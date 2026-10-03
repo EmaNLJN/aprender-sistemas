@@ -168,6 +168,8 @@ npm ci
 npm run build
 ```
 
+Prettier formatea todo el código propio (`npm run format`). Para que `git blame` omita los commits que sólo cambiaron formato, ejecutá una vez `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
+
 Vite, como build único, empaqueta estilos, datos, editor y aplicación en el documento autónomo `dist/index.html`, desde `src/index.html` y `src/main.tsx`. Los checks validan 137 ejercicios por lenguaje (100 del recorrido, 12 nuevos de campaña y 25 de Sistemas), más 16 temas del Atlas por lenguaje. Docker reconstruye desde las fuentes y el lockfile.
 
 Archivos principales: `src/features/atlas/` (Atlas React y contenido ESM), `lab-rust.js` / `lab-go.js` (contenido), `lab.js` (aprendizaje y revisión), `lab-explorers.js` (modelos y misiones), `runner.js` (Playgrounds), `editor-source.js` (CodeMirror), `content.js` / `app.js` (guía original), `quests-rust.js` / `quests-go.js` (24 desafíos nuevos), `campaign-*.js` (mundos y motor), `campaign.js` / `campaign.css` (interfaz de campaña).

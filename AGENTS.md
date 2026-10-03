@@ -37,8 +37,8 @@ node qa/build-check.cjs
 Para la verificación habitual, `npm run build` regenera todos los assets y
 `npm test` ejecuta la suite local completa. `npm run lint` ejecuta ESLint;
 `npm run format:check` comprueba formato sin editar. `npm run format` aplica
-Prettier a los checks, manifiestos y configuraciones propias; las fuentes de la
-aplicación conservan su formato compacto existente.
+Prettier a todo el código propio; `.prettierignore` excluye skills importadas,
+salidas generadas, Markdown y el shell `src/index.html`.
 
 Vite empaqueta React, las fuentes legacy y los estilos en `dist/index.html`.
 `vite-plugin-singlefile` conserva el contrato de un documento autónomo; los checks
@@ -71,6 +71,7 @@ y abrí `http://localhost:8765`; detenelo con
 - Usá ESLint para reglas de código y Prettier para formato, con configuraciones
   separadas. Los avisos de complejidad requieren revisión; no desactives reglas
   globalmente para ocultar un defecto. Conservá el formato original de las skills.
+  Registrá en `.git-blame-ignore-revs` los commits que sólo cambien formato.
 - Mantené credenciales, rutas locales, cachés, progreso y resultados generados fuera
   de Git; actualizá `.gitignore` y `.dockerignore` al introducir nuevas salidas.
 

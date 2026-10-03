@@ -139,9 +139,9 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 - Medí antes de agregar memoización o complejidad por rendimiento. Probá reglas
   y flujos observables con los checks existentes y pruebas específicas de regresión.
 
-Estas reglas se aplican a los cambios nuevos y a los módulos que se migren. No
-exigen reformatear todo el código existente. Las fuentes y skills de referencia
-están en `docs/agent-skills.md`.
+Estas reglas se aplican a los cambios nuevos y a los módulos que se migren; el
+formato ya es uniforme porque Prettier cubre todo el código propio. Las fuentes y
+skills de referencia están en `docs/agent-skills.md`.
 
 ## Feature-Sliced Design incremental
 

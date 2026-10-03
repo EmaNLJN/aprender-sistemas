@@ -13,8 +13,8 @@
     "check:runner": "node qa/runner-check.cjs",
     "build:kits": "esbuild project-kit-source.js --bundle --format=iife --platform=browser --target=es2020 --minify --legal-comments=inline --outfile=project-kit.bundle.js",
     "lint": "eslint .",
-    "format:check": "prettier --no-error-on-unmatched-pattern --check eslint.config.mjs prettier.config.mjs doctor.config.mjs vite.config.ts package.json tsconfig*.json src/**/*.mjs src/**/*.ts src/**/*.jsx src/**/*.tsx qa/atlas-check.mjs qa/lab-state-check.cjs tools/quality/package.json",
-    "format": "prettier --no-error-on-unmatched-pattern --write eslint.config.mjs prettier.config.mjs doctor.config.mjs vite.config.ts package.json tsconfig*.json src/**/*.mjs src/**/*.ts src/**/*.jsx src/**/*.tsx qa/atlas-check.mjs qa/lab-state-check.cjs tools/quality/package.json",
+    "format:check": "prettier . --check",
+    "format": "prettier . --write",
     "check:lab": "node qa/lab-state-check.cjs",
     "pretest": "npm run typecheck && npm run build:kits",
     "test": "node qa/build-check.cjs && node qa/atlas-check.mjs && node qa/content-check.cjs && node qa/runner-check.cjs && node qa/campaign-check.cjs && node qa/campaign-content-check.cjs && node qa/quest-explorers-check.cjs && node qa/systems-check.cjs && node qa/systems-lowlevel-check.cjs && node qa/systems-infra-check.cjs && node qa/systems-play-check.cjs && node qa/systems-pc-check.cjs && node qa/project-kit-check.cjs && npm run check:lab"
