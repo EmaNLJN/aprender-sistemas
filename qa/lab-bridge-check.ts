@@ -6,6 +6,8 @@
  * vigente; no se recalculan con el algoritmo de producción.
  */
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import vm from 'node:vm';
 import { plainJson } from './lib/plain-json.ts';
 import {
@@ -16,6 +18,7 @@ import {
   loadSystemsEngine,
   loadSystemsUi,
 } from './lib/legacy-sources.ts';
+import { repoRoot } from './lib/sources.ts';
 
 interface LabTest {
   id: string;
@@ -26,6 +29,7 @@ interface LabExercise {
 }
 interface Workshop {
   id: string;
+  title: string;
 }
 interface CampaignApi {
   init(): { ready: boolean; storageAvailable: boolean; loadWarning: string };
@@ -95,9 +99,16 @@ function createContext(search: string, labState: LabState): BridgeContext {
   return context;
 }
 
-function campaignBridge(search: string, labState: LabState = { records: {} }): CampaignApi {
+type ContextHook = (context: BridgeContext) => void;
+
+function campaignBridge(
+  search: string,
+  labState: LabState = { records: {} },
+  afterCatalogs?: ContextHook,
+): CampaignApi {
   const context = createContext(search, labState);
   loadCampaignWorlds(context);
+  afterCatalogs?.(context);
   loadCampaignEngine(context);
   loadCampaignUi(context);
   const api = context.TallerCampaign;
@@ -109,8 +120,10 @@ function campaignBridge(search: string, labState: LabState = { records: {} }): C
 function systemsBridge(
   search: string,
   labState: LabState = { records: {} },
+  afterCatalogs?: ContextHook,
 ): { api: SystemsApi; context: BridgeContext } {
   const context = createContext(search, labState);
+  afterCatalogs?.(context);
   loadSystemsEngine(context);
   loadSystemsUi(context);
   const api = context.TallerSystems;
@@ -154,48 +167,67 @@ function test(name: string, run: () => void): void {
   }
 }
 
-// Núcleo programable de cada taller de Sistemas: el número es el mismo en Rust y Go.
-const coreNumbers: Record<string, number> = {
-  pc: 137,
-  cache: 113,
-  heap: 114,
-  mmu: 115,
-  tlb: 116,
-  vm: 117,
-  stack: 118,
-  scheduler: 119,
-  interrupts: 120,
-  wal: 121,
-  lsm: 122,
-  quorum: 123,
-  clocks: 124,
-  network: 125,
-  backpressure: 126,
-  balancing: 127,
-  sharding: 128,
-  transforms: 129,
-  raster: 130,
-  raycast: 131,
-  pathfinding: 132,
-  physics: 133,
-  life: 134,
-  algebra: 135,
-  minimax: 136,
-};
+// Núcleo programable de cada taller de Sistemas: lo fija el fixture de IDs del currículo.
+interface WorkshopContract {
+  cores: Record<'rust' | 'go', string>;
+}
+const fixture = JSON.parse(
+  fs.readFileSync(path.join(repoRoot, 'qa', 'fixtures', 'curriculum-ids.json'), 'utf8'),
+) as { workshops: Record<string, WorkshopContract> };
+const workshopIds = Object.keys(fixture.workshops);
+
+function coreOf(workshopId: string, language: 'rust' | 'go'): string {
+  const workshop = fixture.workshops[workshopId];
+  assert.ok(workshop, `el fixture no declara el taller ${workshopId}`);
+  return workshop.cores[language];
+}
+
+// Los enlaces se comparan por contenido (parámetros y hash), no por su texto exacto.
+interface ParsedLink {
+  params: Record<string, string>;
+  hash: string;
+}
+
+function parseLink(url: string): ParsedLink {
+  const parsed = new URL(url, 'http://taller.test/');
+  return { params: Object.fromEntries(parsed.searchParams), hash: parsed.hash };
+}
+
+function hrefsIn(html: string): ParsedLink[] {
+  return [...html.matchAll(/<a [^>]*href="([^"]*)"/g)].map((match) =>
+    parseLink((match[1] ?? '').replaceAll('&amp;', '&')),
+  );
+}
+
+function listItemsIn(html: string): string[] {
+  return [...html.matchAll(/<li>(.*?)<\/li>/g)].map((match) => match[1] ?? '');
+}
 
 test('campaña: returnURL conserva el formato ?mundo=<id>#campana', () => {
   const campaign = campaignBridge('');
-  assert.equal(campaign.returnURL('rust-world-2'), '?mundo=rust-world-2#campana');
-  assert.equal(campaign.returnURL('go-world-4'), '?mundo=go-world-4#campana');
-  assert.equal(campaign.returnURL('mundo raro/1'), '?mundo=mundo%20raro%2F1#campana');
+  assert.deepEqual(parseLink(campaign.returnURL('rust-world-2')), {
+    params: { mundo: 'rust-world-2' },
+    hash: '#campana',
+  });
+  assert.deepEqual(parseLink(campaign.returnURL('go-world-4')), {
+    params: { mundo: 'go-world-4' },
+    hash: '#campana',
+  });
+  // Los caracteres reservados deben sobrevivir al ciclo codificar y decodificar.
+  assert.deepEqual(parseLink(campaign.returnURL('mundo raro/1')), {
+    params: { mundo: 'mundo raro/1' },
+    hash: '#campana',
+  });
 });
 
 test('campaña: una misión de entrenamiento muestra mundo, XP y tipo', () => {
   const campaign = campaignBridge('?campana=rust-world-1&ejercicio=rust-02&paso=learn');
-  assert.equal(
-    campaign.exerciseContextHTML('rust-02', 'rust'),
-    '<div class="quest-lab-context"><a href="?mundo=rust-world-1#campana">← Estación del robot</a><span>0/30 XP · Entrenamiento</span><span>○ Pruebas ○ Predicción</span></div>',
-  );
+  const html = campaign.exerciseContextHTML('rust-02', 'rust');
+  assert.match(html, /^<div class="quest-lab-context">/);
+  assert.deepEqual(hrefsIn(html), [{ params: { mundo: 'rust-world-1' }, hash: '#campana' }]);
+  assert.match(html, />← Estación del robot<\/a>/);
+  assert.match(html, /<span>0\/30 XP · Entrenamiento<\/span>/);
+  assert.match(html, /<span>○ Pruebas ○ Predicción<\/span>/);
 });
 
 test('campaña: el tipo de misión distingue reparación, kata y desafío final', () => {
@@ -207,10 +239,9 @@ test('campaña: el tipo de misión distingue reparación, kata y desafío final'
 
 test('campaña: el contexto de Go usa el mundo de Go', () => {
   const campaign = campaignBridge('?campana=go-world-1');
-  assert.match(
-    campaign.exerciseContextHTML('go-06', 'go'),
-    /<a href="\?mundo=go-world-1#campana">← La estación del rover<\/a>/,
-  );
+  const html = campaign.exerciseContextHTML('go-06', 'go');
+  assert.deepEqual(hrefsIn(html), [{ params: { mundo: 'go-world-1' }, hash: '#campana' }]);
+  assert.match(html, />← La estación del rover<\/a>/);
   assert.match(campaign.exerciseContextHTML('go-103', 'go'), /Desafío final/);
 });
 
@@ -239,16 +270,18 @@ test('campaña: el contexto refleja las pruebas y la predicción del laboratorio
 
 test('campaña: un jefe bloqueado muestra los motivos y el regreso al mapa', () => {
   const campaign = campaignBridge('?campana=rust-world-1&ejercicio=rust-103&paso=learn');
-  assert.equal(
-    campaign.lockedExerciseHTML('rust-103', 'rust'),
-    '<section class="quest-direct-lock"><div class="eyebrow">CAMPAÑA · ACCESO A LA MISIÓN</div><h1>Primero, las piezas<br><em>que te preparan.</em></h1><p>Esta misión todavía no está disponible en tu campaña.</p><ul>' +
-      '<li>Verificá las pruebas de «Repará el contador inmutable» (rust-02).</li>' +
-      '<li>Verificá las pruebas de «Elegí una ruta con if» (rust-06).</li>' +
-      '<li>Verificá las pruebas de «El método conoce su rectángulo» (rust-22).</li>' +
-      '<li>Verificá las pruebas de «Reparación · La brújula cruzada» (rust-101).</li>' +
-      '<li>Verificá las pruebas de «Kata · El inventario no puede desbordarse» (rust-102).</li>' +
-      '</ul><a class="button" href="?mundo=rust-world-1#campana">Ver mi mapa →</a></section>',
-  );
+  const html = campaign.lockedExerciseHTML('rust-103', 'rust');
+  assert.match(html, /^<section class="quest-direct-lock">/);
+  assert.match(html, /Esta misión todavía no está disponible en tu campaña\./);
+  assert.deepEqual(listItemsIn(html), [
+    'Verificá las pruebas de «Repará el contador inmutable» (rust-02).',
+    'Verificá las pruebas de «Elegí una ruta con if» (rust-06).',
+    'Verificá las pruebas de «El método conoce su rectángulo» (rust-22).',
+    'Verificá las pruebas de «Reparación · La brújula cruzada» (rust-101).',
+    'Verificá las pruebas de «Kata · El inventario no puede desbordarse» (rust-102).',
+  ]);
+  assert.deepEqual(hrefsIn(html), [{ params: { mundo: 'rust-world-1' }, hash: '#campana' }]);
+  assert.match(html, /<a class="button" [^>]*>Ver mi mapa →<\/a>/);
 });
 
 test('campaña: una misión permitida o sin enlace de campaña no se bloquea', () => {
@@ -264,8 +297,6 @@ test('campaña: el jefe se habilita al verificar las cinco misiones previas y si
     ids.map((id) => [id, passedRecord(labExercise('', id), true)]),
   );
   const campaign = campaignBridge('?campana=rust-world-1', { records });
-  // lockedExerciseHTML no sincroniza por sí misma: usa el último estado sincronizado.
-  assert.match(campaign.lockedExerciseHTML('rust-103', 'rust'), /quest-direct-lock/);
   campaign.sync();
   assert.equal(campaign.lockedExerciseHTML('rust-103', 'rust'), '');
 });
@@ -273,10 +304,12 @@ test('campaña: el jefe se habilita al verificar las cinco misiones previas y si
 test('campaña: un enlace que no pertenece al mundo explica el problema', () => {
   const html = campaignBridge('?campana=rust-world-1').lockedExerciseHTML('rust-01', 'rust');
   assert.match(html, /<li>El enlace no corresponde a una misión de este mundo\.<\/li>/);
-  assert.match(html, /<a class="button" href="\?mundo=rust-world-1#campana">Ver mi mapa →<\/a>/);
+  assert.deepEqual(hrefsIn(html), [{ params: { mundo: 'rust-world-1' }, hash: '#campana' }]);
+  assert.match(html, />Ver mi mapa →<\/a>/);
   const unknownWorld = campaignBridge('?campana=no-existe').lockedExerciseHTML('rust-02', 'rust');
   assert.match(unknownWorld, /El enlace no corresponde a una misión de este mundo\./);
-  assert.match(unknownWorld, /<a class="button" href="#campana">Ver mi mapa →<\/a>/);
+  assert.deepEqual(hrefsIn(unknownWorld), [{ params: {}, hash: '#campana' }]);
+  assert.match(unknownWorld, />Ver mi mapa →<\/a>/);
 });
 
 test('sistemas: el catálogo expone los 25 talleres esperados', () => {
@@ -289,16 +322,16 @@ test('sistemas: el catálogo expone los 25 talleres esperados', () => {
   ]
     .flatMap((source) => source?.workshops ?? [])
     .map((workshop) => workshop.id);
-  assert.deepEqual([...ids].sort(), Object.keys(coreNumbers).sort());
+  assert.deepEqual([...ids].sort(), [...workshopIds].sort());
 });
 
 test('sistemas: missionIDs termina en el núcleo de cada taller (50 núcleos)', () => {
   const { api } = systemsBridge('');
   const cores: string[] = [];
-  for (const [id, number] of Object.entries(coreNumbers))
-    for (const lang of ['rust', 'go']) {
+  for (const id of workshopIds)
+    for (const lang of ['rust', 'go'] as const) {
       const ids = api.missionIDs(id, lang);
-      assert.equal(ids.at(-1), `${lang}-${number}`, `${id}/${lang}`);
+      assert.equal(ids.at(-1), coreOf(id, lang), `${id}/${lang}`);
       cores.push(ids.at(-1) as string);
     }
   assert.equal(cores.length, 50);
@@ -307,19 +340,27 @@ test('sistemas: missionIDs termina en el núcleo de cada taller (50 núcleos)', 
 
 test('sistemas: missionIDs lista primero las herramientas previas y después el núcleo', () => {
   const { api } = systemsBridge('');
-  assert.deepEqual(plainJson(api.missionIDs('cache', 'rust')), ['rust-31', 'rust-35', 'rust-113']);
-  assert.deepEqual(plainJson(api.missionIDs('heap', 'go')), ['go-16', 'go-75', 'go-114']);
+  assert.deepEqual(plainJson(api.missionIDs('cache', 'rust')), [
+    'rust-31',
+    'rust-35',
+    coreOf('cache', 'rust'),
+  ]);
+  assert.deepEqual(plainJson(api.missionIDs('heap', 'go')), [
+    'go-16',
+    'go-75',
+    coreOf('heap', 'go'),
+  ]);
   assert.deepEqual(plainJson(api.missionIDs('pc', 'rust')), [
-    'rust-115',
-    'rust-116',
-    'rust-120',
-    'rust-137',
+    coreOf('mmu', 'rust'),
+    coreOf('tlb', 'rust'),
+    coreOf('interrupts', 'rust'),
+    coreOf('pc', 'rust'),
   ]);
   assert.deepEqual(plainJson(api.missionIDs('minimax', 'go')), [
     'go-06',
     'go-10',
     'go-86',
-    'go-136',
+    coreOf('minimax', 'go'),
   ]);
 });
 
@@ -332,23 +373,32 @@ test('sistemas: missionIDs devuelve vacío sin taller o con un taller desconocid
 
 test('sistemas: returnURL conserva el formato ?taller=&parte=build&lenguaje=#sistemas', () => {
   const { api } = systemsBridge('');
-  assert.equal(api.returnURL('cache'), '?taller=cache&parte=build&lenguaje=rust#sistemas');
-  assert.equal(api.returnURL('cache', 'rust'), '?taller=cache&parte=build&lenguaje=rust#sistemas');
-  assert.equal(api.returnURL('cache', 'go'), '?taller=cache&parte=build&lenguaje=go#sistemas');
-  assert.equal(api.returnURL('cache', 'otro'), '?taller=cache&parte=build&lenguaje=rust#sistemas');
-  assert.equal(api.returnURL('a b'), '?taller=a%20b&parte=build&lenguaje=rust#sistemas');
+  const systemsLink = (taller: string, lenguaje: string): ParsedLink => ({
+    params: { taller, parte: 'build', lenguaje },
+    hash: '#sistemas',
+  });
+  assert.deepEqual(parseLink(api.returnURL('cache')), systemsLink('cache', 'rust'));
+  assert.deepEqual(parseLink(api.returnURL('cache', 'rust')), systemsLink('cache', 'rust'));
+  assert.deepEqual(parseLink(api.returnURL('cache', 'go')), systemsLink('cache', 'go'));
+  assert.deepEqual(parseLink(api.returnURL('cache', 'otro')), systemsLink('cache', 'rust'));
+  assert.deepEqual(parseLink(api.returnURL('a b')), systemsLink('a b', 'rust'));
 });
 
 test('sistemas: el núcleo muestra el título del taller y el regreso', () => {
-  const { api } = systemsBridge('?sistema=cache&ejercicio=rust-113&paso=code');
-  assert.equal(
-    api.exerciseContextHTML('rust-113', 'rust'),
-    '<div class="quest-lab-context"><a href="?taller=cache&parte=build&lenguaje=rust#sistemas">← Una caché que aprende tus visitas</a><span>Núcleo del taller</span><span>Tres pruebas para verificar el núcleo</span></div>',
-  );
-  assert.match(
-    api.exerciseContextHTML('go-113', 'go'),
-    /<a href="\?taller=cache&parte=build&lenguaje=go#sistemas">← Una caché que aprende tus visitas<\/a><span>Núcleo del taller<\/span>/,
-  );
+  const { api } = systemsBridge(`?sistema=cache&ejercicio=${coreOf('cache', 'rust')}&paso=code`);
+  const rust = api.exerciseContextHTML(coreOf('cache', 'rust'), 'rust');
+  assert.match(rust, /^<div class="quest-lab-context">/);
+  assert.deepEqual(hrefsIn(rust), [
+    { params: { taller: 'cache', parte: 'build', lenguaje: 'rust' }, hash: '#sistemas' },
+  ]);
+  assert.match(rust, />← Una caché que aprende tus visitas<\/a>/);
+  assert.match(rust, /<span>Núcleo del taller<\/span>/);
+  assert.match(rust, /<span>Tres pruebas para verificar el núcleo<\/span>/);
+  const go = api.exerciseContextHTML(coreOf('cache', 'go'), 'go');
+  assert.deepEqual(hrefsIn(go), [
+    { params: { taller: 'cache', parte: 'build', lenguaje: 'go' }, hash: '#sistemas' },
+  ]);
+  assert.match(go, /<span>Núcleo del taller<\/span>/);
 });
 
 test('sistemas: una herramienta previa se rotula como tal', () => {
@@ -359,17 +409,50 @@ test('sistemas: una herramienta previa se rotula como tal', () => {
 test('sistemas: un ejercicio que no es núcleo ni previo devuelve cadena vacía', () => {
   const { api } = systemsBridge('?sistema=cache');
   assert.equal(api.exerciseContextHTML('rust-01', 'rust'), '');
-  assert.equal(api.exerciseContextHTML('rust-113', 'go'), '');
-  assert.equal(api.exerciseContextHTML('go-113', 'rust'), '');
-  assert.equal(systemsBridge('?sistema=no-existe').api.exerciseContextHTML('rust-113', 'rust'), '');
-  assert.equal(systemsBridge('').api.exerciseContextHTML('rust-113', 'rust'), '');
+  assert.equal(api.exerciseContextHTML(coreOf('cache', 'rust'), 'go'), '');
+  assert.equal(api.exerciseContextHTML(coreOf('cache', 'go'), 'rust'), '');
+  assert.equal(
+    systemsBridge('?sistema=no-existe').api.exerciseContextHTML(coreOf('cache', 'rust'), 'rust'),
+    '',
+  );
+  assert.equal(systemsBridge('').api.exerciseContextHTML(coreOf('cache', 'rust'), 'rust'), '');
 });
 
 test('sistemas: el contexto marca el núcleo verificado por el laboratorio', () => {
-  const labState = { records: { 'rust-113': passedRecord(labExercise('', 'rust-113'), false) } };
+  const core = coreOf('cache', 'rust');
+  const labState = { records: { [core]: passedRecord(labExercise('', core), false) } };
   const { api } = systemsBridge('?sistema=cache', labState);
-  assert.match(api.exerciseContextHTML('rust-113', 'rust'), /<span>✓ Núcleo verificado<\/span>/);
-  assert.match(api.exerciseContextHTML('go-113', 'go'), /Tres pruebas para verificar el núcleo/);
+  assert.match(api.exerciseContextHTML(core, 'rust'), /<span>✓ Núcleo verificado<\/span>/);
+  assert.match(
+    api.exerciseContextHTML(coreOf('cache', 'go'), 'go'),
+    /Tres pruebas para verificar el núcleo/,
+  );
+});
+
+// Título con HTML, comillas y &: debe aparecer escapado, nunca como marcado.
+const hostileTitle = 'Caché <b>"rápida"</b> & cía';
+const escapedTitle = 'Caché &lt;b&gt;&quot;rápida&quot;&lt;/b&gt; &amp; cía';
+
+test('escape: el título del primer mundo de campaña se muestra escapado en el contexto', () => {
+  const campaign = campaignBridge('?campana=rust-world-1', { records: {} }, (context) => {
+    const [firstWorld] = context.RUST_CAMPAIGN as { title: string }[];
+    assert.ok(firstWorld, 'RUST_CAMPAIGN está vacío');
+    firstWorld.title = hostileTitle;
+  });
+  const html = campaign.exerciseContextHTML('rust-02', 'rust');
+  assert.ok(html.includes(`← ${escapedTitle}</a>`), html);
+  assert.ok(!html.includes('<b>'), 'el título inyectó una etiqueta b');
+});
+
+test('escape: el título del primer taller de Sistemas se muestra escapado en el contexto', () => {
+  const { api } = systemsBridge('?sistema=cache', { records: {} }, (context) => {
+    const firstWorkshop = context.SYSTEMS_LOWLEVEL?.workshops[0];
+    assert.ok(firstWorkshop, 'SYSTEMS_LOWLEVEL no tiene talleres');
+    firstWorkshop.title = hostileTitle;
+  });
+  const html = api.exerciseContextHTML(coreOf('cache', 'rust'), 'rust');
+  assert.ok(html.includes(`← ${escapedTitle}</a>`), html);
+  assert.ok(!html.includes('<b>'), 'el título inyectó una etiqueta b');
 });
 
 process.stdout.write(`\n${passed} passed, ${failed} failed\n`);

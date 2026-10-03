@@ -15,6 +15,7 @@ const checks = [
   'exercise-evidence-check.ts',
   'lab-state-check.ts',
   'app-shell-check.ts',
+  'boot-check.ts',
   'lab-bridge-check.ts',
   'campaign-check.ts',
   'campaign-content-check.ts',

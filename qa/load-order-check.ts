@@ -4,6 +4,10 @@
  * Los scripts legacy se comunican por window.* y leen sus dependencias al
  * evaluarse, así que el orden de los imports es el contrato de carga. El check
  * sólo lee el texto de main.tsx: no ejecuta nada.
+ *
+ * Cada import se normaliza a una ruta relativa a la raíz del repo (resuelta desde el
+ * directorio de la entrada, probando .ts, .tsx y .js cuando no lleva extensión), y la
+ * tabla de restricciones usa esas rutas: mover la entrada no obliga a reescribirla.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -12,77 +16,102 @@ import { repoRoot } from './lib/sources.ts';
 
 type Constraint = [before: string, after: string, reason: string];
 
+const APP = 'app.js';
+const LAB = 'lab.js';
+const STYLES = 'styles.css';
+const ATLAS = 'src/app/legacy/register-atlas.tsx';
+const CAMPAIGN_ENGINE = 'src/app/legacy/register-campaign-engine.ts';
+const SYSTEMS_ENGINE = 'src/app/legacy/register-systems-engine.ts';
+
 const BEFORE_LAB = [
-  '../../lab-rust.js',
-  '../../lab-go.js',
-  '../../quests-rust.js',
-  '../../quests-go.js',
-  '../../systems-lowlevel-labs.js',
-  '../../systems-infra-labs.js',
-  '../../systems-play-labs.js',
-  '../../systems-pc-labs.js',
+  'lab-rust.js',
+  'lab-go.js',
+  'quests-rust.js',
+  'quests-go.js',
+  'systems-lowlevel-labs.js',
+  'systems-infra-labs.js',
+  'systems-play-labs.js',
+  'systems-pc-labs.js',
 ];
-const BEFORE_APP = [
-  '../../lab.js',
-  '../../campaign.js',
-  '../../systems.js',
-  '../../campaign-rust.js',
-  '../../campaign-go.js',
-  './legacy/register-atlas',
+const SYSTEMS_CATALOGS = [
+  'systems-lowlevel.js',
+  'systems-infra.js',
+  'systems-play.js',
+  'systems-pc.js',
 ];
+const BEFORE_APP_REASONS: Record<string, string> = {
+  [LAB]:
+    'render() de app.js llama a window.TallerLab.mount(); app.js también usa getExercises() en syncLinkedLanguage()',
+  'campaign.js': 'app.js llama a window.TallerCampaign?.init() al cargar y a mount() en render()',
+  'systems.js': 'app.js llama a window.TallerSystems?.init() al cargar y a mount() en render()',
+  'campaign-rust.js':
+    'syncLinkedLanguage() de app.js lee window.RUST_CAMPAIGN y campaign.js init() la pasa al motor al cargar app.js',
+  'campaign-go.js':
+    'syncLinkedLanguage() de app.js lee window.GO_CAMPAIGN y campaign.js init() la pasa al motor al cargar app.js',
+  [ATLAS]:
+    'render() de app.js llama a window.TallerAtlas.mount() sin guarda opcional en la vista atlas',
+};
 
 const CONSTRAINTS: Constraint[] = [
   [
-    '../../content.js',
-    '../../app.js',
+    'content.js',
+    APP,
     'app.js lee window.GUIDE_DATA al cargar (const data = window.GUIDE_DATA, que usa allSteps y resourceIds)',
   ],
   ...BEFORE_LAB.map((catalog): Constraint => [
     catalog,
-    '../../lab.js',
+    LAB,
     'lab.js arma la lista exercises/byId con window.RUST_LAB, GO_LAB, *_QUESTS y SYSTEMS_*_LABS al evaluarse; sanitize() descarta el progreso de IDs ausentes en byId',
   ]),
+  ...SYSTEMS_CATALOGS.map((catalog): Constraint => [
+    catalog,
+    APP,
+    'TallerSystems.init() lee el catálogo de Sistemas (window.SYSTEMS_*) cuando app.js carga',
+  ]),
   [
-    '../../systems-lowlevel.js',
-    '../../systems-lowlevel-labs.js',
+    'systems-lowlevel.js',
+    'systems-lowlevel-labs.js',
     'systems-lowlevel-labs.js lee window.SYSTEMS_LOWLEVEL.workshops al evaluarse (pair() usa workshops[index])',
   ],
   [
-    '../../systems-pc.js',
-    '../../systems-pc-labs.js',
+    'systems-pc.js',
+    'systems-pc-labs.js',
     'systems-pc-labs.js lee window.SYSTEMS_PC.workshops[0] al evaluarse (const workshop)',
   ],
   [
-    './legacy/register-campaign-engine',
-    '../../campaign.js',
+    CAMPAIGN_ENGINE,
+    'campaign.js',
     'campaign.js captura window.TallerCampaignEngine en const engine al evaluarse',
   ],
   [
-    './legacy/register-systems-engine',
-    '../../systems.js',
+    SYSTEMS_ENGINE,
+    'systems.js',
     'systems.js captura window.TallerSystemsEngine en const engine al evaluarse',
   ],
-  ...BEFORE_APP.map((module): Constraint => {
-    const reason: Record<string, string> = {
-      '../../lab.js':
-        'render() de app.js llama a window.TallerLab.mount(); app.js también usa getExercises() en syncLinkedLanguage()',
-      '../../campaign.js':
-        'app.js llama a window.TallerCampaign?.init() al cargar y a mount() en render()',
-      '../../systems.js':
-        'app.js llama a window.TallerSystems?.init() al cargar y a mount() en render()',
-      '../../campaign-rust.js':
-        'syncLinkedLanguage() de app.js lee window.RUST_CAMPAIGN y campaign.js init() la pasa al motor al cargar app.js',
-      '../../campaign-go.js':
-        'syncLinkedLanguage() de app.js lee window.GO_CAMPAIGN y campaign.js init() la pasa al motor al cargar app.js',
-      './legacy/register-atlas':
-        'render() de app.js llama a window.TallerAtlas.mount() sin guarda opcional en la vista atlas',
-    };
-    return [module, '../../app.js', reason[module] ?? ''];
-  }),
+  ...Object.entries(BEFORE_APP_REASONS).map(([module, reason]): Constraint => [
+    module,
+    APP,
+    reason,
+  ]),
 ];
 
-function readImports(source: string): string[] {
-  return [...source.matchAll(/^\s*import\s+['"]([^'"]+)['"]\s*;?\s*$/gm)].map((match) => match[1]);
+const SOURCE_EXTENSIONS = ['', '.ts', '.tsx', '.js'];
+
+// Ruta del import relativa a la raíz del repo, con barras; lo no relativo queda igual.
+function normalizeImport(specifier: string, entryDirectory: string): string {
+  if (!specifier.startsWith('.')) return specifier;
+  const absolute = path.resolve(entryDirectory, specifier);
+  const resolved =
+    SOURCE_EXTENSIONS.map((extension) => absolute + extension).find(
+      (candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile(),
+    ) ?? absolute;
+  return path.relative(repoRoot, resolved).split(path.sep).join('/');
+}
+
+function readImports(source: string, entryDirectory: string): string[] {
+  return [...source.matchAll(/^\s*import\s+['"]([^'"]+)['"]\s*;?\s*$/gm)].map((match) =>
+    normalizeImport(match[1] ?? '', entryDirectory),
+  );
 }
 
 function checkLoadOrder(imports: string[]): string[] {
@@ -99,18 +128,18 @@ function checkLoadOrder(imports: string[]): string[] {
       problems.push(`${before} debe importarse antes que ${after}: ${reason}`);
     }
   }
-  if (imports.at(-1) !== '../../app.js') {
-    problems.push(`../app.js debe ser el último import, pero lo es ${imports.at(-1)}`);
+  if (imports.at(-1) !== APP) {
+    problems.push(`${APP} debe ser el último import, pero lo es ${imports.at(-1)}`);
   }
   const firstStyle = imports.find((name) => name.endsWith('.css'));
-  if (firstStyle !== '../../styles.css') {
-    problems.push(`../styles.css debe ser la primera hoja de estilos, pero lo es ${firstStyle}`);
+  if (firstStyle !== STYLES) {
+    problems.push(`${STYLES} debe ser la primera hoja de estilos, pero lo es ${firstStyle}`);
   }
   return problems;
 }
 
 const mainPath = path.join(repoRoot, 'src', 'app', 'main.tsx');
-const imports = readImports(fs.readFileSync(mainPath, 'utf8'));
+const imports = readImports(fs.readFileSync(mainPath, 'utf8'), path.dirname(mainPath));
 const problems = checkLoadOrder(imports);
 assert.deepEqual(
   problems,

@@ -50,6 +50,7 @@ cambies y evitá reformatear las skills importadas o las salidas generadas.
 | Cambio | Comprobaciones locales |
 | --- | --- |
 | Empaquetado, assets u orden de carga | `npm run build`; `node qa/build-check.ts`, `node qa/load-order-check.ts` |
+| Arranque, adaptadores `window.Taller*` o navegación por vistas | `node qa/boot-check.ts` |
 | IDs de ejercicios, mundos, talleres o conceptos | `node qa/curriculum-ids-check.ts` |
 | Ejercicios o contratos de revisión | `node qa/content-check.ts`, `node qa/runner-check.ts` |
 | Recorrido, biblioteca o respaldo global | `node qa/guide-content-check.ts`, `node qa/app-shell-check.ts` |
@@ -76,13 +77,17 @@ npm test
 ## Red de seguridad para refactors
 
 - `qa/fixtures/curriculum-ids.json` es contrato: fija IDs, títulos, composición de
-  mundos, núcleos de cada taller y enlaces del Atlas. Cambiar un ID exige migrar el
+  mundos, núcleos y objetivos de cada taller y enlaces del Atlas. Cambiar un ID exige migrar el
   progreso guardado y actualizar el fixture a mano; nunca lo regeneres para que un
   check pase.
 - `app-shell-check` y `lab-bridge-check` caracterizan el comportamiento actual,
   incluidos defectos conocidos marcados como `DEFECTO CONOCIDO`. Al corregir uno,
   cambiá su escenario en el mismo commit TDD: primero la prueba nueva que falla,
   después la corrección.
+- `qa/lib/app-adapters.ts` lista los métodos de cada `window.Taller*` que consume
+  `app.js`: los fakes de `app-shell-check` salen de esa lista y `boot-check`, que
+  empaqueta `src/app/main.tsx` sobre el DOM falso de `qa/lib/fake-dom.ts`, exige que los
+  adaptadores reales los publiquen y que todas las vistas y «Borrar todo» funcionen.
 - `load-order-check` declara qué fuente legacy debe evaluarse antes que otra y por
   qué. Al mover o portar un archivo, actualizá su ruta en la tabla sin relajar la
   restricción.

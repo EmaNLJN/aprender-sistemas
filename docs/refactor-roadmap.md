@@ -181,6 +181,7 @@ posición de la entrada.
 | P1 | Hecha | `2ed5227` |
 | P2 | Hecha: bundle JS idéntico y oráculo sin cambios | `7b7e957`, `58b093f` |
 | P3/P4 | Hecha: 14 checks portados con salidas idénticas, 5 checks nuevos de red, configuraciones en TS, `build:kits` retirado | `16e98fb`, `f00fbc9`, `010a2e3` |
+| Red (auditoría) | Hecha: objetivos de los talleres en el fixture, `boot-check` con la entrada real y contrato de adaptadores, escape HTML, escrituras bloqueadas, accesibilidad del shell y rutas de `load-order` relativas a la raíz | (este commit) |
 | P8 (motores) | Hecha: `src/entities/campaign` y `src/entities/systems-workshop` con fábricas tipadas y adaptadores; paridad diferencial de 3 668 y 2 916 operaciones sin diferencias; `qa/lib/legacy-sources.ts` centraliza la carga de fuentes en QA | (este commit) |
 | P7b | Hecha: `versioned-storage` común a los cuatro almacenes, sin escrituras al cargar, respaldo `<clave>:respaldo`, descarte por registro, avisos acumulados, importación atómica y «Borrar todo» con respaldos; verificado en navegador | (este commit) |
 | P8 (infraestructura) | Hecha: runner en `src/shared/api/playground` (paridad idéntica en 32 casos), editor en `src/shared/ui/code-editor`, celebración en `src/shared/lib`; adaptadores en `src/app/legacy` | (este commit) |

@@ -11,6 +11,10 @@
  * src/entities/systems-workshop (requireCore) resuelve `workshop.code[language]` contra el
  * catálogo de ejercicios, y systems.js usa `workshop.code[lang]` para elegir el
  * núcleo ejecutable y marcar "Núcleo del taller". Este check lee ese mismo campo.
+ *
+ * Objetivos: el progreso de cada taller guarda en `observed` los IDs de
+ * `workshop.objectives`; renombrar uno descarta lo observado (progress.ts lo filtra
+ * contra los IDs vigentes). Por eso el fixture fija esa lista, en orden.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -45,6 +49,7 @@ interface WorkshopSource {
   id: string;
   model: string;
   code: Record<Language, string>;
+  objectives: { id: string }[];
 }
 interface AtlasConcept {
   id: string;
@@ -122,6 +127,7 @@ function collectWorkshops(win: CatalogWindow): Table {
       result[workshop.id] = {
         model: workshop.model,
         cores: { rust: workshop.code.rust, go: workshop.code.go },
+        objectives: workshop.objectives.map((objective) => objective.id),
       };
     }
   }
@@ -139,6 +145,18 @@ async function collectAtlas(): Promise<Table> {
   return result;
 }
 
+function fieldChangeMessage(
+  section: string,
+  id: string,
+  field: string,
+  wanted: unknown,
+  found: unknown,
+): string {
+  const detail = `esperado ${JSON.stringify(wanted)}, actual ${JSON.stringify(found)}`;
+  if (field === 'title') return `${section}: ${id} título editado: ${detail}`;
+  return `${section}: ${id}.${field} cambió: ${detail}`;
+}
+
 function diffEntry(section: string, id: string, expected: unknown, actual: unknown): string[] {
   if (expected === undefined) return [`${section}: ID nuevo no declarado en el fixture: ${id}`];
   if (actual === undefined) return [`${section}: falta el ID ${id} que declara el fixture`];
@@ -148,16 +166,53 @@ function diffEntry(section: string, id: string, expected: unknown, actual: unkno
   const changes: string[] = [];
   for (const field of fields) {
     if (JSON.stringify(wanted[field]) === JSON.stringify(found[field])) continue;
-    changes.push(
-      `${section}: ${id}.${field} cambió: esperado ${JSON.stringify(wanted[field])}, actual ${JSON.stringify(found[field])}`,
-    );
+    changes.push(fieldChangeMessage(section, id, field, wanted[field], found[field]));
   }
   return changes;
 }
 
+function fieldOf(entry: unknown, field: string): unknown {
+  return (entry as Record<string, unknown> | undefined)?.[field];
+}
+
+// Un título ya declarado bajo otro ID (y bajo uno solo del mismo lenguaje) delata un
+// cambio de ID, no una edición de texto: el progreso guardado queda apuntando al ID
+// viejo. El lenguaje desambigua porque Rust y Go repiten títulos (p. ej. los núcleos).
+function findPreviousId(id: string, expected: Table, actual: Table): string | undefined {
+  const title = fieldOf(actual[id], 'title');
+  if (typeof title !== 'string' || fieldOf(expected[id], 'title') === title) return undefined;
+  const language = fieldOf(actual[id], 'language');
+  const owners = Object.keys(expected).filter(
+    (other) =>
+      other !== id &&
+      fieldOf(expected[other], 'title') === title &&
+      fieldOf(expected[other], 'language') === language,
+  );
+  return owners.length === 1 ? owners[0] : undefined;
+}
+
 function compareSection(section: string, expected: Table, actual: Table): string[] {
-  const ids = new Set([...Object.keys(expected), ...Object.keys(actual)]);
-  return [...ids].flatMap((id) => diffEntry(section, id, expected[id], actual[id]));
+  const ids = [...new Set([...Object.keys(expected), ...Object.keys(actual)])];
+  const previousIds = new Map<string, string>();
+  for (const id of ids) {
+    const previous = findPreviousId(id, expected, actual);
+    if (previous !== undefined) previousIds.set(id, previous);
+  }
+  const movedAway = new Set(previousIds.values());
+  return ids.flatMap((id) => {
+    const previous = previousIds.get(id);
+    const renameNotice =
+      previous === undefined
+        ? []
+        : [
+            `${section}: ${id} cambió de ID (antes ${previous}): restaurá el orden o migrá el progreso; no actualices el fixture`,
+          ];
+    if (actual[id] === undefined && movedAway.has(id)) return renameNotice;
+    if (previous === undefined) return diffEntry(section, id, expected[id], actual[id]);
+    if (expected[id] === undefined) return renameNotice;
+    const withoutTitle = { ...(actual[id] as Table), title: fieldOf(expected[id], 'title') };
+    return [...renameNotice, ...diffEntry(section, id, expected[id], withoutTitle)];
+  });
 }
 
 function compareCurriculum(fixture: Fixture, actual: Fixture): string[] {

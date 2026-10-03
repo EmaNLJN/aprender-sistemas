@@ -1153,175 +1153,200 @@
       "cores": {
         "rust": "rust-113",
         "go": "go-113"
-      }
+      },
+      "objectives": ["miss", "hit", "evict"]
     },
     "heap": {
       "model": "heap",
       "cores": {
         "rust": "rust-114",
         "go": "go-114"
-      }
+      },
+      "objectives": ["allocate", "fragment", "coalesce"]
     },
     "mmu": {
       "model": "mmu",
       "cores": {
         "rust": "rust-115",
         "go": "go-115"
-      }
+      },
+      "objectives": ["translate", "protection", "map"]
     },
     "tlb": {
       "model": "tlb",
       "cores": {
         "rust": "rust-116",
         "go": "go-116"
-      }
+      },
+      "objectives": ["hit", "stale", "recover"]
     },
     "vm": {
       "model": "vm",
       "cores": {
         "rust": "rust-117",
         "go": "go-117"
-      }
+      },
+      "objectives": ["branch", "halt", "bounded"]
     },
     "stack": {
       "model": "stack",
       "cores": {
         "rust": "rust-118",
         "go": "go-118"
-      }
+      },
+      "objectives": ["nested", "return", "guard"]
     },
     "scheduler": {
       "model": "scheduler",
       "cores": {
         "rust": "rust-119",
         "go": "go-119"
-      }
+      },
+      "objectives": ["rotate", "wake", "finish"]
     },
     "interrupts": {
       "model": "interrupts",
       "cores": {
         "rust": "rust-120",
         "go": "go-120"
-      }
+      },
+      "objectives": ["masked", "deliver", "again"]
     },
     "wal": {
       "model": "wal",
       "cores": {
         "rust": "rust-121",
         "go": "go-121"
-      }
+      },
+      "objectives": ["wal-loss", "wal-durable", "wal-recovered"]
     },
     "lsm": {
       "model": "lsm",
       "cores": {
         "rust": "rust-122",
         "go": "go-122"
-      }
+      },
+      "objectives": ["lsm-resurrection", "lsm-retained", "lsm-reclaimed"]
     },
     "quorum": {
       "model": "quorum",
       "cores": {
         "rust": "rust-123",
         "go": "go-123"
-      }
+      },
+      "objectives": ["quorum-stale", "quorum-unavailable", "quorum-repaired"]
     },
     "clocks": {
       "model": "clocks",
       "cores": {
         "rust": "rust-124",
         "go": "go-124"
-      }
+      },
+      "objectives": ["clocks-independent", "clocks-receive", "clocks-chain"]
     },
     "network": {
       "model": "network",
       "cores": {
         "rust": "rust-125",
         "go": "go-125"
-      }
+      },
+      "objectives": ["network-reordered", "network-deduped", "network-assembled"]
     },
     "backpressure": {
       "model": "backpressure",
       "cores": {
         "rust": "rust-126",
         "go": "go-126"
-      }
+      },
+      "objectives": ["backpressure-blocked", "backpressure-resumed", "backpressure-fifo"]
     },
     "balancing": {
       "model": "balancing",
       "cores": {
         "rust": "rust-127",
         "go": "go-127"
-      }
+      },
+      "objectives": ["balancing-health", "balancing-opened", "balancing-recovered"]
     },
     "sharding": {
       "model": "sharding",
       "cores": {
         "rust": "rust-128",
         "go": "go-128"
-      }
+      },
+      "objectives": ["sharding-wrap", "sharding-local", "sharding-compared"]
     },
     "transforms": {
       "model": "transforms",
       "cores": {
         "rust": "rust-129",
         "go": "go-129"
-      }
+      },
+      "objectives": ["transforms-translation", "transforms-order", "transforms-inverse"]
     },
     "raster": {
       "model": "raster",
       "cores": {
         "rust": "rust-130",
         "go": "go-130"
-      }
+      },
+      "objectives": ["raster-line", "raster-steep", "raster-point"]
     },
     "raycast": {
       "model": "raycast",
       "cores": {
         "rust": "rust-131",
         "go": "go-131"
-      }
+      },
+      "objectives": ["raycast-hit", "raycast-miss", "raycast-nearest"]
     },
     "pathfinding": {
       "model": "pathfinding",
       "cores": {
         "rust": "rust-132",
         "go": "go-132"
-      }
+      },
+      "objectives": ["pathfinding-bfs", "pathfinding-astar", "pathfinding-blocked"]
     },
     "physics": {
       "model": "physics",
       "cores": {
         "rust": "rust-133",
         "go": "go-133"
-      }
+      },
+      "objectives": ["physics-wall", "physics-brick", "physics-touch"]
     },
     "life": {
       "model": "life",
       "cores": {
         "rust": "rust-134",
         "go": "go-134"
-      }
+      },
+      "objectives": ["life-oscillator", "life-still", "life-travel"]
     },
     "algebra": {
       "model": "algebra",
       "cores": {
         "rust": "rust-135",
         "go": "go-135"
-      }
+      },
+      "objectives": ["algebra-horner", "algebra-derivative", "algebra-stationary"]
     },
     "minimax": {
       "model": "minimax",
       "cores": {
         "rust": "rust-136",
         "go": "go-136"
-      }
+      },
+      "objectives": ["minimax-choice", "minimax-win", "minimax-loss"]
     },
     "pc": {
       "model": "pc",
       "cores": {
         "rust": "rust-137",
         "go": "go-137"
-      }
+      },
+      "objectives": ["translate", "protect-retry", "interrupt"]
     }
   },
   "atlas": {

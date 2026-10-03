@@ -15,6 +15,7 @@ export interface RunOptions extends BundleOptions {
 
 const iifeCache = new Map<string, string>();
 const esmCache = new Map<string, string>();
+const appCache = new Map<string, string>();
 
 function build(relativePath: string, options: esbuild.BuildOptions): string {
   const absolute = path.join(repoRoot, relativePath);
@@ -53,6 +54,25 @@ export function bundleSource(relativePath: string, options: BundleOptions = {}):
     minify,
   });
   iifeCache.set(key, text);
+  return text;
+}
+
+// Empaqueta una entrada de aplicación completa (como src/app/main.tsx) para ejecutarla
+// sin navegador: las hojas de estilo se ignoran (loader `empty`), el JSX usa el runtime
+// automático de React y `process.env.NODE_ENV` queda fijo en producción. Es una función
+// aparte de `bundleSource` para no alterar su formato ni su caché.
+export function bundleApp(relativePath: string): string {
+  const cached = appCache.get(relativePath);
+  if (cached !== undefined) return cached;
+  const text = build(relativePath, {
+    format: 'iife',
+    platform: 'browser',
+    target: 'es2020',
+    jsx: 'automatic',
+    loader: { '.css': 'empty' },
+    define: { 'process.env.NODE_ENV': '"production"' },
+  });
+  appCache.set(relativePath, text);
   return text;
 }
 

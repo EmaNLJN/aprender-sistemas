@@ -10,145 +10,12 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { plainJson } from './lib/plain-json.ts';
 import { loadAppShell, loadGuideContent } from './lib/legacy-sources.ts';
+import { APP_ADAPTER_METHODS, APP_ADAPTER_NAMES, type AdapterName } from './lib/app-adapters.ts';
+import { FakeBlob, FakeElement } from './lib/fake-dom.ts';
 
 const STORAGE_KEY = 'taller-learning-v1';
 const BACKUP_KEY = 'taller-learning-v1:respaldo';
 const FIXED_NOW = '2026-03-04T05:06:07.000Z';
-
-type Handler = (event: FakeEvent) => unknown;
-interface FakeEvent {
-  type: string;
-  target: FakeElement;
-  preventDefault(): void;
-  [extra: string]: unknown;
-}
-interface FakeFile {
-  size: number;
-  text(): Promise<string>;
-}
-
-class FakeClassList {
-  readonly names = new Set<string>();
-  add(name: string): void {
-    this.names.add(name);
-  }
-  remove(name: string): void {
-    this.names.delete(name);
-  }
-  contains(name: string): boolean {
-    return this.names.has(name);
-  }
-  toggle(name: string, force?: boolean): boolean {
-    const on = force ?? !this.names.has(name);
-    if (on) this.names.add(name);
-    else this.names.delete(name);
-    return on;
-  }
-}
-
-class FakeElement {
-  readonly dataset: Record<string, string> = {};
-  readonly classList = new FakeClassList();
-  readonly style: Record<string, string> = {};
-  readonly attributes = new Map<string, string>();
-  readonly listeners = new Map<string, Handler[]>();
-  readonly children: FakeElement[] = [];
-  files: FakeFile[] = [];
-  innerHTML = '';
-  textContent = '';
-  value = '';
-  checked = false;
-  hidden = false;
-  open = false;
-  href = '';
-  download = '';
-  max = 0;
-  isConnected = true;
-  clicks = 0;
-  focused = 0;
-
-  readonly tag: string;
-  readonly id: string;
-
-  constructor(tag: string, id = '') {
-    this.tag = tag;
-    this.id = id;
-  }
-
-  addEventListener(type: string, handler: Handler): void {
-    this.listeners.set(type, [...(this.listeners.get(type) ?? []), handler]);
-  }
-  removeEventListener(type: string, handler: Handler): void {
-    this.listeners.set(
-      type,
-      (this.listeners.get(type) ?? []).filter((item) => item !== handler),
-    );
-  }
-  // Despacha un evento a mano y espera a los manejadores asíncronos.
-  async dispatch(type: string, extra: Record<string, unknown> = {}): Promise<void> {
-    const event: FakeEvent = { type, target: this, preventDefault: () => undefined, ...extra };
-    for (const handler of this.listeners.get(type) ?? []) await handler(event);
-  }
-  setAttribute(name: string, value: string): void {
-    this.attributes.set(name, String(value));
-  }
-  getAttribute(name: string): string | null {
-    return this.attributes.get(name) ?? null;
-  }
-  removeAttribute(name: string): void {
-    this.attributes.delete(name);
-  }
-  toggleAttribute(name: string, force?: boolean): boolean {
-    const on = force ?? !this.attributes.has(name);
-    if (on) this.attributes.set(name, '');
-    else this.attributes.delete(name);
-    return on;
-  }
-  focus(): void {
-    this.focused++;
-  }
-  click(): void {
-    this.clicks++;
-    void this.dispatch('click');
-  }
-  closest(): FakeElement | null {
-    return null;
-  }
-  querySelector(): FakeElement | null {
-    return null;
-  }
-  querySelectorAll(): FakeElement[] {
-    return [];
-  }
-  appendChild(child: FakeElement): FakeElement {
-    this.children.push(child);
-    return child;
-  }
-  remove(): void {
-    this.isConnected = false;
-  }
-  scrollIntoView(): void {}
-  select(): void {}
-  showModal(): void {
-    this.open = true;
-  }
-  close(): void {
-    this.open = false;
-    void this.dispatch('close');
-  }
-}
-
-class FakeBlob {
-  readonly parts: string[];
-  readonly options: { type?: string };
-  readonly text: string;
-
-  constructor(parts: string[], options: { type?: string } = {}) {
-    this.parts = parts;
-    this.options = options;
-    this.text = parts.join('');
-  }
-}
 
 interface Timer {
   callback: () => void;
@@ -167,8 +34,11 @@ interface Harness {
   downloads: FakeElement[];
   toast(): string;
   languageButtons: FakeElement[];
+  viewLinks: FakeElement[];
   storedState(): Record<string, unknown>;
 }
+
+type ModuleKey = 'lab' | 'campaign' | 'systems';
 
 interface HarnessOptions {
   hash?: string;
@@ -176,10 +46,12 @@ interface HarnessOptions {
   stored?: unknown;
   storedRaw?: string;
   blocked?: boolean;
+  // Lecturas válidas pero setItem lanza (cuota llena, modo privado).
+  writesBlocked?: boolean;
   backup?: string;
-  warnings?: Partial<Record<'lab' | 'campaign' | 'systems', string>>;
-  failValidate?: Partial<Record<'lab' | 'campaign' | 'systems', string>>;
-  failImport?: Partial<Record<'lab' | 'campaign' | 'systems', string>>;
+  warnings?: Partial<Record<ModuleKey, string>>;
+  failValidate?: Partial<Record<ModuleKey, string>>;
+  failImport?: Partial<Record<ModuleKey, string>>;
 }
 
 const ids = [
@@ -204,6 +76,58 @@ const ids = [
 const labExport = { version: 1, marker: 'lab', records: {} };
 const campaignExport = { version: 1, marker: 'campaign', xp: 30 };
 const systemsExport = { version: 1, marker: 'systems', workshops: {} };
+
+// Los fakes salen de la lista única de métodos que app.js consume (qa/lib/app-adapters.ts):
+// cada método registra su llamada como `Adaptador.método` y devuelve lo que fije `behaviors`.
+type Behavior = (...args: unknown[]) => unknown;
+
+function fakeAdapters(
+  record: (name: string, args?: unknown[]) => void,
+  options: HarnessOptions,
+): Record<AdapterName, Record<string, Behavior>> {
+  const failure = (kind: 'failValidate' | 'failImport', key: ModuleKey) => {
+    const message = options[kind]?.[key];
+    if (message) throw new Error(message);
+  };
+  const behaviors: Record<AdapterName, Record<string, Behavior>> = {
+    TallerLab: {
+      exportState: () => labExport,
+      validateImport: () => failure('failValidate', 'lab'),
+      importState: () => failure('failImport', 'lab'),
+      loadWarning: () => options.warnings?.lab ?? '',
+      getExercises: () => [],
+    },
+    TallerAtlas: {},
+    TallerCampaign: {
+      init: () => ({ loadWarning: options.warnings?.campaign ?? '' }),
+    },
+    TallerSystems: {
+      init: () => ({ loadWarning: options.warnings?.systems ?? '' }),
+    },
+    TallerCampaignEngine: {
+      exportState: () => campaignExport,
+      validateImport: () => failure('failValidate', 'campaign'),
+      importState: () => failure('failImport', 'campaign'),
+    },
+    TallerSystemsEngine: {
+      exportState: () => systemsExport,
+      validateImport: () => failure('failValidate', 'systems'),
+      importState: () => failure('failImport', 'systems'),
+    },
+  };
+  const fakes = {} as Record<AdapterName, Record<string, Behavior>>;
+  for (const name of APP_ADAPTER_NAMES) {
+    const prefix = name.replace(/^Taller/, '');
+    fakes[name] = {};
+    for (const method of APP_ADAPTER_METHODS[name]) {
+      fakes[name][method] = (...args) => {
+        record(`${prefix}.${method}`, args);
+        return behaviors[name][method]?.(...args);
+      };
+    }
+  }
+  return fakes;
+}
 
 function buildHarness(options: HarnessOptions = {}): Harness {
   const elements: Record<string, FakeElement> = {};
@@ -283,20 +207,6 @@ function buildHarness(options: HarnessOptions = {}): Harness {
     calls.push(name);
     if (args.length) callArgs[name] = args[0];
   };
-  const adapter = (prefix: string, key: 'lab' | 'campaign' | 'systems', exported: object) => ({
-    exportState: () => (record(`${prefix}.exportState`), exported),
-    validateImport: (raw: unknown) => {
-      record(`${prefix}.validateImport`, [raw]);
-      const failure = options.failValidate?.[key];
-      if (failure) throw new Error(failure);
-    },
-    importState: (raw: unknown) => {
-      record(`${prefix}.importState`, [raw]);
-      const failure = options.failImport?.[key];
-      if (failure) throw new Error(failure);
-    },
-    reset: () => record(`${prefix}.reset`),
-  });
   const context = {
     URL: FakeURL,
     URLSearchParams,
@@ -310,11 +220,11 @@ function buildHarness(options: HarnessOptions = {}): Harness {
         return storage.get(key) ?? null;
       },
       setItem: (key: string, value: string) => {
-        if (options.blocked) throw new Error('almacenamiento bloqueado');
+        if (options.blocked || options.writesBlocked) throw new Error('almacenamiento bloqueado');
         storage.set(key, String(value));
       },
       removeItem: (key: string) => {
-        if (options.blocked) throw new Error('almacenamiento bloqueado');
+        if (options.blocked || options.writesBlocked) throw new Error('almacenamiento bloqueado');
         storage.delete(key);
       },
     },
@@ -326,31 +236,7 @@ function buildHarness(options: HarnessOptions = {}): Harness {
     clearInterval: () => undefined,
     addEventListener: () => undefined,
     scrollTo: () => undefined,
-    TallerLab: {
-      ...adapter('Lab', 'lab', labExport),
-      loadWarning: () => options.warnings?.lab ?? '',
-      mount: () => record('Lab.mount'),
-      unmount: () => record('Lab.unmount'),
-      getExercises: () => (record('Lab.getExercises'), []),
-    },
-    TallerCampaign: {
-      init: () => (record('Campaign.init'), { loadWarning: options.warnings?.campaign ?? '' }),
-      sync: () => record('Campaign.sync'),
-      mount: () => record('Campaign.mount'),
-      unmount: () => record('Campaign.unmount'),
-    },
-    TallerCampaignEngine: adapter('CampaignEngine', 'campaign', campaignExport),
-    TallerSystems: {
-      init: () => (record('Systems.init'), { loadWarning: options.warnings?.systems ?? '' }),
-      mount: () => record('Systems.mount'),
-      unmount: () => record('Systems.unmount'),
-      resetSimulations: () => record('Systems.resetSimulations'),
-    },
-    TallerSystemsEngine: adapter('SystemsEngine', 'systems', systemsExport),
-    TallerAtlas: {
-      mount: () => record('Atlas.mount'),
-      unmount: () => record('Atlas.unmount'),
-    },
+    ...fakeAdapters(record, options),
   } as Record<string, unknown>;
   context.window = context;
   vm.createContext(context);
@@ -367,6 +253,7 @@ function buildHarness(options: HarnessOptions = {}): Harness {
     storage,
     downloads,
     languageButtons,
+    viewLinks,
     toast: () => elements['toast']?.textContent ?? '',
     storedState: () => JSON.parse(storage.get(STORAGE_KEY) ?? 'null') as Record<string, unknown>,
   };
@@ -375,6 +262,8 @@ function buildHarness(options: HarnessOptions = {}): Harness {
 function importFile(harness: Harness, text: string): Promise<void> {
   const input = harness.elements['import-file'];
   assert.ok(input);
+  // Un valor previo hace significativa la aserción de que app.js limpia el input.
+  input.value = 'C:\\fakepath\\copia.json';
   input.files = [{ size: text.length, text: () => Promise.resolve(text) }];
   return input.dispatch('change');
 }
@@ -739,6 +628,53 @@ await test('h) borrar todo: elimina el respaldo del recorrido y reinicia a los m
     ['Lab.reset', 'CampaignEngine.reset', 'SystemsEngine.reset'],
   );
   assert.equal(harness.toast(), 'Progreso reiniciado. Un nuevo comienzo.');
+});
+
+const scriptNote = '</textarea><img src=x onerror=alert(1)>';
+
+await test('seguridad: una nota importada con HTML se escapa en #metodo', async () => {
+  const harness = buildHarness({ hash: '#metodo' });
+  const withNote = { version: 1, notes: { rust: { learned: scriptNote, next: '' } } };
+  await importFile(harness, JSON.stringify(withNote));
+  const html = harness.elements['main']?.innerHTML ?? '';
+  assert.ok(
+    html.includes('&lt;/textarea&gt;&lt;img src=x onerror=alert(1)&gt;'),
+    'la nota no aparece escapada',
+  );
+  assert.ok(!html.includes('<img src=x'), 'la nota inyectó una etiqueta img');
+});
+
+await test('almacenamiento sin escritura: importar funciona en memoria y avisa que exporte', async () => {
+  // Valores observados con setItem lanzando; caracterizan el comportamiento vigente.
+  const harness = buildHarness({ stored: localProgress, writesBlocked: true });
+  await importFile(harness, JSON.stringify(validImport));
+  assert.equal(harness.toast(), 'Copia importada y combinada con tu avance actual.');
+  assert.equal(harness.elements['save-label']?.textContent, 'Exportá para conservar tu avance');
+  assert.deepEqual(harness.storedState(), localProgress);
+  const exported = await exportedProgress(harness);
+  assert.deepEqual(exported.completed, ['rust-ownership', 'go-save', 'rust-first-session']);
+  assert.deepEqual(exported.favorites, ['rustlings', 'go-tour']);
+});
+
+await test('accesibilidad: aria-pressed marca el idioma activo y aria-current la vista activa', async () => {
+  const rust = buildHarness({ hash: '#proyecto' });
+  assert.deepEqual(
+    rust.languageButtons.map((button) => button.getAttribute('aria-pressed')),
+    ['true', 'false'],
+  );
+  assert.deepEqual(
+    rust.viewLinks.map((link) => link.getAttribute('aria-current')),
+    [null, 'page'],
+  );
+  const go = buildHarness({ stored: localProgress });
+  assert.deepEqual(
+    go.languageButtons.map((button) => button.getAttribute('aria-pressed')),
+    ['false', 'true'],
+  );
+  assert.deepEqual(
+    go.viewLinks.map((link) => link.getAttribute('aria-current')),
+    ['page', null],
+  );
 });
 
 const milestoneSuffixes = ['memory', 'commands', 'files', 'measure', 'network'];
