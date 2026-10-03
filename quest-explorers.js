@@ -1,12 +1,8 @@
 /* Modelos conceptuales locales. No ejecutan ni evalúan el código del editor. */
+import { escapeHtml } from './src/shared/lib/escape-html';
 (() => {
   'use strict';
   const states = new Map();
-  const esc = (value) =>
-    String(value).replace(
-      /[&<>"']/g,
-      (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char],
-    );
   const hex = (value, digits = 2) => (value >>> 0).toString(16).toUpperCase().padStart(digits, '0');
   const directions = {
     N: [0, 1, 'norte'],
@@ -59,7 +55,7 @@
     return `<button type="button" data-lab-action="quest-explore" data-quest-op="${operation}" ${extra}>${label}</button>`;
   }
   function prediction(state, question, options, answer, explanation) {
-    return `<fieldset class="qx-prediction"><legend>Antes de ejecutar: ${esc(question)}</legend><div class="qx-options">${options.map((label, index) => button('predict-' + index, esc(label), `aria-pressed="${state.prediction === index}"`)).join('')}</div>${state.prediction === null ? '<p>Elegí una respuesta para revelar el porqué. No suma puntos a la misión.</p>' : `<p class="qx-answer ${state.prediction === answer ? 'qx-good' : ''}"><strong>${state.prediction === answer ? 'Sí.' : 'Revisemos la regla.'}</strong> ${esc(explanation)}</p>`}</fieldset>`;
+    return `<fieldset class="qx-prediction"><legend>Antes de ejecutar: ${escapeHtml(question)}</legend><div class="qx-options">${options.map((label, index) => button('predict-' + index, escapeHtml(label), `aria-pressed="${state.prediction === index}"`)).join('')}</div>${state.prediction === null ? '<p>Elegí una respuesta para revelar el porqué. No suma puntos a la misión.</p>' : `<p class="qx-answer ${state.prediction === answer ? 'qx-good' : ''}"><strong>${state.prediction === answer ? 'Sí.' : 'Revisemos la regla.'}</strong> ${escapeHtml(explanation)}</p>`}</fieldset>`;
   }
   function robotBody(state, info) {
     const robot =
@@ -74,7 +70,7 @@
         );
       }
     const log = state.logs.length
-      ? `<ol class="qx-log" start="${state.logs[0].step}">${state.logs.map((entry) => `<li><strong>${esc(entry.summary)}</strong><span>${esc(entry.why)}</span></li>`).join('')}</ol>`
+      ? `<ol class="qx-log" start="${state.logs[0].step}">${state.logs.map((entry) => `<li><strong>${escapeHtml(entry.summary)}</strong><span>${escapeHtml(entry.why)}</span></li>`).join('')}</ol>`
       : '<p class="qx-empty-log">El registro va a mostrar primero la propuesta y después por qué se acepta o rechaza.</p>';
     return `<div class="qx-heading"><span class="small-label">EXPLORADOR · ESTADOS Y DECISIONES</span><h3>Un paso. Una decisión.</h3><p>Llegá a la baliza con cuatro movimientos. Los bordes son paredes: chocar no cambia la posición ni consume batería.</p></div>
       <div class="qx-robot-layout"><div><div class="qx-grid" role="img" aria-label="Hangar de 3 por 3. Robot en x ${state.x}, y ${state.y}. Baliza en x 2, y 2. Norte aumenta y; este aumenta x."><div class="qx-cells" aria-hidden="true">${cells.join('')}</div></div><p class="qx-grid-caption">Norte ↑ · Este → · Coordenadas (x,y)</p>
@@ -191,7 +187,7 @@
     const info = descriptor(item);
     if (!info) return null;
     const state = stateFor(item, info);
-    return `<section class="quest-explorer" data-quest-explorer="${esc(item.id)}" aria-label="Explorador conceptual interactivo"><p class="qx-model-label">Modelo conceptual · No ejecuta el código del editor ni acredita la misión.</p><div data-q-view>${body(state, info)}</div><p class="qx-live" data-q-status role="status" aria-live="polite" aria-atomic="true">${esc(state.notice)}</p></section>`;
+    return `<section class="quest-explorer" data-quest-explorer="${escapeHtml(item.id)}" aria-label="Explorador conceptual interactivo"><p class="qx-model-label">Modelo conceptual · No ejecuta el código del editor ni acredita la misión.</p><div data-q-view>${body(state, info)}</div><p class="qx-live" data-q-status role="status" aria-live="polite" aria-atomic="true">${escapeHtml(state.notice)}</p></section>`;
   }
   function move(state, direction) {
     const [dx, dy, name] = directions[direction];
