@@ -28,8 +28,9 @@
  * THE SOFTWARE.
  */
 import { basicSetup } from 'codemirror';
-import { EditorState, Prec } from '@codemirror/state';
+import { EditorState, Prec, type Extension } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
+import type { CompletionSource } from '@codemirror/autocomplete';
 import { indentWithTab } from '@codemirror/commands';
 import {
   autocompletion,
@@ -46,8 +47,25 @@ import { tags } from '@lezer/highlight';
 import { rust } from '@codemirror/lang-rust';
 import { go } from '@codemirror/lang-go';
 
-const active = new WeakMap();
-const keywords = {
+export type EditorLanguage = 'rust' | 'go';
+
+export interface CodeEditorOptions {
+  language?: string;
+  onRun?: () => void;
+  onEscape?: () => void;
+}
+
+export interface CodeEditorController {
+  view: EditorView;
+  focus(): void;
+  destroy(): void;
+}
+
+type SnippetEntry = readonly [label: string, template: string, detail: string];
+
+const DEFAULT_MAX_LENGTH = 30000;
+const active = new WeakMap<HTMLTextAreaElement, CodeEditorController>();
+const keywords: Record<EditorLanguage, string[]> = {
   rust: 'as async await break const continue crate dyn else enum extern false fn for if impl in let loop match mod move mut pub ref return self Self static struct super trait true type unsafe use where while'.split(
     ' ',
   ),
@@ -55,7 +73,7 @@ const keywords = {
     ' ',
   ),
 };
-const snippets = {
+const snippets: Record<EditorLanguage, SnippetEntry[]> = {
   rust: [
     ['fn', 'fn ${nombre}(${argumentos}) -> ${tipo} \\{\n\t${todo!()}\n\\}', 'declarar una función'],
     ['if', 'if ${condicion} \\{\n\t${}\n\\}', 'bifurcación'],
@@ -85,7 +103,7 @@ const snippets = {
     ['select', 'select \\{\ncase ${valor} := <-${canal}:\n\t${}\n\\}', 'operaciones sobre canales'],
   ],
 };
-function completions(language) {
+function completions(language: EditorLanguage): CompletionSource {
   return completeFromList([
     ...keywords[language].map((label) => ({
       label,
@@ -195,89 +213,104 @@ const highlighting = HighlightStyle.define([
   { tag: [tags.invalid], color: '#ffb2a4', textDecoration: 'underline' },
 ]);
 
-function mount(textarea, { language = 'rust', onRun, onEscape } = {}) {
+function createExtensions(
+  language: EditorLanguage,
+  textarea: HTMLTextAreaElement,
+  maximum: number,
+  { onRun, onEscape }: CodeEditorOptions,
+  onDocChanged: (text: string) => void,
+): Extension[] {
+  return [
+    Prec.highest(
+      keymap.of([
+        {
+          key: 'Mod-Enter',
+          run: () => {
+            if (onRun) onRun();
+            return true;
+          },
+          preventDefault: true,
+        },
+        {
+          key: 'Escape',
+          run: (editor: EditorView) => {
+            closeCompletion(editor);
+            if (onEscape) onEscape();
+            else editor.contentDOM.blur();
+            return true;
+          },
+          preventDefault: true,
+        },
+        {
+          key: 'Tab',
+          run: (editor: EditorView) =>
+            hasNextSnippetField(editor.state)
+              ? nextSnippetField(editor)
+              : (indentWithTab.run?.(editor) ?? false),
+        },
+        {
+          key: 'Shift-Tab',
+          run: (editor: EditorView) =>
+            hasPrevSnippetField(editor.state)
+              ? prevSnippetField(editor)
+              : (indentWithTab.shift?.(editor) ?? false),
+        },
+      ]),
+    ),
+    basicSetup,
+    language === 'go' ? go() : rust(),
+    autocompletion({
+      override: [completions(language)],
+      activateOnTyping: true,
+      maxRenderedOptions: 12,
+    }),
+    indentUnit.of(language === 'go' ? '\t' : '    '),
+    EditorState.tabSize.of(4),
+    EditorState.changeFilter.of(
+      (transaction) => !transaction.docChanged || transaction.newDoc.length <= maximum,
+    ),
+    EditorView.contentAttributes.of({
+      'aria-label':
+        textarea.getAttribute('aria-label') ||
+        'Editor de código ' + (language === 'go' ? 'Go' : 'Rust'),
+      'aria-multiline': 'true',
+      'data-gramm': 'false',
+      spellcheck: 'false',
+      autocapitalize: 'off',
+    }),
+    EditorView.updateListener.of((update) => {
+      if (update.docChanged) onDocChanged(update.state.doc.toString());
+    }),
+    theme,
+    syntaxHighlighting(highlighting),
+  ];
+}
+
+export function mountCodeEditor(
+  textarea: HTMLTextAreaElement | null,
+  options: CodeEditorOptions = {},
+): CodeEditorController {
   if (!textarea || textarea.tagName !== 'TEXTAREA' || !textarea.parentNode)
     throw new Error('TallerEditor.mount necesita un textarea conectado.');
-  if (active.has(textarea)) active.get(textarea).destroy();
-  language = language === 'go' ? 'go' : 'rust';
-  const parent = textarea.parentNode;
+  active.get(textarea)?.destroy();
+  const language: EditorLanguage = options.language === 'go' ? 'go' : 'rust';
+  const parent = textarea.parentNode as HTMLElement;
   const previous = {
     display: textarea.style.display,
     ariaHidden: textarea.getAttribute('aria-hidden'),
   };
-  const maximum = textarea.maxLength > 0 ? textarea.maxLength : 30000;
+  const maximum = textarea.maxLength > 0 ? textarea.maxLength : DEFAULT_MAX_LENGTH;
   let destroyed = false;
   let syncing = false;
   const view = new EditorView({
     doc: textarea.value,
-    extensions: [
-      Prec.highest(
-        keymap.of([
-          {
-            key: 'Mod-Enter',
-            run: () => {
-              if (onRun) onRun();
-              return true;
-            },
-            preventDefault: true,
-          },
-          {
-            key: 'Escape',
-            run: (editor) => {
-              closeCompletion(editor);
-              if (onEscape) onEscape();
-              else editor.contentDOM.blur();
-              return true;
-            },
-            preventDefault: true,
-          },
-          {
-            key: 'Tab',
-            run: (editor) =>
-              hasNextSnippetField(editor.state)
-                ? nextSnippetField(editor)
-                : indentWithTab.run(editor),
-          },
-          {
-            key: 'Shift-Tab',
-            run: (editor) =>
-              hasPrevSnippetField(editor.state)
-                ? prevSnippetField(editor)
-                : indentWithTab.shift(editor),
-          },
-        ]),
-      ),
-      basicSetup,
-      language === 'go' ? go() : rust(),
-      autocompletion({
-        override: [completions(language)],
-        activateOnTyping: true,
-        maxRenderedOptions: 12,
-      }),
-      indentUnit.of(language === 'go' ? '\t' : '    '),
-      EditorState.tabSize.of(4),
-      EditorState.changeFilter.of(
-        (transaction) => !transaction.docChanged || transaction.newDoc.length <= maximum,
-      ),
-      EditorView.contentAttributes.of({
-        'aria-label':
-          textarea.getAttribute('aria-label') ||
-          'Editor de código ' + (language === 'go' ? 'Go' : 'Rust'),
-        'aria-multiline': 'true',
-        'data-gramm': 'false',
-        spellcheck: 'false',
-        autocapitalize: 'off',
-      }),
-      EditorView.updateListener.of((update) => {
-        if (!update.docChanged || destroyed) return;
-        textarea.value = update.state.doc.toString();
-        syncing = true;
-        textarea.dispatchEvent(new Event('input', { bubbles: true }));
-        syncing = false;
-      }),
-      theme,
-      syntaxHighlighting(highlighting),
-    ],
+    extensions: createExtensions(language, textarea, maximum, options, (text) => {
+      if (destroyed) return;
+      textarea.value = text;
+      syncing = true;
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      syncing = false;
+    }),
   });
   parent.insertBefore(view.dom, textarea);
   parent.classList.add('cm-enhanced');
@@ -291,7 +324,7 @@ function mount(textarea, { language = 'rust', onRun, onEscape } = {}) {
     view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: textarea.value } });
   };
   textarea.addEventListener('input', syncExternal);
-  const controller = {
+  const controller: CodeEditorController = {
     view,
     focus() {
       if (!destroyed) view.focus();
@@ -312,5 +345,3 @@ function mount(textarea, { language = 'rust', onRun, onEscape } = {}) {
   active.set(textarea, controller);
   return controller;
 }
-
-window.TallerEditor = Object.freeze({ mount, name: 'CodeMirror 6' });

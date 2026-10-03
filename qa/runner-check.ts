@@ -44,7 +44,7 @@ function setup(fetchFn: FetchFn, quick = false): Runner {
     setTimeout: quick ? (fn: () => void) => setTimeout(fn, 5) : setTimeout,
     clearTimeout,
   });
-  runSource(context, 'runner.js');
+  runSource(context, 'src/app/legacy/register-runner.ts');
   return window.TallerRunner;
 }
 const response = (data: unknown, status = 200): FakeResponse => ({

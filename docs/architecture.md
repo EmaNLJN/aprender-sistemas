@@ -15,8 +15,8 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | Navegación, recorrido y progreso general | `app.js`, `content.js`, `styles.css` |
 | Ejercicios del recorrido | `lab-rust.js`, `lab-go.js` |
 | Laboratorio, revisión y modelos educativos | `lab.js`, `lab-explorers.js`, `lab.css` |
-| Transporte a los Playgrounds oficiales | `runner.js` |
-| Editor CodeMirror 6 | `editor-source.js` |
+| Transporte a los Playgrounds oficiales | `src/shared/api/playground/`, adaptador `src/app/legacy/register-runner.ts` |
+| Editor CodeMirror 6 | `src/shared/ui/code-editor/`, adaptador `src/app/legacy/register-editor.ts` |
 | Atlas migrado a React/TypeScript | `src/pages/atlas/` (`ui`, `model`, `content`, `lib`) y adaptador `src/app/legacy/register-atlas.tsx` |
 | Desafíos nuevos de campaña | `quests-rust.js`, `quests-go.js` |
 | Mundos, reglas y progreso de campaña | `campaign-rust.js`, `campaign-go.js`, `campaign-engine.js` |
@@ -25,7 +25,7 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | Núcleos Rust/Go de Sistemas | `systems-{lowlevel,infra,play,pc}-labs.js` |
 | Sellos y progreso de Sistemas | `systems-engine.js` |
 | Interfaz de Sistemas | `systems.js`, `systems.css` |
-| Animaciones | `game-effects-source.js` |
+| Animaciones | `src/shared/lib/celebration.ts`, adaptador `src/app/legacy/register-effects.ts` |
 | Kits ZIP de proyecto | `src/features/download-project-kit/` (archivos puros y ZIP con fflate), `src/shared/lib/download-file.ts`, adaptador `src/app/legacy/register-project-kit.ts` |
 | Construcción y dependencias | configuración Vite, `package.json`, `package-lock.json` |
 | Servicio estático y preview | `Dockerfile`, `compose.yaml`, `compose.preview.yaml`, `nginx.conf` |
