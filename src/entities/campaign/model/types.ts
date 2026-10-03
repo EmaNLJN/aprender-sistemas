@@ -13,6 +13,11 @@ export interface CampaignExercise {
   tests: CampaignTest[];
 }
 
+export interface CampaignWorldSource {
+  title: string;
+  url: string;
+}
+
 export interface CampaignCheckpoint {
   question: string;
   options: string[];
@@ -21,8 +26,8 @@ export interface CampaignCheckpoint {
 }
 
 // Mundo tal como lo entrega el catálogo. El motor sólo valida los campos tipados
-// aquí; el resto del contenido (subtítulo, historia, conceptos…) se conserva sin
-// interpretarlo. `badge` lo garantiza campaign-content-check, no `init`.
+// aquí; el resto del contenido (subtítulo, historia, conceptos…) lo declaran los
+// catálogos y el motor lo conserva sin interpretarlo. `badge` lo garantiza campaign-content-check, no `init`.
 export interface CampaignWorldDefinition {
   id: string;
   level: LevelId;
@@ -32,6 +37,12 @@ export interface CampaignWorldDefinition {
   challengeIds: string[];
   bossId: string;
   checkpoint: CampaignCheckpoint;
+  subtitle?: string;
+  story?: string;
+  concepts?: string[];
+  why?: string;
+  guide?: string[];
+  sources?: CampaignWorldSource[];
   [content: string]: unknown;
 }
 

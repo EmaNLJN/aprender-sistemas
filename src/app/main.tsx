@@ -6,11 +6,7 @@ import '../../quest-explorers.css';
 import '../../systems.css';
 
 // The import order is the temporary compatibility seam for legacy window.Taller* adapters.
-import '../../content.js';
-import '../../lab-rust.js';
-import '../../lab-go.js';
-import '../../quests-rust.js';
-import '../../quests-go.js';
+import './legacy/register-catalogs';
 import './legacy/register-runner';
 import './legacy/register-editor';
 import '../../lab-explorers.js';
@@ -21,12 +17,9 @@ import '../../systems-infra.js';
 import '../../systems-infra-labs.js';
 import '../../systems-play.js';
 import '../../systems-play-labs.js';
-import '../../systems-pc.js';
-import '../../systems-pc-labs.js';
+import './legacy/register-systems-pc';
 import '../../lab.js';
 import './legacy/register-atlas';
-import '../../campaign-rust.js';
-import '../../campaign-go.js';
 import './legacy/register-campaign-engine';
 import './legacy/register-effects';
 import '../../campaign.js';

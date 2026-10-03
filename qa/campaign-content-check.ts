@@ -2,14 +2,12 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {
-  CAMPAIGN_WORLD_SOURCES,
-  LAB_SOURCES,
-  QUEST_SOURCES,
+  loadCampaignWorlds,
+  loadLabExercises,
   SYSTEMS_DOMAINS,
   loadCampaignEngine,
   loadSystemsDomain,
 } from './lib/legacy-sources.ts';
-import { runSource } from './lib/sources.ts';
 
 interface Exercise {
   id: string;
@@ -46,14 +44,9 @@ const languages = ['rust', 'go'] as const,
   levels = ['beginner', 'medium', 'advanced', 'expert'];
 const allExercises: Exercise[] = [],
   worlds: Record<string, Chapter[]> = {};
+loadLabExercises(context);
+loadCampaignWorlds(context);
 for (const language of languages) {
-  for (const source of [
-    LAB_SOURCES[language],
-    QUEST_SOURCES[language],
-    CAMPAIGN_WORLD_SOURCES[language],
-  ]) {
-    runSource(context, source);
-  }
   const name = language.toUpperCase(),
     core = context.window[name + '_LAB'] as Exercise[],
     quests = context.window[name + '_QUESTS'] as Exercise[];

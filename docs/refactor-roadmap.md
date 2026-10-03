@@ -181,6 +181,7 @@ posición de la entrada.
 | P1 | Hecha | `2ed5227` |
 | P2 | Hecha: bundle JS idéntico y oráculo sin cambios | `7b7e957`, `58b093f` |
 | P3/P4 | Hecha: 14 checks portados con salidas idénticas, 5 checks nuevos de red, configuraciones en TS, `build:kits` retirado | `16e98fb`, `f00fbc9`, `010a2e3` |
+| P8 (catálogos y `pc`) | Hecha: guía, ejercicios, desafíos (fábrica única `defineQuest`, IDs explícitos) y mundos en TS publicados por `register-catalogs`; contrato `systems-simulation` con `defineModel` y dominio `pc` portado (complejidad de `act` 46 → 5). Los 7 globals y SYSTEMS_PC son idénticos, el recorrido diferencial de `pc` da 0 diferencias en 12 000 pasos y runtime-check sigue en 137/137 | (este commit) |
 | Red (auditoría) | Hecha: objetivos de los talleres en el fixture, `boot-check` con la entrada real y contrato de adaptadores, escape HTML, escrituras bloqueadas, accesibilidad del shell y rutas de `load-order` relativas a la raíz | (este commit) |
 | P8 (motores) | Hecha: `src/entities/campaign` y `src/entities/systems-workshop` con fábricas tipadas y adaptadores; paridad diferencial de 3 668 y 2 916 operaciones sin diferencias; `qa/lib/legacy-sources.ts` centraliza la carga de fuentes en QA | (este commit) |
 | P7b | Hecha: `versioned-storage` común a los cuatro almacenes, sin escrituras al cargar, respaldo `<clave>:respaldo`, descarte por registro, avisos acumulados, importación atómica y «Borrar todo» con respaldos; verificado en navegador | (este commit) |

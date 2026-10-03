@@ -1,5 +1,7 @@
 /* Campaña original: cada mundo enlaza tres prácticas previas y tres desafíos nuevos. */
-window.RUST_CAMPAIGN = [
+import type { CampaignWorldDefinition } from '../model/types';
+
+export const rustWorlds: CampaignWorldDefinition[] = [
   {
     id: 'rust-world-1',
     level: 'beginner',

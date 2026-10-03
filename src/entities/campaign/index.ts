@@ -12,6 +12,7 @@ export type {
   CampaignStateV1,
   CampaignSummary,
   CampaignWorldDefinition,
+  CampaignWorldSource,
   CheckpointAnswerResult,
   DerivedWorld,
   ImportResult,

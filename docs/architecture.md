@@ -13,18 +13,21 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | Helpers y constantes compartidos, sin reglas de negocio | `src/shared/lib/`, `src/shared/config/` |
 | Evidencia de aprobación, interpretación de ejecuciones y fusión de registros | `src/entities/exercise/` |
 | Lectura versionada, respaldo y avisos de carga del progreso | `src/shared/lib/versioned-storage.ts` (ADR 0003) |
-| Navegación, recorrido y progreso general | `app.js`, `content.js`, `styles.css` |
-| Ejercicios del recorrido | `lab-rust.js`, `lab-go.js` |
+| Navegación, recorrido y progreso general | `app.js`, `styles.css` |
+| Contenido del recorrido y biblioteca | `src/entities/guide/` |
+| Catálogos de contenido (publicados en `window.*`) | adaptador `src/app/legacy/register-catalogs.ts` |
+| Ejercicios del recorrido y tipo `Exercise` | `src/entities/exercise/content/{rust,go}-lab.ts`, `src/entities/exercise/model/types.ts` |
 | Laboratorio, revisión y modelos educativos | `lab.js`, `lab-explorers.js`, `lab.css` |
 | Transporte a los Playgrounds oficiales | `src/shared/api/playground/`, adaptador `src/app/legacy/register-runner.ts` |
 | Editor CodeMirror 6 | `src/shared/ui/code-editor/`, adaptador `src/app/legacy/register-editor.ts` |
 | Atlas migrado a React/TypeScript | `src/pages/atlas/` (`ui`, `model`, `content`, `lib`) y adaptador `src/app/legacy/register-atlas.tsx` |
-| Desafíos nuevos de campaña | `quests-rust.js`, `quests-go.js` |
-| Mundos de campaña | `campaign-rust.js`, `campaign-go.js` |
+| Desafíos nuevos de campaña | `src/entities/exercise/content/{rust,go}-quests.ts` (fábrica `defineQuest`) |
+| Mundos de campaña | `src/entities/campaign/content/{rust,go}-worlds.ts` |
 | Reglas, validación y progreso de campaña | `src/entities/campaign/`, adaptador `src/app/legacy/register-campaign-engine.ts` |
 | Interfaz y exploradores de campaña | `campaign.js`, `campaign.css`, `quest-explorers.js`, `quest-explorers.css` |
-| Catálogos y modelos puros de Sistemas | `systems-{lowlevel,infra,play,pc}.js` |
-| Núcleos Rust/Go de Sistemas | `systems-{lowlevel,infra,play,pc}-labs.js` |
+| Contrato de simulaciones de Sistemas | `src/entities/systems-simulation/` (`defineModel`, tipos de vista y escena) |
+| Catálogos y modelos de Sistemas | portado: `pc` (modelo en `src/entities/systems-simulation/models/pc/`, ficha en `src/entities/systems-workshop/content/`, adaptador `src/app/legacy/register-systems-pc.ts`); legacy: `systems-{lowlevel,infra,play}.js` |
+| Núcleos Rust/Go de Sistemas | portado: `src/entities/exercise/content/systems-pc-cores.ts`; legacy: `systems-{lowlevel,infra,play}-labs.js` |
 | Sellos y progreso de Sistemas | `src/entities/systems-workshop/`, adaptador `src/app/legacy/register-systems-engine.ts` |
 | Interfaz de Sistemas | `systems.js`, `systems.css` |
 | Animaciones | `src/shared/lib/celebration.ts`, adaptador `src/app/legacy/register-effects.ts` |

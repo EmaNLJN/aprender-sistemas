@@ -17,6 +17,7 @@ import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
 import { repoRoot as root, runSource } from './lib/sources.ts';
+import { SYSTEMS_DOMAINS, systemsDomainSources } from './lib/legacy-sources.ts';
 
 interface TestCase {
   id: string;
@@ -109,24 +110,25 @@ const context = vm.createContext({
   window,
   localStorage: { getItem: () => null, setItem: () => {} },
 });
-const questFile = 'quests-' + language + '.js';
-const systemFiles = ['lowlevel', 'infra', 'play', 'pc']
-  .flatMap((domain) => ['systems-' + domain + '.js', 'systems-' + domain + '-labs.js'])
-  .filter((file) => fs.existsSync(path.join(root, file)));
-for (const file of [
-  'lab-' + language + '.js',
-  ...(fs.existsSync(path.join(root, questFile)) ? [questFile] : []),
-  ...systemFiles,
-  'lab.js',
-]) {
+// Catálogos del lenguaje: los publica el adaptador desde los módulos TS; el hash
+// sólo cubre las fuentes del lenguaje elegido (no el adaptador ni el otro lenguaje).
+const catalogSources = [
+  'src/entities/exercise/content/' + language + '-lab.ts',
+  'src/entities/exercise/content/' + language + '-quests.ts',
+];
+// Mismas fuentes y orden que el resto de QA: los dominios portados tienen un adaptador.
+const systemFiles = SYSTEMS_DOMAINS.flatMap((domain) => systemsDomainSources(domain));
+const hashedSources = [...catalogSources, ...systemFiles].filter((file) =>
+  fs.existsSync(path.join(root, file)),
+);
+for (const file of ['src/app/legacy/register-catalogs.ts', ...systemFiles, 'lab.js']) {
   runSource(context, file);
 }
 const lab = requireLab();
 const allExercises = lab.getExercises().filter((ex) => ex.language === language);
 const sourceHash = (): string =>
   hash(
-    ['lab-' + language + '.js', questFile, ...systemFiles]
-      .filter((file) => fs.existsSync(path.join(root, file)))
+    hashedSources
       .map((file) => file + '\n' + fs.readFileSync(path.join(root, file), 'utf8'))
       .join('\n'),
   );
@@ -168,9 +170,7 @@ function currentRecord(): ValidationRecord {
     mode: 'solutions',
     checkedAt: new Date().toISOString(),
     currentSourceHash: sourceHash(),
-    sourceHashScope: ['lab-' + language + '.js', questFile, ...systemFiles].filter((file) =>
-      fs.existsSync(path.join(root, file)),
-    ),
+    sourceHashScope: hashedSources,
     exercises: allExercises.map((ex) => {
       const prior = byId.get(ex.id);
       const programHash = hash(built(ex, false));

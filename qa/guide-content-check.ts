@@ -7,7 +7,7 @@
  */
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import { runSource } from './lib/sources.ts';
+import { loadGuideContent } from './lib/legacy-sources.ts';
 import { plainJson } from './lib/plain-json.ts';
 
 type Language = 'rust' | 'go';
@@ -83,8 +83,8 @@ const EXPECTED_RESOURCE_IDS = [
 
 function loadGuide(): GuideData {
   const fakeWindow: { GUIDE_DATA?: unknown } = {};
-  runSource(vm.createContext({ window: fakeWindow }), 'content.js');
-  assert.ok(fakeWindow.GUIDE_DATA, 'content.js debe publicar window.GUIDE_DATA');
+  loadGuideContent(vm.createContext({ window: fakeWindow }));
+  assert.ok(fakeWindow.GUIDE_DATA, 'el adaptador de catálogos debe publicar window.GUIDE_DATA');
   return plainJson(fakeWindow.GUIDE_DATA) as GuideData;
 }
 

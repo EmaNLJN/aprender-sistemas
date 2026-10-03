@@ -7,7 +7,8 @@ import { runSource, type RunOptions } from './sources.ts';
 export type Language = 'rust' | 'go';
 export type SystemsDomain = 'lowlevel' | 'infra' | 'play' | 'pc';
 
-export const GUIDE_CONTENT_SOURCE = 'content.js';
+// Contenido del recorrido, ejercicios, desafíos y mundos: un adaptador publica los 7 globals.
+export const CATALOGS_SOURCE = 'src/app/legacy/register-catalogs.ts';
 export const APP_SHELL_SOURCE = 'app.js';
 export const LAB_SOURCE = 'lab.js';
 export const CAMPAIGN_ENGINE_SOURCE = 'src/app/legacy/register-campaign-engine.ts';
@@ -15,36 +16,27 @@ export const CAMPAIGN_UI_SOURCE = 'campaign.js';
 export const SYSTEMS_ENGINE_SOURCE = 'src/app/legacy/register-systems-engine.ts';
 export const SYSTEMS_UI_SOURCE = 'systems.js';
 
-export const LAB_SOURCES: Record<Language, string> = { rust: 'lab-rust.js', go: 'lab-go.js' };
-export const QUEST_SOURCES: Record<Language, string> = {
-  rust: 'quests-rust.js',
-  go: 'quests-go.js',
-};
-export const CAMPAIGN_WORLD_SOURCES: Record<Language, string> = {
-  rust: 'campaign-rust.js',
-  go: 'campaign-go.js',
-};
-
-// Ejercicios del recorrido y desafíos de campaña, en el orden en que se evalúan.
-export const LAB_EXERCISE_SOURCES: readonly string[] = [
-  LAB_SOURCES.rust,
-  LAB_SOURCES.go,
-  QUEST_SOURCES.rust,
-  QUEST_SOURCES.go,
-];
+// Ejercicios del recorrido y desafíos de campaña.
+export const LAB_EXERCISE_SOURCES: readonly string[] = [CATALOGS_SOURCE];
 
 export const SYSTEMS_DOMAINS: readonly SystemsDomain[] = ['lowlevel', 'infra', 'play', 'pc'];
 
-// Cada dominio publica su catálogo y luego sus núcleos programables, que lo leen.
-export function systemsDomainSources(domain: SystemsDomain): [catalog: string, labs: string] {
-  return [`systems-${domain}.js`, `systems-${domain}-labs.js`];
+// Fuentes de cada dominio en orden de evaluación. Los dominios legacy publican su
+// catálogo y luego sus núcleos, que lo leen; los portados tienen un único adaptador.
+const PORTED_SYSTEMS_DOMAINS: Partial<Record<SystemsDomain, string>> = {
+  pc: 'src/app/legacy/register-systems-pc.ts',
+};
+
+export function systemsDomainSources(domain: SystemsDomain): readonly string[] {
+  const adapter = PORTED_SYSTEMS_DOMAINS[domain];
+  return adapter ? [adapter] : [`systems-${domain}.js`, `systems-${domain}-labs.js`];
 }
 
 export const SYSTEMS_CATALOG_SOURCES: readonly string[] =
   SYSTEMS_DOMAINS.flatMap(systemsDomainSources);
 
 export function loadGuideContent(context: vm.Context): void {
-  runSource(context, GUIDE_CONTENT_SOURCE);
+  runSource(context, CATALOGS_SOURCE);
 }
 
 export function loadAppShell(context: vm.Context): void {
@@ -52,7 +44,7 @@ export function loadAppShell(context: vm.Context): void {
 }
 
 export function loadLabExercises(context: vm.Context): void {
-  for (const source of LAB_EXERCISE_SOURCES) runSource(context, source);
+  runSource(context, CATALOGS_SOURCE);
 }
 
 export function loadSystemsDomain(
@@ -74,7 +66,7 @@ export function loadLabCatalogs(context: vm.Context): void {
 }
 
 export function loadCampaignWorlds(context: vm.Context): void {
-  for (const source of Object.values(CAMPAIGN_WORLD_SOURCES)) runSource(context, source);
+  runSource(context, CATALOGS_SOURCE);
 }
 
 export function loadLab(context: vm.Context): void {

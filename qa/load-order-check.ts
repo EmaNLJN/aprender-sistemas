@@ -22,42 +22,29 @@ const STYLES = 'styles.css';
 const ATLAS = 'src/app/legacy/register-atlas.tsx';
 const CAMPAIGN_ENGINE = 'src/app/legacy/register-campaign-engine.ts';
 const SYSTEMS_ENGINE = 'src/app/legacy/register-systems-engine.ts';
+const CATALOGS = 'src/app/legacy/register-catalogs.ts';
+const SYSTEMS_PC = 'src/app/legacy/register-systems-pc.ts';
 
 const BEFORE_LAB = [
-  'lab-rust.js',
-  'lab-go.js',
-  'quests-rust.js',
-  'quests-go.js',
+  CATALOGS,
   'systems-lowlevel-labs.js',
   'systems-infra-labs.js',
   'systems-play-labs.js',
-  'systems-pc-labs.js',
+  SYSTEMS_PC,
 ];
-const SYSTEMS_CATALOGS = [
-  'systems-lowlevel.js',
-  'systems-infra.js',
-  'systems-play.js',
-  'systems-pc.js',
-];
+const SYSTEMS_CATALOGS = ['systems-lowlevel.js', 'systems-infra.js', 'systems-play.js', SYSTEMS_PC];
 const BEFORE_APP_REASONS: Record<string, string> = {
   [LAB]:
     'render() de app.js llama a window.TallerLab.mount(); app.js también usa getExercises() en syncLinkedLanguage()',
   'campaign.js': 'app.js llama a window.TallerCampaign?.init() al cargar y a mount() en render()',
   'systems.js': 'app.js llama a window.TallerSystems?.init() al cargar y a mount() en render()',
-  'campaign-rust.js':
-    'syncLinkedLanguage() de app.js lee window.RUST_CAMPAIGN y campaign.js init() la pasa al motor al cargar app.js',
-  'campaign-go.js':
-    'syncLinkedLanguage() de app.js lee window.GO_CAMPAIGN y campaign.js init() la pasa al motor al cargar app.js',
+  [CATALOGS]:
+    'app.js lee window.GUIDE_DATA al cargar; syncLinkedLanguage() lee window.RUST_CAMPAIGN/GO_CAMPAIGN y campaign.js init() los pasa al motor al cargar app.js',
   [ATLAS]:
     'render() de app.js llama a window.TallerAtlas.mount() sin guarda opcional en la vista atlas',
 };
 
 const CONSTRAINTS: Constraint[] = [
-  [
-    'content.js',
-    APP,
-    'app.js lee window.GUIDE_DATA al cargar (const data = window.GUIDE_DATA, que usa allSteps y resourceIds)',
-  ],
   ...BEFORE_LAB.map((catalog): Constraint => [
     catalog,
     LAB,
@@ -72,11 +59,6 @@ const CONSTRAINTS: Constraint[] = [
     'systems-lowlevel.js',
     'systems-lowlevel-labs.js',
     'systems-lowlevel-labs.js lee window.SYSTEMS_LOWLEVEL.workshops al evaluarse (pair() usa workshops[index])',
-  ],
-  [
-    'systems-pc.js',
-    'systems-pc-labs.js',
-    'systems-pc-labs.js lee window.SYSTEMS_PC.workshops[0] al evaluarse (const workshop)',
   ],
   [
     CAMPAIGN_ENGINE,

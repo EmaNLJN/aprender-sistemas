@@ -1,5 +1,7 @@
 /* La campaña referencia entrenamientos existentes; no duplica sus ejercicios. */
-window.GO_CAMPAIGN = [
+import type { CampaignWorldDefinition } from '../model/types';
+
+export const goWorlds: CampaignWorldDefinition[] = [
   {
     id: 'go-world-1',
     level: 'beginner',

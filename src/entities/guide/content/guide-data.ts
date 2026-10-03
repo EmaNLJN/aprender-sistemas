@@ -1,5 +1,7 @@
 /* Contenido de la guía: un recorrido orientativo para aprender haciendo. */
-window.GUIDE_DATA = {
+import type { GuideData } from '../model/types';
+
+export const guideData: GuideData = {
   resources: [
     {
       id: 'rust-100',
