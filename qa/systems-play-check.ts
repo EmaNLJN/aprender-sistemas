@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { plainJson as plain } from './lib/plain-json.ts';
-import { runSource } from './lib/sources.ts';
+import { loadSystemsDomain } from './lib/legacy-sources.ts';
 import {
   achievedBelongToWorkshop,
   assertUnchanged,
@@ -140,9 +140,7 @@ interface PlayWindow {
 
 const context: { window: PlayWindow } = { window: {} };
 vm.createContext(context);
-for (const file of ['systems-play.js', 'systems-play-labs.js']) {
-  runSource(context, file, { timeout: 3000 });
-}
+loadSystemsDomain(context, 'play', { timeout: 3000 });
 const playDomain = context.window.SYSTEMS_PLAY;
 const labs = context.window.SYSTEMS_PLAY_LABS;
 if (!playDomain || !labs) throw new Error('SYSTEMS_PLAY was not published by systems-play.js');

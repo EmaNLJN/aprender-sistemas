@@ -1,7 +1,7 @@
 /* Offline backup/proof regression checks at public lab and campaign interfaces. */
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import { runSource } from './lib/sources.ts';
+import { loadCampaignEngine, loadLab } from './lib/legacy-sources.ts';
 import { plainJson as plain } from './lib/plain-json.ts';
 
 interface Evidence {
@@ -74,7 +74,8 @@ function environment(stored?: string, blocked = false): Environment {
       removeItem: (key: string) => (guard(), saved.delete(key)),
     },
   });
-  for (const file of ['lab.js', 'campaign-engine.js']) runSource(context, file);
+  loadLab(context);
+  loadCampaignEngine(context);
   const lab = window.TallerLab,
     campaign = window.TallerCampaignEngine;
   campaign.init({ exercises: [exercise], worlds: { rust: [], go: [] } });

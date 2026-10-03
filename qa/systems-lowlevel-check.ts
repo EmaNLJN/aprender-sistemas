@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { plainJson as plain } from './lib/plain-json.ts';
-import { runSource } from './lib/sources.ts';
+import { loadSystemsDomain } from './lib/legacy-sources.ts';
 import {
   achievedBelongToWorkshop,
   assertUnchanged,
@@ -105,9 +105,7 @@ interface LowLevelWindow {
 
 const context: { window: LowLevelWindow } = { window: {} };
 vm.createContext(context);
-for (const filename of ['systems-lowlevel.js', 'systems-lowlevel-labs.js']) {
-  runSource(context, filename);
-}
+loadSystemsDomain(context, 'lowlevel');
 const lowLevel = context.window.SYSTEMS_LOWLEVEL;
 if (!lowLevel) throw new Error('SYSTEMS_LOWLEVEL was not published by systems-lowlevel.js');
 const { workshops, models } = lowLevel;

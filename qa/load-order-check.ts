@@ -53,12 +53,12 @@ const CONSTRAINTS: Constraint[] = [
     'systems-pc-labs.js lee window.SYSTEMS_PC.workshops[0] al evaluarse (const workshop)',
   ],
   [
-    '../../campaign-engine.js',
+    './legacy/register-campaign-engine',
     '../../campaign.js',
     'campaign.js captura window.TallerCampaignEngine en const engine al evaluarse',
   ],
   [
-    '../../systems-engine.js',
+    './legacy/register-systems-engine',
     '../../systems.js',
     'systems.js captura window.TallerSystemsEngine en const engine al evaluarse',
   ],

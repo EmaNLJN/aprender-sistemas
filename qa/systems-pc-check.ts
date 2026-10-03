@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { plainJson as plain } from './lib/plain-json.ts';
-import { runSource } from './lib/sources.ts';
+import { loadSystemsDomain } from './lib/legacy-sources.ts';
 import {
   achievedBelongToWorkshop,
   assertUnchanged,
@@ -88,7 +88,7 @@ interface PcWindow {
 
 const context: { window: PcWindow } = { window: {} };
 vm.createContext(context);
-for (const name of ['systems-pc.js', 'systems-pc-labs.js']) runSource(context, name);
+loadSystemsDomain(context, 'pc');
 const pcDomain = context.window.SYSTEMS_PC;
 if (!pcDomain) throw new Error('SYSTEMS_PC was not published by systems-pc.js');
 const { workshops, models } = pcDomain,

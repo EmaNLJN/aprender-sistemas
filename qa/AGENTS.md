@@ -11,6 +11,8 @@ directamente; usan `node:assert`, contextos VM y `qa/lib/`, sin framework de pru
 - Los checks importan archivos de `qa/` con extensión `.ts` explícita y sólo usan
   sintaxis TypeScript borrable; `tsconfig.qa.json` los tipa en `npm run typecheck`.
 - `qa/run-checks.ts` es la lista única de la suite que ejecuta `npm test`.
+- `qa/lib/legacy-sources.ts` concentra las rutas y el orden de carga de las fuentes
+  del navegador; al mover o portar un archivo, cambiá su ruta ahí y no en cada check.
 
 ## TDD para cambios de comportamiento
 

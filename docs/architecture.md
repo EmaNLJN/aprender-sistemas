@@ -20,11 +20,12 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | Editor CodeMirror 6 | `src/shared/ui/code-editor/`, adaptador `src/app/legacy/register-editor.ts` |
 | Atlas migrado a React/TypeScript | `src/pages/atlas/` (`ui`, `model`, `content`, `lib`) y adaptador `src/app/legacy/register-atlas.tsx` |
 | Desafíos nuevos de campaña | `quests-rust.js`, `quests-go.js` |
-| Mundos, reglas y progreso de campaña | `campaign-rust.js`, `campaign-go.js`, `campaign-engine.js` |
+| Mundos de campaña | `campaign-rust.js`, `campaign-go.js` |
+| Reglas, validación y progreso de campaña | `src/entities/campaign/`, adaptador `src/app/legacy/register-campaign-engine.ts` |
 | Interfaz y exploradores de campaña | `campaign.js`, `campaign.css`, `quest-explorers.js`, `quest-explorers.css` |
 | Catálogos y modelos puros de Sistemas | `systems-{lowlevel,infra,play,pc}.js` |
 | Núcleos Rust/Go de Sistemas | `systems-{lowlevel,infra,play,pc}-labs.js` |
-| Sellos y progreso de Sistemas | `systems-engine.js` |
+| Sellos y progreso de Sistemas | `src/entities/systems-workshop/`, adaptador `src/app/legacy/register-systems-engine.ts` |
 | Interfaz de Sistemas | `systems.js`, `systems.css` |
 | Animaciones | `src/shared/lib/celebration.ts`, adaptador `src/app/legacy/register-effects.ts` |
 | Kits ZIP de proyecto | `src/features/download-project-kit/` (archivos puros y ZIP con fflate), `src/shared/lib/download-file.ts`, adaptador `src/app/legacy/register-project-kit.ts` |

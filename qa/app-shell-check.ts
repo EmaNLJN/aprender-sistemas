@@ -9,7 +9,7 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { plainJson } from './lib/plain-json.ts';
-import { runSource } from './lib/sources.ts';
+import { loadAppShell, loadGuideContent } from './lib/legacy-sources.ts';
 
 const STORAGE_KEY = 'taller-learning-v1';
 const BACKUP_KEY = 'taller-learning-v1:respaldo';
@@ -354,8 +354,8 @@ function buildHarness(options: HarnessOptions = {}): Harness {
   } as Record<string, unknown>;
   context.window = context;
   vm.createContext(context);
-  runSource(context, 'content.js');
-  runSource(context, 'app.js');
+  loadGuideContent(context);
+  loadAppShell(context);
   return {
     context,
     elements,

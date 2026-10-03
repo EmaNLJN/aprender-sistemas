@@ -4,7 +4,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { plainJson as plain } from './lib/plain-json.ts';
-import { repoRoot as root, runSource } from './lib/sources.ts';
+import {
+  LAB_EXERCISE_SOURCES,
+  LAB_SOURCE,
+  SYSTEMS_CATALOG_SOURCES,
+  loadLab,
+  loadLabCatalogs,
+  loadSystemsEngine,
+} from './lib/legacy-sources.ts';
+import { repoRoot as root } from './lib/sources.ts';
 import {
   achievedBelongToWorkshop,
   assertFiniteJson,
@@ -256,9 +264,9 @@ function fixture(): Config {
 function environment(store = storage(), config: Config = fixture()) {
   const context: Sandbox = { window: {}, localStorage: store };
   vm.createContext(context);
-  runSource(context, 'systems-engine.js');
+  loadSystemsEngine(context);
   const engine = context.window.TallerSystemsEngine;
-  if (!engine) throw new Error('TallerSystemsEngine was not published by systems-engine.js');
+  if (!engine) throw new Error('TallerSystemsEngine was not published by its adapter');
   const status = engine.init(config);
   return { engine, status, store, context };
 }
@@ -816,27 +824,14 @@ if (process.argv.includes('--engine-only')) {
 } else {
   let real: Catalog | undefined;
   test('All four workshop domains and lab integration files are available', () => {
-    const files = [
-      'lab-rust.js',
-      'lab-go.js',
-      'quests-rust.js',
-      'quests-go.js',
-      'systems-lowlevel.js',
-      'systems-lowlevel-labs.js',
-      'systems-infra.js',
-      'systems-infra-labs.js',
-      'systems-play.js',
-      'systems-play-labs.js',
-      'systems-pc.js',
-      'systems-pc-labs.js',
-      'lab.js',
-    ];
+    const files = [...LAB_EXERCISE_SOURCES, ...SYSTEMS_CATALOG_SOURCES, LAB_SOURCE];
     const context: Sandbox = { window: {}, localStorage: storage() };
     vm.createContext(context);
     for (const file of files) {
       assert(fs.existsSync(path.join(root, file)), `Awaiting completed snapshot: ${file}`);
-      runSource(context, file);
     }
+    loadLabCatalogs(context);
+    loadLab(context);
     const w = context.window,
       domains = [w.SYSTEMS_LOWLEVEL, w.SYSTEMS_INFRA, w.SYSTEMS_PLAY, w.SYSTEMS_PC].filter(
         (domain): domain is Domain => Boolean(domain),

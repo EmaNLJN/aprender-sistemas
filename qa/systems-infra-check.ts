@@ -1,7 +1,7 @@
 // Pure-model invariants and observable learning outcomes; no compiler or network.
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import { runSource } from './lib/sources.ts';
+import { loadLabExercises, loadSystemsDomain } from './lib/legacy-sources.ts';
 import {
   achievedBelongToWorkshop,
   hasSupportedTones,
@@ -113,16 +113,8 @@ interface InfraWindow {
 
 const context: { window: InfraWindow } = { window: {} };
 vm.createContext(context);
-for (const file of [
-  'systems-infra.js',
-  'systems-infra-labs.js',
-  'lab-rust.js',
-  'lab-go.js',
-  'quests-rust.js',
-  'quests-go.js',
-]) {
-  runSource(context, file);
-}
+loadSystemsDomain(context, 'infra');
+loadLabExercises(context);
 const infra = context.window.SYSTEMS_INFRA;
 const labs = context.window.SYSTEMS_INFRA_LABS;
 if (!infra || !labs) throw new Error('SYSTEMS_INFRA was not published by systems-infra.js');

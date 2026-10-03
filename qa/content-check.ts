@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
+import { LAB_SOURCES, QUEST_SOURCES, loadSystemsCatalogs } from './lib/legacy-sources.ts';
 import { repoRoot, runSource } from './lib/sources.ts';
 
 type Language = 'rust' | 'go';
@@ -60,8 +61,7 @@ const extensionLevels: Record<number, string> = {
   23: 'advanced',
   24: 'expert',
 };
-for (const domain of ['lowlevel', 'infra', 'play', 'pc'])
-  for (const suffix of ['', '-labs']) runSource(context, 'systems-' + domain + suffix + '.js');
+loadSystemsCatalogs(context);
 const systems = ['LOWLEVEL', 'INFRA', 'PLAY', 'PC'].flatMap(
   (name) => window['SYSTEMS_' + name + '_LABS'] as Exercise[],
 );
@@ -69,12 +69,12 @@ const ids = new Set<string>();
 let count = 0;
 let tests = 0;
 for (const language of ['rust', 'go'] as const) {
-  runSource(context, 'lab-' + language + '.js');
+  runSource(context, LAB_SOURCES[language]);
   const core = window[language === 'rust' ? 'RUST_LAB' : 'GO_LAB'] as Exercise[];
   assert.ok(Array.isArray(core) && core.length > 0, language + ' curriculum');
   assert.ok(core.length <= 100, language + ' has at most 100 core exercises');
   if (!partial) assert.equal(core.length, 100, language + ' should have 100 core exercises');
-  const questFile = 'quests-' + language + '.js';
+  const questFile = QUEST_SOURCES[language];
   if (fs.existsSync(path.join(repoRoot, questFile))) runSource(context, questFile);
   const quests = (window[language === 'rust' ? 'RUST_QUESTS' : 'GO_QUESTS'] || []) as Exercise[];
   assert.ok(

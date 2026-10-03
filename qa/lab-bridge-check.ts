@@ -8,7 +8,14 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { plainJson } from './lib/plain-json.ts';
-import { runSource } from './lib/sources.ts';
+import {
+  loadCampaignEngine,
+  loadCampaignUi,
+  loadCampaignWorlds,
+  loadLabCatalogs,
+  loadSystemsEngine,
+  loadSystemsUi,
+} from './lib/legacy-sources.ts';
 
 interface LabTest {
   id: string;
@@ -57,20 +64,6 @@ interface BridgeContext extends vm.Context {
   [name: string]: unknown;
 }
 
-const catalogScripts = [
-  'lab-rust.js',
-  'lab-go.js',
-  'quests-rust.js',
-  'quests-go.js',
-  'systems-lowlevel.js',
-  'systems-lowlevel-labs.js',
-  'systems-infra.js',
-  'systems-infra-labs.js',
-  'systems-play.js',
-  'systems-play-labs.js',
-  'systems-pc.js',
-  'systems-pc-labs.js',
-];
 const labGlobals = [
   'RUST_LAB',
   'RUST_QUESTS',
@@ -96,7 +89,7 @@ function createContext(search: string, labState: LabState): BridgeContext {
   } as unknown as BridgeContext;
   context.window = context;
   vm.createContext(context);
-  for (const script of catalogScripts) runSource(context, script);
+  loadLabCatalogs(context);
   const exercises = labGlobals.flatMap((name) => context[name] as LabExercise[]);
   context.TallerLab = { getExercises: () => exercises, exportState: () => labState };
   return context;
@@ -104,8 +97,9 @@ function createContext(search: string, labState: LabState): BridgeContext {
 
 function campaignBridge(search: string, labState: LabState = { records: {} }): CampaignApi {
   const context = createContext(search, labState);
-  for (const script of ['campaign-rust.js', 'campaign-go.js', 'campaign-engine.js', 'campaign.js'])
-    runSource(context, script);
+  loadCampaignWorlds(context);
+  loadCampaignEngine(context);
+  loadCampaignUi(context);
   const api = context.TallerCampaign;
   assert.ok(api, 'campaign.js no publicó TallerCampaign');
   assert.deepEqual(plainJson(api.init()), { ready: true, storageAvailable: true, loadWarning: '' });
@@ -117,7 +111,8 @@ function systemsBridge(
   labState: LabState = { records: {} },
 ): { api: SystemsApi; context: BridgeContext } {
   const context = createContext(search, labState);
-  for (const script of ['systems-engine.js', 'systems.js']) runSource(context, script);
+  loadSystemsEngine(context);
+  loadSystemsUi(context);
   const api = context.TallerSystems;
   assert.ok(api, 'systems.js no publicó TallerSystems');
   assert.deepEqual(plainJson(api.init()), { storageAvailable: true, loadWarning: '' });

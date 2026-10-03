@@ -1,6 +1,14 @@
 /* Verify the actual campaign curriculum and links, without network or DOM. */
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
+import {
+  CAMPAIGN_WORLD_SOURCES,
+  LAB_SOURCES,
+  QUEST_SOURCES,
+  SYSTEMS_DOMAINS,
+  loadCampaignEngine,
+  loadSystemsDomain,
+} from './lib/legacy-sources.ts';
 import { runSource } from './lib/sources.ts';
 
 interface Exercise {
@@ -34,13 +42,17 @@ const context = vm.createContext({
   window: {} as Registry,
   localStorage: { getItem: () => null, setItem: () => {} },
 });
-const languages = ['rust', 'go'],
+const languages = ['rust', 'go'] as const,
   levels = ['beginner', 'medium', 'advanced', 'expert'];
 const allExercises: Exercise[] = [],
   worlds: Record<string, Chapter[]> = {};
 for (const language of languages) {
-  for (const prefix of ['lab', 'quests', 'campaign']) {
-    runSource(context, prefix + '-' + language + '.js');
+  for (const source of [
+    LAB_SOURCES[language],
+    QUEST_SOURCES[language],
+    CAMPAIGN_WORLD_SOURCES[language],
+  ]) {
+    runSource(context, source);
   }
   const name = language.toUpperCase(),
     core = context.window[name + '_LAB'] as Exercise[],
@@ -110,12 +122,12 @@ for (const language of languages) {
   worlds[language] = chapters;
   allExercises.push(...core, ...quests);
 }
-for (const domain of ['lowlevel', 'infra', 'play', 'pc']) {
-  for (const suffix of ['', '-labs']) runSource(context, `systems-${domain}${suffix}.js`);
+for (const domain of SYSTEMS_DOMAINS) {
+  loadSystemsDomain(context, domain);
   allExercises.push(...(context.window['SYSTEMS_' + domain.toUpperCase() + '_LABS'] as Exercise[]));
 }
 assert.equal(allExercises.length, 274);
-runSource(context, 'campaign-engine.js');
+loadCampaignEngine(context);
 const engine = context.window.TallerCampaignEngine as CampaignEngine;
 engine.init({ exercises: allExercises, worlds });
 for (const language of languages) {

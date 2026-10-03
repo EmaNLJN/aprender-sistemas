@@ -8,7 +8,7 @@
  *
  * Vínculo taller-núcleo: la app no calcula posiciones. Cada taller declara
  * `code: { rust, go }` con los IDs de sus ejercicios núcleo y los consume así:
- * systems-engine.js requireCore() resuelve `workshop.code[language]` contra el
+ * src/entities/systems-workshop (requireCore) resuelve `workshop.code[language]` contra el
  * catálogo de ejercicios, y systems.js usa `workshop.code[lang]` para elegir el
  * núcleo ejecutable y marcar "Núcleo del taller". Este check lee ese mismo campo.
  */
@@ -16,7 +16,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
-import { importModule, repoRoot, runSource } from './lib/sources.ts';
+import { loadCampaignWorlds, loadGuideContent, loadLabCatalogs } from './lib/legacy-sources.ts';
+import { importModule, repoRoot } from './lib/sources.ts';
 import { plainJson } from './lib/plain-json.ts';
 
 type Language = 'rust' | 'go';
@@ -56,23 +57,6 @@ interface CatalogWindow {
   [name: string]: unknown;
 }
 
-const LOAD_ORDER = [
-  'content',
-  'lab-rust',
-  'lab-go',
-  'quests-rust',
-  'quests-go',
-  'systems-lowlevel',
-  'systems-lowlevel-labs',
-  'systems-infra',
-  'systems-infra-labs',
-  'systems-play',
-  'systems-play-labs',
-  'systems-pc',
-  'systems-pc-labs',
-  'campaign-rust',
-  'campaign-go',
-];
 const EXERCISE_CATALOGS = [
   'RUST_LAB',
   'GO_LAB',
@@ -92,7 +76,9 @@ const WORKSHOP_CATALOGS = ['SYSTEMS_LOWLEVEL', 'SYSTEMS_INFRA', 'SYSTEMS_PLAY', 
 function loadWindow(): CatalogWindow {
   const fakeWindow: CatalogWindow = {};
   const context = vm.createContext({ window: fakeWindow });
-  for (const name of LOAD_ORDER) runSource(context, `${name}.js`);
+  loadGuideContent(context);
+  loadLabCatalogs(context);
+  loadCampaignWorlds(context);
   return fakeWindow;
 }
 

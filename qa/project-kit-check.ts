@@ -13,6 +13,13 @@ import vm from 'node:vm';
 import zlib from 'node:zlib';
 import crypto from 'node:crypto';
 import { spawn, execFileSync } from 'node:child_process';
+import {
+  SYSTEMS_DOMAINS,
+  loadLab,
+  loadLabExercises,
+  loadSystemsDomain,
+  systemsDomainSources,
+} from './lib/legacy-sources.ts';
 import { bundleSource, repoRoot as root, runSource } from './lib/sources.ts';
 
 type Language = 'rust' | 'go';
@@ -262,9 +269,6 @@ function context(): FakeContext {
   };
   vm.createContext(context);
   return context;
-}
-function load(ctx: FakeContext, filename: string): void {
-  runSource(ctx, filename);
 }
 
 // Independent ZIP reader: central directory, inflateRaw from Node, and CRC-32.
@@ -530,29 +534,21 @@ check('Unknown language/core is rejected rather than producing a misleading kit'
 let real = undefined as RealCatalog | undefined;
 check('Load the actual workshop catalog and the production lab registry', () => {
   const ctx = context();
-  for (const file of ['lab-rust.js', 'lab-go.js', 'quests-rust.js', 'quests-go.js'])
-    load(ctx, file);
+  loadLabExercises(ctx);
   const domains: { workshops: Workshop[] }[] = [];
-  for (const [name, global] of [
-    ['lowlevel', 'SYSTEMS_LOWLEVEL'],
-    ['infra', 'SYSTEMS_INFRA'],
-    ['play', 'SYSTEMS_PLAY'],
-    ['pc', 'SYSTEMS_PC'],
-  ]) {
-    const model = `systems-${name}.js`,
-      labs = `systems-${name}-labs.js`;
-    if (!fs.existsSync(path.join(root, model)) || !fs.existsSync(path.join(root, labs))) {
+  for (const name of SYSTEMS_DOMAINS) {
+    const global = `SYSTEMS_${name.toUpperCase()}`;
+    if (!systemsDomainSources(name).every((file) => fs.existsSync(path.join(root, file)))) {
       assert(
         partial,
         `Missing final domain snapshot: ${name}. Use --partial only while authoring.`,
       );
       continue;
     }
-    load(ctx, model);
-    load(ctx, labs);
+    loadSystemsDomain(ctx, name);
     domains.push(ctx.window[global] as { workshops: Workshop[] });
   }
-  load(ctx, 'lab.js');
+  loadLab(ctx);
   runSource(ctx, ADAPTER, { minify: true });
   const workshops = domains.flatMap((d) => d.workshops),
     exercises = ctx.window.TallerLab?.getExercises() ?? [];

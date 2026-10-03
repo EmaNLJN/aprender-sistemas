@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { plainJson } from './lib/plain-json.ts';
-import { runSource } from './lib/sources.ts';
+import { loadCampaignEngine } from './lib/legacy-sources.ts';
 
 interface TestRef {
   id: string;
@@ -153,7 +153,7 @@ function fresh(saved?: string, failStorage = false): Fresh {
       },
     },
   });
-  runSource(context, 'campaign-engine.js');
+  loadCampaignEngine(context);
   const engine = context.window.TallerCampaignEngine as CampaignEngine;
   const initialized = engine.init({ exercises, worlds });
   return { engine, store, initialized };
