@@ -1,6 +1,11 @@
 import { createRoot, type Root } from 'react-dom/client';
-import { atlasByLanguage, type AtlasLanguage } from './atlas-content';
-import { AtlasView, type AtlasSession } from './AtlasView';
+import {
+  AtlasPage,
+  atlasByLanguage,
+  createAtlasSession,
+  type AtlasLanguage,
+  type AtlasSession,
+} from '../../pages/atlas';
 
 declare global {
   interface Window {
@@ -8,19 +13,10 @@ declare global {
   }
 }
 
-function blankSession(): AtlasSession {
-  return {
-    query: '',
-    level: 'all',
-    category: 'all',
-    selected: null,
-    answers: {},
-    compared: {},
-    pitfalls: {},
-  };
-}
-
-const sessions: Record<AtlasLanguage, AtlasSession> = { rust: blankSession(), go: blankSession() };
+const sessions: Record<AtlasLanguage, AtlasSession> = {
+  rust: createAtlasSession(),
+  go: createAtlasSession(),
+};
 let root: Root | null = null;
 
 function unmount() {
@@ -39,7 +35,7 @@ function mount(host: HTMLElement | null, requestedLanguage: string = 'rust'): vo
     },
   });
   root.render(
-    <AtlasView
+    <AtlasPage
       entries={atlasByLanguage[language] || []}
       initialSession={sessions[language]}
       language={language}

@@ -1,0 +1,36 @@
+import '../../styles.css';
+import '../../lab.css';
+import '../pages/atlas/ui/atlas.css';
+import '../../campaign.css';
+import '../../quest-explorers.css';
+import '../../systems.css';
+
+// The import order is the temporary compatibility seam for legacy window.Taller* adapters.
+import '../../content.js';
+import '../../lab-rust.js';
+import '../../lab-go.js';
+import '../../quests-rust.js';
+import '../../quests-go.js';
+import '../../runner.js';
+import '../../editor-source.js';
+import '../../lab-explorers.js';
+import '../../quest-explorers.js';
+import '../../systems-lowlevel.js';
+import '../../systems-lowlevel-labs.js';
+import '../../systems-infra.js';
+import '../../systems-infra-labs.js';
+import '../../systems-play.js';
+import '../../systems-play-labs.js';
+import '../../systems-pc.js';
+import '../../systems-pc-labs.js';
+import '../../lab.js';
+import './legacy/register-atlas';
+import '../../campaign-rust.js';
+import '../../campaign-go.js';
+import '../../campaign-engine.js';
+import '../../game-effects-source.js';
+import '../../campaign.js';
+import '../../systems-engine.js';
+import '../../project-kit-source.js';
+import '../../systems.js';
+import '../../app.js';

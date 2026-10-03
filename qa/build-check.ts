@@ -13,7 +13,7 @@ const documentMarkup = html
   .replace(/<style\b[^>]*>[\s\S]*?<\/style>/g, '<style></style>');
 
 assert(
-  source.includes('type="module" src="./main.tsx"'),
+  source.includes('type="module" src="./app/main.tsx"'),
   'Vite source must use the TypeScript ESM entry',
 );
 assert.equal(scripts.length, 1, 'Vite must inline one application bundle');

@@ -9,14 +9,14 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 
 | Responsabilidad | Fuentes |
 | --- | --- |
-| Documento y entrada ESM | `src/index.html`, `src/main.tsx` |
+| Documento, entrada ESM y adaptadores legacy | `src/index.html`, `src/app/main.tsx`, `src/app/legacy/` |
 | Helpers y constantes compartidos, sin reglas de negocio | `src/shared/lib/`, `src/shared/config/` |
 | Navegación, recorrido y progreso general | `app.js`, `content.js`, `styles.css` |
 | Ejercicios del recorrido | `lab-rust.js`, `lab-go.js` |
 | Laboratorio, revisión y modelos educativos | `lab.js`, `lab-explorers.js`, `lab.css` |
 | Transporte a los Playgrounds oficiales | `runner.js` |
 | Editor CodeMirror 6 | `editor-source.js` |
-| Atlas migrado a React/TypeScript | `src/features/atlas/` y adaptador `window.TallerAtlas` en módulos TS/TSX |
+| Atlas migrado a React/TypeScript | `src/pages/atlas/` (`ui`, `model`, `content`, `lib`) y adaptador `src/app/legacy/register-atlas.tsx` |
 | Desafíos nuevos de campaña | `quests-rust.js`, `quests-go.js` |
 | Mundos, reglas y progreso de campaña | `campaign-rust.js`, `campaign-go.js`, `campaign-engine.js` |
 | Interfaz y exploradores de campaña | `campaign.js`, `campaign.css`, `quest-explorers.js`, `quest-explorers.css` |
@@ -41,8 +41,8 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
   con nombre descriptivo. Agregá un `AGENTS.md` local sólo si tiene reglas propias.
 - La estructura plana es el estado legacy. Una reorganización a carpetas debe
   resolver un problema concreto y actualizar en el mismo cambio imports de
-  `src/main.tsx`, scripts npm, QA, Docker y documentación.
-- `src/main.tsx` define temporalmente el orden de los imports legacy. Esos módulos
+  `src/app/main.tsx`, scripts npm, QA, Docker y documentación.
+- `src/app/main.tsx` define temporalmente el orden de los imports legacy. Esos módulos
   comparten contratos mediante `window.Taller*`; respetá sus dependencias hasta
   reemplazarlas por imports explícitos dentro de cada funcionalidad.
   `qa/load-order-check.ts` declara esas dependencias.
@@ -157,8 +157,8 @@ para infraestructura o UI sin reglas de negocio. Abrí slices en `features` para
 acciones de valor para el alumno y en `entities` para conceptos de dominio estables
 sólo cuando varios consumidores justifiquen ese seam. No agregues `processes` —está
 deprecada— ni `widgets` hasta que exista un bloque autónomo que realmente los necesite.
-El `src/features/atlas` actual nombra una funcionalidad migrada antes de adoptar esta
-taxonomía completa; no clasifiques un módulo por el nombre heredado de su carpeta.
+Estado actual: `src/app` (entrada y adaptadores legacy), `src/pages/atlas` (primera
+página migrada) y `src/shared` (helpers y constantes sin reglas de negocio).
 
 - La dirección permitida es `app → pages → widgets → features → entities → shared`.
   Un módulo sólo importa su propio slice o capas inferiores; dos slices de la misma
@@ -170,7 +170,7 @@ taxonomía completa; no clasifiques un módulo por el nombre heredado de su carp
   esa API y no desde archivos internos; dentro del slice, usá imports directos. En
   `shared`, preferí una API por segmento a un barrel global que ensanche el bundle.
   La API del slice puede reexportar como nombrada la abstracción default de un archivo,
-  por ejemplo `export {default as AtlasView} from './ui/AtlasView'`.
+  por ejemplo `export { default as AtlasPage } from './ui/AtlasPage'`.
 - Adoptá la estructura por slices al migrar una funcionalidad o cuando resuelva un
   problema concreto de cohesión o dependencias. No muevas todo el legacy de una vez
   ni crees capas, abstracciones o reexports para usos hipotéticos.

@@ -75,7 +75,12 @@ export function runSource(
 export async function importModule<T>(relativePath: string): Promise<T> {
   let text = esmCache.get(relativePath);
   if (text === undefined) {
-    text = build(relativePath, { format: 'esm', platform: 'node', target: 'es2022' });
+    text = build(relativePath, {
+      format: 'esm',
+      platform: 'node',
+      target: 'es2022',
+      jsx: 'automatic',
+    });
     esmCache.set(relativePath, text);
   }
   const url = `data:text/javascript;base64,${Buffer.from(text).toString('base64')}`;

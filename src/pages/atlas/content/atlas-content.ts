@@ -1,6 +1,8 @@
 /* Original educational atlas. Snippets illustrate concepts; the lab runs exercises. */
+import type { LevelId } from '../../../shared/config/levels';
+
 export type AtlasLanguage = 'rust' | 'go';
-export type AtlasLevel = 'beginner' | 'medium' | 'advanced' | 'expert';
+export type AtlasLevel = LevelId;
 
 export interface AtlasSource {
   title: string;

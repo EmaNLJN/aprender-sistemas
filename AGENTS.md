@@ -20,7 +20,7 @@ Atlas es la primera vista migrada; el resto conserva adaptadores legacy temporal
 La raíz contiene las fuentes actuales por familia (`lab-*`, `campaign-*`,
 `systems-*`). `qa/` reúne verificaciones e investigación; `docs/` contiene reglas
 específicas de desarrollo; `.agents/skills/` contiene las skills del proyecto.
-`src/index.html` y `src/main.tsx` son las entradas Vite; `dist/` es la salida
+`src/index.html` y `src/app/main.tsx` son las entradas Vite; `dist/` es la salida
 generada. Los `CLAUDE.md` sólo importan este archivo y los de cada
 carpeta para Claude Code; `.claude/` contiene symlinks de skills y subagentes.
 
@@ -92,7 +92,7 @@ y abrí `http://localhost:8765`; detenelo con
   por responsabilidad o mantené exports nombrados; no elijas un `default` arbitrario.
 
 ```ts
-// src/features/atlas/filter-concepts.ts
+// src/pages/atlas/model/filter-concepts.ts
 interface Concept {
   level: string;
 }
@@ -114,10 +114,10 @@ import {filterConcepts} from './filter-concepts';
   primitivas, tipos mapeados o condicionales. No conviertas declaraciones
   existentes sólo por estilo; la elección debe expresar una diferencia útil.
 
-- La interfaz nueva usa **React con TypeScript/TSX** y **Vite**. El
-  `src/features/<funcionalidad>/` actual es un seam transitorio de la migración, no
-  equivale automáticamente a la capa FSD `features`. Conservá un adaptador pequeño
-  cuando una vista legacy todavía dependa de `window.Taller*`.
+- La interfaz nueva usa **React con TypeScript/TSX** y **Vite**. `src/app/` contiene
+  la entrada y los adaptadores `window.Taller*` (`src/app/legacy/`); cada vista migrada
+  es un slice de `src/pages/` (Atlas es el primero). Conservá un adaptador pequeño en
+  `src/app/legacy/` cuando una vista legacy todavía dependa de `window.Taller*`.
 - Aplicá Feature-Sliced Design de forma incremental: empezá por `app`, `pages` y
   `shared`, y creá slices en `features` o `entities` sólo cuando exista una
   responsabilidad de negocio estable y reutilizada. Cada slice expone una API
@@ -167,7 +167,7 @@ import {filterConcepts} from './filter-concepts';
 - Revisá siempre el diff producido por el subagente y ejecutá desde el agente principal
   los checks proporcionales al riesgo; delegar implementación no delega la decisión ni
   la responsabilidad por el resultado.
-- Paralelizá sólo slices con archivos disjuntos. `src/main.tsx`, `package.json`, las
+- Paralelizá sólo slices con archivos disjuntos. `src/app/main.tsx`, `package.json`, las
   configuraciones y la documentación se integran desde el agente principal.
 
 ## Código entendible y pruebas útiles
