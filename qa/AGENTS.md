@@ -30,7 +30,8 @@ comandos: no hace falta inventar tests de producto.
 Para React Doctor y Desloppify, consultá `tools/quality/AGENTS.md`. Son controles
 complementarios; una puntuación no reemplaza las pruebas de comportamiento.
 
-`npm run build` regenera todos los assets. `npm test` reúne los checks locales,
+`npm run build` regenera la aplicación mediante Vite y deja el documento autónomo
+en `dist/index.html`. `npm test` reúne los checks locales,
 incluido `node qa/lab-state-check.cjs` para importar, validar y exportar progreso
 del laboratorio. `npm run lint` y `npm run format:check` se ejecutan antes de cerrar
 cambios de código; el segundo es no mutante. Formateá los archivos propios que
@@ -38,7 +39,7 @@ cambies y evitá reformatear las skills importadas o las salidas generadas.
 
 | Cambio | Comprobaciones locales |
 | --- | --- |
-| Empaquetado, assets u orden de carga | Regenerar bundles e `index.html`; `node qa/build-check.cjs` |
+| Empaquetado, assets u orden de carga | `npm run build`; `node qa/build-check.cjs` |
 | Ejercicios o contratos de revisión | `node qa/content-check.cjs`, `node qa/runner-check.cjs` |
 | Mundos, desbloqueos, XP o progreso de campaña | `node qa/campaign-check.cjs`, `node qa/campaign-content-check.cjs` |
 | Importación, validación o exportación del laboratorio | `node qa/lab-state-check.cjs`, campaña y Sistemas |

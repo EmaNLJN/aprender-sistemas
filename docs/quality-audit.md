@@ -14,7 +14,7 @@ Desloppify 1.0, plugin JavaScript, primer scan: overall **15.1**, objective
 **60.3**, strict **15.1** y verified **60.3**. Son cifras iniciales con cobertura
 reducida: ESLint no estaba configurado y veinte dimensiones subjetivas estaban
 sin evaluar. No representan una calificación completa del proyecto. El detector
-de imports tampoco reconoce que `page.html` carga los scripts globales; su detector
+de imports tampoco reconocía que la entrada HTML cargaba los scripts globales; su detector
 de tests no reconoce plenamente las cargas de fuentes mediante VM de los checks.
 
 | Dimensión | Inicial | Inicial estricto | Estado |
@@ -103,8 +103,14 @@ Desloppify 1.0, scan JavaScript final con los mismos excludes:
 
 El score global no es una calificación completa: Desloppify mantiene congelado el
 resultado mientras las 20 dimensiones subjetivas no tengan revisión humana. El
-detector también cuenta fuentes globales cargadas por `page.html` como huérfanas.
+detector también contaba fuentes globales cargadas por la entrada HTML como huérfanas.
 La duplicación automática se omitió porque `jscpd` terminó con error transitorio.
 
 Los artefactos crudos, prompts y estado de scanners se conservan localmente en
 `.desloppify/` o archivos temporales y están fuera de Git.
+
+## Actualización posterior
+
+El mismo 2026-10-03 comenzó la migración: Atlas pasó a React y el build completo a
+Vite con una entrada ESM en `src/main.tsx`. Esta sección no altera las mediciones
+históricas anteriores; los resultados nuevos se informan con el cambio de migración.

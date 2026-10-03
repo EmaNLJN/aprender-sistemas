@@ -4,35 +4,26 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
+
 const root = path.join(__dirname, '..');
-const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-const source = fs.readFileSync(path.join(root, 'page.html'), 'utf8');
-const scriptFiles = [...source.matchAll(/<script src="([^"]+)"><\/script>/g)].map(match => match[1]);
-const styleFiles = [...source.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map(match => match[1]);
-const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
-const styles = [...html.matchAll(/<style>([\s\S]*?)<\/style>/g)];
+const html = fs.readFileSync(path.join(root, 'dist', 'index.html'), 'utf8');
+const source = fs.readFileSync(path.join(root, 'src', 'index.html'), 'utf8');
+const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)];
+const styles = [...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/g)];
+const documentMarkup = html
+  .replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '<script></script>')
+  .replace(/<style\b[^>]*>[\s\S]*?<\/style>/g, '<style></style>');
 
-assert.equal(scripts.length, scriptFiles.length, 'all local scripts must be bundled');
-assert.equal(styles.length, styleFiles.length, 'all local stylesheets must be bundled');
+assert(source.includes('type="module" src="./main.tsx"'), 'Vite source must use the TypeScript ESM entry');
+assert.equal(scripts.length, 1, 'Vite must inline one application bundle');
+assert.equal(styles.length, 1, 'Vite must inline one stylesheet bundle');
 assert.equal((html.match(/<!DOCTYPE html>/gi) || []).length, 1, 'bundle must not duplicate the document');
-assert(!/<script src=/.test(html), 'no external runtime script dependencies');
-assert(!/<link\b[^>]*\brel="stylesheet"/.test(html), 'no external runtime stylesheet dependencies');
+assert(!/<script\b[^>]*\bsrc=/.test(documentMarkup), 'no external runtime script dependencies');
+assert(!/<link\b[^>]*\brel="stylesheet"/.test(documentMarkup), 'no external runtime stylesheet dependencies');
+assert(!/<link\b[^>]*\brel="modulepreload"/.test(documentMarkup), 'no external module preload dependencies');
 
-for (const [index, script] of scripts.entries()) {
-  const filename = scriptFiles[index];
-  const asset = fs.readFileSync(path.join(root, filename), 'utf8');
-  // HTML-safe closing tags must decode back to the original JavaScript source.
-  // Remove only the two line breaks wrapping the asset, preserving its whitespace.
-  const decoded = script[1].slice(1, -1).replace(/<\\\/script/gi, '</script');
-  assert.equal(decoded, asset, `${filename}: script content or load order changed`);
-  new vm.Script(script[1], {filename});
-}
-for (const [index, style] of styles.entries()) {
-  const filename = styleFiles[index];
-  const asset = fs.readFileSync(path.join(root, filename), 'utf8');
-  assert.equal(style[1].slice(1, -1), asset, `${filename}: stylesheet content or cascade order changed`);
-}
-
+new vm.Script(scripts[0][1], {filename: 'dist/index.html:inline-app.js'});
 assert(html.includes('Permission is hereby granted'), 'editor license retained');
-assert(html.length < 2500000, 'unexpected bundle growth, possibly replacement-string expansion');
-console.log(`${scripts.length} scripts and ${styles.length} styles preserve source content and order; one standalone document; licenses preserved. PASS`);
+assert(html.includes('Copyright (c) Meta Platforms'), 'React license retained in standalone HTML');
+assert(html.length < 2500000, 'unexpected standalone build growth');
+console.log('Vite produced one standalone document with inline JS/CSS and retained licenses. PASS');

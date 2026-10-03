@@ -59,8 +59,9 @@ otro formatter, package manager o framework.
 
 - Leé sólo el SKILL.md pertinente y las referencias necesarias; conservá las
   fuentes importadas y sus atribuciones al actualizarlas.
-- React con JavaScript/JSX es la preferencia acordada. La aplicación aún usa
-  vanilla: las reglas específicas de React aplican a módulos migrados o nuevos.
+- React con TypeScript/TSX y Vite es la arquitectura vigente. Atlas ya está
+  migrado; las reglas específicas de React aplican a módulos migrados o nuevos y
+  el JavaScript legacy se convierte incrementalmente.
 - Aplicá reglas de cliente pertinentes. Next.js, Server Components, SSR, SWR o
   TypeScript son decisiones separadas, no dependencias obligatorias de estas skills.
   Verificá la versión de React antes de aplicar reglas de React 19.
@@ -95,23 +96,53 @@ Las directivas concretas del taller están en
 [arquitectura](architecture.md#complejidad-ciclomática-y-legibilidad), apoyadas en
 ESLint y Sonar. No se presupone que React Doctor mida esta métrica.
 
+Para Feature-Sliced Design se encontró la skill oficial
+[feature-sliced-design](https://www.skills.sh/feature-sliced/skills/feature-sliced-design),
+publicada por el propio proyecto FSD y con unas 19 mil instalaciones consultadas el
+2026-10-03. Su enfoque v2.1 prioriza una adopción incremental desde `app`, `pages` y
+`shared`, con dirección de imports y APIs públicas por slice. Se deja evaluada sin
+instalar: las reglas necesarias quedaron documentadas en `docs/architecture.md` y las
+skills locales `codebase-design` y `vercel-composition-patterns` cubren los seams y la
+composición. Instalála si una futura migración requiere el flujo FSD completo o sus
+referencias específicas.
+
 ## Context7 y base del AGENTS.md
 
 `find-skills` y `context7-mcp` ya estaban disponibles en el entorno; no se
 reinstalaron dentro del proyecto. Context7 necesita un MCP conectado, además
 de la skill que explica cómo consultarlo.
 
-Se consultó `/websites/esbuild_github_io` para el build actual:
+Se consultó `/websites/esbuild_github_io` para el build anterior:
 [IIFE y salida](https://esbuild.github.io/api/#format),
 [archivos generados](https://esbuild.github.io/api/#outfile) y
 [comentarios legales](https://esbuild.github.io/api/#legal-comments).
 También se consultó `/vitejs/vite`: diferencia templates `react` y `react-ts`,
 y genera `dist/` por defecto para [hosting estático](https://vite.dev/guide/static-deploy.html).
-Vite es una opción a evaluar para este taller, no una migración ya implementada.
+La migración comenzó con React 19 y Vite 8; Atlas es la primera vista migrada.
+La decisión actual de usar TypeScript para todo código nuevo está documentada en
+`AGENTS.md` y en el ADR 0001; las consultas sobre la preferencia inicial por
+JavaScript/JSX se conservan como antecedente, no como configuración vigente.
 Las reglas de React se contrastaron con
 [integración gradual](https://react.dev/learn/add-react-to-an-existing-project),
 [pureza e inmutabilidad](https://react.dev/reference/rules/components-and-hooks-must-be-pure)
-y [uso de effects](https://react.dev/learn/you-might-not-need-an-effect).
+y [uso de effects](https://react.dev/learn/you-might-not-need-an-effect). Para exports,
+Context7 confirmó que React admite ambos estilos y que su guía de
+[imports y exports de componentes](https://react.dev/learn/importing-and-exporting-components)
+recoge como convención frecuente usar `default` cuando un archivo expone un solo
+componente y exports nombrados cuando expone varios; en ambos casos recomienda
+identificadores significativos para facilitar el debugging. El proyecto especializa
+esa guía con una abstracción principal nombrada, `export default` al final y exports
+nombrados para módulos auxiliares o multipropósito.
+
+Para TypeScript se consultó `/microsoft/typescript-website` en Context7. La guía
+oficial propone `interface` para contratos públicos y formas de objetos que puedan
+extenderse, y `type` cuando se necesitan capacidades como uniones o tuplas; también
+aclara que gran parte de ambos mecanismos se solapa. La preferencia del proyecto
+expresa esa diferencia y no obliga a reescribir aliases existentes por estilo.
+
+Las reglas de estructura se contrastaron con la documentación oficial de
+[capas](https://fsd.how/docs/reference/layers/) y
+[slices y segmentos](https://fsd.how/docs/reference/slices-segments/) de FSD v2.1.
 
 Para complejidad se consultó `/eslint/eslint` en Context7 y se contrastó la
 [regla oficial `complexity`](https://eslint.org/docs/latest/rules/complexity):

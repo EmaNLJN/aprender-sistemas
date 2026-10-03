@@ -2,7 +2,8 @@
 
 Este directorio mantiene las CLI separadas de las dependencias del taller.
 React Doctor y Desloppify se instalaron el 2026-10-03, junto con sus skills en
-`.agents/skills/`. React es la preferencia futura; la aplicación aún usa vanilla.
+`.agents/skills/`. Atlas ya migró a React/TypeScript con Vite; las demás vistas
+conservan módulos JavaScript legacy detrás de adaptadores durante la migración.
 
 ## Instalación reproducible
 
@@ -45,12 +46,12 @@ tools/quality/node_modules/.bin/react-doctor --help
 El script apunta al repositorio y usa `--no-telemetry`, que también desactiva la
 puntuación remota según la CLI instalada. Para una regresión contra una referencia
 Git real, usá `--scope changed --base <referencia>` con el binario local.
-El análisis React tendrá sentido cuando existan código y dependencias React;
-la verificación actual de instalación sólo comprobó versión y ayuda.
+El análisis React aplica a las vistas React migradas; la verificación de
+instalación de la CLI sólo comprobó versión y ayuda.
 Los trazados de navegador y los informes son estado local y van fuera de Git.
-La configuración raíz `doctor.config.mjs` excluye bundles, `index.html`, skills,
-dependencias y herramientas auxiliares. Como este repositorio aún es vanilla,
-`reactDetected: false` describe cobertura, no un score React.
+La configuración raíz `doctor.config.mjs` excluye bundles, `dist/`, skills,
+dependencias y herramientas auxiliares. La cobertura depende de las vistas React
+presentes y no representa por sí sola un score de calidad.
 
 ## Desloppify
 

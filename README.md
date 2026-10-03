@@ -130,7 +130,7 @@ El taller agrega una función de entrada y evalúa las expresiones booleanas de 
 
 Se necesita conexión para compilar. Los Playgrounds son servicios externos con sus propios límites; pueden cambiar de versión o quedar temporalmente indisponibles. El taller distingue fallos de conexión, errores de compilación y casos fallidos. Nunca aprueba una prueba que no se ejecutó. El Docker sirve la web; no instala compiladores ni ejecuta código del alumno en el host.
 
-Las lecturas, preguntas, modelos, notas, edición y generación de kits ZIP funcionan sin conexión una vez cargada la página. También podés abrir el `index.html` autónomo; algunos navegadores restringen peticiones desde archivos locales, por lo que Docker es la opción recomendada para ejecutar ejercicios. Ejecutar un kit descargado requiere el compilador local correspondiente; el contenedor web no lo proporciona.
+Las lecturas, preguntas, modelos, notas, edición y generación de kits ZIP funcionan sin conexión una vez cargada la página. También podés abrir `dist/index.html`, que es autónomo; algunos navegadores restringen peticiones desde archivos locales, por lo que Docker es la opción recomendada para ejecutar ejercicios. Ejecutar un kit descargado requiere el compilador local correspondiente; el contenedor web no lo proporciona.
 
 El revisor combina diagnósticos del compilador, pruebas y explicaciones preparadas para cada consigna. No es un LLM conversacional ni califica automáticamente texto libre. Tres casos aprobados no demuestran corrección para todas las entradas, ausencia de carreras, soundness de unsafe o mejoras de rendimiento. Los modelos de memoria y canales son conceptuales; no son un depurador del programa escrito.
 
@@ -161,21 +161,18 @@ La importación combina el avance; para un ejercicio presente en la copia, sus d
 
 ## Desarrollo
 
-El sitio utiliza HTML, CSS y JavaScript. Rust y Go siguen siendo los lenguajes de los ejercicios. Node se usa para construir el editor, las animaciones y empaquetar la página, no como sustituto de los compiladores.
+El sitio migra gradualmente a React con TypeScript/TSX y Vite. Atlas es la primera vista migrada; las demás conservan adaptadores JavaScript legacy mientras se migran por funcionalidad. El código nuevo se escribe en TypeScript con módulos ES (`export`/`import`). Rust y Go siguen siendo los lenguajes de los ejercicios. Node ejecuta las herramientas de construcción y QA, no un servidor de aplicación ni los compiladores.
 
 ```sh
 npm ci
-npm run build:editor
-npm run build:effects
-npm run build:kits
-node build.mjs
+npm run build
 ```
 
-`build.mjs` valida los bloques del currículo y empaqueta estilos, datos, editor y aplicación en `index.html`: 137 ejercicios por lenguaje (100 del recorrido, 12 nuevos de campaña y 25 de Sistemas), más 16 temas del Atlas por lenguaje. `build.py` ofrece un empaquetado alternativo si los bundles ya están construidos. El Docker reconstruye desde fuentes y el lockfile.
+Vite, como build único, empaqueta estilos, datos, editor y aplicación en el documento autónomo `dist/index.html`, desde `src/index.html` y `src/main.tsx`. Los checks validan 137 ejercicios por lenguaje (100 del recorrido, 12 nuevos de campaña y 25 de Sistemas), más 16 temas del Atlas por lenguaje. Docker reconstruye desde las fuentes y el lockfile.
 
-Archivos principales: `lab-rust.js` / `lab-go.js` (contenido), `lab.js` (aprendizaje y revisión), `lab-explorers.js` (modelos y misiones), `runner.js` (Playgrounds), `editor-source.js` (CodeMirror), `content.js` / `app.js` (guía original), `quests-rust.js` / `quests-go.js` (24 desafíos nuevos), `campaign-*.js` (mundos y motor), `campaign.js` / `campaign.css` (interfaz de campaña).
+Archivos principales: `src/features/atlas/` (Atlas React y contenido ESM), `lab-rust.js` / `lab-go.js` (contenido), `lab.js` (aprendizaje y revisión), `lab-explorers.js` (modelos y misiones), `runner.js` (Playgrounds), `editor-source.js` (CodeMirror), `content.js` / `app.js` (guía original), `quests-rust.js` / `quests-go.js` (24 desafíos nuevos), `campaign-*.js` (mundos y motor), `campaign.js` / `campaign.css` (interfaz de campaña).
 
-Sistemas separa los datos y modelos puros en `systems-lowlevel.js`, `systems-infra.js`, `systems-play.js` y `systems-pc.js`; sus archivos `*-labs.js` contienen los núcleos Rust/Go. `systems-engine.js` conserva los sellos e importa progreso; `systems.js` / `systems.css` muestran el catálogo, los controles y escenas SVG. `project-kit-source.js` genera proyectos y archivos ZIP; `npm run build:kits` produce `project-kit.bundle.js` con `fflate` incluido. No se necesita un CDN.
+Sistemas separa los datos y modelos puros en `systems-lowlevel.js`, `systems-infra.js`, `systems-play.js` y `systems-pc.js`; sus archivos `*-labs.js` contienen los núcleos Rust/Go. `systems-engine.js` conserva los sellos e importa progreso; `systems.js` / `systems.css` muestran el catálogo, los controles y escenas SVG. `project-kit-source.js` genera proyectos y archivos ZIP con `fflate`; Vite lo incluye en la aplicación sin CDN. `npm run build:kits` genera únicamente el fixture autónomo que usa su check especializado.
 
 ## Verificación
 
@@ -234,4 +231,4 @@ Se reutiliza [canvas-confetti](https://github.com/catdad/canvas-confetti) para l
 
 [fflate](https://github.com/101arrowz/fflate) se incluye localmente para crear los kits ZIP. Su aviso de licencia está en `project-kit-source.js` y se conserva en el bundle; las otras dependencias y sus versiones están fijadas en `package-lock.json`.
 
-Para previsualizar cambios del `index.html` construido, `docker compose -f compose.preview.yaml up --build -d --wait` sirve una instancia aislada en http://localhost:8765 con el archivo montado en modo lectura. Se detiene con `docker compose -f compose.preview.yaml down`. La configuración principal en 8080 sirve su propia copia construida dentro de la imagen.
+Para previsualizar cambios de `dist/index.html`, `docker compose -f compose.preview.yaml up --build -d --wait` sirve una instancia aislada en http://localhost:8765 con el archivo montado en modo lectura. Se detiene con `docker compose -f compose.preview.yaml down`. La configuración principal en 8080 sirve su propia copia construida dentro de la imagen.

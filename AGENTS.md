@@ -3,11 +3,11 @@
 ## Proyecto
 
 Taller educativo en español con ejercicios de Rust/Go y simulaciones de Sistemas.
-Hoy la interfaz usa HTML, CSS y JavaScript vanilla; Node construye la página y
-Nginx la sirve. Los compiladores son los Playgrounds oficiales.
+La interfaz migra por funcionalidades a React/TypeScript; Vite construye un HTML
+autónomo y Nginx lo sirve. Los compiladores son los Playgrounds oficiales.
 
-La preferencia acordada para evolucionar la interfaz es **React con JavaScript/JSX**.
-Vite es una opción de build evaluada con Context7. La migración aún no está hecha.
+La interfaz migra por funcionalidades a **React con TypeScript/TSX** y Vite.
+Atlas es la primera vista migrada; el resto conserva adaptadores legacy temporales.
 
 ## Organización
 
@@ -21,7 +21,8 @@ Vite es una opción de build evaluada con Context7. La migración aún no está 
 La raíz contiene las fuentes actuales por familia (`lab-*`, `campaign-*`,
 `systems-*`). `qa/` reúne verificaciones e investigación; `docs/` contiene reglas
 específicas de desarrollo; `.agents/skills/` contiene las skills del proyecto.
-`page.html` es la entrada fuente; `index.html` y `*.bundle.js` son salidas generadas.
+`src/index.html` y `src/main.tsx` son las entradas Vite; `dist/` y `*.bundle.js`
+son salidas generadas.
 
 ## Comandos
 
@@ -29,10 +30,7 @@ Desde la raíz, con Node y npm instalados (Docker usa Node 24):
 
 ```sh
 npm ci
-npm run build:editor
-npm run build:effects
-npm run build:kits
-node build.mjs
+npm run build
 node qa/build-check.cjs
 ```
 
@@ -42,9 +40,9 @@ Para la verificación habitual, `npm run build` regenera todos los assets y
 Prettier a los checks, manifiestos y configuraciones propias; las fuentes de la
 aplicación conservan su formato compacto existente.
 
-`build.mjs` valida el currículo y genera el `index.html` autónomo. `build.py` es
-un empaquetador alternativo que requiere bundles previos y no reemplaza esas
-validaciones.
+Vite empaqueta React, las fuentes legacy y los estilos en `dist/index.html`.
+`vite-plugin-singlefile` conserva el contrato de un documento autónomo; los checks
+de `qa/` validan el currículo y los contratos de comportamiento por separado.
 
 Para construir y servir con Docker:
 
@@ -53,7 +51,7 @@ docker compose up --build -d --wait
 docker compose down
 ```
 
-La web queda en `http://localhost:8080`. Para servir el `index.html` generado en
+La web queda en `http://localhost:8080`. Para servir `dist/index.html` generado en
 el host como preview, usá `docker compose -f compose.preview.yaml up --build -d --wait`
 y abrí `http://localhost:8765`; detenelo con
 `docker compose -f compose.preview.yaml down`. El progreso de ambos puertos es independiente.
@@ -76,6 +74,96 @@ y abrí `http://localhost:8765`; detenelo con
 - Mantené credenciales, rutas locales, cachés, progreso y resultados generados fuera
   de Git; actualizá `.gitignore` y `.dockerignore` al introducir nuevas salidas.
 
+## Módulos y frameworks JavaScript
+
+- Escribí el código nuevo de la aplicación en **TypeScript como ES modules**: `.ts`
+  para lógica y datos, `.tsx` para React, y siempre `export`/`import`. No agregues
+  `module.exports` ni `require()` en fuentes nuevas.
+- Migrá JavaScript por funcionalidades; `allowJs` admite el legacy sin convertirlo
+  en bloque. No uses `.mjs` como destino de código de aplicación cuando el archivo
+  pueda ser TypeScript. CommonJS queda limitado a checks `.cjs` heredados hasta
+  migrarlos deliberadamente.
+- En archivos de componentes, hooks, contextos o providers con una única abstracción
+  principal, declarala como `const` con nombre, hacé coincidir archivo e identificador
+  y escribí `export default Nombre` al final. Conservá ese nombre en el import.
+- En utils, helpers, constants y módulos con varias capacidades pares, usá exports
+  nombrados. Los specs no exportan salvo que otro archivo consuma deliberadamente
+  un fixture o helper. Si un módulo reúne contexto, provider y hook públicos, separalo
+  por responsabilidad o mantené exports nombrados; no elijas un `default` arbitrario.
+
+```ts
+// src/features/atlas/filter-concepts.ts
+interface Concept {
+  level: string;
+}
+
+interface Filters {
+  level: string;
+}
+
+export function filterConcepts(concepts: Concept[], filters: Filters): Concept[] {
+  return concepts.filter(concept => concept.level === filters.level);
+}
+
+// Consumidor ESM.
+import {filterConcepts} from './filter-concepts';
+```
+
+- Para formas de objetos, props y contratos públicos, preferí `interface`.
+  Reservá `type` para capacidades que lo requieran, como uniones, tuplas,
+  primitivas, tipos mapeados o condicionales. No conviertas declaraciones
+  existentes sólo por estilo; la elección debe expresar una diferencia útil.
+
+- La interfaz nueva usa **React con TypeScript/TSX** y **Vite**. El
+  `src/features/<funcionalidad>/` actual es un seam transitorio de la migración, no
+  equivale automáticamente a la capa FSD `features`. Conservá un adaptador pequeño
+  cuando una vista legacy todavía dependa de `window.Taller*`.
+- Aplicá Feature-Sliced Design de forma incremental: empezá por `app`, `pages` y
+  `shared`, y creá slices en `features` o `entities` sólo cuando exista una
+  responsabilidad de negocio estable y reutilizada. Cada slice expone una API
+  pública pequeña; los imports sólo apuntan a capas inferiores y no atraviesan
+  internals de otro slice. No agregues capas, barrels ni carpetas vacías por anticipado.
+- No agregues un servidor Node directo ni Express sólo para servir archivos estáticos:
+  Vite construye la aplicación y Nginx sirve la salida. Incorporar un backend exige
+  un caso de uso que no pueda resolverse en el cliente, una interfaz explícita, pruebas
+  y un ADR. Para ese caso, evaluá primero Hono por portabilidad Web Standards y
+  Fastify si el despliegue será exclusivamente Node; Express sigue siendo válido
+  cuando su ecosistema o compatibilidad sea una necesidad concreta.
+- No mezcles frameworks de interfaz en una misma migración. Astro queda como alternativa
+  para una futura arquitectura dominada por contenido estático e islas, no como capa
+  adicional sobre React/Vite sin una decisión registrada.
+- Para estado React local y simple, usá `useState`/`setState`; derivá durante el render
+  lo que pueda calcularse y no eleves el estado sin consumidores compartidos reales.
+- Mantené cada componente enfocado en una responsabilidad de interfaz. Cuando uno
+  coordine reglas de dominio, persistencia, efectos y varias regiones visuales,
+  separá esas responsabilidades en componentes, hooks o módulos con contratos claros;
+  no extraigas wrappers triviales sólo para reducir líneas.
+- Evitá prop drilling: un componente intermedio no debe reenviar datos que no usa.
+  Preferí composición con `children`, estado cerca de sus consumidores y un contexto
+  o provider acotado cuando varios descendientes compartan una responsabilidad.
+  Conservá props directas cuando siguen siendo el contrato local más simple.
+- Reservá `useEffect` para sincronización externa. Si un effect mezcla ciclos de vida
+  independientes, varios effects comparten una misma responsabilidad o el cableado de
+  estado y efectos oculta el render, extraé un hook con entradas, salidas y cleanup
+  explícitos. La cantidad de effects es una señal de revisión, no un umbral automático.
+- Para estructuras de estado cliente complejas o compartidas entre funcionalidades,
+  usá Zustand con acciones explícitas y selectores pequeños; no suscribas un componente
+  al store completo ni guardes valores derivados que puedan calcularse con un selector.
+- Para estado navegable que deba persistir en la URL —búsqueda, filtros, pestaña o
+  selección enlazable— usá nuqs con `NuqsAdapter`, parsers y defaults explícitos; la
+  query string es la fuente de verdad y no se duplica en `useState` o Zustand.
+- Instalá Zustand o nuqs sólo al aparecer el primer caso real y sincronizá
+  `package.json`/`package-lock.json`; no agregues stores ni adaptadores preventivos.
+
+## Trabajo con subagentes
+
+- Reservá el agente principal para análisis, decisiones de arquitectura, revisión e
+  integración. Para implementaciones mecánicas o slices bien delimitados, delegá en
+  un subagente económico como `gpt-6-luna`, con archivos, contratos y checks explícitos.
+- Revisá siempre el diff producido por el subagente y ejecutá desde el agente principal
+  los checks proporcionales al riesgo; delegar implementación no delega la decisión ni
+  la responsabilidad por el resultado.
+
 ## Código entendible y pruebas útiles
 
 - Priorizá código simple y entendible sobre soluciones ingeniosas o elegantes.
@@ -84,6 +172,10 @@ y abrí `http://localhost:8765`; detenelo con
 - Revisá complejidad ciclomática y anidación al agregar o modificar lógica con muchas
   decisiones. Más de 10 por función es una señal inicial de revisión, no una orden
   de fragmentar código. Aplicá los criterios y ejemplos de `docs/architecture.md`.
+- Evaluá archivos grandes por responsabilidades, cohesión, acoplamiento, cantidad de
+  exports y costo de navegación. La complejidad ciclomática mide caminos de una
+  función, no el tamaño de un archivo; modularizá por seams con nombre y contrato,
+  no por una cuota arbitraria de líneas.
 - Evitá tests tautológicos: el valor esperado debe venir del contrato, una consigna
   o un ejemplo resuelto de manera independiente, no del mismo algoritmo que se prueba.
   Cada test debe poder detectar un comportamiento incorrecto concreto.
