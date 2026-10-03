@@ -1,42 +1,120 @@
 /* Pure transition checks for the integrated teaching PC. No browser or compiler requests. */
-'use strict';
-const fs = require('node:fs'),
-  path = require('node:path'),
-  vm = require('node:vm'),
-  assert = require('node:assert/strict');
-const root = path.resolve(__dirname, '..'),
-  context = { window: {} };
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import { plainJson as plain } from './lib/plain-json.ts';
+import { runSource } from './lib/sources.ts';
+import {
+  achievedBelongToWorkshop,
+  assertUnchanged,
+  deepFreeze,
+  hasViewCollections,
+  isControlContract,
+} from './lib/systems-model-contract.ts';
+import type { ModelView, ModelWorkshop, SystemsModel } from './lib/systems-model-contract.ts';
+
+interface PageEntry {
+  frame: number;
+  write: boolean;
+}
+interface Instruction {
+  op: string;
+  va?: number;
+}
+interface Trap {
+  cause: string;
+  pc: number;
+  acc: number;
+  mapped?: boolean;
+  acked?: boolean;
+}
+interface PcState {
+  ram: number[];
+  pc: number;
+  acc: number;
+  program: Instruction[];
+  table: (PageEntry | null)[];
+  tlb: (PageEntry | null)[];
+  hits: number;
+  misses: number;
+  faults: number;
+  interrupts: number;
+  retired: number;
+  log: string[];
+  phase: string;
+  mode: string;
+  physical: number;
+  halted: boolean;
+  irqPending: boolean;
+  instruction: Instruction;
+  trap: Trap;
+  observed: Record<string, boolean | undefined>;
+}
+interface PcView extends ModelView {
+  rows: string[][];
+  columns: string[];
+  scene: { shapes: Record<string, unknown>[] };
+}
+interface PcWorkshop extends ModelWorkshop {
+  category: string;
+  level: string;
+  steps: unknown[];
+  prediction: { options: unknown[]; answer: number };
+  sources: { url: string }[];
+  code: Record<'rust' | 'go', string>;
+}
+interface PcLab {
+  id: string;
+  language: string;
+  stage: number;
+  level: string;
+  tests: { id: string; label: string; expression: string; why: string; failure: string }[];
+  hints: unknown[];
+  prediction: { options: unknown[] };
+  intro: string;
+  why: string;
+  objective: string;
+  transfer: string;
+  starter: string;
+  solution: string;
+  review: { success: string; pitfall: string };
+}
+interface PcWindow {
+  SYSTEMS_PC?: {
+    workshops: PcWorkshop[];
+    models: { pc: SystemsModel<PcState, PcView, PcWorkshop> };
+  };
+  SYSTEMS_PC_LABS?: PcLab[];
+}
+
+const context: { window: PcWindow } = { window: {} };
 vm.createContext(context);
-for (const name of ['systems-pc.js', 'systems-pc-labs.js'])
-  vm.runInContext(fs.readFileSync(path.join(root, name), 'utf8'), context, { filename: name });
-const { workshops, models } = context.window.SYSTEMS_PC,
+for (const name of ['systems-pc.js', 'systems-pc-labs.js']) runSource(context, name);
+const pcDomain = context.window.SYSTEMS_PC;
+if (!pcDomain) throw new Error('SYSTEMS_PC was not published by systems-pc.js');
+const { workshops, models } = pcDomain,
   w = workshops[0],
   model = models.pc;
-const plain = (x) => JSON.parse(JSON.stringify(x));
-const freeze = (x) => {
-  if (x && typeof x === 'object') {
-    Object.freeze(x);
-    Object.values(x).forEach(freeze);
-  }
-  return x;
-};
 let checks = 0,
   states = 0;
-function test(name, fn) {
+function test(name: string, fn: () => void): void {
   fn();
   checks++;
   process.stdout.write(`PASS ${name}\n`);
 }
-function act(s, action, value) {
-  const before = JSON.stringify(s);
-  freeze(s);
-  const next = model.act(s, action, value, w);
-  assert.equal(JSON.stringify(s), before, 'Input mutated');
-  states++;
-  assert(next !== s, 'Transition should return its own state');
-  const snapshot = JSON.stringify(next),
-    v = model.view(next, w);
-  assert.equal(JSON.stringify(next), snapshot, 'View mutated state');
+function present(entry: PageEntry | null): PageEntry {
+  assert(entry, 'Expected a present page entry');
+  return entry;
+}
+function assertEntry(entry: PageEntry | null): void {
+  if (entry)
+    assert(
+      Number.isInteger(entry.frame) &&
+        entry.frame >= 0 &&
+        entry.frame < 3 &&
+        typeof entry.write === 'boolean',
+    );
+}
+function assertMachineInvariants(next: PcState): void {
   assert.equal(next.ram.length, 12);
   assert(next.ram.every((n) => Number.isInteger(n) && n >= 0 && n <= 255));
   assert(next.pc >= 0 && next.pc < next.program.length);
@@ -44,31 +122,38 @@ function act(s, action, value) {
   assert.equal(next.tlb.length, 3);
   assert(next.hits >= 0 && next.misses >= 0 && next.faults >= 0 && next.interrupts >= 0);
   assert(next.log.length <= 12);
-  for (const entry of [...next.table, ...next.tlb])
-    if (entry)
-      assert(
-        Number.isInteger(entry.frame) &&
-          entry.frame >= 0 &&
-          entry.frame < 3 &&
-          typeof entry.write === 'boolean',
-      );
-  assert(Array.isArray(v.controls) && Array.isArray(v.metrics) && Array.isArray(v.rows));
+  for (const entry of [...next.table, ...next.tlb]) assertEntry(entry);
+}
+function assertViewContract(v: PcView): void {
+  assert(hasViewCollections(v) && Array.isArray(v.rows));
   assert.equal(v.columns.length, 4);
   for (const row of v.rows) assert.equal(row.length, 4);
-  for (const control of v.controls)
-    assert(typeof control.action === 'string' && typeof control.label === 'string');
+  for (const control of v.controls) assert(isControlContract(control));
   assert(v.scene && Array.isArray(v.scene.shapes));
   for (const shape of v.scene.shapes)
     for (const [key, value] of Object.entries(shape))
       if (typeof value === 'number') assert(Number.isFinite(value), key);
-  for (const id of model.achieved(next, w)) assert(w.objectives.some((o) => o.id === id));
+}
+function act(s: PcState, action: string, value?: string): PcState {
+  const before = JSON.stringify(s);
+  deepFreeze(s);
+  const next = model.act(s, action, value, w);
+  assertUnchanged(s, before, 'Input mutated');
+  states++;
+  assert(next !== s, 'Transition should return its own state');
+  const snapshot = JSON.stringify(next),
+    v = model.view(next, w);
+  assertUnchanged(next, snapshot, 'View mutated state');
+  assertMachineInvariants(next);
+  assertViewContract(v);
+  assert(achievedBelongToWorkshop(model.achieved(next, w), w));
   return next;
 }
-function steps(s, n) {
+function steps(s: PcState, n: number): PcState {
   for (let i = 0; i < n; i++) s = act(s, 'step');
   return s;
 }
-function instruction(s) {
+function instruction(s: PcState): PcState {
   const retired = s.retired;
   for (let i = 0; i < 12; i++) {
     s = act(s, 'step');
@@ -76,7 +161,7 @@ function instruction(s) {
   }
   assert.fail('An instruction did not complete or trap within 12 transitions');
 }
-function auto(s) {
+function auto(s: PcState): PcState {
   for (let i = 0; i < 100 && !s.halted; i++) {
     if (s.phase === 'fault' && s.trap.cause === 'absent')
       s = act(s, s.trap.mapped ? 'return' : 'map');
@@ -100,9 +185,11 @@ test('One workshop, two correctly linked original cores and full teaching metada
   assert.equal(new Set(w.objectives.map((o) => o.id)).size, 3);
   for (const source of w.sources) assert.equal(new URL(source.url).protocol, 'https:');
   const labs = context.window.SYSTEMS_PC_LABS;
+  assert(labs, 'SYSTEMS_PC_LABS must be published by systems-pc-labs.js');
   assert.equal(labs.length, 2);
-  for (const language of ['rust', 'go']) {
-    const item = labs.find((x) => x.language === language);
+  for (const language of ['rust', 'go'] as const) {
+    const item: PcLab | undefined = labs.find((x) => x.language === language);
+    assert(item, `Missing ${language} core`);
     assert.equal(item.id, `${language}-137`);
     assert.equal(w.code[language], item.id);
     assert.equal(item.stage, 49);
@@ -112,8 +199,8 @@ test('One workshop, two correctly linked original cores and full teaching metada
     assert.equal(item.prediction.options.length, 3);
     assert.equal(new Set(item.tests.map((t) => t.id)).size, 3);
     for (const t of item.tests)
-      for (const key of ['label', 'expression', 'why', 'failure']) assert(t[key].trim());
-    for (const key of ['intro', 'why', 'objective', 'transfer', 'starter', 'solution'])
+      for (const key of ['label', 'expression', 'why', 'failure'] as const) assert(t[key].trim());
+    for (const key of ['intro', 'why', 'objective', 'transfer', 'starter', 'solution'] as const)
       assert(item[key].trim());
     assert.notEqual(item.starter, item.solution);
     assert(item.review.success && item.review.pitfall);
@@ -124,10 +211,10 @@ test('Initial machines own independent RAM, PTE and program structures', () => {
   const a = model.initial(),
     b = model.initial();
   a.ram[0] = 99;
-  a.table[0].write = true;
+  present(a.table[0]).write = true;
   a.program[0].va = 7;
   assert.equal(b.ram[0], 10);
-  assert.equal(b.table[0].write, false);
+  assert.equal(present(b.table[0]).write, false);
   assert.equal(b.program[0].va, 1);
   assert.deepEqual(plain(model.achieved(b, w)), []);
 });
@@ -232,7 +319,7 @@ test('Protection rejects a write before RAM and does not grant permissions', () 
   s = act(s, 'map');
   s = act(s, 'return');
   assert.equal(s.phase, 'fault');
-  assert.equal(s.table[0].write, false);
+  assert.equal(present(s.table[0]).write, false);
   assert.deepEqual(plain(s.ram), ram);
   s = act(s, 'abort');
   assert(s.halted);

@@ -173,3 +173,19 @@ posición de la entrada.
 - **Contratos de HTML entre vistas legacy:** el laboratorio inserta HTML de campaña,
   Sistemas y exploradores; se conservan hasta migrar la vista del laboratorio.
 - **Interfaz sin pruebas automáticas:** cada cambio visible se revisa en el navegador.
+
+## Estado
+
+| Fase | Estado | Commits |
+| --- | --- | --- |
+| P1 | Hecha | `2ed5227` |
+| P2 | Hecha: bundle JS idéntico y oráculo sin cambios | `7b7e957`, `58b093f` |
+| P3/P4 | Hecha: 14 checks portados con salidas idénticas, 5 checks nuevos de red, configuraciones en TS, `build:kits` retirado | `16e98fb`, `f00fbc9` y siguientes |
+
+Hallazgos de la caracterización que quedan para P7:
+
+- `TallerSystems.missionIDs(workshopId, lang)` exige argumentos; sin ellos devuelve `[]`.
+- `TallerCampaign.lockedExerciseHTML` usa el último estado sincronizado y no vuelve a
+  sincronizar.
+- La importación de `app.js` muta las notas locales antes de llamar a los `importState`;
+  si uno lanzara a mitad, las notas ya quedarían pisadas.

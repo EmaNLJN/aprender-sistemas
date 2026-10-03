@@ -1,31 +1,114 @@
 /* Real compiler QA. Explicit invocation sends the bundled educational source
- * to the official Rust or Go Playground. Requires Node 20+ and internet.
- * Usage: node qa/runtime-check.cjs rust
- *        node qa/runtime-check.cjs go
- *        node qa/runtime-check.cjs rust starters
- *        node qa/runtime-check.cjs go starters
- *        node qa/runtime-check.cjs go --ids=go-28
- *        node qa/runtime-check.cjs rust --from=51
- *        node qa/runtime-check.cjs rust starters --all-starters --from=76
- *        node qa/runtime-check.cjs go --audit-record
+ * to the official Rust or Go Playground. Requires Node 24+ and internet.
+ * Usage: node qa/runtime-check.ts rust
+ *        node qa/runtime-check.ts go
+ *        node qa/runtime-check.ts rust starters
+ *        node qa/runtime-check.ts go starters
+ *        node qa/runtime-check.ts go --ids=go-28
+ *        node qa/runtime-check.ts rust --from=51
+ *        node qa/runtime-check.ts rust starters --all-starters --from=76
+ *        node qa/runtime-check.ts go --audit-record
  * Uses the SAME program builder as the browser and isolates each exercise in
  * its own module/package. Go's txtar limit is 20 files, so batches contain 15.
  */
-const fs = require('node:fs');
-const vm = require('node:vm');
-const path = require('node:path');
-const os = require('node:os');
-const crypto = require('node:crypto');
+import fs from 'node:fs';
+import vm from 'node:vm';
+import path from 'node:path';
+import os from 'node:os';
+import crypto from 'node:crypto';
+import { repoRoot as root, runSource } from './lib/sources.ts';
 
-const root = path.resolve(__dirname, '..');
+interface TestCase {
+  id: string;
+}
+interface Exercise {
+  id: string;
+  language: string;
+  starter: string;
+  solution: string;
+  tests: TestCase[];
+}
+interface LabApi {
+  getExercises: () => Exercise[];
+  buildProgram: (exercise: Exercise, code: string) => string;
+}
+interface ExerciseEntry {
+  id: string;
+  programHash: string;
+  testCount: number;
+  validated: boolean;
+  validatedAt?: string;
+  evidenceRun?: string;
+}
+interface BatchEvidence {
+  ids: string[];
+  inputHash: string;
+  compilerSuccess: boolean;
+  checkedAt: string;
+  stdout: string;
+  stderr: string;
+  validated: boolean;
+}
+interface RunRecord extends StarterRun {
+  id: string;
+  startedAt: string;
+  mode: string;
+  sourceHash: string;
+  compiler: Record<string, string | boolean>;
+  exercises: ExerciseEntry[];
+  batches: BatchEvidence[];
+}
+interface Summary {
+  total: number;
+  validated: number;
+  assertions: number;
+  pending: string[];
+  starterChecks: { validatedAgainstCurrentSource: number; ids: string[] };
+}
+interface ValidationRecord {
+  language?: string;
+  mode?: string;
+  checkedAt?: string;
+  currentSourceHash?: string;
+  sourceHashScope?: string[];
+  exercises: ExerciseEntry[];
+  runs: StarterRun[];
+  summary?: Summary;
+}
+interface StarterRun {
+  mode: string;
+  exercises?: ExerciseEntry[];
+}
+interface PlaygroundEvent {
+  Kind: string;
+  Message: string;
+}
+interface PlaygroundResponse {
+  success?: boolean;
+  stdout?: string;
+  stderr?: string;
+  Errors?: string;
+  Events?: PlaygroundEvent[] | null;
+  Status?: number;
+  VetErrors?: string;
+}
+
 const language = process.argv[2];
 const options = process.argv.slice(3);
 const starters = options.includes('starters');
 const idsOption = options.find((option) => option.startsWith('--ids='));
 const fromOption = options.find((option) => option.startsWith('--from='));
-const hash = (value) => crypto.createHash('sha256').update(value).digest('hex');
+const hash = (value: string): string => crypto.createHash('sha256').update(value).digest('hex');
 if (!['rust', 'go'].includes(language)) throw new Error('Expected rust or go');
-const context = { window: {}, localStorage: { getItem: () => null, setItem: () => {} } };
+const window: { TallerLab?: LabApi } = {};
+function requireLab(): LabApi {
+  if (!window.TallerLab) throw new Error('TallerLab was not published by lab.js');
+  return window.TallerLab;
+}
+const context = vm.createContext({
+  window,
+  localStorage: { getItem: () => null, setItem: () => {} },
+});
 const questFile = 'quests-' + language + '.js';
 const systemFiles = ['lowlevel', 'infra', 'play', 'pc']
   .flatMap((domain) => ['systems-' + domain + '.js', 'systems-' + domain + '-labs.js'])
@@ -36,11 +119,11 @@ for (const file of [
   ...systemFiles,
   'lab.js',
 ]) {
-  vm.runInNewContext(fs.readFileSync(path.join(root, file), 'utf8'), context);
+  runSource(context, file);
 }
-const lab = context.window.TallerLab;
+const lab = requireLab();
 const allExercises = lab.getExercises().filter((ex) => ex.language === language);
-const sourceHash = () =>
+const sourceHash = (): string =>
   hash(
     ['lab-' + language + '.js', questFile, ...systemFiles]
       .filter((file) => fs.existsSync(path.join(root, file)))
@@ -63,21 +146,23 @@ if (fromOption) {
 if (starters && !options.includes('--all-starters')) exercises = [exercises[0]];
 if (!exercises.length || !exercises[0]) throw new Error('No matching exercises');
 
-function built(ex, useStarter = starters) {
+function built(ex: Exercise, useStarter = starters): string {
   // Prefix just the test identifiers, preserving the original compiler harness.
   return lab
     .buildProgram(ex, useStarter ? ex.starter : ex.solution)
     .replaceAll('__TALLER_TEST__', '__TALLER_TEST__' + ex.id.replace('-', '_') + '_');
 }
 
-const recordPath = path.join(__dirname, language + '-validation.json');
-function currentRecord() {
-  const previous = fs.existsSync(recordPath) ? JSON.parse(fs.readFileSync(recordPath, 'utf8')) : {};
+const recordPath = path.join(import.meta.dirname, language + '-validation.json');
+function currentRecord(): ValidationRecord {
+  const previous: Partial<ValidationRecord> = fs.existsSync(recordPath)
+    ? JSON.parse(fs.readFileSync(recordPath, 'utf8'))
+    : {};
   if (previous.language && (previous.language !== language || previous.mode !== 'solutions')) {
     throw new Error('Existing validation record has an unexpected language or mode');
   }
   const byId = new Map((previous.exercises || []).map((entry) => [entry.id, entry]));
-  const record = {
+  const record: ValidationRecord = {
     ...previous,
     language,
     mode: 'solutions',
@@ -102,7 +187,7 @@ function currentRecord() {
   };
   return record;
 }
-function summarize(record) {
+function summarize(record: ValidationRecord): Summary {
   const valid = record.exercises.filter((entry) => entry.validated);
   const testedStarters = new Map(
     record.runs
@@ -131,13 +216,18 @@ function summarize(record) {
   };
   return record.summary;
 }
-function saveRecord(record) {
+function saveRecord(record: ValidationRecord): void {
   record.checkedAt = new Date().toISOString();
   summarize(record);
   fs.writeFileSync(recordPath, JSON.stringify(record, null, 2) + '\n');
 }
 
-function buildRust(items) {
+function recordEntry(record: ValidationRecord, id: string): ExerciseEntry {
+  const entry = record.exercises.find((candidate) => candidate.id === id);
+  if (!entry) throw new Error('Missing record entry for ' + id);
+  return entry;
+}
+function buildRust(items: Exercise[]): string {
   return (
     items
       .map(
@@ -150,7 +240,7 @@ function buildRust(items) {
   );
 }
 
-function buildGo(items) {
+function buildGo(items: Exercise[]): string {
   let code =
     'package main\nimport (\n' +
     items.map((_, i) => JSON.stringify('taller/e' + i)).join('\n') +
@@ -170,7 +260,7 @@ function buildGo(items) {
   return code;
 }
 
-async function main() {
+async function main(): Promise<void> {
   const record = currentRecord();
   if (options.includes('--audit-record')) {
     const summary = summarize(record);
@@ -205,7 +295,12 @@ async function main() {
       validated: false,
     })),
   };
-  const run = {
+  const manifestEntry = (id: string): ExerciseEntry => {
+    const entry = manifest.exercises.find((candidate) => candidate.id === id);
+    if (!entry) throw new Error('Missing manifest entry for ' + id);
+    return entry;
+  };
+  const run: RunRecord = {
     id: path.basename(workdir),
     startedAt: manifest.startedAt,
     mode: manifest.mode,
@@ -250,21 +345,21 @@ async function main() {
       signal: AbortSignal.timeout(60000),
     });
     if (!response.ok) throw new Error('HTTP ' + response.status);
-    const data = await response.json();
+    const data = (await response.json()) as PlaygroundResponse;
     fs.writeFileSync(
       path.join(workdir, language + '-' + offset + '-result.json'),
       JSON.stringify(data, null, 2),
     );
     const stdout =
       language === 'rust'
-        ? data.stdout
+        ? (data.stdout as string)
         : (data.Events || [])
             .filter((e) => e.Kind === 'stdout')
             .map((e) => e.Message)
             .join('');
     const stderr =
       language === 'rust'
-        ? data.stderr
+        ? (data.stderr as string)
         : data.Errors +
           '\n' +
           (data.Events || [])
@@ -273,7 +368,7 @@ async function main() {
             .join('') +
           '\n' +
           (data.VetErrors || '');
-    const ok = language === 'rust' ? data.success : !data.Errors && data.Status === 0;
+    const ok = language === 'rust' ? (data.success as boolean) : !data.Errors && data.Status === 0;
     const evidence = {
       ids: batch.map((ex) => ex.id),
       inputHash: hash(code),
@@ -287,14 +382,12 @@ async function main() {
     if (!ok) {
       console.error(stderr);
       process.exitCode = 1;
-      if (!starters)
-        for (const ex of batch)
-          record.exercises.find((entry) => entry.id === ex.id).validated = false;
+      if (!starters) for (const ex of batch) recordEntry(record, ex.id).validated = false;
       saveRecord(record);
       continue;
     }
     const lines = new Set(stdout.trim().split(/\r?\n/));
-    const marker = (ex, test, result) =>
+    const marker = (ex: Exercise, test: TestCase, result: string): string =>
       '__TALLER_TEST__' + ex.id.replace('-', '_') + '_' + test.id + ':' + result;
     const expected = batch.flatMap((ex) => ex.tests.map((test) => marker(ex, test, 'PASS')));
     if (starters) {
@@ -316,21 +409,21 @@ async function main() {
         console.error('Missing passes:', missing);
         console.error(stdout);
         process.exitCode = 1;
-        for (const ex of batch)
-          record.exercises.find((entry) => entry.id === ex.id).validated = false;
+        for (const ex of batch) recordEntry(record, ex.id).validated = false;
         saveRecord(record);
         continue;
       }
     }
     checked += batch.length;
     evidence.validated = true;
-    for (const ex of batch) manifest.exercises.find((entry) => entry.id === ex.id).validated = true;
+    for (const ex of batch) manifestEntry(ex.id).validated = true;
     if (!starters)
       for (const ex of batch)
-        Object.assign(
-          record.exercises.find((entry) => entry.id === ex.id),
-          { validated: true, validatedAt: evidence.checkedAt, evidenceRun: run.id },
-        );
+        Object.assign(recordEntry(record, ex.id), {
+          validated: true,
+          validatedAt: evidence.checkedAt,
+          evidenceRun: run.id,
+        });
     saveRecord(record);
     fs.writeFileSync(path.join(workdir, 'manifest.json'), JSON.stringify(manifest, null, 2));
     console.log(

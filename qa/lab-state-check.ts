@@ -1,15 +1,43 @@
 /* Offline backup/proof regression checks at public lab and campaign interfaces. */
-'use strict';
-const fs = require('node:fs');
-const path = require('node:path');
-const vm = require('node:vm');
-const assert = require('node:assert/strict');
-const root = path.resolve(__dirname, '..');
-const plain = (value) => JSON.parse(JSON.stringify(value));
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import { runSource } from './lib/sources.ts';
+import { plainJson as plain } from './lib/plain-json.ts';
+
+interface Evidence {
+  id: string;
+  passed: boolean;
+}
+interface LabRecord {
+  reflection?: string;
+  attempts?: number;
+  reviewAt?: number;
+  assisted?: boolean;
+  result: { stdout: string; customPassed: boolean };
+}
+interface LabState {
+  records: Record<string, LabRecord>;
+  selected: Record<string, string>;
+}
+interface TallerLabApi {
+  importState: (raw: unknown) => void;
+  exportState: () => LabState;
+  validateImport: (raw: unknown) => LabState;
+}
+interface CampaignApi {
+  init: (config: { exercises: unknown[]; worlds: Record<string, unknown[]> }) => void;
+  syncLab: (state: LabState) => { xpGained: number };
+  getSummary: (language: string) => { totalXP: number };
+}
+interface LabWindow {
+  RUST_LAB: unknown[];
+  TallerLab: TallerLabApi;
+  TallerCampaignEngine: CampaignApi;
+}
 let passed = 0,
   failed = 0;
 
-function environment() {
+function environment(): { lab: TallerLabApi; campaign: CampaignApi } {
   const exercise = {
     id: 'rust-1',
     language: 'rust',
@@ -17,38 +45,36 @@ function environment() {
     prediction: { options: ['A', 'B'], answer: 0 },
     tests: [{ id: 't1' }, { id: 't2' }, { id: 't3' }],
   };
-  const saved = new Map();
-  const context = {
-    window: { RUST_LAB: [exercise] },
+  const saved = new Map<string, string>();
+  const window = { RUST_LAB: [exercise] } as LabWindow;
+  const context = vm.createContext({
+    window,
     localStorage: {
-      getItem: (key) => saved.get(key) ?? null,
-      setItem: (key, value) => saved.set(key, value),
+      getItem: (key: string) => saved.get(key) ?? null,
+      setItem: (key: string, value: string) => saved.set(key, value),
     },
-  };
-  vm.createContext(context);
-  for (const file of ['lab.js', 'campaign-engine.js']) {
-    vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context, { filename: file });
-  }
-  const lab = context.window.TallerLab,
-    campaign = context.window.TallerCampaignEngine;
+  });
+  for (const file of ['lab.js', 'campaign-engine.js']) runSource(context, file);
+  const lab = window.TallerLab,
+    campaign = window.TallerCampaignEngine;
   campaign.init({ exercises: [exercise], worlds: { rust: [], go: [] } });
   return { lab, campaign };
 }
 
-function backup(tests) {
+function backup(tests: Evidence[]) {
   return {
     version: 1,
     records: { 'rust-1': { result: { code: 'recorded solution', success: true, tests } } },
   };
 }
-function test(name, run) {
+function test(name: string, run: () => void): void {
   try {
     run();
     passed++;
     console.log('PASS ' + name);
   } catch (error) {
     failed++;
-    console.error('FAIL ' + name + '\n' + error.stack);
+    console.error('FAIL ' + name + '\n' + (error as Error).stack);
   }
 }
 

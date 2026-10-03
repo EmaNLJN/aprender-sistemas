@@ -1,0 +1,39 @@
+// Lista única de la suite local: `npm test` la ejecuta en orden y se detiene en el
+// primer fallo. Cada check sigue siendo ejecutable por separado con `node qa/<check>.ts`.
+// runtime-check queda fuera: envía código a los Playgrounds o audita registros locales.
+import { spawnSync } from 'node:child_process';
+import path from 'node:path';
+
+const checks = [
+  'build-check.ts',
+  'load-order-check.ts',
+  'curriculum-ids-check.ts',
+  'atlas-check.ts',
+  'guide-content-check.ts',
+  'content-check.ts',
+  'runner-check.ts',
+  'lab-state-check.ts',
+  'app-shell-check.ts',
+  'lab-bridge-check.ts',
+  'campaign-check.ts',
+  'campaign-content-check.ts',
+  'quest-explorers-check.ts',
+  'systems-check.ts',
+  'systems-lowlevel-check.ts',
+  'systems-infra-check.ts',
+  'systems-play-check.ts',
+  'systems-pc-check.ts',
+  'project-kit-check.ts',
+];
+
+for (const check of checks) {
+  const result = spawnSync(process.execPath, [path.join(import.meta.dirname, check)], {
+    stdio: 'inherit',
+  });
+  if (result.status !== 0) {
+    console.error(`FAIL ${check} (exit ${result.status ?? result.signal})`);
+    process.exit(result.status ?? 1);
+  }
+}
+
+console.log(`${checks.length} checks passed.`);

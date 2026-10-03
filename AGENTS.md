@@ -31,7 +31,7 @@ Desde la raíz, con Node y npm instalados (Docker usa Node 24):
 ```sh
 npm ci
 npm run build
-node qa/build-check.cjs
+npm test
 ```
 
 Para la verificación habitual, `npm run build` regenera todos los assets y
@@ -81,9 +81,8 @@ y abrí `http://localhost:8765`; detenelo con
   para lógica y datos, `.tsx` para React, y siempre `export`/`import`. No agregues
   `module.exports` ni `require()` en fuentes nuevas.
 - Migrá JavaScript por funcionalidades; `allowJs` admite el legacy sin convertirlo
-  en bloque. No uses `.mjs` como destino de código de aplicación cuando el archivo
-  pueda ser TypeScript. CommonJS queda limitado a checks `.cjs` heredados hasta
-  migrarlos deliberadamente.
+  en bloque. No uses `.mjs` ni `.cjs` cuando el archivo pueda ser TypeScript: los
+  checks de `qa/` y las configuraciones ya son `.ts` ejecutados por Node 24.
 - En archivos de componentes, hooks, contextos o providers con una única abstracción
   principal, declarala como `const` con nombre, hacé coincidir archivo e identificador
   y escribí `export default Nombre` al final. Conservá ese nombre en el import.

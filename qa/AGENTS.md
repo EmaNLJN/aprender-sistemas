@@ -1,8 +1,16 @@
 # Verificación e investigación
 
 Estas reglas complementan el `AGENTS.md` raíz. Ejecutá los comandos desde la raíz
-del repositorio. Los checks `.cjs` usan Node, asserts y contextos VM; no requieren
-migrar a un framework de pruebas.
+del repositorio. Los checks son TypeScript (`qa/*-check.ts`) que Node 24 ejecuta
+directamente; usan `node:assert`, contextos VM y `qa/lib/`, sin framework de pruebas.
+
+- `qa/lib/sources.ts` empaqueta en memoria con esbuild cualquier fuente del navegador
+  (JS o TS, con imports) y la ejecuta en un contexto VM con globals falsos
+  (`runSource`), o la importa como módulo (`importModule`). Cargá siempre las fuentes
+  por ahí: así los checks no dependen del formato ni de la ubicación del archivo.
+- Los checks importan archivos de `qa/` con extensión `.ts` explícita y sólo usan
+  sintaxis TypeScript borrable; `tsconfig.qa.json` los tipa en `npm run typecheck`.
+- `qa/run-checks.ts` es la lista única de la suite que ejecuta `npm test`.
 
 ## TDD para cambios de comportamiento
 
@@ -31,21 +39,25 @@ Para React Doctor y Desloppify, consultá `tools/quality/AGENTS.md`. Son control
 complementarios; una puntuación no reemplaza las pruebas de comportamiento.
 
 `npm run build` regenera la aplicación mediante Vite y deja el documento autónomo
-en `dist/index.html`. `npm test` reúne los checks locales,
-incluido `node qa/lab-state-check.cjs` para importar, validar y exportar progreso
-del laboratorio. `npm run lint` y `npm run format:check` se ejecutan antes de cerrar
-cambios de código; el segundo es no mutante. Formateá los archivos propios que
+en `dist/index.html`. `npm test` ejecuta todos los checks locales de
+`qa/run-checks.ts`; al agregar un check, sumalo a esa lista. `npm run lint` y
+`npm run format:check` se ejecutan antes de cerrar cambios de código; el segundo es
+no mutante. Formateá los archivos propios que
 cambies y evitá reformatear las skills importadas o las salidas generadas.
 
 | Cambio | Comprobaciones locales |
 | --- | --- |
-| Empaquetado, assets u orden de carga | `npm run build`; `node qa/build-check.cjs` |
-| Ejercicios o contratos de revisión | `node qa/content-check.cjs`, `node qa/runner-check.cjs` |
-| Mundos, desbloqueos, XP o progreso de campaña | `node qa/campaign-check.cjs`, `node qa/campaign-content-check.cjs` |
-| Importación, validación o exportación del laboratorio | `node qa/lab-state-check.cjs`, campaña y Sistemas |
-| Exploradores de robot y paquetes | `node qa/quest-explorers-check.cjs` |
-| Catálogo, sellos o progreso de Sistemas | `node qa/systems-check.cjs` |
-| Modelo lowlevel, infra, play o pc | El correspondiente `node qa/systems-<dominio>-check.cjs` |
+| Empaquetado, assets u orden de carga | `npm run build`; `node qa/build-check.ts`, `node qa/load-order-check.ts` |
+| IDs de ejercicios, mundos, talleres o conceptos | `node qa/curriculum-ids-check.ts` |
+| Ejercicios o contratos de revisión | `node qa/content-check.ts`, `node qa/runner-check.ts` |
+| Recorrido, biblioteca o respaldo global | `node qa/guide-content-check.ts`, `node qa/app-shell-check.ts` |
+| Atlas | `node qa/atlas-check.ts` |
+| Mundos, desbloqueos, XP o progreso de campaña | `node qa/campaign-check.ts`, `node qa/campaign-content-check.ts` |
+| Importación, validación o exportación del laboratorio | `node qa/lab-state-check.ts`, campaña y Sistemas |
+| Contexto de campaña o Sistemas dentro del laboratorio | `node qa/lab-bridge-check.ts` |
+| Exploradores de robot y paquetes | `node qa/quest-explorers-check.ts` |
+| Catálogo, sellos o progreso de Sistemas | `node qa/systems-check.ts` |
+| Modelo lowlevel, infra, play o pc | El correspondiente `node qa/systems-<dominio>-check.ts` |
 | Generación de proyectos o ZIP | `node qa/project-kit-check.ts` |
 | Sólo documentación | Verificar rutas, comandos y enlaces locales; `git diff --check` |
 
@@ -53,20 +65,23 @@ Para una reorganización de archivos o un cambio transversal, regenerá la pági
 y ejecutá la suite local completa que también usa `Dockerfile`:
 
 ```sh
-node qa/build-check.cjs
-node qa/content-check.cjs
-node qa/runner-check.cjs
-node qa/campaign-check.cjs
-node qa/campaign-content-check.cjs
-node qa/quest-explorers-check.cjs
-node qa/systems-check.cjs
-node qa/systems-lowlevel-check.cjs
-node qa/systems-infra-check.cjs
-node qa/systems-play-check.cjs
-node qa/systems-pc-check.cjs
-node qa/project-kit-check.ts
-node qa/lab-state-check.cjs
+npm run build
+npm test
 ```
+
+## Red de seguridad para refactors
+
+- `qa/fixtures/curriculum-ids.json` es contrato: fija IDs, títulos, composición de
+  mundos, núcleos de cada taller y enlaces del Atlas. Cambiar un ID exige migrar el
+  progreso guardado y actualizar el fixture a mano; nunca lo regeneres para que un
+  check pase.
+- `app-shell-check` y `lab-bridge-check` caracterizan el comportamiento actual,
+  incluidos defectos conocidos marcados como `DEFECTO CONOCIDO`. Al corregir uno,
+  cambiá su escenario en el mismo commit TDD: primero la prueba nueva que falla,
+  después la corrección.
+- `load-order-check` declara qué fuente legacy debe evaluarse antes que otra y por
+  qué. Al mover o portar un archivo, actualizá su ruta en la tabla sin relajar la
+  restricción.
 
 Los checks locales prueban estructura y comportamiento JavaScript. No prueban
 por sí solos que las soluciones Rust/Go compilen ni que la interfaz funcione
@@ -79,10 +94,10 @@ Usá respuestas simuladas para comprobar transporte sin llamadas públicas masiv
 - `node qa/project-kit-check.ts --docker` ejecuta Cargo/Go en contenedores
   descartables. Necesita las imágenes locales `rust:1.90-alpine` y
   `golang:1.25-alpine`; el script no las descarga.
-- `node qa/runtime-check.cjs rust --audit-record` y su variante `go` comparan
+- `node qa/runtime-check.ts rust --audit-record` y su variante `go` comparan
   hashes con registros locales previos, sin red. Sólo tienen sentido si existen
   manifiestos actuales; en un clon limpio no hay evidencia previa garantizada.
-- `node qa/runtime-check.cjs rust --ids=rust-113` y su variante
+- `node qa/runtime-check.ts rust --ids=rust-113` y su variante
   `go --ids=go-113` envían código a los Playgrounds oficiales. Elegí los IDs
   afectados y evitá repetir verificaciones masivas contra servicios públicos.
 - Usá `--write-report` en el check de kits sólo después de una ejecución real

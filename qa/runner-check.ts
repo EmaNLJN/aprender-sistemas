@@ -1,30 +1,59 @@
 /* Offline boundary tests for the browser compiler adapter. No remote requests. */
-const fs = require('node:fs');
-const path = require('node:path');
-const vm = require('node:vm');
-const assert = require('node:assert/strict');
-const source = fs.readFileSync(path.resolve(__dirname, '../runner.js'), 'utf8');
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import { runSource } from './lib/sources.ts';
 
-function setup(fetchFn, quick = false) {
-  const context = {
-    window: {},
+interface FakeResponse {
+  ok: boolean;
+  status?: number;
+  json: () => Promise<unknown>;
+}
+interface RequestOptions {
+  body: string;
+  credentials: string;
+  signal: AbortSignal;
+}
+type FetchFn = (url: string, options: RequestOptions) => Promise<FakeResponse> | never;
+interface RunInput {
+  language: string;
+  code: string;
+  signal?: AbortSignal;
+}
+interface RunResult {
+  success: boolean;
+  stdout: string;
+  stderr: string;
+  errorType?: string;
+  httpStatus?: number;
+}
+interface Runner {
+  run: (input: RunInput) => Promise<RunResult>;
+}
+interface RunnerWindow {
+  TallerRunner: Runner;
+}
+
+function setup(fetchFn: FetchFn, quick = false): Runner {
+  const window = {} as RunnerWindow;
+  const context = vm.createContext({
+    window,
     fetch: fetchFn,
     TextEncoder,
     AbortController,
     URLSearchParams,
-    setTimeout: quick ? (fn) => setTimeout(fn, 5) : setTimeout,
+    setTimeout: quick ? (fn: () => void) => setTimeout(fn, 5) : setTimeout,
     clearTimeout,
-  };
-  vm.runInNewContext(source, context);
-  return context.window.TallerRunner;
+  });
+  runSource(context, 'runner.js');
+  return window.TallerRunner;
 }
-const response = (data, status = 200) => ({
+const response = (data: unknown, status = 200): FakeResponse => ({
   ok: status >= 200 && status < 300,
   status,
   json: async () => data,
 });
-const input = { language: 'rust', code: 'fn main() {}' };
-const tests = [
+const input: RunInput = { language: 'rust', code: 'fn main() {}' };
+const tests: [string, () => Promise<void>][] = [
   [
     'Rust payload and output',
     async () => {

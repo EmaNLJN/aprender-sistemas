@@ -1,38 +1,57 @@
-'use strict';
-
 // Checks use the public render/act/reset API without exposing private functions.
 // The DOM double does not validate browser geometry or accessibility-tree behavior.
-const fs = require('node:fs');
-const path = require('node:path');
-const vm = require('node:vm');
-const assert = require('node:assert/strict');
-const filename = path.join(__dirname, '..', 'quest-explorers.js');
-const context = { window: {} };
-vm.runInNewContext(fs.readFileSync(filename, 'utf8'), context, { filename });
-const api = context.window.TallerQuestExplorers;
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import { runSource } from './lib/sources.ts';
+
+interface ExplorerItem {
+  id: string;
+}
+interface ExplorerApi {
+  render(item: ExplorerItem): string | null;
+  act(target: unknown, item: ExplorerItem, event: unknown): void;
+  reset(): void;
+}
+interface ButtonDouble {
+  dataset: { questOp: string };
+  disabled: boolean;
+  focus(): void;
+}
+interface Fixture {
+  item: ExplorerItem;
+  view: { innerHTML: string };
+  live: { textContent: string };
+  readonly focused: string;
+  readonly text: string;
+  act(operation: string): void;
+}
+
+const context = vm.createContext({ window: {} as { TallerQuestExplorers?: unknown } });
+runSource(context, 'quest-explorers.js');
+const api = context.window.TallerQuestExplorers as ExplorerApi;
 let assertions = 0;
 
-function check(value, label) {
+function check(value: unknown, label: string): void {
   assert.ok(value, label);
   assertions++;
 }
 
 // Only the DOM interfaces used by the public API are simulated here.
-function fixture(id) {
+function fixture(id: string): Fixture {
   const item = { id };
-  const view = { innerHTML: api.render(item) };
+  const view = { innerHTML: api.render(item) as string };
   const live = { textContent: '' };
   let focused = '';
   const panel = {
     dataset: { questExplorer: id },
-    querySelector(selector) {
+    querySelector(selector: string) {
       if (selector === '[data-q-view]') return view;
       if (selector === '[data-q-status]') return live;
       return null;
     },
-    querySelectorAll() {
+    querySelectorAll(): ButtonDouble[] {
       return [...view.innerHTML.matchAll(/<button[^>]*data-quest-op="([^"]+)"([^>]*)>/g)].map(
-        (match) => ({
+        (match): ButtonDouble => ({
           dataset: { questOp: match[1] },
           disabled: /\bdisabled\b/.test(match[2]),
           focus() {
@@ -55,7 +74,7 @@ function fixture(id) {
         .replace(/\s+/g, ' ')
         .trim();
     },
-    act(operation) {
+    act(operation: string) {
       api.act(
         {
           dataset: { questOp: operation },
@@ -74,7 +93,7 @@ for (const language of ['rust', 'go']) {
   for (let number = 101; number <= 106; number++) {
     const id = language + '-' + number;
     check(
-      api.render({ id }).includes('data-quest-explorer="' + id + '"'),
+      api.render({ id })?.includes('data-quest-explorer="' + id + '"'),
       'Supported exercise: ' + id,
     );
   }
@@ -215,11 +234,11 @@ check(
 
 api.reset();
 check(
-  api.render({ id: 'rust-103' }).includes('Partís de (0,0)'),
+  api.render({ id: 'rust-103' })?.includes('Partís de (0,0)'),
   'Global reset clears robot state',
 );
 check(
-  api.render({ id: 'rust-106' }).includes('0xA9'),
+  api.render({ id: 'rust-106' })?.includes('0xA9'),
   'Global reset clears packet corruption and control changes',
 );
 

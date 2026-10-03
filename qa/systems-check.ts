@@ -1,45 +1,227 @@
 /* Systems progress contract + complete catalog. Pure Node; no network/browser. */
-'use strict';
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
-const vm = require('node:vm');
-const root = path.resolve(__dirname, '..');
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import vm from 'node:vm';
+import { plainJson as plain } from './lib/plain-json.ts';
+import { repoRoot as root, runSource } from './lib/sources.ts';
+import {
+  achievedBelongToWorkshop,
+  assertFiniteJson,
+  assertUnchanged,
+  deepFreeze,
+  hasSupportedTones,
+  isControlContract,
+  rowsMatchColumns,
+} from './lib/systems-model-contract.ts';
+import type { ModelView, SystemsModel } from './lib/systems-model-contract.ts';
+
 const KEY = 'taller-systems-v1';
-const plain = (value) => JSON.parse(JSON.stringify(value));
-const engineSource = fs.readFileSync(path.join(root, 'systems-engine.js'), 'utf8');
+
+type Language = 'rust' | 'go';
+interface Progress {
+  observed: string[];
+  code: boolean;
+  predicted: boolean;
+  answer: number | null;
+  steps: number[];
+  note: string;
+}
+type ProgressOverrides = { [Field in keyof Progress]?: unknown };
+interface Backup {
+  version: number;
+  records: Record<string, unknown>;
+}
+interface WorkshopProgress {
+  seals: number;
+  completed: boolean;
+  modelDone: boolean;
+  storageAvailable: boolean;
+  progress: Progress;
+}
+interface EngineStatus {
+  storageAvailable: boolean;
+  loadWarning?: string;
+}
+interface TestRef {
+  id: string;
+}
+interface CatalogObjective {
+  id: string;
+  label: string;
+  why: string;
+}
+interface CatalogStep {
+  title: string;
+  task: string;
+  why: string;
+  done: string;
+}
+interface Prediction {
+  question: string;
+  options: string[];
+  answer: number;
+  explanation: string;
+}
+interface Source {
+  title: string;
+  url: string;
+}
+interface FixtureWorkshop {
+  id: string;
+  title: string;
+  model: string;
+  objectives: CatalogObjective[];
+  steps: CatalogStep[];
+  prediction: Prediction;
+  code: Record<Language, string>;
+}
+interface Workshop extends FixtureWorkshop {
+  subtitle: string;
+  story: string;
+  what: string;
+  why: string;
+  limits: string;
+  category: string;
+  level: string;
+  minutes: number;
+  uses: string[];
+  sources: Source[];
+  related: Record<Language, string[]>;
+  bridge: Record<Language, string>;
+}
+interface Exercise {
+  id: string;
+  language: Language;
+  tests: TestRef[];
+}
+interface CoreTest extends TestRef {
+  label: string;
+  expression: string;
+  why: string;
+  failure: string;
+}
+interface Lab {
+  id: string;
+  topicId: string;
+  topic: string;
+  title: string;
+  intro: string;
+  why: string;
+  objective: string;
+  starter: string;
+  solution: string;
+  transfer: string;
+  tests: CoreTest[];
+  hints: string[];
+  instructions: string[];
+  imports: string[];
+  level: string;
+  kind: string;
+  review: { success: string; pitfall: string };
+  prediction: Prediction;
+  sources: Source[];
+}
+type CatalogModel = SystemsModel<unknown, ModelView, Workshop>;
+interface Config {
+  workshops: FixtureWorkshop[];
+  exercises: Exercise[];
+  models: Record<string, unknown>;
+}
+interface Engine {
+  init(config: Config): EngineStatus;
+  get(id: string, language: string): WorkshopProgress;
+  observe(
+    id: string,
+    language: string,
+    objectives: unknown[],
+  ): { added: string[]; modelDone: boolean; progress: Progress };
+  answer(id: string, language: string, index: unknown): { correct: boolean; progress: Progress };
+  setStep(id: string, language: string, index: number, done: boolean): unknown;
+  setNote(id: string, language: string, note: string): unknown;
+  syncLab(labs: unknown): { changed: boolean };
+  exportState(): Backup & { records: Record<string, Progress> };
+  validateImport(raw: unknown): { records: Record<string, Progress> } | undefined;
+  importState(raw: unknown): unknown;
+  reset(): void;
+}
+interface LabResult {
+  code: unknown;
+  success: unknown;
+  transportError: unknown;
+  tests: { id: string; passed: unknown }[];
+}
+interface LabRecords {
+  records: Record<string, { result: LabResult; draft?: string }>;
+}
+interface Storage {
+  data: Map<string, string>;
+  writes: number;
+  failRead: boolean;
+  failWrite: boolean;
+  getItem(key: string): string | null;
+  setItem(key: string, value: unknown): void;
+}
+interface SystemsWindow {
+  TallerSystemsEngine?: Engine;
+  SYSTEMS_LOWLEVEL?: Domain;
+  SYSTEMS_INFRA?: Domain;
+  SYSTEMS_PLAY?: Domain;
+  SYSTEMS_PC?: Domain;
+  SYSTEMS_LOWLEVEL_LABS?: Lab[];
+  SYSTEMS_INFRA_LABS?: Lab[];
+  SYSTEMS_PLAY_LABS?: Lab[];
+  SYSTEMS_PC_LABS?: Lab[];
+  TallerLab?: { getExercises(): Exercise[] };
+}
+interface Domain {
+  workshops: Workshop[];
+  models: Record<string, CatalogModel>;
+}
+interface Sandbox {
+  window: SystemsWindow;
+  localStorage?: Storage;
+}
+interface Catalog extends Config {
+  workshops: Workshop[];
+  context: Sandbox;
+  domains: Domain[];
+  models: Record<string, CatalogModel>;
+  labs: Lab[];
+}
+
 let passed = 0,
   failed = 0;
-function test(name, run) {
+function test(name: string, run: () => void): void {
   try {
     run();
     passed++;
     process.stdout.write(`PASS ${name}\n`);
   } catch (error) {
     failed++;
-    process.stderr.write(`FAIL ${name}\n${error.stack}\n`);
+    process.stderr.write(`FAIL ${name}\n${(error as Error).stack}\n`);
   }
 }
-function storage(seed = {}) {
+function storage(seed: Record<string, string> = {}): Storage {
   const data = new Map(Object.entries(seed));
   return {
     data,
     writes: 0,
     failRead: false,
     failWrite: false,
-    getItem(key) {
+    getItem(key: string) {
       if (this.failRead) throw new Error('Storage blocked');
       return data.get(key) ?? null;
     },
-    setItem(key, value) {
+    setItem(key: string, value: unknown) {
       if (this.failWrite) throw new Error('Storage full');
       this.writes++;
       data.set(key, String(value));
     },
   };
 }
-function fixture() {
-  const workshops = ['alpha', 'beta'].map((id, i) => ({
+function fixture(): Config {
+  const workshops: FixtureWorkshop[] = ['alpha', 'beta'].map((id, i) => ({
     id,
     title: id,
     model: id,
@@ -58,8 +240,8 @@ function fixture() {
     },
     code: { rust: `rust-${113 + i}`, go: `go-${113 + i}` },
   }));
-  const exercises = workshops.flatMap((w) =>
-    ['rust', 'go'].map((language) => ({
+  const exercises: Exercise[] = workshops.flatMap((w) =>
+    (['rust', 'go'] as const).map((language) => ({
       id: w.code[language],
       language,
       tests: ['t1', 't2', 't3'].map((id) => ({ id })),
@@ -67,27 +249,29 @@ function fixture() {
   );
   return { workshops, exercises, models: { alpha: {}, beta: {} } };
 }
-function environment(store = storage(), config = fixture()) {
-  const context = { window: {}, localStorage: store };
+function environment(store = storage(), config: Config = fixture()) {
+  const context: Sandbox = { window: {}, localStorage: store };
   vm.createContext(context);
-  vm.runInContext(engineSource, context, { filename: 'systems-engine.js' });
+  runSource(context, 'systems-engine.js');
   const engine = context.window.TallerSystemsEngine;
+  if (!engine) throw new Error('TallerSystemsEngine was not published by systems-engine.js');
   const status = engine.init(config);
   return { engine, status, store, context };
 }
-function result(overrides = {}) {
+type LabOverrides = Partial<Record<keyof LabResult, unknown>>;
+function result(overrides: LabOverrides = {}): LabResult {
   return {
     code: 'verified solution',
     success: true,
     transportError: false,
     tests: ['t1', 't2', 't3'].map((id) => ({ id, passed: true })),
     ...overrides,
-  };
+  } as LabResult;
 }
-function labResult(id = 'rust-113', overrides = {}) {
+function labResult(id = 'rust-113', overrides: LabOverrides = {}): LabRecords {
   return { records: { [id]: { result: result(overrides) } } };
 }
-function progress(overrides = {}) {
+function progress(overrides: ProgressOverrides = {}) {
   return {
     observed: [],
     code: false,
@@ -98,7 +282,7 @@ function progress(overrides = {}) {
     ...overrides,
   };
 }
-const backup = (records) => ({ version: 1, records });
+const backup = (records: Record<string, unknown>) => ({ version: 1, records });
 
 test('Empty progress starts without earned seals', () => {
   const { engine, status } = environment();
@@ -323,7 +507,7 @@ test('Import preflight is pure and filters IDs/steps without mutating its input'
     }),
   });
   const originalInput = JSON.stringify(raw),
-    clean = engine.validateImport(raw);
+    clean = engine.validateImport(raw) as { records: Record<string, Progress> };
   assert.equal(JSON.stringify(engine.exportState()), originalState);
   assert.equal(store.writes, writes);
   assert.equal(JSON.stringify(raw), originalInput);
@@ -509,11 +693,11 @@ const SOURCE_HOSTS = new Set([
   'ripes.me',
   'nand2tetris.github.io',
 ]);
-function nonempty(value, label) {
+function nonempty(value: unknown, label: string): void {
   assert.equal(typeof value, 'string', label);
-  assert(value.trim(), label);
+  assert((value as string).trim(), label);
 }
-function trustedSource(source, owner) {
+function trustedSource(source: Source, owner: string): void {
   nonempty(source.title, `${owner}: source title`);
   const url = new URL(source.url);
   assert.equal(url.protocol, 'https:', `${owner}: source must use HTTPS`);
@@ -524,29 +708,10 @@ function trustedSource(source, owner) {
     `${owner}: review primary-source hostname ${url.hostname} before adding it to the allowlist`,
   );
 }
-function finiteJSON(value, owner) {
-  if (typeof value === 'number')
-    assert(Number.isFinite(value), `${owner}: non-finite numeric state`);
-  else if (Array.isArray(value)) value.forEach((v) => finiteJSON(v, owner));
-  else if (value && typeof value === 'object')
-    Object.values(value).forEach((v) => finiteJSON(v, owner));
-  else
-    assert(
-      ['string', 'boolean'].includes(typeof value) || value === null,
-      `${owner}: state contains non-JSON value`,
-    );
-}
-function deepFreeze(value) {
-  if (value && typeof value === 'object') {
-    Object.freeze(value);
-    Object.values(value).forEach(deepFreeze);
-  }
-  return value;
-}
-function validateView(view, owner) {
-  for (const field of ['title', 'summary', 'explanation'])
+function validateView(view: ModelView, owner: string): void {
+  for (const field of ['title', 'summary', 'explanation'] as const)
     nonempty(view[field], `${owner}: view.${field}`);
-  for (const field of ['metrics', 'cells', 'controls', 'log'])
+  for (const field of ['metrics', 'cells', 'controls', 'log'] as const)
     assert(Array.isArray(view[field]), `${owner}: view.${field}`);
   for (const m of view.metrics) {
     nonempty(m.label, owner);
@@ -555,20 +720,17 @@ function validateView(view, owner) {
   for (const c of view.cells) {
     nonempty(c.label, owner);
     assert(['string', 'number'].includes(typeof c.value), owner);
-    assert(['active', 'good', 'bad', 'muted'].includes(c.tone), owner);
   }
+  assert(hasSupportedTones(view.cells), owner);
   for (const control of view.controls) {
     nonempty(control.action, owner);
     nonempty(control.label, owner);
-    if (control.value !== undefined) assert.equal(typeof control.value, 'string', owner);
+    assert(isControlContract(control), owner);
   }
-  for (const row of view.rows || []) {
-    assert(Array.isArray(row), owner);
-    row.forEach((v) => assert.equal(typeof v, 'string', owner));
-  }
+  assert(rowsMatchColumns(view), owner);
   for (const label of view.columns || []) assert.equal(typeof label, 'string', owner);
   view.log.forEach((line) => assert.equal(typeof line, 'string', owner));
-  finiteJSON(view, owner);
+  assertFiniteJson(view, owner);
 }
 
 if (process.argv.includes('--engine-only')) {
@@ -576,7 +738,7 @@ if (process.argv.includes('--engine-only')) {
     'Catalog checks explicitly skipped (--engine-only); run without the flag for the release gate.\n',
   );
 } else {
-  let real;
+  let real: Catalog | undefined;
   test('All four workshop domains and lab integration files are available', () => {
     const files = [
       'lab-rust.js',
@@ -593,56 +755,68 @@ if (process.argv.includes('--engine-only')) {
       'systems-pc-labs.js',
       'lab.js',
     ];
-    const context = { window: {}, localStorage: storage() };
+    const context: Sandbox = { window: {}, localStorage: storage() };
     vm.createContext(context);
     for (const file of files) {
       assert(fs.existsSync(path.join(root, file)), `Awaiting completed snapshot: ${file}`);
-      vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context, { filename: file });
+      runSource(context, file);
     }
     const w = context.window,
-      domains = [w.SYSTEMS_LOWLEVEL, w.SYSTEMS_INFRA, w.SYSTEMS_PLAY, w.SYSTEMS_PC];
-    assert(domains.every(Boolean), 'All four global domain objects must exist.');
+      domains = [w.SYSTEMS_LOWLEVEL, w.SYSTEMS_INFRA, w.SYSTEMS_PLAY, w.SYSTEMS_PC].filter(
+        (domain): domain is Domain => Boolean(domain),
+      );
+    assert(domains.length === 4, 'All four global domain objects must exist.');
     real = {
       context,
       workshops: domains.flatMap((d) => d.workshops),
       domains,
-      models: Object.assign({}, ...domains.map((d) => d.models)),
+      models: Object.assign({}, ...domains.map((d) => d.models)) as Record<string, CatalogModel>,
       labs: [
-        ...w.SYSTEMS_LOWLEVEL_LABS,
-        ...w.SYSTEMS_INFRA_LABS,
-        ...w.SYSTEMS_PLAY_LABS,
-        ...w.SYSTEMS_PC_LABS,
+        ...(w.SYSTEMS_LOWLEVEL_LABS ?? []),
+        ...(w.SYSTEMS_INFRA_LABS ?? []),
+        ...(w.SYSTEMS_PLAY_LABS ?? []),
+        ...(w.SYSTEMS_PC_LABS ?? []),
       ],
-      exercises: w.TallerLab.getExercises(),
+      exercises: (w.TallerLab as { getExercises(): Exercise[] }).getExercises(),
     };
   });
   if (real) {
+    const catalog: Catalog = real;
     test('Complete release catalog contains 25 workshops, 50 new cores and 274 unique exercises', () => {
-      assert.equal(real.workshops.length, 25);
-      assert.equal(real.labs.length, 50);
-      assert.equal(real.exercises.length, 274);
-      assert.equal(new Set(real.workshops.map((w) => w.id)).size, 25);
-      assert.equal(new Set(real.exercises.map((e) => e.id)).size, 274);
+      assert.equal(catalog.workshops.length, 25);
+      assert.equal(catalog.labs.length, 50);
+      assert.equal(catalog.exercises.length, 274);
+      assert.equal(new Set(catalog.workshops.map((w) => w.id)).size, 25);
+      assert.equal(new Set(catalog.exercises.map((e) => e.id)).size, 274);
       assert.equal(
-        Object.keys(real.models).length,
+        Object.keys(catalog.models).length,
         25,
         'Model names must not collide across domains.',
       );
-      for (const lang of ['rust', 'go']) {
-        assert.equal(real.exercises.filter((e) => e.language === lang).length, 137);
+      for (const lang of ['rust', 'go'] as const) {
+        assert.equal(catalog.exercises.filter((e) => e.language === lang).length, 137);
         for (let id = 113; id <= 137; id++)
           assert(
-            real.exercises.some((e) => e.id === `${lang}-${id}`),
+            catalog.exercises.some((e) => e.id === `${lang}-${id}`),
             `${lang}-${id}`,
           );
       }
     });
 
     test('Every workshop has its complete educational contract and valid exercise links', () => {
-      const byId = new Map(real.exercises.map((e) => [e.id, e])),
+      const byId = new Map(catalog.exercises.map((e) => [e.id, e])),
         usedCores = new Set();
-      for (const w of real.workshops) {
-        for (const field of ['id', 'title', 'subtitle', 'story', 'what', 'why', 'limits', 'model'])
+      for (const w of catalog.workshops) {
+        for (const field of [
+          'id',
+          'title',
+          'subtitle',
+          'story',
+          'what',
+          'why',
+          'limits',
+          'model',
+        ] as const)
           nonempty(w[field], `${w.id}.${field}`);
         nonempty(w.category, `${w.id}.category`);
         assert(['beginner', 'medium', 'advanced', 'expert'].includes(w.level));
@@ -652,10 +826,11 @@ if (process.argv.includes('--engine-only')) {
         assert.equal(w.objectives.length, 3);
         assert.equal(new Set(w.objectives.map((g) => g.id)).size, 3);
         for (const goal of w.objectives)
-          for (const field of ['id', 'label', 'why']) nonempty(goal[field], `${w.id}.${field}`);
+          for (const field of ['id', 'label', 'why'] as const)
+            nonempty(goal[field], `${w.id}.${field}`);
         assert.equal(w.steps.length, 4);
         for (const step of w.steps)
-          for (const field of ['title', 'task', 'why', 'done'])
+          for (const field of ['title', 'task', 'why', 'done'] as const)
             nonempty(step[field], `${w.id}.${field}`);
         assert.equal(w.prediction.options.length, 3);
         assert(
@@ -668,7 +843,7 @@ if (process.argv.includes('--engine-only')) {
         nonempty(w.prediction.explanation, w.id);
         assert(Array.isArray(w.sources) && w.sources.length > 0);
         w.sources.forEach((s) => trustedSource(s, w.id));
-        for (const lang of ['rust', 'go']) {
+        for (const lang of ['rust', 'go'] as const) {
           assert.equal(byId.get(w.code[lang])?.language, lang, `${w.id}: missing ${lang} core`);
           assert(!usedCores.has(w.code[lang]), `${w.id}: a core is assigned to two workshops`);
           usedCores.add(w.code[lang]);
@@ -681,7 +856,7 @@ if (process.argv.includes('--engine-only')) {
     });
 
     test('All 50 new cores expose meaningful test/reviewer metadata without changing the language contract', () => {
-      for (const ex of real.labs) {
+      for (const ex of catalog.labs) {
         for (const field of [
           'id',
           'topicId',
@@ -693,7 +868,7 @@ if (process.argv.includes('--engine-only')) {
           'starter',
           'solution',
           'transfer',
-        ])
+        ] as const)
           nonempty(ex[field], `${ex.id}.${field}`);
         assert.equal(ex.tests.length, 3);
         assert.equal(new Set(ex.tests.map((t) => t.id)).size, 3);
@@ -706,7 +881,7 @@ if (process.argv.includes('--engine-only')) {
         assert(['beginner', 'medium', 'advanced', 'expert'].includes(ex.level));
         assert(['completar', 'reparar'].includes(ex.kind));
         for (const t of ex.tests)
-          for (const field of ['id', 'label', 'expression', 'why', 'failure'])
+          for (const field of ['id', 'label', 'expression', 'why', 'failure'] as const)
             nonempty(t[field], `${ex.id}.${field}`);
         nonempty(ex.review.success, ex.id);
         nonempty(ex.review.pitfall, ex.id);
@@ -722,13 +897,13 @@ if (process.argv.includes('--engine-only')) {
     });
 
     test('Every model has finite deterministic initial/view data and valid control actions', () => {
-      for (const workshop of real.workshops) {
-        const model = real.models[workshop.model];
-        for (const name of ['initial', 'act', 'view', 'achieved'])
+      for (const workshop of catalog.workshops) {
+        const model = catalog.models[workshop.model];
+        for (const name of ['initial', 'act', 'view', 'achieved'] as const)
           assert.equal(typeof model[name], 'function', `${workshop.id}.${name}`);
         const initial = model.initial(workshop),
           before = JSON.stringify(initial);
-        finiteJSON(initial, workshop.id);
+        assertFiniteJson(initial, workshop.id);
         deepFreeze(initial);
         const first = model.view(initial, workshop),
           second = model.view(initial, workshop);
@@ -738,22 +913,21 @@ if (process.argv.includes('--engine-only')) {
           JSON.stringify(second),
           `${workshop.id}: nondeterministic view`,
         );
-        assert.equal(JSON.stringify(initial), before, `${workshop.id}: view mutated state`);
-        const allowed = new Set(workshop.objectives.map((g) => g.id));
-        assert(model.achieved(initial, workshop).every((id) => allowed.has(id)));
+        assertUnchanged(initial, before, `${workshop.id}: view mutated state`);
+        assert(achievedBelongToWorkshop(model.achieved(initial, workshop), workshop));
         for (const control of first.controls) {
           const next = model.act(initial, control.action, control.value, workshop);
           const repeated = model.act(initial, control.action, control.value, workshop);
-          finiteJSON(next, `${workshop.id}/${control.action}`);
+          assertFiniteJson(next, `${workshop.id}/${control.action}`);
           assert.equal(
             JSON.stringify(next),
             JSON.stringify(repeated),
             `${workshop.id}: nondeterministic action`,
           );
-          assert.equal(JSON.stringify(initial), before, `${workshop.id}: act mutated input`);
+          assertUnchanged(initial, before, `${workshop.id}: act mutated input`);
           validateView(model.view(next, workshop), workshop.id);
           assert(
-            model.achieved(next, workshop).every((id) => allowed.has(id)),
+            achievedBelongToWorkshop(model.achieved(next, workshop), workshop),
             `${workshop.id}: unregistered earned objective`,
           );
         }
@@ -761,15 +935,16 @@ if (process.argv.includes('--engine-only')) {
     });
 
     test('Real catalog can earn each workshop in one language without granting the other', () => {
-      const { engine } = environment(storage(), real);
-      for (const w of real.workshops) {
+      const { engine } = environment(storage(), catalog);
+      for (const w of catalog.workshops) {
         engine.observe(
           w.id,
           'rust',
           w.objectives.map((g) => g.id),
         );
         engine.answer(w.id, 'rust', w.prediction.answer);
-        const ex = real.exercises.find((e) => e.id === w.code.rust);
+        const ex = catalog.exercises.find((e) => e.id === w.code.rust);
+        if (!ex) throw new Error(`${w.id}: missing rust core ${w.code.rust}`);
         engine.syncLab({
           records: {
             [ex.id]: {

@@ -1,25 +1,51 @@
 /* Verify the actual campaign curriculum and links, without network or DOM. */
-const fs = require('node:fs');
-const path = require('node:path');
-const vm = require('node:vm');
-const assert = require('node:assert/strict');
-const root = path.resolve(__dirname, '..');
-const context = { window: {}, localStorage: { getItem: () => null, setItem: () => {} } };
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import { runSource } from './lib/sources.ts';
+
+interface Exercise {
+  id: string;
+  level?: string;
+  stage?: number;
+}
+interface Chapter {
+  id: string;
+  level: string;
+  trainingIds: string[];
+  challengeIds: string[];
+  bossId: string;
+  checkpoint: { options: string[] };
+  [field: string]: unknown;
+}
+interface WorldView {
+  unlocked: boolean;
+  missions: unknown[];
+  bossReady: boolean;
+  checkpointReady: boolean;
+}
+interface CampaignEngine {
+  init(config: { exercises: Exercise[]; worlds: Record<string, Chapter[]> }): unknown;
+  getSummary(language: string): { maxScore: number; score: number };
+  getWorlds(language: string): WorldView[];
+}
+type Registry = Record<string, unknown>;
+
+const context = vm.createContext({
+  window: {} as Registry,
+  localStorage: { getItem: () => null, setItem: () => {} },
+});
 const languages = ['rust', 'go'],
   levels = ['beginner', 'medium', 'advanced', 'expert'];
-const allExercises = [],
-  worlds = {};
+const allExercises: Exercise[] = [],
+  worlds: Record<string, Chapter[]> = {};
 for (const language of languages) {
   for (const prefix of ['lab', 'quests', 'campaign']) {
-    vm.runInNewContext(
-      fs.readFileSync(path.join(root, prefix + '-' + language + '.js'), 'utf8'),
-      context,
-    );
+    runSource(context, prefix + '-' + language + '.js');
   }
   const name = language.toUpperCase(),
-    core = context.window[name + '_LAB'],
-    quests = context.window[name + '_QUESTS'];
-  const chapters = context.window[name + '_CAMPAIGN'];
+    core = context.window[name + '_LAB'] as Exercise[],
+    quests = context.window[name + '_QUESTS'] as Exercise[];
+  const chapters = context.window[name + '_CAMPAIGN'] as Chapter[];
   assert.equal(core.length, 100, language + ': core curriculum');
   assert.equal(quests.length, 12, language + ': campaign curriculum');
   assert.ok(Array.isArray(chapters) && chapters.length === 4, language + ': four worlds');
@@ -69,6 +95,7 @@ for (const language of languages) {
       );
       usedChallenges.add(id);
       const ex = quests.find((item) => item.id === id);
+      assert.ok(ex);
       assert.equal(ex.level, chapter.level);
       assert.equal(ex.stage, 21 + i);
     }
@@ -84,16 +111,12 @@ for (const language of languages) {
   allExercises.push(...core, ...quests);
 }
 for (const domain of ['lowlevel', 'infra', 'play', 'pc']) {
-  for (const suffix of ['', '-labs'])
-    vm.runInNewContext(
-      fs.readFileSync(path.join(root, `systems-${domain}${suffix}.js`), 'utf8'),
-      context,
-    );
-  allExercises.push(...context.window['SYSTEMS_' + domain.toUpperCase() + '_LABS']);
+  for (const suffix of ['', '-labs']) runSource(context, `systems-${domain}${suffix}.js`);
+  allExercises.push(...(context.window['SYSTEMS_' + domain.toUpperCase() + '_LABS'] as Exercise[]));
 }
 assert.equal(allExercises.length, 274);
-vm.runInNewContext(fs.readFileSync(path.join(root, 'campaign-engine.js'), 'utf8'), context);
-const engine = context.window.TallerCampaignEngine;
+runSource(context, 'campaign-engine.js');
+const engine = context.window.TallerCampaignEngine as CampaignEngine;
 engine.init({ exercises: allExercises, worlds });
 for (const language of languages) {
   assert.equal(engine.getSummary(language).maxScore, 720);

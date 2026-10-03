@@ -9,14 +9,14 @@
     "build": "npm run typecheck && vite build",
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.qa.json",
     "preview": "vite preview",
-    "check:content": "node qa/content-check.cjs",
-    "check:runner": "node qa/runner-check.cjs",
+    "check:content": "node qa/content-check.ts",
+    "check:runner": "node qa/runner-check.ts",
     "lint": "eslint .",
     "format:check": "prettier . --check",
     "format": "prettier . --write",
-    "check:lab": "node qa/lab-state-check.cjs",
+    "check:lab": "node qa/lab-state-check.ts",
     "pretest": "npm run typecheck",
-    "test": "node qa/build-check.cjs && node qa/atlas-check.mjs && node qa/content-check.cjs && node qa/runner-check.cjs && node qa/campaign-check.cjs && node qa/campaign-content-check.cjs && node qa/quest-explorers-check.cjs && node qa/systems-check.cjs && node qa/systems-lowlevel-check.cjs && node qa/systems-infra-check.cjs && node qa/systems-play-check.cjs && node qa/systems-pc-check.cjs && node qa/project-kit-check.ts && npm run check:lab"
+    "test": "node qa/run-checks.ts"
   },
   "dependencies": {
     "@codemirror/autocomplete": "6.20.3",

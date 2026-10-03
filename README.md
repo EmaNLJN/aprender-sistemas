@@ -179,21 +179,11 @@ Sistemas separa los datos y modelos puros en `systems-lowlevel.js`, `systems-inf
 ## Verificación
 
 ```sh
-node qa/content-check.cjs
-node qa/runner-check.cjs
-node qa/build-check.cjs
-node qa/campaign-check.cjs
-node qa/campaign-content-check.cjs
-node qa/quest-explorers-check.cjs
-node qa/systems-check.cjs
-node qa/systems-lowlevel-check.cjs
-node qa/systems-infra-check.cjs
-node qa/systems-play-check.cjs
-node qa/systems-pc-check.cjs
-node qa/project-kit-check.ts
+npm run build
+npm test
 ```
 
-Los primeros checks comprueban contenido, transporte sin red, paquete autónomo, reglas de campaña y los modelos de robot/paquetes. `systems-check` cubre el catálogo y el motor de sellos; los cuatro checks de dominio prueban reglas de sus simulaciones. El check de kits crea ZIP, los vuelve a leer con un decodificador independiente y compara archivos, CRC y contenido del borrador. Estos comandos son comprobaciones locales; por sí solos no demuestran que un programa haya compilado.
+`npm test` ejecuta, en el orden de `qa/run-checks.ts`, todos los checks locales en TypeScript; cada uno corre también por separado con `node qa/<check>.ts`. Comprueban paquete autónomo y orden de carga, contrato de IDs del currículo, contenido, transporte sin red, respaldo del recorrido, reglas de campaña, contexto de campaña y Sistemas dentro del laboratorio y los modelos de robot/paquetes. `systems-check` cubre el catálogo y el motor de sellos; los cuatro checks de dominio prueban reglas de sus simulaciones. El check de kits crea ZIP, los vuelve a leer con un decodificador independiente y compara archivos, CRC y contenido del borrador. Estos comandos son comprobaciones locales; por sí solos no demuestran que un programa haya compilado.
 
 Para ejecutar además `cargo test` y `go test` sobre los kits en contenedores descartables:
 
@@ -206,15 +196,15 @@ Esta comprobación opcional requiere Docker y las imágenes `rust:1.90-alpine` y
 Para comprobar sin red que los programas actuales coinciden con las soluciones ya verificadas y registradas en los manifiestos:
 
 ```sh
-node qa/runtime-check.cjs rust --audit-record
-node qa/runtime-check.cjs go --audit-record
+node qa/runtime-check.ts rust --audit-record
+node qa/runtime-check.ts go --audit-record
 ```
 
 Para recompilar soluciones de referencia con los servicios reales (requiere conexión):
 
 ```sh
-node qa/runtime-check.cjs rust
-node qa/runtime-check.cjs go
+node qa/runtime-check.ts rust
+node qa/runtime-check.ts go
 ```
 
 Se agrupan las soluciones para reducir solicitudes y se conservan manifiestos con hashes de los programas verificados. No ejecutes verificaciones masivas repetitivas contra los servicios públicos. Las pruebas del navegador también deben comprobar editor, guardado, importación/exportación, respuesta del revisor, accesibilidad de teclado y diseño móvil.

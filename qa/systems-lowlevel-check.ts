@@ -1,68 +1,177 @@
 /* Pure-model tests: no browser, network, timers or compiler service calls. */
 'use strict';
-const fs = require('node:fs');
-const path = require('node:path');
-const vm = require('node:vm');
-const assert = require('node:assert/strict');
-const root = path.resolve(__dirname, '..');
-const context = { window: {} };
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import { plainJson as plain } from './lib/plain-json.ts';
+import { runSource } from './lib/sources.ts';
+import {
+  achievedBelongToWorkshop,
+  assertUnchanged,
+  deepFreeze,
+  hasSupportedTones,
+  hasViewCollections,
+} from './lib/systems-model-contract.ts';
+import type { ModelWorkshop, SystemsModel } from './lib/systems-model-contract.ts';
+
+interface BaseState {
+  flags: Record<string, boolean | undefined>;
+}
+interface CacheState extends BaseState {
+  entries: string[];
+  hits: number;
+  misses: number;
+  evictions: number;
+}
+interface HeapBlock {
+  start: number;
+  size: number;
+  owner: string | null;
+}
+interface HeapState extends BaseState {
+  blocks: HeapBlock[];
+  failures: number;
+}
+interface MmuState extends BaseState {
+  last: string;
+  faults: number;
+}
+interface TlbState extends BaseState {
+  last: string;
+  tableFrame: number;
+  cachedFrame: number | null;
+  hits: number;
+  misses: number;
+}
+interface VmState extends BaseState {
+  pc: number;
+  accumulator: number;
+  executed: number;
+  stopped: boolean;
+  error: string;
+}
+interface StackState extends BaseState {
+  frames: { name: string; local: number }[];
+  pc: number;
+}
+interface SchedulerState extends BaseState {
+  time: number;
+  jobs: Record<string, number>;
+  ready: string[];
+  blocked: string[];
+  done: string[];
+  running: string;
+}
+interface InterruptsState extends BaseState {
+  pending: boolean;
+  inService: boolean;
+  data: number;
+  received: number[];
+  overruns: number;
+}
+interface States {
+  cache: CacheState;
+  heap: HeapState;
+  mmu: MmuState;
+  tlb: TlbState;
+  vm: VmState;
+  stack: StackState;
+  scheduler: SchedulerState;
+  interrupts: InterruptsState;
+}
+type ModelId = keyof States;
+type Models = { [Id in ModelId]: SystemsModel<States[Id]> };
+type Action = [action: string, value?: string];
+interface LowLevelLab {
+  id: string;
+  stage: number;
+  level: string;
+  tests: unknown[];
+  hints: unknown[];
+  starter: string;
+  solution: string;
+}
+interface LowLevelWorkshop extends ModelWorkshop {
+  id: ModelId;
+  model: ModelId;
+  level: string;
+  steps: unknown[];
+  prediction: { options: unknown[] };
+  code: Record<'rust' | 'go', string>;
+}
+interface LowLevelWindow {
+  SYSTEMS_LOWLEVEL?: { workshops: LowLevelWorkshop[]; models: Models };
+  SYSTEMS_LOWLEVEL_LABS?: LowLevelLab[];
+}
+
+const context: { window: LowLevelWindow } = { window: {} };
 vm.createContext(context);
 for (const filename of ['systems-lowlevel.js', 'systems-lowlevel-labs.js']) {
-  vm.runInContext(fs.readFileSync(path.join(root, filename), 'utf8'), context, { filename });
+  runSource(context, filename);
 }
-const { workshops, models } = context.window.SYSTEMS_LOWLEVEL;
-const plain = (value) => JSON.parse(JSON.stringify(value));
-function freeze(value) {
-  if (value && typeof value === 'object') {
-    Object.freeze(value);
-    Object.values(value).forEach(freeze);
-  }
-  return value;
-}
+const lowLevel = context.window.SYSTEMS_LOWLEVEL;
+if (!lowLevel) throw new Error('SYSTEMS_LOWLEVEL was not published by systems-lowlevel.js');
+const { workshops, models } = lowLevel;
 let passed = 0;
-function test(name, fn) {
+function test(name: string, fn: () => void): void {
   fn();
   passed++;
   process.stdout.write(`PASS ${name}\n`);
 }
-function advance(id, state, action, value) {
-  const model = models[id],
-    workshop = workshops.find((w) => w.id === id),
+function workshopOf(id: ModelId): LowLevelWorkshop {
+  const workshop = workshops.find((w) => w.id === id);
+  if (!workshop) throw new Error(`Missing workshop ${id}`);
+  return workshop;
+}
+function advance<Id extends ModelId>(
+  id: Id,
+  state: States[Id],
+  action: string,
+  value?: string,
+): States[Id] {
+  const model: SystemsModel<States[Id]> = models[id],
+    workshop = workshopOf(id),
     before = JSON.stringify(state);
-  freeze(state);
+  deepFreeze(state);
   const next = model.act(state, action, value, workshop);
-  assert.equal(JSON.stringify(state), before, `${id}: act mutated its input`);
+  assertUnchanged(state, before, `${id}: act mutated its input`);
   assert.doesNotThrow(() => JSON.stringify(next));
   const viewBefore = JSON.stringify(next),
     rendered = model.view(next, workshop);
-  assert.equal(JSON.stringify(next), viewBefore, `${id}: view mutated state`);
-  assert(
-    Array.isArray(rendered.controls) &&
-      Array.isArray(rendered.metrics) &&
-      Array.isArray(rendered.cells),
-  );
-  assert(Array.isArray(rendered.log) && rendered.log.length <= 12);
-  for (const cell of rendered.cells) assert(['active', 'good', 'bad', 'muted'].includes(cell.tone));
-  const objectiveIds = workshop.objectives.map((o) => o.id);
-  for (const id of model.achieved(next, workshop))
-    assert(objectiveIds.includes(id), 'Unknown objective');
+  assertUnchanged(next, viewBefore, `${id}: view mutated state`);
+  assert(hasViewCollections(rendered));
+  assert(rendered.log.length <= 12);
+  assert(hasSupportedTones(rendered.cells));
+  assert(achievedBelongToWorkshop(model.achieved(next, workshop), workshop), 'Unknown objective');
   return next;
 }
-function play(id, actions) {
-  let state = models[id].initial(workshops.find((w) => w.id === id));
+function play<Id extends ModelId>(id: Id, actions: Action[]): States[Id] {
+  const model: SystemsModel<States[Id]> = models[id];
+  let state = model.initial(workshopOf(id));
   for (const action of actions) state = advance(id, state, action[0], action[1]);
   return state;
 }
-function allGoals(id, state) {
+function allGoals<Id extends ModelId>(id: Id, state: States[Id]): void {
+  const model: SystemsModel<States[Id]> = models[id];
   assert.deepEqual(
-    plain(models[id].achieved(state)).sort(),
-    plain(workshops.find((w) => w.id === id).objectives.map((o) => o.id)).sort(),
+    plain(model.achieved(state)).sort(),
+    plain(workshopOf(id).objectives.map((o) => o.id)).sort(),
   );
+}
+
+function assertResetYieldsFreshState<Id extends ModelId>(w: LowLevelWorkshop & { id: Id }): void {
+  const model: SystemsModel<States[Id]> = models[w.id];
+  const initial = model.initial(w),
+    other = model.initial(w);
+  initial.flags.probe = true;
+  assert.equal(other.flags.probe, undefined);
+  const clean = model.act(initial, 'reset', undefined, w);
+  assert.deepEqual(plain(clean), plain(other));
 }
 
 test('Eight models, sixteen executable cores and unambiguous links', () => {
   assert.equal(workshops.length, 8);
   const labs = context.window.SYSTEMS_LOWLEVEL_LABS;
+  assert(labs, 'SYSTEMS_LOWLEVEL_LABS must be published by systems-lowlevel-labs.js');
   assert.equal(labs.length, 16);
   assert.equal(new Set(labs.map((x) => x.id)).size, 16);
   for (const [index, w] of workshops.entries()) {
@@ -70,9 +179,10 @@ test('Eight models, sixteen executable cores and unambiguous links', () => {
     assert.equal(w.steps.length, 4);
     assert.equal(w.prediction.options.length, 3);
     assert(models[w.model]);
-    for (const language of ['rust', 'go']) {
+    for (const language of ['rust', 'go'] as const) {
       assert.equal(w.code[language], `${language}-${113 + index}`);
-      const lab = labs.find((x) => x.id === w.code[language]);
+      const lab: LowLevelLab | undefined = labs.find((x) => x.id === w.code[language]);
+      assert(lab, `${w.id}: missing ${language} lab`);
       assert.equal(lab.stage, 25 + index);
       assert.equal(lab.level, w.level);
       assert.equal(lab.tests.length, 3);
@@ -226,7 +336,7 @@ test('Stack preserves locals and restores nested continuations', () => {
   assert.deepEqual(plain(s.frames.map((f) => f.local)), [1, 1, 1]);
   s = advance('stack', s, 'return');
   assert.equal(s.pc, 2);
-  assert.equal(s.frames.at(-1).name, 'f');
+  assert.equal(s.frames.at(-1)?.name, 'f');
   s = advance('stack', s, 'return');
   assert.equal(s.pc, 1);
   assert.equal(s.frames[0].local, 1);
@@ -297,13 +407,6 @@ test('An overrun loses the arriving byte, not the byte already pending', () => {
 });
 
 test('Reset yields fresh isolated state for every workshop', () => {
-  for (const w of workshops) {
-    const initial = models[w.id].initial(w),
-      other = models[w.id].initial(w);
-    initial.flags.probe = true;
-    assert.equal(other.flags.probe, undefined);
-    const clean = models[w.id].act(initial, 'reset', undefined, w);
-    assert.deepEqual(plain(clean), plain(other));
-  }
+  for (const w of workshops) assertResetYieldsFreshState(w);
 });
 process.stdout.write(`\n${passed} low-level model checks passed.\n`);

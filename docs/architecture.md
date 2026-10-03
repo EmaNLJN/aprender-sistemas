@@ -26,7 +26,7 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | Animaciones y kits ZIP | `game-effects-source.js`, `project-kit-source.js` |
 | Construcción y dependencias | configuración Vite, `package.json`, `package-lock.json` |
 | Servicio estático y preview | `Dockerfile`, `compose.yaml`, `compose.preview.yaml`, `nginx.conf` |
-| Comprobaciones e investigación educativa | `qa/*-check.cjs`, `qa/research-*.md` |
+| Comprobaciones e investigación educativa | `qa/*-check.ts`, `qa/lib/`, `qa/fixtures/`, `qa/run-checks.ts`, `qa/research-*.md` |
 | Documentación del desarrollo | `AGENTS.md`, `docs/` |
 
 ## Cómo mantener el orden

@@ -1,13 +1,110 @@
 /* Offline behavior checks for the campaign ledger and its prerequisite chain. */
-const fs = require('node:fs');
-const path = require('node:path');
-const vm = require('node:vm');
-const assert = require('node:assert/strict');
-const source = fs.readFileSync(path.resolve(__dirname, '../campaign-engine.js'), 'utf8');
-const plain = (value) => JSON.parse(JSON.stringify(value));
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import { plainJson } from './lib/plain-json.ts';
+import { runSource } from './lib/sources.ts';
+
+interface TestRef {
+  id: string;
+}
+interface ExerciseFixture {
+  id: string;
+  language: string;
+  title: string;
+  tests: TestRef[];
+}
+interface Checkpoint {
+  question: string;
+  options: string[];
+  answer: number;
+  explanation: string;
+}
+interface WorldFixture {
+  id: string;
+  level: string;
+  title: string;
+  badge: string;
+  trainingIds: string[];
+  challengeIds: string[];
+  bossId: string;
+  checkpoint: Checkpoint;
+}
+type Worlds = Record<string, WorldFixture[]>;
+interface Mission {
+  points: number;
+  assisted: boolean;
+  code: boolean;
+}
+interface WorldView {
+  unlocked: boolean;
+  reasons: string[];
+  missions: Mission[];
+  score: number;
+  completed: boolean;
+  bossReady: boolean;
+  checkpointReady: boolean;
+  checkpointReasons: string[];
+  checkpointAnswer: number;
+}
+interface Summary {
+  totalXP: number;
+  score: number;
+  maxScore: number;
+  completedWorlds: number;
+  badges: string[];
+}
+interface Attempt {
+  allowed: boolean;
+  reasons: string[];
+}
+interface CheckpointResult {
+  accepted: boolean;
+  passed: boolean;
+  explanation: string;
+}
+interface Seal {
+  code: boolean;
+  prediction: boolean;
+  assisted: boolean;
+}
+interface LedgerState {
+  version: number;
+  seals: Record<string, Seal>;
+  checkpoints: Record<string, unknown>;
+}
+interface SyncResult {
+  xpGained: number;
+  storageAvailable: boolean;
+}
+interface InitResult {
+  storageAvailable: boolean;
+  loadWarning?: string;
+}
+interface CampaignEngine {
+  init(config: { exercises: ExerciseFixture[]; worlds: Worlds }): InitResult;
+  syncLab(payload: unknown): SyncResult;
+  getWorlds(language: string): WorldView[];
+  getSummary(language: string): Summary;
+  canAttempt(exerciseId: string, language: string): Attempt;
+  answerCheckpoint(worldId: string, answer: number): CheckpointResult;
+  exportState(): LedgerState;
+  importState(state: unknown): { changed: boolean };
+  validateImport(state: unknown): unknown;
+  reset(): void;
+}
+interface Fresh {
+  engine: CampaignEngine;
+  store: Map<string, string>;
+  initialized: InitResult;
+}
+interface RecordedResult {
+  code: string;
+  success: boolean;
+  tests: { id: string; passed: boolean }[];
+}
 const languages = ['rust', 'go'];
 const levels = ['beginner', 'medium', 'advanced', 'expert'];
-const exercises = languages.flatMap((language) =>
+const exercises: ExerciseFixture[] = languages.flatMap((language) =>
   Array.from({ length: 25 }, (_, i) => ({
     id: language + '-' + (i + 1),
     language,
@@ -15,7 +112,7 @@ const exercises = languages.flatMap((language) =>
     tests: ['t1', 't2', 't3'].map((id) => ({ id })),
   })),
 );
-const worlds = Object.fromEntries(
+const worlds: Worlds = Object.fromEntries(
   languages.map((language) => [
     language,
     levels.map((level, i) => ({
@@ -36,27 +133,27 @@ const worlds = Object.fromEntries(
   ]),
 );
 const storageKey = 'taller-campaign-v1';
-function fresh(saved, failStorage = false) {
-  const store = new Map(saved === undefined ? [] : [[storageKey, saved]]);
-  const context = {
-    window: {},
+function fresh(saved?: string, failStorage = false): Fresh {
+  const store = new Map<string, string>(saved === undefined ? [] : [[storageKey, saved]]);
+  const context = vm.createContext({
+    window: {} as { TallerCampaignEngine?: unknown },
     localStorage: {
-      getItem(key) {
+      getItem(key: string) {
         if (failStorage) throw Error('unavailable');
         return store.get(key) ?? null;
       },
-      setItem(key, value) {
+      setItem(key: string, value: string) {
         if (failStorage) throw Error('unavailable');
         store.set(key, value);
       },
     },
-  };
-  vm.runInNewContext(source, context);
-  const engine = context.window.TallerCampaignEngine;
+  });
+  runSource(context, 'campaign-engine.js');
+  const engine = context.window.TallerCampaignEngine as CampaignEngine;
   const initialized = engine.init({ exercises, worlds });
   return { engine, store, initialized };
 }
-function good(prediction = false) {
+function good(prediction = false): { predictionCorrect: boolean; result: RecordedResult } {
   return {
     predictionCorrect: prediction,
     result: {
@@ -66,23 +163,23 @@ function good(prediction = false) {
     },
   };
 }
-function sync(engine, ids, prediction = false) {
+function sync(engine: CampaignEngine, ids: string[], prediction = false): SyncResult {
   return engine.syncLab({
     version: 1,
     records: Object.fromEntries(ids.map((id) => [id, good(prediction)])),
   });
 }
-function world(engine, index = 0, lang = 'rust') {
+function world(engine: CampaignEngine, index = 0, lang = 'rust'): WorldView {
   return engine.getWorlds(lang)[index];
 }
-function eligible(engine, index = 0, lang = 'rust') {
+function eligible(engine: CampaignEngine, index = 0, lang = 'rust'): void {
   const ids = [...worlds[lang][index].trainingIds, ...worlds[lang][index].challengeIds];
   sync(engine, ids);
   for (const id of [ids[0], ids[1], ids[5]])
     engine.syncLab({ records: { [id]: { predictionCorrect: true } } });
 }
 let passed = 0;
-function test(name, fn) {
+function test(name: string, fn: () => void): void {
   fn();
   passed++;
   console.log('PASS ' + name);
@@ -199,7 +296,7 @@ test('Checkpoint blocks early answers, then permits retry without granting extra
   assert.equal(engine.answerCheckpoint('rust-world-1', 1).passed, true); // Earned checkpoint stays earned.
   assert.equal(world(engine).score, 150);
   assert.equal(engine.getSummary('rust').completedWorlds, 1);
-  assert.deepEqual(plain(engine.getSummary('rust').badges), ['Insignia 1']);
+  assert.deepEqual(plainJson(engine.getSummary('rust').badges), ['Insignia 1']);
 });
 test('150 points alone do not bypass the boss code and prediction requirement', () => {
   const { engine } = fresh();
@@ -273,7 +370,7 @@ test('Import honors local progress, merges monotonically, and accepts absent leg
 test('Corrupt imports are rejected atomically, including out-of-range checkpoint answers', () => {
   const { engine } = fresh();
   sync(engine, ['rust-1'], true);
-  const before = plain(engine.exportState());
+  const before = plainJson(engine.exportState());
   for (const invalid of [
     { version: 2, seals: {}, checkpoints: {} },
     { version: 1, seals: [], checkpoints: {} },
@@ -285,7 +382,7 @@ test('Corrupt imports are rejected atomically, including out-of-range checkpoint
     { version: 1, seals: {}, checkpoints: { 'rust-world-1': { passed: true, lastAnswer: 9 } } },
   ]) {
     assert.throws(() => engine.importState(invalid));
-    assert.deepEqual(plain(engine.exportState()), before);
+    assert.deepEqual(plainJson(engine.exportState()), before);
   }
 });
 test('Import preflight is pure so the app can validate multiple backup sections before applying any', () => {
@@ -295,7 +392,7 @@ test('Import preflight is pure so the app can validate multiple backup sections 
     seals: { 'rust-1': { code: true, prediction: true, assisted: false } },
     checkpoints: {},
   };
-  assert.deepEqual(plain(engine.validateImport(data)), data);
+  assert.deepEqual(plainJson(engine.validateImport(data)), data);
   assert.equal(engine.getSummary('rust').score, 0);
   assert.equal(store.has(storageKey), false);
   assert.equal(engine.validateImport(undefined), undefined);
@@ -321,7 +418,7 @@ test('Reset clears both languages and checkpoints, then legacy sync can restore 
   engine.answerCheckpoint('rust-world-1', 0);
   sync(engine, ['go-1'], true);
   engine.reset();
-  assert.deepEqual(plain(engine.exportState()), { version: 1, seals: {}, checkpoints: {} });
+  assert.deepEqual(plainJson(engine.exportState()), { version: 1, seals: {}, checkpoints: {} });
   assert.equal(engine.getSummary('rust').completedWorlds, 0);
   assert.equal(engine.getSummary('go').score, 0);
   sync(engine, ['rust-1'], true);
@@ -330,11 +427,11 @@ test('Reset clears both languages and checkpoints, then legacy sync can restore 
 test('Configuration rejects duplicate missions and invalid checkpoints before replacing a working campaign', () => {
   const { engine } = fresh();
   sync(engine, ['rust-1'], true);
-  const badWorlds = plain(worlds);
+  const badWorlds = plainJson(worlds);
   badWorlds.rust[1].trainingIds[0] = 'rust-1';
   assert.throws(() => engine.init({ exercises, worlds: badWorlds }));
   assert.equal(world(engine).score, 30);
-  const badQuestion = plain(worlds);
+  const badQuestion = plainJson(worlds);
   badQuestion.rust[0].checkpoint.answer = 3;
   assert.throws(() => engine.init({ exercises, worlds: badQuestion }));
 });

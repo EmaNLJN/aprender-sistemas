@@ -1,11 +1,9 @@
-'use strict';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import vm from 'node:vm';
+import { repoRoot as root } from './lib/sources.ts';
 
-const fs = require('node:fs');
-const path = require('node:path');
-const vm = require('node:vm');
-const assert = require('node:assert/strict');
-
-const root = path.join(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'dist', 'index.html'), 'utf8');
 const source = fs.readFileSync(path.join(root, 'src', 'index.html'), 'utf8');
 const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)];

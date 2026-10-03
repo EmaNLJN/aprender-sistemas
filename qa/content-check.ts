@@ -1,12 +1,55 @@
 /* Offline validation of exercise structure and minimum learning scaffolding. */
-const fs = require('node:fs');
-const path = require('node:path');
-const vm = require('node:vm');
-const assert = require('node:assert/strict');
-const context = { window: {} };
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import vm from 'node:vm';
+import { repoRoot, runSource } from './lib/sources.ts';
+
+type Language = 'rust' | 'go';
+type TextField =
+  | 'topicId'
+  | 'topic'
+  | 'title'
+  | 'intro'
+  | 'why'
+  | 'objective'
+  | 'starter'
+  | 'solution'
+  | 'transfer';
+interface TestCase {
+  id: string;
+  label: string;
+  expression: string;
+  why: string;
+  failure: string;
+  [field: string]: string;
+}
+interface Exercise extends Record<TextField, string> {
+  id: string;
+  language: Language;
+  stage: number;
+  level?: string;
+  instructions: string[];
+  hints: string[];
+  review: { success: string; pitfall: string };
+  tests: TestCase[];
+  prediction: {
+    question: string;
+    explanation: string;
+    options: string[];
+    answer: number;
+  };
+  sources: { title: string; url: string }[];
+}
+interface CheckWindow {
+  [name: string]: unknown;
+}
+
+const window: CheckWindow = {};
+const context = vm.createContext({ window });
 const partial = process.argv.includes('--partial');
 const validLevels = new Set(['beginner', 'medium', 'advanced', 'expert']);
-const extensionLevels = {
+const extensionLevels: Record<number, string> = {
   16: 'beginner',
   17: 'medium',
   18: 'medium',
@@ -18,29 +61,22 @@ const extensionLevels = {
   24: 'expert',
 };
 for (const domain of ['lowlevel', 'infra', 'play', 'pc'])
-  for (const suffix of ['', '-labs'])
-    vm.runInNewContext(
-      fs.readFileSync(path.resolve(__dirname, '../systems-' + domain + suffix + '.js'), 'utf8'),
-      context,
-    );
+  for (const suffix of ['', '-labs']) runSource(context, 'systems-' + domain + suffix + '.js');
 const systems = ['LOWLEVEL', 'INFRA', 'PLAY', 'PC'].flatMap(
-  (name) => context.window['SYSTEMS_' + name + '_LABS'],
+  (name) => window['SYSTEMS_' + name + '_LABS'] as Exercise[],
 );
-const ids = new Set();
+const ids = new Set<string>();
 let count = 0;
 let tests = 0;
-for (const language of ['rust', 'go']) {
-  vm.runInNewContext(
-    fs.readFileSync(path.resolve(__dirname, '../lab-' + language + '.js'), 'utf8'),
-    context,
-  );
-  const core = context.window[language === 'rust' ? 'RUST_LAB' : 'GO_LAB'];
+for (const language of ['rust', 'go'] as const) {
+  runSource(context, 'lab-' + language + '.js');
+  const core = window[language === 'rust' ? 'RUST_LAB' : 'GO_LAB'] as Exercise[];
   assert.ok(Array.isArray(core) && core.length > 0, language + ' curriculum');
   assert.ok(core.length <= 100, language + ' has at most 100 core exercises');
   if (!partial) assert.equal(core.length, 100, language + ' should have 100 core exercises');
-  const questFile = path.resolve(__dirname, '../quests-' + language + '.js');
-  if (fs.existsSync(questFile)) vm.runInNewContext(fs.readFileSync(questFile, 'utf8'), context);
-  const quests = context.window[language === 'rust' ? 'RUST_QUESTS' : 'GO_QUESTS'] || [];
+  const questFile = 'quests-' + language + '.js';
+  if (fs.existsSync(path.join(repoRoot, questFile))) runSource(context, questFile);
+  const quests = (window[language === 'rust' ? 'RUST_QUESTS' : 'GO_QUESTS'] || []) as Exercise[];
   assert.ok(
     Array.isArray(quests) && quests.length <= 12,
     language + ' has at most 12 campaign challenges',
@@ -49,7 +85,7 @@ for (const language of ['rust', 'go']) {
   const kernels = systems.filter((item) => item.language === language);
   assert.equal(kernels.length, 25, language + ' has 25 systems kernels');
   const exercises = [...core, ...quests, ...kernels];
-  const stages = new Set();
+  const stages = new Set<number>();
   for (const [index, ex] of exercises.entries()) {
     const expectedId = language + '-' + String(index + 1).padStart(2, '0');
     assert.equal(ex.id, expectedId);
@@ -83,7 +119,7 @@ for (const language of ['rust', 'go']) {
       'starter',
       'solution',
       'transfer',
-    ]) {
+    ] as const) {
       assert.ok(typeof ex[key] === 'string' && ex[key].trim(), ex.id + ': ' + key);
     }
     assert.notEqual(ex.starter.trim(), ex.solution.trim(), ex.id + ': starter already solved');
