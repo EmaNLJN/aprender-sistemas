@@ -1,4 +1,5 @@
 import { cloneJson } from './src/shared/lib/clone-json';
+import { hasPassingEvidence } from './src/entities/exercise';
 import { isPlainObject } from './src/shared/lib/is-plain-object';
 (() => {
   'use strict';
@@ -188,25 +189,11 @@ import { isPlainObject } from './src/shared/lib/is-plain-object';
       for (const language of languages) {
         const exercise = exercises.get(workshop.code[language]),
           result = lab?.records?.[exercise.id]?.result;
-        if (
-          !result ||
-          result.success !== true ||
-          result.transportError === true ||
-          typeof result.code !== 'string' ||
-          !result.code.trim() ||
-          !Array.isArray(result.tests)
-        )
-          continue;
-        const passed = exercise.tests.every((test) => {
-          const matches = result.tests.filter((row) => row?.id === test.id);
-          return matches.length === 1 && matches[0].passed === true;
-        });
-        if (passed) {
-          const r = record(workshop.id, language);
-          if (!r.code) {
-            r.code = true;
-            changed = true;
-          }
+        if (!hasPassingEvidence(result, exercise.tests)) continue;
+        const r = record(workshop.id, language);
+        if (!r.code) {
+          r.code = true;
+          changed = true;
         }
       }
     if (changed) persist();

@@ -1,4 +1,5 @@
 import { cloneJson } from './src/shared/lib/clone-json';
+import { interpretRun, mergeRecord, syncAfterRun, testPassed } from './src/entities/exercise';
 import { escapeHtml } from './src/shared/lib/escape-html';
 import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
 (() => {
@@ -67,12 +68,10 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
   };
   let confirmAction = null;
   function sanitizeResult(result, exercise) {
-    const tests = exercise.tests.map((test) => {
-      const evidence = Array.isArray(result.tests)
-        ? result.tests.filter((candidate) => candidate?.id === test.id)
-        : [];
-      return { id: test.id, passed: evidence.length === 1 && evidence[0].passed === true };
-    });
+    const tests = exercise.tests.map((test) => ({
+      id: test.id,
+      passed: testPassed(result, test.id),
+    }));
     return {
       code: typeof result.code === 'string' ? result.code.slice(0, 30000) : '',
       success: result.success === true,
@@ -619,34 +618,37 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
     activeController = new AbortController();
     updateRunUI();
     try {
-      const result = await window.TallerRunner.run({
-        language: item.language,
-        code: buildProgram(item, code, customTest),
-        signal: activeController.signal,
-      });
+      let runnerResult;
+      try {
+        runnerResult = await window.TallerRunner.run({
+          language: item.language,
+          code: buildProgram(item, code, customTest),
+          signal: activeController.signal,
+        });
+      } catch (error) {
+        if (activeRun !== run || error.name === 'AbortError') return;
+        record.result = {
+          code,
+          customTest,
+          customPassed: false,
+          success: false,
+          stdout: '',
+          stderr: error.message || 'No se pudo conectar al compilador.',
+          transportError: true,
+          tests: [],
+          time: Date.now(),
+        };
+        save();
+        return;
+      }
       if (activeRun !== run) return;
-      const markers = new Map(
-        [...String(result.stdout || '').matchAll(/^__TALLER_TEST__(\w+):(PASS|FAIL)\s*$/gm)].map(
-          (match) => [match[1], match[2] === 'PASS'],
-        ),
-      );
-      const tests = item.tests.map((test) => ({
-        id: test.id,
-        passed: markers.get(test.id) === true,
-      }));
-      const transportError = Boolean(result.error) && !result.success;
-      record.result = {
+      const { result, solved } = interpretRun(item, runnerResult, {
         code,
-        success: result.success === true,
-        stdout: String(result.stdout || '').slice(0, 12000),
-        stderr: String(result.stderr || result.error || '').slice(0, 18000),
-        transportError,
-        tests,
-        time: Date.now(),
-      };
-      record.result.customTest = customTest;
-      record.result.customPassed = markers.get('custom') === true;
-      if (result.success && tests.every((test) => test.passed)) {
+        customTest,
+        now: Date.now(),
+      });
+      record.result = result;
+      if (solved) {
         const first = !record.solvedAt;
         record.solvedAt = record.solvedAt || Date.now();
         if (!record.reviewAt) record.reviewAt = Date.now() + 86400000;
@@ -657,24 +659,14 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
         );
       }
       save();
-      window.TallerSystems?.sync();
-      const game = window.TallerCampaign?.sync();
-      if (game?.xpGained && window.TallerCampaignEngine.canAttempt(item.id, language).worldId)
-        notify(`+${game.xpGained} XP. Tu progreso de campaña está actualizado.`);
-    } catch (error) {
-      if (activeRun !== run || error.name === 'AbortError') return;
-      record.result = {
-        code,
-        customTest,
-        customPassed: false,
-        success: false,
-        stdout: '',
-        stderr: error.message || 'No se pudo conectar al compilador.',
-        transportError: true,
-        tests: [],
-        time: Date.now(),
-      };
-      save();
+      syncAfterRun({
+        syncSystems: () => window.TallerSystems?.sync(),
+        syncCampaign: () => window.TallerCampaign?.sync(),
+        isCampaignMission: () =>
+          Boolean(window.TallerCampaignEngine.canAttempt(item.id, language).worldId),
+        notify,
+        logError: (error) => console.error(error),
+      });
     } finally {
       if (activeRun === run) {
         activeRun = null;
@@ -1153,7 +1145,7 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
     importState(raw) {
       const incoming = sanitize(raw);
       for (const [id, record] of Object.entries(incoming.records))
-        state.records[id] = { ...state.records[id], ...record };
+        state.records[id] = mergeRecord(state.records[id], record);
       for (const lang of ['rust', 'go'])
         if (incoming.selected[lang]) state.selected[lang] = incoming.selected[lang];
       save();

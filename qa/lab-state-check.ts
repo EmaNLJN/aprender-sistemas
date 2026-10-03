@@ -9,11 +9,17 @@ interface Evidence {
   passed: boolean;
 }
 interface LabRecord {
+  draft?: string;
   reflection?: string;
+  customTest?: string;
   attempts?: number;
+  hints?: number;
+  solvedAt?: number;
   reviewAt?: number;
+  predictionCorrect?: boolean;
   assisted?: boolean;
-  result: { stdout: string; customPassed: boolean };
+  solutionSeen?: boolean;
+  result?: { code?: string; success?: boolean; stdout: string; customPassed: boolean };
 }
 interface LabState {
   records: Record<string, LabRecord>;
@@ -178,8 +184,103 @@ test('Backup preflight is pure and preserves valid notes, selection and proof fi
   assert.equal(restored.records['rust-1'].attempts, 2);
   assert.equal(restored.records['rust-1'].reviewAt, 200);
   assert.equal(restored.records['rust-1'].assisted, true);
-  assert.equal(clean.records['rust-1'].result.customPassed, true);
-  assert.equal(clean.records['rust-1'].result.stdout, 'output');
+  assert.equal(clean.records['rust-1'].result?.customPassed, true);
+  assert.equal(clean.records['rust-1'].result?.stdout, 'output');
+});
+
+const allPassed: Evidence[] = [
+  { id: 't1', passed: true },
+  { id: 't2', passed: true },
+  { id: 't3', passed: true },
+];
+const noneRan: Evidence[] = allPassed.map(({ id }) => ({ id, passed: false }));
+
+function importTwice(local: object, incoming: object): LabRecord {
+  const { lab } = environment();
+  lab.importState({ version: 1, records: { 'rust-1': local } });
+  lab.importState({ version: 1, records: { 'rust-1': incoming } });
+  return plain(lab.exportState()).records['rust-1'];
+}
+
+test('A backup without help marks does not clear local ones', () => {
+  const merged = importTwice(
+    { assisted: true, solutionSeen: true, predictionCorrect: true },
+    { attempts: 1 },
+  );
+  assert.equal(merged.assisted, true);
+  assert.equal(merged.solutionSeen, true);
+  assert.equal(merged.predictionCorrect, true);
+  assert.equal(merged.attempts, 1);
+});
+
+test('A backup with help marks adds them to a clean local record', () => {
+  const merged = importTwice({ attempts: 3 }, { assisted: true, predictionCorrect: true });
+  assert.equal(merged.assisted, true);
+  assert.equal(merged.predictionCorrect, true);
+  assert.equal(merged.solutionSeen, false);
+});
+
+test('solvedAt keeps the oldest value when both sides have one', () => {
+  assert.equal(importTwice({ solvedAt: 100 }, { solvedAt: 500 }).solvedAt, 100);
+  assert.equal(importTwice({ solvedAt: 500 }, { solvedAt: 100 }).solvedAt, 100);
+});
+
+test('solvedAt from only one side is kept', () => {
+  assert.equal(importTwice({ attempts: 1 }, { solvedAt: 300 }).solvedAt, 300);
+  assert.equal(importTwice({ solvedAt: 300 }, { attempts: 1 }).solvedAt, 300);
+});
+
+test('A local result with passing evidence is not replaced by one without it', () => {
+  const merged = importTwice(
+    { result: { code: 'local solution', success: true, stdout: 'ok', tests: allPassed } },
+    { result: { code: 'failed attempt', success: true, stdout: 'bad', tests: noneRan } },
+  );
+  assert.equal(merged.result?.code, 'local solution');
+  assert.equal(merged.result?.stdout, 'ok');
+});
+
+test('An imported result replaces a local one without evidence, or one with evidence', () => {
+  const failing = { code: 'local attempt', success: false, stdout: 'local', tests: noneRan };
+  const solving = { code: 'imported solution', success: true, stdout: 'ok', tests: allPassed };
+  assert.equal(
+    importTwice({ result: failing }, { result: solving }).result?.code,
+    'imported solution',
+  );
+  assert.equal(
+    importTwice({ result: solving }, { result: { ...solving, code: 'newer solution' } }).result
+      ?.code,
+    'newer solution',
+  );
+  assert.equal(importTwice({ result: failing }, { attempts: 2 }).result?.code, 'local attempt');
+});
+
+test('Empty imported drafts and reflections do not overwrite local ones', () => {
+  const merged = importTwice(
+    { draft: 'local draft', reflection: 'local note' },
+    { draft: '', reflection: '' },
+  );
+  assert.equal(merged.draft, 'local draft');
+  assert.equal(merged.reflection, 'local note');
+});
+
+test('Non-empty imported drafts and reflections replace local ones', () => {
+  const merged = importTwice(
+    { draft: 'local draft', reflection: 'local note' },
+    { draft: 'imported draft', reflection: 'imported note' },
+  );
+  assert.equal(merged.draft, 'imported draft');
+  assert.equal(merged.reflection, 'imported note');
+});
+
+test('Other imported fields still replace local ones', () => {
+  const merged = importTwice(
+    { attempts: 9, hints: 3, reviewAt: 900, customTest: '1 == 1' },
+    { attempts: 2, hints: 1, reviewAt: 100, customTest: '2 == 2' },
+  );
+  assert.equal(merged.attempts, 2);
+  assert.equal(merged.hints, 1);
+  assert.equal(merged.reviewAt, 100);
+  assert.equal(merged.customTest, '2 == 2');
 });
 
 console.log(passed + ' lab state scenarios passed; ' + failed + ' failed.');

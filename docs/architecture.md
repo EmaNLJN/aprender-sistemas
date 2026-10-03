@@ -11,6 +11,7 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | --- | --- |
 | Documento, entrada ESM y adaptadores legacy | `src/index.html`, `src/app/main.tsx`, `src/app/legacy/` |
 | Helpers y constantes compartidos, sin reglas de negocio | `src/shared/lib/`, `src/shared/config/` |
+| Evidencia de aprobación, interpretación de ejecuciones y fusión de registros | `src/entities/exercise/` |
 | Navegación, recorrido y progreso general | `app.js`, `content.js`, `styles.css` |
 | Ejercicios del recorrido | `lab-rust.js`, `lab-go.js` |
 | Laboratorio, revisión y modelos educativos | `lab.js`, `lab-explorers.js`, `lab.css` |
@@ -76,7 +77,9 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
   16 conceptos del Atlas por lenguaje, y 25 talleres de Sistemas compartidos.
   Una ampliación debe actualizar las expectativas del build, QA, interfaz y README.
 - Separá resultados reales de compilación, simulaciones y etapas manuales. Un
-  fallo de transporte o compilación nunca equivale a aprobar una prueba.
+  fallo de transporte o compilación nunca equivale a aprobar una prueba. La regla
+  única de aprobación es `hasPassingEvidence` de `src/entities/exercise`; las
+  políticas de lectura, respaldo y fusión del progreso están en el ADR 0003.
 - El progreso vive en `localStorage`, separado por origen y lenguaje. Preservá la
   exportación/importación, los logros ya obtenidos y el manejo de almacenamiento
   bloqueado. Las simulaciones no deben otorgar aprobación de código.
@@ -158,7 +161,9 @@ acciones de valor para el alumno y en `entities` para conceptos de dominio estab
 sólo cuando varios consumidores justifiquen ese seam. No agregues `processes` —está
 deprecada— ni `widgets` hasta que exista un bloque autónomo que realmente los necesite.
 Estado actual: `src/app` (entrada y adaptadores legacy), `src/pages/atlas` (primera
-página migrada) y `src/shared` (helpers y constantes sin reglas de negocio).
+página migrada), `src/entities/exercise` (regla de evidencia, interpretación de la
+ejecución y fusión de registros, compartidas por laboratorio, campaña y Sistemas) y
+`src/shared` (helpers y constantes sin reglas de negocio).
 
 - La dirección permitida es `app → pages → widgets → features → entities → shared`.
   Un módulo sólo importa su propio slice o capas inferiores; dos slices de la misma

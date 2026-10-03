@@ -1,4 +1,5 @@
 import { cloneJson } from './src/shared/lib/clone-json';
+import { hasPassingEvidence } from './src/entities/exercise';
 import { isPlainObject } from './src/shared/lib/is-plain-object';
 import { LEVEL_IDS } from './src/shared/config/levels';
 (() => {
@@ -184,18 +185,7 @@ import { LEVEL_IDS } from './src/shared/config/levels';
         const prior = seal(id),
           result = record.result,
           expected = exercises.get(id).tests;
-        const code = Boolean(
-          isPlainObject(result) &&
-          result.success === true &&
-          result.transportError !== true &&
-          typeof result.code === 'string' &&
-          result.code.trim() &&
-          Array.isArray(result.tests) &&
-          expected.every((test) => {
-            const matches = result.tests.filter((candidate) => candidate?.id === test.id);
-            return matches.length === 1 && matches[0].passed === true;
-          }),
-        );
+        const code = hasPassingEvidence(result, expected);
         const next = {
           code: prior.code || code,
           prediction: prior.prediction || record.predictionCorrect === true,

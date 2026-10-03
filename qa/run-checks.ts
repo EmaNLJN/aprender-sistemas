@@ -12,6 +12,7 @@ const checks = [
   'guide-content-check.ts',
   'content-check.ts',
   'runner-check.ts',
+  'exercise-evidence-check.ts',
   'lab-state-check.ts',
   'app-shell-check.ts',
   'lab-bridge-check.ts',
