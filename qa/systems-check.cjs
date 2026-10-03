@@ -60,6 +60,35 @@ test('Empty progress starts without earned seals', () => {
   }
 });
 
+test('A core without verification cases is rejected without replacing earned progress', () => {
+  const {engine} = environment();
+  engine.observe('alpha', 'rust', ['a']);
+  engine.setNote('alpha', 'rust', 'Keep my project note');
+  const before = plain(engine.exportState()), invalid = fixture();
+  invalid.exercises[0].tests = [];
+  assert.throws(() => engine.init(invalid), /pruebas/i);
+  assert.deepEqual(plain(engine.exportState()), before);
+  assert.equal(engine.get('alpha', 'rust').progress.note, 'Keep my project note');
+});
+
+test('Duplicate verification IDs are rejected without replacing earned progress', () => {
+  const {engine} = environment();
+  engine.observe('alpha', 'rust', ['a']);
+  const before = plain(engine.exportState()), invalid = fixture();
+  invalid.exercises[0].tests = [{id: 't1'}, {id: 't1'}, {id: 't3'}];
+  assert.throws(() => engine.init(invalid), /pruebas/i);
+  assert.deepEqual(plain(engine.exportState()), before);
+});
+
+test('Invalid verification IDs are rejected before replacing the usable catalog', () => {
+  const {engine} = environment();
+  engine.setNote('alpha', 'rust', 'Keep this note');
+  const before = plain(engine.exportState()), invalid = fixture();
+  invalid.exercises[0].tests = [{id: ''}, {id: 't2'}, {id: 't3'}];
+  assert.throws(() => engine.init(invalid), /pruebas/i);
+  assert.deepEqual(plain(engine.exportState()), before);
+});
+
 test('Observe filters unknown objectives and is idempotent', () => {
   const {engine, store} = environment();
   const first = engine.observe('alpha', 'rust', ['a', 'a', 'unknown', null, 7]);

@@ -30,6 +30,20 @@
     }
     return clean;
   }
+  function requireCore(workshop, language, allExercises) {
+    const exercise = allExercises.get(workshop.code?.[language]);
+    if (exercise?.language !== language) {
+      throw new Error('Falta el núcleo programable de ' + workshop.id + ' en ' + language + '.');
+    }
+    const tests = exercise.tests;
+    if (!Array.isArray(tests) || !tests.length) {
+      throw new Error('Pruebas de núcleo inválidas: ' + exercise.id);
+    }
+    const validIds = tests.every(test => object(test) && typeof test.id === 'string' && test.id.trim());
+    if (!validIds || new Set(tests.map(test => test.id)).size !== tests.length) {
+      throw new Error('IDs de pruebas de núcleo inválidos: ' + exercise.id);
+    }
+  }
   function init(config){
     if(!Array.isArray(config?.workshops)||!config.models||!Array.isArray(config.exercises))throw new Error('Falta el catálogo de Sistemas.');
     const next=new Map(),allExercises=new Map(config.exercises.map(exercise=>[exercise.id,exercise]));
@@ -39,7 +53,7 @@
       if(!Array.isArray(workshop.steps)||workshop.steps.length!==4)throw new Error('Se necesitan cuatro etapas de proyecto.');
       const q=workshop.prediction;
       if(!q||!Array.isArray(q.options)||q.options.length<2||!Number.isInteger(q.answer)||q.answer<0||q.answer>=q.options.length)throw new Error('Checkpoint de taller inválido.');
-      for(const language of languages)if(allExercises.get(workshop.code?.[language])?.language!==language)throw new Error('Falta el núcleo programable de '+workshop.id+' en '+language+'.');
+      for(const language of languages)requireCore(workshop,language,allExercises);
       next.set(workshop.id,clone(workshop));
     }
     catalog=next;exercises=allExercises;state=blank();storageAvailable=true;

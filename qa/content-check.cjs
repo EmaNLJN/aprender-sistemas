@@ -52,6 +52,8 @@ for (const language of ['rust', 'go']) {
       assert.equal(test.id, 't' + (i + 1));
       for (const field of ['label', 'expression', 'why', 'failure']) assert.ok(test[field] && test[field].trim(), ex.id + ': test ' + field);
       assert.ok(!/^(true|false|\d+\s*==\s*\d+)$/.test(test.expression.trim()), ex.id + ': trivial constant-only test');
+      // Control bytes are intentionally rejected from curriculum expressions.
+      // eslint-disable-next-line no-control-regex
       assert.ok(!/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/.test(test.expression), ex.id + ': control characters');
     }
     const prediction = ex.prediction;

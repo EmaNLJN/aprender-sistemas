@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY . .
-RUN npm run build:editor && npm run build:effects && npm run build:kits && node build.mjs && node qa/build-check.cjs && node qa/content-check.cjs && node qa/runner-check.cjs && node qa/campaign-check.cjs && node qa/campaign-content-check.cjs && node qa/quest-explorers-check.cjs && node qa/systems-check.cjs && node qa/systems-lowlevel-check.cjs && node qa/systems-infra-check.cjs && node qa/systems-play-check.cjs && node qa/systems-pc-check.cjs && node qa/project-kit-check.cjs
+RUN npm run build && npm test && npm run lint && npm run format:check
 
 FROM nginxinc/nginx-unprivileged:stable-alpine@sha256:ed04ec1ff34502c339ee5c3ae3f855442398edc1d05591e2b98981dcbbd20b1e
 COPY nginx.conf /etc/nginx/nginx.conf

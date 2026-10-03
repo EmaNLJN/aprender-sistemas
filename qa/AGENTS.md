@@ -30,11 +30,18 @@ comandos: no hace falta inventar tests de producto.
 Para React Doctor y Desloppify, consultá `tools/quality/AGENTS.md`. Son controles
 complementarios; una puntuación no reemplaza las pruebas de comportamiento.
 
+`npm run build` regenera todos los assets. `npm test` reúne los checks locales,
+incluido `node qa/lab-state-check.cjs` para importar, validar y exportar progreso
+del laboratorio. `npm run lint` y `npm run format:check` se ejecutan antes de cerrar
+cambios de código; el segundo es no mutante. Formateá los archivos propios que
+cambies y evitá reformatear las skills importadas o las salidas generadas.
+
 | Cambio | Comprobaciones locales |
 | --- | --- |
 | Empaquetado, assets u orden de carga | Regenerar bundles e `index.html`; `node qa/build-check.cjs` |
 | Ejercicios o contratos de revisión | `node qa/content-check.cjs`, `node qa/runner-check.cjs` |
 | Mundos, desbloqueos, XP o progreso de campaña | `node qa/campaign-check.cjs`, `node qa/campaign-content-check.cjs` |
+| Importación, validación o exportación del laboratorio | `node qa/lab-state-check.cjs`, campaña y Sistemas |
 | Exploradores de robot y paquetes | `node qa/quest-explorers-check.cjs` |
 | Catálogo, sellos o progreso de Sistemas | `node qa/systems-check.cjs` |
 | Modelo lowlevel, infra, play o pc | El correspondiente `node qa/systems-<dominio>-check.cjs` |
@@ -57,6 +64,7 @@ node qa/systems-infra-check.cjs
 node qa/systems-play-check.cjs
 node qa/systems-pc-check.cjs
 node qa/project-kit-check.cjs
+node qa/lab-state-check.cjs
 ```
 
 Los checks locales prueban estructura y comportamiento JavaScript. No prueban

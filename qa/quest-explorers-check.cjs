@@ -1,23 +1,15 @@
 'use strict';
 
-// Deterministic model checks. Real browser layout/keyboard checks live separately.
-// The VM hook exposes private pure functions only in this test's source copy.
+// Checks use the public render/act/reset API without exposing private functions.
+// The DOM double does not validate browser geometry or accessibility-tree behavior.
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
-
 const filename = path.join(__dirname, '..', 'quest-explorers.js');
-const source = fs.readFileSync(filename, 'utf8');
-const marker = 'window.TallerQuestExplorers = {render, act, reset};';
-assert.ok(source.includes(marker), 'The test hook must match the public API declaration.');
-const instrumented = source.replace(marker,
-  'globalThis.test = {crc32,rotateChecksum,packetData,fresh,descriptor,move}; ' + marker);
 const context = {window: {}};
-vm.createContext(context);
-vm.runInContext(instrumented, context, {filename});
+vm.runInNewContext(fs.readFileSync(filename, 'utf8'), context, {filename});
 const api = context.window.TallerQuestExplorers;
-const model = context.test;
 let assertions = 0;
 
 function check(value, label) {
@@ -25,63 +17,10 @@ function check(value, label) {
   assertions++;
 }
 
-for (const language of ['rust', 'go']) {
-  for (let number = 101; number <= 106; number++) {
-    const id = language + '-' + number;
-    check(api.render({id}).includes('data-quest-explorer="' + id + '"'), 'Supported exercise: ' + id);
-  }
-}
-for (const id of ['go-100', 'rust-107', 'go-110', 'evil-101', 'go-101x', '<script>']) {
-  check(api.render({id}) === null, 'Unsupported ID returns null: ' + id);
-}
-
-const robot = model.fresh({mode: 'robot'});
-model.move(robot, 'O');
-check(robot.energy === 4 && robot.x === 0 && robot.y === 0, 'Wall collision preserves position and battery');
-for (const direction of ['N', 'N', 'E', 'E']) model.move(robot, direction);
-check(robot.x === 2 && robot.y === 2 && robot.energy === 0 && robot.moves === 4, 'Four accepted steps reach the beacon');
-model.move(robot, 'S');
-check(robot.x === 2 && robot.y === 2 && robot.energy === 0, 'An empty battery prevents an otherwise valid movement');
-for (let index = 0; index < 8; index++) model.move(robot, 'N');
-check(robot.logs.length === 6 && robot.logs[0].step === robot.attempts - 5, 'Trace retains the last six numbered attempts');
-
-check(model.crc32([]) === 0, 'CRC-32 IEEE of an empty message is zero');
-check(model.crc32(Array.from(Buffer.from('123456789'))) === 0xCBF43926, 'CRC-32 IEEE matches the independent standard check vector');
-check(model.rotateChecksum([1, 2]) === 0 && model.rotateChecksum([2, 1]) === 5, 'The educational rotate-XOR checksum is order-sensitive');
-
-const go = {mode: 'packet', language: 'go'};
-const rust = {mode: 'packet', language: 'rust'};
-let packet = model.fresh(go);
-let data = model.packetData(packet, go);
-check(data.failure === null && data.declared === 3, 'Initial Go packet is accepted');
-packet.corrupt = true;
-data = model.packetData(packet, go);
-check(data.failure === 'checksum' && data.sent !== data.computed, 'Corruption changes received data without recalculating the sent CRC');
-packet = model.fresh(go);
-packet.size = 260;
-data = model.packetData(packet, go);
-check(data.lengthBytes[0] === 1 && data.lengthBytes[1] === 4 && data.failure === null, 'Length 260 is encoded as 01 04 in big-endian');
-packet.reversed = true;
-data = model.packetData(packet, go);
-check(data.declared === 1025 && data.failure === 'largo', 'Reversing length bytes changes the receiver interpretation to 1025');
-packet.badLength = true;
-check(model.packetData(packet, go).declared === 1024, 'Length bit control affects the low received byte after reversal');
-
-packet = model.fresh(rust);
-data = model.packetData(packet, rust);
-check(data.failure === null && data.sent === model.rotateChecksum([0x13, 3, 0x53, 0x4F, 0x53]), 'Rust packet checksum covers header, length and payload');
-packet.corrupt = true;
-check(model.packetData(packet, rust).failure === 'checksum', 'Rust packet detects the selected payload corruption');
-packet.badLength = true;
-check(model.packetData(packet, rust).failure === 'largo', 'Rust length validation precedes checksum validation');
-packet.control = 0x23;
-check(model.packetData(packet, rust).failure === 'version', 'Rust version validation precedes length validation');
-
-// A deliberately small DOM double verifies the act contract and stable live node.
-// It does not claim to validate accessibility-tree behavior or browser geometry.
+// Only the DOM interfaces used by the public API are simulated here.
 function fixture(id) {
   const item = {id};
-  const view = {innerHTML: ''};
+  const view = {innerHTML: api.render(item)};
   const live = {textContent: ''};
   let focused = '';
   const panel = {
@@ -102,31 +41,84 @@ function fixture(id) {
   return {
     item, view, live,
     get focused() { return focused; },
+    get text() { return view.innerHTML.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(); },
     act(operation) {
       api.act({dataset: {questOp: operation}, closest() { return panel; }}, item, null);
     }
   };
 }
 
+for (const language of ['rust', 'go']) {
+  for (let number = 101; number <= 106; number++) {
+    const id = language + '-' + number;
+    check(api.render({id}).includes('data-quest-explorer="' + id + '"'), 'Supported exercise: ' + id);
+  }
+}
+for (const id of ['go-100', 'rust-107', 'go-110', 'evil-101', 'go-101x', '<script>']) {
+  check(api.render({id}) === null, 'Unsupported ID returns null: ' + id);
+}
+
 let mounted = fixture('rust-103');
+mounted.act('move-O');
+check(mounted.text.includes('Posición (0,0)') && mounted.text.includes('Batería 4/4'), 'Wall collision preserves position and battery');
+check(mounted.text.includes('Pasos aceptados 0'), 'Rejected movement earns no accepted step');
+for (const direction of ['N', 'N', 'E', 'E']) mounted.act('move-' + direction);
+check(mounted.text.includes('Posición (2,2)') && mounted.text.includes('Batería 0/4'), 'Four accepted steps reach the beacon with empty battery');
+check(mounted.text.includes('Pasos aceptados 4') && mounted.text.includes('Baliza alcanzada.'), 'Arrival displays the four accepted steps and success message');
+mounted.act('move-S');
+check(mounted.text.includes('Posición (2,2)') && mounted.text.includes('Batería 0/4'), 'Empty battery prevents an otherwise valid movement');
+check(mounted.live.textContent.includes('sin batería'), 'A rejected move explains the missing energy');
+for (let index = 0; index < 8; index++) mounted.act('move-N');
+const history = /<ol class="qx-log" start="(\d+)">([\s\S]*?)<\/ol>/.exec(mounted.view.innerHTML);
+check(history && history[1] === '9' && (history[2].match(/<li>/g) || []).length === 6, 'Fourteen attempts display exactly the last six, numbered nine through fourteen');
+check(mounted.live.textContent.includes('Intento 14.'), 'The live announcement retains the total attempt number');
+
+mounted.act('battery-4');
 mounted.act('move-N');
-check(mounted.view.innerHTML.includes('(0,1)') && mounted.live.textContent.includes('batería 3') && mounted.focused === 'move-N', 'Movement updates view and live text, restoring the same control focus');
+check(mounted.text.includes('Posición (0,1)') && mounted.live.textContent.includes('batería 3') && mounted.focused === 'move-N', 'Movement updates view and live text, restoring the same control focus');
 mounted.act('battery-2');
-check(mounted.live.textContent.includes('batería 2') && mounted.view.innerHTML.includes('(0,0)'), 'Battery preset starts a new run');
+check(mounted.live.textContent.includes('batería 2') && mounted.text.includes('Posición (0,0)'), 'Battery preset starts a new run');
 mounted.act('predict-0');
-check(mounted.view.innerHTML.includes('qx-good'), 'Correct prediction displays explanatory feedback');
+check(mounted.text.includes('Sí.') && mounted.live.textContent.includes('Predicción correcta.'), 'Correct prediction displays explanatory feedback');
 
 mounted = fixture('go-106');
+check(mounted.text.includes('Pasa las comprobaciones'), 'Initial Go packet is accepted');
+// CRC-32 IEEE literals were checked independently with Python zlib.crc32.
+check(mounted.text.includes('Enviado 0x14381A7F') && mounted.text.includes('Calculado 0x14381A7F'), 'Go SOS payload has the independently verified CRC-32 IEEE');
+mounted.act('size-0');
+check(mounted.text.includes('Enviado 0x00000000') && mounted.text.includes('Calculado 0x00000000'), 'Empty Go payload has CRC-32 IEEE zero');
+mounted.act('size-3');
+mounted.act('corrupt');
+check(mounted.text.includes('Enviado 0x14381A7F') && mounted.text.includes('Calculado 0x15FA7048'), 'Corruption changes the received CRC while preserving the transmitted CRC');
+check(mounted.text.includes('Rechazado: la comprobación recibida no coincide'), 'Go rejects a corrupted payload');
 mounted.act('size-260');
-check(mounted.view.innerHTML.includes('01 04') && mounted.focused === 'size-260', 'Size control updates displayed bytes and retains focus');
+check(mounted.text.includes('01 04') && mounted.text.includes('= 260.'), 'Length 260 is encoded as 01 04 in big-endian');
+check(mounted.text.includes('Pasa las comprobaciones') && mounted.focused === 'size-260', 'Size control resets corruptions and retains focus');
 mounted.act('reverse-endian');
-check(mounted.view.innerHTML.includes('1025') && mounted.view.innerHTML.includes('qx-rejected'), 'Endianness control displays the concrete rejection');
+check(mounted.text.includes('Rechazado: declara 1025 bytes, pero llegaron 260.'), 'Reversing length bytes changes receiver interpretation to 1025');
+mounted.act('bad-length');
+check(mounted.text.includes('Rechazado: declara 1024 bytes, pero llegaron 260.'), 'Length bit control affects the low received byte after reversal');
 mounted.act('packet-reset');
-check(mounted.view.innerHTML.includes('qx-accepted') && mounted.focused === 'packet-reset', 'Packet reset restores an accepted packet');
+check(mounted.text.includes('Pasa las comprobaciones') && mounted.focused === 'packet-reset', 'Packet reset restores an accepted packet');
+
+mounted = fixture('rust-106');
+// Worked independently: rotl8+XOR over 13 03 53 4F 53 gives 13 → 25 → 19 → 7D → A9.
+check(mounted.text.includes('Enviado 0xA9') && mounted.text.includes('Calculado 0xA9'), 'Rust checksum covers header, length and SOS payload');
+check(mounted.text.includes('Pasa las comprobaciones'), 'Initial Rust packet is accepted');
+mounted.act('corrupt');
+check(mounted.text.includes('Enviado 0xA9') && mounted.text.includes('Calculado 0xAD'), 'Rust payload bit corruption changes the independent expected checksum');
+check(mounted.text.includes('Rechazado: la comprobación recibida no coincide'), 'Rust packet detects selected payload corruption');
+mounted.act('bad-length');
+check(mounted.text.includes('Rechazado: declara 2 bytes, pero llegaron 3.'), 'Rust length validation precedes checksum validation');
+mounted.act('bit-5');
+mounted.act('bit-4');
+check(mounted.text.includes('0x23 = 35') && mounted.text.includes('Rechazado: versión distinta de 1.'), 'Rust version validation precedes length validation');
+
 api.reset();
-check(api.render({id: 'rust-103'}).includes('Partís de (0,0)'), 'Global reset clears per-exercise model state');
+check(api.render({id: 'rust-103'}).includes('Partís de (0,0)'), 'Global reset clears robot state');
+check(api.render({id: 'rust-106'}).includes('0xA9'), 'Global reset clears packet corruption and control changes');
 
 console.log(JSON.stringify({
   status: 'PASS', assertions,
-  scope: 'Pure models, checksums, mutations, rendering, live text and focus restoration. Browser checks are separate.'
+  scope: 'Public explorer API: movements, checksums, packet controls, rendering, live text, focus and reset. Browser checks are separate.'
 }));

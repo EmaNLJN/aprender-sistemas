@@ -48,6 +48,9 @@ Git real, usá `--scope changed --base <referencia>` con el binario local.
 El análisis React tendrá sentido cuando existan código y dependencias React;
 la verificación actual de instalación sólo comprobó versión y ayuda.
 Los trazados de navegador y los informes son estado local y van fuera de Git.
+La configuración raíz `doctor.config.mjs` excluye bundles, `index.html`, skills,
+dependencias y herramientas auxiliares. Como este repositorio aún es vanilla,
+`reactDetected: false` describe cobertura, no un score React.
 
 ## Desloppify
 

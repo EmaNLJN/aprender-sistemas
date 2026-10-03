@@ -36,9 +36,15 @@ node build.mjs
 node qa/build-check.cjs
 ```
 
+Para la verificación habitual, `npm run build` regenera todos los assets y
+`npm test` ejecuta la suite local completa. `npm run lint` ejecuta ESLint;
+`npm run format:check` comprueba formato sin editar. `npm run format` aplica
+Prettier a los checks, manifiestos y configuraciones propias; las fuentes de la
+aplicación conservan su formato compacto existente.
+
 `build.mjs` valida el currículo y genera el `index.html` autónomo. `build.py` es
 un empaquetador alternativo que requiere bundles previos y no reemplaza esas
-validaciones. No existe actualmente un comando agregado `npm test` o `npm run build`.
+validaciones.
 
 Para construir y servir con Docker:
 
@@ -64,6 +70,9 @@ y abrí `http://localhost:8765`; detenelo con
 - Preferí soluciones portables entre Linux y macOS. Comentá atajos y automatizaciones
   no obvias con su disparador, acción y efectos visibles.
 - Editá fuentes y regenerá assets; conservá licencias y sincronizá el lockfile.
+- Usá ESLint para reglas de código y Prettier para formato, con configuraciones
+  separadas. Los avisos de complejidad requieren revisión; no desactives reglas
+  globalmente para ocultar un defecto. Conservá el formato original de las skills.
 - Mantené credenciales, rutas locales, cachés, progreso y resultados generados fuera
   de Git; actualizá `.gitignore` y `.dockerignore` al introducir nuevas salidas.
 

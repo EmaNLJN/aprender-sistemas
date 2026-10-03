@@ -18,27 +18,55 @@
   let codeEditor = null;
   let simulation = {ownership:'create',sliceCopied:false,sliceOriginal:20,sliceView:20,flow:0};
   let confirmAction = null;
+  function sanitizeResult(result, exercise) {
+    const tests = exercise.tests.map(test => {
+      const evidence = Array.isArray(result.tests)
+        ? result.tests.filter(candidate => candidate?.id === test.id) : [];
+      return {id: test.id, passed: evidence.length === 1 && evidence[0].passed === true};
+    });
+    return {
+      code: typeof result.code === 'string' ? result.code.slice(0, 30000) : '',
+      success: result.success === true,
+      stdout: String(result.stdout || '').slice(0, 12000),
+      stderr: String(result.stderr || '').slice(0, 18000),
+      transportError: result.transportError === true,
+      tests,
+      time: Number.isFinite(result.time) ? result.time : 0,
+      customTest: typeof result.customTest === 'string' ? result.customTest.slice(0, 3000) : '',
+      customPassed: result.customPassed === true
+    };
+  }
+  function sanitizeRecord(record, exercise) {
+    const clean = {};
+    const textLimits = {draft: 30000, reflection: 10000, customTest: 3000};
+    for (const [field, limit] of Object.entries(textLimits)) {
+      if (typeof record[field] === 'string') clean[field] = record[field].slice(0, limit);
+    }
+    const numberLimits = {attempts: Number.MAX_SAFE_INTEGER, hints: 3,
+      solvedAt: Number.MAX_SAFE_INTEGER, reviewAt: Number.MAX_SAFE_INTEGER, reviewedAt: Number.MAX_SAFE_INTEGER};
+    for (const [field, limit] of Object.entries(numberLimits)) {
+      if (Number.isFinite(record[field]) && record[field] >= 0) clean[field] = Math.min(record[field], limit);
+    }
+    if (Number.isInteger(record.prediction) && record.prediction >= 0 && record.prediction < exercise.prediction.options.length) {
+      clean.prediction = record.prediction;
+    }
+    for (const field of ['predictionCorrect', 'assisted', 'solutionSeen']) clean[field] = record[field] === true;
+    if (['again', 'practice', 'confident'].includes(record.confidence)) clean.confidence = record.confidence;
+    if (record.result && typeof record.result === 'object') clean.result = sanitizeResult(record.result, exercise);
+    return clean;
+  }
   function sanitize(raw) {
-    if (!raw || raw.version !== 1 || typeof raw.records !== 'object' || !raw.records) throw new Error('El laboratorio de esa copia no es compatible.');
+    if (!raw || raw.version !== 1 || typeof raw.records !== 'object' || !raw.records || Array.isArray(raw.records)) {
+      throw new Error('El laboratorio de esa copia no es compatible.');
+    }
     const clean = blank();
     for (const [id, record] of Object.entries(raw.records)) {
       if (!byId.has(id) || !record || typeof record !== 'object') continue;
-      const item = {};
-      for (const key of ['draft','reflection','customTest']) if (typeof record[key] === 'string') item[key] = record[key].slice(0,key === 'draft' ? 30000 : key === 'customTest' ? 3000 : 10000);
-      for (const key of ['attempts','hints','solvedAt','reviewAt','reviewedAt']) if (Number.isFinite(record[key]) && record[key] >= 0) item[key] = Math.min(record[key],key === 'hints' ? 3 : Number.MAX_SAFE_INTEGER);
-      if (Number.isInteger(record.prediction) && record.prediction >= 0 && record.prediction < byId.get(id).prediction.options.length) item.prediction = record.prediction;
-      for (const key of ['predictionCorrect','assisted','solutionSeen']) item[key] = record[key] === true;
-      if (['again','practice','confident'].includes(record.confidence)) item.confidence = record.confidence;
-      if (record.result && typeof record.result === 'object') {
-        const r = record.result;
-        const tests = byId.get(id).tests;
-        item.result = {code:typeof r.code === 'string' ? r.code.slice(0,30000) : '',success:r.success === true,stdout:String(r.stdout||'').slice(0,12000),stderr:String(r.stderr||'').slice(0,18000),transportError:r.transportError === true,tests:tests.map(test=>({id:test.id,passed:Array.isArray(r.tests)&&r.tests.some(candidate=>candidate?.id===test.id && candidate.passed === true)})),time:Number.isFinite(r.time)?r.time:0};
-        item.result.customTest=typeof r.customTest==='string'?r.customTest.slice(0,3000):'';
-        item.result.customPassed=r.customPassed===true;
-      }
-      clean.records[id] = item;
+      clean.records[id] = sanitizeRecord(record, byId.get(id));
     }
-    for (const lang of ['rust','go']) if (byId.get(raw.selected?.[lang])?.language === lang) clean.selected[lang] = raw.selected[lang];
+    for (const lang of ['rust', 'go']) {
+      if (byId.get(raw.selected?.[lang])?.language === lang) clean.selected[lang] = raw.selected[lang];
+    }
     return clean;
   }
   try {const saved = localStorage.getItem(KEY); if (saved) state = sanitize(JSON.parse(saved));}
@@ -95,7 +123,7 @@
     if(mode==='map'){url.searchParams.delete('campana');url.searchParams.delete('sistema');}
     if(mode==='exercise'){url.searchParams.set('ejercicio',selectedId);url.searchParams.set('paso',phase);}
     else{url.searchParams.delete('ejercicio');url.searchParams.delete('paso');}
-    try{history.replaceState(null,'',url);}catch{}
+    try{history.replaceState(null,'',url);}catch(error){ void error; /* File previews may not expose the History API. */ }
   }
   function mapHTML() {
     const stats=achievementStats();
@@ -306,7 +334,7 @@
   }
   async function copyText(text) {
     try{await navigator.clipboard.writeText(text);notify('Código copiado. Incluye las pruebas.');}
-    catch{const textarea=document.createElement('textarea');textarea.value=text;textarea.style.cssText='position:fixed;left:-9999px';document.body.appendChild(textarea);textarea.select();let success=false;try{success=document.execCommand('copy');}catch{}textarea.remove();notify(success?'Código copiado.':'No se pudo copiar automáticamente. Probá seleccionar el texto.');}
+    catch{const textarea=document.createElement('textarea');textarea.value=text;textarea.style.cssText='position:fixed;left:-9999px';document.body.appendChild(textarea);textarea.select();let success=false;try{success=document.execCommand('copy');}catch(error){ void error; /* Selection fallback remains available below. */ }textarea.remove();notify(success?'Código copiado.':'No se pudo copiar automáticamente. Probá seleccionar el texto.');}
   }
   function askConfirmation(title,message,action) {
     let dialog=document.getElementById('lab-confirm-dialog');
