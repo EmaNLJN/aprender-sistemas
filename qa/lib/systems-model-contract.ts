@@ -76,14 +76,17 @@ export function isFiniteJsonValue(value: unknown): boolean {
   return false;
 }
 
-// Misma regla que `isFiniteJsonValue`, con mensajes que distinguen el motivo.
+// Misma regla que `isFiniteJsonValue` (objetos planos, arreglos, null, textos,
+// booleanos y números finitos), con mensajes que distinguen el motivo.
 export function assertFiniteJson(value: unknown, owner: string): void {
   if (typeof value === 'number') {
     assert(Number.isFinite(value), `${owner}: non-finite numeric state`);
   } else if (Array.isArray(value)) {
     value.forEach((item) => assertFiniteJson(item, owner));
-  } else if (value && typeof value === 'object') {
-    Object.values(value).forEach((item) => assertFiniteJson(item, owner));
+  } else if (Object.prototype.toString.call(value) === '[object Object]') {
+    Object.values(value as Record<string, unknown>).forEach((item) =>
+      assertFiniteJson(item, owner),
+    );
   } else {
     assert(
       ['string', 'boolean'].includes(typeof value) || value === null,
@@ -125,7 +128,7 @@ export function isControlContract(control: ViewControl): boolean {
   );
 }
 
-// Regla: la tabla opcional tiene una fila de texto por cada columna.
+// Regla: si hay filas, hay columnas y cada fila tiene un texto por columna.
 export function rowsMatchColumns(view: ModelView): boolean {
   if (!view.rows) return true;
   const columns = view.columns;

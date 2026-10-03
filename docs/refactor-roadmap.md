@@ -24,7 +24,7 @@ archivo y nombre de función: los números de línea del diagnóstico original y
 - **Oráculo de equivalencia** para cambios que no deben alterar comportamiento: volcado JSON
   canónico de todos los globals de datos, de `initial`/`view`/`achieved` de los 25 modelos de
   Sistemas y del contenido de Atlas; hash de `dist/index.html`; y
-  `node qa/runtime-check.cjs {rust,go} --audit-record` (137/137 por lenguaje en la línea
+  `node qa/runtime-check.ts {rust,go} --audit-record` (137/137 por lenguaje en la línea
   base). Un refactor «puro» que cambia el volcado no es puro.
 - **Separación de commits:** lo mecánico (formato, movimientos, ports equivalentes) nunca se
   mezcla con cambios de comportamiento. Cada corrección de comportamiento lleva su propio
@@ -83,7 +83,7 @@ almacenamiento bloqueado y la copia ilegible se distinguen.
 | Andamiaje de modelos de Sistemas | `button`, `cell`, `metric`, `log`, `copy`, `achieved` en los 4 dominios | `defineModel` generaliza la fábrica de `systems-infra.js`. |
 | Fábricas de ejercicios | 8 copias con 3 estrategias de ID | Una fábrica tipada con IDs explícitos. |
 | Validadores y helpers de QA | `plain` ×7, contrato de vista ×5 | `qa/lib/`. |
-| Protocolo de Playground y toolchains | `runner.js`, `qa/runtime-check.cjs`, `project-kit-source.js` | El criterio de éxito de Go difiere entre runner y runtime-check. |
+| Protocolo de Playground y toolchains | `runner.js`, `qa/runtime-check.ts`, `project-kit-source.js` | El criterio de éxito de Go difiere entre runner y runtime-check. |
 | Contexto del lab para campaña y Sistemas | API paralela; el lab busca tres veces | — |
 
 ### Módulos con demasiadas responsabilidades

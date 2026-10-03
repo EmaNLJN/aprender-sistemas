@@ -137,12 +137,17 @@ const expected: ModelId[] = [
   'balancing',
   'sharding',
 ];
+// A missing catalog global must fail loudly, not shrink the set of known IDs.
+function published<T>(list: T[] | undefined, name: string): T[] {
+  if (!Array.isArray(list)) throw new Error(`${name} was not published by its source`);
+  return list;
+}
 const allKnown = new Set(
   [
-    ...(context.window.RUST_LAB ?? []),
-    ...(context.window.GO_LAB ?? []),
-    ...(context.window.RUST_QUESTS ?? []),
-    ...(context.window.GO_QUESTS ?? []),
+    ...published(context.window.RUST_LAB, 'RUST_LAB'),
+    ...published(context.window.GO_LAB, 'GO_LAB'),
+    ...published(context.window.RUST_QUESTS, 'RUST_QUESTS'),
+    ...published(context.window.GO_QUESTS, 'GO_QUESTS'),
     ...labs,
   ].map((item) => item.id),
 );

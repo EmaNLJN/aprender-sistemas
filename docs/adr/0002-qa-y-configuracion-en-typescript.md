@@ -44,3 +44,8 @@ dependencia del proyecto.
   bundle de kits y `runtime-check --audit-record` en 137/137 por lenguaje.
 - El contexto VM sigue sin `structuredClone`; los helpers compartidos que deban
   ejecutarse en QA conservan la semántica JSON para clonar.
+- El bundle se evalúa en modo estricto y con alcance de módulo, igual que en
+  producción con Vite: una escritura sobre un estado congelado o una global
+  implícita ahora fallan también en QA. Al extraer reglas comunes del contrato de
+  vista de Sistemas se adoptó la variante más estricta (`rowsMatchColumns`,
+  `hasViewCollections`, `isControlContract`).
