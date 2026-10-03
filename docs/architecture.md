@@ -12,6 +12,7 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | Documento, entrada ESM y adaptadores legacy | `src/index.html`, `src/app/main.tsx`, `src/app/legacy/` |
 | Helpers y constantes compartidos, sin reglas de negocio | `src/shared/lib/`, `src/shared/config/` |
 | Evidencia de aprobación, interpretación de ejecuciones y fusión de registros | `src/entities/exercise/` |
+| Lectura versionada, respaldo y avisos de carga del progreso | `src/shared/lib/versioned-storage.ts` (ADR 0003) |
 | Navegación, recorrido y progreso general | `app.js`, `content.js`, `styles.css` |
 | Ejercicios del recorrido | `lab-rust.js`, `lab-go.js` |
 | Laboratorio, revisión y modelos educativos | `lab.js`, `lab-explorers.js`, `lab.css` |

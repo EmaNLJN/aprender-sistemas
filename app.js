@@ -1,5 +1,11 @@
 import { escapeHtml } from './src/shared/lib/escape-html';
 import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
+import {
+  describeLoadResult,
+  loadVersionedState,
+  removeVersionedState,
+  writeVersionedState,
+} from './src/shared/lib/versioned-storage';
 (() => {
   'use strict';
   const data = window.GUIDE_DATA;
@@ -71,48 +77,69 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
     notes: { rust: { learned: '', next: '' }, go: { learned: '', next: '' } },
     minutes: 25,
   });
-  function sanitize(raw) {
-    if (!raw || typeof raw !== 'object' || raw.version !== 1)
+  const isObjectLike = (value) => Boolean(value) && typeof value === 'object';
+  // Normaliza el recorrido y cuenta cada dato que no conserva (IDs desconocidos, valores de
+  // otro tipo o fuera de rango). Lanza si la forma o la versión no se reconocen.
+  function parseProgress(raw) {
+    if (!isObjectLike(raw) || raw.version !== 1)
       throw new Error('Formato de progreso no compatible.');
     const result = defaults();
+    let dropped = 0;
+    const languageIsValid = raw.language === 'rust' || raw.language === 'go';
+    if (raw.language !== undefined && !languageIsValid) dropped++;
     result.language = raw.language === 'go' ? 'go' : 'rust';
-    const filtered = (items, valid) => [
-      ...new Set(
-        Array.isArray(items) ? items.filter((id) => typeof id === 'string' && valid.has(id)) : [],
-      ),
-    ];
+    const filtered = (items, valid) => {
+      if (items === undefined) return [];
+      if (!Array.isArray(items)) {
+        dropped++;
+        return [];
+      }
+      const kept = items.filter((id) => typeof id === 'string' && valid.has(id));
+      dropped += items.length - kept.length;
+      return [...new Set(kept)];
+    };
     result.completed = filtered(raw.completed, stepIds);
     result.milestones = filtered(raw.milestones, milestoneIds);
     result.favorites = filtered(raw.favorites, resourceIds);
-    result.minutes = [15, 25, 45].includes(raw.minutes) ? raw.minutes : 25;
+    if ([15, 25, 45].includes(raw.minutes)) result.minutes = raw.minutes;
+    else if (raw.minutes !== undefined) dropped++;
     for (const language of ['rust', 'go'])
       for (const field of ['learned', 'next']) {
         const value = raw.notes?.[language]?.[field];
-        result.notes[language][field] = typeof value === 'string' ? value.slice(0, 20000) : '';
+        if (typeof value === 'string') result.notes[language][field] = value.slice(0, 20000);
+        else if (value !== undefined) dropped++;
       }
+    const answers = isObjectLike(raw.quizAnswers) ? raw.quizAnswers : {};
+    if (raw.quizAnswers !== undefined && answers !== raw.quizAnswers) dropped++;
     for (const step of allSteps) {
-      const answer = raw.quizAnswers?.[step.id];
+      const answer = answers[step.id];
       if (Number.isInteger(answer) && answer >= 0 && answer < step.quiz.options.length)
         result.quizAnswers[step.id] = answer;
     }
-    return result;
+    dropped += Object.keys(answers).length - Object.keys(result.quizAnswers).length;
+    return { state: result, dropped };
   }
-  let state = defaults();
-  let storageAvailable = true;
-  let loadNotice = '';
-  try {
-    const saved = localStorage.getItem(KEY);
-    if (saved) state = sanitize(JSON.parse(saved));
-    localStorage.setItem(KEY, JSON.stringify(state));
-  } catch {
-    storageAvailable = false;
-    loadNotice = 'No se pudo leer o guardar el avance. Podés exportarlo al terminar.';
+  // Importación: acepta lo que reconoce y descarta el resto sin contarlo.
+  const sanitize = (raw) => parseProgress(raw).state;
+  function loadNoticeFor(loaded) {
+    if (loaded.status === 'unavailable')
+      return 'No se pudo leer o guardar el avance. Podés exportarlo al terminar.';
+    return describeLoadResult(loaded, 'del recorrido');
   }
+  // Nunca escribe al cargar: la primera escritura es una acción del alumno.
+  const loaded = loadVersionedState(KEY, { blank: defaults, parse: parseProgress });
+  let state = loaded.state;
+  let storageAvailable = loaded.status !== 'unavailable';
   const filters = { query: '', language: 'all', category: 'all', cost: 'all', favorites: false };
   const campaignInit = window.TallerCampaign?.init();
-  if (campaignInit?.loadWarning) loadNotice = campaignInit.loadWarning;
   const systemsInit = window.TallerSystems?.init();
-  if (systemsInit?.loadWarning) loadNotice = systemsInit.loadWarning;
+  // Los avisos de todos los almacenes se muestran juntos; ninguno pisa a otro.
+  const loadNotices = [
+    loadNoticeFor(loaded),
+    campaignInit?.loadWarning,
+    systemsInit?.loadWarning,
+    window.TallerLab?.loadWarning?.(),
+  ].filter(Boolean);
   function syncLinkedLanguage() {
     const params = new URLSearchParams(location.search);
     if (location.hash === '#sistemas' && ['rust', 'go'].includes(params.get('lenguaje')))
@@ -137,12 +164,7 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
   let toastTimeout;
   const timer = { running: false, remaining: state.minutes * 60, deadline: 0 };
   function save() {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(state));
-      storageAvailable = true;
-    } catch {
-      storageAvailable = false;
-    }
+    storageAvailable = writeVersionedState(KEY, state);
     updateSaveLabel();
   }
   function updateSaveLabel() {
@@ -582,6 +604,7 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
   $('#cancel-reset').addEventListener('click', () => $('#confirm-dialog').close());
   $('#confirm-reset').addEventListener('click', () => {
     state = defaults();
+    removeVersionedState(KEY);
     window.TallerLab?.reset();
     window.TallerCampaignEngine?.reset();
     window.TallerSystemsEngine?.reset();
@@ -604,12 +627,14 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
       if (rawImport.campaign) window.TallerCampaignEngine.validateImport(rawImport.campaign);
       if (rawImport.lab) window.TallerLab.validateImport(rawImport.lab);
       if (rawImport.systems) window.TallerSystemsEngine.validateImport(rawImport.systems);
+      // El estado combinado se arma sin mutar `state`; se asigna al final.
       const combined = {
         ...state,
         completed: [...new Set([...state.completed, ...imported.completed])],
         milestones: [...new Set([...state.milestones, ...imported.milestones])],
         favorites: [...new Set([...state.favorites, ...imported.favorites])],
         quizAnswers: { ...state.quizAnswers, ...imported.quizAnswers },
+        notes: { rust: { ...state.notes.rust }, go: { ...state.notes.go } },
       };
       for (const language of ['rust', 'go'])
         for (const field of ['learned', 'next'])
@@ -631,5 +656,5 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
     event.target.value = '';
   });
   render();
-  if (loadNotice) toast(loadNotice);
+  if (loadNotices.length) toast(loadNotices.join(' · '));
 })();

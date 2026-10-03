@@ -26,6 +26,7 @@ const checks = [
   'systems-pc-check.ts',
   'project-kit-check.ts',
   'shared-lib-check.ts',
+  'versioned-storage-check.ts',
 ];
 
 for (const check of checks) {

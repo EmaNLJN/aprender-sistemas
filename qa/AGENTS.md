@@ -51,6 +51,8 @@ cambies y evitá reformatear las skills importadas o las salidas generadas.
 | IDs de ejercicios, mundos, talleres o conceptos | `node qa/curriculum-ids-check.ts` |
 | Ejercicios o contratos de revisión | `node qa/content-check.ts`, `node qa/runner-check.ts` |
 | Recorrido, biblioteca o respaldo global | `node qa/guide-content-check.ts`, `node qa/app-shell-check.ts` |
+| Lectura, respaldo o avisos de carga del progreso | `node qa/versioned-storage-check.ts` y el check del almacén afectado |
+| Evidencia de aprobación o interpretación de ejecuciones | `node qa/exercise-evidence-check.ts` |
 | Atlas | `node qa/atlas-check.ts` |
 | Mundos, desbloqueos, XP o progreso de campaña | `node qa/campaign-check.ts`, `node qa/campaign-content-check.ts` |
 | Importación, validación o exportación del laboratorio | `node qa/lab-state-check.ts`, campaña y Sistemas |

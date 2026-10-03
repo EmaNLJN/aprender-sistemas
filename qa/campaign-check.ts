@@ -133,6 +133,7 @@ const worlds: Worlds = Object.fromEntries(
   ]),
 );
 const storageKey = 'taller-campaign-v1';
+const backupKey = 'taller-campaign-v1:respaldo';
 function fresh(saved?: string, failStorage = false): Fresh {
   const store = new Map<string, string>(saved === undefined ? [] : [[storageKey, saved]]);
   const context = vm.createContext({
@@ -145,6 +146,10 @@ function fresh(saved?: string, failStorage = false): Fresh {
       setItem(key: string, value: string) {
         if (failStorage) throw Error('unavailable');
         store.set(key, value);
+      },
+      removeItem(key: string) {
+        if (failStorage) throw Error('unavailable');
+        store.delete(key);
       },
     },
   });
@@ -408,9 +413,76 @@ test('Storage reload preserves achievements; unavailable storage keeps in-memory
   assert.equal(offline.initialized.storageAvailable, false);
   assert.equal(sync(offline.engine, ['rust-1'], true).storageAvailable, false);
   assert.equal(world(offline.engine).score, 30);
+});
+test('Unreadable saved progress starts blank, keeps a backup copy and warns without touching the key', () => {
+  for (const saved of ['{bad json', JSON.stringify({ version: 2, seals: {}, checkpoints: {} })]) {
+    const corrupt = fresh(saved);
+    assert.equal(
+      corrupt.initialized.loadWarning,
+      'No se pudo leer el progreso de campaña guardado; se conservó una copia en taller-campaign-v1:respaldo.',
+    );
+    assert.equal(corrupt.initialized.storageAvailable, true);
+    assert.equal(world(corrupt.engine).score, 0);
+    assert.equal(corrupt.store.get(backupKey), saved);
+    assert.equal(corrupt.store.get(storageKey), saved);
+  }
+});
+test('Loading drops only invalid or unknown entries, keeps the rest and backs up the original text', () => {
+  const saved = JSON.stringify({
+    version: 1,
+    seals: {
+      'rust-1': { code: true, prediction: false, assisted: false },
+      'rust-2': { code: 'yes' },
+      'rust-3': 'broken',
+      'ghost-id': { code: true },
+    },
+    checkpoints: {
+      'rust-world-1': { passed: true, lastAnswer: 9 },
+      'ghost-world': { passed: true, lastAnswer: 0 },
+    },
+  });
+  const loaded = fresh(saved);
+  assert.equal(
+    loaded.initialized.loadWarning,
+    'Se descartaron 5 registros de campaña que esta versión no reconoce; se conservó una copia en taller-campaign-v1:respaldo.',
+  );
+  assert.equal(loaded.initialized.storageAvailable, true);
+  assert.deepEqual(plainJson(loaded.engine.exportState()), {
+    version: 1,
+    seals: { 'rust-1': { code: true, prediction: false, assisted: false } },
+    checkpoints: {},
+  });
+  assert.equal(world(loaded.engine).score, 20);
+  assert.equal(loaded.store.get(backupKey), saved);
+  assert.equal(loaded.store.get(storageKey), saved);
+});
+test('A valid saved copy loads without warning, backup or writes; the first save keeps the backup', () => {
+  const valid = JSON.stringify({
+    version: 1,
+    seals: { 'rust-1': { code: true, prediction: true, assisted: false } },
+    checkpoints: {},
+  });
+  const loaded = fresh(valid);
+  assert.equal(loaded.initialized.loadWarning, '');
+  assert.equal(loaded.store.has(backupKey), false);
+  assert.equal(world(loaded.engine).score, 30);
   const corrupt = fresh('{bad json');
-  assert.ok(corrupt.initialized.loadWarning);
-  assert.equal(world(corrupt.engine).score, 0);
+  sync(corrupt.engine, ['rust-1']);
+  assert.equal(corrupt.store.get(backupKey), '{bad json');
+  assert.equal(JSON.parse(corrupt.store.get(storageKey) ?? '').seals['rust-1'].code, true);
+});
+test('Blocked storage is the only case that reports storageAvailable false, without a load warning', () => {
+  const offline = fresh(undefined, true);
+  assert.equal(offline.initialized.storageAvailable, false);
+  assert.equal(offline.initialized.loadWarning, '');
+});
+test('Reset removes the saved progress and its backup copy', () => {
+  const { engine, store } = fresh('{bad json');
+  sync(engine, ['rust-1']);
+  assert.equal(store.has(storageKey) && store.has(backupKey), true);
+  engine.reset();
+  assert.equal(store.has(storageKey), false);
+  assert.equal(store.has(backupKey), false);
 });
 test('Reset clears both languages and checkpoints, then legacy sync can restore real lab achievements', () => {
   const { engine } = fresh();

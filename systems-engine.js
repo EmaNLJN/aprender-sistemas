@@ -1,6 +1,12 @@
 import { cloneJson } from './src/shared/lib/clone-json';
 import { hasPassingEvidence } from './src/entities/exercise';
 import { isPlainObject } from './src/shared/lib/is-plain-object';
+import {
+  describeLoadResult,
+  loadVersionedState,
+  removeVersionedState,
+  writeVersionedState,
+} from './src/shared/lib/versioned-storage';
 (() => {
   'use strict';
   const KEY = 'taller-systems-v1',
@@ -29,51 +35,80 @@ import { isPlainObject } from './src/shared/lib/is-plain-object';
     return state.records[key(id, language)] || (state.records[key(id, language)] = empty());
   }
   function persist() {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(state));
-      storageAvailable = true;
-    } catch {
-      storageAvailable = false;
-    }
+    storageAvailable = writeVersionedState(KEY, state);
   }
-  function validateImport(raw) {
-    if (raw === undefined || raw === null) return undefined;
+  function assertBackupShape(raw) {
     if (!isPlainObject(raw) || raw.version !== 1 || !isPlainObject(raw.records))
       throw new Error('La copia de Sistemas no es compatible.');
+  }
+  // Un registro pertenece al catálogo si su nombre es `lenguaje:taller` conocido.
+  function workshopFor(name) {
+    const [language, id, ...rest] = name.split(':');
+    if (rest.length || !languages.includes(language) || !catalog.has(id)) return null;
+    return catalog.get(id);
+  }
+  function sanitizeRecord(workshop, value) {
+    const id = workshop.id,
+      allowed = new Set(workshop.objectives.map((goal) => goal.id));
+    if (!isPlainObject(value) || !Array.isArray(value.observed) || !Array.isArray(value.steps))
+      throw new Error('Progreso de taller inválido: ' + id);
+    for (const field of ['code', 'predicted'])
+      if (typeof value[field] !== 'boolean') throw new Error('Sello de taller inválido: ' + id);
+    if (
+      value.answer !== null &&
+      (!Number.isInteger(value.answer) ||
+        value.answer < 0 ||
+        value.answer >= workshop.prediction.options.length)
+    )
+      throw new Error('Respuesta de taller inválida: ' + id);
+    if (typeof value.note !== 'string') throw new Error('Nota de taller inválida: ' + id);
+    return {
+      observed: [...new Set(value.observed.filter((goal) => allowed.has(goal)))],
+      code: value.code,
+      predicted: value.predicted,
+      answer: value.answer,
+      steps: [
+        ...new Set(
+          value.steps.filter(
+            (index) => Number.isInteger(index) && index >= 0 && index < workshop.steps.length,
+          ),
+        ),
+      ],
+      note: value.note.slice(0, 10000),
+    };
+  }
+  // Importación: estricta y todo-o-nada; un registro inválido rechaza la copia.
+  function validateImport(raw) {
+    if (raw === undefined || raw === null) return undefined;
+    assertBackupShape(raw);
     const clean = blank();
     for (const [name, value] of Object.entries(raw.records)) {
-      const [language, id, ...rest] = name.split(':');
-      if (rest.length || !languages.includes(language) || !catalog.has(id)) continue;
-      const workshop = catalog.get(id),
-        allowed = new Set(workshop.objectives.map((goal) => goal.id));
-      if (!isPlainObject(value) || !Array.isArray(value.observed) || !Array.isArray(value.steps))
-        throw new Error('Progreso de taller inválido: ' + id);
-      for (const field of ['code', 'predicted'])
-        if (typeof value[field] !== 'boolean') throw new Error('Sello de taller inválido: ' + id);
-      if (
-        value.answer !== null &&
-        (!Number.isInteger(value.answer) ||
-          value.answer < 0 ||
-          value.answer >= workshop.prediction.options.length)
-      )
-        throw new Error('Respuesta de taller inválida: ' + id);
-      if (typeof value.note !== 'string') throw new Error('Nota de taller inválida: ' + id);
-      clean.records[name] = {
-        observed: [...new Set(value.observed.filter((goal) => allowed.has(goal)))],
-        code: value.code,
-        predicted: value.predicted,
-        answer: value.answer,
-        steps: [
-          ...new Set(
-            value.steps.filter(
-              (index) => Number.isInteger(index) && index >= 0 && index < workshop.steps.length,
-            ),
-          ),
-        ],
-        note: value.note.slice(0, 10000),
-      };
+      const workshop = workshopFor(name);
+      if (workshop) clean.records[name] = sanitizeRecord(workshop, value);
     }
     return clean;
+  }
+  // Carga: tolerante por registro. Descarta y cuenta los inválidos o de talleres desconocidos.
+  function parseSaved(raw) {
+    assertBackupShape(raw);
+    const clean = blank();
+    let dropped = 0;
+    for (const [name, value] of Object.entries(raw.records)) {
+      const workshop = workshopFor(name);
+      if (!workshop) {
+        dropped++;
+        continue;
+      }
+      try {
+        clean.records[name] = sanitizeRecord(workshop, value);
+      } catch {
+        dropped++;
+      }
+    }
+    return { state: clean, dropped };
+  }
+  function loadWarningFor(loaded) {
+    return describeLoadResult(loaded, 'de Sistemas');
   }
   function requireCore(workshop, language, allExercises) {
     const exercise = allExercises.get(workshop.code?.[language]);
@@ -126,22 +161,10 @@ import { isPlainObject } from './src/shared/lib/is-plain-object';
     }
     catalog = next;
     exercises = allExercises;
-    state = blank();
-    storageAvailable = true;
-    let loadWarning = '';
-    try {
-      const saved = localStorage.getItem(KEY);
-      if (saved) {
-        const parsed = validateImport(JSON.parse(saved));
-        if (!parsed) throw new Error('Estado vacío.');
-        state = parsed;
-      }
-    } catch {
-      loadWarning =
-        'No se pudo leer el avance de Sistemas. Podés conservar esta sesión exportando tu progreso.';
-      storageAvailable = false;
-    }
-    return { storageAvailable, loadWarning };
+    const loaded = loadVersionedState(KEY, { blank, parse: parseSaved });
+    state = loaded.state;
+    storageAvailable = loaded.status !== 'unavailable';
+    return { storageAvailable, loadWarning: loadWarningFor(loaded) };
   }
   function get(id, language) {
     const workshop = requireWorkshop(id, language),
@@ -242,7 +265,7 @@ import { isPlainObject } from './src/shared/lib/is-plain-object';
     exportState: () => cloneJson(state),
     reset() {
       state = blank();
-      persist();
+      removeVersionedState(KEY);
     },
   };
 })();

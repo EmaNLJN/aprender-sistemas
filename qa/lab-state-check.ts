@@ -26,6 +26,8 @@ interface LabState {
   selected: Record<string, string>;
 }
 interface TallerLabApi {
+  loadWarning: () => string;
+  reset: () => void;
   importState: (raw: unknown) => void;
   exportState: () => LabState;
   validateImport: (raw: unknown) => LabState;
@@ -43,7 +45,15 @@ interface LabWindow {
 let passed = 0,
   failed = 0;
 
-function environment(): { lab: TallerLabApi; campaign: CampaignApi } {
+const LAB_KEY = 'taller-laboratorio-v1';
+const LAB_BACKUP_KEY = 'taller-laboratorio-v1:respaldo';
+interface Environment {
+  lab: TallerLabApi;
+  campaign: CampaignApi;
+  saved: Map<string, string>;
+}
+
+function environment(stored?: string, blocked = false): Environment {
   const exercise = {
     id: 'rust-1',
     language: 'rust',
@@ -51,20 +61,24 @@ function environment(): { lab: TallerLabApi; campaign: CampaignApi } {
     prediction: { options: ['A', 'B'], answer: 0 },
     tests: [{ id: 't1' }, { id: 't2' }, { id: 't3' }],
   };
-  const saved = new Map<string, string>();
+  const saved = new Map<string, string>(stored === undefined ? [] : [[LAB_KEY, stored]]);
   const window = { RUST_LAB: [exercise] } as LabWindow;
+  const guard = (): void => {
+    if (blocked) throw new Error('almacenamiento bloqueado');
+  };
   const context = vm.createContext({
     window,
     localStorage: {
-      getItem: (key: string) => saved.get(key) ?? null,
-      setItem: (key: string, value: string) => saved.set(key, value),
+      getItem: (key: string) => (guard(), saved.get(key) ?? null),
+      setItem: (key: string, value: string) => (guard(), saved.set(key, value)),
+      removeItem: (key: string) => (guard(), saved.delete(key)),
     },
   });
   for (const file of ['lab.js', 'campaign-engine.js']) runSource(context, file);
   const lab = window.TallerLab,
     campaign = window.TallerCampaignEngine;
   campaign.init({ exercises: [exercise], worlds: { rust: [], go: [] } });
-  return { lab, campaign };
+  return { lab, campaign, saved };
 }
 
 function backup(tests: Evidence[]) {
@@ -281,6 +295,94 @@ test('Other imported fields still replace local ones', () => {
   assert.equal(merged.hints, 1);
   assert.equal(merged.reviewAt, 100);
   assert.equal(merged.customTest, '2 == 2');
+});
+
+const validRecord = { draft: 'borrador conservado', attempts: 2 };
+
+test('Loading a valid copy keeps it, warns nothing and writes nothing', () => {
+  const text = JSON.stringify({ version: 1, records: { 'rust-1': validRecord } });
+  const { lab, saved } = environment(text);
+  assert.equal(lab.loadWarning(), '');
+  assert.equal(plain(lab.exportState()).records['rust-1'].draft, 'borrador conservado');
+  assert.deepEqual([...saved.keys()], [LAB_KEY]);
+  assert.equal(saved.get(LAB_KEY), text);
+});
+
+test('An unreadable copy starts blank, keeps a backup and the first save does not lose it', () => {
+  for (const text of ['{roto', JSON.stringify({ version: 2, records: {} })]) {
+    const { lab, saved } = environment(text);
+    assert.equal(
+      lab.loadWarning(),
+      'No se pudo leer el progreso del laboratorio guardado; se conservó una copia en taller-laboratorio-v1:respaldo.',
+    );
+    assert.deepEqual(plain(lab.exportState()).records, {});
+    assert.equal(saved.get(LAB_BACKUP_KEY), text);
+    assert.equal(saved.get(LAB_KEY), text);
+    lab.importState({ version: 1, records: { 'rust-1': validRecord } });
+    assert.equal(saved.get(LAB_BACKUP_KEY), text);
+    assert.equal(JSON.parse(saved.get(LAB_KEY) ?? '').records['rust-1'].attempts, 2);
+  }
+});
+
+test('Loading drops records of unknown ids or non-objects, keeps the rest and backs up the text', () => {
+  const text = JSON.stringify({
+    version: 1,
+    records: {
+      'rust-1': validRecord,
+      'desconocido-9': { draft: 'x' },
+      'rust-2': 'texto',
+      'rust-3': null,
+    },
+    selected: { rust: 'rust-1', go: 'go-999' },
+  });
+  const { lab, saved } = environment(text);
+  assert.equal(
+    lab.loadWarning(),
+    'Se descartaron 3 registros del laboratorio que esta versión no reconoce; se conservó una copia en taller-laboratorio-v1:respaldo.',
+  );
+  const state = plain(lab.exportState());
+  assert.deepEqual(Object.keys(state.records), ['rust-1']);
+  assert.equal(state.selected.rust, 'rust-1');
+  assert.equal(saved.get(LAB_BACKUP_KEY), text);
+  assert.equal(saved.get(LAB_KEY), text);
+});
+
+test('A known id whose record is not an object is dropped too', () => {
+  const text = JSON.stringify({ version: 1, records: { 'rust-1': 'texto' } });
+  const { lab, saved } = environment(text);
+  assert.match(lab.loadWarning(), /^Se descartó 1 registro del laboratorio /);
+  assert.deepEqual(plain(lab.exportState()).records, {});
+  assert.equal(saved.get(LAB_BACKUP_KEY), text);
+});
+
+test('An invalid selected entry alone is not a dropped record', () => {
+  const text = JSON.stringify({
+    version: 1,
+    records: { 'rust-1': validRecord },
+    selected: { rust: 'go-1', go: 7 },
+  });
+  const { lab, saved } = environment(text);
+  assert.equal(lab.loadWarning(), '');
+  assert.equal(saved.has(LAB_BACKUP_KEY), false);
+  assert.equal(plain(lab.exportState()).selected.rust, null);
+});
+
+test('Blocked storage loads blank without a load warning and saving is the only failure', () => {
+  const { lab, saved } = environment(undefined, true);
+  assert.equal(lab.loadWarning(), '');
+  assert.equal(saved.size, 0);
+  assert.doesNotThrow(() => lab.importState({ version: 1, records: { 'rust-1': validRecord } }));
+  assert.equal(plain(lab.exportState()).records['rust-1'].attempts, 2);
+});
+
+test('Reset removes the saved progress copy and its backup', () => {
+  const { lab, saved } = environment('{roto');
+  lab.importState({ version: 1, records: { 'rust-1': validRecord } });
+  assert.equal(saved.has(LAB_BACKUP_KEY), true);
+  lab.reset();
+  assert.equal(saved.has(LAB_BACKUP_KEY), false);
+  assert.deepEqual(plain(lab.exportState()).records, {});
+  assert.equal(lab.loadWarning(), '');
 });
 
 console.log(passed + ' lab state scenarios passed; ' + failed + ' failed.');

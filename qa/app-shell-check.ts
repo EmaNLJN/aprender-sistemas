@@ -2,7 +2,8 @@
  * node qa/app-shell-check.ts
  * Ejecuta content.js y app.js sobre un DOM falso mínimo (sin dependencias) y adaptadores
  * falsos de Lab, Campaña, Sistemas y Atlas que registran sus llamadas. Fija el
- * comportamiento ACTUAL, incluidos los defectos conocidos; no cambia código de producción.
+ * comportamiento vigente (ADR 0003: carga sin escritura, respaldo antes de perder datos,
+ * avisos acumulados e importación atómica).
  * Los valores esperados están escritos a mano desde el contrato del respaldo y de content.js.
  */
 import assert from 'node:assert/strict';
@@ -11,6 +12,7 @@ import { plainJson } from './lib/plain-json.ts';
 import { runSource } from './lib/sources.ts';
 
 const STORAGE_KEY = 'taller-learning-v1';
+const BACKUP_KEY = 'taller-learning-v1:respaldo';
 const FIXED_NOW = '2026-03-04T05:06:07.000Z';
 
 type Handler = (event: FakeEvent) => unknown;
@@ -164,6 +166,7 @@ interface Harness {
   storage: Map<string, string>;
   downloads: FakeElement[];
   toast(): string;
+  languageButtons: FakeElement[];
   storedState(): Record<string, unknown>;
 }
 
@@ -171,7 +174,12 @@ interface HarnessOptions {
   hash?: string;
   search?: string;
   stored?: unknown;
+  storedRaw?: string;
+  blocked?: boolean;
+  backup?: string;
+  warnings?: Partial<Record<'lab' | 'campaign' | 'systems', string>>;
   failValidate?: Partial<Record<'lab' | 'campaign' | 'systems', string>>;
+  failImport?: Partial<Record<'lab' | 'campaign' | 'systems', string>>;
 }
 
 const ids = [
@@ -221,6 +229,8 @@ function buildHarness(options: HarnessOptions = {}): Harness {
   const callArgs: Record<string, unknown> = {};
   const storage = new Map<string, string>();
   if (options.stored !== undefined) storage.set(STORAGE_KEY, JSON.stringify(options.stored));
+  if (options.storedRaw !== undefined) storage.set(STORAGE_KEY, options.storedRaw);
+  if (options.backup !== undefined) storage.set(BACKUP_KEY, options.backup);
 
   const query = (selector: string): FakeElement | null => {
     if (selector.startsWith('#')) return elements[selector.slice(1)] ?? null;
@@ -280,7 +290,11 @@ function buildHarness(options: HarnessOptions = {}): Harness {
       const failure = options.failValidate?.[key];
       if (failure) throw new Error(failure);
     },
-    importState: (raw: unknown) => record(`${prefix}.importState`, [raw]),
+    importState: (raw: unknown) => {
+      record(`${prefix}.importState`, [raw]);
+      const failure = options.failImport?.[key];
+      if (failure) throw new Error(failure);
+    },
     reset: () => record(`${prefix}.reset`),
   });
   const context = {
@@ -291,8 +305,18 @@ function buildHarness(options: HarnessOptions = {}): Harness {
     document,
     location,
     localStorage: {
-      getItem: (key: string) => storage.get(key) ?? null,
-      setItem: (key: string, value: string) => void storage.set(key, String(value)),
+      getItem: (key: string) => {
+        if (options.blocked) throw new Error('almacenamiento bloqueado');
+        return storage.get(key) ?? null;
+      },
+      setItem: (key: string, value: string) => {
+        if (options.blocked) throw new Error('almacenamiento bloqueado');
+        storage.set(key, String(value));
+      },
+      removeItem: (key: string) => {
+        if (options.blocked) throw new Error('almacenamiento bloqueado');
+        storage.delete(key);
+      },
     },
     history: { replaceState: () => undefined },
     navigator: {},
@@ -304,19 +328,20 @@ function buildHarness(options: HarnessOptions = {}): Harness {
     scrollTo: () => undefined,
     TallerLab: {
       ...adapter('Lab', 'lab', labExport),
+      loadWarning: () => options.warnings?.lab ?? '',
       mount: () => record('Lab.mount'),
       unmount: () => record('Lab.unmount'),
       getExercises: () => (record('Lab.getExercises'), []),
     },
     TallerCampaign: {
-      init: () => (record('Campaign.init'), {}),
+      init: () => (record('Campaign.init'), { loadWarning: options.warnings?.campaign ?? '' }),
       sync: () => record('Campaign.sync'),
       mount: () => record('Campaign.mount'),
       unmount: () => record('Campaign.unmount'),
     },
     TallerCampaignEngine: adapter('CampaignEngine', 'campaign', campaignExport),
     TallerSystems: {
-      init: () => (record('Systems.init'), {}),
+      init: () => (record('Systems.init'), { loadWarning: options.warnings?.systems ?? '' }),
       mount: () => record('Systems.mount'),
       unmount: () => record('Systems.unmount'),
       resetSimulations: () => record('Systems.resetSimulations'),
@@ -341,6 +366,7 @@ function buildHarness(options: HarnessOptions = {}): Harness {
     timers,
     storage,
     downloads,
+    languageButtons,
     toast: () => elements['toast']?.textContent ?? '',
     storedState: () => JSON.parse(storage.get(STORAGE_KEY) ?? 'null') as Record<string, unknown>,
   };
@@ -569,61 +595,150 @@ await test('e) atomicidad: si validateImport de Sistemas lanza, nada se importa'
   assert.deepEqual(await exportedProgress(harness), before);
 });
 
-await test('f) DEFECTO CONOCIDO (poda al cargar): se descartan datos que la versión actual no conoce', async () => {
-  // Una fase posterior corregirá este comportamiento a propósito: hoy sanitize() borra
-  // pasos y favoritos desconocidos, ajusta minutes y vacía notas no textuales al cargar,
-  // y reescribe el storage, de modo que un progreso de otra versión se pierde.
+await test('e) atomicidad: si importState de Sistemas lanza a mitad, notas y pasos locales no cambian', async () => {
   const harness = buildHarness({
-    stored: {
-      version: 1,
-      language: 'go',
-      completed: ['paso-desconocido', 'go-save'],
-      milestones: ['go-memory', 'go-inexistente'],
-      favorites: ['favorito-inexistente', 'go-tour'],
-      quizAnswers: { 'go-save': 1, 'paso-desconocido': 0 },
-      notes: { go: { learned: 42, next: 'sigo con tests' } },
-      minutes: 99,
-    },
+    stored: localProgress,
+    failImport: { systems: 'Sistemas falló al aplicar.' },
   });
-  assert.deepEqual(harness.storedState(), {
-    version: 1,
-    language: 'go',
-    completed: ['go-save'],
-    milestones: ['go-memory'],
-    favorites: ['go-tour'],
-    quizAnswers: { 'go-save': 1 },
-    notes: {
-      rust: { learned: '', next: '' },
-      go: { learned: '', next: 'sigo con tests' },
-    },
-    minutes: 25,
-  });
-  assert.equal(harness.toast(), '');
+  const before = await exportedProgress(harness);
+  await importFile(harness, JSON.stringify(validImport));
+  assert.equal(harness.toast(), 'No se pudo importar: Sistemas falló al aplicar.');
+  assert.deepEqual(
+    harness.calls.filter((name) => name.endsWith('.importState')),
+    ['CampaignEngine.importState', 'Lab.importState', 'SystemsEngine.importState'],
+  );
+  const after = await exportedProgress(harness);
+  assert.deepEqual(after.notes, localProgress.notes);
+  assert.deepEqual(after.completed, localProgress.completed);
+  assert.deepEqual(after.milestones, localProgress.milestones);
+  assert.deepEqual(after.favorites, localProgress.favorites);
+  assert.deepEqual(after.quizAnswers, localProgress.quizAnswers);
+  assert.deepEqual(after, before);
+  assert.deepEqual(harness.storedState(), localProgress);
 });
 
-await test('f) la poda también ocurre con un storage vacío: se escribe el estado por defecto', () => {
-  const harness = buildHarness();
-  assert.deepEqual(harness.storedState(), {
-    version: 1,
-    language: 'rust',
-    completed: [],
-    milestones: [],
-    favorites: [],
-    quizAnswers: {},
-    notes: { rust: { learned: '', next: '' }, go: { learned: '', next: '' } },
-    minutes: 25,
-  });
+const unknownProgress = {
+  version: 1,
+  language: 'go',
+  completed: ['paso-desconocido', 'go-save'],
+  milestones: ['go-memory', 'go-inexistente'],
+  favorites: ['favorito-inexistente', 'go-tour'],
+  quizAnswers: { 'go-save': 1, 'paso-desconocido': 0 },
+  notes: { go: { learned: 42, next: 'sigo con tests' } },
+  minutes: 99,
+};
+const droppedNotice =
+  'Se descartaron 6 registros del recorrido que esta versión no reconoce; se conservó una copia en taller-learning-v1:respaldo.';
+
+await test('f) cargar no escribe taller-learning-v1, ni siquiera con datos que se descartan', () => {
+  const raw = JSON.stringify(unknownProgress);
+  const harness = buildHarness({ storedRaw: raw });
+  assert.equal(harness.storage.get(STORAGE_KEY), raw);
+  const empty = buildHarness();
+  assert.equal(empty.storage.has(STORAGE_KEY), false);
+  assert.equal(empty.storage.has(BACKUP_KEY), false);
+  assert.equal(empty.toast(), '');
 });
 
-await test('f) un storage ilegible avisa y la app arranca con valores por defecto', async () => {
-  const harness = buildHarness({ stored: 'no es un objeto de progreso' });
+await test('f) con descartes: respaldo con el texto original, aviso y estado podado en memoria', async () => {
+  const raw = JSON.stringify(unknownProgress);
+  const harness = buildHarness({ storedRaw: raw });
+  assert.equal(harness.storage.get(BACKUP_KEY), raw);
+  assert.equal(harness.toast(), droppedNotice);
+  const exported = await exportedProgress(harness);
+  assert.equal(exported.language, 'go');
+  assert.deepEqual(exported.completed, ['go-save']);
+  assert.deepEqual(exported.milestones, ['go-memory']);
+  assert.deepEqual(exported.favorites, ['go-tour']);
+  assert.deepEqual(exported.quizAnswers, { 'go-save': 1 });
+  assert.deepEqual(exported.notes, {
+    rust: { learned: '', next: '' },
+    go: { learned: '', next: 'sigo con tests' },
+  });
+  assert.equal(exported.minutes, 25);
+});
+
+await test('f) la primera acción del alumno guarda el estado podado y conserva el respaldo', () => {
+  const raw = JSON.stringify(unknownProgress);
+  const harness = buildHarness({ storedRaw: raw });
+  void harness.languageButtons[0]?.dispatch('click');
+  assert.equal(harness.storedState().language, 'rust');
+  assert.deepEqual(harness.storedState().completed, ['go-save']);
+  assert.equal(harness.storage.get(BACKUP_KEY), raw);
+});
+
+await test('f) un respaldo previo no se pisa al cargar datos con descartes', () => {
+  const harness = buildHarness({
+    storedRaw: JSON.stringify(unknownProgress),
+    backup: 'respaldo anterior',
+  });
+  assert.equal(harness.storage.get(BACKUP_KEY), 'respaldo anterior');
+});
+
+await test('f) JSON ilegible: respaldo, aviso y la clave queda intacta', async () => {
+  const harness = buildHarness({ storedRaw: '{roto' });
+  assert.equal(harness.storage.get(BACKUP_KEY), '{roto');
+  assert.equal(harness.storage.get(STORAGE_KEY), '{roto');
   assert.equal(
     harness.toast(),
-    'No se pudo leer o guardar el avance. Podés exportarlo al terminar.',
+    'No se pudo leer el progreso del recorrido guardado; se conservó una copia en taller-learning-v1:respaldo.',
   );
   const exported = await exportedProgress(harness);
   assert.equal(exported.language, 'rust');
   assert.deepEqual(exported.completed, []);
+});
+
+await test('f) una copia de otra forma o versión avisa y arranca con valores por defecto', async () => {
+  for (const stored of ['no es un objeto de progreso', { ...localProgress, version: 2 }]) {
+    const harness = buildHarness({ stored });
+    assert.equal(
+      harness.toast(),
+      'No se pudo leer el progreso del recorrido guardado; se conservó una copia en taller-learning-v1:respaldo.',
+    );
+    assert.equal(harness.storage.get(BACKUP_KEY), JSON.stringify(stored));
+    assert.deepEqual((await exportedProgress(harness)).completed, []);
+  }
+});
+
+await test('f) con el almacenamiento bloqueado: aviso de no disponible y la app funciona', async () => {
+  const harness = buildHarness({ blocked: true });
+  assert.equal(
+    harness.toast(),
+    'No se pudo leer o guardar el avance. Podés exportarlo al terminar.',
+  );
+  assert.equal(harness.elements['save-label']?.textContent, 'Exportá para conservar tu avance');
+  assert.deepEqual((await exportedProgress(harness)).completed, []);
+});
+
+await test('avisos: los de campaña y laboratorio se muestran juntos en un único toast', () => {
+  const harness = buildHarness({
+    warnings: { campaign: 'Aviso de campaña.', lab: 'Aviso del laboratorio.' },
+  });
+  assert.equal(harness.toast(), 'Aviso de campaña. · Aviso del laboratorio.');
+});
+
+await test('avisos: recorrido, campaña, Sistemas y laboratorio se acumulan sin perder ninguno', () => {
+  const harness = buildHarness({
+    storedRaw: '{roto',
+    warnings: { campaign: 'C.', systems: 'S.', lab: 'L.' },
+  });
+  assert.equal(
+    harness.toast(),
+    'No se pudo leer el progreso del recorrido guardado; se conservó una copia en taller-learning-v1:respaldo. · C. · S. · L.',
+  );
+});
+
+await test('h) borrar todo: elimina el respaldo del recorrido y reinicia a los motores', () => {
+  const harness = buildHarness({ stored: localProgress, backup: 'copia anterior' });
+  const before = harness.calls.length;
+  void harness.elements['confirm-reset']?.dispatch('click');
+  assert.equal(harness.storage.has(BACKUP_KEY), false);
+  assert.deepEqual(harness.storedState().completed, []);
+  assert.deepEqual(
+    harness.calls.slice(before).filter((name) => name.endsWith('.reset')),
+    ['Lab.reset', 'CampaignEngine.reset', 'SystemsEngine.reset'],
+  );
+  assert.equal(harness.toast(), 'Progreso reiniciado. Un nuevo comienzo.');
 });
 
 const milestoneSuffixes = ['memory', 'commands', 'files', 'measure', 'network'];

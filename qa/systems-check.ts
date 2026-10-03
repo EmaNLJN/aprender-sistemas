@@ -161,6 +161,7 @@ interface Storage {
   failWrite: boolean;
   getItem(key: string): string | null;
   setItem(key: string, value: unknown): void;
+  removeItem(key: string): void;
 }
 interface SystemsWindow {
   TallerSystemsEngine?: Engine;
@@ -217,6 +218,9 @@ function storage(seed: Record<string, string> = {}): Storage {
       if (this.failWrite) throw new Error('Storage full');
       this.writes++;
       data.set(key, String(value));
+    },
+    removeItem(key: string) {
+      data.delete(key);
     },
   };
 }
@@ -601,13 +605,14 @@ test('Progress including notes and checkboxes survives reload', () => {
   assert.equal(second.get('alpha', 'rust').seals, 0);
 });
 
-test('Unavailable storage keeps session progress exportable and reports the limitation', () => {
+test('Unavailable storage keeps session progress exportable; the shell reports the limitation', () => {
   const store = storage();
   store.failRead = true;
   store.failWrite = true;
   const { engine, status } = environment(store);
   assert.equal(status.storageAvailable, false);
-  assert(status.loadWarning);
+  // El shell ya avisa que el almacenamiento está bloqueado; Sistemas no lo repite.
+  assert.equal(status.loadWarning, '');
   engine.observe('alpha', 'rust', ['a', 'b', 'c']);
   engine.answer('alpha', 'rust', 1);
   engine.syncLab(labResult());
@@ -620,17 +625,85 @@ test('Unavailable storage keeps session progress exportable and reports the limi
   assert.equal(engine.get('alpha', 'rust').storageAvailable, true);
 });
 
-test('Corrupt saved JSON recovers to usable blank progress', () => {
-  const { engine, status } = environment(storage({ [KEY]: '{broken' }));
-  assert(status.loadWarning);
-  assert.equal(engine.get('alpha', 'rust').seals, 0);
+const BACKUP_KEY = 'taller-systems-v1:respaldo';
+
+test('Unreadable saved JSON starts blank, keeps a backup copy and warns without touching the key', () => {
+  for (const saved of ['{broken', 'null', JSON.stringify({ version: 2, records: {} })]) {
+    const store = storage({ [KEY]: saved });
+    const { engine, status } = environment(store);
+    assert.equal(
+      status.loadWarning,
+      'No se pudo leer el progreso de Sistemas guardado; se conservó una copia en taller-systems-v1:respaldo.',
+    );
+    assert.equal(status.storageAvailable, true);
+    assert.equal(engine.get('alpha', 'rust').seals, 0);
+    assert.equal(store.data.get(BACKUP_KEY), saved);
+    assert.equal(store.data.get(KEY), saved);
+    assert.equal(store.writes, 1);
+  }
 });
 
-test('Saved JSON null cannot replace live state with undefined', () => {
-  const { engine, status } = environment(storage({ [KEY]: 'null' }));
-  assert.doesNotThrow(() => engine.get('alpha', 'rust'));
-  assert.equal(engine.get('alpha', 'rust').seals, 0);
-  assert(status.loadWarning, 'A malformed persisted payload should produce a warning.');
+test('Loading drops only invalid or unknown records, keeps the rest and backs up the original text', () => {
+  const good = progress({ observed: ['a', 'b'], code: true, note: 'kept note' });
+  const saved = JSON.stringify(
+    backup({
+      'rust:alpha': good,
+      'go:beta': progress({ code: 'yes' }),
+      'rust:beta': { observed: 'a' },
+      'go:alpha': progress({ answer: 9 }),
+      'rust:ghost': progress(),
+      'python:alpha': progress(),
+    }),
+  );
+  const store = storage({ [KEY]: saved });
+  const { engine, status } = environment(store);
+  assert.equal(
+    status.loadWarning,
+    'Se descartaron 5 registros de Sistemas que esta versión no reconoce; se conservó una copia en taller-systems-v1:respaldo.',
+  );
+  assert.equal(status.storageAvailable, true);
+  assert.deepEqual(plain(engine.exportState()), {
+    version: 1,
+    records: { 'rust:alpha': good },
+  });
+  assert.equal(store.data.get(BACKUP_KEY), saved);
+  assert.equal(store.data.get(KEY), saved);
+  assert.equal(store.writes, 1); // Sólo la copia de respaldo.
+});
+
+test('Loading normalizes a valid record like a backup import and never warns for it', () => {
+  const store = storage({
+    [KEY]: JSON.stringify(
+      backup({ 'go:alpha': progress({ observed: ['a', 'a', 'zzz'], steps: [1, 1, 7, 'x'] }) }),
+    ),
+  });
+  const { engine, status } = environment(store);
+  assert.equal(status.loadWarning, '');
+  assert.equal(store.data.has(BACKUP_KEY), false);
+  const loaded = engine.get('alpha', 'go').progress;
+  assert.deepEqual(plain(loaded.observed), ['a']);
+  assert.deepEqual(plain(loaded.steps), [1]);
+});
+
+test('The first save after an unreadable load keeps the original in the backup', () => {
+  const store = storage({ [KEY]: '{broken' });
+  const { engine } = environment(store);
+  engine.setNote('alpha', 'rust', 'fresh start');
+  assert.equal(store.data.get(BACKUP_KEY), '{broken');
+  assert.equal(JSON.parse(store.data.get(KEY) ?? '').records['rust:alpha'].note, 'fresh start');
+});
+
+test('Imports stay strict: one invalid record rejects the whole backup', () => {
+  const { engine } = environment();
+  engine.setNote('alpha', 'rust', 'local note');
+  const before = JSON.stringify(engine.exportState());
+  const mixed = backup({
+    'rust:alpha': progress({ code: true }),
+    'go:beta': progress({ code: 1 }),
+  });
+  assert.throws(() => engine.validateImport(mixed), /Sello de taller inválido: beta/);
+  assert.throws(() => engine.importState(mixed), /Sello de taller inválido: beta/);
+  assert.equal(JSON.stringify(engine.exportState()), before);
 });
 
 test('Returned objects cannot mutate internal earned state', () => {
@@ -646,12 +719,15 @@ test('Returned objects cannot mutate internal earned state', () => {
   assert.equal(engine.get('alpha', 'rust').progress.note, '');
 });
 
-test('Reset clears all languages, saves the blank state and survives reload', () => {
-  const shared = storage(),
+test('Reset clears all languages, removes the saved progress and its backup, and survives reload', () => {
+  const shared = storage({ [BACKUP_KEY]: 'copia previa' }),
     { engine } = environment(shared);
   engine.observe('alpha', 'rust', ['a']);
   engine.setNote('beta', 'go', 'Remove this');
+  assert.equal(shared.data.has(KEY), true);
   engine.reset();
+  assert.equal(shared.data.has(KEY), false);
+  assert.equal(shared.data.has(BACKUP_KEY), false);
   assert.deepEqual(plain(engine.exportState()), { version: 1, records: {} });
   const reloaded = environment(shared).engine;
   assert.equal(reloaded.get('alpha', 'rust').seals, 0);
@@ -766,6 +842,12 @@ if (process.argv.includes('--engine-only')) {
         (domain): domain is Domain => Boolean(domain),
       );
     assert(domains.length === 4, 'All four global domain objects must exist.');
+    assert(
+      [w.SYSTEMS_LOWLEVEL_LABS, w.SYSTEMS_INFRA_LABS, w.SYSTEMS_PLAY_LABS, w.SYSTEMS_PC_LABS].every(
+        Array.isArray,
+      ),
+      'All four lab globals must exist.',
+    );
     real = {
       context,
       workshops: domains.flatMap((d) => d.workshops),

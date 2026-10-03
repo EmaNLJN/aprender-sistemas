@@ -2,6 +2,12 @@ import { cloneJson } from './src/shared/lib/clone-json';
 import { interpretRun, mergeRecord, syncAfterRun, testPassed } from './src/entities/exercise';
 import { escapeHtml } from './src/shared/lib/escape-html';
 import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
+import {
+  describeLoadResult,
+  loadVersionedState,
+  removeVersionedState,
+  writeVersionedState,
+} from './src/shared/lib/versioned-storage';
 (() => {
   'use strict';
   const KEY = 'taller-laboratorio-v1';
@@ -116,7 +122,7 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
       clean.result = sanitizeResult(record.result, exercise);
     return clean;
   }
-  function sanitize(raw) {
+  function assertBackupShape(raw) {
     if (
       !raw ||
       raw.version !== 1 ||
@@ -126,30 +132,52 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
     ) {
       throw new Error('El laboratorio de esa copia no es compatible.');
     }
-    const clean = blank();
-    for (const [id, record] of Object.entries(raw.records)) {
-      if (!byId.has(id) || !record || typeof record !== 'object') continue;
-      clean.records[id] = sanitizeRecord(record, byId.get(id));
-    }
+  }
+  function sanitizeSelected(raw, clean) {
     for (const lang of ['rust', 'go']) {
       if (byId.get(raw.selected?.[lang])?.language === lang)
         clean.selected[lang] = raw.selected[lang];
     }
+  }
+  const isRecordObject = (id, record) =>
+    byId.has(id) && Boolean(record) && typeof record === 'object';
+  // Importación: los registros de IDs desconocidos o que no son objetos se omiten en silencio.
+  function sanitize(raw) {
+    assertBackupShape(raw);
+    const clean = blank();
+    for (const [id, record] of Object.entries(raw.records)) {
+      if (isRecordObject(id, record)) clean.records[id] = sanitizeRecord(record, byId.get(id));
+    }
+    sanitizeSelected(raw, clean);
     return clean;
   }
-  try {
-    const saved = localStorage.getItem(KEY);
-    if (saved) state = sanitize(JSON.parse(saved));
-  } catch {
-    saveAvailable = false;
-  }
-  function save() {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(state));
-      saveAvailable = true;
-    } catch {
-      saveAvailable = false;
+  // Carga: igual que la importación, pero cuenta los registros descartados. Un `selected`
+  // inválido se ignora sin contarse.
+  function parseSaved(raw) {
+    assertBackupShape(raw);
+    const clean = blank();
+    let dropped = 0;
+    for (const [id, record] of Object.entries(raw.records)) {
+      try {
+        if (!isRecordObject(id, record)) throw new Error('Registro desconocido: ' + id);
+        clean.records[id] = sanitizeRecord(record, byId.get(id));
+      } catch {
+        dropped++;
+      }
     }
+    sanitizeSelected(raw, clean);
+    return { state: clean, dropped };
+  }
+  function loadWarningFor(loaded) {
+    return describeLoadResult(loaded, 'del laboratorio');
+  }
+  // Nunca escribe al cargar: la primera escritura es una acción del alumno.
+  const loaded = loadVersionedState(KEY, { blank, parse: parseSaved });
+  state = loaded.state;
+  saveAvailable = loaded.status !== 'unavailable';
+  let loadWarning = loadWarningFor(loaded);
+  function save() {
+    saveAvailable = writeVersionedState(KEY, state);
   }
   const recordFor = (id) => state.records[id] || (state.records[id] = {});
   const list = () => exercises.filter((exercise) => exercise.language === language);
@@ -307,6 +335,7 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
     return `<section class="lab-intro"><div><div class="eyebrow"><span class="eyebrow-line"></span> LABORATORIO · ${langName().toUpperCase()}</div><h1>Aprendé tocando.<br><em>Entendé probando.</em></h1><p>El código lo escribís vos. Un revisor te acompaña con pruebas, pistas y el porqué de cada resultado. Equivocarte también hace avanzar el experimento.</p></div><div class="lab-stamp" aria-label="${list().length} desafíos en ${langName()}"><span>HECHO PARA EXPLORAR</span><strong>${list().length}</strong><span>DESAFÍOS EN ${langName().toUpperCase()}</span></div></section>
     <div class="lab-metrics"><span><strong>${stats.solved}/${list().length}</strong> resueltos</span><span><strong>${stats.topics.length}</strong> temas</span><span><strong>${stats.points}</strong> puntos de práctica</span><span><strong>${stats.due}</strong> para repasar</span></div>
     ${!saveAvailable ? '<div class="lab-storage-warning">El guardado local no está disponible. Exportá tu progreso desde Método y notas antes de cerrar.</div>' : ''}
+    ${loadWarning ? `<div class="lab-storage-warning">${escapeHtml(loadWarning)} Exportá tu progreso desde Método y notas para conservar lo que sigue.</div>` : ''}
     <div class="lab-continue"><div><span class="small-label">UN DESAFÍO PARA HOY</span><h2>${escapeHtml(next?.title || 'Tu próximo experimento')}</h2><p>${escapeHtml(next?.objective || '')}</p></div><button class="button" data-lab-action="open" data-id="${escapeHtml(next?.id)}">${stats.solved ? 'Seguir aprendiendo' : 'Entrar al laboratorio'} ↗</button></div>
     <div class="quest-banner"><p><strong>¿Preferís aprender como una expedición?</strong><br>Campaña suma mundos, katas, reparaciones y desafíos finales con desbloqueos.</p><a class="button secondary" href="#campana">Jugar la campaña ↗</a></div>${levelTabsHTML()}<div class="lab-toolbar"><label class="search-wrap"><span aria-hidden="true">⌕</span><input id="lab-search" name="buscar-desafio" autocomplete="off" type="search" value="${escapeHtml(query)}" placeholder="Buscá un tema o desafío…" aria-label="Buscar ejercicios"></label><div class="lab-toolbar-actions"><button class="button small secondary" data-lab-action="extras" aria-pressed="${extraOnly}">Clásicos y sistemas · ${list().filter((item) => item.stage > 15 && item.stage <= 20).length}</button><button class="button small secondary" data-lab-action="surprise">Sorprendeme ↗</button><button class="button small secondary" data-lab-action="due" aria-pressed="${dueOnly}">${dueOnly ? 'Ver todos' : 'Repasar pendientes'}${stats.due ? ' · ' + stats.due : ''}</button></div></div><p id="lab-filter-status" class="lab-filter-status" role="status">${list().filter(matches).length} desafíos visibles${extraOnly ? ' · ampliación Clásicos y sistemas' : ''}.</p><div id="lab-topic-grid" class="topic-grid">${topicsHTML()}</div>
     <div class="lab-map-caption"><span><i class="legend-dot"></i> Resuelto con pruebas</span><span><i class="legend-dot pending"></i> Repaso sugerido</span><span>Podés explorar cualquier tema, sin bloqueos.</span></div>
@@ -1140,6 +1169,7 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
     unmount,
     buildProgram,
     validateImport: sanitize,
+    loadWarning: () => loadWarning,
     getExercises: () => exercises,
     exportState: () => cloneJson(state),
     importState(raw) {
@@ -1157,6 +1187,8 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
       phase = 'learn';
       activeController?.abort();
       activeRun = null;
+      loadWarning = '';
+      removeVersionedState(KEY);
       save();
     },
   };

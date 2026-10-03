@@ -2,6 +2,12 @@ import { cloneJson } from './src/shared/lib/clone-json';
 import { hasPassingEvidence } from './src/entities/exercise';
 import { isPlainObject } from './src/shared/lib/is-plain-object';
 import { LEVEL_IDS } from './src/shared/config/levels';
+import {
+  describeLoadResult,
+  loadVersionedState,
+  removeVersionedState,
+  writeVersionedState,
+} from './src/shared/lib/versioned-storage';
 (() => {
   'use strict';
   const KEY = 'taller-campaign-v1';
@@ -30,14 +36,9 @@ import { LEVEL_IDS } from './src/shared/config/levels';
       .reduce((sum, ex) => sum + points(ex.id), 0);
   }
   function persist() {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(state));
-      storageAvailable = true;
-    } catch {
-      storageAvailable = false;
-    }
+    storageAvailable = writeVersionedState(KEY, state);
   }
-  function sanitize(raw) {
+  function assertBackupShape(raw) {
     if (
       !isPlainObject(raw) ||
       raw.version !== 1 ||
@@ -46,36 +47,66 @@ import { LEVEL_IDS } from './src/shared/config/levels';
     ) {
       throw new Error('La copia de campaña no tiene un formato compatible.');
     }
+  }
+  function sanitizeSeal(id, value) {
+    if (!isPlainObject(value)) throw new Error('Sello de ejercicio inválido: ' + id);
+    for (const key of ['code', 'prediction', 'assisted']) {
+      if (value[key] !== undefined && typeof value[key] !== 'boolean')
+        throw new Error('Sello de ejercicio inválido: ' + id);
+    }
+    return {
+      code: value.code === true,
+      prediction: value.prediction === true,
+      assisted: value.assisted === true,
+    };
+  }
+  function sanitizeCheckpoint(id, value) {
+    if (!isPlainObject(value) || typeof value.passed !== 'boolean')
+      throw new Error('Checkpoint inválido: ' + id);
+    const answer = value.lastAnswer ?? null;
+    if (
+      answer !== null &&
+      (!Number.isInteger(answer) ||
+        answer < 0 ||
+        answer >= worldById.get(id).checkpoint.options.length)
+    ) {
+      throw new Error('Respuesta de checkpoint inválida: ' + id);
+    }
+    return { passed: value.passed, lastAnswer: answer };
+  }
+  // Importación: estricta y todo-o-nada; un registro inválido rechaza la copia.
+  function sanitize(raw) {
+    assertBackupShape(raw);
     const clean = blank();
     for (const [id, value] of Object.entries(raw.seals)) {
-      if (!exercises.has(id)) continue;
-      if (!isPlainObject(value)) throw new Error('Sello de ejercicio inválido: ' + id);
-      for (const key of ['code', 'prediction', 'assisted']) {
-        if (value[key] !== undefined && typeof value[key] !== 'boolean')
-          throw new Error('Sello de ejercicio inválido: ' + id);
-      }
-      clean.seals[id] = {
-        code: value.code === true,
-        prediction: value.prediction === true,
-        assisted: value.assisted === true,
-      };
+      if (exercises.has(id)) clean.seals[id] = sanitizeSeal(id, value);
     }
     for (const [id, value] of Object.entries(raw.checkpoints)) {
-      if (!worldById.has(id)) continue;
-      if (!isPlainObject(value) || typeof value.passed !== 'boolean')
-        throw new Error('Checkpoint inválido: ' + id);
-      const answer = value.lastAnswer ?? null;
-      if (
-        answer !== null &&
-        (!Number.isInteger(answer) ||
-          answer < 0 ||
-          answer >= worldById.get(id).checkpoint.options.length)
-      ) {
-        throw new Error('Respuesta de checkpoint inválida: ' + id);
-      }
-      clean.checkpoints[id] = { passed: value.passed, lastAnswer: answer };
+      if (worldById.has(id)) clean.checkpoints[id] = sanitizeCheckpoint(id, value);
     }
     return clean;
+  }
+  // Carga: tolerante por registro. Descarta y cuenta los inválidos o de IDs desconocidos.
+  function parseSaved(raw) {
+    assertBackupShape(raw);
+    const clean = blank();
+    let dropped = 0;
+    const keepValid = (entries, isKnown, normalize, target) => {
+      for (const [id, value] of Object.entries(entries)) {
+        try {
+          if (!isKnown(id)) throw new Error('ID desconocido: ' + id);
+          target[id] = normalize(id, value);
+        } catch {
+          dropped++;
+        }
+      }
+    };
+    keepValid(raw.seals, (id) => exercises.has(id), sanitizeSeal, clean.seals);
+    keepValid(raw.checkpoints, (id) => worldById.has(id), sanitizeCheckpoint, clean.checkpoints);
+    return { state: clean, dropped };
+  }
+  function loadWarningFor(loaded) {
+    return describeLoadResult(loaded, 'de campaña');
   }
   function init(config) {
     if (!isPlainObject(config) || !Array.isArray(config.exercises))
@@ -158,22 +189,10 @@ import { LEVEL_IDS } from './src/shared/config/levels';
     worlds = nextWorlds;
     worldById = nextWorldById;
     initialized = true;
-    state = blank();
-    storageAvailable = true;
-    let loadWarning = '';
-    try {
-      const saved = localStorage.getItem(KEY);
-      if (saved) {
-        try {
-          state = sanitize(JSON.parse(saved));
-        } catch {
-          loadWarning = 'No se pudo leer el progreso de campaña guardado.';
-        }
-      }
-    } catch {
-      storageAvailable = false;
-    }
-    return { ready: true, storageAvailable, loadWarning };
+    const loaded = loadVersionedState(KEY, { blank, parse: parseSaved });
+    state = loaded.state;
+    storageAvailable = loaded.status !== 'unavailable';
+    return { ready: true, storageAvailable, loadWarning: loadWarningFor(loaded) };
   }
   function syncLab(labState) {
     assertReady();
@@ -378,7 +397,7 @@ import { LEVEL_IDS } from './src/shared/config/levels';
   function reset() {
     assertReady();
     state = blank();
-    persist();
+    removeVersionedState(KEY);
     return { storageAvailable };
   }
   window.TallerCampaignEngine = {
