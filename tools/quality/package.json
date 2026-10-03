@@ -1,0 +1,11 @@
+{
+  "name": "taller-quality-tools",
+  "private": true,
+  "description": "Herramientas locales de calidad, separadas de las dependencias de la web",
+  "scripts": {
+    "check:react": "react-doctor ../.. --verbose --no-telemetry"
+  },
+  "devDependencies": {
+    "react-doctor": "0.9.14"
+  }
+}

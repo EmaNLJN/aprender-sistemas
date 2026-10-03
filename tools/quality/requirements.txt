@@ -1,0 +1,14 @@
+# Development tooling only; install in tools/quality/.venv.
+# Keep the full analyzer extra and its resolved dependencies together.
+desloppify[full]==1.0
+bandit==1.9.4
+defusedxml==0.7.1
+markdown-it-py==4.2.0
+mdurl==0.1.2
+pillow==12.3.0
+Pygments==2.21.0
+PyYAML==6.0.3
+rich==15.0.0
+stevedore==5.9.1
+tree-sitter==0.26.0
+tree-sitter-language-pack==1.6.2
