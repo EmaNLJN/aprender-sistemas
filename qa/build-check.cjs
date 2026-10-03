@@ -14,15 +14,28 @@ const documentMarkup = html
   .replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '<script></script>')
   .replace(/<style\b[^>]*>[\s\S]*?<\/style>/g, '<style></style>');
 
-assert(source.includes('type="module" src="./main.tsx"'), 'Vite source must use the TypeScript ESM entry');
+assert(
+  source.includes('type="module" src="./main.tsx"'),
+  'Vite source must use the TypeScript ESM entry',
+);
 assert.equal(scripts.length, 1, 'Vite must inline one application bundle');
 assert.equal(styles.length, 1, 'Vite must inline one stylesheet bundle');
-assert.equal((html.match(/<!DOCTYPE html>/gi) || []).length, 1, 'bundle must not duplicate the document');
+assert.equal(
+  (html.match(/<!DOCTYPE html>/gi) || []).length,
+  1,
+  'bundle must not duplicate the document',
+);
 assert(!/<script\b[^>]*\bsrc=/.test(documentMarkup), 'no external runtime script dependencies');
-assert(!/<link\b[^>]*\brel="stylesheet"/.test(documentMarkup), 'no external runtime stylesheet dependencies');
-assert(!/<link\b[^>]*\brel="modulepreload"/.test(documentMarkup), 'no external module preload dependencies');
+assert(
+  !/<link\b[^>]*\brel="stylesheet"/.test(documentMarkup),
+  'no external runtime stylesheet dependencies',
+);
+assert(
+  !/<link\b[^>]*\brel="modulepreload"/.test(documentMarkup),
+  'no external module preload dependencies',
+);
 
-new vm.Script(scripts[0][1], {filename: 'dist/index.html:inline-app.js'});
+new vm.Script(scripts[0][1], { filename: 'dist/index.html:inline-app.js' });
 assert(html.includes('Permission is hereby granted'), 'editor license retained');
 assert(html.includes('Copyright (c) Meta Platforms'), 'React license retained in standalone HTML');
 assert(html.length < 2500000, 'unexpected standalone build growth');
