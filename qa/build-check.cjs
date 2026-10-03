@@ -1,0 +1,16 @@
+const fs=require('node:fs');
+const path=require('node:path');
+const vm=require('node:vm');
+const assert=require('node:assert/strict');
+const root=path.join(__dirname,'..');
+const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+const source=fs.readFileSync(path.join(root,'page.html'),'utf8');
+const expected=[...source.matchAll(/<script src="([^"]+)"><\/script>/g)].length;
+const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
+assert.equal(scripts.length,expected,'all local scripts must be bundled');
+assert.equal((html.match(/<!DOCTYPE html>/gi)||[]).length,1,'bundle must not duplicate the document');
+assert(!/<script src=/.test(html),'no external runtime script dependencies');
+scripts.forEach((m,i)=>new vm.Script(m[1],{filename:`inline-script-${i+1}.js`}));
+assert(html.includes('Permission is hereby granted'),'editor license retained');
+assert(html.length<2500000,'unexpected bundle growth, possibly replacement-string expansion');
+console.log(`${scripts.length} bundled scripts parse; one standalone document; licenses preserved. PASS`);

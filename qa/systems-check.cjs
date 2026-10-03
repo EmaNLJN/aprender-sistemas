@@ -1,0 +1,433 @@
+/* Systems progress contract + complete catalog. Pure Node; no network/browser. */
+'use strict';
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const root = path.resolve(__dirname, '..');
+const KEY = 'taller-systems-v1';
+const plain = value => JSON.parse(JSON.stringify(value));
+const engineSource = fs.readFileSync(path.join(root, 'systems-engine.js'), 'utf8');
+let passed = 0, failed = 0;
+function test(name, run) {
+  try { run(); passed++; process.stdout.write(`PASS ${name}\n`); }
+  catch (error) { failed++; process.stderr.write(`FAIL ${name}\n${error.stack}\n`); }
+}
+function storage(seed = {}) {
+  const data = new Map(Object.entries(seed));
+  return {data, writes: 0, failRead: false, failWrite: false,
+    getItem(key) { if (this.failRead) throw new Error('Storage blocked'); return data.get(key) ?? null; },
+    setItem(key, value) { if (this.failWrite) throw new Error('Storage full'); this.writes++; data.set(key, String(value)); }
+  };
+}
+function fixture() {
+  const workshops = ['alpha', 'beta'].map((id, i) => ({
+    id, title: id, model: id,
+    objectives: ['a', 'b', 'c'].map(id => ({id, label: id, why: 'Observable transition'})),
+    steps: Array.from({length: 4}, (_, index) => ({title: `Stage ${index}`, task: 'Implement', why: 'Reason', done: 'Criterion'})),
+    prediction: {question: 'Which invariant?', options: ['A', 'B', 'C'], answer: 1, explanation: 'Because B.'},
+    code: {rust: `rust-${113 + i}`, go: `go-${113 + i}`}
+  }));
+  const exercises = workshops.flatMap(w => ['rust', 'go'].map(language => ({
+    id: w.code[language], language, tests: ['t1', 't2', 't3'].map(id => ({id}))
+  })));
+  return {workshops, exercises, models: {alpha: {}, beta: {}}};
+}
+function environment(store = storage(), config = fixture()) {
+  const context = {window: {}, localStorage: store};
+  vm.createContext(context);
+  vm.runInContext(engineSource, context, {filename: 'systems-engine.js'});
+  const engine = context.window.TallerSystemsEngine;
+  const status = engine.init(config);
+  return {engine, status, store, context};
+}
+function result(overrides = {}) {
+  return {code: 'verified solution', success: true, transportError: false,
+    tests: ['t1', 't2', 't3'].map(id => ({id, passed: true})), ...overrides};
+}
+function labResult(id = 'rust-113', overrides = {}) { return {records: {[id]: {result: result(overrides)}}}; }
+function progress(overrides = {}) {
+  return {observed: [], code: false, predicted: false, answer: null, steps: [], note: '', ...overrides};
+}
+const backup = records => ({version: 1, records});
+
+test('Empty progress starts without earned seals', () => {
+  const {engine, status} = environment();
+  assert.equal(status.storageAvailable, true);
+  for (const language of ['rust', 'go']) for (const id of ['alpha', 'beta']) {
+    const w = engine.get(id, language);
+    assert.equal(w.seals, 0); assert.equal(w.completed, false); assert.equal(w.modelDone, false);
+  }
+});
+
+test('Observe filters unknown objectives and is idempotent', () => {
+  const {engine, store} = environment();
+  const first = engine.observe('alpha', 'rust', ['a', 'a', 'unknown', null, 7]);
+  assert.deepEqual(plain(first.added), ['a']);
+  assert.deepEqual(plain(first.progress.observed), ['a']);
+  const writes = store.writes;
+  const second = engine.observe('alpha', 'rust', ['a', 'unknown']);
+  assert.deepEqual(plain(second.added), []); assert.equal(store.writes, writes);
+  assert.equal(second.modelDone, false);
+});
+
+test('Language and workshop progress are isolated', () => {
+  const {engine} = environment();
+  engine.observe('alpha', 'rust', ['a', 'b', 'c']); engine.answer('alpha', 'rust', 1);
+  engine.syncLab(labResult());
+  assert.equal(engine.get('alpha', 'rust').completed, true);
+  assert.equal(engine.get('alpha', 'go').seals, 0);
+  assert.equal(engine.get('beta', 'rust').seals, 0);
+});
+
+test('Completion requires three observations, verified code and prediction', () => {
+  const {engine} = environment();
+  engine.syncLab(labResult());
+  assert.equal(engine.get('alpha', 'rust').seals, 1);
+  engine.observe('alpha', 'rust', ['a', 'b']); engine.answer('alpha', 'rust', 1);
+  assert.equal(engine.get('alpha', 'rust').seals, 2);
+  assert.equal(engine.get('alpha', 'rust').completed, false);
+  engine.observe('alpha', 'rust', ['c']);
+  assert.equal(engine.get('alpha', 'rust').seals, 3);
+  assert.equal(engine.get('alpha', 'rust').completed, true);
+});
+
+test('Manual project checkboxes and notes do not earn proof seals', () => {
+  const {engine} = environment();
+  for (let i = 0; i < 4; i++) engine.setStep('alpha', 'rust', i, true);
+  engine.setNote('alpha', 'rust', 'Completed my implementation.');
+  assert.equal(engine.get('alpha', 'rust').seals, 0);
+  engine.setStep('alpha', 'rust', 1, false);
+  assert.deepEqual(plain(engine.get('alpha', 'rust').progress.steps), [0, 2, 3]);
+  assert.equal(engine.get('alpha', 'rust').progress.note, 'Completed my implementation.');
+});
+
+test('A correct prediction stays earned after another answer', () => {
+  const {engine} = environment();
+  assert.equal(engine.answer('alpha', 'rust', 0).correct, false);
+  assert.equal(engine.get('alpha', 'rust').progress.predicted, false);
+  assert.equal(engine.answer('alpha', 'rust', 1).correct, true);
+  const last = engine.answer('alpha', 'rust', 2);
+  assert.equal(last.correct, false); assert.equal(last.progress.predicted, true); assert.equal(last.progress.answer, 2);
+});
+
+test('Invalid questions, languages and stages do not modify progress', () => {
+  const {engine, store} = environment();
+  const before = JSON.stringify(engine.exportState()), writes = store.writes;
+  for (const index of [-1, 3, 1.5, '1', NaN]) assert.throws(() => engine.answer('alpha', 'rust', index));
+  assert.throws(() => engine.observe('alpha', 'python', ['a']));
+  assert.throws(() => engine.observe('missing', 'rust', ['a']));
+  assert.throws(() => engine.setStep('alpha', 'rust', 4, true));
+  assert.equal(JSON.stringify(engine.exportState()), before); assert.equal(store.writes, writes);
+});
+
+test('Valid core evidence earns exactly its own seal once', () => {
+  const {engine, store} = environment();
+  assert.equal(engine.syncLab(labResult('go-113')).changed, true);
+  const writes = store.writes;
+  assert.equal(engine.syncLab(labResult('go-113')).changed, false);
+  assert.equal(store.writes, writes);
+  assert.equal(engine.get('alpha', 'go').progress.code, true);
+  assert.equal(engine.get('alpha', 'rust').progress.code, false);
+});
+
+test('Sync rejects failed transport, missing/blank code and non-success', () => {
+  const rejected = [
+    {success: false}, {success: 'true'}, {success: undefined}, {transportError: true},
+    {code: ''}, {code: ' \n\t '}, {code: null}, {code: 12}, {tests: null}, {tests: {}}, {tests: []}
+  ];
+  for (const invalid of rejected) {
+    const {engine} = environment();
+    assert.equal(engine.syncLab(labResult('rust-113', invalid)).changed, false, JSON.stringify(invalid));
+    assert.equal(engine.get('alpha', 'rust').progress.code, false, JSON.stringify(invalid));
+  }
+});
+
+test('Sync requires all three expected test IDs exactly once and truly passed', () => {
+  const rejected = [
+    [{id: 't1', passed: true}, {id: 't2', passed: true}],
+    [{id: 't1', passed: true}, {id: 't2', passed: true}, {id: 'wrong', passed: true}],
+    [{id: 't1', passed: true}, {id: 't2', passed: false}, {id: 't3', passed: true}],
+    [{id: 't1', passed: true}, {id: 't2', passed: 'true'}, {id: 't3', passed: true}],
+    [{id: 't1', passed: true}, {id: 't1', passed: false}, {id: 't2', passed: true}, {id: 't3', passed: true}],
+    [{id: 't1', passed: true}, {id: 't1', passed: true}, {id: 't2', passed: true}, {id: 't3', passed: true}]
+  ];
+  for (const tests of rejected) {
+    const {engine} = environment();
+    assert.equal(engine.syncLab(labResult('rust-113', {tests})).changed, false, JSON.stringify(tests));
+  }
+});
+
+test('An independent optional test does not change the core contract', () => {
+  const {engine} = environment();
+  const r = result(); r.tests.push({id: 'custom', passed: false});
+  assert.equal(engine.syncLab({records: {'rust-113': {result: r}}}).changed, true);
+});
+
+test('An old verified code snapshot can earn and retains its historical seal', () => {
+  const {engine} = environment();
+  const lab = labResult(); lab.records['rust-113'].draft = 'new unverified draft';
+  engine.syncLab(lab);
+  assert.equal(engine.get('alpha', 'rust').progress.code, true);
+  engine.syncLab(labResult('rust-113', {success: false, tests: []}));
+  engine.syncLab({records: {}});
+  assert.equal(engine.get('alpha', 'rust').progress.code, true);
+});
+
+test('Import preflight is pure and filters IDs/steps without mutating its input', () => {
+  const {engine, store} = environment();
+  engine.setNote('alpha', 'rust', 'Local note');
+  const originalState = JSON.stringify(engine.exportState()), writes = store.writes;
+  const raw = backup({'rust:alpha': progress({observed: ['a', 'a', 'unknown'], steps: [0, 0, 3, 4, -1, '2'], note: 'n'.repeat(10005)})});
+  const originalInput = JSON.stringify(raw), clean = engine.validateImport(raw);
+  assert.equal(JSON.stringify(engine.exportState()), originalState); assert.equal(store.writes, writes);
+  assert.equal(JSON.stringify(raw), originalInput);
+  assert.deepEqual(plain(clean.records['rust:alpha'].observed), ['a']);
+  assert.deepEqual(plain(clean.records['rust:alpha'].steps), [0, 3]);
+  assert.equal(clean.records['rust:alpha'].note.length, 10000);
+});
+
+test('A corrupt later import record cannot partially apply earlier valid progress', () => {
+  const {engine, store} = environment();
+  engine.observe('beta', 'go', ['b']); engine.setNote('alpha', 'rust', 'Keep me');
+  const before = JSON.stringify(engine.exportState()), writes = store.writes;
+  const raw = backup({'rust:alpha': progress({observed: ['a', 'b', 'c'], code: true, predicted: true}), 'go:beta': progress({code: 'true'})});
+  assert.throws(() => engine.importState(raw));
+  assert.equal(JSON.stringify(engine.exportState()), before); assert.equal(store.writes, writes);
+});
+
+test('Malformed imports reject instead of coercing proof fields', () => {
+  const malformed = [42, [], {version: 2, records: {}}, {version: 1, records: []},
+    backup({'rust:alpha': progress({observed: null})}), backup({'rust:alpha': progress({steps: null})}),
+    backup({'rust:alpha': progress({predicted: 1})}), backup({'rust:alpha': progress({answer: 9})}),
+    backup({'rust:alpha': progress({note: {text: 'x'}})})];
+  for (const raw of malformed) {
+    const {engine} = environment(); const before = JSON.stringify(engine.exportState());
+    assert.throws(() => engine.importState(raw)); assert.equal(JSON.stringify(engine.exportState()), before);
+  }
+});
+
+test('Import unions achievements and stages, updates nonempty notes, preserves answer on null', () => {
+  const {engine} = environment();
+  engine.observe('alpha', 'rust', ['a']); engine.answer('alpha', 'rust', 1);
+  engine.setStep('alpha', 'rust', 0, true); engine.setNote('alpha', 'rust', 'Earlier');
+  engine.importState(backup({'rust:alpha': progress({observed: ['b', 'c'], code: true, steps: [1], note: 'Imported'})}));
+  const merged = engine.get('alpha', 'rust');
+  assert.equal(merged.completed, true); assert.deepEqual(plain(merged.progress.steps), [0, 1]);
+  assert.equal(merged.progress.answer, 1); assert.equal(merged.progress.note, 'Imported');
+  engine.importState(backup({'rust:alpha': progress()}));
+  assert.equal(engine.get('alpha', 'rust').completed, true);
+  assert.equal(engine.get('alpha', 'rust').progress.note, 'Imported');
+});
+
+test('Unknown import IDs and optional old-backup payloads are harmless', () => {
+  const {engine} = environment();
+  engine.importState(backup({'rust:unknown': null, 'python:alpha': null, 'rust:alpha:extra': null}));
+  const before = JSON.stringify(engine.exportState());
+  assert.equal(engine.validateImport(undefined), undefined); assert.equal(engine.validateImport(null), undefined);
+  engine.importState(undefined); engine.importState(null);
+  assert.equal(JSON.stringify(engine.exportState()), before);
+});
+
+test('Progress including notes and checkboxes survives reload', () => {
+  const shared = storage(), first = environment(shared).engine;
+  first.observe('alpha', 'go', ['a', 'b', 'c']); first.answer('alpha', 'go', 1);
+  first.syncLab(labResult('go-113')); first.setStep('alpha', 'go', 2, true); first.setNote('alpha', 'go', 'Proof by example');
+  const second = environment(shared).engine, restored = second.get('alpha', 'go');
+  assert.equal(restored.completed, true); assert.deepEqual(plain(restored.progress.steps), [2]);
+  assert.equal(restored.progress.note, 'Proof by example');
+  assert.equal(second.get('alpha', 'rust').seals, 0);
+});
+
+test('Unavailable storage keeps session progress exportable and reports the limitation', () => {
+  const store = storage(); store.failRead = true; store.failWrite = true;
+  const {engine, status} = environment(store);
+  assert.equal(status.storageAvailable, false); assert(status.loadWarning);
+  engine.observe('alpha', 'rust', ['a', 'b', 'c']); engine.answer('alpha', 'rust', 1); engine.syncLab(labResult());
+  assert.equal(engine.get('alpha', 'rust').completed, true);
+  assert.equal(engine.get('alpha', 'rust').storageAvailable, false);
+  assert.equal(engine.exportState().records['rust:alpha'].code, true);
+  store.failRead = false; store.failWrite = false;
+  engine.setNote('alpha', 'rust', 'Storage returned');
+  assert.equal(engine.get('alpha', 'rust').storageAvailable, true);
+});
+
+test('Corrupt saved JSON recovers to usable blank progress', () => {
+  const {engine, status} = environment(storage({[KEY]: '{broken'}));
+  assert(status.loadWarning); assert.equal(engine.get('alpha', 'rust').seals, 0);
+});
+
+test('Saved JSON null cannot replace live state with undefined', () => {
+  const {engine, status} = environment(storage({[KEY]: 'null'}));
+  assert.doesNotThrow(() => engine.get('alpha', 'rust'));
+  assert.equal(engine.get('alpha', 'rust').seals, 0);
+  assert(status.loadWarning, 'A malformed persisted payload should produce a warning.');
+});
+
+test('Returned objects cannot mutate internal earned state', () => {
+  const {engine} = environment(); engine.observe('alpha', 'rust', ['a']);
+  const first = engine.get('alpha', 'rust'); first.progress.observed.push('b'); first.progress.code = true;
+  const exported = engine.exportState(); exported.records['rust:alpha'].note = 'External mutation';
+  assert.deepEqual(plain(engine.get('alpha', 'rust').progress.observed), ['a']);
+  assert.equal(engine.get('alpha', 'rust').progress.code, false); assert.equal(engine.get('alpha', 'rust').progress.note, '');
+});
+
+test('Reset clears all languages, saves the blank state and survives reload', () => {
+  const shared = storage(), {engine} = environment(shared);
+  engine.observe('alpha', 'rust', ['a']); engine.setNote('beta', 'go', 'Remove this'); engine.reset();
+  assert.deepEqual(plain(engine.exportState()), {version: 1, records: {}});
+  const reloaded = environment(shared).engine;
+  assert.equal(reloaded.get('alpha', 'rust').seals, 0); assert.equal(reloaded.get('beta', 'go').progress.note, '');
+});
+
+const SOURCE_HOSTS = new Set([
+  'doc.rust-lang.org', 'go.dev', 'pkg.go.dev', 'pages.cs.wisc.edu', 'os.phil-opp.com', 'pdos.csail.mit.edu',
+  'github.com', 'www.nand2tetris.org', 'tinygo.org', 'sqlite.org', 'www.sqlite.org', 'docs.tigerbeetle.com',
+  'www.allthingsdistributed.com', 'raft.github.io', 'lamport.azurewebsites.net', 'datatracker.ietf.org',
+  'www.envoyproxy.io', 'www.cs.cornell.edu', 'zingl.github.io', 'raytracing.github.io', 'www.redblobgames.com',
+  'gafferongames.com', 'www.cs.princeton.edu', 'dlmf.nist.gov', 'inst.eecs.berkeley.edu',
+  'developer.mozilla.org', 'www.khronos.org', 'www.w3.org', 'www.open-std.org', 'janmr.com', 'ripes.dk', 'ripes.me', 'nand2tetris.github.io'
+]);
+function nonempty(value, label) { assert.equal(typeof value, 'string', label); assert(value.trim(), label); }
+function trustedSource(source, owner) {
+  nonempty(source.title, `${owner}: source title`);
+  const url = new URL(source.url);
+  assert.equal(url.protocol, 'https:', `${owner}: source must use HTTPS`);
+  assert.equal(url.username, ''); assert.equal(url.password, '');
+  assert(SOURCE_HOSTS.has(url.hostname), `${owner}: review primary-source hostname ${url.hostname} before adding it to the allowlist`);
+}
+function finiteJSON(value, owner) {
+  if (typeof value === 'number') assert(Number.isFinite(value), `${owner}: non-finite numeric state`);
+  else if (Array.isArray(value)) value.forEach(v => finiteJSON(v, owner));
+  else if (value && typeof value === 'object') Object.values(value).forEach(v => finiteJSON(v, owner));
+  else assert(['string', 'boolean'].includes(typeof value) || value === null, `${owner}: state contains non-JSON value`);
+}
+function deepFreeze(value) {
+  if (value && typeof value === 'object') { Object.freeze(value); Object.values(value).forEach(deepFreeze); }
+  return value;
+}
+function validateView(view, owner) {
+  for (const field of ['title', 'summary', 'explanation']) nonempty(view[field], `${owner}: view.${field}`);
+  for (const field of ['metrics', 'cells', 'controls', 'log']) assert(Array.isArray(view[field]), `${owner}: view.${field}`);
+  for (const m of view.metrics) { nonempty(m.label, owner); assert(['string', 'number'].includes(typeof m.value), owner); }
+  for (const c of view.cells) { nonempty(c.label, owner); assert(['string', 'number'].includes(typeof c.value), owner); assert(['active', 'good', 'bad', 'muted'].includes(c.tone), owner); }
+  for (const control of view.controls) { nonempty(control.action, owner); nonempty(control.label, owner); if (control.value !== undefined) assert.equal(typeof control.value, 'string', owner); }
+  for (const row of view.rows || []) { assert(Array.isArray(row), owner); row.forEach(v => assert.equal(typeof v, 'string', owner)); }
+  for (const label of view.columns || []) assert.equal(typeof label, 'string', owner);
+  view.log.forEach(line => assert.equal(typeof line, 'string', owner));
+  finiteJSON(view, owner);
+}
+
+if (process.argv.includes('--engine-only')) {
+  process.stdout.write('Catalog checks explicitly skipped (--engine-only); run without the flag for the release gate.\n');
+} else {
+  let real;
+  test('All four workshop domains and lab integration files are available', () => {
+    const files = ['lab-rust.js', 'lab-go.js', 'quests-rust.js', 'quests-go.js',
+      'systems-lowlevel.js', 'systems-lowlevel-labs.js', 'systems-infra.js', 'systems-infra-labs.js',
+      'systems-play.js', 'systems-play-labs.js', 'systems-pc.js', 'systems-pc-labs.js', 'lab.js'];
+    const context = {window: {}, localStorage: storage()}; vm.createContext(context);
+    for (const file of files) {
+      assert(fs.existsSync(path.join(root, file)), `Awaiting completed snapshot: ${file}`);
+      vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context, {filename: file});
+    }
+    const w = context.window, domains = [w.SYSTEMS_LOWLEVEL, w.SYSTEMS_INFRA, w.SYSTEMS_PLAY, w.SYSTEMS_PC];
+    assert(domains.every(Boolean), 'All four global domain objects must exist.');
+    real = {context, workshops: domains.flatMap(d => d.workshops), domains,
+      models: Object.assign({}, ...domains.map(d => d.models)), labs: [...w.SYSTEMS_LOWLEVEL_LABS, ...w.SYSTEMS_INFRA_LABS, ...w.SYSTEMS_PLAY_LABS, ...w.SYSTEMS_PC_LABS],
+      exercises: w.TallerLab.getExercises()};
+  });
+  if (real) {
+    test('Complete release catalog contains 25 workshops, 50 new cores and 274 unique exercises', () => {
+      assert.equal(real.workshops.length, 25); assert.equal(real.labs.length, 50); assert.equal(real.exercises.length, 274);
+      assert.equal(new Set(real.workshops.map(w => w.id)).size, 25);
+      assert.equal(new Set(real.exercises.map(e => e.id)).size, 274);
+      assert.equal(Object.keys(real.models).length, 25, 'Model names must not collide across domains.');
+      for (const lang of ['rust', 'go']) {
+        assert.equal(real.exercises.filter(e => e.language === lang).length, 137);
+        for (let id = 113; id <= 137; id++) assert(real.exercises.some(e => e.id === `${lang}-${id}`), `${lang}-${id}`);
+      }
+    });
+
+    test('Every workshop has its complete educational contract and valid exercise links', () => {
+      const byId = new Map(real.exercises.map(e => [e.id, e])), usedCores = new Set();
+      for (const w of real.workshops) {
+        for (const field of ['id', 'title', 'subtitle', 'story', 'what', 'why', 'limits', 'model']) nonempty(w[field], `${w.id}.${field}`);
+        nonempty(w.category, `${w.id}.category`);
+        assert(['beginner', 'medium', 'advanced', 'expert'].includes(w.level));
+        assert(Number.isFinite(w.minutes) && w.minutes > 0);
+        assert.equal(w.uses.length, 3); w.uses.forEach(use => nonempty(use, w.id));
+        assert.equal(w.objectives.length, 3); assert.equal(new Set(w.objectives.map(g => g.id)).size, 3);
+        for (const goal of w.objectives) for (const field of ['id', 'label', 'why']) nonempty(goal[field], `${w.id}.${field}`);
+        assert.equal(w.steps.length, 4);
+        for (const step of w.steps) for (const field of ['title', 'task', 'why', 'done']) nonempty(step[field], `${w.id}.${field}`);
+        assert.equal(w.prediction.options.length, 3); assert(Number.isInteger(w.prediction.answer) && w.prediction.answer >= 0 && w.prediction.answer < 3);
+        w.prediction.options.forEach(option => nonempty(option, `${w.id}.prediction.option`));
+        nonempty(w.prediction.question, w.id); nonempty(w.prediction.explanation, w.id);
+        assert(Array.isArray(w.sources) && w.sources.length > 0); w.sources.forEach(s => trustedSource(s, w.id));
+        for (const lang of ['rust', 'go']) {
+          assert.equal(byId.get(w.code[lang])?.language, lang, `${w.id}: missing ${lang} core`);
+          assert(!usedCores.has(w.code[lang]), `${w.id}: a core is assigned to two workshops`); usedCores.add(w.code[lang]);
+          assert(Array.isArray(w.related[lang]) && w.related[lang].length <= 3);
+          for (const id of w.related[lang]) assert.equal(byId.get(id)?.language, lang, `${w.id}: related ${id}`);
+          nonempty(w.bridge[lang], `${w.id}: bridge ${lang}`);
+        }
+      }
+    });
+
+    test('All 50 new cores expose meaningful test/reviewer metadata without changing the language contract', () => {
+      for (const ex of real.labs) {
+        for (const field of ['id', 'topicId', 'topic', 'title', 'intro', 'why', 'objective', 'starter', 'solution', 'transfer']) nonempty(ex[field], `${ex.id}.${field}`);
+        assert.equal(ex.tests.length, 3); assert.equal(new Set(ex.tests.map(t => t.id)).size, 3);
+        assert.notEqual(ex.starter, ex.solution); assert.equal(ex.hints.length, 3);
+        assert(Array.isArray(ex.instructions) && ex.instructions.length >= 2);
+        ex.instructions.forEach(instruction => nonempty(instruction, `${ex.id}.instruction`));
+        ex.hints.forEach(hint => nonempty(hint, `${ex.id}.hint`));
+        assert(Array.isArray(ex.imports)); assert(['beginner', 'medium', 'advanced', 'expert'].includes(ex.level));
+        assert(['completar', 'reparar'].includes(ex.kind));
+        for (const t of ex.tests) for (const field of ['id', 'label', 'expression', 'why', 'failure']) nonempty(t[field], `${ex.id}.${field}`);
+        nonempty(ex.review.success, ex.id); nonempty(ex.review.pitfall, ex.id);
+        assert.equal(ex.prediction.options.length, 3);
+        assert(Number.isInteger(ex.prediction.answer) && ex.prediction.answer >= 0 && ex.prediction.answer < 3);
+        assert(Array.isArray(ex.sources) && ex.sources.length); ex.sources.forEach(s => trustedSource(s, ex.id));
+      }
+    });
+
+    test('Every model has finite deterministic initial/view data and valid control actions', () => {
+      for (const workshop of real.workshops) {
+        const model = real.models[workshop.model];
+        for (const name of ['initial', 'act', 'view', 'achieved']) assert.equal(typeof model[name], 'function', `${workshop.id}.${name}`);
+        const initial = model.initial(workshop), before = JSON.stringify(initial);
+        finiteJSON(initial, workshop.id); deepFreeze(initial);
+        const first = model.view(initial, workshop), second = model.view(initial, workshop);
+        validateView(first, workshop.id); assert.equal(JSON.stringify(first), JSON.stringify(second), `${workshop.id}: nondeterministic view`);
+        assert.equal(JSON.stringify(initial), before, `${workshop.id}: view mutated state`);
+        const allowed = new Set(workshop.objectives.map(g => g.id));
+        assert(model.achieved(initial, workshop).every(id => allowed.has(id)));
+        for (const control of first.controls) {
+          const next = model.act(initial, control.action, control.value, workshop);
+          const repeated = model.act(initial, control.action, control.value, workshop);
+          finiteJSON(next, `${workshop.id}/${control.action}`);
+          assert.equal(JSON.stringify(next), JSON.stringify(repeated), `${workshop.id}: nondeterministic action`);
+          assert.equal(JSON.stringify(initial), before, `${workshop.id}: act mutated input`);
+          validateView(model.view(next, workshop), workshop.id);
+          assert(model.achieved(next, workshop).every(id => allowed.has(id)), `${workshop.id}: unregistered earned objective`);
+        }
+      }
+    });
+
+    test('Real catalog can earn each workshop in one language without granting the other', () => {
+      const {engine} = environment(storage(), real);
+      for (const w of real.workshops) {
+        engine.observe(w.id, 'rust', w.objectives.map(g => g.id)); engine.answer(w.id, 'rust', w.prediction.answer);
+        const ex = real.exercises.find(e => e.id === w.code.rust);
+        engine.syncLab({records: {[ex.id]: {result: result({tests: ex.tests.map(t => ({id: t.id, passed: true}))})}}});
+        assert.equal(engine.get(w.id, 'rust').completed, true, w.id);
+        assert.equal(engine.get(w.id, 'go').seals, 0, w.id);
+      }
+    });
+  }
+}
+
+process.stdout.write(`\n${passed} systems checks passed; ${failed} failed.\n`);
+if (failed) process.exitCode = 1;

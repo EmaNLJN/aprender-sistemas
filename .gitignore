@@ -1,0 +1,59 @@
+# Dependencies and local tool environments.
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.cache/
+
+# Local configuration and secrets; sanitized templates may be committed.
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+.envrc
+.ssh/
+.aws/
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Rebuilt by the npm build scripts and build.mjs/build.py.
+/index.html
+/*.bundle.js
+*.map
+/dist/
+/build/
+
+# Generated previews, validation records, and test output.
+/qa/lab-preview.html
+/qa/*-validation.json
+coverage/
+test-results/
+playwright-report/
+*.log
+
+# Compiled artifacts and exported archives.
+target/
+*.o
+*.obj
+*.a
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+*.wasm
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+# Operating-system and editor state.
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~

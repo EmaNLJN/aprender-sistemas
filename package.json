@@ -1,0 +1,27 @@
+{
+  "name": "taller-rust-go",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Editor local del taller interactivo de Rust y Go",
+  "scripts": {
+    "build:editor": "esbuild editor-source.js --bundle --format=iife --platform=browser --target=es2020 --minify --legal-comments=inline --outfile=editor.bundle.js",
+    "check:content": "node qa/content-check.cjs",
+    "check:runner": "node qa/runner-check.cjs",
+    "build:effects": "esbuild game-effects-source.js --bundle --format=iife --platform=browser --target=es2020 --minify --legal-comments=inline --outfile=game-effects.bundle.js",
+    "build:kits": "esbuild project-kit-source.js --bundle --format=iife --platform=browser --target=es2020 --minify --legal-comments=inline --outfile=project-kit.bundle.js"
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "6.20.3",
+    "@codemirror/commands": "6.11.1",
+    "@codemirror/lang-go": "6.0.1",
+    "@codemirror/lang-rust": "6.0.2",
+    "@codemirror/language": "6.12.4",
+    "@codemirror/state": "6.7.6",
+    "@codemirror/view": "6.43.13",
+    "@lezer/highlight": "1.2.5",
+    "canvas-confetti": "1.9.4",
+    "codemirror": "6.0.2",
+    "esbuild": "0.28.2",
+    "fflate": "0.8.3"
+  }
+}

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f3ed">
+  <meta name="description" content="Tu taller personal para aprender Rust y Go: sesiones pequeñas, proyectos reales y recursos seleccionados.">
+  <title>Taller — Aprendé Rust y Go, haciendo</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="lab.css">
+  <link rel="stylesheet" href="atlas.css">
+  <link rel="stylesheet" href="campaign.css"><link rel="stylesheet" href="quest-explorers.css">
+  <link rel="stylesheet" href="systems.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Ir al contenido</a>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#recorrido" aria-label="Taller, inicio"><span class="brand-mark" aria-hidden="true">[t]</span> taller<span class="brand-dot">.</span></a>
+      <p class="sidebar-tagline">Un poco cada día.<br>Más profundo cada vez.</p>
+      <nav aria-label="Navegación principal" class="navigation">
+        <a href="#recorrido" data-view="recorrido"><span class="nav-symbol" aria-hidden="true">↗</span> Mi recorrido</a>
+        <a href="#campana" data-view="campana"><span class="nav-symbol" aria-hidden="true">✳</span> Campaña <span class="nav-count">4</span></a>
+        <a href="#sistemas" data-view="sistemas"><span class="nav-symbol" aria-hidden="true">▧</span> Sistemas <span class="nav-count">25</span></a>
+        <a href="#atlas" data-view="atlas"><span class="nav-symbol" aria-hidden="true">{ }</span> Atlas del lenguaje</a>
+        <a href="?#laboratorio" data-view="laboratorio"><span class="nav-symbol" aria-hidden="true">⌁</span> Laboratorio <span class="nav-count lab-nav-count">274</span></a>
+        <a href="#biblioteca" data-view="biblioteca"><span class="nav-symbol" aria-hidden="true">▤</span> Biblioteca <span class="nav-count" id="resource-count">15</span></a>
+        <a href="#proyecto" data-view="proyecto"><span class="nav-symbol" aria-hidden="true">⌘</span> Mi proyecto</a>
+        <a href="#metodo" data-view="metodo"><span class="nav-symbol" aria-hidden="true">✎</span> Método y notas</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="sidebar-progress"><div class="small-label">RECORRIDO GUIADO · <span id="sidebar-language">RUST</span></div><div class="progress-caption"><strong id="sidebar-completed">0 de 12</strong><span id="sidebar-percent">0%</span></div><progress id="sidebar-progress" value="0" max="12" aria-label="Pasos completados"></progress></div>
+        <div class="save-status"><span class="status-dot" aria-hidden="true"></span><span id="save-label">Guardado en este navegador</span></div>
+        <button class="text-button export-button" id="export-progress">Exportar mi progreso <span aria-hidden="true">↗</span></button>
+        <p class="sidebar-footnote">A tu ritmo. Sin rachas que mantener.</p>
+      </div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar"><span class="topbar-label">APRENDER ES CONSTRUIR</span><div class="language-switch" role="group" aria-label="Lenguaje del recorrido"><button data-language="rust" aria-pressed="true">Rust <span class="recommended-dot" aria-hidden="true"></span></button><button data-language="go" aria-pressed="false">Go</button></div></header>
+      <main id="main" tabindex="-1"></main>
+      <footer class="main-footer"><span>Hecho para la curiosidad, no para correr.</span><span>Recursos revisados · 02 OCT 2026</span></footer>
+    </div>
+  </div>
+  <dialog id="lesson-dialog" aria-labelledby="lesson-title"><div class="dialog-content" id="lesson-content"></div></dialog>
+  <dialog id="confirm-dialog" aria-labelledby="confirm-title"><div class="dialog-content"><h2 id="confirm-title">¿Borrar tu progreso?</h2><p>Se borrarán los pasos, favoritos, notas, campaña, talleres de Sistemas y ejercicios del laboratorio de ambos lenguajes en este navegador. Podés exportarlos antes.</p><div class="dialog-actions"><button class="button secondary" id="cancel-reset">Conservar mi avance</button><button class="button danger" id="confirm-reset">Borrar todo</button></div></div></dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <input id="import-file" type="file" accept="application/json,.json" hidden aria-label="Importar archivo de progreso">
+  <noscript><div class="noscript">Esta guía necesita JavaScript para mostrar el recorrido y guardar tu avance. Activá JavaScript en tu navegador.</div></noscript>
+  <script src="content.js"></script>
+  <script src="lab-rust.js"></script>
+  <script src="lab-go.js"></script>
+  <script src="quests-rust.js"></script>
+  <script src="quests-go.js"></script>
+  <script src="runner.js"></script>
+  <script src="editor.bundle.js"></script>
+  <script src="lab-explorers.js"></script>
+  <script src="quest-explorers.js"></script>
+  <script src="systems-lowlevel.js"></script>
+  <script src="systems-lowlevel-labs.js"></script>
+  <script src="systems-infra.js"></script>
+  <script src="systems-infra-labs.js"></script>
+  <script src="systems-play.js"></script>
+  <script src="systems-play-labs.js"></script>
+  <script src="systems-pc.js"></script>
+  <script src="systems-pc-labs.js"></script>
+  <script src="lab.js"></script>
+  <script src="atlas-content.js"></script>
+  <script src="atlas.js"></script>
+  <script src="campaign-rust.js"></script>
+  <script src="campaign-go.js"></script>
+  <script src="campaign-engine.js"></script>
+  <script src="game-effects.bundle.js"></script>
+  <script src="campaign.js"></script>
+  <script src="systems-engine.js"></script>
+  <script src="project-kit.bundle.js"></script>
+  <script src="systems.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
