@@ -25,7 +25,8 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | Núcleos Rust/Go de Sistemas | `systems-{lowlevel,infra,play,pc}-labs.js` |
 | Sellos y progreso de Sistemas | `systems-engine.js` |
 | Interfaz de Sistemas | `systems.js`, `systems.css` |
-| Animaciones y kits ZIP | `game-effects-source.js`, `project-kit-source.js` |
+| Animaciones | `game-effects-source.js` |
+| Kits ZIP de proyecto | `src/features/download-project-kit/` (archivos puros y ZIP con fflate), `src/shared/lib/download-file.ts`, adaptador `src/app/legacy/register-project-kit.ts` |
 | Construcción y dependencias | configuración Vite, `package.json`, `package-lock.json` |
 | Servicio estático y preview | `Dockerfile`, `compose.yaml`, `compose.preview.yaml`, `nginx.conf` |
 | Comprobaciones e investigación educativa | `qa/*-check.ts`, `qa/lib/`, `qa/fixtures/`, `qa/run-checks.ts`, `qa/research-*.md` |

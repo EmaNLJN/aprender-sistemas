@@ -181,6 +181,7 @@ posición de la entrada.
 | P1 | Hecha | `2ed5227` |
 | P2 | Hecha: bundle JS idéntico y oráculo sin cambios | `7b7e957`, `58b093f` |
 | P3/P4 | Hecha: 14 checks portados con salidas idénticas, 5 checks nuevos de red, configuraciones en TS, `build:kits` retirado | `16e98fb`, `f00fbc9`, `010a2e3` |
+| P8 (kits) | Hecha: `src/features/download-project-kit/` con archivos puros, ZIP y adaptador; 300 kits y sus ZIP idénticos byte a byte al generador anterior | (este commit) |
 | P7a | Hecha: regla única de evidencia (equivalencia probada en 19 casos), `interpretRun` puro, sincronización aislada del transporte (verificada en navegador) y fusión monótona al importar en el laboratorio | (este commit) |
 | P6 | Hecha: Atlas en `src/pages/atlas` (un componente por archivo, modelo puro probado, foco con `flushSync`), entrada en `src/app/main.tsx`; «Principiante» pasa a «Inicial» como en el resto de la app | (este commit) |
 | P5 | Hecha la parte pura: 10 fuentes legacy importan `src/shared` (escape ×4, normalización ×3, clon JSON ×7, objeto plano ×2, niveles ×3); oráculo idéntico y smoke test en navegador. Queda el escape de los exploradores, que cambia la salida con valores nulos | (este commit) |

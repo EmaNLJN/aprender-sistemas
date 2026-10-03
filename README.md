@@ -174,7 +174,7 @@ Vite, como build único, empaqueta estilos, datos, editor y aplicación en el do
 
 Archivos principales: `src/pages/atlas/` (Atlas React: componentes, modelo y contenido), `src/app/` (entrada y adaptadores legacy), `src/shared/` (helpers comunes), `lab-rust.js` / `lab-go.js` (contenido), `lab.js` (aprendizaje y revisión), `lab-explorers.js` (modelos y misiones), `runner.js` (Playgrounds), `editor-source.js` (CodeMirror), `content.js` / `app.js` (guía original), `quests-rust.js` / `quests-go.js` (24 desafíos nuevos), `campaign-*.js` (mundos y motor), `campaign.js` / `campaign.css` (interfaz de campaña).
 
-Sistemas separa los datos y modelos puros en `systems-lowlevel.js`, `systems-infra.js`, `systems-play.js` y `systems-pc.js`; sus archivos `*-labs.js` contienen los núcleos Rust/Go. `systems-engine.js` conserva los sellos e importa progreso; `systems.js` / `systems.css` muestran el catálogo, los controles y escenas SVG. `project-kit-source.js` genera proyectos y archivos ZIP con `fflate`; Vite lo incluye en la aplicación sin CDN y su check lo empaqueta en memoria con esbuild.
+Sistemas separa los datos y modelos puros en `systems-lowlevel.js`, `systems-infra.js`, `systems-play.js` y `systems-pc.js`; sus archivos `*-labs.js` contienen los núcleos Rust/Go. `systems-engine.js` conserva los sellos e importa progreso; `systems.js` / `systems.css` muestran el catálogo, los controles y escenas SVG. `src/features/download-project-kit/` genera proyectos y archivos ZIP con `fflate`; Vite lo incluye en la aplicación sin CDN y su check lo empaqueta en memoria con esbuild.
 
 ## Verificación
 
@@ -221,6 +221,6 @@ El diseño educativo toma como referencia [freeCodeCamp](https://contribute.free
 
 Se reutiliza [canvas-confetti](https://github.com/catdad/canvas-confetti) para las celebraciones, con la preferencia de movimiento reducido y limpieza al salir de la vista. Su API se verificó con Context7 y su licencia se conserva en `THIRD-PARTY-NOTICES.txt`. La interfaz y los compiladores permanecen separados: no hace falta traducir los ejercicios a JavaScript.
 
-[fflate](https://github.com/101arrowz/fflate) se incluye localmente para crear los kits ZIP. Su aviso de licencia está en `project-kit-source.js` y se conserva en el bundle; las otras dependencias y sus versiones están fijadas en `package-lock.json`.
+[fflate](https://github.com/101arrowz/fflate) se incluye localmente para crear los kits ZIP. Su aviso de licencia está en `src/features/download-project-kit/lib/archive.ts` y se conserva en el bundle; las otras dependencias y sus versiones están fijadas en `package-lock.json`.
 
 Para previsualizar cambios de `dist/index.html`, `docker compose -f compose.preview.yaml up --build -d --wait` sirve una instancia aislada en http://localhost:8765 con el archivo montado en modo lectura. Se detiene con `docker compose -f compose.preview.yaml down`. La configuración principal en 8080 sirve su propia copia construida dentro de la imagen.

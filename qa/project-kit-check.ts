@@ -51,7 +51,7 @@ interface Workshop {
 }
 function projectKit(ctx: FakeContext): ProjectKitApi {
   const api = ctx.window.TallerProjectKit;
-  if (!api) throw new Error('TallerProjectKit was not published by project-kit-source.js');
+  if (!api) throw new Error('TallerProjectKit was not published by register-project-kit.ts');
   return api;
 }
 interface Draft {
@@ -187,12 +187,23 @@ const previous: PriorReport | null = previousText ? JSON.parse(previousText) : n
 const IMAGE: Record<Language, string> = { rust: 'rust:1.90-alpine', go: 'golang:1.25-alpine' };
 const digest = (data: string | Uint8Array): string =>
   crypto.createHash('sha256').update(data).digest('hex');
-const bundle = bundleSource('project-kit-source.js', { minify: true });
+const ADAPTER = 'src/app/legacy/register-project-kit.ts';
+// Fuentes que componen el generador, en orden alfabético para un hash estable.
+const KIT_SOURCES = [
+  ADAPTER,
+  'src/features/download-project-kit/index.ts',
+  'src/features/download-project-kit/lib/archive.ts',
+  'src/features/download-project-kit/model/kit-files.ts',
+  'src/shared/lib/download-file.ts',
+].sort();
+const bundle = bundleSource(ADAPTER, { minify: true });
 const report: Report = {
   checkedAt: new Date().toISOString(),
   partial,
   bundleSHA256: digest(bundle),
-  sourceSHA256: digest(fs.readFileSync(path.join(root, 'project-kit-source.js'))),
+  sourceSHA256: digest(
+    Buffer.concat(KIT_SOURCES.map((file) => fs.readFileSync(path.join(root, file)))),
+  ),
   checks: [],
   kits: [],
   containers: {},
@@ -396,7 +407,7 @@ fx.window.TallerLab = {
   getExercises: () => sample.exercises,
   exportState: () => ({ version: 1, records: sample.records }),
 };
-runSource(fx, 'project-kit-source.js', { minify: true });
+runSource(fx, ADAPTER, { minify: true });
 
 check('Normal export preserves exact drafts, custom tests, UTF-8 and personal notes', () => {
   for (const language of ['rust', 'go'] as const) {
@@ -542,7 +553,7 @@ check('Load the actual workshop catalog and the production lab registry', () => 
     domains.push(ctx.window[global] as { workshops: Workshop[] });
   }
   load(ctx, 'lab.js');
-  runSource(ctx, 'project-kit-source.js', { minify: true });
+  runSource(ctx, ADAPTER, { minify: true });
   const workshops = domains.flatMap((d) => d.workshops),
     exercises = ctx.window.TallerLab?.getExercises() ?? [];
   if (!partial) {

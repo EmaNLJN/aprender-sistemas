@@ -36,5 +36,9 @@ assert(
 new vm.Script(scripts[0][1], { filename: 'dist/index.html:inline-app.js' });
 assert(html.includes('Permission is hereby granted'), 'editor license retained');
 assert(html.includes('Copyright (c) Meta Platforms'), 'React license retained in standalone HTML');
+assert(
+  /Copyright \(c\) \d{4} Arjun Barrett/.test(html),
+  'fflate license retained in standalone HTML',
+);
 assert(html.length < 2500000, 'unexpected standalone build growth');
 console.log('Vite produced one standalone document with inline JS/CSS and retained licenses. PASS');

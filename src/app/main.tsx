@@ -31,6 +31,6 @@ import '../../campaign-engine.js';
 import '../../game-effects-source.js';
 import '../../campaign.js';
 import '../../systems-engine.js';
-import '../../project-kit-source.js';
+import './legacy/register-project-kit';
 import '../../systems.js';
 import '../../app.js';
