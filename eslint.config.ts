@@ -1,19 +1,19 @@
 import js from '@eslint/js';
+import reactHooks from 'eslint-plugin-react-hooks';
+import { defineConfig, globalIgnores } from 'eslint/config';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
-import { defineConfig, globalIgnores } from 'eslint/config';
 
 export default defineConfig([
   globalIgnores([
     '**/node_modules/**',
     '**/.venv/**',
+    // Imported skills keep their upstream code; .claude/skills only links to them.
     '.agents/**',
+    '.claude/**',
     '.codex/**',
     '.desloppify/**',
-    '**/*.bundle.js',
-    'index.html',
     'dist/**',
-    'build/**',
   ]),
   js.configs.recommended,
   ...tseslint.configs.recommended.map((config) => ({
@@ -21,6 +21,12 @@ export default defineConfig([
     files: ['**/*.{ts,tsx}'],
   })),
   {
+    // Official React rules, including the compiler-powered purity, refs and effect checks.
+    ...reactHooks.configs.flat.recommended,
+    files: ['src/**/*.{ts,tsx}'],
+  },
+  {
+    // Legacy browser scripts still publish window.Taller* globals as classic scripts.
     files: ['*.js'],
     languageOptions: { sourceType: 'script', globals: globals.browser },
   },
@@ -37,7 +43,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['**/*.mjs', '**/*.cjs', 'vite.config.ts'],
+    files: ['**/*.mjs', '**/*.cjs', 'qa/**/*.ts', '*.config.ts'],
     languageOptions: { globals: globals.node },
   },
   {
