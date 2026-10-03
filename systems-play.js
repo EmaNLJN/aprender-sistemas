@@ -1,4 +1,5 @@
 /* Deterministic visual-computing models. Pure data in, pure data out. */
+import { cloneJson } from './src/shared/lib/clone-json';
 window.SYSTEMS_PLAY = (() => {
   const C = {
     bg: '#14271f',
@@ -10,7 +11,6 @@ window.SYSTEMS_PLAY = (() => {
     red: '#f08c85',
     blue: '#83c5e5',
   };
-  const copy = (value) => JSON.parse(JSON.stringify(value));
   const line = (x1, y1, x2, y2, stroke = C.grid, strokeWidth = 1) => ({
     type: 'line',
     x1,
@@ -98,18 +98,18 @@ window.SYSTEMS_PLAY = (() => {
       order: 'TR',
       step: 0,
       matrix: [...identity],
-      points: copy(baseShip),
+      points: cloneJson(baseShip),
       completedOrders: [],
       seen: {},
       log: [],
     }),
     act(input, action) {
-      const s = copy(input);
+      const s = cloneJson(input);
       if (action === 'order') {
         s.order = s.order === 'TR' ? 'RT' : 'TR';
         s.step = 0;
         s.matrix = [...identity];
-        s.points = copy(baseShip);
+        s.points = cloneJson(baseShip);
         log(s, 'Nueva secuencia: ' + s.order.split('').join(' → ') + '.');
       }
       if (action === 'step' && s.step < 2) {
@@ -257,7 +257,7 @@ window.SYSTEMS_PLAY = (() => {
   models.raster = {
     initial: () => ({ preset: 0, index: 1, seen: {}, log: [] }),
     act(input, action, value) {
-      const s = copy(input);
+      const s = cloneJson(input);
       if (action === 'preset') {
         const n = Number(value);
         if (Number.isInteger(n) && n >= 0 && n < 4) {
@@ -356,7 +356,7 @@ window.SYSTEMS_PLAY = (() => {
   models.raycast = {
     initial: () => ({ angle: 0, cast: false, seen: {}, log: [] }),
     act(input, action, value) {
-      const s = copy(input);
+      const s = cloneJson(input);
       if (action === 'aim' && Number.isFinite(Number(value))) {
         s.angle = Math.max(-45, Math.min(45, s.angle + Number(value)));
         s.cast = false;
@@ -460,7 +460,7 @@ window.SYSTEMS_PLAY = (() => {
   ];
   const key = (r, c) => r + ',' + c;
   function pathMap(s) {
-    const g = copy(gameMap);
+    const g = cloneJson(gameMap);
     if (!s.weighted)
       g.forEach((row) =>
         row.forEach((v, c) => {
@@ -544,7 +544,7 @@ window.SYSTEMS_PLAY = (() => {
     initial: () =>
       pathReset({ algorithm: 'bfs', weighted: false, blocked: false, seen: {}, log: [] }),
     act(input, action, value) {
-      let s = copy(input);
+      let s = cloneJson(input);
       if (action === 'algorithm') {
         s.algorithm = value === 'astar' ? 'astar' : 'bfs';
         pathReset(s);
@@ -650,7 +650,7 @@ window.SYSTEMS_PLAY = (() => {
   models.physics = {
     initial: () => physicsPreset('brick'),
     act(input, action, value) {
-      let s = copy(input);
+      let s = cloneJson(input);
       if (action === 'preset' && ['brick', 'wall', 'touch'].includes(value))
         return physicsPreset(value, s.seen, [...s.log, 'Nueva escena: ' + value + '.'].slice(-6));
       if (action === 'step') {
@@ -815,7 +815,7 @@ window.SYSTEMS_PLAY = (() => {
       log: [],
     }),
     act(input, action, value) {
-      const s = copy(input);
+      const s = cloneJson(input);
       if (action === 'pattern' && lifePatterns[value]) {
         s.preset = value;
         s.grid = lifeBoard(value);
@@ -897,7 +897,7 @@ window.SYSTEMS_PLAY = (() => {
   models.algebra = {
     initial: () => ({ preset: 0, x: 1, index: 0, acc: 0, derived: false, seen: {}, log: [] }),
     act(input, action, value) {
-      const s = copy(input);
+      const s = cloneJson(input);
       if (action === 'x' && Number.isFinite(Number(value))) {
         s.x = Math.max(-2, Math.min(2, s.x + Number(value)));
         s.index = 0;
@@ -1040,7 +1040,7 @@ window.SYSTEMS_PLAY = (() => {
   models.minimax = {
     initial: () => makeGame(7),
     act(input, action, value) {
-      let s = copy(input);
+      let s = cloneJson(input);
       if (action === 'preset' && ['6', '7'].includes(String(value)))
         return makeGame(
           Number(value),

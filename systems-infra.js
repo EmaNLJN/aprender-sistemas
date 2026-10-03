@@ -1,7 +1,7 @@
 /* Talleres originales. Modelos puros: sin red, disco, temporizadores ni ejecución del editor. */
+import { cloneJson } from './src/shared/lib/clone-json';
 (() => {
   'use strict';
-  const clone = (value) => JSON.parse(JSON.stringify(value));
   const c = (action, label, value) => ({
     action,
     label,
@@ -24,7 +24,7 @@
         notice: 'Elegí una acción y observá qué garantía cambia.',
       }),
       act(state, action, value) {
-        const next = clone(state);
+        const next = cloneJson(state);
         transition(next, action, value);
         return next;
       },
@@ -704,7 +704,7 @@
     return shardKeys.filter((key) => owner(ring, key) !== owner(baselineRing, key));
   }
   models.sharding = model(
-    () => ({ ring: clone(baselineRing), compared: false, selected: 95 }),
+    () => ({ ring: cloneJson(baselineRing), compared: false, selected: 95 }),
     (s, action) => {
       if (action === 'inspect-wrap') {
         s.selected = 95;
@@ -743,7 +743,7 @@
           `En estas 7 muestras: anillo mueve ${movements(s.ring).length}, hash mod N mueve ${moduloMoved}. Es un ejemplo concreto, no una garantía de equilibrio para toda carga.`,
         );
       } else if (action === 'remove') {
-        s.ring = clone(baselineRing);
+        s.ring = cloneJson(baselineRing);
         s.compared = false;
         note(
           s,

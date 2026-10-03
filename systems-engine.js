@@ -1,9 +1,9 @@
+import { cloneJson } from './src/shared/lib/clone-json';
+import { isPlainObject } from './src/shared/lib/is-plain-object';
 (() => {
   'use strict';
   const KEY = 'taller-systems-v1',
     languages = ['rust', 'go'];
-  const clone = (value) => JSON.parse(JSON.stringify(value));
-  const object = (value) => Boolean(value && typeof value === 'object' && !Array.isArray(value));
   const blank = () => ({ version: 1, records: {} });
   let state = blank(),
     catalog = new Map(),
@@ -37,7 +37,7 @@
   }
   function validateImport(raw) {
     if (raw === undefined || raw === null) return undefined;
-    if (!object(raw) || raw.version !== 1 || !object(raw.records))
+    if (!isPlainObject(raw) || raw.version !== 1 || !isPlainObject(raw.records))
       throw new Error('La copia de Sistemas no es compatible.');
     const clean = blank();
     for (const [name, value] of Object.entries(raw.records)) {
@@ -45,7 +45,7 @@
       if (rest.length || !languages.includes(language) || !catalog.has(id)) continue;
       const workshop = catalog.get(id),
         allowed = new Set(workshop.objectives.map((goal) => goal.id));
-      if (!object(value) || !Array.isArray(value.observed) || !Array.isArray(value.steps))
+      if (!isPlainObject(value) || !Array.isArray(value.observed) || !Array.isArray(value.steps))
         throw new Error('Progreso de taller inválido: ' + id);
       for (const field of ['code', 'predicted'])
         if (typeof value[field] !== 'boolean') throw new Error('Sello de taller inválido: ' + id);
@@ -84,7 +84,7 @@
       throw new Error('Pruebas de núcleo inválidas: ' + exercise.id);
     }
     const validIds = tests.every(
-      (test) => object(test) && typeof test.id === 'string' && test.id.trim(),
+      (test) => isPlainObject(test) && typeof test.id === 'string' && test.id.trim(),
     );
     if (!validIds || new Set(tests.map((test) => test.id)).size !== tests.length) {
       throw new Error('IDs de pruebas de núcleo inválidos: ' + exercise.id);
@@ -121,7 +121,7 @@
       )
         throw new Error('Checkpoint de taller inválido.');
       for (const language of languages) requireCore(workshop, language, allExercises);
-      next.set(workshop.id, clone(workshop));
+      next.set(workshop.id, cloneJson(workshop));
     }
     catalog = next;
     exercises = allExercises;
@@ -147,8 +147,8 @@
       r = record(id, language);
     const modelDone = workshop.objectives.every((goal) => r.observed.includes(goal.id));
     return {
-      ...clone(workshop),
-      progress: clone(r),
+      ...cloneJson(workshop),
+      progress: cloneJson(r),
       modelDone,
       completed: modelDone && r.code && r.predicted,
       seals: Number(modelDone) + Number(r.code) + Number(r.predicted),
@@ -252,7 +252,7 @@
       persist();
       return { storageAvailable };
     },
-    exportState: () => clone(state),
+    exportState: () => cloneJson(state),
     reset() {
       state = blank();
       persist();

@@ -10,6 +10,7 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | Responsabilidad | Fuentes |
 | --- | --- |
 | Documento y entrada ESM | `src/index.html`, `src/main.tsx` |
+| Helpers y constantes compartidos, sin reglas de negocio | `src/shared/lib/`, `src/shared/config/` |
 | Navegación, recorrido y progreso general | `app.js`, `content.js`, `styles.css` |
 | Ejercicios del recorrido | `lab-rust.js`, `lab-go.js` |
 | Laboratorio, revisión y modelos educativos | `lab.js`, `lab-explorers.js`, `lab.css` |
@@ -44,6 +45,10 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 - `src/main.tsx` define temporalmente el orden de los imports legacy. Esos módulos
   comparten contratos mediante `window.Taller*`; respetá sus dependencias hasta
   reemplazarlas por imports explícitos dentro de cada funcionalidad.
+  `qa/load-order-check.ts` declara esas dependencias.
+- Las fuentes legacy de la raíz son módulos ES: importan helpers de `src/shared/`
+  (escape HTML, normalización de búsqueda, clon JSON, niveles) en lugar de copiarlos.
+  Antes de escribir un helper, buscá si ya existe ahí.
 - Al agregar un asset, importalo desde la entrada o la funcionalidad que lo usa para
   que Vite lo procese. No agregues otro empaquetador ni un script de concatenación.
 - Editá las fuentes, conservá los avisos de licencia y regenerá los artefactos.

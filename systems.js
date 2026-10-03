@@ -1,17 +1,9 @@
+import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
+import { escapeHtml } from './src/shared/lib/escape-html';
+import { LEVEL_LABELS } from './src/shared/config/levels';
 (() => {
   'use strict';
   const engine = window.TallerSystemsEngine;
-  const escape = (value) =>
-    String(value ?? '').replace(
-      /[&<>"']/g,
-      (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
-    );
-  const levels = {
-    beginner: 'Inicial',
-    medium: 'Intermedio',
-    advanced: 'Avanzado',
-    expert: 'Experto',
-  };
   const groups = {
     all: 'Todo el taller',
     machine: 'Dentro de la máquina',
@@ -116,24 +108,16 @@
       )
       .join(
         '',
-      )}</div><label class="sys-search"><span aria-hidden="true">⌕</span><input id="sys-search" type="search" autocomplete="off" placeholder="Caché, rayos, kernel, colisiones…" aria-label="Buscar talleres de sistemas" value="${escape(query)}"></label></div>
+      )}</div><label class="sys-search"><span aria-hidden="true">⌕</span><input id="sys-search" type="search" autocomplete="off" placeholder="Caché, rayos, kernel, colisiones…" aria-label="Buscar talleres de sistemas" value="${escapeHtml(query)}"></label></div>
     <p id="sys-count" class="sys-result-count" role="status">${filtered(all).length} talleres para explorar</p><div id="sys-catalog" class="sys-catalog">${cards(filtered(all))}</div>
     ${externalTools()}<details class="sys-boundaries"><summary>Del modelo a una implementación real</summary><p>Los modelos corren localmente y explican sus reglas. Tu código se compila con el runner de Rust o Go. Un MMU de papel no programa la MMU física; una cola visual no simula el scheduler completo del sistema operativo. Cada taller delimita qué enseña, enlaza fuentes y propone pasos concretos para seguir fuera del navegador.</p><p>Los proyectos reutilizan el IDE, el runner y un formato común de modelos, objetivos y pruebas. Las descargas ZIP usan <a href="https://github.com/101arrowz/fflate" target="_blank" rel="noopener noreferrer">fflate</a>. Tu avance sigue siendo local y se incluye al exportar la guía.</p></details>`;
   }
   function filtered(items) {
-    const q = query
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
+    const q = normalizeSearchText(query);
     return items.filter(
       (w) =>
         (category === 'all' || w.category === category) &&
-        [w.title, w.subtitle, w.what, w.why, w.id]
-          .join(' ')
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .toLowerCase()
-          .includes(q),
+        normalizeSearchText([w.title, w.subtitle, w.what, w.why, w.id].join(' ')).includes(q),
     );
   }
   function externalTools() {
@@ -144,13 +128,13 @@
       ? items
           .map(
             (w) =>
-              `<article class="sys-card"><div class="sys-card-top"><span class="sys-card-symbol" aria-hidden="true">${symbols[w.category] || '◈'}</span><span>${levels[w.level]} · ${w.minutes} min orientativos</span></div><span class="small-label">${escape(groups[w.category])}</span><h2>${escape(w.title)}</h2><p>${escape(w.subtitle)}</p><div class="sys-card-bottom"><span>${w.completed ? '✓ Tres sellos conseguidos' : `${w.seals}/3 sellos`}</span><button class="button small secondary" data-sys="open" data-id="${w.id}">Explorar →</button></div></article>`,
+              `<article class="sys-card"><div class="sys-card-top"><span class="sys-card-symbol" aria-hidden="true">${symbols[w.category] || '◈'}</span><span>${LEVEL_LABELS[w.level]} · ${w.minutes} min orientativos</span></div><span class="small-label">${escapeHtml(groups[w.category])}</span><h2>${escapeHtml(w.title)}</h2><p>${escapeHtml(w.subtitle)}</p><div class="sys-card-bottom"><span>${w.completed ? '✓ Tres sellos conseguidos' : `${w.seals}/3 sellos`}</span><button class="button small secondary" data-sys="open" data-id="${w.id}">Explorar →</button></div></article>`,
           )
           .join('')
       : '<div class="lab-empty"><h2>No aparece ese taller.</h2><p>Probá otra idea o quitá los filtros.</p><button class="button secondary" data-sys="clear">Ver todos los talleres</button></div>';
   }
   function detail(workshop) {
-    return `<div class="sys-breadcrumb"><button data-sys="back">← Todos los talleres</button><span>${escape(groups[workshop.category])} / ${levels[workshop.level]}</span></div><header class="sys-detail-heading"><div class="eyebrow">${symbols[workshop.category]} ${language.toUpperCase()} · ${workshop.minutes} MIN ORIENTATIVOS</div><h1 tabindex="-1">${escape(workshop.title)}</h1><p>${escape(workshop.story)}</p></header>
+    return `<div class="sys-breadcrumb"><button data-sys="back">← Todos los talleres</button><span>${escapeHtml(groups[workshop.category])} / ${LEVEL_LABELS[workshop.level]}</span></div><header class="sys-detail-heading"><div class="eyebrow">${symbols[workshop.category]} ${language.toUpperCase()} · ${workshop.minutes} MIN ORIENTATIVOS</div><h1 tabindex="-1">${escapeHtml(workshop.title)}</h1><p>${escapeHtml(workshop.story)}</p></header>
     <div class="sys-seals" aria-label="Progreso del taller">${[
       [workshop.modelDone, '01', 'Modelo explorado'],
       [workshop.progress.code, '02', 'Código verificado'],
@@ -178,22 +162,22 @@
     const state = stateFor(workshop),
       model = models[workshop.model],
       view = model.view(state, workshop);
-    return `<div class="sys-concept"><section><h2>¿Qué estás construyendo?</h2><p>${escape(workshop.what)}</p></section><section><h2>¿Por qué existe?</h2><p>${escape(workshop.why)}</p></section></div><div class="sys-model-layout"><section class="sys-sandbox" aria-label="Modelo interactivo de ${escape(workshop.title)}"><div class="sys-model-top"><span class="small-label">MODELO CONCEPTUAL · PASO A PASO</span><button class="text-button" data-sys="reset-model">Reiniciar modelo ↺</button></div><div id="sys-model-view">${modelView(view)}</div><p id="sys-model-live" class="sys-model-live" role="status" aria-live="polite">${escape(view.explanation)}</p></section><aside class="sys-objectives"><span class="eyebrow">TU INVESTIGACIÓN</span><h2>Tres cosas para descubrir.</h2><div id="sys-objective-list">${objectives(workshop)}</div><p>Los sellos se conservan al reiniciar el modelo. Experimentar acá no ejecuta ni aprueba el código del editor.</p></aside></div><div class="sys-limit"><strong>Hasta dónde llega este modelo</strong><p>${escape(workshop.limits)}</p></div>${checkpoint(workshop)}<div class="sys-footer"><p>Convertí las reglas que observaste en una función que puedas probar.</p><button class="button" data-sys="phase" data-value="build">Programar el núcleo →</button></div>${sources(workshop)}`;
+    return `<div class="sys-concept"><section><h2>¿Qué estás construyendo?</h2><p>${escapeHtml(workshop.what)}</p></section><section><h2>¿Por qué existe?</h2><p>${escapeHtml(workshop.why)}</p></section></div><div class="sys-model-layout"><section class="sys-sandbox" aria-label="Modelo interactivo de ${escapeHtml(workshop.title)}"><div class="sys-model-top"><span class="small-label">MODELO CONCEPTUAL · PASO A PASO</span><button class="text-button" data-sys="reset-model">Reiniciar modelo ↺</button></div><div id="sys-model-view">${modelView(view)}</div><p id="sys-model-live" class="sys-model-live" role="status" aria-live="polite">${escapeHtml(view.explanation)}</p></section><aside class="sys-objectives"><span class="eyebrow">TU INVESTIGACIÓN</span><h2>Tres cosas para descubrir.</h2><div id="sys-objective-list">${objectives(workshop)}</div><p>Los sellos se conservan al reiniciar el modelo. Experimentar acá no ejecuta ni aprueba el código del editor.</p></aside></div><div class="sys-limit"><strong>Hasta dónde llega este modelo</strong><p>${escapeHtml(workshop.limits)}</p></div>${checkpoint(workshop)}<div class="sys-footer"><p>Convertí las reglas que observaste en una función que puedas probar.</p><button class="button" data-sys="phase" data-value="build">Programar el núcleo →</button></div>${sources(workshop)}`;
   }
   function objectives(workshop) {
     return workshop.objectives
       .map(
         (goal) =>
-          `<div class="sys-goal ${workshop.progress.observed.includes(goal.id) ? 'earned' : ''}"><span aria-hidden="true">${workshop.progress.observed.includes(goal.id) ? '✓' : '○'}</span><div><strong>${escape(goal.label)}</strong><p>${escape(goal.why)}</p></div></div>`,
+          `<div class="sys-goal ${workshop.progress.observed.includes(goal.id) ? 'earned' : ''}"><span aria-hidden="true">${workshop.progress.observed.includes(goal.id) ? '✓' : '○'}</span><div><strong>${escapeHtml(goal.label)}</strong><p>${escapeHtml(goal.why)}</p></div></div>`,
       )
       .join('');
   }
   function modelView(view) {
-    return `<h2>${escape(view.title)}</h2><p class="sys-model-summary">${escape(view.summary)}</p><div class="sys-metrics">${(view.metrics || []).map((metric) => `<div><span>${escape(metric.label)}</span><strong>${escape(metric.value)}</strong></div>`).join('')}</div>${view.scene ? scene(view.scene) : ''}${view.cells?.length ? `<div class="sys-cells">${view.cells.map((cell) => `<div class="sys-cell ${['active', 'good', 'bad', 'muted'].includes(cell.tone) ? cell.tone : ''}"><span>${escape(cell.label)}</span><strong>${escape(cell.value)}</strong></div>`).join('')}</div>` : ''}${view.columns?.length ? `<div class="sys-table-scroll" tabindex="0" role="region" aria-label="Estado del modelo"><table><thead><tr>${view.columns.map((column) => `<th scope="col">${escape(column)}</th>`).join('')}</tr></thead><tbody>${(view.rows || []).map((row) => `<tr>${row.map((cell) => `<td>${escape(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}<div class="sys-controls" role="group" aria-label="Acciones del modelo">${(view.controls || []).map((control) => `<button data-sys="model" data-model-action="${escape(control.action)}" data-value="${escape(control.value ?? '')}" ${control.disabled ? 'disabled' : ''}>${escape(control.label)}</button>`).join('')}</div>${
+    return `<h2>${escapeHtml(view.title)}</h2><p class="sys-model-summary">${escapeHtml(view.summary)}</p><div class="sys-metrics">${(view.metrics || []).map((metric) => `<div><span>${escapeHtml(metric.label)}</span><strong>${escapeHtml(metric.value)}</strong></div>`).join('')}</div>${view.scene ? scene(view.scene) : ''}${view.cells?.length ? `<div class="sys-cells">${view.cells.map((cell) => `<div class="sys-cell ${['active', 'good', 'bad', 'muted'].includes(cell.tone) ? cell.tone : ''}"><span>${escapeHtml(cell.label)}</span><strong>${escapeHtml(cell.value)}</strong></div>`).join('')}</div>` : ''}${view.columns?.length ? `<div class="sys-table-scroll" tabindex="0" role="region" aria-label="Estado del modelo"><table><thead><tr>${view.columns.map((column) => `<th scope="col">${escapeHtml(column)}</th>`).join('')}</tr></thead><tbody>${(view.rows || []).map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}<div class="sys-controls" role="group" aria-label="Acciones del modelo">${(view.controls || []).map((control) => `<button data-sys="model" data-model-action="${escapeHtml(control.action)}" data-value="${escapeHtml(control.value ?? '')}" ${control.disabled ? 'disabled' : ''}>${escapeHtml(control.label)}</button>`).join('')}</div>${
       view.log?.length
         ? `<details class="sys-trace" open><summary>Qué cambió y por qué · últimos pasos</summary><ol>${view.log
             .slice(-8)
-            .map((line) => `<li>${escape(line)}</li>`)
+            .map((line) => `<li>${escapeHtml(line)}</li>`)
             .join('')}</ol></details>`
         : ''
     }`;
@@ -215,26 +199,26 @@
         if (shape.type === 'polygon')
           return `<polygon points="${(shape.points || []).map((pair) => `${finite(pair[0])},${finite(pair[1])}`).join(' ')}" ${style}/>`;
         if (shape.type === 'text')
-          return `<text x="${finite(shape.x)}" y="${finite(shape.y)}" fill="${color(shape.fill, '#252c27')}" font-size="${finite(shape.fontSize, 12)}" font-family="monospace">${escape(shape.text)}</text>`;
+          return `<text x="${finite(shape.x)}" y="${finite(shape.y)}" fill="${color(shape.fill, '#252c27')}" font-size="${finite(shape.fontSize, 12)}" font-family="monospace">${escapeHtml(shape.text)}</text>`;
         return '';
       })
       .join('');
-    return `<svg class="sys-scene" viewBox="0 0 ${Math.max(1, finite(data.width, 400))} ${Math.max(1, finite(data.height, 260))}" role="img" aria-label="${escape(data.alt)}" style="background:${color(data.background, '#eeeae1')}">${shapes}</svg>`;
+    return `<svg class="sys-scene" viewBox="0 0 ${Math.max(1, finite(data.width, 400))} ${Math.max(1, finite(data.height, 260))}" role="img" aria-label="${escapeHtml(data.alt)}" style="background:${color(data.background, '#eeeae1')}">${shapes}</svg>`;
   }
   function checkpoint(workshop) {
     const q = workshop.prediction,
       r = workshop.progress;
-    return `<section class="sys-checkpoint"><div class="small-label">CHECKPOINT · EXPLICÁ LA DECISIÓN</div><h2>${escape(q.question)}</h2><div class="sys-answers">${q.options.map((option, index) => `<button data-sys="answer" data-index="${index}" aria-pressed="${r.answer === index}" class="${r.answer === index ? (index === q.answer ? 'correct' : 'incorrect') : ''}"><span>${String.fromCharCode(65 + index)}</span>${escape(option)}</button>`).join('')}</div><div class="sys-feedback" role="status">${r.answer === null ? 'Probá una explicación. Después contrastala con el porqué.' : `<strong>${r.answer === q.answer ? 'Esa es la idea.' : 'Revisemos esa decisión.'}</strong> ${escape(q.explanation)}`}</div></section>`;
+    return `<section class="sys-checkpoint"><div class="small-label">CHECKPOINT · EXPLICÁ LA DECISIÓN</div><h2>${escapeHtml(q.question)}</h2><div class="sys-answers">${q.options.map((option, index) => `<button data-sys="answer" data-index="${index}" aria-pressed="${r.answer === index}" class="${r.answer === index ? (index === q.answer ? 'correct' : 'incorrect') : ''}"><span>${String.fromCharCode(65 + index)}</span>${escapeHtml(option)}</button>`).join('')}</div><div class="sys-feedback" role="status">${r.answer === null ? 'Probá una explicación. Después contrastala con el porqué.' : `<strong>${r.answer === q.answer ? 'Esa es la idea.' : 'Revisemos esa decisión.'}</strong> ${escapeHtml(q.explanation)}`}</div></section>`;
   }
   function build(workshop) {
     const item = window.TallerLab.getExercises().find((ex) => ex.id === workshop.code[language]);
-    return `<div class="sys-build-callout"><div><span class="small-label">NÚCLEO EJECUTABLE · ${language.toUpperCase()}</span><h2>${escape(item.title)}</h2><p>${escape(item.objective)}</p><div class="sys-pills"><span>${item.tests.length} pruebas reales</span><span>Pistas progresivas</span><span>Tu propio caso extra</span></div></div><a class="button" href="${codeURL(workshop, item.id)}">Entrar al IDE ↗</a></div><div class="sys-concept"><section><h2>Del dibujo al código.</h2><p>${escape(workshop.bridge[language])}</p></section><section><h2>Lo que vas a verificar.</h2><ul>${item.tests.map((test) => `<li><strong>${escape(test.label)}</strong><br>${escape(test.why)}</li>`).join('')}</ul></section></div>${workshop.progress.code ? '<p class="sys-code-passed" role="status">✓ Este núcleo tiene una ejecución registrada con sus tres casos aprobados. Cambiarlo no borra el sello: ejecutá otra vez para verificar el código nuevo.</p>' : ''}<div class="sys-related"><h2>Herramientas que preparan esta idea.</h2><p>Estos ejercicios existentes se reutilizan como práctica previa. Podés ir directamente al núcleo si ya entendés el concepto.</p><div>${(
+    return `<div class="sys-build-callout"><div><span class="small-label">NÚCLEO EJECUTABLE · ${language.toUpperCase()}</span><h2>${escapeHtml(item.title)}</h2><p>${escapeHtml(item.objective)}</p><div class="sys-pills"><span>${item.tests.length} pruebas reales</span><span>Pistas progresivas</span><span>Tu propio caso extra</span></div></div><a class="button" href="${codeURL(workshop, item.id)}">Entrar al IDE ↗</a></div><div class="sys-concept"><section><h2>Del dibujo al código.</h2><p>${escapeHtml(workshop.bridge[language])}</p></section><section><h2>Lo que vas a verificar.</h2><ul>${item.tests.map((test) => `<li><strong>${escapeHtml(test.label)}</strong><br>${escapeHtml(test.why)}</li>`).join('')}</ul></section></div>${workshop.progress.code ? '<p class="sys-code-passed" role="status">✓ Este núcleo tiene una ejecución registrada con sus tres casos aprobados. Cambiarlo no borra el sello: ejecutá otra vez para verificar el código nuevo.</p>' : ''}<div class="sys-related"><h2>Herramientas que preparan esta idea.</h2><p>Estos ejercicios existentes se reutilizan como práctica previa. Podés ir directamente al núcleo si ya entendés el concepto.</p><div>${(
       workshop.related?.[language] || []
     )
       .map((id) => {
         const ex = window.TallerLab.getExercises().find((x) => x.id === id);
         return ex
-          ? `<a href="${codeURL(workshop, id)}"><span>${id}</span>${escape(ex.title)} ↗</a>`
+          ? `<a href="${codeURL(workshop, id)}"><span>${id}</span>${escapeHtml(ex.title)} ↗</a>`
           : '';
       })
       .join(
@@ -242,10 +226,10 @@
       )}</div></div><div class="sys-footer"><p>El navegador comprueba el núcleo acotado. El próximo paso convierte esa pieza en un proyecto.</p><button class="button" data-sys="phase" data-value="ship">Armar mi proyecto →</button></div>${sources(workshop)}`;
   }
   function ship(workshop) {
-    return `<section class="sys-project-intro"><div><span class="eyebrow">UNA PIEZA QUE PODÉS LLEVARTE</span><h2>Del experimento al proyecto.</h2><p>Descargá un kit con tu borrador actual, tres tests, una solución separada para consultar y esta hoja de ruta. ${language === 'rust' ? 'Incluye Cargo.toml y pruebas de Rust.' : 'Incluye go.mod y pruebas de Go.'} El kit implementa el núcleo del ejercicio; estas cuatro etapas guían la ampliación.</p></div><button class="button" data-sys="download">Descargar kit ${language === 'rust' ? 'Rust' : 'Go'} ↓</button></section><div class="sys-real-uses"><h3>Dónde aparece esta idea</h3>${workshop.uses.map((use) => `<span>${escape(use)}</span>`).join('')}</div><div class="sys-project-steps">${workshop.steps.map((step, index) => `<article><div class="sys-step-index">0${index + 1}</div><div><h3>${escape(step.title)}</h3><p>${escape(step.task)}</p><p><strong>Por qué:</strong> ${escape(step.why)}</p><div class="sys-acceptance"><strong>Lo podés comprobar así</strong><p>${escape(step.done)}</p></div><label><input type="checkbox" data-sys-step="${index}" ${workshop.progress.steps.includes(index) ? 'checked' : ''}> Lo comprobé en mi proyecto · registro manual</label></div></article>`).join('')}</div><div class="sys-limit"><strong>Límite y siguiente herramienta</strong><p>${escape(workshop.limits)}</p><p>${escape(workshop.bridge[language])}</p></div><label class="sys-note"><span>Dejá tu próximo experimento por escrito</span><textarea id="sys-note" maxlength="10000" placeholder="Observé que… Mi próximo test va a demostrar…">${escape(workshop.progress.note)}</textarea></label><p id="sys-note-status" class="note-state">La nota y las etapas se guardan con tu progreso. Las casillas son tu registro, no una evaluación automática.</p>${checkpoint(workshop)}${sources(workshop)}`;
+    return `<section class="sys-project-intro"><div><span class="eyebrow">UNA PIEZA QUE PODÉS LLEVARTE</span><h2>Del experimento al proyecto.</h2><p>Descargá un kit con tu borrador actual, tres tests, una solución separada para consultar y esta hoja de ruta. ${language === 'rust' ? 'Incluye Cargo.toml y pruebas de Rust.' : 'Incluye go.mod y pruebas de Go.'} El kit implementa el núcleo del ejercicio; estas cuatro etapas guían la ampliación.</p></div><button class="button" data-sys="download">Descargar kit ${language === 'rust' ? 'Rust' : 'Go'} ↓</button></section><div class="sys-real-uses"><h3>Dónde aparece esta idea</h3>${workshop.uses.map((use) => `<span>${escapeHtml(use)}</span>`).join('')}</div><div class="sys-project-steps">${workshop.steps.map((step, index) => `<article><div class="sys-step-index">0${index + 1}</div><div><h3>${escapeHtml(step.title)}</h3><p>${escapeHtml(step.task)}</p><p><strong>Por qué:</strong> ${escapeHtml(step.why)}</p><div class="sys-acceptance"><strong>Lo podés comprobar así</strong><p>${escapeHtml(step.done)}</p></div><label><input type="checkbox" data-sys-step="${index}" ${workshop.progress.steps.includes(index) ? 'checked' : ''}> Lo comprobé en mi proyecto · registro manual</label></div></article>`).join('')}</div><div class="sys-limit"><strong>Límite y siguiente herramienta</strong><p>${escapeHtml(workshop.limits)}</p><p>${escapeHtml(workshop.bridge[language])}</p></div><label class="sys-note"><span>Dejá tu próximo experimento por escrito</span><textarea id="sys-note" maxlength="10000" placeholder="Observé que… Mi próximo test va a demostrar…">${escapeHtml(workshop.progress.note)}</textarea></label><p id="sys-note-status" class="note-state">La nota y las etapas se guardan con tu progreso. Las casillas son tu registro, no una evaluación automática.</p>${checkpoint(workshop)}${sources(workshop)}`;
   }
   function sources(workshop) {
-    return `<section class="sys-sources"><h2>Seguí con quienes construyeron estas ideas.</h2><div>${workshop.sources.map((source) => `<a href="${escape(source.url)}" target="_blank" rel="noopener noreferrer">${escape(source.title)} ↗</a>`).join('')}</div></section>`;
+    return `<section class="sys-sources"><h2>Seguí con quienes construyeron estas ideas.</h2><div>${workshop.sources.map((source) => `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.title)} ↗</a>`).join('')}</div></section>`;
   }
   function onClick(event) {
     const button = event.target.closest('[data-sys]');
@@ -374,7 +358,7 @@
     if (!w || !missionIDs(parent, lang).includes(id)) return '';
     sync();
     const progress = engine.get(parent, lang);
-    return `<div class="quest-lab-context"><a href="${returnURL(parent, lang)}">← ${escape(w.title)}</a><span>${id === w.code[lang] ? 'Núcleo del taller' : 'Herramienta previa'}</span><span>${progress.progress.code ? '✓ Núcleo verificado' : 'Tres pruebas para verificar el núcleo'}</span></div>`;
+    return `<div class="quest-lab-context"><a href="${returnURL(parent, lang)}">← ${escapeHtml(w.title)}</a><span>${id === w.code[lang] ? 'Núcleo del taller' : 'Herramienta previa'}</span><span>${progress.progress.code ? '✓ Núcleo verificado' : 'Tres pruebas para verificar el núcleo'}</span></div>`;
   }
   window.TallerSystems = {
     init,

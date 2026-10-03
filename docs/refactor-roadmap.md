@@ -180,7 +180,8 @@ posición de la entrada.
 | --- | --- | --- |
 | P1 | Hecha | `2ed5227` |
 | P2 | Hecha: bundle JS idéntico y oráculo sin cambios | `7b7e957`, `58b093f` |
-| P3/P4 | Hecha: 14 checks portados con salidas idénticas, 5 checks nuevos de red, configuraciones en TS, `build:kits` retirado | `16e98fb`, `f00fbc9` y siguientes |
+| P3/P4 | Hecha: 14 checks portados con salidas idénticas, 5 checks nuevos de red, configuraciones en TS, `build:kits` retirado | `16e98fb`, `f00fbc9`, `010a2e3` |
+| P5 | Hecha la parte pura: 10 fuentes legacy importan `src/shared` (escape ×4, normalización ×3, clon JSON ×7, objeto plano ×2, niveles ×3); oráculo idéntico y smoke test en navegador. Queda el escape de los exploradores, que cambia la salida con valores nulos | (este commit) |
 
 Hallazgos de la caracterización que quedan para P7:
 

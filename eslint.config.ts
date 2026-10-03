@@ -26,13 +26,9 @@ export default defineConfig([
     files: ['src/**/*.{ts,tsx}'],
   },
   {
-    // Legacy browser scripts still publish window.Taller* globals as classic scripts.
+    // Legacy browser scripts still publish window.Taller* globals, but are ES modules for Vite.
     files: ['*.js'],
-    languageOptions: { sourceType: 'script', globals: globals.browser },
-  },
-  {
-    files: ['*-source.js'],
-    languageOptions: { sourceType: 'module' },
+    languageOptions: { sourceType: 'module', globals: globals.browser },
   },
   {
     files: ['src/**/*.{js,jsx,ts,tsx}'],

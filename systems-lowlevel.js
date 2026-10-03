@@ -1,7 +1,7 @@
 /* Original, deterministic teaching models. These do not access the host machine. */
+import { cloneJson } from './src/shared/lib/clone-json';
 window.SYSTEMS_LOWLEVEL = (() => {
   'use strict';
-  const copy = (value) => JSON.parse(JSON.stringify(value));
   const button = (action, label, value) => ({
     action,
     label,
@@ -22,7 +22,7 @@ window.SYSTEMS_LOWLEVEL = (() => {
     initial: () => ({ ...base(), entries: [], capacity: 3, hits: 0, misses: 0, evictions: 0 }),
     act(state, action, value) {
       if (action === 'reset') return this.initial();
-      const s = copy(state);
+      const s = cloneJson(state);
       if (action !== 'read' || !['A', 'B', 'C', 'D'].includes(value)) return s;
       const index = s.entries.indexOf(value);
       if (index >= 0) {
@@ -82,7 +82,7 @@ window.SYSTEMS_LOWLEVEL = (() => {
     }),
     act(state, action, value) {
       if (action === 'reset') return this.initial();
-      const s = copy(state);
+      const s = cloneJson(state);
       if (action === 'allocate' && [4, 6, 8, 12].includes(Number(value))) {
         const size = Number(value),
           index = s.blocks.findIndex((b) => b.owner === null && b.size >= size);
@@ -194,7 +194,7 @@ window.SYSTEMS_LOWLEVEL = (() => {
     }),
     act(state, action, value) {
       if (action === 'reset') return this.initial();
-      const s = copy(state);
+      const s = cloneJson(state);
       if (action === 'map') {
         s.table[2] = { frame: 3, write: true };
         return log(
@@ -289,7 +289,7 @@ window.SYSTEMS_LOWLEVEL = (() => {
     }),
     act(state, action) {
       if (action === 'reset') return this.initial();
-      const s = copy(state);
+      const s = cloneJson(state);
       if (action === 'remap') {
         s.tableFrame = 3;
         s.invalidated = false;
@@ -371,7 +371,7 @@ window.SYSTEMS_LOWLEVEL = (() => {
     }),
     act(state, action) {
       if (action === 'reset') return this.initial();
-      const s = copy(state);
+      const s = cloneJson(state);
       if (action === 'loop') {
         Object.assign(s, {
           bytes: [3, 0],
@@ -477,7 +477,7 @@ window.SYSTEMS_LOWLEVEL = (() => {
     }),
     act(state, action, value) {
       if (action === 'reset') return this.initial();
-      const s = copy(state),
+      const s = cloneJson(state),
         top = s.frames[s.frames.length - 1];
       if (action === 'call' && ['f', 'g'].includes(value)) {
         if (s.frames.length === 4) {
@@ -567,7 +567,7 @@ window.SYSTEMS_LOWLEVEL = (() => {
     }),
     act(state, action) {
       if (action === 'reset') return this.initial();
-      const s = copy(state);
+      const s = cloneJson(state);
       if (action === 'block' && s.ready.length) {
         const id = s.ready.shift();
         s.blocked.push(id);
@@ -665,7 +665,7 @@ window.SYSTEMS_LOWLEVEL = (() => {
     }),
     act(state, action) {
       if (action === 'reset') return this.initial();
-      const s = copy(state);
+      const s = cloneJson(state);
       if (action === 'inject') {
         const arriving = s.next;
         s.next = s.next === 90 ? 65 : s.next + 1;

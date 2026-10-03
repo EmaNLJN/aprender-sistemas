@@ -1,0 +1,12 @@
+// Escapa texto para interpolarlo en plantillas HTML; null y undefined dan ''.
+const HTML_ESCAPES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
+
+export function escapeHtml(value: unknown): string {
+  return String(value ?? '').replace(/[&<>"']/g, (character) => HTML_ESCAPES[character]);
+}

@@ -1,7 +1,7 @@
 /* A deterministic teaching computer. No host memory, devices or native instructions. */
+import { cloneJson } from './src/shared/lib/clone-json';
 window.SYSTEMS_PC = (() => {
   'use strict';
-  const copy = (value) => JSON.parse(JSON.stringify(value));
   const button = (action, label, value) => ({
     action,
     label,
@@ -159,10 +159,10 @@ window.SYSTEMS_PC = (() => {
     initial,
     act(state, action, value) {
       if (action === 'reset') return initial();
-      const s = copy(state);
+      const s = cloneJson(state);
       if (action === 'program' && ['normal', 'protection'].includes(value)) {
         const fresh = initial();
-        fresh.observed = copy(s.observed);
+        fresh.observed = cloneJson(s.observed);
         fresh.log = s.log;
         fresh.scenario = value;
         if (value === 'protection')
@@ -269,7 +269,7 @@ window.SYSTEMS_PC = (() => {
           if (instruction) s.retired++;
           return log(s, 'HALT: terminó el programa. Cargá otro escenario o reiniciá para repetir.');
         }
-        s.instruction = copy(instruction);
+        s.instruction = cloneJson(instruction);
         s.translation = null;
         s.physical = null;
         s.phase = 'tlb';
@@ -284,7 +284,7 @@ window.SYSTEMS_PC = (() => {
         if (cached) {
           s.hits++;
           s.observed.hit = true;
-          s.translation = copy(cached);
+          s.translation = cloneJson(cached);
           s.phase = 'permission';
           return log(
             s,
@@ -302,8 +302,8 @@ window.SYSTEMS_PC = (() => {
         const vpn = Math.floor(s.instruction.va / 4),
           entry = s.table[vpn];
         if (!entry) return fault(s, 'absent');
-        s.translation = copy(entry);
-        s.tlb[vpn] = copy(entry);
+        s.translation = cloneJson(entry);
+        s.tlb[vpn] = cloneJson(entry);
         s.observed.walk = true;
         s.phase = 'permission';
         return log(

@@ -1,10 +1,10 @@
+import { cloneJson } from './src/shared/lib/clone-json';
+import { isPlainObject } from './src/shared/lib/is-plain-object';
+import { LEVEL_IDS } from './src/shared/config/levels';
 (() => {
   'use strict';
   const KEY = 'taller-campaign-v1';
   const LANGUAGES = ['rust', 'go'];
-  const LEVELS = ['beginner', 'medium', 'advanced', 'expert'];
-  const clone = (value) => JSON.parse(JSON.stringify(value));
-  const object = (value) => Boolean(value && typeof value === 'object' && !Array.isArray(value));
   const blank = () => ({ version: 1, seals: {}, checkpoints: {} });
   let state = blank(),
     exercises = new Map(),
@@ -37,13 +37,18 @@
     }
   }
   function sanitize(raw) {
-    if (!object(raw) || raw.version !== 1 || !object(raw.seals) || !object(raw.checkpoints)) {
+    if (
+      !isPlainObject(raw) ||
+      raw.version !== 1 ||
+      !isPlainObject(raw.seals) ||
+      !isPlainObject(raw.checkpoints)
+    ) {
       throw new Error('La copia de campaña no tiene un formato compatible.');
     }
     const clean = blank();
     for (const [id, value] of Object.entries(raw.seals)) {
       if (!exercises.has(id)) continue;
-      if (!object(value)) throw new Error('Sello de ejercicio inválido: ' + id);
+      if (!isPlainObject(value)) throw new Error('Sello de ejercicio inválido: ' + id);
       for (const key of ['code', 'prediction', 'assisted']) {
         if (value[key] !== undefined && typeof value[key] !== 'boolean')
           throw new Error('Sello de ejercicio inválido: ' + id);
@@ -56,7 +61,7 @@
     }
     for (const [id, value] of Object.entries(raw.checkpoints)) {
       if (!worldById.has(id)) continue;
-      if (!object(value) || typeof value.passed !== 'boolean')
+      if (!isPlainObject(value) || typeof value.passed !== 'boolean')
         throw new Error('Checkpoint inválido: ' + id);
       const answer = value.lastAnswer ?? null;
       if (
@@ -72,19 +77,21 @@
     return clean;
   }
   function init(config) {
-    if (!object(config) || !Array.isArray(config.exercises))
+    if (!isPlainObject(config) || !Array.isArray(config.exercises))
       throw new Error('Faltan los ejercicios de la campaña.');
     const nextExercises = new Map();
     for (const ex of config.exercises) {
       if (
-        !object(ex) ||
+        !isPlainObject(ex) ||
         !/^(rust|go)-\d+$/.test(ex.id) ||
         !LANGUAGES.includes(ex.language) ||
         !ex.id.startsWith(ex.language + '-') ||
         nextExercises.has(ex.id) ||
         !Array.isArray(ex.tests) ||
         !ex.tests.length ||
-        !ex.tests.every((test) => object(test) && typeof test.id === 'string' && test.id.trim()) ||
+        !ex.tests.every(
+          (test) => isPlainObject(test) && typeof test.id === 'string' && test.id.trim(),
+        ) ||
         new Set(ex.tests.map((test) => test.id)).size !== ex.tests.length
       ) {
         throw new Error('Ejercicio de campaña inválido.');
@@ -96,7 +103,7 @@
           LANGUAGES.map((lang) => [lang, config.worlds.filter((world) => world.language === lang)]),
         )
       : config.worlds;
-    if (!object(supplied)) throw new Error('Faltan los mundos de la campaña.');
+    if (!isPlainObject(supplied)) throw new Error('Faltan los mundos de la campaña.');
     const nextWorlds = { rust: [], go: [] },
       nextWorldById = new Map(),
       assigned = new Set();
@@ -104,12 +111,12 @@
       if (!Array.isArray(supplied[language])) throw new Error('Faltan mundos de ' + language + '.');
       for (const world of supplied[language]) {
         if (
-          !object(world) ||
+          !isPlainObject(world) ||
           typeof world.id !== 'string' ||
           !/^[a-z][a-z0-9-]*$/.test(world.id) ||
           !world.id.startsWith(language + '-') ||
           nextWorldById.has(world.id) ||
-          !LEVELS.includes(world.level) ||
+          !LEVEL_IDS.includes(world.level) ||
           typeof world.title !== 'string' ||
           !world.title.trim() ||
           !Array.isArray(world.trainingIds) ||
@@ -128,7 +135,7 @@
         }
         const q = world.checkpoint;
         if (
-          !object(q) ||
+          !isPlainObject(q) ||
           typeof q.question !== 'string' ||
           !q.question.trim() ||
           !Array.isArray(q.options) ||
@@ -141,7 +148,7 @@
           !q.explanation.trim()
         )
           throw new Error('Pregunta de checkpoint inválida.');
-        const copied = { ...clone(world), language, missionIds };
+        const copied = { ...cloneJson(world), language, missionIds };
         nextWorlds[language].push(copied);
         nextWorldById.set(copied.id, copied);
       }
@@ -171,14 +178,14 @@
     assertReady();
     const before = totalXP();
     let changed = false;
-    if (object(labState?.records))
+    if (isPlainObject(labState?.records))
       for (const [id, record] of Object.entries(labState.records)) {
-        if (!exercises.has(id) || !object(record)) continue;
+        if (!exercises.has(id) || !isPlainObject(record)) continue;
         const prior = seal(id),
           result = record.result,
           expected = exercises.get(id).tests;
         const code = Boolean(
-          object(result) &&
+          isPlainObject(result) &&
           result.success === true &&
           result.transportError !== true &&
           typeof result.code === 'string' &&
@@ -255,7 +262,7 @@
         requirements.push(text);
       }
       derived.push({
-        ...clone(world),
+        ...cloneJson(world),
         score,
         maxScore: 180,
         unlocked,
@@ -393,7 +400,7 @@
     getSummary,
     exportState: () => {
       assertReady();
-      return clone(state);
+      return cloneJson(state);
     },
     validateImport: (raw) => {
       assertReady();

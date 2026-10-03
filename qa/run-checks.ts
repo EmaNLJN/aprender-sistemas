@@ -24,6 +24,7 @@ const checks = [
   'systems-play-check.ts',
   'systems-pc-check.ts',
   'project-kit-check.ts',
+  'shared-lib-check.ts',
 ];
 
 for (const check of checks) {
