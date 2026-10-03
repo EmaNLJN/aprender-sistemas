@@ -39,7 +39,21 @@ Sus CLI están aisladas en `tools/quality/`; consultá
 [su guía](../tools/quality/AGENTS.md) para instalación y comandos.
 React Doctor se usa sobre código React; Desloppify se activa para un análisis de
 salud o deuda técnica solicitado, sin ampliar una tarea de instalación a una
-refactorización completa. El inventario total es de diez skills locales.
+refactorización completa.
+
+En la pasada de calidad también se instaló
+[code-review](../.agents/skills/code-review/SKILL.md), de
+[Matt Pocock](https://www.skills.sh/mattpocock/skills/code-review), con unas
+657 mil instalaciones consultadas el 2026-10-03. Requiere un punto de comparación
+y una especificación para revisar estándares y requisitos por separado. El total
+actual es de once skills locales.
+
+Para ESLint/Prettier se buscó `eslint prettier` con `find-skills`: `antfu` tenía
+16,4 mil instalaciones, pero recomienda una combinación de herramientas distinta
+de la elegida por el usuario. Se tomó como base la configuración recomendada
+oficial de ESLint y el ejemplo oficial de instalación/configuración de Prettier,
+consultados mediante Context7; no se agregó una skill redundante para imponer
+otro formatter, package manager o framework.
 
 ## Criterios de uso
 

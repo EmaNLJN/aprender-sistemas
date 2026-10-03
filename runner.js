@@ -107,7 +107,7 @@
         return failure('El Playground devolvió una respuesta que no se pudo leer. Volvé a intentar.', 'response');
       }
       return language === 'rust' ? parseRust(data) : parseGo(data);
-    } catch (error) {
+    } catch {
       if (timedOut) return failure('La ejecución superó los 60 segundos. Revisá bucles y bloqueos; también puede haber demoras del servicio.', 'timeout');
       if (controller.signal.aborted) return failure('Ejecución cancelada.', 'aborted');
       return failure('No se pudo conectar al Playground. Revisá tu conexión o un posible bloqueo del navegador. Podés seguir leyendo y resolviendo las preguntas sin conexión.', 'network');

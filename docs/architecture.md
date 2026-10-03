@@ -124,7 +124,8 @@ La complejidad cognitiva es otra medida, orientada a la dificultad de comprensi�
 
 - En funciones nuevas o modificadas, usá **más de 10** como aviso inicial para
   revisar responsabilidades, decisiones y pruebas. Es un criterio local revisable;
-  ESLint tiene un máximo predeterminado de 20. Hoy no hay un gate de ESLint activo.
+  ESLint tiene un máximo predeterminado de 20. `npm run lint` activa el aviso local
+  con variante `classic`; las reglas recomendadas de ESLint son errores.
 - Medí funciones relevantes de las fuentes, excluyendo bundles, dependencias,
   skills importadas y salidas generadas. Indicá herramienta, versión y variante
   al comparar mediciones; métricas de herramientas distintas pueden diferir.

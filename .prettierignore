@@ -1,0 +1,15 @@
+# Imported skills retain upstream formatting and attribution.
+.agents/
+.codex/
+.desloppify/
+**/node_modules/
+**/.venv/
+**/venv/
+*.bundle.js
+index.html
+dist/
+build/
+coverage/
+test-results/
+playwright-report/
+qa/*-validation.json

@@ -23,7 +23,7 @@ window.SYSTEMS_PLAY = (() => {
   const models = {};
   models.transforms = {
     initial: () => ({order:'TR',step:0,matrix:[...identity],points:copy(baseShip),completedOrders:[],seen:{},log:[]}),
-    act(input,action,value) {
+    act(input,action) {
       const s=copy(input);
       if(action==='order'){s.order=s.order==='TR'?'RT':'TR';s.step=0;s.matrix=[...identity];s.points=copy(baseShip);log(s,'Nueva secuencia: '+s.order.split('').join(' → ')+'.');}
       if(action==='step'&&s.step<2){

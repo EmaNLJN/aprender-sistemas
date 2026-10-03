@@ -8,7 +8,13 @@
     "check:content": "node qa/content-check.cjs",
     "check:runner": "node qa/runner-check.cjs",
     "build:effects": "esbuild game-effects-source.js --bundle --format=iife --platform=browser --target=es2020 --minify --legal-comments=inline --outfile=game-effects.bundle.js",
-    "build:kits": "esbuild project-kit-source.js --bundle --format=iife --platform=browser --target=es2020 --minify --legal-comments=inline --outfile=project-kit.bundle.js"
+    "build:kits": "esbuild project-kit-source.js --bundle --format=iife --platform=browser --target=es2020 --minify --legal-comments=inline --outfile=project-kit.bundle.js",
+    "build": "npm run build:editor && npm run build:effects && npm run build:kits && node build.mjs",
+    "lint": "eslint .",
+    "format:check": "prettier --no-error-on-unmatched-pattern --check eslint.config.mjs prettier.config.mjs doctor.config.mjs package.json qa/lab-state-check.cjs tools/quality/package.json",
+    "format": "prettier --no-error-on-unmatched-pattern --write eslint.config.mjs prettier.config.mjs doctor.config.mjs package.json qa/lab-state-check.cjs tools/quality/package.json",
+    "check:lab": "node qa/lab-state-check.cjs",
+    "test": "node qa/build-check.cjs && node qa/content-check.cjs && node qa/runner-check.cjs && node qa/campaign-check.cjs && node qa/campaign-content-check.cjs && node qa/quest-explorers-check.cjs && node qa/systems-check.cjs && node qa/systems-lowlevel-check.cjs && node qa/systems-infra-check.cjs && node qa/systems-play-check.cjs && node qa/systems-pc-check.cjs && node qa/project-kit-check.cjs && npm run check:lab"
   },
   "dependencies": {
     "@codemirror/autocomplete": "6.20.3",
@@ -23,5 +29,11 @@
     "codemirror": "6.0.2",
     "esbuild": "0.28.2",
     "fflate": "0.8.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.12.0",
+    "globals": "17.13.0",
+    "prettier": "3.9.9"
   }
 }

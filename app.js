@@ -45,7 +45,7 @@
     const saved = localStorage.getItem(KEY);
     if (saved) state = sanitize(JSON.parse(saved));
     localStorage.setItem(KEY, JSON.stringify(state));
-  } catch (error) {
+  } catch {
     storageAvailable = false;
     loadNotice = 'No se pudo leer o guardar el avance. Podés exportarlo al terminar.';
   }
@@ -231,7 +231,7 @@
     try {await navigator.clipboard.writeText(prompt);toast('Pedido copiado. Pegalo en tu asistente.');}
     catch {
       const field=document.createElement('textarea');field.value=prompt;field.style.position='fixed';field.style.top='-1000px';document.body.appendChild(field);field.select();
-      let copied=false;try {copied=document.execCommand('copy');} catch {}
+      let copied=false;try {copied=document.execCommand('copy');} catch (error) { void error; /* Selection fallback remains available below. */ }
       field.remove();
       if (copied) toast('Pedido copiado.'); else {const range=document.createRange();range.selectNodeContents($('#tutor-prompt'));const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range);toast('Texto seleccionado. Usá Copiar en tu navegador.');}
     }
