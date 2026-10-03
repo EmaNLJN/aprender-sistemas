@@ -47,7 +47,7 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 - Al agregar un asset, importalo desde la entrada o la funcionalidad que lo usa para
   que Vite lo procese. No agregues otro empaquetador ni un script de concatenación.
 - Editá las fuentes, conservá los avisos de licencia y regenerá los artefactos.
-  `dist/` y `*.bundle.js` son salidas ignoradas, no fuentes para editar o versionar.
+  `dist/` es una salida ignorada, no una fuente para editar o versionar.
 - Mantené las versiones y el lockfile sincronizados. Para una migración de interfaz,
   definí el framework y el build objetivo, organizá componentes por funcionalidad
   y avanzá por vistas verificables. Conservá contenido, modelos, runner y progreso

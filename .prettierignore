@@ -10,7 +10,6 @@
 **/venv/
 
 # Generated output.
-*.bundle.js
 dist/
 coverage/
 test-results/

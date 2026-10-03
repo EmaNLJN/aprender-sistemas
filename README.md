@@ -174,7 +174,7 @@ Vite, como build único, empaqueta estilos, datos, editor y aplicación en el do
 
 Archivos principales: `src/features/atlas/` (Atlas React y contenido ESM), `lab-rust.js` / `lab-go.js` (contenido), `lab.js` (aprendizaje y revisión), `lab-explorers.js` (modelos y misiones), `runner.js` (Playgrounds), `editor-source.js` (CodeMirror), `content.js` / `app.js` (guía original), `quests-rust.js` / `quests-go.js` (24 desafíos nuevos), `campaign-*.js` (mundos y motor), `campaign.js` / `campaign.css` (interfaz de campaña).
 
-Sistemas separa los datos y modelos puros en `systems-lowlevel.js`, `systems-infra.js`, `systems-play.js` y `systems-pc.js`; sus archivos `*-labs.js` contienen los núcleos Rust/Go. `systems-engine.js` conserva los sellos e importa progreso; `systems.js` / `systems.css` muestran el catálogo, los controles y escenas SVG. `project-kit-source.js` genera proyectos y archivos ZIP con `fflate`; Vite lo incluye en la aplicación sin CDN. `npm run build:kits` genera únicamente el fixture autónomo que usa su check especializado.
+Sistemas separa los datos y modelos puros en `systems-lowlevel.js`, `systems-infra.js`, `systems-play.js` y `systems-pc.js`; sus archivos `*-labs.js` contienen los núcleos Rust/Go. `systems-engine.js` conserva los sellos e importa progreso; `systems.js` / `systems.css` muestran el catálogo, los controles y escenas SVG. `project-kit-source.js` genera proyectos y archivos ZIP con `fflate`; Vite lo incluye en la aplicación sin CDN y su check lo empaqueta en memoria con esbuild.
 
 ## Verificación
 
@@ -190,7 +190,7 @@ node qa/systems-lowlevel-check.cjs
 node qa/systems-infra-check.cjs
 node qa/systems-play-check.cjs
 node qa/systems-pc-check.cjs
-node qa/project-kit-check.cjs
+node qa/project-kit-check.ts
 ```
 
 Los primeros checks comprueban contenido, transporte sin red, paquete autónomo, reglas de campaña y los modelos de robot/paquetes. `systems-check` cubre el catálogo y el motor de sellos; los cuatro checks de dominio prueban reglas de sus simulaciones. El check de kits crea ZIP, los vuelve a leer con un decodificador independiente y compara archivos, CRC y contenido del borrador. Estos comandos son comprobaciones locales; por sí solos no demuestran que un programa haya compilado.
@@ -198,7 +198,7 @@ Los primeros checks comprueban contenido, transporte sin red, paquete autónomo,
 Para ejecutar además `cargo test` y `go test` sobre los kits en contenedores descartables:
 
 ```sh
-node qa/project-kit-check.cjs --docker
+node qa/project-kit-check.ts --docker
 ```
 
 Esta comprobación opcional requiere Docker y las imágenes `rust:1.90-alpine` y `golang:1.25-alpine` disponibles localmente; el script no las descarga. Está separada de la construcción del contenedor web y no requiere compilar contra los servicios públicos. Para actualizar deliberadamente el registro de evidencia después de esa ejecución completa, agregá `--write-report`. No lo uses en una comprobación solamente estructural: reemplazaría evidencia previa de compiladores.

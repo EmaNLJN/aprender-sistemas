@@ -1,32 +1,194 @@
 /* Production ZIP roundtrip + optional real Cargo/Go tests in disposable containers.
- * node qa/project-kit-check.cjs --docker --write-report
+ * node qa/project-kit-check.ts --docker --write-report
  * --partial allows only domains whose metadata is already available during authoring.
  * --only=pc recompiles PC plus every changed/unverified kit; unchanged exact hashes
  * retain their earlier compiler evidence. ZIP/artifact checks still cover every kit.
  * --changed recompiles only changed/unverified kits, with no forced workshop.
  * This script never pulls images, opens ports, or mounts the application workspace.
  */
-'use strict';
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
-const vm = require('node:vm');
-const zlib = require('node:zlib');
-const crypto = require('node:crypto');
-const { spawn, execFileSync } = require('node:child_process');
-const root = path.resolve(__dirname, '..');
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import vm from 'node:vm';
+import zlib from 'node:zlib';
+import crypto from 'node:crypto';
+import { spawn, execFileSync } from 'node:child_process';
+import { bundleSource, repoRoot as root, runSource } from './lib/sources.ts';
+
+type Language = 'rust' | 'go';
+interface TestCase {
+  id: string;
+  label: string;
+  expression: string;
+  why: string;
+}
+interface Exercise {
+  id: string;
+  language: Language;
+  objective: string;
+  instructions: string[];
+  why: string;
+  starter: string;
+  solution: string;
+  imports: string[];
+  tests: TestCase[];
+}
+interface WorkshopStep {
+  title: string;
+  task: string;
+  why: string;
+  done: string;
+}
+interface Workshop {
+  id: string;
+  title: string;
+  code: Record<string, string>;
+  steps: WorkshopStep[];
+  limits: string;
+  bridge: Record<string, string>;
+  sources: { title: string; url: string }[];
+  progress: { note: string };
+}
+function projectKit(ctx: FakeContext): ProjectKitApi {
+  const api = ctx.window.TallerProjectKit;
+  if (!api) throw new Error('TallerProjectKit was not published by project-kit-source.js');
+  return api;
+}
+interface Draft {
+  draft?: string;
+  customTest?: string;
+}
+interface Kit {
+  name: string;
+  files: Record<string, string>;
+}
+interface Archive {
+  name: string;
+  bytes: Uint8Array;
+}
+interface ProjectKitApi {
+  files(workshop: Workshop, language: string, options?: { solution?: boolean }): Kit;
+  archive(workshop: Workshop, language: string, options?: { solution?: boolean }): Archive;
+}
+interface LabApi {
+  getExercises(): Exercise[];
+  exportState?(): unknown;
+}
+interface BrowserWindow {
+  TallerLab?: LabApi;
+  TallerProjectKit?: ProjectKitApi;
+  [global: string]: unknown;
+}
+interface FakeContext {
+  window: BrowserWindow;
+  [name: string]: unknown;
+}
+interface Prepared {
+  kit: Kit;
+  language: Language;
+  workshop: string;
+  exercise?: string;
+  kind: string;
+  expectedTests: number;
+}
+interface Evidence {
+  checkedAt?: string;
+  filesSHA256: string;
+  testsPassed: number;
+  image?: string;
+  imageID: string;
+  repoDigests?: string[];
+  toolchain: string;
+  output?: string;
+  method?: string;
+  poisonedReferenceTextExcluded?: boolean;
+}
+interface KitRow {
+  name: string;
+  language: Language;
+  workshop: string;
+  exercise: string | null;
+  kind: string;
+  expectedTests: number;
+  filesSHA256: string;
+  compiled: boolean;
+  compileThisRun: boolean;
+  verification: string;
+  evidence?: Evidence;
+}
+interface ContainerReport {
+  image?: string;
+  imageID?: string;
+  repoDigests?: string[];
+  network?: string;
+  portsPublished?: boolean;
+  toolchain?: string;
+  milliseconds?: number;
+  exitCode?: number | null;
+  testsPassed?: number;
+}
+interface Report {
+  checkedAt: string;
+  partial: boolean;
+  bundleSHA256: string;
+  sourceSHA256: string;
+  checks: { name: string; passed: boolean; error?: string }[];
+  kits: KitRow[];
+  containers: Partial<Record<Language, ContainerReport>>;
+  officialImageSources: string[];
+  schemaVersion?: number;
+  selection?: {
+    requestedWorkshop: string | null;
+    policy: string;
+    reusedExactHashes?: number;
+    projectsToCompile?: number;
+  };
+  previousManifestSHA256?: string;
+  previousCheckedAt?: string;
+  compilerHistory?: unknown[];
+  workshops?: number;
+  exerciseRegistry?: number;
+  temporaryDirectory?: string;
+  passedChecks?: number;
+  failedChecks?: number;
+  referenceKitsCompiled?: number;
+  referenceTestsVerified?: number;
+  referenceKitsCompiledThisRun?: number;
+  referenceKitsReused?: number;
+  fullReferenceValidation?: boolean;
+}
+type PriorKit = Omit<KitRow, 'compileThisRun' | 'verification'> &
+  Partial<Pick<KitRow, 'compileThisRun' | 'verification'>>;
+interface PriorReport {
+  checkedAt: string;
+  failedChecks: number;
+  fullReferenceValidation: boolean;
+  kits: PriorKit[];
+  containers: Partial<Record<string, ContainerReport>>;
+  temporaryDirectory: string;
+  bundleSHA256?: string;
+  sourceSHA256?: string;
+  compilerHistory?: unknown[];
+  referenceKitsCompiled?: number;
+}
+interface RealCatalog {
+  ctx: FakeContext;
+  workshops: Workshop[];
+  exercises: Exercise[];
+}
 const partial = process.argv.includes('--partial'),
   useDocker = process.argv.includes('--docker');
 const only = process.argv.find((arg) => arg.startsWith('--only='))?.slice('--only='.length) || null;
 const incremental = Boolean(only) || process.argv.includes('--changed');
-const reportPath = path.join(__dirname, 'project-kit-validation.json');
+const reportPath = path.join(import.meta.dirname, 'project-kit-validation.json');
 const previousText =
   incremental && fs.existsSync(reportPath) ? fs.readFileSync(reportPath, 'utf8') : null;
-const previous = previousText ? JSON.parse(previousText) : null;
-const IMAGE = { rust: 'rust:1.90-alpine', go: 'golang:1.25-alpine' };
-const digest = (data) => crypto.createHash('sha256').update(data).digest('hex');
-const bundle = fs.readFileSync(path.join(root, 'project-kit.bundle.js'), 'utf8');
-const report = {
+const previous: PriorReport | null = previousText ? JSON.parse(previousText) : null;
+const IMAGE: Record<Language, string> = { rust: 'rust:1.90-alpine', go: 'golang:1.25-alpine' };
+const digest = (data: string | Uint8Array): string =>
+  crypto.createHash('sha256').update(data).digest('hex');
+const bundle = bundleSource('project-kit-source.js', { minify: true });
+const report: Report = {
   checkedAt: new Date().toISOString(),
   partial,
   bundleSHA256: digest(bundle),
@@ -37,7 +199,7 @@ const report = {
   officialImageSources: ['https://hub.docker.com/_/rust', 'https://hub.docker.com/_/golang'],
 };
 report.schemaVersion = 2;
-report.selection = {
+const selection: NonNullable<Report['selection']> = {
   requestedWorkshop: only,
   policy: incremental
     ? only
@@ -45,7 +207,8 @@ report.selection = {
       : 'Every kit without matching complete prior evidence'
     : 'Compile every kit',
 };
-if (previous) {
+report.selection = selection;
+if (previous && previousText) {
   report.previousManifestSHA256 = digest(previousText);
   report.previousCheckedAt = previous.checkedAt;
   report.compilerHistory = [
@@ -63,7 +226,7 @@ if (previous) {
 }
 let passed = 0,
   failed = 0;
-function check(name, run) {
+function check(name: string, run: () => void): void {
   try {
     run();
     passed++;
@@ -71,12 +234,13 @@ function check(name, run) {
     process.stdout.write(`PASS ${name}\n`);
   } catch (error) {
     failed++;
-    report.checks.push({ name, passed: false, error: error.message });
-    process.stderr.write(`FAIL ${name}\n${error.stack}\n`);
+    const failure = error instanceof Error ? error : new Error(String(error));
+    report.checks.push({ name, passed: false, error: failure.message });
+    process.stderr.write(`FAIL ${name}\n${failure.stack}\n`);
   }
 }
-function context() {
-  const context = {
+function context(): FakeContext {
+  const context: FakeContext = {
     window: {},
     Uint8Array,
     Uint16Array,
@@ -88,13 +252,13 @@ function context() {
   vm.createContext(context);
   return context;
 }
-function load(ctx, filename) {
-  vm.runInContext(fs.readFileSync(path.join(root, filename), 'utf8'), ctx, { filename });
+function load(ctx: FakeContext, filename: string): void {
+  runSource(ctx, filename);
 }
 
 // Independent ZIP reader: central directory, inflateRaw from Node, and CRC-32.
 // It deliberately does not use fflate to decode a ZIP produced by fflate.
-function crc32(bytes) {
+function crc32(bytes: Uint8Array): number {
   let crc = 0xffffffff;
   for (const byte of bytes) {
     crc ^= byte;
@@ -102,7 +266,7 @@ function crc32(bytes) {
   }
   return (crc ^ 0xffffffff) >>> 0;
 }
-function unzip(bytes) {
+function unzip(bytes: Uint8Array): Map<string, string> {
   const zip = Buffer.from(bytes);
   let end = -1;
   for (let at = zip.length - 22; at >= Math.max(0, zip.length - 65557); at--) {
@@ -118,7 +282,7 @@ function unzip(bytes) {
     centralBytes = zip.readUInt32LE(end + 12);
   let at = zip.readUInt32LE(end + 16);
   const centralStart = at,
-    files = new Map();
+    files = new Map<string, string>();
   for (let entry = 0; entry < count; entry++) {
     assert.equal(zip.readUInt32LE(at), 0x02014b50, 'Invalid central directory header');
     const flags = zip.readUInt16LE(at + 8),
@@ -151,7 +315,7 @@ function unzip(bytes) {
   assert.equal(at - centralStart, centralBytes);
   return files;
 }
-function roundtrip(kit, archive) {
+function roundtrip(kit: Kit, archive: Archive): Map<string, string> {
   assert.equal(archive.name, `${kit.name}.zip`);
   const restored = unzip(archive.bytes),
     expected = Object.entries(kit.files);
@@ -160,8 +324,12 @@ function roundtrip(kit, archive) {
     assert.equal(restored.get(`${kit.name}/${file}`), text, `${kit.name}/${file}`);
   return restored;
 }
-function fixture() {
-  const workshop = {
+function fixture(): {
+  workshop: Workshop;
+  exercises: Exercise[];
+  records: Record<string, Draft>;
+} {
+  const workshop: Workshop = {
     id: 'fixture',
     title: 'Kit ñ · Unicode λ',
     code: { rust: 'rust-901', go: 'go-901' },
@@ -181,7 +349,7 @@ function fixture() {
     instructions: ['Implementá el cálculo.', 'Probá los bordes.'],
     why: 'Los tests describen el contrato.',
   };
-  const rust = {
+  const rust: Exercise = {
     ...shared,
     id: 'rust-901',
     language: 'rust',
@@ -195,7 +363,7 @@ function fixture() {
       why: `Comprueba ${n}.`,
     })),
   };
-  const go = {
+  const go: Exercise = {
     ...shared,
     id: 'go-901',
     language: 'go',
@@ -221,19 +389,19 @@ function fixture() {
   };
   return { workshop, exercises: [rust, go], records };
 }
-const prepared = [],
+const prepared: Prepared[] = [],
   sample = fixture(),
   fx = context();
 fx.window.TallerLab = {
   getExercises: () => sample.exercises,
   exportState: () => ({ version: 1, records: sample.records }),
 };
-vm.runInContext(bundle, fx, { filename: 'project-kit.bundle.js' });
+runSource(fx, 'project-kit-source.js', { minify: true });
 
 check('Normal export preserves exact drafts, custom tests, UTF-8 and personal notes', () => {
-  for (const language of ['rust', 'go']) {
-    const kit = fx.window.TallerProjectKit.files(sample.workshop, language),
-      record = sample.records[sample.workshop.code[language]];
+  for (const language of ['rust', 'go'] as const) {
+    const kit = projectKit(fx).files(sample.workshop, language),
+      record = sample.records[sample.workshop.code[language]] as Required<Draft>;
     const executable = kit.files[language === 'rust' ? 'src/lib.rs' : 'exercise_test.go'];
     assert(executable.includes(record.draft));
     assert(executable.includes(record.customTest.trim()));
@@ -242,26 +410,25 @@ check('Normal export preserves exact drafts, custom tests, UTF-8 and personal no
     const tests =
       executable.match(language === 'rust' ? /#\[test\]/g : /func TestCaso\d+\(/g) || [];
     assert.equal(tests.length, 4);
-    roundtrip(kit, fx.window.TallerProjectKit.archive(sample.workshop, language));
+    roundtrip(kit, projectKit(fx).archive(sample.workshop, language));
     prepared.push({ kit, language, workshop: 'fixture', kind: 'draft-fixture', expectedTests: 4 });
   }
 });
 
 check('Reference export chooses the solution and omits the user custom case', () => {
-  for (const language of ['rust', 'go']) {
-    const kit = fx.window.TallerProjectKit.files(sample.workshop, language, { solution: true });
+  for (const language of ['rust', 'go'] as const) {
+    const kit = projectKit(fx).files(sample.workshop, language, { solution: true });
     const file = kit.files[language === 'rust' ? 'src/lib.rs' : 'exercise_test.go'];
-    assert(file.includes(sample.exercises.find((e) => e.language === language).solution));
+    assert(
+      file.includes((sample.exercises.find((e) => e.language === language) as Exercise).solution),
+    );
     assert(!file.includes('DRAFT_SENTINEL'));
     assert(!file.includes('CUSTOM_SENTINEL'));
     assert.equal(
       (file.match(language === 'rust' ? /#\[test\]/g : /func TestCaso\d+\(/g) || []).length,
       3,
     );
-    roundtrip(
-      kit,
-      fx.window.TallerProjectKit.archive(sample.workshop, language, { solution: true }),
-    );
+    roundtrip(kit, projectKit(fx).archive(sample.workshop, language, { solution: true }));
   }
 });
 
@@ -269,12 +436,12 @@ check('A missing draft uses the starter; an intentionally empty draft stays empt
   const old = sample.records['rust-901'];
   sample.records['rust-901'] = {};
   assert(
-    fx.window.TallerProjectKit.files(sample.workshop, 'rust').files['src/lib.rs'].startsWith(
-      sample.exercises[0].starter,
-    ),
+    projectKit(fx)
+      .files(sample.workshop, 'rust')
+      .files['src/lib.rs'].startsWith(sample.exercises[0].starter),
   );
   sample.records['rust-901'] = { draft: '' };
-  const file = fx.window.TallerProjectKit.files(sample.workshop, 'rust').files['src/lib.rs'];
+  const file = projectKit(fx).files(sample.workshop, 'rust').files['src/lib.rs'];
   assert(!file.includes(sample.exercises[0].starter));
   assert(!file.includes('fn doble('));
   sample.records['rust-901'] = old;
@@ -283,8 +450,8 @@ check('A missing draft uses the starter; an intentionally empty draft stays empt
 check(
   'Reference files are text-only and README explains command, limits and four project stages',
   () => {
-    for (const language of ['rust', 'go']) {
-      const kit = fx.window.TallerProjectKit.files(sample.workshop, language);
+    for (const language of ['rust', 'go'] as const) {
+      const kit = projectKit(fx).files(sample.workshop, language);
       const referenceFiles = Object.keys(kit.files).filter((name) => name.startsWith('reference/'));
       assert.deepEqual(referenceFiles, [
         `reference/solution.${language === 'rust' ? 'rs' : 'go'}.txt`,
@@ -303,7 +470,7 @@ check(
 check(
   'Go imports cover custom fmt cases and all declarations live in the test package file',
   () => {
-    const kit = fx.window.TallerProjectKit.files(sample.workshop, 'go'),
+    const kit = projectKit(fx).files(sample.workshop, 'go'),
       file = kit.files['exercise_test.go'];
     assert(/^package workshop\b/.test(file));
     assert(file.includes('"testing"'));
@@ -324,11 +491,12 @@ check('Go regression fixture preserves fmt only in learner comments and strings'
       customTest: 'Doble(5) == 10 && "fmt.Sprint no es una llamada" != ""',
     };
     const workshop = { ...sample.workshop, id: 'fixture-comment' };
-    const kit = fx.window.TallerProjectKit.files(workshop, 'go');
-    assert(kit.files['exercise_test.go'].includes(sample.records['go-901'].draft));
-    assert(kit.files['exercise_test.go'].includes(sample.records['go-901'].customTest));
+    const kit = projectKit(fx).files(workshop, 'go');
+    const fixtureRecord = sample.records['go-901'] as Required<Draft>;
+    assert(kit.files['exercise_test.go'].includes(fixtureRecord.draft));
+    assert(kit.files['exercise_test.go'].includes(fixtureRecord.customTest));
     assert(kit.files['exercise_test.go'].includes('"fmt"'));
-    roundtrip(kit, fx.window.TallerProjectKit.archive(workshop, 'go'));
+    roundtrip(kit, projectKit(fx).archive(workshop, 'go'));
     prepared.push({
       kit,
       language: 'go',
@@ -342,21 +510,18 @@ check('Go regression fixture preserves fmt only in learner comments and strings'
 });
 
 check('Unknown language/core is rejected rather than producing a misleading kit', () => {
-  assert.throws(() => fx.window.TallerProjectKit.files(sample.workshop, 'python'));
+  assert.throws(() => projectKit(fx).files(sample.workshop, 'python'));
   assert.throws(() =>
-    fx.window.TallerProjectKit.files(
-      { ...sample.workshop, code: { rust: 'rust-unknown' } },
-      'rust',
-    ),
+    projectKit(fx).files({ ...sample.workshop, code: { rust: 'rust-unknown' } }, 'rust'),
   );
 });
 
-let real;
+let real = undefined as RealCatalog | undefined;
 check('Load the actual workshop catalog and the production lab registry', () => {
   const ctx = context();
   for (const file of ['lab-rust.js', 'lab-go.js', 'quests-rust.js', 'quests-go.js'])
     load(ctx, file);
-  const domains = [];
+  const domains: { workshops: Workshop[] }[] = [];
   for (const [name, global] of [
     ['lowlevel', 'SYSTEMS_LOWLEVEL'],
     ['infra', 'SYSTEMS_INFRA'],
@@ -374,12 +539,12 @@ check('Load the actual workshop catalog and the production lab registry', () => 
     }
     load(ctx, model);
     load(ctx, labs);
-    domains.push(ctx.window[global]);
+    domains.push(ctx.window[global] as { workshops: Workshop[] });
   }
   load(ctx, 'lab.js');
-  vm.runInContext(bundle, ctx, { filename: 'project-kit.bundle.js' });
+  runSource(ctx, 'project-kit-source.js', { minify: true });
   const workshops = domains.flatMap((d) => d.workshops),
-    exercises = ctx.window.TallerLab.getExercises();
+    exercises = ctx.window.TallerLab?.getExercises() ?? [];
   if (!partial) {
     assert.equal(workshops.length, 25);
     assert.equal(exercises.length, 274);
@@ -389,18 +554,22 @@ check('Load the actual workshop catalog and the production lab registry', () => 
   report.exerciseRegistry = exercises.length;
 });
 
-if (real) {
+const catalog = real;
+if (catalog) {
   check(
     'Every real reference kit roundtrips through ZIP with exact file contents and three tests',
     () => {
-      for (const workshop of real.workshops)
-        for (const language of ['rust', 'go']) {
-          const item = real.exercises.find((e) => e.id === workshop.code[language]);
+      for (const workshop of catalog.workshops)
+        for (const language of ['rust', 'go'] as const) {
+          const item: Exercise | undefined = catalog.exercises.find(
+            (e) => e.id === workshop.code[language],
+          );
           assert(item, workshop.code[language]);
-          const kit = real.ctx.window.TallerProjectKit.files(workshop, language, {
+          const kit: Kit = projectKit(catalog.ctx).files(workshop, language, {
             solution: true,
           });
-          const executable = kit.files[language === 'rust' ? 'src/lib.rs' : 'exercise_test.go'];
+          const executable: string =
+            kit.files[language === 'rust' ? 'src/lib.rs' : 'exercise_test.go'];
           assert(executable.includes(item.solution));
           assert.equal(
             (executable.match(language === 'rust' ? /#\[test\]/g : /func TestCaso\d+\(/g) || [])
@@ -409,7 +578,7 @@ if (real) {
           );
           const restored = roundtrip(
             kit,
-            real.ctx.window.TallerProjectKit.archive(workshop, language, { solution: true }),
+            projectKit(catalog.ctx).archive(workshop, language, { solution: true }),
           );
           assert.equal(restored.size, 5);
           prepared.push({
@@ -433,7 +602,11 @@ if (real) {
   });
 }
 
-function reusableEvidence(prior, candidate, filesSHA256) {
+function reusableEvidence(
+  prior: PriorReport | null,
+  candidate: Prepared,
+  filesSHA256: string,
+): Evidence | null {
   if (!prior || !prior.fullReferenceValidation || prior.failedChecks !== 0) return null;
   const matches = prior.kits.filter((k) => k.name === candidate.kit.name);
   if (matches.length !== 1) return null;
@@ -464,7 +637,7 @@ function reusableEvidence(prior, candidate, filesSHA256) {
     container.exitCode !== 0 ||
     !container.toolchain ||
     !container.imageID ||
-    container.testsPassed < candidate.expectedTests
+    (container.testsPassed ?? Infinity) < candidate.expectedTests
   )
     return null;
   return {
@@ -484,15 +657,15 @@ function reusableEvidence(prior, candidate, filesSHA256) {
 check(
   'Incremental evidence requires exact files, identity, test count and a complete successful prior run',
   () => {
-    const candidate = {
-      kit: { name: 'taller-example-rust' },
+    const candidate: Prepared = {
+      kit: { name: 'taller-example-rust', files: {} },
       language: 'rust',
       workshop: 'example',
       exercise: 'rust-999',
       kind: 'reference',
       expectedTests: 3,
     };
-    const kit = {
+    const kit: PriorKit = {
       name: candidate.kit.name,
       language: 'rust',
       workshop: 'example',
@@ -502,7 +675,7 @@ check(
       filesSHA256: 'exact',
       compiled: true,
     };
-    const prior = {
+    const prior: PriorReport = {
       checkedAt: '2026-01-01T00:00:00Z',
       failedChecks: 0,
       fullReferenceValidation: true,
@@ -534,10 +707,10 @@ check(
   },
 );
 
-function preparePlan() {
+function preparePlan(catalog: RealCatalog): void {
   if (only)
     assert(
-      real.workshops.some((w) => w.id === only),
+      catalog.workshops.some((w) => w.id === only),
       `Unknown --only workshop: ${only}`,
     );
   for (const p of prepared) {
@@ -563,13 +736,13 @@ function preparePlan() {
         `COMPILE ${p.kit.name}${p.workshop === only ? ' (requested)' : ' (new, changed or unverified)'}\n`,
       );
   }
-  report.selection.reusedExactHashes = report.kits.filter(
+  selection.reusedExactHashes = report.kits.filter(
     (k) => k.verification === 'reused-exact-hash',
   ).length;
-  report.selection.projectsToCompile = report.kits.filter((k) => k.compileThisRun).length;
+  selection.projectsToCompile = report.kits.filter((k) => k.compileThisRun).length;
 }
 
-function writePrepared() {
+function writePrepared(): string {
   const directory = fs.mkdtempSync('/tmp/taller-project-kits-');
   const selected = new Set(report.kits.filter((k) => k.compileThisRun).map((k) => k.name));
   for (const p of prepared.filter((p) => selected.has(p.kit.name))) {
@@ -587,7 +760,7 @@ function writePrepared() {
       );
     }
   }
-  for (const language of ['rust', 'go']) {
+  for (const language of ['rust', 'go'] as const) {
     const command =
       language === 'rust' ? 'cargo test --offline --quiet' : 'go test -count=1 -v ./...';
     const version = language === 'rust' ? 'rustc --version' : 'go version';
@@ -597,18 +770,22 @@ function writePrepared() {
   report.temporaryDirectory = directory;
   return directory;
 }
-async function runContainer(language, directory) {
+async function runContainer(language: Language, directory: string): Promise<void> {
   const image = IMAGE[language];
-  const inspection = JSON.parse(
-    execFileSync('docker', ['image', 'inspect', image], { encoding: 'utf8' }),
-  )[0];
-  report.containers[language] = {
+  const inspection = (
+    JSON.parse(execFileSync('docker', ['image', 'inspect', image], { encoding: 'utf8' })) as {
+      Id: string;
+      RepoDigests: string[];
+    }[]
+  )[0] as { Id: string; RepoDigests: string[] };
+  const container: ContainerReport = {
     image,
     imageID: inspection.Id,
     repoDigests: inspection.RepoDigests,
     network: 'none',
     portsPublished: false,
   };
+  report.containers[language] = container;
   const args = [
     'run',
     '--rm',
@@ -631,7 +808,7 @@ async function runContainer(language, directory) {
   ];
   const started = Date.now();
   let output = '';
-  const exitCode = await new Promise((resolve, reject) => {
+  const exitCode = await new Promise<number | null>((resolve, reject) => {
     const child = spawn('docker', args, { stdio: ['ignore', 'pipe', 'pipe'] });
     child.stdout.on('data', (chunk) => {
       const text = chunk.toString();
@@ -647,9 +824,10 @@ async function runContainer(language, directory) {
     child.once('close', resolve);
   });
   const results = [...output.matchAll(/^KIT_RESULT\|([^|]+)\|(PASS|FAIL)$/gm)];
-  report.containers[language].toolchain = output.match(/^TOOLCHAIN\|[^|]+\|(.+)$/m)?.[1] || '';
-  report.containers[language].milliseconds = Date.now() - started;
-  report.containers[language].exitCode = exitCode;
+  const toolchain = output.match(/^TOOLCHAIN\|[^|]+\|(.+)$/m)?.[1] || '';
+  container.toolchain = toolchain;
+  container.milliseconds = Date.now() - started;
+  container.exitCode = exitCode;
   const expected = report.kits.filter((k) => k.language === language && k.compileThisRun);
   for (const k of expected) {
     const row = results.find((r) => r[1] === k.name);
@@ -680,7 +858,7 @@ async function runContainer(language, directory) {
           : [...output.matchAll(/^--- PASS: TestCaso\d+ /gm)].length;
       const wanted = expected.reduce((sum, k) => sum + k.expectedTests, 0);
       assert.equal(count, wanted, `${language}: expected test cases were not all executed`);
-      report.containers[language].testsPassed = count;
+      container.testsPassed = count;
       for (const k of expected)
         k.evidence = {
           checkedAt: report.checkedAt,
@@ -689,7 +867,7 @@ async function runContainer(language, directory) {
           image,
           imageID: inspection.Id,
           repoDigests: inspection.RepoDigests,
-          toolchain: report.containers[language].toolchain,
+          toolchain,
           output: path.join(directory, `${language}-test-output.txt`),
           method: 'docker',
           poisonedReferenceTextExcluded: true,
@@ -698,22 +876,24 @@ async function runContainer(language, directory) {
   );
 }
 async function main() {
-  if (real) preparePlan();
-  if (useDocker && real) {
+  if (catalog) preparePlan(catalog);
+  if (useDocker && catalog) {
     const directory = writePrepared();
     process.stdout.write(`Generated project files: ${directory}\n`);
-    const languages = ['rust', 'go'].filter((language) =>
+    const languages = (['rust', 'go'] as const).filter((language) =>
       report.kits.some((k) => k.language === language && k.compileThisRun),
     );
     const results = await Promise.allSettled(
       languages.map((language) => runContainer(language, directory)),
     );
-    for (let i = 0; i < results.length; i++)
-      if (results[i].status === 'rejected') {
+    for (let i = 0; i < results.length; i++) {
+      const outcome = results[i];
+      if (outcome?.status === 'rejected') {
         check(`Container execution ${languages[i]}`, () => {
-          throw results[i].reason;
+          throw outcome.reason;
         });
       }
+    }
   } else {
     process.stdout.write(
       'Compiler execution not requested or catalog unavailable. Use --docker after images are present.\n',

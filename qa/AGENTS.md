@@ -46,7 +46,7 @@ cambies y evitá reformatear las skills importadas o las salidas generadas.
 | Exploradores de robot y paquetes | `node qa/quest-explorers-check.cjs` |
 | Catálogo, sellos o progreso de Sistemas | `node qa/systems-check.cjs` |
 | Modelo lowlevel, infra, play o pc | El correspondiente `node qa/systems-<dominio>-check.cjs` |
-| Generación de proyectos o ZIP | `npm run build:kits`, `node qa/project-kit-check.cjs` |
+| Generación de proyectos o ZIP | `node qa/project-kit-check.ts` |
 | Sólo documentación | Verificar rutas, comandos y enlaces locales; `git diff --check` |
 
 Para una reorganización de archivos o un cambio transversal, regenerá la página
@@ -64,7 +64,7 @@ node qa/systems-lowlevel-check.cjs
 node qa/systems-infra-check.cjs
 node qa/systems-play-check.cjs
 node qa/systems-pc-check.cjs
-node qa/project-kit-check.cjs
+node qa/project-kit-check.ts
 node qa/lab-state-check.cjs
 ```
 
@@ -76,7 +76,7 @@ Usá respuestas simuladas para comprobar transporte sin llamadas públicas masiv
 
 ## Compiladores y evidencia
 
-- `node qa/project-kit-check.cjs --docker` ejecuta Cargo/Go en contenedores
+- `node qa/project-kit-check.ts --docker` ejecuta Cargo/Go en contenedores
   descartables. Necesita las imágenes locales `rust:1.90-alpine` y
   `golang:1.25-alpine`; el script no las descarga.
 - `node qa/runtime-check.cjs rust --audit-record` y su variante `go` comparan

@@ -20,8 +20,8 @@ Atlas es la primera vista migrada; el resto conserva adaptadores legacy temporal
 La raíz contiene las fuentes actuales por familia (`lab-*`, `campaign-*`,
 `systems-*`). `qa/` reúne verificaciones e investigación; `docs/` contiene reglas
 específicas de desarrollo; `.agents/skills/` contiene las skills del proyecto.
-`src/index.html` y `src/main.tsx` son las entradas Vite; `dist/` y `*.bundle.js`
-son salidas generadas. Los `CLAUDE.md` sólo importan este archivo y los de cada
+`src/index.html` y `src/main.tsx` son las entradas Vite; `dist/` es la salida
+generada. Los `CLAUDE.md` sólo importan este archivo y los de cada
 carpeta para Claude Code; `.claude/` contiene symlinks de skills y subagentes.
 
 ## Comandos

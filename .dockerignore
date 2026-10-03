@@ -9,7 +9,6 @@ CLAUDE.local.md
 # Quality tools are installed separately and never shipped with the workshop.
 tools/quality
 .desloppify
-*.bundle.js
 *.map
 dist
 .cache
