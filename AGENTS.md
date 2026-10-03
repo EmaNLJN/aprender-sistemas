@@ -3,10 +3,8 @@
 ## Proyecto
 
 Taller educativo en español con ejercicios de Rust/Go y simulaciones de Sistemas.
-La interfaz migra por funcionalidades a React/TypeScript; Vite construye un HTML
-autónomo y Nginx lo sirve. Los compiladores son los Playgrounds oficiales.
-
-La interfaz migra por funcionalidades a **React con TypeScript/TSX** y Vite.
+La interfaz migra por funcionalidades a **React con TypeScript/TSX**; Vite construye
+un HTML autónomo y Nginx lo sirve. Los compiladores son los Playgrounds oficiales.
 Atlas es la primera vista migrada; el resto conserva adaptadores legacy temporales.
 
 ## Organización
@@ -17,12 +15,14 @@ Atlas es la primera vista migrada; el resto conserva adaptadores legacy temporal
 - Para elegir checks, agregar pruebas o trabajar con TDD, leé `qa/AGENTS.md`.
 - Para activar, instalar o actualizar skills, leé `docs/agent-skills.md`.
 - Para usar o reinstalar React Doctor y Desloppify, leé `tools/quality/AGENTS.md`.
+- Para continuar el refactor en curso, leé `docs/refactor-roadmap.md`.
 
 La raíz contiene las fuentes actuales por familia (`lab-*`, `campaign-*`,
 `systems-*`). `qa/` reúne verificaciones e investigación; `docs/` contiene reglas
 específicas de desarrollo; `.agents/skills/` contiene las skills del proyecto.
 `src/index.html` y `src/main.tsx` son las entradas Vite; `dist/` y `*.bundle.js`
-son salidas generadas.
+son salidas generadas. Los `CLAUDE.md` sólo importan este archivo y los de cada
+carpeta para Claude Code; `.claude/` contiene symlinks de skills y subagentes.
 
 ## Comandos
 
@@ -158,11 +158,17 @@ import {filterConcepts} from './filter-concepts';
 ## Trabajo con subagentes
 
 - Reservá el agente principal para análisis, decisiones de arquitectura, revisión e
-  integración. Para implementaciones mecánicas o slices bien delimitados, delegá en
-  un subagente económico como `gpt-6-luna`, con archivos, contratos y checks explícitos.
+  integración, con el modelo más capaz y razonamiento máximo: en Claude Code, Opus 5.5
+  con effort `max`. Los análisis y revisiones delegados usan el mismo nivel
+  (`.claude/agents/revisor.md`).
+- Para implementaciones mecánicas o slices bien delimitados, delegá en un subagente
+  económico con archivos, contratos y checks explícitos: en Claude Code,
+  `.claude/agents/implementador.md` (Sonnet 5.5, effort `medium`); en Codex, `gpt-6-luna`.
 - Revisá siempre el diff producido por el subagente y ejecutá desde el agente principal
   los checks proporcionales al riesgo; delegar implementación no delega la decisión ni
   la responsabilidad por el resultado.
+- Paralelizá sólo slices con archivos disjuntos. `src/main.tsx`, `package.json`, las
+  configuraciones y la documentación se integran desde el agente principal.
 
 ## Código entendible y pruebas útiles
 
@@ -213,6 +219,7 @@ Estos ejemplos ilustran el criterio; no agregan funciones ni reglas nuevas al cu
 Leé el `SKILL.md` local de la capacidad pertinente antes de aplicarla; activá sólo
 las necesarias. Usá `clean-code` para legibilidad, `codebase-design` para interfaces,
 `tdd` para cambios de comportamiento, y las skills de Vercel para código React.
+`.agents/skills/` es la fuente única; `.claude/skills/` sólo contiene symlinks por skill.
 El inventario y los criterios de uso están en `docs/agent-skills.md`.
 
 Usá `context7-mcp` al cambiar APIs o configuración de dependencias: resolvé el ID,

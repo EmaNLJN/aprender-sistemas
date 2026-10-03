@@ -2,15 +2,16 @@ node_modules
 .git
 # Project agent instructions and skills are development inputs, not web assets.
 .agents
+.claude
 .codex
+**/CLAUDE.md
+CLAUDE.local.md
 # Quality tools are installed separately and never shipped with the workshop.
 tools/quality
 .desloppify
-index.html
 *.bundle.js
 *.map
 dist
-build
 .cache
 .venv
 venv

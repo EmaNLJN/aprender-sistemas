@@ -55,6 +55,29 @@ oficial de ESLint y el ejemplo oficial de instalación/configuración de Prettie
 consultados mediante Context7; no se agregó una skill redundante para imponer
 otro formatter, package manager o framework.
 
+## Claude Code
+
+Consultado el 2026-10-03 en la documentación oficial de Claude Code
+([memoria](https://code.claude.com/docs/en/memory),
+[skills](https://code.claude.com/docs/en/skills) y
+[subagentes](https://code.claude.com/docs/en/sub-agents)):
+
+- Claude Code carga `AGENTS.md` de forma nativa desde la versión 2.1.277 y sólo cuando no
+  hay un `CLAUDE.md`; la CLI del entorno de desarrollo era la 2.1.162. Por eso la raíz,
+  `qa/` y `tools/quality/` tienen un `CLAUDE.md` que importa su `AGENTS.md` con
+  `@AGENTS.md`. Con un `CLAUDE.md` en la raíz, las versiones nuevas ignoran los `AGENTS.md`
+  anidados que no se importen: al agregar uno, sumá su `CLAUDE.md` con la misma línea.
+- Claude Code descubre skills sólo en `.claude/skills/<nombre>/SKILL.md` y admite symlinks
+  por skill. Al instalar una skill en `.agents/skills/`, agregá su enlace relativo:
+  `ln -s ../../.agents/skills/<nombre> .claude/skills/<nombre>`.
+- Una skill de proyecto con el nombre de un comando incluido lo reemplaza. `code-review`
+  queda sólo en `.agents/skills/` para no ocultar el `/code-review` de Claude Code.
+- `.claude/agents/revisor.md` (Opus, effort `max`, sin edición) e
+  `.claude/agents/implementador.md` (Sonnet, effort `medium`) aplican el reparto de modelos
+  de `AGENTS.md`. Usan los campos documentados `model`, `effort`, `tools` y `skills`; los
+  alias de modelo siguen la versión vigente de cada familia. Un subagente nuevo se detecta
+  sin reiniciar, salvo cuando `.claude/agents/` no existía al iniciar la sesión.
+
 ## Criterios de uso
 
 - Leé sólo el SKILL.md pertinente y las referencias necesarias; conservá las
