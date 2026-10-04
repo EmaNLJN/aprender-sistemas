@@ -15,6 +15,9 @@ type Config struct {
 	RustImage     string
 	GoImage       string
 	MaxConcurrent int
+	// Instance es el valor de la etiqueta taller.executor.run: separa los recursos de cada
+	// servicio (y de las pruebas de integración) que comparten el daemon.
+	Instance string
 }
 
 const minTokenLength = 32
@@ -29,6 +32,10 @@ func FromEnv(getenv func(string) string) (Config, error) {
 		RustImage:     getenv("EXECUTOR_RUST_IMAGE"),
 		GoImage:       getenv("EXECUTOR_GO_IMAGE"),
 		MaxConcurrent: 4,
+		Instance:      valueOr(getenv("EXECUTOR_INSTANCE"), "servicio"),
+	}
+	if !isLabelValue(cfg.Instance) {
+		return Config{}, fmt.Errorf("EXECUTOR_INSTANCE sólo admite minúsculas, dígitos y guiones (1 a 32): %q", cfg.Instance)
 	}
 	if raw := getenv("EXECUTOR_MAX_CONCURRENT"); raw != "" {
 		n, err := strconv.Atoi(raw)
@@ -54,4 +61,16 @@ func valueOr(value, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+func isLabelValue(value string) bool {
+	if value == "" || len(value) > 32 {
+		return false
+	}
+	for _, r := range value {
+		if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+			return false
+		}
+	}
+	return true
 }

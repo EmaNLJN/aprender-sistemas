@@ -22,7 +22,7 @@ func TestDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Addr != ":8080" || cfg.Runtime != "runsc" || cfg.MaxConcurrent != 4 {
+	if cfg.Addr != ":8080" || cfg.Runtime != "runsc" || cfg.MaxConcurrent != 4 || cfg.Instance != "servicio" {
 		t.Fatalf("valores por defecto inesperados: %+v", cfg)
 	}
 }
@@ -30,6 +30,7 @@ func TestDefaults(t *testing.T) {
 func TestReadsExplicitValues(t *testing.T) {
 	values := valid()
 	values["EXECUTOR_ADDR"] = ":9000"
+	values["EXECUTOR_INSTANCE"] = "staging-2"
 	cfg, err := FromEnv(env(values))
 	if err != nil {
 		t.Fatal(err)
@@ -39,6 +40,9 @@ func TestReadsExplicitValues(t *testing.T) {
 	}
 	if cfg.RustImage != "rust-img" || cfg.GoImage != "go-img" {
 		t.Fatalf("cada lenguaje debe usar su propia imagen: %+v", cfg)
+	}
+	if cfg.Instance != "staging-2" {
+		t.Fatalf("la instancia sale del entorno: %+v", cfg)
 	}
 }
 
@@ -87,6 +91,16 @@ func TestMaxConcurrentRange(t *testing.T) {
 		cfg, err := FromEnv(env(values))
 		if err != nil || cfg.MaxConcurrent != want {
 			t.Fatalf("EXECUTOR_MAX_CONCURRENT=%q debe aceptarse como %d: %+v, %v", raw, want, cfg, err)
+		}
+	}
+}
+
+func TestInstanceMustBeALabelValue(t *testing.T) {
+	for _, raw := range []string{"Con Espacio", "a_b", "MAYUS", strings.Repeat("a", 33)} {
+		values := valid()
+		values["EXECUTOR_INSTANCE"] = raw
+		if _, err := FromEnv(env(values)); err == nil {
+			t.Fatalf("EXECUTOR_INSTANCE=%q debe rechazarse", raw)
 		}
 	}
 }

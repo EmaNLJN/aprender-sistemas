@@ -6,6 +6,7 @@ import (
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -33,7 +34,15 @@ type runRequest struct {
 	Program  string `json:"program"`
 }
 
+// Handler arma las rutas. Hace panic ante una configuración insegura: un token corto o un
+// semáforo sin lugares son errores de programación, no de un pedido.
 func (s *Server) Handler() http.Handler {
+	if len(s.Token) < 32 {
+		panic("api: el token debe tener al menos 32 bytes")
+	}
+	if cap(s.Slots) == 0 {
+		panic("api: Slots necesita al menos un lugar")
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("ok"))
@@ -46,6 +55,7 @@ func (s *Server) requireToken(next http.HandlerFunc) http.HandlerFunc {
 	expected := []byte("Bearer " + s.Token)
 	return func(w http.ResponseWriter, r *http.Request) {
 		if subtle.ConstantTimeCompare([]byte(r.Header.Get("Authorization")), expected) != 1 {
+			w.Header().Set("WWW-Authenticate", "Bearer")
 			writeError(w, http.StatusUnauthorized, "token inválido")
 			return
 		}
@@ -67,6 +77,16 @@ func (s *Server) run(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "JSON inválido")
 		return
 	}
+	// Un solo objeto y nada más: leer hasta el EOF también deja que Go detecte si el cliente se fue.
+	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		var tooLarge *http.MaxBytesError
+		if errors.As(err, &tooLarge) {
+			writeError(w, http.StatusRequestEntityTooLarge, "programa demasiado grande")
+			return
+		}
+		writeError(w, http.StatusBadRequest, "JSON inválido: hay datos después del objeto")
+		return
+	}
 	switch {
 	case !s.Languages[req.Language]:
 		writeError(w, http.StatusBadRequest, "lenguaje no soportado")
@@ -85,6 +105,9 @@ func (s *Server) run(w http.ResponseWriter, r *http.Request) {
 	case s.Slots <- struct{}{}:
 		defer func() { <-s.Slots }()
 	case <-wait.Done():
+		if r.Context().Err() != nil {
+			return // el cliente se fue mientras esperaba lugar: no hay a quién responder
+		}
 		// Nada corrió todavía: el llamador puede reintentar sin repetir una ejecución.
 		w.Header().Set("Retry-After", "1")
 		writeError(w, http.StatusServiceUnavailable, "ejecutor ocupado")
@@ -93,6 +116,10 @@ func (s *Server) run(w http.ResponseWriter, r *http.Request) {
 
 	result, err := s.Exec.Execute(r.Context(), req.Language, []byte(req.Program))
 	if err != nil {
+		if r.Context().Err() != nil {
+			log.Printf("el cliente canceló la ejecución: %v", err)
+			return
+		}
 		// 500 y no 503: el programa pudo haber llegado a correr, así que no se reintenta solo.
 		log.Printf("ejecución fallida: %v", err)
 		writeError(w, http.StatusInternalServerError, "no se pudo ejecutar en el sandbox")

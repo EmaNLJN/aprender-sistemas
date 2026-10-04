@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"maps"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -54,10 +56,15 @@ func TestHealthzNeedsNoToken(t *testing.T) {
 }
 
 func TestRunRequiresTheToken(t *testing.T) {
-	for _, auth := range []string{"", "Bearer otro-token", token} {
-		rec := post(t, newServer(&fakeExecutor{}), `{"language":"rust","program":"fn main(){}"}`, auth)
-		if rec.Code != http.StatusUnauthorized {
-			t.Fatalf("Authorization %q: código %d; quiero 401", auth, rec.Code)
+	sameLength := "Bearer " + token[:len(token)-1] + "x"
+	for _, auth := range []string{"", "Bearer otro-token", token, sameLength} {
+		exec := &fakeExecutor{}
+		rec := post(t, newServer(exec), `{"language":"rust","program":"fn main(){}"}`, auth)
+		if rec.Code != http.StatusUnauthorized || exec.calls != 0 {
+			t.Fatalf("Authorization %q: código %d, llamadas %d; quiero 401 sin ejecutar", auth, rec.Code, exec.calls)
+		}
+		if rec.Header().Get("WWW-Authenticate") != "Bearer" {
+			t.Fatalf("el 401 dice qué esquema espera: %q", rec.Header().Get("WWW-Authenticate"))
 		}
 	}
 }
@@ -73,6 +80,7 @@ func TestRunValidatesTheRequest(t *testing.T) {
 		"programa grande":   {`{"language":"go","program":"` + strings.Repeat("x", 101) + `"}`, http.StatusRequestEntityTooLarge},
 		"cuerpo grande":     {`{"language":"go","program":"` + strings.Repeat("x", 2000) + `"}`, http.StatusRequestEntityTooLarge},
 		"JSON roto":         {`{"language":`, http.StatusBadRequest},
+		"datos después":     {`{"language":"go","program":"x"} basura`, http.StatusBadRequest},
 	}
 	for name, tc := range cases {
 		exec := &fakeExecutor{}
@@ -118,10 +126,115 @@ func TestRunReturnsTheResultAsJSON(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil || got != want {
 		t.Fatalf("got %+v, err %v", got, err)
 	}
-	if !strings.Contains(rec.Body.String(), `"exitCode"`) || !strings.Contains(rec.Body.String(), `"timedOut"`) {
-		t.Fatalf("el contrato usa camelCase: %s", rec.Body.String())
+	var fields map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &fields); err != nil {
+		t.Fatal(err)
+	}
+	keys := slices.Sorted(maps.Keys(fields))
+	wantKeys := []string{"compileMs", "exitCode", "oomKilled", "phase", "runMs", "stderr", "stdout", "timedOut", "truncated"}
+	if !slices.Equal(keys, wantKeys) {
+		t.Fatalf("el contrato tiene exactamente estas claves: %v", keys)
 	}
 	if len(s.Slots) != 0 {
 		t.Fatal("el lugar del semáforo se libera al terminar")
+	}
+}
+
+func TestRunAcceptsAProgramOfExactlyMaxProgram(t *testing.T) {
+	exec := &fakeExecutor{}
+	rec := post(t, newServer(exec), `{"language":"go","program":"`+strings.Repeat("x", 100)+`"}`, "Bearer "+token)
+	if rec.Code != http.StatusOK || exec.calls != 1 {
+		t.Fatalf("código %d, llamadas %d; MaxProgram es un tope inclusivo", rec.Code, exec.calls)
+	}
+}
+
+func TestRunWaitsForASlotWithinQueueWait(t *testing.T) {
+	exec := &fakeExecutor{}
+	s := newServer(exec)
+	s.QueueWait = 2 * time.Second
+	s.Slots <- struct{}{}
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		<-s.Slots // otra ejecución termina y libera su lugar
+	}()
+	rec := post(t, s, `{"language":"rust","program":"fn main(){}"}`, "Bearer "+token)
+	if rec.Code != http.StatusOK || exec.calls != 1 {
+		t.Fatalf("código %d, llamadas %d; un lugar que se libera a tiempo se usa", rec.Code, exec.calls)
+	}
+}
+
+type blockingExecutor struct {
+	started chan struct{}
+	seen    chan error
+}
+
+func (b *blockingExecutor) Execute(ctx context.Context, _ string, _ []byte) (sandbox.Result, error) {
+	close(b.started)
+	<-ctx.Done()
+	b.seen <- ctx.Err()
+	return sandbox.Result{}, ctx.Err()
+}
+
+func TestClientCancellationReachesTheExecutorAndWritesNothing(t *testing.T) {
+	exec := &blockingExecutor{started: make(chan struct{}), seen: make(chan error, 1)}
+	ctx, cancel := context.WithCancel(context.Background())
+	req := httptest.NewRequest(http.MethodPost, "/v1/run", strings.NewReader(`{"language":"go","program":"x"}`)).WithContext(ctx)
+	req.Header.Set("Authorization", "Bearer "+token)
+	rec := httptest.NewRecorder()
+	done := make(chan struct{})
+	go func() {
+		newServer(exec).Handler().ServeHTTP(rec, req)
+		close(done)
+	}()
+	// Cancela con la ejecución en curso: antes de tomar lugar, la cancelación compite con el semáforo.
+	select {
+	case <-exec.started:
+	case <-time.After(2 * time.Second):
+		t.Fatal("el Executor nunca arrancó")
+	}
+	cancel()
+	select {
+	case err := <-exec.seen:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("el Executor recibe el contexto del pedido: %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("el Executor nunca vio la cancelación")
+	}
+	<-done
+	if rec.Body.Len() != 0 {
+		t.Fatalf("a un cliente que se fue no se le escribe un 500: %q", rec.Body.String())
+	}
+}
+
+func TestClientCancellationWhileWaitingForASlotWritesNothing(t *testing.T) {
+	exec := &fakeExecutor{}
+	s := newServer(exec)
+	s.QueueWait = 2 * time.Second
+	s.Slots <- struct{}{} // ocupado: el pedido queda esperando lugar
+	ctx, cancel := context.WithCancel(context.Background())
+	req := httptest.NewRequest(http.MethodPost, "/v1/run", strings.NewReader(`{"language":"go","program":"x"}`)).WithContext(ctx)
+	req.Header.Set("Authorization", "Bearer "+token)
+	rec := httptest.NewRecorder()
+	time.AfterFunc(50*time.Millisecond, cancel)
+	s.Handler().ServeHTTP(rec, req)
+	if rec.Body.Len() != 0 || exec.calls != 0 {
+		t.Fatalf("un cliente que se fue mientras esperaba no recibe un 503 ni ejecuta: %q, llamadas %d", rec.Body.String(), exec.calls)
+	}
+}
+
+func TestHandlerRefusesAnUnsafeConfiguration(t *testing.T) {
+	for name, s := range map[string]*Server{
+		"token corto": {Token: "corto", Slots: make(chan struct{}, 1)},
+		"sin lugares": {Token: token, Slots: make(chan struct{})},
+	} {
+		func() {
+			defer func() {
+				if recover() == nil {
+					t.Fatalf("%s: Handler debe negarse a armar el servidor", name)
+				}
+			}()
+			s.Handler()
+		}()
 	}
 }

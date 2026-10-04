@@ -17,7 +17,12 @@ biblioteca estándar: no agregues módulos sin un ADR.
   Docker, incluido un contenedor que no pudo arrancar, es un error del sandbox y nunca un
   resultado del alumno.
 - Contrato HTTP: `POST /v1/run {language, program}` con token Bearer. 503 con `Retry-After`
-  significa ocupado (no corrió nada); 500, fallo del sandbox (pudo haber corrido: quien llama
-  no reintenta solo).
+  significa ocupado (no corrió nada); 500, o una respuesta perdida por el `WriteTimeout` de
+  90 s, significa fallo del sandbox (pudo haber corrido: quien llama no reintenta solo);
+  400 o 413, pedido inválido.
+- Cada instancia etiqueta lo suyo con `taller.executor.run=<EXECUTOR_INSTANCE>` (`servicio`
+  por defecto; las pruebas de integración usan `integracion`). Al arrancar barre todo lo de su
+  instancia y al recibir SIGTERM cancela los pedidos en curso, cuyos contenedores borra el
+  `Runner`: Compose necesita un `stop_grace_period` de 20 s o más.
 - Las imágenes base se fijan por digest con el tag delante; al actualizarlas, corré otra vez la
   integración.
