@@ -1,9 +1,11 @@
 /* Offline backup/proof regression checks at public lab and campaign interfaces. */
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import vm from 'node:vm';
-import { loadCampaignEngine, loadLab } from './lib/legacy-sources.ts';
+import { loadCampaignEngine, loadLab, loadLabCatalogs } from './lib/legacy-sources.ts';
 import { plainJson as plain } from './lib/plain-json.ts';
-import { importModule } from './lib/sources.ts';
+import { importModule, repoRoot } from './lib/sources.ts';
 
 interface Evidence {
   id: string;
@@ -28,10 +30,15 @@ interface LabState {
 }
 interface TallerLabApi {
   loadWarning: () => string;
-  reset: () => void;
+  reset: () => boolean;
   importState: (raw: unknown) => void;
   exportState: () => LabState;
   validateImport: (raw: unknown) => LabState;
+  planImport: (raw: unknown) => { state: LabState; lossy: boolean };
+  applyImport: (plan: { state: LabState; lossy: boolean }) => boolean;
+  backups: () => { key: string; text: string }[];
+  getExercises: () => { id: string; tests: { id: string }[] }[];
+  mount: (host: unknown, language: string, notify: (message: string) => void) => void;
 }
 interface CampaignApi {
   init: (config: { exercises: unknown[]; worlds: Record<string, unknown[]> }) => void;
@@ -425,6 +432,318 @@ test('Reset removes the saved progress copy and its backup', () => {
   assert.equal(saved.has(LAB_BACKUP_KEY), false);
   assert.deepEqual(plain(lab.exportState()).records, {});
   assert.equal(lab.loadWarning(), '');
+});
+
+async function testAsync(name: string, run: () => Promise<void>): Promise<void> {
+  try {
+    await run();
+    passed++;
+    console.log('PASS ' + name);
+  } catch (error) {
+    failed++;
+    console.error('FAIL ' + name + '\n' + (error as Error).stack);
+  }
+}
+
+// --- Pestañas con el catálogo real y un DOM mínimo para disparar los handlers de lab.js ---
+
+const SLOT_KEYS = [LAB_BACKUP_KEY, ...[2, 3, 4, 5].map((number) => `${LAB_BACKUP_KEY}-${number}`)];
+const SYNC_FAILURE_NOTICE = 'No se pudo actualizar campaña/Sistemas; tu resultado quedó guardado.';
+
+interface StubElement {
+  innerHTML: string;
+  textContent: string;
+  open: boolean;
+  value: string;
+  classList: { toggle(): void; add(): void };
+  setAttribute(): void;
+  replaceWith(): void;
+  focus(): void;
+  select(): void;
+  scrollIntoView(): void;
+  content: { querySelector(): StubElement; firstElementChild: StubElement };
+}
+interface TabOptions {
+  failRemove?: boolean;
+  campaignSync?: () => { xpGained?: number } | undefined;
+  runner?: () => Promise<unknown>;
+}
+interface Tab {
+  lab: TallerLabApi;
+  notices: string[];
+  errors: unknown[];
+  host: StubElement;
+  click(action: string, data?: Record<string, string>): void;
+  type(id: string, value: string): StubElement;
+  element(selector: string): StubElement;
+}
+
+function stubElement(): StubElement {
+  const element: StubElement = {
+    innerHTML: '',
+    textContent: '',
+    open: false,
+    value: '',
+    classList: { toggle: () => undefined, add: () => undefined },
+    setAttribute: () => undefined,
+    replaceWith: () => undefined,
+    focus: () => undefined,
+    select: () => undefined,
+    scrollIntoView: () => undefined,
+    content: {
+      querySelector: () => element,
+      get firstElementChild() {
+        return element;
+      },
+    },
+  };
+  return element;
+}
+
+// Una pestaña del navegador sobre el almacenamiento compartido `saved`. El host acepta los
+// listeners que registra mount y devuelve el mismo elemento falso por selector, salvo el
+// contexto de campaña, que sólo existe si el check lo agrega.
+function openTab(saved: Map<string, string>, options: TabOptions = {}): Tab {
+  const listeners = new Map<string, (event: unknown) => void>();
+  const elements = new Map<string, StubElement>();
+  const element = (selector: string): StubElement => {
+    if (!elements.has(selector)) elements.set(selector, stubElement());
+    return elements.get(selector) as StubElement;
+  };
+  const host = {
+    ...stubElement(),
+    addEventListener: (type: string, listener: (event: unknown) => void) =>
+      void listeners.set(type, listener),
+    removeEventListener: () => undefined,
+    querySelector: (selector: string) =>
+      selector === '.quest-lab-context' ? null : element(selector),
+    querySelectorAll: () => [],
+  };
+  const notices: string[] = [];
+  const errors: unknown[] = [];
+  const window: Record<string, unknown> = {};
+  const context = vm.createContext({
+    window,
+    URL,
+    URLSearchParams,
+    AbortController,
+    location: { search: '', hash: '', href: 'http://taller.test/' },
+    history: { replaceState: () => undefined },
+    document: { createElement: stubElement, activeElement: null },
+    console: { error: (error: unknown) => errors.push(error) },
+    localStorage: {
+      getItem: (key: string) => saved.get(key) ?? null,
+      setItem: (key: string, value: string) => void saved.set(key, value),
+      removeItem: (key: string) => {
+        if (options.failRemove) throw new Error('no se puede borrar');
+        saved.delete(key);
+      },
+    },
+  });
+  loadLabCatalogs(context);
+  if (options.campaignSync) {
+    window.TallerCampaign = {
+      sync: options.campaignSync,
+      refresh: () => undefined,
+      exerciseContextHTML: () => '',
+      lockedExerciseHTML: () => '',
+    };
+    window.TallerCampaignEngine = { canAttempt: () => ({ worldId: 'mundo-1' }) };
+  }
+  if (options.runner) window.TallerRunner = { run: options.runner };
+  loadLab(context);
+  const lab = window.TallerLab as TallerLabApi;
+  lab.mount(host, 'rust', (message) => notices.push(message));
+  const dispatch = (type: string, event: object): void => {
+    (listeners.get(type) as (event: unknown) => void)(event);
+  };
+  return {
+    lab,
+    notices,
+    errors,
+    host,
+    element,
+    click(action, data = {}) {
+      const target = { dataset: { labAction: action, ...data }, closest: () => target };
+      dispatch('click', { target });
+    },
+    type(id, value) {
+      const target = element('#' + id);
+      Object.assign(target, { id, value });
+      dispatch('input', { target });
+      return element('#' + id + '-status');
+    },
+  };
+}
+
+function fullProof(lab: TallerLabApi, id: string): LabRecord {
+  const tests = (lab.getExercises().find((exercise) => exercise.id === id)?.tests ?? []).map(
+    (item) => ({ id: item.id, passed: true }),
+  );
+  return {
+    solvedAt: 100,
+    result: { code: 'solución de A', success: true, stdout: '', customPassed: false, tests },
+  } as LabRecord;
+}
+
+function storedRecords(saved: Map<string, string>): Record<string, LabRecord> {
+  return JSON.parse(saved.get(LAB_KEY) ?? '{}').records;
+}
+
+test('Two tabs: a stale tab keeps the other tab progress and its own consecutive saves', () => {
+  const saved = new Map<string, string>();
+  const tabA = openTab(saved),
+    tabB = openTab(saved);
+  const { lab } = tabA;
+  const proof = fullProof(lab, 'rust-01');
+  assert.equal(
+    lab.applyImport(lab.planImport({ version: 1, records: { 'rust-01': proof } })),
+    true,
+  );
+  tabB.click('open', { id: 'rust-02' });
+  tabB.click('predict', { answer: '1' });
+  tabB.click('hint');
+  const records = storedRecords(saved);
+  assert.equal(records['rust-01'].solvedAt, 100);
+  assert.equal(records['rust-01'].result?.success, true);
+  assert.equal((records['rust-02'] as { prediction?: number }).prediction, 1);
+  assert.equal(records['rust-02'].hints, 1);
+  assert.equal(JSON.parse(saved.get(LAB_KEY) ?? '{}').selected.rust, 'rust-02');
+});
+
+test('Two tabs: the merge happens in place, so a record held across the merging save keeps mutating', () => {
+  const saved = new Map<string, string>();
+  const tabA = openTab(saved),
+    tabB = openTab(saved);
+  tabB.click('open', { id: 'rust-02' }); // crea el registro vacío de rust-02 al renderizar
+  const { lab } = tabA;
+  lab.applyImport(
+    lab.planImport({ version: 1, records: { 'rust-01': fullProof(lab, 'rust-01') } }),
+  );
+  tabB.click('predict', { answer: '1' }); // este guardado fusiona lo de A
+  tabB.click('hint');
+  tabB.click('hint');
+  const records = storedRecords(saved);
+  assert.equal(records['rust-01'].solvedAt, 100);
+  assert.equal((records['rust-02'] as { prediction?: number }).prediction, 1);
+  assert.equal(records['rust-02'].hints, 2);
+});
+
+// Un solo handler guarda dos veces sobre el mismo `record`: la ejecución suma el intento
+// (primer guardado, que fusiona lo de A) y, al volver del compilador, escribe el resultado
+// sobre la referencia que ya tenía.
+await testAsync(
+  'Two tabs: a run keeps writing its held record after the save that merged the other tab',
+  async () => {
+    const saved = new Map<string, string>();
+    const tabA = openTab(saved);
+    const tabB = openTab(saved, { runner: () => Promise.reject(new Error('sin red')) });
+    tabB.click('open', { id: 'rust-02' });
+    const { lab } = tabA;
+    lab.applyImport(
+      lab.planImport({ version: 1, records: { 'rust-01': fullProof(lab, 'rust-01') } }),
+    );
+    tabB.click('run');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const records = storedRecords(saved);
+    assert.equal(records['rust-01'].solvedAt, 100);
+    assert.equal(records['rust-02'].attempts, 1);
+    assert.equal((records['rust-02'].result as { transportError?: boolean }).transportError, true);
+  },
+);
+
+test('One tab: emptied draft and reflection reload empty, without merging anything', () => {
+  const saved = new Map<string, string>();
+  const first = openTab(saved);
+  first.click('open', { id: 'rust-02' });
+  first.type('lab-reflection', 'mi explicación');
+  first.type('lab-code', 'fn main() {}');
+  first.type('lab-reflection', '');
+  first.type('lab-code', '');
+  const reloaded = openTab(saved).lab.exportState();
+  assert.equal(reloaded.records['rust-02'].reflection, '');
+  assert.equal(reloaded.records['rust-02'].draft, '');
+});
+
+test('planImport is pure and applyImport persists the planned state', () => {
+  const saved = new Map<string, string>();
+  const { lab } = openTab(saved);
+  const raw = { version: 1, records: { 'rust-02': { draft: 'borrador importado', attempts: 2 } } };
+  const rawBefore = plain(raw),
+    stateBefore = plain(lab.exportState()),
+    storageBefore = [...saved.entries()];
+  const plan = lab.planImport(raw);
+  assert.equal(plan.state.records['rust-02'].draft, 'borrador importado');
+  assert.deepEqual(plain(raw), rawBefore);
+  assert.deepEqual(plain(lab.exportState()), stateBefore);
+  assert.deepEqual([...saved.entries()], storageBefore);
+  assert.equal(lab.applyImport(plan), true);
+  assert.equal(plain(lab.exportState()).records['rust-02'].draft, 'borrador importado');
+  assert.equal(storedRecords(saved)['rust-02'].draft, 'borrador importado');
+});
+
+test('planImport rejects an invalid shape as the import always did', () => {
+  const { lab } = openTab(new Map());
+  assert.throws(() => lab.planImport({ version: 1, records: [] }), /compatible/);
+});
+
+test('planImport reports a lossy import for unknown ids and a lossless one for real exports', () => {
+  const { lab } = openTab(new Map());
+  const unknown = { version: 1, records: { 'desconocido-9': { draft: 'x' } } };
+  assert.equal(lab.planImport(unknown).lossy, true);
+  for (const name of ['progress-master-2a278ad-export.json', 'progress-d0e1b49-export.json']) {
+    const exported = JSON.parse(fs.readFileSync(path.join(repoRoot, 'qa/fixtures', name), 'utf8'));
+    assert.equal(lab.planImport(exported.lab).lossy, false, name);
+  }
+});
+
+function predictionTab(campaignSync: TabOptions['campaignSync']): Tab {
+  const tab = openTab(new Map(), { campaignSync });
+  tab.click('open', { id: 'rust-02' });
+  return tab;
+}
+
+test('A failing campaign sync after a prediction is not propagated and is reported once', () => {
+  const tab = predictionTab(() => {
+    throw new Error('campaña caída');
+  });
+  assert.doesNotThrow(() => tab.click('predict', { answer: '1' }));
+  assert.deepEqual(tab.notices, [SYNC_FAILURE_NOTICE]);
+  assert.equal(tab.errors.length, 1);
+});
+
+test('A prediction that earns campaign XP announces them', () => {
+  const tab = predictionTab(() => ({ xpGained: 15 }));
+  tab.click('predict', { answer: '1' });
+  assert.deepEqual(tab.notices, ['+15 XP por razonar tu predicción.']);
+});
+
+test('Reset reports success and clears the backup slots; a failing removal reports false', () => {
+  const saved = new Map<string, string>([[LAB_KEY, '{roto']]);
+  const { lab } = openTab(saved);
+  assert.equal(saved.get(LAB_BACKUP_KEY), '{roto');
+  assert.equal(lab.reset(), true);
+  for (const slot of SLOT_KEYS) assert.equal(saved.has(slot), false, slot);
+  const stuck = new Map<string, string>([[LAB_KEY, '{roto']]);
+  assert.equal(openTab(stuck, { failRemove: true }).lab.reset(), false);
+});
+
+test('backups lists the slot created by a degraded load', () => {
+  const { lab } = openTab(new Map([[LAB_KEY, '{roto']]));
+  assert.deepEqual(plain(lab.backups()), [{ key: LAB_BACKUP_KEY, text: '{roto' }]);
+});
+
+test('A degraded load without a secured copy never touches the key and never says saved', () => {
+  const saved = new Map<string, string>([[LAB_KEY, '{roto']]);
+  SLOT_KEYS.forEach((slot, index) => saved.set(slot, `otro texto ${index}`));
+  const before = [...saved.entries()];
+  const tab = openTab(saved);
+  assert.ok(tab.host.innerHTML.includes('El guardado local no está disponible'));
+  tab.click('open', { id: 'rust-02' });
+  const status = tab.type('lab-reflection', 'no se puede guardar');
+  assert.equal(status.textContent, 'El guardado no está disponible: exportá tu avance.');
+  assert.equal(tab.lab.applyImport(tab.lab.planImport({ version: 1, records: {} })), false);
+  assert.deepEqual([...saved.entries()], before);
 });
 
 console.log(passed + ' lab state scenarios passed; ' + failed + ' failed.');

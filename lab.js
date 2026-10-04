@@ -1,13 +1,9 @@
 import { cloneJson } from './src/shared/lib/clone-json';
+import { isLosslessNormalization } from './src/shared/lib/is-lossless-normalization';
 import { interpretRun, mergeRecord, syncAfterRun, testPassed } from './src/entities/exercise';
 import { escapeHtml } from './src/shared/lib/escape-html';
 import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
-import {
-  describeLoadResult,
-  loadVersionedState,
-  removeVersionedState,
-  writeVersionedState,
-} from './src/shared/lib/versioned-storage';
+import { describeLoadResult, openVersionedStore } from './src/shared/lib/versioned-storage';
 (() => {
   'use strict';
   const KEY = 'taller-laboratorio-v1';
@@ -172,13 +168,48 @@ import {
   function loadWarningFor(loaded) {
     return describeLoadResult(loaded, 'del laboratorio');
   }
+  // Combina lo que guardó otra pestaña con el estado local, que gana en los campos editables
+  // (ver mergeRecord). Muta `local` en el lugar y no cambia su identidad ni la de sus
+  // registros: los handlers guardan una referencia a `record` antes de save() y siguen
+  // escribiéndola después; un estado nuevo la dejaría huérfana y esa edición se perdería.
+  function absorbStored(stored, local) {
+    for (const [id, storedRecord] of Object.entries(stored.records)) {
+      if (!local.records[id]) local.records[id] = storedRecord;
+      else
+        Object.assign(
+          local.records[id],
+          mergeRecord(storedRecord, local.records[id], byId.get(id).tests),
+        );
+    }
+    return local;
+  }
+  const store = openVersionedStore(KEY, { blank, parse: parseSaved, merge: absorbStored });
   // Nunca escribe al cargar: la primera escritura es una acción del alumno.
-  const loaded = loadVersionedState(KEY, { blank, parse: parseSaved });
+  const loaded = store.load();
   state = loaded.state;
-  saveAvailable = loaded.status !== 'unavailable';
+  saveAvailable = loaded.writable;
   let loadWarning = loadWarningFor(loaded);
   function save() {
-    saveAvailable = writeVersionedState(KEY, state);
+    const result = store.write(state);
+    state = result.state;
+    saveAvailable = result.saved;
+    return saveAvailable;
+  }
+  // Calcula el estado resultante de importar `raw` sin tocar `state`, `raw` ni el almacenamiento.
+  // `lossy` avisa que la normalización quitó o cambió datos de la copia.
+  function planImport(raw) {
+    const incoming = sanitize(raw);
+    const lossy = !isLosslessNormalization(raw, incoming);
+    const merged = cloneJson(state);
+    for (const [id, record] of Object.entries(incoming.records))
+      merged.records[id] = mergeRecord(merged.records[id], record, byId.get(id).tests);
+    for (const lang of ['rust', 'go'])
+      if (incoming.selected[lang]) merged.selected[lang] = incoming.selected[lang];
+    return { state: merged, lossy };
+  }
+  function applyImport(plan) {
+    state = cloneJson(plan.state);
+    return save();
   }
   const recordFor = (id) => state.records[id] || (state.records[id] = {});
   const list = () => exercises.filter((exercise) => exercise.language === language);
@@ -949,10 +980,15 @@ import {
         );
       });
       $('#lab-prediction-feedback').innerHTML = predictionFeedback(item, record);
-      window.TallerSystems?.sync();
-      const game = window.TallerCampaign?.sync();
-      if (game?.xpGained && window.TallerCampaignEngine.canAttempt(item.id, language).worldId)
-        notify(`+${game.xpGained} XP por razonar tu predicción.`);
+      syncAfterRun({
+        syncSystems: () => window.TallerSystems?.sync(),
+        syncCampaign: () => window.TallerCampaign?.sync(),
+        isCampaignMission: () =>
+          Boolean(window.TallerCampaignEngine.canAttempt(item.id, language).worldId),
+        notify,
+        logError: (error) => console.error(error),
+        formatXp: (xp) => `+${xp} XP por razonar tu predicción.`,
+      });
       const context = $('.quest-lab-context');
       if (context) {
         const box = document.createElement('template');
@@ -1173,14 +1209,13 @@ import {
     loadWarning: () => loadWarning,
     getExercises: () => exercises,
     exportState: () => cloneJson(state),
+    planImport,
+    applyImport,
+    // Envoltorio hasta migrar app.js (parte 3b).
     importState(raw) {
-      const incoming = sanitize(raw);
-      for (const [id, record] of Object.entries(incoming.records))
-        state.records[id] = mergeRecord(state.records[id], record, byId.get(id).tests);
-      for (const lang of ['rust', 'go'])
-        if (incoming.selected[lang]) state.selected[lang] = incoming.selected[lang];
-      save();
+      applyImport(planImport(raw));
     },
+    backups: () => store.backups(),
     reset() {
       state = blank();
       selectedId = null;
@@ -1189,8 +1224,9 @@ import {
       activeController?.abort();
       activeRun = null;
       loadWarning = '';
-      removeVersionedState(KEY);
+      const removed = store.remove();
       save();
+      return removed;
     },
   };
 })();
