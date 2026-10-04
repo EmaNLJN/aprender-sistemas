@@ -1,0 +1,17 @@
+id: go-kv-cli
+title: Interpretá tres comandos
+minutes: 25
+objective: Transformar las operaciones en una herramienta interactiva.
+task: Agregá lectura de líneas y soportá SET clave valor, GET clave y EXIT. Limitá claves y valores a palabras sin espacios y mostrá esa regla en la ayuda. Separá la interpretación de una línea de la lectura de la terminal. Un comando desconocido o incompleto debe producir un mensaje y permitir seguir trabajando.
+doneWhen: En una misma ejecución guardás, consultás, enviás un comando incorrecto y continuás usando el almacén.
+resourceIds:
+  - go-examples
+  - gophercises
+quiz:
+  question: ¿Qué ventaja tiene interpretar una línea en una función separada de la terminal?
+  options:
+    - Podés probar esa función con textos concretos sin simular una sesión manual.
+    - Ya no necesitás definir comandos válidos.
+    - El programa se vuelve concurrente automáticamente.
+  answer: 0
+  explanation: Separar interpretación y entrada permite comprobar reglas con datos simples y reutilizarlas después en otro medio, como una conexión de red.

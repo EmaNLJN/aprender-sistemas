@@ -1,0 +1,12 @@
+id: go-tests
+title: Learn Go with Tests
+url: https://quii.gitbook.io/learn-go-with-tests
+languages:
+  - go
+category: lectura
+cost: gratis
+format: Libro práctico con tests · Inglés
+description: Aprendés Go escribiendo tests, implementando lo necesario para pasarlos y mejorando el diseño paso a paso.
+why: 'Tu recorrido principal recomendado en Go: ya sabés programar y podés usar los tests para explorar el lenguaje.'
+caveat: Requiere trabajo local y lectura; no tiene mecánicas de juego. Hacé cada ejemplo antes de leer la solución completa.
+featured: true

@@ -1,0 +1,18 @@
+id: go-local-server
+title: Respondé a un cliente local
+minutes: 25
+objective: Conectar una entrada de red con reglas que ya funcionan y tienen tests.
+task: Consultá un ejemplo de servidor TCP y aceptá una conexión local. Leé un comando completo, llamá al núcleo del almacén y devolvé la respuesta definida. Atendé un cliente por vez; todavía no agregues concurrencia. Probá SET y GET desde un cliente separado. Si necesitás dividir la tarea, terminá esta sesión con una respuesta fija y anotá dónde conectarás el intérprete.
+doneWhen: Un cliente recibe una respuesta del servidor local y registraste si ya usa el núcleo o todavía responde un texto fijo.
+resourceIds:
+  - context7
+  - codecrafters
+  - go-examples
+quiz:
+  question: ¿Por qué empezar atendiendo un cliente por vez?
+  options:
+    - Para comprobar primero protocolo y comportamiento con menos situaciones simultáneas.
+    - Porque Go no puede manejar varios clientes.
+    - Porque eso demuestra que los datos compartidos son seguros para concurrencia.
+  answer: 0
+  explanation: Acotar la primera versión permite aislar errores de transporte y protocolo. Si luego agregás concurrencia, tendrás que razonar por separado sobre el acceso al estado compartido.

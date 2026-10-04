@@ -3,6 +3,7 @@
 import { loadCampaign } from './campaign.ts';
 import type { Language, SystemsDomain } from './catalogs.ts';
 import { expectDistinctIds, interleaveCores, loadLanguage } from './exercises.ts';
+import { loadGuide } from './guide.ts';
 import type { JsonRecord } from './shape.ts';
 import { loadWorkshops } from './workshops.ts';
 
@@ -12,6 +13,7 @@ export interface Curriculum {
   cores: Record<SystemsDomain, JsonRecord[]>;
   campaign: Record<Language, JsonRecord[]>;
   workshops: Record<SystemsDomain, JsonRecord[]>;
+  guide: JsonRecord;
 }
 
 export function loadCurriculum(root: string): Curriculum {
@@ -24,5 +26,6 @@ export function loadCurriculum(root: string): Curriculum {
     cores: interleaveCores(rust, go),
     campaign: loadCampaign(root),
     workshops: loadWorkshops(root),
+    guide: loadGuide(root),
   };
 }

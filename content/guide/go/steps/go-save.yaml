@@ -1,0 +1,17 @@
+id: go-save
+title: Escribí un archivo que puedas leer
+minutes: 25
+objective: Definir una representación simple y manejar el fallo de escritura.
+task: Agregá guardado manual a un archivo de práctica nuevo. Escribí una entrada por línea y separá clave y valor con un tabulador; mantené la restricción de palabras sin espacios. Documentá dos líneas de ejemplo. Probá un destino inválido y asegurate de informar el fallo sin borrar el almacén en memoria.
+doneWhen: Reconocés los datos al abrir el archivo y una escritura fallida deja disponible el estado en memoria.
+resourceIds:
+  - go-examples
+  - go-tests
+quiz:
+  question: Si la escritura falla, ¿qué debería hacer tu primera versión?
+  options:
+    - Informar éxito para simplificar la interfaz.
+    - Borrar los datos en memoria porque el archivo no se guardó.
+    - Informar el fallo y conservar el estado que todavía tiene en memoria.
+  answer: 2
+  explanation: El usuario necesita saber que el guardado no se completó. Conservar el estado permite corregir el destino y volver a intentar.

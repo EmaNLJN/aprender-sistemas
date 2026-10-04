@@ -1,0 +1,17 @@
+id: rust-save
+title: Guardá una foto del almacén
+minutes: 25
+objective: Hacer explícito el formato de los datos que salen del programa.
+task: Agregá una operación de guardado manual a un archivo de práctica nuevo. Usá una línea por entrada con clave y valor separados por un tabulador; mantené la restricción de palabras sin espacios. Documentá el formato con dos ejemplos. Mostrá un error si no se puede escribir y conservá los datos en memoria. No hace falta implementar guardado automático todavía.
+doneWhen: Abrís el archivo y reconocés las dos entradas; un destino inválido produce un mensaje comprensible.
+resourceIds:
+  - rust-examples
+  - rust-google
+quiz:
+  question: ¿Por qué importa definir cómo se separan los campos de un archivo?
+  options:
+    - Porque determina cómo podrá reconstruirlos quien lea el archivo.
+    - Porque todo archivo de texto es una base de datos transaccional.
+    - Porque elimina cualquier riesgo de error de escritura.
+  answer: 0
+  explanation: Quien lee necesita conocer las reglas de representación. Esas reglas permiten reconocer campos y detectar líneas que no respetan el formato.

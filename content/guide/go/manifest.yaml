@@ -1,0 +1,31 @@
+title: Go · construí herramientas y explorá sistemas
+description: Una alternativa si te motiva avanzar pronto hacia una herramienta útil. Usá Tour of Go para empezar y Learn Go with Tests como base. El mismo almacén clave-valor te permite explorar errores, archivos, mediciones y redes en 12 sesiones orientativas.
+modules:
+  - id: go-foundations
+    title: Entrá escribiendo código
+    subtitle: Ejemplos pequeños, predicciones y tests desde el comienzo.
+    steps:
+      - go-first-session
+      - go-first-test
+      - go-errors
+  - id: go-kv
+    title: Dale forma a tu herramienta
+    subtitle: Guardá datos, hablá con el programa y protegé su comportamiento.
+    steps:
+      - go-kv-memory
+      - go-kv-cli
+      - go-kv-tests
+  - id: go-disk
+    title: Conservá datos y observá costos
+    subtitle: Archivos pequeños y preguntas de rendimiento con alcance claro.
+    steps:
+      - go-save
+      - go-load
+      - go-measure
+  - id: go-network
+    title: Conectá tu proyecto con el exterior
+    subtitle: Un cliente, un servidor y una especificación que ambos entiendan.
+    steps:
+      - go-protocol
+      - go-local-server
+      - go-next-challenge

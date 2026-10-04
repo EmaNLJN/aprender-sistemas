@@ -1,0 +1,18 @@
+id: go-measure
+title: Compará sin engañarte con el tiempo
+minutes: 25
+objective: Entender qué puede y qué no puede decir una medición pequeña.
+task: Prepará un lote fijo de búsquedas sobre un conjunto de datos conocido. Medí varias repeticiones sin imprimir en cada operación. Registrá tamaño del lote, datos usados y configuración. Si comparás dos variantes, usá la misma carga y verificá resultados equivalentes. Escribí una conclusión acotada; si los resultados fluctúan mucho, registrá esa incertidumbre.
+doneWhen: Tenés varias mediciones comparables y podés explicar qué trabajo incluye el tiempo registrado.
+resourceIds:
+  - go-tests
+  - go-examples
+  - context7
+quiz:
+  question: ¿Qué puede pasar si imprimís una línea por cada búsqueda mientras medís?
+  options:
+    - La impresión nunca influye en los tiempos.
+    - Podés terminar midiendo en gran parte el costo de salida en vez de las búsquedas.
+    - El resultado se convierte automáticamente en una medición de memoria.
+  answer: 1
+  explanation: La salida agrega trabajo y puede dominar la duración observada. Aislá el trabajo que querés estudiar y describí lo que tu medición incluye.

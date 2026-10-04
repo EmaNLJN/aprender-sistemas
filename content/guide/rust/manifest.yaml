@@ -1,0 +1,31 @@
+title: Rust · entendé lo que pasa por dentro
+description: Recorrido recomendado para tu interés en sistemas y rendimiento. Usá 100 Exercises como base, Brown para destrabar conceptos y un pequeño almacén clave-valor como hilo conductor. Son 12 sesiones orientativas, no una fecha límite para dominar el lenguaje.
+modules:
+  - id: rust-foundations
+    title: Ganá confianza con el compilador
+    subtitle: Predecí, probá y explicá. Un concepto nuevo por sesión.
+    steps:
+      - rust-first-session
+      - rust-ownership
+      - rust-errors
+  - id: rust-kv
+    title: Construí tu almacén clave-valor
+    subtitle: Un programa chico que crece con cada idea que aprendés.
+    steps:
+      - rust-kv-memory
+      - rust-kv-cli
+      - rust-kv-tests
+  - id: rust-disk
+    title: Mirá qué pasa en disco y en el tiempo
+    subtitle: Persistencia sencilla, fallos observables y mediciones honestas.
+    steps:
+      - rust-save
+      - rust-load
+      - rust-measure
+  - id: rust-network
+    title: Abrí la puerta a las redes
+    subtitle: Primero un protocolo pequeño; después, un reto con evaluación externa.
+    steps:
+      - rust-protocol
+      - rust-local-server
+      - rust-next-challenge

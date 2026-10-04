@@ -3,7 +3,7 @@
 import curriculum from '../../../build/curriculum.json';
 import type { CampaignWorldDefinition } from '../../entities/campaign';
 import type { Exercise } from '../../entities/exercise';
-import { guideData, type GuideData } from '../../entities/guide';
+import type { GuideData } from '../../entities/guide';
 
 declare global {
   interface Window {
@@ -17,7 +17,7 @@ declare global {
   }
 }
 
-window.GUIDE_DATA = guideData;
+window.GUIDE_DATA = curriculum.guide as GuideData;
 window.RUST_LAB = curriculum.lab.rust as Exercise[];
 window.GO_LAB = curriculum.lab.go as Exercise[];
 window.RUST_QUESTS = curriculum.quests.rust as Exercise[];

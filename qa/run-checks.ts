@@ -10,6 +10,7 @@ const checks = [
   'content-tools-check.ts',
   'content-exercises-check.ts',
   'content-records-check.ts',
+  'content-guide-check.ts',
   'curriculum-ids-check.ts',
   'atlas-check.ts',
   'guide-content-check.ts',

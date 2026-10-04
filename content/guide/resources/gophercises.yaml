@@ -1,0 +1,12 @@
+id: gophercises
+title: Gophercises
+url: https://gophercises.com/
+languages:
+  - go
+category: proyectos
+cost: gratis
+format: Proyectos con consignas y videos · Inglés
+description: Proyectos como un quiz, un acortador de URLs o una aventura interactiva, con material para construirlos paso a paso.
+why: Una opción para salir de los ejercicios aislados y terminar algo que puedas ejecutar y mostrar.
+caveat: Intentá implementar la consigna antes del video. Consultá documentación actual si una dependencia o instrucción del entorno cambió.
+featured: false

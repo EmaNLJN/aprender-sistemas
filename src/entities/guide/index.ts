@@ -1,4 +1,3 @@
-export { guideData } from './content/guide-data';
 export type {
   GuideData,
   GuideLanguage,

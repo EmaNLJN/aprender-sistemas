@@ -1,0 +1,17 @@
+id: go-load
+title: Completá el viaje de ida y vuelta
+minutes: 25
+objective: Verificar que el formato conserva lo necesario para reconstruir el estado.
+task: Implementá la carga del archivo en un almacén temporal y reemplazá el actual solo cuando todas las líneas sean válidas. Guardá dos claves, cerrá el programa, abrilo y recuperalas. Después probá una línea mal formada. Explicá qué diferencia hay entre validar una carga completa y garantizar resistencia a una caída durante una escritura.
+doneWhen: Dos ejecuciones distintas recuperan los mismos valores y un archivo inválido deja intacto el estado previo.
+resourceIds:
+  - go-examples
+  - go-tests
+quiz:
+  question: Pasar una prueba de guardar y cargar correctamente, ¿qué demuestra?
+  options:
+    - Que ese viaje de ida y vuelta conservó los datos probados bajo esas condiciones.
+    - Que el archivo resistirá cualquier corte de energía.
+    - Que varios procesos pueden escribirlo a la vez sin coordinación.
+  answer: 0
+  explanation: La prueba cubre un recorrido normal. Durabilidad frente a fallos y coordinación de varios escritores son propiedades adicionales que requieren otro diseño y otras verificaciones.

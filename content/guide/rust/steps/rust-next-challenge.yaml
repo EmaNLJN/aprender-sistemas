@@ -1,0 +1,18 @@
+id: rust-next-challenge
+title: Elegí tu próximo problema real
+minutes: 25
+objective: Cerrar el recorrido con una dirección propia y un próximo paso pequeño.
+task: 'Elegí un solo siguiente reto: HTTP o shell en CodeCrafters, o el primer desafío de Protohackers. Leé su especificación y anotá qué parte ya entendés y qué concepto falta. Definí una primera etapa que puedas comprobar localmente. Cerrá explicando tu almacén sin mirar el código: propiedad de datos, errores, persistencia y una limitación de tus mediciones.'
+doneWhen: Tenés un reto elegido, una primera prueba concreta y una explicación propia de cuatro decisiones de tu proyecto.
+resourceIds:
+  - codecrafters
+  - protohackers
+  - rust-google
+quiz:
+  question: ¿Qué señal muestra mejor que podés transferir lo aprendido?
+  options:
+    - Haber abierto muchos cursos distintos.
+    - Resolver una variante nueva y explicar las decisiones sin copiar la solución.
+    - Recordar exactamente el orden de las lecciones.
+  answer: 1
+  explanation: Aplicar una idea en una situación diferente y justificarla ofrece una señal de comprensión más fuerte que reconocer una solución conocida.

@@ -1,0 +1,18 @@
+id: rust-ownership
+title: Seguí el recorrido de un valor
+minutes: 25
+objective: Distinguir transferencia de propiedad, préstamo y copia explícita.
+task: Abrí una explicación de ownership en Brown y un ejercicio relacionado en Rustlings o 100 Exercises. Dibujá qué variable posee el dato antes y después de una operación. Intentá resolver el ejercicio sin agregar copias por prueba y error. Al final explicá cuándo alcanza con prestar acceso y cuándo necesitás otro valor independiente.
+doneWhen: Resolviste un caso y podés explicar quién posee el valor y por qué una operación está permitida o rechazada.
+resourceIds:
+  - rust-brown
+  - rustlings
+  - rust-100
+quiz:
+  question: Una función solo necesita consultar un dato del llamador. ¿Qué diseño conviene explorar primero?
+  options:
+    - Prestarle acceso al dato durante el tiempo necesario.
+    - Duplicar siempre el dato completo.
+    - Entregarle la propiedad aunque el llamador lo siga necesitando.
+  answer: 0
+  explanation: Un préstamo puede expresar que una función consulta un dato sin apropiárselo ni crear una copia. El diseño concreto depende de cuánto tiempo necesita acceder a él.

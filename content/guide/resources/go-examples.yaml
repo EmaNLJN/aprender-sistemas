@@ -1,0 +1,12 @@
+id: go-examples
+title: Go by Example
+url: https://gobyexample.com/
+languages:
+  - go
+category: lectura
+cost: gratis
+format: Ejemplos comentados por tema · Inglés
+description: Ejemplos cortos de Go que podés consultar por tema mientras construís tu propio programa.
+why: Una referencia rápida cuando sabés qué querés hacer y necesitás ver un ejemplo pequeño.
+caveat: Es un recurso de la comunidad. Para detalles de una API o de versión, seguí el enlace a la documentación correspondiente.
+featured: false

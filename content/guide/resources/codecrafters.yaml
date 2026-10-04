@@ -1,0 +1,12 @@
+id: codecrafters
+title: CodeCrafters
+url: https://codecrafters.io/
+languages:
+  - both
+category: proyectos
+cost: mixto
+format: Reconstrucción de herramientas por etapas · Inglés
+description: Implementás proyectos como una shell, un servidor HTTP o partes de Redis y Git, trabajando en tu editor y validando cada etapa con tests.
+why: Conecta muy bien con tu interés por entender cómo funcionan las herramientas por dentro.
+caveat: 'El acceso gratuito y las condiciones dependen del reto. Anunciaron una pausa en nuevos retos, manteniendo los existentes: evaluá el proyecto que ya esté disponible.'
+featured: true

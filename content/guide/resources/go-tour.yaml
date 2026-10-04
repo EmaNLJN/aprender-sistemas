@@ -1,0 +1,12 @@
+id: go-tour
+title: A Tour of Go
+url: https://go.dev/tour/
+languages:
+  - go
+category: ejercicios
+cost: gratis
+format: Lecciones ejecutables en el navegador · Inglés
+description: El recorrido introductorio oficial de Go, con ejemplos editables y ejercicios desde el navegador.
+why: Una forma de empezar con poca preparación y comprobar enseguida qué cambia cuando tocás el código.
+caveat: No hace falta completar todo de una vez. Alterná las primeras lecciones con un programa pequeño en tu computadora.
+featured: true

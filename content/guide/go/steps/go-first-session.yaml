@@ -1,0 +1,17 @@
+id: go-first-session
+title: Modificá tu primer ejemplo
+minutes: 25
+objective: Aprender una construcción del lenguaje con una prueba inmediata.
+task: Abrí Tour of Go y elegí una lección inicial con una función y variables. Antes de ejecutarla, predecí la salida. Cambiá una entrada, agregá un caso y explicá por qué cambia el resultado. Si ya conocés esa parte, avanzá hasta encontrar una diferencia concreta con tu lenguaje habitual; anotá una, no una lista completa.
+doneWhen: Podés anticipar el resultado de dos variantes del ejemplo y explicar una diferencia con un lenguaje que ya usás.
+resourceIds:
+  - go-tour
+  - go-examples
+quiz:
+  question: ¿Qué práctica comprueba mejor que entendiste un ejemplo?
+  options:
+    - Ejecutarlo una sola vez y mirar la salida.
+    - Leer la solución hasta que resulte familiar.
+    - Predecir una variante, ejecutarla y explicar la diferencia.
+  answer: 2
+  explanation: La predicción te obliga a formular un modelo. Compararla con el resultado muestra dónde ese modelo necesita ajustes.

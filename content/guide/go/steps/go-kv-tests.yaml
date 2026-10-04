@@ -1,0 +1,17 @@
+id: go-kv-tests
+title: Probá lo que prometiste
+minutes: 25
+objective: Convertir decisiones del proyecto en comprobaciones repetibles.
+task: 'Escribí tres casos sobre el núcleo: guardar y consultar, sobrescribir y buscar una clave ausente. Agregá un caso de comando incompleto si queda tiempo. Cambiá temporalmente la sobrescritura para que conserve el valor anterior y comprobá que el test falle. Corregí el comportamiento y ejecutá todos los casos de nuevo.'
+doneWhen: Los tres casos pasan y el test de sobrescritura detectó el fallo deliberado.
+resourceIds:
+  - go-tests
+  - go-exercism
+quiz:
+  question: ¿Qué deberían verificar principalmente estos tests?
+  options:
+    - Que nunca cambies la cantidad de funciones.
+    - Las respuestas y cambios de estado que prometen tus operaciones.
+    - Que todas las variables tengan nombres de una letra.
+  answer: 1
+  explanation: Probar comportamiento observable te permite mejorar la implementación sin reescribir tests que dependan de detalles irrelevantes del diseño interno.

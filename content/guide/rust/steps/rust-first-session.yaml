@@ -1,0 +1,17 @@
+id: rust-first-session
+title: Tu primer cambio comprobable
+minutes: 25
+objective: Arrancar con una victoria pequeña y aprender a leer el resultado de un test.
+task: Elegí 100 Exercises o su versión en RustRover. Seguí la preparación del recurso y resolvé el primer ejercicio disponible. Antes de ejecutarlo, anotá qué esperás que pase. Después cambiá una entrada para provocar un fallo y explicá la diferencia. Si preparar el entorno consume la sesión, dejá anotado el ejercicio exacto para mañana.
+doneWhen: Podés ejecutar el ejercicio y señalar qué cambio hace pasar o fallar su comprobación.
+resourceIds:
+  - rust-100
+  - rust-rover
+quiz:
+  question: Un test acaba de pasar. ¿Qué conclusión está justificada?
+  options:
+    - El programa es correcto para cualquier entrada.
+    - Ese caso comprobó la propiedad expresada por el test.
+    - La implementación ya es la más rápida posible.
+  answer: 1
+  explanation: Un test verifica un caso y sus condiciones. Todavía pueden faltar entradas, propiedades y comportamientos por cubrir.

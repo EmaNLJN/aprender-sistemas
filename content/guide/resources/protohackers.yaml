@@ -1,0 +1,12 @@
+id: protohackers
+title: Protohackers
+url: https://protohackers.com/
+languages:
+  - both
+category: proyectos
+cost: gratis
+format: Desafíos de protocolos de red · Inglés
+description: Implementás un servidor a partir de una especificación y un servicio externo prueba su comportamiento. Podés elegir el lenguaje.
+why: Excelente para practicar lectura de especificaciones, entradas inesperadas y comportamiento de red.
+caveat: Para usar el evaluador necesitás un servidor accesible desde Internet. Empezá probando localmente y dejá ese despliegue para otra sesión.
+featured: true

@@ -1,0 +1,12 @@
+id: rust-examples
+title: Rust by Example
+url: https://doc.rust-lang.org/rust-by-example/
+languages:
+  - rust
+category: lectura
+cost: gratis
+format: Ejemplos ejecutables por tema · Inglés
+description: Una referencia oficial organizada en ejemplos breves para explorar construcciones y conceptos de Rust.
+why: Útil para comparar una explicación con un programa concreto y modificar una sola condición.
+caveat: Consultalo a demanda. Copiar un ejemplo sin predecir su resultado aporta poco a tu práctica.
+featured: false

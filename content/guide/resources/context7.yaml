@@ -1,0 +1,12 @@
+id: context7
+title: Context7
+url: https://github.com/upstash/context7
+languages:
+  - both
+category: herramientas
+cost: mixto
+format: Documentación para asistentes de código · Inglés
+description: Permite recuperar documentación y ejemplos de bibliotecas para que un asistente fundamente sus respuestas en fuentes concretas.
+why: Usalo cuando aparezca una duda específica de API o de versión durante un ejercicio.
+caveat: No es un curso ni un evaluador pedagógico. Hay límites de uso y cobertura; pedí la fuente y contrastá lo que explica el asistente.
+featured: false

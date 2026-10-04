@@ -1,0 +1,12 @@
+id: rustlings
+title: Rustlings
+url: https://rustlings.rust-lang.org/
+languages:
+  - rust
+category: ejercicios
+cost: gratis
+format: Programas pequeños para reparar · Inglés
+description: Corregís errores de compilación y tests en ejercicios cortos, con pistas y revisión de los cambios.
+why: Va muy bien para una sesión breve o para reforzar un concepto que te está costando.
+caveat: No reemplaza un proyecto propio. Evitá completar mecánicamente los cambios sin explicar qué estaba fallando.
+featured: true

@@ -1,0 +1,17 @@
+id: rust-load
+title: Reiniciá sin perder el estado
+minutes: 25
+objective: Comprobar una propiedad que atraviesa dos ejecuciones distintas.
+task: 'Agregá carga manual del archivo que guardaste. Primero leé y validá todo en un almacén temporal; reemplazá el actual solo si la carga termina bien. Probá el viaje completo: guardar, cerrar, abrir, cargar y consultar. Después introducí una línea inválida y verificá que la carga informe el problema y conserve el estado previo.'
+doneWhen: Recuperás los valores después de reiniciar y una carga inválida no deja el almacén parcialmente cambiado.
+resourceIds:
+  - rust-examples
+  - rust-brown
+quiz:
+  question: ¿Qué ventaja tiene validar una carga completa antes de reemplazar el estado actual?
+  options:
+    - Evita tener que definir un formato.
+    - Impide todos los fallos posibles del sistema operativo.
+    - Evita aplicar solo una parte del archivo cuando aparece un error.
+  answer: 2
+  explanation: Preparar el nuevo estado antes de aplicarlo permite conservar el anterior si la validación falla. Esto no equivale por sí solo a ofrecer transacciones durables en disco.

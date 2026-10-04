@@ -1,0 +1,17 @@
+id: rust-kv-tests
+title: Protegé las decisiones con tests
+minutes: 25
+objective: Usar tests para poder cambiar el programa con confianza.
+task: 'Escribí tres tests sobre el núcleo: consultar después de guardar, sobrescribir una clave y consultar una clave ausente. Si te queda tiempo, sumá un test de comando incompleto. Introducí un error deliberado en la sobrescritura para comprobar que el test lo detecta y después corregilo. Evitá que los tests dependan de escribir manualmente en la terminal.'
+doneWhen: Los tres casos pasan y viste al menos uno fallar ante una modificación incorrecta.
+resourceIds:
+  - rust-100
+  - rust-examples
+quiz:
+  question: ¿Qué test protege mejor el comportamiento de sobrescritura?
+  options:
+    - Comprobar que una variable interna tiene cierto nombre.
+    - Guardar dos valores con la misma clave y verificar que se recupera el último.
+    - Ejecutar el programa sin comprobar el resultado.
+  answer: 1
+  explanation: Ese test expresa el comportamiento prometido al usuario y sigue siendo útil aunque cambies la estructura interna del almacén.
