@@ -224,7 +224,7 @@ import (
 )
 
 func main() {
-	// Con uid 65534, CapEff ya es 0 aunque falte --cap-drop ALL: CapBnd y CapPrm sí lo delatan.
+	// Con uid 65534, CapEff ya es 0 aunque falte --cap-drop ALL: CapBnd sí lo delata.
 	status, _ := os.ReadFile("/proc/self/status")
 	values := map[string]string{}
 	for _, line := range strings.Split(string(status), "\n") {

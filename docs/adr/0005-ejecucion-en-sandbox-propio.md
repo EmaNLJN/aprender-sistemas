@@ -270,12 +270,14 @@ La implementación del ejecutor (`docs/plans/2026-10-04-ejecutor-go.md`) ajustó
   `--pids-limit`; después de un tiempo agotado, el 137 es del `kill`, no del programa.
 - **Salida:** `truncated` es el OR de los cuatro streams. En la fase `run`, `stderr` suma los
   avisos de compilación y el `stderr` de la ejecución (hasta 128 KiB, y más si hubo bytes
-  inválidos reemplazados por U+FFFD); `stdout` llega a 65 536 bytes, uno más que un `TEXT`
-  de MySQL: va en `MEDIUMTEXT`. `compileMs` y `runMs` incluyen el arranque del contenedor.
+  inválidos reemplazados por U+FFFD); `stdout` llega a 65 536 bytes con UTF-8 válido (más
+  si hubo bytes inválidos reemplazados), uno más que un `TEXT` de MySQL: va en `MEDIUMTEXT`. `compileMs` y `runMs` incluyen el arranque del contenedor.
 - **Respuestas:** 503 con `Retry-After` = ocupado, no corrió nada (con `tries = 1`, se
   reencola con un dispatch nuevo); 500 o conexión cerrada sin respuesta = `infra_error`, sin
-  reintento automático. Al apagarse, los pedidos que esperaban lugar reciben la conexión
-  cerrada aunque no corrió nada.
+  reintento automático. Al apagarse, los pedidos que esperaban lugar reciben 503
+  (no corrió nada) y los que ejecutaban, 500. Una conexión rechazada mientras el ejecutor
+  reinicia tampoco corrió nada. Como defensa, un 2xx cuyo cuerpo no es un resultado válido es
+  `infra_error`.
 - **Plazos:** el cliente HTTP espera más de 90 s (`WriteTimeout`), el job más que el cliente
   y `retry_after` más que ambos. Los workers de la cola de ejecuciones son como mucho
   `MaxConcurrent`: el ejecutor no limita cuántos esperan lugar.

@@ -19,6 +19,7 @@ func startServe(t *testing.T, cleanup time.Duration, grace time.Duration) (cance
 		t.Fatal(err)
 	}
 	root, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
 	started := make(chan struct{}, 1)
 	cleaned = &atomic.Bool{}
 	server := &http.Server{

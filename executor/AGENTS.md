@@ -19,7 +19,8 @@ biblioteca estándar: no agregues módulos sin un ADR.
 - Contrato HTTP: `POST /v1/run {language, program}` con token Bearer. 503 con `Retry-After`
   significa ocupado (no corrió nada); 500, o una respuesta perdida por el `WriteTimeout` de
   90 s, significa fallo del sandbox (pudo haber corrido: quien llama no reintenta solo);
-  400 o 413, pedido inválido.
+  400 o 413, pedido inválido. Un pedido cancelado (cliente que se fue o apagado del
+  ejecutor) recibe 503 si esperaba lugar y 500 si ya ejecutaba: nunca un 200 vacío.
 - Cada instancia etiqueta lo suyo con `taller.executor.run=<EXECUTOR_INSTANCE>` (`servicio`
   por defecto; las pruebas de integración usan `integracion`). Al arrancar verifica las
   imágenes y el runtime, y barre todo lo de su instancia. Al recibir SIGTERM cancela los

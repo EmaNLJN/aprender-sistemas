@@ -175,7 +175,7 @@ func (b *blockingExecutor) Execute(ctx context.Context, _ string, _ []byte) (san
 	return sandbox.Result{}, ctx.Err()
 }
 
-func TestClientCancellationReachesTheExecutorAndWritesNothing(t *testing.T) {
+func TestCancelledExecutionAnswers500(t *testing.T) {
 	exec := &blockingExecutor{started: make(chan struct{}), seen: make(chan error, 1)}
 	ctx, cancel := context.WithCancel(context.Background())
 	req := httptest.NewRequest(http.MethodPost, "/v1/run", strings.NewReader(`{"language":"go","program":"x"}`)).WithContext(ctx)
@@ -186,7 +186,8 @@ func TestClientCancellationReachesTheExecutorAndWritesNothing(t *testing.T) {
 		newServer(exec).Handler().ServeHTTP(rec, req)
 		close(done)
 	}()
-	// Cancela con la ejecución en curso: antes de tomar lugar, la cancelación compite con el semáforo.
+	// Cancela con la ejecución en curso, como el apagado (BaseContext: root): antes de tomar
+	// lugar, la cancelación compite con el semáforo.
 	select {
 	case <-exec.started:
 	case <-time.After(2 * time.Second):
@@ -202,12 +203,13 @@ func TestClientCancellationReachesTheExecutorAndWritesNothing(t *testing.T) {
 		t.Fatal("el Executor nunca vio la cancelación")
 	}
 	<-done
-	if rec.Body.Len() != 0 {
-		t.Fatalf("a un cliente que se fue no se le escribe un 500: %q", rec.Body.String())
+	// Sin una respuesta explícita, net/http mandaría un 200 vacío que parece un resultado.
+	if rec.Code != http.StatusInternalServerError || !strings.Contains(rec.Body.String(), `"error"`) {
+		t.Fatalf("una ejecución cancelada pudo haber corrido: 500, nunca un 200 vacío; llegó %d %q", rec.Code, rec.Body.String())
 	}
 }
 
-func TestClientCancellationWhileWaitingForASlotWritesNothing(t *testing.T) {
+func TestCancellationWhileWaitingForASlotAnswers503(t *testing.T) {
 	exec := &fakeExecutor{}
 	s := newServer(exec)
 	s.QueueWait = 2 * time.Second
@@ -218,8 +220,8 @@ func TestClientCancellationWhileWaitingForASlotWritesNothing(t *testing.T) {
 	rec := httptest.NewRecorder()
 	time.AfterFunc(50*time.Millisecond, cancel)
 	s.Handler().ServeHTTP(rec, req)
-	if rec.Body.Len() != 0 || exec.calls != 0 {
-		t.Fatalf("un cliente que se fue mientras esperaba no recibe un 503 ni ejecuta: %q, llamadas %d", rec.Body.String(), exec.calls)
+	if rec.Code != http.StatusServiceUnavailable || rec.Header().Get("Retry-After") != "1" || exec.calls != 0 {
+		t.Fatalf("cancelado mientras esperaba (apagado): nada corrió, así que 503 con Retry-After y sin ejecutar; llegó %d %q, llamadas %d", rec.Code, rec.Body.String(), exec.calls)
 	}
 }
 

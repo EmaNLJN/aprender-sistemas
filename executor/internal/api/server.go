@@ -105,23 +105,27 @@ func (s *Server) run(w http.ResponseWriter, r *http.Request) {
 	case s.Slots <- struct{}{}:
 		defer func() { <-s.Slots }()
 	case <-wait.Done():
-		if r.Context().Err() != nil {
-			return // el cliente se fue mientras esperaba lugar: no hay a quién responder
-		}
-		// Nada corrió todavía: el llamador puede reintentar sin repetir una ejecución.
+		// Nada corrió todavía: el llamador puede reintentar sin repetir una ejecución. Si el
+		// pedido se canceló (el ejecutor se apaga), también se responde: con el cliente ya ido no
+		// tiene efecto, y sin respuesta net/http mandaría un 200 vacío.
 		w.Header().Set("Retry-After", "1")
-		writeError(w, http.StatusServiceUnavailable, "ejecutor ocupado")
+		message := "ejecutor ocupado"
+		if r.Context().Err() != nil {
+			message = "el ejecutor se está apagando"
+		}
+		writeError(w, http.StatusServiceUnavailable, message)
 		return
 	}
 
 	result, err := s.Exec.Execute(r.Context(), req.Language, []byte(req.Program))
 	if err != nil {
-		if r.Context().Err() != nil {
-			log.Printf("el cliente canceló la ejecución: %v", err)
-			return
-		}
 		// 500 y no 503: el programa pudo haber llegado a correr, así que no se reintenta solo.
-		log.Printf("ejecución fallida: %v", err)
+		// Vale también si el pedido se canceló (cliente que se fue o apagado del ejecutor).
+		if r.Context().Err() != nil {
+			log.Printf("ejecución cancelada (cliente que se fue o apagado): %v", err)
+		} else {
+			log.Printf("ejecución fallida: %v", err)
+		}
 		writeError(w, http.StatusInternalServerError, "no se pudo ejecutar en el sandbox")
 		return
 	}

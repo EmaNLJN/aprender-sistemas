@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -47,15 +48,17 @@ func main() {
 	defer stop()
 
 	for _, image := range []string{cfg.RustImage, cfg.GoImage} {
-		if err := sandbox.ExecCommand(root, "docker", []string{"image", "inspect", "--format", "{{.Id}}", image}, nil, io.Discard, io.Discard); err != nil {
-			log.Fatalf("falta la imagen %s (los pedidos nunca descargan imágenes): %v", image, err)
+		var stderr bytes.Buffer
+		if err := sandbox.ExecCommand(root, "docker", []string{"image", "inspect", "--format", "{{.Id}}", image}, nil, io.Discard, &stderr); err != nil {
+			log.Fatalf("falta la imagen %s (los pedidos nunca descargan imágenes): %v: %s", image, err, strings.TrimSpace(stderr.String()))
 		}
 	}
 
 	// Sin el runtime, /healthz respondería ok y cada pedido sería un 500.
 	var runtimes bytes.Buffer
-	if err := sandbox.ExecCommand(root, "docker", []string{"info", "--format", "{{json .Runtimes}}"}, nil, &runtimes, io.Discard); err != nil {
-		log.Fatalf("no pude consultar los runtimes de Docker: %v", err)
+	var runtimesStderr bytes.Buffer
+	if err := sandbox.ExecCommand(root, "docker", []string{"info", "--format", "{{json .Runtimes}}"}, nil, &runtimes, &runtimesStderr); err != nil {
+		log.Fatalf("no pude consultar los runtimes de Docker: %v: %s", err, strings.TrimSpace(runtimesStderr.String()))
 	}
 	registered, err := runtimeRegistered(runtimes.Bytes(), cfg.Runtime)
 	if err != nil {
