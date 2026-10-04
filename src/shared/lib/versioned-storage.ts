@@ -162,10 +162,13 @@ export function openVersionedStore<T>(
     if (current === null) return state;
     const { parsed, lossy } = inspectText(current, options.parse);
     if (parsed && !lossy) return options.merge ? options.merge(parsed.state, state) : state;
+    // Texto ilegible o con pérdida: antes de pisarlo se asegura la copia original.
     if (secureBackup(target, key, current) === null) {
       writable = false;
       return null;
     }
+    // Si es legible, aunque con pérdida, se rescata lo que esta versión reconoce.
+    if (parsed && options.merge) return options.merge(parsed.state, state);
     return state;
   }
 
@@ -190,16 +193,21 @@ export function openVersionedStore<T>(
   }
 
   function remove(): boolean {
-    if (!storage) return false;
+    // Sin almacenamiento no hay nada que borrar.
+    if (!storage) return true;
     let allRemoved = true;
+    let mainKeyRemoved = true;
     for (const name of [key, ...backupKeysFor(key)]) {
       try {
         storage.removeItem(name);
       } catch {
         allRemoved = false;
+        if (name === key) mainKeyRemoved = false;
       }
     }
-    lastText = null;
+    // Si la clave principal sigue guardada, `lastText` conserva ese texto: la escritura
+    // siguiente lo sobrescribe en vez de tratarlo como un cambio de otra pestaña.
+    if (mainKeyRemoved) lastText = null;
     writable = true;
     return allRemoved;
   }

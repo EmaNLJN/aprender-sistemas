@@ -179,6 +179,7 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
     state = result.state;
     storageAvailable = result.saved;
     updateSaveLabel();
+    return result.saved;
   }
   function updateSaveLabel() {
     $('#save-label').textContent = storageAvailable
@@ -691,22 +692,28 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
       return { area: section.area, adapter, plan: adapter.planImport(rawImport[section.key]) };
     });
   }
-  function importNotice(routePlan, sectionPlans) {
+  // `unsaved`: áreas cuya copia quedó aplicada sólo en memoria (el almacén no pudo escribir).
+  function importNotice(routePlan, sectionPlans, unsaved) {
     const lossy = new Set(sectionPlans.filter((item) => item.plan.lossy).map((item) => item.area));
     if (routePlan.lossy) lossy.add('recorrido');
     const areas = NOTICE_AREAS.filter((area) => lossy.has(area));
-    const notice = 'Copia importada y combinada con tu avance actual.';
+    const unsavedAreas = NOTICE_AREAS.filter((area) => unsaved.has(area));
+    const notice = unsavedAreas.length
+      ? `Copia importada en esta sesión, pero no se pudo guardar: ${unsavedAreas.join(', ')}. Exportá tu avance para conservarlo.`
+      : 'Copia importada y combinada con tu avance actual.';
     if (!areas.length) return notice;
     return `${notice} Se omitieron datos que esta versión no reconoce: ${areas.join(', ')}.`;
   }
   // Persiste los sellos que Sistemas y Campaña derivan del laboratorio recién importado.
-  // La copia ya quedó aplicada: un fallo acá sólo se registra.
+  // La copia ya quedó aplicada: un fallo acá sólo se registra, y cada sincronización
+  // es independiente para que un fallo de Sistemas no impida la de campaña.
   function syncDerivedSeals() {
-    try {
-      window.TallerSystems?.sync();
-      window.TallerCampaign?.sync();
-    } catch (error) {
-      console.error(error);
+    for (const sync of [() => window.TallerSystems?.sync(), () => window.TallerCampaign?.sync()]) {
+      try {
+        sync();
+      } catch (error) {
+        console.error(error);
+      }
     }
   }
   $('#import-file').addEventListener('change', async (event) => {
@@ -720,12 +727,16 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
       const routePlan = planRouteImport(rawImport);
       const sectionPlans = planSectionImports(rawImport);
       // Fase 2: se aplica cada plan y, por último, el recorrido.
-      for (const { adapter, plan } of sectionPlans) adapter.applyImport(plan);
+      // Sólo `false` cuenta como «no se guardó»; el recorrido usa el resultado de save().
+      const unsaved = new Set();
+      for (const { area, adapter, plan } of sectionPlans) {
+        if (adapter.applyImport(plan) === false) unsaved.add(area);
+      }
       state = routePlan.state;
-      save();
+      if (!save()) unsaved.add('recorrido');
       syncDerivedSeals();
       render();
-      toast(importNotice(routePlan, sectionPlans));
+      toast(importNotice(routePlan, sectionPlans, unsaved));
     } catch (error) {
       toast(
         'No se pudo importar: ' +

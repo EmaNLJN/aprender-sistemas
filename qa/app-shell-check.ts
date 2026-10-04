@@ -48,6 +48,8 @@ interface HarnessOptions {
   stored?: unknown;
   storedRaw?: string;
   blocked?: boolean;
+  // El acceso mismo a `localStorage` lanza (navegador con el almacenamiento deshabilitado).
+  storageInaccessible?: boolean;
   // Lecturas válidas pero setItem lanza (cuota llena, modo privado).
   writesBlocked?: boolean;
   backup?: string;
@@ -65,6 +67,10 @@ interface HarnessOptions {
   backups?: Partial<Record<ModuleKey, { key: string; text: string }[]>>;
   // Campaña o Sistemas lanzan al sincronizar los sellos del laboratorio importado.
   failSync?: boolean;
+  // Sólo la sincronización de Sistemas lanza; la de campaña funciona.
+  failSystemsSync?: boolean;
+  // Valor que devuelve applyImport de la sección (por defecto, true: se guardó).
+  applyResults?: Partial<Record<ModuleKey, boolean>>;
 }
 
 const ids = [
@@ -116,7 +122,7 @@ function fakeAdapters(
   const applyFor = (key: ModuleKey): Behavior => {
     return () => {
       failure('failApply', key);
-      return true;
+      return options.applyResults?.[key] ?? true;
     };
   };
   const backupsFor =
@@ -143,7 +149,10 @@ function fakeAdapters(
     },
     TallerSystems: {
       init: () => ({ loadWarning: options.warnings?.systems ?? '' }),
-      sync: syncBehavior,
+      sync: () => {
+        if (options.failSystemsSync) throw new Error('sync de Sistemas falló');
+        syncBehavior();
+      },
     },
     TallerCampaignEngine: {
       exportState: () => campaignExport,
@@ -292,6 +301,13 @@ function buildHarness(options: HarnessOptions = {}): Harness {
     scrollTo: () => undefined,
     ...fakeAdapters(record, options),
   } as Record<string, unknown>;
+  if (options.storageInaccessible) {
+    Object.defineProperty(context, 'localStorage', {
+      get() {
+        throw new Error('acceso al almacenamiento bloqueado');
+      },
+    });
+  }
   context.window = context;
   vm.createContext(context);
   loadGuideContent(context);
@@ -523,11 +539,48 @@ await test('b) importar: después de aplicar sincroniza Sistemas y Campaña, y l
   assert.deepEqual(harness.errors, []);
 });
 
+await test('b) importar: si la sincronización de Sistemas lanza, la de campaña igual se llama', async () => {
+  const harness = buildHarness({ stored: localProgress, failSystemsSync: true });
+  const before = harness.calls.length;
+  await importFile(harness, JSON.stringify(validImport));
+  const syncs = harness.calls.slice(before).filter((name) => name.endsWith('.sync'));
+  assert.deepEqual(syncs, ['Systems.sync', 'Campaign.sync']);
+  assert.equal(harness.errors.length, 1);
+  assert.equal(harness.toast(), 'Copia importada y combinada con tu avance actual.');
+});
+
+const NOT_SAVED_TAIL = '. Exportá tu avance para conservarlo.';
+const NOT_SAVED_HEAD = 'Copia importada en esta sesión, pero no se pudo guardar: ';
+
+await test('b) importar: si el laboratorio no se pudo guardar, no anuncia éxito y lo nombra', async () => {
+  const harness = buildHarness({ stored: localProgress, applyResults: { lab: false } });
+  await importFile(harness, JSON.stringify(validImport));
+  assert.equal(harness.toast(), NOT_SAVED_HEAD + 'laboratorio' + NOT_SAVED_TAIL);
+});
+
+await test('b) importar: con el recorrido no escribible lo nombra primero y conserva la cola de omisiones', async () => {
+  const harness = buildHarness({
+    stored: localProgress,
+    writesBlocked: true,
+    applyResults: { systems: false, campaign: false },
+    lossy: { lab: true },
+  });
+  await importFile(harness, JSON.stringify(validImport));
+  assert.equal(
+    harness.toast(),
+    NOT_SAVED_HEAD +
+      'recorrido, campaña, Sistemas' +
+      NOT_SAVED_TAIL +
+      ' Se omitieron datos que esta versión no reconoce: laboratorio.',
+  );
+});
+
 await test('b) importar: si sync lanza, el error se registra y la copia ya quedó importada', async () => {
   const harness = buildHarness({ stored: localProgress, failSync: true });
   await importFile(harness, JSON.stringify(validImport));
   assert.equal(harness.toast(), 'Copia importada y combinada con tu avance actual.');
-  assert.equal(harness.errors.length, 1);
+  // Cada sincronización falla y se registra por separado.
+  assert.equal(harness.errors.length, 2);
   assert.deepEqual(harness.storedState().completed, [
     'rust-ownership',
     'go-save',
@@ -819,6 +872,12 @@ await test('h) borrar todo: un adaptador ausente no cuenta como fallo', async ()
   assert.equal(harness.toast(), 'Progreso reiniciado. Un nuevo comienzo.');
 });
 
+await test('h) borrar todo: sin acceso al almacenamiento no hay nada que borrar y avisa éxito', async () => {
+  const harness = buildHarness({ storageInaccessible: true });
+  await harness.elements['confirm-reset']?.dispatch('click');
+  assert.equal(harness.toast(), 'Progreso reiniciado. Un nuevo comienzo.');
+});
+
 const scriptNote = '</textarea><img src=x onerror=alert(1)>';
 
 await test('seguridad: una nota importada con HTML se escapa en #metodo', async () => {
@@ -834,10 +893,9 @@ await test('seguridad: una nota importada con HTML se escapa en #metodo', async 
 });
 
 await test('almacenamiento sin escritura: importar funciona en memoria y avisa que exporte', async () => {
-  // Valores observados con setItem lanzando; caracterizan el comportamiento vigente.
   const harness = buildHarness({ stored: localProgress, writesBlocked: true });
   await importFile(harness, JSON.stringify(validImport));
-  assert.equal(harness.toast(), 'Copia importada y combinada con tu avance actual.');
+  assert.equal(harness.toast(), NOT_SAVED_HEAD + 'recorrido' + NOT_SAVED_TAIL);
   assert.equal(harness.elements['save-label']?.textContent, 'Exportá para conservar tu avance');
   assert.deepEqual(harness.storedState(), localProgress);
   const exported = await exportedProgress(harness);

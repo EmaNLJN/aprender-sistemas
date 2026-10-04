@@ -82,7 +82,7 @@ export function createCampaignEngine(): CampaignEngine {
     return deriveWorlds(ready, state, requireLanguage(language));
   }
 
-  function init(config: CampaignConfig): InitResult {
+  function init(config: CampaignConfig, labState?: CampaignLabState | null): InitResult {
     const validated = validateCampaignConfig(config);
     catalog = validated;
     store = openVersionedStore(STORAGE_KEY, {
@@ -98,6 +98,9 @@ export function createCampaignEngine(): CampaignEngine {
     const loaded = store.load();
     state = loaded.state;
     storageAvailable = loaded.writable;
+    // Los sellos que la clave guardada no tiene pero el laboratorio sí se derivan en memoria
+    // (sin escribir) antes de fijar la línea base: así el primer `syncLab` sólo informa el XP nuevo.
+    if (labState) applyLabEvidence(state, validated, labState);
     lastReportedXP = totalXP(validated, state);
     return {
       ready: true,

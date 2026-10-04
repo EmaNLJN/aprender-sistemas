@@ -318,7 +318,8 @@ test('sin storage explícito lee globalThis.localStorage; si el acceso lanza, un
     assert.equal(blocked.status, 'unavailable');
     assert.equal(blocked.writable, false);
     assert.deepEqual(blockedStore.write(blank()), { saved: false, state: blank() });
-    assert.equal(blockedStore.remove(), false);
+    // Sin almacenamiento no hay nada que borrar.
+    assert.equal(blockedStore.remove(), true);
   } finally {
     delete holder.localStorage;
   }
@@ -394,6 +395,52 @@ test('texto ilegible de otra pestaña: write asegura una copia y escribe el esta
   assert.deepEqual(result.state.items, ['local']);
   assert.equal(storage.data.get(BACKUP), '{roto');
   assert.equal(storage.data.get(KEY), text(['local']));
+});
+
+test('texto legible con pérdida de otra pestaña: asegura copia y conserva lo reconocido', () => {
+  const storage = fakeStorage({ [KEY]: text(['a']) });
+  const store = openVersionedStore(KEY, options(storage));
+  store.load();
+  const lossy = text(['reconocido', 42]);
+  storage.data.set(KEY, lossy);
+  const result = store.write({ version: 1, items: ['local'] });
+  assert.equal(result.saved, true);
+  assert.deepEqual(result.state.items, ['reconocido', 'local']);
+  assert.equal(storage.data.get(BACKUP), lossy);
+  assert.equal(storage.data.get(KEY), text(['reconocido', 'local']));
+});
+
+test('texto legible con pérdida sin lugar para la copia: no escribe', () => {
+  const storage = fakeStorage({ [KEY]: text(['a']) });
+  const store = openVersionedStore(KEY, options(storage));
+  store.load();
+  storage.data.set(KEY, text(['reconocido', 42]));
+  for (const slot of SLOTS) storage.data.set(slot, 'ocupada ' + slot);
+  assert.equal(store.write({ version: 1, items: ['x'] }).saved, false);
+  assert.equal(storage.data.get(KEY), text(['reconocido', 42]));
+});
+
+test('remove sin almacenamiento disponible devuelve true: no hay nada que borrar', () => {
+  const noStorage = (globalThis as { localStorage?: unknown }).localStorage;
+  assert.equal(noStorage, undefined);
+  assert.equal(openVersionedStore(KEY, { blank, parse, merge: union }).remove(), true);
+});
+
+test('si remove no pudo borrar la clave, la escritura siguiente no fusiona el texto viejo', () => {
+  const data = new Map([[KEY, text(['viejo'])]]);
+  const storage: StorageLike = {
+    getItem: (key) => data.get(key) ?? null,
+    setItem: (key, value) => void data.set(key, value),
+    removeItem: (key) => {
+      if (key === KEY) throw new Error('no se puede borrar la clave principal');
+      data.delete(key);
+    },
+  };
+  const store = openVersionedStore(KEY, options(storage));
+  store.load();
+  assert.equal(store.remove(), false);
+  assert.equal(store.write(blank()).saved, true);
+  assert.equal(data.get(KEY), text([]));
 });
 
 test('texto ilegible de otra pestaña sin lugar para la copia: no escribe y bloquea las siguientes', () => {

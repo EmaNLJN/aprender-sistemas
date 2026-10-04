@@ -20,10 +20,14 @@ import { LEVEL_LABELS } from './src/shared/config/levels';
   const itemFor = (id) => exercises().find((item) => item.id === id);
   const $ = (selector) => host?.querySelector(selector);
   function init() {
-    return engine.init({
-      exercises: exercises(),
-      worlds: { rust: window.RUST_CAMPAIGN || [], go: window.GO_CAMPAIGN || [] },
-    });
+    return engine.init(
+      {
+        exercises: exercises(),
+        worlds: { rust: window.RUST_CAMPAIGN || [], go: window.GO_CAMPAIGN || [] },
+      },
+      // lab.js se evalúa antes que campaign.js: su evidencia ya está disponible al iniciar.
+      window.TallerLab?.exportState(),
+    );
   }
   // Lo usan los renders: deriva la evidencia en memoria y nunca escribe.
   function refresh() {

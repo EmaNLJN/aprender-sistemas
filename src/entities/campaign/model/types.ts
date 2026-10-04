@@ -175,7 +175,9 @@ export interface CampaignLabState {
 }
 
 export interface CampaignEngine {
-  init(config: CampaignConfig): InitResult;
+  // Con `labState`, la evidencia del laboratorio se aplica en memoria (sin escribir) antes de
+  // fijar el XP ya informado.
+  init(config: CampaignConfig, labState?: CampaignLabState | null): InitResult;
   // Aplica la evidencia del laboratorio sólo en memoria: nunca escribe. Lo usan los renders.
   refreshFromLab(labState?: CampaignLabState | null): RefreshResult;
   // Aplica la evidencia y guarda lo pendiente. Lo usan las acciones del alumno.

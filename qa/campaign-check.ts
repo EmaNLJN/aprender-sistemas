@@ -101,7 +101,7 @@ interface InitResult {
   loadWarning?: string;
 }
 interface CampaignEngine {
-  init(config: { exercises: ExerciseFixture[]; worlds: Worlds }): InitResult;
+  init(config: { exercises: ExerciseFixture[]; worlds: Worlds }, labState?: unknown): InitResult;
   syncLab(payload: unknown): SyncResult;
   refreshFromLab(payload: unknown): RefreshResult;
   getWorlds(language: string): WorldView[];
@@ -561,6 +561,17 @@ test('refreshFromLab derives evidence in memory without writing; syncLab then wr
   assert.equal(synced.changed, true);
   assert.equal(savedLedger(store).seals['rust-1'].code, true);
   assert.equal(engine.syncLab(lab).xpGained, 0);
+});
+test('init with the lab state derives its evidence in memory, so the first sync reports only new XP', () => {
+  const { engine, store } = fresh();
+  // Sin clave de campaña: los sellos de rust-2 y rust-6 sólo existen en el laboratorio.
+  engine.init({ exercises, worlds }, labWith(['rust-2', 'rust-6']));
+  assert.equal(store.has(storageKey), false);
+  assert.equal(engine.getSummary('rust').totalXP, 40);
+  const synced = sync(engine, ['rust-2', 'rust-6', 'rust-22']);
+  assert.equal(synced.xpGained, 20);
+  assert.equal(engine.getSummary('rust').totalXP, 60);
+  assert.equal(savedLedger(store).seals['rust-2'].code, true);
 });
 test('Two tabs: a stale tab keeps the checkpoint the other one passed when it saves its own evidence', () => {
   const store = new Map<string, string>();

@@ -616,6 +616,25 @@ test('Two tabs: a stale tab keeps the other tab progress and its own consecutive
   assert.equal(JSON.parse(saved.get(LAB_KEY) ?? '{}').selected.rust, 'rust-02');
 });
 
+test('Two tabs: a lossy text from the other tab keeps the known solved exercise and leaves a backup', () => {
+  const saved = new Map<string, string>();
+  const tab = openTab(saved);
+  const proof = fullProof(tab.lab, 'rust-06');
+  // Otra pestaña (versión que conoce `rust-999`) guarda un texto con un ID que ésta no reconoce.
+  const otherTabText = JSON.stringify({
+    version: 1,
+    records: { 'rust-06': proof, 'rust-999': { draft: 'ejercicio desconocido' } },
+    selected: {},
+  });
+  saved.set(LAB_KEY, otherTabText);
+  tab.click('open', { id: 'rust-02' });
+  const records = storedRecords(saved);
+  assert.equal(records['rust-06'].solvedAt, 100);
+  assert.equal(records['rust-06'].result?.success, true);
+  assert.equal('rust-999' in records, false);
+  assert.equal(saved.get(LAB_BACKUP_KEY), otherTabText);
+});
+
 test('Two tabs: the merge happens in place, so a record held across the merging save keeps mutating', () => {
   const saved = new Map<string, string>();
   const tabA = openTab(saved),
