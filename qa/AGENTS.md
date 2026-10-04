@@ -64,6 +64,7 @@ cambies y evitá reformatear las skills importadas o las salidas generadas.
 | Catálogo, sellos o progreso de Sistemas | `node qa/systems-check.ts` |
 | Modelo lowlevel, infra, play o pc | El correspondiente `node qa/systems-<dominio>-check.ts` |
 | Generación de proyectos o ZIP | `node qa/project-kit-check.ts` |
+| API Laravel (`api/`) | `npm run api:test` y `npm run api:format:check`; con el stack levantado, `npm run api:smoke` (no forman parte de `npm test`) |
 | Sólo documentación | Verificar rutas, comandos y enlaces locales; `git diff --check` |
 
 Para una reorganización de archivos o un cambio transversal, regenerá la página

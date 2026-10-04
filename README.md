@@ -6,13 +6,19 @@ Los 50 núcleos de Sistemas forman parte de los 274 ejercicios. Cada lenguaje ti
 
 ## Levantar con Docker
 
-Necesitás Docker con Docker Compose. Desde esta carpeta:
+Necesitás Docker con Docker Compose. La primera vez, desde esta carpeta, creá el archivo `.env` con los secretos de la API y de MySQL:
+
+```sh
+sh api/scripts/init-env.sh
+```
+
+El script agrega `APP_KEY`, `MYSQL_PASSWORD` y `MYSQL_ROOT_PASSWORD` aleatorios sin tocar lo que el archivo ya tenga. `.env` queda fuera de Git y de las imágenes. Después:
 
 ```sh
 docker compose up --build -d --wait
 ```
 
-Abrí **http://localhost:8080/#sistemas**. También podés entrar por `#campana`, `#laboratorio` o `#atlas`. Compose construye la web, el editor, las animaciones y el generador de kits ZIP con Node en una etapa de construcción, y los sirve con Nginx dentro del contenedor. En la PC anfitriona sólo necesitás Docker y Compose: no hace falta instalar Python, Node ni un servidor web. La primera construcción descarga las imágenes y las dependencias. Las siguientes aprovechan la caché.
+Abrí **http://localhost:8080/#sistemas**. También podés entrar por `#campana`, `#laboratorio` o `#atlas`. Compose construye la web, el editor, las animaciones y el generador de kits ZIP con Node en una etapa de construcción, y los sirve con Nginx dentro del contenedor. También levanta la API Laravel (PHP-FPM), MySQL y un servicio que aplica las migraciones y termina. Nginx pasa `/api/` a la API en el mismo origen, y **http://localhost:8080/api/up** responde si arrancó. En la PC anfitriona sólo necesitás Docker y Compose: no hace falta instalar Python, Node, PHP ni un servidor web. La primera construcción descarga las imágenes y las dependencias. Las siguientes aprovechan la caché.
 
 Para detenerlo:
 
@@ -20,7 +26,9 @@ Para detenerlo:
 docker compose down
 ```
 
-Para usar otro puerto, creá un archivo `.env` junto a `compose.yaml` con `TALLER_PORT=8090` y ejecutá el mismo comando. El puerto se publica solo en tu equipo (127.0.0.1). El servicio usa la red bridge existente de Docker y no necesita reservar otra subred. Las imágenes base están fijadas por digest para reproducir esta entrega.
+Todos los comandos de `docker compose` leen `.env`: sin los secretos, hasta `down` se niega a correr. `down` conserva la base, que vive en el volumen `taller-rust-go_mysql-data`; `docker compose down -v` la borra. MySQL toma las contraseñas al crear ese volumen: cambiarlas después en `.env` no cambia las de la base.
+
+Para usar otro puerto, agregá `TALLER_PORT=8090` al `.env` y ejecutá el mismo comando. El puerto se publica solo en tu equipo (127.0.0.1); MySQL (3306) y PHP-FPM (9000) no se publican. Compose crea redes propias: `edge`, la única con salida, para Nginx; `web`, interna, entre Nginx y PHP; `app`, interna, entre PHP y MySQL (Nginx no llega a MySQL), y `testing`, interna, para `npm run api:test`. Las imágenes base están fijadas por digest para reproducir esta entrega.
 
 ## Aprender en el taller
 
@@ -128,7 +136,7 @@ Al pulsar **Ejecutar y revisar**, el navegador envía únicamente el programa de
 
 El taller agrega una función de entrada y evalúa las expresiones booleanas de cada caso. Son comprobaciones reales de comportamiento; no lanza un proyecto completo con `cargo test` o `go test`.
 
-Se necesita conexión para compilar. Los Playgrounds son servicios externos con sus propios límites; pueden cambiar de versión o quedar temporalmente indisponibles. El taller distingue fallos de conexión, errores de compilación y casos fallidos. Nunca aprueba una prueba que no se ejecutó. El Docker sirve la web; no instala compiladores ni ejecuta código del alumno en el host.
+Se necesita conexión para compilar. Los Playgrounds son servicios externos con sus propios límites; pueden cambiar de versión o quedar temporalmente indisponibles. El taller distingue fallos de conexión, errores de compilación y casos fallidos. Nunca aprueba una prueba que no se ejecutó. Docker sirve la web y la API Laravel con MySQL; no instala compiladores ni ejecuta código del alumno en el host.
 
 Las lecturas, preguntas, modelos, notas, edición y generación de kits ZIP funcionan sin conexión una vez cargada la página. También podés abrir `dist/index.html`, que es autónomo; algunos navegadores restringen peticiones desde archivos locales, por lo que Docker es la opción recomendada para ejecutar ejercicios. Ejecutar un kit descargado requiere el compilador local correspondiente; el contenedor web no lo proporciona.
 
@@ -157,7 +165,7 @@ Para cambiar de PC, navegador, puerto o de archivo local a Docker:
 2. Copiá el JSON al otro equipo.
 3. Abrí el taller y usá **Importar progreso** en **Método y notas**.
 
-La importación combina el avance sin perder logros: para un ejercicio presente en la copia, sus datos importados reemplazan los campos existentes, pero las marcas de predicción y de ayuda se combinan, se conserva la fecha de resolución más antigua, un resultado aprobado no se reemplaza por uno sin aprobar y un borrador o una reflexión vacíos no pisan los tuyos. Los sellos y checkpoints de campaña, y los logros de Sistemas, se combinan conservando los obtenidos. Se aceptan copias anteriores sin campaña o Sistemas. Si una copia guardada en el navegador no se puede leer, o trae datos que esta versión no reconoce, el taller conserva el texto original en una ranura de respaldo (`…:respaldo` y hasta cuatro más, `…:respaldo-2` a `…:respaldo-5`, que nunca se pisan) y te avisa al abrir; al cargar o al cambiar de vista nunca reescribe tu progreso. Si no hay lugar para el respaldo, esa sección deja de guardar durante la sesión y el aviso te lo dice. En **Método y notas** podés descargar cada respaldo. Al importar, el aviso nombra las secciones con datos que esta versión no reconoce y que se omitieron. «Borrar todo» elimina también los respaldos y te avisa si no pudo. El contenedor no necesita un volumen: no guarda tus datos. Una limpieza del navegador o el modo privado puede eliminarlos; exportá una copia al terminar una etapa. El ZIP de un proyecto y el JSON de progreso cumplen funciones diferentes: descargá ambos si querés conservar código y recorrido.
+La importación combina el avance sin perder logros: para un ejercicio presente en la copia, sus datos importados reemplazan los campos existentes, pero las marcas de predicción y de ayuda se combinan, se conserva la fecha de resolución más antigua, un resultado aprobado no se reemplaza por uno sin aprobar y un borrador o una reflexión vacíos no pisan los tuyos. Los sellos y checkpoints de campaña, y los logros de Sistemas, se combinan conservando los obtenidos. Se aceptan copias anteriores sin campaña o Sistemas. Si una copia guardada en el navegador no se puede leer, o trae datos que esta versión no reconoce, el taller conserva el texto original en una ranura de respaldo (`…:respaldo` y hasta cuatro más, `…:respaldo-2` a `…:respaldo-5`, que nunca se pisan) y te avisa al abrir; al cargar o al cambiar de vista nunca reescribe tu progreso. Si no hay lugar para el respaldo, esa sección deja de guardar durante la sesión y el aviso te lo dice. En **Método y notas** podés descargar cada respaldo. Al importar, el aviso nombra las secciones con datos que esta versión no reconoce y que se omitieron. «Borrar todo» elimina también los respaldos y te avisa si no pudo. El progreso todavía no se guarda en MySQL: el volumen de la base existe, pero la sincronización llega en una fase posterior del ADR 0004. Una limpieza del navegador o el modo privado puede eliminarlos; exportá una copia al terminar una etapa. El ZIP de un proyecto y el JSON de progreso cumplen funciones diferentes: descargá ambos si querés conservar código y recorrido.
 
 ## Desarrollo
 
@@ -208,6 +216,15 @@ node qa/runtime-check.ts go
 ```
 
 Se agrupan las soluciones para reducir solicitudes y se conservan manifiestos con hashes de los programas verificados. No ejecutes verificaciones masivas repetitivas contra los servicios públicos. Las pruebas del navegador también deben comprobar editor, guardado, importación/exportación, respuesta del revisor, accesibilidad de teclado y diseño móvil.
+
+La API Laravel tiene pruebas propias, fuera de `npm test` porque necesitan Docker:
+
+```sh
+npm run api:test          # Pest contra una MySQL de prueba descartable (tmpfs)
+npm run api:test:down     # apaga esa base de prueba
+npm run api:format:check  # formato PHP con Pint
+npm run api:smoke         # con el stack levantado: Nginx, PHP-FPM, Laravel y MySQL
+```
 
 ## Fuentes y atribución
 
