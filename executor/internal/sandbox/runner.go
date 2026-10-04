@@ -48,7 +48,7 @@ func (r *Runner) Execute(ctx context.Context, language string, program []byte) (
 	defer r.cleanup(func(c context.Context) error { return r.Engine.RemoveVolume(c, volume) })
 
 	compileOut, compileErr := newStreams(profile.OutputLimit)
-	compiled, err := r.phase(ctx, r.spec("taller-c-"+id, profile.Image, profile.Compile, volume, false, labels),
+	compiled, err := r.phase(ctx, r.spec("taller-c-"+id, profile.Image, profile.Compile, volume, labels),
 		program, compileOut, compileErr)
 	if err != nil {
 		return Result{}, err
@@ -64,7 +64,7 @@ func (r *Runner) Execute(ctx context.Context, language string, program []byte) (
 	}
 
 	runOut, runErr := newStreams(profile.OutputLimit)
-	ran, err := r.phase(ctx, r.spec("taller-r-"+id, profile.Image, profile.Run, volume, true, labels),
+	ran, err := r.phase(ctx, r.spec("taller-r-"+id, profile.Image, profile.Run, volume, labels),
 		nil, runOut, runErr)
 	if err != nil {
 		return Result{}, err
@@ -114,11 +114,8 @@ func (r *Runner) phase(ctx context.Context, spec Spec, stdin []byte, stdout, std
 	return phaseOutcome{state: state, elapsed: elapsed}, nil
 }
 
-func (r *Runner) spec(name, image string, phase Phase, volume string, readOnlyVolume bool, labels map[string]string) Spec {
-	return Spec{
-		Name: name, Image: image, Phase: phase, Volume: volume, VolumeRO: readOnlyVolume,
-		Labels: labels, Runtime: r.Runtime,
-	}
+func (r *Runner) spec(name, image string, phase Phase, volume string, labels map[string]string) Spec {
+	return Spec{Name: name, Image: image, Phase: phase, Volume: volume, Labels: labels, Runtime: r.Runtime}
 }
 
 func (r *Runner) inspect(name string) (State, error) {

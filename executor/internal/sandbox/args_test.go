@@ -28,7 +28,7 @@ func specFor(language string, run bool) Spec {
 		phase, name = profile.Run, "taller-r-1"
 	}
 	return Spec{
-		Name: name, Image: profile.Image, Phase: phase, Volume: "taller-out-1", VolumeRO: run,
+		Name: name, Image: profile.Image, Phase: phase, Volume: "taller-out-1",
 		Runtime: "runsc", Labels: map[string]string{RunLabel: "1", CreatedLabel: "100"},
 	}
 }
@@ -87,14 +87,47 @@ func TestProfilesMatchTheADR(t *testing.T) {
 		if profile.Run.Timeout.Seconds() != 10 || profile.OutputLimit != 64<<10 {
 			t.Fatalf("%s: ejecución 10 s y salida de 64 KiB", language)
 		}
+		if !profile.Run.ReadOnly || !profile.Run.OutReadOnly || profile.Compile.OutReadOnly {
+			t.Fatalf("%s: la ejecución corre con rootfs y /out de sólo lectura; la compilación escribe /out", language)
+		}
 	}
 }
 
-func TestLabelsAreSortedSoArgsAreStable(t *testing.T) {
-	first := createArgs(specFor("rust", false))
-	for range 20 {
-		if !slices.Equal(first, createArgs(specFor("rust", false))) {
-			t.Fatal("los argumentos cambian entre llamadas")
+func TestEveryPhaseHasItsLimits(t *testing.T) {
+	cases := []struct {
+		language string
+		run      bool
+		memory   string
+		pids     string
+		cpus     string
+		tmpfs    string
+	}{
+		{"rust", false, "1024m", "256", "2", "/tmp:rw,noexec,nosuid,nodev,size=256m"},
+		{"go", false, "1024m", "256", "2", "/tmp:rw,noexec,nosuid,nodev,size=256m"},
+		{"rust", true, "256m", "64", "1", "/tmp:rw,noexec,nosuid,nodev,size=16m"},
+		{"go", true, "256m", "64", "1", "/tmp:rw,noexec,nosuid,nodev,size=16m"},
+	}
+	for _, c := range cases {
+		args := createArgs(specFor(c.language, c.run))
+		for _, pair := range [][2]string{
+			{"--memory", c.memory}, {"--memory-swap", c.memory}, {"--pids-limit", c.pids},
+			{"--cpus", c.cpus}, {"--tmpfs", c.tmpfs}, {"--ulimit", "nofile=256:256"},
+			{"--log-driver", "none"},
+		} {
+			if !containsPair(args, pair[0], pair[1]) {
+				t.Errorf("%s (ejecución=%v): falta %s %s en %v", c.language, c.run, pair[0], pair[1], args)
+			}
 		}
+	}
+}
+
+func TestSortedKeysOrdersLabels(t *testing.T) {
+	labels := map[string]string{}
+	for _, key := range []string{"j", "c", "a", "h", "e", "b", "i", "d", "g", "f"} {
+		labels[key] = "1"
+	}
+	want := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"}
+	if got := sortedKeys(labels); !slices.Equal(got, want) {
+		t.Fatalf("sortedKeys = %v; quiero %v, para que los argumentos no cambien entre llamadas", got, want)
 	}
 }

@@ -18,13 +18,15 @@ func createArgs(s Spec) []string {
 		"--cap-drop", "ALL",
 		"--security-opt", "no-new-privileges",
 		"--user", "65534:65534",
+		// Sin log del daemon: la salida se lee por attach y sólo se guardan 64 KiB.
+		"--log-driver", "none",
 		"--pids-limit", strconv.Itoa(p.Pids),
 		"--memory", memory,
 		"--memory-swap", memory,
 		"--cpus", p.CPUs,
 		"--ulimit", "nofile=256:256",
-		"--tmpfs", fmt.Sprintf("/tmp:rw,nosuid,nodev,size=%dm", p.TmpfsMiB),
-		"--mount", volumeMount(s.Volume, s.VolumeRO),
+		"--tmpfs", fmt.Sprintf("/tmp:rw,noexec,nosuid,nodev,size=%dm", p.TmpfsMiB),
+		"--mount", volumeMount(s.Volume, p.OutReadOnly),
 	}
 	for _, key := range sortedKeys(s.Labels) {
 		args = append(args, "--label", key+"="+s.Labels[key])

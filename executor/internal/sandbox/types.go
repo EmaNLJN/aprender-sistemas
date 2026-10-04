@@ -11,14 +11,17 @@ const (
 )
 
 // Phase son los límites y el comando de un contenedor. Vienen del ADR 0005, nunca del pedido.
+// ReadOnly monta el rootfs de sólo lectura; OutReadOnly hace lo mismo con /out, para que la
+// ejecución lea el binario sin poder escribir en un volumen sin cuota del host.
 type Phase struct {
-	Timeout   time.Duration
-	MemoryMiB int
-	Pids      int
-	TmpfsMiB  int
-	CPUs      string
-	ReadOnly  bool
-	Cmd       []string
+	Timeout     time.Duration
+	MemoryMiB   int
+	Pids        int
+	TmpfsMiB    int
+	CPUs        string
+	ReadOnly    bool
+	OutReadOnly bool
+	Cmd         []string
 }
 
 type Profile struct {
@@ -29,13 +32,12 @@ type Profile struct {
 }
 
 type Spec struct {
-	Name     string
-	Image    string
-	Phase    Phase
-	Volume   string
-	VolumeRO bool
-	Labels   map[string]string
-	Runtime  string
+	Name    string
+	Image   string
+	Phase   Phase
+	Volume  string
+	Labels  map[string]string
+	Runtime string
 }
 
 type State struct {

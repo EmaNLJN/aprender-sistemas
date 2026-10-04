@@ -9,7 +9,7 @@ const outputLimit = 64 << 10
 func Profiles(rustImage, goImage string) map[string]Profile {
 	run := Phase{
 		Timeout: 10 * time.Second, MemoryMiB: 256, Pids: 64, TmpfsMiB: 16, CPUs: "1",
-		ReadOnly: true, Cmd: []string{"/out/main"},
+		ReadOnly: true, OutReadOnly: true, Cmd: []string{"/out/main"},
 	}
 	return map[string]Profile{
 		"rust": {
