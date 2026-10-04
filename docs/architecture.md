@@ -14,27 +14,27 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | Evidencia de aprobación, interpretación de ejecuciones y fusión de registros | `src/entities/exercise/` |
 | Lectura versionada, respaldo y avisos de carga del progreso | `src/shared/lib/versioned-storage.ts` (ADR 0003) |
 | Navegación, recorrido y progreso general | `app.js`, `styles.css` |
-| Contenido del recorrido y biblioteca | `src/entities/guide/` |
-| Catálogos de contenido (publicados en `window.*`) | adaptador `src/app/legacy/register-catalogs.ts` |
-| Ejercicios del recorrido y tipo `Exercise` | `src/entities/exercise/content/{rust,go}-lab.ts`, `src/entities/exercise/model/types.ts` |
+| Contenido del recorrido y biblioteca | `content/guide/`; tipos y progreso en `src/entities/guide/` |
+| Catálogos de contenido (publicados en `window.*`) | `content/` → `tools/content/` → `build/curriculum.json`; adaptador `src/app/legacy/register-catalogs.ts` |
+| Ejercicios del recorrido y tipo `Exercise` | sección `lab` de `content/{rust,go}/manifest.yaml` y `content/{rust,go}/exercises/<id>/`; `src/entities/exercise/model/types.ts` |
 | Laboratorio, revisión y modelos educativos | `lab.js`, `lab-explorers.js`, `lab.css` |
 | Transporte a los Playgrounds oficiales | `src/shared/api/playground/`, adaptador `src/app/legacy/register-runner.ts` |
 | Editor CodeMirror 6 | `src/shared/ui/code-editor/`, adaptador `src/app/legacy/register-editor.ts` |
-| Atlas migrado a React/TypeScript | `src/pages/atlas/` (`ui`, `model`, `content`, `lib`) y adaptador `src/app/legacy/register-atlas.tsx` |
-| Desafíos nuevos de campaña | `src/entities/exercise/content/{rust,go}-quests.ts` (fábrica `defineQuest`) |
-| Mundos de campaña | `src/entities/campaign/content/{rust,go}-worlds.ts` |
+| Atlas migrado a React/TypeScript | `src/pages/atlas/` (`ui`, `model`, `lib`), conceptos en `content/atlas/` y adaptador `src/app/legacy/register-atlas.tsx` |
+| Desafíos nuevos de campaña | sección `quests` de `content/{rust,go}/manifest.yaml` (la posición en el mundo fija tipo, `kind` y minutos del jefe) |
+| Mundos de campaña | `content/campaign/` |
 | Reglas, validación y progreso de campaña | `src/entities/campaign/`, adaptador `src/app/legacy/register-campaign-engine.ts` |
 | Interfaz y exploradores de campaña | `campaign.js`, `campaign.css`, `quest-explorers.js`, `quest-explorers.css` |
 | Contrato de simulaciones de Sistemas | `src/entities/systems-simulation/` (`defineModel`, tipos de vista y escena) |
 | Modelos de Sistemas | `src/entities/systems-simulation/models/{lowlevel,infra,play,pc}/` (un archivo por modelo, con `defineModel`) |
-| Fichas de los talleres | `src/entities/systems-workshop/content/{lowlevel,infra,play,pc}-workshops.ts` |
-| Núcleos Rust/Go de Sistemas | `src/entities/exercise/content/systems-{lowlevel,infra,play,pc}-cores.ts` |
+| Fichas de los talleres | `content/workshops/` |
+| Núcleos Rust/Go de Sistemas | sección `systems` de `content/{rust,go}/manifest.yaml` y una carpeta por núcleo en `content/{rust,go}/exercises/` |
 | Catálogos de Sistemas publicados en `window.SYSTEMS_*` | adaptadores `src/app/legacy/register-systems-{lowlevel,infra,play,pc}.ts` |
 | Sellos y progreso de Sistemas | `src/entities/systems-workshop/`, adaptador `src/app/legacy/register-systems-engine.ts` |
 | Interfaz de Sistemas | `systems.js`, `systems.css` |
 | Animaciones | `src/shared/lib/celebration.ts`, adaptador `src/app/legacy/register-effects.ts` |
 | Kits ZIP de proyecto | `src/features/download-project-kit/` (archivos puros y ZIP con fflate), `src/shared/lib/download-file.ts`, adaptador `src/app/legacy/register-project-kit.ts` |
-| Construcción y dependencias | configuración Vite, `package.json`, `package-lock.json` |
+| Construcción y dependencias | configuración Vite, `package.json`, `package-lock.json`; generador del currículo en `tools/content/` (`npm run curriculum`, validación, `build/curriculum.json` y oráculos de equivalencia) |
 | Servicio estático y preview | `Dockerfile`, `compose.yaml`, `compose.preview.yaml`, `nginx.conf` |
 | Comprobaciones e investigación educativa | `qa/*-check.ts`, `qa/lib/`, `qa/fixtures/`, `qa/run-checks.ts`, `qa/research-*.md` |
 | Documentación del desarrollo | `AGENTS.md`, `docs/` |
@@ -80,6 +80,11 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 - Conservá IDs de ejercicios, mundos, talleres y objetivos: son referencias del
   currículo y del progreso guardado. Los cambios de formato deben contemplar las
   copias existentes y validar la importación antes de modificar el estado.
+- El contenido se edita en `content/` y nunca en `build/curriculum.json`. El orden de cada
+  catálogo sale de su manifiesto, nunca del número del ID. El orden de claves de los
+  ejercicios lo fija `tools/content/catalogs.ts`, porque el código legacy lo observa. Si un
+  cambio no debe alterar los catálogos, `npm run curriculum && node tools/content/dump-globals.ts .`
+  da los mismos bytes antes y después.
 - El currículo actual tiene 100 ejercicios base, 12 desafíos nuevos de campaña y
   25 núcleos de Sistemas por lenguaje: 274 ejercicios en total. Hay 4 mundos y
   16 conceptos del Atlas por lenguaje, y 25 talleres de Sistemas compartidos.

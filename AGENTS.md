@@ -10,6 +10,9 @@ Atlas es la primera vista migrada; el resto conserva adaptadores legacy temporal
 ## Organización
 
 - Antes de cambiar un flujo educativo, leé `README.md`.
+- Para agregar o editar contenido del currículo (ejercicios, desafíos, núcleos, mundos,
+  talleres, Atlas o guía), leé «Contenido del currículo» en `README.md`: se edita `content/`,
+  nunca `build/`.
 - Al ubicar código, reorganizar módulos, cambiar contratos o migrar una vista,
   leé `docs/architecture.md`: mapa de fuentes y reglas de React/clean code.
 - Para elegir checks, agregar pruebas o trabajar con TDD, leé `qa/AGENTS.md`.
@@ -23,7 +26,9 @@ El resto vive en `src/` por capas FSD (`app`, `pages`, `features`, `entities`,
 `shared`); el mapa está en `docs/architecture.md`. `qa/` reúne verificaciones e investigación; `docs/` contiene reglas
 específicas de desarrollo; `.agents/skills/` contiene las skills del proyecto.
 `src/index.html` y `src/app/main.tsx` son las entradas Vite; `dist/` es la salida
-generada. Los `CLAUDE.md` sólo importan este archivo y los de cada
+generada. `content/` es la fuente del currículo (YAML y código Rust y Go real);
+`tools/content/` la valida y genera `build/curriculum.json`, otra salida ignorada que
+importan los adaptadores. Los `CLAUDE.md` sólo importan este archivo y los de cada
 carpeta para Claude Code; `.claude/` contiene symlinks de skills y subagentes.
 
 ## Comandos
@@ -42,7 +47,9 @@ Para la verificación habitual, `npm run build` regenera todos los assets y
 Prettier a todo el código propio; `.prettierignore` excluye skills importadas,
 salidas generadas, Markdown y el shell `src/index.html`.
 
-Vite empaqueta React, las fuentes legacy y los estilos en `dist/index.html`.
+Vite empaqueta React, las fuentes legacy, los estilos y `build/curriculum.json` en
+`dist/index.html`. Ese JSON sale de `content/` con `npm run curriculum`, que corre antes de
+`npm run typecheck` (y por eso de `build` y `test`) y de `npm run dev`.
 `vite-plugin-singlefile` conserva el contrato de un documento autónomo; los checks
 de `qa/` validan el currículo y los contratos de comportamiento por separado.
 

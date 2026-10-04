@@ -25,7 +25,7 @@ Opus (`revisor`) e integra el agente principal.
 | ID | Subplan | Depende de | Entrega verificable | Plan |
 |---|---|---|---|---|
 | B1 | Ejecutor Go, imágenes de sandbox y prueba de humo de gVisor | — | `POST /v1/run` compila y ejecuta Rust y Go en contenedores endurecidos, con pruebas unitarias e integración | [2026-10-04-ejecutor-go.md](2026-10-04-ejecutor-go.md) |
-| A1 | Contenido en YAML y código real, con oráculo idéntico | — | `content/` reemplaza los catálogos `.ts`; `curriculum.json` generado; bundle y oráculo `dump-globals-v2` idénticos | a escribir |
+| A1 | Contenido en YAML y código real, con oráculo idéntico | — | `content/` reemplaza los catálogos `.ts`; `curriculum.json` generado; oráculo `dump-globals-v2` idéntico y catálogos del bundle idénticos (los bytes del bundle no pueden serlo) | [2026-10-04-contenido-yaml.md](2026-10-04-contenido-yaml.md) |
 | C1 | Base Laravel en Docker | — | Proyecto API-only, servicios `php`, `mysql` y `migrate`, Nginx con `/api/`, healthchecks, Pest contra MySQL de test | a escribir |
 | A2 | Compuerta de arranque y contenido fuera del bundle | A1 | `main.tsx` espera el contenido antes de evaluar las vistas legacy (spike previo); el HTML deja de embeberlo | a escribir |
 | C2 | Contenido en MySQL | A1, C1 | Migraciones, `content:import` idempotente, `GET /api/content` con ETag; la respuesta es idéntica al oráculo | a escribir |

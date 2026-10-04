@@ -13,6 +13,13 @@ directamente; usan `node:assert`, contextos VM y `qa/lib/`, sin framework de pru
 - `qa/run-checks.ts` es la lista única de la suite que ejecuta `npm test`.
 - `qa/lib/legacy-sources.ts` concentra las rutas y el orden de carga de las fuentes
   del navegador; al mover o portar un archivo, cambiá su ruta ahí y no en cada check.
+- Los catálogos se publican desde `build/curriculum.json`, que `tools/content/` genera a partir
+  de `content/`. `npm test` lo regenera por `pretypecheck`; antes de un check suelto, después
+  de editar `content/`, corré `npm run curriculum`.
+- `tools/content/dump-globals.ts` es el oráculo de equivalencia. Vuelca en JSON canónico lo que
+  publican los adaptadores, los modelos de Sistemas y el Atlas. `tools/content/dump-dist-globals.ts`
+  vuelca sólo los catálogos `window.*` de un `dist/index.html` construido. Un refactor puro
+  deja el oráculo idéntico y los catálogos del dist iguales a los suyos.
 
 ## TDD para cambios de comportamiento
 
@@ -52,6 +59,7 @@ cambies y evitá reformatear las skills importadas o las salidas generadas.
 | Empaquetado, assets u orden de carga | `npm run build`; `node qa/build-check.ts`, `node qa/load-order-check.ts` |
 | Arranque, adaptadores `window.Taller*` o navegación por vistas | `node qa/boot-check.ts` |
 | IDs de ejercicios, mundos, talleres o conceptos | `node qa/curriculum-ids-check.ts` |
+| Contenido en `content/` o generador en `tools/content/` | `npm run curriculum`; el `node qa/content-*-check.ts` del módulo tocado; si ningún catálogo debe cambiar, `npm run curriculum && node tools/content/dump-globals.ts .` da los mismos bytes antes y después |
 | Ejercicios o contratos de revisión | `node qa/content-check.ts`, `node qa/runner-check.ts` |
 | Recorrido, biblioteca o respaldo global | `node qa/guide-content-check.ts`, `node qa/app-shell-check.ts` |
 | Lectura, respaldo o avisos de carga del progreso | `node qa/versioned-storage-check.ts` y el check del almacén afectado |
