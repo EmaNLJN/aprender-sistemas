@@ -40,3 +40,6 @@ USER www-data
 # cachés dentro del proyecto.
 FROM base AS dev
 COPY --from=dev-vendor /app /var/www/html
+# Laravel lee .env al arrancar, antes de registrar su manejador de errores. Sin el archivo,
+# phpdotenv avisa y Pest registra el aviso en cada corrida. Va vacío: el entorno llega de Compose.
+RUN touch .env
