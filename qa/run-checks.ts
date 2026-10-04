@@ -8,6 +8,7 @@ const checks = [
   'build-check.ts',
   'load-order-check.ts',
   'content-tools-check.ts',
+  'content-exercises-check.ts',
   'curriculum-ids-check.ts',
   'atlas-check.ts',
   'guide-content-check.ts',
