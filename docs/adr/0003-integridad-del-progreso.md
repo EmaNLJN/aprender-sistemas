@@ -39,7 +39,10 @@ posterior encontró que la capa todavía no era segura para sincronizar:
 - **B1–B4:** casos menores de `solvedAt: 0`, evidencia vacía, importación parcialmente
   aplicada y sincronizaciones encadenadas.
 
-La fase P9 corrigió todo eso. Este texto describe el comportamiento resultante.
+La fase P9 y su cierre, después de una segunda revisión, resolvieron A1, M2, M3, M4, B1,
+B2 y B7, más cuatro hallazgos nuevos (N1–N4). M1, M5, B3, B4 y B6 quedaron parciales y B5
+abierto: lo que falta está en «Pendiente para sincronizar». Este texto describe el
+comportamiento resultante.
 
 ## Decisión
 
@@ -57,23 +60,28 @@ La fase P9 corrigió todo eso. Este texto describe el comportamiento resultante.
      `refreshFromLab`).
    - Se persiste por acciones del alumno: ejecutar, predecir, responder un checkpoint,
      observar, editar notas o etapas, importar y reiniciar.
-   - Si al cargar no se pudo leer el almacenamiento, ese almacén no escribe en toda la
-     sesión, porque no sabe qué pisaría.
+   - Si al cargar no se pudo leer el almacenamiento, ese almacén no escribe en el resto de
+     la sesión, porque no sabe qué pisaría. Sólo «Borrar todo» lo vuelve a habilitar.
 3. **Respaldo antes de perder datos.**
    - Hay cinco ranuras por clave: `<clave>:respaldo` y de `<clave>:respaldo-2` a
      `<clave>:respaldo-5`. Nunca se reemplazan, y el mismo texto reutiliza su ranura.
    - Una carga ilegible, con registros descartados o con cualquier pérdida de
      normalización asegura una copia del texto original.
    - Si no hay copia posible (ranuras llenas o cuota agotada), el almacén queda no
-     escribible por esa sesión y el aviso lo dice. Nunca afirma una copia que no existe.
+     escribible hasta «Borrar todo» y el aviso lo dice. Nunca afirma una copia que no existe.
    - Los avisos de los cuatro almacenes se muestran juntos.
    - Método lista los respaldos y permite descargarlos. «Borrar todo» los elimina e
-     informa si no pudo.
+     informa si no pudo. Sin almacenamiento disponible no hay nada que borrar.
+   - Si «Borrar todo» no pudo borrar una clave, la escritura siguiente la sobrescribe en
+     lugar de fusionarla con lo viejo.
 4. **Carga tolerante, importación estricta.**
    - La carga descarta sólo lo que no reconoce: lo respalda y avisa.
-   - Un registro conocido pero inválido rechaza la importación entera.
+   - En campaña y Sistemas, un registro conocido pero inválido rechaza la importación
+     entera.
+   - El laboratorio, en cambio, normaliza un registro conocido inválido: recorta o descarta
+     los campos que no reconoce y lo informa como omisión.
    - Los IDs o datos desconocidos se omiten, y el aviso de la importación nombra las
-     secciones afectadas.
+     secciones afectadas. Si una sección no se pudo guardar, el aviso también la nombra.
 5. **Fusión monótona al importar.**
    - Sellos, checkpoints aprobados, objetivos, etapas y marcas de ayuda se combinan con
      OR o unión.
@@ -100,8 +108,12 @@ La fase P9 corrigió todo eso. Este texto describe el comportamiento resultante.
    la ejecución y la predicción.
 9. **Varias pestañas.**
    - Una escritura fusiona sólo si otra pestaña cambió la clave desde la última lectura o
-     escritura. Usa la regla de importación: el local gana en los campos editables y los
-     logros de la otra pestaña sobreviven.
+     escritura. Usa la regla de importación: los logros de la otra pestaña sobreviven y el
+     local gana en los campos editables, salvo un texto local en blanco (borrador,
+     reflexión o nota vaciados), que no pisa el de la otra pestaña.
+   - Si el texto de la otra pestaña trae datos que esta versión no reconoce, se asegura una
+     copia, se fusiona lo que esta versión reconoce y se escribe. Si es ilegible, se
+     asegura la copia y se escribe el estado local.
    - En una sola pestaña nunca se fusiona: desmarcar o vaciar se conserva.
    - El laboratorio fusiona en el lugar, porque sus handlers mantienen referencias a
      registros a través de `save()`.
@@ -111,10 +123,20 @@ La fase P9 corrigió todo eso. Este texto describe el comportamiento resultante.
 Estos límites son conocidos y aceptados para el uso local. El formato v2 y el backend los
 resuelven:
 
-- **Sin fecha por campo.** Con dos pestañas, el local gana siempre en los campos
-  editables, y algo desmarcado en la otra pestaña puede volver. Falta «gana la última
-  escritura» con fecha por campo, y lápidas.
-- **Lo desconocido no se conserva en el estado.** Se respalda y se avisa.
+- **Sin fecha por campo.** Con dos pestañas, algo desmarcado vuelve cuando la otra
+  pestaña guarda, y mientras una pestaña vieja siga escribiendo no se puede desmarcar.
+  Vaciar un texto tampoco gana. Falta «gana la última escritura» con fecha por campo, y
+  lápidas.
+- **Textos vaciados al importar (B5).** Un borrador o una reflexión vaciados viajan como
+  ausentes: al importar en otro navegador, el editor vuelve al código inicial.
+- **Lo desconocido no se conserva en el estado.** Al cargar o importar se respalda y se
+  avisa; al escribir con conflicto entre pestañas se respalda sin aviso en ese momento.
+- **Respaldos sin restauración.** Se descargan, pero no se restauran desde la app, y sólo
+  «Borrar todo» libera ranuras.
+- **Aplicación de la importación (B3).** Si un `applyImport` lanzara, las secciones
+  anteriores quedarían aplicadas. Los adaptadores actuales no lanzan en esa fase.
+- **Aviso de carga breve (B6).** Es un toast de 4,5 s; el panel persistente es el de
+  Método.
 - **Evidencia sin campo propio.** Una ejecución con fallo de transporte reemplaza el
   último resultado guardado; los sellos ya ganados se conservan. Falta `proof` separado
   de `result`.
