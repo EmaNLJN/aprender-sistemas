@@ -8,6 +8,9 @@ node_modules
 CLAUDE.local.md
 # Quality tools are installed separately and never shipped with the workshop.
 tools/quality
+# El ejecutor Go tiene su propio Dockerfile (executor/) y el scratch de agentes no es un asset.
+executor
+.superpowers
 .desloppify
 *.map
 dist
