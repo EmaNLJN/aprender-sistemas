@@ -1,6 +1,6 @@
 # ADR 0005 — Ejecución de código en un sandbox propio
 
-- Estado: propuesta
+- Estado: aceptada (aprobada por el usuario el 2026-10-04)
 - Fecha: 2026-10-03
 - Relacionado: ADR 0004 (backend Laravel y MySQL). Reemplaza el uso de los Playgrounds
   públicos.

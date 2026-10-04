@@ -1,6 +1,6 @@
 # ADR 0004 — Backend Laravel y MySQL con contenido y progreso en tablas
 
-- Estado: propuesta
+- Estado: aceptada (aprobada por el usuario el 2026-10-04)
 - Fecha: 2026-10-03
 - Reemplaza en parte: ADR 0001 (HTML autónomo y backend diferido) y la forma de
   persistencia del ADR 0003
