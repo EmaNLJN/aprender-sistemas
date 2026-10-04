@@ -1,67 +1,255 @@
+import { escapeHtml } from './src/shared/lib/escape-html';
 (() => {
   'use strict';
   let model;
-  const esc = value => String(value).replace(/[&<>"']/g, x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
-  function reset(){model={value:10,copy:10,capacity:0,queue:[],sender:false,receiver:false,delivered:0,notice:'Elegí qué participante da el primer paso.',type:'int',constraint:'ordered'};}
+  function reset() {
+    model = {
+      value: 10,
+      copy: 10,
+      capacity: 0,
+      queue: [],
+      sender: false,
+      receiver: false,
+      delivered: 0,
+      notice: 'Elegí qué participante da el primer paso.',
+      type: 'int',
+      constraint: 'ordered',
+    };
+  }
   reset();
-  function kind(item){
-    const topic=(item.topic+' '+item.title+' '+item.visual).toLowerCase();
-    if(/goroutine|concurren|canal|threads|mutex|worker|waitgroup|atomic|sync\./.test(topic))return 'channel';
-    if(/generic|genéric|constraint|dispatch|trait|asociado/.test(topic))return 'generic';
-    if(/puntero|pointer|box|refcell|\brc\b|\bweak\b|\bunsafe\b/.test(topic))return 'pointer';
+  function kind(item) {
+    const topic = (item.topic + ' ' + item.title + ' ' + item.visual).toLowerCase();
+    if (/goroutine|concurren|canal|threads|mutex|worker|waitgroup|atomic|sync\./.test(topic))
+      return 'channel';
+    if (/generic|genéric|constraint|dispatch|trait|asociado/.test(topic)) return 'generic';
+    if (/puntero|pointer|box|refcell|\brc\b|\bweak\b|\bunsafe\b/.test(topic)) return 'pointer';
     return '';
   }
-  function button(op,label,extra=''){return `<button data-lab-action="explore" data-operation="${op}" ${extra}>${label}</button>`;}
-  function render(item){const mode=kind(item);if(!mode)return '';return `<section id="lab-special-explorer" class="lab-explorer special-explorer">${body(item,mode)}</section>`;}
-  function body(item,mode){
-    const rust=item.language==='rust';
-    if(mode==='pointer')return `<span class="small-label">MINILAB · ALIAS O COPIA</span><h3>Dos nombres. ¿Un mismo lugar?</h3><p>Modelo de un entero: copiá el valor o accedé al original a través de ${rust?'una referencia mutable':'un puntero'}. Cada botón incrementa en uno.</p><div class="pointer-board"><div class="pointer-box"><span>original</span><strong>${model.value}</strong><small>celda A</small></div><div class="pointer-route"><code>${rust?'&mut original':'&original'}</code><span>→ celda A</span></div><div class="pointer-box independent"><span>copia</span><strong>${model.copy}</strong><small>celda B</small></div></div><div class="explorer-actions">${button('pointer-copy','Modificar copia +1')}${button('pointer-ref',rust?'Modificar por &mut +1':'Modificar por *p +1')}${button('reset','Reiniciar ↺')}</div><div class="explorer-explanation" role="status">${esc(model.notice==='Elegí qué participante da el primer paso.'?'Una copia de este entero es independiente. Un acceso indirecto permite modificar el mismo dato original.':model.notice)}</div><p class="model-caveat">${rust?'Este dibujo usa i32, que es Copy, y préstamos sucesivos. Un raw pointer no obtiene estas garantías: dereferenciarlo exige un bloque unsafe y demostrar validez, alineación y reglas de aliasing. Box posee; Rc comparte propiedad; RefCell comprueba préstamos en ejecución.':'Go pasa argumentos por valor, incluso los punteros: se copia la dirección, no el objeto apuntado. El recolector evita liberar objetos todavía alcanzables; no evita carreras entre goroutines.'} Es un modelo conceptual, no una inspección de memoria real.</p>`;
-    if(mode==='channel')return `<span class="small-label">MINILAB · COORDINÁ DOS PARTICIPANTES</span><h3>¿Quién está esperando a quién?</h3><p>Probá enviar antes de recibir y después invertí el orden. Modelamos ${rust?'sync_channel':'un channel de Go'} con capacidad 0 o 2; no modelamos el planificador completo.</p><div class="explorer-actions" role="group" aria-label="Capacidad del canal">${button('capacity-0','Sin buffer',`aria-pressed="${model.capacity===0}"`)}${button('capacity-2','Buffer de 2',`aria-pressed="${model.capacity===2}"`)}</div><div class="channel-board"><div class="actor ${model.sender?'blocked':''}"><strong>Productor</strong><span>${model.sender?'esperando envío':'listo para enviar'}</span></div><div class="channel-pipe"><span aria-hidden="true">→</span><div>${model.capacity?Array.from({length:model.capacity},(_,i)=>`<i class="channel-slot ${i<model.queue.length?'filled':''}">${i<model.queue.length?'●':'·'}</i>`).join(''):'<span class="rendezvous">encuentro</span>'}</div><span aria-hidden="true">→</span></div><div class="actor ${model.receiver?'blocked':''}"><strong>Consumidor</strong><span>${model.receiver?'esperando recepción':'listo para recibir'}</span></div></div><div class="explorer-actions">${button('send','Paso del productor →',model.sender?'disabled':'')}${button('receive','Paso del consumidor →',model.receiver?'disabled':'')}${button('reset','Reiniciar ↺')}</div><div class="explorer-explanation" role="status">${esc(model.notice)}<br><strong>${model.delivered} mensajes entregados.</strong></div><p class="model-caveat">Un buffer permite desacoplar algunos envíos, pero también puede llenarse. Concurrencia no implica paralelismo. Este modelo explica espera y coordinación; un test que pasa no demuestra ausencia de carreras o deadlocks.</p>`;
-    const options=[['int','Entero'],['string','Texto'],['record',rust?'Struct sin derives':'Struct { ID int }']];
-    const valid=model.constraint==='ordered'?model.type!=='record':model.constraint==='comparable'?(!rust||model.type!=='record'):model.type!=='record';
-    const constraintName=model.constraint==='ordered'?(rust?'Ord':'~int | ~string'):model.constraint==='comparable'?(rust?'Eq':'comparable'):(rust?'Display':'~int | ~string');
-    return `<span class="small-label">MINILAB · EL CONTRATO DEL TIPO</span><h3>¿Este tipo puede entrar?</h3><p>Una función genérica promete usar ciertas operaciones. Elegí una necesidad y un tipo: la restricción se verifica antes de ejecutar.</p><div class="generic-controls"><label>La función necesita<select data-explorer="constraint"><option value="ordered" ${model.constraint==='ordered'?'selected':''}>Comparar orden</option><option value="comparable" ${model.constraint==='comparable'?'selected':''}>Comparar igualdad</option>${rust?`<option value="display" ${model.constraint==='display'?'selected':''}>Mostrar con Display</option>`:''}</select></label><label>Le pasás<select data-explorer="type">${options.map(([id,label])=>`<option value="${id}" ${model.type===id?'selected':''}>${label}</option>`).join('')}</select></label></div><div class="generic-gate ${valid?'accepted':'rejected'}"><code>${esc(constraintName)}</code><span aria-hidden="true">→</span><strong>${valid?'El contrato se cumple ✓':'Falta cumplir el contrato ×'}</strong></div><div class="explorer-explanation" role="status">${valid?'Este tipo admite las operaciones que esta restricción permite. La función puede usarlas sin conocer un valor específico.':rust?'Un struct no implementa automáticamente Ord, Eq o Display. Necesitás implementar el trait o derivarlo si ese trait lo admite y sus campos cumplen las restricciones.':'Un struct con un campo int es comparable, pero no pertenece al conjunto ~int | ~string. La igualdad no implica que exista un orden con <.'}</div><p class="model-caveat">${rust?'Este ejemplo usa enteros y String; no generaliza Ord a todos los números: f64 no implementa Ord. Los traits expresan comportamientos y sus leyes también importan.':'El ~ incluye tipos cuyo tipo subyacente coincide. Slices y maps no cumplen comparable. Un conjunto de tipos restringe qué argumentos acepta la función; no convierte sus valores.'} Cambiá después el código real para observar el diagnóstico del compilador.</p>`;
+  function button(op, label, extra = '') {
+    return `<button data-lab-action="explore" data-operation="${op}" ${extra}>${label}</button>`;
   }
-  function act(button,item,host){
-    const op=button.dataset.operation;
-    if(op==='reset')reset();
-    if(op==='pointer-copy'){model.copy++;model.notice='Cambió la celda B. El original conserva su valor porque copiar un entero crea otro valor independiente.';}
-    if(op==='pointer-ref'){model.value++;model.notice='Cambió la celda A: la referencia o el puntero lleva al original. La copia de la celda B sigue igual.';}
-    if(op.startsWith('capacity-')){reset();model.capacity=Number(op.slice(-1));model.notice=model.capacity?'Hay dos lugares para mensajes pendientes. Probá tres envíos seguidos.':'Sin buffer, el envío y la recepción necesitan encontrarse. Probá iniciar uno antes que el otro.';}
-    if(op==='send'){
-      if(model.receiver){model.receiver=false;model.delivered++;model.notice='El consumidor ya esperaba. El mensaje se entregó y ambos pueden continuar.';}
-      else if(model.queue.length<model.capacity){model.queue.push(1);model.notice='El mensaje quedó en el buffer. El productor puede continuar antes de que el consumidor lo lea.';}
-      else{model.sender=true;model.notice=model.capacity?'El buffer está lleno. Este envío espera a que una recepción libere espacio.':'El productor espera: sin buffer no puede completar el envío hasta que aparezca una recepción.';}
-    }
-    if(op==='receive'){
-      if(model.queue.length){model.queue.shift();model.delivered++;if(model.sender){model.queue.push(1);model.sender=false;model.notice='La recepción liberó un lugar y permitió completar el envío que esperaba.';}else model.notice='El consumidor retiró un mensaje del buffer.';}
-      else if(model.sender){model.sender=false;model.delivered++;model.notice='La recepción se encontró con el envío pendiente. Los dos participantes pueden continuar.';}
-      else{model.receiver=true;model.notice='No hay mensajes: el consumidor espera un envío. Otra tarea tiene que producirlo.';}
-    }
-    host.querySelector('#lab-special-explorer').innerHTML=body(item,kind(item));
-    const same=host.querySelector(`[data-operation="${op}"]`);
-    const next=same&&!same.disabled?same:host.querySelector(`[data-operation="${op==='send'?'receive':'send'}"]`);
-    next?.focus({preventScroll:true});
+  function render(item) {
+    const mode = kind(item);
+    if (!mode) return '';
+    return `<section id="lab-special-explorer" class="lab-explorer special-explorer">${body(item, mode)}</section>`;
   }
-  function change(target,item,host){if(!target.dataset.explorer)return;model[target.dataset.explorer]=target.value;host.querySelector('#lab-special-explorer').innerHTML=body(item,kind(item));host.querySelector(`[data-explorer="${target.dataset.explorer}"]`)?.focus();}
-  const missions={
-    rust:[
-      ['Inicial','Tu primera crate','Cargo, módulos, dependencias y documentación','Creá una CLI que convierta unidades y separá cálculo de entrada/salida. Una crate es una unidad de compilación; un módulo organiza nombres y privacidad.','Probá inputs válidos e inválidos. Revisá qué exporta tu biblioteca y qué queda privado. Conservá Cargo.lock para reproducir la aplicación.','https://doc.rust-lang.org/cargo/guide/','Cargo Guide'],
-      ['Intermedio','Una red de seguridad','Unit tests, integración, doctests y manejo de errores','Extraé el parser del laboratorio a una biblioteca. Agregá tests públicos y ejemplos en la documentación: cada prueba comprueba un contrato distinto.','Incluí un caso vacío, Unicode y entrada malformada; verificá que un cambio incorrecto haga fallar una prueba.','https://doc.rust-lang.org/book/ch11-00-testing.html','The Book · Testing'],
-      ['Avanzado','Archivos que sobreviven','I/O, serialización, CLI y recuperación de errores','Guardá el KV en disco, recargalo y definí qué pasa si el archivo está incompleto. Los errores de I/O deben conservar contexto útil.','Simulá permisos insuficientes o contenido truncado. Documentá qué durabilidad prometés. Para formatos JSON, investigá Serde y sus derives.','https://doc.rust-lang.org/book/ch12-00-an-io-project.html','The Book · I/O project'],
-      ['Avanzado','Servicio que sabe detenerse','async/await, ejecutores, cancelación y backpressure','Convertí el KV en un servicio. Un Future describe trabajo que progresa al ser sondeado; un runtime coordina la ejecución y el I/O.','Elegí un runtime y justificá límites de concurrencia. Cancelá una operación, apagá el servicio y comprobá que no perdés tareas críticas.','https://rust-lang.github.io/async-book/','Async Book'],
-      ['Experto','Medí antes de optimizar','Cargo profiles, benchmarks, asignaciones y profiling','Compará dos representaciones del KV con datos realistas y builds optimizados. Una medición aislada puede reflejar ruido, calentamiento o trabajo eliminado.','Registrá tamaños, distribución de entradas y entorno. Repetí mediciones y verificá que ambas implementaciones hacen el mismo trabajo.','https://doc.rust-lang.org/cargo/reference/profiles.html','Cargo · Profiles'],
-      ['Experto','La frontera de confianza','unsafe, FFI, invariantes y Miri','Diseñá un wrapper seguro alrededor de una operación de bajo nivel. Explicá qué condiciones hacen válido cada acceso antes de escribir unsafe.','Auditá alineación, inicialización, aliasing, lifetimes y liberación. Usá Miri en los casos compatibles; pasar pruebas no demuestra soundness.','https://doc.rust-lang.org/nomicon/','The Rustonomicon']
+  function body(item, mode) {
+    const rust = item.language === 'rust';
+    if (mode === 'pointer')
+      return `<span class="small-label">MINILAB · ALIAS O COPIA</span><h3>Dos nombres. ¿Un mismo lugar?</h3><p>Modelo de un entero: copiá el valor o accedé al original a través de ${rust ? 'una referencia mutable' : 'un puntero'}. Cada botón incrementa en uno.</p><div class="pointer-board"><div class="pointer-box"><span>original</span><strong>${model.value}</strong><small>celda A</small></div><div class="pointer-route"><code>${rust ? '&mut original' : '&original'}</code><span>→ celda A</span></div><div class="pointer-box independent"><span>copia</span><strong>${model.copy}</strong><small>celda B</small></div></div><div class="explorer-actions">${button('pointer-copy', 'Modificar copia +1')}${button('pointer-ref', rust ? 'Modificar por &mut +1' : 'Modificar por *p +1')}${button('reset', 'Reiniciar ↺')}</div><div class="explorer-explanation" role="status">${escapeHtml(model.notice === 'Elegí qué participante da el primer paso.' ? 'Una copia de este entero es independiente. Un acceso indirecto permite modificar el mismo dato original.' : model.notice)}</div><p class="model-caveat">${rust ? 'Este dibujo usa i32, que es Copy, y préstamos sucesivos. Un raw pointer no obtiene estas garantías: dereferenciarlo exige un bloque unsafe y demostrar validez, alineación y reglas de aliasing. Box posee; Rc comparte propiedad; RefCell comprueba préstamos en ejecución.' : 'Go pasa argumentos por valor, incluso los punteros: se copia la dirección, no el objeto apuntado. El recolector evita liberar objetos todavía alcanzables; no evita carreras entre goroutines.'} Es un modelo conceptual, no una inspección de memoria real.</p>`;
+    if (mode === 'channel')
+      return `<span class="small-label">MINILAB · COORDINÁ DOS PARTICIPANTES</span><h3>¿Quién está esperando a quién?</h3><p>Probá enviar antes de recibir y después invertí el orden. Modelamos ${rust ? 'sync_channel' : 'un channel de Go'} con capacidad 0 o 2; no modelamos el planificador completo.</p><div class="explorer-actions" role="group" aria-label="Capacidad del canal">${button('capacity-0', 'Sin buffer', `aria-pressed="${model.capacity === 0}"`)}${button('capacity-2', 'Buffer de 2', `aria-pressed="${model.capacity === 2}"`)}</div><div class="channel-board"><div class="actor ${model.sender ? 'blocked' : ''}"><strong>Productor</strong><span>${model.sender ? 'esperando envío' : 'listo para enviar'}</span></div><div class="channel-pipe"><span aria-hidden="true">→</span><div>${model.capacity ? Array.from({ length: model.capacity }, (_, i) => `<i class="channel-slot ${i < model.queue.length ? 'filled' : ''}">${i < model.queue.length ? '●' : '·'}</i>`).join('') : '<span class="rendezvous">encuentro</span>'}</div><span aria-hidden="true">→</span></div><div class="actor ${model.receiver ? 'blocked' : ''}"><strong>Consumidor</strong><span>${model.receiver ? 'esperando recepción' : 'listo para recibir'}</span></div></div><div class="explorer-actions">${button('send', 'Paso del productor →', model.sender ? 'disabled' : '')}${button('receive', 'Paso del consumidor →', model.receiver ? 'disabled' : '')}${button('reset', 'Reiniciar ↺')}</div><div class="explorer-explanation" role="status">${escapeHtml(model.notice)}<br><strong>${model.delivered} mensajes entregados.</strong></div><p class="model-caveat">Un buffer permite desacoplar algunos envíos, pero también puede llenarse. Concurrencia no implica paralelismo. Este modelo explica espera y coordinación; un test que pasa no demuestra ausencia de carreras o deadlocks.</p>`;
+    const options = [
+      ['int', 'Entero'],
+      ['string', 'Texto'],
+      ['record', rust ? 'Struct sin derives' : 'Struct { ID int }'],
+    ];
+    const valid =
+      model.constraint === 'ordered'
+        ? model.type !== 'record'
+        : model.constraint === 'comparable'
+          ? !rust || model.type !== 'record'
+          : model.type !== 'record';
+    const constraintName =
+      model.constraint === 'ordered'
+        ? rust
+          ? 'Ord'
+          : '~int | ~string'
+        : model.constraint === 'comparable'
+          ? rust
+            ? 'Eq'
+            : 'comparable'
+          : rust
+            ? 'Display'
+            : '~int | ~string';
+    return `<span class="small-label">MINILAB · EL CONTRATO DEL TIPO</span><h3>¿Este tipo puede entrar?</h3><p>Una función genérica promete usar ciertas operaciones. Elegí una necesidad y un tipo: la restricción se verifica antes de ejecutar.</p><div class="generic-controls"><label>La función necesita<select data-explorer="constraint"><option value="ordered" ${model.constraint === 'ordered' ? 'selected' : ''}>Comparar orden</option><option value="comparable" ${model.constraint === 'comparable' ? 'selected' : ''}>Comparar igualdad</option>${rust ? `<option value="display" ${model.constraint === 'display' ? 'selected' : ''}>Mostrar con Display</option>` : ''}</select></label><label>Le pasás<select data-explorer="type">${options.map(([id, label]) => `<option value="${id}" ${model.type === id ? 'selected' : ''}>${label}</option>`).join('')}</select></label></div><div class="generic-gate ${valid ? 'accepted' : 'rejected'}"><code>${escapeHtml(constraintName)}</code><span aria-hidden="true">→</span><strong>${valid ? 'El contrato se cumple ✓' : 'Falta cumplir el contrato ×'}</strong></div><div class="explorer-explanation" role="status">${valid ? 'Este tipo admite las operaciones que esta restricción permite. La función puede usarlas sin conocer un valor específico.' : rust ? 'Un struct no implementa automáticamente Ord, Eq o Display. Necesitás implementar el trait o derivarlo si ese trait lo admite y sus campos cumplen las restricciones.' : 'Un struct con un campo int es comparable, pero no pertenece al conjunto ~int | ~string. La igualdad no implica que exista un orden con <.'}</div><p class="model-caveat">${rust ? 'Este ejemplo usa enteros y String; no generaliza Ord a todos los números: f64 no implementa Ord. Los traits expresan comportamientos y sus leyes también importan.' : 'El ~ incluye tipos cuyo tipo subyacente coincide. Slices y maps no cumplen comparable. Un conjunto de tipos restringe qué argumentos acepta la función; no convierte sus valores.'} Cambiá después el código real para observar el diagnóstico del compilador.</p>`;
+  }
+  function act(button, item, host) {
+    const op = button.dataset.operation;
+    if (op === 'reset') reset();
+    if (op === 'pointer-copy') {
+      model.copy++;
+      model.notice =
+        'Cambió la celda B. El original conserva su valor porque copiar un entero crea otro valor independiente.';
+    }
+    if (op === 'pointer-ref') {
+      model.value++;
+      model.notice =
+        'Cambió la celda A: la referencia o el puntero lleva al original. La copia de la celda B sigue igual.';
+    }
+    if (op.startsWith('capacity-')) {
+      reset();
+      model.capacity = Number(op.slice(-1));
+      model.notice = model.capacity
+        ? 'Hay dos lugares para mensajes pendientes. Probá tres envíos seguidos.'
+        : 'Sin buffer, el envío y la recepción necesitan encontrarse. Probá iniciar uno antes que el otro.';
+    }
+    if (op === 'send') {
+      if (model.receiver) {
+        model.receiver = false;
+        model.delivered++;
+        model.notice = 'El consumidor ya esperaba. El mensaje se entregó y ambos pueden continuar.';
+      } else if (model.queue.length < model.capacity) {
+        model.queue.push(1);
+        model.notice =
+          'El mensaje quedó en el buffer. El productor puede continuar antes de que el consumidor lo lea.';
+      } else {
+        model.sender = true;
+        model.notice = model.capacity
+          ? 'El buffer está lleno. Este envío espera a que una recepción libere espacio.'
+          : 'El productor espera: sin buffer no puede completar el envío hasta que aparezca una recepción.';
+      }
+    }
+    if (op === 'receive') {
+      if (model.queue.length) {
+        model.queue.shift();
+        model.delivered++;
+        if (model.sender) {
+          model.queue.push(1);
+          model.sender = false;
+          model.notice = 'La recepción liberó un lugar y permitió completar el envío que esperaba.';
+        } else model.notice = 'El consumidor retiró un mensaje del buffer.';
+      } else if (model.sender) {
+        model.sender = false;
+        model.delivered++;
+        model.notice =
+          'La recepción se encontró con el envío pendiente. Los dos participantes pueden continuar.';
+      } else {
+        model.receiver = true;
+        model.notice =
+          'No hay mensajes: el consumidor espera un envío. Otra tarea tiene que producirlo.';
+      }
+    }
+    host.querySelector('#lab-special-explorer').innerHTML = body(item, kind(item));
+    const same = host.querySelector(`[data-operation="${op}"]`);
+    const next =
+      same && !same.disabled
+        ? same
+        : host.querySelector(`[data-operation="${op === 'send' ? 'receive' : 'send'}"]`);
+    next?.focus({ preventScroll: true });
+  }
+  function change(target, item, host) {
+    if (!target.dataset.explorer) return;
+    model[target.dataset.explorer] = target.value;
+    host.querySelector('#lab-special-explorer').innerHTML = body(item, kind(item));
+    host.querySelector(`[data-explorer="${target.dataset.explorer}"]`)?.focus();
+  }
+  const missions = {
+    rust: [
+      [
+        'Inicial',
+        'Tu primera crate',
+        'Cargo, módulos, dependencias y documentación',
+        'Creá una CLI que convierta unidades y separá cálculo de entrada/salida. Una crate es una unidad de compilación; un módulo organiza nombres y privacidad.',
+        'Probá inputs válidos e inválidos. Revisá qué exporta tu biblioteca y qué queda privado. Conservá Cargo.lock para reproducir la aplicación.',
+        'https://doc.rust-lang.org/cargo/guide/',
+        'Cargo Guide',
+      ],
+      [
+        'Intermedio',
+        'Una red de seguridad',
+        'Unit tests, integración, doctests y manejo de errores',
+        'Extraé el parser del laboratorio a una biblioteca. Agregá tests públicos y ejemplos en la documentación: cada prueba comprueba un contrato distinto.',
+        'Incluí un caso vacío, Unicode y entrada malformada; verificá que un cambio incorrecto haga fallar una prueba.',
+        'https://doc.rust-lang.org/book/ch11-00-testing.html',
+        'The Book · Testing',
+      ],
+      [
+        'Avanzado',
+        'Archivos que sobreviven',
+        'I/O, serialización, CLI y recuperación de errores',
+        'Guardá el KV en disco, recargalo y definí qué pasa si el archivo está incompleto. Los errores de I/O deben conservar contexto útil.',
+        'Simulá permisos insuficientes o contenido truncado. Documentá qué durabilidad prometés. Para formatos JSON, investigá Serde y sus derives.',
+        'https://doc.rust-lang.org/book/ch12-00-an-io-project.html',
+        'The Book · I/O project',
+      ],
+      [
+        'Avanzado',
+        'Servicio que sabe detenerse',
+        'async/await, ejecutores, cancelación y backpressure',
+        'Convertí el KV en un servicio. Un Future describe trabajo que progresa al ser sondeado; un runtime coordina la ejecución y el I/O.',
+        'Elegí un runtime y justificá límites de concurrencia. Cancelá una operación, apagá el servicio y comprobá que no perdés tareas críticas.',
+        'https://rust-lang.github.io/async-book/',
+        'Async Book',
+      ],
+      [
+        'Experto',
+        'Medí antes de optimizar',
+        'Cargo profiles, benchmarks, asignaciones y profiling',
+        'Compará dos representaciones del KV con datos realistas y builds optimizados. Una medición aislada puede reflejar ruido, calentamiento o trabajo eliminado.',
+        'Registrá tamaños, distribución de entradas y entorno. Repetí mediciones y verificá que ambas implementaciones hacen el mismo trabajo.',
+        'https://doc.rust-lang.org/cargo/reference/profiles.html',
+        'Cargo · Profiles',
+      ],
+      [
+        'Experto',
+        'La frontera de confianza',
+        'unsafe, FFI, invariantes y Miri',
+        'Diseñá un wrapper seguro alrededor de una operación de bajo nivel. Explicá qué condiciones hacen válido cada acceso antes de escribir unsafe.',
+        'Auditá alineación, inicialización, aliasing, lifetimes y liberación. Usá Miri en los casos compatibles; pasar pruebas no demuestra soundness.',
+        'https://doc.rust-lang.org/nomicon/',
+        'The Rustonomicon',
+      ],
     ],
-    go:[
-      ['Inicial','Un módulo que podés compartir','go.mod, paquetes, visibilidad y documentación','Convertí tres funciones del laboratorio en una biblioteca y consumila desde una CLI. Elegí una API pequeña y nombres exportados con intención.','Separá lógica de entrada/salida, documentá contratos y agregá una prueba por comportamiento público.','https://go.dev/doc/tutorial/create-module','Go · Create a module'],
-      ['Intermedio','Pruebas que buscan sorpresas','testing, tablas, subtests, ejemplos y fuzzing','Probá el parser con tablas y definí una propiedad para un fuzz test: por ejemplo que serializar y parsear preserve un valor válido.','Incluí entradas vacías y malformadas; guardá un caso encontrado por el fuzzer como regresión.','https://go.dev/doc/tutorial/fuzz','Go · Fuzzing'],
-      ['Avanzado','HTTP con límites','net/http, context, JSON, timeouts y pruebas de handlers','Construí una API para el KV. Acotá cuerpos, validá inputs y propagá cancelación a operaciones que puedan bloquear.','Probá códigos de estado con httptest. Cancelá una solicitud y comprobá qué recursos deben liberarse.','https://pkg.go.dev/net/http','Go · net/http'],
-      ['Avanzado','Trabajadores que terminan','Goroutines, select, canales, Mutex y cierre ordenado','Construí un pool con un número fijo de trabajadores y una cola acotada. Especificá quién cierra cada canal y quién espera a cada tarea.','Ejecutá la suite con detección de carreras. Forzá cancelación con la cola llena y verificá que todos los trabajadores salgan.','https://go.dev/doc/articles/race_detector','Go · Race detector'],
-      ['Experto','Rendimiento con evidencia','Benchmarks, perfiles de CPU/memoria, GC y escapes','Medí el KV y observá asignaciones. Un puntero no garantiza heap; el análisis de escapes y la vida del dato influyen.','Compará trabajo equivalente y tamaños diferentes. Identificá un costo con un perfil y recién después medí una optimización.','https://go.dev/doc/diagnostics','Go · Diagnostics'],
-      ['Experto','Persistencia y límites del proceso','database/sql, transacciones, recursos y recuperación','Agregá almacenamiento persistente y definí una operación atómica. Cancelación, cierre de recursos y límites del pool forman parte del diseño.','Probá rollback y errores a mitad de operación. Documentá qué fallos podés recuperar y cuándo devolver el error al llamador.','https://go.dev/doc/database/execute-transactions','Go · Transactions']
-    ]
+    go: [
+      [
+        'Inicial',
+        'Un módulo que podés compartir',
+        'go.mod, paquetes, visibilidad y documentación',
+        'Convertí tres funciones del laboratorio en una biblioteca y consumila desde una CLI. Elegí una API pequeña y nombres exportados con intención.',
+        'Separá lógica de entrada/salida, documentá contratos y agregá una prueba por comportamiento público.',
+        'https://go.dev/doc/tutorial/create-module',
+        'Go · Create a module',
+      ],
+      [
+        'Intermedio',
+        'Pruebas que buscan sorpresas',
+        'testing, tablas, subtests, ejemplos y fuzzing',
+        'Probá el parser con tablas y definí una propiedad para un fuzz test: por ejemplo que serializar y parsear preserve un valor válido.',
+        'Incluí entradas vacías y malformadas; guardá un caso encontrado por el fuzzer como regresión.',
+        'https://go.dev/doc/tutorial/fuzz',
+        'Go · Fuzzing',
+      ],
+      [
+        'Avanzado',
+        'HTTP con límites',
+        'net/http, context, JSON, timeouts y pruebas de handlers',
+        'Construí una API para el KV. Acotá cuerpos, validá inputs y propagá cancelación a operaciones que puedan bloquear.',
+        'Probá códigos de estado con httptest. Cancelá una solicitud y comprobá qué recursos deben liberarse.',
+        'https://pkg.go.dev/net/http',
+        'Go · net/http',
+      ],
+      [
+        'Avanzado',
+        'Trabajadores que terminan',
+        'Goroutines, select, canales, Mutex y cierre ordenado',
+        'Construí un pool con un número fijo de trabajadores y una cola acotada. Especificá quién cierra cada canal y quién espera a cada tarea.',
+        'Ejecutá la suite con detección de carreras. Forzá cancelación con la cola llena y verificá que todos los trabajadores salgan.',
+        'https://go.dev/doc/articles/race_detector',
+        'Go · Race detector',
+      ],
+      [
+        'Experto',
+        'Rendimiento con evidencia',
+        'Benchmarks, perfiles de CPU/memoria, GC y escapes',
+        'Medí el KV y observá asignaciones. Un puntero no garantiza heap; el análisis de escapes y la vida del dato influyen.',
+        'Compará trabajo equivalente y tamaños diferentes. Identificá un costo con un perfil y recién después medí una optimización.',
+        'https://go.dev/doc/diagnostics',
+        'Go · Diagnostics',
+      ],
+      [
+        'Experto',
+        'Persistencia y límites del proceso',
+        'database/sql, transacciones, recursos y recuperación',
+        'Agregá almacenamiento persistente y definí una operación atómica. Cancelación, cierre de recursos y límites del pool forman parte del diseño.',
+        'Probá rollback y errores a mitad de operación. Documentá qué fallos podés recuperar y cuándo devolver el error al llamador.',
+        'https://go.dev/doc/database/execute-transactions',
+        'Go · Transactions',
+      ],
+    ],
   };
-  function curriculumHTML(language){return `<section class="lab-project-path"><div class="eyebrow">DEL EXPERIMENTO AL SISTEMA REAL</div><h2>El mapa sigue fuera del navegador.</h2><p>Los desafíos cubren conceptos del lenguaje con código ejecutable. Herramientas, dependencias, red, archivos y rendimiento necesitan además proyectos en tu entorno. Estas misiones completan ese recorrido; su evaluación es manual.</p><div class="mission-grid">${missions[language].map(([level,title,topics,why,check,url,label])=>`<details class="mission-card"><summary><span class="topic-level">${level}</span><strong>${title}</strong><small>${topics}</small></summary><p>${why}</p><p><strong>Cómo comprobarlo:</strong> ${check}</p><a href="${url}" target="_blank" rel="noopener noreferrer">${label} ↗</a></details>`).join('')}</div><details class="lab-inspiration"><summary>Cómo está diseñado este taller y de dónde salen las ideas</summary><p>Contenido y ejercicios originales, con fuentes oficiales en cada desafío. Tomamos como referencia el ciclo de consigna, código, pruebas y explicación; las soluciones se ejecutan con compiladores reales.</p><div class="concept-sources"><a href="https://contribute.freecodecamp.org/how-to-work-on-coding-challenges/" target="_blank" rel="noopener noreferrer">freeCodeCamp · organización de desafíos ↗</a><a href="https://support.leetcode.com/hc/en-us/articles/32442719377939-How-to-create-test-cases-on-LeetCode" target="_blank" rel="noopener noreferrer">LeetCode · casos propios ↗</a><a href="https://help.codecademy.com/hc/en-us/articles/23400751016859-AI-Features-available-on-Codecademy" target="_blank" rel="noopener noreferrer">Codecademy · acompañamiento y pistas ↗</a><a href="https://www.educative.io/courses/rust-programming-language" target="_blank" rel="noopener noreferrer">Educative · curso interactivo de Rust ↗</a><a href="https://learn.replit.com/docs/ai-foundations/lesson-4" target="_blank" rel="noopener noreferrer">Replit · construir y probar en el navegador ↗</a></div><p>Este revisor usa diagnósticos del compilador, pruebas y explicaciones preparadas. No incluye un servicio de IA conversacional ni evalúa automáticamente tus reflexiones.</p></details></section>`;}
-  window.TallerExplorers={reset,render,act,change,curriculumHTML};
+  function curriculumHTML(language) {
+    return `<section class="lab-project-path"><div class="eyebrow">DEL EXPERIMENTO AL SISTEMA REAL</div><h2>El mapa sigue fuera del navegador.</h2><p>Los desafíos cubren conceptos del lenguaje con código ejecutable. Herramientas, dependencias, red, archivos y rendimiento necesitan además proyectos en tu entorno. Estas misiones completan ese recorrido; su evaluación es manual.</p><div class="mission-grid">${missions[language].map(([level, title, topics, why, check, url, label]) => `<details class="mission-card"><summary><span class="topic-level">${level}</span><strong>${title}</strong><small>${topics}</small></summary><p>${why}</p><p><strong>Cómo comprobarlo:</strong> ${check}</p><a href="${url}" target="_blank" rel="noopener noreferrer">${label} ↗</a></details>`).join('')}</div><details class="lab-inspiration"><summary>Cómo está diseñado este taller y de dónde salen las ideas</summary><p>Contenido y ejercicios originales, con fuentes oficiales en cada desafío. Tomamos como referencia el ciclo de consigna, código, pruebas y explicación; las soluciones se ejecutan con compiladores reales.</p><div class="concept-sources"><a href="https://contribute.freecodecamp.org/how-to-work-on-coding-challenges/" target="_blank" rel="noopener noreferrer">freeCodeCamp · organización de desafíos ↗</a><a href="https://support.leetcode.com/hc/en-us/articles/32442719377939-How-to-create-test-cases-on-LeetCode" target="_blank" rel="noopener noreferrer">LeetCode · casos propios ↗</a><a href="https://help.codecademy.com/hc/en-us/articles/23400751016859-AI-Features-available-on-Codecademy" target="_blank" rel="noopener noreferrer">Codecademy · acompañamiento y pistas ↗</a><a href="https://www.educative.io/courses/rust-programming-language" target="_blank" rel="noopener noreferrer">Educative · curso interactivo de Rust ↗</a><a href="https://learn.replit.com/docs/ai-foundations/lesson-4" target="_blank" rel="noopener noreferrer">Replit · construir y probar en el navegador ↗</a></div><p>Este revisor usa diagnósticos del compilador, pruebas y explicaciones preparadas. No incluye un servicio de IA conversacional ni evalúa automáticamente tus reflexiones.</p></details></section>`;
+  }
+  window.TallerExplorers = { reset, render, act, change, curriculumHTML };
 })();

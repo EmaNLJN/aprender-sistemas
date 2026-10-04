@@ -1,0 +1,18 @@
+import type { Exercise } from '../../entities/exercise';
+import { systemsPcCores } from '../../entities/exercise/content/systems-pc-cores';
+import { pcModel, type PcState, type SystemsModel } from '../../entities/systems-simulation';
+import type { SystemsWorkshop } from '../../entities/systems-workshop';
+import { pcWorkshops } from '../../entities/systems-workshop/content/pc-workshops';
+
+declare global {
+  interface Window {
+    SYSTEMS_PC: {
+      workshops: SystemsWorkshop[];
+      models: { pc: SystemsModel<PcState> };
+    };
+    SYSTEMS_PC_LABS: Exercise[];
+  }
+}
+
+window.SYSTEMS_PC = { workshops: pcWorkshops, models: { pc: pcModel } };
+window.SYSTEMS_PC_LABS = systemsPcCores;

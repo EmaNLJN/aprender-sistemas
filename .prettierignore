@@ -1,15 +1,27 @@
-# Imported skills retain upstream formatting and attribution.
+# Imported skills keep their upstream formatting; .claude/skills only links to them.
 .agents/
+.claude/
 .codex/
+
+# Local tools, dependencies and scanner state.
 .desloppify/
 **/node_modules/
 **/.venv/
 **/venv/
-*.bundle.js
-index.html
+
+# Generated output.
 dist/
-build/
 coverage/
 test-results/
 playwright-report/
+qa/lab-preview.html
 qa/*-validation.json
+
+# Managed by npm.
+package-lock.json
+
+# Prose keeps its hand-written layout.
+*.md
+
+# Prettier's whitespace-sensitive HTML output would change text nodes of the static shell.
+src/index.html

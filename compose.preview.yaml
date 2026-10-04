@@ -6,7 +6,7 @@ services:
     build: .
     network_mode: bridge
     ports:
-      - "127.0.0.1:8765:8080"
+      - '127.0.0.1:8765:8080'
     volumes:
       - ./dist/index.html:/usr/share/nginx/html/index.html:ro
     read_only: true

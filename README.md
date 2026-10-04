@@ -157,7 +157,7 @@ Para cambiar de PC, navegador, puerto o de archivo local a Docker:
 2. Copiá el JSON al otro equipo.
 3. Abrí el taller y usá **Importar progreso** en **Método y notas**.
 
-La importación combina el avance; para un ejercicio presente en la copia, sus datos importados reemplazan los campos existentes. Los sellos y checkpoints de campaña, y los logros de Sistemas, se combinan conservando los obtenidos. Se aceptan copias anteriores sin campaña o Sistemas. El contenedor no necesita un volumen: no guarda tus datos. Una limpieza del navegador o el modo privado puede eliminarlos; exportá una copia al terminar una etapa. El ZIP de un proyecto y el JSON de progreso cumplen funciones diferentes: descargá ambos si querés conservar código y recorrido.
+La importación combina el avance sin perder logros: para un ejercicio presente en la copia, sus datos importados reemplazan los campos existentes, pero las marcas de predicción y de ayuda se combinan, se conserva la fecha de resolución más antigua, un resultado aprobado no se reemplaza por uno sin aprobar y un borrador o una reflexión vacíos no pisan los tuyos. Los sellos y checkpoints de campaña, y los logros de Sistemas, se combinan conservando los obtenidos. Se aceptan copias anteriores sin campaña o Sistemas. Si una copia guardada en el navegador no se puede leer, o trae datos que esta versión no reconoce, el taller conserva el texto original en una ranura de respaldo (`…:respaldo` y hasta cuatro más, `…:respaldo-2` a `…:respaldo-5`, que nunca se pisan) y te avisa al abrir; al cargar o al cambiar de vista nunca reescribe tu progreso. Si no hay lugar para el respaldo, esa sección deja de guardar durante la sesión y el aviso te lo dice. En **Método y notas** podés descargar cada respaldo. Al importar, el aviso nombra las secciones con datos que esta versión no reconoce y que se omitieron. «Borrar todo» elimina también los respaldos y te avisa si no pudo. El contenedor no necesita un volumen: no guarda tus datos. Una limpieza del navegador o el modo privado puede eliminarlos; exportá una copia al terminar una etapa. El ZIP de un proyecto y el JSON de progreso cumplen funciones diferentes: descargá ambos si querés conservar código y recorrido.
 
 ## Desarrollo
 
@@ -168,35 +168,27 @@ npm ci
 npm run build
 ```
 
-Vite, como build único, empaqueta estilos, datos, editor y aplicación en el documento autónomo `dist/index.html`, desde `src/index.html` y `src/main.tsx`. Los checks validan 137 ejercicios por lenguaje (100 del recorrido, 12 nuevos de campaña y 25 de Sistemas), más 16 temas del Atlas por lenguaje. Docker reconstruye desde las fuentes y el lockfile.
+Prettier formatea todo el código propio (`npm run format`). Para que `git blame` omita los commits que sólo cambiaron formato, ejecutá una vez `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
 
-Archivos principales: `src/features/atlas/` (Atlas React y contenido ESM), `lab-rust.js` / `lab-go.js` (contenido), `lab.js` (aprendizaje y revisión), `lab-explorers.js` (modelos y misiones), `runner.js` (Playgrounds), `editor-source.js` (CodeMirror), `content.js` / `app.js` (guía original), `quests-rust.js` / `quests-go.js` (24 desafíos nuevos), `campaign-*.js` (mundos y motor), `campaign.js` / `campaign.css` (interfaz de campaña).
+Vite, como build único, empaqueta estilos, datos, editor y aplicación en el documento autónomo `dist/index.html`, desde `src/index.html` y `src/app/main.tsx`. Los checks validan 137 ejercicios por lenguaje (100 del recorrido, 12 nuevos de campaña y 25 de Sistemas), más 16 temas del Atlas por lenguaje. Docker reconstruye desde las fuentes y el lockfile.
 
-Sistemas separa los datos y modelos puros en `systems-lowlevel.js`, `systems-infra.js`, `systems-play.js` y `systems-pc.js`; sus archivos `*-labs.js` contienen los núcleos Rust/Go. `systems-engine.js` conserva los sellos e importa progreso; `systems.js` / `systems.css` muestran el catálogo, los controles y escenas SVG. `project-kit-source.js` genera proyectos y archivos ZIP con `fflate`; Vite lo incluye en la aplicación sin CDN. `npm run build:kits` genera únicamente el fixture autónomo que usa su check especializado.
+Archivos principales: `src/pages/atlas/` (Atlas React: componentes, modelo y contenido), `src/app/` (entrada y adaptadores legacy), `src/shared/` (helpers comunes, transporte a los Playgrounds en `api/playground`, editor CodeMirror en `ui/code-editor`), `src/entities/exercise/` (evidencia y ejecución), `src/features/download-project-kit/` (kits ZIP), `src/entities/exercise/content/` (ejercicios del recorrido, 24 desafíos nuevos y núcleos), `src/entities/guide/` (guía original), `src/entities/campaign/` (mundos y reglas), `lab.js` (aprendizaje y revisión), `lab-explorers.js` (modelos y misiones), `app.js` (shell y recorrido), `campaign.js` / `campaign.css` (interfaz de campaña).
+
+Sistemas separa los datos y modelos puros: `src/entities/systems-simulation/` define el contrato común (`defineModel`) y contiene los 25 modelos de los cuatro dominios; las fichas de los talleres están en `src/entities/systems-workshop/content/` y los núcleos Rust/Go en `src/entities/exercise/content/systems-*-cores.ts`. `src/entities/systems-workshop/` conserva los sellos e importa progreso, y `src/entities/campaign/` aplica las reglas de la campaña; `systems.js` / `systems.css` muestran el catálogo, los controles y escenas SVG. `src/features/download-project-kit/` genera proyectos y archivos ZIP con `fflate`; Vite lo incluye en la aplicación sin CDN y su check lo empaqueta en memoria con esbuild.
 
 ## Verificación
 
 ```sh
-node qa/content-check.cjs
-node qa/runner-check.cjs
-node qa/build-check.cjs
-node qa/campaign-check.cjs
-node qa/campaign-content-check.cjs
-node qa/quest-explorers-check.cjs
-node qa/systems-check.cjs
-node qa/systems-lowlevel-check.cjs
-node qa/systems-infra-check.cjs
-node qa/systems-play-check.cjs
-node qa/systems-pc-check.cjs
-node qa/project-kit-check.cjs
+npm run build
+npm test
 ```
 
-Los primeros checks comprueban contenido, transporte sin red, paquete autónomo, reglas de campaña y los modelos de robot/paquetes. `systems-check` cubre el catálogo y el motor de sellos; los cuatro checks de dominio prueban reglas de sus simulaciones. El check de kits crea ZIP, los vuelve a leer con un decodificador independiente y compara archivos, CRC y contenido del borrador. Estos comandos son comprobaciones locales; por sí solos no demuestran que un programa haya compilado.
+`npm test` ejecuta, en el orden de `qa/run-checks.ts`, todos los checks locales en TypeScript; cada uno corre también por separado con `node qa/<check>.ts`. Comprueban paquete autónomo y orden de carga, contrato de IDs del currículo, contenido, transporte sin red, respaldo del recorrido, reglas de campaña, contexto de campaña y Sistemas dentro del laboratorio y los modelos de robot/paquetes. `systems-check` cubre el catálogo y el motor de sellos; los cuatro checks de dominio prueban reglas de sus simulaciones. El check de kits crea ZIP, los vuelve a leer con un decodificador independiente y compara archivos, CRC y contenido del borrador. Estos comandos son comprobaciones locales; por sí solos no demuestran que un programa haya compilado.
 
 Para ejecutar además `cargo test` y `go test` sobre los kits en contenedores descartables:
 
 ```sh
-node qa/project-kit-check.cjs --docker
+node qa/project-kit-check.ts --docker
 ```
 
 Esta comprobación opcional requiere Docker y las imágenes `rust:1.90-alpine` y `golang:1.25-alpine` disponibles localmente; el script no las descarga. Está separada de la construcción del contenedor web y no requiere compilar contra los servicios públicos. Para actualizar deliberadamente el registro de evidencia después de esa ejecución completa, agregá `--write-report`. No lo uses en una comprobación solamente estructural: reemplazaría evidencia previa de compiladores.
@@ -204,15 +196,15 @@ Esta comprobación opcional requiere Docker y las imágenes `rust:1.90-alpine` y
 Para comprobar sin red que los programas actuales coinciden con las soluciones ya verificadas y registradas en los manifiestos:
 
 ```sh
-node qa/runtime-check.cjs rust --audit-record
-node qa/runtime-check.cjs go --audit-record
+node qa/runtime-check.ts rust --audit-record
+node qa/runtime-check.ts go --audit-record
 ```
 
 Para recompilar soluciones de referencia con los servicios reales (requiere conexión):
 
 ```sh
-node qa/runtime-check.cjs rust
-node qa/runtime-check.cjs go
+node qa/runtime-check.ts rust
+node qa/runtime-check.ts go
 ```
 
 Se agrupan las soluciones para reducir solicitudes y se conservan manifiestos con hashes de los programas verificados. No ejecutes verificaciones masivas repetitivas contra los servicios públicos. Las pruebas del navegador también deben comprobar editor, guardado, importación/exportación, respuesta del revisor, accesibilidad de teclado y diseño móvil.
@@ -229,6 +221,6 @@ El diseño educativo toma como referencia [freeCodeCamp](https://contribute.free
 
 Se reutiliza [canvas-confetti](https://github.com/catdad/canvas-confetti) para las celebraciones, con la preferencia de movimiento reducido y limpieza al salir de la vista. Su API se verificó con Context7 y su licencia se conserva en `THIRD-PARTY-NOTICES.txt`. La interfaz y los compiladores permanecen separados: no hace falta traducir los ejercicios a JavaScript.
 
-[fflate](https://github.com/101arrowz/fflate) se incluye localmente para crear los kits ZIP. Su aviso de licencia está en `project-kit-source.js` y se conserva en el bundle; las otras dependencias y sus versiones están fijadas en `package-lock.json`.
+[fflate](https://github.com/101arrowz/fflate) se incluye localmente para crear los kits ZIP. Su aviso de licencia está en `src/features/download-project-kit/lib/archive.ts` y se conserva en el bundle; las otras dependencias y sus versiones están fijadas en `package-lock.json`.
 
 Para previsualizar cambios de `dist/index.html`, `docker compose -f compose.preview.yaml up --build -d --wait` sirve una instancia aislada en http://localhost:8765 con el archivo montado en modo lectura. Se detiene con `docker compose -f compose.preview.yaml down`. La configuración principal en 8080 sirve su propia copia construida dentro de la imagen.

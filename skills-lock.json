@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "laravel-security": {
+      "source": "affaan-m/ECC",
+      "sourceType": "github",
+      "skillPath": "skills/laravel-security/SKILL.md",
+      "computedHash": "37312e1d7d543c7e0b926c74c4bde87cb95300d7c8549e0a3974c9c44a34a84c"
+    },
+    "laravel-specialist": {
+      "source": "Jeffallan/claude-skills",
+      "sourceType": "github",
+      "skillPath": "skills/laravel-specialist/SKILL.md",
+      "computedHash": "3403773759d65079d1a31052b4a87c526a164eee343bf360dba00ee46dd4a6e4"
+    },
+    "laravel-tdd": {
+      "source": "affaan-m/ECC",
+      "sourceType": "github",
+      "skillPath": "skills/laravel-tdd/SKILL.md",
+      "computedHash": "2b30678c04801d14ef4b0f5449430d1a524222061283b0ee88aec5e77b10d3b3"
+    },
+    "tailwind-design-system": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/frontend-mobile-development/skills/tailwind-design-system/SKILL.md",
+      "computedHash": "4e5bfe5af9b5da504752432dc45ed605af350cf1489a58419afad4123a514f89"
+    }
+  }
+}

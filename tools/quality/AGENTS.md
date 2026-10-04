@@ -49,8 +49,8 @@ Git real, usá `--scope changed --base <referencia>` con el binario local.
 El análisis React aplica a las vistas React migradas; la verificación de
 instalación de la CLI sólo comprobó versión y ayuda.
 Los trazados de navegador y los informes son estado local y van fuera de Git.
-La configuración raíz `doctor.config.mjs` excluye bundles, `dist/`, skills,
-dependencias y herramientas auxiliares. La cobertura depende de las vistas React
+La configuración raíz `doctor.config.ts` excluye `dist/`, skills, dependencias y
+herramientas auxiliares. La cobertura depende de las vistas React
 presentes y no representa por sí sola un score de calidad.
 
 ## Desloppify

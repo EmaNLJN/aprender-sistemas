@@ -3,10 +3,8 @@
 ## Proyecto
 
 Taller educativo en español con ejercicios de Rust/Go y simulaciones de Sistemas.
-La interfaz migra por funcionalidades a React/TypeScript; Vite construye un HTML
-autónomo y Nginx lo sirve. Los compiladores son los Playgrounds oficiales.
-
-La interfaz migra por funcionalidades a **React con TypeScript/TSX** y Vite.
+La interfaz migra por funcionalidades a **React con TypeScript/TSX**; Vite construye
+un HTML autónomo y Nginx lo sirve. Los compiladores son los Playgrounds oficiales.
 Atlas es la primera vista migrada; el resto conserva adaptadores legacy temporales.
 
 ## Organización
@@ -17,12 +15,16 @@ Atlas es la primera vista migrada; el resto conserva adaptadores legacy temporal
 - Para elegir checks, agregar pruebas o trabajar con TDD, leé `qa/AGENTS.md`.
 - Para activar, instalar o actualizar skills, leé `docs/agent-skills.md`.
 - Para usar o reinstalar React Doctor y Desloppify, leé `tools/quality/AGENTS.md`.
+- Para continuar el refactor en curso, leé `docs/refactor-roadmap.md`.
 
-La raíz contiene las fuentes actuales por familia (`lab-*`, `campaign-*`,
-`systems-*`). `qa/` reúne verificaciones e investigación; `docs/` contiene reglas
+La raíz conserva sólo las vistas legacy que faltan migrar a React (`app.js`,
+`lab.js`, `campaign.js`, `systems.js`, `lab-explorers.js` y `quest-explorers.js`).
+El resto vive en `src/` por capas FSD (`app`, `pages`, `features`, `entities`,
+`shared`); el mapa está en `docs/architecture.md`. `qa/` reúne verificaciones e investigación; `docs/` contiene reglas
 específicas de desarrollo; `.agents/skills/` contiene las skills del proyecto.
-`src/index.html` y `src/main.tsx` son las entradas Vite; `dist/` y `*.bundle.js`
-son salidas generadas.
+`src/index.html` y `src/app/main.tsx` son las entradas Vite; `dist/` es la salida
+generada. Los `CLAUDE.md` sólo importan este archivo y los de cada
+carpeta para Claude Code; `.claude/` contiene symlinks de skills y subagentes.
 
 ## Comandos
 
@@ -31,14 +33,14 @@ Desde la raíz, con Node y npm instalados (Docker usa Node 24):
 ```sh
 npm ci
 npm run build
-node qa/build-check.cjs
+npm test
 ```
 
 Para la verificación habitual, `npm run build` regenera todos los assets y
 `npm test` ejecuta la suite local completa. `npm run lint` ejecuta ESLint;
 `npm run format:check` comprueba formato sin editar. `npm run format` aplica
-Prettier a los checks, manifiestos y configuraciones propias; las fuentes de la
-aplicación conservan su formato compacto existente.
+Prettier a todo el código propio; `.prettierignore` excluye skills importadas,
+salidas generadas, Markdown y el shell `src/index.html`.
 
 Vite empaqueta React, las fuentes legacy y los estilos en `dist/index.html`.
 `vite-plugin-singlefile` conserva el contrato de un documento autónomo; los checks
@@ -71,6 +73,7 @@ y abrí `http://localhost:8765`; detenelo con
 - Usá ESLint para reglas de código y Prettier para formato, con configuraciones
   separadas. Los avisos de complejidad requieren revisión; no desactives reglas
   globalmente para ocultar un defecto. Conservá el formato original de las skills.
+  Registrá en `.git-blame-ignore-revs` los commits que sólo cambien formato.
 - Mantené credenciales, rutas locales, cachés, progreso y resultados generados fuera
   de Git; actualizá `.gitignore` y `.dockerignore` al introducir nuevas salidas.
 
@@ -80,9 +83,8 @@ y abrí `http://localhost:8765`; detenelo con
   para lógica y datos, `.tsx` para React, y siempre `export`/`import`. No agregues
   `module.exports` ni `require()` en fuentes nuevas.
 - Migrá JavaScript por funcionalidades; `allowJs` admite el legacy sin convertirlo
-  en bloque. No uses `.mjs` como destino de código de aplicación cuando el archivo
-  pueda ser TypeScript. CommonJS queda limitado a checks `.cjs` heredados hasta
-  migrarlos deliberadamente.
+  en bloque. No uses `.mjs` ni `.cjs` cuando el archivo pueda ser TypeScript: los
+  checks de `qa/` y las configuraciones ya son `.ts` ejecutados por Node 24.
 - En archivos de componentes, hooks, contextos o providers con una única abstracción
   principal, declarala como `const` con nombre, hacé coincidir archivo e identificador
   y escribí `export default Nombre` al final. Conservá ese nombre en el import.
@@ -92,7 +94,7 @@ y abrí `http://localhost:8765`; detenelo con
   por responsabilidad o mantené exports nombrados; no elijas un `default` arbitrario.
 
 ```ts
-// src/features/atlas/filter-concepts.ts
+// src/pages/atlas/model/filter-concepts.ts
 interface Concept {
   level: string;
 }
@@ -114,10 +116,10 @@ import {filterConcepts} from './filter-concepts';
   primitivas, tipos mapeados o condicionales. No conviertas declaraciones
   existentes sólo por estilo; la elección debe expresar una diferencia útil.
 
-- La interfaz nueva usa **React con TypeScript/TSX** y **Vite**. El
-  `src/features/<funcionalidad>/` actual es un seam transitorio de la migración, no
-  equivale automáticamente a la capa FSD `features`. Conservá un adaptador pequeño
-  cuando una vista legacy todavía dependa de `window.Taller*`.
+- La interfaz nueva usa **React con TypeScript/TSX** y **Vite**. `src/app/` contiene
+  la entrada y los adaptadores `window.Taller*` (`src/app/legacy/`); cada vista migrada
+  es un slice de `src/pages/` (Atlas es el primero). Conservá un adaptador pequeño en
+  `src/app/legacy/` cuando una vista legacy todavía dependa de `window.Taller*`.
 - Aplicá Feature-Sliced Design de forma incremental: empezá por `app`, `pages` y
   `shared`, y creá slices en `features` o `entities` sólo cuando exista una
   responsabilidad de negocio estable y reutilizada. Cada slice expone una API
@@ -158,11 +160,17 @@ import {filterConcepts} from './filter-concepts';
 ## Trabajo con subagentes
 
 - Reservá el agente principal para análisis, decisiones de arquitectura, revisión e
-  integración. Para implementaciones mecánicas o slices bien delimitados, delegá en
-  un subagente económico como `gpt-6-luna`, con archivos, contratos y checks explícitos.
+  integración, con el modelo más capaz y razonamiento máximo: en Claude Code, Opus 5.5
+  con effort `max`. Los análisis y revisiones delegados usan el mismo nivel
+  (`.claude/agents/revisor.md`).
+- Para implementaciones mecánicas o slices bien delimitados, delegá en un subagente
+  económico con archivos, contratos y checks explícitos: en Claude Code,
+  `.claude/agents/implementador.md` (Sonnet 5.5, effort `medium`); en Codex, `gpt-6-luna`.
 - Revisá siempre el diff producido por el subagente y ejecutá desde el agente principal
   los checks proporcionales al riesgo; delegar implementación no delega la decisión ni
   la responsabilidad por el resultado.
+- Paralelizá sólo slices con archivos disjuntos. `src/app/main.tsx`, `package.json`, las
+  configuraciones y la documentación se integran desde el agente principal.
 
 ## Código entendible y pruebas útiles
 
@@ -212,7 +220,10 @@ Estos ejemplos ilustran el criterio; no agregan funciones ni reglas nuevas al cu
 
 Leé el `SKILL.md` local de la capacidad pertinente antes de aplicarla; activá sólo
 las necesarias. Usá `clean-code` para legibilidad, `codebase-design` para interfaces,
-`tdd` para cambios de comportamiento, y las skills de Vercel para código React.
+`tdd` para cambios de comportamiento, las skills de Vercel para código React,
+`tailwind-design-system` para estilos con Tailwind y `laravel-specialist`,
+`laravel-tdd` y `laravel-security` para el backend Laravel.
+`.agents/skills/` es la fuente única; `.claude/skills/` sólo contiene symlinks por skill.
 El inventario y los criterios de uso están en `docs/agent-skills.md`.
 
 Usá `context7-mcp` al cambiar APIs o configuración de dependencias: resolvé el ID,

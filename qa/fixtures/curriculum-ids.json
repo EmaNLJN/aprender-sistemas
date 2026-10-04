@@ -1,0 +1,1482 @@
+{
+  "exercises": {
+    "rust-01": {
+      "language": "rust",
+      "title": "La energía del reactor"
+    },
+    "rust-02": {
+      "language": "rust",
+      "title": "Repará el contador inmutable"
+    },
+    "rust-03": {
+      "language": "rust",
+      "title": "El punto y coma que se comió el resultado"
+    },
+    "rust-04": {
+      "language": "rust",
+      "title": "Shadowing: mismo nombre, nueva etapa"
+    },
+    "rust-05": {
+      "language": "rust",
+      "title": "Paquetes completos y bytes restantes"
+    },
+    "rust-06": {
+      "language": "rust",
+      "title": "Elegí una ruta con if"
+    },
+    "rust-07": {
+      "language": "rust",
+      "title": "Match para un protocolo pequeño"
+    },
+    "rust-08": {
+      "language": "rust",
+      "title": "El último segundo también cuenta"
+    },
+    "rust-09": {
+      "language": "rust",
+      "title": "Salir de loop con una respuesta"
+    },
+    "rust-10": {
+      "language": "rust",
+      "title": "Guardas antes del trabajo"
+    },
+    "rust-11": {
+      "language": "rust",
+      "title": "Leer sin llevarte el String"
+    },
+    "rust-12": {
+      "language": "rust",
+      "title": "Un préstamo que sí modifica"
+    },
+    "rust-13": {
+      "language": "rust",
+      "title": "Copiar un número no mueve su dueño"
+    },
+    "rust-14": {
+      "language": "rust",
+      "title": "Snapshot con una copia deliberada"
+    },
+    "rust-15": {
+      "language": "rust",
+      "title": "Final del préstamo, comienzo de la mutación"
+    },
+    "rust-16": {
+      "language": "rust",
+      "title": "Bytes y caracteres no son lo mismo"
+    },
+    "rust-17": {
+      "language": "rust",
+      "title": "Primer carácter sin romper UTF-8"
+    },
+    "rust-18": {
+      "language": "rust",
+      "title": "Prefijo seguro en bytes"
+    },
+    "rust-19": {
+      "language": "rust",
+      "title": "Leer una orden entre espacios"
+    },
+    "rust-20": {
+      "language": "rust",
+      "title": "Una vista sobre mediciones"
+    },
+    "rust-21": {
+      "language": "rust",
+      "title": "Una estructura para el paquete"
+    },
+    "rust-22": {
+      "language": "rust",
+      "title": "El método conoce su rectángulo"
+    },
+    "rust-23": {
+      "language": "rust",
+      "title": "Estados que el compilador conoce"
+    },
+    "rust-24": {
+      "language": "rust",
+      "title": "Cada mensaje lleva sus propios datos"
+    },
+    "rust-25": {
+      "language": "rust",
+      "title": "Una transición del semáforo"
+    },
+    "rust-26": {
+      "language": "rust",
+      "title": "El primer elemento puede faltar"
+    },
+    "rust-27": {
+      "language": "rust",
+      "title": "División con un error que explica"
+    },
+    "rust-28": {
+      "language": "rust",
+      "title": "Un puerto válido se construye"
+    },
+    "rust-29": {
+      "language": "rust",
+      "title": "Propagá errores sin esconderlos"
+    },
+    "rust-30": {
+      "language": "rust",
+      "title": "Un valor por defecto con intención"
+    },
+    "rust-31": {
+      "language": "rust",
+      "title": "Conservá solo mediciones sanas"
+    },
+    "rust-32": {
+      "language": "rust",
+      "title": "Una pila de tareas"
+    },
+    "rust-33": {
+      "language": "rust",
+      "title": "Contá eventos con HashMap"
+    },
+    "rust-34": {
+      "language": "rust",
+      "title": "Un conjunto con salida estable"
+    },
+    "rust-35": {
+      "language": "rust",
+      "title": "Turnos justos con VecDeque"
+    },
+    "rust-36": {
+      "language": "rust",
+      "title": "Transformaciones que todavía no ocurrieron"
+    },
+    "rust-37": {
+      "language": "rust",
+      "title": "Un pipeline de sensores"
+    },
+    "rust-38": {
+      "language": "rust",
+      "title": "Closures que recuerdan un umbral"
+    },
+    "rust-39": {
+      "language": "rust",
+      "title": "Un comportamiento compartido por contrato"
+    },
+    "rust-40": {
+      "language": "rust",
+      "title": "Construí tu propio iterador"
+    },
+    "rust-41": {
+      "language": "rust",
+      "title": "Mové valores sin pedirles ser Copy"
+    },
+    "rust-42": {
+      "language": "rust",
+      "title": "El primer elemento de cualquier tipo"
+    },
+    "rust-43": {
+      "language": "rust",
+      "title": "El mayor sin clonar la colección"
+    },
+    "rust-44": {
+      "language": "rust",
+      "title": "Decí de dónde puede venir la referencia"
+    },
+    "rust-45": {
+      "language": "rust",
+      "title": "Una estructura que presta su texto"
+    },
+    "rust-46": {
+      "language": "rust",
+      "title": "Un trabajo que viaja a otro thread"
+    },
+    "rust-47": {
+      "language": "rust",
+      "title": "Mensajes hasta cerrar el canal"
+    },
+    "rust-48": {
+      "language": "rust",
+      "title": "Un contador compartido y sincronizado"
+    },
+    "rust-49": {
+      "language": "rust",
+      "title": "Boss: del texto a una orden tipada"
+    },
+    "rust-50": {
+      "language": "rust",
+      "title": "Boss final: tu mini almacén en memoria"
+    },
+    "rust-51": {
+      "language": "rust",
+      "title": "Una lista que cabe gracias a Box"
+    },
+    "rust-52": {
+      "language": "rust",
+      "title": "Compartir propiedad no es clonar datos"
+    },
+    "rust-53": {
+      "language": "rust",
+      "title": "Un préstamo interior que puede rechazarse"
+    },
+    "rust-54": {
+      "language": "rust",
+      "title": "Una referencia débil que no retiene al dueño"
+    },
+    "rust-55": {
+      "language": "rust",
+      "title": "Tu tipo también puede prestar como str"
+    },
+    "rust-56": {
+      "language": "rust",
+      "title": "Distintos tipos en una misma colección"
+    },
+    "rust-57": {
+      "language": "rust",
+      "title": "Un tipo asociado para cada fuente"
+    },
+    "rust-58": {
+      "language": "rust",
+      "title": "Dimensiones conocidas por el tipo"
+    },
+    "rust-59": {
+      "language": "rust",
+      "title": "Una closure que cambia su memoria"
+    },
+    "rust-60": {
+      "language": "rust",
+      "title": "Una API que acepta vistas sin exigir tamaño fijo"
+    },
+    "rust-61": {
+      "language": "rust",
+      "title": "Campos privados, invariantes públicas"
+    },
+    "rust-62": {
+      "language": "rust",
+      "title": "Una fachada pública para el módulo interno"
+    },
+    "rust-63": {
+      "language": "rust",
+      "title": "Tu primera macro con repetición"
+    },
+    "rust-64": {
+      "language": "rust",
+      "title": "Una prueba que encuentra la frontera olvidada"
+    },
+    "rust-65": {
+      "language": "rust",
+      "title": "Convertir no significa aceptar cualquier valor"
+    },
+    "rust-66": {
+      "language": "rust",
+      "title": "Preguntale a un Future si ya está listo"
+    },
+    "rust-67": {
+      "language": "rust",
+      "title": "Async se pone en marcha al avanzar"
+    },
+    "rust-68": {
+      "language": "rust",
+      "title": "Pending no significa volver a empezar"
+    },
+    "rust-69": {
+      "language": "rust",
+      "title": "Mover el handle de Pin conserva la asignación"
+    },
+    "rust-70": {
+      "language": "rust",
+      "title": "Send y Sync tienen trabajos diferentes"
+    },
+    "rust-71": {
+      "language": "rust",
+      "title": "RAII: liberar es parte del alcance"
+    },
+    "rust-72": {
+      "language": "rust",
+      "title": "Un bloque unsafe con una justificación pequeña"
+    },
+    "rust-73": {
+      "language": "rust",
+      "title": "Cow: copiá solo cuando cambie el texto"
+    },
+    "rust-74": {
+      "language": "rust",
+      "title": "Overflow con una política explícita"
+    },
+    "rust-75": {
+      "language": "rust",
+      "title": "Un error que sirve para personas y programas"
+    },
+    "rust-76": {
+      "language": "rust",
+      "title": "FizzBuzz del reactor"
+    },
+    "rust-77": {
+      "language": "rust",
+      "title": "El calendario de las excepciones"
+    },
+    "rust-78": {
+      "language": "rust",
+      "title": "Permisos dentro de un byte"
+    },
+    "rust-79": {
+      "language": "rust",
+      "title": "Desarmá un número decimal"
+    },
+    "rust-80": {
+      "language": "rust",
+      "title": "Euclides reduce el problema"
+    },
+    "rust-81": {
+      "language": "rust",
+      "title": "Anagramas sin perder repeticiones"
+    },
+    "rust-82": {
+      "language": "rust",
+      "title": "Comprimí rachas de caracteres"
+    },
+    "rust-83": {
+      "language": "rust",
+      "title": "Reconstruí el mensaje por rachas"
+    },
+    "rust-84": {
+      "language": "rust",
+      "title": "La palabra más larga, sin copiarla"
+    },
+    "rust-85": {
+      "language": "rust",
+      "title": "Cortá por caracteres en una frontera de bytes"
+    },
+    "rust-86": {
+      "language": "rust",
+      "title": "Una pila para los delimitadores"
+    },
+    "rust-87": {
+      "language": "rust",
+      "title": "Encontrá la primera posición posible"
+    },
+    "rust-88": {
+      "language": "rust",
+      "title": "Fusioná dos secuencias ya ordenadas"
+    },
+    "rust-89": {
+      "language": "rust",
+      "title": "La mejor ventana de mediciones"
+    },
+    "rust-90": {
+      "language": "rust",
+      "title": "Dos sumandos sin reutilizar el mismo elemento"
+    },
+    "rust-91": {
+      "language": "rust",
+      "title": "Parseá decimal con un presupuesto de bits"
+    },
+    "rust-92": {
+      "language": "rust",
+      "title": "Hexadecimal: dos símbolos por byte"
+    },
+    "rust-93": {
+      "language": "rust",
+      "title": "Un frame binario con longitud declarada"
+    },
+    "rust-94": {
+      "language": "rust",
+      "title": "La bitácora que conserva solo lo reciente"
+    },
+    "rust-95": {
+      "language": "rust",
+      "title": "Una calculadora de pila con errores explícitos"
+    },
+    "rust-96": {
+      "language": "rust",
+      "title": "Una caché aprende qué usaste recientemente"
+    },
+    "rust-97": {
+      "language": "rust",
+      "title": "Tiempo lógico: expiración sin sleeps"
+    },
+    "rust-98": {
+      "language": "rust",
+      "title": "Reconstruí el estado desde un journal"
+    },
+    "rust-99": {
+      "language": "rust",
+      "title": "Una actualización con versión esperada"
+    },
+    "rust-100": {
+      "language": "rust",
+      "title": "Boss 100: un lote se acepta completo o no cambia nada"
+    },
+    "go-01": {
+      "language": "go",
+      "title": "La mochila de bytes"
+    },
+    "go-02": {
+      "language": "go",
+      "title": "El porcentaje que perdió sus decimales"
+    },
+    "go-03": {
+      "language": "go",
+      "title": "Encender desde cero"
+    },
+    "go-04": {
+      "language": "go",
+      "title": "Intercambio sin pisar datos"
+    },
+    "go-05": {
+      "language": "go",
+      "title": "El panel de permisos binarios"
+    },
+    "go-06": {
+      "language": "go",
+      "title": "La temperatura dentro del rango"
+    },
+    "go-07": {
+      "language": "go",
+      "title": "Contar solamente las tareas sanas"
+    },
+    "go-08": {
+      "language": "go",
+      "title": "El semáforo de un servicio"
+    },
+    "go-09": {
+      "language": "go",
+      "title": "Dividir y avisar si se pudo"
+    },
+    "go-10": {
+      "language": "go",
+      "title": "Una función con memoria propia"
+    },
+    "go-11": {
+      "language": "go",
+      "title": "Tres sensores, un array"
+    },
+    "go-12": {
+      "language": "go",
+      "title": "El evento que append no guardó"
+    },
+    "go-13": {
+      "language": "go",
+      "title": "Una copia que sea de verdad"
+    },
+    "go-14": {
+      "language": "go",
+      "title": "Filtrar sin dejar huellas"
+    },
+    "go-15": {
+      "language": "go",
+      "title": "Una ventana con bordes seguros"
+    },
+    "go-16": {
+      "language": "go",
+      "title": "El contador de visitas"
+    },
+    "go-17": {
+      "language": "go",
+      "title": "Cero no es ausencia"
+    },
+    "go-18": {
+      "language": "go",
+      "title": "Un reporte reproducible"
+    },
+    "go-19": {
+      "language": "go",
+      "title": "Los bytes no son letras"
+    },
+    "go-20": {
+      "language": "go",
+      "title": "Limpiar comandos con espacios reales"
+    },
+    "go-21": {
+      "language": "go",
+      "title": "Datos que viajan juntos"
+    },
+    "go-22": {
+      "language": "go",
+      "title": "Modificar el contador original"
+    },
+    "go-23": {
+      "language": "go",
+      "title": "Mover una copia del explorador"
+    },
+    "go-24": {
+      "language": "go",
+      "title": "El método que olvidaba cada incremento"
+    },
+    "go-25": {
+      "language": "go",
+      "title": "Snapshot de una ficha con etiquetas"
+    },
+    "go-26": {
+      "language": "go",
+      "title": "Un error que el llamador puede atender"
+    },
+    "go-27": {
+      "language": "go",
+      "title": "El puerto tiene dos validaciones"
+    },
+    "go-28": {
+      "language": "go",
+      "title": "Contexto sin perder la causa"
+    },
+    "go-29": {
+      "language": "go",
+      "title": "Errores con datos útiles"
+    },
+    "go-30": {
+      "language": "go",
+      "title": "Una fila mala no es un total parcial"
+    },
+    "go-31": {
+      "language": "go",
+      "title": "Una capacidad, dos implementaciones"
+    },
+    "go-32": {
+      "language": "go",
+      "title": "Leer sin conocer el origen"
+    },
+    "go-33": {
+      "language": "go",
+      "title": "Tu tipo aprende a presentarse"
+    },
+    "go-34": {
+      "language": "go",
+      "title": "Preguntar por un tipo sin explotar"
+    },
+    "go-35": {
+      "language": "go",
+      "title": "El error nil que no era nil"
+    },
+    "go-36": {
+      "language": "go",
+      "title": "Cerrar incluso si salís temprano"
+    },
+    "go-37": {
+      "language": "go",
+      "title": "Desarmar la torre al revés"
+    },
+    "go-38": {
+      "language": "go",
+      "title": "Capturar ahora o mirar después"
+    },
+    "go-39": {
+      "language": "go",
+      "title": "También puede fallar el cierre"
+    },
+    "go-40": {
+      "language": "go",
+      "title": "Una limpieza por iteración"
+    },
+    "go-41": {
+      "language": "go",
+      "title": "El mensajero y el punto de encuentro"
+    },
+    "go-42": {
+      "language": "go",
+      "title": "Una transmisión que sabe terminar"
+    },
+    "go-43": {
+      "language": "go",
+      "title": "El buzón con espacio contado"
+    },
+    "go-44": {
+      "language": "go",
+      "title": "Mirar el buzón sin quedarse esperando"
+    },
+    "go-45": {
+      "language": "go",
+      "title": "Trabajo paralelo, resultado ordenado"
+    },
+    "go-46": {
+      "language": "go",
+      "title": "Misión KV: interpretar una orden"
+    },
+    "go-47": {
+      "language": "go",
+      "title": "Misión KV: un almacén listo desde cero"
+    },
+    "go-48": {
+      "language": "go",
+      "title": "Misión KV: ejecutar sin mutar una orden rota"
+    },
+    "go-49": {
+      "language": "go",
+      "title": "Misión KV: reconstruir un snapshot"
+    },
+    "go-50": {
+      "language": "go",
+      "title": "Misión final: medir trabajo, no adivinar velocidad"
+    },
+    "go-51": {
+      "language": "go",
+      "title": "Una primera pieza de cualquier tipo"
+    },
+    "go-52": {
+      "language": "go",
+      "title": "El símbolo ~ abre la familia"
+    },
+    "go-53": {
+      "language": "go",
+      "title": "Un conjunto que conserva la primera aparición"
+    },
+    "go-54": {
+      "language": "go",
+      "title": "La fábrica cambia el tipo de la pieza"
+    },
+    "go-55": {
+      "language": "go",
+      "title": "Una caja tipada que intercambia contenido"
+    },
+    "go-56": {
+      "language": "go",
+      "title": "Cambiar la puerta de entrada a una lista"
+    },
+    "go-57": {
+      "language": "go",
+      "title": "Componer un dispositivo sin herencia"
+    },
+    "go-58": {
+      "language": "go",
+      "title": "Qué métodos promete un valor"
+    },
+    "go-59": {
+      "language": "go",
+      "title": "Actualizar el descriptor del slice ajeno"
+    },
+    "go-60": {
+      "language": "go",
+      "title": "Un mapa de objetos, dos niveles de copia"
+    },
+    "go-61": {
+      "language": "go",
+      "title": "Cancelar sin temporizadores mágicos"
+    },
+    "go-62": {
+      "language": "go",
+      "title": "Dos transmisiones, un cierre limpio"
+    },
+    "go-63": {
+      "language": "go",
+      "title": "Un contador compartido con puerta"
+    },
+    "go-64": {
+      "language": "go",
+      "title": "Una sola goroutine gana el arranque"
+    },
+    "go-65": {
+      "language": "go",
+      "title": "Una fábrica con cantidad fija de workers"
+    },
+    "go-66": {
+      "language": "go",
+      "title": "El archivo que se cortó en silencio"
+    },
+    "go-67": {
+      "language": "go",
+      "title": "Una entrada JSON con contrato estricto"
+    },
+    "go-68": {
+      "language": "go",
+      "title": "Los campos públicos deciden qué sale al mundo"
+    },
+    "go-69": {
+      "language": "go",
+      "title": "Tu primer handler, probado sin abrir puertos"
+    },
+    "go-70": {
+      "language": "go",
+      "title": "El escritor que guardó sólo la mitad"
+    },
+    "go-71": {
+      "language": "go",
+      "title": "El explorador de APIs públicas"
+    },
+    "go-72": {
+      "language": "go",
+      "title": "El reviewer aprende de una tabla de casos"
+    },
+    "go-73": {
+      "language": "go",
+      "title": "La semilla que rompió tu supuesto Unicode"
+    },
+    "go-74": {
+      "language": "go",
+      "title": "Optimizar con una medición de memoria"
+    },
+    "go-75": {
+      "language": "go",
+      "title": "Tu taller termina con una herramienta del lenguaje"
+    },
+    "go-76": {
+      "language": "go",
+      "title": "FizzBuzz: dos reglas que pueden coincidir"
+    },
+    "go-77": {
+      "language": "go",
+      "title": "El engranaje de Euclides"
+    },
+    "go-78": {
+      "language": "go",
+      "title": "El guardián de los números primos"
+    },
+    "go-79": {
+      "language": "go",
+      "title": "Contar las luces encendidas de un registro"
+    },
+    "go-80": {
+      "language": "go",
+      "title": "Dos turnos, una franja compartida"
+    },
+    "go-81": {
+      "language": "go",
+      "title": "Anagramas con inventario de runes"
+    },
+    "go-82": {
+      "language": "go",
+      "title": "Empaquetar repeticiones consecutivas"
+    },
+    "go-83": {
+      "language": "go",
+      "title": "El detector de palabras del chat"
+    },
+    "go-84": {
+      "language": "go",
+      "title": "La ventana sin símbolos repetidos"
+    },
+    "go-85": {
+      "language": "go",
+      "title": "Una ruta lógica sin escapar de la raíz"
+    },
+    "go-86": {
+      "language": "go",
+      "title": "Una pila que recuerda su mínimo"
+    },
+    "go-87": {
+      "language": "go",
+      "title": "Cerrar la puerta correcta"
+    },
+    "go-88": {
+      "language": "go",
+      "title": "El lugar de inserción entre duplicados"
+    },
+    "go-89": {
+      "language": "go",
+      "title": "La suma que se desliza"
+    },
+    "go-90": {
+      "language": "go",
+      "title": "Girar el tablero sin deformarlo"
+    },
+    "go-91": {
+      "language": "go",
+      "title": "Palabras entre comillas sin inventar un shell"
+    },
+    "go-92": {
+      "language": "go",
+      "title": "La calculadora de operaciones pospuestas"
+    },
+    "go-93": {
+      "language": "go",
+      "title": "La caché que recuerda qué usaste último"
+    },
+    "go-94": {
+      "language": "go",
+      "title": "Una caché con reloj que podés controlar"
+    },
+    "go-95": {
+      "language": "go",
+      "title": "Repetir un evento sin cobrarlo dos veces"
+    },
+    "go-96": {
+      "language": "go",
+      "title": "Cuatro bytes aunque lleguen de a uno"
+    },
+    "go-97": {
+      "language": "go",
+      "title": "El último fragmento viene con EOF"
+    },
+    "go-98": {
+      "language": "go",
+      "title": "Un byte extra para detectar el exceso"
+    },
+    "go-99": {
+      "language": "go",
+      "title": "La huella de un stream, fragmento a fragmento"
+    },
+    "go-100": {
+      "language": "go",
+      "title": "La expedición se detiene cuando el dueño lo pide"
+    },
+    "rust-101": {
+      "language": "rust",
+      "title": "Reparación · La brújula cruzada"
+    },
+    "rust-102": {
+      "language": "rust",
+      "title": "Kata · El inventario no puede desbordarse"
+    },
+    "rust-103": {
+      "language": "rust",
+      "title": "Boss · Cruzá el hangar con la energía justa"
+    },
+    "rust-104": {
+      "language": "rust",
+      "title": "Reparación · Dos señales en un byte"
+    },
+    "rust-105": {
+      "language": "rust",
+      "title": "Kata · Una huella que recuerda el orden"
+    },
+    "rust-106": {
+      "language": "rust",
+      "title": "Boss · Abrí la compuerta del protocolo"
+    },
+    "rust-107": {
+      "language": "rust",
+      "title": "Reparación · La cola se convirtió en pila"
+    },
+    "rust-108": {
+      "language": "rust",
+      "title": "Kata · Seguí el hilo de los predecesores"
+    },
+    "rust-109": {
+      "language": "rust",
+      "title": "Boss · Encontrá la salida entre los muros"
+    },
+    "rust-110": {
+      "language": "rust",
+      "title": "Reparación · El byte que olvidó su signo"
+    },
+    "rust-111": {
+      "language": "rust",
+      "title": "Kata · Una instrucción, una transición completa"
+    },
+    "rust-112": {
+      "language": "rust",
+      "title": "Boss · Encendé una máquina que sabe detenerse"
+    },
+    "go-101": {
+      "language": "go",
+      "title": "La brújula al revés"
+    },
+    "go-102": {
+      "language": "go",
+      "title": "Carga express para el rover"
+    },
+    "go-103": {
+      "language": "go",
+      "title": "Jefe: rescate en el cráter"
+    },
+    "go-104": {
+      "language": "go",
+      "title": "Un byte, dos mandos"
+    },
+    "go-105": {
+      "language": "go",
+      "title": "Detective de bits alterados"
+    },
+    "go-106": {
+      "language": "go",
+      "title": "Jefe: abrir el paquete del satélite"
+    },
+    "go-107": {
+      "language": "go",
+      "title": "El explorador que se vuelve demasiado pronto"
+    },
+    "go-108": {
+      "language": "go",
+      "title": "La ruta con menos saltos"
+    },
+    "go-109": {
+      "language": "go",
+      "title": "Jefe: la secuencia de lanzamiento"
+    },
+    "go-110": {
+      "language": "go",
+      "title": "El interruptor que guarda rencor"
+    },
+    "go-111": {
+      "language": "go",
+      "title": "Tres oportunidades, ninguna de más"
+    },
+    "go-112": {
+      "language": "go",
+      "title": "Jefe: el último mensaje a la Tierra"
+    },
+    "rust-113": {
+      "language": "rust",
+      "title": "Núcleo · Reproducí una traza LRU"
+    },
+    "go-113": {
+      "language": "go",
+      "title": "Núcleo · Reproducí una traza LRU"
+    },
+    "rust-114": {
+      "language": "rust",
+      "title": "Núcleo · Encontrá un hueco alineado"
+    },
+    "go-114": {
+      "language": "go",
+      "title": "Núcleo · Encontrá un hueco alineado"
+    },
+    "rust-115": {
+      "language": "rust",
+      "title": "Núcleo · Traducí sin saltarte los permisos"
+    },
+    "go-115": {
+      "language": "go",
+      "title": "Núcleo · Traducí sin saltarte los permisos"
+    },
+    "rust-116": {
+      "language": "rust",
+      "title": "Núcleo · Invalidá solo las traducciones correctas"
+    },
+    "go-116": {
+      "language": "go",
+      "title": "Núcleo · Invalidá solo las traducciones correctas"
+    },
+    "rust-117": {
+      "language": "rust",
+      "title": "Núcleo · Los saltos aterrizan en instrucciones"
+    },
+    "go-117": {
+      "language": "go",
+      "title": "Núcleo · Los saltos aterrizan en instrucciones"
+    },
+    "rust-118": {
+      "language": "rust",
+      "title": "Núcleo · CALL y RET conservan al llamador"
+    },
+    "go-118": {
+      "language": "go",
+      "title": "Núcleo · CALL y RET conservan al llamador"
+    },
+    "rust-119": {
+      "language": "rust",
+      "title": "Núcleo · Repartí CPU por quantum"
+    },
+    "go-119": {
+      "language": "go",
+      "title": "Núcleo · Repartí CPU por quantum"
+    },
+    "rust-120": {
+      "language": "rust",
+      "title": "Núcleo · Elegí y confirmá una interrupción"
+    },
+    "go-120": {
+      "language": "go",
+      "title": "Núcleo · Elegí y confirmá una interrupción"
+    },
+    "rust-121": {
+      "language": "rust",
+      "title": "Recuperar solo transacciones completas"
+    },
+    "go-121": {
+      "language": "go",
+      "title": "Recuperar solo transacciones completas"
+    },
+    "rust-122": {
+      "language": "rust",
+      "title": "Compactar sin resucitar una clave"
+    },
+    "go-122": {
+      "language": "go",
+      "title": "Compactar sin resucitar una clave"
+    },
+    "rust-123": {
+      "language": "rust",
+      "title": "Lo que un quórum sí demuestra"
+    },
+    "go-123": {
+      "language": "go",
+      "title": "Lo que un quórum sí demuestra"
+    },
+    "rust-124": {
+      "language": "rust",
+      "title": "El sello que nunca debe retroceder"
+    },
+    "go-124": {
+      "language": "go",
+      "title": "El sello que nunca debe retroceder"
+    },
+    "rust-125": {
+      "language": "rust",
+      "title": "Un mensaje, aunque llegue dos veces"
+    },
+    "go-125": {
+      "language": "go",
+      "title": "Un mensaje, aunque llegue dos veces"
+    },
+    "rust-126": {
+      "language": "rust",
+      "title": "Una cola que reutiliza sus huecos"
+    },
+    "go-126": {
+      "language": "go",
+      "title": "Una cola que reutiliza sus huecos"
+    },
+    "rust-127": {
+      "language": "rust",
+      "title": "Elegí un destino que sí puede trabajar"
+    },
+    "go-127": {
+      "language": "go",
+      "title": "Elegí un destino que sí puede trabajar"
+    },
+    "rust-128": {
+      "language": "rust",
+      "title": "Buscá al dueño después del último token"
+    },
+    "go-128": {
+      "language": "go",
+      "title": "Buscá al dueño después del último token"
+    },
+    "rust-129": {
+      "language": "rust",
+      "title": "Componé la coreografía"
+    },
+    "go-129": {
+      "language": "go",
+      "title": "Componé la coreografía"
+    },
+    "rust-130": {
+      "language": "rust",
+      "title": "Elegí el próximo píxel"
+    },
+    "go-130": {
+      "language": "go",
+      "title": "Elegí el próximo píxel"
+    },
+    "rust-131": {
+      "language": "rust",
+      "title": "Encontrá la primera intersección"
+    },
+    "go-131": {
+      "language": "go",
+      "title": "Encontrá la primera intersección"
+    },
+    "rust-132": {
+      "language": "rust",
+      "title": "El camino barato no siempre es el corto"
+    },
+    "go-132": {
+      "language": "go",
+      "title": "El camino barato no siempre es el corto"
+    },
+    "rust-133": {
+      "language": "rust",
+      "title": "Detectá la región del choque"
+    },
+    "go-133": {
+      "language": "go",
+      "title": "Detectá la región del choque"
+    },
+    "rust-134": {
+      "language": "rust",
+      "title": "Hacé crecer una generación"
+    },
+    "go-134": {
+      "language": "go",
+      "title": "Hacé crecer una generación"
+    },
+    "rust-135": {
+      "language": "rust",
+      "title": "Derivá una estructura, no un string"
+    },
+    "go-135": {
+      "language": "go",
+      "title": "Derivá una estructura, no un string"
+    },
+    "rust-136": {
+      "language": "rust",
+      "title": "Buscá antes de tomar una ficha"
+    },
+    "go-136": {
+      "language": "go",
+      "title": "Buscá antes de tomar una ficha"
+    },
+    "rust-137": {
+      "language": "rust",
+      "title": "Núcleo · Una instrucción llega hasta la RAM"
+    },
+    "go-137": {
+      "language": "go",
+      "title": "Núcleo · Una instrucción llega hasta la RAM"
+    }
+  },
+  "worlds": {
+    "rust-world-1": {
+      "language": "rust",
+      "trainingIds": ["rust-02", "rust-06", "rust-22"],
+      "challengeIds": ["rust-101", "rust-102", "rust-103"],
+      "bossId": "rust-103"
+    },
+    "rust-world-2": {
+      "language": "rust",
+      "trainingIds": ["rust-18", "rust-27", "rust-78"],
+      "challengeIds": ["rust-104", "rust-105", "rust-106"],
+      "bossId": "rust-106"
+    },
+    "rust-world-3": {
+      "language": "rust",
+      "trainingIds": ["rust-34", "rust-35", "rust-86"],
+      "challengeIds": ["rust-107", "rust-108", "rust-109"],
+      "bossId": "rust-109"
+    },
+    "rust-world-4": {
+      "language": "rust",
+      "trainingIds": ["rust-24", "rust-29", "rust-99"],
+      "challengeIds": ["rust-110", "rust-111", "rust-112"],
+      "bossId": "rust-112"
+    },
+    "go-world-1": {
+      "language": "go",
+      "trainingIds": ["go-06", "go-07", "go-11"],
+      "challengeIds": ["go-101", "go-102", "go-103"],
+      "bossId": "go-103"
+    },
+    "go-world-2": {
+      "language": "go",
+      "trainingIds": ["go-05", "go-15", "go-26"],
+      "challengeIds": ["go-104", "go-105", "go-106"],
+      "bossId": "go-106"
+    },
+    "go-world-3": {
+      "language": "go",
+      "trainingIds": ["go-16", "go-18", "go-88"],
+      "challengeIds": ["go-107", "go-108", "go-109"],
+      "bossId": "go-109"
+    },
+    "go-world-4": {
+      "language": "go",
+      "trainingIds": ["go-39", "go-61", "go-100"],
+      "challengeIds": ["go-110", "go-111", "go-112"],
+      "bossId": "go-112"
+    }
+  },
+  "workshops": {
+    "cache": {
+      "model": "cache",
+      "cores": {
+        "rust": "rust-113",
+        "go": "go-113"
+      },
+      "objectives": ["miss", "hit", "evict"]
+    },
+    "heap": {
+      "model": "heap",
+      "cores": {
+        "rust": "rust-114",
+        "go": "go-114"
+      },
+      "objectives": ["allocate", "fragment", "coalesce"]
+    },
+    "mmu": {
+      "model": "mmu",
+      "cores": {
+        "rust": "rust-115",
+        "go": "go-115"
+      },
+      "objectives": ["translate", "protection", "map"]
+    },
+    "tlb": {
+      "model": "tlb",
+      "cores": {
+        "rust": "rust-116",
+        "go": "go-116"
+      },
+      "objectives": ["hit", "stale", "recover"]
+    },
+    "vm": {
+      "model": "vm",
+      "cores": {
+        "rust": "rust-117",
+        "go": "go-117"
+      },
+      "objectives": ["branch", "halt", "bounded"]
+    },
+    "stack": {
+      "model": "stack",
+      "cores": {
+        "rust": "rust-118",
+        "go": "go-118"
+      },
+      "objectives": ["nested", "return", "guard"]
+    },
+    "scheduler": {
+      "model": "scheduler",
+      "cores": {
+        "rust": "rust-119",
+        "go": "go-119"
+      },
+      "objectives": ["rotate", "wake", "finish"]
+    },
+    "interrupts": {
+      "model": "interrupts",
+      "cores": {
+        "rust": "rust-120",
+        "go": "go-120"
+      },
+      "objectives": ["masked", "deliver", "again"]
+    },
+    "wal": {
+      "model": "wal",
+      "cores": {
+        "rust": "rust-121",
+        "go": "go-121"
+      },
+      "objectives": ["wal-loss", "wal-durable", "wal-recovered"]
+    },
+    "lsm": {
+      "model": "lsm",
+      "cores": {
+        "rust": "rust-122",
+        "go": "go-122"
+      },
+      "objectives": ["lsm-resurrection", "lsm-retained", "lsm-reclaimed"]
+    },
+    "quorum": {
+      "model": "quorum",
+      "cores": {
+        "rust": "rust-123",
+        "go": "go-123"
+      },
+      "objectives": ["quorum-stale", "quorum-unavailable", "quorum-repaired"]
+    },
+    "clocks": {
+      "model": "clocks",
+      "cores": {
+        "rust": "rust-124",
+        "go": "go-124"
+      },
+      "objectives": ["clocks-independent", "clocks-receive", "clocks-chain"]
+    },
+    "network": {
+      "model": "network",
+      "cores": {
+        "rust": "rust-125",
+        "go": "go-125"
+      },
+      "objectives": ["network-reordered", "network-deduped", "network-assembled"]
+    },
+    "backpressure": {
+      "model": "backpressure",
+      "cores": {
+        "rust": "rust-126",
+        "go": "go-126"
+      },
+      "objectives": ["backpressure-blocked", "backpressure-resumed", "backpressure-fifo"]
+    },
+    "balancing": {
+      "model": "balancing",
+      "cores": {
+        "rust": "rust-127",
+        "go": "go-127"
+      },
+      "objectives": ["balancing-health", "balancing-opened", "balancing-recovered"]
+    },
+    "sharding": {
+      "model": "sharding",
+      "cores": {
+        "rust": "rust-128",
+        "go": "go-128"
+      },
+      "objectives": ["sharding-wrap", "sharding-local", "sharding-compared"]
+    },
+    "transforms": {
+      "model": "transforms",
+      "cores": {
+        "rust": "rust-129",
+        "go": "go-129"
+      },
+      "objectives": ["transforms-translation", "transforms-order", "transforms-inverse"]
+    },
+    "raster": {
+      "model": "raster",
+      "cores": {
+        "rust": "rust-130",
+        "go": "go-130"
+      },
+      "objectives": ["raster-line", "raster-steep", "raster-point"]
+    },
+    "raycast": {
+      "model": "raycast",
+      "cores": {
+        "rust": "rust-131",
+        "go": "go-131"
+      },
+      "objectives": ["raycast-hit", "raycast-miss", "raycast-nearest"]
+    },
+    "pathfinding": {
+      "model": "pathfinding",
+      "cores": {
+        "rust": "rust-132",
+        "go": "go-132"
+      },
+      "objectives": ["pathfinding-bfs", "pathfinding-astar", "pathfinding-blocked"]
+    },
+    "physics": {
+      "model": "physics",
+      "cores": {
+        "rust": "rust-133",
+        "go": "go-133"
+      },
+      "objectives": ["physics-wall", "physics-brick", "physics-touch"]
+    },
+    "life": {
+      "model": "life",
+      "cores": {
+        "rust": "rust-134",
+        "go": "go-134"
+      },
+      "objectives": ["life-oscillator", "life-still", "life-travel"]
+    },
+    "algebra": {
+      "model": "algebra",
+      "cores": {
+        "rust": "rust-135",
+        "go": "go-135"
+      },
+      "objectives": ["algebra-horner", "algebra-derivative", "algebra-stationary"]
+    },
+    "minimax": {
+      "model": "minimax",
+      "cores": {
+        "rust": "rust-136",
+        "go": "go-136"
+      },
+      "objectives": ["minimax-choice", "minimax-win", "minimax-loss"]
+    },
+    "pc": {
+      "model": "pc",
+      "cores": {
+        "rust": "rust-137",
+        "go": "go-137"
+      },
+      "objectives": ["translate", "protect-retry", "interrupt"]
+    }
+  },
+  "atlas": {
+    "rust-identity": {
+      "language": "rust",
+      "labId": "rust-37"
+    },
+    "rust-syntax": {
+      "language": "rust",
+      "labId": "rust-04"
+    },
+    "rust-types": {
+      "language": "rust",
+      "labId": "rust-16"
+    },
+    "rust-flow": {
+      "language": "rust",
+      "labId": "rust-23"
+    },
+    "rust-functions": {
+      "language": "rust",
+      "labId": "rust-59"
+    },
+    "rust-collections": {
+      "language": "rust",
+      "labId": "rust-35"
+    },
+    "rust-structs": {
+      "language": "rust",
+      "labId": "rust-22"
+    },
+    "rust-interfaces": {
+      "language": "rust",
+      "labId": "rust-56"
+    },
+    "rust-functional": {
+      "language": "rust",
+      "labId": "rust-36"
+    },
+    "rust-generics": {
+      "language": "rust",
+      "labId": "rust-58"
+    },
+    "rust-memory": {
+      "language": "rust",
+      "labId": "rust-44"
+    },
+    "rust-errors": {
+      "language": "rust",
+      "labId": "rust-29"
+    },
+    "rust-modules": {
+      "language": "rust",
+      "labId": "rust-61"
+    },
+    "rust-concurrency": {
+      "language": "rust",
+      "labId": "rust-70"
+    },
+    "rust-async": {
+      "language": "rust",
+      "labId": "rust-67"
+    },
+    "rust-expert": {
+      "language": "rust",
+      "labId": "rust-72"
+    },
+    "go-identity": {
+      "language": "go",
+      "labId": "go-01"
+    },
+    "go-syntax": {
+      "language": "go",
+      "labId": "go-03"
+    },
+    "go-types": {
+      "language": "go",
+      "labId": "go-19"
+    },
+    "go-flow": {
+      "language": "go",
+      "labId": "go-08"
+    },
+    "go-functions": {
+      "language": "go",
+      "labId": "go-10"
+    },
+    "go-collections": {
+      "language": "go",
+      "labId": "go-13"
+    },
+    "go-structs": {
+      "language": "go",
+      "labId": "go-57"
+    },
+    "go-interfaces": {
+      "language": "go",
+      "labId": "go-35"
+    },
+    "go-functional": {
+      "language": "go",
+      "labId": "go-54"
+    },
+    "go-generics": {
+      "language": "go",
+      "labId": "go-52"
+    },
+    "go-memory": {
+      "language": "go",
+      "labId": "go-22"
+    },
+    "go-errors": {
+      "language": "go",
+      "labId": "go-28"
+    },
+    "go-modules": {
+      "language": "go",
+      "labId": "go-71"
+    },
+    "go-concurrency": {
+      "language": "go",
+      "labId": "go-42"
+    },
+    "go-async": {
+      "language": "go",
+      "labId": "go-61"
+    },
+    "go-expert": {
+      "language": "go",
+      "labId": "go-38"
+    }
+  }
+}

@@ -45,8 +45,26 @@ En la pasada de calidad también se instaló
 [code-review](../.agents/skills/code-review/SKILL.md), de
 [Matt Pocock](https://www.skills.sh/mattpocock/skills/code-review), con unas
 657 mil instalaciones consultadas el 2026-10-03. Requiere un punto de comparación
-y una especificación para revisar estándares y requisitos por separado. El total
-actual es de once skills locales.
+y una especificación para revisar estándares y requisitos por separado.
+
+Para la adopción de Tailwind en las vistas React y el backend Laravel se buscaron
+skills con `find-skills` (`npx skills find`) el 2026-10-03, verificando instalaciones,
+reputación del repositorio de origen y licencia, y revisando el contenido antes de
+exponerlo (sólo Markdown, sin scripts ni instrucciones de red):
+
+| Skill | Fuente | Señales consultadas | Uso en este proyecto |
+| --- | --- | --- | --- |
+| [tailwind-design-system](../.agents/skills/tailwind-design-system/SKILL.md) | [wshobson/agents](https://skills.sh/wshobson/agents/tailwind-design-system) | 67 mil instalaciones; ★40 mil; MIT | Tokens, theming y componentes con Tailwind v4 al reemplazar CSS ad hoc. |
+| [laravel-specialist](../.agents/skills/laravel-specialist/SKILL.md) | [Jeffallan/claude-skills](https://skills.sh/jeffallan/claude-skills/laravel-specialist) | 22 mil; ★11,7 mil; MIT | API, Eloquent, Sanctum y configuración del backend Laravel. |
+| [laravel-tdd](../.agents/skills/laravel-tdd/SKILL.md) | [affaan-m/ECC](https://skills.sh/affaan-m/ecc/laravel-tdd) | 9,6 mil; ★272 mil; MIT | Pruebas con Pest/PHPUnit en ciclos TDD. |
+| [laravel-security](../.agents/skills/laravel-security/SKILL.md) | [affaan-m/ECC](https://skills.sh/affaan-m/ecc/laravel-security) | 10,7 mil; ★272 mil; MIT | Revisión de autenticación, validación y despliegue del backend. |
+
+Se descartaron `tailwind-4-docs` (repositorio con 75 estrellas; la documentación de
+Tailwind se consulta con Context7) y skills atadas a shadcn o Expo. Estas cuatro se
+instalaron con `npx skills add <repo> --skill <nombre> -a codex -y`, que copia la skill
+en `.agents/skills/` y registra fuente y hash en `skills-lock.json`
+(`npx skills experimental_install` las restaura). El total actual es de quince skills
+locales.
 
 Para ESLint/Prettier se buscó `eslint prettier` con `find-skills`: `antfu` tenía
 16,4 mil instalaciones, pero recomienda una combinación de herramientas distinta
@@ -54,6 +72,29 @@ de la elegida por el usuario. Se tomó como base la configuración recomendada
 oficial de ESLint y el ejemplo oficial de instalación/configuración de Prettier,
 consultados mediante Context7; no se agregó una skill redundante para imponer
 otro formatter, package manager o framework.
+
+## Claude Code
+
+Consultado el 2026-10-03 en la documentación oficial de Claude Code
+([memoria](https://code.claude.com/docs/en/memory),
+[skills](https://code.claude.com/docs/en/skills) y
+[subagentes](https://code.claude.com/docs/en/sub-agents)):
+
+- Claude Code carga `AGENTS.md` de forma nativa desde la versión 2.1.277 y sólo cuando no
+  hay un `CLAUDE.md`; la CLI del entorno de desarrollo era la 2.1.162. Por eso la raíz,
+  `qa/` y `tools/quality/` tienen un `CLAUDE.md` que importa su `AGENTS.md` con
+  `@AGENTS.md`. Con un `CLAUDE.md` en la raíz, las versiones nuevas ignoran los `AGENTS.md`
+  anidados que no se importen: al agregar uno, sumá su `CLAUDE.md` con la misma línea.
+- Claude Code descubre skills sólo en `.claude/skills/<nombre>/SKILL.md` y admite symlinks
+  por skill. Al instalar una skill en `.agents/skills/`, agregá su enlace relativo:
+  `ln -s ../../.agents/skills/<nombre> .claude/skills/<nombre>`.
+- Una skill de proyecto con el nombre de un comando incluido lo reemplaza. `code-review`
+  queda sólo en `.agents/skills/` para no ocultar el `/code-review` de Claude Code.
+- `.claude/agents/revisor.md` (Opus, effort `max`, sin edición) e
+  `.claude/agents/implementador.md` (Sonnet, effort `medium`) aplican el reparto de modelos
+  de `AGENTS.md`. Usan los campos documentados `model`, `effort`, `tools` y `skills`; los
+  alias de modelo siguen la versión vigente de cada familia. Un subagente nuevo se detecta
+  sin reiniciar, salvo cuando `.claude/agents/` no existía al iniciar la sesión.
 
 ## Criterios de uso
 

@@ -9,24 +9,34 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 
 | Responsabilidad | Fuentes |
 | --- | --- |
-| Documento y entrada ESM | `src/index.html`, `src/main.tsx` |
-| Navegación, recorrido y progreso general | `app.js`, `content.js`, `styles.css` |
-| Ejercicios del recorrido | `lab-rust.js`, `lab-go.js` |
+| Documento, entrada ESM y adaptadores legacy | `src/index.html`, `src/app/main.tsx`, `src/app/legacy/` |
+| Helpers y constantes compartidos, sin reglas de negocio | `src/shared/lib/`, `src/shared/config/` |
+| Evidencia de aprobación, interpretación de ejecuciones y fusión de registros | `src/entities/exercise/` |
+| Lectura versionada, respaldo y avisos de carga del progreso | `src/shared/lib/versioned-storage.ts` (ADR 0003) |
+| Navegación, recorrido y progreso general | `app.js`, `styles.css` |
+| Contenido del recorrido y biblioteca | `src/entities/guide/` |
+| Catálogos de contenido (publicados en `window.*`) | adaptador `src/app/legacy/register-catalogs.ts` |
+| Ejercicios del recorrido y tipo `Exercise` | `src/entities/exercise/content/{rust,go}-lab.ts`, `src/entities/exercise/model/types.ts` |
 | Laboratorio, revisión y modelos educativos | `lab.js`, `lab-explorers.js`, `lab.css` |
-| Transporte a los Playgrounds oficiales | `runner.js` |
-| Editor CodeMirror 6 | `editor-source.js` |
-| Atlas migrado a React/TypeScript | `src/features/atlas/` y adaptador `window.TallerAtlas` en módulos TS/TSX |
-| Desafíos nuevos de campaña | `quests-rust.js`, `quests-go.js` |
-| Mundos, reglas y progreso de campaña | `campaign-rust.js`, `campaign-go.js`, `campaign-engine.js` |
+| Transporte a los Playgrounds oficiales | `src/shared/api/playground/`, adaptador `src/app/legacy/register-runner.ts` |
+| Editor CodeMirror 6 | `src/shared/ui/code-editor/`, adaptador `src/app/legacy/register-editor.ts` |
+| Atlas migrado a React/TypeScript | `src/pages/atlas/` (`ui`, `model`, `content`, `lib`) y adaptador `src/app/legacy/register-atlas.tsx` |
+| Desafíos nuevos de campaña | `src/entities/exercise/content/{rust,go}-quests.ts` (fábrica `defineQuest`) |
+| Mundos de campaña | `src/entities/campaign/content/{rust,go}-worlds.ts` |
+| Reglas, validación y progreso de campaña | `src/entities/campaign/`, adaptador `src/app/legacy/register-campaign-engine.ts` |
 | Interfaz y exploradores de campaña | `campaign.js`, `campaign.css`, `quest-explorers.js`, `quest-explorers.css` |
-| Catálogos y modelos puros de Sistemas | `systems-{lowlevel,infra,play,pc}.js` |
-| Núcleos Rust/Go de Sistemas | `systems-{lowlevel,infra,play,pc}-labs.js` |
-| Sellos y progreso de Sistemas | `systems-engine.js` |
+| Contrato de simulaciones de Sistemas | `src/entities/systems-simulation/` (`defineModel`, tipos de vista y escena) |
+| Modelos de Sistemas | `src/entities/systems-simulation/models/{lowlevel,infra,play,pc}/` (un archivo por modelo, con `defineModel`) |
+| Fichas de los talleres | `src/entities/systems-workshop/content/{lowlevel,infra,play,pc}-workshops.ts` |
+| Núcleos Rust/Go de Sistemas | `src/entities/exercise/content/systems-{lowlevel,infra,play,pc}-cores.ts` |
+| Catálogos de Sistemas publicados en `window.SYSTEMS_*` | adaptadores `src/app/legacy/register-systems-{lowlevel,infra,play,pc}.ts` |
+| Sellos y progreso de Sistemas | `src/entities/systems-workshop/`, adaptador `src/app/legacy/register-systems-engine.ts` |
 | Interfaz de Sistemas | `systems.js`, `systems.css` |
-| Animaciones y kits ZIP | `game-effects-source.js`, `project-kit-source.js` |
+| Animaciones | `src/shared/lib/celebration.ts`, adaptador `src/app/legacy/register-effects.ts` |
+| Kits ZIP de proyecto | `src/features/download-project-kit/` (archivos puros y ZIP con fflate), `src/shared/lib/download-file.ts`, adaptador `src/app/legacy/register-project-kit.ts` |
 | Construcción y dependencias | configuración Vite, `package.json`, `package-lock.json` |
 | Servicio estático y preview | `Dockerfile`, `compose.yaml`, `compose.preview.yaml`, `nginx.conf` |
-| Comprobaciones e investigación educativa | `qa/*-check.cjs`, `qa/research-*.md` |
+| Comprobaciones e investigación educativa | `qa/*-check.ts`, `qa/lib/`, `qa/fixtures/`, `qa/run-checks.ts`, `qa/research-*.md` |
 | Documentación del desarrollo | `AGENTS.md`, `docs/` |
 
 ## Cómo mantener el orden
@@ -40,14 +50,18 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
   con nombre descriptivo. Agregá un `AGENTS.md` local sólo si tiene reglas propias.
 - La estructura plana es el estado legacy. Una reorganización a carpetas debe
   resolver un problema concreto y actualizar en el mismo cambio imports de
-  `src/main.tsx`, scripts npm, QA, Docker y documentación.
-- `src/main.tsx` define temporalmente el orden de los imports legacy. Esos módulos
+  `src/app/main.tsx`, scripts npm, QA, Docker y documentación.
+- `src/app/main.tsx` define temporalmente el orden de los imports legacy. Esos módulos
   comparten contratos mediante `window.Taller*`; respetá sus dependencias hasta
   reemplazarlas por imports explícitos dentro de cada funcionalidad.
+  `qa/load-order-check.ts` declara esas dependencias.
+- Las fuentes legacy de la raíz son módulos ES: importan helpers de `src/shared/`
+  (escape HTML, normalización de búsqueda, clon JSON, niveles) en lugar de copiarlos.
+  Antes de escribir un helper, buscá si ya existe ahí.
 - Al agregar un asset, importalo desde la entrada o la funcionalidad que lo usa para
   que Vite lo procese. No agregues otro empaquetador ni un script de concatenación.
 - Editá las fuentes, conservá los avisos de licencia y regenerá los artefactos.
-  `dist/` y `*.bundle.js` son salidas ignoradas, no fuentes para editar o versionar.
+  `dist/` es una salida ignorada, no una fuente para editar o versionar.
 - Mantené las versiones y el lockfile sincronizados. Para una migración de interfaz,
   definí el framework y el build objetivo, organizá componentes por funcionalidad
   y avanzá por vistas verificables. Conservá contenido, modelos, runner y progreso
@@ -71,7 +85,9 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
   16 conceptos del Atlas por lenguaje, y 25 talleres de Sistemas compartidos.
   Una ampliación debe actualizar las expectativas del build, QA, interfaz y README.
 - Separá resultados reales de compilación, simulaciones y etapas manuales. Un
-  fallo de transporte o compilación nunca equivale a aprobar una prueba.
+  fallo de transporte o compilación nunca equivale a aprobar una prueba. La regla
+  única de aprobación es `hasPassingEvidence` de `src/entities/exercise`; las
+  políticas de lectura, respaldo y fusión del progreso están en el ADR 0003.
 - El progreso vive en `localStorage`, separado por origen y lenguaje. Preservá la
   exportación/importación, los logros ya obtenidos y el manejo de almacenamiento
   bloqueado. Las simulaciones no deben otorgar aprobación de código.
@@ -139,9 +155,9 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 - Medí antes de agregar memoización o complejidad por rendimiento. Probá reglas
   y flujos observables con los checks existentes y pruebas específicas de regresión.
 
-Estas reglas se aplican a los cambios nuevos y a los módulos que se migren. No
-exigen reformatear todo el código existente. Las fuentes y skills de referencia
-están en `docs/agent-skills.md`.
+Estas reglas se aplican a los cambios nuevos y a los módulos que se migren; el
+formato ya es uniforme porque Prettier cubre todo el código propio. Las fuentes y
+skills de referencia están en `docs/agent-skills.md`.
 
 ## Feature-Sliced Design incremental
 
@@ -152,8 +168,10 @@ para infraestructura o UI sin reglas de negocio. Abrí slices en `features` para
 acciones de valor para el alumno y en `entities` para conceptos de dominio estables
 sólo cuando varios consumidores justifiquen ese seam. No agregues `processes` —está
 deprecada— ni `widgets` hasta que exista un bloque autónomo que realmente los necesite.
-El `src/features/atlas` actual nombra una funcionalidad migrada antes de adoptar esta
-taxonomía completa; no clasifiques un módulo por el nombre heredado de su carpeta.
+Estado actual: `src/app` (entrada y adaptadores legacy), `src/pages/atlas` (primera
+página migrada), `src/entities/exercise` (regla de evidencia, interpretación de la
+ejecución y fusión de registros, compartidas por laboratorio, campaña y Sistemas) y
+`src/shared` (helpers y constantes sin reglas de negocio).
 
 - La dirección permitida es `app → pages → widgets → features → entities → shared`.
   Un módulo sólo importa su propio slice o capas inferiores; dos slices de la misma
@@ -165,7 +183,7 @@ taxonomía completa; no clasifiques un módulo por el nombre heredado de su carp
   esa API y no desde archivos internos; dentro del slice, usá imports directos. En
   `shared`, preferí una API por segmento a un barrel global que ensanche el bundle.
   La API del slice puede reexportar como nombrada la abstracción default de un archivo,
-  por ejemplo `export {default as AtlasView} from './ui/AtlasView'`.
+  por ejemplo `export { default as AtlasPage } from './ui/AtlasPage'`.
 - Adoptá la estructura por slices al migrar una funcionalidad o cuando resuelva un
   problema concreto de cohesión o dependencias. No muevas todo el legacy de una vez
   ni crees capas, abstracciones o reexports para usos hipotéticos.
