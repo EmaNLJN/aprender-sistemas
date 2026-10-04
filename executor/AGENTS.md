@@ -24,5 +24,8 @@ biblioteca estándar: no agregues módulos sin un ADR.
   por defecto; las pruebas de integración usan `integracion`). Al arrancar barre todo lo de su
   instancia y al recibir SIGTERM cancela los pedidos en curso, cuyos contenedores borra el
   `Runner`: Compose necesita un `stop_grace_period` de 20 s o más.
-- Las imágenes base se fijan por digest con el tag delante; al actualizarlas, corré otra vez la
-  integración.
+- Las imágenes base se fijan por digest con el tag delante. Las de sandbox se reconstruyen al
+  menos cada semana (seguridad y caché de Go, ver la enmienda del ADR 0005); después de
+  actualizarlas, corré otra vez la integración con runc y con runsc.
+- `integration.sh` monta el socket de Docker en el contenedor de pruebas: ese contenedor controla
+  el daemon entero. Usa siempre `/var/run/docker.sock` e ignora `DOCKER_HOST`.

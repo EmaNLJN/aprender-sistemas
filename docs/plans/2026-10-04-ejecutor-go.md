@@ -2276,7 +2276,7 @@ exec docker run --rm \
 - [ ] **Paso 5: Correr la integración con runc**
 
 Ejecutar: `sh executor/scripts/integration.sh`
-Esperado: las 12 pruebas `TestIntegration…` en PASS. Si alguna falla, el implementador
+Esperado: las pruebas `TestIntegration…` en PASS (12 en este plan; 19 al cierre de B1, ver el ledger y la enmienda del ADR 0005). Si alguna falla, el implementador
 reporta la salida exacta y se detiene; no ajusta límites por su cuenta.
 
 - [ ] **Paso 6: Crear la prueba de humo que corre el usuario**
@@ -2320,7 +2320,7 @@ git commit -m "test(ejecutor): imágenes de sandbox, integración con Docker y p
 - [ ] **Paso 8: Repetir con gVisor** (cuando el usuario haya instalado `runsc` y la prueba de humo pase)
 
 Ejecutar: `EXECUTOR_RUNTIME=runsc sh executor/scripts/integration.sh`
-Esperado: las mismas 12 pruebas en PASS. Si alguna difiere, por ejemplo por cómo gVisor
+Esperado: las mismas pruebas en PASS. Si alguna difiere, por ejemplo por cómo gVisor
 informa un OOM, se documenta en el ADR 0005 antes de ajustar la prueba.
 
 ---

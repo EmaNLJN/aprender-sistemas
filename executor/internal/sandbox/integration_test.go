@@ -75,9 +75,11 @@ func TestIntegrationInfiniteLoopTimesOut(t *testing.T) {
 }
 
 func TestIntegrationMemoryHogIsKilled(t *testing.T) {
-	r := execute(t, "rust", `fn main() { let mut v = Vec::new(); loop { v.push(vec![1u8; 1 << 20]); } }`)
-	if !r.OOMKilled && r.ExitCode != 137 {
-		t.Fatalf("debe morir por memoria: %+v", r)
+	// 512 MiB acotados: sin límite de memoria, el programa termina enseguida e imprime «sin
+	// límite» en vez de crecer hasta el plazo (un kill por plazo también da 137, sin OOM).
+	r := execute(t, "rust", `fn main() { let mut v = Vec::new(); for _ in 0..512 { v.push(vec![1u8; 1 << 20]); } println!("sin límite {}", v.len()); }`)
+	if r.Phase != "run" || r.TimedOut || !r.OOMKilled {
+		t.Fatalf("debe morir por memoria, no por tiempo: %+v", r)
 	}
 }
 
@@ -89,9 +91,30 @@ func TestIntegrationOutputFloodIsTruncated(t *testing.T) {
 }
 
 func TestIntegrationHasNoNetwork(t *testing.T) {
-	r := execute(t, "go", "package main\n\nimport (\"fmt\"; \"net\"; \"time\")\n\nfunc main() {\n\t_, err := net.DialTimeout(\"tcp\", \"1.1.1.1:53\", 2*time.Second)\n\tif err != nil { fmt.Println(\"sin red\"); return }\n\tfmt.Println(\"con red\")\n}\n")
-	if r.Stdout != "sin red\n" {
-		t.Fatalf("%+v", r)
+	// Mira las interfaces, no un dial: sin salida a Internet en el host, un dial fallaría igual.
+	r := execute(t, "go", `package main
+
+import (
+	"fmt"
+	"os"
+	"strings"
+)
+
+func main() {
+	data, err := os.ReadFile("/proc/net/dev")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	for _, line := range lines[2:] {
+		name, _, _ := strings.Cut(line, ":")
+		fmt.Println(strings.TrimSpace(name))
+	}
+}
+`)
+	if r.Stdout != "lo\n" {
+		t.Fatalf("la única interfaz es loopback: %+v", r)
 	}
 }
 
@@ -111,7 +134,14 @@ func TestIntegrationLegitConcurrencyFitsThePidsLimit(t *testing.T) {
 
 func TestIntegrationThreadBombHitsThePidsLimit(t *testing.T) {
 	r := execute(t, "rust", `fn main() { let mut hs = Vec::new(); for _ in 0..10000 { match std::thread::Builder::new().spawn(|| std::thread::sleep(std::time::Duration::from_secs(5))) { Ok(h) => hs.push(h), Err(_) => { println!("límite"); return; } } } }`)
-	if r.Stdout != "límite\n" {
+	// Con runc, crear el hilo 64 falla con EAGAIN y el programa lo informa. Con runsc, el límite
+	// cuenta los hilos del host del sandbox: al excederlo, gVisor mata el sandbox entero (137, sin
+	// OOM). Las dos contienen la bomba; ver la enmienda del ADR 0005.
+	contained := r.Stdout == "límite\n"
+	if os.Getenv("EXECUTOR_RUNTIME") == "runsc" {
+		contained = r.ExitCode == 137 && !r.OOMKilled && !r.TimedOut
+	}
+	if !contained {
 		t.Fatalf("el límite de procesos corta la bomba de hilos: %+v", r)
 	}
 }
@@ -147,19 +177,77 @@ import (
 )
 
 func main() {
-	for _, path := range []string{"/out/x", "/x", "/tmp/x"} {
+	// /opt/gocache es de 65534 y /var/tmp es 1777: sólo --read-only impide escribirlos.
+	for _, path := range []string{"/out/x", "/opt/gocache/x", "/var/tmp/x", "/tmp/x"} {
 		err := os.WriteFile(path, []byte("x"), 0o600)
 		fmt.Println(path, err == nil)
 	}
+	fmt.Println("uid", os.Getuid())
 }
 `)
 	want := `/out/x false
-/x false
+/opt/gocache/x false
+/var/tmp/x false
 /tmp/x true
+uid 65534
 `
 	if r.Stdout != want {
-		t.Fatalf("la ejecución sólo escribe en /tmp: rootfs y /out son de sólo lectura: %+v", r)
+		t.Fatalf("la ejecución corre como 65534 y sólo escribe en /tmp: %+v", r)
 	}
+}
+
+func TestIntegrationRunHasNoPrivileges(t *testing.T) {
+	r := execute(t, "go", `package main
+
+import (
+	"fmt"
+	"os"
+	"os/exec"
+	"strings"
+)
+
+func main() {
+	status, _ := os.ReadFile("/proc/self/status")
+	for _, line := range strings.Split(string(status), "\n") {
+		if strings.HasPrefix(line, "CapEff:") || strings.HasPrefix(line, "NoNewPrivs:") {
+			fmt.Println(strings.Join(strings.Fields(line), " "))
+		}
+	}
+	os.WriteFile("/tmp/x.sh", []byte("#!/bin/sh\necho ejecutado\n"), 0o755)
+	fmt.Println("exec en /tmp falla:", exec.Command("/tmp/x.sh").Run() != nil)
+}
+`)
+	want := `CapEff: 0000000000000000
+NoNewPrivs: 1
+exec en /tmp falla: true
+`
+	if r.Stdout != want {
+		t.Fatalf("sin capabilities, sin escalada y /tmp sin exec: %+v", r)
+	}
+}
+
+func TestIntegrationRunsOnTheRequestedRuntime(t *testing.T) {
+	r := execute(t, "go", `package main
+
+import (
+	"fmt"
+	"os"
+	"strings"
+)
+
+func main() {
+	release, _ := os.ReadFile("/proc/sys/kernel/osrelease")
+	fmt.Println(strings.Contains(string(release), "gvisor"))
+}
+`)
+	want := "false\n"
+	if os.Getenv("EXECUTOR_RUNTIME") == "runsc" {
+		want = "true\n"
+	}
+	if r.Stdout != want {
+		t.Fatalf("EXECUTOR_RUNTIME=%q, pero el kernel que ve el programa no coincide: %+v", os.Getenv("EXECUTOR_RUNTIME"), r)
+	}
+	t.Logf("runtime %q: compilación %d ms, ejecución %d ms", os.Getenv("EXECUTOR_RUNTIME"), r.CompileMs, r.RunMs)
 }
 
 func TestIntegrationContainerThatCannotStartIsAnError(t *testing.T) {

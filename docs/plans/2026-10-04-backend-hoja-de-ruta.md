@@ -40,9 +40,9 @@ Opus (`revisor`) e integra el agente principal.
 
 ## Estado
 
-- **B1** (2026-10-04): implementado en la rama `feat/b1-ejecutor` (PR #3). Las 15 pruebas de
-  integración pasan con runc; falta repetirlas con runsc cuando el usuario instale gVisor y pase
-  la prueba de humo.
+- **B1** (2026-10-04): implementado en la rama `feat/b1-ejecutor` (PR #3). Las 19 pruebas de
+  integración pasan con runc y con runsc (gVisor instalado por apt). Falta que el usuario
+  agregue `--network=none` a runsc; la prueba de humo lo marca hasta entonces.
 
 ## Orden y paralelismo
 

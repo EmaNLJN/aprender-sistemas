@@ -228,9 +228,28 @@ La implementación del ejecutor (`docs/plans/2026-10-04-ejecutor-go.md`) ajustó
   ocupado (no corrió nada) y 500 ante un fallo del sandbox (pudo haber corrido, así que Laravel
   no lo reintenta solo).
 - **Tiempo de ejecución.** 10 s; la tabla decía de 5 a 10 s.
-- **Medido con runc (2026-10-04).** Compilar un hola mundo tarda unos 0,4 s en Go y 0,2 s en
-  Rust, y el OOM llega como `OOMKilled=true`. Falta repetir la integración y las medidas con
-  runsc.
+- **Medido el 2026-10-04** con runsc `release-20260928.0` instalado por apt, plataforma systrap:
+  - las 19 pruebas de integración pasan con runc (19 s) y con runsc (28 s);
+  - un programa Go de prueba compila en unos 0,4 s con runc y 1 s con runsc, y se ejecuta en
+    unos 0,15–0,2 s con los dos;
+  - el OOM llega como `OOMKilled=true` con los dos runtimes;
+  - con runsc el programa ve 0 capabilities, `NoNewPrivs`, `/tmp` sin exec y sólo loopback.
+- **`--pids-limit` con runsc.** Cuenta los hilos del host del sandbox (sentry y gofer), no los
+  procesos del programa:
+  - con menos de unos 20, el sandbox ni arranca;
+  - si el programa lo excede, gVisor mata el sandbox entero (exit 137, sin `OOMKilled`) en vez
+    de devolverle `EAGAIN`;
+  - la bomba queda contenida igual, y con el límite de 64 de la ejecución corren los programas
+    concurrentes de las pruebas (8 hilos).
+  La auditoría B3 confirma que ninguna solución del currículo lo excede.
+- **Plataforma.** Se queda systrap, la de omisión de gVisor, aunque el host tiene `/dev/kvm`: los
+  tiempos medidos alcanzan y KVM agrega otra variable. Se reevalúa si la latencia molesta.
+- **`runtimeArgs: ["--network=none"]`** en `daemon.json` (`sudo runsc install -- --network=none`)
+  queda como defensa en profundidad: la prueba de humo lo verifica.
+- **Imágenes de sandbox.** Se reconstruyen al menos cada semana: además de las correcciones de
+  seguridad, `go build` recorta el caché precalentado que no se usó en 5 días, y cada
+  contenedor parte de la capa de la imagen, así que pasada esa semana todos recompilarían vet y
+  la stdlib (2–3 s más por envío).
 
 ## Fuentes
 
