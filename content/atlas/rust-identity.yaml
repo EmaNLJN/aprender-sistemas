@@ -1,0 +1,27 @@
+id: rust-identity
+level: beginner
+category: Fundamentos
+title: Qué lenguaje estás aprendiendo
+summary: Rust es compilado y de tipado estático. Combina programación imperativa, genérica, funcional y abstracciones orientadas a objetos sin exigir un único paradigma.
+why: Su diseño intenta hacer explícitos propiedad, mutación y costos. Las comprobaciones estáticas permiten detectar usos inválidos de memoria antes de ejecutar código seguro.
+code: |-
+  fn energia(valores: &[i32]) -> i32 {
+      valores.iter().map(|x| x * x).sum()
+  }
+  // Otra implementación válida puede usar un for
+  // y un acumulador mutable.
+explanation: El tipo de entrada es una vista prestada de enteros. La función describe una transformación funcional; un bucle imperativo también sería idiomático según el contexto. Rust no requiere un recolector de basura para su modelo normal de propiedad.
+comparison: A diferencia de JavaScript, los tipos de esta firma se comprueban antes de ejecutar. Frente a lenguajes con GC, Rust hace visible quién posee un recurso y cuándo se presta. Eso no convierte automáticamente cualquier programa Rust en más rápido.
+pitfall: Tipado estático y seguridad de memoria no demuestran que el algoritmo sea correcto ni que nunca haya deadlocks, fugas o errores de lógica.
+quiz:
+  question: ¿Rust obliga a escribir todo con iteradores funcionales?
+  options:
+    - Sí
+    - 'No: combina varios estilos'
+    - Solo permite clases
+  answer: 1
+  explanation: Podés combinar funciones, bucles, tipos propios, traits e iteradores según el problema.
+labId: rust-37
+source:
+  title: The Rust Book · Introduction
+  url: https://doc.rust-lang.org/book/ch00-00-introduction.html

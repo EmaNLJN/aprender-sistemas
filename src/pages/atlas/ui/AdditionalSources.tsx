@@ -1,4 +1,4 @@
-import type { AtlasSource } from '../content/atlas-content';
+import type { AtlasSource } from '../model/types';
 import safeHttpsUrl from '../lib/safe-https-url';
 
 interface AdditionalSourcesProps {

@@ -1,0 +1,28 @@
+id: rust-structs
+level: medium
+category: Abstracción
+title: 'Sin class: structs, métodos y composición'
+summary: Rust no tiene clases con herencia de implementación. Usa structs para datos, impl para métodos y enums para alternativas; los tipos pueden componerse como campos.
+why: Separar datos, comportamiento compartido y variantes evita depender de una jerarquía única para todos los problemas.
+code: |-
+  struct Motor { potencia: u32 }
+  struct Robot { motor: Motor }
+  impl Robot {
+      fn potencia(&self) -> u32 { self.motor.potencia }
+      fn ajustar(&mut self, n: u32) { self.motor.potencia = n; }
+  }
+explanation: '&self presta para observar; &mut self permite modificar; self por valor puede consumir la instancia. La privacidad de módulos protege campos. Un método constructor como new es una convención, no una palabra especial.'
+comparison: Si venís de Java o C#, composición corresponde a tener otro objeto como campo. Rust admite encapsulación y polimorfismo con traits, pero no extends de structs ni constructores implícitos equivalentes.
+pitfall: La ausencia de class no significa ausencia de abstracción u orientación a objetos; necesitás identificar qué propiedades concretas querés modelar.
+quiz:
+  question: ¿Qué receptor comunica una modificación prestada de la instancia?
+  options:
+    - '&self'
+    - '&mut self'
+    - 'Ninguno: todos son iguales'
+  answer: 1
+  explanation: '&mut self exige acceso exclusivo mientras ese préstamo se usa.'
+labId: rust-22
+source:
+  title: Rust Book · Methods
+  url: https://doc.rust-lang.org/book/ch05-03-method-syntax.html

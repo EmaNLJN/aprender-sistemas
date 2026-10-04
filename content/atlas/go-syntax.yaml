@@ -1,0 +1,29 @@
+id: go-syntax
+level: beginner
+category: Fundamentos
+title: Variables, valor cero y declaraciones cortas
+summary: var declara variables; := declara e inicializa dentro de funciones. Las variables son reasignables y conservan su tipo. Todo valor tiene una forma cero.
+why: El valor cero permite que muchas estructuras sean utilizables sin constructores. La distinción entre declarar y reasignar evita confusiones sobre qué variable cambia.
+code: |-
+  var total int        // 0
+  var activo bool      // false
+  var nombre string    // ""
+  total = 3
+  limite := 10         // declaración local con tipo inferido
+  limite += total
+  const Maximo = 100
+explanation: En el mismo bloque, := exige al menos una variable nueva no vacía; puede reutilizar otras existentes. En un bloque interior puede ocultar una variable exterior. const define constantes, no una variante general de variable inmutable.
+comparison: 'A diferencia de Rust, no existe let mut: las variables Go son mutables por defecto. A diferencia de JavaScript, reasignar no cambia libremente el tipo de una variable.'
+pitfall: Un := dentro de if o de otro bloque puede crear una variable nueva cuando pretendías modificar la exterior. Leé el alcance, no solo el nombre.
+quiz:
+  question: ¿Qué valor tiene var cantidad int antes de asignarle otro?
+  options:
+    - Indefinido
+    - '0'
+    - nil
+  answer: 1
+  explanation: Los enteros se inicializan con su valor cero.
+labId: go-03
+source:
+  title: Go Specification · Declarations and scope
+  url: https://go.dev/ref/spec#Declarations_and_scope

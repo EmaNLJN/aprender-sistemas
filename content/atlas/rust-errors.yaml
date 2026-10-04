@@ -1,0 +1,27 @@
+id: rust-errors
+level: medium
+category: Control y errores
+title: Ausencia, errores y panic son decisiones distintas
+summary: Option representa presencia o ausencia. Result distingue éxito y error recuperable. ? propaga un error; panic interrumpe el flujo normal y no sustituye la validación esperable.
+why: Los tipos obligan al llamador a considerar respuestas que de otro modo podrían olvidarse o confundirse con cero y cadena vacía.
+code: |-
+  fn puerto(s: &str) -> Result<u16, &'static str> {
+      let n = s.parse::<u16>().map_err(|_| "numero")?;
+      if n == 0 { Err("cero") } else { Ok(n) }
+  }
+  let primero = [0, 3].first(); // Some(&0), distinto de None
+explanation: Err es un valor, no una excepción lanzada automáticamente. ? devuelve temprano el error compatible desde la función. En bibliotecas, enums de errores pueden conservar causas y datos; Display aporta una presentación independiente.
+comparison: Frente a excepciones de Java o Python, los errores habituales están visibles en Result. Go también devuelve errores explícitos, pero usa resultados múltiples y el contrato error/nil.
+pitfall: unwrap transforma un caso no tratado en panic. Es razonable en algunos tests o invariantes justificadas, pero no valida una entrada externa.
+quiz:
+  question: ¿Some(0) y None expresan lo mismo?
+  options:
+    - Sí
+    - 'No: cero presente y ausencia son estados distintos'
+    - Solo si el retorno es numérico
+  answer: 1
+  explanation: El contenido cero es un dato válido dentro de Some.
+labId: rust-29
+source:
+  title: Rust Book · Recoverable errors
+  url: https://doc.rust-lang.org/book/ch09-02-recoverable-errors-with-result.html

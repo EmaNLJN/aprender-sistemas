@@ -1,5 +1,6 @@
 // Arma curriculum.json a partir de content/. Cada clave publica uno o más catálogos legacy;
 // los adaptadores de src/app/legacy/ los asignan a window.* sin transformarlos.
+import { loadAtlas } from './atlas.ts';
 import { loadCampaign } from './campaign.ts';
 import type { Language, SystemsDomain } from './catalogs.ts';
 import { expectDistinctIds, interleaveCores, loadLanguage } from './exercises.ts';
@@ -14,6 +15,7 @@ export interface Curriculum {
   campaign: Record<Language, JsonRecord[]>;
   workshops: Record<SystemsDomain, JsonRecord[]>;
   guide: JsonRecord;
+  atlas: Record<Language, JsonRecord[]>;
 }
 
 export function loadCurriculum(root: string): Curriculum {
@@ -27,5 +29,6 @@ export function loadCurriculum(root: string): Curriculum {
     campaign: loadCampaign(root),
     workshops: loadWorkshops(root),
     guide: loadGuide(root),
+    atlas: loadAtlas(root),
   };
 }

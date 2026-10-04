@@ -1,0 +1,29 @@
+id: rust-functions
+level: medium
+category: Abstracción
+title: Funciones y closures con capturas
+summary: fn define funciones con parámetros tipados. Las closures pueden capturar el entorno; Fn, FnMut y FnOnce describen cómo se pueden invocar.
+why: El tipo de la closure expresa si puede leer, mutar o consumir capturas. Eso permite aceptar comportamientos sin ocultar cómo se usan sus recursos.
+code: |-
+  fn doble(x: i32) -> i32 { x * 2 }
+  let mut llamadas = 0;
+  let mut transformar = |x| {
+      llamadas += 1;
+      doble(x)
+  };
+  let salida = transformar(3); // 6
+explanation: La closure necesita acceso mutable a llamadas y cumple FnMut. move controla que las capturas pasen a ser propias; no determina por sí solo que una closure solo pueda ejecutarse una vez. Consumir una captura durante la llamada es lo relevante para FnOnce.
+comparison: Como en JavaScript o Python, una función puede recibir comportamiento. Rust además refleja en traits las capacidades de invocación y verifica los préstamos de lo capturado.
+pitfall: Pedir Fn cuando tu algoritmo puede aceptar FnMut excluye innecesariamente closures con estado mutable.
+quiz:
+  question: ¿Una closure move siempre se consume en su primera llamada?
+  options:
+    - Sí
+    - 'No: depende de qué hace con sus capturas'
+    - Solo si captura enteros
+  answer: 1
+  explanation: Puede poseer datos y leerlos repetidamente sin consumirlos.
+labId: rust-59
+source:
+  title: Rust Book · Closures
+  url: https://doc.rust-lang.org/book/ch13-01-closures.html

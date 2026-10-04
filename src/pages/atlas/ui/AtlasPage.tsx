@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import type { AtlasConcept, AtlasLanguage } from '../content/atlas-content';
+import type { AtlasConcept, AtlasLanguage } from '../model/types';
 import {
   clearFilters,
   selectConcept,

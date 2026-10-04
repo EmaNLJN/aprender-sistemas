@@ -1,6 +1,6 @@
 import type { RefObject } from 'react';
 import { LEVEL_LABELS } from '../../../shared/config/levels';
-import type { AtlasConcept, AtlasLanguage } from '../content/atlas-content';
+import type { AtlasConcept, AtlasLanguage } from '../model/types';
 import safeHttpsUrl from '../lib/safe-https-url';
 import {
   answerQuiz,

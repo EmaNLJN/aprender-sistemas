@@ -11,6 +11,7 @@ const checks = [
   'content-exercises-check.ts',
   'content-records-check.ts',
   'content-guide-check.ts',
+  'content-atlas-check.ts',
   'curriculum-ids-check.ts',
   'atlas-check.ts',
   'guide-content-check.ts',

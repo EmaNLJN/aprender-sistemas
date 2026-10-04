@@ -1,0 +1,28 @@
+id: go-collections
+level: medium
+category: Datos y memoria
+title: Arrays, slices y maps
+summary: Un array incluye su longitud en el tipo. Un slice describe una vista sobre un array subyacente. Un map relaciona claves comparables con valores.
+why: Copiar una variable no siempre copia todos los datos alcanzables. Entender qué parte se comparte evita cambios accidentales entre vistas.
+code: |-
+  base := []int{1, 2, 3}
+  vista := base[:2]
+  vista[0] = 9           // base[0] también es 9
+  copia := append([]int(nil), base...)
+  copia[0] = 7           // base no cambia por esto
+  base = append(base, 4)  // conservá el slice devuelto
+explanation: Copiar un slice copia su descriptor, que sigue señalando almacenamiento compartido. append puede reutilizar o reemplazar el array; por eso su retorno importa. Un map nil permite lecturas, pero insertar requiere inicializarlo con make o un literal.
+comparison: 'Rust evita ciertos solapamientos de préstamo mutable en compilación. Go permite compartir estas vistas: el programa debe coordinar cuándo sus mutaciones son intencionales.'
+pitfall: Copiar un slice de structs o punteros puede seguir siendo una copia superficial de los datos anidados. Un slice nuevo no garantiza independencia profunda.
+quiz:
+  question: ¿b := a clona los elementos si a es un slice?
+  options:
+    - Sí, siempre
+    - 'No: copia el descriptor y puede compartir el array'
+    - Solo si len(a) es pequeño
+  answer: 1
+  explanation: La copia independiente de elementos requiere una operación adicional.
+labId: go-13
+source:
+  title: Go Blog · Slices internals
+  url: https://go.dev/blog/slices-intro

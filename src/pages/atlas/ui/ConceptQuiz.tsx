@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import type { AtlasConcept } from '../content/atlas-content';
+import type { AtlasConcept } from '../model/types';
 
 interface ConceptQuizProps {
   concept: AtlasConcept;

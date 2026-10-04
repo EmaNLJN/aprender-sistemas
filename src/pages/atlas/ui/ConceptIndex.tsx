@@ -1,5 +1,5 @@
 import { LEVEL_LABELS } from '../../../shared/config/levels';
-import type { AtlasConcept, AtlasLanguage } from '../content/atlas-content';
+import type { AtlasConcept, AtlasLanguage } from '../model/types';
 
 interface ConceptIndexProps {
   concepts: AtlasConcept[];

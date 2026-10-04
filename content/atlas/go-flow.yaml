@@ -1,0 +1,33 @@
+id: go-flow
+level: beginner
+category: Control y errores
+title: if, switch, for y range
+summary: if necesita bool. switch selecciona casos y no cae automáticamente al siguiente. for cubre los bucles tradicionales, condicionales e infinitos; range recorre estructuras.
+why: Pocas formas sintácticas cubren muchos recorridos. Aun así, conviene entender qué valores entrega range para cada tipo.
+code: |-
+  for i := 0; i < 3; i++ {
+      fmt.Println(i)
+  }
+  for indice, valor := range []int{8, 9} {
+      fmt.Println(indice, valor)
+  }
+  switch codigo {
+  case 200: return "ok"
+  case 404: return "ausente"
+  default: return "otro"
+  }
+explanation: 'No hay while separado: for condicion hace ese trabajo. if y switch son sentencias, no expresiones que asignen un valor directamente. Un switch sin expresión puede organizar condiciones booleanas.'
+comparison: A diferencia del switch tradicional de C o JavaScript, no necesitás break para impedir caída automática al caso siguiente. A diferencia de Rust match, un switch común no garantiza exhaustividad de un enum algebraico.
+pitfall: range sobre un map no garantiza orden estable. No bases una salida reproducible en el orden observado en una ejecución.
+quiz:
+  question: ¿Qué sucede al terminar un case normal de switch?
+  options:
+    - Continúa automáticamente al siguiente case
+    - Termina ese switch salvo control explícito diferente
+    - Repite el switch
+  answer: 1
+  explanation: La caída al siguiente caso no es implícita; fallthrough es una instrucción explícita con reglas propias.
+labId: go-08
+source:
+  title: Go Specification · Statements
+  url: https://go.dev/ref/spec#Statements

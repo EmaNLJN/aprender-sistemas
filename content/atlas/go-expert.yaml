@@ -1,0 +1,38 @@
+id: go-expert
+level: expert
+category: Herramientas
+title: Defer, reflexión y límites de unsafe
+summary: defer programa trabajo para la salida de la función. reflect inspecciona tipos en ejecución. unsafe, cgo y el ajuste del GC son especializaciones con contratos y herramientas propias.
+why: La limpieza explícita y las herramientas de introspección son útiles, pero cada una cambia qué debe revisar el programador sobre costos, control y seguridad.
+code: |-
+  func Demo() {
+      n := 1
+      defer fmt.Println(n) // captura el argumento ahora: 1
+      defer func() { fmt.Println(n) }() // lee al salir: 2
+      n = 2
+  } // imprime 2 y después 1: orden LIFO
+  // reflect.TypeOf(valor) inspecciona su tipo dinámico.
+explanation: 'Los argumentos de defer se evalúan al registrarlo; una closure puede leer la variable al ejecutarse. Defer pertenece a la función, no al bloque del for. reflect requiere revisar kind, validez y posibilidad de modificar un valor. unsafe.Pointer y uintptr no tienen el mismo papel ante el GC. cgo permite interoperar con C y agrega reglas sobre punteros y memoria; estudiar y medir el GC requiere un proyecto y carga reales. Los enlaces de especialización amplían estas áreas: este ejemplo no las ejecuta.'
+comparison: Defer se parece a una limpieza programada, pero no es un finally por bloque ni el Drop asociado al dueño de Rust. Reflexión inspecciona en ejecución; los genéricos preservan relaciones de tipos en compilación.
+pitfall: Guardar una dirección solo como uintptr no mantiene por sí mismo vivo el objeto. No uses unsafe para evitar un chequeo que no entendés; tampoco asumas que reflect permite modificar cualquier valor.
+quiz:
+  question: Si registrás dos defer, ¿en qué orden se ejecutan al salir normalmente?
+  options:
+    - En el orden de registro
+    - En orden inverso al registro
+    - En paralelo
+  answer: 1
+  explanation: La pila de defer se ejecuta en orden LIFO.
+labId: go-38
+source:
+  title: Go Specification · Defer statements
+  url: https://go.dev/ref/spec#Defer_statements
+furtherSources:
+  - title: Especialización · reflect
+    url: https://pkg.go.dev/reflect
+  - title: Especialización · unsafe
+    url: https://pkg.go.dev/unsafe
+  - title: Especialización · cgo
+    url: https://pkg.go.dev/cmd/cgo
+  - title: Especialización · Guía del GC
+    url: https://go.dev/doc/gc-guide

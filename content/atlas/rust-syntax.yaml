@@ -1,0 +1,27 @@
+id: rust-syntax
+level: beginner
+category: Fundamentos
+title: Bindings, bloques y expresiones
+summary: let crea un binding inmutable por defecto; mut habilita reasignación. Los bloques producen valores y el punto y coma puede cambiar su resultado.
+why: La mutación queda señalada en el lugar donde se declara. Las expresiones permiten componer decisiones sin asignaciones temporales obligatorias.
+code: |-
+  let limite = 10;
+  let mut total = 0;
+  total += 2;
+  let estado = if total < limite { "listo" } else { "lleno" };
+  let total = total.to_string(); // shadowing: nuevo binding y tipo
+explanation: 'El segundo let total no cambia el tipo del binding anterior: declara otro y oculta el nombre previo. En una función -> i32, la última expresión puede devolver un entero sin return; agregarle ; puede dejar el bloque con valor ().'
+comparison: let no tiene la misma mutabilidad que let de JavaScript. Rust necesita mut para reasignar y no permite cambiar el tipo de ese binding mediante una asignación.
+pitfall: 'Inmutable no significa que nunca exista mutabilidad interior: tipos como RefCell ofrecen un contrato distinto y explícito.'
+quiz:
+  question: ¿Qué hace let x = x.len(); si x era &str?
+  options:
+    - Cambia el tipo del mismo binding
+    - Crea otro binding que oculta al anterior
+    - Modifica el texto
+  answer: 1
+  explanation: Shadowing introduce un nombre nuevo con su propio tipo y valor.
+labId: rust-04
+source:
+  title: Rust Book · Variables and mutability
+  url: https://doc.rust-lang.org/book/ch03-01-variables-and-mutability.html

@@ -44,7 +44,7 @@ interface RenderModule {
 (globalThis as { require?: NodeJS.Require }).require ??= createRequire(import.meta.url);
 
 const { atlasByLanguage } = await importModule<AtlasContentModule>(
-  'src/pages/atlas/content/atlas-content.ts',
+  'src/pages/atlas/model/atlas-catalog.ts',
 );
 const { filterConcepts } = await importModule<FilterModule>(
   'src/pages/atlas/model/filter-concepts.ts',

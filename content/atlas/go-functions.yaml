@@ -1,0 +1,30 @@
+id: go-functions
+level: medium
+category: Abstracción
+title: Funciones, resultados múltiples y closures
+summary: 'Las funciones son valores: pueden pasarse, guardarse y devolverse. Los resultados múltiples permiten devolver un dato y su estado. Las closures capturan variables del entorno.'
+why: Podés introducir comportamiento y mantener estado local sin crear una clase. Los resultados múltiples hacen visibles varias dimensiones de una operación.
+code: |-
+  func Contador() func() int {
+      n := 0
+      return func() int { n++; return n }
+  }
+  func Dividir(a, b int) (int, bool) {
+      if b == 0 { return 0, false }
+      return a / b, true
+  }
+explanation: 'Cada llamada a Contador crea un estado n diferente; las funciones devueltas por esa llamada mantienen acceso a su variable capturada. El bool de Dividir debe interpretarse según el contrato: no es una excepción automática.'
+comparison: 'Las closures se parecen a las de JavaScript o Python. Go no expresa Fn/FnMut/FnOnce como Rust: la firma de función no informa si una captura será modificada.'
+pitfall: Compartir la misma closure con estado entre goroutines puede introducir una carrera. Capturar una variable no agrega sincronización.
+quiz:
+  question: ¿Dos llamadas independientes a Contador comparten necesariamente el mismo n?
+  options:
+    - Sí
+    - 'No: cada llamada crea su propio estado capturado'
+    - Solo si el retorno se guarda
+  answer: 1
+  explanation: Cada invocación crea una nueva variable local que puede escapar mediante su closure.
+labId: go-10
+source:
+  title: Go Specification · Function literals
+  url: https://go.dev/ref/spec#Function_literals

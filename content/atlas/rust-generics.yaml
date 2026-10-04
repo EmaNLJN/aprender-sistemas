@@ -1,0 +1,28 @@
+id: rust-generics
+level: advanced
+category: Abstracción
+title: Genéricos que piden lo necesario
+summary: Los parámetros de tipo abstraen valores; los bounds declaran capacidades; los tipos asociados fijan salidas de un trait y los const generics parametrizan constantes como longitudes.
+why: Una buena firma acepta todos los tipos que el algoritmo puede manejar sin pedir Clone, Copy o un tamaño fijo innecesariamente.
+code: |-
+  fn mayor<T: Ord>(xs: &[T]) -> Option<&T> { xs.iter().max() }
+  fn cantidad<T, const N: usize>(_: &[T; N]) -> usize { N }
+  trait Fuente {
+      type Item;
+      fn siguiente(&mut self) -> Option<Self::Item>;
+  }
+explanation: 'mayor compara y presta: no copia T. Ord garantiza orden total. N forma parte del tipo del array. Un tipo asociado Item se elige en cada impl y queda fijo para esa implementación.'
+comparison: Como los genéricos de otros lenguajes, evitan duplicación por tipo. Sus restricciones se expresan mediante traits; no habilitan acceder a campos solo porque varios tipos se parezcan.
+pitfall: Un genérico no implica aceptar cualquier operación. Si el bound no promete un comportamiento, el cuerpo no puede asumirlo.
+quiz:
+  question: '¿Por qué mayor<T: Ord> puede funcionar con String sin T: Clone?'
+  options:
+    - Porque clona en secreto
+    - Porque devuelve una referencia existente
+    - Porque Ord hereda Clone
+  answer: 1
+  explanation: La comparación y el préstamo no requieren duplicar el elemento.
+labId: rust-58
+source:
+  title: Rust Book · Generics
+  url: https://doc.rust-lang.org/book/ch10-01-syntax.html

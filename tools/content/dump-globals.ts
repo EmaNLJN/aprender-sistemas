@@ -92,7 +92,10 @@ for (const domain of ['SYSTEMS_LOWLEVEL', 'SYSTEMS_INFRA', 'SYSTEMS_PLAY', 'SYST
 out.models = models;
 
 // Contenido del Atlas, con el mismo empaquetador. La primera ruta que exista gana.
-const atlasCandidates = ['src/pages/atlas/content/atlas-content.ts'];
+const atlasCandidates = [
+  'src/pages/atlas/model/atlas-catalog.ts',
+  'src/pages/atlas/content/atlas-content.ts',
+];
 const atlasEntry = atlasCandidates
   .map((candidate) => join(root, candidate))
   .find((candidate) => existsSync(candidate));

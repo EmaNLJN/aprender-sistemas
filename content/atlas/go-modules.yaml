@@ -1,0 +1,30 @@
+id: go-modules
+level: medium
+category: Herramientas
+title: Paquetes, módulos y herramientas
+summary: Los paquetes organizan código. Los identificadores que empiezan con mayúscula pueden exportarse; los módulos agrupan paquetes y versionan dependencias mediante go.mod.
+why: Una API pública pequeña reduce dependencias sobre implementación. Las herramientas estándar dan un flujo común para formato, análisis y pruebas.
+code: |-
+  package contador
+
+  type Contador struct { valor int }
+  func Nuevo() *Contador { return &Contador{} }
+  func (c *Contador) Valor() int { return c.valor }
+  // Proyecto local: go test ./...
+  // go test -race ./...   ·   go vet ./...
+  // gofmt y go mod tidy pertenecen al flujo de herramientas.
+explanation: Contador, Nuevo y Valor son nombres exportados; valor permanece interno al paquete. Un módulo tiene una ruta y un go.mod; go.sum registra sumas de contenido utilizadas en la verificación de dependencias. Los archivos _test.go integran pruebas con el paquete testing.
+comparison: La privacidad se organiza por paquetes y nombres, no por public/private en cada declaración como otros lenguajes. Un módulo puede contener varios paquetes.
+pitfall: 'El laboratorio ejecuta fragmentos: no finge correr go test -race, go vet, fuzzing, builds multicarpeta o mediciones de rendimiento locales.'
+quiz:
+  question: ¿Qué hace exportable al método Valor de este paquete?
+  options:
+    - Su nombre empieza con mayúscula
+    - Que devuelva int
+    - Que tenga receptor puntero
+  answer: 0
+  explanation: La capitalización inicial es parte de la regla de exportación, junto con el contexto de declaración.
+labId: go-71
+source:
+  title: Go Modules Reference
+  url: https://go.dev/ref/mod
