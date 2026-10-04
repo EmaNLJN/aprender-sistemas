@@ -161,12 +161,14 @@ posición de la entrada.
 | P6 | Atlas a `pages/atlas` con las convenciones y pruebas de su modelo. | Sonnet | Suite, React Doctor y navegador. |
 | P7 | Correcciones de integridad con TDD y almacén versionado común. | Sonnet + revisión Opus | Pruebas nuevas que fallan antes y pasan después. |
 | P8 | Port a TS: runner, motores, efectos y kits; luego datos con IDs explícitos; luego `defineModel` y partición de los dominios de Sistemas. | Sonnet | Oráculo, auditoría de runtime y suite. |
-| Después | Vistas a React (biblioteca, proyecto y método; Sistemas; campaña; laboratorio; recorrido; shell) y la sesión «Esenciales». | — | Un ADR por decisión de URL/estado; presupuesto del documento autónomo. |
+| P9 | Integridad antes de sincronizar, a partir de una revisión adversarial del ADR 0003: respaldos en ranuras, detección de pérdida, sin escrituras al cargar ni al renderizar, fusión entre pestañas, importación en dos fases, regla única de aprobación y respaldos descargables en Método. | Sonnet + revisión Opus | Pruebas que fallan antes; fixtures congeladas con progreso real de master. |
+| Después | Backend Laravel + MySQL según el ADR 0004 (contenido y progreso en tablas, sincronización); vistas a React (biblioteca, proyecto y método; Sistemas; campaña; laboratorio; recorrido; shell) y la sesión «Esenciales». | — | Un ADR por decisión; criterios de aceptación del ADR 0004. |
 
 ## Riesgos
 
-- **Tamaño del documento autónomo:** 1,99 MB frente al límite de 2,5 MB de `qa/build-check`.
-  La sesión «Esenciales» necesita una decisión de presupuesto antes de empezar.
+- **Tamaño del documento autónomo:** 2,04 MB frente al límite de 2,5 MB de `qa/build-check`.
+  El ADR 0004 saca del bundle unos 1,07 MB de contenido, que pasa a servir la API; hasta
+  entonces la sesión «Esenciales» no entra.
 - **Orden de evaluación:** varios módulos leen globals al cargarse; cualquier adaptador nuevo
   ocupa la posición exacta del archivo que reemplaza.
 - **IDs y formato del progreso:** son contrato del currículo y del progreso guardado.
@@ -191,11 +193,12 @@ posición de la entrada.
 | P7a | Hecha: regla única de evidencia (equivalencia probada en 19 casos), `interpretRun` puro, sincronización aislada del transporte (verificada en navegador) y fusión monótona al importar en el laboratorio | (este commit) |
 | P6 | Hecha: Atlas en `src/pages/atlas` (un componente por archivo, modelo puro probado, foco con `flushSync`), entrada en `src/app/main.tsx`; «Principiante» pasa a «Inicial» como en el resto de la app | (este commit) |
 | P5 | Hecha la parte pura: 10 fuentes legacy importan `src/shared` (escape ×4, normalización ×3, clon JSON ×7, objeto plano ×2, niveles ×3); oráculo idéntico y smoke test en navegador. Queda el escape de los exploradores, que cambia la salida con valores nulos | (este commit) |
+| P9 | Hecha: almacén `openVersionedStore` con cinco ranuras de respaldo y detección de pérdida, carga y render sin escrituras, fusión entre pestañas (en el lugar en el laboratorio), importación en dos fases con aviso de omisiones, regla única de aprobación, `syncAfterRun` por separado y respaldos descargables en Método; fixtures congeladas de master 2a278ad y d0e1b49 | `e3bc74c`, `8793480`, `74765e8` y siguientes |
 
 Hallazgos de la caracterización que quedan para P7:
 
 - `TallerSystems.missionIDs(workshopId, lang)` exige argumentos; sin ellos devuelve `[]`.
 - `TallerCampaign.lockedExerciseHTML` usa el último estado sincronizado y no vuelve a
   sincronizar.
-- La importación de `app.js` muta las notas locales antes de llamar a los `importState`;
-  si uno lanzara a mitad, las notas ya quedarían pisadas.
+- Resuelto en P7b y P9: la importación de `app.js` mutaba las notas locales antes de
+  importar las secciones; hoy arma primero un plan puro de todas y recién después aplica.

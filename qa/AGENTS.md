@@ -80,6 +80,11 @@ npm test
   mundos, núcleos y objetivos de cada taller y enlaces del Atlas. Cambiar un ID exige migrar el
   progreso guardado y actualizar el fixture a mano; nunca lo regeneres para que un
   check pase.
+- `qa/fixtures/progress-master-2a278ad-storage.json`, `progress-master-2a278ad-export.json`
+  y `progress-d0e1b49-export.json` son progreso real generado por esas versiones (las
+  cuatro claves de `localStorage` y dos exportaciones). Fijan la compatibilidad del
+  formato v1: arrancar con ellas no escribe, no respalda ni avisa, y sus secciones se
+  importan sin pérdida. Están congeladas: nunca las regeneres ni las edites.
 - `app-shell-check` y `lab-bridge-check` caracterizan el comportamiento actual,
   incluidos defectos conocidos marcados como `DEFECTO CONOCIDO`. Al corregir uno,
   cambiá su escenario en el mismo commit TDD: primero la prueba nueva que falla,
