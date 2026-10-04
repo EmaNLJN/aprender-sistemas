@@ -1,0 +1,43 @@
+title: Una fachada pública para el módulo interno
+kind: reparar
+intro: pub use reexporta un elemento con una ruta pública estable. La organización interna puede quedar oculta detrás de esa fachada.
+why: Los usuarios de una biblioteca no deberían depender de cada directorio o módulo interno; una API pequeña reduce el acoplamiento.
+objective: Hacé accesible protocolo::Estado manteniendo interno privado. estado_listo debe devolver la variante Listo.
+instructions:
+  - Agregá una reexportación pub use dentro de protocolo.
+  - No cambies la ruta usada por estado_listo ni hagas público interno.
+tests:
+  - id: t1
+    label: Ruta pública
+    expression: estado_listo() == protocolo::Estado::Listo
+    why: El tipo existe en la fachada solicitada.
+    failure: Reexportá el enum desde protocolo.
+  - id: t2
+    label: Variantes distintas
+    expression: protocolo::Estado::Listo != protocolo::Estado::Cerrado
+    why: La fachada conserva el tipo original.
+    failure: No declares otro enum paralelo con otras reglas.
+  - id: t3
+    label: Consumidor del enum
+    expression: '{ let e = protocolo::Estado::Cerrado; matches!(e, protocolo::Estado::Cerrado) }'
+    why: Otros consumidores usan únicamente la ruta pública.
+    failure: pub use conserva acceso a las variantes públicas del enum.
+hints:
+  - use trae un nombre al alcance; pub use además lo expone.
+  - Desde protocolo, interno se referencia como self::interno.
+  - Agregá pub use self::interno::Estado;.
+review:
+  success: La ruta protocolo::Estado queda desacoplada del módulo donde se define. Reexportar no crea un tipo distinto.
+  pitfall: El elemento reexportado debe tener visibilidad suficiente; pub use no permite publicar arbitrariamente un elemento privado.
+transfer: Separá los módulos en archivos usando mod y conservá la misma ruta de consumo.
+prediction:
+  question: ¿pub use crea una copia independiente del enum?
+  options:
+    - Sí, con otras variantes
+    - Solo fuera del crate
+    - 'No: ofrece otra ruta al mismo elemento'
+  answer: 2
+  explanation: Una reexportación expone el elemento existente; no duplica su definición.
+sources:
+  - title: Rust Book · Bringing paths into scope
+    url: https://doc.rust-lang.org/book/ch07-04-bringing-paths-into-scope-with-the-use-keyword.html

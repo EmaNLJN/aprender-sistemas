@@ -1,0 +1,45 @@
+title: Permisos dentro de un byte
+level: beginner
+minutes: 10
+visual: memory
+intro: Cada bit puede representar una capacidad. OR agrega bits; AND con el complemento elimina una máscara sin tocar los demás.
+why: Una máscara permite actualizar permisos independientes en una representación compacta. La regla de conservación de los demás bits es parte del contrato.
+objective: actualizar activa o desactiva todos los bits de mascara sobre estado, según habilitar.
+instructions:
+  - Usá operadores de bits sobre u8.
+  - Una máscara cero no debe modificar nada.
+tests:
+  - id: t1
+    label: Activar sin borrar
+    expression: actualizar(0b1000, 0b0011, true) == 0b1011
+    why: Se conservan permisos ajenos a la máscara.
+    failure: OR combina bits; asignar mascara borraría los anteriores.
+  - id: t2
+    label: Quitar solo elegidos
+    expression: actualizar(0b1111, 0b0101, false) == 0b1010
+    why: La eliminación se limita a bits seleccionados.
+    failure: AND con !mascara apaga esos bits.
+  - id: t3
+    label: Operación neutra e idempotente
+    expression: actualizar(7, 0, true) == 7 && actualizar(7, 0, false) == 7 && actualizar(3, 3, true) == 3
+    why: Reaplicar permisos no los alterna.
+    failure: XOR alternaría bits y no implementa activar.
+hints:
+  - No confundas | y & con || y &&.
+  - Activar es estado | mascara.
+  - Desactivar es estado & !mascara.
+review:
+  success: Los casos comprueban conservación e idempotencia. Actualizar un permiso dos veces da el mismo resultado que hacerlo una vez.
+  pitfall: XOR sirve para alternar; usarlo para habilitar rompe la idempotencia.
+transfer: Agregá contiene_todos(estado, mascara) y definí qué debe devolver con máscara cero.
+prediction:
+  question: ¿Qué sucede si activás dos veces el mismo bit con OR?
+  options:
+    - Vuelve a apagarse
+    - Permanece encendido
+    - Se mueve una posición
+  answer: 1
+  explanation: OR no alterna un bit que ya era uno.
+sources:
+  - title: Rust Reference · Bitwise operators
+    url: https://doc.rust-lang.org/reference/expressions/operator-expr.html#arithmetic-and-logical-binary-operators

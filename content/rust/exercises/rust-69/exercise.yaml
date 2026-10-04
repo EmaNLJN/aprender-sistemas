@@ -1,0 +1,45 @@
+title: Mover el handle de Pin conserva la asignación
+visual: pointers
+intro: Pin expresa una garantía sobre mover el valor apuntado, no una prohibición universal de mover el puntero que lo contiene. Unpin permite al tipo no depender de esa garantía.
+why: Algunos Futures guardan referencias internas a su propio estado. Preservar la ubicación del valor ayuda a que esas relaciones sigan siendo válidas.
+objective: Fijá un dato !Unpin con Box::pin, medí su dirección, mové el handle y comprobá que la dirección y el valor sigan iguales.
+instructions:
+  - Usá PhantomPinned en el tipo provisto.
+  - Completá inspeccionar_pin sin unsafe, sin extraer el valor y sin desreferenciar raw pointers.
+tests:
+  - id: t1
+    label: Handle transferido
+    expression: inspeccionar_pin(4) == (true, 4)
+    why: Mover el dueño del handle no desplaza el dato asignado.
+    failure: Mové original al binding movido sin recrear la asignación.
+  - id: t2
+    label: Dato cero
+    expression: inspeccionar_pin(0) == (true, 0)
+    why: El contenido no influye en la identidad de dirección.
+    failure: No compares el valor como sustituto de comparar direcciones.
+  - id: t3
+    label: Dato negativo
+    expression: inspeccionar_pin(-8) == (true, -8)
+    why: El préstamo de lectura conserva el dato.
+    failure: get_ref permite observar sin sacar el valor del Pin.
+hints:
+  - as_ref().get_ref() entrega &Fijo.
+  - Convertir &Fijo a *const Fijo y comparar direcciones es seguro.
+  - let movido = original transfiere el handle, no mueve el Fijo del heap.
+review:
+  success: Las observaciones ilustran estabilidad de dirección al mover el handle de Box::pin. PhantomPinned hace que Fijo no implemente Unpin automáticamente.
+  pitfall: Un test de direcciones no demuestra por sí solo todas las invariantes de Pin. La seguridad proviene del contrato y de usar sus APIs seguras; no agregues get_unchecked_mut por conveniencia.
+transfer: Quitá PhantomPinned en una copia del ejemplo y estudiá qué APIs de acceso mutable habilita Unpin.
+prediction:
+  question: ¿Mover Pin<Box<Fijo>> a otra variable mueve necesariamente el Fijo del heap?
+  options:
+    - Sí
+    - 'No: se mueve el handle propietario'
+    - Solo cuando valor es negativo
+  answer: 1
+  explanation: Box mantiene su asignación; cambiar el dueño del handle no relocaliza el contenido.
+sources:
+  - title: std · Pin
+    url: https://doc.rust-lang.org/std/pin/index.html
+  - title: std · PhantomPinned
+    url: https://doc.rust-lang.org/std/marker/struct.PhantomPinned.html

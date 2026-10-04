@@ -1,0 +1,42 @@
+title: Un comportamiento compartido por contrato
+intro: Un trait describe operaciones que un tipo ofrece. Una función genérica puede pedir ese comportamiento sin conocer el tipo concreto.
+why: 'La abstracción queda limitada a lo que necesitás: calcular bytes. No obliga a que todos los mensajes compartan una estructura de campos.'
+objective: Implementá Bytes para Bloque y calculá el doble de su tamaño en duplicado.
+instructions:
+  - Completá el método del trait y la función genérica.
+  - Los tamaños de prueba son menores que 1.000.
+tests:
+  - id: t1
+    label: Bloque concreto
+    expression: 'duplicado(&Bloque { tamano: 12 }) == 24'
+    why: La implementación entrega el campo correcto.
+    failure: bytes devuelve tamano y duplicado lo multiplica.
+  - id: t2
+    label: Tamaño vacío
+    expression: 'duplicado(&Bloque { tamano: 0 }) == 0'
+    why: El contrato incluye cero.
+    failure: No agregues cabeceras que no se pidieron.
+  - id: t3
+    label: Otro implementador
+    expression: '{ struct Cabecera; impl Bytes for Cabecera { fn bytes(&self) -> usize { 7 } } duplicado(&Cabecera) == 14 }'
+    why: La función depende del trait, no de los campos de Bloque.
+    failure: Dentro de duplicado usá valor.bytes(), no valor.tamano.
+hints:
+  - El método de Bloque puede acceder a self.tamano.
+  - 'T: Bytes habilita llamar bytes sobre &T.'
+  - La función genérica solo debe conocer el método del trait.
+review:
+  success: La tercera prueba aporta otro tipo sin modificar duplicado. Eso verifica el límite de la abstracción.
+  pitfall: 'Una restricción T: Bytes no promete campos específicos, solo los métodos declarados por el trait.'
+transfer: Implementá Bytes para un tipo Texto que contenga String.
+prediction:
+  question: '¿Puede duplicado<T: Bytes> acceder a valor.tamano para cualquier T?'
+  options:
+    - 'No: el trait garantiza métodos, no ese campo'
+    - 'Sí: todos los tipos tienen tamano'
+    - Solo en modo release
+  answer: 0
+  explanation: T podría ser Cabecera u otro tipo con una representación diferente.
+sources:
+  - title: Rust Book · Traits
+    url: https://doc.rust-lang.org/book/ch10-02-traits.html

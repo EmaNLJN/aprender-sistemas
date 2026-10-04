@@ -1,0 +1,44 @@
+title: El mayor sin clonar la colección
+intro: 'T: Ord garantiza un orden total. Al devolver una referencia, no necesitás T: Copy ni T: Clone.'
+why: Las restricciones genéricas son promesas comprobables. Pedís comparación porque el algoritmo la usa y evitás pedir capacidades ajenas.
+objective: Devolvé una referencia al mayor elemento o None si el slice está vacío.
+instructions:
+  - Usá iter().max() o un recorrido equivalente.
+  - 'Mantené solamente T: Ord como restricción.'
+tests:
+  - id: t1
+    label: Enteros sin ordenar
+    expression: mayor(&[3, 9, 1]) == Some(&9)
+    why: Se compara toda la secuencia.
+    failure: No asumas que el último es el mayor.
+  - id: t2
+    label: Strings
+    expression: '{ let v = vec![String::from("beta"), String::from("alfa")]; mayor(&v).map(|s| s.as_str()) == Some("beta") }'
+    why: El algoritmo acepta un tipo no Copy con Ord.
+    failure: La comparación sigue el orden de T.
+  - id: t3
+    label: Ausencia y negativos
+    expression: mayor::<i32>(&[]).is_none() && mayor(&[-7, -2, -9]) == Some(&-2)
+    why: No se usa cero como máximo artificial.
+    failure: Un valor inicial fijo fallaría con todos negativos.
+hints:
+  - iter produce referencias a T.
+  - max devuelve Option con el tipo de elemento del iterador.
+  - datos.iter().max() ya cumple la firma.
+review:
+  success: La abstracción devuelve una vista del dato máximo. Ord proporciona un contrato más fuerte que una comparación parcial.
+  pitfall: 'f32 y f64 no implementan Ord: NaN hace que su comparación habitual sea parcial.'
+transfer: Definí una struct con derives de orden y probá qué campo decide primero.
+prediction:
+  question: '¿Por qué esta función no pide T: Clone?'
+  options:
+    - Porque clona con magia
+    - Porque Ord incluye Clone
+    - Porque devuelve una referencia existente
+  answer: 2
+  explanation: Comparar y prestar no exige duplicar el valor.
+sources:
+  - title: std · Ord
+    url: https://doc.rust-lang.org/std/cmp/trait.Ord.html
+  - title: std · Iterator::max
+    url: https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.max

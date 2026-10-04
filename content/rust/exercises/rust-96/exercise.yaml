@@ -1,0 +1,45 @@
+title: Una caché aprende qué usaste recientemente
+level: expert
+minutes: 18
+visual: collections
+intro: Una política LRU descarta lo usado hace más tiempo. Un acceso a una clave existente también cambia su posición de recencia.
+why: El orden de inserción no basta para representar uso. Una caché necesita actualizar metadatos incluso cuando la clave ya estaba presente.
+objective: Simulá accesos a claves con capacidad fija. Cada acceso inserta o mueve la clave al extremo más reciente. Devolvé claves de menos a más reciente; capacidad cero retiene ninguna.
+instructions:
+  - Eliminá una clave existente de su posición antes de agregarla al final.
+  - Si una clave nueva excede la capacidad, expulsá la menos reciente.
+tests:
+  - id: t1
+    label: Un hit protege de expulsión
+    expression: simular_lru(&["a", "b", "a", "c"], 2) == vec!["a", "c"]
+    why: Releer a hace que b sea la menos reciente.
+    failure: Mover un hit es parte de la política, no solo insertarlo.
+  - id: t2
+    label: Una clave ocupa un lugar
+    expression: simular_lru(&["x", "x", "x"], 3) == vec!["x"]
+    why: Los accesos repetidos no duplican entradas.
+    failure: Eliminá la aparición previa antes de insertar al final.
+  - id: t3
+    label: Extremos de capacidad
+    expression: simular_lru(&["a", "b"], 0).is_empty() && simular_lru(&["a", "b"], 1) == vec!["b"] && simular_lru(&[], 2).is_empty()
+    why: Cero, uno y ausencia de accesos tienen políticas consistentes.
+    failure: La capacidad lógica debe aplicarse a cada acceso.
+hints:
+  - position encuentra el índice actual de una clave.
+  - Un hit ya libera su lugar; no expulsa otra clave.
+  - VecDeque::remove(i) y push_back actualizan la recencia.
+review:
+  success: Las pruebas distinguen LRU de FIFO y verifican unicidad. La solución didáctica recorre la cola en cada acceso, por lo que cuesta O(capacidad) por acceso.
+  pitfall: Esto modela la política, no una caché O(1) de producción. Los tests de orden no demuestran complejidad ni rendimiento.
+transfer: Diseñá qué metadatos necesitarías para acceso O(1) y compará el costo y complejidad de mantenerlos.
+prediction:
+  question: Con capacidad dos y accesos a,b,a,c, ¿qué clave se expulsa?
+  options:
+    - a, porque se insertó primero
+    - b, porque a volvió a usarse
+    - c, porque es nueva
+  answer: 1
+  explanation: LRU se basa en último uso; FIFO se basaría en orden de entrada.
+sources:
+  - title: std · VecDeque::remove
+    url: https://doc.rust-lang.org/std/collections/struct.VecDeque.html#method.remove

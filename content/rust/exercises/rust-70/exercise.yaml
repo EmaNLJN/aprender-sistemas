@@ -1,0 +1,45 @@
+title: Send y Sync tienen trabajos diferentes
+visual: concurrency
+intro: 'Send permite transferir un valor entre threads. Sync significa que compartir &T entre threads es seguro; se relaciona con &T: Send.'
+why: Estos auto traits llevan las reglas de seguridad de tipos al límite entre threads. Arc comparte propiedad, pero no vuelve sincronizado a cualquier contenido.
+objective: "Completá eco_en_thread para transferir y devolver cualquier T: Send + 'static, usando spawn y join."
+instructions:
+  - Mové el valor al thread y devolvelo desde la closure.
+  - Conservá los bounds y observá las verificaciones de Send y Sync en los casos.
+tests:
+  - id: t1
+    label: String propio
+    expression: eco_en_thread(String::from("mensaje")) == "mensaje"
+    why: Un recurso propio Send puede transferirse.
+    failure: Usá move para transferir la captura.
+  - id: t2
+    label: Send sin ser Sync
+    expression: eco_en_thread(std::cell::Cell::new(7)).get() == 7
+    why: Cell<i32> puede moverse entre threads aunque no se comparta como &Cell.
+    failure: 'No agregues T: Sync si el algoritmo solo necesita transferirlo.'
+  - id: t3
+    label: Compartido sincronizado
+    expression: '{ requiere_sync::<std::sync::Arc<std::sync::Mutex<u32>>>(); let a = std::sync::Arc::new(std::sync::Mutex::new(3)); let b = eco_en_thread(std::sync::Arc::clone(&a)); std::sync::Arc::ptr_eq(&a, &b) && *b.lock().unwrap() == 3 }'
+    why: El compilador acepta compartir Arc<Mutex<u32>>.
+    failure: El bound Sync se verifica al compilar la llamada genérica.
+hints:
+  - La closure puede ser move || valor.
+  - join devuelve Result<T, _>.
+  - Send alcanza para la transferencia; Sync no es un requisito de este algoritmo.
+review:
+  success: Los casos incluyen Cell, que diferencia transferencia de acceso compartido. La solución propuesta transfiere el valor con spawn; los resultados no prueban por sí solos que tu implementación haya creado un thread.
+  pitfall: "'static aquí prohíbe depender de préstamos más cortos en el valor transferido; no significa que un String propio tenga que vivir para siempre. Los threads con scope permiten otros contratos."
+transfer: Intentá pasar Rc<String> en una copia local y leé el error Send. No implementes unsafe Send manualmente para silenciarlo.
+prediction:
+  question: ¿Que T sea Send garantiza automáticamente que T sea Sync?
+  options:
+    - Sí
+    - 'No: transferir propiedad y compartir referencias son capacidades distintas'
+    - Solo cuando T está en el heap
+  answer: 1
+  explanation: 'Cell<i32> muestra la diferencia: puede transferirse, pero no ofrece acceso compartido sincronizado.'
+sources:
+  - title: Rust Book · Send and Sync
+    url: https://doc.rust-lang.org/book/ch16-04-extensible-concurrency-sync-and-send.html
+  - title: std · thread::spawn
+    url: https://doc.rust-lang.org/std/thread/fn.spawn.html

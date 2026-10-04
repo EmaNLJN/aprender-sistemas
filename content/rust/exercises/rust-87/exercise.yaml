@@ -1,0 +1,43 @@
+title: Encontrá la primera posición posible
+level: medium
+intro: Una búsqueda binaria puede buscar una frontera entre valores menores que el objetivo y valores mayores o iguales.
+why: Definir un intervalo semiabierto [lo, hi) evita restar uno a cero y aclara qué parte del problema sigue pendiente.
+objective: Sobre un slice ordenado ascendente, devolvé el primer índice cuyo valor sea >= objetivo; si no existe, devolvé len.
+instructions:
+  - Mantené lo = 0 y hi = len con extremo superior exclusivo.
+  - Si el elemento central es menor, avanzá lo; en otro caso reducí hi a mid.
+tests:
+  - id: t1
+    label: Duplicados al comienzo de la frontera
+    expression: posicion_insercion(&[1, 3, 3, 3, 8], 3) == 1
+    why: Se devuelve el primer igual, no cualquiera.
+    failure: La igualdad debe mover hi a mid.
+  - id: t2
+    label: Hueco y final
+    expression: posicion_insercion(&[2, 5, 9], 6) == 2 && posicion_insercion(&[2, 5, 9], 10) == 3
+    why: También hay respuesta sin coincidencia exacta.
+    failure: Buscás una frontera, no solo igualdad.
+  - id: t3
+    label: Inicio y vacío
+    expression: posicion_insercion(&[4, 7], 0) == 0 && posicion_insercion(&[], 5) == 0
+    why: El intervalo vacío termina sin indexar.
+    failure: La guarda lo < hi debe preceder a la lectura.
+hints:
+  - La respuesta siempre está entre cero y len inclusive.
+  - mid = lo + (hi - lo) / 2 evita sumar extremos grandes.
+  - También existe datos.partition_point(|x| *x < objetivo) para expresar esta frontera.
+review:
+  success: Los casos verifican frontera, duplicados y extremos. La solución propuesta reduce el intervalo en cada paso; los tests de salida no demuestran por sí solos complejidad logarítmica.
+  pitfall: El contrato presupone datos ordenados. Aplicarlo a una secuencia arbitraria no produce una frontera significativa.
+transfer: 'Obtené el rango completo de un valor usando dos fronteras: < objetivo y <= objetivo.'
+prediction:
+  question: Al encontrar igualdad, ¿por qué seguir hacia la izquierda?
+  options:
+    - Porque el igual nunca sirve
+    - Porque puede existir una posición igual anterior
+    - Para ordenar la entrada
+  answer: 1
+  explanation: El contrato exige el primer índice que cumple la condición.
+sources:
+  - title: std · slice::partition_point
+    url: https://doc.rust-lang.org/std/primitive.slice.html#method.partition_point

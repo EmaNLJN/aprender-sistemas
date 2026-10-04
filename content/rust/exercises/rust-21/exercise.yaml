@@ -1,0 +1,44 @@
+title: Una estructura para el paquete
+intro: Un struct da nombres a los campos relacionados. Así no dependés de recordar el orden de una tupla.
+why: Un tipo del dominio permite expresar qué significan los números y concentrar las operaciones que les corresponden.
+objective: 'Completá payload: descontá la cabecera de 4 bytes del tamaño total; si total es menor que 4, devolvé 0.'
+instructions:
+  - Leé el campo total del Paquete prestado.
+  - Usá una resta comprobada o saturating_sub para evitar underflow.
+tests:
+  - id: t1
+    label: Datos útiles
+    expression: 'payload(&Paquete { total: 12 }) == 8'
+    why: Se descuenta la cabecera.
+    failure: Restá cuatro al total.
+  - id: t2
+    label: Solo cabecera
+    expression: 'payload(&Paquete { total: 4 }) == 0'
+    why: La frontera tiene carga vacía.
+    failure: La igualdad debe entregar cero.
+  - id: t3
+    label: Incompleto
+    expression: 'payload(&Paquete { total: 2 }) == 0'
+    why: La política evita restas negativas en u32.
+    failure: saturating_sub limita el resultado inferior a cero.
+hints:
+  - El campo se accede con p.total.
+  - u32 no representa números negativos.
+  - p.total.saturating_sub(4) implementa esta política.
+review:
+  success: La estructura conserva el significado del tamaño; la operación define explícitamente qué ocurre con un paquete incompleto.
+  pitfall: Saturar a cero es una política del ejercicio. Un parser real podría preferir reportar un error.
+transfer: Agregá un campo cabecera y probá encabezados de tamaños distintos.
+prediction:
+  question: ¿Por qué no alcanza con p.total - 4 para cualquier u32?
+  options:
+    - Porque - no existe en Rust
+    - Porque valores menores que 4 producirían underflow
+    - Porque los campos son referencias
+  answer: 1
+  explanation: u32 no puede representar -2. Elegí explícitamente cómo tratar una resta fuera del rango.
+sources:
+  - title: Rust Book · Structs
+    url: https://doc.rust-lang.org/book/ch05-01-defining-structs.html
+  - title: std · u32::saturating_sub
+    url: https://doc.rust-lang.org/std/primitive.u32.html#method.saturating_sub

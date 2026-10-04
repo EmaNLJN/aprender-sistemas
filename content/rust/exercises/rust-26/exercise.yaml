@@ -1,0 +1,42 @@
+title: El primer elemento puede faltar
+intro: Option<T> expresa Some(valor) o None. La ausencia deja de depender de un número especial que podría confundirse con datos reales.
+why: Un slice vacío es válido. La firma recuerda a cada llamador que debe considerar la ausencia antes de usar el resultado.
+objective: Devolvé una copia del primer i32 del slice, o None.
+instructions:
+  - Usá first() para evitar indexación insegura.
+  - Convertí Option<&i32> en Option<i32> con copied o un match.
+tests:
+  - id: t1
+    label: Elemento existente
+    expression: primero(&[7, 8]) == Some(7)
+    why: Se copia el primer elemento, no el último.
+    failure: first entrega la posición inicial.
+  - id: t2
+    label: Cero es dato
+    expression: primero(&[0]) == Some(0)
+    why: Cero no se usa como señal de ausencia.
+    failure: Some(0) y None tienen significado diferente.
+  - id: t3
+    label: Slice vacío
+    expression: primero(&[]) == None
+    why: La ausencia es explícita y no causa panic.
+    failure: Evitá datos[0] y unwrap.
+hints:
+  - first devuelve Option<&i32>.
+  - i32 es Copy, por eso copied está disponible.
+  - datos.first().copied()
+review:
+  success: La API conserva la diferencia entre tener un cero y no tener ningún valor.
+  pitfall: unwrap elimina la obligación de tratar None convirtiéndola en un posible panic.
+transfer: Escribí ultimo con last y compará los mismos casos de prueba.
+prediction:
+  question: ¿Some(0) es igual a None?
+  options:
+    - Sí, ambos son falsos
+    - 'No: uno contiene un dato y el otro expresa ausencia'
+    - Depende del slice
+  answer: 1
+  explanation: Option no usa conversiones implícitas a bool; sus variantes son distintas.
+sources:
+  - title: std · Option
+    url: https://doc.rust-lang.org/std/option/enum.Option.html

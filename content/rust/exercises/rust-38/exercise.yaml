@@ -1,0 +1,42 @@
+title: Closures que recuerdan un umbral
+intro: Una closure puede usar variables del entorno. No necesitás convertir el umbral en una variable global.
+why: Capturar una configuración local mantiene juntas la regla y sus dependencias. El compilador decide cómo prestar o mover las capturas según sus usos.
+objective: Contá cuántas mediciones son mayores o iguales al umbral.
+instructions:
+  - Usá filter con una closure que capture umbral.
+  - Contá los aceptados con count.
+tests:
+  - id: t1
+    label: Incluye la frontera
+    expression: alarmas(&[9, 10, 11], 10) == 2
+    why: El umbral es inclusivo.
+    failure: Usá >=, no >.
+  - id: t2
+    label: Configuración diferente
+    expression: alarmas(&[-2, -1, 0], -1) == 2
+    why: La closure usa el argumento actual.
+    failure: No fijes el umbral en una constante.
+  - id: t3
+    label: Ninguna alarma
+    expression: alarmas(&[], 0) == 0 && alarmas(&[1, 2], 3) == 0
+    why: Vacío y rechazo total se comportan igual en el conteo.
+    failure: count mide aceptados, no el tamaño original.
+hints:
+  - umbral está disponible dentro de |x| ... .
+  - filter recibe una referencia al elemento.
+  - filter(|x| *x >= umbral).count()
+review:
+  success: La condición captura el umbral de esta llamada, por eso la misma función admite distintas configuraciones.
+  pitfall: La closure de filter recibe una referencia, incluso si el iterador entrega valores; esa firma evita consumir el elemento al decidir.
+transfer: Aceptá dos umbrales y contá solo valores dentro del intervalo.
+prediction:
+  question: ¿La closure necesita una variable global para leer umbral?
+  options:
+    - Sí
+    - Solo si umbral cambia entre llamadas
+    - 'No: puede capturarlo del entorno local'
+  answer: 2
+  explanation: Las closures pueden acceder a variables de su contexto.
+sources:
+  - title: Rust Book · Closures
+    url: https://doc.rust-lang.org/book/ch13-01-closures.html

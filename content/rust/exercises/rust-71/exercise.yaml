@@ -1,0 +1,45 @@
+title: 'RAII: liberar es parte del alcance'
+visual: pointers
+intro: Drop permite ejecutar limpieza al destruir un valor. RAII conecta la vida del recurso con la vida de su dueño, incluso al salir de un bloque.
+why: Archivos, locks y buffers pueden liberar recursos automáticamente. Un registro en memoria permite observar ese orden sin abrir archivos reales.
+objective: Registrá el id de cada Recurso en Drop. cerrar crea a y después b; si temprano es true, destruye a explícitamente antes de salir del bloque.
+instructions:
+  - Completá Drop y la destrucción opcional.
+  - Devolvé el registro después de que ambos recursos hayan salido del alcance.
+tests:
+  - id: t1
+    label: Fin de alcance
+    expression: cerrar(1, 2, false) == vec![2, 1]
+    why: Los bindings locales se destruyen en orden inverso.
+    failure: El Drop registra id; no agregues registros manuales al salir.
+  - id: t2
+    label: Liberación temprana
+    expression: cerrar(1, 2, true) == vec![1, 2]
+    why: drop permite terminar la vida del recurso antes del bloque.
+    failure: Usá std::mem::drop mediante drop(primero), no el método Drop::drop.
+  - id: t3
+    label: Una destrucción por recurso
+    expression: cerrar(9, 9, true) == vec![9, 9]
+    why: Incluso ids iguales representan dos recursos distintos.
+    failure: El valor movido a drop no debe liberarse otra vez manualmente.
+hints:
+  - Drop recibe &mut self para limpiar el valor.
+  - El registro se modifica con borrow_mut().push(self.id).
+  - drop(primero) consume el recurso; el compilador gestiona su estado de movimiento.
+review:
+  success: El registro observa limpieza al terminar el alcance y una liberación adelantada. El recurso pasado a drop ya no puede seguir usándose.
+  pitfall: No prometas Drop ante abortos del proceso, std::mem::forget o ciclos de Rc. Los destructores tampoco deben usarse como sustituto de confirmar escrituras críticas explícitamente.
+transfer: 'Relacioná este patrón con MutexGuard: explicar por qué soltar el guard libera el lock.'
+prediction:
+  question: ¿Cómo pedís una destrucción anticipada segura?
+  options:
+    - Llamando recurso.drop() directamente
+    - Pasando el valor a drop(recurso)
+    - Borrando su dirección de memoria
+  answer: 1
+  explanation: La función drop consume el valor y activa su destrucción; invocar directamente Drop::drop está prohibido.
+sources:
+  - title: Rust Book · Drop
+    url: https://doc.rust-lang.org/book/ch15-03-drop.html
+  - title: Rust Reference · Destructors
+    url: https://doc.rust-lang.org/reference/destructors.html

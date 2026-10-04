@@ -1,0 +1,45 @@
+title: Un bloque unsafe con una justificación pequeña
+visual: pointers
+intro: Crear o comparar raw pointers puede ser seguro; desreferenciarlos exige unsafe. Quien escribe ese bloque debe garantizar validez, alineación y reglas de acceso.
+why: Unsafe delimita obligaciones que el compilador no verifica automáticamente. Mantener la frontera pequeña permite revisar el argumento de seguridad.
+objective: Devolvé el segundo u32 de un slice mediante as_ptr y add(1), o None si faltan elementos. Conservá una API pública segura.
+instructions:
+  - Validá len antes de calcular y leer el segundo elemento.
+  - Incluí un comentario SAFETY que explique por qué el puntero es válido. No uses direcciones inventadas.
+tests:
+  - id: t1
+    label: Lectura válida
+    expression: segundo_crudo(&[10, 20, 30]) == Some(20)
+    why: Se consulta la posición uno del slice.
+    failure: add(1) avanza un elemento u32, no un byte.
+  - id: t2
+    label: Sin segundo elemento
+    expression: segundo_crudo(&[]) == None && segundo_crudo(&[8]) == None
+    why: La validación precede a cualquier lectura.
+    failure: Salir antes del bloque unsafe evita acceder fuera del slice.
+  - id: t3
+    label: Vista parcial
+    expression: '{ let a = [99, 4, u32::MAX, 88]; segundo_crudo(&a[1..3]) == Some(u32::MAX) }'
+    why: La dirección base corresponde al slice recibido.
+    failure: No supongas el inicio de la asignación original.
+hints:
+  - El caso len < 2 devuelve None antes de construir la lectura.
+  - as_ptr da un *const u32 ligado a datos válidos mientras viva el préstamo.
+  - El bloque unsafe contiene únicamente *puntero.add(1).
+review:
+  success: 'Los casos verifican resultados y fronteras observables. La seguridad del bloque requiere además revisar el argumento SAFETY: pasar tests no prueba ausencia de comportamiento indefinido.'
+  pitfall: La versión normal de esta operación sería datos.get(1).copied(), completamente segura y más simple. Unsafe no desactiva el resto de reglas de Rust ni aporta rendimiento por sí solo.
+transfer: Compará con get(1).copied(). En un proyecto local podés usar Miri para detectar ciertas infracciones; este laboratorio no ejecuta Miri ni demuestra seguridad completa.
+prediction:
+  question: ¿Un bloque unsafe hace que cualquier dirección de memoria sea válida?
+  options:
+    - 'No: las obligaciones de validez siguen vigentes'
+    - Sí, evita todas las verificaciones
+    - Solo en modo release
+  answer: 0
+  explanation: Unsafe permite operaciones específicas y traslada obligaciones al programador; violarlas sigue siendo comportamiento indefinido.
+sources:
+  - title: Rust Book · Unsafe Rust
+    url: https://doc.rust-lang.org/book/ch20-01-unsafe-rust.html
+  - title: std · pointer::add safety
+    url: https://doc.rust-lang.org/std/primitive.pointer.html#method.add

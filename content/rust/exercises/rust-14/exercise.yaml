@@ -1,0 +1,43 @@
+title: Snapshot con una copia deliberada
+visual: ownership
+intro: clone crea un valor propio nuevo. Para String implica copiar el contenido a otro buffer.
+why: Una copia explícita puede ser la decisión correcta cuando necesitás dos versiones independientes. El costo queda visible en el código.
+objective: 'Devolvé dos Strings: el original y una versión con sufijo "-v2".'
+instructions:
+  - Cloná una sola vez antes de modificar la versión nueva.
+  - El primer resultado debe quedar intacto.
+tests:
+  - id: t1
+    label: Dos versiones
+    expression: versiones(String::from("config")) == (String::from("config"), String::from("config-v2"))
+    why: Cada resultado conserva su contenido propio.
+    failure: Modificá la copia, no original.
+  - id: t2
+    label: Original vacío
+    expression: versiones(String::new()) == (String::new(), String::from("-v2"))
+    why: Un buffer vacío se trata consistentemente.
+    failure: El sufijo se aplica aun sin prefijo.
+  - id: t3
+    label: Contenido Unicode
+    expression: versiones(String::from("día")) == (String::from("día"), String::from("día-v2"))
+    why: Clonar preserva los bytes válidos de UTF-8.
+    failure: No reconstruyas el texto por índices de bytes.
+hints:
+  - Asignar original directamente movería su propiedad.
+  - clone conserva original y da un String nuevo.
+  - let mut nueva = original.clone(); seguido de nueva.push_str("-v2");.
+review:
+  success: 'Elegiste pagar una copia para obtener independencia. La clonación tiene un propósito comprobable: el primer resultado no cambia.'
+  pitfall: 'clone no es una reparación universal para préstamos: primero decidí si realmente necesitás dos valores propios.'
+transfer: Diseñá otra firma que devuelva solo la versión nueva y evite la copia cuando ya no necesitás original.
+prediction:
+  question: Después de clonar String y modificar la copia, ¿cambia el original?
+  options:
+    - 'No: cada String tiene contenido independiente'
+    - 'Sí: apuntan al mismo buffer mutable'
+    - Depende del largo
+  answer: 0
+  explanation: String::clone duplica el contenido; no crea un alias mutable compartido.
+sources:
+  - title: std · String
+    url: https://doc.rust-lang.org/std/string/struct.String.html

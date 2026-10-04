@@ -1,0 +1,45 @@
+title: 'Cow: copiá solo cuando cambie el texto'
+visual: memory
+intro: Cow combina una vista prestada y un valor propio. La variante permite evitar una copia cuando el dato original ya sirve.
+why: Hacer visible si una transformación aloca ayuda a elegir costos según el caso común, sin sacrificar una API cómoda de lectura.
+objective: Convertí solo las letras ASCII A–Z a minúsculas. Si no hay ninguna, devolvé Cow::Borrowed; si hay cambios, Cow::Owned.
+instructions:
+  - Detectá mayúsculas ASCII antes de construir un String.
+  - El resto de Unicode queda intacto; no implementamos case folding universal.
+tests:
+  - id: t1
+    label: Sin copia necesaria
+    expression: matches!(minusculas_ascii("rust"), Cow::Borrowed("rust"))
+    why: La representación conserva un préstamo si no cambia nada.
+    failure: No llames to_string incondicionalmente.
+  - id: t2
+    label: Cambio con dueño propio
+    expression: matches!(minusculas_ascii("RuSt"), Cow::Owned(ref s) if s == "rust")
+    why: El contenido modificado vive en un String propio.
+    failure: to_ascii_lowercase construye la salida modificada.
+  - id: t3
+    label: Contrato ASCII y vacío
+    expression: matches!(minusculas_ascii("É"), Cow::Borrowed("É")) && matches!(minusculas_ascii(""), Cow::Borrowed(""))
+    why: No se introduce normalización Unicode fuera del contrato.
+    failure: Detectá A–Z con is_ascii_uppercase, no toda mayúscula Unicode.
+hints:
+  - bytes().any(...) puede detectar A–Z sin alocar.
+  - Cow::Borrowed recibe &str.
+  - Cow::Owned recibe el String de to_ascii_lowercase().
+review:
+  success: Los tests comprueban tanto contenido como variante, por lo que distinguen conservar un préstamo de construir un dueño nuevo.
+  pitfall: 'Cow no es siempre más rápido: la ventaja depende de cuántas entradas evitan la copia y de los costos del chequeo previo.'
+transfer: Medí en un proyecto local entradas que cambian y que no cambian, con distribución realista. Este laboratorio no presenta sus tiempos de red como benchmarks de Rust.
+prediction:
+  question: ¿Cow::Borrowed conserva el texto después de destruir su dueño original?
+  options:
+    - Sí, lo clona automáticamente al destruirlo
+    - 'No: sigue sujeto al lifetime del préstamo'
+    - Solo si el texto es ASCII
+  answer: 1
+  explanation: La variante prestada depende del dueño; convertir a owned explícitamente cambia esa relación.
+sources:
+  - title: std · Cow
+    url: https://doc.rust-lang.org/std/borrow/enum.Cow.html
+  - title: Cargo · Build profiles
+    url: https://doc.rust-lang.org/cargo/reference/profiles.html

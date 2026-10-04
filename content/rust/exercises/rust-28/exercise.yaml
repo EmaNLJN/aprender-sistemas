@@ -1,0 +1,44 @@
+title: Un puerto válido se construye
+intro: parse::<u16>() convierte texto a un número comprobando su rango. map_err permite adaptar el error a tu dominio.
+why: Primero se verifica la representación, después la regla de negocio. No todo u16 es un puerto permitido por este ejercicio.
+objective: 'Quitá espacios exteriores y aceptá 1..=65535. Texto inválido o fuera de rango: Err("numero"); cero: Err("cero").'
+instructions:
+  - Parseá como u16 después de trim.
+  - Separá el error de representación del valor cero.
+tests:
+  - id: t1
+    label: Número con espacios
+    expression: puerto(" 8080 ") == Ok(8080)
+    why: La normalización precede al parseo.
+    failure: Aplicá trim antes de parse.
+  - id: t2
+    label: Cero tiene otra causa
+    expression: puerto("0") == Err("cero")
+    why: Un parseo exitoso no garantiza la regla del dominio.
+    failure: Validá cero después de obtener n.
+  - id: t3
+    label: Formato y rango
+    expression: puerto("abc") == Err("numero") && puerto("65536") == Err("numero")
+    why: El parser limita el rango de u16.
+    failure: No parsees a un tipo grande y luego uses as para truncar.
+hints:
+  - Especificá u16 en parse o en la variable.
+  - map_err(|_| "numero") normaliza el error de parseo.
+  - Usá ? para propagar el Result antes de comparar n con cero.
+review:
+  success: Los errores distinguen entrada no representable de un valor representable prohibido. El cast as no reemplaza esta validación.
+  pitfall: 65536 as u16 truncaría el número; parse::<u16> rechaza la entrada fuera del rango.
+transfer: Definí un tipo Puerto con constructor que garantice la invariante.
+prediction:
+  question: ¿Qué debería ocurrir con "65536" al parsearlo como u16?
+  options:
+    - Se vuelve 0 silenciosamente
+    - Devuelve un error
+    - Se convierte en u32
+  answer: 1
+  explanation: FromStr valida que el valor sea representable por el tipo pedido.
+sources:
+  - title: std · str::parse
+    url: https://doc.rust-lang.org/std/primitive.str.html#method.parse
+  - title: Rust Book · Result and ?
+    url: https://doc.rust-lang.org/book/ch09-02-recoverable-errors-with-result.html

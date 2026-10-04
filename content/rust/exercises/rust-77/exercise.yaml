@@ -1,0 +1,44 @@
+title: El calendario de las excepciones
+level: beginner
+minutes: 8
+intro: '&& y || permiten combinar predicados. Poner paréntesis puede comunicar mejor una regla aunque conozcas su precedencia.'
+why: Las excepciones a una regla suelen tener más valor de prueba que un ejemplo común. Un calendario es un problema pequeño con tres divisores relevantes.
+objective: Un año gregoriano positivo es bisiesto si es divisible por 400, o si es divisible por 4 y no por 100.
+instructions:
+  - Devolvé bool.
+  - Probá un siglo bisiesto y otro que no lo sea.
+tests:
+  - id: t1
+    label: Regla habitual
+    expression: bisiesto(2024) && !bisiesto(2023)
+    why: Se distinguen años comunes.
+    failure: La base es divisibilidad por cuatro.
+  - id: t2
+    label: Siglo excluido
+    expression: '!bisiesto(1900) && !bisiesto(2100)'
+    why: La excepción del siglo no se omite.
+    failure: Los múltiplos de cien requieren otra comprobación.
+  - id: t3
+    label: Excepción de la excepción
+    expression: bisiesto(2000) && bisiesto(2400)
+    why: Un múltiplo de cuatrocientos sí se admite.
+    failure: No rechaces todos los siglos indiscriminadamente.
+hints:
+  - '% devuelve el resto.'
+  - El caso divisible por 400 es suficiente por sí solo.
+  - Uní ese caso con (divisible por 4 && no divisible por 100).
+review:
+  success: La expresión codifica la regla completa y los tests observan las dos capas de excepción.
+  pitfall: Este ejercicio usa el calendario gregoriano como regla matemática; no modela adopciones históricas de calendarios ni años no positivos.
+transfer: Implementá dias_del_anio a partir de esta función y justificá qué lógica no deberías duplicar.
+prediction:
+  question: Según el contrato, ¿1900 es bisiesto?
+  options:
+    - Sí, porque es divisible por cuatro
+    - 'No: es divisible por cien pero no por cuatrocientos'
+    - Depende del huso horario
+  answer: 1
+  explanation: La excepción del siglo rechaza 1900.
+sources:
+  - title: Rust Reference · Boolean operators
+    url: https://doc.rust-lang.org/reference/expressions/operator-expr.html#lazy-boolean-operators

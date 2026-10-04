@@ -1,0 +1,44 @@
+title: Euclides reduce el problema
+level: beginner
+minutes: 10
+intro: El máximo común divisor no cambia al sustituir (a, b) por (b, a % b) mientras b no sea cero.
+why: Un algoritmo puede avanzar conservando una propiedad en lugar de probar todas las respuestas posibles. El resto hace disminuir el segundo componente.
+objective: Calculá mcd(a, b) para u32. Por contrato mcd(a, 0) = a y mcd(0, 0) = 0.
+instructions:
+  - Iterá hasta que b sea cero.
+  - Guardá el resto antes de reasignar a y b.
+tests:
+  - id: t1
+    label: Divisor compartido
+    expression: mcd(48, 18) == 6 && mcd(18, 48) == 6
+    why: La respuesta no depende del orden de entradas.
+    failure: Cada vuelta transforma ambos valores.
+  - id: t2
+    label: Coprimos
+    expression: mcd(17, 13) == 1
+    why: El algoritmo puede terminar en uno.
+    failure: No presupongas un divisor mayor que uno.
+  - id: t3
+    label: Ceros
+    expression: mcd(9, 0) == 9 && mcd(0, 9) == 9 && mcd(0, 0) == 0
+    why: La condición evita dividir por cero.
+    failure: Comprobá b antes de calcular a % b.
+hints:
+  - El valor temporal resto evita perder el a anterior.
+  - La condición del while es b != 0.
+  - Al salir, a es la respuesta.
+review:
+  success: La transición reduce el problema y la guarda protege la operación %. Los casos con cero son parte expresa del contrato.
+  pitfall: Reasignar a antes de calcular a % b usaría un valor cambiado y destruiría la transición.
+transfer: Contá las iteraciones para pares distintos y compará con buscar divisores uno por uno; no confundas conteo de pasos con un benchmark temporal.
+prediction:
+  question: ¿Por qué calcular el resto antes de a = b?
+  options:
+    - Para usar ambos valores de la iteración anterior
+    - Porque las asignaciones son lentas
+    - Porque Rust no permite dos variables mutables
+  answer: 0
+  explanation: La transición necesita a y b originales para calcular el próximo resto.
+sources:
+  - title: Rust Book · Loops
+    url: https://doc.rust-lang.org/book/ch03-05-control-flow.html

@@ -1,0 +1,43 @@
+title: Contá eventos con HashMap
+visual: collections
+intro: HashMap relaciona claves con valores. entry permite insertar un valor inicial si falta y luego modificarlo con un único flujo.
+why: El contador de frecuencias reúne búsqueda, creación y actualización sin duplicar decisiones sobre la misma clave.
+objective: Contá palabras separadas por whitespace, respetando mayúsculas. Devolvé HashMap<String, usize>.
+instructions:
+  - Recorré split_whitespace.
+  - Usá entry(palabra.to_string()).or_insert(0) y aumentá el contador.
+tests:
+  - id: t1
+    label: Repeticiones
+    expression: '{ let m = frecuencias("cpu ram cpu"); m.get("cpu") == Some(&2) && m.get("ram") == Some(&1) && m.len() == 2 }'
+    why: Cada clave acumula su propia frecuencia.
+    failure: Incrementá el valor retornado por entry.
+  - id: t2
+    label: Mayúsculas y separadores
+    expression: "{ let m = frecuencias(\"Go\tgo\nGo\"); m.get(\"Go\") == Some(&2) && m.get(\"go\") == Some(&1) }"
+    why: No hay normalización no solicitada.
+    failure: Conservá la palabra original y usá split_whitespace.
+  - id: t3
+    label: Sin palabras
+    expression: frecuencias("  ").is_empty()
+    why: El mapa no contiene claves vacías.
+    failure: split_whitespace evita tokens vacíos.
+hints:
+  - La clave debe ser String propio.
+  - or_insert devuelve &mut usize.
+  - Usá * para incrementar el contador apuntado.
+review:
+  success: El mapa almacena claves propias y contadores separados. Las pruebas consultan claves porque HashMap no promete orden de iteración.
+  pitfall: Comparar una lista de claves sin ordenar haría depender la prueba de un orden no garantizado.
+transfer: Normalizá a minúsculas en una variante y explicá cómo cambia el contrato.
+prediction:
+  question: ¿HashMap promete iterar en el orden en que insertaste las claves?
+  options:
+    - Sí
+    - No
+    - Solo cuando las claves son String
+  answer: 1
+  explanation: El orden de HashMap no forma parte de ese contrato. Ordená explícitamente si necesitás salida estable.
+sources:
+  - title: std · HashMap::entry
+    url: https://doc.rust-lang.org/std/collections/struct.HashMap.html#method.entry

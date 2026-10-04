@@ -1,0 +1,45 @@
+title: Pending no significa volver a empezar
+visual: concurrency
+intro: Un Future puede guardar estado entre polls. Antes de devolver Pending, debe preparar un aviso cuando pueda progresar; aquí pedimos explícitamente otra consulta.
+why: El estado persistente permite continuar el cálculo sin repetir todo el trabajo. El Waker comunica posibilidad de progreso al executor.
+objective: DosPasos devuelve Pending la primera vez y Ready(valor) la segunda. Guardá que ya fue visitado y llamá wake_by_ref antes del Pending.
+instructions:
+  - Completá poll usando el campo visitado.
+  - 'Este tipo es Unpin: podés acceder a sus campos mediante el Pin<&mut Self>.'
+tests:
+  - id: t1
+    label: Dos estados diferentes
+    expression: dos_polls(9) == (true, Some(9))
+    why: El primer poll suspende y el siguiente termina.
+    failure: Guardá visitado antes de devolver Pending.
+  - id: t2
+    label: Contenido cero
+    expression: dos_polls(0) == (true, Some(0))
+    why: Disponibilidad no depende de un valor centinela.
+    failure: Usá visitado para el estado, no valor == 0.
+  - id: t3
+    label: Contenido negativo
+    expression: dos_polls(-7) == (true, Some(-7))
+    why: El estado de avance no altera el resultado.
+    failure: El segundo poll devuelve self.valor intacto.
+hints:
+  - Si visitado ya es true, devolvé Ready.
+  - La primera llamada cambia visitado a true.
+  - Llamá cx.waker().wake_by_ref() y después devolvé Pending.
+review:
+  success: Los tests observan el cambio entre dos polls. La solución propuesta también pide otro turno mediante el Waker; esa notificación debe revisarse en el código, porque el harness consulta dos veces explícitamente.
+  pitfall: Este ejercicio no implementa planificación real. Tampoco debés asumir que todos los Futures permiten volver a hacer poll después de Ready.
+transfer: Reemplazá el Waker didáctico por uno que cuente notificaciones y comprobá que el primer poll avise una vez.
+prediction:
+  question: ¿Pending significa que el Future perdió sus campos internos?
+  options:
+    - 'No: conserva estado para próximos polls'
+    - 'Sí: se reconstruye desde cero'
+    - Solo conserva el tipo
+  answer: 0
+  explanation: El mismo Future permanece vivo y puede recordar dónde quedó.
+sources:
+  - title: std · Future contract
+    url: https://doc.rust-lang.org/std/future/trait.Future.html
+  - title: std · Waker
+    url: https://doc.rust-lang.org/std/task/struct.Waker.html

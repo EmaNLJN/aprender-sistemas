@@ -1,0 +1,45 @@
+title: Reconstruí el estado desde un journal
+level: expert
+minutes: 18
+visual: collections
+intro: Un journal describe cambios en orden. La secuencia permite detectar saltos o repeticiones antes de aceptar la reconstrucción.
+why: Guardar operaciones y reconstruir estado separa historia de snapshot. Un resultado consistente exige definir cómo se identifican faltantes y eliminaciones.
+objective: Reproducí registros con secuencias exactamente 1,2,3…; cualquier desviación → Err("secuencia"). Some(v) guarda/reemplaza una clave; None la elimina aunque no exista. Como máximo hay 1.000 registros.
+instructions:
+  - Construí un BTreeMap<String, i32> local para una salida ordenada por clave.
+  - Devolvé el estado solo si toda la secuencia es válida.
+tests:
+  - id: t1
+    label: Historia y reemplazo
+    expression: '{ let log = vec![reg(1, "b", Some(2)), reg(2, "a", Some(1)), reg(3, "b", Some(9))]; reconstruir(&log) == Ok(BTreeMap::from([(String::from("a"), 1), (String::from("b"), 9)])) }'
+    why: El último valor de una clave prevalece y la salida tiene orden definido.
+    failure: Aplicá operaciones en orden, no agrupadas por clave.
+  - id: t2
+    label: Eliminar y journal vacío
+    expression: '{ let log = vec![reg(1, "x", Some(3)), reg(2, "x", None), reg(3, "ausente", None)]; reconstruir(&log) == Ok(BTreeMap::new()) && reconstruir(&[]) == Ok(BTreeMap::new()) }'
+    why: Eliminar una clave ausente es un no-op, no un fallo.
+    failure: remove ya permite una ausencia sin panic.
+  - id: t3
+    label: Secuencias rotas
+    expression: reconstruir(&[reg(2, "x", Some(1))]) == Err("secuencia") && reconstruir(&[reg(1, "x", Some(1)), reg(1, "y", Some(2))]) == Err("secuencia")
+    why: Se detectan saltos y repeticiones.
+    failure: La secuencia esperada viene de la posición, empezando en uno.
+hints:
+  - enumerate empieza en cero; el número esperado comienza en uno.
+  - El límite de registros permite convertir el índice a u64 sin pérdida.
+  - Cloná la clave solo al guardarla; eliminar admite &String.
+review:
+  success: La reconstrucción verifica continuidad y aplica la historia en orden. El mapa local evita publicar un snapshot parcial si hay un registro inválido.
+  pitfall: Este journal está en memoria y no ofrece durabilidad, checksums ni recuperación de escrituras partidas en disco. Es el núcleo lógico que esas capas podrían utilizar.
+transfer: Agregá un snapshot inicial con número de secuencia base y ajustá la validación del tramo restante.
+prediction:
+  question: ¿Ordenar el journal por clave antes de aplicarlo conserva siempre el significado?
+  options:
+    - Sí
+    - 'No: el orden temporal de los cambios importa'
+    - Solo cuando hay un BTreeMap
+  answer: 1
+  explanation: Cambiar el orden puede alterar qué escritura es la última y cuándo ocurre una eliminación.
+sources:
+  - title: std · BTreeMap
+    url: https://doc.rust-lang.org/std/collections/struct.BTreeMap.html

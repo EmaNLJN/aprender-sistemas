@@ -1,0 +1,40 @@
+title: El último segundo también cuenta
+kind: reparar
+intro: a..b excluye b; a..=b lo incluye. Un rango hace explícitas las fronteras de una iteración.
+why: Los errores de frontera suelen sobrevivir a ejemplos grandes. Probar cero y uno revela rápidamente si elegiste bien el intervalo.
+objective: Sumá los enteros desde 1 hasta n inclusive. n está entre 0 y 1.000.
+instructions:
+  - Repará el rango del for.
+  - El resultado para n = 0 debe seguir siendo 0.
+tests:
+  - id: t1
+    label: Una vuelta
+    expression: suma_hasta(1) == 1
+    why: El extremo superior entra en la suma.
+    failure: 1..1 está vacío; necesitás un rango inclusivo.
+  - id: t2
+    label: Varias vueltas
+    expression: suma_hasta(5) == 15
+    why: Se suman todos los elementos una vez.
+    failure: La secuencia esperada es 1, 2, 3, 4, 5.
+  - id: t3
+    label: Rango vacío
+    expression: suma_hasta(0) == 0
+    why: Una entrada sin elementos conserva el acumulador.
+    failure: No agregues n fuera del bucle para compensar sin pensar el caso vacío.
+hints:
+  - Compará .. y ..=.
+  - El acumulador ya está bien inicializado.
+  - Cambiá 1..n por 1..=n.
+review:
+  success: Corregiste el límite del recorrido sin agregar casos especiales. El rango descendente 1..=0 no produce elementos.
+  pitfall: No confundas un rango inclusivo con uno que cuenta automáticamente hacia atrás.
+transfer: Sumá solo los pares y agregá pruebas con n par e impar.
+prediction:
+  question: ¿Cuántos valores produce 0..3?
+  options:
+    - '2'
+    - '3'
+    - '4'
+  answer: 1
+  explanation: Produce 0, 1 y 2; el límite 3 está excluido.

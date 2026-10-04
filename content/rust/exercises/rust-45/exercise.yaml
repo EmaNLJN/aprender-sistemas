@@ -1,0 +1,40 @@
+title: Una estructura que presta su texto
+visual: memory
+intro: Un struct puede contener referencias. El parámetro de lifetime registra que su validez depende de datos que pertenecen a otro valor.
+why: Esto permite vistas sin copias para parsers y protocolos. El costo es que el dueño original debe permanecer disponible mientras exista el uso de la vista.
+objective: Construí Vista sobre el texto después de quitar espacios exteriores. El campo debe seguir siendo &str prestado.
+instructions:
+  - Completá crear_vista sin String nuevo.
+  - Agregá bytes() para medir el slice guardado.
+tests:
+  - id: t1
+    label: Normalización sin copia
+    expression: '{ let s = String::from("  cpu  "); let v = crear_vista(&s); v.texto == "cpu" && v.bytes() == 3 }'
+    why: La vista conserva el tramo normalizado.
+    failure: trim devuelve un slice de la entrada.
+  - id: t2
+    label: Solo espacios
+    expression: "{ let v = crear_vista(\" \t \"); v.texto.is_empty() && v.bytes() == 0 }"
+    why: La vista vacía sigue siendo válida.
+    failure: No inventes texto cuando trim queda vacío.
+  - id: t3
+    label: Unicode
+    expression: '{ let s = String::from(" ñ "); let v = crear_vista(&s); v.texto == "ñ" && v.bytes() == 2 }'
+    why: El método mide almacenamiento UTF-8.
+    failure: Usá len sobre el campo prestado.
+hints:
+  - 'Vista { texto: texto.trim() } construye la vista.'
+  - El lifetime '_ se infiere desde la entrada.
+  - bytes debe devolver self.texto.len().
+review:
+  success: La estructura guarda una vista válida del texto original. Sus métodos pueden operar sin poseer ni copiar ese texto.
+  pitfall: No podés devolver una Vista de un String creado y destruido dentro de crear_vista; una anotación no arreglaría ese dueño faltante.
+transfer: Agregá otro campo prestado para el primer token y documentá su relación con la entrada.
+prediction:
+  question: ¿Podés construir la vista desde un String local y devolverla después de destruir ese String?
+  options:
+    - 'No: quedaría apuntando a datos que ya no existen'
+    - Sí, agregando 'static
+    - Sí, porque &str copia el contenido
+  answer: 0
+  explanation: Las referencias no poseen sus datos; el compilador rechaza devolver préstamos de dueños locales destruidos.

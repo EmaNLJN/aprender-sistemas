@@ -1,0 +1,43 @@
+title: El punto y coma que se comió el resultado
+kind: reparar
+intro: Los bloques también son expresiones. Podés usarlos para limitar nombres temporales y devolver un cálculo como último valor.
+why: Este diseño permite componer operaciones sin introducir asignaciones externas. Un ; cambia el valor del bloque, por lo que afecta el contrato de la función.
+objective: 'Calculá el costo total: cantidad × 12 + 5 de envío, para cantidades entre 0 y 1.000.'
+instructions:
+  - Conservá el bloque que calcula total.
+  - Corregí su expresión final para que entregue el número.
+tests:
+  - id: t1
+    label: Una unidad
+    expression: costo(1) == 17
+    why: El envío se agrega una vez.
+    failure: La última expresión debe sumar 5 a productos.
+  - id: t2
+    label: Solo cargo fijo
+    expression: costo(0) == 5
+    why: El cargo no depende de la cantidad.
+    failure: El cinco queda fuera de la multiplicación.
+  - id: t3
+    label: Varias unidades
+    expression: costo(4) == 53
+    why: Los productos escalan, el envío no.
+    failure: No calcules cantidad * 17.
+hints:
+  - Inspeccioná el tipo que Rust infiere para total.
+  - La última línea del bloque debe producir i32.
+  - Quitá solamente el ; después de productos + 5.
+review:
+  success: El bloque ahora evalúa a un entero. productos permanece local, y total recibe únicamente el resultado.
+  pitfall: El ; después de cerrar el bloque sí termina let total = ...; y debe conservarse.
+transfer: Usá otro bloque para aplicar un descuento antes del envío.
+prediction:
+  question: ¿Puede usarse productos después de cerrar su bloque?
+  options:
+    - Sí, porque es i32
+    - Sí, si total es mutable
+    - 'No: su nombre está fuera de alcance'
+  answer: 2
+  explanation: El alcance de la vinculación termina con el bloque. El valor resultante puede salir sin exportar todos los nombres internos.
+sources:
+  - title: Rust Book · Statements and expressions
+    url: https://doc.rust-lang.org/book/ch03-03-how-functions-work.html

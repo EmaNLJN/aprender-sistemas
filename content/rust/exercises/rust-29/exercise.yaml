@@ -1,0 +1,44 @@
+title: Propagá errores sin esconderlos
+intro: '? extrae Ok o devuelve temprano el Err desde la función actual. Permite encadenar operaciones que pueden fallar.'
+why: El camino exitoso se lee en orden y el error conserva su significado. No necesitás duplicar un match completo en cada paso.
+objective: 'Parseá a y b como i32, sumalos con checked_add. Error de parseo: "numero"; overflow: "overflow".'
+instructions:
+  - Propagá el error de cada parseo con ?.
+  - Convertí el Option de checked_add usando ok_or.
+tests:
+  - id: t1
+    label: Camino exitoso
+    expression: sumar_texto("12", "-5") == Ok(7)
+    why: Los dos parseos preceden a la suma.
+    failure: Conservá el signo al parsear i32.
+  - id: t2
+    label: Dos lugares de fallo
+    expression: sumar_texto("x", "2") == Err("numero") && sumar_texto("2", "x") == Err("numero")
+    why: Ningún parseo se ignora.
+    failure: Ambos parseos necesitan map_err y ?.
+  - id: t3
+    label: Overflow visible
+    expression: sumar_texto("2147483647", "1") == Err("overflow")
+    why: El límite aritmético se maneja explícitamente.
+    failure: checked_add devuelve None si el resultado no cabe.
+hints:
+  - parse::<i32>() devuelve Result.
+  - checked_add devuelve Option<i32>.
+  - La última línea puede ser a.checked_add(b).ok_or("overflow").
+review:
+  success: La función comunica dos clases de error. El comportamiento no depende de cómo se configure la comprobación de overflow del compilador.
+  pitfall: Usar + y esperar capturar siempre un panic no define una política consistente para todos los perfiles de compilación.
+transfer: Agregá un tercer operando manteniendo la propagación de errores.
+prediction:
+  question: ¿Qué hace ? cuando encuentra Err dentro de esta función?
+  options:
+    - Lo cambia por cero
+    - Reintenta la operación
+    - Devuelve temprano el error
+  answer: 2
+  explanation: El operador propaga el error; no lo repara ni lo descarta.
+sources:
+  - title: std · i32::checked_add
+    url: https://doc.rust-lang.org/std/primitive.i32.html#method.checked_add
+  - title: Rust Book · Propagating errors
+    url: https://doc.rust-lang.org/book/ch09-02-recoverable-errors-with-result.html

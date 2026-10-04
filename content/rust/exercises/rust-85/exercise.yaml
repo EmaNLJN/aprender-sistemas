@@ -1,0 +1,44 @@
+title: Cortá por caracteres en una frontera de bytes
+level: medium
+visual: memory
+intro: 'char_indices conecta dos modelos: entrega un escalar y el offset de bytes donde comienza. Ese offset es una frontera válida para slicing.'
+why: Las APIs de texto suelen recibir una cantidad de caracteres pero almacenan UTF-8. Transformar la posición una vez permite devolver vistas sin reconstruir el contenido.
+objective: Separá el texto después de n chars. Si n supera la cantidad disponible, devolvé (texto, "").
+instructions:
+  - Buscá con char_indices().nth(n) el inicio del tramo restante.
+  - Usá texto.len() si no existe ese char y devolvé dos slices.
+tests:
+  - id: t1
+    label: Frontera Unicode
+    expression: dividir_chars("a🦀ñz", 2) == ("a🦀", "ñz")
+    why: El corte no parte bytes de un escalar.
+    failure: nth cuenta elementos; el offset devuelto sirve para split_at.
+  - id: t2
+    label: Nada a la izquierda
+    expression: dividir_chars("hola", 0) == ("", "hola")
+    why: El inicio también es una frontera válida.
+    failure: El char de índice cero empieza en byte cero.
+  - id: t3
+    label: Fin y exceso
+    expression: dividir_chars("ñ", 1) == ("ñ", "") && dividir_chars("ñ", 9) == ("ñ", "") && dividir_chars("", 4) == ("", "")
+    why: El contrato satura en el final del texto.
+    failure: Si nth no existe, usá len en bytes.
+hints:
+  - char_indices entrega pares (offset_en_bytes, char).
+  - El n-ésimo char es el primero del tramo derecho.
+  - split_at devuelve los dos préstamos con una sola frontera.
+review:
+  success: La función traduce una posición de chars a bytes sin cortar UTF-8. El resultado comparte almacenamiento con la entrada.
+  pitfall: La operación puede recorrer n caracteres; no la describas como acceso aleatorio constante.
+transfer: Implementá un recorte entre dos posiciones de chars y definí qué pasa si el inicio supera el final.
+prediction:
+  question: ¿Qué representa el usize de char_indices?
+  options:
+    - Una posición de bytes válida en str
+    - Siempre el número de letras anteriores
+    - Un identificador del carácter Unicode
+  answer: 0
+  explanation: La iteración entrega el byte inicial de cada escalar.
+sources:
+  - title: std · str::char_indices
+    url: https://doc.rust-lang.org/std/primitive.str.html#method.char_indices

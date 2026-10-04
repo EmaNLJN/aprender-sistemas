@@ -1,0 +1,44 @@
+title: 'Boss: del texto a una orden tipada'
+intro: Un parser traduce texto externo a un modelo interno. Después de validar, las demás funciones pueden trabajar con variantes claras.
+why: Separar representación y significado evita repetir split y comprobaciones de cantidad de campos en cada operación.
+objective: Aceptá exactamente GET clave o SET clave valor. Los tokens no contienen espacios. Cualquier otra forma devuelve Err("orden").
+instructions:
+  - Separá con split_whitespace y comprobá la cantidad exacta de tokens.
+  - Devolvé variantes con Strings propios; comandos distinguen mayúsculas.
+tests:
+  - id: t1
+    label: Consulta normalizada
+    expression: "parsear(\"  GET\tusuario \") == Ok(Orden::Get(String::from(\"usuario\")))"
+    why: El parser tolera separadores variados.
+    failure: El patrón debe tener exactamente dos tokens.
+  - id: t2
+    label: Escritura tipada
+    expression: parsear("SET color azul") == Ok(Orden::Set(String::from("color"), String::from("azul")))
+    why: La orden conserva clave y valor por separado.
+    failure: Convertí ambos slices en Strings propios.
+  - id: t3
+    label: Rechazo sin ambigüedad
+    expression: parsear("GET x extra") == Err("orden") && parsear("SET x") == Err("orden") && parsear("get x") == Err("orden") && parsear("") == Err("orden")
+    why: Se rechazan campos extra, faltantes y comandos diferentes.
+    failure: El comodín cubre toda forma no permitida, no descartes tokens sobrantes.
+hints:
+  - Un Vec<&str> puede verse como slice con as_slice().
+  - Los patrones de slice pueden exigir longitud y literales.
+  - Usá ["GET", clave] y ["SET", clave, valor], con _ => Err("orden").
+review:
+  success: El parser garantiza la forma antes de construir la orden. El resto del programa ya no necesita comprobar si SET recibió un valor.
+  pitfall: Aceptar campos extras silenciosamente escondería errores del cliente; el contrato exige aridad exacta.
+transfer: Agregá DEL clave con su propia variante y probá tanto aceptación como rechazo.
+prediction:
+  question: ¿Por qué devolver un enum después de parsear?
+  options:
+    - Para impedir todo error de ejecución imaginable
+    - Para obligar a usar threads
+    - Para representar solo formas de orden ya validadas
+  answer: 2
+  explanation: El enum traslada la validación estructural al tipo que consumirá el ejecutor.
+sources:
+  - title: Rust Reference · Slice patterns
+    url: https://doc.rust-lang.org/reference/patterns.html#slice-patterns
+  - title: Rust Book · Enums
+    url: https://doc.rust-lang.org/book/ch06-01-defining-an-enum.html

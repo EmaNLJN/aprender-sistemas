@@ -1,0 +1,39 @@
+title: Elegí una ruta con if
+intro: if puede producir un valor. Cada rama debe entregar tipos compatibles para que el resultado tenga un tipo conocido.
+why: Rust no convierte números en condiciones implícitamente. Una comparación entrega bool y hace visible la decisión.
+objective: Elegí "cache" si la latencia es menor que 20 ms; desde 20 inclusive, elegí "disco".
+instructions:
+  - Completá el cuerpo con if / else.
+  - Devolvé los literales como &'static str.
+tests:
+  - id: t1
+    label: Por debajo
+    expression: ruta(19) == "cache"
+    why: La rama rápida incluye 19.
+    failure: Compará con < 20.
+  - id: t2
+    label: Frontera exacta
+    expression: ruta(20) == "disco"
+    why: El umbral pertenece a la otra rama.
+    failure: Menor que no incluye el límite.
+  - id: t3
+    label: Muy por encima
+    expression: ruta(900) == "disco"
+    why: La segunda rama cubre todo el resto.
+    failure: No agregues un intervalo superior que no pide el contrato.
+hints:
+  - La condición es latencia_ms < 20.
+  - Cada bloque termina con un literal de texto.
+  - if latencia_ms < 20 { "cache" } else { "disco" }
+review:
+  success: Ambas ramas producen &str. Los literales están disponibles durante toda la ejecución y por eso admiten 'static.
+  pitfall: Agregar ; dentro de una sola rama introduce (), y las ramas dejan de concordar.
+transfer: Agregá una tercera categoría "red" para latencias desde 100 ms.
+prediction:
+  question: ¿Puede una rama devolver 7 y la otra "siete" sin envolverlos en un tipo común?
+  options:
+    - Sí, Rust usa any
+    - 'No: el if necesita un tipo de resultado coherente'
+    - Sí, si la condición es true
+  answer: 1
+  explanation: El chequeo incluye ambas ramas, aunque una condición concreta seleccione solo una al ejecutar.

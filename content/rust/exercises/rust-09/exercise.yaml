@@ -1,0 +1,39 @@
+title: Salir de loop con una respuesta
+intro: loop repite hasta un break. Con break valor, el propio bucle produce ese valor.
+why: Sirve para búsquedas con una condición de salida clara. El resultado viaja directamente desde el lugar donde encontraste la respuesta.
+objective: 'Encontrá la primera potencia de dos mayor o igual que n. Para n = 0 devolvé 1. Rango de n: 0..=1.000.000.'
+instructions:
+  - Empezá en 1 y duplicá mientras sea insuficiente.
+  - Terminá con break potencia al alcanzar el umbral.
+tests:
+  - id: t1
+    label: Capacidad mínima
+    expression: capacidad(0) == 1
+    why: El algoritmo tiene base incluso sin demanda.
+    failure: Comprobá el umbral antes de duplicar.
+  - id: t2
+    label: Ya es potencia
+    expression: capacidad(8) == 8
+    why: No se duplica de más en la igualdad.
+    failure: La salida debe usar >=, no solo >.
+  - id: t3
+    label: Redondeo hacia arriba
+    expression: capacidad(9) == 16
+    why: Se elige una potencia suficiente y mínima.
+    failure: Duplicá desde 1 hasta cubrir n.
+hints:
+  - El if de salida va antes de *= 2.
+  - break puede incluir una expresión.
+  - Usá if potencia >= n { break potencia; }.
+review:
+  success: Cada vuelta acerca potencia al objetivo en el dominio indicado. El break devuelve el resultado del loop.
+  pitfall: Sin un dominio acotado, duplicar u32 podría desbordar. Este ejercicio limita n; una API general necesitaría checked_mul.
+transfer: Diseñá una versión que devuelva Option<u32> si no existe una potencia representable.
+prediction:
+  question: ¿Qué representa break 16; dentro de loop?
+  options:
+    - Imprime 16
+    - Sale de la función siempre
+    - Termina el loop y le da valor 16
+  answer: 2
+  explanation: El valor pertenece a la expresión loop; la función puede devolverlo o usarlo en otro cálculo.

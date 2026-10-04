@@ -1,0 +1,43 @@
+title: Comprimí rachas de caracteres
+level: medium
+intro: Run-length encoding describe cada racha consecutiva mediante un valor y su cantidad. No agrupa repeticiones separadas.
+why: Representar el estado actual como la última racha permite recorrer el texto una vez. Usar pares evita ambigüedades si el propio texto contiene dígitos.
+objective: Transformá texto en Vec<(char, usize)> de rachas consecutivas; por ejemplo "aaññb" → [(a,2),(ñ,2),(b,1)].
+instructions:
+  - Recorré chars, no bytes.
+  - Incrementá la última racha solo si su char coincide; de lo contrario creá otra.
+tests:
+  - id: t1
+    label: Rachas Unicode
+    expression: codificar_rle("aaññb") == vec![('a', 2), ('ñ', 2), ('b', 1)]
+    why: Una unidad Unicode no se divide en bytes.
+    failure: Iterá chars y actualizá un contador por racha.
+  - id: t2
+    label: Repetición separada
+    expression: codificar_rle("aba") == vec![('a', 1), ('b', 1), ('a', 1)]
+    why: Dos rachas de a permanecen separadas.
+    failure: Compará solamente con la última racha.
+  - id: t3
+    label: Vacío y dígitos
+    expression: codificar_rle("").is_empty() && codificar_rle("111") == vec![('1', 3)]
+    why: El formato no confunde contenido numérico con cantidad.
+    failure: La salida son pares tipados, no una cadena ambigua.
+hints:
+  - Anotá Vec<(char, usize)> para orientar la inferencia.
+  - last_mut permite cambiar el contador sin extraer el par.
+  - Un match con guarda compara *previo == ch.
+review:
+  success: Cada racha representa un bloque contiguo y conserva su orden. Los pares tipados separan dato y metadato.
+  pitfall: 'RLE no siempre comprime: un texto sin repeticiones puede ocupar más espacio representado en pares.'
+transfer: Componé este ejercicio con decodificar_rle y verificá el recorrido de ida y vuelta.
+prediction:
+  question: ¿RLE de "aba" debería juntar las dos letras a?
+  options:
+    - Sí, en una única racha
+    - 'No: no son consecutivas'
+    - Solo si ordenás primero
+  answer: 1
+  explanation: Juntarlas destruiría el orden necesario para reconstruir el texto.
+sources:
+  - title: std · slice::last_mut
+    url: https://doc.rust-lang.org/std/primitive.slice.html#method.last_mut

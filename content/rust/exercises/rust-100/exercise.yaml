@@ -1,0 +1,48 @@
+title: 'Boss 100: un lote se acepta completo o no cambia nada'
+level: expert
+minutes: 22
+visual: collections
+intro: Una transacción lógica agrupa varios cambios y los publica solo si todos resultan válidos. Trabajar sobre un snapshot privado es una estrategia simple para aprender ese contrato.
+why: Validar cada operación mientras mutás el estado público puede dejar cambios parciales al fallar una operación posterior. La frontera de commit separa preparación y publicación.
+objective: Aplicá un lote de Poner, Sumar y Borrar. Sumar exige clave existente ("ausente") y suma i32 comprobada ("overflow"). Borrar ausente es válido. Ante cualquier error, el mapa original queda idéntico.
+instructions:
+  - Cloná el mapa para preparar el lote en una copia privada.
+  - Procesá en orden y propagá el primer error.
+  - Reemplazá el original únicamente después de terminar todo el lote.
+tests:
+  - id: t1
+    label: Commit de cambios dependientes
+    expression: '{ let mut d = BTreeMap::from([(String::from("vieja"), 1)]); let ops = [Cambio::Poner("x".into(), 5), Cambio::Sumar("x".into(), 3), Cambio::Borrar("vieja".into())]; aplicar_lote(&mut d, &ops) == Ok(()) && d == BTreeMap::from([(String::from("x"), 8)]) }'
+    why: Las operaciones del lote observan cambios preparados previamente.
+    failure: Sumar debe consultar la copia de trabajo, no el original.
+  - id: t2
+    label: Rollback de un error tardío
+    expression: '{ let mut d = BTreeMap::from([(String::from("x"), 4)]); let antes = d.clone(); let ops = [Cambio::Poner("nueva".into(), 9), Cambio::Borrar("x".into()), Cambio::Sumar("ausente".into(), 1)]; aplicar_lote(&mut d, &ops) == Err("ausente") && d == antes }'
+    why: El fallo restaura también escrituras y eliminaciones anteriores del lote.
+    failure: La forma más simple es no publicar ninguna de esas mutaciones todavía.
+  - id: t3
+    label: Overflow, vacío y eliminación ausente
+    expression: '{ let mut d = BTreeMap::from([(String::from("x"), i32::MAX)]); let antes = d.clone(); let err = aplicar_lote(&mut d, &[Cambio::Poner("y".into(), 2), Cambio::Sumar("x".into(), 1)]); err == Err("overflow") && d == antes && aplicar_lote(&mut d, &[]) == Ok(()) && aplicar_lote(&mut d, &[Cambio::Borrar("nadie".into())]) == Ok(()) && d == antes }'
+    why: La garantía se mantiene ante overflow y lotes neutros.
+    failure: El commit debe ocurrir una sola vez, tras cualquier posible error.
+hints:
+  - BTreeMap<String, i32> implementa Clone porque sus claves y valores también.
+  - Toda lectura y escritura del lote va a preparado.
+  - La última transición es *datos = preparado; seguida de Ok(()).
+review:
+  success: Los casos verifican efectos dependientes, fallos tardíos y conservación exacta del estado. La solución ofrece atomicidad lógica observable entre entrada y retorno de esta función.
+  pitfall: Clonar todo el mapa cuesta tiempo y memoria. Esto no implementa durabilidad en disco, aislamiento entre threads, bloqueo de lectores ni una base de datos ACID completa.
+transfer: Compará snapshot completo con un journal de deshacer. Explicá qué nuevas pruebas necesitarías antes de agregar persistencia o concurrencia real.
+prediction:
+  question: ¿Cuándo se debe reemplazar el mapa original?
+  options:
+    - Después de cada operación exitosa
+    - Solo cuando todo el lote terminó sin error
+    - Antes de validar la primera operación
+  answer: 1
+  explanation: Publicar cambios parciales rompería la garantía de que un error deja el original intacto.
+sources:
+  - title: std · BTreeMap::clone
+    url: https://doc.rust-lang.org/std/collections/struct.BTreeMap.html
+  - title: Rust Book · Recoverable errors
+    url: https://doc.rust-lang.org/book/ch09-02-recoverable-errors-with-result.html

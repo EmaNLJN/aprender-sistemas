@@ -1,0 +1,43 @@
+title: Turnos justos con VecDeque
+visual: collections
+intro: VecDeque permite agregar al final y retirar del frente. Esa combinación implementa una cola FIFO.
+why: Para una cola de trabajo, atender primero lo que llegó primero puede ser parte de la corrección, no solo una decisión de rendimiento.
+objective: Construí la cola con tareas, atendé hasta limite elementos y devolvé los atendidos en orden.
+instructions:
+  - Usá pop_front sobre VecDeque.
+  - Si se vacía antes del límite, terminá sin panic.
+tests:
+  - id: t1
+    label: Cupo parcial
+    expression: atender(&[10, 20, 30], 2) == vec![10, 20]
+    why: La extracción cumple FIFO.
+    failure: Retirá por el frente, no por atrás.
+  - id: t2
+    label: Cupo mayor a la cola
+    expression: atender(&[7], 8) == vec![7]
+    why: No se inventan tareas faltantes.
+    failure: Cortá ante None.
+  - id: t3
+    label: Sin cupo
+    expression: atender(&[1, 2], 0).is_empty() && atender(&[], 3).is_empty()
+    why: Cero cupo y cero tareas se manejan.
+    failure: El bucle no debe retirar elementos antes de verificar el límite.
+hints:
+  - Recolectá copied en VecDeque<i32>.
+  - Un for en 0..limite marca el máximo de extracciones.
+  - 'match pop_front: Some va a salida; None termina el bucle.'
+review:
+  success: La cola preserva el orden de llegada y el límite de trabajo. La estructura evita desplazar todo un Vec para cada extracción frontal.
+  pitfall: VecDeque puede estar dividido internamente en dos regiones; no supongas que siempre ofrece un slice contiguo.
+transfer: Devolvé también las tareas pendientes y comprobá que ningún elemento desaparezca.
+prediction:
+  question: ¿Qué pareja de operaciones modela FIFO?
+  options:
+    - push_back y pop_front
+    - push_back y pop_back
+    - sort y pop_back
+  answer: 0
+  explanation: Agregar al final y retirar del principio conserva el orden de llegada.
+sources:
+  - title: std · VecDeque
+    url: https://doc.rust-lang.org/std/collections/struct.VecDeque.html

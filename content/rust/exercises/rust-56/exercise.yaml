@@ -1,0 +1,45 @@
+title: Distintos tipos en una misma colección
+visual: generics
+intro: dyn Trait permite invocar un comportamiento cuando el tipo concreto se conoce en ejecución. Box<dyn Tarifa> posee valores de tamaños concretos diferentes detrás de una interfaz común.
+why: Los genéricos sirven cuando cada instancia tiene un tipo concreto conocido; un trait object permite una colección heterogénea. El despacho dinámico implica una indirección.
+objective: Implementá costo para Fija y PorByte; total suma las tarifas de todos los objetos.
+instructions:
+  - Fija(n) cuesta n; PorByte { bytes, precio } cuesta bytes × precio.
+  - Conservá &[Box<dyn Tarifa>] en total. Los valores y la suma caben en u32.
+tests:
+  - id: t1
+    label: Colección heterogénea
+    expression: '{ let t: Vec<Box<dyn Tarifa>> = vec![Box::new(Fija(5)), Box::new(PorByte { bytes: 3, precio: 2 })]; total(&t) == 11 }'
+    why: Un recorrido acepta tipos concretos diferentes.
+    failure: Invocá el método de la interfaz, no campos concretos.
+  - id: t2
+    label: Sin tarifas
+    expression: total(&[]) == 0
+    why: La suma vacía mantiene su identidad.
+    failure: sum puede devolver cero sin casos artificiales.
+  - id: t3
+    label: Extensión de la interfaz
+    expression: '{ struct Gratis; impl Tarifa for Gratis { fn costo(&self) -> u32 { 0 } } let t: Vec<Box<dyn Tarifa>> = vec![Box::new(Gratis), Box::new(Fija(7))]; total(&t) == 7 }'
+    why: La función acepta un implementador nuevo.
+    failure: No hagas match manual sobre tipos concretos.
+hints:
+  - Cada impl conoce los campos de su tipo.
+  - El trait object solo garantiza costo().
+  - El total puede usar map(|t| t.costo()).sum().
+review:
+  success: El mismo recorrido opera sobre tipos diferentes mediante su contrato común. Box aporta propiedad e indirección; dyn aporta despacho dinámico.
+  pitfall: No todos los traits son compatibles con dyn. Por ejemplo, métodos genéricos ordinarios requieren considerar esas restricciones.
+transfer: 'Escribí una versión genérica total_homogeneo<T: Tarifa> y compará qué colecciones admite.'
+prediction:
+  question: ¿Un Vec<T> genérico ordinario puede mezclar cualquier tipo implementador de Tarifa sin un wrapper común?
+  options:
+    - Sí, T cambia en cada posición
+    - 'No: cada Vec tiene un único tipo de elemento'
+    - Solo si ambos tipos tienen igual tamaño
+  answer: 1
+  explanation: El trait object proporciona el tipo común Box<dyn Tarifa> mientras conserva implementaciones distintas.
+sources:
+  - title: Rust Book · Trait objects
+    url: https://doc.rust-lang.org/book/ch18-02-trait-objects.html
+  - title: Rust Reference · Dyn compatibility
+    url: https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility

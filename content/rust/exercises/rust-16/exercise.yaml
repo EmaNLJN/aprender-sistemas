@@ -1,0 +1,43 @@
+title: Bytes y caracteres no son lo mismo
+visual: memory
+intro: str usa UTF-8. len() mide bytes; chars().count() cuenta valores escalares Unicode.
+why: 'Una representación UTF-8 puede usar varios bytes por carácter. Incluso chars no cuenta siempre símbolos visuales completos: algunos se forman con varios escalares.'
+objective: Devolvé (bytes, escalares_unicode) para el texto recibido.
+instructions:
+  - Usá len para bytes y chars().count() para escalares.
+  - No indexés el texto como si fuera un array de letras.
+tests:
+  - id: t1
+    label: ASCII
+    expression: medidas("cpu") == (3, 3)
+    why: ASCII usa un byte por escalar.
+    failure: La pareja va en orden bytes, escalares.
+  - id: t2
+    label: Acento
+    expression: medidas("ñ") == (2, 1)
+    why: Un escalar puede usar varios bytes.
+    failure: len y chars().count no son intercambiables.
+  - id: t3
+    label: Emoji y vacío
+    expression: medidas("🦀") == (4, 1) && medidas("") == (0, 0)
+    why: Se cubren cuatro bytes y la ausencia de datos.
+    failure: chars cuenta escalares, no bytes.
+hints:
+  - Ambos resultados son usize.
+  - chars() crea un iterador; count() lo recorre.
+  - (texto.len(), texto.chars().count())
+review:
+  success: Distinguiste almacenamiento de unidades Unicode. Esa diferencia importa al limitar paquetes o mostrar longitudes al usuario.
+  pitfall: Un emoji compuesto o una letra con marca combinante puede contener varios chars aunque se vea como un símbolo.
+transfer: Probá "é" y comparalo con "é"; describí qué mide cada número.
+prediction:
+  question: ¿chars().count() siempre cuenta símbolos visuales completos?
+  options:
+    - Sí
+    - 'No: cuenta valores escalares Unicode'
+    - Solo cuenta bytes ASCII
+  answer: 1
+  explanation: Los grafemas visibles pueden combinar varios escalares. Este ejercicio no implementa segmentación de grafemas.
+sources:
+  - title: std · str
+    url: https://doc.rust-lang.org/std/primitive.str.html

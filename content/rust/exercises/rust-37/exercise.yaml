@@ -1,0 +1,39 @@
+title: Un pipeline de sensores
+intro: filter conserva elementos que cumplen una condición. map puede convertirlos antes de un consumidor como sum.
+why: 'Cada paso nombra una intención: seleccionar, transformar, reducir. Esta separación ayuda a revisar la lógica sin seguir índices.'
+objective: Sumá el cuadrado de los valores estrictamente positivos. Entradas entre -1.000 y 1.000, como máximo 100 elementos.
+instructions:
+  - Ignorá cero y negativos.
+  - Usá un pipeline o un recorrido equivalente sin modificar la entrada.
+tests:
+  - id: t1
+    label: Mezcla de signos
+    expression: energia_positiva(&[-3, 2, 4]) == 20
+    why: Los negativos no se vuelven positivos al cuadrarlos antes de filtrar.
+    failure: Filtrá según el valor original.
+  - id: t2
+    label: Nada aceptado
+    expression: energia_positiva(&[-1, 0]) == 0
+    why: La reducción vacía suma cero.
+    failure: No eleves negativos antes del filtro.
+  - id: t3
+    label: Solo positivos
+    expression: energia_positiva(&[1, 2, 3]) == 14
+    why: Se suma cada cuadrado individual.
+    failure: Cuadrado de la suma no es suma de cuadrados.
+hints:
+  - copied simplifica trabajar con valores i32.
+  - El filtro va antes de map(|x| x * x).
+  - Terminá con sum().
+review:
+  success: 'El orden del pipeline expresa la regla del dominio: decidir con el dato original y transformar solo lo aceptado.'
+  pitfall: Cambiar filter y map puede cambiar el significado incluso si el código compila.
+transfer: Contá cuántos valores fueron descartados y devolvé ambas métricas.
+prediction:
+  question: Si primero elevás al cuadrado y después filtrás > 0, ¿qué pasa con -3?
+  options:
+    - Se descarta
+    - Se acepta como 9, cambiando la regla
+    - No compila
+  answer: 1
+  explanation: La transformación destruye la información del signo que necesitaba el filtro.

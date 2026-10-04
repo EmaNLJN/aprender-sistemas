@@ -1,0 +1,42 @@
+title: Un valor por defecto con intención
+intro: map transforma el contenido de Some y conserva None. unwrap_or selecciona un valor por defecto si no había contenido.
+why: Estas operaciones mantienen explícita la diferencia entre dato presente y ausente durante la transformación.
+objective: Para Some(nombre), devolvé "Hola, nombre". Para None, devolvé "Hola, visitante". Some("") sigue siendo un nombre presente.
+instructions:
+  - Transformá la opción sin unwrap.
+  - Devolvé un String propio construido con format!.
+tests:
+  - id: t1
+    label: Persona presente
+    expression: saludo(Some("Ana")) == "Hola, Ana"
+    why: Se preserva el contenido de Some.
+    failure: Insertá el nombre recibido en el mensaje.
+  - id: t2
+    label: Ausencia
+    expression: saludo(None) == "Hola, visitante"
+    why: El default se limita al caso None.
+    failure: unwrap_or puede seleccionar visitante.
+  - id: t3
+    label: Presente pero vacío
+    expression: saludo(Some("")) == "Hola, "
+    why: Vacío y ausencia no se mezclan.
+    failure: 'No filtres el nombre vacío: el contrato lo conserva.'
+hints:
+  - No necesitás tratar Some("") como error.
+  - unwrap_or("visitante") obtiene un &str en ambos casos.
+  - format!("Hola, {}", nombre.unwrap_or("visitante"))
+review:
+  success: El fallback responde a la ausencia, no a un juicio implícito sobre el contenido. Esa distinción hace predecible la API.
+  pitfall: Un valor presente puede ser cero, false o una cadena vacía; ninguno equivale automáticamente a None.
+transfer: Construí la misma función con map y unwrap_or_else; identificá cuándo se crea cada String.
+prediction:
+  question: ¿Some("").unwrap_or("visitante") produce "visitante"?
+  options:
+    - No, produce la cadena vacía presente
+    - Sí, porque está vacía
+    - Causa panic
+  answer: 0
+  explanation: unwrap_or solo usa su alternativa cuando la opción es None.
+sources:
+  - title: std · Option
+    url: https://doc.rust-lang.org/std/option/enum.Option.html

@@ -1,0 +1,42 @@
+title: Match para un protocolo pequeño
+intro: match selecciona un patrón y obliga a cubrir las posibilidades. El comodín _ agrupa los valores que no tienen un caso específico.
+why: Una clasificación completa evita que un código desconocido quede sin respuesta. En protocolos, definir ese caso reduce ambigüedades.
+objective: Convertí 200 en "ok", 404 en "ausente", 500 en "error" y cualquier otro número en "desconocido".
+instructions:
+  - Usá match sobre codigo.
+  - Incluí un brazo final _ para los códigos no listados.
+tests:
+  - id: t1
+    label: Éxito
+    expression: estado(200) == "ok"
+    why: El caso positivo es explícito.
+    failure: Usá el patrón 200.
+  - id: t2
+    label: Errores distintos
+    expression: estado(404) == "ausente" && estado(500) == "error"
+    why: Dos clases de fallo no se confunden.
+    failure: Cada código requiere su propio resultado.
+  - id: t3
+    label: Código no reconocido
+    expression: estado(201) == "desconocido" && estado(0) == "desconocido"
+    why: La clasificación es total.
+    failure: El brazo _ debe devolver desconocido.
+hints:
+  - Cada brazo tiene patrón => expresión.
+  - Los brazos se separan con coma.
+  - El comodín debe quedar después de los casos específicos.
+review:
+  success: Definiste una respuesta para todo u16, aunque tu protocolo conozca pocos valores.
+  pitfall: Un _ primero capturaría todos los números y haría inalcanzables los casos siguientes.
+transfer: Agrupá varios códigos que compartan respuesta con patrones separados por |.
+prediction:
+  question: ¿Qué sucede si match sobre u16 omite el comodín y solo cubre tres números?
+  options:
+    - Devuelve cadena vacía
+    - Lanza un panic al recibir otro código
+    - No compila por patrones no exhaustivos
+  answer: 2
+  explanation: Rust exige cubrir todos los valores posibles del tipo.
+sources:
+  - title: Rust Book · match
+    url: https://doc.rust-lang.org/book/ch06-02-match.html

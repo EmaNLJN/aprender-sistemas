@@ -1,0 +1,46 @@
+title: 'Boss final: tu mini almacén en memoria'
+visual: collections
+intro: Combiná un mapa, parsing y respuestas explícitas en un ejecutor determinista. Cada llamada procesa una sesión independiente.
+why: Separar este núcleo de archivos y sockets permite probar sus reglas sin depender del entorno. Más adelante podés conectar el mismo comportamiento a una CLI o servidor.
+objective: Procesá SET clave valor → "OK"; GET clave → valor o "NOT_FOUND". Formas inválidas → "ERROR" sin modificar datos. SET reemplaza el valor previo.
+instructions:
+  - Creá un HashMap nuevo para cada llamada y procesá las líneas en orden.
+  - Aceptá solo la cantidad exacta de tokens, con comandos en mayúsculas.
+  - Devolvé una respuesta String por cada línea.
+tests:
+  - id: t1
+    label: Guardar, leer y reemplazar
+    expression: sesion(&["SET color rojo", "GET color", "SET color azul", "GET color"]) == vec!["OK", "rojo", "OK", "azul"]
+    why: El estado persiste entre órdenes de la misma sesión.
+    failure: El mapa va fuera del for y SET reemplaza el valor anterior.
+  - id: t2
+    label: Error sin efectos laterales
+    expression: sesion(&["SET x uno", "SET x dos extra", "GET x", "GET ausente"]) == vec!["OK", "ERROR", "uno", "NOT_FOUND"]
+    why: Una orden inválida no modifica datos existentes.
+    failure: Validá todos los tokens antes de insertar.
+  - id: t3
+    label: Sesiones independientes
+    expression: sesion(&[]).is_empty() && sesion(&["GET color", "", "get x"]) == vec!["NOT_FOUND", "ERROR", "ERROR"]
+    why: No hay estado global ni líneas sin respuesta.
+    failure: Creá el mapa dentro de la función y respondé incluso a una línea inválida.
+hints:
+  - Necesitás un HashMap<String, String> y Vec<String>.
+  - El match sobre el slice valida antes de ejecutar.
+  - GET puede usar get(*clave).cloned().unwrap_or_else(|| String::from("NOT_FOUND")).
+review:
+  success: Construiste un núcleo con estado, validación y resultados deterministas. Las pruebas verifican secuencias completas y que los errores no alteren el almacén.
+  pitfall: Este protocolo didáctico no admite valores con espacios y sus textos de error podrían coincidir con un valor guardado. Una API robusta usaría respuestas tipadas y un formato sin ambigüedad.
+transfer: Agregá DEL y devolvé un enum Respuesta. Después separá parsear, ejecutar y formatear en funciones comprobables.
+prediction:
+  question: ¿Dónde debe crearse el mapa para conservar datos dentro de una sesión y aislar llamadas?
+  options:
+    - Dentro de cada vuelta del for
+    - Dentro de sesion, antes del for
+    - En una variable global mutable
+  answer: 1
+  explanation: Una instancia por llamada mantiene el estado durante sus órdenes y evita compartirlo accidentalmente con otras sesiones.
+sources:
+  - title: std · HashMap
+    url: https://doc.rust-lang.org/std/collections/struct.HashMap.html
+  - title: Rust Reference · Slice patterns
+    url: https://doc.rust-lang.org/reference/patterns.html#slice-patterns

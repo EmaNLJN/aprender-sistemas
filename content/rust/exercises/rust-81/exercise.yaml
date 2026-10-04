@@ -1,0 +1,43 @@
+title: Anagramas sin perder repeticiones
+level: medium
+intro: 'Un anagrama conserva la cantidad de cada unidad de texto. En este ejercicio la unidad es char: un escalar Unicode.'
+why: Un conjunto comprueba presencia pero pierde multiplicidad. Ordenar dos secuencias permite comparar las cantidades sin gestionar un mapa de contadores.
+objective: Devolvé true si ambos textos contienen exactamente los mismos chars, con las mismas repeticiones. Mayúsculas, espacios y acentos cuentan; no normalices Unicode.
+instructions:
+  - Recolectá chars de cada texto y ordenalos.
+  - Compará las secuencias completas, incluyendo longitud.
+tests:
+  - id: t1
+    label: Orden distinto
+    expression: anagramas("ñab", "bañ") && anagramas("", "")
+    why: El orden no importa y el vacío conserva el multiconjunto vacío.
+    failure: Compará chars ordenados, no los textos originales.
+  - id: t2
+    label: Repeticiones importan
+    expression: '!anagramas("aab", "abb") && !anagramas("ab", "aab")'
+    why: Un set no alcanza para contar repeticiones.
+    failure: No dedupliques antes de comparar.
+  - id: t3
+    label: Contrato literal Unicode
+    expression: '!anagramas("A", "a") && !anagramas("é", "é")'
+    why: No se normalizan mayúsculas ni formas Unicode equivalentes.
+    failure: La unidad es el escalar exacto, no la apariencia visual.
+hints:
+  - chars().collect::<Vec<char>>() conserva repeticiones.
+  - sort_unstable no necesita preservar orden entre valores iguales.
+  - Igualdad de vectores verifica longitud y cada posición.
+review:
+  success: La comparación conserva multiplicidad y el contrato Unicode explícito. La solución propuesta ordena en lugar de confundir un multiconjunto con un conjunto.
+  pitfall: Dos textos visualmente equivalentes pueden usar secuencias Unicode distintas. Normalizarlos requeriría otro contrato y herramientas adicionales.
+transfer: Implementá otra solución con HashMap<char, usize> y compará qué memoria necesita cada enfoque.
+prediction:
+  question: ¿Un HashSet<char> distingue "aab" de "abb"?
+  options:
+    - Sí
+    - 'No: ambos contienen a y b'
+    - Solo con Unicode
+  answer: 1
+  explanation: El conjunto elimina información sobre cantidades.
+sources:
+  - title: std · str::chars
+    url: https://doc.rust-lang.org/std/primitive.str.html#method.chars

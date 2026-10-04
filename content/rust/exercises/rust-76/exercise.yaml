@@ -1,0 +1,44 @@
+title: FizzBuzz del reactor
+level: beginner
+minutes: 8
+intro: Una regla puede cumplir dos condiciones a la vez. El orden de las decisiones determina si reconocés esa intersección.
+why: Antes de programar, separá casos exclusivos y compartidos. Esta habilidad aparece en validadores, permisos y reglas de negocio.
+objective: 'Para n entre 1 y 10.000: múltiplo de 3 → "Fizz"; de 5 → "Buzz"; de ambos → "FizzBuzz"; en otro caso el número decimal.'
+instructions:
+  - Comprobá primero el caso combinado o combiná dos booleanos con match.
+  - Devolvé String en todos los caminos.
+tests:
+  - id: t1
+    label: Condiciones separadas
+    expression: fizzbuzz(9) == "Fizz" && fizzbuzz(10) == "Buzz"
+    why: Cada divisor activa su propia regla.
+    failure: El resto cero indica divisibilidad.
+  - id: t2
+    label: Intersección
+    expression: fizzbuzz(15) == "FizzBuzz" && fizzbuzz(30) == "FizzBuzz"
+    why: No se pierde el caso que cumple ambas.
+    failure: Un if de 3 antes del combinado escondería FizzBuzz.
+  - id: t3
+    label: Número ordinario
+    expression: fizzbuzz(1) == "1" && fizzbuzz(17) == "17"
+    why: El camino restante conserva el argumento.
+    failure: Usá to_string sobre n.
+hints:
+  - n % divisor == 0 detecta un múltiplo.
+  - Dos booleanos forman cuatro combinaciones.
+  - match (n % 3 == 0, n % 5 == 0) permite nombrar las cuatro.
+review:
+  success: Las pruebas cubren reglas individuales, su intersección y el caso restante. El match de la solución vuelve visibles las cuatro combinaciones.
+  pitfall: Cumplir la primera condición no implica que la segunda sea falsa.
+transfer: Agregá una regla para múltiplos de 7 y contá cuántas combinaciones necesitarías considerar.
+prediction:
+  question: Si primero devolvés Fizz cuando n % 3 == 0, ¿qué ocurre con 15?
+  options:
+    - Devuelve FizzBuzz automáticamente
+    - El caso combinado queda oculto y devuelve Fizz
+    - No compila
+  answer: 1
+  explanation: Una devolución temprana impide evaluar las reglas posteriores.
+sources:
+  - title: Rust Book · match
+    url: https://doc.rust-lang.org/book/ch06-02-match.html

@@ -1,0 +1,44 @@
+title: Fusioná dos secuencias ya ordenadas
+level: medium
+visual: collections
+intro: Si cada entrada está ordenada, el menor elemento restante está en alguno de sus dos frentes.
+why: Podés aprovechar una propiedad de los datos para evitar ordenar todo otra vez. Los duplicados son datos y deben conservarse.
+objective: Fusioná dos slices ascendentes en un Vec ascendente que incluya cada elemento de ambas entradas.
+instructions:
+  - Compará los frentes con dos índices.
+  - Cuando una entrada termine, agregá el resto de la otra.
+tests:
+  - id: t1
+    label: Alternancia
+    expression: fusionar(&[1, 4, 8], &[2, 3, 9]) == vec![1, 2, 3, 4, 8, 9]
+    why: La elección debe repetirse después de cada extracción.
+    failure: No concatenes simplemente entradas completas.
+  - id: t2
+    label: Repetidos y negativos
+    expression: fusionar(&[-2, 1, 1], &[-2, 1]) == vec![-2, -2, 1, 1, 1]
+    why: No se pierde multiplicidad.
+    failure: Usar un set destruiría duplicados.
+  - id: t3
+    label: Entradas vacías
+    expression: fusionar(&[], &[2, 4]) == vec![2, 4] && fusionar(&[1], &[]) == vec![1] && fusionar(&[], &[]).is_empty()
+    why: Las colas restantes cubren también el caso sin bucle.
+    failure: Agregá ambos tramos restantes después del while.
+hints:
+  - Avanzá solamente el índice de la entrada que aportó el elemento.
+  - Elegir a en igualdad conserva sus repeticiones sin saltar b.
+  - extend_from_slice agrega el resto desde cada índice.
+review:
+  success: La salida conserva orden y cantidades. En la solución propuesta cada elemento se copia una vez; ordenar después también podría pasar estos tests, pero desaprovecharía la precondición.
+  pitfall: El algoritmo depende del orden de ambas entradas. Los tests no prueban esa precondición para datos externos.
+transfer: 'Generalizá a T: Ord + Clone o diseñá una versión que consuma Vec<T> sin exigir Clone.'
+prediction:
+  question: ¿Qué índice avanzás después de elegir a[i]?
+  options:
+    - Solo i
+    - Ambos siempre
+    - Solo j
+  answer: 0
+  explanation: El frente de b todavía no fue consumido.
+sources:
+  - title: std · Vec::extend_from_slice
+    url: https://doc.rust-lang.org/std/vec/struct.Vec.html#method.extend_from_slice

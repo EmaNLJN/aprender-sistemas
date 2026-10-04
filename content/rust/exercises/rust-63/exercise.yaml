@@ -1,0 +1,42 @@
+title: Tu primera macro con repetición
+intro: macro_rules! trabaja con estructura sintáctica antes de compilar el resultado. Una repetición puede aceptar una cantidad variable de expresiones.
+why: Las macros sirven cuando la forma del código es variable, pero siguen produciendo Rust que debe pasar el chequeo de tipos.
+objective: Implementá sumar! para cero o más expresiones i32, con coma final opcional. Cada expresión debe evaluarse exactamente una vez.
+instructions:
+  - Usá el patrón ($($x:expr),* $(,)?).
+  - Acumulá cada expresión una vez en un total i32. Los ejemplos no desbordan.
+tests:
+  - id: t1
+    label: Expresiones y coma opcional
+    expression: sumar!(1, 2 * 3, -2,) == 5
+    why: La macro acepta expresiones, no solo literales.
+    failure: Usá expr como fragmento y acumulá cada uno.
+  - id: t2
+    label: Sin argumentos
+    expression: sumar!() == 0
+    why: La repetición * permite cero elementos.
+    failure: Inicializá el acumulador en cero.
+  - id: t3
+    label: Efecto una vez
+    expression: '{ let mut n = 0; let r = sumar!({ n += 1; n }, { n += 1; n }); r == 3 && n == 2 }'
+    why: La expansión no duplica evaluaciones.
+    failure: Cada $x debe aparecer una única vez en el código evaluado.
+hints:
+  - $($x:expr),* captura una lista separada por comas.
+  - $(total += $x;)* repite una sentencia por expresión.
+  - Las llaves dobles producen un bloque expresión con temporales locales.
+review:
+  success: La macro genera un bloque tipado y evalúa cada argumento una vez. Esa propiedad es esencial si el argumento tiene efectos.
+  pitfall: 'Una macro no es texto pegado sin reglas: sus fragmentos y el código expandido deben ser válidos.'
+transfer: Compará con una función que acepte &[i32] y decidí cuándo realmente necesitás la macro.
+prediction:
+  question: ¿Una macro puede producir código que después falle por tipos incompatibles?
+  options:
+    - 'Sí: la expansión también se verifica'
+    - 'No: las macros evitan el type checker'
+    - Solo si no tiene signos !
+  answer: 0
+  explanation: La expansión sucede antes del chequeo del Rust generado.
+sources:
+  - title: Rust Reference · Macros by example
+    url: https://doc.rust-lang.org/reference/macros-by-example.html

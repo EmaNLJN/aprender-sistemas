@@ -1,0 +1,42 @@
+title: Mensajes hasta cerrar el canal
+intro: mpsc::channel conecta emisores con un receptor. Recorrer el receptor termina cuando ya no quedan emisores y se consumió lo enviado.
+why: Cerrar el canal comunica finalización sin inventar un número especial de fin que pueda confundirse con datos.
+objective: Un thread envía 0..n; el receptor devuelve todos los valores en orden. n está entre 0 y 20.
+instructions:
+  - Mové el único sender al thread productor.
+  - Recolectá el receiver y hacé join al productor.
+tests:
+  - id: t1
+    label: Secuencia completa
+    expression: transmitir(4) == vec![0, 1, 2, 3]
+    why: El productor único conserva el orden de sus envíos.
+    failure: Enviá cada i de 0..n una vez.
+  - id: t2
+    label: Canal sin mensajes
+    expression: transmitir(0).is_empty()
+    why: La finalización no depende de recibir al menos un dato.
+    failure: El sender debe destruirse al terminar el thread.
+  - id: t3
+    label: Un único envío
+    expression: transmitir(1) == vec![0]
+    why: No se usa cero como centinela de fin.
+    failure: Cero es un mensaje normal.
+hints:
+  - move debe llevarse tx; no dejes otro sender vivo.
+  - rx.into_iter().collect() consume hasta el cierre.
+  - Al terminar la closure, tx se destruye y el receptor puede finalizar.
+review:
+  success: Los casos comprueban la secuencia devuelta. En la solución propuesta, la vida del sender define el fin de la recepción; verificá además en tu código el uso del canal y su cierre, porque devolver la secuencia directamente también pasaría estas pruebas.
+  pitfall: Conservar un clone de tx en el thread principal mantendría abierto el canal y podría bloquear la recolección.
+transfer: Agregá dos productores y explicá qué orden ya no podés dar por garantizado entre ellos.
+prediction:
+  question: Si queda un sender vivo que no envía, ¿el iterador del receptor sabe que terminó todo?
+  options:
+    - Sí, al vaciarse la cola
+    - Sí, después de un milisegundo
+    - 'No: puede esperar más mensajes'
+  answer: 2
+  explanation: Una cola momentáneamente vacía no equivale a un canal cerrado.
+sources:
+  - title: std · mpsc::channel
+    url: https://doc.rust-lang.org/std/sync/mpsc/fn.channel.html

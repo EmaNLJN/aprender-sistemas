@@ -1,0 +1,42 @@
+title: La energía del reactor
+intro: 'Una función puede devolver su última expresión sin escribir return. La firma fn energia(celdas: i32) -> i32 promete transformar un entero en otro entero.'
+why: 'Rust distingue las expresiones, que producen un valor, de las sentencias. El compilador comprueba que el valor final coincida con el tipo de retorno: esa verificación detecta muchos olvidos antes de ejecutar.'
+objective: Cada celda entrega 7 unidades. Calculá la energía de 0 a 1.000 celdas.
+instructions:
+  - Reemplazá todo!() por el cálculo.
+  - Devolvé el resultado; imprimirlo no satisface la firma.
+tests:
+  - id: t1
+    label: Tres celdas
+    expression: energia(3) == 21
+    why: La salida depende del argumento.
+    failure: Multiplicá la cantidad por la energía de una celda.
+  - id: t2
+    label: Reactor vacío
+    expression: energia(0) == 0
+    why: Cero conserva su significado físico.
+    failure: No agregues una energía fija al resultado.
+  - id: t3
+    label: Escala distinta
+    expression: energia(11) == 77
+    why: No hay un resultado fijo para el primer ejemplo.
+    failure: Usá celdas en la expresión, no un número de prueba.
+hints:
+  - El operador de multiplicación es *.
+  - La expresión final debe tener tipo i32.
+  - Escribí celdas * 7 sin punto y coma al final.
+review:
+  success: La firma funciona como un contrato. La última expresión entrega el valor al llamador; no necesitaste una variable temporal.
+  pitfall: println! muestra texto y devuelve (). Mostrar 21 no equivale a devolver 21.
+transfer: Agregá un parámetro potencia_por_celda y explicá qué casos probarías.
+prediction:
+  question: ¿Qué pasa si escribís celdas * 7; como única línea?
+  options:
+    - Devuelve 21 siempre
+    - La función deja de devolver i32 y no compila
+    - Rust ignora el punto y coma
+  answer: 1
+  explanation: El punto y coma convierte esa expresión en sentencia. El bloque queda con valor (), incompatible con -> i32.
+sources:
+  - title: Rust Book · Functions
+    url: https://doc.rust-lang.org/book/ch03-03-how-functions-work.html

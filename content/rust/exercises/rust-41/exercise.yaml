@@ -1,0 +1,43 @@
+title: Mové valores sin pedirles ser Copy
+visual: memory
+intro: Los genéricos representan tipos que conocerá cada llamada. Mover valores no requiere copiar ni clonarlos.
+why: Pedir menos restricciones amplía la utilidad de una función. Si solo intercambiás posiciones, Copy y Clone no aportan nada.
+objective: Invertí una pareja (A, B) y devolvé (B, A), moviendo ambos valores.
+instructions:
+  - Desestructurá la tupla recibida.
+  - No agregues restricciones Copy o Clone.
+tests:
+  - id: t1
+    label: Tipos distintos
+    expression: invertir((7, "cpu")) == ("cpu", 7)
+    why: Cada posición conserva su tipo al cambiar de lugar.
+    failure: La firma de salida invierte B y A.
+  - id: t2
+    label: Recursos propios
+    expression: invertir((String::from("clave"), vec![1, 2])) == (vec![1, 2], String::from("clave"))
+    why: La función acepta valores que no son Copy.
+    failure: Mové los valores; no necesitás copiarlos.
+  - id: t3
+    label: Tipo sin Clone
+    expression: '{ struct Unico(u8); let (flag, unico) = invertir((Unico(9), true)); flag && unico.0 == 9 }'
+    why: No se introdujeron restricciones innecesarias.
+    failure: Desestructurar permite mover incluso un tipo sin Clone.
+hints:
+  - let (a, b) = pareja toma ambos campos.
+  - Los movimientos transfieren propiedad.
+  - Devolvé (b, a).
+review:
+  success: La función es genérica respecto de la representación y no impone capacidades que no usa.
+  pitfall: Agregar Clone por costumbre limita las entradas y puede sugerir copias que no son necesarias.
+transfer: Rotá una tupla (A, B, C) a (C, A, B) sin restricciones.
+prediction:
+  question: '¿Necesita A: Clone esta función para devolver a en otra posición?'
+  options:
+    - No, puede moverlo
+    - Sí, toda función genérica necesita Clone
+    - Solo para String
+  answer: 0
+  explanation: Mover un valor no requiere implementar Clone.
+sources:
+  - title: Rust Book · Generic data types
+    url: https://doc.rust-lang.org/book/ch10-01-syntax.html

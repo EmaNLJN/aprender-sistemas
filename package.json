@@ -5,8 +5,11 @@
   "type": "module",
   "description": "Editor local del taller interactivo de Rust y Go",
   "scripts": {
+    "curriculum": "node tools/content/build-curriculum.ts",
+    "predev": "npm run curriculum",
     "dev": "vite",
     "build": "npm run typecheck && vite build",
+    "pretypecheck": "npm run curriculum",
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.qa.json",
     "preview": "vite preview",
     "check:content": "node qa/content-check.ts",

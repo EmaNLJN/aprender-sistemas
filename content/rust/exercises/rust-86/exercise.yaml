@@ -1,0 +1,44 @@
+title: Una pila para los delimitadores
+level: medium
+visual: collections
+intro: Los delimitadores anidados se cierran en orden inverso al de apertura. Esa relación coincide con una pila.
+why: Contar aperturas y cierres no detecta cruces como ([)]. Recordar el orden permite comprobar la estructura.
+objective: Validá (), [] y {} correctamente anidados. Ignorá cualquier otro char; no hay reglas de comillas o comentarios.
+instructions:
+  - Apilá aperturas.
+  - Cada cierre debe corresponder a la última apertura; al terminar la pila debe estar vacía.
+tests:
+  - id: t1
+    label: Anidación y texto
+    expression: balanceado("f([x] + {ñ})") && balanceado("")
+    why: Los caracteres ajenos no afectan la estructura.
+    failure: Ignorá letras y operadores.
+  - id: t2
+    label: Cruce incorrecto
+    expression: '!balanceado("([)]")'
+    why: Cantidad igual no garantiza orden correcto.
+    failure: Compará el cierre con la última apertura.
+  - id: t3
+    label: Extremos incompletos
+    expression: '!balanceado(")(") && !balanceado("(()")'
+    why: Se rechazan cierres sin apertura y aperturas pendientes.
+    failure: Controlá tanto pop como la pila al final.
+hints:
+  - Vec<char> puede actuar como pila con push y pop.
+  - Un cierre exige el tipo de apertura correspondiente.
+  - Retorná false al primer desacuerdo; al final revisá is_empty.
+review:
+  success: Los casos distinguen balance numérico de anidación correcta. La pila conserva exactamente las aperturas aún pendientes.
+  pitfall: 'Este validador no es un parser de Rust: trata delimitadores dentro de supuestas comillas como cualquier otro delimitador, según su contrato.'
+transfer: Devolvé el índice de bytes del primer cierre inválido usando char_indices.
+prediction:
+  question: ¿Contar tres aperturas y tres cierres alcanza para validar la anidación?
+  options:
+    - Sí
+    - 'No: también importa el orden y el tipo'
+    - Solo si no hay texto
+  answer: 1
+  explanation: Una secuencia puede tener cantidades iguales y cruces incompatibles.
+sources:
+  - title: std · Vec
+    url: https://doc.rust-lang.org/std/vec/struct.Vec.html

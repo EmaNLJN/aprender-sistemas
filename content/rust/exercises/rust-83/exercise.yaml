@@ -1,0 +1,43 @@
+title: Reconstruí el mensaje por rachas
+level: medium
+intro: Decodificar aplica cada cantidad al carácter correspondiente. El formato con pares ya distingue datos de cantidades.
+why: Una transformación inversa es una buena oportunidad para comprobar qué información conserva la representación. Las rachas de longitud cero se definen aquí como vacías.
+objective: Expandí &[(char, usize)] a String en el orden recibido. Cada cantidad está entre 0 y 100 y la salida tiene como máximo 1.000 chars.
+instructions:
+  - Agregá el char cantidad veces con String::push.
+  - No exijas que rachas adyacentes tengan caracteres distintos.
+tests:
+  - id: t1
+    label: Reconstrucción Unicode
+    expression: decodificar_rle(&[('ñ', 2), ('🦀', 1)]) == "ññ🦀"
+    why: push codifica correctamente cada char en UTF-8.
+    failure: No trates un char como un único byte.
+  - id: t2
+    label: Cantidades cero
+    expression: decodificar_rle(&[('x', 0), ('a', 2)]) == "aa" && decodificar_rle(&[]) == ""
+    why: Una racha vacía no agrega símbolos.
+    failure: El rango 0..cantidad hace cero vueltas para cero.
+  - id: t3
+    label: Rachas contiguas iguales
+    expression: decodificar_rle(&[('1', 2), ('1', 1)]) == "111"
+    why: No hace falta un formato canónico para decodificar.
+    failure: Cada par aporta su propia cantidad.
+hints:
+  - El patrón &(ch, cantidad) copia ambos valores pequeños.
+  - push recibe char y mantiene String válido.
+  - La repetición anidada sigue el tamaño de la salida.
+review:
+  success: La salida conserva orden y cantidades. Rachas equivalentes pueden producir el mismo texto aunque la representación no sea canónica.
+  pitfall: Los límites del ejercicio evitan expansiones enormes. Un decodificador de entradas no confiables debe validar un presupuesto de salida antes de reservar o expandir.
+transfer: Agregá un límite de salida y devolvé Result cuando la suma de cantidades lo supere.
+prediction:
+  question: ¿Decodificar y volver a codificar conserva siempre exactamente los mismos pares?
+  options:
+    - Sí
+    - 'No: rachas contiguas iguales y ceros pueden normalizarse'
+    - Solo si hay emoji
+  answer: 1
+  explanation: El texto puede ser el mismo aunque la codificación canónica junte rachas o elimine ceros.
+sources:
+  - title: std · String::push
+    url: https://doc.rust-lang.org/std/string/struct.String.html#method.push

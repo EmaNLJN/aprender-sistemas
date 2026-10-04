@@ -1,0 +1,43 @@
+title: Conservá solo mediciones sanas
+visual: collections
+intro: Vec::retain conserva los elementos para los que el predicado devuelve true y mantiene su orden relativo.
+why: Filtrar en el mismo vector evita construir otra colección cuando el llamador permite modificar la existente.
+objective: Eliminá todos los valores negativos, conservando cero, duplicados y orden.
+instructions:
+  - Recibís &mut Vec<i32>; modificá ese vector.
+  - Usá retain con la condición de aceptación.
+tests:
+  - id: t1
+    label: Mezcla
+    expression: '{ let mut v = vec![-2, 5, 0, -1, 5]; limpiar(&mut v); v == vec![5, 0, 5] }'
+    why: Cero, duplicados y orden se conservan.
+    failure: La condición debe ser >= 0, sin ordenar.
+  - id: t2
+    label: Todos descartados
+    expression: '{ let mut v = vec![-3, -1]; limpiar(&mut v); v.is_empty() }'
+    why: La colección puede quedar vacía.
+    failure: retain conserva true y elimina false.
+  - id: t3
+    label: Ya vacío
+    expression: '{ let mut v = Vec::new(); limpiar(&mut v); v.is_empty() }'
+    why: La operación acepta el elemento vacío.
+    failure: No indexés el primer elemento.
+hints:
+  - La closure recibe &i32.
+  - Desreferenciá x para compararlo con cero.
+  - datos.retain(|x| *x >= 0);
+review:
+  success: La colección mantiene los datos aceptados en su orden original. El préstamo mutable expresa que la función cambia su contenido.
+  pitfall: Retener positivos con > 0 eliminaría el cero que el contrato permite.
+transfer: Hacé configurable el umbral y probá valores exactamente iguales a él.
+prediction:
+  question: Si el predicado de retain devuelve false, ¿qué pasa con el elemento?
+  options:
+    - Se conserva
+    - Se elimina
+    - Se reemplaza por cero
+  answer: 1
+  explanation: retain mantiene únicamente los elementos aceptados por el predicado.
+sources:
+  - title: std · Vec::retain
+    url: https://doc.rust-lang.org/std/vec/struct.Vec.html#method.retain

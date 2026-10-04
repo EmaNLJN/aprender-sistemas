@@ -1,0 +1,43 @@
+title: Dimensiones conocidas por el tipo
+visual: generics
+intro: Los const generics permiten parametrizar un tipo o función por una constante, como la longitud de un array.
+why: La firma puede relacionar dimensiones sin guardar esos tamaños como decisiones libres en ejecución. Array y Vec ofrecen contratos distintos.
+objective: Sumá cada fila de una matriz [[i32; C]; R] y devolvé [i32; R]. Los casos no desbordan i32.
+instructions:
+  - Conservá los parámetros const R y C.
+  - Soportá cero filas y filas con cero columnas.
+tests:
+  - id: t1
+    label: Dos por tres
+    expression: sumar_filas([[1, 2, 3], [4, 0, -1]]) == [6, 3]
+    why: Cada fila tiene una salida propia.
+    failure: No sumes toda la matriz en una única posición.
+  - id: t2
+    label: Columnas vacías
+    expression: sumar_filas::<2, 0>([[], []]) == [0, 0]
+    why: La suma de una fila vacía es cero.
+    failure: El tipo sigue teniendo dos filas.
+  - id: t3
+    label: Sin filas
+    expression: sumar_filas::<0, 3>([]) == []
+    why: La salida conserva R incluso cuando es cero.
+    failure: Inicializar [0; R] funciona para R = 0.
+hints:
+  - '[0; R] construye el array de salida con longitud del tipo.'
+  - enumerate entrega el índice de cada fila.
+  - Asigná fila.iter().sum() a salida[i].
+review:
+  success: La cantidad de resultados queda ligada a R en la firma. Los casos de dimensiones cero son valores válidos de esos tipos.
+  pitfall: Una longitud leída de un archivo no se convierte automáticamente en const generic; para tamaño dinámico suele corresponder Vec.
+transfer: Escribí transponer<const R, const C> con salida [[i32; R]; C].
+prediction:
+  question: ¿[i32; 3] y [i32; 4] son el mismo tipo?
+  options:
+    - Sí, solo difieren los datos
+    - 'No: la longitud forma parte del tipo'
+    - Solo si ambos contienen ceros
+  answer: 1
+  explanation: Los arrays incluyen longitud en su tipo; los const generics permiten escribir una función para varias longitudes.
+sources:
+  - title: Rust Reference · Const generics
+    url: https://doc.rust-lang.org/reference/items/generics.html#const-generics

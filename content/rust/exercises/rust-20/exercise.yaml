@@ -1,0 +1,40 @@
+title: Una vista sobre mediciones
+visual: memory
+intro: '&[i32] representa una vista prestada de una secuencia. Acepta arrays, vectores y subrangos sin tomar su propiedad.'
+why: 'Elegir un slice en una firma reduce el acoplamiento a una colección concreta. La función solo pide lo que necesita: leer números consecutivos.'
+objective: Sumá las mediciones del slice. El vacío suma 0. Los casos usan valores cuya suma cabe en i32.
+instructions:
+  - Recorré todas las mediciones sin modificar la entrada.
+  - La firma debe aceptar &[i32].
+tests:
+  - id: t1
+    label: Array prestado
+    expression: total_mediciones(&[4, -1, 7]) == 10
+    why: El slice incluye negativos.
+    failure: Sumá el valor apuntado por cada elemento.
+  - id: t2
+    label: Vista parcial
+    expression: '{ let v = vec![99, 2, 3, 88]; total_mediciones(&v[1..3]) == 5 && v[0] == 99 }'
+    why: Se recorre solo el rango prestado y el dueño se conserva.
+    failure: Usá el slice recibido sin suponer datos anteriores.
+  - id: t3
+    label: Sin mediciones
+    expression: total_mediciones(&[]) == 0
+    why: El acumulador tiene un elemento neutro.
+    failure: Inicializá en cero.
+hints:
+  - for &dato in datos copia cada i32 desde su referencia.
+  - Un acumulador mutable empieza en 0.
+  - También podrías usar datos.iter().sum().
+review:
+  success: La misma función funciona con representaciones distintas. El slice transporta el acceso a los elementos y su longitud.
+  pitfall: Aceptar &Vec<i32> exigiría innecesariamente un Vec cuando la operación solo necesita una secuencia.
+transfer: Calculá suma y cantidad para preparar un promedio con caso vacío explícito.
+prediction:
+  question: ¿Puede &[i32] representar parte de un Vec sin copiar sus elementos?
+  options:
+    - Sí
+    - No, siempre aloca
+    - Solo si tiene un elemento
+  answer: 0
+  explanation: Un slice puede prestar un subrango contiguo de una colección.

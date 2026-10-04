@@ -1,0 +1,41 @@
+title: Final del préstamo, comienzo de la mutación
+kind: reparar
+visual: ownership
+intro: Un préstamo de lectura sigue activo mientras haya un uso posterior de esa referencia. Calculá primero lo que necesitás y después modificá.
+why: El compilador analiza los usos, no solamente las llaves del bloque. Un número calculado a partir del texto puede sobrevivir sin mantener prestado el texto.
+objective: Devolvé los bytes previos y agregá ? al texto, sin clone.
+instructions:
+  - Mové el cálculo de la longitud antes de push.
+  - Guardá el número, de modo que vista no se use después de la mutación.
+tests:
+  - id: t1
+    label: Lee antes de escribir
+    expression: '{ let mut s = String::from("hola"); let n = marcar(&mut s); n == 4 && s == "hola?" }'
+    why: El número corresponde al estado anterior.
+    failure: Guardá la longitud antes de agregar el signo.
+  - id: t2
+    label: Partir del vacío
+    expression: '{ let mut s = String::new(); let n = marcar(&mut s); n == 0 && s == "?" }'
+    why: Mutar no altera retroactivamente el número.
+    failure: No midas al final.
+  - id: t3
+    label: Tamaño en bytes
+    expression: '{ let mut s = String::from("ñ"); let n = marcar(&mut s); n == 2 && s == "ñ?" }'
+    why: El préstamo conserva la semántica de len.
+    failure: No cambies len por chars().count().
+hints:
+  - El último uso de vista ocurre después de push en el código roto.
+  - Extraé vista.len() antes de la mutación.
+  - Devolvé una variable usize, sin volver a usar vista.
+review:
+  success: El préstamo de vista ya no es necesario al ejecutar push. El usize guardado no referencia el buffer.
+  pitfall: El problema no era que leer y escribir estén en la misma función; era el solapamiento de usos.
+transfer: Devolvé también el tamaño posterior y explicá por qué ambos números son seguros.
+prediction:
+  question: ¿Agregar llaves siempre es necesario para terminar un préstamo?
+  options:
+    - Sí, Rust solo mira bloques
+    - 'No: puede terminar tras su último uso'
+    - 'No: todos terminan inmediatamente'
+  answer: 1
+  explanation: El análisis de préstamos puede reconocer que una referencia ya no vuelve a utilizarse.

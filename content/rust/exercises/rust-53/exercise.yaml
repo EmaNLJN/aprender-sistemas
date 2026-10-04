@@ -1,0 +1,43 @@
+title: Un préstamo interior que puede rechazarse
+visual: pointers
+intro: RefCell comprueba los préstamos en ejecución. try_borrow_mut devuelve un error si existe un préstamo incompatible, en lugar de provocar panic.
+why: La mutabilidad interior conserva las reglas de exclusividad, pero cambia dónde se verifican. Es útil cuando una API necesita mutar mediante &self en un solo thread.
+objective: Intentá incrementar un RefCell<i32> en uno. Devolvé true si pudiste, false si estaba prestado. Los valores están entre -100 y 100.
+instructions:
+  - Usá try_borrow_mut y tratá ambas variantes.
+  - No modifiques el valor si el préstamo es rechazado.
+tests:
+  - id: t1
+    label: Préstamo disponible
+    expression: '{ let c = RefCell::new(4); intentar_incrementar(&c) && *c.borrow() == 5 }'
+    why: La mutación modifica el dato interior.
+    failure: Desreferenciá el guard mutable para sumar.
+  - id: t2
+    label: Lector activo
+    expression: '{ let c = RefCell::new(8); let lectura = c.borrow(); let rechazo = !intentar_incrementar(&c); rechazo && *lectura == 8 }'
+    why: Un lector activo impide escritura.
+    failure: try_borrow_mut debe manejar Err sin panic.
+  - id: t3
+    label: Volver a prestar
+    expression: '{ let c = RefCell::new(0); { let _guard = c.borrow_mut(); assert!(!intentar_incrementar(&c)); } intentar_incrementar(&c) && *c.borrow() == 1 }'
+    why: Soltar el guard restablece la posibilidad de préstamo.
+    failure: El rechazo no debe envenenar ni consumir RefCell.
+hints:
+  - try_borrow_mut devuelve Result<RefMut<_>, _>.
+  - Necesitás mut en la variable del guard para modificar lo apuntado.
+  - Err(_) devuelve false; Ok(mut valor) incrementa y devuelve true.
+review:
+  success: 'Las reglas siguen existiendo: múltiples lectores o un escritor. La diferencia es que ahora el conflicto es observable durante la ejecución.'
+  pitfall: RefCell no sincroniza threads. Mutabilidad interior no significa automáticamente acceso concurrente seguro.
+transfer: Integrá Rc<RefCell<i32>> para que dos dueños observen el mismo contador en un thread.
+prediction:
+  question: ¿RefCell permite mantener un préstamo mutable y otro de lectura simultáneamente?
+  options:
+    - Sí, elimina las reglas
+    - 'No: verifica el conflicto en ejecución'
+    - Sí, si el número es Copy
+  answer: 1
+  explanation: RefCell aplica reglas de préstamo en ejecución; la variante try permite manejar el rechazo.
+sources:
+  - title: std · RefCell::try_borrow_mut
+    url: https://doc.rust-lang.org/std/cell/struct.RefCell.html#method.try_borrow_mut

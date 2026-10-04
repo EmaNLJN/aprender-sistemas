@@ -1,0 +1,42 @@
+title: Construí tu propio iterador
+intro: Iterator exige un tipo Item y el método next. Los métodos como collect se construyen sobre ese contrato.
+why: Implementar una operación pequeña conecta tu estructura con herramientas generales de recorrido y transformación.
+objective: Cuenta(3) debe producir 3, 2, 1 y terminar. Cuenta(0) no produce elementos; después de terminar, siempre devuelve None.
+instructions:
+  - En next, devolvé None si el contador es cero.
+  - En otro caso guardá el valor, restá uno y devolvé Some(valor).
+tests:
+  - id: t1
+    label: Secuencia descendente
+    expression: Cuenta(3).collect::<Vec<_>>() == vec![3, 2, 1]
+    why: Cada llamada avanza antes de repetir.
+    failure: Reducí el estado después de guardar el actual.
+  - id: t2
+    label: Ya agotado
+    expression: '{ let mut c = Cuenta(0); c.next() == None && c.next() == None }'
+    why: Agotarse no produce underflow.
+    failure: Comprobá cero antes de restar.
+  - id: t3
+    label: Estado paso a paso
+    expression: '{ let mut c = Cuenta(1); c.next() == Some(1) && c.next() == None && c.next() == None }'
+    why: El último elemento sale una sola vez.
+    failure: Devolvé el valor previo a la reducción.
+hints:
+  - self.0 accede al campo de la tuple struct.
+  - next necesita &mut self porque cambia el estado.
+  - La guarda de cero evita tanto bucle infinito como underflow.
+review:
+  success: Tu tipo ya funciona con collect sin implementarlo. Cada next establece avance o finalización.
+  pitfall: No todos los iteradores prometen quedarse en None; este ejercicio sí lo exige como parte de su contrato.
+transfer: Usá Cuenta(5).filter(...) para producir únicamente los valores pares.
+prediction:
+  question: Si next devuelve siempre Some(3) sin modificar estado, ¿terminará collect?
+  options:
+    - Sí, después de tres elementos
+    - 'No: el iterador nunca indica finalización'
+    - Devuelve un vector vacío
+  answer: 1
+  explanation: collect continúa solicitando elementos hasta recibir None; next debe garantizar progreso.
+sources:
+  - title: std · Iterator
+    url: https://doc.rust-lang.org/std/iter/trait.Iterator.html
