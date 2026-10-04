@@ -1,0 +1,68 @@
+id: algebra
+title: La máquina de polinomios
+subtitle: Evaluá, derivá y conectá símbolos con una curva que podés mover.
+level: advanced
+minutes: 40
+story: Tu calculadora debe entender una familia de expresiones, no una fórmula escrita a mano para cada ejemplo.
+what: Un CAS mínimo de polinomios con coeficientes, evaluación de Horner y derivada simbólica.
+why: Elegir una representación convierte operaciones algebraicas en transformaciones de datos verificables.
+uses:
+  - Herramientas matemáticas
+  - Interpolación y curvas
+  - Núcleos de compiladores de expresiones
+limits: Solo polinomios pequeños con aritmética acotada. No hay parser general, factorización ni precisión arbitraria.
+objectives:
+  - id: algebra-horner
+    label: Completar una evaluación de Horner
+    why: El acumulador muestra cómo evitar calcular cada potencia por separado.
+  - id: algebra-derivative
+    label: Construir la derivada simbólica
+    why: El índice del coeficiente representa la potencia que cambia al derivar.
+  - id: algebra-stationary
+    label: Encontrar una tangente horizontal
+    why: P′(x)=0 expresa una pendiente nula, no necesariamente P(x)=0.
+prediction:
+  question: En la parábola P(x)=x²−3, en x=0…
+  options:
+    - P y P′ valen 0
+    - P vale −3 y P′ vale 0
+    - P vale 0 y P′ vale −3
+  answer: 1
+  explanation: La altura es −3, pero la pendiente en el vértice es 0.
+steps:
+  - title: Representar
+    task: Guardá coeficientes en orden creciente de potencias.
+    why: La posición es parte del significado del dato.
+    done: Podés representar términos faltantes sin perder su grado.
+  - title: Evaluar
+    task: Implementá Horner y mostrá su acumulador.
+    why: Reutilizar el resultado parcial reduce operaciones.
+    done: Coincide con una evaluación directa en casos pequeños.
+  - title: Derivar
+    task: Transformá cada coeficiente y su exponente.
+    why: Derivar es una operación sobre la estructura, no sobre el texto de una pantalla.
+    done: La derivada de una constante es el polinomio 0.
+  - title: Conectar
+    task: Dibujá P, P′ y la tangente en un punto elegible.
+    why: El gráfico conecta valor, pendiente y representación simbólica.
+    done: Encontrás un punto donde la tangente es horizontal sin confundirlo con una raíz.
+sources:
+  - title: NIST DLMF · esquema de Horner
+    url: https://dlmf.nist.gov/1.11
+related:
+  rust:
+    - rust-36
+    - rust-37
+    - rust-40
+  go:
+    - go-07
+    - go-11
+    - go-12
+bridge:
+  rust: Iteradores rev, enumerate y fold expresan recorrido y acumulación; los rangos del contrato evitan overflow en este núcleo.
+  go: Los slices almacenan coeficientes y sus índices son exponentes; recorrer desde len−1 exige tratar también el slice vacío.
+category: play
+model: algebra
+code:
+  rust: rust-135
+  go: go-135

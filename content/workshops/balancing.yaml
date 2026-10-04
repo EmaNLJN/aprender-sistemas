@@ -1,0 +1,70 @@
+id: balancing
+category: infra
+model: balancing
+minutes: 40
+sources:
+  - title: Envoy · Load balancing
+    url: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/overview
+  - title: Envoy · límites de circuit breaking
+    url: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/circuit_breaking
+  - title: Envoy · outlier detection y fallos consecutivos
+    url: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/outlier
+code:
+  rust: rust-127
+  go: go-127
+title: El portero de la estación
+subtitle: Balanceo, health y circuitos
+level: advanced
+story: Tres servidores reciben trabajo. Uno no está sano, otro empieza a fallar y un tercero se llena. Elegí un destino elegible antes de comparar cargas.
+what: Separás salud, circuito y cupo; elegís menor carga y liberás recursos cuando una petición termina.
+why: Un algoritmo de reparto no arregla un destino incapaz de recibir trabajo. La elegibilidad debe filtrar antes de balancear y los empates necesitan una regla reproducible.
+uses:
+  - Proxies de servicios
+  - Despacho de jobs
+  - Protección frente a fallos y saturación
+limits: La salud y la sonda se controlan manualmente. Circuito de racha didáctico con umbral dos; Envoy también usa límites de recursos y mecanismos separados de outlier detection. Sin latencia, retries, timers ni half-open completo.
+objectives:
+  - id: balancing-health
+    label: Excluir un backend no sano
+    why: Marcá A no sano y encaminá una petición a otro.
+  - id: balancing-opened
+    label: Abrir B tras dos fallos consecutivos
+    why: Cada fallo debe corresponder a una petición activa en B.
+  - id: balancing-recovered
+    label: Volver a elegir B tras sonda exitosa
+    why: La recuperación debe volver a habilitar trabajo real, no solo cambiar una etiqueta.
+prediction:
+  question: A tiene carga 0 pero no está sano; B está sano con carga 1 y cupo libre. ¿Qué elegimos?
+  options:
+    - A, siempre gana cero
+    - B, primero se filtra elegibilidad
+    - Cualquier nombre al azar
+  answer: 1
+  explanation: La carga se compara dentro del conjunto que puede recibir una petición.
+steps:
+  - title: Elegibilidad
+    task: Definí healthy, open, inflight y limit.
+    why: Son condiciones diferentes que pueden excluir al mismo nodo.
+    done: Un nodo sin cupo, abierto o no sano nunca es elegido.
+  - title: Selección pura
+    task: Implementá menor carga y desempate lexical.
+    why: Probar la política no necesita red.
+    done: Cambiar el orden del slice no cambia un empate por nombre.
+  - title: Contabilidad
+    task: Incrementá al admitir y decrementá al terminar, también ante error.
+    why: Un cupo que no se libera termina simulando una caída permanente.
+    done: Una prueba de fallo deja la carga activa correcta.
+  - title: Proxy existente
+    task: Compará esta política con Envoy y configurá un servicio de prueba.
+    why: Un proxy real ya resuelve discovery, métricas y muchas condiciones de fallo.
+    done: Documentás qué límite configura circuit breaking y qué mecanismo observa salud.
+related:
+  rust:
+    - rust-110
+    - rust-112
+  go:
+    - go-110
+    - go-112
+bridge:
+  rust: Una referencia al candidato evita clonar todo el backend; la función devuelve el nombre elegido sin mutar cargas.
+  go: Una función pura separa selección de reserva del cupo. La reserva concurrente requiere una sección coordinada aparte.

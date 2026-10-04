@@ -1,0 +1,68 @@
+category: machine
+minutes: 45
+id: heap
+title: El estacionamiento de la memoria
+subtitle: First-fit, alineación y fragmentación.
+level: advanced
+story: Tenés 24 lugares consecutivos para vehículos de distintos tamaños. Muchos lugares libres no garantizan que un vehículo largo encuentre un hueco.
+what: 'Modelás un allocator con intervalos: reservar divide un hueco, liberar devuelve un bloque y coalescer une huecos contiguos.'
+why: La capacidad total y el tamaño del mayor hueco responden preguntas distintas. La alineación también consume espacio aunque el objeto pedido sea pequeño.
+uses:
+  - Entender allocators de memoria
+  - Pools de objetos y arenas
+  - Diagnosticar fragmentación en sistemas acotados
+limits: Heap acá significa región de memoria dinámica; no es un binary heap de prioridad. La simulación no entrega punteros reales, omite metadatos internos y muestra coalescing manual. El núcleo agrega alineación a una lista de huecos.
+objectives:
+  - id: allocate
+    label: Dividí un hueco reservando memoria
+    why: El sobrante mantiene su dirección y tamaño.
+  - id: fragment
+    label: Fallá aunque el total libre alcance
+    why: Hace falta un intervalo contiguo suficiente.
+  - id: coalesce
+    label: Uní huecos contiguos
+    why: Coalescer reorganiza metadatos sin mover objetos.
+prediction:
+  question: Hay huecos de 6 y 6 separados por un bloque vivo. ¿Entra una reserva contigua de 8?
+  options:
+    - 'Sí: hay 12 libres'
+    - 'No: ningún hueco tiene 8'
+    - Sí, si se cambia el nombre del bloque
+  answer: 1
+  explanation: La suma no vuelve contiguos los intervalos.
+steps:
+  - title: Representá intervalos
+    task: Usá rangos [inicio,fin) ordenados sin solapamientos.
+    why: Un invariante geométrico permite revisar todas las operaciones.
+    done: Cada unidad está libre o asignada exactamente una vez.
+  - title: Encontrá first-fit alineado
+    task: Implementá el núcleo y explicitá padding, tamaño y overflow.
+    why: La primera dirección libre puede no cumplir la alineación.
+    done: Pasan casos con padding y falta de espacio.
+  - title: Reservá y liberá
+    task: Agregá IDs de asignación, split y rechazo de liberaciones desconocidas.
+    why: El dueño de cada rango evita liberar dos veces.
+    done: Una secuencia alloc/free conserva la capacidad total.
+  - title: Coalescé y mostrálos
+    task: Uní vecinos libres y exportá una traza de bloques en tu CLI.
+    why: Un modelo visible permite explicar fragmentación sin punteros peligrosos.
+    done: Reproducís un fallo por fragmentación y su recuperación.
+sources:
+  - title: OSTEP · Free-space management
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/vm-freespace.pdf
+  - title: Writing an OS in Rust · Allocator designs
+    url: https://os.phil-opp.com/allocator-designs/
+related:
+  rust:
+    - rust-51
+    - rust-71
+  go:
+    - go-16
+    - go-75
+bridge:
+  rust: Empezá como simulador seguro en Cargo. Un GlobalAlloc real exige contratos de alineación, concurrencia y unsafe; el tutorial externo es otra etapa, no algo que se ejecute aquí.
+  go: 'Implementá un pool de índices sobre un buffer y medí su utilidad. Go administra objetos con su runtime y GC: este allocator de juguete no reemplaza al GC.'
+model: heap
+code:
+  rust: rust-114
+  go: go-114

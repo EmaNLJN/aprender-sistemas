@@ -1,0 +1,68 @@
+id: sharding
+category: infra
+model: sharding
+minutes: 40
+sources:
+  - title: Envoy · Ring hash
+    url: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/load_balancers#ring-hash
+  - title: Dynamo · particionamiento
+    url: https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf
+code:
+  rust: rust-128
+  go: go-128
+title: El anillo que se estira
+subtitle: Hash consistente y movimiento de claves
+level: advanced
+story: Agregás una estación D y querés redistribuir una parte del catálogo, no cambiar casi todos los destinos. Dibujá un anillo de tokens y compará con hash mod N.
+what: Buscás el primer token mayor o igual que el hash y volvés al inicio si no existe. Agregar un token transfiere su intervalo desde el sucesor.
+why: El mapeo desacopla la posición de una clave del número total de nodos. Reduce reasignación ante cambios, pero no promete equilibrio con pocos tokens ni migra datos automáticamente.
+uses:
+  - Cachés distribuidas
+  - Particionamiento de claves
+  - Afinidad en balanceadores
+limits: Hashes y tokens pequeños ya calculados, un token por nodo, sin réplicas ni fallos durante migración. El menor movimiento se observa para estas muestras; distribución, virtual nodes y claves calientes requieren más trabajo.
+objectives:
+  - id: sharding-wrap
+    label: Seguir el anillo después del último token
+    why: Hash 95 vuelve a 10/A.
+  - id: sharding-local
+    label: Mover solo el intervalo ganado por D
+    why: Al agregar 25/D, solo cambia (10,25].
+  - id: sharding-compared
+    label: Comparar movimiento con módulo N
+    why: Observá la diferencia sobre el mismo conjunto fijo de claves.
+prediction:
+  question: 'Tokens 10/A,40/B,70/C: ¿quién posee hash 95?'
+  options:
+    - A
+    - B
+    - C
+  answer: 0
+  explanation: No hay token ≥95; la búsqueda vuelve al primer token del anillo.
+steps:
+  - title: Contrato del anillo
+    task: Definí tokens únicos y orden de desempate; rechazá ambigüedades.
+    why: Dos dueños en el mismo token requieren una política explícita.
+    done: Un token repetido produce error en este núcleo.
+  - title: Asignación
+    task: Ordená una copia y buscá el sucesor con vuelta al inicio.
+    why: El orden de entrada no debe cambiar la propiedad de una clave.
+    done: Pasan fronteras exactas, wrap y anillo vacío.
+  - title: Movimiento medido
+    task: Compará el destino de miles de hashes antes y después de agregar un nodo.
+    why: Un dibujo con pocos puntos no demuestra balance.
+    done: Registrás fracción movida y dispersión de carga por nodo.
+  - title: Proyecto distribuido
+    task: Usá una implementación mantenida con virtual nodes o ring hash; diseñá transferencia y réplicas.
+    why: Asignar un dueño nuevo no mueve los bytes que ya estaban guardados.
+    done: Durante una migración de prueba no se pierden lecturas ni escrituras confirmadas.
+related:
+  rust:
+    - rust-87
+    - rust-34
+  go:
+    - go-88
+    - go-18
+bridge:
+  rust: Ordenar un Vec clonado conserva el slice prestado; Result informa tokens ambiguos.
+  go: Copiar antes de sort.Slice evita modificar la configuración del llamador mientras se calcula una asignación.

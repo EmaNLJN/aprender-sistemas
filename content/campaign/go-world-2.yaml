@@ -1,0 +1,37 @@
+id: go-world-2
+level: medium
+title: La antena de telemetría
+subtitle: Los bytes también tienen reglas
+story: El rover ya se mueve, pero sus mensajes llegan cortados o alterados. Vas a definir un byte de control, comprobar errores de transmisión y abrir paquetes sin confiar a ciegas en su contenido.
+concepts:
+  - Bits y límites
+  - Endianness y longitudes
+  - Checksums y propiedad de buffers
+why: Un protocolo funciona porque emisor y receptor acuerdan una representación exacta. La biblioteca estándar resuelve los detalles mecánicos; vos seguís siendo responsable de validar límites y contratos.
+guide:
+  - Repasá máscaras, ventanas de slices y retornos con error.
+  - Dibujá los ocho bits del control y reutilizá hash/crc32 para la suma de comprobación.
+  - En el jefe, validá tamaño, marca, longitud y checksum antes de devolver una copia del payload.
+trainingIds:
+  - go-05
+  - go-15
+  - go-26
+challengeIds:
+  - go-104
+  - go-105
+  - go-106
+bossId: go-106
+checkpoint:
+  question: Un paquete tiene CRC correcto. ¿Qué podés afirmar?
+  options:
+    - Que lo envió una persona autorizada
+    - Que pasó esa comprobación de errores, sin autenticar al emisor
+    - Que no hace falta revisar su longitud
+  answer: 1
+  explanation: CRC sirve para detectar errores accidentales; no es una firma ni reemplaza las validaciones estructurales.
+badge: Guardián de paquetes
+sources:
+  - title: encoding/binary
+    url: https://pkg.go.dev/encoding/binary
+  - title: hash/crc32
+    url: https://pkg.go.dev/hash/crc32

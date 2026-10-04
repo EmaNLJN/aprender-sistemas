@@ -1,0 +1,37 @@
+id: rust-world-3
+level: advanced
+title: Archivo de rutas
+subtitle: Explorá por capas y encontrá una salida.
+story: El protocolo te dio acceso a un mapa lleno de pasillos y ciclos. La estación necesita explorar sin repetir trabajo y encontrar la salida con la menor cantidad de pasos. La estructura que elijas para pendientes cambia la forma de recorrer el mundo.
+concepts:
+  - Colas FIFO y conjuntos visitados
+  - Predecesores y reconstrucción
+  - Búsqueda por amplitud en una grilla
+why: 'Los algoritmos dependen de invariantes concretos: cuándo marcás un nodo, desde qué extremo extraés y qué significa cada distancia. Practicar esas decisiones explica por qué el programa termina y cuándo su resultado es mínimo.'
+guide:
+  - Repasá conjuntos con salida estable, una cola con VecDeque y una pila de delimitadores. Compará FIFO y LIFO usando el mismo dibujo de conexiones.
+  - Repará el recorrido que extrae por el extremo equivocado. Luego reconstruí un camino desde sus predecesores y detectá cadenas ausentes, fuera de rango o cíclicas.
+  - En el boss, validá la forma del mapa antes de buscar. Marcá al encolar, guardá distancia y probá un muro, un destino aislado y el caso donde ya estás en la salida.
+trainingIds:
+  - rust-34
+  - rust-35
+  - rust-86
+challengeIds:
+  - rust-107
+  - rust-108
+  - rust-109
+bossId: rust-109
+checkpoint:
+  question: ¿Qué cambio rompe la justificación de distancia mínima de BFS usada en este mundo?
+  options:
+    - Agregar un ciclo manteniendo visitados
+    - Hacer que algunos movimientos cuesten más que otros
+    - Permitir varias rutas de igual cantidad de pasos
+  answer: 1
+  explanation: La cola procesa por cantidad de aristas, lo cual coincide con el costo solo cuando cada movimiento cuesta lo mismo. Con costos diferentes necesitás otro criterio para elegir qué expandir.
+badge: Cartografía de rutas
+sources:
+  - title: std · VecDeque
+    url: https://doc.rust-lang.org/std/collections/struct.VecDeque.html
+  - title: std · HashSet
+    url: https://doc.rust-lang.org/std/collections/struct.HashSet.html

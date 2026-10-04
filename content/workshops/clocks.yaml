@@ -1,0 +1,66 @@
+id: clocks
+category: infra
+model: clocks
+minutes: 40
+sources:
+  - title: Lamport · Time, Clocks, and the Ordering of Events
+    url: https://lamport.azurewebsites.net/pubs/time-clocks.pdf
+code:
+  rust: rust-124
+  go: go-124
+title: La oficina sin hora oficial
+subtitle: Relojes Lamport y causalidad
+level: advanced
+story: A, B y C registran eventos sin compartir un reloj fiable. Mandá mensajes para crear relaciones de precedencia y observá cómo los contadores se ajustan al recibir.
+what: Actualizás un reloj lógico en eventos locales, envíos y recepciones con max(local, recibido)+1.
+why: 'Si un evento precede causalmente a otro, su sello debe ser menor. La implicación inversa no existe: un contador menor no prueba que haya causado al otro.'
+uses:
+  - Ordenación de eventos
+  - Diagnóstico de sistemas distribuidos
+  - Componentes de protocolos de replicación
+limits: 'Sin segundos, deadlines, TTL ni leases: Lamport no mide tiempo físico. Los contadores del modelo son pequeños; el código usa checked overflow. Un orden total por nodo desempata, pero no descubre causalidad adicional.'
+objectives:
+  - id: clocks-independent
+    label: Crear eventos independientes con el mismo sello
+    why: Hacé un evento local en A y otro en B antes de enviar mensajes.
+  - id: clocks-receive
+    label: Recibir un sello y avanzar con max+1
+    why: La recepción debe quedar después de ambos contadores previos.
+  - id: clocks-chain
+    label: Crear la cadena A→B→C
+    why: B debe recibir de A antes de enviar a C.
+prediction:
+  question: Local=7, mensaje=3. ¿Nuevo reloj al recibir?
+  options:
+    - '4'
+    - '7'
+    - '8'
+  answer: 2
+  explanation: Se toma max(7,3)+1. Usar solo recibido+1 haría retroceder el reloj.
+steps:
+  - title: Evento local
+    task: Definí un incremento que detecte overflow.
+    why: Un contador que vuelve a cero rompe la monotonía.
+    done: El máximo representable produce error sin un sello válido.
+  - title: Recepción
+    task: Implementá max(local, remoto)+1.
+    why: La recepción debe ser posterior a ambos valores.
+    done: Pasan mensajes menores, mayores y límites enteros.
+  - title: Traza causal
+    task: Guardá evento, nodo, sello y vínculo de envío/recepción.
+    why: Una lista de números sola no captura las relaciones de mensajes.
+    done: La traza diferencia eventos independientes y eventos conectados.
+  - title: Comparación útil
+    task: Contrastá con vector clocks usando las fuentes originales antes de extender el modelo.
+    why: Detectar concurrencia exige más información que un entero.
+    done: Explicás por qué L(a)<L(b) no implica a→b y por qué no sirve para TTL.
+related:
+  rust:
+    - rust-74
+    - rust-97
+  go:
+    - go-64
+    - go-94
+bridge:
+  rust: checked_add devuelve Option; el llamador puede rechazar un evento cuyo sello no entra.
+  go: Con uint64, comprobá MaxUint64 antes de sumar; un wrap silencioso no es un reloj válido.

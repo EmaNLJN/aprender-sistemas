@@ -1,0 +1,11 @@
+# Mundos de campaña por lenguaje, en orden. Los IDs son inmutables: indexan el progreso.
+rust:
+  - rust-world-1
+  - rust-world-2
+  - rust-world-3
+  - rust-world-4
+go:
+  - go-world-1
+  - go-world-2
+  - go-world-3
+  - go-world-4

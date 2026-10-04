@@ -1,0 +1,68 @@
+id: raycast
+title: Linterna entre planetas
+subtitle: Dispará un rayo y elegí qué superficie aparece primero.
+level: advanced
+minutes: 40
+story: Una nave escanea tres planetas. Encontrar cualquier intersección dibujaría planetas lejanos por encima de los cercanos.
+what: Una escena 2D de rayos y círculos que resuelve la cuadrática y ordena impactos hacia delante.
+why: Una raíz matemática solo es útil después de interpretar su signo y su distancia relativa para la escena.
+uses:
+  - Selección de objetos
+  - Visibilidad y ray tracing
+  - Sensores y geometría de juegos
+limits: Círculos 2D, sin iluminación física. La política de tolerancias cerca de superficies exige más trabajo en un renderizador real.
+objectives:
+  - id: raycast-hit
+    label: Alcanzar una superficie
+    why: El discriminante permite encontrar un punto de contacto real.
+  - id: raycast-miss
+    label: Encontrar un rayo sin impacto
+    why: No todos los rayos alcanzan la escena; ausencia es un resultado válido.
+  - id: raycast-nearest
+    label: Comparar dos impactos en el mismo rayo
+    why: La superficie más cercana oculta la más lejana.
+prediction:
+  question: Si el origen está dentro de un círculo, ¿qué raíz puede ser útil?
+  options:
+    - Ninguna, siempre falla
+    - La raíz de salida no negativa
+    - Solo la raíz menor aunque sea negativa
+  answer: 1
+  explanation: La entrada puede quedar detrás del origen; la salida sigue estando delante.
+steps:
+  - title: Parametrizar
+    task: Representá el rayo como origen+t·dirección.
+    why: Separar trayectoria y parámetro permite comparar intersecciones.
+    done: Un cambio de escala en dirección modifica t pero no el punto.
+  - title: Resolver
+    task: Sustituí el rayo en la ecuación del círculo.
+    why: La cuadrática conecta álgebra y geometría.
+    done: Hay pruebas para tangencia, ausencia y origen interior.
+  - title: Ordenar
+    task: Elegí el menor t no negativo de todos los objetos.
+    why: Encontrar un objeto no demuestra que sea el primero visible.
+    done: Un planeta cercano oculta uno lejano.
+  - title: Extender
+    task: Añadí normales y un color según su orientación.
+    why: La normal permite conectar geometría con sombreado.
+    done: El color cambia de forma consistente sobre la superficie.
+sources:
+  - title: Ray Tracing in One Weekend · intersecciones
+    url: https://raytracing.github.io/books/RayTracingInOneWeekend.html
+related:
+  rust:
+    - rust-26
+    - rust-27
+    - rust-37
+  go:
+    - go-02
+    - go-09
+    - go-21
+bridge:
+  rust: Option<f64> distingue ausencia de t=0. Usá f64 y definí la tolerancia en las pruebas.
+  go: El par (float64,bool) separa valor y presencia; math.Sqrt resuelve la raíz solo después de validar el discriminante.
+category: play
+model: raycast
+code:
+  rust: rust-131
+  go: go-131

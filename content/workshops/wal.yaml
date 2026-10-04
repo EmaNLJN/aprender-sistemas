@@ -1,0 +1,68 @@
+id: wal
+category: infra
+model: wal
+minutes: 40
+sources:
+  - title: SQLite · Write-Ahead Logging
+    url: https://sqlite.org/wal.html
+  - title: TigerBeetle · Safety
+    url: https://docs.tigerbeetle.com/concepts/safety/
+code:
+  rust: rust-121
+  go: go-121
+title: La base que sobrevive al apagón
+subtitle: WAL, commit y recuperación
+level: advanced
+story: El puesto comercial del rover confirma un saldo, se corta la energía y la cifra desaparece. Tu misión es encontrar qué promesa faltaba y construir un replay que publique solo transacciones completas.
+what: Separás registros preparados, commits visibles y un prefijo durable; después reconstruís estado tras un crash.
+why: Ordenar escrituras y confirmar durabilidad son decisiones distintas. Un registro COMMIT en un buffer no equivale a una barrera persistente completada.
+uses:
+  - Motores de bases de datos
+  - Journals de aplicaciones
+  - Recuperación de servicios
+limits: Modelo en memoria de un escritor y una clave. Sync representa una barrera durable exitosa asumida; no ejecuta fsync, no simula sectores rotos, cachés del disco, checkpoints ni fallos de hardware. No es el formato WAL de SQLite.
+objectives:
+  - id: wal-loss
+    label: Perder un commit no sincronizado
+    why: Provocá el corte antes de sync para distinguir visibilidad de durabilidad.
+  - id: wal-durable
+    label: Sincronizar un commit completo
+    why: El prefijo durable debe contener PUT y COMMIT.
+  - id: wal-recovered
+    label: Recuperar el valor después del corte
+    why: Replay solo publica transacciones comprometidas dentro del prefijo sobreviviente.
+prediction:
+  question: PUT y COMMIT están en RAM, sin sync; ocurre un corte. ¿Qué promete este modelo?
+  options:
+    - Que el commit siempre sobrevive
+    - Que solo sobrevive el prefijo sincronizado
+    - Que el valor cero es el saldo real
+  answer: 1
+  explanation: La barrera durable define qué sobrevive. Un commit visible puede perderse si aún estaba fuera de ese prefijo.
+steps:
+  - title: Registro primero
+    task: Definí PUT y COMMIT con un ID de transacción.
+    why: Un replay necesita saber qué escrituras forman una unidad.
+    done: Una transacción incompleta no modifica el estado recuperado.
+  - title: Núcleo ejecutable
+    task: Implementá RecoverWAL / recover_wal con el prefijo durable explícito.
+    why: La lógica puede probarse sin depender del disco.
+    done: Pasan transacciones intercaladas, commits y un sufijo perdido.
+  - title: Archivo local
+    task: En un proyecto propio, serializá registros y manejá errores de escritura/sync con la API oficial del sistema.
+    why: La promesa durable depende de un I/O exitoso y su contrato.
+    done: Un error de sync no recibe una confirmación durable al cliente.
+  - title: Recuperación real
+    task: Agregá checksum, longitud y truncado del último registro; reiniciá el proceso con un archivo preparado.
+    why: El log real puede terminar a mitad de registro.
+    done: Se recupera el prefijo válido sin publicar la transacción incompleta.
+related:
+  rust:
+    - rust-98
+    - rust-100
+  go:
+    - go-96
+    - go-99
+bridge:
+  rust: Enums y BTreeMap expresan tipos de registro y escrituras pendientes; Result propaga fallos de I/O al salir del modelo.
+  go: Structs y maps agrupan los cambios pendientes. El commit debe aplicar una unidad completa y descartar el buffer de esa transacción.

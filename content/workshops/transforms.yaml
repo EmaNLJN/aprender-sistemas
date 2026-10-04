@@ -1,0 +1,68 @@
+id: transforms
+title: Coreografía de matrices
+subtitle: Mové una nave y descubrí por qué el orden importa.
+level: medium
+minutes: 30
+story: 'El director de una escena espacial te pide mover una nave. Dos instrucciones aparentemente iguales la dejan en lugares distintos: alguien cambió el orden.'
+what: Un pequeño editor de transformaciones afines 2D con matrices homogéneas, vértices y operación inversa.
+why: Representar cada transformación de la misma forma permite componer una escena completa sin duplicar reglas para cada objeto.
+uses:
+  - Cámaras y objetos 2D
+  - Interfaces y animación
+  - Conversión entre sistemas de coordenadas
+limits: Modelo 2D con operaciones exactas de 90°. No representa perspectiva 3D ni la precisión de una GPU.
+objectives:
+  - id: transforms-translation
+    label: Aplicar una traslación
+    why: Mover el origen muestra para qué existe la columna de traslación.
+  - id: transforms-order
+    label: Comparar los dos órdenes completos
+    why: Los mismos operadores producen matrices distintas al permutarlos.
+  - id: transforms-inverse
+    label: Volver con la inversa
+    why: Deshacer exige invertir la transformación compuesta, no solo cambiar un signo.
+prediction:
+  question: ¿Trasladar y después girar siempre equivale a girar y trasladar?
+  options:
+    - Sí, las matrices conmutan
+    - 'No: también puede girar el desplazamiento'
+    - Solo cambia el tamaño
+  answer: 1
+  explanation: Una traslación aplicada antes del giro se expresa en los ejes que después giran.
+steps:
+  - title: Representar
+    task: Guardá vértices y una matriz afín de seis números.
+    why: Una representación uniforme separa geometría de posición.
+    done: Transformar identidad conserva cada vértice.
+  - title: Componer
+    task: Implementá A después de B y probá ambos órdenes.
+    why: El desplazamiento también participa de la composición.
+    done: Un ejemplo con giro y traslación produce dos ubicaciones distintas.
+  - title: Dibujar
+    task: Mostrá original y resultado en la misma grilla.
+    why: Una referencia fija hace observable la transformación.
+    done: La nave y sus coordenadas concuerdan.
+  - title: Deshacer
+    task: Construí la inversa cuando el determinante no sea 0.
+    why: Una matriz singular no puede recuperar información perdida.
+    done: Aplicar transformación e inversa recupera los puntos dentro de una tolerancia.
+sources:
+  - title: Cornell CS4620 · transformaciones 2D
+    url: https://www.cs.cornell.edu/courses/cs4620/2014fa/lectures/08transforms2d.pdf
+related:
+  rust:
+    - rust-21
+    - rust-22
+    - rust-36
+  go:
+    - go-11
+    - go-21
+    - go-23
+bridge:
+  rust: Arrays y tuplas fijan la representación; prestá los vértices y devolvé un nuevo Vec cuando convenga conservar el original.
+  go: Un array [6]float64 expresa la matriz y una struct puede nombrar sus campos; prestá atención a los slices que comparten memoria.
+category: play
+model: transforms
+code:
+  rust: rust-129
+  go: go-129

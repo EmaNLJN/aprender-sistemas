@@ -1,0 +1,68 @@
+category: machine
+minutes: 45
+id: cache
+title: Una caché que aprende tus visitas
+subtitle: Localidad, hits y expulsiones LRU.
+level: medium
+story: La cocina tiene tres platos al alcance de la mano. Cada pedido decide qué conservar cerca y qué volver a buscar al depósito.
+what: Vas a construir una caché LRU de capacidad fija y reproducir trazas de acceso. Cada hit mueve la entrada a la posición más reciente.
+why: Separar corrección de política permite preguntar qué datos se devuelven y, después, cuántas consultas evitaste. Una política puede funcionar bien con una carga y mal con otra.
+uses:
+  - Cachés de resultados en servicios
+  - Reemplazo de páginas y buffers
+  - Comprender localidad de acceso
+limits: 'El modelo guarda claves, no datos ni latencias. LRU exacto no describe todas las cachés de CPU: hay asociatividad, líneas, escrituras y coherencia. El núcleo usa una lista pequeña O(capacidad), no promete O(1).'
+objectives:
+  - id: miss
+    label: Provocá una carga por miss
+    why: Una caché vacía debe consultar su fuente.
+  - id: hit
+    label: Reutilizá una clave con hit
+    why: Leer actualiza la recencia.
+  - id: evict
+    label: Llená y expulsá la menos reciente
+    why: Capacidad y política deciden qué conservar.
+prediction:
+  question: Con orden LRU→MRU [A,B,C], leés A y luego D. ¿Qué sale?
+  options:
+    - A
+    - B
+    - C
+  answer: 1
+  explanation: Leer A produce [B,C,A]; D expulsa B.
+steps:
+  - title: Definí el contrato
+    task: Elegí capacidad, representación y comportamiento con capacidad cero.
+    why: Un caso borde ambiguo se propaga a todas las operaciones.
+    done: Tenés ejemplos de vacío, hit y miss.
+  - title: Implementá el núcleo
+    task: Resolvés el ejercicio enlazado y comparás el orden después de cada lectura.
+    why: Una traza permite detectar errores de recencia.
+    done: Pasan las pruebas y una traza propia.
+  - title: Agregá una fuente de datos
+    task: Creá get(key) que consulte una fuente contada en los misses y almacene su resultado.
+    why: La caché debe ahorrar trabajo sin cambiar el valor devuelto.
+    done: Una clave repetida devuelve igual dato con menos consultas.
+  - title: Evaluá otra carga
+    task: Compará una secuencia repetida con un barrido mayor a la capacidad; registrá hits y misses.
+    why: El rendimiento depende de la carga, no del nombre del algoritmo.
+    done: Tu informe incluye la traza y ambas tasas, sin tiempos inventados.
+sources:
+  - title: OSTEP · Replacement policies
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/vm-beyondphys-policy.pdf
+  - title: std · Vec
+    url: https://doc.rust-lang.org/std/vec/struct.Vec.html
+related:
+  rust:
+    - rust-31
+    - rust-35
+  go:
+    - go-31
+    - go-35
+bridge:
+  rust: Llevá el simulador a Cargo y separá almacenamiento de política mediante un trait. Después evaluá un índice HashMap si necesitás operaciones O(1).
+  go: Llevá el simulador a un módulo Go y una interfaz para la fuente. Si varias goroutines comparten la caché, definí sincronización antes de medir.
+model: cache
+code:
+  rust: rust-113
+  go: go-113

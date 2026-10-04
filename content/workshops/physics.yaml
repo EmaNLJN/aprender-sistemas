@@ -1,0 +1,68 @@
+id: physics
+title: La cancha de los rebotes
+subtitle: Una colisión combina geometría, tiempo y una decisión de respuesta.
+level: medium
+minutes: 35
+story: Tu prototipo tiene una pared y una caja. El cuadrado debe rebotar, pero tocar el borde no debería teletransportarlo ni inventar penetración.
+what: Un simulador discreto de AABB y reflejos con avance manual de tiempo fijo.
+why: Detectar intersección, corregir posición y cambiar velocidad son responsabilidades diferentes.
+uses:
+  - Prototipos de juegos 2D
+  - Detección rápida de contacto
+  - Simulaciones con pasos reproducibles
+limits: Sin gravedad, fricción ni rotación. Las velocidades están acotadas; una simulación discreta puede sufrir tunneling con objetos rápidos.
+objectives:
+  - id: physics-wall
+    label: Reflejar en una pared
+    why: Cambiar el signo del componente normal invierte el movimiento contra el límite.
+  - id: physics-brick
+    label: Rebotar en la caja interior
+    why: Una región de intersección permite detectar penetración y resolverla.
+  - id: physics-touch
+    label: Distinguir contacto de penetración
+    why: Compartir un borde no equivale a compartir área.
+prediction:
+  question: Una prueba AABB al final del paso puede perder un choque si…
+  options:
+    - El objeto atraviesa una pared entera entre dos muestras
+    - El objeto está quieto
+    - La caja tiene cuatro lados
+  answer: 0
+  explanation: 'Un objeto puede estar antes y después de la pared sin superponerla en ninguna muestra: es tunneling.'
+steps:
+  - title: Detectar
+    task: Implementá la intersección de intervalos en x e y.
+    why: La geometría debe tener un contrato para bordes y cajas degeneradas.
+    done: Contacto sin área devuelve ausencia.
+  - title: Integrar
+    task: Avanzá posición con un intervalo de tiempo fijo.
+    why: Separar simulación y frecuencia de dibujo mejora reproducibilidad.
+    done: La misma secuencia de pasos da el mismo estado.
+  - title: Responder
+    task: Reflejás velocidad y corregís la penetración.
+    why: Cambiar velocidad sin corregir posición deja el objeto dentro de la pared.
+    done: Tras el choque, la caja queda fuera y puede alejarse.
+  - title: Investigar
+    task: Aumentá la velocidad y documentá los límites.
+    why: Un ejemplo que falla enseña cuándo hace falta barrido continuo o subpasos.
+    done: Podés explicar qué casos cubre tu detector.
+sources:
+  - title: Glenn Fiedler · Fix Your Timestep
+    url: https://gafferongames.com/post/fix_your_timestep/
+related:
+  rust:
+    - rust-12
+    - rust-22
+    - rust-25
+  go:
+    - go-21
+    - go-22
+    - go-23
+bridge:
+  rust: Separá una función pura de intersección de una transición que recibe &mut Estado; preparar el nuevo estado ayuda a razonar.
+  go: Usá structs para caja y velocidad; un método con receptor puntero confirma el estado y las funciones de geometría pueden seguir siendo puras.
+category: play
+model: physics
+code:
+  rust: rust-133
+  go: go-133

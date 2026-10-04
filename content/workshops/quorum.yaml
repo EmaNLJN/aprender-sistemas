@@ -1,0 +1,70 @@
+id: quorum
+category: infra
+model: quorum
+minutes: 40
+sources:
+  - title: Dynamo · artículo original
+    url: https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf
+  - title: Raft · visualizaciones y artículo
+    url: https://raft.github.io/
+  - title: MIT 6.5840 · sistemas distribuidos
+    url: https://pdos.csail.mit.edu/6.5840/
+code:
+  rust: rust-123
+  go: go-123
+title: El archipiélago de réplicas
+subtitle: Particiones, quórums y lecturas viejas
+level: expert
+story: Tres estaciones guardan el mismo contador. Una queda aislada durante una actualización y después contesta una lectura. Mirá qué garantía aporta reunir respuestas y cuál sigue faltando.
+what: Explorás N=3, W=2, R=1/R=2 y una reparación explícita; el núcleo verifica intersección de conjuntos, no implementa consenso.
+why: La disponibilidad y la frescura dependen de quién responde. W+R>N es una propiedad de intersección bajo membresía fija, no una receta suficiente para obtener lecturas linealizables.
+uses:
+  - Almacenes replicados
+  - Diseño de políticas de lectura
+  - Análisis de fallos de red
+limits: Un único escritor asigna versiones globales; no hay escritores concurrentes ni membresía dinámica. Rechazamos propuestas sin W antes de instalarlas, simplificación que omite escrituras parciales. No es Raft ni demuestra linealizabilidad.
+objectives:
+  - id: quorum-stale
+    label: Leer una réplica atrasada
+    why: Aislá C, escribí en A/B, saná la red y pedí una copia.
+  - id: quorum-unavailable
+    label: Observar indisponibilidad de la minoría
+    why: Una única respuesta no satisface W=2.
+  - id: quorum-repaired
+    label: Reparar después de sanar la red
+    why: Reconectar no actualiza los datos automáticamente.
+prediction:
+  question: Con W=2,R=2,N=3, ¿qué demuestra W+R>N por sí sola?
+  options:
+    - Consenso y elección de líder
+    - Intersección entre esos conjuntos de réplicas
+    - Disponibilidad bajo cualquier partición
+  answer: 1
+  explanation: Los conjuntos se superponen. La consistencia final depende además del protocolo, versiones, concurrencia y fallos.
+steps:
+  - title: Conjuntos antes de protocolos
+    task: Implementá la validación N,W,R y la condición de intersección sin overflow.
+    why: Una propiedad matemática pequeña no debe confundirse con un servicio completo.
+    done: Rechazás R/W fuera de rango y distinguís W+R=N.
+  - title: Versiones observables
+    task: Guardá versiones y respuestas por réplica en un simulador.
+    why: El valor de cada nodo permite explicar lecturas atrasadas.
+    done: La réplica aislada conserva su versión anterior.
+  - title: Protocolo con referencias
+    task: Seguí los laboratorios MIT y visualizaciones de Raft para elegir un protocolo completo.
+    why: Términos, elecciones y commits requieren reglas conjuntas.
+    done: Podés describir qué propiedad no garantiza tu modelo de quórum.
+  - title: Fallos reproducibles
+    task: Prepará trazas de partición, retraso y reinicio; documentá supuestos de membresía.
+    why: Dormir unos milisegundos no define un modelo de fallos.
+    done: Cada traza produce un historial que se puede revisar y repetir.
+related:
+  rust:
+    - rust-99
+    - rust-110
+  go:
+    - go-93
+    - go-110
+bridge:
+  rust: Result separa configuración inválida de una configuración válida sin intersección garantizada.
+  go: Validar rangos primero permite comparar W > N-R sin desbordar una suma grande.

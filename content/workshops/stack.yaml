@@ -1,0 +1,68 @@
+category: machine
+minutes: 45
+id: stack
+title: Las mochilas de cada llamada
+subtitle: Frames, locales y direcciones de retorno.
+level: medium
+story: main llama a f y f a g. Cada función deja una mochila con lo necesario para continuar cuando la siguiente termine.
+what: Representás una pila de frames con variables locales propias, continuación y límites de profundidad.
+why: Una variable local pertenece a una invocación, no al nombre global de su función. La continuación explica adónde vuelve RET, incluso al anidar llamadas.
+uses:
+  - Comprender recursión
+  - Leer stack traces
+  - Implementar llamadas en una VM
+limits: Es una pila lógica de frames, no la memoria de stack real del compilador. ABIs, registros, inlining, optimizaciones y stacks que crecen cambian la representación física.
+objectives:
+  - id: nested
+    label: Anidá dos llamadas
+    why: Cada invocación crea un frame distinto.
+  - id: return
+    label: Retorná a una continuación guardada
+    why: El llamador recupera su contexto.
+  - id: guard
+    label: Rechazá un límite de pila
+    why: Overflow y underflow no deben destruir frames.
+prediction:
+  question: main tiene local=2, f crea local=0 y lo cambia a 1. Al retornar, ¿cuánto vale el local de main?
+  options:
+    - '1'
+    - '2'
+    - '0'
+  answer: 1
+  explanation: Son locales de invocaciones diferentes.
+steps:
+  - title: Definí el frame
+    task: Elegí campos para retorno y locales; reservá un frame raíz.
+    why: Separar contexto evita sobrescribir al llamador.
+    done: Podés dibujar main→f→g.
+  - title: Implementá CALL/RET
+    task: Completá el núcleo con límite de profundidad y rechazo sin cambios.
+    why: Los errores de estructura deben conservar la pila.
+    done: Probás llamada, retorno y ambos límites.
+  - title: Integrá con una VM
+    task: Añadí CALL y RET al proyecto bytecode, validando destinos de función.
+    why: Los frames conectan control de flujo y estado local.
+    done: Una función llama a otra y ambas vuelven correctamente.
+  - title: Construí un backtrace
+    task: Mostrá nombres, PC y locales desde el frame activo hasta main.
+    why: Depurar es reconstruir el camino de ejecución.
+    done: Ante un error obtenés una traza que explica la cadena de llamadas.
+sources:
+  - title: Nand2Tetris · Function calls
+    url: https://www.nand2tetris.org/project08
+  - title: Rust Book · Ownership and stack/heap
+    url: https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html
+related:
+  rust:
+    - rust-07
+    - rust-21
+  go:
+    - go-07
+    - go-21
+bridge:
+  rust: Los frames del intérprete pueden vivir en un Vec aunque representen una pila. No confundas la estructura de datos con dónde almacena físicamente cada objeto el programa anfitrión.
+  go: 'Una slice de frames modela la pila de tu VM. Las pilas reales de goroutines las administra el runtime y pueden crecer: no asumas el layout del modelo.'
+model: stack
+code:
+  rust: rust-118
+  go: go-118

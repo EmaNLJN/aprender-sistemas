@@ -1,0 +1,37 @@
+id: go-world-3
+level: advanced
+title: El mapa de suministros
+subtitle: Encontrá rutas y ordená lo que depende de otras cosas
+story: Las bases forman una red. Algunas rutas vuelven al mismo lugar y algunas tareas dependen de otras. Tu equipo necesita una ruta corta y un plan de lanzamiento reproducible.
+concepts:
+  - Grafos y visitados
+  - BFS y predecesores
+  - Dependencias y colas de prioridad
+why: 'Una red puede representar caminos, paquetes o tareas. La estructura del problema decide el algoritmo: BFS minimiza saltos sin pesos; un orden topológico respeta dependencias.'
+guide:
+  - Repasá maps, orden reproducible y búsquedas con límites claros.
+  - Repará la exploración y reconstruí una ruta con predecesores, sin copiar caminos completos en cada paso.
+  - En el jefe, mantené tareas listas en container/heap y detectá cuándo una dependencia impide terminar.
+trainingIds:
+  - go-16
+  - go-18
+  - go-88
+challengeIds:
+  - go-107
+  - go-108
+  - go-109
+bossId: go-109
+checkpoint:
+  question: Si las rutas tienen tiempos distintos, ¿BFS garantiza el viaje más rápido?
+  options:
+    - Sí, porque siempre usa una cola
+    - Sí, si marcás visitados
+    - No; minimiza cantidad de aristas, no suma de tiempos
+  answer: 2
+  explanation: Con costes distintos necesitás un algoritmo acorde, como Dijkstra para pesos no negativos.
+badge: Cartógrafo de dependencias
+sources:
+  - title: Maps en Go
+    url: https://go.dev/blog/maps
+  - title: container/heap
+    url: https://pkg.go.dev/container/heap

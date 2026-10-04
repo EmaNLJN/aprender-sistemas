@@ -1,0 +1,68 @@
+category: machine
+minutes: 45
+id: vm
+title: Construí una máquina diminuta
+subtitle: Bytecode, instrucciones y límites de ejecución.
+level: advanced
+story: Te entregaron seis bytes y una CPU inventada. Cada paso revela dónde termina el dato y empieza la instrucción que le da significado.
+what: Vas a especificar una ISA pequeña, validar límites de instrucciones y ejecutar un intérprete paso a paso.
+why: Un programa puede estar formado por bytes válidos y aun saltar al medio de un operando. Decodificar, validar y ejecutar son responsabilidades distintas.
+uses:
+  - Intérpretes de lenguajes
+  - Motores de reglas y scripting
+  - Comprender bytecode y herramientas de depuración
+limits: Esta VM es un intérprete de una ISA inventada; no es QEMU, una JVM ni un contenedor. No ejecuta código nativo ni emula dispositivos. Un presupuesto de pasos no equivale a un sandbox general.
+objectives:
+  - id: branch
+    label: Tomá un salto condicional
+    why: PC deja de avanzar secuencialmente.
+  - id: halt
+    label: Terminá el programa normal
+    why: HALT es una instrucción explícita.
+  - id: bounded
+    label: Frená el bucle por presupuesto
+    why: Un límite permite observar un programa que no progresa.
+prediction:
+  question: Una instrucción ocupa opcode y operando. ¿Todo índice dentro del bytecode es un destino de salto válido?
+  options:
+    - Sí, mientras esté en rango
+    - 'No: debe ser inicio de instrucción'
+    - Solo si el byte es par
+  answer: 1
+  explanation: La estructura del programa importa además del rango.
+steps:
+  - title: Escribí la ISA
+    task: Definí formato, tamaño, efecto y errores de HALT, SET, DEC y JNZ.
+    why: Sin semántica precisa no hay intérprete comprobable.
+    done: Cada opcode tiene una fila en tu especificación.
+  - title: Validá el bytecode
+    task: Implementá el núcleo que descubre inicios y verifica saltos.
+    why: Los operandos no se pueden ejecutar como instrucciones por accidente.
+    done: Rechazás opcode desconocido, truncado y salto a operando.
+  - title: Interpretá con traza
+    task: Agregá registros, loop de ejecución y presupuesto; imprimí estado antes de cada paso.
+    why: Una traza explica el resultado y los bucles.
+    done: El programa normal termina y el bucle agota pasos.
+  - title: Agregá etiquetas
+    task: Creá un ensamblador mínimo que resuelva nombres a offsets y un desensamblador.
+    why: Las etiquetas reducen errores manuales de direcciones.
+    done: Un programa con etiquetas compila al bytecode esperado.
+sources:
+  - title: Nand2Tetris · VM project
+    url: https://www.nand2tetris.org/project08
+  - title: Rust Book · Enums and match
+    url: https://doc.rust-lang.org/book/ch06-02-match.html
+related:
+  rust:
+    - rust-110
+    - rust-112
+  go:
+    - go-95
+    - go-100
+bridge:
+  rust: Creá un crate con parser, validador e intérprete separados. Un enum puede representar instrucciones ya verificadas, reduciendo estados inválidos durante ejecución.
+  go: Creá un módulo con paquetes pequeños para ensamblar y ejecutar; usá tests de tablas y fuzzing del decodificador antes de agregar instrucciones complejas.
+model: vm
+code:
+  rust: rust-117
+  go: go-117

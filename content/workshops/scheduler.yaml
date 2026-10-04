@@ -1,0 +1,68 @@
+category: machine
+minutes: 45
+id: scheduler
+title: Un kernel que reparte turnos
+subtitle: Round-robin, espera y finalización.
+level: advanced
+story: Tres tareas comparten un solo sillón de CPU. Una tarea puede usar su turno, terminar o salir a esperar una respuesta de I/O.
+what: Implementás el núcleo determinista de un planificador round-robin y después separás listas de tareas listas, bloqueadas y terminadas.
+why: Bloqueada no significa terminada. El quantum controla cuánto puede ocupar una tarea antes de ceder, pero una política justa necesita definir llegada, espera y costos.
+uses:
+  - Entender planificación de procesos
+  - Diseñar ejecutores cooperativos
+  - Analizar latencia y respuesta de tareas
+limits: El modelo es uniprocesador con ticks y sin costo de cambio de contexto. No crea procesos ni interrumpe la CPU real. El scheduler de goroutines de Go y un kernel moderno son más complejos que esta cola.
+objectives:
+  - id: rotate
+    label: Devolvé una tarea pendiente al final
+    why: Un quantum no implica finalización.
+  - id: wake
+    label: Bloqueá y despertá una tarea
+    why: Un evento la hace lista otra vez.
+  - id: finish
+    label: Terminá las tres tareas
+    why: Una tarea sin trabajo no debe reencolarse.
+prediction:
+  question: Después de consumir su quantum, A todavía tiene trabajo y B espera lista. ¿Dónde va A?
+  options:
+    - Al final de la cola de listos
+    - A terminadas
+    - De nuevo al frente siempre
+  answer: 0
+  explanation: Round-robin permite que otra tarea lista reciba el próximo turno.
+steps:
+  - title: Modelá los estados
+    task: Diferenciá lista, bloqueada, ejecutando y terminada.
+    why: Estados explícitos evitan ejecutar tareas que esperan un evento.
+    done: Cada tarea ocupa un único estado.
+  - title: Implementá round-robin
+    task: Completá el núcleo con quantum positivo y tareas de trabajo cero.
+    why: Un quantum cero impediría progresar.
+    done: Tenés una traza manual y una verificada.
+  - title: Agregá eventos de I/O
+    task: Permití bloquear y despertar con un orden determinista de eventos.
+    why: Los tiempos de espera cambian la cola disponible.
+    done: Una tarea bloqueada no consume CPU antes de despertar.
+  - title: Medí respuesta
+    task: Registrá primer turno y finalización para varias duraciones de quantum.
+    why: La elección del quantum tiene compromisos observables.
+    done: Comparás métricas y declarás que omitiste costos de contexto.
+sources:
+  - title: OSTEP · CPU scheduling
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-sched.pdf
+  - title: xv6 RISC-V · Teaching kernel
+    url: https://pdos.csail.mit.edu/6.828/2025/xv6.html
+related:
+  rust:
+    - rust-35
+    - rust-46
+  go:
+    - go-41
+    - go-45
+bridge:
+  rust: 'Llevá el simulador a Cargo y después leé swtch/scheduler en xv6 para identificar lo que falta: contexto de CPU, traps, locks y privilegios.'
+  go: Usá una función pura para la política y goroutines solo cuando estudies su interacción con el runtime. Crear goroutines no equivale a escribir el scheduler del kernel.
+model: scheduler
+code:
+  rust: rust-119
+  go: go-119

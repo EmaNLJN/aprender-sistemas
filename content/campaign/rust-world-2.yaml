@@ -1,0 +1,37 @@
+id: rust-world-2
+level: medium
+title: Puerto de señales
+subtitle: Dale significado a cada bit del mensaje.
+story: El robot llegó al puerto, pero la compuerta espera mensajes binarios. Una cabecera de un byte identifica el protocolo, el tamaño delimita el contenido y una huella permite rechazar algunas alteraciones. Tu tarea es convertir esos bytes en datos con un contrato explícito.
+concepts:
+  - Campos de bits y conversiones
+  - Validación de tamaños
+  - Errores y precedencia de rechazo
+why: 'Un protocolo no se define solo por su caso feliz: también establece rangos, tamaños y qué significa cada error. Rust aporta tipos y acceso comprobado; el formato y las garantías de integridad los diseñás vos.'
+guide:
+  - Repasá un prefijo seguro, un Result explicativo y las máscaras de permisos. Separá posición en bytes, significado del campo y rango permitido.
+  - Repará el empaquetado de dos campos de cuatro bits. Construí después el checksum siguiendo una tabla de acumulador antes y después de cada byte.
+  - 'En el boss, escribí primero la secuencia de validaciones: mínimo, versión, largo y huella. Recién entonces extraé el payload y comprobá también un paquete vacío válido.'
+trainingIds:
+  - rust-18
+  - rust-27
+  - rust-78
+challengeIds:
+  - rust-104
+  - rust-105
+  - rust-106
+bossId: rust-106
+checkpoint:
+  question: Dos paquetes producen la misma huella de ocho bits. ¿Qué podés concluir?
+  options:
+    - Que necesariamente son el mismo mensaje
+    - Que ambos fueron enviados por una persona autorizada
+    - Que sus huellas coinciden; todavía pueden ser mensajes distintos
+  answer: 2
+  explanation: Solo hay 256 huellas posibles y muchísimos más mensajes. El checksum de este mundo comprueba una regla del formato, pero admite colisiones y no autentica al emisor.
+badge: Custodia del protocolo
+sources:
+  - title: Rust Reference · Operator expressions
+    url: https://doc.rust-lang.org/reference/expressions/operator-expr.html
+  - title: std · u8::rotate_left
+    url: https://doc.rust-lang.org/std/primitive.u8.html#method.rotate_left

@@ -1,0 +1,66 @@
+id: network
+category: infra
+model: network
+minutes: 40
+sources:
+  - title: RFC 9000 · QUIC y retransmisión de información
+    url: https://datatracker.ietf.org/doc/html/rfc9000#section-13.3
+code:
+  rust: rust-125
+  go: go-125
+title: El correo que se desarma
+subtitle: Reensamblado, duplicados y reintentos
+level: advanced
+story: GOPHER llega como tres fragmentos. Podés entregarlos al revés, perder uno y enviar dos veces otro. El receptor debe reconstruir un solo mensaje sin confundir repetición con información nueva.
+what: Guardás fragmentos por índice, aceptás duplicados idénticos y rechazás índices imposibles o duplicados contradictorios.
+why: El transporte puede repetir información. Hacer el reensamblado idempotente evita agregar dos veces un fragmento y la validación detecta ambigüedades.
+uses:
+  - Protocolos sobre datagramas
+  - Transferencias segmentadas
+  - Procesamiento de mensajes repetidos
+limits: 'Un único mensaje con cantidad fija de fragmentos. Sin sockets, cifrado, MTU, congestión ni reloj de retransmisión. No reproduce QUIC: allí se retransmite información con reglas de frames y nuevos números de paquete.'
+objectives:
+  - id: network-reordered
+    label: 'Recibir #2 antes de #0'
+    why: El orden de llegada no define el orden del mensaje.
+  - id: network-deduped
+    label: Ignorar una copia idéntica
+    why: La cantidad almacenada debe conservarse ante el duplicado.
+  - id: network-assembled
+    label: 'Recuperar #1 perdido y armar GOPHER'
+    why: La retransmisión necesaria completa el hueco sin repetir otros fragmentos.
+prediction:
+  question: 'Ya guardaste #0=GO y llega #0=XX. ¿Qué hace nuestro contrato?'
+  options:
+    - Sobrescribe sin avisar
+    - Rechaza el conflicto
+    - Concatena GOXX
+  answer: 1
+  explanation: Un mismo índice con bytes distintos hace ambiguo el mensaje. No se elige silenciosamente una versión.
+steps:
+  - title: Identidad de fragmento
+    task: Definí índice y bytes, más una cantidad total confiable.
+    why: Sin identidad, una repetición parece un fragmento nuevo.
+    done: Un índice fuera de rango devuelve error.
+  - title: Reensamblado
+    task: Implementá el núcleo con almacenamiento por índice.
+    why: La llegada desordenada no debe cambiar el resultado.
+    done: Duplicados iguales no agrandan el mensaje y los diferentes fallan.
+  - title: Límites de recursos
+    task: En un proyecto local, agregá ID de mensaje, máximo de bytes y expiración con reloj monotónico.
+    why: Un emisor incompleto no debe retener memoria indefinidamente.
+    done: Mensajes distintos no comparten buffer y se respeta el presupuesto.
+  - title: Transporte real
+    task: Usá una biblioteca de transporte mantenida y leé su política de reintentos.
+    why: Congestión y seguridad no se resuelven con un bucle de resend.
+    done: Podés provocar pérdida en pruebas sin prometer entrega exactamente una vez.
+related:
+  rust:
+    - rust-93
+    - rust-106
+  go:
+    - go-106
+    - go-111
+bridge:
+  rust: Vec<Option<Vec<u8>>> distingue hueco de un fragmento vacío; Result distingue incompleto de inválido.
+  go: Un slice de presencia separado distingue un []byte vacío de un fragmento que nunca llegó.

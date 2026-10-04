@@ -1,0 +1,68 @@
+category: machine
+minutes: 45
+id: tlb
+title: La dirección que quedó vieja
+subtitle: Cachear traducciones también exige invalidarlas.
+level: expert
+story: Actualizaste el directorio, pero el mensajero sigue usando la dirección que anotó en su bolsillo. La copia rápida ahora discrepa de la fuente.
+what: Observás hits y misses de una TLB, provocás una traducción obsoleta y la recuperás con invalidación explícita.
+why: Modificar el dato principal y mantener sus copias coherentes son operaciones distintas. El software del sistema debe cumplir las reglas de invalidación y orden de la arquitectura.
+uses:
+  - Cambios de permisos y mapeos
+  - Diseño de kernels con varios núcleos
+  - Entender por qué existen TLB shootdowns
+limits: La traducción vieja es un escenario deliberadamente incorrecto. Simulamos una sola TLB y un solo espacio; no emulamos instrucciones privilegiadas, barreras, ASIDs, coherencia ni shootdown real. El núcleo practica invalidación selectiva por ASID/VPN.
+objectives:
+  - id: hit
+    label: Obtené un hit de traducción
+    why: Evita volver a consultar la tabla.
+  - id: stale
+    label: Observá una copia obsoleta
+    why: La tabla y la TLB pueden discrepar si se omite mantenimiento.
+  - id: recover
+    label: Invalidá y cargá el marco nuevo
+    why: El miss posterior consulta la fuente actualizada.
+prediction:
+  question: Cambiaste la tabla de marco 1 a 3, pero conservaste una TLB con marco 1. En este modelo, ¿qué usa el siguiente hit?
+  options:
+    - Marco 1
+    - Marco 3 automáticamente
+    - El promedio de ambos
+  answer: 0
+  explanation: 'Un hit usa la copia cacheada: esa es precisamente la inconsistencia que hay que resolver.'
+steps:
+  - title: Dibujá fuente y copia
+    task: Añadí una TLB al traductor con métricas de hit/miss.
+    why: Cachear una traducción no cambia el contrato de permisos.
+    done: Podés señalar qué lectura consulta cada estructura.
+  - title: Invalidá selectivamente
+    task: Implementá el núcleo por ASID y VPN; probá coincidencias parciales.
+    why: Invalidar demasiado o demasiado poco tiene consecuencias distintas.
+    done: Una entrada de otro espacio permanece intacta.
+  - title: Reproducí el fallo
+    task: Cambiá tabla sin invalidar, observá la copia vieja y aplicá el protocolo correcto.
+    why: Un test negativo muestra por qué existe la operación.
+    done: Tenés trazas antes y después de invalidar.
+  - title: Extendé a dos núcleos
+    task: Modelá dos TLB y un mensaje de invalidación con confirmación, sin hilos reales al principio.
+    why: La copia de un núcleo no representa las copias de todos.
+    done: La prueba no reutiliza el marco hasta ambas confirmaciones.
+sources:
+  - title: OSTEP · TLBs
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/vm-tlbs.pdf
+  - title: Writing an OS in Rust · Paging
+    url: https://os.phil-opp.com/paging-implementation/
+related:
+  rust:
+    - rust-34
+    - rust-67
+  go:
+    - go-31
+    - go-74
+bridge:
+  rust: Mantené el protocolo como máquina de estados comprobable. En un kernel real consultá la especificación de la arquitectura y su operación de invalidación; no alcanza con borrar un Vec.
+  go: Usá el modelo para entender coherencia y mensajes de confirmación. Go estándar ejecuta sobre un runtime/OS y no emite invalidaciones de TLB desde estas funciones.
+model: tlb
+code:
+  rust: rust-116
+  go: go-116

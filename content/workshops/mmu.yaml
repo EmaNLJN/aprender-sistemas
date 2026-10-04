@@ -1,0 +1,68 @@
+category: machine
+minutes: 45
+id: mmu
+title: Direcciones con pasaporte
+subtitle: Páginas, marcos y permisos.
+level: advanced
+story: Tu programa pide una dirección de su mapa. Antes de llegar a la memoria, un control traduce el destino y comprueba si esa operación está permitida.
+what: Separás una dirección virtual en número de página y offset; la tabla elige un marco físico y permisos.
+why: El mismo offset puede conservarse mientras cambia la ubicación física de la página. Una dirección válida numéricamente todavía puede estar ausente o prohibida.
+uses:
+  - Aislamiento entre procesos
+  - Memoria virtual de sistemas operativos
+  - Depurar fallos de acceso y permisos
+limits: La MMU real es hardware gobernado por estructuras del sistema operativo. Este software simula una tabla de un nivel, sin page walks multinivel, swap, TLB, bits accessed/dirty ni privilegios completos.
+objectives:
+  - id: translate
+    label: Traducí una lectura permitida
+    why: El offset debe preservarse.
+  - id: protection
+    label: Provocá una escritura prohibida
+    why: Presencia y permiso son condiciones distintas.
+  - id: map
+    label: Mapeá una página y accedé
+    why: La política de mapeo habilita una traducción nueva.
+prediction:
+  question: 'Página de tamaño 4: VA 9 usa VPN 2, mapeada al marco 3. ¿Cuál es PA?'
+  options:
+    - '9'
+    - '12'
+    - '13'
+  answer: 2
+  explanation: Offset=1; PA=3×4+1.
+steps:
+  - title: Especificá tu formato
+    task: Elegí tamaño de página y entradas con marco/presente/escritura.
+    why: Los formatos reales varían por arquitectura.
+    done: Podés descomponer tres direcciones a mano.
+  - title: Implementá traducción
+    task: Completá el núcleo con errores de rango, ausencia, permisos y overflow.
+    why: No debe surgir una dirección física tras una validación fallida.
+    done: Pasaron traducciones y rechazos.
+  - title: Agregá espacios de proceso
+    task: Dos procesos tienen tablas distintas sobre una memoria física simulada.
+    why: Aislamiento significa que igual VA puede referir a distinto PA.
+    done: Probás dos procesos con VA iguales y datos separados.
+  - title: Conectá con un kernel educativo
+    task: Leé el manejo de tablas en xv6 o el tutorial Rust y trazá una entrada real.
+    why: El simulador prepara vocabulario; el kernel agrega formato y privilegios.
+    done: Documentaste qué simplificaciones ya no valen fuera del modelo.
+sources:
+  - title: OSTEP · Paging
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/vm-paging.pdf
+  - title: xv6 RISC-V · Repository
+    url: https://github.com/mit-pdos/xv6-riscv
+related:
+  rust:
+    - rust-26
+    - rust-69
+  go:
+    - go-26
+    - go-28
+bridge:
+  rust: Una función pura de traducción se prueba con std. Activar paginación requiere un proyecto de kernel, tablas alineadas e instrucciones de arquitectura fuera del Playground.
+  go: Go sirve para implementar el simulador y herramientas de inspección. Un programa Go estándar sobre su runtime/OS no puede reemplazar la MMU del proceso.
+model: mmu
+code:
+  rust: rust-115
+  go: go-115
