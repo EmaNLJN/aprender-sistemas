@@ -405,5 +405,28 @@ await test('integridad: con la clave de campaña ausente, arrancar y navegar no 
   assert.equal(harness.storage.has(SYSTEMS_KEY), false, 'se creó la clave de Sistemas');
 });
 
+// Exportaciones reales de master 2a278ad y d0e1b49: contrato congelado de compatibilidad.
+const FROZEN_EXPORTS = [
+  'qa/fixtures/progress-master-2a278ad-export.json',
+  'qa/fixtures/progress-d0e1b49-export.json',
+];
+
+for (const file of FROZEN_EXPORTS) {
+  await test(`importación: ${file} se combina sin omisiones con los adaptadores reales`, async () => {
+    const harness = await bootApp();
+    const text = readFileSync(file, 'utf8');
+    const input = harness.elements['import-file'];
+    assert.ok(input);
+    input.files = [{ size: text.length, text: () => Promise.resolve(text) }];
+    await input.dispatch('change');
+    await harness.flush();
+    assert.deepEqual(harness.errors, []);
+    assert.equal(
+      harness.elements['toast']?.textContent,
+      'Copia importada y combinada con tu avance actual.',
+    );
+  });
+}
+
 process.stdout.write(`\n${passed} passed, ${failed} failed\n`);
 if (failed) process.exit(1);

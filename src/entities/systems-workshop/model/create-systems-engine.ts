@@ -189,14 +189,10 @@ export function createSystemsEngine(): SystemsEngine {
     return true;
   }
 
-  function validateImport(raw: unknown): SystemsStateV1 | undefined {
-    return validateSystemsImport(catalog, raw);
-  }
-
   // Calcula el estado resultante sin tocar `state`, `raw` ni el almacenamiento.
   function planImport(raw: unknown): SystemsImportPlan {
     const planned = cloneJson(state);
-    const incoming = validateImport(raw);
+    const incoming = validateSystemsImport(catalog, raw);
     if (!incoming) return { state: planned, lossy: false };
     mergeImportedRecords(planned, incoming);
     return { state: planned, lossy: !isLosslessNormalization(raw, incoming) };
@@ -207,10 +203,6 @@ export function createSystemsEngine(): SystemsEngine {
     const changed = requireStore().hasUnsavedChanges(state);
     if (changed) persist();
     return { changed, storageAvailable };
-  }
-
-  function importState(raw: unknown): void {
-    applyImport(planImport(raw));
   }
 
   function setStep(id: string, language: string, index: number, checked: boolean): void {
@@ -241,10 +233,8 @@ export function createSystemsEngine(): SystemsEngine {
     answer,
     refreshFromLab,
     syncLab,
-    validateImport,
     planImport,
     applyImport,
-    importState,
     backups: () => requireStore().backups(),
     list: (language) => [...catalog.workshops.keys()].map((id) => get(id, language)),
     setStep,

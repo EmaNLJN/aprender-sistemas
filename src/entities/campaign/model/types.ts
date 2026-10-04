@@ -185,10 +185,8 @@ export interface CampaignEngine {
   answerCheckpoint(worldId: string, index: number): CheckpointAnswerResult;
   getSummary(language: string): CampaignSummary;
   exportState(): CampaignStateV1;
-  validateImport(raw: unknown): CampaignStateV1 | undefined;
   planImport(raw: unknown): CampaignImportPlan;
   applyImport(plan: CampaignImportPlan): ImportResult;
-  importState(raw: unknown): ImportResult;
   backups(): BackupEntry[];
   reset(): ResetResult;
 }

@@ -109,12 +109,14 @@ interface CampaignEngine {
   canAttempt(exerciseId: string, language: string): Attempt;
   answerCheckpoint(worldId: string, answer: number): CheckpointResult;
   exportState(): LedgerState;
-  importState(state: unknown): RefreshResult;
-  validateImport(state: unknown): unknown;
   planImport(raw: unknown): ImportPlan;
   applyImport(plan: ImportPlan): RefreshResult;
   backups(): BackupEntry[];
   reset(): { storageAvailable: boolean; removed: boolean };
+}
+// Importa en dos fases, como app.js: planifica la copia y aplica el plan.
+function importState(engine: CampaignEngine, raw: unknown): RefreshResult {
+  return engine.applyImport(engine.planImport(raw));
 }
 interface Fresh {
   engine: CampaignEngine;
@@ -363,7 +365,7 @@ test('A boss solved in the free lab cannot bypass any of the five earlier code m
 test('A complete future world cannot skip an incomplete prerequisite chain', () => {
   const { engine } = fresh();
   const futureIds = [...worlds.rust[1].trainingIds, ...worlds.rust[1].challengeIds];
-  engine.importState({
+  importState(engine, {
     version: 1,
     seals: Object.fromEntries(
       futureIds.map((id) => [id, { code: true, prediction: true, assisted: false }]),
@@ -390,7 +392,7 @@ test('Languages are isolated and exercise achievements outside campaign do not i
 test('Import honors local progress, merges monotonically, and accepts absent legacy campaign', () => {
   const { engine } = fresh();
   sync(engine, ['rust-1'], true);
-  engine.importState({
+  importState(engine, {
     version: 1,
     seals: {
       'rust-1': { code: false, prediction: false, assisted: true },
@@ -400,8 +402,8 @@ test('Import honors local progress, merges monotonically, and accepts absent leg
   });
   assert.equal(world(engine).score, 30);
   assert.equal(world(engine).missions[0].assisted, true);
-  assert.equal(engine.importState(undefined).changed, false);
-  assert.equal(engine.importState(null).changed, false);
+  assert.equal(importState(engine, undefined).changed, false);
+  assert.equal(importState(engine, null).changed, false);
   const exported = engine.exportState();
   exported.seals['rust-1'].code = false;
   assert.equal(world(engine).missions[0].code, true); // Snapshot cannot mutate the ledger.
@@ -420,23 +422,9 @@ test('Corrupt imports are rejected atomically, including out-of-range checkpoint
     },
     { version: 1, seals: {}, checkpoints: { 'rust-world-1': { passed: true, lastAnswer: 9 } } },
   ]) {
-    assert.throws(() => engine.importState(invalid));
+    assert.throws(() => importState(engine, invalid));
     assert.deepEqual(plainJson(engine.exportState()), before);
   }
-});
-test('Import preflight is pure so the app can validate multiple backup sections before applying any', () => {
-  const { engine, store } = fresh();
-  const data = {
-    version: 1,
-    seals: { 'rust-1': { code: true, prediction: true, assisted: false } },
-    checkpoints: {},
-  };
-  assert.deepEqual(plainJson(engine.validateImport(data)), data);
-  assert.equal(engine.getSummary('rust').score, 0);
-  assert.equal(store.has(storageKey), false);
-  assert.equal(engine.validateImport(undefined), undefined);
-  assert.throws(() => engine.validateImport({ version: 1, seals: [], checkpoints: {} }));
-  assert.equal(engine.getSummary('rust').score, 0);
 });
 test('Storage reload preserves achievements; unavailable storage keeps in-memory progress', () => {
   const { engine, store } = fresh();
@@ -603,7 +591,7 @@ test('A degraded load without a backup slot never writes the main key: sync, che
   eligible(engine);
   assert.equal(engine.answerCheckpoint('rust-world-1', 0).accepted, true);
   assert.equal(
-    engine.importState({ version: 1, seals: { 'go-1': { code: true } }, checkpoints: {} })
+    importState(engine, { version: 1, seals: { 'go-1': { code: true } }, checkpoints: {} })
       .storageAvailable,
     false,
   );

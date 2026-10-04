@@ -50,24 +50,14 @@ interface VersionedStorage {
   BACKUP_SLOTS: number;
   backupKeysFor(key: string): string[];
   openVersionedStore<T>(key: string, options: StoreOptions<T>): VersionedStore<T>;
-  loadVersionedState<T>(key: string, options: StoreOptions<T>): LoadResult<T>;
-  writeVersionedState(key: string, value: unknown, storage?: StorageLike): boolean;
-  removeVersionedState(key: string, storage?: StorageLike): boolean;
   describeLoadResult(
     result: Pick<LoadResult<unknown>, 'status' | 'dropped' | 'lossy' | 'backupKey'>,
     area: string,
   ): string;
 }
 
-const {
-  BACKUP_SLOTS,
-  backupKeysFor,
-  openVersionedStore,
-  loadVersionedState,
-  writeVersionedState,
-  removeVersionedState,
-  describeLoadResult,
-} = await importModule<VersionedStorage>('src/shared/lib/versioned-storage.ts');
+const { BACKUP_SLOTS, backupKeysFor, openVersionedStore, describeLoadResult } =
+  await importModule<VersionedStorage>('src/shared/lib/versioned-storage.ts');
 
 const KEY = 'taller-demo-v1';
 const BACKUP = 'taller-demo-v1:respaldo';
@@ -135,7 +125,7 @@ const options = (storage: StorageLike, extra: Partial<StoreOptions<Demo>> = {}) 
   ...extra,
 });
 const load = (storage: StorageLike): LoadResult<Demo> =>
-  loadVersionedState(KEY, { blank, parse, storage });
+  openVersionedStore(KEY, { blank, parse, storage }).load();
 const text = (items: unknown[]): string => JSON.stringify({ version: 1, items });
 
 let passed = 0;
@@ -264,7 +254,7 @@ test('si el respaldo no se puede escribir, la carga no lanza, no hay copia ni es
 test('una normalización con pérdida y sin descartes da lossy, copia y aviso de datos', () => {
   const original = text([' a ', '  ', 'b']);
   const storage = fakeStorage({ [KEY]: original });
-  const result = loadVersionedState(KEY, { blank, parse: parseTrimming, storage });
+  const result = openVersionedStore(KEY, { blank, parse: parseTrimming, storage }).load();
   assert.equal(result.dropped, 0);
   assert.equal(result.lossy, true);
   assert.equal(result.backupKey, BACKUP);
@@ -277,7 +267,7 @@ test('una normalización con pérdida y sin descartes da lossy, copia y aviso de
 
 test('una normalización aditiva no da pérdida, copia ni aviso', () => {
   const storage = fakeStorage({ [KEY]: text(['a']) });
-  const result = loadVersionedState(KEY, { blank, parse: parseAdding, storage });
+  const result = openVersionedStore(KEY, { blank, parse: parseAdding, storage }).load();
   assert.equal(result.lossy, false);
   assert.equal(result.backupKey, null);
   assert.equal(describeLoadResult(result, 'de prueba'), '');
@@ -291,7 +281,7 @@ test('un parse que muta su entrada no oculta la pérdida', () => {
     return { state: value, dropped: 0 };
   };
   const storage = fakeStorage({ [KEY]: text(['a', 'b']) });
-  const result = loadVersionedState(KEY, { blank, parse: mutating, storage });
+  const result = openVersionedStore(KEY, { blank, parse: mutating, storage }).load();
   assert.equal(result.lossy, true);
   assert.equal(result.backupKey, BACKUP);
 });
@@ -314,7 +304,7 @@ test('sin storage explícito lee globalThis.localStorage; si el acceso lanza, un
   const stored = fakeStorage({ [KEY]: text(['g']) });
   Object.defineProperty(globalThis, 'localStorage', { value: stored, configurable: true });
   try {
-    const result = loadVersionedState(KEY, { blank, parse });
+    const result = openVersionedStore(KEY, { blank, parse }).load();
     assert.equal(result.status, 'loaded');
     assert.deepEqual(result.state, { version: 1, items: ['g'] });
     Object.defineProperty(globalThis, 'localStorage', {
@@ -323,11 +313,12 @@ test('sin storage explícito lee globalThis.localStorage; si el acceso lanza, un
       },
       configurable: true,
     });
-    const blocked = loadVersionedState(KEY, { blank, parse });
+    const blockedStore = openVersionedStore(KEY, { blank, parse });
+    const blocked = blockedStore.load();
     assert.equal(blocked.status, 'unavailable');
     assert.equal(blocked.writable, false);
-    assert.equal(writeVersionedState(KEY, blank()), false);
-    assert.equal(removeVersionedState(KEY), false);
+    assert.deepEqual(blockedStore.write(blank()), { saved: false, state: blank() });
+    assert.equal(blockedStore.remove(), false);
   } finally {
     delete holder.localStorage;
   }
@@ -435,7 +426,6 @@ test('remove borra la clave y las cinco ranuras', () => {
   const store = openVersionedStore(KEY, options(storage));
   assert.equal(store.remove(), true);
   assert.deepEqual([...storage.data.keys()], ['otra']);
-  assert.equal(removeVersionedState(KEY, fakeStorage(all)), true);
 });
 
 test('remove devuelve false si una borrada lanza, pero intenta todas las demás', () => {
@@ -455,7 +445,8 @@ test('remove devuelve false si una borrada lanza, pero intenta todas las demás'
   };
   assert.equal(openVersionedStore(KEY, options(storage)).remove(), false);
   assert.deepEqual(removed, [KEY, SLOTS[0], SLOTS[2], SLOTS[3], SLOTS[4]]);
-  assert.equal(removeVersionedState(KEY, fakeStorage({ [KEY]: 'a' }, ['removeItem'])), false);
+  const blocked = fakeStorage({ [KEY]: 'a' }, ['removeItem']);
+  assert.equal(openVersionedStore(KEY, options(blocked)).remove(), false);
 });
 
 test('remove vuelve a habilitar la escritura de un almacén que quedó no escribible', () => {
@@ -477,12 +468,18 @@ test('backups devuelve las ranuras existentes en orden de ranura', () => {
   ]);
 });
 
-test('writeVersionedState serializa el valor y devuelve false si no pudo escribir', () => {
+test('write serializa el estado y devuelve saved false si setItem lanza', () => {
   const storage = fakeStorage();
-  assert.equal(writeVersionedState(KEY, { version: 1, items: ['x'] }, storage), true);
+  const store = openVersionedStore(KEY, options(storage));
+  store.load();
+  assert.deepEqual(store.write({ version: 1, items: ['x'] }), {
+    saved: true,
+    state: { version: 1, items: ['x'] },
+  });
   assert.equal(storage.data.get(KEY), '{"version":1,"items":["x"]}');
-  const blocked = fakeStorage({}, ['setItem']);
-  assert.equal(writeVersionedState(KEY, blank(), blocked), false);
+  const blocked = openVersionedStore(KEY, options(fakeStorage({}, ['setItem'])));
+  blocked.load();
+  assert.deepEqual(blocked.write(blank()), { saved: false, state: blank() });
 });
 
 test('describeLoadResult: todas las variantes, con y sin copia', () => {

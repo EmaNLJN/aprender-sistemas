@@ -150,12 +150,14 @@ interface Engine {
   syncLab(labs: unknown): { changed: boolean; storageAvailable: boolean };
   refreshFromLab(labs: unknown): { changed: boolean; storageAvailable: boolean };
   exportState(): Backup & { records: Record<string, Progress> };
-  validateImport(raw: unknown): { records: Record<string, Progress> } | undefined;
   planImport(raw: unknown): ImportPlan;
   applyImport(plan: ImportPlan): { changed: boolean; storageAvailable: boolean };
-  importState(raw: unknown): unknown;
   backups(): { key: string; text: string }[];
   reset(): { removed: boolean };
+}
+// Importa en dos fases, como app.js: planifica la copia y aplica el plan.
+function importState(engine: Engine, raw: unknown): void {
+  engine.applyImport(engine.planImport(raw));
 }
 interface ImportPlan {
   state: Backup & { records: Record<string, Progress> };
@@ -527,7 +529,7 @@ test('Import preflight is pure and filters IDs/steps without mutating its input'
     }),
   });
   const originalInput = JSON.stringify(raw),
-    clean = engine.validateImport(raw) as { records: Record<string, Progress> };
+    clean = engine.planImport(raw).state;
   assert.equal(JSON.stringify(engine.exportState()), originalState);
   assert.equal(store.writes, writes);
   assert.equal(JSON.stringify(raw), originalInput);
@@ -546,7 +548,7 @@ test('A corrupt later import record cannot partially apply earlier valid progres
     'rust:alpha': progress({ observed: ['a', 'b', 'c'], code: true, predicted: true }),
     'go:beta': progress({ code: 'true' }),
   });
-  assert.throws(() => engine.importState(raw));
+  assert.throws(() => importState(engine, raw));
   assert.equal(JSON.stringify(engine.exportState()), before);
   assert.equal(store.writes, writes);
 });
@@ -566,7 +568,7 @@ test('Malformed imports reject instead of coercing proof fields', () => {
   for (const raw of malformed) {
     const { engine } = environment();
     const before = JSON.stringify(engine.exportState());
-    assert.throws(() => engine.importState(raw));
+    assert.throws(() => importState(engine, raw));
     assert.equal(JSON.stringify(engine.exportState()), before);
   }
 });
@@ -577,7 +579,8 @@ test('Import unions achievements and stages, updates nonempty notes, preserves a
   engine.answer('alpha', 'rust', 1);
   engine.setStep('alpha', 'rust', 0, true);
   engine.setNote('alpha', 'rust', 'Earlier');
-  engine.importState(
+  importState(
+    engine,
     backup({
       'rust:alpha': progress({ observed: ['b', 'c'], code: true, steps: [1], note: 'Imported' }),
     }),
@@ -587,21 +590,20 @@ test('Import unions achievements and stages, updates nonempty notes, preserves a
   assert.deepEqual(plain(merged.progress.steps), [0, 1]);
   assert.equal(merged.progress.answer, 1);
   assert.equal(merged.progress.note, 'Imported');
-  engine.importState(backup({ 'rust:alpha': progress() }));
+  importState(engine, backup({ 'rust:alpha': progress() }));
   assert.equal(engine.get('alpha', 'rust').completed, true);
   assert.equal(engine.get('alpha', 'rust').progress.note, 'Imported');
 });
 
 test('Unknown import IDs and optional old-backup payloads are harmless', () => {
   const { engine } = environment();
-  engine.importState(
+  importState(
+    engine,
     backup({ 'rust:unknown': null, 'python:alpha': null, 'rust:alpha:extra': null }),
   );
   const before = JSON.stringify(engine.exportState());
-  assert.equal(engine.validateImport(undefined), undefined);
-  assert.equal(engine.validateImport(null), undefined);
-  engine.importState(undefined);
-  engine.importState(null);
+  importState(engine, undefined);
+  importState(engine, null);
   assert.equal(JSON.stringify(engine.exportState()), before);
 });
 
@@ -725,8 +727,8 @@ test('Imports stay strict: one invalid record rejects the whole backup', () => {
     'rust:alpha': progress({ code: true }),
     'go:beta': progress({ code: 1 }),
   });
-  assert.throws(() => engine.validateImport(mixed), /Sello de taller inválido: beta/);
-  assert.throws(() => engine.importState(mixed), /Sello de taller inválido: beta/);
+  assert.throws(() => engine.planImport(mixed), /Sello de taller inválido: beta/);
+  assert.throws(() => importState(engine, mixed), /Sello de taller inválido: beta/);
   assert.equal(JSON.stringify(engine.exportState()), before);
 });
 
@@ -825,7 +827,7 @@ test('A degraded load without a backup slot leaves the main key alone: sync, obs
   assert.equal(engine.syncLab(labResult('go-113')).storageAvailable, false);
   engine.observe('alpha', 'rust', ['a']);
   engine.setNote('alpha', 'rust', 'solo en memoria');
-  engine.importState(backup({ 'rust:beta': progress({ code: true }) }));
+  importState(engine, backup({ 'rust:beta': progress({ code: true }) }));
   assert.equal(engine.get('alpha', 'rust').storageAvailable, false);
   assert.equal(engine.get('beta', 'rust').progress.code, true);
   assert.deepEqual([...store.data], [...before]);
@@ -881,9 +883,9 @@ test('planImport marks as lossy a backup with unknown IDs, objectives or steps',
 test('Importing a blank note does not erase the local note', () => {
   const { engine } = environment();
   engine.setNote('alpha', 'rust', 'mi nota');
-  engine.importState(backup({ 'rust:alpha': progress({ note: '   ' }) }));
+  importState(engine, backup({ 'rust:alpha': progress({ note: '   ' }) }));
   assert.equal(engine.get('alpha', 'rust').progress.note, 'mi nota');
-  engine.importState(backup({ 'rust:alpha': progress({ note: '' }) }));
+  importState(engine, backup({ 'rust:alpha': progress({ note: '' }) }));
   assert.equal(engine.get('alpha', 'rust').progress.note, 'mi nota');
 });
 

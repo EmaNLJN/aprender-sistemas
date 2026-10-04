@@ -223,35 +223,6 @@ export function openVersionedStore<T>(
   };
 }
 
-// Atajo para los consumidores que sólo cargan; los que escriben usan el almacén abierto.
-// Nunca escribe la clave principal: la primera escritura es una acción del alumno.
-export function loadVersionedState<T>(
-  key: string,
-  options: VersionedStoreOptions<T>,
-): LoadResult<T> {
-  return openVersionedStore(key, options).load();
-}
-
-export function writeVersionedState(key: string, value: unknown, storage?: StorageLike): boolean {
-  const target = resolveStorage(storage);
-  if (!target) return false;
-  try {
-    target.setItem(key, JSON.stringify(value));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-// Borra la clave y sus cinco ranuras; devuelve false si no hay almacenamiento o alguna falló.
-export function removeVersionedState(key: string, storage?: StorageLike): boolean {
-  return openVersionedStore(key, {
-    blank: () => null,
-    parse: () => ({ state: null, dropped: 0 }),
-    storage,
-  }).remove();
-}
-
 // Aviso para el alumno según la carga. `area` nombra el progreso («del recorrido»,
 // «de campaña»…). El almacenamiento bloqueado lo informa el shell, así que da ''.
 export function describeLoadResult(

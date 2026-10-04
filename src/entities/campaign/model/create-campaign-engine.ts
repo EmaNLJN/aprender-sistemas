@@ -146,11 +146,6 @@ export function createCampaignEngine(): CampaignEngine {
     };
   }
 
-  function validateImport(raw: unknown): CampaignStateV1 | undefined {
-    const ready = assertReady();
-    return raw === undefined || raw === null ? undefined : sanitizeCampaignState(ready, raw);
-  }
-
   // Calcula el estado resultante sin tocar `state`, `raw` ni el almacenamiento.
   function planImport(raw: unknown): CampaignImportPlan {
     const ready = assertReady();
@@ -198,10 +193,8 @@ export function createCampaignEngine(): CampaignEngine {
       assertReady();
       return cloneJson(state);
     },
-    validateImport,
     planImport,
     applyImport,
-    importState: (raw) => applyImport(planImport(raw)),
     backups: () => requireStore().backups(),
     reset,
   };

@@ -27,6 +27,8 @@ interface Harness {
   elements: Record<string, FakeElement>;
   calls: string[];
   callArgs: Record<string, unknown>;
+  // Lo que la app registró con console.error.
+  errors: string[];
   blobs: FakeBlob[];
   revoked: string[];
   timers: Timer[];
@@ -49,9 +51,20 @@ interface HarnessOptions {
   // Lecturas válidas pero setItem lanza (cuota llena, modo privado).
   writesBlocked?: boolean;
   backup?: string;
+  // Claves extra del almacenamiento (por ejemplo, las demás ranuras de respaldo).
+  extraStorage?: Record<string, string>;
   warnings?: Partial<Record<ModuleKey, string>>;
-  failValidate?: Partial<Record<ModuleKey, string>>;
-  failImport?: Partial<Record<ModuleKey, string>>;
+  // El plan o la aplicación de la sección lanzan este mensaje.
+  failPlan?: Partial<Record<ModuleKey, string>>;
+  failApply?: Partial<Record<ModuleKey, string>>;
+  // El plan de la sección informa que la normalización quitó datos.
+  lossy?: Partial<Record<ModuleKey, boolean>>;
+  // Resultado de reset de cada adaptador (por defecto, borrado completo).
+  resets?: Partial<Record<ModuleKey, boolean>>;
+  // Ranuras de respaldo que publica cada adaptador; la lista es mutable a propósito.
+  backups?: Partial<Record<ModuleKey, { key: string; text: string }[]>>;
+  // Campaña o Sistemas lanzan al sincronizar los sellos del laboratorio importado.
+  failSync?: boolean;
 }
 
 const ids = [
@@ -70,6 +83,11 @@ const ids = [
   'confirm-reset',
   'import-file',
   'export-progress',
+  // Los usan la biblioteca (favoritos) y la bitácora (notas) al guardar.
+  'resource-results-label',
+  'resource-grid',
+  'note-state',
+  'tutor-prompt',
 ];
 
 // Datos controlados que devuelven los adaptadores al exportar.
@@ -85,34 +103,61 @@ function fakeAdapters(
   record: (name: string, args?: unknown[]) => void,
   options: HarnessOptions,
 ): Record<AdapterName, Record<string, Behavior>> {
-  const failure = (kind: 'failValidate' | 'failImport', key: ModuleKey) => {
+  const failure = (kind: 'failPlan' | 'failApply', key: ModuleKey) => {
     const message = options[kind]?.[key];
     if (message) throw new Error(message);
+  };
+  const planFor = (key: ModuleKey): Behavior => {
+    return (raw) => {
+      failure('failPlan', key);
+      return { state: raw, lossy: options.lossy?.[key] ?? false };
+    };
+  };
+  const applyFor = (key: ModuleKey): Behavior => {
+    return () => {
+      failure('failApply', key);
+      return true;
+    };
+  };
+  const backupsFor =
+    (key: ModuleKey): Behavior =>
+    () =>
+      options.backups?.[key] ?? [];
+  const syncBehavior: Behavior = () => {
+    if (options.failSync) throw new Error('sync falló');
   };
   const behaviors: Record<AdapterName, Record<string, Behavior>> = {
     TallerLab: {
       exportState: () => labExport,
-      validateImport: () => failure('failValidate', 'lab'),
-      importState: () => failure('failImport', 'lab'),
+      planImport: planFor('lab'),
+      applyImport: applyFor('lab'),
+      reset: () => options.resets?.lab ?? true,
+      backups: backupsFor('lab'),
       loadWarning: () => options.warnings?.lab ?? '',
       getExercises: () => [],
     },
     TallerAtlas: {},
     TallerCampaign: {
       init: () => ({ loadWarning: options.warnings?.campaign ?? '' }),
+      sync: syncBehavior,
     },
     TallerSystems: {
       init: () => ({ loadWarning: options.warnings?.systems ?? '' }),
+      sync: syncBehavior,
     },
     TallerCampaignEngine: {
       exportState: () => campaignExport,
-      validateImport: () => failure('failValidate', 'campaign'),
-      importState: () => failure('failImport', 'campaign'),
+      planImport: planFor('campaign'),
+      applyImport: applyFor('campaign'),
+      reset: () => ({ removed: options.resets?.campaign ?? true }),
+      backups: backupsFor('campaign'),
     },
     TallerSystemsEngine: {
       exportState: () => systemsExport,
-      validateImport: () => failure('failValidate', 'systems'),
-      importState: () => failure('failImport', 'systems'),
+      planImport: planFor('systems'),
+      applyImport: applyFor('systems'),
+      reset: () => ({ removed: options.resets?.systems ?? true }),
+      backups: backupsFor('systems'),
     },
   };
   const fakes = {} as Record<AdapterName, Record<string, Behavior>>;
@@ -127,6 +172,16 @@ function fakeAdapters(
     }
   }
   return fakes;
+}
+
+// Contenido inicial del almacenamiento: el recorrido, un respaldo y las claves extra.
+function initialStorage(options: HarnessOptions): Map<string, string> {
+  const storage = new Map<string, string>();
+  if (options.stored !== undefined) storage.set(STORAGE_KEY, JSON.stringify(options.stored));
+  if (options.storedRaw !== undefined) storage.set(STORAGE_KEY, options.storedRaw);
+  if (options.backup !== undefined) storage.set(BACKUP_KEY, options.backup);
+  for (const [key, text] of Object.entries(options.extraStorage ?? {})) storage.set(key, text);
+  return storage;
 }
 
 function buildHarness(options: HarnessOptions = {}): Harness {
@@ -151,10 +206,8 @@ function buildHarness(options: HarnessOptions = {}): Harness {
   const timers: Timer[] = [];
   const calls: string[] = [];
   const callArgs: Record<string, unknown> = {};
-  const storage = new Map<string, string>();
-  if (options.stored !== undefined) storage.set(STORAGE_KEY, JSON.stringify(options.stored));
-  if (options.storedRaw !== undefined) storage.set(STORAGE_KEY, options.storedRaw);
-  if (options.backup !== undefined) storage.set(BACKUP_KEY, options.backup);
+  const errors: string[] = [];
+  const storage = initialStorage(options);
 
   const query = (selector: string): FakeElement | null => {
     if (selector.startsWith('#')) return elements[selector.slice(1)] ?? null;
@@ -228,6 +281,7 @@ function buildHarness(options: HarnessOptions = {}): Harness {
         storage.delete(key);
       },
     },
+    console: { error: (...args: unknown[]) => errors.push(args.map(String).join(' ')) },
     history: { replaceState: () => undefined },
     navigator: {},
     setTimeout: (callback: () => void, delay: number) => timers.push({ callback, delay }),
@@ -247,6 +301,7 @@ function buildHarness(options: HarnessOptions = {}): Harness {
     elements,
     calls,
     callArgs,
+    errors,
     blobs,
     revoked,
     timers,
@@ -266,6 +321,29 @@ function importFile(harness: Harness, text: string): Promise<void> {
   input.value = 'C:\\fakepath\\copia.json';
   input.files = [{ size: text.length, text: () => Promise.resolve(text) }];
   return input.dispatch('change');
+}
+
+// El DOM falso no resuelve `closest`: el destino simulado de un clic o cambio se devuelve a sí mismo.
+function actionTarget(dataset: Record<string, string>, value = ''): FakeElement {
+  const target = new FakeElement('button');
+  Object.assign(target.dataset, dataset);
+  target.value = value;
+  target.closest = () => target;
+  return target;
+}
+
+// Simula un clic del alumno sobre un elemento con `data-action` dentro de #main.
+async function clickAction(harness: Harness, dataset: Record<string, string>): Promise<void> {
+  await harness.elements['main']?.dispatch('click', { target: actionTarget(dataset) });
+}
+
+async function changeField(
+  harness: Harness,
+  type: 'change' | 'input',
+  dataset: Record<string, string>,
+  value = '',
+): Promise<void> {
+  await harness.elements['main']?.dispatch(type, { target: actionTarget(dataset, value) });
 }
 
 async function exportedProgress(harness: Harness): Promise<Record<string, unknown>> {
@@ -400,28 +478,61 @@ await test('b) importar: se conservan los minutes y el language locales', async 
   assert.equal(state.language, 'go');
 });
 
-await test('b) importar: valida primero y después importa en lab, campaña y sistemas', async () => {
+await test('b) importar: planifica las tres secciones y después aplica los tres planes', async () => {
   const harness = buildHarness({ stored: localProgress });
   const before = harness.calls.length;
   await importFile(harness, JSON.stringify(validImport));
   const importCalls = harness.calls
     .slice(before)
-    .filter((name) => /validateImport|importState/.test(name));
+    .filter((name) => /planImport|applyImport/.test(name));
   assert.deepEqual(importCalls, [
-    'CampaignEngine.validateImport',
-    'Lab.validateImport',
-    'SystemsEngine.validateImport',
-    'CampaignEngine.importState',
-    'Lab.importState',
-    'SystemsEngine.importState',
+    'CampaignEngine.planImport',
+    'Lab.planImport',
+    'SystemsEngine.planImport',
+    'CampaignEngine.applyImport',
+    'Lab.applyImport',
+    'SystemsEngine.applyImport',
   ]);
-  assert.deepEqual(plainJson(harness.callArgs['CampaignEngine.importState']), {
+  assert.deepEqual(plainJson(harness.callArgs['CampaignEngine.planImport']), {
     marker: 'campaign-importado',
   });
-  assert.deepEqual(plainJson(harness.callArgs['Lab.importState']), { marker: 'lab-importado' });
-  assert.deepEqual(plainJson(harness.callArgs['SystemsEngine.importState']), {
+  assert.deepEqual(plainJson(harness.callArgs['Lab.planImport']), { marker: 'lab-importado' });
+  assert.deepEqual(plainJson(harness.callArgs['SystemsEngine.planImport']), {
     marker: 'systems-importado',
   });
+  // Cada sección aplica el plan que ella misma calculó.
+  const planned = plainJson(harness.callArgs['SystemsEngine.applyImport']) as { state: unknown };
+  assert.deepEqual(planned.state, { marker: 'systems-importado' });
+});
+
+await test('b) importar: después de aplicar sincroniza Sistemas y Campaña, y luego renderiza', async () => {
+  const harness = buildHarness({ stored: localProgress });
+  const before = harness.calls.length;
+  await importFile(harness, JSON.stringify(validImport));
+  const order = harness.calls
+    .slice(before)
+    .filter((name) =>
+      /^(Campaign|Systems)Engine\.applyImport$|^(Campaign|Systems)\.sync$/.test(name),
+    );
+  assert.deepEqual(order, [
+    'CampaignEngine.applyImport',
+    'SystemsEngine.applyImport',
+    'Systems.sync',
+    'Campaign.sync',
+  ]);
+  assert.deepEqual(harness.errors, []);
+});
+
+await test('b) importar: si sync lanza, el error se registra y la copia ya quedó importada', async () => {
+  const harness = buildHarness({ stored: localProgress, failSync: true });
+  await importFile(harness, JSON.stringify(validImport));
+  assert.equal(harness.toast(), 'Copia importada y combinada con tu avance actual.');
+  assert.equal(harness.errors.length, 1);
+  assert.deepEqual(harness.storedState().completed, [
+    'rust-ownership',
+    'go-save',
+    'rust-first-session',
+  ]);
 });
 
 await test('b) importar: sin lab, campaign ni systems no llama a ningún adaptador', async () => {
@@ -433,7 +544,7 @@ await test('b) importar: sin lab, campaign ni systems no llama a ningún adaptad
   await importFile(harness, JSON.stringify(onlyRoute));
   assert.equal(harness.toast(), 'Copia importada y combinada con tu avance actual.');
   assert.deepEqual(
-    harness.calls.filter((name) => /validateImport|importState/.test(name)),
+    harness.calls.filter((name) => /planImport|applyImport/.test(name)),
     [],
   );
 });
@@ -444,9 +555,22 @@ await test('c) copia con version 2: no aplica nada y avisa el formato', async ()
   assert.equal(harness.toast(), 'No se pudo importar: Formato de progreso no compatible.');
   assert.deepEqual(harness.storedState(), localProgress);
   assert.deepEqual(
-    harness.calls.filter((name) => /validateImport|importState/.test(name)),
+    harness.calls.filter((name) => /planImport|applyImport/.test(name)),
     [],
   );
+});
+
+await test('c) una entrada que no es objeto da el error de formato y no aplica nada', async () => {
+  for (const text of ['null', '[]', '5']) {
+    const harness = buildHarness({ stored: localProgress });
+    await importFile(harness, text);
+    assert.equal(harness.toast(), 'No se pudo importar: Formato de progreso no compatible.', text);
+    assert.deepEqual(harness.storedState(), localProgress);
+    assert.deepEqual(
+      harness.calls.filter((name) => /planImport|applyImport/.test(name)),
+      [],
+    );
+  }
 });
 
 await test('d) JSON roto: el aviso dice que no contiene JSON válido', async () => {
@@ -468,33 +592,33 @@ await test('d) archivo mayor de 10 MB: se rechaza antes de leerlo', async () => 
   );
 });
 
-await test('e) atomicidad: si validateImport de Sistemas lanza, nada se importa', async () => {
+await test('e) atomicidad: si el plan de Sistemas lanza, no se aplica nada', async () => {
   const harness = buildHarness({
     stored: localProgress,
-    failValidate: { systems: 'Sistemas rechazó la copia.' },
+    failPlan: { systems: 'Sistemas rechazó la copia.' },
   });
   const before = await exportedProgress(harness);
   await importFile(harness, JSON.stringify(validImport));
   assert.equal(harness.toast(), 'No se pudo importar: Sistemas rechazó la copia.');
   assert.deepEqual(
-    harness.calls.filter((name) => name.endsWith('.importState')),
+    harness.calls.filter((name) => name.endsWith('.applyImport')),
     [],
   );
   assert.deepEqual(harness.storedState(), localProgress);
   assert.deepEqual(await exportedProgress(harness), before);
 });
 
-await test('e) atomicidad: si importState de Sistemas lanza a mitad, notas y pasos locales no cambian', async () => {
+await test('e) atomicidad: si applyImport de Sistemas lanza a mitad, notas y pasos locales no cambian', async () => {
   const harness = buildHarness({
     stored: localProgress,
-    failImport: { systems: 'Sistemas falló al aplicar.' },
+    failApply: { systems: 'Sistemas falló al aplicar.' },
   });
   const before = await exportedProgress(harness);
   await importFile(harness, JSON.stringify(validImport));
   assert.equal(harness.toast(), 'No se pudo importar: Sistemas falló al aplicar.');
   assert.deepEqual(
-    harness.calls.filter((name) => name.endsWith('.importState')),
-    ['CampaignEngine.importState', 'Lab.importState', 'SystemsEngine.importState'],
+    harness.calls.filter((name) => name.endsWith('.applyImport')),
+    ['CampaignEngine.applyImport', 'Lab.applyImport', 'SystemsEngine.applyImport'],
   );
   const after = await exportedProgress(harness);
   assert.deepEqual(after.notes, localProgress.notes);
@@ -504,6 +628,41 @@ await test('e) atomicidad: si importState de Sistemas lanza a mitad, notas y pas
   assert.deepEqual(after.quizAnswers, localProgress.quizAnswers);
   assert.deepEqual(after, before);
   assert.deepEqual(harness.storedState(), localProgress);
+});
+
+const OMITTED =
+  'Copia importada y combinada con tu avance actual. Se omitieron datos que esta versión no reconoce: ';
+
+await test('e) omisiones: un plan del laboratorio con lossy avisa el área', async () => {
+  const harness = buildHarness({ stored: localProgress, lossy: { lab: true } });
+  await importFile(harness, JSON.stringify(validImport));
+  assert.equal(harness.toast(), `${OMITTED}laboratorio.`);
+});
+
+await test('e) omisiones: un paso desconocido en completed agrega el recorrido, primero en la lista', async () => {
+  const harness = buildHarness({ stored: localProgress, lossy: { lab: true } });
+  const withUnknownStep = { ...validImport, completed: ['paso-desconocido', 'go-save'] };
+  await importFile(harness, JSON.stringify(withUnknownStep));
+  assert.equal(harness.toast(), `${OMITTED}recorrido, laboratorio.`);
+});
+
+await test('e) omisiones: el orden del aviso es recorrido, laboratorio, campaña y Sistemas', async () => {
+  const harness = buildHarness({
+    stored: localProgress,
+    lossy: { lab: true, campaign: true, systems: true },
+  });
+  const withUnknownStep = { ...validImport, completed: ['paso-desconocido'] };
+  await importFile(harness, JSON.stringify(withUnknownStep));
+  assert.equal(harness.toast(), `${OMITTED}recorrido, laboratorio, campaña, Sistemas.`);
+});
+
+await test('e) omisiones: lo que traen lab, campaign, systems y exportedAt no cuenta como pérdida del recorrido', async () => {
+  const harness = buildHarness({ stored: localProgress });
+  await importFile(
+    harness,
+    JSON.stringify({ ...validImport, exportedAt: '2026-01-01T00:00:00.000Z' }),
+  );
+  assert.equal(harness.toast(), 'Copia importada y combinada con tu avance actual.');
 });
 
 const unknownProgress = {
@@ -630,6 +789,36 @@ await test('h) borrar todo: elimina el respaldo del recorrido y reinicia a los m
   assert.equal(harness.toast(), 'Progreso reiniciado. Un nuevo comienzo.');
 });
 
+const RESET_FAILED =
+  'No se pudo borrar todo el progreso guardado. Recargá la página y volvé a intentarlo.';
+
+await test('h) borrar todo: un motor que no pudo borrar ({ removed: false }) da el aviso de fallo', async () => {
+  const harness = buildHarness({ stored: localProgress, resets: { systems: false } });
+  await harness.elements['confirm-reset']?.dispatch('click');
+  assert.equal(harness.toast(), RESET_FAILED);
+  assert.deepEqual(harness.storedState().completed, []);
+});
+
+await test('h) borrar todo: el laboratorio que devuelve false también da el aviso de fallo', async () => {
+  const harness = buildHarness({ stored: localProgress, resets: { lab: false } });
+  await harness.elements['confirm-reset']?.dispatch('click');
+  assert.equal(harness.toast(), RESET_FAILED);
+});
+
+await test('h) borrar todo: si el recorrido no pudo borrar sus claves, avisa el fallo', async () => {
+  const harness = buildHarness({ stored: localProgress, writesBlocked: true });
+  await harness.elements['confirm-reset']?.dispatch('click');
+  assert.equal(harness.toast(), RESET_FAILED);
+});
+
+await test('h) borrar todo: un adaptador ausente no cuenta como fallo', async () => {
+  const harness = buildHarness({ stored: localProgress });
+  harness.context['TallerCampaignEngine'] = undefined;
+  harness.context['TallerSystemsEngine'] = undefined;
+  await harness.elements['confirm-reset']?.dispatch('click');
+  assert.equal(harness.toast(), 'Progreso reiniciado. Un nuevo comienzo.');
+});
+
 const scriptNote = '</textarea><img src=x onerror=alert(1)>';
 
 await test('seguridad: una nota importada con HTML se escapa en #metodo', async () => {
@@ -654,6 +843,117 @@ await test('almacenamiento sin escritura: importar funciona en memoria y avisa q
   const exported = await exportedProgress(harness);
   assert.deepEqual(exported.completed, ['rust-ownership', 'go-save', 'rust-first-session']);
   assert.deepEqual(exported.favorites, ['rustlings', 'go-tour']);
+});
+
+await test('almacén: desmarcar un paso, quitar un favorito y vaciar una nota se conservan al recargar', async () => {
+  const harness = buildHarness({ stored: localProgress });
+  await changeField(harness, 'change', { stepCheck: 'go-save' });
+  await clickAction(harness, { action: 'favorite', id: 'rustlings' });
+  await changeField(harness, 'input', { note: 'learned' }, '');
+  const reloaded = buildHarness({ storedRaw: harness.storage.get(STORAGE_KEY) ?? '' });
+  const exported = await exportedProgress(reloaded);
+  assert.deepEqual(exported.completed, ['rust-ownership']);
+  assert.deepEqual(exported.favorites, []);
+  assert.deepEqual(exported.notes, {
+    rust: localProgress.notes.rust,
+    go: { learned: '', next: 'go local siguiente' },
+  });
+});
+
+await test('almacén: un cambio de otra pestaña se fusiona y gana el idioma y los minutos de esta', async () => {
+  const harness = buildHarness({ stored: localProgress });
+  // Otra pestaña guardó un estado válido distinto, con un paso más, otro idioma y otros minutos.
+  const otherTab = {
+    ...localProgress,
+    language: 'rust',
+    minutes: 15,
+    completed: [...localProgress.completed, 'rust-first-session'],
+  };
+  harness.storage.set(STORAGE_KEY, JSON.stringify(otherTab));
+  await clickAction(harness, { action: 'favorite', id: 'go-tour' });
+  const saved = harness.storedState();
+  assert.deepEqual(saved.completed, ['rust-ownership', 'go-save', 'rust-first-session']);
+  assert.deepEqual(saved.favorites, ['rustlings', 'go-tour']);
+  assert.equal(saved.language, 'go');
+  assert.equal(saved.minutes, 45);
+});
+
+await test('almacén: sin ranuras libres y con la clave ilegible, guardar no escribe y la etiqueta avisa', async () => {
+  const occupied = Object.fromEntries(
+    ['-2', '-3', '-4', '-5'].map((suffix) => [`${BACKUP_KEY}${suffix}`, `copia ajena${suffix}`]),
+  );
+  const harness = buildHarness({
+    storedRaw: '{roto',
+    backup: 'copia ajena',
+    extraStorage: occupied,
+  });
+  assert.equal(harness.elements['save-label']?.textContent, 'Exportá para conservar tu avance');
+  await harness.languageButtons[1]?.dispatch('click');
+  assert.equal(harness.storage.get(STORAGE_KEY), '{roto');
+  assert.equal(harness.elements['save-label']?.textContent, 'Exportá para conservar tu avance');
+});
+
+const backupSlots = {
+  lab: [{ key: 'taller-laboratorio-v1:respaldo', text: 'x'.repeat(2048) }],
+  campaign: [{ key: 'taller-campaign-v1:respaldo', text: '{"campaign":1}' }],
+};
+
+await test('respaldos: Método lista el área y la clave de cada ranura antes de «Tu progreso te pertenece»', () => {
+  const harness = buildHarness({ hash: '#metodo', backup: '{"viejo":true}', backups: backupSlots });
+  const html = harness.elements['main']?.innerHTML ?? '';
+  assert.match(html, /<h2>Respaldos de seguridad\.<\/h2>/);
+  assert.ok(html.includes('«Borrar mi progreso» también los elimina.'));
+  assert.ok(html.indexOf('Respaldos de seguridad.') < html.indexOf('Tu progreso te pertenece.'));
+  assert.ok(
+    html.includes('aria-label="Descargar respaldo de recorrido: taller-learning-v1:respaldo"'),
+  );
+  assert.ok(
+    html.includes('aria-label="Descargar respaldo de laboratorio: taller-laboratorio-v1:respaldo"'),
+  );
+  assert.ok(
+    html.includes('aria-label="Descargar respaldo de campaña: taller-campaign-v1:respaldo"'),
+  );
+  assert.ok(
+    html.includes('data-action="download-backup" data-key="taller-laboratorio-v1:respaldo"'),
+  );
+  assert.ok(html.includes('2.0 KB'), 'falta el tamaño del respaldo del laboratorio');
+});
+
+await test('respaldos: sin ranuras no aparece el panel', () => {
+  const harness = buildHarness({ hash: '#metodo' });
+  assert.ok(!(harness.elements['main']?.innerHTML ?? '').includes('Respaldos de seguridad.'));
+});
+
+await test('respaldos: el clic descarga el texto exacto de la ranura, con su nombre, y avisa', async () => {
+  const harness = buildHarness({ hash: '#metodo', backups: structuredClone(backupSlots) });
+  await clickAction(harness, { action: 'download-backup', key: 'taller-laboratorio-v1:respaldo' });
+  const blob = harness.blobs[0];
+  assert.ok(blob, 'no se creó el Blob');
+  assert.equal(blob.text, 'x'.repeat(2048));
+  assert.equal(blob.options.type, 'application/json');
+  assert.equal(harness.downloads[0]?.download, 'taller-laboratorio-v1-respaldo.json');
+  assert.equal(harness.toast(), 'Respaldo descargado.');
+});
+
+await test('respaldos: el clic vuelve a leer la ranura y descarga su texto actual', async () => {
+  const slots = structuredClone(backupSlots);
+  const harness = buildHarness({ hash: '#metodo', backups: slots });
+  const slot = slots.campaign[0];
+  assert.ok(slot);
+  slot.text = '{"campaign":"cambió"}';
+  await clickAction(harness, { action: 'download-backup', key: 'taller-campaign-v1:respaldo' });
+  assert.equal(harness.blobs[0]?.text, '{"campaign":"cambió"}');
+});
+
+await test('respaldos: la ranura del recorrido sale del almacenamiento y su nombre reemplaza los dos puntos', async () => {
+  const harness = buildHarness({
+    hash: '#metodo',
+    stored: localProgress,
+    backup: '{"viejo":true}',
+  });
+  await clickAction(harness, { action: 'download-backup', key: BACKUP_KEY });
+  assert.equal(harness.blobs[0]?.text, '{"viejo":true}');
+  assert.equal(harness.downloads[0]?.download, 'taller-learning-v1-respaldo.json');
 });
 
 await test('accesibilidad: aria-pressed marca el idioma activo y aria-current la vista activa', async () => {

@@ -1,11 +1,10 @@
+import { mergeRouteProgress } from './src/entities/guide';
+import { downloadBlob } from './src/shared/lib/download-file';
 import { escapeHtml } from './src/shared/lib/escape-html';
+import { isLosslessNormalization } from './src/shared/lib/is-lossless-normalization';
+import { isPlainObject } from './src/shared/lib/is-plain-object';
 import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
-import {
-  describeLoadResult,
-  loadVersionedState,
-  removeVersionedState,
-  writeVersionedState,
-} from './src/shared/lib/versioned-storage';
+import { describeLoadResult, openVersionedStore } from './src/shared/lib/versioned-storage';
 (() => {
   'use strict';
   const data = window.GUIDE_DATA;
@@ -77,12 +76,12 @@ import {
     notes: { rust: { learned: '', next: '' }, go: { learned: '', next: '' } },
     minutes: 25,
   });
+  const FORMAT_ERROR = 'Formato de progreso no compatible.';
   const isObjectLike = (value) => Boolean(value) && typeof value === 'object';
   // Normaliza el recorrido y cuenta cada dato que no conserva (IDs desconocidos, valores de
   // otro tipo o fuera de rango). Lanza si la forma o la versión no se reconocen.
   function parseProgress(raw) {
-    if (!isObjectLike(raw) || raw.version !== 1)
-      throw new Error('Formato de progreso no compatible.');
+    if (!isObjectLike(raw) || raw.version !== 1) throw new Error(FORMAT_ERROR);
     const result = defaults();
     let dropped = 0;
     const languageIsValid = raw.language === 'rust' || raw.language === 'go';
@@ -119,17 +118,29 @@ import {
     dropped += Object.keys(answers).length - Object.keys(result.quizAnswers).length;
     return { state: result, dropped };
   }
-  // Importación: acepta lo que reconoce y descarta el resto sin contarlo.
-  const sanitize = (raw) => parseProgress(raw).state;
   function loadNoticeFor(loaded) {
     if (loaded.status === 'unavailable')
       return 'No se pudo leer o guardar el avance. Podés exportarlo al terminar.';
     return describeLoadResult(loaded, 'del recorrido');
   }
+  // Si otra pestaña guardó mientras tanto, notas, respuestas y conjuntos siguen la regla de
+  // importación (mergeRouteProgress), pero el idioma y los minutos de esta pestaña ganan.
+  function mergeStoredRoute(stored, local) {
+    return {
+      ...mergeRouteProgress(stored, local),
+      language: local.language,
+      minutes: local.minutes,
+    };
+  }
+  const store = openVersionedStore(KEY, {
+    blank: defaults,
+    parse: parseProgress,
+    merge: mergeStoredRoute,
+  });
   // Nunca escribe al cargar: la primera escritura es una acción del alumno.
-  const loaded = loadVersionedState(KEY, { blank: defaults, parse: parseProgress });
+  const loaded = store.load();
   let state = loaded.state;
-  let storageAvailable = loaded.status !== 'unavailable';
+  let storageAvailable = loaded.writable;
   const filters = { query: '', language: 'all', category: 'all', cost: 'all', favorites: false };
   const campaignInit = window.TallerCampaign?.init();
   const systemsInit = window.TallerSystems?.init();
@@ -164,7 +175,9 @@ import {
   let toastTimeout;
   const timer = { running: false, remaining: state.minutes * 60, deadline: 0 };
   function save() {
-    storageAvailable = writeVersionedState(KEY, state);
+    const result = store.write(state);
+    state = result.state;
+    storageAvailable = result.saved;
     updateSaveLabel();
   }
   function updateSaveLabel() {
@@ -342,8 +355,39 @@ import {
   function tutorPrompt() {
     return `Estoy aprendiendo ${languageName()} y ya sé programar. Me interesan los sistemas y el rendimiento. Tengo ${state.minutes} minutos. Trabajemos un concepto con un ejercicio pequeño relacionado con archivos, memoria o redes.\n\nPrimero pedime predecir qué va a pasar y justificarlo. Esperá mi intento. Después dame una pista por vez, sin escribir ni modificar mi solución.\n\nCuando aparezca una duda de API, consultá Context7 o documentación oficial y enlazá la fuente. Si no tenés acceso, decímelo. Al terminar, pedime resolver una variante y explicar qué aprendí.\n\nMi próximo paso: ${state.notes[state.language].next || 'elegir un desafío pequeño del recorrido.'}`;
   }
+  // Ranuras de respaldo de todos los almacenes, cada una con el área a la que pertenece.
+  function collectBackups() {
+    const sources = [
+      ['recorrido', store.backups()],
+      ['laboratorio', window.TallerLab?.backups?.() ?? []],
+      ['campaña', window.TallerCampaignEngine?.backups?.() ?? []],
+      ['Sistemas', window.TallerSystemsEngine?.backups?.() ?? []],
+    ];
+    return sources.flatMap(([area, slots]) => slots.map((slot) => ({ area, ...slot })));
+  }
+  function backupsPanel() {
+    const backups = collectBackups();
+    if (!backups.length) return '';
+    const items = backups
+      .map(
+        ({ area, key, text }) =>
+          `<li><strong>${escapeHtml(area)}</strong> · ${escapeHtml(key)} · ${(text.length / 1024).toFixed(1)} KB <button class="button secondary" data-action="download-backup" data-key="${escapeHtml(key)}" aria-label="Descargar respaldo de ${escapeHtml(area)}: ${escapeHtml(key)}">Descargar</button></li>`,
+      )
+      .join('');
+    return `<section class="method-panel notes-panel"><h2>Respaldos de seguridad.</h2><p>Cuando esta versión no pudo leer parte de tu progreso, guardó acá el texto original. Descargalo antes de borrar los datos del navegador; «Borrar mi progreso» también los elimina.</p><ul class="source-list">${items}</ul></section>`;
+  }
+  // Vuelve a leer la ranura al hacer clic: el texto descargado es el vigente, no el de la última vista.
+  function downloadBackup(key) {
+    const backup = collectBackups().find((item) => item.key === key);
+    if (!backup) return;
+    downloadBlob(
+      new Blob([backup.text], { type: 'application/json' }),
+      `${key.replace(/[^a-z0-9-]/g, '-')}.json`,
+    );
+    toast('Respaldo descargado.');
+  }
   function renderMethod() {
-    return `<div class="page-heading"><div class="eyebrow"><span class="eyebrow-line"></span> HACER ESPACIO PARA APRENDER</div><h1>Menos inercia.<br><em>Más curiosidad.</em></h1><p>No necesitás una tarde libre. Necesitás un problema pequeño y un lugar al que volver. Esta es una propuesta flexible, no una obligación diaria.</p></div><div class="method-grid"><section class="method-panel"><h2>Una sesión de 25 minutos.</h2><ol class="routine"><li><span class="routine-time">03′</span><span><strong>Recordá sin mirar.</strong><br>Reconstruí una idea de la sesión anterior.</span></li><li><span class="routine-time">17′</span><span><strong>Escribí, ejecutá, probá.</strong><br>Un ejercicio o una modificación pequeña. Si te trabás, buscá una pista concreta.</span></li><li><span class="routine-time">05′</span><span><strong>Dejá un hilo para volver.</strong><br>Anotá qué entendiste y el siguiente paso exacto.</span></li></ol><p style="margin:22px 0 0">¿Día complicado? Cinco minutos para un test o una pregunta también cuentan. Si elegís otra duración, adaptá los bloques sin apuro.</p></section><section class="method-panel"><h2>Aprender con intención.</h2><ul><li>Elegí un curso principal y un proyecto.</li><li>Después de resolver, cambiá una condición.</li><li>De vez en cuando, volvé a escribir algo desde cero.</li><li>Usá la IA para preguntas y pistas. Probá desactivar la generación de bloques completos durante los ejercicios.</li><li>Medí avance por lo que podés explicar y demostrar.</li></ul></section></div><section class="method-panel notes-panel"><h2>Tu bitácora de ${languageName()}.</h2><div class="notes-grid"><label><span class="field-label">Lo que entendí / lo que todavía me cuesta</span><textarea id="note-learned" data-note="learned" maxlength="20000" placeholder="Hoy entendí por qué…">${escapeHtml(state.notes[state.language].learned)}</textarea></label><label><span class="field-label">La próxima vez voy a…</span><textarea id="note-next" data-note="next" maxlength="20000" placeholder="Dejá una acción concreta: escribir un test para…">${escapeHtml(state.notes[state.language].next)}</textarea></label></div><p id="note-state" class="note-state">${storageAvailable ? 'Tus notas se guardan automáticamente en este navegador.' : 'El guardado no está disponible. Exportá tu avance al terminar.'}</p></section><section class="method-panel notes-panel"><h2>Un tutor que te haga pensar.</h2><p>Copiá este pedido en tu asistente. Context7 aporta documentación; el asistente acompaña con preguntas. El acceso a Context7 depende de las herramientas de ese asistente.</p><blockquote class="tutor-prompt" id="tutor-prompt">${escapeHtml(tutorPrompt())}</blockquote><button class="button secondary" data-action="copy-prompt">Copiar pedido para mi tutor <span aria-hidden="true">↗</span></button></section><section class="method-panel notes-panel"><h2>Las fuentes, a mano.</h2><p>La selección combina sitios originales y experiencias de comunidad. Los hilos son opiniones, no un consenso. Las duraciones del recorrido son propuestas de esta guía.</p><ul class="source-list">${data.sources.map((source) => `<li><a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.title)} ↗</a><p>${escapeHtml(source.note)}</p></li>`).join('')}</ul></section><section class="method-panel notes-panel"><h2>Tu progreso te pertenece.</h2><p>Pasos, favoritos, respuestas y notas se guardan en este navegador. Incluyen también XP, sellos e insignias de campaña, más los talleres, notas y etapas de Sistemas. No se sincronizan entre dispositivos. Si cambiás de navegador, movés el archivo o borrás sus datos, exportá antes una copia.</p><div class="data-actions"><button class="button secondary" data-action="export">Exportar progreso</button><button class="button secondary" data-action="import">Importar una copia</button><button class="text-button" data-action="reset">Borrar mi progreso</button></div><p class="data-explainer">Importar combina los pasos y favoritos. Para notas y respuestas del mismo tema, conserva los valores de la copia importada. El temporizador no forma parte del respaldo.</p></section>`;
+    return `<div class="page-heading"><div class="eyebrow"><span class="eyebrow-line"></span> HACER ESPACIO PARA APRENDER</div><h1>Menos inercia.<br><em>Más curiosidad.</em></h1><p>No necesitás una tarde libre. Necesitás un problema pequeño y un lugar al que volver. Esta es una propuesta flexible, no una obligación diaria.</p></div><div class="method-grid"><section class="method-panel"><h2>Una sesión de 25 minutos.</h2><ol class="routine"><li><span class="routine-time">03′</span><span><strong>Recordá sin mirar.</strong><br>Reconstruí una idea de la sesión anterior.</span></li><li><span class="routine-time">17′</span><span><strong>Escribí, ejecutá, probá.</strong><br>Un ejercicio o una modificación pequeña. Si te trabás, buscá una pista concreta.</span></li><li><span class="routine-time">05′</span><span><strong>Dejá un hilo para volver.</strong><br>Anotá qué entendiste y el siguiente paso exacto.</span></li></ol><p style="margin:22px 0 0">¿Día complicado? Cinco minutos para un test o una pregunta también cuentan. Si elegís otra duración, adaptá los bloques sin apuro.</p></section><section class="method-panel"><h2>Aprender con intención.</h2><ul><li>Elegí un curso principal y un proyecto.</li><li>Después de resolver, cambiá una condición.</li><li>De vez en cuando, volvé a escribir algo desde cero.</li><li>Usá la IA para preguntas y pistas. Probá desactivar la generación de bloques completos durante los ejercicios.</li><li>Medí avance por lo que podés explicar y demostrar.</li></ul></section></div><section class="method-panel notes-panel"><h2>Tu bitácora de ${languageName()}.</h2><div class="notes-grid"><label><span class="field-label">Lo que entendí / lo que todavía me cuesta</span><textarea id="note-learned" data-note="learned" maxlength="20000" placeholder="Hoy entendí por qué…">${escapeHtml(state.notes[state.language].learned)}</textarea></label><label><span class="field-label">La próxima vez voy a…</span><textarea id="note-next" data-note="next" maxlength="20000" placeholder="Dejá una acción concreta: escribir un test para…">${escapeHtml(state.notes[state.language].next)}</textarea></label></div><p id="note-state" class="note-state">${storageAvailable ? 'Tus notas se guardan automáticamente en este navegador.' : 'El guardado no está disponible. Exportá tu avance al terminar.'}</p></section><section class="method-panel notes-panel"><h2>Un tutor que te haga pensar.</h2><p>Copiá este pedido en tu asistente. Context7 aporta documentación; el asistente acompaña con preguntas. El acceso a Context7 depende de las herramientas de ese asistente.</p><blockquote class="tutor-prompt" id="tutor-prompt">${escapeHtml(tutorPrompt())}</blockquote><button class="button secondary" data-action="copy-prompt">Copiar pedido para mi tutor <span aria-hidden="true">↗</span></button></section><section class="method-panel notes-panel"><h2>Las fuentes, a mano.</h2><p>La selección combina sitios originales y experiencias de comunidad. Los hilos son opiniones, no un consenso. Las duraciones del recorrido son propuestas de esta guía.</p><ul class="source-list">${data.sources.map((source) => `<li><a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.title)} ↗</a><p>${escapeHtml(source.note)}</p></li>`).join('')}</ul></section>${backupsPanel()}<section class="method-panel notes-panel"><h2>Tu progreso te pertenece.</h2><p>Pasos, favoritos, respuestas y notas se guardan en este navegador. Incluyen también XP, sellos e insignias de campaña, más los talleres, notas y etapas de Sistemas. No se sincronizan entre dispositivos. Si cambiás de navegador, movés el archivo o borrás sus datos, exportá antes una copia.</p><div class="data-actions"><button class="button secondary" data-action="export">Exportar progreso</button><button class="button secondary" data-action="import">Importar una copia</button><button class="text-button" data-action="reset">Borrar mi progreso</button></div><p class="data-explainer">Importar combina los pasos y favoritos. Para notas y respuestas del mismo tema, conserva los valores de la copia importada. El temporizador no forma parte del respaldo.</p></section>`;
   }
   function openLesson(id, opener) {
     const step = allSteps.find((item) => item.id === id);
@@ -428,14 +472,7 @@ import {
       ],
       { type: 'application/json' },
     );
-    const url = URL.createObjectURL(blob),
-      link = document.createElement('a');
-    link.href = url;
-    link.download = `taller-progreso-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    downloadBlob(blob, `taller-progreso-${new Date().toISOString().slice(0, 10)}.json`);
     toast('Copia de progreso exportada.');
   }
   async function copyPrompt() {
@@ -524,6 +561,7 @@ import {
       $('#resource-search').focus();
     }
     if (action === 'copy-prompt') copyPrompt();
+    if (action === 'download-backup') downloadBackup(button.dataset.key);
     if (action === 'export') exportProgress();
     if (action === 'import') $('#import-file').click();
     if (action === 'reset') $('#confirm-dialog').showModal();
@@ -604,18 +642,73 @@ import {
   $('#cancel-reset').addEventListener('click', () => $('#confirm-dialog').close());
   $('#confirm-reset').addEventListener('click', () => {
     state = defaults();
-    removeVersionedState(KEY);
-    window.TallerLab?.reset();
-    window.TallerCampaignEngine?.reset();
-    window.TallerSystemsEngine?.reset();
+    // Un adaptador ausente devuelve undefined y no cuenta como fallo; sólo `false` lo es.
+    const removals = [
+      store.remove(),
+      window.TallerLab?.reset(),
+      window.TallerCampaignEngine?.reset()?.removed,
+      window.TallerSystemsEngine?.reset()?.removed,
+    ];
     window.TallerSystems?.resetSimulations();
     timer.running = false;
     timer.remaining = state.minutes * 60;
     save();
     $('#confirm-dialog').close();
     render();
-    toast('Progreso reiniciado. Un nuevo comienzo.');
+    toast(
+      removals.includes(false)
+        ? 'No se pudo borrar todo el progreso guardado. Recargá la página y volvé a intentarlo.'
+        : 'Progreso reiniciado. Un nuevo comienzo.',
+    );
   });
+  // Claves de la copia que pertenecen a otros almacenes y no al recorrido.
+  const NON_ROUTE_KEYS = ['lab', 'campaign', 'systems', 'exportedAt'];
+  // Secciones importables en el orden en que se planifican y aplican.
+  const IMPORT_SECTIONS = [
+    { area: 'campaña', key: 'campaign', adapter: () => window.TallerCampaignEngine },
+    { area: 'laboratorio', key: 'lab', adapter: () => window.TallerLab },
+    { area: 'Sistemas', key: 'systems', adapter: () => window.TallerSystemsEngine },
+  ];
+  // Orden en que el aviso nombra las áreas con datos omitidos.
+  const NOTICE_AREAS = ['recorrido', 'laboratorio', 'campaña', 'Sistemas'];
+  // Calcula el recorrido resultante sin tocar `state`. Lanza si el JSON no es un objeto
+  // reconocible. `lossy` avisa que se descartaron o cambiaron datos de la copia.
+  function planRouteImport(rawImport) {
+    if (!isPlainObject(rawImport)) throw new Error(FORMAT_ERROR);
+    const parsed = parseProgress(rawImport);
+    const rawRoute = Object.fromEntries(
+      Object.entries(rawImport).filter(([key]) => !NON_ROUTE_KEYS.includes(key)),
+    );
+    return {
+      state: mergeRouteProgress(state, parsed.state),
+      lossy: parsed.dropped > 0 || !isLosslessNormalization(rawRoute, parsed.state),
+    };
+  }
+  // Planifica cada sección presente: si alguna lanza, todavía no se aplicó nada.
+  function planSectionImports(rawImport) {
+    return IMPORT_SECTIONS.filter((section) => rawImport[section.key]).map((section) => {
+      const adapter = section.adapter();
+      return { area: section.area, adapter, plan: adapter.planImport(rawImport[section.key]) };
+    });
+  }
+  function importNotice(routePlan, sectionPlans) {
+    const lossy = new Set(sectionPlans.filter((item) => item.plan.lossy).map((item) => item.area));
+    if (routePlan.lossy) lossy.add('recorrido');
+    const areas = NOTICE_AREAS.filter((area) => lossy.has(area));
+    const notice = 'Copia importada y combinada con tu avance actual.';
+    if (!areas.length) return notice;
+    return `${notice} Se omitieron datos que esta versión no reconoce: ${areas.join(', ')}.`;
+  }
+  // Persiste los sellos que Sistemas y Campaña derivan del laboratorio recién importado.
+  // La copia ya quedó aplicada: un fallo acá sólo se registra.
+  function syncDerivedSeals() {
+    try {
+      window.TallerSystems?.sync();
+      window.TallerCampaign?.sync();
+    } catch (error) {
+      console.error(error);
+    }
+  }
   $('#import-file').addEventListener('change', async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -623,30 +716,16 @@ import {
       if (file.size > 10 * 1024 * 1024)
         throw new Error('El archivo supera el tamaño permitido (10 MB).');
       const rawImport = JSON.parse(await file.text());
-      const imported = sanitize(rawImport);
-      if (rawImport.campaign) window.TallerCampaignEngine.validateImport(rawImport.campaign);
-      if (rawImport.lab) window.TallerLab.validateImport(rawImport.lab);
-      if (rawImport.systems) window.TallerSystemsEngine.validateImport(rawImport.systems);
-      // El estado combinado se arma sin mutar `state`; se asigna al final.
-      const combined = {
-        ...state,
-        completed: [...new Set([...state.completed, ...imported.completed])],
-        milestones: [...new Set([...state.milestones, ...imported.milestones])],
-        favorites: [...new Set([...state.favorites, ...imported.favorites])],
-        quizAnswers: { ...state.quizAnswers, ...imported.quizAnswers },
-        notes: { rust: { ...state.notes.rust }, go: { ...state.notes.go } },
-      };
-      for (const language of ['rust', 'go'])
-        for (const field of ['learned', 'next'])
-          if (imported.notes[language][field])
-            combined.notes[language][field] = imported.notes[language][field];
-      if (rawImport.campaign) window.TallerCampaignEngine?.importState(rawImport.campaign);
-      if (rawImport.lab) window.TallerLab?.importState(rawImport.lab);
-      if (rawImport.systems) window.TallerSystemsEngine.importState(rawImport.systems);
-      state = combined;
+      // Fase 1: se valida todo antes de aplicar nada.
+      const routePlan = planRouteImport(rawImport);
+      const sectionPlans = planSectionImports(rawImport);
+      // Fase 2: se aplica cada plan y, por último, el recorrido.
+      for (const { adapter, plan } of sectionPlans) adapter.applyImport(plan);
+      state = routePlan.state;
       save();
+      syncDerivedSeals();
       render();
-      toast('Copia importada y combinada con tu avance actual.');
+      toast(importNotice(routePlan, sectionPlans));
     } catch (error) {
       toast(
         'No se pudo importar: ' +

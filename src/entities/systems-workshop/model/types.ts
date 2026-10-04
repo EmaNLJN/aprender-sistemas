@@ -116,10 +116,8 @@ export interface SystemsEngine {
   refreshFromLab(lab?: unknown): SystemsSyncResult;
   // Sella y guarda lo pendiente. Lo usan las acciones del alumno.
   syncLab(lab?: unknown): SystemsSyncResult;
-  validateImport(raw: unknown): SystemsStateV1 | undefined;
   planImport(raw: unknown): SystemsImportPlan;
   applyImport(plan: SystemsImportPlan): SystemsSyncResult;
-  importState(raw: unknown): void;
   backups(): BackupEntry[];
   list(language: string): WorkshopView[];
   setStep(id: string, language: string, index: number, checked: boolean): void;

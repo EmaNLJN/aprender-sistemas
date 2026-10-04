@@ -31,9 +31,7 @@ interface LabState {
 interface TallerLabApi {
   loadWarning: () => string;
   reset: () => boolean;
-  importState: (raw: unknown) => void;
   exportState: () => LabState;
-  validateImport: (raw: unknown) => LabState;
   planImport: (raw: unknown) => { state: LabState; lossy: boolean };
   applyImport: (plan: { state: LabState; lossy: boolean }) => boolean;
   backups: () => { key: string; text: string }[];
@@ -97,6 +95,10 @@ function environment(stored?: string, blocked = false): Environment {
   return { lab, campaign, saved };
 }
 
+// Importa en dos fases, como app.js: planifica la copia y aplica el plan.
+function importState(lab: TallerLabApi, raw: unknown): void {
+  lab.applyImport(lab.planImport(raw));
+}
 function backup(tests: Evidence[]) {
   return {
     version: 1,
@@ -116,7 +118,8 @@ function test(name: string, run: () => void): void {
 
 test('Contradictory duplicate evidence cannot earn a code seal through lab import', () => {
   const { lab, campaign } = environment();
-  lab.importState(
+  importState(
+    lab,
     backup([
       { id: 't1', passed: true },
       { id: 't1', passed: false },
@@ -130,7 +133,8 @@ test('Contradictory duplicate evidence cannot earn a code seal through lab impor
 
 test('Repeated passing evidence cannot become unique proof through lab import', () => {
   const { lab, campaign } = environment();
-  lab.importState(
+  importState(
+    lab,
     backup([
       { id: 't1', passed: true },
       { id: 't1', passed: true },
@@ -143,7 +147,8 @@ test('Repeated passing evidence cannot become unique proof through lab import', 
 
 test('Unique passing evidence remains compatible with legacy backups and earns code XP once', () => {
   const { lab, campaign } = environment();
-  lab.importState(
+  importState(
+    lab,
     backup([
       { id: 't1', passed: true },
       { id: 't2', passed: true },
@@ -156,12 +161,12 @@ test('Unique passing evidence remains compatible with legacy backups and earns c
 
 test('An array of lab records is rejected before replacing existing progress', () => {
   const { lab } = environment();
-  lab.importState({
+  importState(lab, {
     version: 1,
     records: { 'rust-1': { draft: 'keep this draft', reflection: 'keep this note' } },
   });
   const before = plain(lab.exportState());
-  assert.throws(() => lab.importState({ version: 1, records: [] }), /compatible/);
+  assert.throws(() => importState(lab, { version: 1, records: [] }), /compatible/);
   assert.deepEqual(plain(lab.exportState()), before);
 });
 
@@ -204,10 +209,10 @@ test('Backup preflight is pure and preserves valid notes, selection and proof fi
   };
   const before = plain(raw),
     stateBefore = plain(lab.exportState());
-  const clean = plain(lab.validateImport(raw));
+  const clean = plain(lab.planImport(raw).state);
   assert.deepEqual(plain(raw), before);
   assert.deepEqual(plain(lab.exportState()), stateBefore);
-  lab.importState(raw);
+  importState(lab, raw);
   const restored = plain(lab.exportState());
   assert.equal(restored.selected.rust, 'rust-1');
   assert.equal(restored.records['rust-1'].reflection, 'my explanation');
@@ -227,8 +232,8 @@ const noneRan: Evidence[] = allPassed.map(({ id }) => ({ id, passed: false }));
 
 function importTwice(local: object, incoming: object): LabRecord {
   const { lab } = environment();
-  lab.importState({ version: 1, records: { 'rust-1': local } });
-  lab.importState({ version: 1, records: { 'rust-1': incoming } });
+  importState(lab, { version: 1, records: { 'rust-1': local } });
+  importState(lab, { version: 1, records: { 'rust-1': incoming } });
   return plain(lab.exportState()).records['rust-1'];
 }
 
@@ -350,7 +355,7 @@ test('An unreadable copy starts blank, keeps a backup and the first save does no
     assert.deepEqual(plain(lab.exportState()).records, {});
     assert.equal(saved.get(LAB_BACKUP_KEY), text);
     assert.equal(saved.get(LAB_KEY), text);
-    lab.importState({ version: 1, records: { 'rust-1': validRecord } });
+    importState(lab, { version: 1, records: { 'rust-1': validRecord } });
     assert.equal(saved.get(LAB_BACKUP_KEY), text);
     assert.equal(JSON.parse(saved.get(LAB_KEY) ?? '').records['rust-1'].attempts, 2);
   }
@@ -420,13 +425,13 @@ test('Blocked storage loads blank without a load warning and saving is the only 
   const { lab, saved } = environment(undefined, true);
   assert.equal(lab.loadWarning(), '');
   assert.equal(saved.size, 0);
-  assert.doesNotThrow(() => lab.importState({ version: 1, records: { 'rust-1': validRecord } }));
+  assert.doesNotThrow(() => importState(lab, { version: 1, records: { 'rust-1': validRecord } }));
   assert.equal(plain(lab.exportState()).records['rust-1'].attempts, 2);
 });
 
 test('Reset removes the saved progress copy and its backup', () => {
   const { lab, saved } = environment('{roto');
-  lab.importState({ version: 1, records: { 'rust-1': validRecord } });
+  importState(lab, { version: 1, records: { 'rust-1': validRecord } });
   assert.equal(saved.has(LAB_BACKUP_KEY), true);
   lab.reset();
   assert.equal(saved.has(LAB_BACKUP_KEY), false);

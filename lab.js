@@ -1205,16 +1205,11 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
     mount,
     unmount,
     buildProgram,
-    validateImport: sanitize,
     loadWarning: () => loadWarning,
     getExercises: () => exercises,
     exportState: () => cloneJson(state),
     planImport,
     applyImport,
-    // Envoltorio hasta migrar app.js (parte 3b).
-    importState(raw) {
-      applyImport(planImport(raw));
-    },
     backups: () => store.backups(),
     reset() {
       state = blank();

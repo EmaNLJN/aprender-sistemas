@@ -27,6 +27,7 @@ const checks = [
   'systems-pc-check.ts',
   'project-kit-check.ts',
   'shared-lib-check.ts',
+  'route-progress-check.ts',
   'versioned-storage-check.ts',
 ];
 
