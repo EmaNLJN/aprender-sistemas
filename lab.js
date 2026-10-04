@@ -104,7 +104,8 @@ import {
       reviewedAt: Number.MAX_SAFE_INTEGER,
     };
     for (const [field, limit] of Object.entries(numberLimits)) {
-      if (Number.isFinite(record[field]) && record[field] >= 0)
+      const minimum = field === 'solvedAt' ? 1 : 0;
+      if (Number.isFinite(record[field]) && record[field] >= minimum)
         clean[field] = Math.min(record[field], limit);
     }
     if (
@@ -1175,7 +1176,7 @@ import {
     importState(raw) {
       const incoming = sanitize(raw);
       for (const [id, record] of Object.entries(incoming.records))
-        state.records[id] = mergeRecord(state.records[id], record);
+        state.records[id] = mergeRecord(state.records[id], record, byId.get(id).tests);
       for (const lang of ['rust', 'go'])
         if (incoming.selected[lang]) state.selected[lang] = incoming.selected[lang];
       save();

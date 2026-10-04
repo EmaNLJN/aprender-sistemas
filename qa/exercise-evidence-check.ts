@@ -20,6 +20,7 @@ interface ExerciseApi {
     isCampaignMission: () => boolean;
     notify: (message: string) => void;
     logError: (error: unknown) => void;
+    formatXp?: (xp: number) => string;
   }) => void;
 }
 
@@ -72,7 +73,12 @@ scenario('hasPassingEvidence: tabla de casos límite', () => {
   ];
   for (const [name, result, outcome] of cases)
     assert.equal(hasPassingEvidence(result, expected), outcome, name);
-  assert.equal(hasPassingEvidence(approved({ tests: [] }), []), true, 'sin pruebas esperadas');
+  assert.equal(hasPassingEvidence(approved(), []), false, 'sin pruebas esperadas');
+  assert.equal(
+    hasPassingEvidence(approved({ tests: [] }), []),
+    false,
+    'tests vacíos y esperadas vacías',
+  );
 });
 
 scenario('testPassed: exactamente una entrada aprobada con ese id', () => {
@@ -151,19 +157,29 @@ scenario('interpretRun: un marcador ausente cuenta como fallo', () => {
   ]);
 });
 
-scenario('interpretRun: con marcador duplicado gana el último', () => {
+scenario('interpretRun: un id repetido en los marcadores cuenta como fallo', () => {
   const stdout = [
     marker('t1', 'FAIL'),
     marker('t1', 'PASS'),
     marker('t2', 'PASS'),
-    marker('t2', 'FAIL'),
+    marker('t2', 'PASS'),
   ].join('\n');
   const outcome = run({ success: true, stdout });
   assert.deepEqual(outcome.result.tests, [
-    { id: 't1', passed: true },
+    { id: 't1', passed: false },
     { id: 't2', passed: false },
   ]);
   assert.equal(outcome.solved, false);
+});
+
+scenario('interpretRun: solved coincide con hasPassingEvidence y success 1 no resuelve', () => {
+  const stdout = marker('t1', 'PASS') + '\n' + marker('t2', 'PASS');
+  const solving = run({ success: true, stdout });
+  assert.equal(solving.solved, hasPassingEvidence(solving.result, exercise.tests));
+  assert.equal(solving.solved, true);
+  const truthy = run({ success: 1, stdout });
+  assert.equal(truthy.result.success, false);
+  assert.equal(truthy.solved, false);
 });
 
 scenario('interpretRun: texto alrededor no oculta los marcadores de línea completa', () => {
@@ -272,6 +288,47 @@ scenario('syncAfterRun: si Sistemas falla informa y no propaga', () => {
     'No se pudo actualizar campaña/Sistemas; tu resultado quedó guardado.',
   ]);
   assert.deepEqual(errors, [failure]);
+});
+
+scenario('syncAfterRun: si Sistemas lanza, campaña igual se llama y se avisan sus XP', () => {
+  const calls: string[] = [];
+  const { notices, errors } = syncRun({
+    syncSystems: () => {
+      throw new Error('Sistemas roto');
+    },
+    syncCampaign: () => (calls.push('campaña'), { xpGained: 20 }),
+  });
+  assert.deepEqual(calls, ['campaña']);
+  assert.equal(errors.length, 1);
+  assert.deepEqual(notices, [
+    '+20 XP. Tu progreso de campaña está actualizado.',
+    'No se pudo actualizar campaña/Sistemas; tu resultado quedó guardado.',
+  ]);
+});
+
+scenario('syncAfterRun: con los dos fallando registra ambos errores y avisa una sola vez', () => {
+  const systemsFailure = new Error('Sistemas roto');
+  const campaignFailure = new Error('Campaña rota');
+  const { notices, errors } = syncRun({
+    syncSystems: () => {
+      throw systemsFailure;
+    },
+    syncCampaign: () => {
+      throw campaignFailure;
+    },
+  });
+  assert.deepEqual(errors, [systemsFailure, campaignFailure]);
+  assert.deepEqual(notices, [
+    'No se pudo actualizar campaña/Sistemas; tu resultado quedó guardado.',
+  ]);
+});
+
+scenario('syncAfterRun: un formatXp personalizado da el texto del aviso', () => {
+  const { notices } = syncRun({
+    syncCampaign: () => ({ xpGained: 7 }),
+    formatXp: (xp) => `Ganaste ${xp} puntos`,
+  });
+  assert.deepEqual(notices, ['Ganaste 7 puntos']);
 });
 
 scenario('syncAfterRun: si campaña o su consulta fallan informa y no propaga', () => {

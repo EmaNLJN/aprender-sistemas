@@ -679,15 +679,17 @@ test('Loading drops only invalid or unknown records, keeps the rest and backs up
   assert.equal(store.writes, 1); // Sólo la copia de respaldo.
 });
 
-test('Loading normalizes a valid record like a backup import and never warns for it', () => {
-  const store = storage({
-    [KEY]: JSON.stringify(
-      backup({ 'go:alpha': progress({ observed: ['a', 'a', 'zzz'], steps: [1, 1, 7, 'x'] }) }),
-    ),
-  });
+test('Loading a record with unknown objectives or out-of-range steps keeps the valid ones, backs up the original and warns', () => {
+  const original = JSON.stringify(
+    backup({ 'go:alpha': progress({ observed: ['a', 'a', 'zzz'], steps: [1, 1, 7, 'x'] }) }),
+  );
+  const store = storage({ [KEY]: original });
   const { engine, status } = environment(store);
-  assert.equal(status.loadWarning, '');
-  assert.equal(store.data.has(BACKUP_KEY), false);
+  assert.equal(
+    status.loadWarning,
+    'Se descartaron datos de Sistemas que esta versión no reconoce; se conservó una copia en taller-systems-v1:respaldo.',
+  );
+  assert.equal(store.data.get(BACKUP_KEY), original);
   const loaded = engine.get('alpha', 'go').progress;
   assert.deepEqual(plain(loaded.observed), ['a']);
   assert.deepEqual(plain(loaded.steps), [1]);

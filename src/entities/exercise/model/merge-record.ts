@@ -1,3 +1,4 @@
+import { isBlankText } from '../../../shared/lib/is-blank-text';
 import { hasPassingEvidence } from './passing-evidence';
 
 type HelpFlag = 'predictionCorrect' | 'assisted' | 'solutionSeen';
@@ -10,32 +11,47 @@ export interface LabRecord {
   predictionCorrect?: boolean;
   assisted?: boolean;
   solutionSeen?: boolean;
-  result?: { tests: { id: string }[] };
+  result?: unknown;
   [field: string]: unknown;
 }
 
 const HELP_FLAGS: HelpFlag[] = ['predictionCorrect', 'assisted', 'solutionSeen'];
 const TEXT_FIELDS: TextField[] = ['draft', 'reflection'];
 
-// El resultado local ya fue saneado: sus pruebas son las del ejercicio.
-function resultProves(record: LabRecord): boolean {
-  return hasPassingEvidence(record.result, record.result?.tests ?? []);
+interface ExpectedTest {
+  id: string;
+}
+
+// La evidencia se mide contra las pruebas esperadas del ejercicio, no contra las que trae
+// el propio resultado: un resultado con `tests: []` no prueba nada.
+function resultProves(record: LabRecord, expectedTests: readonly ExpectedTest[]): boolean {
+  return hasPassingEvidence(record.result, expectedTests);
+}
+
+// Fecha de resolución válida: sólo cuentan los valores positivos.
+function isSolvedAt(value: unknown): value is number {
+  return typeof value === 'number' && value > 0;
 }
 
 // Fusiona un registro importado con el local sin perder logros (ADR 0003, punto 5):
-// las marcas de ayuda se combinan con OR, `solvedAt` conserva el valor más antiguo, un
-// resultado con evidencia no se reemplaza por uno sin ella y los textos vacíos no pisan.
+// las marcas de ayuda se combinan con OR, `solvedAt` conserva el valor positivo más antiguo,
+// un resultado con evidencia no se reemplaza por uno sin ella y los textos en blanco no pisan.
 // El resto de los campos importados reemplaza a los locales.
-export function mergeRecord(local: LabRecord | undefined, incoming: LabRecord): LabRecord {
+export function mergeRecord(
+  local: LabRecord | undefined,
+  incoming: LabRecord,
+  expectedTests: readonly ExpectedTest[],
+): LabRecord {
   const current = local ?? {};
   const merged: LabRecord = { ...current, ...incoming };
   for (const flag of HELP_FLAGS) merged[flag] = current[flag] === true || incoming[flag] === true;
   for (const field of TEXT_FIELDS) {
-    const imported = incoming[field];
-    if (typeof imported !== 'string' || imported.trim() === '') merged[field] = current[field];
+    if (isBlankText(incoming[field])) merged[field] = current[field];
   }
-  if (current.solvedAt !== undefined && incoming.solvedAt !== undefined)
-    merged.solvedAt = Math.min(current.solvedAt, incoming.solvedAt);
-  if (resultProves(current) && !resultProves(incoming)) merged.result = current.result;
+  const solvedTimes = [current.solvedAt, incoming.solvedAt].filter(isSolvedAt);
+  if (solvedTimes.length > 0) merged.solvedAt = Math.min(...solvedTimes);
+  else delete merged.solvedAt;
+  if (resultProves(current, expectedTests) && !resultProves(incoming, expectedTests))
+    merged.result = current.result;
   return merged;
 }

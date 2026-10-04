@@ -1,3 +1,5 @@
+import { hasPassingEvidence } from './passing-evidence';
+
 interface ExerciseTests {
   tests: readonly { id: string }[];
 }
@@ -32,15 +34,19 @@ export interface RunOutcome {
 
 const MARKER_PATTERN = /^__TALLER_TEST__(\w+):(PASS|FAIL)\s*$/gm;
 
-// Lee los marcadores que imprime el programa de revisión; si un id se repite, gana el último.
+// Lee los marcadores que imprime el programa de revisión; un id que aparece más de una
+// vez cuenta como fallo, aunque todas sus apariciones sean PASS.
 function readMarkers(stdout: string): Map<string, boolean> {
-  return new Map(
-    [...stdout.matchAll(MARKER_PATTERN)].map((match) => [match[1], match[2] === 'PASS']),
-  );
+  const markers = new Map<string, boolean>();
+  for (const match of stdout.matchAll(MARKER_PATTERN)) {
+    const [, id, outcome] = match;
+    markers.set(id, !markers.has(id) && outcome === 'PASS');
+  }
+  return markers;
 }
 
 // Traduce la respuesta del compilador al registro que guarda el laboratorio. Es pura:
-// no guarda, no notifica ni consulta el reloj.
+// no guarda, no notifica ni consulta el reloj. `solved` usa la regla única de evidencia.
 export function interpretRun(
   exercise: ExerciseTests,
   runnerResult: RunnerResult,
@@ -62,5 +68,5 @@ export function interpretRun(
     customTest,
     customPassed: markers.get('custom') === true,
   };
-  return { result, solved: Boolean(runnerResult.success) && tests.every((test) => test.passed) };
+  return { result, solved: hasPassingEvidence(result, exercise.tests) };
 }

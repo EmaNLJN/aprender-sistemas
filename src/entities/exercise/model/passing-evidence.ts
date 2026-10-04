@@ -15,12 +15,14 @@ export function testPassed(result: unknown, testId: string): boolean {
 }
 
 // Cuándo un resultado del compilador prueba un ejercicio: éxito sin error de
-// transporte, código no vacío y evidencia aprobada por cada prueba esperada.
+// transporte, código no vacío y evidencia aprobada por cada prueba esperada. Sin pruebas
+// esperadas no hay evidencia: una lista vacía no puede probar nada.
 export function hasPassingEvidence(
   result: unknown,
   expectedTests: readonly ExpectedTest[],
 ): boolean {
   return (
+    expectedTests.length > 0 &&
     isPlainObject(result) &&
     result.success === true &&
     result.transportError !== true &&

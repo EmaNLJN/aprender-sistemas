@@ -12,6 +12,7 @@
  * no lance y que las vistas dejen contenido, no su aspecto.
  */
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { missingAdapterMethods } from './lib/app-adapters.ts';
 import { FakeElement, FakeText } from './lib/fake-dom.ts';
@@ -204,8 +205,9 @@ function createBootHarness(): BootHarness {
   };
 }
 
-async function boot(): Promise<BootHarness> {
+async function boot(initialStorage: Record<string, string> = {}): Promise<BootHarness> {
   const harness = createBootHarness();
+  for (const [key, text] of Object.entries(initialStorage)) harness.storage.set(key, text);
   try {
     vm.runInContext(bundleApp(ENTRY), harness.context, { filename: ENTRY });
   } catch (error) {
@@ -217,8 +219,8 @@ async function boot(): Promise<BootHarness> {
 }
 
 // Arranca y exige que la evaluación de main.tsx no haya lanzado.
-async function bootApp(): Promise<BootHarness> {
-  const harness = await boot();
+async function bootApp(initialStorage: Record<string, string> = {}): Promise<BootHarness> {
+  const harness = await boot(initialStorage);
   assert.equal(harness.bootError, undefined, 'main.tsx lanzó al evaluarse');
   return harness;
 }
@@ -310,6 +312,51 @@ await test('borrar todo: confirm-reset reinicia cada adaptador y deja el recorri
   const saved = JSON.parse(harness.storage.get(STORAGE_KEY) ?? 'null') as { completed: string[] };
   assert.deepEqual(saved.completed, []);
   assert.equal(harness.elements['toast']?.textContent, 'Progreso reiniciado. Un nuevo comienzo.');
+});
+
+// Las cuatro claves que escribió master 2a278ad: contrato congelado de compatibilidad.
+const MASTER_STORAGE = JSON.parse(
+  readFileSync('qa/fixtures/progress-master-2a278ad-storage.json', 'utf8'),
+) as Record<string, string>;
+
+// Un arranque sano no debe escribir, respaldar ni avisar.
+function assertQuietBoot(harness: BootHarness, expected: Record<string, string>): void {
+  assert.deepEqual(harness.errors, []);
+  assert.deepEqual(Object.fromEntries(harness.storage), expected);
+  assert.deepEqual(
+    [...harness.storage.keys()].filter((key) => key.includes(':respaldo')),
+    [],
+  );
+  assert.equal(harness.elements['toast']?.textContent, '', 'la carga mostró un aviso');
+}
+
+await test('compatibilidad: arrancar con el progreso de master no escribe, no respalda ni avisa', async () => {
+  const harness = await bootApp(MASTER_STORAGE);
+  assertQuietBoot(harness, MASTER_STORAGE);
+});
+
+await test('compatibilidad: lo que escribe esta versión se relee sin respaldos ni avisos', async () => {
+  const first = await bootApp(MASTER_STORAGE);
+  // El recorrido sólo guarda ante una acción del alumno: cambiar de idioma y volver al
+  // original provoca la escritura real del mismo estado, normalizado por app.js.
+  const buttons = (
+    first.context.document as { querySelectorAll(s: string): FakeElement[] }
+  ).querySelectorAll('[data-language]');
+  const original = JSON.parse(MASTER_STORAGE['taller-learning-v1'] ?? '{}').language as string;
+  for (const language of [original === 'go' ? 'rust' : 'go', original]) {
+    await buttons.find((button) => button.dataset.language === language)?.dispatch('click');
+    await first.flush();
+  }
+  const exported = (adapter: string): string =>
+    JSON.stringify((first.context[adapter] as { exportState(): unknown }).exportState());
+  const written: Record<string, string> = {
+    'taller-learning-v1': first.storage.get('taller-learning-v1') ?? '',
+    'taller-laboratorio-v1': exported('TallerLab'),
+    'taller-campaign-v1': exported('TallerCampaignEngine'),
+    'taller-systems-v1': exported('TallerSystemsEngine'),
+  };
+  const second = await bootApp(written);
+  assertQuietBoot(second, written);
 });
 
 process.stdout.write(`\n${passed} passed, ${failed} failed\n`);

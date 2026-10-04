@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { loadCampaignEngine, loadLab } from './lib/legacy-sources.ts';
 import { plainJson as plain } from './lib/plain-json.ts';
+import { importModule } from './lib/sources.ts';
 
 interface Evidence {
   id: string;
@@ -42,6 +43,13 @@ interface LabWindow {
   TallerLab: TallerLabApi;
   TallerCampaignEngine: CampaignApi;
 }
+const { mergeRecord } = await importModule<{
+  mergeRecord: (
+    local: Record<string, unknown> | undefined,
+    incoming: Record<string, unknown>,
+    expectedTests: { id: string }[],
+  ) => { result?: { code?: string } };
+}>('src/entities/exercise/index.ts');
 let passed = 0,
   failed = 0;
 
@@ -240,6 +248,11 @@ test('solvedAt keeps the oldest value when both sides have one', () => {
   assert.equal(importTwice({ solvedAt: 500 }, { solvedAt: 100 }).solvedAt, 100);
 });
 
+test('solvedAt 0 on one side keeps the positive value of the other', () => {
+  assert.equal(importTwice({ solvedAt: 0 }, { solvedAt: 300 }).solvedAt, 300);
+  assert.equal(importTwice({ solvedAt: 300 }, { solvedAt: 0 }).solvedAt, 300);
+});
+
 test('solvedAt from only one side is kept', () => {
   assert.equal(importTwice({ attempts: 1 }, { solvedAt: 300 }).solvedAt, 300);
   assert.equal(importTwice({ solvedAt: 300 }, { attempts: 1 }).solvedAt, 300);
@@ -252,6 +265,17 @@ test('A local result with passing evidence is not replaced by one without it', (
   );
   assert.equal(merged.result?.code, 'local solution');
   assert.equal(merged.result?.stdout, 'ok');
+});
+
+test('A local result whose own tests are not the expected ones does not count as proof', () => {
+  const expectedTests = [{ id: 't1' }, { id: 't2' }, { id: 't3' }];
+  const incoming = { result: { code: 'imported attempt', success: true, tests: noneRan } };
+  for (const tests of [[], [{ id: 't1', passed: true }]]) {
+    const local = { result: { code: 'local', success: true, tests } };
+    assert.equal(mergeRecord(local, incoming, expectedTests).result?.code, 'imported attempt');
+  }
+  const proving = { result: { code: 'local', success: true, tests: allPassed } };
+  assert.equal(mergeRecord(proving, incoming, expectedTests).result?.code, 'local');
 });
 
 test('An imported result replaces a local one without evidence, or one with evidence', () => {
@@ -356,16 +380,33 @@ test('A known id whose record is not an object is dropped too', () => {
   assert.equal(saved.get(LAB_BACKUP_KEY), text);
 });
 
-test('An invalid selected entry alone is not a dropped record', () => {
+test('An invalid selected entry is not a dropped record but is a loss: backup and data warning', () => {
   const text = JSON.stringify({
     version: 1,
     records: { 'rust-1': validRecord },
     selected: { rust: 'go-1', go: 7 },
   });
   const { lab, saved } = environment(text);
-  assert.equal(lab.loadWarning(), '');
-  assert.equal(saved.has(LAB_BACKUP_KEY), false);
+  assert.equal(
+    lab.loadWarning(),
+    'Se descartaron datos del laboratorio que esta versión no reconoce; se conservó una copia en taller-laboratorio-v1:respaldo.',
+  );
+  assert.equal(saved.get(LAB_BACKUP_KEY), text);
   assert.equal(plain(lab.exportState()).selected.rust, null);
+});
+
+test('A saved copy with solvedAt 0 loads unsolved, with a backup and a data warning', () => {
+  const text = JSON.stringify({
+    version: 1,
+    records: { 'rust-1': { ...validRecord, solvedAt: 0 } },
+  });
+  const { lab, saved } = environment(text);
+  assert.equal(plain(lab.exportState()).records['rust-1'].solvedAt, undefined);
+  assert.equal(
+    lab.loadWarning(),
+    'Se descartaron datos del laboratorio que esta versión no reconoce; se conservó una copia en taller-laboratorio-v1:respaldo.',
+  );
+  assert.equal(saved.get(LAB_BACKUP_KEY), text);
 });
 
 test('Blocked storage loads blank without a load warning and saving is the only failure', () => {
