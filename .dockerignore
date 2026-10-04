@@ -6,6 +6,8 @@ node_modules
 .codex
 **/CLAUDE.md
 CLAUDE.local.md
+# The Laravel API has its own image (api/Dockerfile); the web image never needs it.
+api
 # Quality tools are installed separately and never shipped with the workshop.
 tools/quality
 .desloppify

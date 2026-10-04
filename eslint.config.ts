@@ -14,6 +14,8 @@ export default defineConfig([
     '.codex/**',
     '.desloppify/**',
     'dist/**',
+    // Laravel API: PHP with its own tooling (Pint and Pest).
+    'api/**',
   ]),
   js.configs.recommended,
   ...tseslint.configs.recommended.map((config) => ({
