@@ -259,6 +259,8 @@ La implementación del ejecutor (`docs/plans/2026-10-04-ejecutor-go.md`) ajustó
   seguridad, `go build` recorta el caché precalentado que no se usó en 5 días, y cada
   contenedor parte de la capa de la imagen, así que pasada esa semana todos recompilarían vet y
   la stdlib (2–3 s más por envío).
+  El caché sólo cubre los paquetes que importa `executor/images/go/warm/main.go`: B3 suma un
+  check que compare esa lista con los imports de las soluciones Go del currículo.
 
 ### Para quien consume el ejecutor (B2)
 
@@ -271,7 +273,8 @@ La implementación del ejecutor (`docs/plans/2026-10-04-ejecutor-go.md`) ajustó
 - **Salida:** `truncated` es el OR de los cuatro streams. En la fase `run`, `stderr` suma los
   avisos de compilación y el `stderr` de la ejecución (hasta 128 KiB, y más si hubo bytes
   inválidos reemplazados por U+FFFD); `stdout` llega a 65 536 bytes con UTF-8 válido (más
-  si hubo bytes inválidos reemplazados), uno más que un `TEXT` de MySQL: va en `MEDIUMTEXT`. `compileMs` y `runMs` incluyen el arranque del contenedor.
+  si hubo bytes inválidos reemplazados), uno más que un `TEXT` de MySQL: va en `MEDIUMTEXT`.
+  `compileMs` y `runMs` incluyen el arranque del contenedor.
 - **Respuestas:** 503 con `Retry-After` = ocupado, no corrió nada (con `tries = 1`, se
   reencola con un dispatch nuevo); 500 o conexión cerrada sin respuesta = `infra_error`, sin
   reintento automático. Al apagarse, los pedidos que esperaban lugar reciben 503

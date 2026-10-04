@@ -37,7 +37,8 @@ func (l *Limited) Write(p []byte) (int, error) {
 // String devuelve lo guardado como UTF-8 válido. Si el tope cortó un carácter por la mitad,
 // lo quita entero; los bytes inválidos que imprimió el programa se reemplazan por U+FFFD.
 // Con salida UTF-8 válida el resultado nunca supera Max bytes; con bytes inválidos puede
-// crecer hasta el triple, porque cada reemplazo ocupa 3 bytes.
+// crecer hasta el doble: cada racha de bytes inválidos pasa a un U+FFFD de 3 bytes, y el
+// peor caso alterna un byte inválido con uno válido.
 func (l *Limited) String() string {
 	l.mu.Lock()
 	defer l.mu.Unlock()

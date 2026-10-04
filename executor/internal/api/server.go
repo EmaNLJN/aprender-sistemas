@@ -116,6 +116,13 @@ func (s *Server) run(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusServiceUnavailable, message)
 		return
 	}
+	// Con el contexto ya cancelado y un lugar libre, el select elige al azar. Si tomó el lugar,
+	// igual no se ejecuta nada: no corrió, así que 503 como en la espera (el defer lo libera).
+	if r.Context().Err() != nil {
+		w.Header().Set("Retry-After", "1")
+		writeError(w, http.StatusServiceUnavailable, "el ejecutor se está apagando")
+		return
+	}
 
 	result, err := s.Exec.Execute(r.Context(), req.Language, []byte(req.Program))
 	if err != nil {

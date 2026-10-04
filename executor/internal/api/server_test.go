@@ -219,9 +219,34 @@ func TestCancellationWhileWaitingForASlotAnswers503(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+token)
 	rec := httptest.NewRecorder()
 	time.AfterFunc(50*time.Millisecond, cancel)
+	start := time.Now()
 	s.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusServiceUnavailable || rec.Header().Get("Retry-After") != "1" || exec.calls != 0 {
 		t.Fatalf("cancelado mientras esperaba (apagado): nada corrió, así que 503 con Retry-After y sin ejecutar; llegó %d %q, llamadas %d", rec.Code, rec.Body.String(), exec.calls)
+	}
+	// La espera de lugar observa la cancelación: no espera los 2 s de QueueWait.
+	if elapsed := time.Since(start); elapsed > time.Second {
+		t.Fatalf("cancelado a los 50 ms, respondió a los %v: la espera ignora la cancelación", elapsed)
+	}
+}
+
+func TestAlreadyCancelledRequestWithAFreeSlotAnswers503(t *testing.T) {
+	exec := &fakeExecutor{}
+	s := newServer(exec) // un lugar libre
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	// El select elige al azar entre el lugar libre y la cancelación: varias vueltas.
+	for range 50 {
+		req := httptest.NewRequest(http.MethodPost, "/v1/run", strings.NewReader(`{"language":"go","program":"x"}`)).WithContext(ctx)
+		req.Header.Set("Authorization", "Bearer "+token)
+		rec := httptest.NewRecorder()
+		s.Handler().ServeHTTP(rec, req)
+		if rec.Code != http.StatusServiceUnavailable || rec.Header().Get("Retry-After") != "1" {
+			t.Fatalf("un pedido ya cancelado no ejecuta nada: 503 con Retry-After; llegó %d %q", rec.Code, rec.Body.String())
+		}
+	}
+	if exec.calls != 0 {
+		t.Fatalf("un pedido ya cancelado no llega al Executor: %d llamadas", exec.calls)
 	}
 }
 
