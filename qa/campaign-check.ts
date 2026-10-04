@@ -1,8 +1,15 @@
 /* Offline behavior checks for the campaign ledger and its prerequisite chain. */
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { plainJson } from './lib/plain-json.ts';
-import { loadCampaignEngine } from './lib/legacy-sources.ts';
+import {
+  SYSTEMS_DOMAINS,
+  loadCampaignEngine,
+  loadCampaignWorlds,
+  loadLabExercises,
+  loadSystemsDomain,
+} from './lib/legacy-sources.ts';
 
 interface TestRef {
   id: string;
@@ -73,8 +80,21 @@ interface LedgerState {
   checkpoints: Record<string, unknown>;
 }
 interface SyncResult {
+  changed: boolean;
   xpGained: number;
   storageAvailable: boolean;
+}
+interface RefreshResult {
+  changed: boolean;
+  storageAvailable: boolean;
+}
+interface ImportPlan {
+  state: LedgerState;
+  lossy: boolean;
+}
+interface BackupEntry {
+  key: string;
+  text: string;
 }
 interface InitResult {
   storageAvailable: boolean;
@@ -83,14 +103,18 @@ interface InitResult {
 interface CampaignEngine {
   init(config: { exercises: ExerciseFixture[]; worlds: Worlds }): InitResult;
   syncLab(payload: unknown): SyncResult;
+  refreshFromLab(payload: unknown): RefreshResult;
   getWorlds(language: string): WorldView[];
   getSummary(language: string): Summary;
   canAttempt(exerciseId: string, language: string): Attempt;
   answerCheckpoint(worldId: string, answer: number): CheckpointResult;
   exportState(): LedgerState;
-  importState(state: unknown): { changed: boolean };
+  importState(state: unknown): RefreshResult;
   validateImport(state: unknown): unknown;
-  reset(): void;
+  planImport(raw: unknown): ImportPlan;
+  applyImport(plan: ImportPlan): RefreshResult;
+  backups(): BackupEntry[];
+  reset(): { storageAvailable: boolean; removed: boolean };
 }
 interface Fresh {
   engine: CampaignEngine;
@@ -134,8 +158,14 @@ const worlds: Worlds = Object.fromEntries(
 );
 const storageKey = 'taller-campaign-v1';
 const backupKey = 'taller-campaign-v1:respaldo';
-function fresh(saved?: string, failStorage = false): Fresh {
-  const store = new Map<string, string>(saved === undefined ? [] : [[storageKey, saved]]);
+interface FreshOptions {
+  failStorage?: boolean;
+  failRemove?: boolean;
+  // Almacenamiento compartido: dos motores sobre el mismo mapa son dos pestañas.
+  store?: Map<string, string>;
+}
+function freshWith(options: FreshOptions): Fresh {
+  const { failStorage = false, failRemove = false, store = new Map<string, string>() } = options;
   const context = vm.createContext({
     window: {} as { TallerCampaignEngine?: unknown },
     localStorage: {
@@ -148,7 +178,7 @@ function fresh(saved?: string, failStorage = false): Fresh {
         store.set(key, value);
       },
       removeItem(key: string) {
-        if (failStorage) throw Error('unavailable');
+        if (failStorage || failRemove) throw Error('unavailable');
         store.delete(key);
       },
     },
@@ -157,6 +187,10 @@ function fresh(saved?: string, failStorage = false): Fresh {
   const engine = context.window.TallerCampaignEngine as CampaignEngine;
   const initialized = engine.init({ exercises, worlds });
   return { engine, store, initialized };
+}
+function fresh(saved?: string, failStorage = false): Fresh {
+  const store = new Map<string, string>(saved === undefined ? [] : [[storageKey, saved]]);
+  return freshWith({ store, failStorage });
 }
 function good(prediction = false): { predictionCorrect: boolean; result: RecordedResult } {
   return {
@@ -168,11 +202,11 @@ function good(prediction = false): { predictionCorrect: boolean; result: Recorde
     },
   };
 }
+function labWith(ids: string[], prediction = false): { version: number; records: object } {
+  return { version: 1, records: Object.fromEntries(ids.map((id) => [id, good(prediction)])) };
+}
 function sync(engine: CampaignEngine, ids: string[], prediction = false): SyncResult {
-  return engine.syncLab({
-    version: 1,
-    records: Object.fromEntries(ids.map((id) => [id, good(prediction)])),
-  });
+  return engine.syncLab(labWith(ids, prediction));
 }
 function world(engine: CampaignEngine, index = 0, lang = 'rust'): WorldView {
   return engine.getWorlds(lang)[index];
@@ -471,10 +505,17 @@ test('A valid saved copy loads without warning, backup or writes; the first save
   assert.equal(corrupt.store.get(backupKey), '{bad json');
   assert.equal(JSON.parse(corrupt.store.get(storageKey) ?? '').seals['rust-1'].code, true);
 });
-test('Blocked storage is the only case that reports storageAvailable false, without a load warning', () => {
+test('Blocked storage reports storageAvailable false without a load warning', () => {
   const offline = fresh(undefined, true);
   assert.equal(offline.initialized.storageAvailable, false);
   assert.equal(offline.initialized.loadWarning, '');
+});
+test('A degraded load with no room for a backup also reports storageAvailable false, with its own warning', () => {
+  const { initialized, store, engine } = fullBackupSlots('{bad json');
+  assert.equal(initialized.storageAvailable, false);
+  assert.match(initialized.loadWarning ?? '', /no se pudo guardar una copia/);
+  assert.equal(store.get(storageKey), '{bad json');
+  assert.equal(sync(engine, ['rust-1']).storageAvailable, false);
 });
 test('Reset removes the saved progress and its backup copy', () => {
   const { engine, store } = fresh('{bad json');
@@ -506,5 +547,161 @@ test('Configuration rejects duplicate missions and invalid checkpoints before re
   const badQuestion = plainJson(worlds);
   badQuestion.rust[0].checkpoint.answer = 3;
   assert.throws(() => engine.init({ exercises, worlds: badQuestion }));
+});
+// Las cinco ranuras ocupadas con otros textos: la copia de un texto ilegible no tiene lugar.
+function fullBackupSlots(mainText: string): Fresh {
+  const store = new Map<string, string>([[storageKey, mainText]]);
+  for (const slot of [backupKey, ...[2, 3, 4, 5].map((n) => `${backupKey}-${n}`)])
+    store.set(slot, 'otro texto ' + slot);
+  return freshWith({ store });
+}
+function savedLedger(store: Map<string, string>): LedgerState {
+  return JSON.parse(store.get(storageKey) ?? 'null') as LedgerState;
+}
+
+test('refreshFromLab derives evidence in memory without writing; syncLab then writes and reports the XP', () => {
+  const { engine, store } = fresh();
+  const lab = labWith(['rust-1']);
+  const refreshed = engine.refreshFromLab(lab);
+  assert.equal(refreshed.changed, true);
+  assert.equal(refreshed.storageAvailable, true);
+  assert.equal(store.has(storageKey), false);
+  assert.equal(engine.getSummary('rust').totalXP, 20);
+  // Trampa del render intermedio: el XP derivado antes no se pierde ni deja de escribirse.
+  const synced = engine.syncLab(lab);
+  assert.equal(synced.xpGained, 20);
+  assert.equal(synced.changed, true);
+  assert.equal(savedLedger(store).seals['rust-1'].code, true);
+  assert.equal(engine.syncLab(lab).xpGained, 0);
+});
+test('Two tabs: a stale tab keeps the checkpoint the other one passed when it saves its own evidence', () => {
+  const store = new Map<string, string>();
+  const tabA = freshWith({ store }).engine;
+  const tabB = freshWith({ store }).engine; // Carga antes de que A escriba.
+  eligible(tabA);
+  assert.equal(tabA.answerCheckpoint('rust-world-1', 0).passed, true);
+  sync(tabB, ['rust-1', 'go-1']);
+  const saved = savedLedger(store);
+  assert.deepEqual(saved.checkpoints['rust-world-1'], { passed: true, lastAnswer: 0 });
+  assert.equal(saved.seals['go-1'].code, true);
+  assert.equal(saved.seals['rust-6'].prediction, true);
+  assert.equal(saved.seals['rust-1'].code, true);
+});
+test('Single tab: reloading after saving keeps exactly what the engine exported', () => {
+  const { engine, store } = fresh();
+  eligible(engine);
+  engine.answerCheckpoint('rust-world-1', 1);
+  const reloaded = fresh(store.get(storageKey));
+  assert.deepEqual(plainJson(reloaded.engine.exportState()), plainJson(engine.exportState()));
+  assert.equal(world(reloaded.engine).checkpointAnswer, 1);
+});
+test('A degraded load without a backup slot never writes the main key: sync, checkpoint and import stay in memory', () => {
+  const { engine, store } = fullBackupSlots('{bad json');
+  const before = new Map(store);
+  assert.equal(sync(engine, ['rust-1']).storageAvailable, false);
+  assert.equal(engine.getSummary('rust').totalXP, 20);
+  eligible(engine);
+  assert.equal(engine.answerCheckpoint('rust-world-1', 0).accepted, true);
+  assert.equal(
+    engine.importState({ version: 1, seals: { 'go-1': { code: true } }, checkpoints: {} })
+      .storageAvailable,
+    false,
+  );
+  assert.deepEqual([...store], [...before]);
+});
+test('planImport is pure: it leaves memory, storage and its input untouched, and applyImport persists', () => {
+  const { engine, store } = fresh();
+  sync(engine, ['rust-1']);
+  const stored = store.get(storageKey);
+  const memory = JSON.stringify(engine.exportState());
+  const raw = {
+    version: 1,
+    seals: { 'go-1': { code: true, prediction: true, assisted: false } },
+    checkpoints: {},
+  };
+  const input = JSON.stringify(raw);
+  const plan = engine.planImport(raw);
+  assert.equal(plan.lossy, false);
+  assert.equal(plan.state.seals['go-1'].code, true);
+  assert.equal(plan.state.seals['rust-1'].code, true); // Fusión con lo local.
+  assert.equal(JSON.stringify(engine.exportState()), memory);
+  assert.equal(store.get(storageKey), stored);
+  assert.equal(JSON.stringify(raw), input);
+  const applied = engine.applyImport(plan);
+  assert.deepEqual(plainJson(applied), { changed: true, storageAvailable: true });
+  assert.equal(savedLedger(store).seals['go-1'].prediction, true);
+  assert.equal(engine.getSummary('go').score, 30);
+});
+test('planImport without a campaign section plans no change; with an invalid record it throws', () => {
+  const { engine } = fresh();
+  sync(engine, ['rust-1']);
+  for (const absent of [undefined, null]) {
+    const plan = engine.planImport(absent);
+    assert.equal(plan.lossy, false);
+    assert.deepEqual(plainJson(plan.state), plainJson(engine.exportState()));
+  }
+  assert.throws(() => engine.planImport({ version: 1, seals: [], checkpoints: {} }));
+});
+test('planImport marks as lossy a backup with IDs this catalog does not know', () => {
+  const { engine } = fresh();
+  const plan = engine.planImport({
+    version: 1,
+    seals: { 'rust-1': { code: true }, 'ghost-id': { code: true } },
+    checkpoints: { 'ghost-world': { passed: true, lastAnswer: 0 } },
+  });
+  assert.equal(plan.lossy, true);
+  assert.equal(engine.planImport({ version: 1, seals: {}, checkpoints: {} }).lossy, false);
+});
+test('planImport is not lossy for the campaign section of the frozen progress exports', () => {
+  const context = vm.createContext({
+    window: {} as Record<string, unknown>,
+    localStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
+  });
+  loadLabExercises(context);
+  loadCampaignWorlds(context);
+  const catalogExercises: ExerciseFixture[] = [];
+  const realWorlds: Worlds = {};
+  for (const language of languages) {
+    const name = language.toUpperCase();
+    realWorlds[language] = context.window[name + '_CAMPAIGN'] as WorldFixture[];
+    catalogExercises.push(
+      ...(context.window[name + '_LAB'] as ExerciseFixture[]),
+      ...(context.window[name + '_QUESTS'] as ExerciseFixture[]),
+    );
+  }
+  for (const domain of SYSTEMS_DOMAINS) {
+    loadSystemsDomain(context, domain);
+    catalogExercises.push(
+      ...(context.window['SYSTEMS_' + domain.toUpperCase() + '_LABS'] as ExerciseFixture[]),
+    );
+  }
+  loadCampaignEngine(context);
+  const engine = context.window.TallerCampaignEngine as CampaignEngine;
+  engine.init({ exercises: catalogExercises, worlds: realWorlds });
+  for (const file of ['progress-master-2a278ad-export.json', 'progress-d0e1b49-export.json']) {
+    const exported = JSON.parse(readFileSync('qa/fixtures/' + file, 'utf8')) as {
+      campaign: unknown;
+    };
+    assert.equal(engine.planImport(exported.campaign).lossy, false, file);
+  }
+});
+test('reset reports whether the key and its backup slots were removed', () => {
+  const { engine, store } = fresh('{bad json');
+  sync(engine, ['rust-1']);
+  assert.deepEqual(plainJson(engine.reset()), { storageAvailable: true, removed: true });
+  assert.equal(store.has(storageKey) || store.has(backupKey), false);
+  const stuck = freshWith({ store: new Map([[storageKey, '{bad json']]), failRemove: true });
+  assert.equal(stuck.engine.reset().removed, false);
+});
+test('After reset the XP baseline restarts: the next sync reports the XP of the evidence again', () => {
+  const { engine } = fresh();
+  assert.equal(sync(engine, ['rust-1']).xpGained, 20);
+  engine.reset();
+  assert.equal(sync(engine, ['rust-1']).xpGained, 20);
+});
+test('backups lists the slot that secured the original text after a degraded load', () => {
+  const { engine } = fresh('{bad json');
+  assert.deepEqual(plainJson(engine.backups()), [{ key: backupKey, text: '{bad json' }]);
+  assert.deepEqual(plainJson(fresh().engine.backups()), []);
 });
 console.log(passed + ' campaign behavior scenarios PASS.');

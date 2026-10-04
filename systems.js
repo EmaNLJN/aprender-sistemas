@@ -26,6 +26,8 @@ import { LEVEL_LABELS } from './src/shared/config/levels';
       Boolean,
     );
   const workshops = () => packages().flatMap((source) => source.workshops);
+  // `refresh` lo usan los renders (sólo memoria); `sync`, las acciones del alumno (además guarda).
+  const refresh = () => engine.refreshFromLab(window.TallerLab.exportState());
   const sync = () => engine.syncLab(window.TallerLab.exportState());
   function init() {
     models = {};
@@ -44,7 +46,7 @@ import { LEVEL_LABELS } from './src/shared/config/levels';
     host = element;
     language = lang;
     notify = toast;
-    sync();
+    refresh();
     const params = new URLSearchParams(location.search),
       id = params.get('taller');
     selected = workshops().some((w) => w.id === id) ? id : null;
@@ -90,7 +92,7 @@ import { LEVEL_LABELS } from './src/shared/config/levels';
   }
   function render() {
     if (!host) return;
-    sync();
+    refresh();
     host.innerHTML = selected ? detail(engine.get(selected, language)) : overview();
   }
   function overview() {
@@ -356,12 +358,13 @@ import { LEVEL_LABELS } from './src/shared/config/levels';
     const parent = new URLSearchParams(location.search).get('sistema'),
       w = workshops().find((item) => item.id === parent);
     if (!w || !missionIDs(parent, lang).includes(id)) return '';
-    sync();
+    refresh();
     const progress = engine.get(parent, lang);
     return `<div class="quest-lab-context"><a href="${returnURL(parent, lang)}">← ${escapeHtml(w.title)}</a><span>${id === w.code[lang] ? 'Núcleo del taller' : 'Herramienta previa'}</span><span>${progress.progress.code ? '✓ Núcleo verificado' : 'Tres pruebas para verificar el núcleo'}</span></div>`;
   }
   window.TallerSystems = {
     init,
+    refresh,
     sync,
     mount,
     unmount,

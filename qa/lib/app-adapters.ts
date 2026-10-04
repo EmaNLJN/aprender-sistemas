@@ -15,7 +15,7 @@ export const APP_ADAPTER_METHODS = {
     'loadWarning',
   ],
   TallerAtlas: ['mount', 'unmount'],
-  TallerCampaign: ['init', 'sync', 'mount', 'unmount'],
+  TallerCampaign: ['init', 'refresh', 'mount', 'unmount'],
   TallerSystems: ['init', 'mount', 'unmount', 'resetSimulations'],
   TallerCampaignEngine: ['exportState', 'validateImport', 'importState', 'reset'],
   TallerSystemsEngine: ['exportState', 'validateImport', 'importState', 'reset'],

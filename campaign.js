@@ -25,6 +25,11 @@ import { LEVEL_LABELS } from './src/shared/config/levels';
       worlds: { rust: window.RUST_CAMPAIGN || [], go: window.GO_CAMPAIGN || [] },
     });
   }
+  // Lo usan los renders: deriva la evidencia en memoria y nunca escribe.
+  function refresh() {
+    return engine.refreshFromLab(window.TallerLab.exportState());
+  }
+  // Lo usan las acciones del alumno (ejecutar, predecir): además guarda lo pendiente.
   function sync() {
     return engine.syncLab(window.TallerLab.exportState());
   }
@@ -32,7 +37,7 @@ import { LEVEL_LABELS } from './src/shared/config/levels';
     host = element;
     language = lang;
     notify = toast;
-    sync();
+    refresh();
     const linked = new URLSearchParams(location.search).get('mundo');
     const worlds = engine.getWorlds(language);
     if (worlds.some((world) => world.id === linked)) selected = linked;
@@ -69,7 +74,7 @@ import { LEVEL_LABELS } from './src/shared/config/levels';
   }
   function render() {
     if (!host) return;
-    const synced = sync();
+    refresh();
     const worlds = engine.getWorlds(language),
       summary = engine.getSummary(language);
     const world = worlds.find((w) => w.id === selected) || worlds[0];
@@ -79,7 +84,7 @@ import { LEVEL_LABELS } from './src/shared/config/levels';
     }
     const complete = worlds.filter((w) => w.completed).length;
     host.innerHTML = `<section class="quest-hero"><div><div class="eyebrow"><span class="eyebrow-line"></span> CAMPAÑA · ${language.toUpperCase()}</div><h1>El próximo nivel<br>lo <em>construís vos.</em></h1><p>Una expedición por las ideas que hacen especial a ${language === 'rust' ? 'Rust' : 'Go'}. Repará, inventá y defendé tu solución frente a pruebas reales.</p><div class="quest-pills"><span>4 mundos</span><span>24 misiones</span><span>12 desafíos nuevos</span></div></div><div class="quest-rank"><span class="small-label">TU RANGO</span><div class="rank-symbol" aria-hidden="true">${icons[Math.min(complete, 3)]}</div><strong>${ranks[complete]}</strong><span>${summary.score} / ${summary.maxScore} XP de campaña</span><progress value="${summary.score}" max="${summary.maxScore}" aria-label="Experiencia de campaña"></progress><small>${complete} de 4 insignias</small></div></section>
-    ${synced.storageAvailable === false ? '<p class="quest-mode-note" role="status">Este navegador no pudo guardar tu campaña. Exportá tu progreso antes de cerrar la página.</p>' : ''}<div class="quest-mode-note"><span aria-hidden="true">↗</span><p><strong>Una ruta con propósito.</strong> Cada mundo abre el siguiente al reunir 150 XP, verificar sus seis misiones, resolver la predicción final y superar su checkpoint. Tu <a href="?#laboratorio">laboratorio libre</a> sigue disponible.</p></div>
+    ${summary.storageAvailable === false ? '<p class="quest-mode-note" role="status">Este navegador no pudo guardar tu campaña. Exportá tu progreso antes de cerrar la página.</p>' : ''}<div class="quest-mode-note"><span aria-hidden="true">↗</span><p><strong>Una ruta con propósito.</strong> Cada mundo abre el siguiente al reunir 150 XP, verificar sus seis misiones, resolver la predicción final y superar su checkpoint. Tu <a href="?#laboratorio">laboratorio libre</a> sigue disponible.</p></div>
     <nav class="quest-map" aria-label="Mundos de la campaña">${worlds.map((w, i) => `<button class="world-node ${w.completed ? 'complete' : w.unlocked ? 'available' : 'locked'} ${w.id === world.id ? 'selected' : ''}" data-quest="world" data-id="${escapeHtml(w.id)}" aria-pressed="${w.id === world.id}" aria-label="Mundo ${i + 1}: ${escapeHtml(w.title)}, ${w.completed ? 'completado' : w.unlocked ? 'disponible' : 'bloqueado; ver requisitos'}"><span class="world-icon" aria-hidden="true">${w.completed ? '✓' : w.unlocked ? icons[i] : '◇'}</span><span class="world-number">MUNDO 0${i + 1} · ${LEVEL_LABELS[w.level]}</span><strong>${escapeHtml(w.title)}</strong><span class="world-status">${w.completed ? 'Insignia conseguida' : w.unlocked ? `${w.score}/180 XP · explorar →` : 'Bloqueado · ver requisitos'}</span><progress value="${w.score}" max="180" aria-label="Experiencia en ${escapeHtml(w.title)}"></progress></button>`).join('')}</nav>
     <section class="quest-world" id="quest-world" aria-labelledby="quest-world-title"><div class="quest-world-head"><div><span class="eyebrow">${LEVEL_LABELS[world.level]} / ${world.completed ? 'MUNDO COMPLETADO' : world.unlocked ? 'TU EXPEDICIÓN' : 'PRÓXIMA FRONTERA'}</span><h2 id="quest-world-title" tabindex="-1">${escapeHtml(world.title)}</h2><p>${escapeHtml(world.subtitle)}</p></div><span class="world-score">${world.score}<small>/ 180 XP</small></span></div><p class="world-story">${escapeHtml(world.story)}</p><div class="concept-chips">${world.concepts.map((concept) => `<span>${escapeHtml(concept)}</span>`).join('')}</div>
     ${world.unlocked ? worldBody(world) : lockedBody(world)}
@@ -166,7 +171,7 @@ import { LEVEL_LABELS } from './src/shared/config/levels';
   function exerciseContextHTML(id, lang) {
     const worldId = new URLSearchParams(location.search).get('campana');
     if (!worldId) return '';
-    sync();
+    refresh();
     const world = engine.getWorlds(lang).find((w) => w.id === worldId),
       mission = world?.missions.find((m) => m.id === id);
     if (!world || !mission) return '';
@@ -183,6 +188,7 @@ import { LEVEL_LABELS } from './src/shared/config/levels';
   }
   window.TallerCampaign = {
     init,
+    refresh,
     sync,
     mount,
     unmount,

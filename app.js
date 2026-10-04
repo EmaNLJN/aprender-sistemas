@@ -220,7 +220,7 @@ import {
     window.TallerAtlas?.unmount();
     window.TallerCampaign?.unmount();
     window.TallerSystems?.unmount();
-    window.TallerCampaign?.sync();
+    window.TallerCampaign?.refresh();
     syncShell();
     const renderers = {
       recorrido: renderRoute,

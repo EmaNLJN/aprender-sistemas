@@ -1,3 +1,4 @@
+import { isBlankText } from '../../../shared/lib/is-blank-text';
 import { isPlainObject } from '../../../shared/lib/is-plain-object';
 import type { ParsedState } from '../../../shared/lib/versioned-storage';
 import type { SystemsCatalog, SystemsStateV1, SystemsWorkshop, WorkshopRecord } from './types';
@@ -121,7 +122,7 @@ export function mergeImportedRecords(state: SystemsStateV1, incoming: SystemsSta
       predicted: prev.predicted || next.predicted,
       answer: next.answer ?? prev.answer,
       steps: unionOf(prev.steps, next.steps),
-      note: next.note || prev.note,
+      note: isBlankText(next.note) ? prev.note : next.note,
     };
   }
 }

@@ -282,8 +282,8 @@ import {
     syncLocation();
     codeEditor?.destroy();
     codeEditor = null;
-    window.TallerCampaign?.sync();
-    window.TallerSystems?.sync();
+    window.TallerCampaign?.refresh();
+    window.TallerSystems?.refresh();
     const locked =
       mode === 'exercise' ? window.TallerCampaign?.lockedExerciseHTML(selectedId, language) : '';
     if (locked) {

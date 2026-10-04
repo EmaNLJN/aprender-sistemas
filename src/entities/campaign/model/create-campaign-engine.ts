@@ -1,9 +1,9 @@
 import { cloneJson } from '../../../shared/lib/clone-json';
+import { isLosslessNormalization } from '../../../shared/lib/is-lossless-normalization';
 import {
   describeLoadResult,
-  loadVersionedState,
-  removeVersionedState,
-  writeVersionedState,
+  openVersionedStore,
+  type VersionedStore,
 } from '../../../shared/lib/versioned-storage';
 import {
   applyLabEvidence,
@@ -24,6 +24,7 @@ import type {
   CampaignCatalog,
   CampaignConfig,
   CampaignEngine,
+  CampaignImportPlan,
   CampaignLanguage,
   CampaignLabState,
   CampaignStateV1,
@@ -31,6 +32,7 @@ import type {
   DerivedWorld,
   ImportResult,
   InitResult,
+  RefreshResult,
   ResetResult,
   SyncLabResult,
 } from './types';
@@ -53,14 +55,26 @@ export function createCampaignEngine(): CampaignEngine {
   let state: CampaignStateV1 = blankCampaignState();
   let catalog: CampaignCatalog | null = null;
   let storageAvailable = true;
+  let store: VersionedStore<CampaignStateV1> | null = null;
+  // XP total ya informado a quien llamó a `syncLab`; los renders (`refreshFromLab`) no lo mueven.
+  let lastReportedXP = 0;
 
   function assertReady(): CampaignCatalog {
     if (!catalog) throw new Error('Inicializá la campaña antes de usarla.');
     return catalog;
   }
 
+  function requireStore(): VersionedStore<CampaignStateV1> {
+    if (!store) throw new Error('Inicializá la campaña antes de usarla.');
+    return store;
+  }
+
+  // El almacén puede fusionar con lo que otra pestaña guardó y devuelve el estado final:
+  // después de persistir no se conserva ninguna referencia al estado anterior.
   function persist(): void {
-    storageAvailable = writeVersionedState(STORAGE_KEY, state);
+    const result = requireStore().write(state);
+    state = result.state;
+    storageAvailable = result.saved;
   }
 
   function worldsFor(language: string): DerivedWorld[] {
@@ -71,12 +85,20 @@ export function createCampaignEngine(): CampaignEngine {
   function init(config: CampaignConfig): InitResult {
     const validated = validateCampaignConfig(config);
     catalog = validated;
-    const loaded = loadVersionedState(STORAGE_KEY, {
+    store = openVersionedStore(STORAGE_KEY, {
       blank: blankCampaignState,
       parse: (raw) => parseSavedCampaignState(validated, raw),
+      // Gana el estado local en los campos editables; los logros de la otra pestaña sobreviven.
+      merge(stored, local) {
+        const merged = cloneJson(stored);
+        mergeImportedState(merged, local);
+        return merged;
+      },
     });
+    const loaded = store.load();
     state = loaded.state;
-    storageAvailable = loaded.status !== 'unavailable';
+    storageAvailable = loaded.writable;
+    lastReportedXP = totalXP(validated, state);
     return {
       ready: true,
       storageAvailable,
@@ -84,17 +106,21 @@ export function createCampaignEngine(): CampaignEngine {
     };
   }
 
+  function refreshFromLab(labState?: CampaignLabState | null): RefreshResult {
+    const changed = applyLabEvidence(state, assertReady(), labState);
+    return { changed, storageAvailable };
+  }
+
   function syncLab(labState?: CampaignLabState | null): SyncLabResult {
     const ready = assertReady();
-    const before = totalXP(ready, state);
-    const changed = applyLabEvidence(state, ready, labState);
+    applyLabEvidence(state, ready, labState);
+    // También escribe lo que un `refreshFromLab` anterior derivó y dejó sin guardar.
+    const changed = requireStore().hasUnsavedChanges(state);
     if (changed) persist();
-    return {
-      changed,
-      xpGained: totalXP(ready, state) - before,
-      totalXP: totalXP(ready, state),
-      storageAvailable,
-    };
+    const total = totalXP(ready, state);
+    const xpGained = total - lastReportedXP;
+    lastReportedXP = total;
+    return { changed, xpGained, totalXP: total, storageAvailable };
   }
 
   function answerCheckpoint(worldId: string, index: number): CheckpointAnswerResult {
@@ -125,13 +151,20 @@ export function createCampaignEngine(): CampaignEngine {
     return raw === undefined || raw === null ? undefined : sanitizeCampaignState(ready, raw);
   }
 
-  function importState(raw: unknown): ImportResult {
+  // Calcula el estado resultante sin tocar `state`, `raw` ni el almacenamiento.
+  function planImport(raw: unknown): CampaignImportPlan {
     const ready = assertReady();
-    if (raw === undefined || raw === null) return { changed: false, storageAvailable };
+    const planned = cloneJson(state);
+    if (raw === undefined || raw === null) return { state: planned, lossy: false };
     const incoming = sanitizeCampaignState(ready, raw);
-    const before = JSON.stringify(state);
-    mergeImportedState(state, incoming);
-    const changed = before !== JSON.stringify(state);
+    mergeImportedState(planned, incoming);
+    return { state: planned, lossy: !isLosslessNormalization(raw, incoming) };
+  }
+
+  function applyImport(plan: CampaignImportPlan): ImportResult {
+    assertReady();
+    state = cloneJson(plan.state);
+    const changed = requireStore().hasUnsavedChanges(state);
     if (changed) persist();
     return { changed, storageAvailable };
   }
@@ -139,12 +172,14 @@ export function createCampaignEngine(): CampaignEngine {
   function reset(): ResetResult {
     assertReady();
     state = blankCampaignState();
-    removeVersionedState(STORAGE_KEY);
-    return { storageAvailable };
+    lastReportedXP = 0;
+    const removed = requireStore().remove();
+    return { storageAvailable, removed };
   }
 
   return {
     init,
+    refreshFromLab,
     syncLab,
     getWorlds: worldsFor,
     canAttempt(id, language) {
@@ -164,7 +199,10 @@ export function createCampaignEngine(): CampaignEngine {
       return cloneJson(state);
     },
     validateImport,
-    importState,
+    planImport,
+    applyImport,
+    importState: (raw) => applyImport(planImport(raw)),
+    backups: () => requireStore().backups(),
     reset,
   };
 }

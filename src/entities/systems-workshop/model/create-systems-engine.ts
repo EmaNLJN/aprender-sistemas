@@ -1,9 +1,9 @@
 import { cloneJson } from '../../../shared/lib/clone-json';
+import { isLosslessNormalization } from '../../../shared/lib/is-lossless-normalization';
 import {
   describeLoadResult,
-  loadVersionedState,
-  removeVersionedState,
-  writeVersionedState,
+  openVersionedStore,
+  type VersionedStore,
 } from '../../../shared/lib/versioned-storage';
 import { hasPassingEvidence } from '../../exercise/@x/systems-workshop';
 import {
@@ -21,8 +21,10 @@ import type {
   SystemsCatalog,
   SystemsConfig,
   SystemsEngine,
+  SystemsImportPlan,
   SystemsInitResult,
   SystemsLanguage,
+  SystemsResetResult,
   SystemsStateV1,
   SystemsSyncResult,
   SystemsWorkshop,
@@ -71,9 +73,20 @@ export function createSystemsEngine(): SystemsEngine {
   let state: SystemsStateV1 = blankSystemsState();
   let catalog: SystemsCatalog = { workshops: new Map(), exercises: new Map() };
   let storageAvailable = true;
+  let store: VersionedStore<SystemsStateV1> | null = null;
 
+  function requireStore(): VersionedStore<SystemsStateV1> {
+    if (!store) throw new Error('Inicializá Sistemas antes de usarlo.');
+    return store;
+  }
+
+  // El almacén puede fusionar con lo que otra pestaña guardó y devuelve el estado final:
+  // los registros que se obtuvieron antes de persistir quedan viejos; cada método vuelve a
+  // pedirlos con `record()`.
   function persist(): void {
-    storageAvailable = writeVersionedState(STORAGE_KEY, state);
+    const result = requireStore().write(state);
+    state = result.state;
+    storageAvailable = result.saved;
   }
 
   function requireWorkshop(id: string, language: string): SystemsWorkshop {
@@ -93,12 +106,19 @@ export function createSystemsEngine(): SystemsEngine {
   function init(config: SystemsConfig): SystemsInitResult {
     const validated = validateSystemsConfig(config);
     catalog = validated;
-    const loaded = loadVersionedState(STORAGE_KEY, {
+    store = openVersionedStore(STORAGE_KEY, {
       blank: blankSystemsState,
       parse: (raw) => parseSavedSystemsState(validated, raw),
+      // Gana el estado local en los campos editables; los logros de la otra pestaña sobreviven.
+      merge(stored, local) {
+        const merged = cloneJson(stored);
+        mergeImportedRecords(merged, local);
+        return merged;
+      },
     });
+    const loaded = store.load();
     state = loaded.state;
-    storageAvailable = loaded.status !== 'unavailable';
+    storageAvailable = loaded.writable;
     return { storageAvailable, loadWarning: describeLoadResult(loaded, 'de Sistemas') };
   }
 
@@ -137,12 +157,20 @@ export function createSystemsEngine(): SystemsEngine {
     };
   }
 
-  function syncLab(lab?: unknown): SystemsSyncResult {
+  // Sella en memoria y devuelve si cambió algún taller; nunca escribe.
+  function refreshFromLab(lab?: unknown): SystemsSyncResult {
     let changed = false;
     for (const workshop of catalog.workshops.values())
       for (const language of SYSTEMS_LANGUAGES) {
         if (markCodeSealed(workshop, language, lab)) changed = true;
       }
+    return { changed, storageAvailable };
+  }
+
+  function syncLab(lab?: unknown): SystemsSyncResult {
+    refreshFromLab(lab);
+    // También escribe lo que un `refreshFromLab` anterior derivó y dejó sin guardar.
+    const changed = requireStore().hasUnsavedChanges(state);
     if (changed) persist();
     return { changed, storageAvailable };
   }
@@ -165,11 +193,24 @@ export function createSystemsEngine(): SystemsEngine {
     return validateSystemsImport(catalog, raw);
   }
 
-  function importState(raw: unknown): void {
+  // Calcula el estado resultante sin tocar `state`, `raw` ni el almacenamiento.
+  function planImport(raw: unknown): SystemsImportPlan {
+    const planned = cloneJson(state);
     const incoming = validateImport(raw);
-    if (!incoming) return;
-    mergeImportedRecords(state, incoming);
-    persist();
+    if (!incoming) return { state: planned, lossy: false };
+    mergeImportedRecords(planned, incoming);
+    return { state: planned, lossy: !isLosslessNormalization(raw, incoming) };
+  }
+
+  function applyImport(plan: SystemsImportPlan): SystemsSyncResult {
+    state = cloneJson(plan.state);
+    const changed = requireStore().hasUnsavedChanges(state);
+    if (changed) persist();
+    return { changed, storageAvailable };
+  }
+
+  function importState(raw: unknown): void {
+    applyImport(planImport(raw));
   }
 
   function setStep(id: string, language: string, index: number, checked: boolean): void {
@@ -188,9 +229,9 @@ export function createSystemsEngine(): SystemsEngine {
     return { storageAvailable };
   }
 
-  function reset(): void {
+  function reset(): SystemsResetResult {
     state = blankSystemsState();
-    removeVersionedState(STORAGE_KEY);
+    return { removed: requireStore().remove() };
   }
 
   return {
@@ -198,9 +239,13 @@ export function createSystemsEngine(): SystemsEngine {
     get,
     observe,
     answer,
+    refreshFromLab,
     syncLab,
     validateImport,
+    planImport,
+    applyImport,
     importState,
+    backups: () => requireStore().backups(),
     list: (language) => [...catalog.workshops.keys()].map((id) => get(id, language)),
     setStep,
     setNote,

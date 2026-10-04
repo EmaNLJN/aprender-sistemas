@@ -359,5 +359,51 @@ await test('compatibilidad: lo que escribe esta versión se relee sin respaldos 
   assertQuietBoot(second, written);
 });
 
+const CAMPAIGN_KEY = 'taller-campaign-v1';
+const SYSTEMS_KEY = 'taller-systems-v1';
+const LAB_KEY = 'taller-laboratorio-v1';
+// Evidencia aprobada de rust-02 (misión del mundo 1 de Rust) tomada del laboratorio de master.
+const LAB_WITH_PASSED_RUST_MISSION = MASTER_STORAGE[LAB_KEY] ?? '';
+
+// Recorre las vistas que montan campaña, Sistemas y laboratorio: cada una sincroniza al renderizar.
+async function visitProgressViews(harness: BootHarness): Promise<void> {
+  for (const view of ['campana', 'sistemas', 'laboratorio']) {
+    harness.navigate(view);
+    await harness.flush();
+  }
+}
+
+await test('integridad: una copia de campaña ilegible sobrevive al arranque y a la navegación', async () => {
+  // Copia `version: 2` con un checkpoint: esta versión no la entiende y no puede fusionarla.
+  const unreadable = JSON.stringify({
+    version: 2,
+    seals: {},
+    checkpoints: { 'rust-world-1': { passed: true, lastAnswer: 0 } },
+  });
+  const harness = await bootApp({
+    [CAMPAIGN_KEY]: unreadable,
+    [LAB_KEY]: LAB_WITH_PASSED_RUST_MISSION,
+  });
+  assert.equal(harness.storage.get(CAMPAIGN_KEY), unreadable);
+  assert.equal(harness.storage.get(`${CAMPAIGN_KEY}:respaldo`), unreadable);
+  await visitProgressViews(harness);
+  assert.deepEqual(harness.errors, []);
+  assert.equal(
+    harness.storage.get(CAMPAIGN_KEY),
+    unreadable,
+    'la navegación pisó la copia ilegible',
+  );
+  assert.equal(harness.storage.get(`${CAMPAIGN_KEY}:respaldo`), unreadable);
+  assert.equal(harness.storage.has(SYSTEMS_KEY), false, 'la navegación creó la clave de Sistemas');
+});
+
+await test('integridad: con la clave de campaña ausente, arrancar y navegar no la crean', async () => {
+  const harness = await bootApp({ [LAB_KEY]: LAB_WITH_PASSED_RUST_MISSION });
+  await visitProgressViews(harness);
+  assert.deepEqual(harness.errors, []);
+  assert.equal(harness.storage.has(CAMPAIGN_KEY), false, 'se creó la clave de campaña');
+  assert.equal(harness.storage.has(SYSTEMS_KEY), false, 'se creó la clave de Sistemas');
+});
+
 process.stdout.write(`\n${passed} passed, ${failed} failed\n`);
 if (failed) process.exit(1);

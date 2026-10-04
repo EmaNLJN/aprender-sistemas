@@ -147,11 +147,19 @@ interface Engine {
   answer(id: string, language: string, index: unknown): { correct: boolean; progress: Progress };
   setStep(id: string, language: string, index: number, done: boolean): unknown;
   setNote(id: string, language: string, note: string): unknown;
-  syncLab(labs: unknown): { changed: boolean };
+  syncLab(labs: unknown): { changed: boolean; storageAvailable: boolean };
+  refreshFromLab(labs: unknown): { changed: boolean; storageAvailable: boolean };
   exportState(): Backup & { records: Record<string, Progress> };
   validateImport(raw: unknown): { records: Record<string, Progress> } | undefined;
+  planImport(raw: unknown): ImportPlan;
+  applyImport(plan: ImportPlan): { changed: boolean; storageAvailable: boolean };
   importState(raw: unknown): unknown;
-  reset(): void;
+  backups(): { key: string; text: string }[];
+  reset(): { removed: boolean };
+}
+interface ImportPlan {
+  state: Backup & { records: Record<string, Progress> };
+  lossy: boolean;
 }
 interface LabResult {
   code: unknown;
@@ -167,6 +175,7 @@ interface Storage {
   writes: number;
   failRead: boolean;
   failWrite: boolean;
+  failRemove: boolean;
   getItem(key: string): string | null;
   setItem(key: string, value: unknown): void;
   removeItem(key: string): void;
@@ -218,6 +227,7 @@ function storage(seed: Record<string, string> = {}): Storage {
     writes: 0,
     failRead: false,
     failWrite: false,
+    failRemove: false,
     getItem(key: string) {
       if (this.failRead) throw new Error('Storage blocked');
       return data.get(key) ?? null;
@@ -228,6 +238,7 @@ function storage(seed: Record<string, string> = {}): Storage {
       data.set(key, String(value));
     },
     removeItem(key: string) {
+      if (this.failRemove) throw new Error('Storage locked');
       data.delete(key);
     },
   };
@@ -434,13 +445,12 @@ test('Sync rejects failed transport, missing/blank code and non-success', () => 
     { tests: [] },
   ];
   for (const invalid of rejected) {
-    const { engine } = environment();
-    assert.equal(
-      engine.syncLab(labResult('rust-113', invalid)).changed,
-      false,
-      JSON.stringify(invalid),
-    );
+    const { engine, store } = environment();
+    // `changed` de syncLab ya no mide la evidencia: con la clave aún ausente, la acción guarda el
+    // documento vacío. Lo observable es que ningún sello llega ni a memoria ni al almacenamiento.
+    engine.syncLab(labResult('rust-113', invalid));
     assert.equal(engine.get('alpha', 'rust').progress.code, false, JSON.stringify(invalid));
+    assert.deepEqual(savedCodeSeals(store), [], JSON.stringify(invalid));
   }
 });
 
@@ -479,12 +489,10 @@ test('Sync requires all three expected test IDs exactly once and truly passed', 
     ],
   ];
   for (const tests of rejected) {
-    const { engine } = environment();
-    assert.equal(
-      engine.syncLab(labResult('rust-113', { tests })).changed,
-      false,
-      JSON.stringify(tests),
-    );
+    const { engine, store } = environment();
+    engine.syncLab(labResult('rust-113', { tests })); // Ver arriba: se verifica el sello, no `changed`.
+    assert.equal(engine.get('alpha', 'rust').progress.code, false, JSON.stringify(tests));
+    assert.deepEqual(savedCodeSeals(store), [], JSON.stringify(tests));
   }
 });
 
@@ -629,8 +637,14 @@ test('Unavailable storage keeps session progress exportable; the shell reports t
   assert.equal(engine.exportState().records['rust:alpha'].code, true);
   store.failRead = false;
   store.failWrite = false;
+  // La carga no pudo leer la clave: sobrescribirla podría pisar progreso que no se vio.
+  // La sesión sigue en memoria y avisa; recién una carga nueva vuelve a guardar.
   engine.setNote('alpha', 'rust', 'Storage returned');
-  assert.equal(engine.get('alpha', 'rust').storageAvailable, true);
+  assert.equal(engine.get('alpha', 'rust').storageAvailable, false);
+  assert.equal(store.data.has(KEY), false);
+  const reloaded = environment(store).engine;
+  reloaded.setNote('alpha', 'rust', 'After reload');
+  assert.equal(reloaded.get('alpha', 'rust').storageAvailable, true);
 });
 
 const BACKUP_KEY = 'taller-systems-v1:respaldo';
@@ -742,6 +756,152 @@ test('Reset clears all languages, removes the saved progress and its backup, and
   const reloaded = environment(shared).engine;
   assert.equal(reloaded.get('alpha', 'rust').seals, 0);
   assert.equal(reloaded.get('beta', 'go').progress.note, '');
+});
+
+const BACKUP_SLOTS = [BACKUP_KEY, ...[2, 3, 4, 5].map((n) => `${BACKUP_KEY}-${n}`)];
+// Clave principal ilegible y las cinco ranuras ocupadas con otros textos: no hay lugar para copiar.
+function fullBackupSlots(mainText = '{broken'): Storage {
+  return storage({
+    [KEY]: mainText,
+    ...Object.fromEntries(BACKUP_SLOTS.map((slot) => [slot, 'otro texto ' + slot])),
+  });
+}
+// Nombres de los registros con el sello de código en lo guardado; [] si la clave no existe.
+function savedCodeSeals(store: Storage): string[] {
+  if (!store.data.has(KEY)) return [];
+  return Object.entries(savedRecords(store))
+    .filter(([, saved]) => saved.code)
+    .map(([name]) => name);
+}
+function savedRecords(store: Storage): Record<string, Progress> {
+  return (JSON.parse(store.data.get(KEY) ?? 'null') as { records: Record<string, Progress> })
+    .records;
+}
+
+test('refreshFromLab derives the core seal in memory without writing; syncLab then seals and writes', () => {
+  const { engine, store } = environment();
+  const refreshed = engine.refreshFromLab(labResult('go-113'));
+  assert.equal(refreshed.changed, true);
+  assert.equal(store.data.has(KEY), false);
+  assert.equal(store.writes, 0);
+  assert.equal(engine.get('alpha', 'go').progress.code, true);
+  const synced = engine.syncLab(labResult('go-113'));
+  assert.equal(synced.changed, true);
+  assert.equal(savedRecords(store)['go:alpha'].code, true);
+  assert.equal(engine.syncLab(labResult('go-113')).changed, false);
+});
+
+test('Two tabs: a stale tab keeps the objectives the other one observed when it saves a note', () => {
+  const shared = storage();
+  const tabA = environment(shared).engine;
+  const tabB = environment(shared).engine; // Carga antes de que A escriba.
+  tabA.observe('alpha', 'rust', ['a', 'b', 'c']);
+  tabB.setNote('alpha', 'rust', 'nota de B');
+  const saved = savedRecords(shared)['rust:alpha'];
+  assert.deepEqual(plain(saved.observed), ['a', 'b', 'c']);
+  assert.equal(saved.note, 'nota de B');
+  assert.deepEqual(plain(tabB.get('alpha', 'rust').progress.observed), ['a', 'b', 'c']);
+});
+
+test('Single tab: unchecking a stage and clearing the note survive a reload', () => {
+  const shared = storage();
+  const { engine } = environment(shared);
+  engine.setStep('alpha', 'rust', 1, true);
+  engine.setStep('alpha', 'rust', 2, true);
+  engine.setNote('alpha', 'rust', 'algo');
+  engine.setStep('alpha', 'rust', 1, false);
+  engine.setNote('alpha', 'rust', '');
+  const restored = environment(shared).engine.get('alpha', 'rust').progress;
+  assert.deepEqual(plain(restored.steps), [2]);
+  assert.equal(restored.note, '');
+});
+
+test('A degraded load without a backup slot leaves the main key alone: sync, observe, note and import stay in memory', () => {
+  const store = fullBackupSlots();
+  const before = new Map(store.data);
+  const { engine, status } = environment(store);
+  assert.equal(status.storageAvailable, false);
+  assert.match(status.loadWarning ?? '', /no se pudo guardar una copia/);
+  assert.equal(engine.syncLab(labResult('go-113')).storageAvailable, false);
+  engine.observe('alpha', 'rust', ['a']);
+  engine.setNote('alpha', 'rust', 'solo en memoria');
+  engine.importState(backup({ 'rust:beta': progress({ code: true }) }));
+  assert.equal(engine.get('alpha', 'rust').storageAvailable, false);
+  assert.equal(engine.get('beta', 'rust').progress.code, true);
+  assert.deepEqual([...store.data], [...before]);
+  assert.equal(store.writes, 0);
+});
+
+test('planImport is pure, and applyImport merges it into memory and persists', () => {
+  const { engine, store } = environment();
+  engine.setNote('alpha', 'rust', 'mi nota');
+  const memory = JSON.stringify(engine.exportState()),
+    stored = store.data.get(KEY),
+    writes = store.writes;
+  const raw = backup({ 'rust:alpha': progress({ observed: ['a'], code: true }) });
+  const input = JSON.stringify(raw);
+  const plan = engine.planImport(raw);
+  assert.equal(plan.lossy, false);
+  assert.equal(plan.state.records['rust:alpha'].code, true);
+  assert.equal(plan.state.records['rust:alpha'].note, 'mi nota'); // Fusión con lo local.
+  assert.equal(JSON.stringify(engine.exportState()), memory);
+  assert.equal(store.data.get(KEY), stored);
+  assert.equal(store.writes, writes);
+  assert.equal(JSON.stringify(raw), input);
+  assert.equal(engine.applyImport(plan).changed, true);
+  assert.equal(savedRecords(store)['rust:alpha'].code, true);
+  assert.equal(engine.get('alpha', 'rust').progress.code, true);
+});
+
+test('planImport without a Systems section plans no change; with an invalid record it throws', () => {
+  const { engine } = environment();
+  engine.setNote('alpha', 'rust', 'mi nota');
+  for (const absent of [undefined, null]) {
+    const plan = engine.planImport(absent);
+    assert.equal(plan.lossy, false);
+    assert.deepEqual(plain(plan.state), plain(engine.exportState()));
+  }
+  assert.throws(() => engine.planImport(backup({ 'go:beta': progress({ code: 1 }) })));
+});
+
+test('planImport marks as lossy a backup with unknown IDs, objectives or steps', () => {
+  const { engine } = environment();
+  assert.equal(engine.planImport(backup({ 'rust:ghost': progress() })).lossy, true);
+  assert.equal(
+    engine.planImport(backup({ 'rust:alpha': progress({ observed: ['zzz'] }) })).lossy,
+    true,
+  );
+  assert.equal(engine.planImport(backup({ 'rust:alpha': progress({ steps: [9] }) })).lossy, true);
+  assert.equal(
+    engine.planImport(backup({ 'rust:alpha': progress({ observed: ['a'] }) })).lossy,
+    false,
+  );
+});
+
+test('Importing a blank note does not erase the local note', () => {
+  const { engine } = environment();
+  engine.setNote('alpha', 'rust', 'mi nota');
+  engine.importState(backup({ 'rust:alpha': progress({ note: '   ' }) }));
+  assert.equal(engine.get('alpha', 'rust').progress.note, 'mi nota');
+  engine.importState(backup({ 'rust:alpha': progress({ note: '' }) }));
+  assert.equal(engine.get('alpha', 'rust').progress.note, 'mi nota');
+});
+
+test('reset reports whether the key and its backup slots were removed', () => {
+  const store = storage({ [BACKUP_KEY]: 'copia previa' });
+  const { engine } = environment(store);
+  engine.setNote('alpha', 'rust', 'algo');
+  assert.deepEqual(plain(engine.reset()), { removed: true });
+  assert.equal(store.data.has(KEY) || store.data.has(BACKUP_KEY), false);
+  const locked = storage({ [BACKUP_KEY]: 'copia previa' });
+  locked.failRemove = true;
+  assert.equal(environment(locked).engine.reset().removed, false);
+});
+
+test('backups lists the slot that secured the original text after a degraded load', () => {
+  const { engine } = environment(storage({ [KEY]: '{broken' }));
+  assert.deepEqual(plain(engine.backups()), [{ key: BACKUP_KEY, text: '{broken' }]);
+  assert.deepEqual(plain(environment().engine.backups()), []);
 });
 
 const SOURCE_HOSTS = new Set([
@@ -1010,6 +1170,16 @@ if (process.argv.includes('--engine-only')) {
             `${workshop.id}: unregistered earned objective`,
           );
         }
+      }
+    });
+
+    test('planImport is not lossy for the Systems section of the frozen progress exports', () => {
+      const { engine } = environment(storage(), catalog);
+      for (const file of ['progress-master-2a278ad-export.json', 'progress-d0e1b49-export.json']) {
+        const exported = JSON.parse(
+          fs.readFileSync(path.join(root, 'qa/fixtures', file), 'utf8'),
+        ) as { systems: unknown };
+        assert.equal(engine.planImport(exported.systems).lossy, false, file);
       }
     });
 

@@ -1,3 +1,5 @@
+import type { BackupEntry } from '../../../shared/lib/versioned-storage';
+
 export type SystemsLanguage = 'rust' | 'go';
 
 export interface SystemsTest {
@@ -83,9 +85,22 @@ export interface SystemsInitResult {
   loadWarning: string;
 }
 
+// `changed`: en `syncLab`, había cambios sin guardar y se intentó persistir; en
+// `refreshFromLab`, cambió algo en memoria.
 export interface SystemsSyncResult {
   changed: boolean;
   storageAvailable: boolean;
+}
+
+// Importación planificada sin efectos: `state` es el progreso resultante y `lossy` avisa
+// que el saneado descartó o cambió datos de la copia.
+export interface SystemsImportPlan {
+  state: SystemsStateV1;
+  lossy: boolean;
+}
+
+export interface SystemsResetResult {
+  removed: boolean;
 }
 
 export interface NoteResult {
@@ -97,12 +112,18 @@ export interface SystemsEngine {
   get(id: string, language: string): WorkshopView;
   observe(id: string, language: string, goals: unknown): ObserveResult;
   answer(id: string, language: string, index: number): AnswerResult;
+  // Sella en memoria con la evidencia del laboratorio y nunca escribe. Lo usan los renders.
+  refreshFromLab(lab?: unknown): SystemsSyncResult;
+  // Sella y guarda lo pendiente. Lo usan las acciones del alumno.
   syncLab(lab?: unknown): SystemsSyncResult;
   validateImport(raw: unknown): SystemsStateV1 | undefined;
+  planImport(raw: unknown): SystemsImportPlan;
+  applyImport(plan: SystemsImportPlan): SystemsSyncResult;
   importState(raw: unknown): void;
+  backups(): BackupEntry[];
   list(language: string): WorkshopView[];
   setStep(id: string, language: string, index: number, checked: boolean): void;
   setNote(id: string, language: string, note: string): NoteResult;
   exportState(): SystemsStateV1;
-  reset(): void;
+  reset(): SystemsResetResult;
 }

@@ -1,4 +1,5 @@
 import type { LevelId } from '../../../shared/config/levels';
+import type { BackupEntry } from '../../../shared/lib/versioned-storage';
 
 export type CampaignLanguage = 'rust' | 'go';
 
@@ -143,16 +144,31 @@ export interface CheckpointAnswerResult {
   reasons: string[];
 }
 
+// Resultado de aplicar evidencia o una importación: `changed` dice si hubo cambios que
+// guardar (o, en `refreshFromLab`, si cambió algo en memoria).
+export interface RefreshResult {
+  changed: boolean;
+  storageAvailable: boolean;
+}
+
 export interface ImportResult {
   changed: boolean;
   storageAvailable: boolean;
 }
 
-export interface ResetResult {
-  storageAvailable: boolean;
+// Importación planificada sin efectos: `state` es el progreso resultante y `lossy` avisa
+// que el saneado descartó o cambió datos de la copia.
+export interface CampaignImportPlan {
+  state: CampaignStateV1;
+  lossy: boolean;
 }
 
-// Foto del laboratorio que lee `syncLab`: sólo `records` y, por registro, los campos que
+export interface ResetResult {
+  storageAvailable: boolean;
+  removed: boolean;
+}
+
+// Foto del laboratorio que leen `refreshFromLab` y `syncLab`: sólo `records` y, por registro, los campos que
 // el motor interpreta. El motor tolera cualquier otra forma (ignora lo que no reconoce).
 export interface CampaignLabState {
   records?: Record<string, unknown>;
@@ -160,6 +176,9 @@ export interface CampaignLabState {
 
 export interface CampaignEngine {
   init(config: CampaignConfig): InitResult;
+  // Aplica la evidencia del laboratorio sólo en memoria: nunca escribe. Lo usan los renders.
+  refreshFromLab(labState?: CampaignLabState | null): RefreshResult;
+  // Aplica la evidencia y guarda lo pendiente. Lo usan las acciones del alumno.
   syncLab(labState?: CampaignLabState | null): SyncLabResult;
   getWorlds(language: string): DerivedWorld[];
   canAttempt(id: string, language: string): AttemptPermission;
@@ -167,6 +186,9 @@ export interface CampaignEngine {
   getSummary(language: string): CampaignSummary;
   exportState(): CampaignStateV1;
   validateImport(raw: unknown): CampaignStateV1 | undefined;
+  planImport(raw: unknown): CampaignImportPlan;
+  applyImport(plan: CampaignImportPlan): ImportResult;
   importState(raw: unknown): ImportResult;
+  backups(): BackupEntry[];
   reset(): ResetResult;
 }

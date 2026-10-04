@@ -5,6 +5,7 @@ export type {
   CampaignConfig,
   CampaignEngine,
   CampaignExercise,
+  CampaignImportPlan,
   CampaignLabState,
   CampaignLanguage,
   CampaignMission,
@@ -17,6 +18,7 @@ export type {
   DerivedWorld,
   ImportResult,
   InitResult,
+  RefreshResult,
   ResetResult,
   SyncLabResult,
 } from './model/types';
