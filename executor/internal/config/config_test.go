@@ -27,11 +27,26 @@ func TestDefaults(t *testing.T) {
 	}
 }
 
+func TestReadsExplicitValues(t *testing.T) {
+	values := valid()
+	values["EXECUTOR_ADDR"] = ":9000"
+	cfg, err := FromEnv(env(values))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Addr != ":9000" || cfg.Token != strings.Repeat("x", 32) {
+		t.Fatalf("no respetó la dirección o el token del entorno: %+v", cfg)
+	}
+	if cfg.RustImage != "rust-img" || cfg.GoImage != "go-img" {
+		t.Fatalf("cada lenguaje debe usar su propia imagen: %+v", cfg)
+	}
+}
+
 func TestRejectsShortToken(t *testing.T) {
 	values := valid()
 	values["EXECUTOR_TOKEN"] = strings.Repeat("x", 31)
 	if _, err := FromEnv(env(values)); err == nil {
-		t.Fatal("un token de 31 caracteres debe rechazarse")
+		t.Fatal("un token de 31 bytes debe rechazarse")
 	}
 }
 
@@ -66,10 +81,12 @@ func TestMaxConcurrentRange(t *testing.T) {
 			t.Fatalf("EXECUTOR_MAX_CONCURRENT=%q debe rechazarse", raw)
 		}
 	}
-	values := valid()
-	values["EXECUTOR_MAX_CONCURRENT"] = "3"
-	cfg, err := FromEnv(env(values))
-	if err != nil || cfg.MaxConcurrent != 3 {
-		t.Fatalf("3 debe aceptarse: %+v, %v", cfg, err)
+	for raw, want := range map[string]int{"1": 1, "3": 3, "8": 8} {
+		values := valid()
+		values["EXECUTOR_MAX_CONCURRENT"] = raw
+		cfg, err := FromEnv(env(values))
+		if err != nil || cfg.MaxConcurrent != want {
+			t.Fatalf("EXECUTOR_MAX_CONCURRENT=%q debe aceptarse como %d: %+v, %v", raw, want, cfg, err)
+		}
 	}
 }

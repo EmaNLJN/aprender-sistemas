@@ -7,6 +7,7 @@ import (
 	"strconv"
 )
 
+// Config es la configuración del ejecutor, ya validada por FromEnv.
 type Config struct {
 	Addr          string
 	Token         string
@@ -37,7 +38,7 @@ func FromEnv(getenv func(string) string) (Config, error) {
 		cfg.MaxConcurrent = n
 	}
 	if len(cfg.Token) < minTokenLength {
-		return Config{}, errors.New("EXECUTOR_TOKEN debe tener al menos 32 caracteres")
+		return Config{}, fmt.Errorf("EXECUTOR_TOKEN debe tener al menos %d bytes", minTokenLength)
 	}
 	if cfg.Runtime != "runsc" && cfg.Runtime != "runc" {
 		return Config{}, fmt.Errorf("EXECUTOR_RUNTIME debe ser runsc o runc: %q", cfg.Runtime)

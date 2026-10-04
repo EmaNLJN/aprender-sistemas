@@ -1,11 +1,6 @@
 package output
 
-import (
-	"encoding/json"
-	"strings"
-	"testing"
-	"unicode/utf8"
-)
+import "testing"
 
 func TestLimitedKeepsEverythingUnderTheCap(t *testing.T) {
 	l := &Limited{Max: 10}
@@ -39,17 +34,60 @@ func TestLimitedCutsAtTheCapWithoutBlockingTheWriter(t *testing.T) {
 	}
 }
 
-func TestLimitedNeverReturnsInvalidUTF8(t *testing.T) {
-	l := &Limited{Max: 2}
-	l.Write([]byte("añb")) // "ñ" ocupa 2 bytes: el tope cae en el medio del carácter
-	got := l.String()
-	if !utf8.ValidString(got) {
-		t.Fatalf("String = %q no es UTF-8 válido", got)
+func TestLimitedMarksTruncationOnlyWhenSomethingIsDropped(t *testing.T) {
+	l := &Limited{Max: 5}
+	l.Write([]byte("abcde"))
+	if l.Truncated() {
+		t.Fatal("llenar justo el tope no es truncar: Truncated = true")
 	}
-	if !strings.HasPrefix(got, "a") {
-		t.Fatalf("se perdió el prefijo válido: %q", got)
+	l.Write([]byte("f"))
+	if !l.Truncated() {
+		t.Fatal("con el buffer lleno, descartar un byte debe marcar Truncated")
 	}
-	if _, err := json.Marshal(got); err != nil {
-		t.Fatal(err)
+	if got := l.String(); got != "abcde" {
+		t.Fatalf("String = %q; quiero %q", got, "abcde")
+	}
+}
+
+func TestLimitedDropsACharacterCutByTheCap(t *testing.T) {
+	cases := []struct {
+		name  string
+		max   int
+		input string
+		want  string
+	}{
+		// a(1) ñ(2) ñ(2) o(1): el tope de 4 bytes deja sólo el primer byte de la segunda "ñ".
+		{"ñ cortada tras su primer byte", 4, "añño", "añ"},
+		// "€" ocupa 3 bytes: el tope de 3 deja la "a" y dos bytes del "€".
+		{"€ cortado tras su segundo byte", 3, "a€", "a"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			l := &Limited{Max: c.max}
+			l.Write([]byte(c.input))
+			if got := l.String(); got != c.want || !l.Truncated() {
+				t.Fatalf("String = %q, Truncated = %v; quiero %q y true, sin un U+FFFD que el programa no imprimió",
+					got, l.Truncated(), c.want)
+			}
+		})
+	}
+}
+
+func TestLimitedKeepsACompleteCharacterAtTheCap(t *testing.T) {
+	l := &Limited{Max: 3}
+	l.Write([]byte("añb")) // "añ" ocupa justo 3 bytes: el corte cae entre dos caracteres
+	if got := l.String(); got != "añ" {
+		t.Fatalf("String = %q; quiero %q", got, "añ")
+	}
+}
+
+func TestLimitedReplacesInvalidBytesFromTheProgram(t *testing.T) {
+	l := &Limited{Max: 10}
+	l.Write([]byte("a\xffb"))
+	if got := l.String(); got != "a\uFFFDb" {
+		t.Fatalf("String = %q; quiero %q", got, "a\uFFFDb")
+	}
+	if l.Truncated() {
+		t.Fatal("no se descartó nada: Truncated debe ser false")
 	}
 }
