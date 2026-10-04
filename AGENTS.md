@@ -4,7 +4,8 @@
 
 Taller educativo en español con ejercicios de Rust/Go y simulaciones de Sistemas.
 La interfaz migra por funcionalidades a **React con TypeScript/TSX**; Vite construye
-un HTML autónomo y Nginx lo sirve. Los compiladores son los Playgrounds oficiales.
+un HTML autónomo y Nginx lo sirve; Nginx también pasa `/api/` a la API Laravel de `api/`
+(ADR 0004). Los compiladores son los Playgrounds oficiales.
 Atlas es la primera vista migrada; el resto conserva adaptadores legacy temporales.
 
 ## Organización
@@ -25,11 +26,16 @@ La raíz conserva sólo las vistas legacy que faltan migrar a React (`app.js`,
 El resto vive en `src/` por capas FSD (`app`, `pages`, `features`, `entities`,
 `shared`); el mapa está en `docs/architecture.md`. `qa/` reúne verificaciones e investigación; `docs/` contiene reglas
 específicas de desarrollo; `.agents/skills/` contiene las skills del proyecto.
+`api/` es la API Laravel del ADR 0004 (PHP-FPM y MySQL en Docker); sus reglas y comandos
+están en `api/AGENTS.md`.
 `src/index.html` y `src/app/main.tsx` son las entradas Vite; `dist/` es la salida
 generada. `content/` es la fuente del currículo (YAML y código Rust y Go real);
 `tools/content/` la valida y genera `build/curriculum.json`, otra salida ignorada que
 importan los adaptadores. Los `CLAUDE.md` sólo importan este archivo y los de cada
 carpeta para Claude Code; `.claude/` contiene symlinks de skills y subagentes.
+
+`executor/` es el ejecutor Go del ADR 0005, un servicio interno que compila y ejecuta Rust y
+Go en contenedores endurecidos (gVisor por omisión); sus reglas están en `executor/AGENTS.md`.
 
 ## Comandos
 
@@ -64,6 +70,11 @@ La web queda en `http://localhost:8080`. Para servir `dist/index.html` generado 
 el host como preview, usá `docker compose -f compose.preview.yaml up --build -d --wait`
 y abrí `http://localhost:8765`; detenelo con
 `docker compose -f compose.preview.yaml down`. El progreso de ambos puertos es independiente.
+
+Docker necesita un `.env` en la raíz con `APP_KEY`, `MYSQL_PASSWORD` y `MYSQL_ROOT_PASSWORD`:
+`sh api/scripts/init-env.sh` agrega los que falten. Ese archivo queda fuera de Git y del
+contexto de Docker. Las pruebas de la API (`npm run api:test` y las demás de `api/AGENTS.md`)
+usan Docker y no forman parte de `npm test`.
 
 ## Convenciones
 
@@ -137,7 +148,8 @@ import {filterConcepts} from './filter-concepts';
   un caso de uso que no pueda resolverse en el cliente, una interfaz explícita, pruebas
   y un ADR. Para ese caso, evaluá primero Hono por portabilidad Web Standards y
   Fastify si el despliegue será exclusivamente Node; Express sigue siendo válido
-  cuando su ecosistema o compatibilidad sea una necesidad concreta.
+  cuando su ecosistema o compatibilidad sea una necesidad concreta. El backend vigente es
+  Laravel en `api/` (ADR 0004).
 - No mezcles frameworks de interfaz en una misma migración. Astro queda como alternativa
   para una futura arquitectura dominada por contenido estático e islas, no como capa
   adicional sobre React/Vite sin una decisión registrada.

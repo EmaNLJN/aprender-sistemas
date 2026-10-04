@@ -8,6 +8,8 @@
 **/node_modules/
 **/.venv/
 **/venv/
+# Laravel API: PHP is formatted with Pint and Composer writes composer.json.
+api/
 
 # Generated output.
 dist/

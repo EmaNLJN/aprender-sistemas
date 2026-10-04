@@ -19,6 +19,7 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | Ejercicios del recorrido y tipo `Exercise` | sección `lab` de `content/{rust,go}/manifest.yaml` y `content/{rust,go}/exercises/<id>/`; `src/entities/exercise/model/types.ts` |
 | Laboratorio, revisión y modelos educativos | `lab.js`, `lab-explorers.js`, `lab.css` |
 | Transporte a los Playgrounds oficiales | `src/shared/api/playground/`, adaptador `src/app/legacy/register-runner.ts` |
+| Ejecutor Go en sandbox (ADR 0005, todavía sin conectar al laboratorio) | `executor/`: `internal/sandbox` (perfiles, argumentos de Docker, fases y barrido), `internal/api` (HTTP interno), `images/` (sandboxes Rust y Go) |
 | Editor CodeMirror 6 | `src/shared/ui/code-editor/`, adaptador `src/app/legacy/register-editor.ts` |
 | Atlas migrado a React/TypeScript | `src/pages/atlas/` (`ui`, `model`, `lib`), conceptos en `content/atlas/` y adaptador `src/app/legacy/register-atlas.tsx` |
 | Desafíos nuevos de campaña | sección `quests` de `content/{rust,go}/manifest.yaml` (la posición en el mundo fija tipo, `kind` y minutos del jefe) |
@@ -35,7 +36,8 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | Animaciones | `src/shared/lib/celebration.ts`, adaptador `src/app/legacy/register-effects.ts` |
 | Kits ZIP de proyecto | `src/features/download-project-kit/` (archivos puros y ZIP con fflate), `src/shared/lib/download-file.ts`, adaptador `src/app/legacy/register-project-kit.ts` |
 | Construcción y dependencias | configuración Vite, `package.json`, `package-lock.json`; generador del currículo en `tools/content/` (`npm run curriculum`, validación, `build/curriculum.json` y oráculos de equivalencia) |
-| Servicio estático y preview | `Dockerfile`, `compose.yaml`, `compose.preview.yaml`, `nginx.conf` |
+| Servicio web, API y preview: Nginx, PHP-FPM, MySQL y migraciones | `Dockerfile`, `compose.yaml`, `compose.preview.yaml`, `nginx.conf` |
+| API Laravel del ADR 0004: rutas, configuración, migraciones, pruebas Pest e imagen PHP-FPM | `api/` (reglas en `api/AGENTS.md`) |
 | Comprobaciones e investigación educativa | `qa/*-check.ts`, `qa/lib/`, `qa/fixtures/`, `qa/run-checks.ts`, `qa/research-*.md` |
 | Documentación del desarrollo | `AGENTS.md`, `docs/` |
 

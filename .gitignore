@@ -6,6 +6,8 @@ __pycache__/
 *.py[cod]
 .cache/
 .desloppify/
+# Composer dependencies of the Laravel API live only inside its images.
+/api/vendor/
 
 # Local configuration and secrets; sanitized templates may be committed.
 CLAUDE.local.md
@@ -61,3 +63,5 @@ Thumbs.db
 *.swp
 *.swo
 *~
+# Scratch de los flujos con subagentes (ledger, briefs, informes y paquetes de revisión).
+.superpowers/

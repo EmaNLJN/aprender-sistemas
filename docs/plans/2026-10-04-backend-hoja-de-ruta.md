@@ -26,7 +26,7 @@ Opus (`revisor`) e integra el agente principal.
 |---|---|---|---|---|
 | B1 | Ejecutor Go, imágenes de sandbox y prueba de humo de gVisor | — | `POST /v1/run` compila y ejecuta Rust y Go en contenedores endurecidos, con pruebas unitarias e integración | [2026-10-04-ejecutor-go.md](2026-10-04-ejecutor-go.md) |
 | A1 | Contenido en YAML y código real, con oráculo idéntico | — | `content/` reemplaza los catálogos `.ts`; `curriculum.json` generado; oráculo `dump-globals-v2` idéntico y catálogos del bundle idénticos (los bytes del bundle no pueden serlo) | [2026-10-04-contenido-yaml.md](2026-10-04-contenido-yaml.md) |
-| C1 | Base Laravel en Docker | — | Proyecto API-only, servicios `php`, `mysql` y `migrate`, Nginx con `/api/`, healthchecks, Pest contra MySQL de test | a escribir |
+| C1 | Base Laravel en Docker | — | Proyecto API-only, servicios `php`, `mysql` y `migrate`, Nginx con `/api/`, healthchecks, Pest contra MySQL de test | [2026-10-04-laravel-base.md](2026-10-04-laravel-base.md) |
 | A2 | Compuerta de arranque y contenido fuera del bundle | A1 | `main.tsx` espera el contenido antes de evaluar las vistas legacy (spike previo); el HTML deja de embeberlo | a escribir |
 | C2 | Contenido en MySQL | A1, C1 | Migraciones, `content:import` idempotente, `GET /api/content` con ETag; la respuesta es idéntica al oráculo | a escribir |
 | C3 | Autenticación | C1 | Sanctum SPA + Fortify sin vistas, TOTP, límites por IP y vista de login | a escribir |
@@ -37,6 +37,14 @@ Opus (`revisor`) e integra el agente principal.
 | B3 | Auditoría local del currículo | B2 | Todas las soluciones aprueban y todos los códigos iniciales fallan en el ejecutor local | a escribir |
 | D1 | Progreso en tablas y sincronización | C2, C3 | Tablas de progreso, cliente v2 (fecha por campo, lápidas, IDs de etapa, `proof`), `POST /api/sync`; el fixture de master entra y sale sin pérdida | a escribir |
 | E1 | Sesión Esenciales | A1, D1 | Con su decisión de IDs (ADR propio) | a escribir |
+
+## Estado
+
+- **B1** (2026-10-04): en `master` (PR #3). Las 21 pruebas de integración pasan con runc y con
+  runsc (gVisor instalado por apt), registrado con `--network=none`.
+- **C1** (2026-10-04): en `master` (PR #4). Pest, prueba de humo y primer arranque con el
+  volumen vacío verificados; la imagen del front con el `nginx.conf` nuevo se prueba en el
+  primer `up --build`.
 
 ## Orden y paralelismo
 
