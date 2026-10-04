@@ -4,6 +4,8 @@
 - Fecha: 2026-10-03
 - Reemplaza en parte: ADR 0001 (HTML autónomo y backend diferido) y la forma de
   persistencia del ADR 0003
+- Revisada el mismo día: autenticación y exposición en Internet, ejecución de código en
+  el backend (ADR 0005)
 
 ## Contexto
 
@@ -15,7 +17,9 @@ solo usuario, con la última versión de PHP, Laravel y MySQL en Docker. Tambié
   con el progreso y sacarlo del HTML, de modo que la sesión Esenciales entre en el build;
 - que el navegador lea el contenido desde la API. Se le presentó como alternativa
   recomendada servirlo como archivos estáticos (ver «Alternativas»);
-- no editar contenido desde un panel: la autoría sigue en Git.
+- no editar contenido desde un panel: la autoría sigue en Git;
+- exponer el taller en Internet, con dominio público y certificado propio;
+- ejecutar el código de Rust y Go en un sandbox propio del backend (ADR 0005).
 
 `AGENTS.md` pedía evaluar primero Hono y admitir un backend sólo para lo que el cliente no
 resuelve. La sincronización y la persistencia fuera del navegador lo justifican. Servir el
@@ -43,15 +47,26 @@ El 2026-10-03 se investigaron:
   - Composer 2.10.
 - **API-only sin `php artisan install:api`:** ese comando instala Sanctum sin opción de
   omitirlo. Las rutas van en `routes/api.php`, declaradas en `bootstrap/app.php`.
-- **Autenticación:**
-  - Un único token bearer leído con `config()` desde `.env` y comparado con `hash_equals`.
-  - Un token configurado vacío rechaza todo.
-  - El navegador lo recibe una vez desde Método y lo guarda localmente.
+- **Autenticación,** porque el taller queda expuesto en Internet:
+  - Sesión con cookie HttpOnly, Secure y SameSite, más CSRF (`XSRF-TOKEN` →
+    `X-XSRF-TOKEN`). Usa el patrón SPA de Sanctum (`statefulApi()`), instalado con
+    `composer require laravel/sanctum`, nunca con `install:api`.
+  - Fortify sin vistas: sin registro ni recuperación por mail. El único usuario se crea con
+    un comando artisan.
+  - Segundo factor TOTP opcional, con confirmación.
+  - El login se limita por IP y usuario (5 por minuto), con espera creciente por IP. No hay
+    bloqueo de cuenta: con un solo usuario, un atacante podría dejarlo afuera.
+  - La IP real se toma de Nginx (`trustProxies`).
+  - Sin sesión sólo responde el login. Contenido, progreso y ejecución exigen
+    autenticación.
 - **Docker Compose:**
   - El servicio Nginx actual sirve el front y pasa `/api/` a PHP-FPM, en el mismo origen:
     sin CORS, y la CSP `connect-src 'self'` lo cubre.
-  - Se agregan los servicios `php` y `mysql` (con volumen persistente) y `migrate`, que
-    corre una sola vez `migrate --force` y `content:import`.
+  - Se agregan los servicios:
+    - `php` y `mysql`, este último con volumen persistente;
+    - `migrate`, que corre una sola vez `migrate --force` y `content:import`;
+    - `worker`, para la cola de ejecuciones;
+    - `executor`, el sandbox del ADR 0005, sólo en la red interna.
   - Redes internas; los puertos 3306 y 9000 no se publican.
   - El modo `network_mode: bridge` actual de `compose.yaml` se reemplaza por redes
     definidas.
@@ -59,8 +74,16 @@ El 2026-10-03 se investigaron:
   - MySQL: `mysqladmin ping -h 127.0.0.1`, porque por socket responde antes de terminar
     la inicialización.
   - PHP-FPM: `ping.path` del pool, consultado con `cgi-fcgi`.
-- **Secretos:** el token y las contraseñas viven en `.env`, fuera de Git y del contexto
-  de Docker.
+- **Secretos:** contraseñas, `APP_KEY` y el token interno del ejecutor viven en `.env`,
+  fuera de Git y del contexto de Docker.
+- **Exposición con certificado propio:**
+  - Nginx o Caddy terminan TLS con Let's Encrypt, con renovación automática: los
+    certificados pasan a 64 días en 2027 y a 45 en 2028.
+  - Se abren los puertos 80 y 443, con DNS dinámico si la IP del hogar cambia.
+  - Cabeceras: HSTS, `X-Content-Type-Options: nosniff`, `Referrer-Policy`,
+    `frame-ancestors 'none'`, `Permissions-Policy` y COOP.
+  - Como el HTML deja de ser autónomo, se retira `vite-plugin-singlefile`. Así la CSP
+    puede usar `script-src 'self'` sin `'unsafe-inline'`.
 
 ### 2. Contenido
 
@@ -185,6 +208,7 @@ texto y los retirados.
     última evidencia aprobada (`proof`) separada del último resultado.
   - Cada cambio entra a una cola con un UUID v4 generado con `crypto.getRandomValues`.
     `crypto.randomUUID` exige contexto seguro.
+  - Las peticiones viajan con la sesión y el CSRF del punto 1.
 - **Endpoints.**
   - `POST /api/sync` aplica la cola en una transacción, ignora los UUID ya recibidos y
     devuelve los UUID aceptados junto con el estado completo.
@@ -217,6 +241,11 @@ texto y los retirados.
 - **La base como fuente, con panel de administración.** Descartada: se pierde la revisión
   en Git y los checks de currículo, y el usuario no quiere editar desde un panel.
 - **Hono o Fastify (ADR 0001).** El usuario eligió Laravel.
+- **Token bearer guardado en el navegador.** Descartado al exponer el taller en Internet:
+  OWASP desaconseja guardar identificadores de sesión en `localStorage`, porque un XSS los
+  filtra.
+- **Cloudflare Tunnel con Access.** El usuario eligió no tener un tercero que termine el
+  TLS y vea el tráfico.
 - **Un documento JSON versionado en MySQL (plan previo).** Descartado:
   - no permite consultas;
   - no permite fusionar por registro;
@@ -238,6 +267,8 @@ texto y los retirados.
   - secretos en `.env`, que se agregan a `.gitignore` y `.dockerignore`.
 - **Documentación:** cada fase actualiza `AGENTS.md`, `README.md`, `docs/architecture.md`
   y `qa/AGENTS.md`.
+- **Exposición:** abrir puertos, renovar certificados y mantener actualizados el sistema,
+  Docker, gVisor y las imágenes pasan a ser tareas de operación.
 - **Riesgos conocidos:**
   - relojes desfasados entre dispositivos para «gana la última escritura» (mitigable más
     adelante con una revisión del servidor);
@@ -254,8 +285,11 @@ texto y los retirados.
 4. **`curriculum.json` y la compuerta de arranque,** con un spike previo.
 5. **Proyecto Laravel:** Docker, `content:import`, tablas de contenido y
    `GET /api/content`.
-6. **Progreso:** tablas, cliente v2, sincronización y token.
-7. **Sesión Esenciales,** con su propia decisión de IDs: hoy `content-check` y el fixture
+6. **Autenticación y exposición:** sesión, Fortify con TOTP, límites, TLS y cabeceras.
+7. **Ejecución:** las fases del ADR 0005. El ejecutor puede construirse y probarse antes, por
+   separado.
+8. **Progreso:** tablas, cliente v2 y sincronización.
+9. **Sesión Esenciales,** con su propia decisión de IDs: hoy `content-check` y el fixture
    de IDs asumen numeración correlativa.
 
 ## Fuentes
@@ -272,3 +306,6 @@ texto y los retirados.
 - [Moodle: motor de preguntas](https://github.com/moodle/moodle/blob/main/public/question/engine/questionattempt.php)
 - [xAPI 1.0.3: datos](https://github.com/adlnet/xAPI-Spec/blob/master/xAPI-Data.md)
 - [MDN: crypto.randomUUID](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID)
+- [Laravel 13: Sanctum (SPA)](https://laravel.com/docs/13.x/sanctum), [Fortify](https://laravel.com/docs/13.x/fortify)
+- [OWASP: almacenamiento en HTML5](https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html), [cabeceras HTTP](https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet.html), [autenticación](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html)
+- [Let's Encrypt: certificados de 45 días](https://letsencrypt.org/2025/12/02/from-90-to-45.html)
