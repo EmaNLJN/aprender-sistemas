@@ -31,5 +31,8 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
     código que hace `TRUNCATE` o abre sus propias transacciones.
   - `phpunit.xml` impone la base de pruebas con `<env force="true">` y `<server>`, porque
     Laravel lee primero `$_SERVER`. Cada variable nueva que apunte a la base va con las dos.
+  - `tests/TestCase.php` corta antes de tocar una base que no sea `mysql-test`/`taller_test*`,
+    con la conexión efectiva (DB_URL y socket incluidos) y antes de las bases de cada proceso
+    en paralelo.
 - **Contenedores:** `php` y `migrate` corren como `www-data` y con disco de sólo lectura. Lo
   que necesite escribir va a un tmpfs declarado en `compose.yaml`.

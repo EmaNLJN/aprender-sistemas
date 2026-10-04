@@ -8,3 +8,10 @@ it('responde 404 en JSON a una ruta desconocida bajo /api', function () {
         ->assertHeader('Content-Type', 'application/json')
         ->assertJsonStructure(['message']);
 });
+
+// Laravel recorta la barra final: la raíz /api/ llega como `api`, que `api/*` no cubre.
+it('responde 404 en JSON también en la raíz /api/', function () {
+    $this->get('/api/')
+        ->assertNotFound()
+        ->assertHeader('Content-Type', 'application/json');
+});
