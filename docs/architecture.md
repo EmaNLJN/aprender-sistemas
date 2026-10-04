@@ -19,6 +19,7 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | Ejercicios del recorrido y tipo `Exercise` | `src/entities/exercise/content/{rust,go}-lab.ts`, `src/entities/exercise/model/types.ts` |
 | Laboratorio, revisión y modelos educativos | `lab.js`, `lab-explorers.js`, `lab.css` |
 | Transporte a los Playgrounds oficiales | `src/shared/api/playground/`, adaptador `src/app/legacy/register-runner.ts` |
+| Ejecutor Go en sandbox (ADR 0005, todavía sin conectar al laboratorio) | `executor/`: `internal/sandbox` (perfiles, argumentos de Docker, fases y barrido), `internal/api` (HTTP interno), `images/` (sandboxes Rust y Go) |
 | Editor CodeMirror 6 | `src/shared/ui/code-editor/`, adaptador `src/app/legacy/register-editor.ts` |
 | Atlas migrado a React/TypeScript | `src/pages/atlas/` (`ui`, `model`, `content`, `lib`) y adaptador `src/app/legacy/register-atlas.tsx` |
 | Desafíos nuevos de campaña | `src/entities/exercise/content/{rust,go}-quests.ts` (fábrica `defineQuest`) |

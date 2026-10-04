@@ -16,7 +16,9 @@
     "format": "prettier . --write",
     "check:lab": "node qa/lab-state-check.ts",
     "pretest": "npm run typecheck",
-    "test": "node qa/run-checks.ts"
+    "test": "node qa/run-checks.ts",
+    "test:executor": "sh executor/scripts/test.sh",
+    "test:executor:integration": "sh executor/scripts/integration.sh"
   },
   "dependencies": {
     "@codemirror/autocomplete": "6.20.3",

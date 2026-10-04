@@ -1,6 +1,7 @@
 # ADR 0005 — Ejecución de código en un sandbox propio
 
-- Estado: aceptada (aprobada por el usuario el 2026-10-04)
+- Estado: aceptada (aprobada por el usuario el 2026-10-04); enmendada el 2026-10-04 con lo
+  que ajustó la implementación del plan B1 (ver «Enmienda»)
 - Fecha: 2026-10-03
 - Relacionado: ADR 0004 (backend Laravel y MySQL). Reemplaza el uso de los Playgrounds
   públicos.
@@ -203,6 +204,33 @@ Se insertan en el plan del ADR 0004, después de importar el contenido a MySQL:
 3. **Laboratorio:** el laboratorio pasa a `/api/runs`, con vista previa desde la plantilla
    compartida.
 4. **Auditoría local:** de todas las soluciones y los códigos iniciales.
+
+## Enmienda (2026-10-04, plan B1)
+
+La implementación del ejecutor (`docs/plans/2026-10-04-ejecutor-go.md`) ajustó estos puntos:
+
+- **Petición.** `POST /v1/run {language, program}`: el perfil sale del lenguaje y no viaja en
+  la petición. El ejecutor acepta programas de hasta 128 KiB (código del alumno más harness);
+  el tope de 64 KiB del código del alumno lo aplica Laravel.
+- **Dos contenedores por envío.** Uno compila y otro ejecuta. Comparten un volumen `/out`
+  etiquetado que se borra al terminar: la compilación lo escribe y la ejecución lo monta de
+  sólo lectura, con el rootfs también de sólo lectura. Reemplaza al tmpfs `/work` con `exec`:
+  el binario corre desde el volumen.
+- **`/tmp`.** tmpfs con `noexec,nosuid,nodev`: 256 MiB al compilar y 16 MiB al ejecutar.
+- **Compilación Go.** Sin `--read-only`: `go build` escribe en el GOCACHE precalentado de la
+  imagen, dentro de la capa del contenedor, que se descarta al borrarlo.
+- **Flags nuevos.** `--ulimit nofile=256:256` y `--log-driver none`, para que el daemon no
+  guarde en disco la salida del alumno.
+- **`go vet`.** Corre sólo si el programa compiló, como en el Playground, y nunca cambia el
+  código de salida.
+- **Errores.** Si Docker no puede arrancar el contenedor (`State.Error`), es un fallo del
+  sandbox y no un resultado del alumno. El ejecutor responde 503 con `Retry-After` cuando está
+  ocupado (no corrió nada) y 500 ante un fallo del sandbox (pudo haber corrido, así que Laravel
+  no lo reintenta solo).
+- **Tiempo de ejecución.** 10 s; la tabla decía de 5 a 10 s.
+- **Medido con runc (2026-10-04).** Compilar un hola mundo tarda unos 0,4 s en Go y 0,2 s en
+  Rust, y el OOM llega como `OOMKilled=true`. Falta repetir la integración y las medidas con
+  runsc.
 
 ## Fuentes
 

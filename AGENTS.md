@@ -26,6 +26,9 @@ específicas de desarrollo; `.agents/skills/` contiene las skills del proyecto.
 generada. Los `CLAUDE.md` sólo importan este archivo y los de cada
 carpeta para Claude Code; `.claude/` contiene symlinks de skills y subagentes.
 
+`executor/` es el ejecutor Go del ADR 0005, un servicio interno que compila y ejecuta Rust y
+Go en contenedores endurecidos (gVisor por omisión); sus reglas están en `executor/AGENTS.md`.
+
 ## Comandos
 
 Desde la raíz, con Node y npm instalados (Docker usa Node 24):
