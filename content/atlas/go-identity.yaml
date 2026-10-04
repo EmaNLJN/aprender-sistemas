@@ -1,0 +1,29 @@
+id: go-identity
+level: beginner
+category: Fundamentos
+title: Qué lenguaje estás aprendiendo
+summary: Go es compilado y de tipado estático, con recolector de basura. Favorece funciones, composición, interfaces pequeñas y concurrencia mediante goroutines y canales.
+why: Su diseño busca que el código de sistemas y servicios sea legible y que equipos puedan construir, probar y mantener programas con herramientas comunes.
+code: |-
+  func Total(datos []int) int {
+      total := 0
+      for _, n := range datos {
+          total += n
+      }
+      return total
+  }
+explanation: El ejemplo es imperativo y explícito. Go también admite funciones como valores, closures, genéricos y polimorfismo por interfaces. No exige un paradigma funcional puro ni una jerarquía de clases para organizar el programa.
+comparison: Frente a JavaScript o Python, los tipos de las operaciones se verifican antes de ejecutar. Frente a Rust, la gestión usual de memoria usa GC y no exige demostrar lifetimes de referencias con un borrow checker.
+pitfall: La sencillez de la sintaxis no elimina complejidad de diseño. Un programa con goroutines todavía puede bloquearse o tener carreras.
+quiz:
+  question: ¿Go exige una clase para agrupar cada función?
+  options:
+    - Sí
+    - 'No: las funciones pueden pertenecer directamente a un paquete'
+    - Solo si retorna un int
+  answer: 1
+  explanation: Los paquetes organizan funciones, tipos y otros elementos sin exigir clases.
+labId: go-01
+source:
+  title: Go FAQ · Language design
+  url: https://go.dev/doc/faq

@@ -1,0 +1,44 @@
+title: El camino barato no siempre es el corto
+level: advanced
+minutes: 20
+intro: El personaje atraviesa terreno con distintos costos. El camino de menos casilleros puede cruzar un pantano carísimo.
+why: A* combina costo real g y una cota optimista h. Manhattan es admisible aquí porque moverse es ortogonal y cada casilla transitable cuesta al menos1.
+objective: Buscá el costo mínimo desde arriba-izquierda hasta abajo-derecha en una grilla rectangular de hasta10×10. 0 es muro;1…9 cuesta entrar. No cobres la casilla inicial. Ausencia si vacía, irregular, extremos bloqueados o sin ruta. Usá vecinos ortogonales.
+instructions:
+  - Leé el contrato y predecí un caso antes de ejecutar.
+  - Conservá la representación indicada y verificá también sus límites.
+tests:
+  - id: t1
+    label: Costo frente a distancia
+    expression: func()bool{a,ok:=RouteCost([][]int{{1,9,1},{1,1,1}});b,yes:=RouteCost([][]int{{1,2,3}});return ok&&yes&&a==3&&b==5}()
+    why: Un desvío puede evitar una entrada de costo9.
+    failure: Un desvío puede evitar una entrada de costo9.
+  - id: t2
+    label: Inicio gratis y aislamiento
+    expression: func()bool{a,ok:=RouteCost([][]int{{9}});_,blocked:=RouteCost([][]int{{1,0},{0,1}});return ok&&a==0&&!blocked}()
+    why: El inicio cuesta0 aunque su etiqueta sea9.
+    failure: El inicio cuesta0 aunque su etiqueta sea9.
+  - id: t3
+    label: Validación de forma
+    expression: func()bool{for _,g:=range [][][]int{nil,{{}},{{1,1},{1}},{{0,1}},{{1,0}}}{_,ok:=RouteCost(g);if ok{return false}};return true}()
+    why: Rechazá grillas vacías, irregulares y extremos bloqueados.
+    failure: Rechazá grillas vacías, irregulares y extremos bloqueados.
+hints:
+  - Guardá el mejor costo conocido por casilla.
+  - Priorizá g + distancia Manhattan al objetivo.
+  - Si una entrada pendiente ya tiene un costo peor que el registrado, descartala.
+review:
+  success: Los casos distinguen cantidad de pasos y costo, verifican el inicio gratuito y rechazan mapas inválidos.
+  pitfall: 'La lista abierta de esta solución se recorre para buscar el mínimo: facilita leer A*, pero una cola de prioridad escala mejor.'
+transfer: Devolvé también el camino guardando padres y compará expansiones con h=0.
+prediction:
+  question: Manhattan sigue siendo una cota admisible con costos1…9 porque…
+  options:
+    - Cada paso cuesta al menos1
+    - Todos los costos deben ser iguales
+    - Siempre encuentra paredes
+  answer: 0
+  explanation: Ignorar paredes y cobrar1 por paso nunca sobreestima el costo real permitido por este contrato.
+sources:
+  - title: El mapa que piensa · fundamentos
+    url: https://www.redblobgames.com/pathfinding/a-star/introduction.html

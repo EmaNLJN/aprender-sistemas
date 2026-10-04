@@ -1,0 +1,39 @@
+title: Cada mensaje lleva sus propios datos
+intro: Las variantes de un enum pueden transportar datos diferentes. El patrón extrae esos datos al elegir la variante.
+why: Una orden Ping no necesita un campo de bytes artificial. El tipo evita combinaciones sin sentido como un Ping con tamaño obligatorio.
+objective: 'Calculá el costo: Ping = 1, Datos(n) = n, Cerrar = 0.'
+instructions:
+  - Hacé match sobre Mensaje.
+  - Extraé el tamaño en el patrón Mensaje::Datos(n).
+tests:
+  - id: t1
+    label: Control
+    expression: costo_mensaje(Mensaje::Ping) == 1 && costo_mensaje(Mensaje::Cerrar) == 0
+    why: Los mensajes sin payload tienen reglas propias.
+    failure: Ping y Cerrar no llevan n.
+  - id: t2
+    label: Payload variable
+    expression: costo_mensaje(Mensaje::Datos(128)) == 128
+    why: El patrón conserva el dato transportado.
+    failure: Devolvé n al extraer Datos(n).
+  - id: t3
+    label: Payload vacío
+    expression: costo_mensaje(Mensaje::Datos(0)) == 0
+    why: Cero bytes sigue siendo una variante Datos válida.
+    failure: No confundas Datos(0) con Ping.
+hints:
+  - Los paréntesis del patrón extraen el usize.
+  - Los tres brazos deben devolver usize.
+  - Mensaje::Datos(n) => n.
+review:
+  success: Separaste qué clase de mensaje llegó de la información específica de esa clase.
+  pitfall: 'Un enum con datos no se reemplaza en general por una constante numérica: las variantes pueden tener estructuras distintas.'
+transfer: 'Agregá DatosComprimidos { originales: usize, comprimidos: usize } y definí su costo.'
+prediction:
+  question: ¿Qué es n en Mensaje::Datos(n) => n?
+  options:
+    - Una constante global
+    - Una variable que recibe el dato de esa variante
+    - El número de la variante
+  answer: 1
+  explanation: El patrón enlaza el contenido de Datos a una nueva variable local.

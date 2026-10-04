@@ -1,0 +1,40 @@
+title: Mover una copia del explorador
+kind: reparar
+intro: Queremos calcular la próxima posición sin alterar la actual. Un método con receptor por valor trabaja sobre su propia copia del struct.
+why: Devolver esa copia modificada hace explícita la transformación. El llamador elige si reemplaza la posición vieja o conserva ambas.
+objective: Moved(dx, dy) devuelve una nueva Position desplazada y conserva el original.
+instructions:
+  - Usá un receptor Position por valor.
+  - Modificá la copia y retornala.
+tests:
+  - id: t1
+    label: Movimiento
+    expression: func() bool { p:=Position{2,3}; q:=p.Moved(5,-1); return q.X==7 && q.Y==2 }()
+    why: La copia debe incorporar ambos ejes.
+    failure: No olvides aplicar dy.
+  - id: t2
+    label: Original intacto
+    expression: func() bool { p:=Position{2,3}; _=p.Moved(5,1); return p.X==2 && p.Y==3 }()
+    why: El receptor debe tener semántica de copia.
+    failure: Un receptor *Position permite cambiar el original.
+  - id: t3
+    label: Movimiento nulo
+    expression: func() bool { p:=Position{-4,0}; q:=p.Moved(0,0); return q==p }()
+    why: Sin desplazamiento ambas posiciones coinciden.
+    failure: Conservá las coordenadas iniciales.
+hints:
+  - Quitá el * del receptor.
+  - p será una copia local.
+  - El return devuelve p, ya no *p.
+review:
+  success: Modelaste una transformación que conserva el estado previo. Los campos int hacen que esta copia sea suficiente para aislar la posición.
+  pitfall: Cambiar a receptor por valor no copia profundamente mapas o slices dentro de un struct.
+transfer: Agregá una operación DistanceSquared que no modifique posiciones.
+prediction:
+  question: Un receptor p Position con campos int recibe…
+  options:
+    - Una copia del struct
+    - Siempre un alias
+    - Un puntero nil
+  answer: 0
+  explanation: El receptor por valor tiene sus propios campos escalares.

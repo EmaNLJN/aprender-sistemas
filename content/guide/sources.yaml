@@ -1,0 +1,27 @@
+- title: 'Rust: experiencias de personas que se aburren con The Book'
+  url: https://www.reddit.com/r/learnrust/comments/1jvz6du/any_good_resource_to_learn_rust_which_is_not_the/
+  note: Discusión comunitaria útil para comparar formatos. Son experiencias personales, no un consenso ni evidencia de que un recurso funcione para todos.
+- title: 'Go: Learn Go with Tests frente a Boot.dev'
+  url: https://www.reddit.com/r/golang/comments/1m4ksas/learn_go_with_tests_vs_bootdev_go_course_which/
+  note: Opiniones sobre aprendizaje con experiencia previa, estructura y costo. Usalas como contexto para probar qué formato te sostiene.
+- title: Experiencias con CodeCrafters en Hacker News
+  url: https://news.ycombinator.com/item?id=48245728
+  note: Testimonios sobre reconstruir herramientas y el papel de la IA durante la práctica. La selección del recorrido es una recomendación de esta guía.
+- title: 'CodeCrafters: pausa en el desarrollo de nuevos retos'
+  url: https://codecrafters.io/blog/pausing-new-challenges
+  note: Anuncio de sus creadores sobre nuevos retos y continuidad de los existentes. Revisá la disponibilidad del proyecto concreto antes de pagar.
+- title: 'CodeCrafters: reto de servidor HTTP'
+  url: https://app.codecrafters.io/courses/http-server/overview
+  note: Página del reto para consultar etapas, lenguajes disponibles y condiciones actuales de acceso.
+- title: 'Boot.dev: qué incluye el acceso gratuito'
+  url: https://www.boot.dev/blog/education/is-boot-dev-free
+  note: Fuente oficial para distinguir contenido accesible sin pago de interactividad y beneficios de membresía. Las condiciones pueden cambiar.
+- title: 'JetBrains: 100 Exercises en RustRover'
+  url: https://blog.jetbrains.com/rust/2026/09/23/100-exercises-to-learn-rust/
+  note: Presentación oficial de la integración, condiciones de uso del editor y recomendaciones sobre IA durante los ejercicios.
+- title: 'Protohackers: funcionamiento del evaluador'
+  url: https://protohackers.com/faq
+  note: Requisitos para que el servicio pueda conectarse a tu servidor y comprobar tu implementación.
+- title: 'Context7: proyecto y documentación'
+  url: https://github.com/upstash/context7
+  note: Documentación del proveedor sobre recuperación de referencias para asistentes. Su función es aportar fuentes; la estrategia de tutoría la definís vos.

@@ -1,0 +1,53 @@
+title: Núcleo · Elegí y confirmá una interrupción
+level: expert
+minutes: 20
+intro: Modelás registros de un periférico, un evento pendiente, una máscara de entrega y el ciclo entrar a ISR→atender→ACK. En este ejercicio construís un núcleo verificable del proyecto; las cuatro etapas del taller lo convierten después en una herramienta completa.
+why: Los registros MMIO tienen semántica de dispositivo, no de variables comunes. Algunas escrituras activan acciones y algunas lecturas tienen efectos; el manual especifica cada caso.
+objective: Devolvé (índice,nuevosPendientes,true) para el menor bit de pendientes & habilitadas. Limpiá solo ese bit en pendientes. Si ninguno es entregable devolvé (-1,pendientes,false). Bits0..7; IRQ0 tiene mayor prioridad. No accedas a hardware real.
+instructions:
+  - Calculá candidatas con AND de ambas máscaras.
+  - 'Elegí un único bit: el menos significativo que esté activo.'
+  - Limpiá ese bit en pendientes conservando incluso los pendientes enmascarados.
+tests:
+  - id: t1
+    label: Una IRQ por atención
+    expression: func() bool { i,p,a:=AtenderIRQ(0b1010,0b1111); j,q,b:=AtenderIRQ(p,0b1111); return a && b && i==1 && p==0b1000 && j==3 && q==0 }()
+    why: Confirmar una IRQ no elimina todas las demás.
+    failure: Limpiá únicamente el bit seleccionado.
+  - id: t2
+    label: Máscara y bit alto
+    expression: func() bool { i,p,a:=AtenderIRQ(0b1001,0b1000); j,q,b:=AtenderIRQ(0b10000001,0b10000000); return a && b && i==3 && p==1 && j==7 && q==1 }()
+    why: Los pendientes enmascarados sobreviven.
+    failure: No devuelvas candidatas como nuevo pendiente.
+  - id: t3
+    label: Sin entrega y IRQ cero
+    expression: func() bool { i,p,a:=AtenderIRQ(0b0101,0b1010); j,q,b:=AtenderIRQ(0,255); k,r,c:=AtenderIRQ(1,1); return !a && i==-1 && p==0b0101 && !b && j==-1 && q==0 && c && k==0 && r==0 }()
+    why: El booleano distingue una IRQ real de la ausencia.
+    failure: No uses índice0 como señal de que no hubo evento.
+hints:
+  - 'El índice es distinto de la máscara: IRQ3 corresponde a 1<<3.'
+  - Si candidatas==0 no intentes elegir un bit.
+  - 'Para limpiar uno: pendientes & !(1<<indice), o &^ en Go.'
+review:
+  success: Los casos verifican prioridad, máscaras y confirmación selectiva. Un evento no entregable sigue pendiente para una habilitación posterior.
+  pitfall: Prioridad numérica, máscaras y ACK dependen del dispositivo. Esta operación pura no es una ISR real ni determina el comportamiento de registros MMIO.
+transfer: Agregá prioridad configurable y comprobá que una IRQ de baja prioridad no quede sin atención bajo tu política.
+prediction:
+  question: ENABLE=0 y el periférico activa PENDING. ¿Qué sucede en este modelo?
+  options:
+    - Se borra el evento
+    - Queda pendiente sin entrar a ISR
+    - La CPU entra a ISR de todos modos
+  answer: 1
+  explanation: La máscara impide la entrega; no borra el registro pendiente.
+sources:
+  - title: Writing an OS in Rust · Interrupts
+    url: https://os.phil-opp.com/hardware-interrupts/
+  - title: Rust · Volatile writes
+    url: https://doc.rust-lang.org/std/ptr/fn.write_volatile.html
+  - title: TinyGo · Supported language features
+    url: https://tinygo.org/docs/reference/lang-support/
+  - title: Go FAQ · Runtime
+    url: https://go.dev/doc/faq#runtime
+  - title: Writing an OS in Rust · Repository
+    url: https://github.com/phil-opp/blog_os

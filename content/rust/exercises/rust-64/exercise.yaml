@@ -1,0 +1,45 @@
+title: Una prueba que encuentra la frontera olvidada
+kind: reparar
+intro: 'Las pruebas unitarias viven habitualmente en un módulo #[cfg(test)] y usan #[test]. Un buen caso observa una propiedad, como normalizar dos veces sin cambiar el resultado.'
+why: Un ejemplo feliz puede pasar aunque falte parte del contrato. Casos de borde y propiedades revelan errores que no dependen de un único valor.
+objective: Normalizá quitando whitespace exterior y pasando a minúsculas. Conservá los espacios interiores.
+instructions:
+  - Repará normalizar, cuyo starter olvida una parte.
+  - Leé la prueba local incluida; el navegador ejecuta los tres casos del laboratorio, no cargo test.
+tests:
+  - id: t1
+    label: Whitespace exterior
+    expression: "normalizar(\" \tRuSt\n\") == \"rust\""
+    why: Se aplican las dos partes del contrato.
+    failure: trim debe ejecutarse antes o después de minúsculas.
+  - id: t2
+    label: Espacios interiores
+    expression: "normalizar(\" A  B \") == \"a  b\" && normalizar(\" \n \") == \"\""
+    why: La limpieza no colapsa espacios interiores.
+    failure: split_whitespace y join alterarían contenido que debe conservarse.
+  - id: t3
+    label: Idempotencia
+    expression: '{ let una = normalizar("  HOLA Mundo "); normalizar(&una) == una }'
+    why: Aplicar la operación otra vez mantiene la forma normalizada.
+    failure: La función no debe agregar prefijos, sufijos ni cambiar más datos cada vez.
+hints:
+  - to_lowercase ya resuelve una parte.
+  - trim devuelve una vista sin whitespace exterior.
+  - El cuerpo puede ser texto.trim().to_lowercase().
+review:
+  success: 'Los ejemplos distinguen limpieza exterior de interior y comprueban idempotencia. El módulo #[test] queda listo para ejecutarse con cargo test en un proyecto local.'
+  pitfall: Un test aprobado no demuestra todos los casos posibles. Las pruebas de integración prueban la API pública; los doctests verifican ejemplos documentados con herramientas de Cargo.
+transfer: Creá un crate local con cargo new, mové esta función a src/lib.rs y ejecutá cargo test. El laboratorio no crea ese proyecto ni simula esa ejecución.
+prediction:
+  question: '¿Compilar normalmente un archivo ejecuta automáticamente sus funciones #[test]?'
+  options:
+    - Sí
+    - 'No: requieren el modo y runner de pruebas'
+    - Solo si no hay main
+  answer: 1
+  explanation: cargo test prepara y ejecuta el harness de pruebas; una compilación ordinaria no es lo mismo.
+sources:
+  - title: Rust Book · Test organization
+    url: https://doc.rust-lang.org/book/ch11-03-test-organization.html
+  - title: Cargo · cargo test
+    url: https://doc.rust-lang.org/cargo/commands/cargo-test.html

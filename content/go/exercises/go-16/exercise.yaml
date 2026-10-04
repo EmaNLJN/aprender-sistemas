@@ -1,0 +1,39 @@
+title: El contador de visitas
+intro: Cada nombre necesita su propio contador. Un map asocia una clave con un valor; leer una clave ausente devuelve el cero del tipo del valor.
+why: Ese cero permite incrementar frecuencias sin una rama para la primera aparición. Antes de escribir, el map sí debe estar inicializado.
+objective: Contá cuántas veces aparece cada string; respetá mayúsculas y la cadena vacía.
+instructions:
+  - Creá un map[string]int con make.
+  - Incrementá la entrada de cada nombre.
+tests:
+  - id: t1
+    label: Repetidos
+    expression: func() bool { m:=Frequencies([]string{"ana","luz","ana"}); return len(m)==2 && m["ana"]==2 && m["luz"]==1 }()
+    why: Cada repetición suma una visita.
+    failure: Asignar 1 siempre borra el conteo anterior.
+  - id: t2
+    label: Sin nombres
+    expression: len(Frequencies(nil)) == 0
+    why: No crea una clave artificial.
+    failure: Una colección vacía produce cero entradas.
+  - id: t3
+    label: Claves exactas
+    expression: func() bool { m:=Frequencies([]string{"A","a","",""}); return len(m)==3 && m[""]==2 && m["A"]==1 }()
+    why: Las claves son sensibles a mayúsculas y permiten vacío.
+    failure: No normalices datos sin que el contrato lo pida.
+hints:
+  - Una clave ausente se lee como 0.
+  - El operador ++ actualiza el contador.
+  - El map debe crearse antes de escribir.
+review:
+  success: Usaste un map como índice de frecuencias. Los tests consultan claves; no dependen del orden impredecible de iteración.
+  pitfall: Leer un map nil es posible; escribir en él provoca un panic.
+transfer: Contá palabras de una frase usando strings.Fields.
+prediction:
+  question: En make(map[string]int), leer m["nueva"] devuelve…
+  options:
+    - '0'
+    - nil
+    - Un panic
+  answer: 0
+  explanation: La lectura de una clave ausente devuelve el valor cero del tipo int.

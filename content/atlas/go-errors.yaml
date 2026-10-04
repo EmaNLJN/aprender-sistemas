@@ -1,0 +1,30 @@
+id: go-errors
+level: medium
+category: Control y errores
+title: Errores como valores con contexto
+summary: La convención habitual devuelve (T, error). nil indica ausencia de error según la API. Los errores pueden envolverse con contexto y consultarse con errors.Is o errors.As.
+why: El llamador decide si reintenta, informa o propaga. Conservar la causa permite agregar información sin romper la detección del error original.
+code: |-
+  func Cargar() ([]byte, error) {
+      datos, err := os.ReadFile("config.txt")
+      if err != nil {
+          return nil, fmt.Errorf("cargar configuración: %w", err)
+      }
+      return datos, nil
+  }
+  // errors.Is(err, os.ErrNotExist) inspecciona la cadena.
+explanation: error es una interfaz con Error() string. %w mantiene una relación con la causa. errors.As permite extraer un error de un tipo relevante. El snippet ilustra una API de archivos y requiere los imports correspondientes en un proyecto local.
+comparison: Como Result de Rust, los errores están visibles en la firma, pero el compilador de Go no impide todas las omisiones de tratamiento. panic/recover existe y tiene otra finalidad que el error esperado ordinario.
+pitfall: Comparar err.Error() con una cadena mezcla presentación y lógica. Devolver un puntero nil tipado como error también puede crear una interfaz no nil.
+quiz:
+  question: ¿Qué verbo conserva la causa al envolver un error con fmt.Errorf?
+  options:
+    - '%s'
+    - '%w'
+    - '%d'
+  answer: 1
+  explanation: '%w permite que errors.Is y errors.As recorran la relación de errores envueltos.'
+labId: go-28
+source:
+  title: Go Blog · Working with errors
+  url: https://go.dev/blog/go1.13-errors

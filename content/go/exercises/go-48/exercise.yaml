@@ -1,0 +1,41 @@
+title: 'Misión KV: ejecutar sin mutar una orden rota'
+imports:
+  - strings
+intro: Tu intérprete ya puede recibir texto. Ahora SET guarda y responde OK; GET devuelve el valor o un error si falta. Una orden inválida debe dejar el almacén intacto.
+why: Validar antes de mutar evita estados parcialmente aplicados. El punto donde cambiás el map debe quedar después de todas las comprobaciones de esa orden.
+objective: Implementá Apply para SET y GET; el map recibido está inicializado y las operaciones se escriben en mayúsculas.
+instructions:
+  - Aceptá exactamente tres campos para SET y dos para GET.
+  - Rechazá todo lo demás sin alterar el map; los valores son un único campo.
+tests:
+  - id: t1
+    label: Ciclo guardar y leer
+    expression: func() bool { m:=make(map[string]string); a,e:=Apply(m,"SET color azul"); b,f:=Apply(m,"GET color"); return a=="OK" && e==nil && b=="azul" && f==nil }()
+    why: Comprueba efectos y respuestas de una secuencia.
+    failure: SET debe escribir antes de que GET pueda leer.
+  - id: t2
+    label: Clave desconocida
+    expression: func() bool { m:=make(map[string]string); v,e:=Apply(m,"GET perdida"); return v=="" && e!=nil && len(m)==0 }()
+    why: Una lectura fallida no crea datos.
+    failure: Usá la presencia real del map.
+  - id: t3
+    label: Orden inválida sin efectos
+    expression: func() bool { m:=map[string]string{"x":"original"}; _,a:=Apply(m,"SET x nuevo extra"); _,b:=Apply(m,"SET x"); _,c:=Apply(m,""); return a!=nil && b!=nil && c!=nil && len(m)==1 && m["x"]=="original" }()
+    why: Argumentos extra o faltantes no deben aplicar cambios parciales.
+    failure: Comprobá la longitud exacta antes de escribir.
+hints:
+  - El primer operando de && puede proteger el acceso a fields[0].
+  - En SET verificá len(fields)==3 antes de mutar.
+  - En GET, value y ok distinguen vacío de ausencia.
+review:
+  success: El motor tiene una operación observable de punta a punta. Verificar que un error no cambie estado es tan importante como probar la respuesta feliz.
+  pitfall: Este formato no soporta valores con espacios, persistencia ni acceso concurrente; cada capacidad exige un contrato adicional.
+transfer: Sumá DEL manteniendo la regla de validar antes de cambiar estado.
+prediction:
+  question: Ante SET x nuevo extra, ¿cuándo conviene guardar?
+  options:
+    - Antes de validar para ahorrar trabajo
+    - 'Nunca: la orden es inválida'
+    - Si x ya existía
+  answer: 1
+  explanation: El parser debe rechazar argumentos extra sin modificar el valor anterior.

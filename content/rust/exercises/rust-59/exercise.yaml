@@ -1,0 +1,43 @@
+title: Una closure que cambia su memoria
+visual: generics
+intro: FnMut describe una closure que puede modificar sus capturas al llamarse. FnOnce permite consumir capturas; Fn exige poder llamar mediante acceso compartido.
+why: Las restricciones de closures expresan cómo un algoritmo usará el comportamiento recibido, no solamente qué parámetros y retorno tiene.
+objective: Aplicá f a cada elemento de un Vec<T>, moviendo cada valor y conservando el orden.
+instructions:
+  - 'Aceptá F: FnMut(T) -> T.'
+  - La función debe servir para closures con contador interno y tipos que no son Copy.
+tests:
+  - id: t1
+    label: Captura mutable
+    expression: '{ let mut n = 0; let r = transformar(vec![10, 10, 10], |x| { n += 1; x + n }); r == vec![11, 12, 13] && n == 3 }'
+    why: La closure puede conservar estado entre llamadas.
+    failure: Fn sería una restricción demasiado fuerte para modificar n.
+  - id: t2
+    label: Valores propios
+    expression: transformar(vec![String::from("a"), String::from("b")], |mut s| { s.push('!'); s }) == vec!["a!", "b!"]
+    why: Los elementos se mueven sin exigir Copy.
+    failure: Iterar el Vec por valor permite entregar cada String.
+  - id: t3
+    label: No llamar en vacío
+    expression: '{ let mut n = 0; let r = transformar(Vec::<i32>::new(), |x| { n += 1; x }); r.is_empty() && n == 0 }'
+    why: No se ejecutan efectos sin elementos.
+    failure: Una llamada de prueba a f cambiaría el contrato.
+hints:
+  - El parámetro f necesita mut para invocarlo como FnMut.
+  - Un for sobre datos mueve cada T.
+  - salida.push(f(dato)) realiza una llamada por elemento.
+review:
+  success: El trait de la closure documenta que el algoritmo puede llamarla repetidamente y que ella puede mutar su estado.
+  pitfall: move en una closure controla cómo captura; no significa automáticamente que solo implemente FnOnce.
+transfer: Construí una closure move que solo lee un String capturado y razoná qué traits puede implementar.
+prediction:
+  question: ¿Toda closure escrita con move solo puede llamarse una vez?
+  options:
+    - Sí
+    - 'No: depende de qué haga con las capturas al ejecutarse'
+    - Solo cuando captura números
+  answer: 1
+  explanation: Una closure puede poseer sus capturas y aun así leerlas repetidamente sin consumirlas.
+sources:
+  - title: Rust Book · Closure traits
+    url: https://doc.rust-lang.org/book/ch13-01-closures.html

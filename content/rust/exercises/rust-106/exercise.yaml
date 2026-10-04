@@ -1,0 +1,45 @@
+title: Boss · Abrí la compuerta del protocolo
+intro: El puerto recibe paquetes completos en memoria. Tu compuerta debe aceptar solo los que coincidan con la versión, el tamaño declarado y la huella esperada.
+why: Un parser confiable establece el orden de sus validaciones antes de indexar o extraer datos. Diferenciar causas de rechazo ayuda a diagnosticar el protocolo sin recurrir a panics.
+objective: 'Formato: [cabecera, largo_payload, payload..., checksum]. La mitad alta de cabecera debe valer 1; la baja son banderas. Debe haber exactamente largo_payload+3 bytes. El checksum usa todos los bytes menos el último. Devolvé (banderas, payload propio). Precedencia de errores: menos de 3 bytes → "largo"; versión distinta de 1 → "version"; tamaño inexacto → "largo"; huella distinta → "checksum".'
+instructions:
+  - 'La función checksum ya está provista: reutilizala.'
+  - Validá mínimo, versión y largo exacto en ese orden.
+  - Comprobá la huella antes de copiar el payload al Vec del resultado.
+tests:
+  - id: t1
+    label: Payload y banderas correctos
+    expression: abrir_paquete(&[0x13, 2, 4, 8, 0x90]) == Ok((3, vec![4, 8]))
+    why: Cabecera, largo y huella se combinan para devolver el contenido útil.
+    failure: El checksum incluye cabecera y largo, pero excluye el último byte.
+  - id: t2
+    label: Vacío válido y tamaño exacto
+    expression: abrir_paquete(&[0x10, 0, 0x20]) == Ok((0, vec![])) && abrir_paquete(&[0x10, 1, 0x20]) == Err("largo") && abrir_paquete(&[0x10, 0, 0x20, 0]) == Err("largo")
+    why: Un payload vacío es válido; un byte faltante o sobrante no lo es.
+    failure: 'Compará igualdad de longitudes: no alcanza con tener al menos lo declarado.'
+  - id: t3
+    label: Causas y orden de rechazo
+    expression: abrir_paquete(&[0x13, 2, 4, 8, 0]) == Err("checksum") && abrir_paquete(&[0x20, 9, 0]) == Err("version") && abrir_paquete(&[]) == Err("largo")
+    why: La precedencia produce diagnósticos previsibles aun si un paquete tiene varios problemas.
+    failure: No inspecciones cabecera sin verificar primero el mínimo de tres bytes.
+hints:
+  - Después de verificar len >= 3, datos[0] y datos[1] existen.
+  - El último byte está en len - 1; el payload ocupa 2..len-1.
+  - La versión se obtiene con >> 4 y las banderas con & 0x0F.
+review:
+  success: Los casos distinguen paquetes válidos, truncados, extendidos y alterados. El parser devuelve errores explícitos y solo crea el payload al validar el formato.
+  pitfall: Este parser recibe una trama completa. Una conexión real puede entregarla fragmentada y requiere además buffering y límites de entrada; la huella sigue sin autenticar al emisor.
+transfer: Diseñá un decodificador incremental que reciba fragmentos y diga si falta información, sin confundirlo con un paquete inválido.
+prediction:
+  question: Un paquete de 3 bytes declara versión 2 y payload de 9 bytes. ¿Qué error corresponde?
+  options:
+    - checksum
+    - largo
+    - version
+  answer: 2
+  explanation: Pasa el mínimo de tres bytes y falla la versión, que el contrato valida antes del tamaño declarado.
+sources:
+  - title: Rust Book · Recoverable errors
+    url: https://doc.rust-lang.org/book/ch09-02-recoverable-errors-with-result.html
+  - title: std · Slice methods
+    url: https://doc.rust-lang.org/std/primitive.slice.html

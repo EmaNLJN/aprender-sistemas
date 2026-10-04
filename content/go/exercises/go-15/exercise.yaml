@@ -1,0 +1,40 @@
+title: Una ventana con bordes seguros
+kind: reparar
+intro: Una ventana observa posiciones consecutivas sin copiar. Para un slice de largo N, aceptamos 0 <= start <= end <= N y excluimos end.
+why: El slicing requiere índices válidos. Devolver (slice, bool) permite rechazar un pedido inválido antes de producir un panic.
+objective: Devolvé una vista values[start:end] o nil, false si los límites son inválidos.
+instructions:
+  - Validá ambos límites y su orden.
+  - La ventana válida comparte almacenamiento con values.
+tests:
+  - id: t1
+    label: Vista compartida
+    expression: func() bool { s:=[]int{2,4,6,8}; w,ok:=Window(s,1,3); if !ok || len(w)!=2{return false}; w[0]=9; return s[1]==9 && w[1]==6 }()
+    why: La ventana es una vista y end queda excluido.
+    failure: No copies si el contrato pide compartir la región.
+  - id: t2
+    label: Límites inválidos
+    expression: func() bool { _,a:=Window([]int{1},-1,1); _,b:=Window([]int{1},0,2); _,c:=Window([]int{1},1,0); return !a && !b && !c }()
+    why: Rechaza negativos, exceso e inversión.
+    failure: Comprobá antes de hacer slicing.
+  - id: t3
+    label: Ventana vacía
+    expression: func() bool { w,ok:=Window([]int{1,2},2,2); return ok && len(w)==0 }()
+    why: Un intervalo vacío al final es válido.
+    failure: start == end está permitido.
+hints:
+  - Primero comprobá start < 0.
+  - end no puede ser menor que start ni mayor que len.
+  - La región válida se expresa con dos puntos.
+review:
+  success: 'Modelaste dos decisiones: si una región es válida y si comparte memoria. Una vista barata también permite que los cambios se propaguen.'
+  pitfall: 'El extremo final queda fuera: [1:3] contiene posiciones 1 y 2.'
+transfer: Ofrecé una variante que devuelva una copia de la ventana.
+prediction:
+  question: En []int{10,20,30}, el slice [1:1] tiene…
+  options:
+    - 20 como único elemento
+    - Largo cero
+    - Índices inválidos
+  answer: 1
+  explanation: Un intervalo con inicio y fin iguales es vacío y válido.

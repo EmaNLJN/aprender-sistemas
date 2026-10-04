@@ -1,0 +1,44 @@
+title: Encontrá la primera intersección
+level: advanced
+minutes: 20
+intro: Una linterna envía un rayo y un planeta es un círculo. Encontrá el primer contacto delante del origen, incluso si la linterna empieza dentro.
+why: Sustituir origen+t*dirección en la ecuación del círculo produce una cuadrática. Sus raíces describen entrada y salida; una raíz negativa queda detrás.
+objective: Devolvé el menor t>=0 que satisface |origen+t*dirección-centro|=radio. Sin impacto, dirección cero o radio<=0 produce ausencia. Datos finitos con magnitud<=100. t no es distancia salvo dirección de longitud1.
+instructions:
+  - Leé el contrato y predecí un caso antes de ejecutar.
+  - Conservá la representación indicada y verificá también sus límites.
+tests:
+  - id: t1
+    label: Distancia y parámetro
+    expression: impacto([0.,0.],[1.,0.],[5.,0.],1.).map(|t|(t-4.).abs()<1e-9)==Some(true) && impacto([0.,0.],[2.,0.],[5.,0.],1.).map(|t|(t-2.).abs()<1e-9)==Some(true)
+    why: No asumas que la dirección está normalizada.
+    failure: No asumas que la dirección está normalizada.
+  - id: t2
+    label: Interior y tangencia
+    expression: impacto([0.,0.],[1.,0.],[0.,0.],1.)==Some(1.) && impacto([0.,0.],[1.,0.],[5.,1.],1.)==Some(5.)
+    why: Desde dentro, la raíz de salida es la primera no negativa.
+    failure: Desde dentro, la raíz de salida es la primera no negativa.
+  - id: t3
+    label: Ausencia y geometría inválida
+    expression: impacto([0.,0.],[1.,0.],[-5.,0.],1.)==None && impacto([0.,0.],[1.,0.],[5.,3.],1.)==None && impacto([0.,0.],[0.,0.],[0.,0.],1.)==None && impacto([0.,0.],[1.,0.],[0.,0.],0.)==None
+    why: Distinguir discriminante, dirección y radio evita dividir por cero o aceptar impactos detrás.
+    failure: Distinguir discriminante, dirección y radio evita dividir por cero o aceptar impactos detrás.
+hints:
+  - Calculá a=d·d, b=2*(o-c)·d, c=(o-c)·(o-c)-r².
+  - Un discriminante negativo significa que no existe intersección real.
+  - Probá primero la raíz menor; si es negativa, probá la mayor.
+review:
+  success: Entrada, salida desde el interior, tangencia y escala de la dirección quedan separados por los casos.
+  pitfall: Este núcleo usa coma flotante y círculos perfectos. Un trazador completo debe definir tolerancias para superficies y distancias mínimas.
+transfer: Probá varios círculos y elegí el impacto con menor t válido.
+prediction:
+  question: Si duplicás la dirección sin cambiar el rayo geométrico, t…
+  options:
+    - Se duplica
+    - Se reduce a la mitad
+    - No cambia
+  answer: 1
+  explanation: El mismo punto se alcanza con la mitad del parámetro cuando cada unidad de t avanza el doble.
+sources:
+  - title: Linterna entre planetas · fundamentos
+    url: https://raytracing.github.io/books/RayTracingInOneWeekend.html

@@ -1,0 +1,66 @@
+id: backpressure
+category: infra
+model: backpressure
+minutes: 40
+sources:
+  - title: Go · Pipelines and cancellation
+    url: https://go.dev/blog/pipelines
+code:
+  rust: rust-126
+  go: go-126
+title: La fábrica que sabe decir todavía no
+subtitle: Colas acotadas y presión hacia el productor
+level: medium
+story: El productor fabrica tareas más rápido que el trabajador. Hacé que la cola se llene, conservá la tarea que no entra y retomá cuando se libera un espacio.
+what: Modelás cola, trabajo activo y tarea pendiente por separado; después implementás un buffer circular FIFO con capacidad fija.
+why: Acotar memoria obliga a decidir qué ocurre con la carga adicional. Esperar, rechazar y descartar son políticas diferentes; este modelo conserva el trabajo pendiente en el productor.
+uses:
+  - Pipelines de procesamiento
+  - Pools de workers
+  - Control de admisión y memoria
+limits: Pasos manuales, un productor y un trabajador. No hay bloqueo real, scheduler ni medición de throughput. La capacidad limita la cola; el trabajo activo y el pendiente ocupan estado adicional.
+objectives:
+  - id: backpressure-blocked
+    label: Llenar la cola y retener una tarea
+    why: Una tercera tarea no debe expandir la cola de capacidad dos.
+  - id: backpressure-resumed
+    label: Reintentar después de liberar espacio
+    why: La misma tarea pendiente entra sin pérdida ni cambio de identidad.
+  - id: backpressure-fifo
+    label: Completar al menos dos tareas en orden
+    why: El orden FIFO se refiere a la cola; el trabajador único lo conserva al completar.
+prediction:
+  question: La cola está llena. ¿Qué pasa al presionar producir en este modelo?
+  options:
+    - Crece sin límite
+    - Se pierde la tarea más antigua
+    - La tarea queda pendiente con el productor
+  answer: 2
+  explanation: 'No entra a la cola ni se descarta: el productor conserva su identidad hasta reintentar.'
+steps:
+  - title: Invariante de capacidad
+    task: Definí head, longitud y almacenamiento fijo.
+    why: Capacidad reservada no es cantidad de elementos válidos.
+    done: La longitud siempre queda entre cero y capacidad.
+  - title: Buffer circular
+    task: Implementá push/pop sin desplazar todos los elementos.
+    why: El índice modular reutiliza huecos al final del array.
+    done: Las pruebas fuerzan wrap-around y una capacidad cero.
+  - title: Política de saturación
+    task: Integra rechazo explícito y reintento del productor.
+    why: Un false necesita una decisión del llamador.
+    done: La tarea rechazada no se considera completada ni se pierde.
+  - title: Pipeline local
+    task: Sustituí el modelo por canales acotados y cierre coordinado.
+    why: La concurrencia introduce cancelación y propiedad del cierre.
+    done: Una prueba cancela con la cola llena y todos los trabajadores terminan.
+related:
+  rust:
+    - rust-35
+    - rust-47
+  go:
+    - go-43
+    - go-65
+bridge:
+  rust: Un Vec de tamaño fijo y &mut self protegen cambios locales; compartirlo entre threads requiere sincronización adicional.
+  go: El buffer circular de este ejercicio no es concurrente. Para varios participantes usá un canal o coordiná con un Mutex.

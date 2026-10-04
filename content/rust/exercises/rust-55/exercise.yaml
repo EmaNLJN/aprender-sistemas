@@ -1,0 +1,43 @@
+title: Tu tipo también puede prestar como str
+visual: pointers
+intro: Deref define el tipo al que se puede acceder al desreferenciar un wrapper. También participa en ciertas coerciones entre referencias.
+why: Un wrapper puede conservar su identidad y ofrecer una vista de lectura compatible con APIs existentes. La conversión no requiere copiar el texto.
+objective: Implementá Deref<Target = str> para Texto, permitiendo pasar &Texto a una función que acepta &str.
+instructions:
+  - deref debe devolver un préstamo del String interior.
+  - Conservá la llamada medir_str(texto) para comprobar la coerción.
+tests:
+  - id: t1
+    label: Coerción de lectura
+    expression: medir_wrapper(&Texto(String::from("rust"))) == 4
+    why: La API recibe una vista str del wrapper.
+    failure: Prestá self.0 con as_str.
+  - id: t2
+    label: Vacío
+    expression: medir_wrapper(&Texto(String::new())) == 0
+    why: No se agrega contenido en la conversión.
+    failure: Deref debe revelar el texto real.
+  - id: t3
+    label: Acceso directo
+    expression: '{ let t = Texto(String::from("ñ")); (&*t) == "ñ" && medir_wrapper(&t) == 2 }'
+    why: Desreferenciar y coercionar observan el mismo dato.
+    failure: No devolvás una referencia a un String temporal.
+hints:
+  - El tipo asociado Target indica str, no String.
+  - La firma retorna una referencia ligada a &self.
+  - Devolvé self.0.as_str().
+review:
+  success: La conversión presta el contenido existente. Target asocia a Texto un destino concreto para Deref.
+  pitfall: Deref es parte visible de la API del tipo; no lo uses como conversión arbitraria con costos o efectos sorprendentes.
+transfer: Compará esta API con implementar AsRef<str> y pedir una conversión explícita.
+prediction:
+  question: ¿La coerción &Texto → &str tiene que clonar el String?
+  options:
+    - 'No: puede prestar el contenido'
+    - Sí, para extender su vida
+    - Solo cuando tiene Unicode
+  answer: 0
+  explanation: Deref devuelve una referencia al contenido; los lifetimes siguen limitados por el dueño.
+sources:
+  - title: std · Deref
+    url: https://doc.rust-lang.org/std/ops/trait.Deref.html

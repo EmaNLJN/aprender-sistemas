@@ -1,0 +1,47 @@
+title: Un mensaje, aunque llegue dos veces
+level: advanced
+minutes: 20
+workshopId: network
+challengeType: kata
+intro: Recibís fragmentos de un único mensaje con índices 0…total-1. Pueden llegar en cualquier orden, faltar o repetirse. Un fragmento vacío también cuenta como recibido.
+why: Presencia y contenido son datos diferentes. Guardar por índice permite detectar huecos, no duplicar bytes y verificar si una repetición realmente contiene la misma información.
+objective: Reensamblá en orden de índice. Devolvé completo solo si están todos; un índice inválido, total >1024 o duplicado con bytes distintos devuelve error.
+instructions:
+  - En Rust devolvé Ok(None) si faltan fragmentos y Ok(Some(bytes)) si está completo. En Go devolvé nil,false,nil si falta alguno; ante error devolvé nil,false,error.
+  - total=0 con lista vacía es un mensaje completo vacío. En Go total negativo también es inválido.
+  - Aceptá duplicados idénticos sin contarlos dos veces. No modifiques ni compartas el buffer de salida con los datos de entrada.
+tests:
+  - id: t1
+    label: Desorden, duplicado e independencia
+    expression: '{ let parts=[fragment(2,b"ER"),fragment(0,b"GO"),fragment(1,b"PH"),fragment(0,b"GO")]; let mut out=assemble(3,&parts).unwrap().unwrap(); let correct=out==b"GOPHER"; out[0]=b''X''; correct && parts[1].data==b"GO" }'
+    why: Comprueba orden, deduplicación y propiedad del resultado.
+    failure: Guardá por índice antes de concatenar.
+  - id: t2
+    label: Huecos y fragmentos vacíos
+    expression: assemble(2,&[fragment(0,b"GO"),fragment(0,b"GO")])==Ok(None) && assemble(2,&[fragment(1,b""),fragment(0,&[0,255])])==Ok(Some(vec![0,255])) && assemble(0,&[])==Ok(Some(vec![]))
+    why: Distingue un slot vacío de un slot ausente.
+    failure: Option representa presencia aunque el Vec de datos tenga longitud cero.
+  - id: t3
+    label: Conflictos y límites
+    expression: assemble(1,&[fragment(0,b"A"),fragment(0,b"B")]).is_err() && assemble(1,&[fragment(1,b"A")]).is_err() && assemble(0,&[fragment(0,b"")]).is_err() && assemble(1025,&[]).is_err()
+    why: Rechaza ambigüedad y tamaños fuera del presupuesto.
+    failure: No sobrescribas un duplicado distinto ni reserves una tabla arbitrariamente grande.
+hints:
+  - Reservá total slots y representá explícitamente si cada uno llegó.
+  - Si un slot ya está ocupado, compará sus bytes antes de ignorar el duplicado.
+  - Solo concatená después de validar todos los fragmentos y confirmar que no quedan huecos.
+review:
+  success: El resultado depende de identidades y contenido, no del orden ni cantidad bruta de paquetes. El límite de slots acota esta tabla; un servicio real también debe acotar bytes totales, mensajes simultáneos y su vida.
+  pitfall: 'len(fragmentos)==total no prueba completitud: puede haber duplicados y huecos. Un fragmento vacío no es un hueco.'
+transfer: Agregá message_id y presupuesto de bytes; descartá mensajes incompletos mediante un reloj monotónico inyectado.
+prediction:
+  question: 'total=2; recibís #0=GO dos veces. ¿Está completo?'
+  options:
+    - Sí, llegaron dos paquetes
+    - 'No, todavía falta #1'
+    - Sí, el contenido es GOGO
+  answer: 1
+  explanation: La completitud depende de cubrir los índices, no de contar recepciones.
+sources:
+  - title: RFC 9000 · retransmisión de información
+    url: https://datatracker.ietf.org/doc/html/rfc9000#section-13.3

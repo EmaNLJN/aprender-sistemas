@@ -1,0 +1,44 @@
+title: Contar las luces encendidas de un registro
+intro: Un registro de 32 bits representa interruptores. Necesitamos contar cuántos están encendidos, no obtener el valor numérico del registro.
+why: n & (n-1) apaga el bit encendido de menor posición. Repetir esa operación avanza una vez por cada luz, hasta llegar a cero.
+objective: BitCount devuelve la cantidad de bits 1 de un uint32.
+instructions:
+  - Usá un contador y un loop mientras n sea distinto de cero.
+  - Apagá un bit por iteración sin usar paquetes adicionales.
+tests:
+  - id: t1
+    label: Patrón disperso
+    expression: BitCount(21)==3
+    why: 21 es 10101, con tres bits encendidos.
+    failure: Contá bits, no posiciones ni dígitos decimales.
+  - id: t2
+    label: Vacío y extremo superior
+    expression: BitCount(0)==0 && BitCount(uint32(1)<<31)==1
+    why: El último bit también pertenece al registro.
+    failure: No conviertas a un entero con signo antes de recorrer.
+  - id: t3
+    label: Todos encendidos
+    expression: BitCount(^uint32(0))==32
+    why: Debe procesar todo el ancho del tipo.
+    failure: Cada iteración elimina exactamente un bit 1.
+hints:
+  - Probá en papel 10100 & 10011.
+  - El cero final indica que no quedan bits encendidos.
+  - La resta sólo se hace cuando n != 0.
+review:
+  success: Usaste una propiedad binaria para reducir trabajo. Los tests revisan el resultado; revisá la operación de reducción para justificar el algoritmo.
+  pitfall: 'El ancho fijo importa: uint32 tiene 32 posiciones, mientras que int depende de la arquitectura.'
+transfer: Compará tu función con bits.OnesCount32 de la biblioteca estándar.
+prediction:
+  question: Para n=12 (1100), n&(n-1) vale…
+  options:
+    - 8 (1000)
+    - 4 (0100)
+    - '0'
+  answer: 0
+  explanation: 1100 & 1011 elimina el bit 0100 y deja 1000.
+sources:
+  - title: Operadores bit a bit
+    url: https://go.dev/ref/spec#Arithmetic_operators
+  - title: math/bits.OnesCount32
+    url: https://pkg.go.dev/math/bits#OnesCount32

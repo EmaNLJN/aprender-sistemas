@@ -1,0 +1,43 @@
+title: Primer carácter sin romper UTF-8
+kind: reparar
+intro: No existe indexación directa de str por posición de carácter. chars().next() entrega Option<char>, que también representa el texto vacío.
+why: Buscar por caracteres puede requerir recorrer bytes. La API evita fingir que s[0] tiene el mismo costo y significado que indexar un array.
+objective: Devolvé el primer escalar Unicode, o None si no hay texto.
+instructions:
+  - Reemplazá la indexación inválida.
+  - La función debe devolver Option<char>.
+tests:
+  - id: t1
+    label: Letra común
+    expression: inicial("rust") == Some('r')
+    why: Se obtiene un char, no un byte.
+    failure: Creá un iterador de chars.
+  - id: t2
+    label: Primer emoji
+    expression: inicial("🦀rust") == Some('🦀')
+    why: No se corta una secuencia UTF-8.
+    failure: La posición cero de bytes no es un char.
+  - id: t3
+    label: Ausencia explícita
+    expression: inicial("") == None
+    why: El vacío es un caso válido sin panic.
+    failure: next ya entrega None cuando no hay elementos.
+hints:
+  - str no implementa acceso [usize].
+  - El primer elemento de un iterador se obtiene con next().
+  - Devolvé texto.chars().next() sin envolverlo otra vez.
+review:
+  success: next ya expresa presencia o ausencia. Usaste una operación compatible con todos los textos UTF-8 válidos.
+  pitfall: unwrap convertiría el vacío en un panic y rompería el contrato Option.
+transfer: Buscá el tercer escalar con nth(2) y probá una cadena demasiado corta.
+prediction:
+  question: ¿Qué tipo devuelve chars().next()?
+  options:
+    - char
+    - u8
+    - Option<char>
+  answer: 2
+  explanation: El iterador puede estar agotado; Option representa esa posibilidad.
+sources:
+  - title: std · str::chars
+    url: https://doc.rust-lang.org/std/primitive.str.html#method.chars

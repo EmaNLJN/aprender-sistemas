@@ -1,0 +1,42 @@
+title: Campos privados, invariantes públicas
+intro: Un módulo define una frontera de privacidad. Publicar un tipo no hace públicos automáticamente sus campos.
+why: Si todos deben pasar por el constructor, podés garantizar reglas como que una capacidad nunca sea cero y cambiar la representación interior después.
+objective: Completá Config::nueva y capacidad. Solo capacidades 1..=100 son válidas; el campo permanece privado.
+instructions:
+  - Devolvé Option<Config> desde el constructor.
+  - Usá la API pública desde capacidad_valida.
+tests:
+  - id: t1
+    label: Valor interior válido
+    expression: capacidad_valida(30) == Some(30)
+    why: El constructor conserva el dato validado.
+    failure: Creá Self con capacidad n.
+  - id: t2
+    label: Fronteras admitidas
+    expression: capacidad_valida(1) == Some(1) && capacidad_valida(100) == Some(100)
+    why: El intervalo incluye ambos extremos.
+    failure: Usá 1..=100.
+  - id: t3
+    label: Fronteras rechazadas
+    expression: capacidad_valida(0) == None && capacidad_valida(101) == None
+    why: No se construyen configuraciones inválidas.
+    failure: Validá antes de construir.
+hints:
+  - pub struct no implica pub en capacidad.
+  - Self representa Config dentro de impl.
+  - El getter puede leer el campo porque pertenece a la implementación en el mismo módulo.
+review:
+  success: La API ofrece construcción validada y lectura. El llamador no necesita conocer cómo se almacena la capacidad.
+  pitfall: Estos tests prueban el comportamiento público; respetar la consigna de no publicar el campo requiere mirar la declaración.
+transfer: Mové config a src/config.rs en un proyecto Cargo y conservá la API.
+prediction:
+  question: ¿pub struct Config hace que capacidad sea pública?
+  options:
+    - Sí
+    - 'No: cada campo tiene su propia visibilidad'
+    - Solo en el mismo crate
+  answer: 1
+  explanation: Un struct público puede ocultar sus campos para proteger invariantes.
+sources:
+  - title: Rust Book · Paths and privacy
+    url: https://doc.rust-lang.org/book/ch07-03-paths-for-referring-to-an-item-in-the-module-tree.html

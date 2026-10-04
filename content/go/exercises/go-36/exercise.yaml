@@ -1,0 +1,40 @@
+title: Cerrar incluso si salís temprano
+kind: reparar
+intro: Una operación recibió un recurso ya adquirido. Tanto el camino exitoso como el rechazo deben ejecutar una función de limpieza exactamente una vez.
+why: defer registra una llamada que se ejecuta al salir de la función. Ponerla cerca del comienzo permite agregar retornos sin olvidar la limpieza.
+objective: Invoke(valid, cleanup) devuelve valid y ejecuta cleanup una vez en ambos caminos.
+instructions:
+  - Registrá cleanup con defer antes de decidir si valid es false.
+  - No la llames también de forma manual; cleanup siempre es una función válida.
+tests:
+  - id: t1
+    label: Camino normal
+    expression: func() bool { calls:=0; ok:=Invoke(true,func(){calls++}); return ok && calls==1 }()
+    why: El camino exitoso también libera.
+    failure: La limpieza tiene que suceder exactamente una vez.
+  - id: t2
+    label: Retorno temprano
+    expression: func() bool { calls:=0; ok:=Invoke(false,func(){calls++}); return !ok && calls==1 }()
+    why: La guardia no debe saltarse la limpieza.
+    failure: Registrá defer antes del if.
+  - id: t3
+    label: Dos invocaciones
+    expression: func() bool { calls:=0; close:=func(){calls++}; Invoke(false,close); Invoke(true,close); return calls==2 }()
+    why: Cada adquisición lógica recibe una limpieza.
+    failure: No agregues llamadas manuales además del defer.
+hints:
+  - defer cleanup() programa la llamada.
+  - Debe aparecer antes del retorno temprano.
+  - Quitá la llamada manual que quedaría duplicada.
+review:
+  success: Ambas salidas respetan el ciclo de vida del recurso. Los tests miden el efecto de cleanup; no inspeccionan si escribiste defer.
+  pitfall: defer espera el final de la función, no el final de un bloque cualquiera.
+transfer: Agregá otra validación temprana y comprobá que la limpieza siga ocurriendo.
+prediction:
+  question: Un defer registrado antes de return se ejecuta…
+  options:
+    - Después de cada línea
+    - Al salir de la función
+    - Sólo si se llega a la última línea
+  answer: 1
+  explanation: El registro de defer cubre los retornos posteriores de esa invocación.

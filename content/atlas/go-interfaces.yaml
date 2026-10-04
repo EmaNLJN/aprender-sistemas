@@ -1,0 +1,27 @@
+id: go-interfaces
+level: advanced
+category: Abstracción
+title: Interfaces implícitas y conjuntos de métodos
+summary: Un tipo satisface una interfaz al tener sus métodos requeridos; no declara implements. Los conjuntos de métodos de T y *T pueden diferir.
+why: El consumidor puede declarar una interfaz pequeña que refleje lo que necesita, sin modificar todos los productores para anunciar esa relación.
+code: |-
+  type Contador struct { N int }
+  func (c *Contador) Incrementar() { c.N++ }
+  type Incrementable interface { Incrementar() }
+  var x Incrementable = &Contador{} // *Contador satisface
+  // Contador{} no tiene el mismo conjunto de métodos.
+explanation: 'La satisfacción de interfaces es estructural por métodos, aunque los tipos concretos definidos con nombres tienen identidad propia. Una interfaz guarda tipo dinámico y valor dinámico: un puntero nil dentro de ella puede hacer que la interfaz no sea nil.'
+comparison: A diferencia de Rust, no escribís impl Trait for Tipo. A diferencia del duck typing dinámico, la asignación a una interfaz se comprueba estáticamente según conjuntos de métodos.
+pitfall: Que el compilador permita c.Incrementar() tomando la dirección de una variable no implica que Contador satisfaga una interfaz que exige ese método.
+quiz:
+  question: Si una interfaz contiene (*MiError)(nil), ¿es necesariamente igual a nil?
+  options:
+    - Sí
+    - 'No: conserva un tipo dinámico aunque el puntero sea nil'
+    - Solo si Error devuelve texto vacío
+  answer: 1
+  explanation: Una interfaz nil no tiene ni tipo dinámico ni valor dinámico.
+labId: go-35
+source:
+  title: Go FAQ · Nil interfaces
+  url: https://go.dev/doc/faq#nil_error

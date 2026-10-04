@@ -1,0 +1,40 @@
+title: Una limpieza por iteración
+kind: reparar
+intro: Un loop procesa recursos de a uno. Si todos los defer pertenecen a la función externa, las limpiezas se acumulan y llegan recién al terminar el lote.
+why: Una función pequeña por iteración crea el alcance necesario para defer. Así cada uso termina con su liberación antes de comenzar el siguiente.
+objective: Para cada valor ejecutá use(value) y luego release(value), antes de pasar al siguiente.
+instructions:
+  - Mové el defer a una función interna invocada por iteración.
+  - Conservá el orden de los valores y no invoques callbacks si no hay elementos.
+tests:
+  - id: t1
+    label: Intercalación correcta
+    expression: func() bool { log:=""; ForEach([]int{1,2},func(n int){log+=fmt.Sprintf("U%d",n)},func(n int){log+=fmt.Sprintf("R%d",n)}); return log=="U1R1U2R2" }()
+    why: Cada recurso se libera antes del próximo uso.
+    failure: Los defer del loop externo se acumulan.
+  - id: t2
+    label: Un recurso activo como máximo
+    expression: func() bool { active,max:=0,0; ForEach([]int{3,4,5},func(int){active++;if active>max{max=active}},func(int){active--}); return active==0 && max==1 }()
+    why: Comprueba el ciclo de vida, no sólo la salida final.
+    failure: El defer debe pertenecer a una invocación por elemento.
+  - id: t3
+    label: Sin elementos
+    expression: func() bool { calls:=0; ForEach(nil,func(int){calls++},func(int){calls++}); return calls==0 }()
+    why: No hay recursos que usar ni liberar.
+    failure: No llames callbacks fuera del recorrido.
+hints:
+  - Las llaves del loop no crean una función nueva.
+  - Invocá func(n int) { ... }(value).
+  - Colocá defer release(n) dentro de esa función.
+review:
+  success: Ajustaste el ciclo de vida al alcance real del recurso. Esta estructura evita mantener abierto todo un lote hasta el final.
+  pitfall: 'No alcanza con agregar más bloques: defer se ejecuta al salir de una función.'
+transfer: Explicá qué riesgo habría al abrir miles de archivos con el starter.
+prediction:
+  question: ¿Un bloque for hace que defer corra al final de cada vuelta?
+  options:
+    - Sí
+    - No, espera el retorno de su función
+    - Sólo para int
+  answer: 1
+  explanation: Necesitás una invocación de función por vuelta para ese alcance.

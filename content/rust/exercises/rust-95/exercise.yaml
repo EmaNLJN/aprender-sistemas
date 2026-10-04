@@ -1,0 +1,43 @@
+title: Una calculadora de pila con errores explícitos
+level: advanced
+intro: 'En notación posfija, los operandos preceden a la operación: 3 4 + produce 7. La pila conserva los resultados intermedios.'
+why: 'El parser y el evaluador tienen fronteras distintas: un token puede ser inválido, faltar un operando o desbordarse una operación válida.'
+objective: 'Evaluá enteros i32 y operadores +, - y * separados por whitespace. Fallos de izquierda a derecha: token inválido → "token"; faltan operandos o quedan != 1 resultados → "pila"; overflow → "overflow".'
+instructions:
+  - En una operación extraé primero el operando derecho y luego el izquierdo.
+  - Usá checked_add/sub/mul y exigí una única respuesta final.
+tests:
+  - id: t1
+    label: Operaciones compuestas y orden
+    expression: evaluar_rpn("3 4 + 2 *") == Ok(14) && evaluar_rpn("8 3 -") == Ok(5)
+    why: La pila compone resultados y conserva el orden de resta.
+    failure: El primer pop es el operando derecho.
+  - id: t2
+    label: Aridad incorrecta
+    expression: evaluar_rpn("1 +") == Err("pila") && evaluar_rpn("1 2") == Err("pila") && evaluar_rpn("") == Err("pila")
+    why: La estructura debe tener operandos y una única salida.
+    failure: Controlá tanto cada pop como la cantidad final.
+  - id: t3
+    label: Token y overflow
+    expression: evaluar_rpn("x") == Err("token") && evaluar_rpn("2147483647 1 +") == Err("overflow")
+    why: Una forma válida todavía puede exceder el rango.
+    failure: No uses operadores normales para las cuentas comprobadas.
+hints:
+  - Una comparación con matches! distingue los tres operadores.
+  - Un token negativo como -3 se parsea como número; solo "-" es operador.
+  - Result permite propagar cada clase de error con ?.
+review:
+  success: El evaluador combina parsing, pila y aritmética comprobada. Las pruebas de resta detectan una inversión de operandos que suma y multiplicación ocultarían.
+  pitfall: La función no admite división ni expresiones infijas con paréntesis. Extender la gramática exige actualizar el contrato y sus errores.
+transfer: Agregá división con cero y el caso i32::MIN / -1 explícitamente definidos.
+prediction:
+  question: Para 8 3 -, ¿qué número sale primero de la pila?
+  options:
+    - 8, el izquierdo
+    - 3, el derecho
+    - No importa el orden
+  answer: 1
+  explanation: La última entrada está arriba; para resta debés reconstruir izquierdo - derecho.
+sources:
+  - title: std · i32 checked arithmetic
+    url: https://doc.rust-lang.org/std/primitive.i32.html#method.checked_sub

@@ -1,0 +1,49 @@
+title: El explorador de APIs públicas
+imports:
+  - go/ast
+  - go/parser
+  - go/token
+  - sort
+intro: 'Estás construyendo una mini herramienta de documentación. Querés listar sólo las funciones públicas de un archivo Go: nombres exportados, sin métodos ni funciones privadas.'
+why: Las herramientas de Go pueden usar su parser y AST oficiales. La exportación se relaciona con mayúscula inicial; los paquetes y módulos reales requieren una estructura de archivos fuera de este fragmento.
+objective: ExportedFunctions parsea source y devuelve nombres de funciones exportadas sin receptor, ordenados.
+instructions:
+  - Parseá el archivo con parser.ParseFile.
+  - Seleccioná *ast.FuncDecl con Recv==nil y ast.IsExported; ordená con sort.Strings.
+tests:
+  - id: t1
+    label: Sólo funciones exportadas
+    expression: func() bool { names,e:=ExportedFunctions("package demo\nfunc Zebra(){}\nfunc hidden(){}\nfunc Alpha(){}\n");return e==nil && fmt.Sprint(names)=="[Alpha Zebra]" }()
+    why: El análisis respeta visibilidad y orden determinista.
+    failure: Seleccioná únicamente nombres exportados.
+  - id: t2
+    label: Métodos y tipos no son funciones libres
+    expression: func() bool { names,e:=ExportedFunctions("package demo\ntype Thing struct{}\nfunc (Thing) Public(){}\nconst Visible=1\n");return e==nil && len(names)==0 }()
+    why: El receptor distingue métodos de funciones libres.
+    failure: Comprobá fn.Recv==nil.
+  - id: t3
+    label: Fuente malformada
+    expression: func() bool { names,e:=ExportedFunctions("package demo\nfunc (");return names==nil && e!=nil }()
+    why: La herramienta no oculta errores de sintaxis.
+    failure: Propagá el error del parser.
+hints:
+  - 'Las declaraciones son interfaces: usá una aserción segura a *ast.FuncDecl.'
+  - El nombre está en fn.Name.Name.
+  - Un método tiene un receptor en fn.Recv.
+review:
+  success: Usaste herramientas del propio lenguaje para inspeccionarlo. Esto es análisis sintáctico de un archivo, no resolución completa de imports o tipos entre paquetes.
+  pitfall: Mayúscula exporta un identificador desde su paquete; el consumo real también depende de rutas de importación y reglas como internal.
+transfer: En un proyecto local, creá dos paquetes y comprobá qué nombres puede importar el segundo.
+prediction:
+  question: ¿Qué diferencia sintáctica tiene un método frente a una función libre?
+  options:
+    - Siempre retorna error
+    - Tiene un receptor
+    - Siempre empieza con mayúscula
+  answer: 1
+  explanation: El receptor conecta la declaración con un tipo.
+sources:
+  - title: go/ast
+    url: https://pkg.go.dev/go/ast
+  - title: Organizar código Go
+    url: https://go.dev/doc/code

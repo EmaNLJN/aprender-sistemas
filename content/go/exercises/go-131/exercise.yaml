@@ -1,0 +1,46 @@
+title: Encontrá la primera intersección
+level: advanced
+minutes: 20
+imports:
+  - math
+intro: Una linterna envía un rayo y un planeta es un círculo. Encontrá el primer contacto delante del origen, incluso si la linterna empieza dentro.
+why: Sustituir origen+t*dirección en la ecuación del círculo produce una cuadrática. Sus raíces describen entrada y salida; una raíz negativa queda detrás.
+objective: Devolvé el menor t>=0 que satisface |origen+t*dirección-centro|=radio. Sin impacto, dirección cero o radio<=0 produce ausencia. Datos finitos con magnitud<=100. t no es distancia salvo dirección de longitud1.
+instructions:
+  - Leé el contrato y predecí un caso antes de ejecutar.
+  - Conservá la representación indicada y verificá también sus límites.
+tests:
+  - id: t1
+    label: Direcciones de distinta magnitud
+    expression: func()bool{a,ok:=Hit([2]float64{},[2]float64{1,0},[2]float64{5,0},1);b,yes:=Hit([2]float64{},[2]float64{2,0},[2]float64{5,0},1);return ok&&yes&&math.Abs(a-4)<1e-9&&math.Abs(b-2)<1e-9}()
+    why: Duplicar la dirección divide t, no cambia el punto alcanzado.
+    failure: Duplicar la dirección divide t, no cambia el punto alcanzado.
+  - id: t2
+    label: Interior y tangencia
+    expression: func()bool{a,ok:=Hit([2]float64{},[2]float64{1,0},[2]float64{},1);b,yes:=Hit([2]float64{},[2]float64{1,0},[2]float64{5,1},1);return ok&&yes&&a==1&&b==5}()
+    why: La salida desde el interior puede ser la segunda raíz.
+    failure: La salida desde el interior puede ser la segunda raíz.
+  - id: t3
+    label: No hay impacto válido
+    expression: func()bool{_,a:=Hit([2]float64{},[2]float64{1,0},[2]float64{-5,0},1);_,b:=Hit([2]float64{},[2]float64{1,0},[2]float64{5,3},1);_,c:=Hit([2]float64{},[2]float64{},[2]float64{},1);_,d:=Hit([2]float64{},[2]float64{1,0},[2]float64{},0);return !a&&!b&&!c&&!d}()
+    why: Los errores geométricos son ausencia, no un contacto falso en t=0.
+    failure: Los errores geométricos son ausencia, no un contacto falso en t=0.
+hints:
+  - Calculá a=d·d, b=2*(o-c)·d, c=(o-c)·(o-c)-r².
+  - Un discriminante negativo significa que no existe intersección real.
+  - Probá primero la raíz menor; si es negativa, probá la mayor.
+review:
+  success: Entrada, salida desde el interior, tangencia y escala de la dirección quedan separados por los casos.
+  pitfall: Este núcleo usa coma flotante y círculos perfectos. Un trazador completo debe definir tolerancias para superficies y distancias mínimas.
+transfer: Probá varios círculos y elegí el impacto con menor t válido.
+prediction:
+  question: Si duplicás la dirección sin cambiar el rayo geométrico, t…
+  options:
+    - Se duplica
+    - Se reduce a la mitad
+    - No cambia
+  answer: 1
+  explanation: El mismo punto se alcanza con la mitad del parámetro cuando cada unidad de t avanza el doble.
+sources:
+  - title: Linterna entre planetas · fundamentos
+    url: https://raytracing.github.io/books/RayTracingInOneWeekend.html

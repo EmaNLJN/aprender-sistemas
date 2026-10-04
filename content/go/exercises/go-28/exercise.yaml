@@ -1,0 +1,43 @@
+title: Contexto sin perder la causa
+kind: reparar
+imports:
+  - errors
+  - strings
+intro: Querés explicar qué clave faltó, pero también permitir que el llamador reconozca ErrMissing. Convertir el error solamente a texto pierde esa relación.
+why: fmt.Errorf con %w conserva un error envuelto. errors.Is puede buscar la causa aunque el mensaje incorpore contexto adicional.
+objective: Cuando una clave no existe, devolvé un error con contexto que envuelva ErrMissing.
+instructions:
+  - Conservá el error centinela ErrMissing.
+  - Usá %w al construir el error de ausencia; un valor vacío existente es válido.
+tests:
+  - id: t1
+    label: Causa reconocible
+    expression: func() bool { _,e:=ReadValue(nil,"secreto"); return errors.Is(e,ErrMissing) }()
+    why: El llamador debe identificar la causa sin analizar texto.
+    failure: Usá %w, no %v.
+  - id: t2
+    label: Contexto adicional
+    expression: func() bool { _,e:=ReadValue(nil,"tema"); return e!=nil && strings.Contains(e.Error(),"tema") && errors.Is(e,ErrMissing) }()
+    why: La explicación debe conservar la causa y nombrar la clave.
+    failure: Devolver sólo ErrMissing pierde qué clave se estaba leyendo.
+  - id: t3
+    label: Valor vacío legítimo
+    expression: func() bool { v,e:=ReadValue(map[string]string{"x":""},"x"); return v=="" && e==nil }()
+    why: Vacío y ausente siguen siendo estados distintos.
+    failure: Consultá ok, no v == "".
+hints:
+  - El cambio principal es un verbo de formato.
+  - '%v muestra; %w envuelve.'
+  - errors.Is atraviesa los errores envueltos.
+review:
+  success: El error sirve tanto a una persona como al código que decide cómo recuperarse. Agregar contexto ya no destruye su identidad.
+  pitfall: Comparar mensajes completos hace frágil el manejo de errores frente a cambios de redacción.
+transfer: Envolvé otra vez el error desde una capa superior y comprobá errors.Is.
+prediction:
+  question: ¿Cuál permite buscar ErrMissing a través de contexto?
+  options:
+    - err.Error() == "clave ausente"
+    - errors.Is(err, ErrMissing)
+    - err == nil
+  answer: 1
+  explanation: errors.Is inspecciona la cadena o árbol de errores envueltos.

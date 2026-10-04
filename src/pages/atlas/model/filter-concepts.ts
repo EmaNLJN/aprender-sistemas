@@ -1,6 +1,6 @@
 import { normalizeSearchText } from '../../../shared/lib/normalize-search-text';
 import type { LevelId } from '../../../shared/config/levels';
-import type { AtlasConcept } from '../content/atlas-content';
+import type { AtlasConcept } from './types';
 
 export type LevelFilter = 'all' | LevelId;
 

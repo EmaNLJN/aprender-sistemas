@@ -1,0 +1,40 @@
+title: El primer elemento de cualquier tipo
+visual: memory
+intro: Devolver &T permite observar un elemento sin exigir que T sea copiable. El préstamo del resultado queda relacionado con la entrada.
+why: Una firma genérica puede compartir datos pesados sin duplicarlos. La ausencia sigue representada por Option.
+objective: Implementá cabeza<T> que devuelva una referencia al primer elemento, o None.
+instructions:
+  - Conservá el retorno Option<&T>.
+  - No agregues Copy ni Clone al parámetro T.
+tests:
+  - id: t1
+    label: Enteros
+    expression: cabeza(&[4, 8]) == Some(&4)
+    why: La posición inicial se conserva.
+    failure: first devuelve una referencia.
+  - id: t2
+    label: String prestado
+    expression: '{ let v = vec![String::from("uno"), String::from("dos")]; cabeza(&v).map(|s| s.as_str()) == Some("uno") && v.len() == 2 }'
+    why: No se consumen recursos propios del vector.
+    failure: No uses into_iter sobre un vector propio.
+  - id: t3
+    label: Vacío de otro tipo
+    expression: cabeza::<bool>(&[]).is_none()
+    why: El contrato es genérico también sin elementos.
+    failure: El tipo se puede especificar aunque no haya valores.
+hints:
+  - No necesitás construir ni copiar T.
+  - first ya devuelve Option<&T>.
+  - El cuerpo puede ser datos.first().
+review:
+  success: El resultado refiere al almacenamiento de la entrada. Rust impide conservar ese préstamo más allá de la vida de sus datos.
+  pitfall: 'La función no vuelve inmortal al elemento: el dueño debe seguir vivo mientras uses la referencia.'
+transfer: Escribí cabeza_mut para permitir modificar el primer elemento con un préstamo exclusivo.
+prediction:
+  question: ¿Qué permite omitir lifetimes explícitos en esta firma?
+  options:
+    - Las referencias no tienen lifetime
+    - Hay una única entrada prestada y se aplica la regla de elisión
+    - T debe ser static
+  answer: 1
+  explanation: La elisión relaciona el lifetime de salida con el único lifetime de entrada.

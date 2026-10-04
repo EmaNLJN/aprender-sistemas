@@ -1,0 +1,43 @@
+title: El lugar de inserción entre duplicados
+kind: reparar
+intro: Tu ranking está ordenado y puede contener empates. Querés insertar antes del primer elemento mayor o igual al objetivo, incluso si ese valor ya aparece varias veces.
+why: Buscar un límite es distinto de encontrar cualquier coincidencia. Cuando el centro es igual al objetivo, la respuesta todavía puede estar más a la izquierda.
+objective: LowerBound devuelve el primer índice con values[i]>=target, o len(values) si ninguno cumple.
+instructions:
+  - Usá búsqueda binaria en el intervalo [low,high).
+  - En igualdad seguí buscando hacia la izquierda.
+tests:
+  - id: t1
+    label: Primer duplicado
+    expression: LowerBound([]int{1,3,3,3,8},3)==1
+    why: Debe apuntar al comienzo del bloque de iguales.
+    failure: La igualdad pertenece a la mitad donde puede estar la respuesta.
+  - id: t2
+    label: Huecos y extremos
+    expression: LowerBound([]int{2,5,9},4)==1 && LowerBound([]int{2,5,9},10)==3 && LowerBound([]int{2,5,9},0)==0
+    why: También define posiciones de inserción para valores ausentes.
+    failure: len(values) es una respuesta válida al final.
+  - id: t3
+    label: Vacío y todos iguales
+    expression: LowerBound(nil,7)==0 && LowerBound([]int{4,4},4)==0
+    why: Los límites siguen funcionando sin elementos o sin variedad.
+    failure: No retornes un índice arbitrario al ver igualdad.
+hints:
+  - El starter busca el primer elemento estrictamente mayor.
+  - Para lower bound, descartá el centro sólo si es menor.
+  - Cambiá <= por < en esa decisión.
+review:
+  success: Definiste una frontera estable en una colección con duplicados. Ese índice sirve para insertar y para construir búsquedas de rangos iguales.
+  pitfall: La precondición es orden ascendente; verificarla requeriría trabajo adicional y no lo hace esta función.
+transfer: Implementá UpperBound y calculá cuántas veces aparece un objetivo con la diferencia de límites.
+prediction:
+  question: Si values[mid]==target, LowerBound debe…
+  options:
+    - Retornar mid siempre
+    - Continuar hacia la izquierda
+    - Descartar toda la izquierda
+  answer: 1
+  explanation: Todavía puede haber otro igual en una posición anterior.
+sources:
+  - title: sort.Search y búsqueda de fronteras
+    url: https://pkg.go.dev/sort#Search

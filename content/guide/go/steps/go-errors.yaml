@@ -1,0 +1,18 @@
+id: go-errors
+title: Dale un lugar a los errores
+minutes: 25
+objective: Diferenciar un valor válido de un fallo esperable.
+task: Creá una función que interprete un texto como una cantidad y comunique si la conversión falla. Probá un número, letras y un texto vacío. Hacé que el llamador decida qué mostrar. Compará cómo modelarías la misma situación en tu lenguaje habitual y escribí una diferencia en una sola frase.
+doneWhen: Cada entrada tiene un resultado definido y el caso inválido muestra un mensaje sin terminar inesperadamente el programa.
+resourceIds:
+  - go-tests
+  - go-examples
+  - go-exercism
+quiz:
+  question: ¿Qué riesgo tiene ignorar el error de una conversión de texto a número?
+  options:
+    - Que Go deje de compilar cualquier programa futuro.
+    - Que sigas con un valor que no representa la entrada solicitada.
+    - Que el valor se vuelva automáticamente más preciso.
+  answer: 1
+  explanation: Si la conversión falla, el valor devuelto no debe tratarse sin más como una conversión exitosa. El llamador necesita decidir cómo manejar el fallo.

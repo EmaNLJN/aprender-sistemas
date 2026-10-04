@@ -1,0 +1,44 @@
+title: Un error que sirve para personas y programas
+intro: Un enum de errores conserva causas tipadas. Display ofrece un mensaje para personas; Error permite interoperar con APIs de errores de la biblioteca estándar.
+why: La aplicación puede comparar variantes para decidir y mostrar mensajes para explicar. Mezclar ambas funciones en cadenas dificulta cambiar la redacción sin romper lógica.
+objective: 'Validá un tamaño u16: cero produce Vacio; mayor que 64 produce DemasiadoGrande(n); los demás producen Ok(n). Implementá los mensajes indicados.'
+instructions:
+  - 'Display: Vacio → "tamano vacio"; DemasiadoGrande(n) → "tamano n supera 64".'
+  - Conservá la implementación de std::error::Error y el enum tipado.
+tests:
+  - id: t1
+    label: Datos válidos
+    expression: validar_tamano(1) == Ok(1) && validar_tamano(64) == Ok(64)
+    why: La validación conserva valores y admite fronteras.
+    failure: El rango válido incluye 64.
+  - id: t2
+    label: Causa vacía y mensaje
+    expression: validar_tamano(0) == Err(ErrorTamano::Vacio) && ErrorTamano::Vacio.to_string() == "tamano vacio"
+    why: La variante programática y su presentación están disponibles.
+    failure: Display escribe en Formatter mediante write!.
+  - id: t3
+    label: Error interoperable
+    expression: '{ let error = validar_tamano(80).unwrap_err(); let causa = error == ErrorTamano::DemasiadoGrande(80); let objeto: Box<dyn std::error::Error> = Box::new(error); causa && objeto.to_string() == "tamano 80 supera 64" }'
+    why: El dato de contexto sobrevive y Error permite una interfaz común.
+    failure: Guardá n en la variante y usalo en Display.
+hints:
+  - match n puede usar el patrón 1..=64.
+  - Display retorna el Result que produce write!.
+  - Error exige Debug y Display; el derive ya aporta Debug.
+review:
+  success: La API conserva el número rechazado y una variante comparable. La interfaz Error permite manejar este tipo junto a otros errores cuando convenga.
+  pitfall: Box<dyn Error> simplifica ciertas fronteras, pero pierde coincidencia directa de variantes sin conocer el tipo. En bibliotecas, un enum público suele comunicar mejor los fallos esperables.
+transfer: Agregá contexto y source a un error que envuelva otro. Luego mové el núcleo a una biblioteca Cargo con unit tests, integration tests y ejemplos documentados.
+prediction:
+  question: ¿Conviene decidir la lógica del programa comparando el texto de Display?
+  options:
+    - Sí, siempre es estable
+    - 'No: es preferible comparar variantes tipadas cuando están disponibles'
+    - Solo si el mensaje es corto
+  answer: 1
+  explanation: La presentación puede cambiar; las variantes expresan causas estructuradas para el programa.
+sources:
+  - title: std · Error
+    url: https://doc.rust-lang.org/std/error/trait.Error.html
+  - title: std · Display
+    url: https://doc.rust-lang.org/std/fmt/trait.Display.html

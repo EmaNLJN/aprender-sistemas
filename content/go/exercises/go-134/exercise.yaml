@@ -1,0 +1,44 @@
+title: Hacé crecer una generación
+level: beginner
+minutes: 20
+intro: 'Un jardín digital no mueve criaturas: cada celda decide si vive mirando ocho vecinas de la generación anterior.'
+why: Leer y escribir en tableros distintos mantiene la simultaneidad. Si actualizás en el lugar, el resultado depende del orden de recorrido.
+objective: 'Calculá una generación de Conway B3/S23: una celda nace con3 vecinas y una viva sobrevive con2 o3. Fuera del tablero siempre está muerto, sin wrap. Tablero rectangular de hasta20×20; vacío, sin columnas o irregular produce salida vacía.'
+instructions:
+  - Leé el contrato y predecí un caso antes de ejecutar.
+  - Conservá la representación indicada y verificá también sus límites.
+tests:
+  - id: t1
+    label: Oscilador de período2
+    expression: func()bool{a:=make([][]bool,5);b:=make([][]bool,5);for i:=range a{a[i]=make([]bool,5);b[i]=make([]bool,5)};for i:=1;i<=3;i++{a[2][i]=true;b[i][2]=true};return fmt.Sprint(NextLife(a))==fmt.Sprint(b)&&fmt.Sprint(NextLife(b))==fmt.Sprint(a)}()
+    why: Las decisiones deben leer una misma generación.
+    failure: Las decisiones deben leer una misma generación.
+  - id: t2
+    label: Bloque y sobrepoblación
+    expression: fmt.Sprint(NextLife([][]bool{{true,true},{true,true}}))=="[[true true] [true true]]" && fmt.Sprint(NextLife([][]bool{{true,true,true},{true,true,true},{true,true,true}}))=="[[true false true] [false false false] [true false true]]"
+    why: Los ocho vecinos incluyen diagonales, no la celda central.
+    failure: Los ocho vecinos incluyen diagonales, no la celda central.
+  - id: t3
+    label: Aislamiento y forma
+    expression: fmt.Sprint(NextLife([][]bool{{true}}))=="[[false]]" && len(NextLife(nil))==0 && len(NextLife([][]bool{{}}))==0 && len(NextLife([][]bool{{true},{true,false}}))==0
+    why: Las celdas exteriores son muertas; las grillas inválidas se rechazan.
+    failure: Las celdas exteriores son muertas; las grillas inválidas se rechazan.
+hints:
+  - Contá los ocho desplazamientos alrededor, excluyendo(0,0).
+  - Consultá solo el tablero recibido al calcular vecinos.
+  - Creá otro tablero y aplicá vivos==3 || (actual && vivos==2).
+review:
+  success: El oscilador vuelve a su forma inicial tras dos generaciones, el bloque permanece y el aislamiento desaparece.
+  pitfall: Estos bordes son finitos y muertos. Un universo infinito o toroidal puede producir otro resultado.
+transfer: Agregá un patrón glider y observá su traslación después de cuatro generaciones.
+prediction:
+  question: Actualizar cada celda inmediatamente en el mismo tablero…
+  options:
+    - Mantiene simultaneidad
+    - Puede cambiar el resultado según el recorrido
+    - Es obligatorio para Conway
+  answer: 1
+  explanation: Las celdas siguientes leerían valores nuevos mezclados con los de la generación anterior.
+sources:
+  - title: Un jardín de reglas · fundamentos
+    url: https://www.cs.princeton.edu/courses/archive/fall15/cos126/lectures/CS.Movies.pdf

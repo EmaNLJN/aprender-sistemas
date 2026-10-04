@@ -1,0 +1,43 @@
+title: Reparación · La brújula cruzada
+intro: 'El robot de la estación confunde algunos ejes. Un estado pequeño permite observar cada transición: Este/Oeste cambian x; Norte/Sur cambian y.'
+why: Antes de corregir líneas, escribí qué campos pueden cambiar en cada caso. Conservar los campos no afectados es parte de la corrección.
+objective: Repará paso. N suma uno a y; S resta uno a y; E suma uno a x; O resta uno a x. Otro comando conserva ambos valores. Coordenadas entre -100 y 100.
+instructions:
+  - Compará cada brazo del match con la regla de su dirección.
+  - Corregí solamente las coordenadas intercambiadas.
+  - Devolvé la nueva pareja sin modificar otros datos.
+tests:
+  - id: t1
+    label: Norte y Este usan ejes diferentes
+    expression: paso(2, 7, 'N') == (2, 8) && paso(2, 7, 'E') == (3, 7)
+    why: Valores iniciales distintos revelan un intercambio de ejes.
+    failure: N modifica y; E modifica x.
+  - id: t2
+    label: Regreso por Sur y Oeste
+    expression: paso(-2, 3, 'S') == (-2, 2) && paso(-2, 3, 'O') == (-3, 3)
+    why: Las direcciones opuestas restan sin cambiar el otro componente.
+    failure: Conservá la coordenada perpendicular.
+  - id: t3
+    label: Orden desconocida
+    expression: paso(4, 9, '?') == (4, 9) && paso(4, 9, 'n') == (4, 9)
+    why: El contrato distingue mayúsculas y define un no-op.
+    failure: No conviertas letras ni inventes desplazamientos para otros comandos.
+hints:
+  - Leé la pareja como (horizontal, vertical).
+  - Las ramas N y E están intercambiando responsabilidades.
+  - N debe producir (x, y + 1); E debe producir (x + 1, y).
+review:
+  success: Las cuatro direcciones y el no-op cumplen sus transiciones. Usar coordenadas diferentes hizo visible un error que empezar siempre en (0,0) podía ocultar.
+  pitfall: Que cada rama compile no prueba que modifique el campo correcto. Los nombres y las pruebas deben expresar el significado de cada posición.
+transfer: Encapsulá x e y en una struct Posicion para evitar depender del orden de una tupla.
+prediction:
+  question: Desde (2,7), ¿N debe cambiar qué componente?
+  options:
+    - x, para quedar (3,7)
+    - y, para quedar (2,8)
+    - Ambos
+  answer: 1
+  explanation: El norte aumenta la coordenada vertical y según el contrato de esta estación.
+sources:
+  - title: Rust Book · match
+    url: https://doc.rust-lang.org/book/ch06-02-match.html

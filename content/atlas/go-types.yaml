@@ -1,0 +1,29 @@
+id: go-types
+level: beginner
+category: Datos y memoria
+title: Números, tipos definidos y Unicode
+summary: Go tiene enteros, floats, complejos, bool y string. byte es alias de uint8; rune es alias de int32. Los tipos definidos tienen identidad; los aliases preservan identidad existente.
+why: La representación determina rango y significado. Un string contiene bytes y puede tener UTF-8 inválido; recorrerlo como runes es otra operación.
+code: |-
+  type UserID int64
+  type OrderID int64 // tipo definido distinto
+  type Byte = uint8  // alias
+  s := "ñ"
+  bytes := len(s)          // 2
+  runes := len([]rune(s))  // 1
+  promedio := float64(5) / 2 // 2.5
+explanation: int depende de la arquitectura; int32 e int64 fijan su tamaño. Una conversión numérica explícita no es necesariamente validación de rango. range sobre string decodifica UTF-8 y entrega índices de bytes y runes; un rune no equivale siempre a un grafema visible.
+comparison: Frente al number habitual de JavaScript, los tipos numéricos distinguen representación. Como en Rust, longitud en bytes y cantidad de unidades Unicode no son lo mismo; Go string puede contener bytes que no forman UTF-8 válido.
+pitfall: float64(a / b) convierte después de hacer división entera. Para obtener decimales, convertí un operando antes de dividir.
+quiz:
+  question: Con a y b int, ¿float64(a / b) recupera la fracción descartada?
+  options:
+    - Sí
+    - 'No: la división entera ya ocurrió'
+    - Solo si a es positivo
+  answer: 1
+  explanation: La conversión debe preceder a la operación si querés división flotante.
+labId: go-19
+source:
+  title: Go Specification · Types
+  url: https://go.dev/ref/spec#Types

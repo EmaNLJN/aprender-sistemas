@@ -1,0 +1,40 @@
+title: Transformaciones que todavía no ocurrieron
+kind: reparar
+intro: 'map produce otro iterador y es perezoso: describe una transformación. collect lo consume y construye la colección resultante.'
+why: Separar descripción y ejecución permite encadenar pasos sin materializar una colección intermedia para cada uno.
+objective: Devolvé el doble de cada valor, conservando orden. Valores entre -1.000 y 1.000.
+instructions:
+  - Completá la cadena con un consumidor.
+  - La salida debe ser Vec<i32>.
+tests:
+  - id: t1
+    label: Secuencia
+    expression: dobles(&[1, 3, 2]) == vec![2, 6, 4]
+    why: La transformación respeta el orden.
+    failure: Consumí map con collect.
+  - id: t2
+    label: Signos
+    expression: dobles(&[-4, 0]) == vec![-8, 0]
+    why: La operación se aplica a cada valor.
+    failure: Multiplicá por dos, sin filtrar.
+  - id: t3
+    label: Vacío
+    expression: dobles(&[]).is_empty()
+    why: Un pipeline vacío produce colección vacía.
+    failure: No agregues elementos por defecto.
+hints:
+  - El tipo de map no es Vec.
+  - collect usa el tipo de retorno para saber qué construir.
+  - Agregá .collect() al final.
+review:
+  success: La cadena ahora se consume. No necesitaste escribir índices ni un acumulador manual.
+  pitfall: Crear un iterador y descartarlo puede no ejecutar ninguna de sus transformaciones.
+transfer: Insertá filter antes de map y explicá por qué cambia qué valores se transforman.
+prediction:
+  question: ¿map por sí solo construye inmediatamente un Vec?
+  options:
+    - Sí
+    - 'No: crea un iterador perezoso'
+    - Solo si hay tres elementos
+  answer: 1
+  explanation: Necesitás consumir el iterador, por ejemplo con collect, sum o un for.

@@ -1,0 +1,27 @@
+id: rust-concurrency
+level: advanced
+category: Concurrencia
+title: Threads, mensajes y acceso compartido
+summary: std::thread crea threads; join espera su resultado. Los canales transfieren mensajes y Arc<Mutex<T>> combina propiedad compartida con acceso sincronizado.
+why: Transferir un valor, compartir su vida y permitir escritura son problemas diferentes. Send y Sync hacen que muchas de estas reglas participen del chequeo de tipos.
+code: |-
+  let texto = String::from("trabajo");
+  let worker = std::thread::spawn(move || texto.len());
+  let bytes = worker.join().expect("worker sin panic");
+  // Arc: varios dueños entre threads.
+  // Mutex: acceso mutuamente excluyente al contenido.
+explanation: Send permite transferir propiedad entre threads; Sync permite compartir referencias. Arc por sí solo no vuelve seguro mutar cualquier contenido. join establece finalización real; sleep no prueba que un trabajo haya terminado.
+comparison: Rust exige que las transferencias respeten Send/Sync. En Go, el compilador no tiene un borrow checker equivalente; sincronización y detector de carreras cumplen otras partes del trabajo.
+pitfall: Código Rust seguro todavía puede tener deadlocks o carreras lógicas. Una suite de resultados correctos no demuestra ausencia de todas las fallas concurrentes.
+quiz:
+  question: ¿Arc<T> hace atómicas todas las operaciones sobre T?
+  options:
+    - Sí
+    - 'No: comparte propiedad, el contenido necesita su contrato'
+    - Solo si T está en el heap
+  answer: 1
+  explanation: Arc sincroniza su conteo propietario, no cualquier operación arbitraria sobre el valor.
+labId: rust-70
+source:
+  title: Rust Book · Send and Sync
+  url: https://doc.rust-lang.org/book/ch16-04-extensible-concurrency-sync-and-send.html

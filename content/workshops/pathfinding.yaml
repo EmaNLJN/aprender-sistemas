@@ -1,0 +1,68 @@
+id: pathfinding
+title: El mapa que piensa
+subtitle: Abrí caminos, agregá pantanos y mirá cómo busca tu personaje.
+level: advanced
+minutes: 45
+story: El héroe puede atravesar el pantano o rodearlo. Una ruta de pocos pasos no siempre es la que menos energía consume.
+what: Un explorador visual de BFS y A* con frontera, costos, paredes y reconstrucción de rutas.
+why: Distinguir distancia, costo y estimación evita usar el algoritmo correcto para la pregunta equivocada.
+uses:
+  - Navegación de personajes
+  - Planificación de rutas
+  - Exploración de grafos de estados
+limits: Grilla pequeña, vecinos ortogonales y costos positivos. No hay personajes simultáneos, suavizado ni navegación continua.
+objectives:
+  - id: pathfinding-bfs
+    label: Encontrar una ruta con BFS uniforme
+    why: Una cola explora capas cuando cada arista tiene el mismo costo.
+  - id: pathfinding-astar
+    label: Resolver el terreno costoso con A*
+    why: g+h combina lo gastado con una cota de lo que falta.
+  - id: pathfinding-blocked
+    label: Demostrar que no existe camino
+    why: Agotar la frontera es distinto de detenerse demasiado pronto.
+prediction:
+  question: Con casillas de costos distintos, BFS garantiza…
+  options:
+    - Costo total mínimo
+    - Menos pasos, no necesariamente menor costo
+    - Siempre la misma ruta que A*
+  answer: 1
+  explanation: BFS ordena por capas de aristas; no incorpora el precio de entrar a cada terreno.
+steps:
+  - title: Modelar
+    task: Convertí casillas transitables en nodos y movimientos en aristas.
+    why: La búsqueda opera sobre el grafo, no sobre una imagen.
+    done: Paredes y límites no generan vecinos.
+  - title: Explorar
+    task: Implementá cola BFS y visualizá su frontera.
+    why: Cada capa representa un paso adicional con costo uniforme.
+    done: Un mapa sin camino termina al agotar la cola.
+  - title: Priorizar
+    task: Agregá costos y la prioridad g+h de A*.
+    why: Una heurística admisible no sobreestima la distancia restante.
+    done: El mapa con pantanos elige la ruta barata.
+  - title: Reconstruir
+    task: Guardá padres y devolvé una secuencia transitable.
+    why: Un costo correcto no alcanza para mover al personaje.
+    done: Cada paso de la ruta es vecino y su suma coincide con el costo.
+sources:
+  - title: Amit Patel · introducción a A*
+    url: https://www.redblobgames.com/pathfinding/a-star/introduction.html
+related:
+  rust:
+    - rust-35
+    - rust-107
+    - rust-109
+  go:
+    - go-107
+    - go-108
+    - go-109
+bridge:
+  rust: Guardá costos separados de la grilla y usá Option para ausencia de ruta; un BinaryHeap con orden invertido puede reemplazar la lista abierta.
+  go: Una struct para cada entrada de la frontera permite conservar coordenadas y costo; map o slices almacenan mejores distancias y padres.
+category: play
+model: pathfinding
+code:
+  rust: rust-132
+  go: go-132

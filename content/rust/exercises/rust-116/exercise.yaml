@@ -1,0 +1,47 @@
+title: Núcleo · Invalidá solo las traducciones correctas
+level: expert
+minutes: 20
+intro: Observás hits y misses de una TLB, provocás una traducción obsoleta y la recuperás con invalidación explícita. En este ejercicio construís un núcleo verificable del proyecto; las cuatro etapas del taller lo convierten después en una herramienta completa.
+why: Modificar el dato principal y mantener sus copias coherentes son operaciones distintas. El software del sistema debe cumplir las reglas de invalidación y orden de la arquitectura.
+objective: Una entrada TLB contiene ASID, VPN y marco. Invalidá todas las entradas que coincidan con ASID y con la VPN pedida. Si se pide todo el espacio, ignorá VPN. Conservá orden y contenido de las entradas restantes; devolvé cuántas eliminaste. Puede haber duplicados y deben salir todos. ASID=0 es válido.
+instructions:
+  - La condición exige coincidencia de espacio Y de página, salvo invalidación de todo el espacio.
+  - Una página idéntica de otro ASID no se elimina.
+  - Contá eliminadas a partir de tamaños o durante el filtrado.
+tests:
+  - id: t1
+    label: Misma página, distinto espacio
+    expression: '{ let mut t=vec![Entrada{asid:1,vpn:2,marco:8},Entrada{asid:2,vpn:2,marco:9},Entrada{asid:1,vpn:3,marco:4}]; let n=invalidar(&mut t,1,Some(2)); n==1 && t==vec![Entrada{asid:2,vpn:2,marco:9},Entrada{asid:1,vpn:3,marco:4}] }'
+    why: El ASID forma parte de la identidad de la traducción.
+    failure: No borres todas las entradas con la misma VPN.
+  - id: t2
+    label: Todo el espacio y ASID cero
+    expression: '{ let mut t=vec![Entrada{asid:0,vpn:1,marco:2},Entrada{asid:4,vpn:1,marco:2},Entrada{asid:0,vpn:9,marco:3}]; invalidar(&mut t,0,None)==2 && t==vec![Entrada{asid:4,vpn:1,marco:2}] }'
+    why: Una invalidación global del ASID no afecta a otros espacios.
+    failure: None amplía páginas, no espacios.
+  - id: t3
+    label: Duplicados e idempotencia
+    expression: '{ let mut t=vec![Entrada{asid:3,vpn:7,marco:1},Entrada{asid:3,vpn:7,marco:2}]; let a=invalidar(&mut t,3,Some(7)); let b=invalidar(&mut t,3,Some(7)); a==2 && b==0 && t.is_empty() }'
+    why: Se eliminan todas las coincidencias y repetir no agrega efectos.
+    failure: Un remove de la primera coincidencia es insuficiente.
+hints:
+  - Pensá primero qué entrada debe borrarse; después negá la condición para conservar.
+  - 'Una invalidación repetida es idempotente: la segunda elimina cero.'
+  - 'No elimines por marco físico: la clave del pedido es ASID/VPN.'
+review:
+  success: Los casos verifican aislamiento entre espacios, invalidación total de un ASID e idempotencia. Es un filtro de datos que modela selección de entradas.
+  pitfall: Borrar una lista no ejecuta una instrucción privilegiada real. Las TLB de otros núcleos y las barreras requieren un protocolo adicional.
+transfer: Modelá dos núcleos y no declares completado el cambio hasta recibir ambas confirmaciones de invalidación.
+prediction:
+  question: Cambiaste la tabla de marco 1 a 3, pero conservaste una TLB con marco 1. En este modelo, ¿qué usa el siguiente hit?
+  options:
+    - Marco 1
+    - Marco 3 automáticamente
+    - El promedio de ambos
+  answer: 0
+  explanation: 'Un hit usa la copia cacheada: esa es precisamente la inconsistencia que hay que resolver.'
+sources:
+  - title: OSTEP · TLBs
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/vm-tlbs.pdf
+  - title: Writing an OS in Rust · Paging
+    url: https://os.phil-opp.com/paging-implementation/

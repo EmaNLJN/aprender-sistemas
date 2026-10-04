@@ -1,0 +1,46 @@
+title: Una actualización con versión esperada
+level: expert
+minutes: 15
+intro: La concurrencia optimista verifica que la versión observada no cambió antes de aceptar una escritura. Acá modelamos esa regla en una operación local.
+why: Comparar versiones puede detectar que una decisión se tomó sobre estado viejo. La transición debe conservar el estado completo si se rechaza.
+objective: El estado es (valor i32, versión u64). Si esperada difiere, Err("conflicto"). Si sumar uno a la versión desborda, Err("version"). Si se acepta, guardá nuevo, incrementá versión y devolvé la versión nueva.
+instructions:
+  - Validá conflicto antes de calcular la siguiente versión.
+  - No modifiques ningún campo hasta completar ambas verificaciones.
+tests:
+  - id: t1
+    label: Escritura aceptada
+    expression: '{ let mut e = (10, 4); escribir_versionado(&mut e, 4, 20) == Ok(5) && e == (20, 5) }'
+    why: Dato y versión cambian como una única transición lógica.
+    failure: Asigná ambos campos después de validar.
+  - id: t2
+    label: Cliente con estado viejo
+    expression: '{ let mut e = (20, 5); escribir_versionado(&mut e, 4, 99) == Err("conflicto") && e == (20, 5) }'
+    why: Una versión distinta no sobrescribe información nueva.
+    failure: El conflicto debe salir antes de mutar.
+  - id: t3
+    label: Versión agotada y prioridad
+    expression: '{ let mut e = (7, u64::MAX); let a = escribir_versionado(&mut e, u64::MAX, 8); let b = escribir_versionado(&mut e, 0, 9); a == Err("version") && b == Err("conflicto") && e == (7, u64::MAX) }'
+    why: El overflow y el orden de validaciones conservan el estado.
+    failure: Usá checked_add y respetá que conflicto se comprueba primero.
+hints:
+  - El préstamo &mut brinda acceso exclusivo durante esta llamada.
+  - checked_add(1).ok_or("version")? prepara la nueva versión.
+  - Una sola asignación de tupla expresa el commit lógico.
+review:
+  success: Los casos comprueban la transición y que ambos rechazos conserven exactamente el estado anterior.
+  pitfall: No es un compare-and-swap atómico de hardware ni resuelve acceso concurrente por sí solo. Compartir el estado entre threads requiere una frontera de sincronización apropiada.
+transfer: Encapsulá el estado en Mutex y ejecutá validación más escritura bajo el mismo guard; explicá por qué separar ambos locks sería incorrecto.
+prediction:
+  question: ¿Comparar la versión y escribir después bajo otro lock sería equivalente?
+  options:
+    - Sí
+    - 'No: alguien podría cambiar el estado entre ambos pasos'
+    - Solo depende del tamaño del i32
+  answer: 1
+  explanation: La comprobación y la escritura deben pertenecer a la misma transición protegida.
+sources:
+  - title: std · Mutex
+    url: https://doc.rust-lang.org/std/sync/struct.Mutex.html
+  - title: std · u64::checked_add
+    url: https://doc.rust-lang.org/std/primitive.u64.html#method.checked_add

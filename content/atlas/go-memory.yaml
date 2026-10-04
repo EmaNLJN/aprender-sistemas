@@ -1,0 +1,29 @@
+id: go-memory
+level: advanced
+category: Datos y memoria
+title: Punteros, copias y recolector de basura
+summary: '& obtiene una dirección; * accede al dato apuntado. Los argumentos se pasan por valor, incluidos los punteros. El GC recupera memoria que dejó de ser alcanzable; no cierra tus recursos externos automáticamente.'
+why: Compartir una dirección permite modificar el original. Entender la diferencia entre copiar el puntero y copiar todo el objeto explica efectos que a veces parecen pasaje por referencia.
+code: |-
+  func Incrementar(p *int) { (*p)++ }
+  func Nuevo() *int {
+      n := 7
+      return &n // válido: la implementación conserva los datos
+  }
+  x := 2
+  Incrementar(&x) // x pasa a 3
+explanation: Un puntero se copia como valor y ambas copias pueden acceder al mismo objeto. No hay aritmética ordinaria de punteros como en C. El compilador y runtime gestionan dónde debe vivir un dato que escapa; devolver &n no crea por sí solo un puntero colgante.
+comparison: A diferencia de Rust, no anotás lifetimes y puede haber múltiples aliases mutables sin rechazo estático. Eso hace más importante revisar efectos compartidos y sincronizar accesos entre goroutines.
+pitfall: GC no evita retener innecesariamente grandes arrays mediante un pequeño slice, ni resuelve carreras, ni garantiza cierre oportuno de archivos.
+quiz:
+  question: ¿Pasar *int a una función sigue siendo pasaje por valor?
+  options:
+    - 'Sí: se copia el puntero, que apunta al mismo dato'
+    - 'No: Go tiene un modo especial de pasaje por referencia'
+    - Solo si el número es cero
+  answer: 0
+  explanation: Se copia el valor puntero; la mutación alcanza el dato compartido.
+labId: go-22
+source:
+  title: Go FAQ · Stack or heap
+  url: https://go.dev/doc/faq#stack_or_heap

@@ -65,33 +65,3 @@ export interface Exercise {
   transfer: string;
   prediction: ExercisePrediction;
 }
-
-export type ExerciseTestDraft = Omit<ExerciseTest, 'id'>;
-
-// Lo que declara cada llamada a una fábrica: el texto del ejercicio y, opcionalmente,
-// los campos que reemplazan los valores por defecto de su etapa.
-export interface ExerciseDraft {
-  title: string;
-  intro: string;
-  why: string;
-  objective: string;
-  instructions: string[];
-  starter: string;
-  solution: string;
-  tests: ExerciseTestDraft[];
-  hints: string[];
-  review: ExerciseReview;
-  transfer: string;
-  prediction: ExercisePrediction;
-  sources?: ExerciseSource[];
-  kind?: ExerciseKind;
-  level?: LevelId;
-  imports?: string[];
-  visual?: ExerciseVisual;
-  minutes?: number;
-}
-
-// Los desafíos no heredan fuentes de su mundo: cada uno declara las suyas.
-export interface QuestDraft extends ExerciseDraft {
-  sources: ExerciseSource[];
-}

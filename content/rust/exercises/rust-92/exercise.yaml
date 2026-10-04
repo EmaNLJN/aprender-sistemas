@@ -1,0 +1,44 @@
+title: 'Hexadecimal: dos símbolos por byte'
+level: advanced
+visual: memory
+intro: Cada dígito hexadecimal representa cuatro bits. Dos nibbles forman un byte al desplazar el primero cuatro lugares y combinarlo con el segundo.
+why: La gramática determina cómo agrupar la entrada. Validar antes de usar los símbolos evita aceptar parcialmente un payload mal formado.
+objective: Decodificá texto hexadecimal ASCII en Vec<u8>. Mayúsculas y minúsculas se aceptan. Longitud de bytes impar → Err("largo"); byte inválido → Err("digito"); vacío → Vec vacío.
+instructions:
+  - Implementá nibble para 0–9, a–f y A–F.
+  - Validá longitud primero y recorré pares de bytes, sin espacios opcionales.
+tests:
+  - id: t1
+    label: Valores y cajas mezcladas
+    expression: desde_hex("00aF10") == Ok(vec![0, 175, 16])
+    why: Cada par produce exactamente un byte.
+    failure: El primer nibble representa los cuatro bits altos.
+  - id: t2
+    label: Forma incompleta
+    expression: desde_hex("ABC") == Err("largo") && desde_hex("") == Ok(vec![])
+    why: La longitud impar se rechaza y el vacío es válido.
+    failure: Comprobá longitud antes de recorrer pares.
+  - id: t3
+    label: Símbolos inválidos
+    expression: desde_hex("0g") == Err("digito") && desde_hex("é") == Err("digito") && desde_hex(" 0") == Err("digito")
+    why: Solo la gramática ASCII hexadecimal es válida.
+    failure: No hagas trim ni conviertas caracteres arbitrarios.
+hints:
+  - Cada rama de nibble retorna un valor entre 0 y 15.
+  - chunks_exact(2) da pares tras validar la longitud.
+  - (alto << 4) | bajo ensambla el byte.
+review:
+  success: La decodificación conserva un byte por par y rechaza datos que no pertenecen a la gramática. El uso de bytes es correcto porque el formato es ASCII.
+  pitfall: Un formato de texto Unicode general no puede cortarse así por bytes. Aquí el formato define deliberadamente un alfabeto ASCII.
+transfer: Implementá el codificador inverso con letras minúsculas y comprobá ida y vuelta para los 256 bytes.
+prediction:
+  question: ¿Qué valor aportan los símbolos AF?
+  options:
+    - 10 + 15 = 25
+    - 10 × 16 + 15 = 175
+    - Un carácter Unicode
+  answer: 1
+  explanation: El primer dígito ocupa la posición de dieciséis unidades.
+sources:
+  - title: std · slice::chunks_exact
+    url: https://doc.rust-lang.org/std/primitive.slice.html#method.chunks_exact

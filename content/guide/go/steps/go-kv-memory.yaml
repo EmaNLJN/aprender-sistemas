@@ -1,0 +1,17 @@
+id: go-kv-memory
+title: Construí el núcleo en memoria
+minutes: 25
+objective: Representar claves, valores y ausencia sin sumar infraestructura.
+task: Creá un almacén de texto con operaciones para guardar y buscar. Invocalas directamente con las claves nombre y ciudad. Definí que guardar otra vez reemplaza el valor previo y que buscar una clave ausente se distingue de encontrar un valor vacío. Separá estas operaciones de cualquier impresión en pantalla.
+doneWhen: Guardás y recuperás dos claves, reemplazás una y distinguís ausencia de valor vacío.
+resourceIds:
+  - go-tests
+  - go-examples
+quiz:
+  question: ¿Qué información necesitás conservar al consultar una clave si el texto vacío es un valor válido?
+  options:
+    - Solo la longitud del texto.
+    - La fecha en que compilaste el programa.
+    - El valor y una indicación de si la clave existe.
+  answer: 2
+  explanation: El valor por sí solo puede ser ambiguo. Conocer si la clave existe permite distinguir una entrada vacía de una clave ausente.

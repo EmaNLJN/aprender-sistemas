@@ -1,0 +1,39 @@
+title: División con un error que explica
+intro: Result<T, E> separa una respuesta válida Ok de un fallo Err. El llamador recibe información sin depender de un panic.
+why: Un error esperado, como un divisor inválido, forma parte del contrato. Result permite propagarlo o recuperarse de forma explícita.
+objective: Dividí dos u32. Si b es cero, devolvé Err("divisor cero"); si no, Ok(a / b).
+instructions:
+  - Validá b antes de la operación.
+  - No uses unwrap ni panic para el caso previsto.
+tests:
+  - id: t1
+    label: Resultado válido
+    expression: dividir(9, 2) == Ok(4)
+    why: La división sigue siendo entera.
+    failure: Envolvé el cociente con Ok.
+  - id: t2
+    label: Error descriptivo
+    expression: dividir(9, 0) == Err("divisor cero")
+    why: La entrada inválida tiene un canal propio.
+    failure: La rama de error debe ocurrir antes de dividir.
+  - id: t3
+    label: Cero válido
+    expression: dividir(0, 4) == Ok(0)
+    why: Cero como numerador no es un error.
+    failure: Solo validá el divisor.
+hints:
+  - El tipo de éxito es u32 y el de error es un literal &str.
+  - Err("divisor cero") cumple el tipo de error.
+  - Usá un if para elegir Err u Ok.
+review:
+  success: El llamador puede distinguir un resultado cero de la imposibilidad de dividir. Ese dato no se pierde en un valor centinela.
+  pitfall: Err no lanza automáticamente una excepción. Es un valor que el llamador debe manejar.
+transfer: Reemplazá el texto del error por un enum con variantes propias.
+prediction:
+  question: ¿Devolver Err detiene todo el programa?
+  options:
+    - Siempre
+    - Solo en modo debug
+    - 'No: devuelve un valor de error al llamador'
+  answer: 2
+  explanation: El programa decide qué hacer con Result; Err por sí mismo no equivale a panic.

@@ -1,0 +1,36 @@
+# Conceptos del Atlas por lenguaje, en orden. Los fragmentos ilustran conceptos; el
+# laboratorio ejecuta los ejercicios. Los IDs son inmutables: indexan el progreso.
+rust:
+  - rust-identity
+  - rust-syntax
+  - rust-types
+  - rust-flow
+  - rust-functions
+  - rust-collections
+  - rust-structs
+  - rust-interfaces
+  - rust-functional
+  - rust-generics
+  - rust-memory
+  - rust-errors
+  - rust-modules
+  - rust-concurrency
+  - rust-async
+  - rust-expert
+go:
+  - go-identity
+  - go-syntax
+  - go-types
+  - go-flow
+  - go-functions
+  - go-collections
+  - go-structs
+  - go-interfaces
+  - go-functional
+  - go-generics
+  - go-memory
+  - go-errors
+  - go-modules
+  - go-concurrency
+  - go-async
+  - go-expert

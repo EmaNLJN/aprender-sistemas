@@ -1,0 +1,39 @@
+title: Un trabajo que viaja a otro thread
+intro: thread::spawn inicia una closure en otro hilo. move transfiere las capturas necesarias; join espera el resultado del trabajo.
+why: El thread podría vivir más que el alcance que lo creó. Mover un String propio evita que dependa de una referencia local que desaparezca.
+objective: Mové texto a un thread, calculá sus bytes allí y devolvé el resultado después de join.
+instructions:
+  - Usá std::thread::spawn(move || ...).
+  - Esperá con join; no uses sleep para adivinar cuándo terminó.
+tests:
+  - id: t1
+    label: Resultado del trabajo
+    expression: bytes_en_thread(String::from("worker")) == 6
+    why: El valor retorna desde el thread.
+    failure: join obtiene la respuesta de la closure.
+  - id: t2
+    label: Trabajo vacío
+    expression: bytes_en_thread(String::new()) == 0
+    why: Crear un thread no cambia el cálculo.
+    failure: Devolvé len, no un mensaje impreso.
+  - id: t3
+    label: Unicode en memoria
+    expression: bytes_en_thread(String::from("🦀")) == 4
+    why: La tarea mantiene el contrato de bytes.
+    failure: El movimiento no convierte bytes en caracteres.
+hints:
+  - Guardá el JoinHandle retornado por spawn.
+  - move captura texto por propiedad.
+  - La closure devuelve texto.len(); join devuelve Result<usize, _>.
+review:
+  success: 'Los resultados coinciden con la lectura esperada. La solución propuesta mueve el String al thread y obtiene la respuesta con join: compará esos pasos con tu implementación, porque los tests de salida solos no demuestran que se haya creado un thread.'
+  pitfall: expect aquí simplifica un ejemplo cuyo trabajo no tiene fallos previstos; una aplicación debe decidir qué hacer si el thread entra en panic.
+transfer: Devolvé (bytes, chars) desde el mismo thread.
+prediction:
+  question: ¿sleep de 10 ms garantiza que un thread terminó?
+  options:
+    - Sí, siempre alcanza
+    - 'No: join es el mecanismo para esperar su terminación'
+    - Sí, si el texto es corto
+  answer: 1
+  explanation: La planificación depende del sistema. join espera la terminación real y entrega su resultado.

@@ -1,0 +1,29 @@
+id: rust-async
+level: expert
+category: Concurrencia
+title: Async, Future, Waker y Pin
+summary: async construye un Future; await compone su avance. Un executor consulta poll y usa Waker para programar nuevos intentos. Pin participa en garantizar estabilidad de ubicación cuando hace falta.
+why: Muchas tareas que esperan I/O pueden compartir threads de ejecución. Para entender ese modelo hay que separar crear una tarea, avanzar su estado y ejecutarla en paralelo.
+code: |-
+  async fn respuesta() -> u32 {
+      let base = std::future::ready(20).await;
+      base + 2
+  }
+  let futuro = respuesta(); // todavía necesita ejecución
+  let fijado = Box::pin(futuro);
+  // Un executor real avanzaría este Future mediante poll.
+explanation: El cuerpo async no empieza solo por construir su Future. Pending conserva estado; Ready entrega el resultado. No todo await suspende. Un runtime externo suele ofrecer I/O, temporizadores y planificación; std define contratos fundamentales.
+comparison: Go expresa concurrencia con goroutines y operaciones que pueden bloquearlas. Rust async representa explícitamente Futures; ni una goroutine ni un Future garantizan por sí solos paralelismo simultáneo.
+pitfall: Los polls manuales y Wakers didácticos del laboratorio no son un runtime general. Bloquear un thread del executor puede impedir el progreso de otras tareas.
+quiz:
+  question: ¿Llamar una función async crea automáticamente un thread?
+  options:
+    - Sí
+    - 'No: produce un Future'
+    - Solo si hay dos await
+  answer: 1
+  explanation: El executor y la manera de programar el Future determinan cómo avanza.
+labId: rust-67
+source:
+  title: std · Future
+  url: https://doc.rust-lang.org/std/future/trait.Future.html

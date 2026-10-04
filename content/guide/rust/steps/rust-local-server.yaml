@@ -1,0 +1,18 @@
+id: rust-local-server
+title: Atendé una conexión local
+minutes: 25
+objective: Reutilizar el núcleo de tu programa detrás de una entrada de red.
+task: Consultá un ejemplo oficial de servidor TCP y adaptá solo lo necesario para aceptar una conexión local, leer un comando completo y responder usando tu núcleo existente. Atendé un cliente a la vez; dejá concurrencia para después. Probá un SET y un GET desde un cliente separado. Si el tiempo no alcanza, terminá con una conexión que responda un texto fijo y dejá anotado el siguiente cambio.
+doneWhen: Un cliente recibe una respuesta del servidor local y sabés si completaste la respuesta fija o la integración con el almacén.
+resourceIds:
+  - rust-google
+  - context7
+  - codecrafters
+quiz:
+  question: ¿Qué parte conviene reutilizar al pasar de la terminal a una conexión de red?
+  options:
+    - Las suposiciones sobre cómo llegan los bytes por terminal.
+    - Todo el código de impresión, sin revisar el protocolo.
+    - Las operaciones del almacén y sus reglas, separadas de la entrada y la salida.
+  answer: 2
+  explanation: El comportamiento del almacén puede mantenerse. La forma de recibir comandos y enviar respuestas cambia con el medio y con el protocolo.

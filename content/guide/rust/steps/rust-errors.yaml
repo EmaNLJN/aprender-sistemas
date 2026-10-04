@@ -1,0 +1,18 @@
+id: rust-errors
+title: Tratamiento de entradas inválidas
+minutes: 25
+objective: Separar un resultado válido de un fallo esperable de entrada.
+task: Hacé una función pequeña que intente interpretar un texto como una cantidad. Probá un número válido, un texto vacío y letras. Consultá el tema de manejo de errores cuando lo necesites. Hacé que el llamador decida qué mensaje mostrar; evitá terminar todo el programa desde la función. Anotá qué entradas aceptaste y cuáles rechazaste.
+doneWhen: Las tres entradas tienen un comportamiento definido y la entrada inválida no produce un cierre inesperado.
+resourceIds:
+  - rust-100
+  - rust-examples
+  - rust-google
+quiz:
+  question: Un usuario ingresa letras donde esperabas un número. ¿Cómo conviene modelarlo?
+  options:
+    - Como una prueba de que el compilador falló.
+    - Como un número cero, sin avisarle a nadie.
+    - Como un resultado fallido que el llamador puede manejar.
+  answer: 2
+  explanation: Una entrada inválida es esperable. Representar el fallo permite decidir si mostrar una ayuda, reintentar o devolver el error a otro nivel.

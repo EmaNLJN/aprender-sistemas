@@ -1,0 +1,44 @@
+title: Un contador compartido y sincronizado
+intro: 'Arc comparte propiedad entre threads. Mutex controla el acceso mutable al dato interior: son responsabilidades diferentes.'
+why: Contar desde varios workers exige que leer, sumar y escribir el contador sea una actualización protegida. Compartir un puntero por sí solo no alcanza.
+objective: Creá 4 workers; cada uno incrementa el contador veces veces. Devolvé el total después de esperar a todos. veces está entre 0 y 100.
+instructions:
+  - Compartí Arc<Mutex<u32>> y cloná el Arc para cada worker.
+  - Hacé join de todos antes de leer el total.
+tests:
+  - id: t1
+    label: Cuatro workers
+    expression: contador_compartido(3) == 12
+    why: El total observado coincide con cuatro subtotales de tres.
+    failure: Cada worker debe sumar tres veces sobre el mismo contador.
+  - id: t2
+    label: Sin trabajo
+    expression: contador_compartido(0) == 0
+    why: El resultado del caso sin trabajo es cero.
+    failure: Inicializá el contador en cero.
+  - id: t3
+    label: Más competencia
+    expression: contador_compartido(50) == 200
+    why: El total observado también coincide para más iteraciones; no demuestra ausencia de carreras.
+    failure: Esperá todos los joins y mantené la actualización dentro del lock.
+hints:
+  - Arc::clone comparte el mismo Mutex, no duplica el contador.
+  - El guard de lock permite desreferenciar y modificar.
+  - El guard temporal se libera al final de la sentencia; hacé joins antes del lock final.
+review:
+  success: 'Los totales son correctos para estos casos. La solución propuesta usa Arc para propiedad, Mutex para cada actualización y join antes de leer el total. Revisá ese diseño: los tests de resultado solos no prueban concurrencia ni ausencia de carreras.'
+  pitfall: 'No hagas join mientras mantenés un lock que los workers necesitan: podrías bloquearlos mientras esperás que terminen.'
+transfer: Compará con un diseño donde cada worker devuelve su subtotal y el thread principal suma los resultados.
+prediction:
+  question: ¿Arc<u32> alcanza para modificar el mismo contador desde varios threads?
+  options:
+    - Sí, Arc hace atómicas todas las operaciones
+    - 'No: Arc comparte propiedad; necesitás sincronizar la mutación'
+    - Sí, si los números son chicos
+  answer: 1
+  explanation: Arc no agrega mutabilidad sincronizada al contenido. Mutex o tipos atómicos resuelven esa otra necesidad.
+sources:
+  - title: Rust Book · Shared-state concurrency
+    url: https://doc.rust-lang.org/book/ch16-03-shared-state.html
+  - title: std · Mutex
+    url: https://doc.rust-lang.org/std/sync/struct.Mutex.html

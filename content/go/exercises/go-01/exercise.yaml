@@ -1,0 +1,39 @@
+title: La mochila de bytes
+intro: Un servidor recibe un límite de memoria en KiB. Cada KiB contiene 1024 bytes. Una función expresa la conversión como una regla que podés comprobar con muchas entradas.
+why: El tipo int permite aritmética entera. La firma declara qué recibe la función y qué devuelve; el compilador comprueba ese acuerdo.
+objective: Convertí una cantidad pequeña y no negativa de KiB a bytes.
+instructions:
+  - Conservá la firma Bytes(kib int) int.
+  - Reemplazá el valor fijo por una expresión que use kib.
+tests:
+  - id: t1
+    label: Un bloque
+    expression: Bytes(1) == 1024
+    why: Comprueba la unidad de conversión.
+    failure: Un KiB no es un byte ni 1000 bytes.
+  - id: t2
+    label: Memoria vacía
+    expression: Bytes(0) == 0
+    why: La conversión conserva el cero.
+    failure: Multiplicá la entrada; no sumes una constante.
+  - id: t3
+    label: Varias páginas
+    expression: Bytes(12) == 12288
+    why: La regla debe escalar con la entrada.
+    failure: No devuelvas solamente el resultado del primer ejemplo.
+hints:
+  - Identificá qué unidad entra y cuál sale.
+  - La relación es multiplicativa.
+  - La expresión necesita kib y 1024.
+review:
+  success: Tu función traduce unidades y sirve para cualquier entrada dentro del rango indicado. Los tests verifican ejemplos concretos, no ausencia de overflow para todos los int.
+  pitfall: 'KiB y kB no significan lo mismo: acá elegimos explícitamente 1024.'
+transfer: Agregá una función para MiB y explicá sus unidades.
+prediction:
+  question: ¿Qué devuelve Bytes(2)?
+  options:
+    - '2048'
+    - '1026'
+    - '2000'
+  answer: 0
+  explanation: Dos bloques de 1024 bytes suman 2048 bytes.

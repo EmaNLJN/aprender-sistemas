@@ -1,0 +1,39 @@
+title: Desarmar la torre al revés
+intro: 'Adquiriste recursos en un orden y necesitás liberarlos en el inverso. Los defer pendientes funcionan como una pila: el último registrado sale primero.'
+why: Pasar cada nombre como argumento fija su valor al registrar la llamada. El resultado nombrado permite observar qué agregan las funciones diferidas antes de salir.
+objective: ReleaseOrder devuelve los nombres en el orden inverso mediante llamadas diferidas.
+instructions:
+  - Por cada nombre registrá un defer que lo agregue a out.
+  - Pasá el nombre como argumento de la función diferida.
+tests:
+  - id: t1
+    label: Tres recursos
+    expression: fmt.Sprint(ReleaseOrder([]string{"socket","buffer","lock"})) == "[lock buffer socket]"
+    why: Las últimas adquisiciones se liberan primero.
+    failure: Los defer se ejecutan en orden LIFO.
+  - id: t2
+    label: Nada adquirido
+    expression: len(ReleaseOrder(nil)) == 0
+    why: Sin registro no hay limpieza inventada.
+    failure: El slice de salida puede quedar vacío.
+  - id: t3
+    label: Conserva repeticiones
+    expression: fmt.Sprint(ReleaseOrder([]string{"a","b","a","c"})) == "[c a b a]"
+    why: Cada registro cuenta, aunque comparta nombre.
+    failure: No dedupliques los recursos.
+hints:
+  - La función diferida necesita un parámetro string.
+  - Dentro, agregá value al resultado nombrado out.
+  - El cuerpo termina con return y entonces se vacía la pila.
+review:
+  success: Visualizaste el orden LIFO de la limpieza. El test verifica el orden observado; otras implementaciones de inversión podrían producir la misma salida.
+  pitfall: Defer dentro de un loop acumula registros hasta que la función termina.
+transfer: Explicá por qué un lock interno debería liberarse antes que el recurso externo.
+prediction:
+  question: Registrás defer A(), luego defer B(). Se ejecutan…
+  options:
+    - A y después B
+    - B y después A
+    - En orden aleatorio
+  answer: 1
+  explanation: El último registro pendiente se ejecuta primero.

@@ -1,0 +1,40 @@
+title: Snapshot de una ficha con etiquetas
+kind: reparar
+intro: Una ficha contiene un nombre y un slice de etiquetas. Copiar el struct preserva el nombre, pero el slice copiado todavía puede compartir su array.
+why: Una copia profunda depende de la estructura de los datos. Acá alcanza copiar el slice de strings, porque los strings son inmutables.
+objective: Cloná Note aislando su slice Tags; aceptá Tags nil.
+instructions:
+  - Copiá los campos escalares mediante el valor del struct.
+  - Reservá y copiá un slice propio para Tags.
+tests:
+  - id: t1
+    label: Mismos datos
+    expression: func() bool { n:=Snapshot(Note{"Guía",[]string{"go","redes"}}); return n.Title=="Guía" && fmt.Sprint(n.Tags)=="[go redes]" }()
+    why: Una instantánea conserva el contenido.
+    failure: No olvides copiar elementos al nuevo slice.
+  - id: t2
+    label: Edición independiente
+    expression: func() bool { a:=Note{"A",[]string{"original"}}; b:=Snapshot(a); if len(b.Tags)!=1{return false}; b.Tags[0]="editada"; b.Title="B"; return a.Title=="A" && a.Tags[0]=="original" }()
+    why: El campo compuesto requiere su propia copia.
+    failure: Copiar sólo n deja Tags compartido.
+  - id: t3
+    label: Sin etiquetas
+    expression: func() bool { n:=Snapshot(Note{Title:"Vacía"}); return n.Title=="Vacía" && len(n.Tags)==0 }()
+    why: La ausencia de elementos no es un error.
+    failure: No indexes Tags durante la copia.
+hints:
+  - make([]string, len(n.Tags)) crea un array nuevo.
+  - copy(destino, origen) preserva el orden.
+  - Asigná el destino a n.Tags y devolvé n.
+review:
+  success: 'Identificaste qué nivel requería independencia. Copia profunda no es una instrucción universal: depende de qué contiene cada campo.'
+  pitfall: Si Tags contuviera punteros a objetos mutables, copiar el slice aún compartiría esos objetos.
+transfer: Dibujá qué parte se compartiría en un struct con map[string][]int.
+prediction:
+  question: Si copiás un struct que tiene []string, inicialmente se copian…
+  options:
+    - Todos sus arrays recursivamente
+    - Los valores de campos, incluido el descriptor del slice
+    - Sólo los nombres de campos
+  answer: 1
+  explanation: La copia del descriptor sigue señalando el mismo array hasta que crees uno distinto.

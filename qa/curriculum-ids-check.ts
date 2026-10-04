@@ -135,7 +135,7 @@ function collectWorkshops(win: CatalogWindow): Table {
 }
 
 async function collectAtlas(): Promise<Table> {
-  const atlas = await importModule<AtlasModule>('src/pages/atlas/content/atlas-content.ts');
+  const atlas = await importModule<AtlasModule>('src/pages/atlas/model/atlas-catalog.ts');
   const result: Table = {};
   for (const language of ['rust', 'go'] as const) {
     for (const concept of atlas.atlasByLanguage[language]) {

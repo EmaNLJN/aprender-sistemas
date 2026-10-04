@@ -180,9 +180,34 @@ Prettier formatea todo el código propio (`npm run format`). Para que `git blame
 
 Vite, como build único, empaqueta estilos, datos, editor y aplicación en el documento autónomo `dist/index.html`, desde `src/index.html` y `src/app/main.tsx`. Los checks validan 137 ejercicios por lenguaje (100 del recorrido, 12 nuevos de campaña y 25 de Sistemas), más 16 temas del Atlas por lenguaje. Docker reconstruye desde las fuentes y el lockfile.
 
-Archivos principales: `src/pages/atlas/` (Atlas React: componentes, modelo y contenido), `src/app/` (entrada y adaptadores legacy), `src/shared/` (helpers comunes, transporte a los Playgrounds en `api/playground`, editor CodeMirror en `ui/code-editor`), `src/entities/exercise/` (evidencia y ejecución), `src/features/download-project-kit/` (kits ZIP), `src/entities/exercise/content/` (ejercicios del recorrido, 24 desafíos nuevos y núcleos), `src/entities/guide/` (guía original), `src/entities/campaign/` (mundos y reglas), `lab.js` (aprendizaje y revisión), `lab-explorers.js` (modelos y misiones), `app.js` (shell y recorrido), `campaign.js` / `campaign.css` (interfaz de campaña).
+Archivos principales: `content/` (el currículo en YAML: ejercicios del recorrido, 24 desafíos nuevos y núcleos de Sistemas con su código Rust y Go real, mundos, talleres, Atlas y guía), `tools/content/` (valida `content/` y genera `build/curriculum.json`), `src/pages/atlas/` (Atlas React: componentes y modelo), `src/app/` (entrada y adaptadores legacy, que publican los catálogos de `build/curriculum.json`), `src/shared/` (helpers comunes, transporte a los Playgrounds en `api/playground`, editor CodeMirror en `ui/code-editor`), `src/entities/exercise/` (evidencia y ejecución), `src/features/download-project-kit/` (kits ZIP), `src/entities/guide/` (tipos y progreso de la guía), `src/entities/campaign/` (reglas de la campaña), `lab.js` (aprendizaje y revisión), `lab-explorers.js` (modelos y misiones), `app.js` (shell y recorrido), `campaign.js` / `campaign.css` (interfaz de campaña).
 
-Sistemas separa los datos y modelos puros: `src/entities/systems-simulation/` define el contrato común (`defineModel`) y contiene los 25 modelos de los cuatro dominios; las fichas de los talleres están en `src/entities/systems-workshop/content/` y los núcleos Rust/Go en `src/entities/exercise/content/systems-*-cores.ts`. `src/entities/systems-workshop/` conserva los sellos e importa progreso, y `src/entities/campaign/` aplica las reglas de la campaña; `systems.js` / `systems.css` muestran el catálogo, los controles y escenas SVG. `src/features/download-project-kit/` genera proyectos y archivos ZIP con `fflate`; Vite lo incluye en la aplicación sin CDN y su check lo empaqueta en memoria con esbuild.
+Sistemas separa los datos y modelos puros: `src/entities/systems-simulation/` define el contrato común (`defineModel`) y contiene los 25 modelos de los cuatro dominios; las fichas de los talleres están en `content/workshops/` y los núcleos Rust/Go, en la sección `systems` de `content/<lenguaje>/manifest.yaml`, con una carpeta por núcleo en `content/<lenguaje>/exercises/`. `src/entities/systems-workshop/` conserva los sellos e importa progreso, y `src/entities/campaign/` aplica las reglas de la campaña; `systems.js` / `systems.css` muestran el catálogo, los controles y escenas SVG. `src/features/download-project-kit/` genera proyectos y archivos ZIP con `fflate`; Vite lo incluye en la aplicación sin CDN y su check lo empaqueta en memoria con esbuild.
+
+### Contenido del currículo
+
+El currículo se edita en `content/`; `build/curriculum.json` es una salida generada que no se versiona.
+
+```
+content/<rust|go>/manifest.yaml      etapas en orden (recorrido, desafíos y núcleos) y sus valores por defecto
+content/<rust|go>/exercises/<id>/    exercise.yaml, starter.<rs|go> y solution.<rs|go>
+content/campaign/  content/workshops/  content/atlas/
+                                     manifest.yaml con el orden y un <id>.yaml por registro
+content/guide/                       biblioteca, fuentes y un manifiesto con sus pasos por recorrido
+```
+
+Para agregar un ejercicio:
+
+1. Elegí un ID que nunca se haya usado: los IDs indexan el progreso guardado. El generador toma el orden y la etapa del manifiesto, pero `qa/content-check.ts` todavía ata cada ID a su posición (`rust-01`, `rust-02`…), calcula la etapa a partir de ella y espera 100 ejercicios de recorrido, 12 desafíos y 25 núcleos por lenguaje, y `qa/systems-check.ts` fija el total (274 ejercicios, 137 por lenguaje, con los núcleos en los IDs 113 a 137): el primer ejercicio nuevo cambia esos asserts en el mismo commit.
+2. Agregalo a la lista `exercises` de su etapa en `content/<lenguaje>/manifest.yaml`.
+3. Creá `content/<lenguaje>/exercises/<id>/` con tres archivos:
+   - `exercise.yaml`, sólo con lo que difiere de `defaults` y de la etapa: título, textos, instrucciones, pruebas `t1`, `t2`…, tres pistas, revisión, transferencia y predicción; si hace falta, también `level`, `kind`, `minutes`, `imports`, `visual` o `sources`. El generador además exige que un núcleo de infra lleve `workshopId` y `challengeType`; que un desafío no declare `challengeType`, porque lo fija su posición en el mundo (reparación, kata o jefe); y que cada mundo de desafíos tenga exactamente tres ejercicios;
+   - `starter.<rs|go>` y `solution.<rs|go>`, con el código tal cual. Los `.go` empiezan con `package main` y una línea en blanco.
+4. Corré `npm run curriculum`, que valida todo `content/` y nombra el archivo y el campo de cada error. Después, `npm test`.
+
+En los YAML, un `#` después de un espacio empieza un comentario: un texto con `#` (como `#[test]` o `#2`) va entre comillas, y los comentarios van en su propia línea, sin más sangría que la clave: con más sangría, YAML la pega al valor sin comillas de arriba. `npm run curriculum` rechaza los dos casos.
+
+Un ejercicio nuevo cambia a propósito contratos que se actualizan a mano: `qa/fixtures/curriculum-ids.json`, los asserts de `content-check` (cantidades, ID por posición y etapa) y de `systems-check` (totales), y las cantidades de este README. `npm run format` también formatea los YAML.
 
 ## Verificación
 

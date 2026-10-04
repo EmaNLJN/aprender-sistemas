@@ -1,0 +1,19 @@
+id: go-next-challenge
+title: Convertí curiosidad en un nuevo reto
+minutes: 25
+objective: Elegir un siguiente proyecto que se apoye en lo que ya podés explicar.
+task: 'Elegí un solo próximo paso: servidor HTTP en CodeCrafters, primer reto de Protohackers o un proyecto de Gophercises. Leé la consigna y definí una primera prueba local. Explicá tu almacén sin mirar el código: comandos, errores, persistencia y una limitación del servidor. Si te atrae Boot.dev por su progresión, probá primero su acceso gratuito antes de cambiar de recorrido.'
+doneWhen: Tenés un reto elegido, una primera comprobación realizable y una explicación propia de cuatro decisiones de tu programa.
+resourceIds:
+  - codecrafters
+  - protohackers
+  - gophercises
+  - boot-dev
+quiz:
+  question: ¿Qué próximo paso da una señal útil de progreso?
+  options:
+    - Cambiar de curso cada vez que aparece una dificultad.
+    - Elegir una variante pequeña, implementarla y explicar cómo la verificaste.
+    - Medir únicamente cuántos videos viste.
+  answer: 1
+  explanation: Una modificación concreta y comprobada hace visible lo que podés hacer. Si además explicás tus decisiones, podés detectar qué conceptos necesitan más práctica.

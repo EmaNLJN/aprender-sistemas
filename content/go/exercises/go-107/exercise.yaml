@@ -1,0 +1,46 @@
+title: El explorador que se vuelve demasiado pronto
+visual: collections
+intro: Cada base conoce sus rutas de salida. Tu explorador recuerda qué bases visitó y mantiene una cola, pero declara fracaso antes de explorarla completa. Repará su condición de finalización.
+why: Un map de visitados evita volver a encolar el mismo nodo, incluso si hay ciclos. Agotar la cola prueba que no quedan destinos alcanzables por revisar; examinar solo la base inicial no alcanza.
+objective: Reachable indica si existe un camino dirigido de start a target. Un nodo siempre llega a sí mismo con cero pasos, aunque no figure como clave.
+instructions:
+  - Las listas de vecinos representan salidas dirigidas y pueden tener ciclos o repetidos.
+  - 'Conservá la entrada: no borres rutas del map para marcar visitados.'
+  - Solo devolvé false cuando no queden nodos pendientes.
+tests:
+  - id: t1
+    label: El destino está dos pasos más allá
+    expression: func() bool { g := map[string][]string{"base":{"puente"}, "puente":{"antena"}}; return Reachable(g,"base","antena") && len(g["base"]) == 1 && g["base"][0] == "puente" }()
+    why: Detecta el retorno prematuro y una mutación básica de la entrada.
+    failure: La cola ya puede tener vecinos aunque acabes de procesar un solo nodo.
+  - id: t2
+    label: Ciclos, repetidos y dirección
+    expression: func() bool { g := map[string][]string{"a":{"b","b"},"b":{"a","c"}}; return Reachable(g,"a","c") && !Reachable(g,"c","a") && !Reachable(g,"a","z") }()
+    why: Exige terminar ante ciclos y respetar el sentido de las rutas.
+    failure: Marcá al encolar; no inventes rutas de vuelta.
+  - id: t3
+    label: Viaje de cero pasos
+    expression: Reachable(nil,"isla","isla") && !Reachable(nil,"isla","otra")
+    why: Define la identidad y la ausencia completa de rutas.
+    failure: La primera comparación ocurre antes de consultar vecinos.
+hints:
+  - Seguí head y len(queue) después de la primera vuelta.
+  - Un return sale de toda la función, no solo de la iteración.
+  - El fracaso final pertenece después del for.
+review:
+  success: La búsqueda recorre como máximo una vez cada nodo alcanzable y examina sus salidas. seen corta los ciclos; el cursor head evita quitar continuamente el primer elemento del slice.
+  pitfall: Una arista a→b no implica b→a. Tampoco necesitás que un destino sin salidas exista como clave.
+transfer: Devolvé también cuántos nodos se examinaron para observar cómo crece el trabajo con la red.
+prediction:
+  question: En a→b y b→a, ¿qué evita explorar para siempre?
+  options:
+    - Ordenar los nombres
+    - Marcar cada nodo al encolarlo
+    - Usar un map para el grafo, sin más
+  answer: 1
+  explanation: El conjunto seen impide agregar otra vez un nodo ya descubierto.
+sources:
+  - title: Maps en Go
+    url: https://go.dev/blog/maps
+  - title: For y return
+    url: https://go.dev/ref/spec#Return_statements

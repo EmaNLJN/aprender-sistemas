@@ -1,0 +1,46 @@
+title: Los campos públicos deciden qué sale al mundo
+kind: reparar
+imports:
+  - encoding/json
+  - strings
+intro: Una ficha pública expone name y, si no es cero, score. El token interno no debe aparecer. Los nombres exportados y los tags controlan cómo trabaja encoding/json.
+why: Un campo no exportado no se serializa normalmente con este paquete. Los tags eligen los nombres externos; omitempty elimina el cero según las reglas de JSON.
+objective: Corregí los tags de Profile para producir name y score opcional, conservando token privado.
+instructions:
+  - Name debe tener json:"name".
+  - Score debe tener json:"score,omitempty"; no exportes token.
+tests:
+  - id: t1
+    label: Nombres de la API
+    expression: func() bool { s,e:=EncodeProfile(Profile{Name:"Go",Score:9});var m map[string]interface{};err:=json.Unmarshal([]byte(s),&m);return e==nil && err==nil && len(m)==2 && m["name"]=="Go" && m["score"]==float64(9) }()
+    why: Las claves externas obedecen a los tags.
+    failure: Name y name no son la misma clave JSON.
+  - id: t2
+    label: Cero omitido
+    expression: func() bool { s,e:=EncodeProfile(Profile{Name:"A"});var m map[string]interface{};json.Unmarshal([]byte(s),&m);_,score:=m["score"];return e==nil && len(m)==1 && !score }()
+    why: Un score cero no debe aparecer.
+    failure: Agregá omitempty al tag del campo.
+  - id: t3
+    label: Dato privado
+    expression: func() bool { s,e:=EncodeProfile(Profile{Name:"B",token:"secreto123"});return e==nil && !strings.Contains(s,"secreto123") && !strings.Contains(s,"token") }()
+    why: El campo interno no debe exportarse.
+    failure: Conservá token con inicial minúscula.
+hints:
+  - Un tag es metadata dentro de comillas invertidas.
+  - omitempty va después de una coma en el tag.
+  - Marshal inspecciona campos exportados del struct.
+review:
+  success: La representación externa tiene un contrato separado de los nombres internos. Omitir cero y representar un cero explícito son decisiones de API distintas.
+  pitfall: 'No uses privacidad del campo como único control de secretos en toda la aplicación: otras rutas de logging o serialización pueden existir.'
+transfer: Usá *int para representar score omitido frente a score explícitamente cero.
+prediction:
+  question: Con score,omitempty y Score=0, el JSON contiene…
+  options:
+    - '"score":null'
+    - Ninguna clave score
+    - '"score":0 siempre'
+  answer: 1
+  explanation: El tag omite el valor vacío definido para ese tipo.
+sources:
+  - title: encoding/json.Marshal
+    url: https://pkg.go.dev/encoding/json#Marshal

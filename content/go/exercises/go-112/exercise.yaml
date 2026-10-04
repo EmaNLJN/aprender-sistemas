@@ -1,0 +1,49 @@
+title: 'Jefe: el último mensaje a la Tierra'
+imports:
+  - context
+  - errors
+visual: concurrency
+intro: 'La base debe entregar mensajes en orden con un presupuesto por mensaje. El siguiente no empieza hasta confirmar el actual: el consumidor regula el avance. Una interfaz permite probar el enlace con una simulación y después reemplazarlo por una implementación real.'
+why: Un context comunica cancelación cooperativa y debe llegar a la operación que puede bloquear. Mantener la entrega secuencial evita adelantar mensajes; errors.Is conserva la clasificación de fallos sin depender del texto.
+objective: Dispatch devuelve cuántos mensajes confirmó con éxito y el error que detuvo la entrega. Reintenta cada mensaje hasta limit veces, numeradas desde 1, conservando el orden.
+instructions:
+  - Conservá Sender, SendFunc y ErrPermanent. ctx y sender siempre son no nil. Validá limit > 0 antes de cualquier llamada; un límite inválido devuelve 0,error incluso con lista vacía.
+  - Después de validar, comprobá ctx.Err() al entrar y antes de cada intento. Pasá el mismo ctx a Send. Ante éxito contá el mensaje; ante permanente o agotamiento detenete conservando el error.
+  - 'No lances goroutines ni hagas esperas: modelamos entrega síncrona y sin anticipación. Un Send que ignora ctx no puede ser interrumpido por este bucle.'
+tests:
+  - id: t1
+    label: Presupuesto por mensaje, contexto y orden
+    expression: func() bool { ctx := context.Background(); var log []string; sender := SendFunc(func(got context.Context,message string,attempt int)error{ if got != ctx { return ErrPermanent }; log = append(log,fmt.Sprintf("%s:%d",message,attempt)); needed := 2; if message == "B" { needed = 3 }; if attempt < needed { return fmt.Errorf("temporal") }; return nil }); n,err := Dispatch(ctx,[]string{"A","B"},3,sender); return err == nil && n == 2 && fmt.Sprint(log) == "[A:1 A:2 B:1 B:2 B:3]" }()
+    why: Comprueba reintentos independientes y que B espera la confirmación de A.
+    failure: Reiniciá el contador por mensaje; no uses un presupuesto global ni adelantes el siguiente.
+  - id: t2
+    label: Permanente o agotado bloquea mensajes posteriores
+    expression: 'func() bool { var log []string; sender := SendFunc(func(_ context.Context,message string,attempt int)error{ log = append(log,message); if message == "B" { return fmt.Errorf("rechazado: %w",ErrPermanent) }; return nil }); n,err := Dispatch(context.Background(),[]string{"A","B","C"},4,sender); if n != 1 || !errors.Is(err,ErrPermanent) || fmt.Sprint(log) != "[A B]" { return false }; calls := 0; busy := errors.New("ocupado"); n,err = Dispatch(context.Background(),[]string{"A","B"},2,SendFunc(func(context.Context,string,int)error{ calls++; return busy })); return n == 0 && calls == 2 && errors.Is(err,busy) }()'
+    why: Detecta trabajo extra después de un error definitivo y preserva el último error transitorio.
+    failure: El contador solo aumenta después de nil; el fallo del mensaje actual detiene toda la lista.
+  - id: t3
+    label: Cancelación entre intentos y entregas; entradas vacías
+    expression: func() bool { for _,successful := range []bool{false,true} { ctx,cancel := context.WithCancel(context.Background()); calls := 0; n,err := Dispatch(ctx,[]string{"A","B"},3,SendFunc(func(got context.Context,_ string,_ int)error{ calls++; cancel(); if successful { return nil }; return fmt.Errorf("temporal") })); cancel(); expected := 0; if successful { expected = 1 }; if n != expected || !errors.Is(err,context.Canceled) || calls != 1 { return false } }; ctx,cancel := context.WithCancel(context.Background()); cancel(); calls := 0; sender := SendFunc(func(context.Context,string,int)error{ calls++; return nil }); n,e1 := Dispatch(ctx,[]string{"A"},2,sender); m,e2 := Dispatch(context.Background(),nil,0,sender); z,e3 := Dispatch(context.Background(),nil,1,sender); return n == 0 && errors.Is(e1,context.Canceled) && m == 0 && e2 != nil && z == 0 && e3 == nil && calls == 0 }()
+    why: Verifica los puntos cooperativos de cancelación y validación sin efectos.
+    failure: Comprobá ctx antes de cada nuevo intento. Un éxito ya confirmado sigue contando aunque se cancele después.
+hints:
+  - Usá un bucle exterior por mensaje y uno interior por intento.
+  - Verificá context antes de llamar Send; en nil aumentá delivered y salí solo del bucle interior.
+  - Un error permanente retorna enseguida; al agotarse el bucle interno, devolvé el último error si todavía no hubo éxito.
+review:
+  success: Combinaste una interfaz pequeña, clasificación de errores y cancelación cooperativa. Los callbacks observan que no hay anticipación entre mensajes. Si el último Send confirma éxito, ya no queda otro intento donde observar una cancelación posterior.
+  pitfall: Confirmar mensajes localmente no demuestra entrega exactamente una vez. Un intento puede causar un efecto y devolver error; una implementación real necesita idempotencia y límites propios de I/O.
+transfer: En un proyecto local, implementá Sender con HTTP, una clave de idempotencia y un timeout; mantené estos tests de política con SendFunc.
+prediction:
+  question: A se confirma; el contexto se cancela antes de intentar B. ¿Qué debe devolver el despachador?
+  options:
+    - 0,nil
+    - 1,context.Canceled
+    - 2,nil
+  answer: 1
+  explanation: A ya fue confirmado y se conserva en el contador. B no debe empezar después de observar la cancelación.
+sources:
+  - title: 'Context: cancelación cooperativa'
+    url: https://pkg.go.dev/context
+  - title: errors.Is y errores envueltos
+    url: https://pkg.go.dev/errors#Is

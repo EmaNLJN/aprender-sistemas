@@ -1,0 +1,28 @@
+id: rust-types
+level: beginner
+category: Datos y memoria
+title: Tipos, conversiones y texto Unicode
+summary: Hay enteros con tamaño y signo, floats, bool, char, tuplas y arrays. String posee texto UTF-8; &str presta una vista. Un char es un escalar Unicode, no un byte.
+why: Elegir el tipo define rango, representación y operaciones válidas. Una conversión puede perder información, por eso conviene distinguir casts de validación.
+code: |-
+  let bytes: usize = "ñ".len();       // 2
+  let escalares = "ñ".chars().count(); // 1
+  let valor: u8 = 250;
+  let seguro = u8::try_from(300u16);   // Err
+  struct UserId(u64);
+  struct OrderId(u64); // tipos nominales distintos
+explanation: 'Dos structs con los mismos campos siguen siendo tipos distintos: su identidad no depende solo de la forma. Las tuplas y arrays se describen por sus tipos componentes y longitud. chars no cuenta necesariamente grafemas visuales completos.'
+comparison: Frente al number habitual de JavaScript, los enteros de Rust especifican rango y signo. Frente a TypeScript estructural, UserId y OrderId no son intercambiables solo por tener un campo u64.
+pitfall: Un cast as puede truncar. Para rechazar entradas fuera de rango, usá TryFrom o parse con el tipo destino.
+quiz:
+  question: ¿Cuánto vale "ñ".len()?
+  options:
+    - 1 letra
+    - 2 bytes
+    - Depende del sistema operativo
+  answer: 1
+  explanation: str usa UTF-8 y len mide bytes; ñ ocupa dos.
+labId: rust-16
+source:
+  title: Rust Book · Data types
+  url: https://doc.rust-lang.org/book/ch03-02-data-types.html

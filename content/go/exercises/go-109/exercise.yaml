@@ -1,0 +1,48 @@
+title: 'Jefe: la secuencia de lanzamiento'
+imports:
+  - container/heap
+visual: collections
+intro: No podés ensamblar antes de fabricar piezas, ni despegar antes de comprobar motores. Las tareas forman un grafo de dependencias. Cuando varias están listas, la base elige el nombre menor para producir siempre el mismo plan.
+why: El grado de entrada cuenta dependencias pendientes. Completar una tarea libera a sus dependientes; container/heap mantiene eficientemente el menor nombre disponible. Recorrer un map directamente no ofrece un orden estable.
+objective: Plan recibe tarea→dependencias y devuelve un orden válido eligiendo siempre el menor nombre disponible según < de strings. Devuelve nil,error ante ciclos o dependencias no declaradas.
+instructions:
+  - Conservá TaskHeap y usá heap.Init, heap.Push y heap.Pop para elegir tareas listas.
+  - Todos los nombres de dependencias deben existir como claves. Las listas pueden repetir una dependencia sin cambiar el resultado.
+  - El map vacío produce un plan vacío sin error. No modifiques el map ni sus slices; un fracaso no devuelve un plan parcial.
+tests:
+  - id: t1
+    label: Respetar dependencias y nuevas prioridades
+    expression: func() bool { tasks := map[string][]string{"assemble":{"fetch","test"},"fetch":{},"test":{"fetch"},"docs":{}}; a,e1 := Plan(tasks); b,e2 := Plan(map[string][]string{"a":{"b"},"b":{},"z":{}}); return e1 == nil && fmt.Sprint(a) == "[docs fetch test assemble]" && e2 == nil && fmt.Sprint(b) == "[b a z]" && fmt.Sprint(tasks["assemble"]) == "[fetch test]" }()
+    why: Una tarea recién liberada puede ganar prioridad sobre otra que ya estaba lista.
+    failure: La selección lexical ocurre en cada paso, no una sola vez al inicio.
+  - id: t2
+    label: Ciclo, incluso con tareas independientes
+    expression: func() bool { a,e1 := Plan(map[string][]string{"a":{"b"},"b":{"a"},"free":{}}); b,e2 := Plan(map[string][]string{"self":{"self"}}); return a == nil && e1 != nil && b == nil && e2 != nil }()
+    why: Evita confundir progreso parcial con completar el grafo.
+    failure: Si no procesaste todas las tareas, no hay un plan completo.
+  - id: t3
+    label: Vacío, dependencia ausente y repetida
+    expression: func() bool { a,e1 := Plan(nil); b,e2 := Plan(map[string][]string{"x":{"missing"}}); c,e3 := Plan(map[string][]string{"x":{"base","base"},"base":{}}); return e1 == nil && len(a) == 0 && e2 != nil && b == nil && e3 == nil && fmt.Sprint(c) == "[base x]" }()
+    why: Comprueba casos de frontera y multiplicidad consistente en los contadores.
+    failure: Si contás dependencias repetidas, también deben aparecer repetidas en la lista inversa; o deduplicá ambas juntas.
+hints:
+  - Construí pending[tarea] y una relación inversa dependencia→dependientes.
+  - Solo las tareas con contador cero entran al heap.
+  - Al extraer una tarea, descontá sus aristas salientes y encolá los nuevos ceros; al final compará cantidades.
+review:
+  success: Creaste un orden topológico reproducible y delegaste el mantenimiento de prioridad en container/heap. El algoritmo puede realizar trabajo antes de descubrir un ciclo, pero su API devuelve error sin publicar un plan parcial.
+  pitfall: Los métodos Push y Pop del adaptador son usados por heap; llamar directamente a ready.Pop no conserva por sí solo la propiedad de prioridad.
+transfer: Agregá una prioridad numérica y usá el nombre solo para desempatar. Definí antes qué tarea gana.
+prediction:
+  question: Están listas b y z. Ejecutar b libera a. ¿Qué sigue?
+  options:
+    - a
+    - z
+    - Depende del orden del map
+  answer: 0
+  explanation: 'Se vuelve a elegir el menor nombre entre todas las listas: ahora a gana a z.'
+sources:
+  - title: container/heap y su interfaz
+    url: https://pkg.go.dev/container/heap
+  - title: Orden de iteración en maps
+    url: https://go.dev/ref/spec#For_statements

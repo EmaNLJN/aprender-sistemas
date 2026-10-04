@@ -1,0 +1,12 @@
+id: rust-brown
+title: Rust Book interactivo de Brown
+url: https://rust-book.cs.brown.edu/
+languages:
+  - rust
+category: lectura
+cost: gratis
+format: Libro con preguntas y visualizaciones · Inglés
+description: Una versión interactiva del libro de Rust, con preguntas de comprensión y ayudas para razonar sobre ownership y memoria.
+why: Tu referencia para entender por qué una operación es válida o por qué el compilador la rechaza.
+caveat: 'Sigue siendo un libro: abrí el capítulo que resuelve tu duda actual y después volvé al código.'
+featured: true

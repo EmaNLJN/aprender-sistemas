@@ -1,0 +1,40 @@
+title: Intercambio sin pisar datos
+kind: reparar
+intro: Dos buffers intercambian sus identificadores. Si reemplazás a antes de recordar su valor original, el segundo paso ya no puede recuperarlo.
+why: Una asignación múltiple evalúa los valores de la derecha antes de completar las asignaciones de la izquierda. Eso permite expresar un intercambio directamente.
+objective: Devolvé b y a, conservando sus valores originales.
+instructions:
+  - Corregí el intercambio de a y b.
+  - Probá también cuando ambos valores coinciden.
+tests:
+  - id: t1
+    label: Dos distintos
+    expression: func() bool { a,b := Swap(3,9); return a == 9 && b == 3 }()
+    why: Detecta la pérdida del primer valor.
+    failure: La asignación secuencial sobrescribe a.
+  - id: t2
+    label: Cero y negativo
+    expression: func() bool { a,b := Swap(0,-4); return a == -4 && b == 0 }()
+    why: El intercambio no depende del signo.
+    failure: No uses aritmética para codificar el intercambio.
+  - id: t3
+    label: Mismo valor
+    expression: func() bool { a,b := Swap(7,7); return a == 7 && b == 7 }()
+    why: Los iguales siguen siendo iguales.
+    failure: El contrato cambia posiciones, no magnitudes.
+hints:
+  - Hay una asignación con dos destinos.
+  - Escribí a, b a la izquierda.
+  - Los valores originales pueden ir como b, a a la derecha.
+review:
+  success: El intercambio conserva ambos valores. Esta forma hace visible la operación sin agregar una variable temporal.
+  pitfall: Reasignar un parámetro local no modifica por sí mismo la variable del llamador.
+transfer: Usá el mismo patrón para invertir los extremos de un array.
+prediction:
+  question: Con a=2, b=5, después de a=b; b=a quedan…
+  options:
+    - 5 y 2
+    - 5 y 5
+    - 2 y 2
+  answer: 1
+  explanation: La primera asignación ya destruyó el 2 local de a.

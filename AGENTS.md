@@ -11,6 +11,9 @@ Atlas es la primera vista migrada; el resto conserva adaptadores legacy temporal
 ## Organización
 
 - Antes de cambiar un flujo educativo, leé `README.md`.
+- Para agregar o editar contenido del currículo (ejercicios, desafíos, núcleos, mundos,
+  talleres, Atlas o guía), leé «Contenido del currículo» en `README.md`: se edita `content/`,
+  nunca `build/`.
 - Al ubicar código, reorganizar módulos, cambiar contratos o migrar una vista,
   leé `docs/architecture.md`: mapa de fuentes y reglas de React/clean code.
 - Para elegir checks, agregar pruebas o trabajar con TDD, leé `qa/AGENTS.md`.
@@ -26,8 +29,11 @@ específicas de desarrollo; `.agents/skills/` contiene las skills del proyecto.
 `api/` es la API Laravel del ADR 0004 (PHP-FPM y MySQL en Docker); sus reglas y comandos
 están en `api/AGENTS.md`.
 `src/index.html` y `src/app/main.tsx` son las entradas Vite; `dist/` es la salida
-generada. Los `CLAUDE.md` sólo importan este archivo y los de cada
-carpeta para Claude Code; `.claude/` contiene symlinks de skills y subagentes.
+generada. `content/` es la fuente del currículo (YAML y código Rust y Go real);
+`tools/content/` la valida y genera `build/curriculum.json`, otra salida ignorada que
+importan los adaptadores de `src/app/legacy/` y el Atlas
+(`src/pages/atlas/model/atlas-catalog.ts`). Los `CLAUDE.md` sólo importan este archivo y
+los de cada carpeta para Claude Code; `.claude/` contiene symlinks de skills y subagentes.
 
 `executor/` es el ejecutor Go del ADR 0005, un servicio interno que compila y ejecuta Rust y
 Go en contenedores endurecidos (gVisor por omisión); sus reglas están en `executor/AGENTS.md`.
@@ -48,7 +54,9 @@ Para la verificación habitual, `npm run build` regenera todos los assets y
 Prettier a todo el código propio; `.prettierignore` excluye skills importadas,
 salidas generadas, Markdown y el shell `src/index.html`.
 
-Vite empaqueta React, las fuentes legacy y los estilos en `dist/index.html`.
+Vite empaqueta React, las fuentes legacy, los estilos y `build/curriculum.json` en
+`dist/index.html`. Ese JSON sale de `content/` con `npm run curriculum`, que corre antes de
+`npm run typecheck` (y por eso de `build` y `test`) y de `npm run dev`.
 `vite-plugin-singlefile` conserva el contrato de un documento autónomo; los checks
 de `qa/` validan el currículo y los contratos de comportamiento por separado.
 

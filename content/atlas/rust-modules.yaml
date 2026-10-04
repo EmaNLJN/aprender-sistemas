@@ -1,0 +1,31 @@
+id: rust-modules
+level: medium
+category: Herramientas
+title: Módulos, crates y Cargo
+summary: Un crate es una unidad de compilación; los módulos organizan nombres y privacidad. Cargo administra paquetes, dependencias, builds y herramientas del proyecto.
+why: La organización permite exponer una API estable y mantener detalles internos privados, además de reproducir cómo se construye y prueba el programa.
+code: |-
+  mod configuracion {
+      pub struct Config { limite: usize }
+      impl Config {
+          pub fn nueva() -> Self { Self { limite: 10 } }
+          pub fn limite(&self) -> usize { self.limite }
+      }
+  }
+  use configuracion::Config;
+  // Proyecto local: cargo test, cargo fmt, cargo clippy
+explanation: pub en el struct no publica sus campos. pub use permite reexportar una fachada. Cargo.toml describe el paquete y dependencias; Cargo.lock registra resoluciones. Los tests unitarios, de integración y doctests observan distintas fronteras.
+comparison: Un archivo no equivale necesariamente a un módulo público ni a un paquete como en otros ecosistemas. Cargo reúne herramientas que en otros lenguajes se configuran mediante varios programas separados.
+pitfall: El laboratorio ejecuta fragmentos std; no simula un workspace real, gestión de dependencias, cargo test completo ni benchmarks de tu equipo.
+quiz:
+  question: ¿Publicar un struct publica automáticamente todos sus campos?
+  options:
+    - Sí
+    - No
+    - Solo fuera del crate
+  answer: 1
+  explanation: Cada campo puede mantener su propia privacidad y proteger invariantes.
+labId: rust-61
+source:
+  title: Cargo Book · Guide
+  url: https://doc.rust-lang.org/cargo/guide/index.html

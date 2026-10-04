@@ -1,0 +1,40 @@
+title: El evento que append no guardó
+kind: reparar
+intro: Un slice describe una región de un array. Al agregar un evento, append devuelve la descripción actualizada; puede incluso necesitar otro array.
+why: Aunque append reutilice memoria, la longitud del slice original no cambia mágicamente. Hay que conservar el resultado.
+objective: Devolvé un slice con n agregado al final de values.
+instructions:
+  - Guardá o retorná el resultado de append.
+  - La función también debe aceptar un slice nil.
+tests:
+  - id: t1
+    label: Primer evento
+    expression: func() bool { s:=Push(nil,8); return len(s)==1 && s[0]==8 }()
+    why: append puede iniciar un slice nil.
+    failure: Retorná el nuevo slice.
+  - id: t2
+    label: Con historial
+    expression: fmt.Sprint(Push([]int{2,4},6)) == "[2 4 6]"
+    why: Conserva los elementos previos y el orden.
+    failure: No reemplaces el historial por un único valor.
+  - id: t3
+    label: Capacidad disponible
+    expression: func() bool { s:=make([]int,1,4); s[0]=3; r:=Push(s,9); return len(r)==2 && r[0]==3 && r[1]==9 }()
+    why: Incluso sin realocar cambia la longitud retornada.
+    failure: Reutilizar array no equivale a actualizar el header del llamador.
+hints:
+  - append no modifica tu variable slice.
+  - Su resultado tiene tipo []int.
+  - Podés devolver append(values, n) directamente.
+review:
+  success: Conservaste el nuevo descriptor del slice. Esta operación no promete independencia del array original; eso requiere una copia.
+  pitfall: No deduzcas si hubo realocación solamente porque la operación funcionó.
+transfer: Compará len y cap antes y después de varios append.
+prediction:
+  question: Aunque quede capacidad, después de _ = append(s, x), len(s)…
+  options:
+    - Siempre aumenta
+    - No cambia
+    - Se vuelve cero
+  answer: 1
+  explanation: Se descartó el descriptor actualizado que devolvió append.

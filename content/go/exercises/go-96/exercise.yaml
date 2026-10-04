@@ -1,0 +1,47 @@
+title: Cuatro bytes aunque lleguen de a uno
+kind: reparar
+imports:
+  - io
+  - strings
+  - errors
+intro: El encabezado de tu protocolo tiene cuatro bytes. Un Read puede entregar sólo uno aunque queden más; una lectura corta no significa por sí sola fin del mensaje.
+why: io.ReadFull repite lecturas hasta llenar el destino o encontrar un error. Distingue ausencia total con EOF de un encabezado parcial con ErrUnexpectedEOF.
+objective: ReadHeader devuelve exactamente cuatro bytes o un array cero y error si el encabezado está incompleto.
+instructions:
+  - Reemplazá el único Read por io.ReadFull.
+  - En el error devolvé [4]byte{}; no devuelvas un encabezado parcial como válido.
+tests:
+  - id: t1
+    label: Fragmentos de un byte
+    expression: func() bool {r:=&OneByteReader{Data:[]byte("HEADresto")};h,e:=ReadHeader(r);return e==nil && string(h[:])=="HEAD" && string(r.Data)=="resto"}()
+    why: Debe reunir fragmentos sin consumir el cuerpo.
+    failure: Una llamada a Read no garantiza llenar el buffer.
+  - id: t2
+    label: Encabezado parcial
+    expression: func() bool {h,e:=ReadHeader(strings.NewReader("HE"));return h==([4]byte{}) && errors.Is(e,io.ErrUnexpectedEOF)}()
+    why: Una entrada truncada se informa con su causa.
+    failure: ReadFull distingue lectura parcial de EOF inicial.
+  - id: t3
+    label: Sin ningún byte
+    expression: func() bool {h,e:=ReadHeader(strings.NewReader(""));return h==([4]byte{}) && errors.Is(e,io.EOF)}()
+    why: La ausencia total también produce error y resultado cero.
+    failure: No transformes todos los finales en éxito.
+hints:
+  - header[:] expone el array como slice.
+  - ReadFull sabe completar exactamente len del destino.
+  - Conservá el error que devuelve.
+review:
+  success: Separaste el tamaño lógico de un mensaje del tamaño de cada lectura. El protocolo decide cuántos bytes necesita; el Reader sólo describe cómo entrega fragmentos.
+  pitfall: EOF no distingue automáticamente cierre normal de mensaje truncado; esa interpretación depende del protocolo.
+transfer: Leé primero una longitud y luego un cuerpo acotado, rechazando tamaños excesivos antes de reservar memoria.
+prediction:
+  question: Una llamada Read que devuelve n=1 y err=nil puede significar…
+  options:
+    - Que sólo existía un byte total
+    - Que hay un fragmento y todavía pueden venir más datos
+    - Que Reader violó siempre su contrato
+  answer: 1
+  explanation: Read puede devolver menos bytes que el buffer disponible.
+sources:
+  - title: io.ReadFull
+    url: https://pkg.go.dev/io#ReadFull

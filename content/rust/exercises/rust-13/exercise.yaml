@@ -1,0 +1,43 @@
+title: Copiar un número no mueve su dueño
+visual: memory
+intro: 'Los enteros implementan Copy: una asignación copia su valor. String tiene recursos propios y sigue otras reglas.'
+why: Copy se reserva para tipos cuya duplicación implícita es válida. Evita hacer una asignación aparentemente pequeña que duplique silenciosamente un buffer dinámico.
+objective: 'Devolvé (original, aumentado): aumentado debe ser original + 1. Usá un binding mutable para aumentado.'
+instructions:
+  - Copiá original a otra variable.
+  - Modificá solo la copia. Entradas entre -1.000 y 1.000.
+tests:
+  - id: t1
+    label: Valores independientes
+    expression: duplicar_contador(4) == (4, 5)
+    why: La asignación conserva el original.
+    failure: No incrementes original al preparar la pareja.
+  - id: t2
+    label: Cruzar cero
+    expression: duplicar_contador(-1) == (-1, 0)
+    why: Copy no depende del signo.
+    failure: Sumá exactamente una unidad.
+  - id: t3
+    label: Cero inicial
+    expression: duplicar_contador(0) == (0, 1)
+    why: La copia es un valor, no un alias.
+    failure: La primera posición debe conservar la entrada.
+hints:
+  - i32 implementa Copy.
+  - let mut aumentado = original; crea otro valor independiente.
+  - Devolvé (original, aumentado) después de += 1.
+review:
+  success: Ambos bindings son utilizables porque i32 es Copy. Mutar uno no cambia el otro.
+  pitfall: No extrapoles este comportamiento a String, Vec o cualquier tipo propio sin revisar sus traits.
+transfer: Repetí mentalmente la asignación usando String y predecí qué uso posterior fallaría.
+prediction:
+  question: ¿Cuál copia implícitamente su valor al asignarse?
+  options:
+    - String
+    - Vec<i32>
+    - i32
+  answer: 2
+  explanation: i32 implementa Copy; String y Vec administran almacenamiento y se mueven por defecto.
+sources:
+  - title: std · Copy
+    url: https://doc.rust-lang.org/std/marker/trait.Copy.html

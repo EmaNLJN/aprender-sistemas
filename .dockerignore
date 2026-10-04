@@ -16,6 +16,7 @@ executor
 .desloppify
 *.map
 dist
+build
 .cache
 .venv
 venv

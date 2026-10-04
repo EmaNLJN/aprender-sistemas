@@ -1,0 +1,27 @@
+id: go-structs
+level: medium
+category: Abstracción
+title: Structs, métodos y composición
+summary: Go no tiene class ni herencia clásica de implementación. Los structs agrupan datos; los métodos se asocian a tipos definidos y pueden recibir valores o punteros.
+why: Un receptor puntero permite modificar el objeto original. La composición y el embedding permiten reutilizar piezas sin una jerarquía de subclases.
+code: |-
+  type Motor struct { Potencia int }
+  type Robot struct { Motor; Nombre string }
+  func (r *Robot) Ajustar(n int) { r.Potencia = n }
+  func (r Robot) PotenciaActual() int { return r.Potencia }
+  // Motor embebido promueve campos y métodos permitidos.
+explanation: El receptor valor es una copia del valor recibido; si contiene slices o punteros, esos campos pueden seguir alcanzando datos compartidos. El embedding promueve nombres, pero no convierte Robot en una subclase de Motor.
+comparison: Frente a Java o C#, un método con receptor explícito hace visible la elección de valor/puntero. Frente a herencia tradicional, embedding no aporta automáticamente sustitución por el tipo embebido.
+pitfall: Un método que incrementa un campo numérico con receptor valor modifica su copia. Usá *T si el contrato exige cambiar el original.
+quiz:
+  question: ¿Qué receptor sirve para persistir cambios en un campo int del original?
+  options:
+    - T
+    - '*T'
+    - Ambos siempre hacen lo mismo
+  answer: 1
+  explanation: El receptor puntero permite acceder al valor original y modificar sus campos.
+labId: go-57
+source:
+  title: Effective Go · Embedding
+  url: https://go.dev/doc/effective_go#embedding

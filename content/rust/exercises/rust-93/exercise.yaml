@@ -1,0 +1,44 @@
+title: Un frame binario con longitud declarada
+level: advanced
+visual: memory
+intro: Un protocolo puede anteponer la longitud del payload. Un parser debe distinguir cabecera incompleta, payload incompleto y bytes que pertenecen al frame siguiente.
+why: Recibir un buffer no garantiza que contenga exactamente un mensaje. Devolver cuántos bytes consumiste permite componer parsers sobre un flujo.
+objective: Los dos primeros bytes son longitud u16 big-endian. Devolvé (payload copiado, bytes consumidos). Menos de dos bytes → "cabecera"; payload insuficiente → "datos". Permití bytes sobrantes.
+instructions:
+  - Leé la longitud con u16::from_be_bytes.
+  - Consumí solo 2 + longitud, incluso si el buffer contiene más datos.
+tests:
+  - id: t1
+    label: Mensaje y bytes siguientes
+    expression: leer_frame(&[0, 3, 10, 20, 30, 99]) == Ok((vec![10, 20, 30], 5))
+    why: Los bytes sobrantes quedan fuera del consumo.
+    failure: El resultado consumido incluye los dos bytes de cabecera.
+  - id: t2
+    label: Payload vacío
+    expression: leer_frame(&[0, 0, 9]) == Ok((vec![], 2))
+    why: Cero longitud no equivale a cabecera ausente.
+    failure: La cabecera todavía consume dos bytes.
+  - id: t3
+    label: Entradas incompletas
+    expression: leer_frame(&[0]) == Err("cabecera") && leer_frame(&[1, 0, 7]) == Err("datos")
+    why: La longitud big-endian 256 no se confunde con uno.
+    failure: Validá toda la longitud antes de hacer slicing.
+hints:
+  - La cabecera debe estar completa antes de indexar datos[1].
+  - from_be_bytes([a, b]) interpreta primero el byte de mayor peso.
+  - El extremo del slice es 2 + largo.
+review:
+  success: Los casos separan tipos de truncamiento y verifican el consumo exacto. El parser puede integrarse en un lector que acumule bytes entre lecturas.
+  pitfall: Esto no abre sockets ni implementa buffering de red. Además copia el payload; una versión prestada podría evitar esa copia si su lifetime encaja.
+transfer: Procesá varios frames concatenados avanzando el buffer según bytes consumidos y definí cómo retener un último frame incompleto.
+prediction:
+  question: ¿[1, 0] como u16 big-endian representa qué longitud?
+  options:
+    - '1'
+    - '256'
+    - '0'
+  answer: 1
+  explanation: El primer byte tiene peso 256; el segundo tiene peso uno.
+sources:
+  - title: std · u16::from_be_bytes
+    url: https://doc.rust-lang.org/std/primitive.u16.html#method.from_be_bytes

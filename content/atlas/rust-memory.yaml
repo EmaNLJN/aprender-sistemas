@@ -1,0 +1,30 @@
+id: rust-memory
+level: advanced
+category: Datos y memoria
+title: Ownership, referencias y lifetimes
+summary: Un valor tiene un dueño; moverlo transfiere propiedad. &T presta lectura; &mut T presta acceso exclusivo. Los lifetimes describen cuánto pueden usarse las referencias.
+why: Una referencia no debe sobrevivir a sus datos ni solaparse con accesos incompatibles. El compilador verifica esas relaciones para el código seguro.
+code: |-
+  let mut texto = String::from("hola");
+  let vista = &texto;
+  let bytes = vista.len(); // último uso del préstamo de lectura
+  texto.push('!');
+  let nuevo_dueno = texto; // texto ya no puede usarse
+  fn elegir<'a>(a: &'a str, b: &'a str) -> &'a str {
+      if a.len() > b.len() { a } else { b }
+  }
+explanation: 'Los enteros Copy se copian implícitamente; String se mueve por defecto. Los lifetimes no extienden la vida de los dueños: hacen explícitas relaciones que el compilador debe comprobar. El préstamo puede terminar después de su último uso.'
+comparison: Frente a referencias administradas por GC, Rust exige demostrar validez de los préstamos. Frente a punteros crudos de C, las referencias seguras incluyen garantías de validez y acceso.
+pitfall: clone puede ser correcto si necesitás una copia independiente, pero usarlo para toda dificultad de préstamos puede esconder un diseño innecesariamente costoso.
+quiz:
+  question: ¿Agregar una anotación de lifetime hace vivir más a un String local?
+  options:
+    - Sí
+    - 'No: expresa una relación, no cambia la duración'
+    - Solo con static
+  answer: 1
+  explanation: El dueño sigue teniendo su duración; Rust verifica que la referencia no lo exceda.
+labId: rust-44
+source:
+  title: Rust Book · Lifetimes
+  url: https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html

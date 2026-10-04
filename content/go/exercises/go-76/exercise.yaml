@@ -1,0 +1,40 @@
+title: 'FizzBuzz: dos reglas que pueden coincidir'
+kind: reparar
+intro: El juego dice Fizz para múltiplos de 3, Buzz para múltiplos de 5 y FizzBuzz cuando ambas reglas coinciden. El orden de las decisiones importa cuando una condición contiene a otra.
+why: El resto cero expresa divisibilidad. Revisar primero una condición menos específica puede ocultar el caso combinado con un retorno temprano.
+objective: FizzBuzz recibe n positivo y devuelve Fizz, Buzz, FizzBuzz o el número decimal.
+instructions:
+  - Atendé la coincidencia de ambas reglas antes de retornar por una sola.
+  - Para los demás números usá fmt.Sprintf con %d.
+tests:
+  - id: t1
+    label: Reglas separadas
+    expression: FizzBuzz(9)=="Fizz" && FizzBuzz(10)=="Buzz"
+    why: Cada divisor activa su palabra.
+    failure: El resto de n dividido por el divisor debe ser cero.
+  - id: t2
+    label: Reglas superpuestas
+    expression: FizzBuzz(15)=="FizzBuzz" && FizzBuzz(30)=="FizzBuzz"
+    why: La intersección no debe quedar tapada por el primer retorno.
+    failure: Comprobá ambos divisores antes de los casos simples.
+  - id: t3
+    label: Sin coincidencia
+    expression: FizzBuzz(1)=="1" && FizzBuzz(17)=="17"
+    why: Los números ordinarios conservan su representación.
+    failure: No devuelvas una palabra por defecto para todo.
+hints:
+  - 15 cumple las dos condiciones.
+  - Usá && para expresar esa coincidencia.
+  - Un retorno previo impediría llegar al caso combinado.
+review:
+  success: Resolviste una superposición de reglas ordenando decisiones de específica a general. La misma idea aparece en validadores y rutas.
+  pitfall: Agregar más condiciones no alcanza si una rama anterior ya retorna.
+transfer: Agregá una tercera palabra para múltiplos de 7 y diseñá cómo combinar reglas sin ocho ramas.
+prediction:
+  question: Si comprobás primero n%3==0 y retornás, n=15 produce…
+  options:
+    - FizzBuzz
+    - Fizz
+    - Buzz
+  answer: 1
+  explanation: La primera condición ya coincide y termina la función.

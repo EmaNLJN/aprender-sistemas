@@ -1,0 +1,40 @@
+title: Repará el contador inmutable
+kind: reparar
+intro: let crea por defecto una vinculación inmutable. Si el valor representa un contador que cambia, let mut expresa esa intención.
+why: La mutabilidad explícita reduce el estado que necesitás seguir mentalmente. Un nombre sin mut no puede recibir una nueva asignación accidental.
+objective: Partí del nivel inicial y aplicá exactamente dos incrementos de una unidad.
+instructions:
+  - Conservá las dos actualizaciones del contador.
+  - Repará la declaración que impide compilar. El rango usado es 0..1.000.
+tests:
+  - id: t1
+    label: Arranque en cero
+    expression: cargar(0) == 2
+    why: Ambas actualizaciones se aplican.
+    failure: El contador debe sumar dos unidades en total.
+  - id: t2
+    label: Conserva el valor previo
+    expression: cargar(8) == 10
+    why: La función no reinicia el argumento.
+    failure: Inicializá nivel con inicial.
+  - id: t3
+    label: Otra carga
+    expression: cargar(41) == 43
+    why: La regla funciona independientemente de la entrada.
+    failure: Revisá que no sobrescribas el contador con una constante.
+hints:
+  - Leé la línea señalada por E0384.
+  - La variable nivel se asigna más de una vez.
+  - Cambiá let nivel por let mut nivel.
+review:
+  success: Ahora la declaración anticipa las modificaciones. Elegir mut comunica algo sobre el ciclo de vida del valor.
+  pitfall: mut no cambia el tipo de la variable ni convierte automáticamente todos sus datos en compartibles entre threads.
+transfer: Escribí una segunda versión sin mut usando una sola expresión; compará legibilidad.
+prediction:
+  question: '¿Qué autoriza let mut nivel: i32 = 0?'
+  options:
+    - Asignarle otro i32
+    - Asignarle una cadena después
+    - Modificar cualquier variable del programa
+  answer: 0
+  explanation: mut permite reemplazar el valor conservando el tipo declarado o inferido.

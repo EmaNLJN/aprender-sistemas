@@ -1,0 +1,42 @@
+title: Repetir un evento sin cobrarlo dos veces
+intro: Un registro puede contener reintentos. Si un mismo ID vuelve con el mismo delta, se aplica una vez; si vuelve con otro contenido, hay un conflicto que debemos informar.
+why: 'Un índice de IDs guarda más que presencia: conserva el contenido ya observado para distinguir reintento de contradicción.'
+objective: Replay suma deltas únicos por ID; rechaza ID vacío o un ID repetido con otro delta, devolviendo 0 y error.
+instructions:
+  - Guardá cada delta observado por ID.
+  - Ignorá repeticiones idénticas y rechazá conflictos antes de agregar su valor.
+tests:
+  - id: t1
+    label: Reintento idéntico
+    expression: func() bool {n,e:=Replay([]Event{{"a",5},{"b",2},{"a",5}});return e==nil && n==7}()
+    why: Una repetición no vuelve a aplicar el delta.
+    failure: Comprobá el ID antes de acumular.
+  - id: t2
+    label: Deltas negativos, cero y vacío
+    expression: func() bool {n,e:=Replay([]Event{{"a",0},{"b",-3},{"a",0}});z,f:=Replay(nil);return e==nil && n == -3 && f==nil && z==0}()
+    why: Un delta cero existente necesita la presencia real del map.
+    failure: Usá value, ok; cero no significa ID ausente.
+  - id: t3
+    label: Conflicto y falta de ID
+    expression: func() bool {a,e:=Replay([]Event{{"x",4},{"x",9}});b,f:=Replay([]Event{{"",3}});return a==0 && b==0 && e!=nil && f!=nil}()
+    why: Contenido inconsistente invalida el resultado completo.
+    failure: No ignores silenciosamente un ID repetido distinto.
+hints:
+  - seen tiene tipo map[string]int.
+  - El bool de la lectura distingue un delta cero existente.
+  - En un reintento válido usá continue.
+review:
+  success: Definiste una política de idempotencia para un lote en memoria. No equivale a garantizar exactamente una ejecución en un sistema distribuido con fallos y persistencia.
+  pitfall: Dos eventos distintos con IDs distintos se aplican aunque tengan el mismo delta.
+transfer: Definí qué parte del estado deberías persistir para conservar esta política entre reinicios.
+prediction:
+  question: Dos eventos con mismo ID y distintos deltas son…
+  options:
+    - Un reintento válido
+    - Un conflicto de contenido
+    - Dos eventos nuevos automáticamente
+  answer: 1
+  explanation: El contrato usa el ID como identidad de un evento cuyo contenido debe permanecer igual.
+sources:
+  - title: Map lookup y presencia
+    url: https://go.dev/ref/spec#Index_expressions

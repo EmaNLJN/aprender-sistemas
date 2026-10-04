@@ -1,0 +1,12 @@
+id: rust-google
+title: Comprehensive Rust en español
+url: https://google.github.io/comprehensive-rust/es/
+languages:
+  - rust
+category: lectura
+cost: gratis
+format: Material de curso y ejercicios · Español
+description: Material de formación de Google con fundamentos y recorridos especializados, incluidos concurrencia y bare metal.
+why: Una buena segunda explicación en español, especialmente si querés conectar Rust con sistemas.
+caveat: Fue diseñado para capacitación con instructor. Tomá los módulos como referencia; sus tiempos no son una promesa de dominio.
+featured: false

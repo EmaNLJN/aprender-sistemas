@@ -1,0 +1,1 @@
+fn costo_ruta(g:&[Vec<u8>])->Option<u32>{None}

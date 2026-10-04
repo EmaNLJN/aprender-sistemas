@@ -1,0 +1,39 @@
+title: El mensajero y el punto de encuentro
+intro: 'Una goroutine calcula el doble de un número y lo entrega por un canal. La función espera ese mensaje antes de retornar: no necesita adivinar cuánto tarda el trabajo.'
+why: Un canal sin buffer coordina emisor y receptor. Lanzar una goroutine inicia trabajo, pero la recepción es lo que espera y obtiene su resultado.
+objective: Calculá n*2 en una goroutine y devolvé el mensaje recibido por un canal.
+instructions:
+  - Creá make(chan int).
+  - Lanzá un emisor con go y retorná la recepción <-result.
+tests:
+  - id: t1
+    label: Trabajo positivo
+    expression: AsyncDouble(9) == 18
+    why: La respuesta contiene el cálculo terminado.
+    failure: El resultado debe duplicar n.
+  - id: t2
+    label: Cero válido
+    expression: AsyncDouble(0) == 0
+    why: Un mensaje cero sigue siendo un mensaje.
+    failure: No uses cero como señal de que el canal terminó.
+  - id: t3
+    label: Resultado negativo
+    expression: AsyncDouble(-3) == -6
+    why: El canal transporta datos, no sólo señales positivas.
+    failure: Aplicá la misma cuenta para cualquier signo.
+hints:
+  - make(chan int) crea el punto de intercambio.
+  - result <- valor envía; <-result recibe.
+  - El envío debe estar en la goroutine para que ambos puedan encontrarse.
+review:
+  success: La recepción sincroniza el trabajo sin sleeps. Estos tests verifican el resultado; para practicar el concepto revisá que tu implementación use la goroutine y el canal propuestos.
+  pitfall: Una goroutine no acelera necesariamente un cálculo tan pequeño; acá sirve para estudiar coordinación.
+transfer: Explicá por qué enviar antes de lanzar una goroutine podría bloquear el starter modificado.
+prediction:
+  question: Un envío a un canal sin buffer se completa cuando…
+  options:
+    - Pasó un milisegundo
+    - Hay una recepción correspondiente
+    - La goroutine fue creada
+  answer: 1
+  explanation: El canal sin buffer requiere el encuentro entre emisor y receptor.

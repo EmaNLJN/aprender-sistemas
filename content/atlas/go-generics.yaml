@@ -1,0 +1,31 @@
+id: go-generics
+level: advanced
+category: Abstracción
+title: Parámetros de tipo y constraints
+summary: Los genéricos abstraen tipos. Las constraints limitan qué tipos se aceptan y qué operaciones puede usar el cuerpo. any es una interfaz vacía; comparable permite comparaciones de igualdad.
+why: Una función genérica conserva información de tipos sin convertir todos los valores a una interfaz dinámica ni duplicar el algoritmo para cada tipo.
+code: |-
+  type Entero interface { ~int | ~int64 }
+  func Sumar[T Entero](a, b T) T { return a + b }
+  type Puntos int
+  // Sumar(Puntos(2), Puntos(3)) devuelve Puntos(5).
+  func Primero[T any](xs []T) (T, bool) {
+      if len(xs) > 0 { return xs[0], true }
+      var cero T
+      return cero, false
+  }
+explanation: ~int incluye tipos cuyo tipo subyacente es int, como Puntos. Una unión expresa un conjunto de tipos admitidos. Algunas interfaces usadas como constraints no son tipos válidos para variables ordinarias.
+comparison: Como los bounds de Rust, las constraints declaran operaciones permitidas. Go no usa el mismo sistema de lifetimes ni const generics para longitudes de arrays.
+pitfall: any no habilita automáticamente +, ordenar o acceder a campos. Necesitás una constraint que justifique cada operación.
+quiz:
+  question: ¿Qué diferencia int de ~int en una constraint?
+  options:
+    - Ninguna
+    - ~int incluye tipos definidos cuyo subyacente es int
+    - ~int incluye todos los floats
+  answer: 1
+  explanation: El símbolo ~ amplía el conjunto a tipos con ese subyacente.
+labId: go-52
+source:
+  title: Go Specification · Type parameters
+  url: https://go.dev/ref/spec#Type_parameter_declarations

@@ -1,0 +1,39 @@
+title: Cerrar la puerta correcta
+intro: 'Los paréntesis, corchetes y llaves deben cerrar el último grupo abierto. Contar aperturas y cierres no alcanza: ([)] tiene cantidades correctas y anidamiento incorrecto.'
+why: Una pila representa las aperturas pendientes. Cada cierre debe coincidir con su cima y retirarla; al final no puede quedar ningún grupo abierto.
+objective: Balanced valida (), [] y {}; ignora los demás caracteres, sin reglas de strings ni comentarios.
+instructions:
+  - Apilá aperturas y compará cada cierre con la última.
+  - Rechazá cierres sin apertura y pilas no vacías al terminar.
+tests:
+  - id: t1
+    label: Anidamiento correcto
+    expression: Balanced("{a:[b(c)]}") && Balanced("()[]{}")
+    why: Puede haber grupos anidados o consecutivos.
+    failure: Ignorá los caracteres ajenos a estos seis delimitadores.
+  - id: t2
+    label: Orden incorrecto
+    expression: '!Balanced("([)]") && !Balanced(")(")'
+    why: Las cantidades totales no prueban orden válido.
+    failure: El cierre debe corresponder a la cima.
+  - id: t3
+    label: Pendientes, vacío y texto
+    expression: '!Balanced("((") && Balanced("") && Balanced("hola🙂")'
+    why: El texto sin grupos es válido; las aperturas pendientes no.
+    failure: Revisá la pila al terminar.
+hints:
+  - Un map de cierre a apertura simplifica la comparación.
+  - La cima está en len(stack)-1.
+  - Sólo retires la cima después de comprobar coincidencia.
+review:
+  success: Usaste estado pendiente para comprobar estructura anidada. Es un validador de delimitadores, no un parser completo de Go o de JSON.
+  pitfall: Un paréntesis dentro de comillas sigue contando aquí porque este contrato no interpreta literales.
+transfer: Devolvé la posición del primer error y decidí cómo informar una apertura nunca cerrada.
+prediction:
+  question: ¿Por qué ([)] falla aunque cada tipo aparezca dos veces?
+  options:
+    - Porque hay cuatro símbolos
+    - Porque ) intenta cerrar antes al grupo equivocado
+    - Porque corchetes y paréntesis no pueden mezclarse
+  answer: 1
+  explanation: La última apertura pendiente era [, que exige ].

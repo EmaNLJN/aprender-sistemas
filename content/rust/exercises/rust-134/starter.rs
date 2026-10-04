@@ -1,0 +1,1 @@
+fn siguiente(g:&[Vec<bool>])->Vec<Vec<bool>>{g.to_vec()}

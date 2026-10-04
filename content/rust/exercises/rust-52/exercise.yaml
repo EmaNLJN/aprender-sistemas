@@ -1,0 +1,43 @@
+title: Compartir propiedad no es clonar datos
+visual: pointers
+intro: Rc<T> permite varios dueños dentro de un thread. Rc::clone incrementa un contador; no clona el T interior.
+why: Cuando varias estructuras necesitan mantener vivo el mismo recurso, un dueño único puede no representar la relación que querés modelar.
+objective: Creá un Rc<String>, cloná su Rc una vez y devolvé (dueños_con_copia, mismo_recurso, dueños_tras_drop).
+instructions:
+  - Usá Rc::strong_count y Rc::ptr_eq.
+  - Destruí la segunda referencia propietaria con drop antes de la última medición.
+tests:
+  - id: t1
+    label: Texto compartido
+    expression: observar_rc(String::from("cache")) == (2, true, 1)
+    why: La copia comparte el mismo recurso y suma un dueño.
+    failure: Usá Rc::clone, no Rc::new sobre un String clonado.
+  - id: t2
+    label: String vacío
+    expression: observar_rc(String::new()) == (2, true, 1)
+    why: El conteo no depende del contenido.
+    failure: Rc cuenta dueños de la asignación, no caracteres.
+  - id: t3
+    label: Contenido mayor
+    expression: observar_rc("datos".repeat(100)) == (2, true, 1)
+    why: Compartir no requiere duplicar el buffer interior.
+    failure: ptr_eq comprueba identidad, no igualdad de texto.
+hints:
+  - Rc::new toma la propiedad del String.
+  - Rc::clone(&original) produce otro dueño del mismo contenido.
+  - Guardá las dos primeras observaciones antes de drop(copia).
+review:
+  success: El contador volvió de dos a uno al soltar un dueño. El contenido se liberará al desaparecer el último Rc fuerte.
+  pitfall: Rc no es Send ni Sync. Para compartir propiedad entre threads se usa Arc, junto con la sincronización que el contenido necesite.
+transfer: Compará Rc::ptr_eq entre dos Rc creados por separado con textos iguales.
+prediction:
+  question: ¿Rc::clone(&x) copia todos los bytes del String interior?
+  options:
+    - Sí
+    - 'No: comparte la asignación e incrementa el conteo'
+    - Solo si el String es largo
+  answer: 1
+  explanation: Clonar Rc copia el handle propietario; String::clone tendría un comportamiento diferente.
+sources:
+  - title: std · Rc
+    url: https://doc.rust-lang.org/std/rc/struct.Rc.html

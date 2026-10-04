@@ -1,0 +1,45 @@
+title: El interruptor que guarda rencor
+intro: 'La antena se desconecta después de varios fallos consecutivos. Pero el interruptor actual suma fallos separados por éxitos: un éxito debería romper la racha. Repará esta máquina de estados lógica.'
+why: Un contador de racha representa información distinta de un total histórico. Los métodos con receptor puntero actualizan el mismo objeto; la transición de abierto a cerrado requiere Reset en este modelo explícito.
+objective: Record abre al alcanzar Limit fallos consecutivos. Un éxito en estado cerrado reinicia Failures. Abierto ignora Record hasta Reset.
+instructions:
+  - Limit siempre es positivo y no cambia. No agregues relojes ni goroutines.
+  - Al abrirse, Failures queda en Limit. Record no cambia nada mientras Open es true.
+  - Reset cierra y pone Failures en cero, conservando Limit. Este modelo no incluye temporizador ni estado half-open.
+tests:
+  - id: t1
+    label: Un éxito rompe la racha
+    expression: func() bool { b := Breaker{Limit:2}; b.Record(false); b.Record(true); b.Record(false); return !b.Open && b.Failures == 1 }()
+    why: Distingue fallos consecutivos de fallos acumulados.
+    failure: El éxito debe reiniciar el contador cuando el circuito todavía está cerrado.
+  - id: t2
+    label: Abrir exactamente en el umbral
+    expression: func() bool { b := Breaker{Limit:3}; b.Record(false); b.Record(false); if b.Open || b.Failures != 2 { return false }; b.Record(false); single := Breaker{Limit:1}; single.Record(false); return b.Open && b.Failures == 3 && single.Open }()
+    why: Comprueba ambos lados del umbral y el límite mínimo válido.
+    failure: Abrir con > Limit llega un fallo demasiado tarde.
+  - id: t3
+    label: Abierto no se cura solo
+    expression: func() bool { b := Breaker{Limit:2}; b.Record(false); b.Record(false); b.Record(true); b.Record(false); if !b.Open || b.Failures != 2 { return false }; b.Reset(); if b.Open || b.Failures != 0 || b.Limit != 2 { return false }; b.Record(false); return !b.Open && b.Failures == 1 }()
+    why: Verifica el estado absorbente y la reapertura manual del circuito.
+    failure: Chequeá Open antes de procesar success; solo Reset puede cerrar un circuito abierto.
+hints:
+  - Simulá fallo → éxito → fallo con Limit=2.
+  - En estado cerrado, éxito significa que la nueva racha mide cero.
+  - La rama success necesita asignar b.Failures = 0 antes de retornar.
+review:
+  success: Cada transición ahora responde al estado actual y al evento. Este ejercicio modela únicamente un circuit breaker manual; una biblioteca de producción puede añadir reloj, prueba half-open y sincronización.
+  pitfall: Este struct no es seguro para acceso concurrente sin coordinación. El puntero habilita mutación, no exclusión mutua.
+transfer: Añadí un estado half-open con un único intento de prueba y describí sus transiciones antes de programarlo.
+prediction:
+  question: Limit=2, eventos fallo/éxito/fallo. ¿Estado correcto?
+  options:
+    - Abierto, Failures=2
+    - Cerrado, Failures=0
+    - Cerrado, Failures=1
+  answer: 2
+  explanation: El éxito borra la primera racha; el último fallo inicia una nueva.
+sources:
+  - title: Receptores puntero
+    url: https://go.dev/tour/methods/4
+  - title: Memoria y sincronización
+    url: https://go.dev/ref/mem

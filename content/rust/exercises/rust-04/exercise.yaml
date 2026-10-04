@@ -1,0 +1,40 @@
+title: 'Shadowing: mismo nombre, nueva etapa'
+kind: reparar
+intro: Shadowing significa declarar otra vinculación con el mismo nombre. Esa nueva vinculación puede tener un tipo diferente.
+why: 'Una transformación de texto a número no es una mutación de tipo: es un valor nuevo. Reutilizar un nombre puede expresar etapas sucesivas sin dejar todas las representaciones accesibles.'
+objective: Recibí una etiqueta ASCII y devolvé su longitud en bytes usando shadowing.
+instructions:
+  - Reemplazá la reasignación incompatible por una nueva declaración let.
+  - La función debe seguir devolviendo usize.
+tests:
+  - id: t1
+    label: Etiqueta corta
+    expression: longitud("cpu") == 3
+    why: La representación final es numérica.
+    failure: len() devuelve usize; necesitás una nueva vinculación.
+  - id: t2
+    label: Vacío
+    expression: longitud("") == 0
+    why: No se inventan caracteres para el vacío.
+    failure: Devolvé directamente la longitud.
+  - id: t3
+    label: Etiqueta extensa
+    expression: longitud("procesador") == 10
+    why: El cómputo recorre la entrada real.
+    failure: No uses un tamaño fijo del tipo &str.
+hints:
+  - Una variable mutable conserva su tipo.
+  - Otro let crea una nueva variable que oculta a la anterior.
+  - Usá let dato = dato.len(); y quitá el mut innecesario.
+review:
+  success: La primera vinculación contiene &str; la segunda contiene usize. El compilador conoce ambos tipos en sus respectivos tramos.
+  pitfall: len() cuenta bytes de UTF-8. No generalices estos ejemplos ASCII a letras visibles.
+transfer: Probá longitud("ñ") y explicá por qué devuelve 2.
+prediction:
+  question: ¿Shadowing equivale a cambiar el tipo de una variable mutable?
+  options:
+    - Sí, son sinónimos
+    - 'No: crea otra vinculación'
+    - Solo cuando el valor es numérico
+  answer: 1
+  explanation: El segundo let declara una vinculación distinta; no modifica el tipo de la primera.

@@ -1,0 +1,70 @@
+id: raster
+title: El taller de los píxeles
+subtitle: Convertí una línea ideal en una decisión por casilla.
+level: medium
+minutes: 30
+story: Tu consola retro solo sabe encender píxeles enteros. Una diagonal no cae justo en las casillas y tenés que decidir dónde dibujar.
+what: Un rasterizador de líneas paso a paso que muestra el error acumulado y el próximo píxel.
+why: Una aproximación discreta necesita una regla de decisión explícita. El error acumulado conserva información que redondear sin contexto perdería.
+uses:
+  - Dibujo en pantallas discretas
+  - Recorridos de grillas
+  - Plotters y herramientas gráficas sencillas
+limits: Píxeles binarios y segmentos cortos. No incluye antialiasing, grosor ni recorte de ventanas.
+objectives:
+  - id: raster-line
+    label: Completar una diagonal
+    why: Los extremos deben aparecer y las decisiones conectan toda la línea.
+  - id: raster-steep
+    label: Resolver una pendiente empinada
+    why: El eje que más avanza puede cambiar sin cambiar la idea del error.
+  - id: raster-point
+    label: Dibujar un segmento de longitud 0
+    why: El caso degenerado tiene un píxel, no cero ni un bucle infinito.
+prediction:
+  question: Si el error pide avanzar ambos ejes, ¿qué corresponde?
+  options:
+    - Dos if independientes
+    - Un if/else que elija un solo eje
+    - Reiniciar el error
+  answer: 0
+  explanation: Una transición diagonal cambia ambas coordenadas con el mismo error previo.
+steps:
+  - title: Definir
+    task: Fijá extremos incluidos y una política de empate.
+    why: Dos algoritmos pueden elegir píxeles distintos en una frontera.
+    done: El contrato describe exactamente la secuencia esperada.
+  - title: Acumular
+    task: Actualizá un error entero al mover cada eje.
+    why: Evita recalcular una pendiente fraccional a cada paso.
+    done: Una línea horizontal, vertical y diagonal termina.
+  - title: Visualizar
+    task: Superponé el segmento ideal con los píxeles calculados.
+    why: Ver ambas representaciones explica la aproximación.
+    done: Cada casilla elegida se corresponde con un elemento de la salida.
+  - title: Generalizar
+    task: Probá todos los sentidos y el extremo coincidente.
+    why: Los signos y los casos degenerados exponen supuestos escondidos.
+    done: Tus pruebas cubren reversos y un solo punto.
+sources:
+  - title: Alois Zingl · rasterización con Bresenham
+    url: https://zingl.github.io/bresenham.html
+  - title: Bresenham · artículo original de 1965
+    url: https://janmr.com/files/papers/bresenham65.pdf
+related:
+  rust:
+    - rust-08
+    - rust-09
+    - rust-40
+  go:
+    - go-07
+    - go-11
+    - go-12
+bridge:
+  rust: Un Vec<(i32,i32)> conserva el orden; separar dx y dy de sus signos evita conversiones innecesarias.
+  go: Una struct Pixel hace explícitos los ejes; append acumula la trayectoria y un for controla el punto final.
+category: play
+model: raster
+code:
+  rust: rust-130
+  go: go-130

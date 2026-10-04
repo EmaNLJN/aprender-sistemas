@@ -1,0 +1,43 @@
+title: La mejor ventana de mediciones
+level: medium
+intro: windows(k) recorre segmentos contiguos solapados. k = 0 requiere tratarse antes porque esa llamada no acepta ventanas vacías.
+why: Una ventana representa vecindad, no una selección arbitraria. El caso de todos negativos revela si inicializaste el máximo con un valor inventado.
+objective: Devolvé la mayor suma de una ventana contigua de k elementos. Para k = 0 o k > len devolvé None. Como máximo hay 1.000 i32.
+instructions:
+  - Convertí cada elemento a i64 antes de sumarlo.
+  - Usá max sobre las sumas para conservar el caso vacío como Option.
+tests:
+  - id: t1
+    label: Vecindad
+    expression: mejor_ventana(&[5, -9, 4, 3], 2) == Some(7)
+    why: La ventana exige elementos consecutivos.
+    failure: No selecciones los dos mayores globales.
+  - id: t2
+    label: Todo negativo
+    expression: mejor_ventana(&[-8, -2, -5], 2) == Some(-7)
+    why: El máximo puede ser negativo.
+    failure: Un acumulador de máximo inicializado en cero sería incorrecto.
+  - id: t3
+    label: Ventanas inválidas y suma ancha
+    expression: mejor_ventana(&[1], 0) == None && mejor_ventana(&[1], 2) == None && mejor_ventana(&[i32::MAX, i32::MAX], 2) == Some(4294967294)
+    why: Las guardas y el tipo intermedio protegen casos límite.
+    failure: No sumes en i32 para convertir a i64 después.
+hints:
+  - Validá k antes de llamar a windows.
+  - Cada ventana es &[i32].
+  - map(|&x| i64::from(x)).sum::<i64>() amplía cada sumando.
+review:
+  success: Los casos verifican contigüidad, negativos y aritmética ampliada. Esta solución clara recalcula cada ventana y hace O(n·k) trabajo.
+  pitfall: Usar un iterador no convierte automáticamente el algoritmo en O(n). Una suma deslizante puede reutilizar trabajo entre ventanas.
+transfer: Implementá una suma deslizante que reste el elemento saliente y agregue el entrante; compará resultados, luego contá operaciones.
+prediction:
+  question: ¿Inicializar el máximo en cero es válido si todas las ventanas suman negativo?
+  options:
+    - Sí
+    - 'No: cero sería una respuesta inexistente'
+    - Solo si k es par
+  answer: 1
+  explanation: El resultado debe pertenecer a alguna ventana válida, aunque todas sean negativas.
+sources:
+  - title: std · slice::windows
+    url: https://doc.rust-lang.org/std/primitive.slice.html#method.windows

@@ -1,0 +1,45 @@
+title: Una API que acepta vistas sin exigir tamaño fijo
+visual: generics
+intro: AsRef<[u8]> ofrece una conversión prestada a bytes. ?Sized permite que T sea un tipo de tamaño dinámico como str o [u8].
+why: Pedir una vista de bytes admite Strings, vectores y slices sin obligar a copiarlos a una representación única.
+objective: Implementá bytes_de para cualquier T que pueda prestar &[u8], incluyendo tipos no Sized.
+instructions:
+  - Conservá AsRef<[u8]> + ?Sized.
+  - Devolvé el largo de la vista, sin alocar ni clonar.
+tests:
+  - id: t1
+    label: str no Sized
+    expression: bytes_de::<str>("ñ") == 2
+    why: La API admite directamente str detrás de una referencia.
+    failure: Mantené ?Sized; el parámetro es &T.
+  - id: t2
+    label: Colección propia
+    expression: bytes_de(&vec![1u8, 2, 3]) == 3 && bytes_de(&String::from("cpu")) == 3
+    why: Representaciones distintas ofrecen la misma vista.
+    failure: Usá AsRef en vez de un método exclusivo de String.
+  - id: t3
+    label: Slice vacío
+    expression: bytes_de::<[u8]>(&[]) == 0
+    why: Un slice no Sized también cumple el contrato.
+    failure: La longitud pertenece a la vista &[u8].
+hints:
+  - AsRef habilita dato.as_ref().
+  - El retorno inferido de as_ref es &[u8] por el bound.
+  - Terminá con .len().
+review:
+  success: La firma pide exactamente una vista de bytes. ?Sized relaja el bound Sized implícito en parámetros de tipo.
+  pitfall: ?Sized no permite pasar cualquier dato por valor sin tamaño conocido; aquí el acceso se realiza mediante &T.
+transfer: Usá la misma firma para calcular un checksum XOR de los bytes.
+prediction:
+  question: ¿Qué cambia ?Sized en este parámetro genérico?
+  options:
+    - Quita todas las comprobaciones del tipo
+    - Relaja el requisito implícito de tamaño conocido para T
+    - Hace que todo se guarde en el heap
+  answer: 1
+  explanation: La referencia sigue teniendo representación conocida aunque T pueda ser str o un slice.
+sources:
+  - title: std · AsRef
+    url: https://doc.rust-lang.org/std/convert/trait.AsRef.html
+  - title: std · Sized
+    url: https://doc.rust-lang.org/std/marker/trait.Sized.html

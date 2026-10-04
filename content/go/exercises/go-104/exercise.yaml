@@ -1,0 +1,43 @@
+title: Un byte, dos mandos
+intro: 'La antena reserva un byte: los tres bits altos guardan el tipo de mensaje y los cinco bajos su prioridad. Un desplazamiento equivocado hace que ambos campos se pisen.'
+why: Un byte tiene ocho bits. Al validar cada campo antes de combinarlo, el OR une regiones disjuntas sin perder información. Desplazar cinco posiciones deja libres exactamente los cinco bits bajos.
+objective: PackTag(kind, priority uint8) devuelve kind en los bits 7…5 y priority en 4…0; rechaza kind > 7 o priority > 31.
+instructions:
+  - Ante una entrada fuera de rango, devolvé 0 y un error no nil.
+  - 'No recortes silenciosamente valores con una máscara: una entrada inválida debe fallar.'
+  - Conservá los dos campos al combinarlos.
+tests:
+  - id: t1
+    label: Campos que no se pisan
+    expression: func() bool { tag, err := PackTag(5, 3); return err == nil && tag == 0b10100011 && tag >> 5 == 5 && tag & 31 == 3 }()
+    why: Comprueba posición y recuperación independiente de cada campo.
+    failure: Los cinco bits bajos pertenecen completos a priority.
+  - id: t2
+    label: Extremos válidos
+    expression: func() bool { zero, a := PackTag(0, 0); full, b := PackTag(7, 31); return a == nil && b == nil && zero == 0 && full == 255 }()
+    why: Verifica límites inclusivos del formato.
+    failure: Tres bits representan 0…7 y cinco representan 0…31.
+  - id: t3
+    label: No truncar entradas inválidas
+    expression: func() bool { a, e1 := PackTag(8, 0); b, e2 := PackTag(0, 32); c, e3 := PackTag(255, 255); return e1 != nil && e2 != nil && e3 != nil && a == 0 && b == 0 && c == 0 }()
+    why: Impide que overflow o máscaras escondan una entrada imposible.
+    failure: 'Validá antes del desplazamiento: uint8 no retiene los bits que salen de su rango.'
+hints:
+  - Dibujá TTT PPPPP.
+  - El campo alto necesita saltar los cinco bits del campo bajo.
+  - La combinación es kind << 5 | priority, después de validar.
+review:
+  success: Diseñaste una representación reversible dentro de sus rangos. El compilador conoce el tipo byte, pero el significado de sus bits y sus límites pertenecen al protocolo.
+  pitfall: Enmascarar kind con 7 aceptaría un valor inválido como si fuera otro mensaje. Eso cambia el contrato.
+transfer: Escribí UnpackTag y probá el round trip de los 256 bytes posibles.
+prediction:
+  question: ¿Qué byte representa tipo 1 y prioridad 0?
+  options:
+    - '00000001'
+    - '00001000'
+    - '00100000'
+  answer: 2
+  explanation: 'El tipo ocupa los tres bits altos: 1 se desplaza cinco posiciones.'
+sources:
+  - title: Operadores enteros y desplazamientos
+    url: https://go.dev/ref/spec#Arithmetic_operators

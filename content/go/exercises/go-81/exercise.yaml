@@ -1,0 +1,39 @@
+title: Anagramas con inventario de runes
+intro: Dos palabras son anagramas en este juego si contienen exactamente los mismos puntos de código con las mismas cantidades. Respetamos mayúsculas, espacios y formas Unicode.
+why: Un mapa de frecuencias distingue pertenencia de multiplicidad. Recorrer runes evita tratar cada byte de una letra multibyte como una letra separada.
+objective: Anagram compara strings UTF-8 válidos sin normalizar ni ignorar ningún punto de código.
+instructions:
+  - Contá cada rune del primer string.
+  - Restá las del segundo y verificá que no quede diferencia.
+tests:
+  - id: t1
+    label: Orden distinto, mismas cantidades
+    expression: Anagram("listen","silent") && Anagram("ñ🙂a","a🙂ñ")
+    why: El orden no importa, la multiplicidad sí.
+    failure: Comparar los strings directamente no reconoce permutaciones.
+  - id: t2
+    label: Cantidad y mayúsculas
+    expression: '!Anagram("aab","abb") && !Anagram("Go","go")'
+    why: Un conjunto de runes sin conteos sería insuficiente.
+    failure: Conservá el contrato sensible a mayúsculas.
+  - id: t3
+    label: Vacíos y formas Unicode distintas
+    expression: Anagram("","") && !Anagram("é","é")
+    why: Una forma compuesta y otra descompuesta no son las mismas runes.
+    failure: No prometas equivalencia visual sin normalización explícita.
+hints:
+  - Usá map[rune]int.
+  - Los conteos del segundo texto pueden restarse.
+  - Al final todos los valores deben ser cero.
+review:
+  success: 'Expresaste una comparación de multiconjuntos. El contrato es preciso sobre Unicode: compara puntos de código, no apariencia ni equivalencia lingüística.'
+  pitfall: Para ignorar acentos o equivalencias canónicas necesitarías reglas de normalización adicionales.
+transfer: Diseñá otra versión que ignore espacios y mayúsculas, documentando exactamente qué transforma.
+prediction:
+  question: ¿Un set de runes alcanza para distinguir aab de abb?
+  options:
+    - Sí, siempre
+    - No, ambas contienen a y b
+    - Sólo si están ordenadas
+  answer: 1
+  explanation: Necesitás cuántas veces aparece cada rune, no sólo si existe.

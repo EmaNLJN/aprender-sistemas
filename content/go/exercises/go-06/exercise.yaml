@@ -1,0 +1,39 @@
+title: La temperatura dentro del rango
+intro: Un control necesita limitar una lectura al intervalo permitido. Los retornos tempranos resuelven los extremos antes del caso normal.
+why: Cada if elimina una posibilidad. El camino final queda reservado para un valor ya válido y no necesita más condiciones.
+objective: Devolvé x limitado a [low, high], suponiendo low <= high.
+instructions:
+  - Si x está por debajo, devolvé low.
+  - Si supera high, devolvé high; dentro del rango conservá x.
+tests:
+  - id: t1
+    label: Por debajo
+    expression: Clamp(-8,0,10) == 0
+    why: Comprueba el límite inferior.
+    failure: Compará con low antes de devolver x.
+  - id: t2
+    label: Dentro
+    expression: Clamp(6,0,10) == 6
+    why: Los valores válidos no cambian.
+    failure: No fuerces todo valor a un extremo.
+  - id: t3
+    label: Por encima
+    expression: Clamp(20,0,10) == 10 && Clamp(7,7,7) == 7
+    why: Verifica el límite superior y un intervalo puntual.
+    failure: El intervalo incluye sus extremos.
+hints:
+  - Necesitás dos decisiones independientes.
+  - Un return termina la función.
+  - El último return puede devolver x.
+review:
+  success: 'La función cubre tres regiones: debajo, dentro y encima. Esas regiones explican la selección de tests.'
+  pitfall: Esta función asume un intervalo ordenado; no valida low > high.
+transfer: Agregá una señal que indique si hubo que corregir la entrada.
+prediction:
+  question: Si x == high, ¿hay que modificarlo?
+  options:
+    - Sí, restar uno
+    - No, el límite está incluido
+    - Siempre devolver low
+  answer: 1
+  explanation: Los corchetes [low, high] indican extremos incluidos.

@@ -1,0 +1,42 @@
+title: El método conoce su rectángulo
+intro: impl agrupa métodos de un tipo. &self es una referencia al valor sobre el que se invoca el método.
+why: El receptor deja claro si una operación observa, modifica o consume la instancia. area solo necesita observar.
+objective: Implementá area y es_cuadrado para dimensiones entre 0 y 1.000.
+instructions:
+  - Mantené &self en ambos métodos.
+  - Un rectángulo es cuadrado cuando sus dos dimensiones son iguales, incluso en cero.
+tests:
+  - id: t1
+    label: Rectángulo común
+    expression: '{ let r = Rectangulo { ancho: 3, alto: 5 }; r.area() == 15 && !r.es_cuadrado() }'
+    why: Cada método responde una propiedad diferente.
+    failure: Área multiplica; cuadrado compara.
+  - id: t2
+    label: Cuadrado
+    expression: '{ let r = Rectangulo { ancho: 4, alto: 4 }; r.area() == 16 && r.es_cuadrado() }'
+    why: La igualdad de dimensiones importa.
+    failure: No compares área con ancho.
+  - id: t3
+    label: Dimensiones cero
+    expression: '{ let r = Rectangulo { ancho: 0, alto: 0 }; r.area() == 0 && r.es_cuadrado() }'
+    why: El contrato incluye el caso degenerado.
+    failure: La definición del ejercicio no exige dimensiones positivas.
+hints:
+  - Los campos están en self.
+  - Ambos métodos pueden llamar varias veces porque prestan la instancia.
+  - Usá self.ancho * self.alto y self.ancho == self.alto.
+review:
+  success: Los métodos expresan comportamientos del tipo y no consumen la instancia. La segunda llamada sigue pudiendo usarla.
+  pitfall: Un método con self por valor puede consumir el receptor; elegí el receptor según la operación.
+transfer: 'Agregá escalar(&mut self, factor: u32) y justificá el préstamo mutable.'
+prediction:
+  question: ¿Qué comunica &self?
+  options:
+    - El método consume siempre el valor
+    - El método recibe un préstamo de lectura
+    - El método puede modificar cualquier campo directamente
+  answer: 1
+  explanation: '&self equivale a self: &Self, un préstamo compartido de la instancia.'
+sources:
+  - title: Rust Book · Methods
+    url: https://doc.rust-lang.org/book/ch05-03-method-syntax.html

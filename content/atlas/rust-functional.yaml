@@ -1,0 +1,27 @@
+id: rust-functional
+level: medium
+category: Abstracción
+title: Estilo funcional sin pureza obligatoria
+summary: Iteradores, closures, enums y pattern matching favorecen un estilo funcional. map y filter describen pasos perezosos que un consumidor ejecuta.
+why: Separar selección, transformación y reducción puede expresar mejor la intención que mantener índices y acumuladores manuales.
+code: |-
+  let datos = [1, -2, 3];
+  let total: i32 = datos.iter().copied()
+      .filter(|x| *x > 0)
+      .map(|x| x * x)
+      .sum(); // 10
+explanation: 'map no construye un Vec por sí solo. collect, sum, count o for consumen el recorrido. El orden de filter y map puede cambiar el resultado. Rust permite efectos laterales y mutación: este estilo no convierte automáticamente una función en pura.'
+comparison: A diferencia de Array.map de JavaScript, Iterator::map de Rust no materializa inmediatamente una nueva colección. La composición se parece a pipelines perezosos de otros lenguajes.
+pitfall: 'No uses la estética funcional como objetivo independiente: un for puede expresar mejor control de flujo complejo.'
+quiz:
+  question: ¿Crear datos.iter().map(...) garantiza que la closure ya se ejecutó?
+  options:
+    - Sí
+    - No, hace falta consumir el iterador
+    - Solo cuando hay negativos
+  answer: 1
+  explanation: Los adaptadores de Iterator son perezosos.
+labId: rust-36
+source:
+  title: Rust Book · Iterators
+  url: https://doc.rust-lang.org/book/ch13-02-iterators.html

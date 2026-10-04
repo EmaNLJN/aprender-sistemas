@@ -1,0 +1,1 @@
+fn mejor_jugada(n:usize)->Option<usize>{if n==0{None}else{Some(1)}}

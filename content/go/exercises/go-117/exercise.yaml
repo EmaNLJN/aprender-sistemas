@@ -1,0 +1,49 @@
+title: Núcleo · Los saltos aterrizan en instrucciones
+level: advanced
+minutes: 20
+imports:
+  - reflect
+intro: Vas a especificar una ISA pequeña, validar límites de instrucciones y ejecutar un intérprete paso a paso. En este ejercicio construís un núcleo verificable del proyecto; las cuatro etapas del taller lo convierten después en una herramienta completa.
+why: Un programa puede estar formado por bytes válidos y aun saltar al medio de un operando. Decodificar, validar y ejecutar son responsabilidades distintas.
+objective: 'Devolvé (inicios,motivo), motivo="" en éxito y nil ante error. Formato: 0 HALT y 2 DEC son un byte; 1,n SET y 3,p JNZ son dos. p apunta a un offset de opcode. Errores: vacío "vacio", opcode desconocido "opcode", operando faltante "operando". Revisá TODO el formato primero, incluso después de HALT; luego destinos fuera de los inicios→"salto". No exigís HALT ni terminación.'
+instructions:
+  - 'Primera pasada: registrá inicios y destinos de saltos mientras avanzás según tamaño.'
+  - No interpretes el valor de un operando como opcode.
+  - 'Segunda pasada: rechazá destinos fuera del programa o dentro de un operando.'
+tests:
+  - id: t1
+    label: Instrucciones y salto futuro
+    expression: func() bool { a,e:=ValidarBytecode([]byte{1,3,2,3,2,0}); b,f:=ValidarBytecode([]byte{3,3,2,0}); return e=="" && f=="" && reflect.DeepEqual(a,[]int{0,2,3,5}) && reflect.DeepEqual(b,[]int{0,2,3}) }()
+    why: Los operandos ocupan bytes sin agregar inicios.
+    failure: Avanzá dos posiciones en SET y JNZ.
+  - id: t2
+    label: Destinos inválidos
+    expression: func() bool { a,e:=ValidarBytecode([]byte{1,7,3,1,0}); b,f:=ValidarBytecode([]byte{3,9,0}); return a==nil && b==nil && e=="salto" && f=="salto" }()
+    why: No se puede saltar dentro de un operando.
+    failure: Buscá el destino en la lista de inicios.
+  - id: t3
+    label: Precedencia y HALT opcional
+    expression: func() bool { _,a:=ValidarBytecode(nil); _,b:=ValidarBytecode([]byte{1}); _,c:=ValidarBytecode([]byte{3,9,8}); _,d:=ValidarBytecode([]byte{0,8}); v,e:=ValidarBytecode([]byte{2}); return a=="vacio" && b=="operando" && c=="opcode" && d=="opcode" && e=="" && reflect.DeepEqual(v,[]int{0}) }()
+    why: Un error estructural aparece antes de chequear destinos.
+    failure: Decodificá también lo que está después de HALT.
+hints:
+  - Un salto hacia adelante puede apuntar a un inicio que todavía no conocés en la primera pasada.
+  - SET y JNZ comparten tamaño, pero solo JNZ agrega un destino para validar.
+  - 'Probá [1,7,3,1,0]: el destino 1 es el operando de SET, no una instrucción.'
+review:
+  success: Los casos separan estructura de instrucciones y validez de destinos. Un programa estructuralmente válido puede fallar o consumir todos sus pasos al ejecutarse.
+  pitfall: Validar bytes no resuelve el problema de terminación ni demuestra que el algoritmo del programa sea correcto. El intérprete sigue necesitando límites y errores propios.
+transfer: Agregá un desensamblador que muestre offset, nombre y operando solo después de superar esta validación.
+prediction:
+  question: Una instrucción ocupa opcode y operando. ¿Todo índice dentro del bytecode es un destino de salto válido?
+  options:
+    - Sí, mientras esté en rango
+    - 'No: debe ser inicio de instrucción'
+    - Solo si el byte es par
+  answer: 1
+  explanation: La estructura del programa importa además del rango.
+sources:
+  - title: Nand2Tetris · VM project
+    url: https://www.nand2tetris.org/project08
+  - title: Rust Book · Enums and match
+    url: https://doc.rust-lang.org/book/ch06-02-match.html

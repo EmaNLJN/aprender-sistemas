@@ -1,0 +1,43 @@
+title: Parseá decimal con un presupuesto de bits
+level: advanced
+intro: Cada dígito decimal transforma el acumulador mediante actual × 10 + dígito. Ambas operaciones pueden exceder el tipo destino.
+why: Un parser debe validar forma y rango. Comprobar cada transición evita que una entrada demasiado grande envuelva silenciosamente el resultado.
+objective: 'Aceptá solo dígitos ASCII, sin signos ni espacios, y devolvé u32. Errores: vacío → "vacio"; primer byte no dígito → "digito"; primer overflow → "overflow". Procesá de izquierda a derecha.'
+instructions:
+  - Usá bytes para esta gramática exclusivamente ASCII.
+  - Aplicá checked_mul y checked_add por cada dígito; los ceros iniciales se aceptan.
+tests:
+  - id: t1
+    label: Números y ceros iniciales
+    expression: decimal("00042") == Ok(42) && decimal("0") == Ok(0)
+    why: La sintaxis permite ceros sin cambiar el valor.
+    failure: No confundas texto cero con entrada vacía.
+  - id: t2
+    label: Gramática estricta
+    expression: decimal("") == Err("vacio") && decimal(" 3") == Err("digito") && decimal("+3") == Err("digito") && decimal("٣") == Err("digito")
+    why: No hay trim, signo ni dígitos Unicode en el contrato.
+    failure: is_ascii_digit es más específico que una noción amplia de número.
+  - id: t3
+    label: Límite exacto y exceso
+    expression: decimal("4294967295") == Ok(u32::MAX) && decimal("4294967296") == Err("overflow")
+    why: Llegar al máximo es válido; excederlo no.
+    failure: Comprobá tanto multiplicación como suma.
+hints:
+  - byte - b'0' convierte un dígito ya validado a 0..9.
+  - checked_mul devuelve Option; and_then permite encadenar checked_add.
+  - ok_or("overflow")? propaga el primer fallo.
+review:
+  success: Los casos separan gramática y rango. La solución construye el valor sin depender de si el perfil de compilación detecta overflow con operadores normales.
+  pitfall: 'El orden de errores importa: esta API informa el primer fallo al avanzar, no escanea primero toda la sintaxis.'
+transfer: Generalizá a una base configurable y definí exactamente qué caracteres representan dígitos.
+prediction:
+  question: ¿Basta con checked_add si multiplicás el acumulador usando * 10 normal?
+  options:
+    - Sí
+    - 'No: la multiplicación también puede desbordar'
+    - Solo con ceros iniciales
+  answer: 1
+  explanation: Cada operación que amplía el acumulador necesita su propia política comprobada.
+sources:
+  - title: std · u32::checked_mul
+    url: https://doc.rust-lang.org/std/primitive.u32.html#method.checked_mul

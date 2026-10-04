@@ -1,0 +1,43 @@
+title: Un conjunto con salida estable
+visual: collections
+intro: BTreeSet almacena elementos únicos y los recorre en orden. Permite expresar deduplicación y orden como propiedades de la colección.
+why: Elegir la colección adecuada puede hacer innecesario mantener manualmente dos invariantes diferentes.
+objective: Devolvé los i32 únicos en orden ascendente.
+instructions:
+  - Insertá los valores en BTreeSet.
+  - Convertí su iterador en Vec<i32>.
+tests:
+  - id: t1
+    label: Repetidos desordenados
+    expression: unicos(&[4, 1, 4, 2]) == vec![1, 2, 4]
+    why: Se cumplen unicidad y orden.
+    failure: Un HashSet por sí solo no garantiza este orden.
+  - id: t2
+    label: Negativos y cero
+    expression: unicos(&[0, -2, 0, -2]) == vec![-2, 0]
+    why: El orden es numérico.
+    failure: No conviertas los valores a texto para ordenarlos.
+  - id: t3
+    label: Vacío
+    expression: unicos(&[]).is_empty()
+    why: La colección vacía se transforma correctamente.
+    failure: collect funciona también sin elementos.
+hints:
+  - iter().copied() entrega i32.
+  - Anotá el tipo BTreeSet<i32> al recolectar.
+  - into_iter recorre el conjunto en orden y mueve los valores.
+review:
+  success: La estructura se encarga de no repetir elementos y de su orden. El Vec final sirve como salida estable.
+  pitfall: Vec::dedup elimina solo duplicados consecutivos; sin ordenar primero no resolvería todos estos casos.
+transfer: Implementá otra versión con sort_unstable y dedup; compará sus pasos.
+prediction:
+  question: ¿Vec::dedup por sí solo convierte [2, 1, 2] en [1, 2]?
+  options:
+    - Sí
+    - Solo con i32
+    - 'No: elimina duplicados consecutivos'
+  answer: 2
+  explanation: dedup no ordena ni busca repeticiones arbitrariamente separadas.
+sources:
+  - title: std · BTreeSet
+    url: https://doc.rust-lang.org/std/collections/struct.BTreeSet.html

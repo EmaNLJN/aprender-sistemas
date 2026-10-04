@@ -1,0 +1,41 @@
+title: 'Misión KV: reconstruir un snapshot'
+imports:
+  - strings
+intro: 'El almacén recibe un snapshot en memoria: una entrada clave=valor por línea. El valor puede contener más signos igual; una línea inválida hace fallar toda la carga.'
+why: Separar por el primer igual preserva el resto del valor. Construir un map local permite devolverlo sólo cuando el documento completo es válido.
+objective: Leé líneas clave=valor; ignorá líneas en blanco, recortá espacios de claves y dejá los valores tal cual.
+instructions:
+  - Rechazá líneas sin igual o con clave vacía, devolviendo nil y error.
+  - Ante claves repetidas prevalece la última; un snapshot vacío produce un map vacío válido.
+tests:
+  - id: t1
+    label: El valor conserva signos y espacios
+    expression: func() bool { m,e:=DecodeSnapshot(" token =a=b=c\nnota= hola "); return e==nil && len(m)==2 && m["token"]=="a=b=c" && m["nota"]==" hola " }()
+    why: La separación tiene que detenerse en el primer igual.
+    failure: SplitN con límite 2 conserva el resto del valor.
+  - id: t2
+    label: Último gana y vacío es válido
+    expression: func() bool { m,e:=DecodeSnapshot("x=uno\n \nx=dos\nempty="); z,f:=DecodeSnapshot(""); return e==nil && m["x"]=="dos" && len(m)==2 && m["empty"]=="" && f==nil && z!=nil && len(z)==0 }()
+    why: Define duplicados, valores vacíos y documentos vacíos.
+    failure: No confundas una clave vacía con un valor vacío.
+  - id: t3
+    label: Carga fallida sin resultado parcial
+    expression: func() bool { a,e:=DecodeSnapshot("x=uno\nrota"); b,f:=DecodeSnapshot(" =valor"); return a==nil && e!=nil && b==nil && f!=nil }()
+    why: Un documento inválido no entrega un map parcial como válido.
+    failure: En el error retorná nil, no el map acumulado.
+hints:
+  - strings.Split separa líneas; SplitN limita la división de cada entrada.
+  - Recortá solamente la clave con TrimSpace.
+  - El map local se devuelve al final, después de validar todo.
+review:
+  success: Implementaste una carga con todo-o-nada para su resultado. Preservar los valores exactamente evita corromper datos mientras intentás ser flexible con la sintaxis.
+  pitfall: Este formato educativo no escapa saltos de línea dentro de valores; definir persistencia real requiere resolver esa representación.
+transfer: Diseñá un encoder compatible y una prueba de ida y vuelta con claves ordenadas.
+prediction:
+  question: La entrada token=a=b debe interpretarse como…
+  options:
+    - Clave token y valor a=b
+    - Clave token=a y valor b
+    - Siempre inválida
+  answer: 0
+  explanation: El primer igual separa la clave; los siguientes pertenecen al valor.

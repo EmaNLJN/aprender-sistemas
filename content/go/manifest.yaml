@@ -1,0 +1,402 @@
+# Etapas de Go en orden. La etapa de un ejercicio es la posición de su etapa en este
+# archivo, contando las secciones en orden: lab, quests y systems. Los IDs son inmutables:
+# indexan el progreso guardado. El orden sale de acá, nunca del número del ID.
+# Cada ejercicio toma `defaults`, después los valores de su etapa y encima su exercise.yaml.
+defaults:
+  kind: completar
+  imports: []
+  visual: flow
+lab:
+  - topicId: go-basics
+    topic: Tipos y primeros pasos
+    minutes: 10
+    sources:
+      - title: Tipos en Go
+        url: https://go.dev/ref/spec#Types
+    exercises:
+      - go-01
+      - go-02
+      - go-03
+      - go-04
+      - go-05
+  - topicId: go-flow
+    topic: Funciones y decisiones
+    minutes: 10
+    sources:
+      - title: Control y funciones
+        url: https://go.dev/doc/effective_go#control-structures
+    exercises:
+      - go-06
+      - go-07
+      - go-08
+      - go-09
+      - go-10
+  - topicId: go-slices
+    topic: Arrays, slices y memoria
+    minutes: 10
+    visual: memory
+    sources:
+      - title: Slices e internals
+        url: https://go.dev/blog/slices-intro
+    exercises:
+      - go-11
+      - go-12
+      - go-13
+      - go-14
+      - go-15
+  - topicId: go-collections
+    topic: Maps y texto
+    minutes: 10
+    visual: collections
+    sources:
+      - title: Maps en Go
+        url: https://go.dev/blog/maps
+    exercises:
+      - go-16
+      - go-17
+      - go-18
+      - go-19
+      - go-20
+  - topicId: go-structs
+    topic: Structs y punteros
+    minutes: 15
+    visual: memory
+    sources:
+      - title: Métodos y tipos
+        url: https://go.dev/ref/spec#Method_sets
+    exercises:
+      - go-21
+      - go-22
+      - go-23
+      - go-24
+      - go-25
+  - topicId: go-errors
+    topic: Errores que informan
+    minutes: 15
+    sources:
+      - title: Paquete errors
+        url: https://pkg.go.dev/errors
+    exercises:
+      - go-26
+      - go-27
+      - go-28
+      - go-29
+      - go-30
+  - topicId: go-interfaces
+    topic: Interfaces pequeñas
+    minutes: 15
+    sources:
+      - title: Interfaces y tipos
+        url: https://go.dev/doc/effective_go#interfaces_and_types
+    exercises:
+      - go-31
+      - go-32
+      - go-33
+      - go-34
+      - go-35
+  - topicId: go-defer
+    topic: Defer y recursos
+    minutes: 15
+    sources:
+      - title: Defer, panic y recover
+        url: https://go.dev/blog/defer-panic-and-recover
+    exercises:
+      - go-36
+      - go-37
+      - go-38
+      - go-39
+      - go-40
+  - topicId: go-concurrency
+    topic: Goroutines y canales
+    minutes: 15
+    sources:
+      - title: Pipelines y cancelación
+        url: https://go.dev/blog/pipelines
+    exercises:
+      - go-41
+      - go-42
+      - go-43
+      - go-44
+      - go-45
+  - topicId: go-project
+    topic: Tu motor clave-valor
+    minutes: 15
+    sources:
+      - title: Herramientas para texto
+        url: https://pkg.go.dev/strings
+    exercises:
+      - go-46
+      - go-47
+      - go-48
+      - go-49
+      - go-50
+  - topicId: go-generics
+    topic: Genéricos y restricciones
+    minutes: 15
+    visual: generics
+    sources:
+      - title: Tutorial oficial de genéricos
+        url: https://go.dev/doc/tutorial/generics
+    exercises:
+      - go-51
+      - go-52
+      - go-53
+      - go-54
+      - go-55
+  - topicId: go-pointers
+    topic: Punteros, métodos y composición
+    minutes: 15
+    visual: pointers
+    sources:
+      - title: Tipos y conjuntos de métodos
+        url: https://go.dev/ref/spec#Method_sets
+    exercises:
+      - go-56
+      - go-57
+      - go-58
+      - go-59
+      - go-60
+  - topicId: go-coordination
+    topic: Cancelación y sincronización
+    minutes: 15
+    visual: concurrency
+    sources:
+      - title: Contextos y cancelación
+        url: https://pkg.go.dev/context
+    exercises:
+      - go-61
+      - go-62
+      - go-63
+      - go-64
+      - go-65
+  - topicId: go-io
+    topic: I/O, JSON y HTTP sin salir del laboratorio
+    minutes: 15
+    sources:
+      - title: Interfaces de entrada y salida
+        url: https://pkg.go.dev/io
+    exercises:
+      - go-66
+      - go-67
+      - go-68
+      - go-69
+      - go-70
+  - topicId: go-tooling
+    topic: Pruebas, paquetes y medición
+    minutes: 15
+    sources:
+      - title: Herramientas de pruebas
+        url: https://pkg.go.dev/testing
+    exercises:
+      - go-71
+      - go-72
+      - go-73
+      - go-74
+      - go-75
+  - topicId: go-numeric-puzzles
+    topic: Reglas y rompecabezas numéricos
+    minutes: 15
+    sources:
+      - title: Operadores numéricos
+        url: https://go.dev/ref/spec#Arithmetic_operators
+    level: beginner
+    exercises:
+      - go-76
+      - go-77
+      - go-78
+      - go-79
+      - go-80
+  - topicId: go-text-puzzles
+    topic: Laboratorio de texto y Unicode
+    minutes: 15
+    sources:
+      - title: Texto, bytes y runes
+        url: https://go.dev/blog/strings
+    level: medium
+    exercises:
+      - go-81
+      - go-82
+      - go-83
+      - go-84
+      - go-85
+  - topicId: go-data-puzzles
+    topic: Pilas, ventanas y estructuras
+    minutes: 15
+    sources:
+      - title: Slices y almacenamiento
+        url: https://go.dev/blog/slices-intro
+    level: medium
+    exercises:
+      - go-86
+      - go-87
+      - go-88
+      - go-89
+      - go-90
+  - topicId: go-state-machines
+    topic: Parsers y estado que recuerda
+    minutes: 15
+    sources:
+      - title: Listas y composición de estructuras
+        url: https://pkg.go.dev/container/list
+    level: advanced
+    exercises:
+      - go-91
+      - go-92
+      - go-93
+      - go-94
+      - go-95
+  - topicId: go-streaming
+    topic: Lecturas parciales y streaming
+    minutes: 15
+    sources:
+      - title: Contratos de entrada y salida
+        url: https://pkg.go.dev/io
+    level: expert
+    exercises:
+      - go-96
+      - go-97
+      - go-98
+      - go-99
+      - go-100
+quests:
+  - topicId: go-rover-quests
+    topic: La estación del rover
+    level: beginner
+    minutes: 12
+    bossMinutes: 25
+    exercises:
+      - go-101
+      - go-102
+      - go-103
+  - topicId: go-packet-quests
+    topic: La antena de telemetría
+    level: medium
+    minutes: 12
+    bossMinutes: 25
+    exercises:
+      - go-104
+      - go-105
+      - go-106
+  - topicId: go-graph-quests
+    topic: El mapa de suministros
+    level: advanced
+    minutes: 12
+    bossMinutes: 25
+    exercises:
+      - go-107
+      - go-108
+      - go-109
+  - topicId: go-resilience-quests
+    topic: El último enlace
+    level: expert
+    minutes: 12
+    bossMinutes: 25
+    exercises:
+      - go-110
+      - go-111
+      - go-112
+systems:
+  lowlevel:
+    - topicId: go-systems-cache
+      topic: Una caché que aprende tus visitas
+      exercises:
+        - go-113
+    - topicId: go-systems-heap
+      topic: El estacionamiento de la memoria
+      exercises:
+        - go-114
+    - topicId: go-systems-mmu
+      topic: Direcciones con pasaporte
+      exercises:
+        - go-115
+    - topicId: go-systems-tlb
+      topic: La dirección que quedó vieja
+      exercises:
+        - go-116
+    - topicId: go-systems-vm
+      topic: Construí una máquina diminuta
+      exercises:
+        - go-117
+    - topicId: go-systems-stack
+      topic: Las mochilas de cada llamada
+      exercises:
+        - go-118
+    - topicId: go-systems-scheduler
+      topic: Un kernel que reparte turnos
+      exercises:
+        - go-119
+    - topicId: go-systems-interrupts
+      topic: El timbre del hardware
+      exercises:
+        - go-120
+  infra:
+    - topicId: go-systems-wal
+      topic: WAL y recuperación
+      exercises:
+        - go-121
+    - topicId: go-systems-lsm
+      topic: LSM y tombstones
+      exercises:
+        - go-122
+    - topicId: go-systems-quorum
+      topic: Quórums e intersección
+      exercises:
+        - go-123
+    - topicId: go-systems-clocks
+      topic: Relojes Lamport
+      exercises:
+        - go-124
+    - topicId: go-systems-network
+      topic: Reensamblado de mensajes
+      exercises:
+        - go-125
+    - topicId: go-systems-backpressure
+      topic: Backpressure y buffers circulares
+      exercises:
+        - go-126
+    - topicId: go-systems-balancing
+      topic: Balanceo y elegibilidad
+      exercises:
+        - go-127
+    - topicId: go-systems-sharding
+      topic: Anillo de hash consistente
+      exercises:
+        - go-128
+  play:
+    - topicId: play-transforms
+      topic: Coreografía de matrices
+      exercises:
+        - go-129
+    - topicId: play-raster
+      topic: El taller de los píxeles
+      exercises:
+        - go-130
+    - topicId: play-raycast
+      topic: Linterna entre planetas
+      exercises:
+        - go-131
+    - topicId: play-pathfinding
+      topic: El mapa que piensa
+      exercises:
+        - go-132
+    - topicId: play-physics
+      topic: La cancha de los rebotes
+      exercises:
+        - go-133
+    - topicId: play-life
+      topic: Un jardín de reglas
+      exercises:
+        - go-134
+    - topicId: play-algebra
+      topic: La máquina de polinomios
+      exercises:
+        - go-135
+    - topicId: play-minimax
+      topic: El duelo de las últimas fichas
+      exercises:
+        - go-136
+  pc:
+    - topicId: go-systems-pc
+      topic: Construí una PC de bolsillo
+      exercises:
+        - go-137

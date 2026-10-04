@@ -1,0 +1,48 @@
+title: Una fila mala no es un total parcial
+kind: reparar
+imports:
+  - strconv
+  - strings
+intro: 'Un lote de números alimenta una métrica. El contrato exige todo o nada: si una fila no se interpreta, no queremos presentar una suma incompleta como si fuera definitiva.'
+why: Atender el error dentro del recorrido conserva la ubicación del fallo. Retornar cero y error hace explícito que el agregado completo no está disponible.
+objective: Sumá enteros decimales; ante el primer error devolvé 0 y un error que indique su índice empezando en cero.
+instructions:
+  - Usá strconv.Atoi por cada elemento.
+  - Envolvé el fallo con el texto "posición N" y %w.
+tests:
+  - id: t1
+    label: Lote completo
+    expression: func() bool { n,e:=SumText([]string{"7","-2","4"}); return n==9 && e==nil }()
+    why: Los valores válidos se suman con signo.
+    failure: No rechaces enteros negativos.
+  - id: t2
+    label: Fallo en el medio
+    expression: func() bool { n,e:=SumText([]string{"8","oops","2"}); return n==0 && e!=nil && strings.Contains(e.Error(),"posición 1") }()
+    why: Evita un total parcial y conserva la ubicación.
+    failure: El índice empieza en cero; la fila mala es la 1.
+  - id: t3
+    label: Lote vacío
+    expression: func() bool { n,e:=SumText(nil); return n==0 && e==nil }()
+    why: Un lote sin elementos es una suma válida de cero.
+    failure: Vacío no equivale a texto inválido.
+hints:
+  - No reemplaces err con _.
+  - El índice sale del primer valor de range.
+  - El return del error debe devolver 0, no total.
+review:
+  success: La función evita éxito silencioso ante datos corruptos. Elegiste un contrato transaccional para la salida; otros dominios podrían necesitar un resultado parcial explícito.
+  pitfall: Descartar errores de conversión puede transformar datos rotos en ceros aparentemente válidos.
+transfer: Diseñá otra firma para recolectar todos los errores del lote.
+prediction:
+  question: Si falla el segundo elemento, según este contrato devolvemos…
+  options:
+    - El primer subtotal y nil
+    - 0 y un error con posición 1
+    - La suma de los demás
+  answer: 1
+  explanation: El contrato todo-o-nada considera inválido el agregado completo.
+sources:
+  - title: strconv.Atoi
+    url: https://pkg.go.dev/strconv#Atoi
+  - title: Formato de errores
+    url: https://pkg.go.dev/fmt#Errorf

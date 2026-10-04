@@ -1,0 +1,44 @@
+title: Una ruta lógica sin escapar de la raíz
+imports:
+  - strings
+intro: Tu árbol virtual usa rutas absolutas con /. Un punto conserva la ubicación y dos puntos retroceden un segmento. Intentar subir por encima de la raíz es un error.
+why: 'Un slice puede actuar como pila de segmentos. Este es un modelo lógico: no consulta archivos ni resuelve enlaces simbólicos del sistema operativo.'
+objective: CleanRoute normaliza una ruta absoluta, colapsa barras y rechaza cualquier .. que supere la raíz.
+instructions:
+  - Rechazá entradas que no empiecen con /.
+  - Procesá segmentos en orden con una pila; devolvé / si queda vacía.
+tests:
+  - id: t1
+    label: Segmentos y barras
+    expression: func() bool {s,e:=CleanRoute("/a//b/../c/.");return e==nil && s=="/a/c"}()
+    why: Cada .. deshace el segmento previo.
+    failure: Un reemplazo de texto no conoce la estructura.
+  - id: t2
+    label: Raíz válida
+    expression: func() bool {a,e:=CleanRoute("/a/..");b,f:=CleanRoute("/");return e==nil && f==nil && a=="/" && b=="/"}()
+    why: Volver exactamente a la raíz está permitido.
+    failure: La raíz es /, no una cadena vacía.
+  - id: t3
+    label: Escape y ruta relativa
+    expression: func() bool {for _,s:=range []string{"/../x","/a/../../x","a/b",""}{out,e:=CleanRoute(s);if e==nil || out!=""{return false}};return true}()
+    why: Rechaza un escape en el momento en que ocurre.
+    failure: No normalices una ruta relativa como si fuera absoluta.
+hints:
+  - Ignorá segmentos vacíos y .
+  - .. necesita un elemento existente para retirar.
+  - Los demás segmentos se agregan sin cambiar su texto.
+review:
+  success: La pila interpreta navegación paso a paso con un límite explícito. Este ejercicio no implementa una barrera de seguridad de filesystem real.
+  pitfall: En archivos reales, enlaces simbólicos, volumen, plataforma y carreras pueden cambiar el significado de una ruta.
+transfer: Definí si un segmento con espacios debe conservarse o rechazarse y probá esa política.
+prediction:
+  question: ¿/a/../../b debería convertirse silenciosamente en /b?
+  options:
+    - Sí, siempre
+    - 'No: intenta superar la raíz'
+    - Sólo si b existe
+  answer: 1
+  explanation: El contrato rechaza el intento de escape cuando se encuentra el segundo ...
+sources:
+  - title: strings.Split y Join
+    url: https://pkg.go.dev/strings

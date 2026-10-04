@@ -1,0 +1,74 @@
+category: machine
+minutes: 45
+id: interrupts
+title: El timbre del hardware
+subtitle: MMIO, máscaras, ISR y confirmación.
+level: expert
+story: Un periférico deja un byte y toca timbre. Silenciar el timbre no elimina el byte; atender tampoco significa haber confirmado el evento.
+what: Modelás registros de un periférico, un evento pendiente, una máscara de entrega y el ciclo entrar a ISR→atender→ACK.
+why: Los registros MMIO tienen semántica de dispositivo, no de variables comunes. Algunas escrituras activan acciones y algunas lecturas tienen efectos; el manual especifica cada caso.
+uses:
+  - Drivers de dispositivos
+  - Firmware en microcontroladores
+  - Manejo de timers, UART e interrupciones
+limits: No hay hardware conectado. El dispositivo ficticio usa un único byte RX y PENDING write-one-to-clear; otros dispositivos difieren. Rust bare metal requiere no_std, arranque y target; Go estándar usa runtime/OS, mientras TinyGo admite algunos targets embebidos con límites de bibliotecas y lenguaje. Ningún kernel o firmware se flashea desde este Playground.
+objectives:
+  - id: masked
+    label: Dejá pendiente un evento enmascarado
+    why: La máscara controla entrega, no borra el evento.
+  - id: deliver
+    label: Atendé y confirmá una IRQ
+    why: ACK completa el protocolo del dispositivo.
+  - id: again
+    label: Recibí un segundo evento
+    why: La atención anterior no debe bloquear para siempre las siguientes.
+prediction:
+  question: ENABLE=0 y el periférico activa PENDING. ¿Qué sucede en este modelo?
+  options:
+    - Se borra el evento
+    - Queda pendiente sin entrar a ISR
+    - La CPU entra a ISR de todos modos
+  answer: 1
+  explanation: La máscara impide la entrega; no borra el registro pendiente.
+steps:
+  - title: Especificá registros
+    task: Definí RX, PENDING, ENABLE y qué escrituras confirman el evento.
+    why: No podés adivinar efectos de MMIO por el nombre del registro.
+    done: Tenés una tabla de lectura/escritura y efectos.
+  - title: Elegí una IRQ
+    task: Implementá el núcleo que elige el menor bit pendiente y habilitado, y solo limpia ese bit.
+    why: Atender un evento no debe perder los otros.
+    done: Probás múltiples pendientes y una máscara vacía.
+  - title: Separá ISR de trabajo
+    task: La ISR encola un dato; un consumidor lo procesa fuera de la atención.
+    why: Una ISR larga retrasa otras tareas e interrupciones.
+    done: Definiste capacidad y política de overflow del buffer.
+  - title: Elegí un proyecto externo
+    task: Seguí un target concreto en un emulador o placa con su manual y toolchain.
+    why: Arranque, memoria, volatile, barreras y sincronización dependen del entorno.
+    done: Podés explicar qué parte probaste en modelo y cuál en hardware/emulador.
+sources:
+  - title: Writing an OS in Rust · Interrupts
+    url: https://os.phil-opp.com/hardware-interrupts/
+  - title: Rust · Volatile writes
+    url: https://doc.rust-lang.org/std/ptr/fn.write_volatile.html
+  - title: TinyGo · Supported language features
+    url: https://tinygo.org/docs/reference/lang-support/
+  - title: Go FAQ · Runtime
+    url: https://go.dev/doc/faq#runtime
+  - title: Writing an OS in Rust · Repository
+    url: https://github.com/phil-opp/blog_os
+related:
+  rust:
+    - rust-67
+    - rust-72
+  go:
+    - go-71
+    - go-75
+bridge:
+  rust: El modelo usa enteros seguros. Un driver real encapsula acceso volatile y contratos unsafe; volatile por sí solo no brinda atomicidad ni sincronización entre hilos.
+  go: Para simulación usá Go estándar. Para una placa, verificá primero soporte concreto de TinyGo y sus paquetes machine; no asumas que todo programa o dependencia de Go funciona allí.
+model: interrupts
+code:
+  rust: rust-120
+  go: go-120

@@ -1,0 +1,66 @@
+id: lsm
+category: infra
+model: lsm
+minutes: 40
+sources:
+  - title: RocksDB · Compaction
+    url: https://github.com/facebook/rocksdb/wiki/Compaction
+code:
+  rust: rust-122
+  go: go-122
+title: La tumba que no debía abrirse
+subtitle: LSM, compactación y tombstones
+level: expert
+story: Borraste ore, compactaste un archivo y el dato reapareció desde una tabla antigua. Vas a reproducir la resurrección y decidir cuándo se puede retirar un marcador de borrado.
+what: Fusionás versiones por clave y secuencia; conservás tombstones salvo que el contexto de compactación demuestre que ya no ocultan versiones necesarias.
+why: Un borrado lógico debe ocultar copias que siguen existiendo físicamente. Optimizar espacio sin considerar las tablas fuera de la compactación cambia el resultado de una lectura.
+uses:
+  - Almacenes LSM como RocksDB
+  - Índices persistentes
+  - Retención y borrados lógicos
+limits: Sin snapshots ni replicación. El descarte total solo es seguro aquí porque se incluyen todas las versiones del rango y no hay lectores históricos. Un motor real exige además sus reglas de snapshots, secuencias y niveles.
+objectives:
+  - id: lsm-resurrection
+    label: Provocar una resurrección
+    why: Borrá, hacé flush y eliminá el tombstone de la SST nueva sin incluir la vieja.
+  - id: lsm-retained
+    label: Conservar el borrado en una compactación parcial
+    why: Volvé a borrar y preservá DEL mientras la versión antigua quede afuera.
+  - id: lsm-reclaimed
+    label: Recuperar espacio con contexto completo
+    why: Incluí todas las versiones, sin snapshots, y conservá las otras claves.
+prediction:
+  question: Una SST externa todavía tiene el valor viejo. ¿Podés tirar el tombstone durante una compactación parcial?
+  options:
+    - Sí, porque el DELETE ya pasó
+    - Sí, si ordenás por clave
+    - 'No: el valor podría reaparecer'
+  answer: 2
+  explanation: El marcador impide que una versión anterior siga siendo visible; retirarlo requiere conocer el contexto fuera del conjunto.
+steps:
+  - title: Representar historia
+    task: Definí clave, secuencia y valor opcional; None/Deleted representa tombstone.
+    why: Vacío y borrado son estados distintos.
+    done: Una cadena vacía se conserva como valor válido.
+  - title: Fusionar
+    task: Implementá la selección de mayor secuencia por clave.
+    why: El orden de los archivos no debe reemplazar el orden de versiones.
+    done: Los tests incluyen entradas desordenadas y un borrado reciente.
+  - title: Contexto de descarte
+    task: Exponé una bandera que solo el planificador autorizado pueda activar.
+    why: La función de merge no conoce por sí sola todos los archivos y snapshots.
+    done: Con descarte deshabilitado, el tombstone continúa en el resultado.
+  - title: Proyecto con tablas
+    task: Escribí SST pequeñas e integrá un iterador de merge antes de experimentar con RocksDB.
+    why: Reutilizar un motor real evita reinventar durabilidad, índices y compactación concurrente.
+    done: Compará la lectura antes/después de compactar y revisá snapshots antes de eliminar marcas.
+related:
+  rust:
+    - rust-88
+    - rust-99
+  go:
+    - go-18
+    - go-94
+bridge:
+  rust: Option<String> distingue tombstone de un valor vacío; BTreeMap produce un orden de salida estable.
+  go: Un campo Deleted separado evita confundir cadena vacía con ausencia. La secuencia decide qué entrada gana.

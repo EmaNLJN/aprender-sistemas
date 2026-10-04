@@ -1,0 +1,40 @@
+title: Un préstamo que sí modifica
+visual: ownership
+intro: '&mut String permite cambiar un texto que pertenece al llamador. La función recibe acceso exclusivo durante ese préstamo.'
+why: La exclusividad evita que otro acceso observe o modifique los mismos datos mientras cambia su estructura, por ejemplo si el buffer debe crecer.
+objective: Agregá exactamente un signo ! al String recibido, incluso si estaba vacío.
+instructions:
+  - Mantené la firma &mut String.
+  - Modificá el argumento con push; no reemplaces la función por una que devuelve otro String.
+tests:
+  - id: t1
+    label: Modifica al dueño
+    expression: '{ let mut s = String::from("listo"); enfatizar(&mut s); s == "listo!" }'
+    why: El cambio queda en el String original.
+    failure: Usá push sobre texto.
+  - id: t2
+    label: Texto vacío
+    expression: '{ let mut s = String::new(); enfatizar(&mut s); s == "!" }'
+    why: No se exige contenido previo.
+    failure: El signo se agrega siempre.
+  - id: t3
+    label: Dos llamadas
+    expression: '{ let mut s = String::from("ya"); enfatizar(&mut s); enfatizar(&mut s); s == "ya!!" }'
+    why: Los préstamos sucesivos permiten cambios acumulados.
+    failure: Cada llamada debe agregar un signo, aunque ya exista otro.
+hints:
+  - push recibe char; escribí comillas simples.
+  - '&mut String permite llamar a métodos mutables.'
+  - El cuerpo es texto.push('!');.
+review:
+  success: El llamador conserva la propiedad y ve la mutación. Los dos préstamos de la tercera prueba son sucesivos, por eso son compatibles.
+  pitfall: mut en el nombre de una variable y &mut en una referencia expresan aspectos distintos; cambiar el nombre no concede permiso sobre datos prestados como &T.
+transfer: Escribí una variante que solo agregue ! si el texto todavía no termina con ese signo.
+prediction:
+  question: ¿Podés usar dos &mut activos sobre el mismo String al mismo tiempo?
+  options:
+    - Sí, si hacen lo mismo
+    - Sí, si son pequeños
+    - 'No: sus usos no pueden solaparse'
+  answer: 2
+  explanation: Rust exige exclusividad para el acceso mutable. Dos préstamos sucesivos sí son válidos.

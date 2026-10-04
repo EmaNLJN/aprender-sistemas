@@ -1,0 +1,47 @@
+title: Núcleo · Reproducí una traza LRU
+level: medium
+minutes: 20
+intro: Vas a construir una caché LRU de capacidad fija y reproducir trazas de acceso. Cada hit mueve la entrada a la posición más reciente. En este ejercicio construís un núcleo verificable del proyecto; las cuatro etapas del taller lo convierten después en una herramienta completa.
+why: Separar corrección de política permite preguntar qué datos se devuelven y, después, cuántas consultas evitaste. Una política puede funcionar bien con una carga y mal con otra.
+objective: 'Empezá con caché vacía. Cada acceso a una clave presente es hit y la mueve a más reciente. Un miss incrementa misses y, si hay capacidad, inserta la clave expulsando la menos reciente cuando haga falta. Capacidad cero: todos misses, caché vacía. Devolvé (orden menos→más reciente, hits, misses).'
+instructions:
+  - Buscá la clave antes de insertar; nunca dupliques una entrada.
+  - Un hit también cambia la recencia.
+  - Separá el contador de misses de la decisión de almacenar cuando capacidad es cero.
+tests:
+  - id: t1
+    label: Un hit protege al reciente
+    expression: simular_lru(&[1, 2, 1, 3], 2) == (vec![1, 3], 1, 3)
+    why: El acceso repetido a 1 hace que salga 2.
+    failure: Promové la clave en cada hit.
+  - id: t2
+    label: Capacidad cero y entrada vacía
+    expression: simular_lru(&[9, 9], 0) == (vec![], 0, 2) && simular_lru(&[], 3) == (vec![], 0, 0)
+    why: No tener almacenamiento no elimina los accesos contados.
+    failure: No intentes remove(0) sobre una caché sin capacidad.
+  - id: t3
+    label: Sin duplicados y orden final
+    expression: simular_lru(&[4, 4, 2, 4], 3) == (vec![2, 4], 2, 2)
+    why: La misma clave ocupa un solo lugar aunque se lea varias veces.
+    failure: Quitá la aparición anterior antes de agregar al final.
+hints:
+  - Una lista pequeña sirve aunque su búsqueda sea lineal.
+  - Si encontrás la clave, quitá su posición y agregala al final.
+  - Si no estaba y la lista está llena, quitá el primer elemento antes de agregar.
+review:
+  success: La traza distingue actualización de recencia, expulsión y capacidad cero. Los contadores representan accesos, no tiempo medido.
+  pitfall: Este núcleo es O(accesos×capacidad). Una lista que expulsa solo por orden de inserción implementa FIFO, no LRU.
+transfer: Devolvé además la clave expulsada en cada paso y compará la misma traza contra FIFO.
+prediction:
+  question: Con orden LRU→MRU [A,B,C], leés A y luego D. ¿Qué sale?
+  options:
+    - A
+    - B
+    - C
+  answer: 1
+  explanation: Leer A produce [B,C,A]; D expulsa B.
+sources:
+  - title: OSTEP · Replacement policies
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/vm-beyondphys-policy.pdf
+  - title: std · Vec
+    url: https://doc.rust-lang.org/std/vec/struct.Vec.html

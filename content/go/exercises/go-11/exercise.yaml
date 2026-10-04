@@ -1,0 +1,39 @@
+title: Tres sensores, un array
+intro: Un dispositivo tiene exactamente tres sensores. [3]int expresa esa cantidad en el tipo; [4]int sería un tipo diferente.
+why: Un array guarda una cantidad fija de elementos. Recorrerlo evita repetir código por cada posición y deja explícita la operación sobre todos.
+objective: Sumá las tres lecturas de un [3]int.
+instructions:
+  - Recorré readings sin ignorar ningún índice.
+  - Permití lecturas negativas.
+tests:
+  - id: t1
+    label: Todos aportan
+    expression: Total([3]int{2,5,8}) == 15
+    why: Comprueba las tres posiciones.
+    failure: No te quedes con la primera lectura.
+  - id: t2
+    label: Array cero
+    expression: Total([3]int{}) == 0
+    why: Los elementos omitidos se inicializan a cero.
+    failure: El acumulador debe empezar en cero.
+  - id: t3
+    label: Lecturas con signo
+    expression: Total([3]int{-8,3,1}) == -4
+    why: La suma respeta signos.
+    failure: No filtres negativos en este ejercicio.
+hints:
+  - range también recorre arrays.
+  - Sumá el segundo valor entregado por range.
+  - La longitud fija ya está declarada en la firma.
+review:
+  success: Usaste el tipo para representar tres posiciones obligatorias. Pasar un array a una función copia su valor.
+  pitfall: Un array y un slice no son tipos intercambiables.
+transfer: Diseñá una versión que acepte cualquier cantidad de sensores.
+prediction:
+  question: ¿[3]int y [4]int son el mismo tipo?
+  options:
+    - No, la longitud forma parte del tipo
+    - Sí, ambos contienen int
+    - Sólo si están vacíos
+  answer: 0
+  explanation: La longitud es una propiedad estática del array.

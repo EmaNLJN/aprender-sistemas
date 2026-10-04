@@ -1,0 +1,68 @@
+id: minimax
+title: El duelo de las últimas fichas
+subtitle: Jugá contra una IA pequeña que puede explicar su decisión.
+level: expert
+minutes: 40
+story: 'Hay siete fichas y dos jugadores. El rival no adivina tu intención: explora cómo responderías y elige la jugada con mejor garantía.'
+what: Un juego adversarial de retirar 1 o 2 fichas, evaluado por búsqueda completa de minimax en su forma negamax.
+why: 'Un oponente cambia el significado de una buena acción: no basta con imaginar la respuesta que más te conviene.'
+uses:
+  - IA de juegos de turnos
+  - Búsqueda adversarial
+  - Evaluación de decisiones con un rival
+limits: Juego pequeño, determinista, de información perfecta y suma cero. No equivale a una IA general ni cubre azar o información oculta.
+objectives:
+  - id: minimax-choice
+    label: Elegir una jugada ganadora
+    why: Dejar al rival un estado perdedor transforma su −1 en tu +1.
+  - id: minimax-win
+    label: Ganar frente al rival óptimo
+    why: Una ventaja inicial debe conservarse con decisiones coherentes.
+  - id: minimax-loss
+    label: Reconocer una derrota forzada
+    why: Un buen algoritmo también debe informar cuando no existe victoria garantizada.
+prediction:
+  question: Si todas tus acciones dejan al rival una posición ganadora, tu estado vale…
+  options:
+    - '+1'
+    - 0 automáticamente
+    - −1 con rival perfecto
+  answer: 2
+  explanation: El rival puede responder para ganar; desear una respuesta equivocada no cambia minimax.
+steps:
+  - title: Definir
+    task: Escribí acciones legales, terminales y utilidad.
+    why: La búsqueda solo puede ser correcta respecto de esas reglas.
+    done: El estado con 0 fichas es derrota para quien debería mover.
+  - title: Explorar
+    task: Evaluá hijos cambiando la perspectiva del jugador.
+    why: Negar la utilidad expresa que lo bueno para el rival es malo para vos.
+    done: Con 2 fichas, la búsqueda recomienda retirar 2.
+  - title: Elegir
+    task: Definí un desempate determinista.
+    why: Una derrota forzada puede tener varias acciones igual de malas.
+    done: Con 3 fichas se elige 1 según el contrato, sin inventar una victoria.
+  - title: Escalar
+    task: Probá otro juego y límites de profundidad.
+    why: La búsqueda completa crece rápido; una heurística ya no garantiza el resultado final.
+    done: Distinguís resultado exacto de evaluación aproximada.
+sources:
+  - title: UC Berkeley CS188 · juegos y minimax
+    url: https://inst.eecs.berkeley.edu/~cs188/textbook/games/
+related:
+  rust:
+    - rust-06
+    - rust-23
+    - rust-32
+  go:
+    - go-06
+    - go-10
+    - go-86
+bridge:
+  rust: Una función recursiva pura devuelve utilidad; Option separa ausencia de acción del valor de una jugada.
+  go: Funciones recursivas y structs pueden representar estados; manteniendo la búsqueda pura podés probarla sin una interfaz gráfica.
+category: play
+model: minimax
+code:
+  rust: rust-136
+  go: go-136

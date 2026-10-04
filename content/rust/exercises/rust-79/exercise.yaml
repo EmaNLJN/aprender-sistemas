@@ -1,0 +1,44 @@
+title: Desarmá un número decimal
+level: beginner
+minutes: 8
+intro: Dividir un entero positivo por diez elimina su último dígito. El resto por diez permite observarlo antes de eliminarlo.
+why: Separar estado restante y acumulador ayuda a razonar por qué un bucle termina y qué conserva en cada paso.
+objective: Sumá los dígitos decimales de un u64. Para cero devolvé cero; no conviertas a texto en la solución propuesta.
+instructions:
+  - Usá una copia mutable de n.
+  - Extraé cada dígito con % 10 y reducí el número con / 10.
+tests:
+  - id: t1
+    label: Dígitos con ceros
+    expression: sumar_digitos(40506) == 15
+    why: Los ceros no terminan el recorrido.
+    failure: El bucle depende de n entero, no del dígito extraído.
+  - id: t2
+    label: Cero y una cifra
+    expression: sumar_digitos(0) == 0 && sumar_digitos(8) == 8
+    why: La base funciona sin iteraciones especiales.
+    failure: Inicializá la suma en cero.
+  - id: t3
+    label: Rango máximo
+    expression: sumar_digitos(u64::MAX) == 87
+    why: No se estrecha n antes de descomponerlo.
+    failure: Convertí solo el resto 0..9, no todo n a u32.
+hints:
+  - n % 10 siempre cabe en u32.
+  - La división de n reduce el número de dígitos.
+  - Sumá el resto y luego ejecutá n /= 10.
+review:
+  success: 'El máximo u64 también funciona: cada resto está entre cero y nueve, y la suma de como máximo veinte dígitos cabe ampliamente en u32.'
+  pitfall: Los tests validan el resultado; no imponen la técnica aritmética. Compará tu solución con el objetivo si usaste texto.
+transfer: Generalizá la operación a una base entre 2 y 16.
+prediction:
+  question: ¿n % 10 vale cero implica que ya no quedan dígitos?
+  options:
+    - Sí
+    - 'No: puede ser un cero interior o final'
+    - Solo en u64
+  answer: 1
+  explanation: Por ejemplo, 120 tiene resto cero pero aún contiene las cifras uno y dos.
+sources:
+  - title: Rust Book · Integer operations
+    url: https://doc.rust-lang.org/book/ch03-02-data-types.html

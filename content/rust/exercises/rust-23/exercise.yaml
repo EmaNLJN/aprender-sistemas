@@ -1,0 +1,40 @@
+title: Estados que el compilador conoce
+kind: reparar
+intro: Un enum define alternativas nombradas. match sobre ese enum debe responder a cada variante.
+why: Cuando aparece un nuevo estado, los matches incompletos fallan al compilar. Eso ayuda a encontrar lugares que requieren una decisión nueva.
+objective: 'Asigná prioridades: Esperando = 1, Ejecutando = 2, Terminado = 0.'
+instructions:
+  - Completá el brazo faltante de match.
+  - Conservá los casos nombrados, sin un comodín.
+tests:
+  - id: t1
+    label: En espera
+    expression: prioridad(Estado::Esperando) == 1
+    why: El primer estado tiene su política.
+    failure: Esperando conserva prioridad 1.
+  - id: t2
+    label: En ejecución
+    expression: prioridad(Estado::Ejecutando) == 2
+    why: La ejecución recibe prioridad mayor.
+    failure: Ejecutando debe entregar 2.
+  - id: t3
+    label: Trabajo finalizado
+    expression: prioridad(Estado::Terminado) == 0
+    why: El nuevo estado queda cubierto.
+    failure: Agregá Estado::Terminado => 0.
+hints:
+  - El error de exhaustividad nombra el estado faltante.
+  - Cada variante se califica con Estado::.
+  - Agregá Estado::Terminado => 0,.
+review:
+  success: Cada estado tiene una respuesta explícita. Un futuro estado nuevo volverá a requerir una decisión en este match.
+  pitfall: Un comodín puede ser apropiado, pero aquí ocultaría estados nuevos que querés revisar.
+transfer: Agregá Pausado al enum y observá qué parte del código obliga a actualizar.
+prediction:
+  question: Si agregás otra variante sin cambiar este match, ¿qué pasa?
+  options:
+    - Error de compilación
+    - Se devuelve cero automáticamente
+    - Se ignora la variante nueva
+  answer: 0
+  explanation: Sin comodín, Rust detecta la variante que el match no cubre.

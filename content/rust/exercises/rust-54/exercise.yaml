@@ -1,0 +1,43 @@
+title: Una referencia débil que no retiene al dueño
+visual: pointers
+intro: Weak observa una asignación contada sin mantener vivo su contenido. upgrade intenta obtener un Rc fuerte y devuelve Option.
+why: En grafos, un enlace hacia el padre puede ser débil para evitar ciclos de propiedad que retengan objetos indefinidamente.
+objective: Creá Rc y Weak de un texto. Devolvé si upgrade funciona antes y después de destruir el único Rc fuerte.
+instructions:
+  - Usá Rc::downgrade para crear Weak.
+  - No guardes el Rc temporal de upgrade hasta después de drop del dueño.
+tests:
+  - id: t1
+    label: Dueño que desaparece
+    expression: vida_debil(String::from("padre")) == (true, false)
+    why: Weak no prolonga la vida del contenido.
+    failure: Destruí el último Rc fuerte antes de la segunda observación.
+  - id: t2
+    label: Contenido vacío
+    expression: vida_debil(String::new()) == (true, false)
+    why: La propiedad no depende del contenido.
+    failure: No confundas is_some con String no vacío.
+  - id: t3
+    label: Datos Unicode
+    expression: vida_debil(String::from("árbol")) == (true, false)
+    why: El modelo de propiedad es independiente de UTF-8.
+    failure: Usá downgrade y upgrade, no referencias al String.
+hints:
+  - downgrade no incrementa el conteo fuerte.
+  - is_some consume el Option temporal; no queda un dueño fuerte retenido.
+  - Después de drop(fuerte), debil.upgrade() devuelve None.
+review:
+  success: El enlace débil sigue existiendo, pero ya no puede obtener un contenido destruido. Option obliga a contemplar esa posibilidad.
+  pitfall: Si conservás el Rc devuelto por el primer upgrade, ese Rc pasa a ser otro dueño y mantiene vivo el contenido.
+transfer: Modelá un nodo con hijos Rc y padre Weak; dibujá qué enlaces poseen el árbol.
+prediction:
+  question: ¿Un Weak garantiza que upgrade siempre dará Some?
+  options:
+    - Sí
+    - Solo si contiene String
+    - 'No: depende de que quede algún dueño fuerte'
+  answer: 2
+  explanation: Weak representa un acceso potencial, no propiedad del contenido.
+sources:
+  - title: std · Weak
+    url: https://doc.rust-lang.org/std/rc/struct.Weak.html

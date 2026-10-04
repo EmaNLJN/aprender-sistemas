@@ -1,0 +1,40 @@
+title: Qué métodos promete un valor
+kind: reparar
+intro: Una interfaz exige Increment(). Queremos que solamente un puntero al contador pueda satisfacerla, porque el método cambia el estado original.
+why: El conjunto de métodos de T y de *T no siempre coincide. Un método declarado con receptor *T pertenece al conjunto de *T, no al de T.
+objective: Hacé que *Ticks satisfaga Incrementer y modifique N; Ticks por valor no debe satisfacerla.
+instructions:
+  - Corregí el receptor de Increment.
+  - Conservá Bump que usa la interfaz explícitamente.
+tests:
+  - id: t1
+    label: Mutación a través de interfaz
+    expression: func() bool { t:=Ticks{N:2}; Bump(&t); return t.N==3 }()
+    why: El despacho de interfaz debe actualizar el objeto.
+    failure: Un receptor por valor modifica una copia.
+  - id: t2
+    label: Conjuntos diferentes
+    expression: func() bool { _,v:=interface{}(Ticks{}).(Incrementer); _,p:=interface{}(&Ticks{}).(Incrementer); return !v && p }()
+    why: La satisfacción de interfaz depende del conjunto de métodos.
+    failure: La declaración debe usar receptor *Ticks.
+  - id: t3
+    label: Llamada cómoda sobre variable
+    expression: func() bool { t:=Ticks{}; t.Increment(); t.Increment(); return t.N==2 }()
+    why: La dirección implícita permite métodos sobre una variable direccionable.
+    failure: No confundas la comodidad de llamada con satisfacción por valor.
+hints:
+  - El * va en el receptor, no en la interfaz.
+  - func (t *Ticks) Increment() conserva el cambio.
+  - Go puede tomar &t en una llamada directa si t es direccionable.
+review:
+  success: Comprobaste satisfacción de interfaces, no sólo la salida del método. La llamada t.Increment() puede ser cómoda aunque el valor Ticks no implemente Incrementer.
+  pitfall: La toma automática de dirección en una llamada no agrega métodos al conjunto de T.
+transfer: Probá explicar por qué un literal no direccionable puede comportarse distinto al llamar métodos.
+prediction:
+  question: Con receptor *Ticks, ¿Ticks{} satisface Incrementer?
+  options:
+    - Sí, porque Go siempre toma su dirección
+    - No; *Ticks sí la satisface
+    - Ninguno la satisface
+  answer: 1
+  explanation: Los conjuntos de métodos son una regla estática distinta de la sintaxis cómoda de llamadas.

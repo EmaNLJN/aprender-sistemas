@@ -1,0 +1,30 @@
+id: go-concurrency
+level: advanced
+category: Concurrencia
+title: Goroutines, canales y sincronización
+summary: go inicia una goroutine. Los canales comunican valores y sincronizan operaciones. Mutex, WaitGroup y atómicos cubren otras necesidades de coordinación.
+why: Organizar tareas concurrentes requiere decidir quién posee los datos, quién espera a quién y cómo termina cada tarea.
+code: |-
+  ch := make(chan int)
+  go func() {
+      ch <- 7
+      close(ch) // este productor sabe que terminó
+  }()
+  for valor := range ch {
+      fmt.Println(valor)
+  }
+explanation: Un canal sin buffer sincroniza envío y recepción. range termina después de que el canal se cierre y se consuman los valores pendientes. Un canal con buffer cambia cuándo bloquea, pero no elimina la necesidad de diseñar el cierre y la finalización.
+comparison: Una goroutine no equivale a crear necesariamente un thread del sistema por tarea. Frente a Rust, Go confía en el diseño de sincronización y en herramientas como el detector de carreras para encontrar accesos incompatibles.
+pitfall: Concurrencia no significa paralelismo garantizado. Dormir para esperar trabajo es frágil; usá una señal o mecanismo de espera real.
+quiz:
+  question: ¿Un buffer de canal elimina automáticamente los deadlocks?
+  options:
+    - Sí
+    - 'No: solo cambia ciertas condiciones de bloqueo'
+    - Solo si su tamaño es mayor que uno
+  answer: 1
+  explanation: Todavía puede faltar un receptor, una señal de finalización o un cierre adecuado.
+labId: go-42
+source:
+  title: Effective Go · Concurrency
+  url: https://go.dev/doc/effective_go#concurrency

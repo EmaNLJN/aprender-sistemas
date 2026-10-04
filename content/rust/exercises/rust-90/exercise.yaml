@@ -1,0 +1,44 @@
+title: Dos sumandos sin reutilizar el mismo elemento
+level: medium
+visual: collections
+intro: Mientras avanzás, un conjunto puede recordar valores anteriores. Para cada valor actual buscás el complemento del objetivo.
+why: Consultar antes de insertar evita usar el mismo elemento dos veces. El orden del recorrido define un desempate determinista.
+objective: Buscá el primer elemento actual que complete una pareja con un valor anterior. Devolvé (anterior, actual). Entradas y objetivo están entre -1.000 y 1.000.
+instructions:
+  - Consultá objetivo - actual en un HashSet antes de insertar actual.
+  - Si no hay pareja devolvé None; duplicados en posiciones distintas sí pueden combinarse.
+tests:
+  - id: t1
+    label: Primer cierre de pareja
+    expression: pareja(&[1, 4, 2, 3], 5) == Some((1, 4))
+    why: El primer índice actual válido decide el resultado.
+    failure: Devolvé al encontrar la primera coincidencia.
+  - id: t2
+    label: No usar dos veces el mismo
+    expression: pareja(&[3], 6) == None && pareja(&[3, 3], 6) == Some((3, 3))
+    why: Se requieren dos posiciones aunque los valores coincidan.
+    failure: Consultá antes de insertar el valor actual.
+  - id: t3
+    label: Signos y ausencia
+    expression: pareja(&[-4, 7, 2], 3) == Some((-4, 7)) && pareja(&[], 0) == None && pareja(&[1, 2], 8) == None
+    why: La resta busca complementos con signo.
+    failure: No limites el conjunto a positivos.
+hints:
+  - El conjunto almacena valores, no índices, porque la salida pide valores.
+  - 'El orden de iteración del HashSet no importa: solo hacés consultas.'
+  - Al terminar el for, None expresa que no hubo pareja.
+review:
+  success: Los casos verifican el desempate y la necesidad de dos posiciones. La solución propuesta consulta por clave, sin depender del orden interno del set.
+  pitfall: El rango acotado hace segura la resta i32 del ejercicio. Una API para cualquier i32 debería definir cómo manejar overflow.
+transfer: Devolvé índices y usá un HashMap que recuerde la primera posición de cada valor.
+prediction:
+  question: Si insertás actual antes de buscar su complemento, ¿qué caso se rompe?
+  options:
+    - Una lista de un solo 3 con objetivo 6
+    - Todas las listas vacías
+    - Solo las entradas negativas
+  answer: 0
+  explanation: El set podría contener el mismo elemento actual y aparentar una segunda posición inexistente.
+sources:
+  - title: std · HashSet
+    url: https://doc.rust-lang.org/std/collections/struct.HashSet.html

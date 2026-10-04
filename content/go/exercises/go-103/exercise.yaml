@@ -1,0 +1,45 @@
+title: 'Jefe: rescate en el cráter'
+intro: Tu rover parte en (0,0), mira al norte y recibe un programa de F (avanzar) y R (girar a la derecha). Ahora la brújula, el contador de energía y el intérprete deben trabajar juntos.
+why: Un struct agrupa un estado coherente. Cada comando produce una transición; devolver también bool distingue completar el programa de detenerse con un estado parcial válido.
+objective: RunRover devuelve el estado final y true si completó todo. Norte aumenta Y; este aumenta X. Facing usa 0=N,1=E,2=S,3=O.
+instructions:
+  - F consume una unidad; R no consume energía. La energía inicial siempre es no negativa.
+  - Ante un comando desconocido o un F sin energía, detenete y devolvé el estado ya alcanzado con false.
+  - No avances ni gastes energía en el comando que falla. El programa vacío termina correctamente.
+tests:
+  - id: t1
+    label: Llegar y volver hacia el oeste
+    expression: func() bool { a, ok := RunRover("RFFRF", 3); b, back := RunRover("RRRF", 1); return ok && a == (Rover{X:2, Y:-1, Facing:2}) && back && b == (Rover{X:-1, Facing:3}) }()
+    why: Comprueba desplazamientos según distintas orientaciones.
+    failure: El avance necesita un delta X/Y elegido por Facing.
+  - id: t2
+    label: Combustible agotado sin paso fantasma
+    expression: func() bool { r, ok := RunRover("FFFR", 2); return !ok && r == (Rover{Y:2, Energy:0}) }()
+    why: El comando fallido y los siguientes no deben modificar el estado.
+    failure: Verificá energía antes de mover; retorná inmediatamente cuando falla.
+  - id: t3
+    label: Giros gratis, vacío y comando inválido
+    expression: func() bool { a, ok := RunRover("RRRR", 0); b, empty := RunRover("", 2); c, invalid := RunRover("F?F", 3); return ok && a == (Rover{}) && empty && b == (Rover{Energy:2}) && !invalid && c == (Rover{Y:1, Energy:2}) }()
+    why: Distingue transiciones gratuitas, ausencia de comandos y fracaso parcial.
+    failure: No gastes energía al girar y no descartes el progreso anterior a un error.
+hints:
+  - Escribí los cuatro vectores de movimiento en el orden de Facing.
+  - Un array [4][2]int permite elegir el delta con un índice.
+  - Validá el paso, aplicá el delta y recién después descontá energía.
+review:
+  success: 'Construiste una máquina de estados pequeña: entrada + estado actual determinan el siguiente estado. El indicador de éxito y el estado parcial forman parte del contrato, no son detalles de implementación.'
+  pitfall: Reiniciar a cero ante un error perdería la posición real. Tampoco debemos ejecutar comandos posteriores al fallo.
+transfer: 'Sumá obstáculos: un F bloqueado no gasta energía y devuelve false. Escribí primero un caso que distinga esa regla.'
+prediction:
+  question: 'Programa RF con energía 1: ¿dónde termina?'
+  options:
+    - (1,0), este, energía 0
+    - (0,1), norte, energía 0
+    - (0,0), este, energía 0
+  answer: 0
+  explanation: R gira al este sin gastar; F mueve una unidad en X y consume la batería.
+sources:
+  - title: Structs
+    url: https://go.dev/tour/moretypes/2
+  - title: Switch
+    url: https://go.dev/ref/spec#Switch_statements

@@ -1,0 +1,47 @@
+title: Recuperar solo transacciones completas
+level: advanced
+minutes: 20
+workshopId: wal
+challengeType: kata
+intro: El disco simulado conserva solo los primeros durable registros. Las transacciones pueden intercalarse; cada COMMIT publica todos los PUT pendientes de su ID, en ese punto del log.
+why: Un PUT durable pero sin su COMMIT no es una transacción recuperable. Los buffers por ID separan preparación de publicación y evitan mezclar transacciones intercaladas.
+objective: Reconstruí clave→entero desde el prefijo durable. Cada PUT reemplaza la escritura pendiente de esa clave para su transacción; cada COMMIT aplica y vacía ese buffer. Un COMMIT sin pendientes no cambia nada.
+instructions:
+  - Rechazá durable fuera de 0…len(log). Ignorá completamente el sufijo perdido.
+  - Las claves pueden estar vacías y los valores pueden ser cero. No uses esos valores como sentinelas.
+  - No modifiques el log. Reutilizar un ID después de un commit empieza otro buffer; aquí no modelamos IDs persistentes globales.
+tests:
+  - id: t1
+    label: PUT sin commit no se publica
+    expression: '{ let log = [put(1,"x",9),Record::Commit(1)]; recover_wal(&log,1).unwrap().is_empty() && recover_wal(&log,2).unwrap().get("x") == Some(&9) }'
+    why: Distingue el corte antes y después del commit.
+    failure: Publicá cambios solo al leer Commit dentro del prefijo.
+  - id: t2
+    label: Intercalados y orden de commit
+    expression: '{ let log = [put(1,"x",1),put(2,"x",2),Record::Commit(2),Record::Commit(1),put(3,"y",7)]; let out = recover_wal(&log,5).unwrap(); out.len() == 1 && out.get("x") == Some(&1) }'
+    why: El orden de publicación es el orden de commit, no el último PUT global.
+    failure: Cada transacción necesita su propio buffer.
+  - id: t3
+    label: Cero, ID reutilizado y frontera inválida
+    expression: '{ let log = [put(1,"",4),put(1,"",0),Record::Commit(1),put(2,"",8),Record::Commit(2),Record::Commit(1)]; recover_wal(&log,6).unwrap().get("") == Some(&8) && recover_wal(&log,0).unwrap().is_empty() && recover_wal(&log,7).is_err() }'
+    why: Verifica vaciado tras commit, valores válidos vacíos y límites.
+    failure: Un commit repetido no debe reaplicar escrituras ya confirmadas.
+hints:
+  - Necesitás un map de transacción→map de escrituras pendientes, más el estado confirmado.
+  - PUT cambia el buffer de su ID; COMMIT transfiere ese buffer al estado.
+  - Al confirmar, eliminá el buffer de la transacción para que un commit repetido no reaplique datos viejos.
+review:
+  success: El replay distingue log presente de transacción comprometida. Los tests observan recuperación del prefijo dado; no prueban fsync, formato binario, atomicidad de disco ni protección contra corrupción.
+  pitfall: Aplicar PUT de inmediato publicaría transacciones incompletas; acumular todas las transacciones en un solo buffer confunde intercalados.
+transfer: Agregá registros binarios con longitud y checksum; ante un registro truncado, recuperá solo el prefijo válido.
+prediction:
+  question: El prefijo durable contiene PUT(tx=1,x=9), pero no COMMIT(1). ¿Qué recuperás para x?
+  options:
+    - '9'
+    - Ningún valor confirmado por esa transacción
+    - 0 obligatoriamente
+  answer: 1
+  explanation: Durabilidad del registro y compromiso de la transacción son condiciones distintas.
+sources:
+  - title: SQLite · mecanismo WAL
+    url: https://sqlite.org/wal.html

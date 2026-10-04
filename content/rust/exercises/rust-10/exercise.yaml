@@ -1,0 +1,39 @@
+title: Guardas antes del trabajo
+intro: return permite salir temprano ante una condición excepcional. Los casos comunes quedan después de esas guardas.
+why: Separar una entrada inválida del cálculo evita una división por cero y reduce la profundidad de if anidados.
+objective: Calculá bytes / segundos con división entera. Si segundos es 0, devolvé 0 como política explícita de esta función.
+instructions:
+  - Agregá una guarda antes de dividir.
+  - 'No uses panic para la entrada cero: el contrato ya define una respuesta.'
+tests:
+  - id: t1
+    label: División normal
+    expression: velocidad(120, 3) == 40
+    why: El caso común conserva la operación.
+    failure: Dividí bytes por segundos, en ese orden.
+  - id: t2
+    label: Tiempo nulo
+    expression: velocidad(120, 0) == 0
+    why: La guarda se ejecuta antes de la división.
+    failure: Retorná 0 antes de evaluar bytes / segundos.
+  - id: t3
+    label: Fracción truncada
+    expression: velocidad(10, 3) == 3
+    why: La función mantiene aritmética entera.
+    failure: No redondees ni conviertas a flotante.
+hints:
+  - Compará segundos == 0.
+  - return 0; termina inmediatamente esta llamada.
+  - Después de la guarda, devolvé bytes / segundos.
+review:
+  success: La entrada riesgosa tiene una salida definida. Más adelante Result permitirá distinguir una velocidad real de cero de un cálculo inválido.
+  pitfall: Este cero es una decisión del ejercicio; no es una forma universal de representar errores.
+transfer: Anotá cómo cambiaría la firma si quisieras informar "tiempo inválido".
+prediction:
+  question: Si segundos es 0, ¿se evalúa la división después de return 0;?
+  options:
+    - Sí, Rust evalúa todo
+    - No, esa llamada ya terminó
+    - Solo en modo release
+  answer: 1
+  explanation: return corta el flujo de la función antes de llegar a la división.

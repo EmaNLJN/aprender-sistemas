@@ -1,0 +1,42 @@
+title: La brújula al revés
+intro: 'El rover usa cuatro números: norte=0, este=1, sur=2 y oeste=3. Su giro a la derecha quedó programado hacia el lado contrario. Repará esa única transición antes de darle motores.'
+why: El resto de una división permite volver al inicio de un ciclo. Con orientaciones no negativas, (dirección + 1) % 4 recorre exactamente los cuatro estados.
+objective: Implementá un giro horario. La entrada siempre pertenece a 0…3.
+instructions:
+  - Conservá TurnRight(facing int) int.
+  - Después del oeste debe venir el norte; no existe una orientación 4.
+tests:
+  - id: t1
+    label: Norte → este
+    expression: TurnRight(0) == 1
+    why: Fija qué sentido significa derecha.
+    failure: Sumar tres gira a la izquierda en esta codificación.
+  - id: t2
+    label: El borde del ciclo
+    expression: TurnRight(3) == 0 && TurnRight(2) == 3
+    why: Comprueba el retorno al primer estado y una transición interior.
+    failure: La orientación tiene cuatro valores, no cinco.
+  - id: t3
+    label: Una vuelta completa
+    expression: func() bool { for start := 0; start < 4; start++ { d := start; for i := 0; i < 4; i++ { d = TurnRight(d) }; if d != start { return false } }; return true }()
+    why: Cuatro transiciones deben conservar la orientación inicial.
+    failure: Aplicá la misma regla a cualquier punto de partida.
+hints:
+  - Dibujá 0 → 1 → 2 → 3 → 0.
+  - Primero avanzá una posición.
+  - Usá % 4 para volver a cero después del tres.
+review:
+  success: 'Reparaste una transición local y verificaste una propiedad global: cuatro giros cierran el ciclo. Los tests también distinguen el sentido, porque una vuelta sola no lo distinguiría.'
+  pitfall: En Go, % es resto; con números negativos no garantiza un resultado positivo. El contrato acá excluye esas entradas.
+transfer: Agregá TurnLeft y comprobá que izquierda(derecha(d)) conserva d.
+prediction:
+  question: Desde oeste (3), dos giros a la derecha terminan en…
+  options:
+    - Sur (2)
+    - Este (1)
+    - Norte (0)
+  answer: 1
+  explanation: '3 → 0 → 1: el ciclo pasa por norte y termina en este.'
+sources:
+  - title: Operadores aritméticos de Go
+    url: https://go.dev/ref/spec#Arithmetic_operators

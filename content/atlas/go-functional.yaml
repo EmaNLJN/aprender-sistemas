@@ -1,0 +1,28 @@
+id: go-functional
+level: medium
+category: Abstracción
+title: Funciones de orden superior sin pureza obligatoria
+summary: Go permite closures y funciones de orden superior. Un estilo funcional se puede escribir con helpers genéricos, aunque un for directo suele ser una opción clara.
+why: Separar una transformación de su recorrido permite reutilizar comportamiento. La elección debe ayudar a leer y comprobar el programa.
+code: |-
+  func Map[A, B any](xs []A, f func(A) B) []B {
+      out := make([]B, len(xs))
+      for i, x := range xs { out[i] = f(x) }
+      return out
+  }
+  // Map([]int{1, 2}, func(x int) int { return x * 2 })
+explanation: 'Este Map particular es inmediato: recorre todos los elementos y aloca la salida al llamarlo. No es una primitiva especial del lenguaje ni un iterador perezoso. La closure puede tener efectos: Go no declara pureza en el tipo func.'
+comparison: Se parece a Array.map de JavaScript en evaluación inmediata. A diferencia de Iterator::map de Rust, esta implementación concreta no espera a un consumidor para ejecutarse.
+pitfall: Crear helpers funcionales para cada bucle puede dificultar depuración y control de errores. Si la función transforma y falla, diseñá también cómo se propaga el error.
+quiz:
+  question: ¿El tipo func(int) int garantiza ausencia de efectos laterales?
+  options:
+    - Sí
+    - 'No: la función puede modificar capturas o realizar I/O'
+    - Solo si se usa en Map
+  answer: 1
+  explanation: La firma define parámetros y resultado, no un sistema de efectos o pureza.
+labId: go-54
+source:
+  title: Go Specification · Function types
+  url: https://go.dev/ref/spec#Function_types

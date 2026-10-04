@@ -1,0 +1,39 @@
+title: Girar el tablero sin deformarlo
+intro: Un tablero rectangular gira 90 grados en sentido horario. Si tenía R filas y C columnas, el resultado tendrá C filas y R columnas.
+why: La posición (r,c) se transforma en (c,R-1-r). Un slice de slices no garantiza forma rectangular por su tipo, así que tenemos que validarla.
+objective: RotateGrid crea un tablero girado e independiente; rechaza filas de distinta longitud.
+instructions:
+  - Validá que todas las filas tengan la misma longitud.
+  - Reservá nuevas filas y aplicá la transformación de coordenadas; vacío produce vacío.
+tests:
+  - id: t1
+    label: Rectángulo no cuadrado
+    expression: func() bool {out,e:=RotateGrid([][]int{{1,2,3},{4,5,6}});return e==nil && fmt.Sprint(out)=="[[4 1] [5 2] [6 3]]"}()
+    why: Intercambia dimensiones y gira en el sentido pedido.
+    failure: No confundas giro con simple transposición.
+  - id: t2
+    label: Memoria independiente
+    expression: func() bool {src:=[][]int{{7}};out,e:=RotateGrid(src);if e!=nil || len(out)!=1 || len(out[0])!=1{return false};out[0][0]=99;return src[0][0]==7}()
+    why: Modificar el tablero nuevo no altera el anterior.
+    failure: Cada fila de salida necesita almacenamiento propio.
+  - id: t3
+    label: Irregular y vacío
+    expression: func() bool {a,e:=RotateGrid([][]int{{1,2},{3}});b,f:=RotateGrid(nil);c,g:=RotateGrid([][]int{{},{}});return a==nil && e!=nil && f==nil && g==nil && len(b)==0 && len(c)==0}()
+    why: Valida forma antes de indexar y acepta tableros sin celdas.
+    failure: La longitud de la primera fila no valida las demás.
+hints:
+  - La cantidad de filas nuevas es cols.
+  - La columna nueva es rows-1-r.
+  - La fila nueva es c.
+review:
+  success: La transformación conecta una regla de coordenadas con una representación dinámica. La prueba rectangular detecta errores que un tablero cuadrado puede ocultar.
+  pitfall: Copiar sólo el slice externo seguiría compartiendo las filas internas.
+transfer: Aplicá el giro cuatro veces y diseñá una prueba que recupere el tablero original.
+prediction:
+  question: Un tablero de 2 filas y 3 columnas girado tendrá…
+  options:
+    - 2 filas y 3 columnas
+    - 3 filas y 2 columnas
+    - 6 filas y 1 columna
+  answer: 1
+  explanation: Las dimensiones intercambian sus roles.

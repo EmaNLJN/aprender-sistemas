@@ -1,0 +1,27 @@
+id: rust-interfaces
+level: advanced
+category: Abstracción
+title: 'Traits: polimorfismo estático y dinámico'
+summary: 'Un trait declara capacidades. T: Trait permite código genérico; dyn Trait permite usar implementaciones concretas distintas mediante una interfaz común en ejecución.'
+why: Podés elegir entre una colección homogénea con tipo concreto y una heterogénea detrás de referencias o punteros propietarios.
+code: |-
+  trait Costo { fn costo(&self) -> u32; }
+  struct Ticket(u32);
+  impl Costo for Ticket { fn costo(&self) -> u32 { self.0 } }
+  fn estatico<T: Costo>(x: &T) -> u32 { x.costo() }
+  fn dinamico(x: &dyn Costo) -> u32 { x.costo() }
+explanation: El trait se implementa explícitamente. Las llamadas genéricas normalmente se especializan para los tipos concretos; dyn usa despacho mediante una tabla de métodos. No todos los traits son compatibles con dyn.
+comparison: A diferencia de las interfaces implícitas de Go, Rust usa impl Trait for Tipo. A diferencia de una jerarquía de clases, compartir un trait no implica heredar campos.
+pitfall: dyn no elimina los requisitos de lifetimes, ownership o compatibilidad del trait. Tampoco garantiza que una alternativa sea más rápida sin medir el contexto.
+quiz:
+  question: ¿Qué permite Vec<Box<dyn Costo>>?
+  options:
+    - Guardar implementadores concretos distintos del trait
+    - Acceder a campos que no declara el trait
+    - Evitar todos los costos de indirección
+  answer: 0
+  explanation: El tipo de elemento común oculta tipos concretos mientras mantiene el contrato Costo.
+labId: rust-56
+source:
+  title: Rust Book · Trait objects
+  url: https://doc.rust-lang.org/book/ch18-02-trait-objects.html

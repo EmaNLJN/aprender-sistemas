@@ -1,0 +1,39 @@
+title: Contar solamente las tareas sanas
+intro: Los números positivos representan trabajo completado; los demás no aportan. Un acumulador resume una secuencia sin guardar cada paso.
+why: range entrega índice y valor. El identificador _ descarta el índice cuando tu regla solamente necesita el valor.
+objective: Sumá exclusivamente los enteros mayores que cero de un slice.
+instructions:
+  - Recorré values con range.
+  - Agregá cada positivo a un acumulador iniciado en cero.
+tests:
+  - id: t1
+    label: Entradas mezcladas
+    expression: SumPositive([]int{4,-9,2,0}) == 6
+    why: Los negativos no restan al total.
+    failure: Filtrá antes de acumular.
+  - id: t2
+    label: Sin tareas
+    expression: SumPositive(nil) == 0
+    why: El acumulador representa el caso vacío.
+    failure: range sobre nil realiza cero vueltas.
+  - id: t3
+    label: Todas descartadas
+    expression: SumPositive([]int{-2,0,-1}) == 0
+    why: Comprueba la condición estricta.
+    failure: Solamente value > 0 aporta trabajo.
+hints:
+  - La suma actual incluye valores inválidos.
+  - Introducí un if dentro del for.
+  - El cero inicial ya resuelve el slice vacío.
+review:
+  success: Separaste recorrido, selección y acumulación. Ese patrón se reutiliza para métricas, validaciones y reportes.
+  pitfall: El primer valor de range es el índice, no el contenido.
+transfer: Adaptalo para contar positivos en vez de sumarlos.
+prediction:
+  question: ¿Qué produce range sobre un slice nil?
+  options:
+    - Un panic
+    - Una vuelta con 0
+    - Cero vueltas
+  answer: 2
+  explanation: Un slice nil tiene longitud cero y puede recorrerse sin casos especiales.

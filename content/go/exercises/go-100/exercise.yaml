@@ -1,0 +1,51 @@
+title: La expedición se detiene cuando el dueño lo pide
+kind: reparar
+imports:
+  - context
+  - bufio
+  - io
+  - strings
+  - errors
+intro: Procesás líneas con un callback secuencial. El trabajo debe detenerse si el dueño cancela o si un callback falla, contando sólo líneas completadas con éxito.
+why: La cancelación cooperativa requiere revisar el contexto en límites de trabajo. Un io.Reader genérico no ofrece una forma universal de interrumpir un Read que ya está bloqueado.
+objective: WalkLines conserva líneas vacías, espera cada callback y retorna cantidad completada más el error de cancelación, callback o scanner.
+instructions:
+  - Comprobá ctx.Err antes de cada Scan y nuevamente antes del callback.
+  - No cuentes un callback fallido ni proceses líneas posteriores; no lances goroutines.
+tests:
+  - id: t1
+    label: Cada línea, también vacía
+    expression: func() bool {got:=[]string{};n,e:=WalkLines(context.Background(),strings.NewReader("a\n\nb"),func(s string)error{got=append(got,s);return nil});return e==nil && n==3 && len(got)==3 && got[1]=="" && got[2]=="b"}()
+    why: Este contrato preserva líneas vacías.
+    failure: No reutilices un filtro de líneas vacías de otro ejercicio.
+  - id: t2
+    label: Cancelar entre callbacks
+    expression: func() bool {ctx,cancel:=context.WithCancel(context.Background());defer cancel();calls:=0;n,e:=WalkLines(ctx,strings.NewReader("a\nb\nc"),func(string)error{calls++;cancel();return nil});return n==1 && calls==1 && errors.Is(e,context.Canceled)}()
+    why: La línea terminada cuenta, pero ninguna siguiente se procesa.
+    failure: Volvé a comprobar el contexto antes de la próxima lectura.
+  - id: t3
+    label: Fallo del callback y cancelación previa
+    expression: func() bool {failure:=fmt.Errorf("visitante");calls:=0;n,e:=WalkLines(context.Background(),strings.NewReader("a\nb\nc"),func(string)error{calls++;if calls==2{return failure};return nil});ctx,cancel:=context.WithCancel(context.Background());cancel();prior:=0;m,f:=WalkLines(ctx,strings.NewReader("x"),func(string)error{prior++;return nil});return n==1 && calls==2 && errors.Is(e,failure) && m==0 && prior==0 && errors.Is(f,context.Canceled)}()
+    why: Detiene trabajo posterior y no cuenta una operación fallida.
+    failure: El contexto ya cancelado debe comprobarse antes de empezar.
+hints:
+  - La condición del loop puede pasar al cuerpo para revisar ctx antes de Scan.
+  - Si Scan es false, retorná scanner.Err.
+  - Incrementá done solamente después de visit sin error.
+review:
+  success: 'Integraste interfaces, streaming, cancelación y un contrato de resultados parciales. Un callback lento frena naturalmente el siguiente: no hay una cola ilimitada de tareas.'
+  pitfall: Scanner puede leer por adelantado y un Read bloqueado no se interrumpe sólo por revisar Context. Recursos reales necesitan deadlines, cierre o APIs que admitan cancelación.
+transfer: En un proyecto real, conectá una fuente cancelable, definí deadlines y probá que su bloqueo puede interrumpirse.
+prediction:
+  question: ¿Pasar Context permite detener cualquier Read bloqueado instantáneamente?
+  options:
+    - Sí, automáticamente
+    - No, la fuente necesita un mecanismo compatible
+    - Sólo si el callback retorna int
+  answer: 1
+  explanation: Context transporta una señal; cada operación debe tener una manera de observarla o interrumpirse.
+sources:
+  - title: context.Context y cancelación
+    url: https://pkg.go.dev/context#Context
+  - title: bufio.Scanner
+    url: https://pkg.go.dev/bufio#Scanner

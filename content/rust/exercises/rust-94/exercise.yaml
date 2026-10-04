@@ -1,0 +1,44 @@
+title: La bitácora que conserva solo lo reciente
+level: advanced
+visual: collections
+intro: Un buffer de retención acotada descarta el evento más antiguo al necesitar espacio. VecDeque expresa bien sus dos extremos.
+why: El límite lógico de retención es distinto de la capacidad de memoria reservada. with_capacity por sí solo no establece una política de descarte.
+objective: Procesá eventos i32 y devolvé los últimos limite valores en orden de llegada. Si limite es cero, no retengas ninguno.
+instructions:
+  - Antes de agregar con push_back, quitá el frente si ya se alcanzó el límite.
+  - No ordenes ni dedupliques eventos.
+tests:
+  - id: t1
+    label: Descartar antigüedad
+    expression: recientes(&[1, 2, 3, 4], 2) == vec![3, 4]
+    why: La política retiene el sufijo en el orden original.
+    failure: El elemento más antiguo está al frente.
+  - id: t2
+    label: Sin descarte necesario
+    expression: recientes(&[7, 7, 3], 8) == vec![7, 7, 3]
+    why: Repetidos y orden son parte de la bitácora.
+    failure: El límite es máximo, no cantidad obligatoria.
+  - id: t3
+    label: Límite cero y ausencia
+    expression: recientes(&[1, 2], 0).is_empty() && recientes(&[], 3).is_empty()
+    why: La política cero se maneja antes de agregar.
+    failure: Sin guarda, len == 0 y pop_front no impedirían insertar.
+hints:
+  - Separá el caso limite == 0.
+  - Compará len con el límite antes de cada inserción.
+  - Convertí VecDeque en Vec al finalizar para presentar la salida.
+review:
+  success: La salida comprueba retención y orden. La solución propuesta mantiene como máximo limite elementos durante el recorrido; los tests finales no miden el pico de memoria de otras implementaciones.
+  pitfall: VecDeque::with_capacity reserva espacio inicial, pero la colección puede crecer si insertás más. El límite pertenece a tu algoritmo.
+transfer: Devolvé también cuántos eventos se descartaron y comprobá retenidos + descartados = recibidos.
+prediction:
+  question: ¿with_capacity(10) impide insertar un undécimo elemento?
+  options:
+    - Sí
+    - 'No: reserva capacidad, no impone un máximo lógico'
+    - Solo en debug
+  answer: 1
+  explanation: La estructura puede crecer; debés implementar la política de retención.
+sources:
+  - title: std · VecDeque
+    url: https://doc.rust-lang.org/std/collections/struct.VecDeque.html

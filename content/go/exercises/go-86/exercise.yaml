@@ -1,0 +1,40 @@
+title: Una pila que recuerda su mínimo
+kind: reparar
+intro: El inventario necesita Push, Pop y Minimum. Una segunda pila puede guardar el mínimo observado a cada profundidad, de modo que retirar un elemento restaure el mínimo anterior.
+why: Cada posición de mins resume el prefijo correspondiente de values. Ambas pilas deben crecer y reducirse juntas para conservar esa relación.
+objective: Corregí Push para que Minimum entregue el mínimo de los valores todavía presentes.
+instructions:
+  - Conservá Pop y Minimum.
+  - Al agregar n, guardá el menor entre n y el mínimo anterior.
+tests:
+  - id: t1
+    label: Mínimo que reaparece
+    expression: func() bool {var s MinStack;s.Push(3);s.Push(1);s.Push(2);a,_:=s.Minimum();s.Pop();s.Pop();b,_:=s.Minimum();return a==1 && b==3}()
+    why: La cima y el mínimo no son necesariamente el mismo dato.
+    failure: Cada profundidad recuerda el mínimo de su prefijo.
+  - id: t2
+    label: Duplicados mínimos
+    expression: func() bool {var s MinStack;s.Push(1);s.Push(1);s.Pop();n,ok:=s.Minimum();return ok && n==1}()
+    why: Retirar una copia no elimina la otra.
+    failure: Guardá un mínimo por nivel, incluso si se repite.
+  - id: t3
+    label: Pila vacía
+    expression: func() bool {var s MinStack;n,a:=s.Pop();m,b:=s.Minimum();return !a && !b && n==0 && m==0}()
+    why: La ausencia se informa sin panic.
+    failure: No indexes una pila vacía.
+hints:
+  - El mínimo previo está al final de mins.
+  - El mínimo nuevo puede permanecer igual.
+  - values guarda n; mins guarda low.
+review:
+  success: Guardaste información auxiliar para acelerar una consulta manteniendo una invariancia entre estructuras. Los tests observan respuestas; la forma de la representación explica el costo constante de Minimum.
+  pitfall: Si una operación modifica sólo una de las dos pilas, la relación entre sus posiciones se rompe.
+transfer: Agregá Maximum y compará el costo adicional de memoria.
+prediction:
+  question: Al insertar 8 cuando el mínimo actual es 3, el nuevo mínimo guardado es…
+  options:
+    - '8'
+    - '3'
+    - '11'
+  answer: 1
+  explanation: El prefijo ampliado todavía contiene el 3.

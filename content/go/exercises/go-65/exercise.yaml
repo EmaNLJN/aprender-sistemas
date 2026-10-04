@@ -1,0 +1,45 @@
+title: Una fábrica con cantidad fija de workers
+kind: reparar
+imports:
+  - sync
+intro: Lanzar una goroutine por cada elemento puede crear demasiadas tareas. Una cantidad fija de workers consume índices de una cola y escribe cada resultado en su posición.
+why: La cola distribuye trabajo y WaitGroup reúne la finalización. Índices distintos separan las escrituras sin compartir una operación append concurrente.
+objective: Completá el pool para producir cuadrados ordenados; workers debe ser mayor que cero.
+instructions:
+  - Corregí la transformación sin crear goroutines adicionales por elemento.
+  - Conservá cierre de jobs y espera de todos los workers antes del return.
+tests:
+  - id: t1
+    label: Tres workers, orden original
+    expression: func() bool { out,e:=PoolSquares([]int{5,-2,0,3},3);return e==nil && fmt.Sprint(out)=="[25 4 0 9]" }()
+    why: El índice del trabajo fija dónde guardar la salida.
+    failure: Cuadrado significa multiplicar el valor por sí mismo.
+  - id: t2
+    label: Validación y lote vacío
+    expression: func() bool { a,e:=PoolSquares(nil,2);b,f:=PoolSquares([]int{2},0);return e==nil && len(a)==0 && b==nil && f!=nil }()
+    why: El pool vacío termina; cero workers se rechaza antes de enviar.
+    failure: Sin workers, un envío bloquearía para siempre.
+  - id: t3
+    label: Más datos que workers
+    expression: func() bool { input:=make([]int,40);for i:=range input{input[i]=i};out,e:=PoolSquares(input,2);if e!=nil || len(out)!=40{return false};for i,n:=range out{if n!=i*i{return false}};return true }()
+    why: Los workers deben continuar hasta agotar la cola.
+    failure: Cada worker recorre jobs, no recibe un solo elemento.
+hints:
+  - El esquema del pool ya está armado.
+  - La operación dentro del range define el trabajo.
+  - close(jobs) permite terminar a todos los consumidores.
+review:
+  success: El trabajo queda acotado por la cantidad de workers, preservando orden mediante índices. Los tests observan resultados; la estructura del código explica el límite de concurrencia.
+  pitfall: 'Un pool no es siempre más rápido: el costo de coordinación puede superar tareas tan pequeñas.'
+transfer: Agregá cancelación y decidí qué devolver cuando sólo se completó parte del lote.
+prediction:
+  question: ¿Quién cierra jobs en este diseño?
+  options:
+    - Cada worker al terminar su primer elemento
+    - El productor después de enviar todos los índices
+    - El primer consumidor que queda libre
+  answer: 1
+  explanation: El productor sabe que ya no habrá más envíos.
+sources:
+  - title: Pipelines y distribución de trabajo
+    url: https://go.dev/blog/pipelines

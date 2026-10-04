@@ -1,0 +1,37 @@
+id: rust-world-1
+level: beginner
+title: Estación del robot
+subtitle: Repará los controles y cruzá el hangar.
+story: Llegás a una estación detenida. Su robot conserva energía, pero la brújula confunde los ejes y el inventario no tiene controles de capacidad. Primero recuperás herramientas conocidas; después reparás, construís y probás una misión completa.
+concepts:
+  - Estado y mutabilidad explícita
+  - Condiciones antes de escribir
+  - Transiciones con recursos limitados
+why: Una variable mutable representa una parte del estado. Aprender a distinguir una acción propuesta de una acción aceptada evita gastar recursos, mezclar coordenadas y dejar valores incoherentes. La misma lógica aparece en formularios, juegos y operaciones de negocio.
+guide:
+  - Entrená con el contador, la selección mediante if y un método de struct. Antes de ejecutar, predecí qué valor cambia y cuál debe conservarse.
+  - 'Repará la brújula con una tabla N/S/E/O. Después construí el inventario: acceso válido, suma comprobada y una única actualización al aceptar.'
+  - En el boss, dibujá el hangar 3×3 y recorré las órdenes a mano. Compará ese recorrido con las pruebas, incluida una pared y el momento exacto en que se agota la batería.
+trainingIds:
+  - rust-02
+  - rust-06
+  - rust-22
+challengeIds:
+  - rust-101
+  - rust-102
+  - rust-103
+bossId: rust-103
+checkpoint:
+  question: El robot propone moverse, pero el destino es una pared. ¿En qué momento conviene haber descontado la batería?
+  options:
+    - Al recibir cualquier orden
+    - Después de confirmar que el movimiento es válido
+    - Antes de calcular la posición candidata
+  answer: 1
+  explanation: La batería pertenece a la transición aceptada. Validar primero permite rechazar una acción conservando todo el estado, sin tener que restaurarlo después.
+badge: Piloto de estados
+sources:
+  - title: Rust Book · Variables and mutability
+    url: https://doc.rust-lang.org/book/ch03-01-variables-and-mutability.html
+  - title: Rust Book · Control flow
+    url: https://doc.rust-lang.org/book/ch03-05-control-flow.html

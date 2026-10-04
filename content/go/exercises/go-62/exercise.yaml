@@ -1,0 +1,44 @@
+title: Dos transmisiones, un cierre limpio
+imports:
+  - sort
+intro: Llegan mensajes desde dos canales. El orden entre orígenes puede variar, pero todos los mensajes deben conservarse y la función tiene que terminar cuando ambos se agotan.
+why: Un canal cerrado permanece listo para recibir ceros con ok=false. Asignarle nil desactiva ese case y evita un loop que repita lecturas vacías.
+objective: CollectBoth reúne valores de dos canales que eventualmente se cierran; acepta un canal nil como desactivado.
+instructions:
+  - Usá select mientras al menos un canal sea distinto de nil.
+  - Cuando una recepción entregue ok=false, asigná nil a ese canal.
+tests:
+  - id: t1
+    label: Conserva ambos orígenes
+    expression: func() bool { a:=make(chan int,2);b:=make(chan int,2);a<-1;a<-3;b<-2;b<-4;close(a);close(b);got:=CollectBoth(a,b);sort.Ints(got);return fmt.Sprint(got)=="[1 2 3 4]" }()
+    why: El orden global no se presupone; sí la conservación de datos.
+    failure: Revisá ambos casos hasta que ambos terminen.
+  - id: t2
+    label: Una entrada desactivada
+    expression: func() bool { ch:=make(chan int,1);ch<-0;close(ch);got:=CollectBoth(nil,ch);return len(got)==1 && got[0]==0 }()
+    why: nil desactiva una entrada, y cero sigue siendo dato.
+    failure: ok distingue cero válido de canal agotado.
+  - id: t3
+    label: Ambos agotados
+    expression: func() bool { a:=make(chan int);b:=make(chan int);close(a);close(b);return len(CollectBoth(a,b))==0 && len(CollectBoth(nil,nil))==0 }()
+    why: Debe finalizar sin agregar ceros fantasma.
+    failure: Al cerrar cada entrada, poné su variable en nil.
+hints:
+  - for left != nil || right != nil controla el fin.
+  - Un canal nil nunca queda listo en select.
+  - Agregá n sólo cuando ok sea true.
+review:
+  success: El estado de cada canal forma una pequeña máquina de finalización. Los tests comparan contenido ordenado porque imponer orden entre productores sería otro contrato.
+  pitfall: Esta función espera hasta el cierre; si un productor nunca termina, necesita cancelación adicional.
+transfer: Extendé el protocolo para aceptar un contexto de cancelación.
+prediction:
+  question: Leer repetidamente un canal cerrado y vacío sin revisar ok produce…
+  options:
+    - Bloqueo en cada lectura
+    - Valores cero inmediatamente
+    - Panic
+  answer: 1
+  explanation: Por eso lo desactivamos al detectar el cierre.
+sources:
+  - title: Select y canales
+    url: https://go.dev/ref/spec#Select_statements

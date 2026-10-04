@@ -1,0 +1,46 @@
+title: Una entrada JSON con contrato estricto
+imports:
+  - encoding/json
+  - strings
+  - io
+intro: Una API recibe un usuario. No queremos aceptar campos escritos por error, edades negativas ni dos documentos pegados que se interpreten como uno.
+why: Decoder permite rechazar campos desconocidos. Validar el objeto y comprobar que la siguiente lectura sea EOF completa el contrato de un único documento.
+objective: DecodeUser acepta exactamente un objeto con name no vacío y age no negativo; rechaza campos desconocidos.
+instructions:
+  - Usá Decoder y DisallowUnknownFields.
+  - Después de validar el objeto, intentá una segunda decodificación y exigí io.EOF.
+tests:
+  - id: t1
+    label: Documento válido
+    expression: func() bool { u,e:=DecodeUser(`{"name":"Ada","age":30}`);return e==nil && u.Name=="Ada" && u.Age==30 }()
+    why: Los tags conectan campos JSON con campos Go.
+    failure: Pasá &u a Decode para que pueda escribir el struct.
+  - id: t2
+    label: Errores de modelo y campos
+    expression: func() bool { for _,s:=range []string{`{"name":"A","age":-1}`,`{"name":""}`,`{"name":"A","agge":4}`} {_,e:=DecodeUser(s);if e==nil{return false}};return true }()
+    why: Validez de JSON y validez del usuario son distintas.
+    failure: Rechazá campos desconocidos y validá después de decodificar.
+  - id: t3
+    label: Un único documento
+    expression: func() bool { _,a:=DecodeUser(`{"name":"A"} {"name":"B"}`);_,b:=DecodeUser(`{"name":`);u,c:=DecodeUser(`{"name":"B"}  `);return a!=nil && b!=nil && c==nil && u.Name=="B" }()
+    why: Contenido adicional no equivale a whitespace final.
+    failure: Una segunda decodificación debe terminar en io.EOF.
+hints:
+  - Llamá d.DisallowUnknownFields() antes de Decode.
+  - Las reglas de Name y Age pertenecen a tu aplicación.
+  - Leer un segundo valor permite detectar basura o documentos extra.
+review:
+  success: Combinaste parsing, reglas de dominio y consumo completo. El decoder estándar todavía tiene decisiones como aceptar claves duplicadas; un contrato más estricto requeriría tratarlas explícitamente.
+  pitfall: DisallowUnknownFields no obliga a que todos los campos aparezcan; acá age omitido usa cero y es válido.
+transfer: Diferenciá age omitido de age=0 usando un campo puntero.
+prediction:
+  question: ¿JSON sintácticamente correcto garantiza un usuario válido?
+  options:
+    - Sí
+    - No; faltan reglas del dominio
+    - Sólo si se usa un struct
+  answer: 1
+  explanation: La sintaxis no puede decidir por sí sola si una edad o nombre cumplen tu contrato.
+sources:
+  - title: encoding/json.Decoder
+    url: https://pkg.go.dev/encoding/json#Decoder

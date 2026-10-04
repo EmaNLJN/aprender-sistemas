@@ -1,0 +1,17 @@
+id: rust-kv-cli
+title: Dale una conversación por terminal
+minutes: 25
+objective: Convertir el núcleo en una herramienta que puedas usar.
+task: Agregá un bucle que lea una línea, la interprete y responda. Soportá SET clave valor, GET clave y EXIT. Para esta primera versión limitá claves y valores a una palabra sin espacios. Escribí esa regla en la ayuda. Ante un comando desconocido o incompleto, mostrá un mensaje y seguí aceptando entradas.
+doneWhen: En una misma ejecución guardás, consultás, enviás un comando incorrecto y luego volvés a consultar con éxito.
+resourceIds:
+  - rust-examples
+  - rust-brown
+quiz:
+  question: ¿Qué aporta definir primero la forma de los comandos?
+  options:
+    - Garantiza automáticamente que el programa no tenga errores.
+    - Hace innecesario comprobar las entradas.
+    - Permite decidir qué entradas aceptar y qué comportamiento probar.
+  answer: 2
+  explanation: Una especificación pequeña da un acuerdo explícito entre el programa y quien lo usa. A partir de ella podés construir ejemplos válidos e inválidos.

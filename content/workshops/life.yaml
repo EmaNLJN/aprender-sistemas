@@ -1,0 +1,68 @@
+id: life
+title: Un jardín de reglas
+subtitle: Tres reglas locales hacen aparecer osciladores y criaturas viajeras.
+level: beginner
+minutes: 30
+story: No vas a programar cada movimiento de la criatura. Vas a programar cómo nace y muere una celda y observar qué emerge.
+what: Un tablero de Conway con reproducción por generaciones, patrones conocidos y nacimientos visibles.
+why: Separar lectura y escritura permite que una regla local produzca una transición global simultánea.
+uses:
+  - Autómatas celulares
+  - Simulaciones discretas
+  - Experimentación con sistemas emergentes
+limits: Tablero finito con borde muerto. Los patrones pueden cambiar al alcanzar el borde y no representan organismos biológicos.
+objectives:
+  - id: life-oscillator
+    label: Ver volver al oscilador
+    why: Un patrón de período 2 distingue tiempo de movimiento.
+  - id: life-still
+    label: Conservar un bloque estable
+    why: Todas sus celdas cumplen la regla de supervivencia.
+  - id: life-travel
+    label: Mover el glider en cuatro generaciones
+    why: La traslación emerge de reglas idénticas aplicadas a todas las celdas.
+prediction:
+  question: Una celda muerta con exactamente 3 vecinas vivas…
+  options:
+    - Nace
+    - Permanece muerta
+    - Depende del color
+  answer: 0
+  explanation: B3 significa nacimiento con 3 vecinas; S23 conserva una viva con 2 o 3.
+steps:
+  - title: Representar
+    task: Construí una grilla de booleanos y definí sus bordes.
+    why: Sin un contrato del exterior, contar vecinos es ambiguo.
+    done: Una celda aislada no ve vecinos al otro lado del tablero.
+  - title: Actualizar
+    task: Calculá la siguiente generación en otro buffer.
+    why: Leer estados nuevos durante el mismo paso rompe la simultaneidad.
+    done: Un blinker rota y recupera su forma después de dos pasos.
+  - title: Observar
+    task: Marcá nacimientos y muertes con colores diferentes.
+    why: Contar población no alcanza para entender cómo cambia una forma.
+    done: El bloque es estable y el glider se traslada.
+  - title: Experimentar
+    task: Diseñá semillas y anotá predicciones.
+    why: Reglas simples no vuelven triviales los resultados globales.
+    done: Podés comparar tu hipótesis con una secuencia de generaciones.
+sources:
+  - title: Princeton COS126 · Conway y autómatas celulares
+    url: https://www.cs.princeton.edu/courses/archive/fall15/cos126/lectures/CS.Movies.pdf
+related:
+  rust:
+    - rust-14
+    - rust-15
+    - rust-20
+  go:
+    - go-11
+    - go-13
+    - go-25
+bridge:
+  rust: Un Vec<Vec<bool>> nuevo evita mezclar préstamos de lectura y escritura. Después podés probar dos buffers reutilizables.
+  go: 'Crear filas nuevas importa: copiar solo el slice externo seguiría compartiendo los arreglos internos.'
+category: play
+model: life
+code:
+  rust: rust-134
+  go: go-134

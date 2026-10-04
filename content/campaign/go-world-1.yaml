@@ -1,0 +1,37 @@
+id: go-world-1
+level: beginner
+title: La estación del rover
+subtitle: Decisiones pequeñas, un robot que responde
+story: Un rover de exploración quedó varado. Antes del rescate vas a revisar sus límites, cargar suministros y recuperar la brújula. La misión final convierte instrucciones en movimiento visible en el estado del robot.
+concepts:
+  - Bucles y decisiones
+  - Slices y arrays
+  - Transiciones de estado
+why: Los programas grandes también se construyen con reglas pequeñas. Poder explicar el estado antes y después de cada comando vale más que memorizar la sintaxis de un for.
+guide:
+  - 'Entrená límites, acumuladores y arrays: predecí un caso antes de ejecutar.'
+  - Repará la brújula y probá qué cambia entre continue y break al cargar cajas.
+  - En el jefe, anotá X, Y, dirección y energía después de cada comando. Compará esa traza con los tests.
+trainingIds:
+  - go-06
+  - go-07
+  - go-11
+challengeIds:
+  - go-101
+  - go-102
+  - go-103
+bossId: go-103
+checkpoint:
+  question: El rover completó dos pasos y falla el tercero. ¿Qué resultado conserva información útil según nuestro contrato?
+  options:
+    - El estado alcanzado y false
+    - El estado inicial y true
+    - Solo false, sin posición
+  answer: 0
+  explanation: El estado parcial describe lo que sí ocurrió; false indica que el programa completo no terminó.
+badge: Piloto de estados
+sources:
+  - title: 'A Tour of Go: control de flujo'
+    url: https://go.dev/tour/flowcontrol/1
+  - title: 'Golings: práctica adicional de comunidad'
+    url: https://github.com/madhank93/golings

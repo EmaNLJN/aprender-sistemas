@@ -1,0 +1,45 @@
+title: Detective de bits alterados
+imports:
+  - hash/crc32
+intro: 'Un rayo cósmico puede cambiar un bit de la telemetría. El emisor adjunta un CRC-32 IEEE; el receptor lo recalcula y compara. Go ya implementa el algoritmo: tu tarea es aplicar el contrato correcto.'
+why: Reutilizar hash/crc32 evita reimplementar tablas y polinomios. Un checksum detecta muchos errores accidentales, pero no demuestra identidad ni impide alteraciones deliberadas.
+objective: CheckPayload devuelve true exactamente cuando crc32.ChecksumIEEE(payload) coincide con want, sin modificar payload.
+instructions:
+  - Usá hash/crc32; no conviertas los bytes a texto ni implementes el polinomio a mano.
+  - El payload puede contener ceros, bytes no UTF-8 o estar vacío.
+  - Compará el resultado con want, no con un valor fijo.
+tests:
+  - id: t1
+    label: Vector conocido de CRC-32 IEEE
+    expression: CheckPayload([]byte("123456789"), 0xcbf43926) && !CheckPayload([]byte("123456789"), 0)
+    why: Usa un resultado conocido e independiente de tu implementación.
+    failure: La suma se calcula sobre el payload recibido.
+  - id: t2
+    label: Mensaje vacío también tiene contrato
+    expression: CheckPayload(nil, 0) && CheckPayload([]byte{}, 0) && !CheckPayload(nil, 1)
+    why: Distingue un mensaje vacío válido de cualquier checksum aceptado por defecto.
+    failure: El CRC IEEE del mensaje vacío es cero, pero want puede ser incorrecto.
+  - id: t3
+    label: Binario intacto y un bit cambiado
+    expression: func() bool { p := []byte{0, 255, 128, 7}; want := crc32.ChecksumIEEE(p); before := fmt.Sprint(p); ok := CheckPayload(p, want); if fmt.Sprint(p) != before { return false }; p[2] ^= 1; return ok && !CheckPayload(p, want) }()
+    why: Comprueba bytes arbitrarios, ausencia de mutación y una corrupción concreta.
+    failure: Procesá los bytes tal cual están; no hagas normalización de texto.
+hints:
+  - La biblioteca devuelve uint32, el mismo tipo que want.
+  - ChecksumIEEE acepta un slice de bytes directamente.
+  - Una comparación == produce el bool que necesita la firma.
+review:
+  success: Usaste una implementación estándar y dejaste la política de aceptación visible en una línea. La prueba del bit alterado demuestra ese caso concreto; CRC no garantiza detectar toda posible colisión.
+  pitfall: 'CRC no es criptografía: alguien que modifica el payload también puede recalcular su checksum.'
+transfer: Con crc32.NewIEEE, calculá el mismo resultado escribiendo el payload en varios fragmentos.
+prediction:
+  question: Un atacante cambia el mensaje y recalcula su CRC. ¿Nuestra comprobación lo detecta necesariamente?
+  options:
+    - No; el CRC no autentica el contenido
+    - Sí; todo checksum es una firma
+    - Sí; uint32 no admite colisiones
+  answer: 0
+  explanation: Para autenticidad necesitás un mecanismo criptográfico y una política de claves, no solo CRC.
+sources:
+  - title: 'hash/crc32: ChecksumIEEE'
+    url: https://pkg.go.dev/hash/crc32#ChecksumIEEE

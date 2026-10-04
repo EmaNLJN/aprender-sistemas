@@ -1,0 +1,43 @@
+title: El símbolo ~ abre la familia
+kind: reparar
+intro: Una moneda de tu juego es un tipo propio basado en int. Querés que una suma genérica admita tanto enteros comunes como tipos de dominio con la misma base.
+why: Una unión de restricciones admite varios tipos. ~int incluye tipos cuyo tipo subyacente es int, sin convertir el resultado y perder su identidad.
+objective: Sumá []T con T restringido a ~int | ~int64, preservando el tipo del total.
+instructions:
+  - Conservá la restricción y los tipos de dominio dados.
+  - Acumulá todos los valores, sin reemplazar el total en cada vuelta.
+tests:
+  - id: t1
+    label: Enteros comunes
+    expression: SumNumbers([]int{2,4,-1}) == 5
+    why: La operación debe acumular.
+    failure: Asignar n descarta lo anterior.
+  - id: t2
+    label: Tipos del dominio
+    expression: func() bool { var c Coins=SumNumbers([]Coins{3,7}); var d Distance=SumNumbers([]Distance{10,-2}); return c==10 && d==8 }()
+    why: ~ acepta tipos definidos sobre las bases permitidas.
+    failure: El retorno debe seguir siendo T.
+  - id: t3
+    label: Vacío tipado
+    expression: SumNumbers[int64](nil) == 0
+    why: El valor cero de T actúa como suma vacía.
+    failure: No accedas a values[0] para inicializar.
+hints:
+  - T permite + porque todos sus tipos admitidos lo permiten.
+  - Usá += sobre el acumulador.
+  - ~ modifica el conjunto de tipos, no los valores.
+review:
+  success: El algoritmo sirve a tipos del dominio sin borrar su significado. La restricción describe qué operaciones son válidas en todo el conjunto.
+  pitfall: int | int64 excluiría Coins y Distance; ~int | ~int64 incluye sus tipos subyacentes.
+transfer: Ampliá la restricción a una familia flotante y discutí el redondeo.
+prediction:
+  question: type Coins int satisface ~int…
+  options:
+    - Sí, su tipo subyacente es int
+    - No, sólo acepta el nombre int
+    - Sólo después de convertir cada valor
+  answer: 0
+  explanation: ~ incluye los tipos definidos con esa base subyacente.
+sources:
+  - title: Restricciones y tipos subyacentes
+    url: https://go.dev/blog/intro-generics

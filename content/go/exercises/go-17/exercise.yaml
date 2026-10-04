@@ -1,0 +1,40 @@
+title: Cero no es ausencia
+kind: reparar
+intro: Un inventario puede tener un producto registrado con stock cero. Si interpretás ese cero como ausencia, confundís dos estados diferentes.
+why: La lectura value, ok := m[key] informa tanto el valor como la existencia de la clave. Esa segunda respuesta evita inventar valores centinela.
+objective: Devolvé el valor y la presencia real de key en un map.
+instructions:
+  - Usá la lectura con dos resultados.
+  - Debe funcionar también con un map nil.
+tests:
+  - id: t1
+    label: Stock positivo
+    expression: func() bool { n,ok:=Lookup(map[string]int{"chip":3},"chip"); return n==3 && ok }()
+    why: Devuelve un dato existente.
+    failure: La firma requiere valor y presencia.
+  - id: t2
+    label: Agotado pero registrado
+    expression: func() bool { n,ok:=Lookup(map[string]int{"chip":0},"chip"); return n==0 && ok }()
+    why: Cero es un stock legítimo.
+    failure: La existencia no puede deducirse del número.
+  - id: t3
+    label: Ausente y nil
+    expression: func() bool { n,ok:=Lookup(nil,"chip"); return n==0 && !ok }()
+    why: Un map nil no contiene claves.
+    failure: Leer un map nil no requiere make.
+hints:
+  - m[key] puede producir dos resultados.
+  - El segundo resultado tiene tipo bool.
+  - Retorná ambos sin inferir presencia a partir de n.
+review:
+  success: Ahora el inventario diferencia “agotado” de “desconocido”. Es una decisión de modelo de datos con consecuencias visibles en la interfaz.
+  pitfall: El valor cero por sí solo no describe si una clave existe.
+transfer: Decidí qué mensaje mostraría tu interfaz para cada estado.
+prediction:
+  question: Si m["x"] = 0, la lectura n, ok := m["x"] produce…
+  options:
+    - 0, false
+    - 0, true
+    - nil, true
+  answer: 1
+  explanation: ok indica presencia, independiente del valor almacenado.

@@ -1,0 +1,16 @@
+id: go-first-test
+title: Hacé fallar un test a propósito
+minutes: 25
+objective: Aprender el ciclo de expresar un comportamiento y comprobarlo.
+task: Seguí la preparación y el primer ejemplo de Learn Go with Tests. Ejecutá el test antes y después de implementar el comportamiento. Después cambiá deliberadamente el resultado para ver un fallo. Leé el mensaje completo y anotá qué esperaba y qué recibió. Si el entorno consume la sesión, dejá el primer test preparado para el próximo día.
+doneWhen: Ejecutaste un test que falla y luego pasa, y podés explicar qué propiedad verifica.
+resourceIds:
+  - go-tests
+quiz:
+  question: ¿Para qué sirve ver fallar un test antes de corregir la implementación?
+  options:
+    - Para comprobar que puede detectar al menos ese comportamiento incorrecto.
+    - Para demostrar que cubre todas las entradas.
+    - Para evitar leer el mensaje de error.
+  answer: 0
+  explanation: Un test que falla ante el error esperado muestra que está conectado con el comportamiento que querés proteger. No demuestra cobertura completa.

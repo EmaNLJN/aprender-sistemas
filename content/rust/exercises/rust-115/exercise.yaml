@@ -1,0 +1,47 @@
+title: Núcleo · Traducí sin saltarte los permisos
+level: advanced
+minutes: 20
+intro: Separás una dirección virtual en número de página y offset; la tabla elige un marco físico y permisos. En este ejercicio construís un núcleo verificable del proyecto; las cuatro etapas del taller lo convierten después en una herramienta completa.
+why: El mismo offset puede conservarse mientras cambia la ubicación física de la página. Una dirección válida numéricamente todavía puede estar ausente o prohibida.
+objective: 'Cada entrada tiene marco, presente y escritura. Tamaño de página debe ser potencia de dos >0. Dividí VA en VPN y offset. Orden de errores: tamaño inválido→"tamano"; VPN fuera de tabla→"pagina"; no presente→"ausente"; escritura no autorizada→"permiso"; dirección física fuera de u64→"overflow". En éxito devolvé marco×tamaño+offset.'
+instructions:
+  - Validá antes de indexar y antes de calcular dirección física.
+  - Una lectura no exige permiso de escritura.
+  - Comprobá multiplicación y suma sin depender del modo debug/release.
+tests:
+  - id: t1
+    label: Conservar el offset y cambiar el marco
+    expression: '{ let t = [Pagina {marco:3,presente:true,escritura:false}, Pagina {marco:1,presente:true,escritura:true}]; traducir(&t,16,5,false)==Ok(53) && traducir(&t,16,18,true)==Ok(18) }'
+    why: Distintas páginas usan su propio marco y el mismo offset relativo.
+    failure: No uses VA completa como offset.
+  - id: t2
+    label: Ausencia y protección
+    expression: '{ let t = [Pagina {marco:3,presente:true,escritura:false}, Pagina {marco:1,presente:false,escritura:false}]; traducir(&t,16,5,true)==Err("permiso") && traducir(&t,16,16,true)==Err("ausente") && traducir(&t,16,32,false)==Err("pagina") }'
+    why: Los errores conservan una precedencia explícita.
+    failure: Presencia se comprueba antes del permiso.
+  - id: t3
+    label: Formato y aritmética
+    expression: '{ let t = [Pagina {marco:u64::MAX,presente:true,escritura:true}]; traducir(&t,0,0,false)==Err("tamano") && traducir(&t,3,0,false)==Err("tamano") && traducir(&t,16,1,false)==Err("overflow") }'
+    why: Ni tamaño cero ni una dirección desbordada producen traducción.
+    failure: La multiplicación del marco también puede fallar.
+hints:
+  - VPN=VA/tamaño y offset=VA%tamaño.
+  - Separá falta de entrada de una entrada marcada no presente.
+  - Rust ofrece checked_mul/checked_add; en Go comprobá contra máximo antes de operar.
+review:
+  success: 'Los casos verifican offset, presencia y permiso antes de producir una dirección física. No se lee memoria real: la dirección es un número del modelo.'
+  pitfall: Un resultado numérico en rango no demuestra que el proceso tenga derecho a usarlo. La autorización es parte del contrato de traducción.
+transfer: Agregá un bit de ejecución y una operación Fetch; distinguí leer datos de ejecutar instrucciones.
+prediction:
+  question: 'Página de tamaño 4: VA 9 usa VPN 2, mapeada al marco 3. ¿Cuál es PA?'
+  options:
+    - '9'
+    - '12'
+    - '13'
+  answer: 2
+  explanation: Offset=1; PA=3×4+1.
+sources:
+  - title: OSTEP · Paging
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/vm-paging.pdf
+  - title: xv6 RISC-V · Repository
+    url: https://github.com/mit-pdos/xv6-riscv

@@ -1,0 +1,12 @@
+id: go-exercism
+title: Exercism · Go
+url: https://exercism.org/tracks/go
+languages:
+  - go
+category: ejercicios
+cost: gratis
+format: Ejercicios con tests y comunidad · Inglés
+description: Una colección de ejercicios con tests y herramientas de análisis, junto con oportunidades de aprender de soluciones y mentoría voluntaria.
+why: Ideal para una sesión corta y para comparar tu solución con otras después de intentar resolverla.
+caveat: La mentoría humana depende de disponibilidad. Un ejercicio aprobado tampoco demuestra por sí solo que puedas transferir lo aprendido.
+featured: true

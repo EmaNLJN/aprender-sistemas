@@ -1,0 +1,39 @@
+title: Filtrar sin dejar huellas
+intro: El panel muestra únicamente valores pares, pero otro componente sigue usando los datos originales. Tu transformación debe conservar ese contrato.
+why: Construir un slice nuevo separa lectura y escritura. Reutilizar values[:0] sería una optimización con efectos observables sobre la entrada.
+objective: Devolvé los pares en su orden original, con almacenamiento independiente.
+instructions:
+  - Agregá al resultado sólo n % 2 == 0.
+  - No modifiques el slice recibido.
+tests:
+  - id: t1
+    label: Selección con orden
+    expression: fmt.Sprint(Evens([]int{3,8,2,5,-4})) == "[8 2 -4]"
+    why: Filtra sin ordenar ni descartar pares negativos.
+    failure: Ser par significa tener resto cero.
+  - id: t2
+    label: Nada coincide
+    expression: len(Evens([]int{1,3})) == 0 && len(Evens(nil)) == 0
+    why: Un filtro puede producir cero elementos.
+    failure: No fabriques ceros como relleno.
+  - id: t3
+    label: Aislamiento
+    expression: func() bool { src:=[]int{1,2,4}; out:=Evens(src); if len(out)!=2{return false}; out[0]=88; return fmt.Sprint(src)=="[1 2 4]" }()
+    why: El resultado no puede compartir las posiciones editadas.
+    failure: Evitá usar values[:0] como destino.
+hints:
+  - Necesitás otro slice inicialmente vacío.
+  - Usá append y conservá su resultado.
+  - Recorré la entrada sin asignar a sus índices.
+review:
+  success: Separaste selección y propiedad de los datos. Los tests revisan tanto lo devuelto como un efecto secundario que podría pasar desapercibido.
+  pitfall: Un resultado correcto no basta si se dañó la entrada.
+transfer: Hacé un filtro que reciba la condición como función.
+prediction:
+  question: ¿-4 % 2 cumple la condición de par?
+  options:
+    - Sí, el resto es cero
+    - No, es negativo
+    - Provoca un panic
+  answer: 0
+  explanation: La divisibilidad también se cumple con números negativos.

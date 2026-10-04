@@ -1,0 +1,43 @@
+title: Una lista que cabe gracias a Box
+visual: pointers
+intro: Box<T> tiene un único dueño y guarda un T en el heap. En un tipo recursivo, la indirección evita que el tamaño incluya otra copia completa de sí mismo indefinidamente.
+why: El compilador necesita conocer el tamaño del enum. El campo Box tiene tamaño conocido aunque la lista representada pueda crecer.
+objective: Contá los nodos de Lista sin consumirla. Fin tiene longitud cero.
+instructions:
+  - Hacé match sobre la lista prestada.
+  - En Nodo, sumá uno y recorré la cola Box por referencia.
+tests:
+  - id: t1
+    label: Sin nodos
+    expression: longitud_lista(&Lista::Fin) == 0
+    why: La recursión tiene un caso base.
+    failure: Fin no contiene ningún valor.
+  - id: t2
+    label: Un nodo
+    expression: longitud_lista(&Lista::Nodo(9, Box::new(Lista::Fin))) == 1
+    why: Box contiene la siguiente lista.
+    failure: Sumá uno por Nodo, no por Box y Nodo separados.
+  - id: t3
+    label: Préstamo reutilizable
+    expression: '{ let l = Lista::Nodo(4, Box::new(Lista::Nodo(-1, Box::new(Lista::Fin)))); longitud_lista(&l) == 2 && longitud_lista(&l) == 2 }'
+    why: El recorrido no consume la estructura.
+    failure: Prestá la cola; no intentes moverla desde &Lista.
+hints:
+  - Los patrones sobre &Lista prestan los campos.
+  - Rust puede convertir &Box<Lista> en &Lista mediante Deref.
+  - Nodo(_, cola) => 1 + longitud_lista(cola).
+review:
+  success: La indirección hace finita la representación de cada nodo; el préstamo permite recorrer sin transferir propiedad.
+  pitfall: Box no vuelve infinita la pila de llamadas. Una lista enorme puede necesitar un recorrido iterativo; aquí las listas son pequeñas.
+transfer: Implementá suma_lista; después escribí el recorrido con while let para evitar recursión.
+prediction:
+  question: ¿Qué resuelve Box en este tipo recursivo?
+  options:
+    - Hace conocido el tamaño de la indirección
+    - Clona toda la lista al leerla
+    - Permite mutación simultánea sin reglas
+  answer: 0
+  explanation: El nodo contiene un puntero propietario de tamaño conocido en lugar de otra Lista completa embebida.
+sources:
+  - title: Rust Book · Box and recursive types
+    url: https://doc.rust-lang.org/book/ch15-01-box.html

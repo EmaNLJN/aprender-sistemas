@@ -1,0 +1,48 @@
+title: El detector de palabras del chat
+kind: reparar
+imports:
+  - strings
+  - unicode
+intro: El chat mezcla puntuación y mayúsculas. Acá una palabra es una secuencia máxima de letras Unicode o dígitos; cualquier otro símbolo la separa.
+why: FieldsFunc permite definir separadores por rune. ToLower aplica minúsculas simples de Unicode; no implementa por sí solo normalización ni todas las equivalencias de case folding.
+objective: WordCounts devuelve frecuencias de palabras en minúsculas según esa definición.
+instructions:
+  - Conservá la separación por letras y dígitos.
+  - Acumulá repeticiones en vez de asignar siempre uno.
+tests:
+  - id: t1
+    label: Mayúsculas y puntuación
+    expression: func() bool {m:=WordCounts("Go, go! GO?");return len(m)==1 && m["go"]==3}()
+    why: La normalización precede al conteo.
+    failure: Incrementá el contador existente.
+  - id: t2
+    label: Letras Unicode y números
+    expression: func() bool {m:=WordCounts("Niño niño 42-42");return len(m)==2 && m["niño"]==2 && m["42"]==2}()
+    why: Los dígitos forman palabras según este contrato.
+    failure: El guion es separador, no parte del token.
+  - id: t3
+    label: Sólo separadores y límites
+    expression: func() bool {m:=WordCounts("a_b");return len(WordCounts(" ! 🙂 "))==0 && len(m)==2 && m["a"]==1 && m["b"]==1}()
+    why: No crea palabras vacías ni incluye underscore.
+    failure: Usá exactamente la definición letras-o-dígitos.
+hints:
+  - El parser ya produce las palabras correctas.
+  - El map tiene cero para una clave nueva.
+  - Cambiá la actualización a out[word]++.
+review:
+  success: La definición de palabra es verificable y evita expectativas implícitas. Es una tokenización educativa; idiomas sin separadores y marcas combinantes necesitan reglas más elaboradas.
+  pitfall: No afirmes que esta función cuenta palabras humanas correctamente en todos los idiomas.
+transfer: Decidí si el apóstrofo o las marcas combinantes deberían pertenecer a una palabra y agregá tests.
+prediction:
+  question: Según este contrato, a_b contiene…
+  options:
+    - Una palabra a_b
+    - 'Dos palabras: a y b'
+    - Ninguna palabra
+  answer: 1
+  explanation: Underscore no es letra ni dígito y actúa como separador.
+sources:
+  - title: unicode.IsLetter e IsDigit
+    url: https://pkg.go.dev/unicode
+  - title: strings.FieldsFunc
+    url: https://pkg.go.dev/strings#FieldsFunc

@@ -1,0 +1,42 @@
+title: Leer una orden entre espacios
+intro: split_whitespace recorre palabras prestadas, omitiendo espacios iniciales y separadores repetidos.
+why: Usar una API de texto evita codificar supuestos de un solo espacio ASCII. Al devolver &str, el token sigue apuntando al texto original.
+objective: Devolvé el primer token, o "" cuando la entrada no contenga ninguno.
+instructions:
+  - Separá con split_whitespace.
+  - Convertí el None inicial en un slice vacío con unwrap_or.
+tests:
+  - id: t1
+    label: Comando y argumento
+    expression: primera_orden("GET clave") == "GET"
+    why: Se conserva solamente el primer token.
+    failure: Pedí next al iterador.
+  - id: t2
+    label: Espacios variados
+    expression: "primera_orden(\" \t SET\nclave\") == \"SET\""
+    why: La separación no depende de un espacio exacto.
+    failure: split(' ') no cubre tabulaciones como split_whitespace.
+  - id: t3
+    label: Sin tokens
+    expression: "primera_orden(\" \n\t\") == \"\""
+    why: No hay panic frente a entrada vacía de palabras.
+    failure: Usá unwrap_or("") para el None.
+hints:
+  - split_whitespace omite tokens vacíos.
+  - next devuelve Option<&str>.
+  - Encadená .next().unwrap_or("").
+review:
+  success: Tokenizaste sin crear Strings nuevos. El préstamo del resultado queda asociado a la entrada.
+  pitfall: unwrap fallaría en líneas vacías; el fallback forma parte del contrato.
+transfer: Devolvé también el número de tokens y probá una línea con saltos.
+prediction:
+  question: ¿split_whitespace necesita copiar cada palabra a otro String?
+  options:
+    - Sí, siempre
+    - Solo para Unicode
+    - 'No: entrega slices prestados'
+  answer: 2
+  explanation: Los tokens &str son vistas del almacenamiento existente.
+sources:
+  - title: std · str::split_whitespace
+    url: https://doc.rust-lang.org/std/primitive.str.html#method.split_whitespace

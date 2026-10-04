@@ -11,6 +11,7 @@
  * Uses the SAME program builder as the browser and isolates each exercise in
  * its own module/package. Go's txtar limit is 20 files, so batches contain 15.
  */
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
@@ -97,6 +98,16 @@ interface PlaygroundResponse {
 const language = process.argv[2];
 const options = process.argv.slice(3);
 const starters = options.includes('starters');
+// Los programas salen de build/curriculum.json: se regenera antes de auditar, porque un JSON
+// viejo daría verde a código que nadie validó (o mandaría al Playground otro programa).
+const generated = spawnSync(process.execPath, ['tools/content/build-curriculum.ts'], {
+  cwd: root,
+  stdio: 'inherit',
+});
+if (generated.status !== 0) {
+  console.error('runtime-check: content/ no es válido; corregilo antes de auditar.');
+  process.exit(1);
+}
 const idsOption = options.find((option) => option.startsWith('--ids='));
 const fromOption = options.find((option) => option.startsWith('--from='));
 const hash = (value: string): string => crypto.createHash('sha256').update(value).digest('hex');
@@ -110,12 +121,15 @@ const context = vm.createContext({
   window,
   localStorage: { getItem: () => null, setItem: () => {} },
 });
-// Catálogos del lenguaje: los publica el adaptador desde los módulos TS; el hash
-// sólo cubre las fuentes del lenguaje elegido (no el adaptador ni el otro lenguaje).
-const catalogSources = [
-  'src/entities/exercise/content/' + language + '-lab.ts',
-  'src/entities/exercise/content/' + language + '-quests.ts',
-];
+// Catálogos del lenguaje: content/<lenguaje>/ (manifiesto, exercise.yaml y código); el hash
+// sólo cubre las fuentes del lenguaje elegido (no el generador ni el otro lenguaje).
+const catalogSources = fs
+  .readdirSync(path.join(root, 'content', language), { recursive: true, encoding: 'utf8' })
+  .map((entry) => path.posix.join('content', language, entry))
+  // Sin ocultos (.DS_Store, .swp), como la política de tools/content/catalog-files.ts.
+  .filter((file) => !file.split('/').some((part) => part.startsWith('.')))
+  .filter((file) => fs.statSync(path.join(root, file)).isFile())
+  .sort();
 // Mismas fuentes y orden que el resto de QA: los dominios portados tienen un adaptador.
 const systemFiles = SYSTEMS_DOMAINS.flatMap((domain) => systemsDomainSources(domain));
 const hashedSources = [...catalogSources, ...systemFiles].filter((file) =>

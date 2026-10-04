@@ -1,0 +1,45 @@
+title: Async se pone en marcha al avanzar
+visual: concurrency
+intro: Un bloque async construye un Future; su cuerpo no corre por el simple hecho de crearlo. .await compone el avance de otro Future.
+why: Entender esa pereza evita esperar efectos que nunca ocurrieron porque nadie ejecutó el futuro. Async tampoco significa crear automáticamente otro thread.
+objective: Construí un bloque async que incremente visitas una vez, espere ready(n), y devuelva n × 3. Observá visitas antes y después de un poll.
+instructions:
+  - Completá solo el bloque async señalado.
+  - Conservá las observaciones y el Box::pin; n está entre -100 y 100.
+tests:
+  - id: t1
+    label: Efecto diferido
+    expression: observar_async(5) == (0, Some(15), 1)
+    why: El cuerpo ocurre durante poll y no al crear el futuro.
+    failure: El incremento debe estar dentro del bloque async.
+  - id: t2
+    label: Resultado cero
+    expression: observar_async(0) == (0, Some(0), 1)
+    why: El efecto sucede incluso si el resultado es cero.
+    failure: No condicionales el incremento al argumento.
+  - id: t3
+    label: Resultado negativo
+    expression: observar_async(-2) == (0, Some(-6), 1)
+    why: El future aplica una transformación consistente.
+    failure: Esperá ready(n), no ready de un valor fijo.
+hints:
+  - Cell::set permite contar con una referencia compartida local.
+  - let valor = std::future::ready(n).await; obtiene el i32.
+  - Dejá valor * 3 como última expresión del bloque.
+review:
+  success: Las observaciones separan creación y avance del cálculo. En la implementación propuesta todo ocurre en el thread que hace poll.
+  pitfall: Un await sobre ready puede terminar sin suspenderse. No todo await obliga a ceder ejecución ni a cambiar de thread.
+transfer: En un proyecto local, contrastá un Future listo con un temporizador de un runtime. Agregar dependencias y ejecutar ese runtime queda fuera de este laboratorio std.
+prediction:
+  question: ¿Crear un bloque async ejecuta inmediatamente su cuerpo en otro thread?
+  options:
+    - Sí
+    - Solo si tiene await
+    - 'No: construye un Future que debe avanzar'
+  answer: 2
+  explanation: Async describe una computación suspendible; su ejecución depende de quién la consulte o espere.
+sources:
+  - title: Rust Reference · Async blocks
+    url: https://doc.rust-lang.org/reference/expressions/block-expr.html#async-blocks
+  - title: std · future::ready
+    url: https://doc.rust-lang.org/std/future/fn.ready.html

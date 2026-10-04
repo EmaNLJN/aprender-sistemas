@@ -1,0 +1,39 @@
+title: La fábrica cambia el tipo de la pieza
+intro: 'Un pipeline convierte códigos enteros a etiquetas. No sólo varía el dato: el tipo de salida puede ser diferente del tipo de entrada.'
+why: 'Dos parámetros A y B describen una relación: la función de transformación recibe A y produce B. El compilador verifica esa conexión en cada uso.'
+objective: MapSlice[A,B any] aplica convert a cada elemento y devuelve []B en el mismo orden.
+instructions:
+  - Reservá un resultado con la longitud de entrada.
+  - Asigná convert(value) al índice correspondiente.
+tests:
+  - id: t1
+    label: De int a string
+    expression: 'fmt.Sprint(MapSlice([]int{2,5},func(n int)string{return fmt.Sprintf("#%d",n)})) == "[#2 #5]"'
+    why: Entrada y salida pueden tener tipos diferentes.
+    failure: Invocá la función, no dejes los ceros de B.
+  - id: t2
+    label: Una llamada por elemento
+    expression: func() bool { calls:=0; out:=MapSlice([]string{"a","abcd"},func(s string)int{calls++;return len(s)}); return calls==2 && fmt.Sprint(out)=="[1 4]" }()
+    why: Cada entrada se transforma una vez.
+    failure: No invoques convert una vez extra para inferir el tipo.
+  - id: t3
+    label: Vacío sin callback
+    expression: func() bool { calls:=0; out:=MapSlice([]int{},func(n int)int{calls++;return n}); return len(out)==0 && calls==0 }()
+    why: La entrada vacía no ejecuta trabajo.
+    failure: El tamaño sale de len, no de una llamada de prueba.
+hints:
+  - El resultado tiene tipo []B.
+  - range entrega i y value.
+  - out[i] = convert(value) conecta ambos tipos.
+review:
+  success: Separaste el recorrido de la transformación conservando tipos concretos. Elegí esta abstracción cuando mejore claridad; un loop explícito también puede ser la mejor opción.
+  pitfall: 'Genérico no significa concurrente: esta función mantiene llamadas secuenciales.'
+transfer: Diseñá una variante cuya transformación pueda devolver un error.
+prediction:
+  question: Si convert es func(string) int, A y B son…
+  options:
+    - int y string
+    - string e int
+    - Ambos any en ejecución
+  answer: 1
+  explanation: Los parámetros enlazan el tipo del argumento con el del resultado.

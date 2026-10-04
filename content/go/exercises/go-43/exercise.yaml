@@ -1,0 +1,40 @@
+title: El buzón con espacio contado
+kind: reparar
+intro: Conocés la cantidad completa de mensajes y querés llenar una cola antes de devolverla. Un buffer suficiente permite esos envíos sin un receptor simultáneo.
+why: La capacidad define cuántos mensajes pueden esperar. El orden de recepción de esta cola debe conservar el orden de los envíos.
+objective: Queue crea un canal con capacidad len(values), lo llena en orden y lo cierra.
+instructions:
+  - Conservá el buffer dimensionado al tamaño del lote.
+  - Corregí el orden de envío; no hace falta una goroutine.
+tests:
+  - id: t1
+    label: Capacidad y mensajes listos
+    expression: func() bool { c:=Queue([]int{4,9}); sizeOK:=cap(c)==2 && len(c)==2; a,okA:=<-c; b,okB:=<-c; _,open:=<-c; return sizeOK && okA && okB && a==4 && b==9 && !open }()
+    why: El lote cabe completo y mantiene FIFO.
+    failure: Recorré values desde el comienzo.
+  - id: t2
+    label: Cola vacía cerrada
+    expression: func() bool { c:=Queue(nil); _,ok:=<-c; return cap(c)==0 && !ok }()
+    why: Sin datos no debe quedar una recepción bloqueada.
+    failure: Cerrá incluso el canal de capacidad cero.
+  - id: t3
+    label: Repetidos preservados
+    expression: func() bool { got:=[]int{}; for n:=range Queue([]int{2,2,1}) { got=append(got,n) }; return fmt.Sprint(got)=="[2 2 1]" }()
+    why: Una cola conserva multiplicidad y orden.
+    failure: No ordenes ni dedupliques los mensajes.
+hints:
+  - El starter recorre desde el último índice.
+  - Un range directo conserva el orden del slice.
+  - Cerrar no borra los mensajes almacenados.
+review:
+  success: El buffer representa un límite concreto de mensajes pendientes. Cerrar la cola impide nuevos envíos, pero permite consumir los ya guardados.
+  pitfall: Agregar buffers sin calcular su papel no arregla automáticamente un protocolo que puede bloquearse.
+transfer: Razoná qué pasaría si la capacidad fuera len(values)-1 y no hubiera receptor.
+prediction:
+  question: Si cerrás un canal con dos mensajes guardados…
+  options:
+    - Los dos se pierden
+    - Aún pueden recibirse
+    - close espera a que desaparezcan
+  answer: 1
+  explanation: El cierre conserva los mensajes que ya estaban en el buffer.

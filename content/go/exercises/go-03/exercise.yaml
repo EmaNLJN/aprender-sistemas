@@ -1,0 +1,40 @@
+title: Encender desde cero
+kind: reparar
+intro: Querés que un dispositivo recién creado tenga contador cero, modo apagado y nombre vacío. Go inicializa cada variable con el valor cero de su tipo.
+why: Podés empezar con var sin inventar valores de relleno. El cero es parte del diseño del tipo y ayuda a construir estados iniciales predecibles.
+objective: Devolvé los valores cero de int, bool y string, en ese orden.
+instructions:
+  - Declaralos con var dentro de Defaults.
+  - Devolvé las tres variables.
+tests:
+  - id: t1
+    label: Contador inicial
+    expression: func() bool { n, _, _ := Defaults(); return n == 0 }()
+    why: El cero numérico debe ser 0.
+    failure: Una variable int sin inicializador empieza en cero.
+  - id: t2
+    label: Apagado
+    expression: func() bool { _, on, _ := Defaults(); return !on }()
+    why: El cero booleano es false.
+    failure: true es una decisión explícita, no el estado por defecto.
+  - id: t3
+    label: Nombre vacío
+    expression: func() bool { _, _, s := Defaults(); return s == "" }()
+    why: Distingue vacío de un nombre de relleno.
+    failure: La cadena vacía se escribe "".
+hints:
+  - var count int ya está inicializada.
+  - Podés declarar una variable por línea.
+  - return admite tres valores separados por comas.
+review:
+  success: El estado inicial ahora tiene un contrato claro. Los tests observan los valores; no pueden exigir que uses var en vez de literales equivalentes.
+  pitfall: El valor cero puede ser útil, pero no garantiza que cualquier objeto esté listo para cualquier operación.
+transfer: Pensá si el puerto cero sería válido para tu aplicación.
+prediction:
+  question: Después de var ready bool, ready vale…
+  options:
+    - nil
+    - 'true'
+    - 'false'
+  answer: 2
+  explanation: bool tiene dos valores. Su valor cero es false.

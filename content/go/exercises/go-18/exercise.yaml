@@ -1,0 +1,47 @@
+title: Un reporte reproducible
+kind: reparar
+imports:
+  - sort
+intro: El reporte de claves cambia de orden entre ejecuciones. Los maps no prometen un orden de recorrido; un reporte estable debe establecerlo explícitamente.
+why: Separar recolección y ordenamiento evita depender de un comportamiento accidental. Así los usuarios y los tests observan el mismo orden.
+objective: Devolvé todas las claves del map ordenadas lexicográficamente.
+instructions:
+  - Recorré las claves y agregalas a un slice.
+  - Usá sort.Strings antes de devolverlo.
+tests:
+  - id: t1
+    label: Orden ascendente
+    expression: fmt.Sprint(SortedKeys(map[string]int{"z":1,"b":2,"a":3})) == "[a b z]"
+    why: El orden debe declararse, no depender del map.
+    failure: Ordená ascendente.
+  - id: t2
+    label: Sin claves
+    expression: len(SortedKeys(nil)) == 0
+    why: El caso vacío no debe fallar.
+    failure: make con longitud cero es suficiente.
+  - id: t3
+    label: Mismo resultado y fuente intacta
+    expression: func() bool { m:=map[string]int{"a":9,"B":2}; r:=SortedKeys(m); return len(r)==2 && r[0]=="B" && r[1]=="a" && len(m)==2 && m["a"]==9 }()
+    why: Define orden de strings, no orden alfabético de un idioma.
+    failure: En este orden B precede a a; no cambies las claves.
+hints:
+  - El starter ordena al revés a propósito.
+  - sort.Strings modifica el slice recibido.
+  - No hace falta cambiar el map.
+review:
+  success: Agregaste determinismo en el límite de presentación. El orden de strings no implementa reglas de diccionario de cada idioma.
+  pitfall: Un test que a veces pasa por casualidad no prueba que range ordene claves.
+transfer: Ordená por cantidad y usá la clave para desempatar.
+prediction:
+  question: ¿Qué orden garantiza range sobre un map?
+  options:
+    - Inserción
+    - Alfabético
+    - Ninguno específico
+  answer: 2
+  explanation: Si el orden importa, construí y ordená una secuencia.
+sources:
+  - title: Maps en Go
+    url: https://go.dev/blog/maps
+  - title: sort.Strings
+    url: https://pkg.go.dev/sort#Strings

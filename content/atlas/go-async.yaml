@@ -1,0 +1,31 @@
+id: go-async
+level: expert
+category: Concurrencia
+title: Esperar y cancelar sin async/await
+summary: Go no define palabras async y await. La concurrencia se expresa con goroutines, canales y APIs que coordinan espera. context.Context transporta cancelación, deadlines y valores de alcance de solicitud.
+why: Una tarea que ya no necesita el llamador debería poder detener su trabajo y liberar recursos. Eso requiere cooperación de la tarea.
+code: |-
+  func Esperar(ctx context.Context, ch <-chan int) (int, error) {
+      select {
+      case <-ctx.Done():
+          return 0, ctx.Err()
+      case n, ok := <-ch:
+          if !ok { return 0, io.EOF }
+          return n, nil
+      }
+  }
+explanation: 'select espera entre operaciones de canales listas. Si varias están listas, no debés asumir prioridad de la primera escrita. Cancelar un contexto no mata una goroutine: el código debe observarlo o llamar a APIs que lo respeten.'
+comparison: Frente a los Futures de Rust o promesas de JavaScript, Go no marca la función con async para esperar una operación. Eso no autoriza asumir que cualquier llamada sea cancelable ni que todas las esperas consuman los mismos recursos.
+pitfall: Omitir cancel() de un contexto derivado puede retener recursos hasta que venza o se cancele su padre. No uses context como bolsa de parámetros opcionales de cualquier función.
+quiz:
+  question: ¿Cancelar un Context termina forzosamente todas las goroutines que lo recibieron?
+  options:
+    - Sí
+    - 'No: deben cooperar observando la cancelación'
+    - Solo si se llama dos veces
+  answer: 1
+  explanation: La cancelación es una señal; no interrumpe arbitrariamente el código.
+labId: go-61
+source:
+  title: context · Package documentation
+  url: https://pkg.go.dev/context

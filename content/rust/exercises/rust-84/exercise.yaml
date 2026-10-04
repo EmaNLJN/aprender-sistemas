@@ -1,0 +1,43 @@
+title: La palabra más larga, sin copiarla
+level: medium
+intro: Podés comparar tokens por una métrica y devolver un slice prestado del original. El desempate es una decisión que debe aparecer en el contrato.
+why: Medir bytes puede favorecer injustamente caracteres multibyte. Aquí la longitud se define por escalares Unicode y el empate conserva la primera palabra.
+objective: Devolvé la palabra con más chars según split_whitespace. En empate gana la primera; sin palabras devolvé None.
+instructions:
+  - Guardá la mejor palabra y su cantidad de chars.
+  - Actualizá solo cuando la candidata sea estrictamente más larga.
+tests:
+  - id: t1
+    label: Ganador por longitud
+    expression: palabra_larga("cpu memoria red") == Some("memoria")
+    why: Se compara toda la secuencia de tokens.
+    failure: Actualizá el mejor al encontrar un largo superior.
+  - id: t2
+    label: Unicode y empate
+    expression: palabra_larga("ññ abc") == Some("abc") && palabra_larga("sol mar") == Some("sol")
+    why: Se cuentan chars y se respeta el primer empate.
+    failure: Usá >, no >=, y no compares len en bytes.
+  - id: t3
+    label: Separadores y vacío
+    expression: "palabra_larga(\" \t\n\") == None && palabra_larga(\"\tuno\ndosdos\") == Some(\"dosdos\")"
+    why: La ausencia de tokens está representada.
+    failure: split_whitespace maneja separadores variados.
+hints:
+  - La salida Option<&str> no necesita un String nuevo.
+  - split_whitespace no genera palabras vacías.
+  - Una comparación estricta conserva el primer candidato empatado.
+review:
+  success: Los casos verifican la métrica, el desempate y la ausencia. La solución devuelve una vista que sigue ligada a la entrada.
+  pitfall: chars no segmenta grafemas visuales. Si esa fuera la métrica del producto, haría falta otro contrato.
+transfer: Devolvé todas las palabras empatadas y documentá si querés conservar repetidas.
+prediction:
+  question: ¿Usar >= en la actualización preservaría el primer empate?
+  options:
+    - Sí
+    - 'No: lo reemplazaría por el último empatado'
+    - No cambia nunca nada
+  answer: 1
+  explanation: En igualdad, >= autoriza actualizar y desplaza al candidato anterior.
+sources:
+  - title: std · str::split_whitespace
+    url: https://doc.rust-lang.org/std/primitive.str.html#method.split_whitespace

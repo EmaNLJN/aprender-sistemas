@@ -1,0 +1,29 @@
+id: rust-flow
+level: beginner
+category: Control y errores
+title: Decisiones y recorridos explícitos
+summary: if necesita bool; match compara patrones y exige exhaustividad. for recorre iteradores, while verifica una condición y loop puede devolver un valor con break.
+why: Los patrones hacen visibles las alternativas y los rangos nombran fronteras. Los enums vuelven especialmente útil la exhaustividad.
+code: |-
+  let categoria = match codigo {
+      200 => "ok",
+      400..=499 => "cliente",
+      _ => "otro",
+  };
+  for n in 0..3 { println!("{n}"); } // 0, 1, 2
+  let valor = loop { break 7; };
+explanation: 0..3 excluye 3 y 0..=3 lo incluye. Los brazos de match producen tipos compatibles. if también es una expresión, por lo que sus ramas pueden alimentar directamente una asignación.
+comparison: No hay truthiness numérica como en JavaScript o Python. match incorpora patrones y exhaustividad; va más allá de comparar constantes como un switch sencillo.
+pitfall: Un comodín _ demasiado temprano captura casos que querías distinguir. Un rango descendente común no produce automáticamente una cuenta regresiva.
+quiz:
+  question: ¿Qué ocurre si match sobre un enum no cubre todas sus variantes?
+  options:
+    - Devuelve cero
+    - Falla al compilar
+    - Ignora el valor desconocido
+  answer: 1
+  explanation: La exhaustividad forma parte del chequeo del lenguaje.
+labId: rust-23
+source:
+  title: Rust Book · Control flow
+  url: https://doc.rust-lang.org/book/ch03-05-control-flow.html

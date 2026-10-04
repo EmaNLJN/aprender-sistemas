@@ -1,0 +1,43 @@
+title: Prefijo seguro en bytes
+visual: memory
+intro: get sobre un rango de str devuelve Option<&str>. Verifica tanto los límites como que el corte coincida con fronteras de UTF-8.
+why: Un slice de texto válido nunca termina a mitad de un carácter. Poder fallar sin panic es útil al procesar tamaños recibidos de otra parte del sistema.
+objective: Devolvé los primeros n bytes si forman un slice válido; en otro caso, None.
+instructions:
+  - Usá texto.get con el rango ..n.
+  - No redondees n ni reemplaces caracteres.
+tests:
+  - id: t1
+    label: Frontera válida
+    expression: prefijo("ñandú", 2) == Some("ñ")
+    why: Dos bytes completan ñ.
+    failure: Pedimos bytes, no cantidad de chars.
+  - id: t2
+    label: Corte interno
+    expression: prefijo("ñandú", 1) == None
+    why: No se genera UTF-8 inválido.
+    failure: get devuelve None para una frontera inválida.
+  - id: t3
+    label: Fuera y en cero
+    expression: prefijo("abc", 9) == None && prefijo("abc", 0) == Some("")
+    why: El vacío es válido y exceder el largo no lo es.
+    failure: 'No uses []: podría causar panic.'
+hints:
+  - get(..n) es la variante comprobada del slicing.
+  - El resultado ya es Option<&str>.
+  - Devolvé texto.get(..n).
+review:
+  success: El resultado presta una región del texto sin copiarla. La validación conserva la garantía de UTF-8 de &str.
+  pitfall: None puede significar límite fuera de rango o corte en un byte de continuación; ambos casos son inválidos.
+transfer: Diseñá una función que pida cantidad de chars, y compará el trabajo necesario.
+prediction:
+  question: ¿Qué hace "ñ".get(..1)?
+  options:
+    - Devuelve Some("ñ")
+    - Devuelve None
+    - Devuelve el primer byte como &str
+  answer: 1
+  explanation: ñ necesita dos bytes en UTF-8; un byte aislado no forma un str válido.
+sources:
+  - title: std · str::get
+    url: https://doc.rust-lang.org/std/primitive.str.html#method.get

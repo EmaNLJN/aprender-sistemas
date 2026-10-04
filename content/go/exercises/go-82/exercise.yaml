@@ -1,0 +1,39 @@
+title: Empaquetar repeticiones consecutivas
+intro: 'Una transmisión repite símbolos. RLE agrupa rachas consecutivas: aaabb pasa a dos grupos, pero aba conserva tres porque las a no son vecinas.'
+why: Mantener el último grupo permite decidir entre ampliarlo o crear otro. Usar un struct evita ambigüedades de formatos como a12 cuando los símbolos pueden ser dígitos.
+objective: Runs convierte texto UTF-8 válido en []Run con Symbol rune y Count int, preservando rachas.
+instructions:
+  - Si la rune coincide con el último grupo, incrementá Count.
+  - Si es diferente, agregá un grupo con Count=1.
+tests:
+  - id: t1
+    label: Rachas largas
+    expression: func() bool {r:=Runs("aaabb");return len(r)==2 && r[0]==(Run{'a',3}) && r[1]==(Run{'b',2})}()
+    why: Agrupa únicamente símbolos vecinos.
+    failure: Actualizá el último elemento del slice.
+  - id: t2
+    label: Reaparición separada
+    expression: func() bool {r:=Runs("aba");return len(r)==3 && r[0].Count==1 && r[2].Symbol=='a'}()
+    why: No es un histograma global.
+    failure: La última rune importa, no si apareció alguna vez.
+  - id: t3
+    label: Unicode y vacío
+    expression: func() bool {r:=Runs("🙂🙂ñ");return len(Runs(""))==0 && len(r)==2 && r[0]==(Run{'🙂',2}) && r[1]==(Run{'ñ',1})}()
+    why: Cuenta runes sin partirlas en bytes.
+    failure: range sobre string decodifica runes.
+hints:
+  - Antes de mirar el último grupo, verificá len(out)>0.
+  - La posición final es len(out)-1.
+  - Un grupo nuevo empieza con cantidad 1.
+review:
+  success: Modelaste una secuencia de grupos, no un conjunto de frecuencias. La representación estructurada permite reconstruir el texto sin adivinar dónde terminan los conteos.
+  pitfall: RLE puede agrandar datos sin repeticiones; comprimir no garantiza reducir cualquier entrada.
+transfer: Implementá la operación inversa y probá que decodificar Runs(text) conserve el texto.
+prediction:
+  question: Runs("aba") genera cuántos grupos?
+  options:
+    - '2'
+    - '3'
+    - '1'
+  answer: 1
+  explanation: Las dos a no son consecutivas y pertenecen a grupos distintos.

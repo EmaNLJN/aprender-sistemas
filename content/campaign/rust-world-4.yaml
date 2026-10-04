@@ -1,0 +1,37 @@
+id: rust-world-4
+level: expert
+title: Núcleo de la máquina
+subtitle: Diseñá instrucciones, errores y límites de ejecución.
+story: El último sistema de la estación es una máquina programable. Sus instrucciones parecen pequeñas, pero un signo mal leído, una transición incompleta o un salto infinito pueden cambiar todo el resultado. Vas a darle una semántica que puedas explicar y probar.
+concepts:
+  - Bytecode e instrucciones tipadas
+  - Transiciones sin efectos parciales
+  - Interpretación con presupuesto finito
+why: 'Un intérprete vuelve visibles decisiones que otros sistemas suelen ocultar: qué es una instrucción, cómo avanza el programa, qué estado cambia y cómo se detiene. Los enums describen alternativas válidas; Result y un límite explícito definen las salidas del motor.'
+guide:
+  - Repasá enums con datos, propagación de errores y actualizaciones con versión. Buscá en cada práctica la frontera entre preparar un cambio y confirmarlo.
+  - 'Repará la lectura firmada de un byte y construí la transición de una instrucción. En esta segunda misión pc ya cuenta instrucciones: no mezcles esas unidades con los offsets en bytes del decodificador.'
+  - En el boss, ejecutá instrucciones tipadas con un presupuesto. Seguí pc, acumulador y contador en una tabla; probá un bucle que termina, otro que agota el límite y una dirección inválida.
+trainingIds:
+  - rust-24
+  - rust-29
+  - rust-99
+challengeIds:
+  - rust-110
+  - rust-111
+  - rust-112
+bossId: rust-112
+checkpoint:
+  question: ¿Qué garantiza el presupuesto del intérprete construido en este mundo?
+  options:
+    - Que todo programa calcula la respuesta que quiso su autor
+    - Que cada programa tarda exactamente la misma cantidad de milisegundos
+    - Que no ejecuta más instrucciones de la VM que las permitidas
+  answer: 2
+  explanation: El contador acota pasos de este conjunto de instrucciones. No demuestra corrección del programa ni mide tiempo real; una futura instrucción de costo variable requeriría revisar esa garantía.
+badge: Arquitectura del núcleo
+sources:
+  - title: Rust Book · Enums
+    url: https://doc.rust-lang.org/book/ch06-01-defining-an-enum.html
+  - title: Rust Reference · Numeric casts
+    url: https://doc.rust-lang.org/reference/expressions/operator-expr.html#numeric-cast

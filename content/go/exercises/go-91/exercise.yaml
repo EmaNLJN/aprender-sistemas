@@ -1,0 +1,47 @@
+title: Palabras entre comillas sin inventar un shell
+imports:
+  - strings
+  - unicode
+intro: 'Tu consola admite grupos entre comillas dobles para conservar espacios. Las partes contiguas se unen: ab" c" forma un solo token ab c. No hay escapes ni expansión de variables.'
+why: Un estado inQuotes cambia qué significa un espacio. Además, una marca started permite conservar un token explícitamente vacío como "".
+objective: Tokens separa por whitespace fuera de comillas, elimina las comillas y rechaza una apertura sin cierre.
+instructions:
+  - Recorré runes alternando el estado al ver comillas dobles.
+  - Separá tokens sólo fuera de comillas y conservá grupos vacíos explícitos.
+tests:
+  - id: t1
+    label: Valor con espacios
+    expression: func() bool {out,e:=Tokens(`set nombre "Ada Lovelace"`);return e==nil && len(out)==3 && out[2]=="Ada Lovelace"}()
+    why: Los espacios entre comillas pertenecen al token.
+    failure: El estado determina si un espacio separa o se conserva.
+  - id: t2
+    label: Vacío explícito y fragmentos contiguos
+    expression: func() bool {out,e:=Tokens(`"" ab" c"`);return e==nil && len(out)==2 && out[0]=="" && out[1]=="ab c"}()
+    why: Un token vacío existe aunque el builder tenga longitud cero.
+    failure: La marca started debe activarse al abrir comillas.
+  - id: t3
+    label: Apertura pendiente y whitespace
+    expression: func() bool {a,e:=Tokens(`x "rota`);b,f:=Tokens(" \t\n");return a==nil && e!=nil && f==nil && len(b)==0}()
+    why: Una entrada incompleta no produce tokens parciales válidos.
+    failure: Comprobá quoted al terminar.
+hints:
+  - Necesitás quoted y started como estados separados.
+  - Una comilla cambia el modo pero no se escribe en el token.
+  - Al separar un token, reiniciá el builder y started.
+review:
+  success: La máquina de estados distingue caracteres de control y contenido sin prometer una gramática de shell completa. El vacío explícito exigió recordar intención además de contenido.
+  pitfall: 'Una barra invertida es un carácter literal aquí: no escapa la comilla siguiente.'
+transfer: Agregá escapes con un estado separado y definí qué secuencias son legales.
+prediction:
+  question: ¿Por qué token.Len()>0 no alcanza para decidir si hay un token?
+  options:
+    - Porque los strings no tienen longitud
+    - Porque "" representa un token vacío válido
+    - Porque toda entrada debe producir un token
+  answer: 1
+  explanation: La existencia del token y la cantidad de caracteres son datos distintos.
+sources:
+  - title: strings.Builder
+    url: https://pkg.go.dev/strings#Builder
+  - title: unicode.IsSpace
+    url: https://pkg.go.dev/unicode#IsSpace

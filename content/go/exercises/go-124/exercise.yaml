@@ -1,0 +1,47 @@
+title: El sello que nunca debe retroceder
+level: advanced
+minutes: 20
+workshopId: clocks
+challengeType: kata
+intro: Un evento local incrementa el contador. Una recepción debe quedar después tanto del estado local como del sello recibido. Ninguno de estos números representa segundos.
+why: Tomar solo remoto+1 puede hacer retroceder a un nodo adelantado. Permitir overflow también rompe la monotonía; rechazarlo forma parte del contrato.
+objective: Para evento local devolvé local+1; para recepción, max(local,remoto)+1. Si no entra en 64 bits sin signo, devolvé ausencia/error.
+instructions:
+  - En Rust, None como parámetro remoto significa evento local; en Go, isReceive=false significa que remote debe ignorarse.
+  - Una recepción con sello igual también incrementa.
+  - 'La función es pura: el llamador solo actualiza su reloj si recibió un resultado válido.'
+tests:
+  - id: t1
+    label: Evento local ignora remote
+    expression: func() bool { a,e1:=Lamport(0,0,false); b,e2:=Lamport(8,^uint64(0),false); return e1==nil && a==1 && e2==nil && b==9 }()
+    why: Define el incremento local sin recepción.
+    failure: remote no participa si isReceive es false.
+  - id: t2
+    label: Remoto menor, mayor e igual
+    expression: func() bool { a,e1:=Lamport(12,4,true); b,e2:=Lamport(2,9,true); c,e3:=Lamport(5,5,true); return e1==nil && a==13 && e2==nil && b==10 && e3==nil && c==6 }()
+    why: La base debe incorporar ambos valores.
+    failure: Usá max antes de sumar uno.
+  - id: t3
+    label: Límite sin wrap
+    expression: func() bool { max:=^uint64(0); _,a:=Lamport(max,0,false); _,b:=Lamport(0,max,true); _,c:=Lamport(max,0,true); d,e:=Lamport(max-1,0,false); return a!=nil && b!=nil && c!=nil && e==nil && d==max }()
+    why: Evita que un contador máximo vuelva a cero.
+    failure: El error depende del máximo de ambos contadores, no solo del remoto.
+hints:
+  - 'Elegí primero la base: local o el máximo.'
+  - Detectá el máximo representable antes de sumar.
+  - Rust ofrece checked_add; en Go compará con ^uint64(0).
+review:
+  success: La transición conserva la monotonía bajo el rango del contador. Un sello menor no demuestra causalidad inversa; hacen falta vínculos de mensajes para interpretar una traza.
+  pitfall: No uses estos sellos para TTL, tiempos de espera ni leases. No miden duración física.
+transfer: Agregá ID de nodo para desempatar un orden total y explicá qué causalidad adicional no aparece por eso.
+prediction:
+  question: Local=12 y llega sello 4. ¿Resultado?
+  options:
+    - '5'
+    - '12'
+    - '13'
+  answer: 2
+  explanation: max(12,4)+1 preserva que la recepción sucede después del estado local y del envío.
+sources:
+  - title: Lamport · Time, Clocks, and the Ordering of Events
+    url: https://lamport.azurewebsites.net/pubs/time-clocks.pdf

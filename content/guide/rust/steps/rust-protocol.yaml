@@ -1,0 +1,17 @@
+id: rust-protocol
+title: Especificá antes de conectar
+minutes: 25
+objective: Separar el significado de un comando del medio por el que llega.
+task: 'Escribí una especificación de una página para reutilizar SET y GET por una conexión: cada comando termina en un salto de línea y cada respuesta también. Definí respuestas para éxito, clave ausente y entrada inválida. Usá una sola conexión y procesamiento secuencial como alcance inicial. Prepará tres conversaciones de ejemplo y comprobá sus comandos contra tu intérprete actual.'
+doneWhen: Otra persona podría predecir las respuestas de tus tres conversaciones leyendo la especificación.
+resourceIds:
+  - protohackers
+  - codecrafters
+quiz:
+  question: ¿Por qué tu protocolo necesita una regla para saber dónde termina un comando?
+  options:
+    - Porque una conexión de bytes no define por sí sola los límites de tus comandos.
+    - Porque cada envío siempre llega en una sola lectura.
+    - Porque todos los comandos de red deben medir exactamente lo mismo.
+  answer: 0
+  explanation: TCP transporta un flujo de bytes. El protocolo de la aplicación debe indicar cómo reconocer cada mensaje, por ejemplo con un delimitador o una longitud.

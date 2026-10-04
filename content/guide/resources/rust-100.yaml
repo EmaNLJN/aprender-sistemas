@@ -1,0 +1,12 @@
+id: rust-100
+title: 100 Exercises to Learn Rust
+url: https://rust-exercises.com/100-exercises/
+languages:
+  - rust
+category: ejercicios
+cost: gratis
+format: Ejercicios locales con tests · Inglés
+description: Explicaciones breves y ejercicios que avanzan desde los fundamentos hasta temas más profundos de Rust. Está pensado para personas que ya programan.
+why: 'Tu recorrido principal recomendado: escribís código desde el comienzo y tenés una señal concreta de progreso.'
+caveat: Elegí esta versión o la integrada en RustRover; comparten la base. No hace falta terminarlo entero antes de iniciar tu proyecto.
+featured: true

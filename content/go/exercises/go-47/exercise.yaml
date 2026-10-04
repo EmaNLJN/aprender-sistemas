@@ -1,0 +1,42 @@
+title: 'Misión KV: un almacén listo desde cero'
+intro: Querés poder declarar var store Store y usarlo sin un constructor obligatorio. El map interno necesita crearse cuando llegue la primera escritura.
+why: Diseñar un valor cero útil simplifica el uso del tipo. Los métodos ocultan la inicialización y exponen únicamente guardar y consultar.
+objective: Implementá Set y Get para Store; Get distingue ausente de valor vacío.
+instructions:
+  - En Set inicializá data con make si es nil.
+  - En Get usá la consulta de map con dos resultados.
+tests:
+  - id: t1
+    label: Primer guardado desde cero
+    expression: func() bool { var s Store; s.Set("lang","Go"); v,ok:=s.Get("lang"); return v=="Go" && ok }()
+    why: Una instancia sin constructor debe aceptar su primera escritura.
+    failure: Escribir en un map nil provoca panic.
+  - id: t2
+    label: Vacío y ausente
+    expression: func() bool { var s Store; _,before:=s.Get("x"); s.Set("x",""); v,after:=s.Get("x"); return !before && after && v=="" }()
+    why: Presencia y contenido tienen significados separados.
+    failure: Usá el ok real del map.
+  - id: t3
+    label: Reemplazo e independencia
+    expression: func() bool { var a,b Store; a.Set("x","uno"); a.Set("x","dos"); v,ok:=a.Get("x"); _,other:=b.Get("x"); return ok && v=="dos" && !other }()
+    why: Sobrescribir afecta sólo al almacén elegido.
+    failure: El map debe pertenecer a la instancia, no a una variable global.
+hints:
+  - s.data == nil detecta la inicialización pendiente.
+  - make(map[string]string) crea el almacenamiento.
+  - value, ok := s.data[key] también funciona antes del primer Set.
+review:
+  success: Integraste punteros, maps y un contrato de valor cero útil. Este Store es secuencial; usarlo simultáneamente desde varias goroutines requeriría coordinación.
+  pitfall: Copiar un Store después de inicializarlo copiaría el descriptor del map y compartiría sus datos.
+transfer: Agregá Delete que informe si realmente eliminó una clave.
+prediction:
+  question: Antes del primer Set, Get sobre el map nil…
+  options:
+    - Puede leer una ausencia sin panic
+    - Debe crear el map siempre
+    - Produce datos aleatorios
+  answer: 0
+  explanation: La lectura de un map nil es válida; la escritura necesita inicialización.
+sources:
+  - title: Maps y su valor cero
+    url: https://go.dev/blog/maps

@@ -1,0 +1,49 @@
+title: Núcleo · CALL y RET conservan al llamador
+level: medium
+minutes: 20
+imports:
+  - reflect
+intro: Representás una pila de frames con variables locales propias, continuación y límites de profundidad. En este ejercicio construís un núcleo verificable del proyecto; las cuatro etapas del taller lo convierten después en una herramienta completa.
+why: Una variable local pertenece a una invocación, no al nombre global de su función. La continuación explica adónde vuelve RET, incluso al anidar llamadas.
+objective: 'Llamar recibe puntero a slice, retorno/local y límite: agrega un frame solo si len>0 y len<limite; un límite <=0 también rechaza. Retornar solo quita si len>1 y devuelve (retorno,true); rechazo→(0,false). El raíz nunca sale. No modifiques estado al rechazar. Los punteros recibidos son no nil.'
+instructions:
+  - Comprobá límites antes de modificar el vector o slice.
+  - El dato devuelto por RET sale del frame quitado, no del llamador.
+  - Los locales del llamador deben quedar intactos.
+tests:
+  - id: t1
+    label: Retornos anidados
+    expression: func() bool { p:=[]Marco{{0,2}}; a:=Llamar(&p,7,10,4); b:=Llamar(&p,12,20,4); r,ok:=Retornar(&p); s,ok2:=Retornar(&p); return a && b && ok && ok2 && r==12 && s==7 && reflect.DeepEqual(p,[]Marco{{0,2}}) }()
+    why: CALL apila y RET usa la continuación más reciente.
+    failure: Leé el retorno antes de recortar el slice.
+  - id: t2
+    label: Locales separados
+    expression: func() bool { p:=[]Marco{{0,9}}; ok:=Llamar(&p,3,0,2); if !ok { return false }; p[1].Local=5; r,ok2:=Retornar(&p); return ok2 && r==3 && p[0].Local==9 }()
+    why: Cada struct contiene el local de una invocación.
+    failure: El índice del frame activo es len−1.
+  - id: t3
+    label: Raíz y capacidad lógica
+    expression: func() bool { p:=[]Marco{{0,4}}; a:=Llamar(&p,9,1,1); _,b:=Retornar(&p); var vacia []Marco; c:=Llamar(&vacia,1,0,3); d:=Llamar(&p,1,0,-1); return !a && !b && !c && !d && len(vacia)==0 && reflect.DeepEqual(p,[]Marco{{0,4}}) }()
+    why: El límite lógico no es cap(slice), y el raíz se conserva.
+    failure: Usá el parámetro limite para decidir si se permite otra llamada.
+hints:
+  - CALL necesita !pila.is_empty() y len<limite.
+  - RET necesita len>1; recién entonces pop es válido.
+  - Guardar frames como valores mantiene separados los locales de cada llamada.
+review:
+  success: Los casos verifican orden LIFO, continuación y conservación del frame raíz. La pila modela invocaciones; no depende de la ubicación física de estos datos.
+  pitfall: Un límite de profundidad del intérprete no es el tamaño de la pila de ejecución del compilador anfitrión. Este código administra un vector explícito.
+transfer: Agregá un identificador de función a cada frame y generá un backtrace sin modificar la pila.
+prediction:
+  question: main tiene local=2, f crea local=0 y lo cambia a 1. Al retornar, ¿cuánto vale el local de main?
+  options:
+    - '1'
+    - '2'
+    - '0'
+  answer: 1
+  explanation: Son locales de invocaciones diferentes.
+sources:
+  - title: Nand2Tetris · Function calls
+    url: https://www.nand2tetris.org/project08
+  - title: Rust Book · Ownership and stack/heap
+    url: https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html

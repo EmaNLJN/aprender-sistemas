@@ -1,0 +1,45 @@
+title: 'Misión final: medir trabajo, no adivinar velocidad'
+kind: reparar
+intro: Tenés un índice ordenado de enteros distintos. La búsqueda lineal funciona, pero inspecciona demasiadas posiciones. Vamos a medir inspecciones, sin depender del reloj ni del equipo.
+why: La búsqueda binaria reduce el intervalo a la mitad por paso. Contar posiciones examinadas permite estudiar crecimiento algorítmico de manera determinista; no equivale a un benchmark de tiempo.
+objective: Implementá búsqueda binaria y devolvé índice o -1, más el número de posiciones inspeccionadas.
+instructions:
+  - Usá un intervalo [low, high) y contá una inspección cada vez que leas el punto medio.
+  - No copies ni ordenes la entrada; ya llega ordenada y sin repetidos.
+tests:
+  - id: t1
+    label: Encuentra una posición
+    expression: func() bool { i,p:=FindSorted([]int{2,5,8,11,14},11); return i==3 && p>0 && p<=3 }()
+    why: Debe devolver el índice original con pocas inspecciones.
+    failure: Compará el centro y descartá la mitad que no puede contener el dato.
+  - id: t2
+    label: Vacío y ausencias
+    expression: func() bool { i,p:=FindSorted(nil,3); a,x:=FindSorted([]int{1,3,5},0); b,y:=FindSorted([]int{1,3,5},6); return i == -1 && p==0 && a == -1 && b == -1 && x<=2 && y<=2 }()
+    why: El intervalo vacío termina y las ausencias no acceden fuera de rango.
+    failure: El límite high es exclusivo.
+  - id: t3
+    label: Un índice de 1024 entradas
+    expression: func() bool { values:=make([]int,1024); for i:=range values {values[i]=i*2}; at,probes:=FindSorted(values,2046); return at==1023 && probes>0 && probes<=11 && values[0]==0 && values[1023]==2046 }()
+    why: El presupuesto de inspecciones distingue búsqueda binaria de lineal.
+    failure: Reducí el intervalo en cada iteración; la última clave no necesita 1024 lecturas.
+hints:
+  - Iniciá low=0 y high=len(values).
+  - mid := low + (high-low)/2 evita sumar los extremos directamente.
+  - Si values[mid] es menor, low=mid+1; si es mayor, high=mid.
+review:
+  success: 'Ahora tenés una explicación medible de la mejora: se reduce el espacio de búsqueda. Los tests confían en el contador que devolvés y no prueban tiempos reales; revisá que aumente en cada inspección.'
+  pitfall: Un contador inventado podría engañar estos tests sin mejorar el algoritmo. La revisión de la invariancia del intervalo sigue siendo parte del aprendizaje.
+transfer: Compará inspecciones lineales y binarias para 16, 256 y 4096 claves; después diseñá un benchmark local.
+prediction:
+  question: Si duplicás el tamaño de un índice ordenado, la búsqueda binaria suele necesitar…
+  options:
+    - Aproximadamente una inspección adicional en el peor caso
+    - El doble de inspecciones siempre
+    - La misma cantidad exacta en todos los casos
+  answer: 0
+  explanation: Cada paso descarta cerca de la mitad; una duplicación agrega aproximadamente un nivel de búsqueda.
+sources:
+  - title: Búsqueda sobre secuencias ordenadas
+    url: https://pkg.go.dev/sort#Search
+  - title: Benchmarks de Go
+    url: https://pkg.go.dev/testing#hdr-Benchmarks

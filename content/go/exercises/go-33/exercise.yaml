@@ -1,0 +1,43 @@
+title: Tu tipo aprende a presentarse
+kind: reparar
+intro: Una duración interna se mide en milisegundos. Queremos que su representación incluya la unidad y que cualquier consumidor de fmt.Stringer pueda mostrarla.
+why: Un tipo definido sobre int puede tener métodos propios. String() string declara cómo se representa sin cambiar la aritmética subyacente.
+objective: Hacé que Millis implemente String() devolviendo el número seguido de "ms".
+instructions:
+  - Usá fmt.Sprintf para conservar el valor y el signo.
+  - No cambies Render, que trabaja con fmt.Stringer.
+tests:
+  - id: t1
+    label: Duración normal
+    expression: Render(Millis(125)) == "125ms"
+    why: La representación conserva el valor.
+    failure: No retornes una etiqueta fija.
+  - id: t2
+    label: Duración cero
+    expression: Render(Millis(0)) == "0ms"
+    why: El cero también tiene unidad.
+    failure: No uses vacío como sinónimo de cero.
+  - id: t3
+    label: Diferencia negativa
+    expression: Render(Millis(-7)) == "-7ms"
+    why: El signo no se pierde.
+    failure: Convertí a int si querés formatear explícitamente su número.
+hints:
+  - El formato necesita %d y ms.
+  - int(m) conserva el valor numérico.
+  - El método ya tiene la firma que exige Stringer.
+review:
+  success: El comportamiento pertenece al tipo y Render sólo necesita la interfaz. Una unidad explícita evita interpretar mal números aislados.
+  pitfall: Llamar a fmt.Sprint(m) dentro de String puede invocar el mismo método otra vez.
+transfer: Agregá otro tipo de medida que funcione con el mismo Render.
+prediction:
+  question: ¿Qué método exige fmt.Stringer?
+  options:
+    - Render() string
+    - String() string
+    - Format() int
+  answer: 1
+  explanation: La interfaz define exactamente String() string.
+sources:
+  - title: fmt.Stringer
+    url: https://pkg.go.dev/fmt#Stringer

@@ -1,0 +1,12 @@
+id: boot-dev
+title: Boot.dev · Go
+url: https://www.boot.dev/courses/learn-golang
+languages:
+  - go
+category: ejercicios
+cost: mixto
+format: Lecciones y desafíos con progresión · Inglés
+description: Un recorrido de aprendizaje con desafíos de programación y una progresión visual orientada a desarrollo backend.
+why: Puede ayudarte si una estructura externa y los objetivos frecuentes te dan ganas de volver.
+caveat: La interactividad completa requiere membresía después de la prueba. El acceso gratuito conserva parte del material de lectura; verificá las condiciones antes de pagar.
+featured: false

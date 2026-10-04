@@ -1,0 +1,47 @@
+title: Lo que un quórum sí demuestra
+level: expert
+minutes: 20
+workshopId: quorum
+challengeType: kata
+intro: Antes de simular réplicas, comprobá la propiedad matemática que necesitás. Para membresía fija de N nodos, conjuntos de tamaños W y R deben intersectarse si W+R>N.
+why: La desigualdad estricta deja afuera conjuntos disjuntos que justo suman N. Además, sumar enteros sin cuidado puede desbordar y cambiar una condición verdadera a falsa.
+objective: Validá N>0 y 1≤W,R≤N. Devolvé si TODOS los conjuntos de esos tamaños deben intersectarse. Una configuración inválida devuelve error.
+instructions:
+  - Trabajá con uint64/u64, incluyendo su máximo representable.
+  - 'Evitá calcular W+R directamente: después de validar podés comparar W>N-R.'
+  - 'No presentes true como consenso o linealizabilidad: solo verifica intersección de conjuntos fijos.'
+tests:
+  - id: t1
+    label: Intersección estricta
+    expression: quorums_intersect(3,2,2)==Ok(true) && quorums_intersect(4,2,2)==Ok(false) && quorums_intersect(5,4,1)==Ok(false)
+    why: Detecta la frontera > frente a >=.
+    failure: Sumar exactamente N no obliga a compartir un nodo.
+  - id: t2
+    label: Configuraciones imposibles
+    expression: quorums_intersect(0,0,0).is_err() && quorums_intersect(3,0,1).is_err() && quorums_intersect(3,1,0).is_err() && quorums_intersect(3,4,1).is_err() && quorums_intersect(3,1,4).is_err()
+    why: Requiere validar ambos tamaños y N.
+    failure: Las precondiciones también hacen segura la resta.
+  - id: t3
+    label: Sin overflow al máximo
+    expression: quorums_intersect(u64::MAX,u64::MAX,u64::MAX)==Ok(true) && quorums_intersect(u64::MAX,1,u64::MAX)==Ok(true) && quorums_intersect(u64::MAX,1,u64::MAX-1)==Ok(false)
+    why: Comprueba la propiedad más allá de sumas representables.
+    failure: No dependas de wrapping ni de saturación para decidir la desigualdad.
+hints:
+  - Si W+R=N, todavía pueden ser dos conjuntos disjuntos.
+  - Con R≤N, la resta N-R es segura.
+  - La condición equivalente es W>N-R.
+review:
+  success: La función separa configuración inválida, falta de garantía de intersección e intersección garantizada. No evalúa versiones, escritores concurrentes, quórums flexibles ni protocolos de consenso.
+  pitfall: Intersección no elige un líder ni prueba que el valor seleccionado sea el más reciente.
+transfer: Enumerá todos los subconjuntos para N pequeño y verificá la fórmula contra una comprobación exhaustiva.
+prediction:
+  question: 'N=4, W=2, R=2: ¿la intersección está garantizada?'
+  options:
+    - 'No: {A,B} y {C,D} son disjuntos'
+    - Sí, ambos son mayoría
+    - Solo si los nodos usan Rust
+  answer: 0
+  explanation: Dos de cuatro no es mayoría estricta; la suma es N, no mayor que N.
+sources:
+  - title: Dynamo · quórums y replicación
+    url: https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf

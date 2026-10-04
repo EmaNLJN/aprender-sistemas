@@ -1,0 +1,44 @@
+title: Overflow con una política explícita
+intro: 'checked_add, saturating_add y wrapping_add representan tres decisiones distintas: fallar, limitar al máximo o continuar módulo el rango.'
+why: La aritmética de un contador circular no tiene la misma política que el tamaño de un buffer. Nombrar la operación evita depender implícitamente del perfil de compilación.
+objective: Para a y b u8, devolvé (resultado_checked, resultado_saturating, resultado_wrapping).
+instructions:
+  - Usá los tres métodos correspondientes de u8.
+  - La misma función debe definir el comportamiento con y sin overflow.
+tests:
+  - id: t1
+    label: Sin overflow
+    expression: sumar_politicas(10, 20) == (Some(30), 30, 30)
+    why: Las tres políticas coinciden cuando el resultado cabe.
+    failure: Aplicá la misma suma a y b en los tres métodos.
+  - id: t2
+    label: Cruzar el máximo
+    expression: sumar_politicas(250, 10) == (None, 255, 4)
+    why: Las políticas se distinguen ante overflow.
+    failure: 'u8 tiene 256 valores: wrapping continúa módulo 256.'
+  - id: t3
+    label: Frontera exacta
+    expression: sumar_politicas(255, 0) == (Some(255), 255, 255) && sumar_politicas(255, 1) == (None, 255, 0)
+    why: Llegar al máximo es válido; excederlo cambia el resultado.
+    failure: checked_add no falla solo por recibir 255.
+hints:
+  - Cada método toma b y opera sobre a.
+  - checked_add retorna Option; los otros retornan u8.
+  - Devolvé los tres resultados en el orden del contrato.
+review:
+  success: Cada resultado expresa una política independiente del perfil de compilación. Los límites 255 + 0 y 255 + 1 muestran dónde se separan.
+  pitfall: Saturar o envolver puede ocultar errores si lo que necesitabas era rechazar la operación. Elegí según el dominio, no para silenciar un fallo.
+transfer: Proponé una política para un índice circular y otra para calcular tamaño de una reserva. En Cargo, revisá perfiles debug/release antes de medir rendimiento real.
+prediction:
+  question: ¿Qué política conserva información explícita de que la suma no cabe?
+  options:
+    - wrapping_add
+    - saturating_add
+    - checked_add
+  answer: 2
+  explanation: checked_add devuelve None cuando no puede representar el resultado.
+sources:
+  - title: std · u8 arithmetic
+    url: https://doc.rust-lang.org/std/primitive.u8.html
+  - title: Cargo · overflow-checks
+    url: https://doc.rust-lang.org/cargo/reference/profiles.html#overflow-checks

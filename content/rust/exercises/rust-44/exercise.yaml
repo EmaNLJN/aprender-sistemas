@@ -1,0 +1,41 @@
+title: Decí de dónde puede venir la referencia
+kind: reparar
+visual: memory
+intro: Con dos entradas prestadas y una salida que podría venir de cualquiera, la firma necesita describir la relación de lifetimes.
+why: Las anotaciones no alargan la vida de los datos. Explican qué relaciones debe verificar el compilador en cada llamada.
+objective: Devolvé a si usar_a es true, o b si es false; agregá un lifetime compartido a entradas y salida.
+instructions:
+  - Declarar 'a en la función permite nombrar esa relación.
+  - No devuelvas String ni uses 'static para esconder el problema.
+tests:
+  - id: t1
+    label: Primera entrada
+    expression: '{ let a = String::from("local"); let b = String::from("remoto"); elegir(&a, &b, true) == "local" }'
+    why: Se devuelve una vista de a.
+    failure: Aplicá el mismo lifetime nombrado a ambos candidatos y la salida.
+  - id: t2
+    label: Segunda entrada
+    expression: '{ let a = String::from("local"); let b = String::from("remoto"); elegir(&a, &b, false) == "remoto" }'
+    why: El contrato admite cualquiera de los dos orígenes.
+    failure: El bool selecciona b cuando es false.
+  - id: t3
+    label: Entrada vacía válida
+    expression: '{ let a = String::new(); let b = String::from("x"); elegir(&a, &b, true).is_empty() }'
+    why: El contenido no altera la regla de selección.
+    failure: No reemplaces texto vacío por otro candidato.
+hints:
+  - El compilador necesita saber qué préstamos limitan la salida.
+  - "La forma es fn elegir<'a>(a: &'a str, b: &'a str, ...) -> &'a str."
+  - Conservá el cuerpo; repará únicamente la firma.
+review:
+  success: La firma permite un lifetime común durante el cual ambas referencias son válidas. La salida solo podrá usarse dentro de ese contrato.
+  pitfall: "'a no obliga a que ambos dueños se creen o se destruyan al mismo tiempo; limita la región donde puede usarse el préstamo resultante."
+transfer: Intentá usar el resultado fuera del bloque donde se creó b y observá la protección del compilador.
+prediction:
+  question: ¿Escribir 'a hace que un String local viva más tiempo?
+  options:
+    - Sí, evita su destrucción
+    - No, solo declara una relación que Rust verifica
+    - Sí, lo mueve al heap
+  answer: 1
+  explanation: Los lifetimes no administran la duración en ejecución; describen la validez de los préstamos.

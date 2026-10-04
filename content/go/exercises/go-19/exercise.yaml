@@ -1,0 +1,43 @@
+title: Los bytes no son letras
+kind: reparar
+intro: El contador de texto parece funcionar hasta que alguien escribe “ñ” o un emoji. len de un string mide bytes. Acá queremos contar puntos de código Unicode.
+why: 'range decodifica el texto UTF-8 en runes. Una rune no equivale siempre a un carácter visual: algunas grafías combinan varios puntos de código.'
+objective: Contá runes de un string UTF-8 válido, sin confundirlas con bytes ni grafemas.
+instructions:
+  - Recorré el string con range.
+  - Sumá una unidad por cada iteración.
+tests:
+  - id: t1
+    label: ASCII y vacío
+    expression: RuneCount("Go") == 2 && RuneCount("") == 0
+    why: Preserva los casos sencillos.
+    failure: No agregues un conteo fijo por cadena.
+  - id: t2
+    label: Unicode multibyte
+    expression: RuneCount("niño🚀") == 5
+    why: Una rune puede ocupar varios bytes.
+    failure: len(text) cuenta el almacenamiento, no los puntos de código.
+  - id: t3
+    label: Acento combinado
+    expression: RuneCount("é") == 2
+    why: Distingue runes de caracteres visuales.
+    failure: e y el acento combinado son dos puntos de código.
+hints:
+  - No indexes bytes para este conteo.
+  - for range text recorre sus runes.
+  - Un acumulador iniciado en cero basta.
+review:
+  success: Elegiste la unidad de texto adecuada para este contrato. Contar caracteres que una persona percibe requeriría segmentar grafemas.
+  pitfall: len([]rune(s)) tampoco cuenta grafemas; cuenta runes.
+transfer: Compará bytes, runes y grafemas de un emoji compuesto.
+prediction:
+  question: Para "ñ", len(text) y RuneCount(text) son…
+  options:
+    - 1 y 1
+    - 2 y 1
+    - 2 y 2
+  answer: 1
+  explanation: ñ ocupa dos bytes en UTF-8 y es un único punto de código.
+sources:
+  - title: Strings, bytes y runes
+    url: https://go.dev/blog/strings

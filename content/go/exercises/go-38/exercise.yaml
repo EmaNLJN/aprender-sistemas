@@ -1,0 +1,40 @@
+title: Capturar ahora o mirar después
+kind: reparar
+intro: 'Dos defer observan un contador: uno debe recordar el valor original y otro el valor al salir. Un argumento evaluado ahora y una clausura consultada después no hacen lo mismo.'
+why: Los argumentos de una llamada diferida se evalúan al registrar defer. Una clausura sin ese argumento puede leer la variable cuando finalmente se ejecuta.
+objective: Capture(start) devuelve start y start+1 usando las dos observaciones diferidas.
+instructions:
+  - Fijá el primer valor pasándolo como argumento al defer.
+  - Dejá que el segundo defer lea n al terminar.
+tests:
+  - id: t1
+    label: Valor inicial distinto
+    expression: func() bool { a,b:=Capture(5); return a==5 && b==6 }()
+    why: Separa captura inicial de lectura final.
+    failure: Pasá n como argumento en el primer defer.
+  - id: t2
+    label: Cero
+    expression: func() bool { a,b:=Capture(0); return a==0 && b==1 }()
+    why: La observación inicial puede ser cero legítimo.
+    failure: No uses el valor cero para decidir si se capturó.
+  - id: t3
+    label: Valor negativo
+    expression: func() bool { a,b:=Capture(-2); return a == -2 && b == -1 }()
+    why: La regla no depende de positivos.
+    failure: Incrementá una sola vez.
+hints:
+  - La primera función diferida puede recibir value int.
+  - Llamala con (n) al final del registro.
+  - La segunda clausura puede seguir leyendo n directamente.
+review:
+  success: Diferenciaste el momento de evaluar un argumento del momento de ejecutar el cuerpo. Es útil para medir cambios de estado sin confundir instantáneas.
+  pitfall: Defer retrasa la llamada, pero no retrasa automáticamente la evaluación de sus argumentos.
+transfer: Predecí qué ocurre si incrementás n dos veces antes del return.
+prediction:
+  question: En defer f(n), el valor de n se obtiene…
+  options:
+    - Cuando se registra defer
+    - Al terminar la función
+    - Cuando f lo pide
+  answer: 0
+  explanation: Los argumentos se evalúan al ejecutar la sentencia defer.

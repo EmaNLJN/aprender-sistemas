@@ -1,0 +1,44 @@
+title: Convertir no significa aceptar cualquier valor
+intro: TryFrom expresa una conversión que puede fallar; su tipo asociado Error comunica la causa. From queda para conversiones infalibles.
+why: Un newtype validado permite que el resto de la aplicación reciba un Puerto correcto sin repetir controles en cada función.
+objective: 'Implementá TryFrom<u16> para Puerto: cero da Err("cero"); otros valores construyen Puerto.'
+instructions:
+  - Declarar type Error es parte de la implementación.
+  - El método numero devuelve el valor validado.
+tests:
+  - id: t1
+    label: Conversión válida
+    expression: Puerto::try_from(8080).map(|p| p.numero()) == Ok(8080)
+    why: La conversión conserva el valor permitido.
+    failure: Creá Self(n) cuando n no es cero.
+  - id: t2
+    label: Conversión rechazada
+    expression: Puerto::try_from(0) == Err("cero")
+    why: El error se expresa como Result.
+    failure: No reemplaces silenciosamente cero por otro puerto.
+  - id: t3
+    label: Fronteras del tipo
+    expression: Puerto::try_from(1).map(|p| p.numero()) == Ok(1) && Puerto::try_from(u16::MAX).map(|p| p.numero()) == Ok(65535)
+    why: No se agregan límites que el contrato no exige.
+    failure: Todo u16 distinto de cero es aceptado.
+hints:
+  - TryFrom devuelve Result<Self, Self::Error>.
+  - Una guarda puede rechazar n == 0.
+  - Ok(Self(n)) construye el newtype validado.
+review:
+  success: La conversión es una operación comprobable del tipo y distingue fallos de valores válidos. Mover el tipo a un módulo con campo privado reforzaría la invariante para sus consumidores.
+  pitfall: Una conversión con as no llama automáticamente a TryFrom ni realiza esta validación de dominio.
+transfer: Empaquetá el tipo en una biblioteca con campo privado y documentá ejemplos. Para dependencias reales usá Cargo.toml y cargo add localmente; este laboratorio utiliza solo std.
+prediction:
+  question: ¿Por qué TryFrom corresponde mejor que From aquí?
+  options:
+    - Porque siempre es más rápido
+    - Porque la conversión tiene una entrada rechazada
+    - Porque u16 no puede moverse
+  answer: 1
+  explanation: From representa una conversión infalible; TryFrom devuelve Result cuando existe una condición de fallo.
+sources:
+  - title: std · TryFrom
+    url: https://doc.rust-lang.org/std/convert/trait.TryFrom.html
+  - title: Cargo · Specifying dependencies
+    url: https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html

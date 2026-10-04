@@ -1,0 +1,39 @@
+title: Una transmisión que sabe terminar
+intro: Un productor envía una secuencia. El consumidor usa range sobre el canal y necesita saber que no llegarán más mensajes, incluso si la secuencia está vacía.
+why: El productor que controla los envíos puede cerrar el canal al terminar. El consumidor sigue leyendo los mensajes disponibles y sale cuando se agotan.
+objective: Stream devuelve un canal que emite los valores en orden y luego se cierra.
+instructions:
+  - Usá una goroutine productora y registrá defer close(out).
+  - Enviá todos los valores; el consumidor del ejercicio agotará el canal.
+tests:
+  - id: t1
+    label: Orden y cierre
+    expression: func() bool { got:=[]int{}; for n:=range Stream([]int{3,1,4}) { got=append(got,n) }; return fmt.Sprint(got)=="[3 1 4]" }()
+    why: range debe recibir la secuencia y poder terminar.
+    failure: Cerrá el canal después del último envío.
+  - id: t2
+    label: Productor vacío
+    expression: func() bool { count:=0; for range Stream(nil){count++}; return count==0 }()
+    why: También debe cerrarse sin mensajes.
+    failure: El cierre no puede depender de entrar al loop.
+  - id: t3
+    label: Cero es dato
+    expression: func() bool { sum,count:=0,0; for n:=range Stream([]int{0,-2,0}){sum+=n;count++}; return sum == -2 && count==3 }()
+    why: Los ceros no indican fin por sí mismos.
+    failure: Usá close para señalar fin, no un valor especial.
+hints:
+  - El canal sólo de recepción se escribe <-chan int.
+  - El productor conserva el canal bidireccional local.
+  - defer close(out) cubre también la lista vacía.
+review:
+  success: Tu protocolo diferencia datos de finalización. Esta implementación supone que el consumidor recibe todo; detenerse antes requeriría cancelación para no dejar al productor bloqueado.
+  pitfall: Enviar a un canal cerrado causa panic; el dueño de los envíos debe controlar el cierre.
+transfer: Diseñá cómo avisarías al productor que el consumidor ya no quiere datos.
+prediction:
+  question: Un range sobre canal termina cuando…
+  options:
+    - Recibe un cero
+    - El canal se cierra y no quedan mensajes
+    - El productor deja de ejecutarse un instante
+  answer: 1
+  explanation: Cerrar el canal señala que no habrá más valores.

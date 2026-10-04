@@ -1,0 +1,47 @@
+title: Núcleo · Encontrá un hueco alineado
+level: advanced
+minutes: 20
+intro: 'Modelás un allocator con intervalos: reservar divide un hueco, liberar devuelve un bloque y coalescer une huecos contiguos. En este ejercicio construís un núcleo verificable del proyecto; las cuatro etapas del taller lo convierten después en una herramienta completa.'
+why: La capacidad total y el tamaño del mayor hueco responden preguntas distintas. La alineación también consume espacio aunque el objeto pedido sea pequeño.
+objective: Cada hueco es (inicio,tamaño) con enteros u64/uint64. Buscá el primero en el orden recibido que contenga tamaño pedido >0, empezando en una dirección múltiplo de alineación. Alineación debe ser potencia de dos y >0. Ignorá huecos cuyo inicio+tamaño desborde. No cambies los huecos. Devolvé índice y dirección; señalá ausencia si parámetros inválidos o nada entra.
+instructions:
+  - Calculá el padding hasta el próximo múltiplo sin sumar ciegamente alineación−1.
+  - El padding también ocupa parte del hueco disponible.
+  - Probá un final de intervalo que no cabe en u64.
+tests:
+  - id: t1
+    label: El padding puede descartar el primer hueco
+    expression: primer_ajuste(&[(3, 5), (16, 8)], 5, 4) == Some((1, 16)) && primer_ajuste(&[(3, 5)], 4, 4) == Some((0, 4))
+    why: Redondear 3 a 4 deja solo cuatro unidades útiles.
+    failure: Descontá el padding de la capacidad disponible.
+  - id: t2
+    label: First-fit y ajuste exacto
+    expression: primer_ajuste(&[(32, 8), (0, 32)], 8, 8) == Some((0, 32)) && primer_ajuste(&[(0, 4)], 4, 1) == Some((0, 0))
+    why: Se respeta el orden dado y el límite superior exclusivo.
+    failure: First-fit no significa buscar la dirección numéricamente menor.
+  - id: t3
+    label: Parámetros y overflow
+    expression: primer_ajuste(&[(0, 20)], 0, 4) == None && primer_ajuste(&[(0, 20)], 1, 3) == None && primer_ajuste(&[(0, 20)], 1, 0) == None && primer_ajuste(&[(u64::MAX-1, 4)], 1, 1) == None
+    why: Un intervalo desbordado no representa una región válida.
+    failure: checked_add valida el final del hueco antes de intentar usarlo.
+hints:
+  - Si inicio%alineación es cero, padding=0; si no, padding=alineación−resto.
+  - Comprobá padding<=tamaño del hueco antes de restarlo.
+  - El pedido entra si pedido<=hueco.tamaño−padding y las sumas son representables.
+review:
+  success: Los casos verifican alineación, orden first-fit y rechazo de intervalos no representables. La función solo encuentra una ubicación; reservarla requiere dividir el hueco después.
+  pitfall: Redondear el inicio sin descontar padding puede aceptar un bloque que termina fuera del hueco. No se manipulan punteros reales.
+transfer: Devolvé los intervalos libres anterior y posterior a la reserva y probá que no se solapan con lo asignado.
+prediction:
+  question: Hay huecos de 6 y 6 separados por un bloque vivo. ¿Entra una reserva contigua de 8?
+  options:
+    - 'Sí: hay 12 libres'
+    - 'No: ningún hueco tiene 8'
+    - Sí, si se cambia el nombre del bloque
+  answer: 1
+  explanation: La suma no vuelve contiguos los intervalos.
+sources:
+  - title: OSTEP · Free-space management
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/vm-freespace.pdf
+  - title: Writing an OS in Rust · Allocator designs
+    url: https://os.phil-opp.com/allocator-designs/

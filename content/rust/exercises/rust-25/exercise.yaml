@@ -1,0 +1,39 @@
+title: Una transición del semáforo
+intro: Modelar transiciones como funciones permite probar una máquina de estados sin temporizadores ni interfaz gráfica.
+why: Un enum limita el conjunto de estados válidos. Una función pura vuelve reproducible cada paso de la transición.
+objective: Implementá Rojo → Verde → Amarillo → Rojo.
+instructions:
+  - Devolvé una nueva variante sin mutar estado global.
+  - Conservá el derive para poder comparar resultados.
+tests:
+  - id: t1
+    label: Habilitar paso
+    expression: siguiente(Luz::Rojo) == Luz::Verde
+    why: Rojo conduce al estado habilitado.
+    failure: El próximo estado de Rojo es Verde.
+  - id: t2
+    label: Avisar cierre
+    expression: siguiente(Luz::Verde) == Luz::Amarillo
+    why: La transición intermedia no se omite.
+    failure: Verde no salta directamente a Rojo.
+  - id: t3
+    label: Ciclo completo
+    expression: siguiente(siguiente(siguiente(Luz::Rojo))) == Luz::Rojo
+    why: Tres pasos cierran el ciclo.
+    failure: Amarillo debe devolver Rojo.
+hints:
+  - Necesitás tres brazos.
+  - Cada brazo devuelve Luz, no texto.
+  - Mapeá la última variante otra vez a Luz::Rojo.
+review:
+  success: El comportamiento completo cabe en tres transiciones comprobables. derive(PartialEq) habilita comparar instancias del enum.
+  pitfall: Una máquina real podría tener eventos y errores; no los confundas con este avance incondicional.
+transfer: Agregá un evento Emergencia que lleve cualquier estado a Rojo.
+prediction:
+  question: ¿Qué aporta derive(PartialEq) aquí?
+  options:
+    - Permite comparar dos Luz con ==
+    - Hace que Luz sea automáticamente Copy
+    - Ejecuta la transición en paralelo
+  answer: 0
+  explanation: PartialEq define igualdad; otros comportamientos requieren otros traits.

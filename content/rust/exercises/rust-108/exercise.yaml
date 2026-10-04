@@ -1,0 +1,46 @@
+title: Kata · Seguí el hilo de los predecesores
+visual: collections
+intro: El explorador guardó quién descubrió cada nodo. Para mostrar el trayecto, necesitás caminar hacia atrás sin quedar atrapado si el registro está incompleto o es cíclico.
+why: 'Una tabla de predecesores separa la búsqueda del armado del camino. Los índices son datos: Rust evita accesos inválidos, pero vos definís cómo reportar un registro inconsistente.'
+objective: prev[n] contiene el predecesor del nodo n. Devolvé la ruta de inicio a fin, ambos incluidos. Si inicio o fin no existen, falta un enlace antes de llegar a inicio, hay un padre fuera de rango o aparece un ciclo en el tramo recorrido, devolvé None. inicio==fin válido produce [inicio], sin seguir su padre.
+instructions:
+  - Empezá en fin y acumulá el trayecto al revés.
+  - Limitá el recorrido a prev.len() nodos para detectar un ciclo.
+  - Al alcanzar inicio, invertí el vector y devolvelo.
+tests:
+  - id: t1
+    label: Volver y dar vuelta la ruta
+    expression: reconstruir_ruta(&[None, Some(0), Some(0), Some(1)], 0, 3) == Some(vec![0, 1, 3])
+    why: Se devuelve inicio→fin, aunque los enlaces se recorren en sentido inverso.
+    failure: reverse se aplica al llegar al origen, no a cada paso.
+  - id: t2
+    label: Ruta trivial y enlace ausente
+    expression: reconstruir_ruta(&[None, None], 0, 0) == Some(vec![0]) && reconstruir_ruta(&[None, None], 0, 1) == None && reconstruir_ruta(&[], 0, 0) == None
+    why: Coincidir no vuelve válido un índice inexistente; un origen real no necesita padre.
+    failure: Validá índices antes del caso inicio==fin.
+  - id: t3
+    label: Registro corrupto sin bucle infinito
+    expression: reconstruir_ruta(&[None, Some(2), Some(1)], 0, 2) == None && reconstruir_ruta(&[None, Some(9)], 0, 1) == None && reconstruir_ruta(&[None], 0, 7) == None
+    why: Ciclos e índices ajenos al slice producen None de forma acotada.
+    failure: Un camino simple no puede visitar más nodos que la longitud de prev.
+hints:
+  - 'get(actual) devuelve Option<&Option<usize>>: hay una ausencia del índice y otra del padre.'
+  - copied().flatten() convierte esas dos capas en Option<usize>.
+  - El operador ? propaga None y el límite del for detecta ciclos sin otro HashSet.
+review:
+  success: 'Los casos verifican orientación, extremos y terminación ante registros inválidos. Solo se exige validar la cadena recorrida: otros componentes pueden contener enlaces ajenos.'
+  pitfall: Un predecesor no demuestra por sí mismo que el camino sea mínimo. Esa propiedad depende del algoritmo que construyó la tabla.
+transfer: Modificá la búsqueda BFS anterior para guardar predecesores y mostrar tanto el orden visitado como la ruta final.
+prediction:
+  question: Si hay 4 nodos y seguís 4 predecesores sin llegar al inicio ni salir del registro, ¿qué pasó?
+  options:
+    - Existe un camino mínimo de 5 nodos distintos
+    - Se repitió un nodo de la cadena
+    - Hace falta ordenar el slice
+  answer: 1
+  explanation: 'Con solo cuatro índices posibles, una cadena más larga repite algún nodo: su enlace determinista forma un ciclo.'
+sources:
+  - title: std · Option
+    url: https://doc.rust-lang.org/std/option/enum.Option.html
+  - title: std · Slice methods
+    url: https://doc.rust-lang.org/std/primitive.slice.html

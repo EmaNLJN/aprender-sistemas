@@ -1,0 +1,17 @@
+id: rust-kv-memory
+title: Guardá y recuperá dos valores
+minutes: 25
+objective: Construir el núcleo del proyecto sin sumar todavía archivos ni red.
+task: 'Creá un almacén de texto en memoria con dos operaciones: guardar una clave con su valor y buscar una clave. Empezá invocándolas directamente desde un ejemplo; usá las claves nombre y ciudad. Decidí qué representa una clave ausente y qué pasa al guardar dos veces la misma clave. Mantené las operaciones separadas de la impresión en pantalla.'
+doneWhen: Recuperás ambas claves, sobrescribís una y distinguís una clave ausente de un valor vacío.
+resourceIds:
+  - rust-100
+  - rust-examples
+quiz:
+  question: ¿Por qué conviene distinguir una clave ausente de una clave cuyo valor es un texto vacío?
+  options:
+    - Porque son estados distintos que podrían necesitar respuestas distintas.
+    - Porque un texto vacío siempre ocupa más memoria.
+    - Porque todo almacén debe prohibir valores vacíos.
+  answer: 0
+  explanation: La ausencia indica que la clave no está almacenada. Un valor vacío puede ser un valor válido. Confundirlos borra información del modelo.

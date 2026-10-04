@@ -1,0 +1,17 @@
+# Orden de la biblioteca. Los IDs de recursos y pasos son inmutables: indexan el progreso.
+resources:
+  - rust-100
+  - rust-rover
+  - rustlings
+  - rust-brown
+  - rust-google
+  - codecrafters
+  - protohackers
+  - go-tour
+  - go-tests
+  - go-exercism
+  - gophercises
+  - boot-dev
+  - context7
+  - rust-examples
+  - go-examples

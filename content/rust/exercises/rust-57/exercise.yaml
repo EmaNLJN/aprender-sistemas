@@ -1,0 +1,43 @@
+title: Un tipo asociado para cada fuente
+visual: generics
+intro: Un tipo asociado define una parte del contrato elegida por cada implementación. Fuente::Item indica qué dato entrega esa fuente.
+why: La función consumidora puede devolver elementos del tipo correcto sin decidir si son números, Strings u otra estructura.
+objective: leer_dos extrae hasta dos elementos de cualquier Fuente, deteniéndose ante None.
+instructions:
+  - Implementá Fuente para una cola de Strings.
+  - La función genérica debe devolver Vec<F::Item> sin Copy ni Clone.
+tests:
+  - id: t1
+    label: Mover Strings
+    expression: '{ let mut f = Textos(VecDeque::from([String::from("a"), String::from("b"), String::from("c")])); leer_dos(&mut f) == vec!["a", "b"] && f.siguiente() == Some(String::from("c")) }'
+    why: El consumo se limita a dos valores propios.
+    failure: No recolectes toda la fuente ni clones sus elementos.
+  - id: t2
+    label: Fuente agotada
+    expression: '{ let mut f = Textos(VecDeque::new()); leer_dos(&mut f).is_empty() }'
+    why: None detiene la lectura.
+    failure: La salida puede quedar vacía.
+  - id: t3
+    label: Otro Item
+    expression: '{ struct Uno(bool); impl Fuente for Uno { type Item = u8; fn siguiente(&mut self) -> Option<u8> { if self.0 { self.0 = false; Some(9) } else { None } } } leer_dos(&mut Uno(true)) == vec![9u8] }'
+    why: La salida adopta el tipo asociado u8.
+    failure: Referí el elemento como F::Item, no String fijo.
+hints:
+  - Textos delega en pop_front.
+  - F::Item nombra el tipo seleccionado por el impl.
+  - Un bucle de dos pasos con match conserva la generalidad.
+review:
+  success: El consumidor funciona con distintas fuentes y conserva el tipo de sus datos. El tipo asociado evita fijarlo dentro del algoritmo.
+  pitfall: Un tipo asociado no es una variable que cambie de tipo entre llamadas del mismo impl.
+transfer: Reescribí Fuente como Iterator y observá qué consumidores ya vienen implementados.
+prediction:
+  question: Para un mismo impl Fuente for Textos, ¿puede Item ser String en una llamada y u32 en otra?
+  options:
+    - 'No: el impl fija su tipo asociado'
+    - Sí, si siguiente devuelve None antes
+    - Sí, depende del contenido
+  answer: 0
+  explanation: La asociación forma parte del contrato estático de esa implementación.
+sources:
+  - title: Rust Book · Associated types
+    url: https://doc.rust-lang.org/book/ch20-02-advanced-traits.html

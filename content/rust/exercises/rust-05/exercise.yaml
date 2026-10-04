@@ -1,0 +1,43 @@
+title: Paquetes completos y bytes restantes
+visual: memory
+intro: Una tupla reúne resultados de tipos conocidos. La división entera calcula paquetes completos; el resto % conserva lo que no entra.
+why: 'Devolver ambos valores evita perder información y mantiene una relación verificable: completos × tamaño + resto = bytes.'
+objective: Dividí una cantidad u32 de bytes en paquetes de 64 y devolvé (paquetes_completos, resto).
+instructions:
+  - Usá / para la cantidad completa y % para el resto.
+  - Devolvé una tupla (u32, u32).
+tests:
+  - id: t1
+    label: Paquete exacto
+    expression: paquetes(128) == (2, 0)
+    why: Un múltiplo no genera sobrante.
+    failure: El resto de 128 dividido por 64 es cero.
+  - id: t2
+    label: Queda un fragmento
+    expression: paquetes(150) == (2, 22)
+    why: La parte fraccionaria no se redondea.
+    failure: La división entera descarta la fracción; recuperala con %.
+  - id: t3
+    label: Sin bytes
+    expression: paquetes(0) == (0, 0)
+    why: El elemento neutro conserva ambos ceros.
+    failure: No fuerces un paquete cuando no hay contenido.
+hints:
+  - Una tupla se escribe con paréntesis y coma.
+  - 150 / 64 produce 2 con enteros.
+  - El cuerpo puede ser (bytes / 64, bytes % 64).
+review:
+  success: La tupla representa dos aspectos del mismo cálculo. Su orden forma parte del contrato.
+  pitfall: 'División entera no significa redondeo al más cercano: para enteros sin signo trunca hacia abajo.'
+transfer: Desestructurá el resultado con let (completos, resto) y reconstruí bytes.
+prediction:
+  question: Con enteros u32, ¿cuánto es 63 / 64?
+  options:
+    - '0'
+    - '1'
+    - '0.984375'
+  answer: 0
+  explanation: Ambos operandos son enteros, por lo que el resultado también lo es.
+sources:
+  - title: Rust Book · Data types
+    url: https://doc.rust-lang.org/book/ch03-02-data-types.html

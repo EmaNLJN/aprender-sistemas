@@ -1,0 +1,43 @@
+title: Una pila de tareas
+visual: collections
+intro: Vec::push agrega al final y pop retira de ese mismo extremo. Juntos implementan una pila LIFO.
+why: La elección de estructura determina el orden de trabajo. Una pila favorece el último elemento recibido, como en deshacer acciones.
+objective: Apilá las tareas en el orden recibido y devolvé el orden de extracción usando pop.
+instructions:
+  - Copiá los i32 a un Vec y retiralos hasta vaciarlo.
+  - El resultado debe estar en orden inverso, sin perder duplicados.
+tests:
+  - id: t1
+    label: Último entra, primero sale
+    expression: procesar_pila(&[1, 2, 3]) == vec![3, 2, 1]
+    why: La estructura cumple LIFO.
+    failure: pop retira el extremo final.
+  - id: t2
+    label: Duplicados
+    expression: procesar_pila(&[4, 4, 7]) == vec![7, 4, 4]
+    why: Cada tarea se procesa, aunque repita valor.
+    failure: No conviertas a un conjunto.
+  - id: t3
+    label: Sin tareas
+    expression: procesar_pila(&[]).is_empty()
+    why: La primera extracción puede no existir.
+    failure: while let maneja el None de pop.
+hints:
+  - to_vec crea un vector propio a partir del slice.
+  - while let Some(tarea) = pila.pop() repite mientras haya elementos.
+  - Agregá cada elemento retirado a salida.
+review:
+  success: Cada extracción reduce la pila y garantiza terminar. El orden observado revela la política de la estructura.
+  pitfall: 'Una pila no es una cola FIFO: elegir pop del final cambia qué tarea va primero.'
+transfer: Compará este orden con el ejercicio de VecDeque.
+prediction:
+  question: Después de push(1), push(2), ¿qué devuelve el primer pop?
+  options:
+    - Some(1)
+    - None
+    - Some(2)
+  answer: 2
+  explanation: pop retira el último elemento insertado.
+sources:
+  - title: std · Vec::pop
+    url: https://doc.rust-lang.org/std/vec/struct.Vec.html#method.pop

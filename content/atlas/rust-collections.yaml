@@ -1,0 +1,27 @@
+id: rust-collections
+level: medium
+category: Datos y memoria
+title: La colección expresa parte del algoritmo
+summary: Arrays tienen longitud fija; Vec crece; slices prestan una secuencia. HashMap busca por clave, BTreeSet ordena elementos únicos y VecDeque sirve para colas.
+why: Orden, unicidad, propiedad y forma de acceso son contratos distintos. Elegir una estructura puede resolver una parte de la lógica sin código extra.
+code: |-
+  let mut datos = vec![3, 1, 3];
+  let vista: &[i32] = &datos[1..];
+  assert_eq!(vista, &[1, 3]);
+  datos.push(8); // la vista ya no se usa después
+  let primero = datos.get(0); // Option<&i32>
+explanation: 'Vec posee sus elementos; &[T] presta un tramo y no obliga al llamador a usar un Vec. get comunica ausencia con Option. HashMap no garantiza orden de iteración: para una salida estable, ordená o elegí una colección ordenada.'
+comparison: Un Vec se parece a una lista dinámica, pero su elemento T es homogéneo y prestar una vista limita las mutaciones concurrentes sobre el dueño. No tiene el contrato de un array JavaScript heterogéneo.
+pitfall: Vec::dedup elimina duplicados consecutivos; no elimina todas las repeticiones separadas sin ordenar o usar otra estrategia.
+quiz:
+  question: ¿Qué pide menos al llamador si solo leés una secuencia?
+  options:
+    - '&Vec<T>'
+    - '&[T]'
+    - Vec<T> propio siempre
+  answer: 1
+  explanation: Un slice acepta vistas de arrays, vectores y subrangos sin exigir propiedad ni una colección concreta.
+labId: rust-35
+source:
+  title: std · Collections
+  url: https://doc.rust-lang.org/std/collections/index.html

@@ -1,0 +1,39 @@
+title: Mirar el buzón sin quedarse esperando
+intro: Un panel consulta si ya hay una respuesta. Debe volver inmediatamente si no la hay, y distinguir un mensaje cero de la ausencia de mensaje.
+why: select con default permite una operación no bloqueante. La recepción con ok distingue un canal cerrado y agotado de un mensaje real.
+objective: TryReceive devuelve un mensaje listo y true; si no hay mensaje o el canal está agotado, 0 y false.
+instructions:
+  - Usá select con un case de recepción y default.
+  - Propagá el ok de la recepción; no agregues sleeps ni loops de espera.
+tests:
+  - id: t1
+    label: Mensaje listo, incluso cero
+    expression: func() bool { c:=make(chan int,1); c<-0; n,ok:=TryReceive(c); return n==0 && ok && len(c)==0 }()
+    why: Recibir cero no significa ausencia.
+    failure: Leé el bool de la recepción.
+  - id: t2
+    label: Sin mensaje
+    expression: func() bool { c:=make(chan int); n,ok:=TryReceive(c); return n==0 && !ok }()
+    why: Debe regresar sin esperar emisor.
+    failure: El default evita el bloqueo.
+  - id: t3
+    label: Cerrado y nil
+    expression: func() bool { c:=make(chan int); close(c); _,a:=TryReceive(c); _,b:=TryReceive(nil); return !a && !b }()
+    why: Cerrado agotado y canal nil no entregan datos nuevos.
+    failure: La rama default permite manejar también un canal nil.
+hints:
+  - select elige una comunicación lista.
+  - default se usa cuando ninguna puede avanzar.
+  - El case puede declarar value, ok := <-ch.
+review:
+  success: Una consulta no bloqueante informa el estado que observó en ese instante. No garantiza que llegue o no llegue un mensaje inmediatamente después.
+  pitfall: Repetir esta consulta en un loop sin espera puede desperdiciar CPU; no es un reemplazo universal de recibir normalmente.
+transfer: Explicá cuándo conviene esperar en una recepción normal en vez de consultar.
+prediction:
+  question: En select, si el canal nil es la única comunicación y hay default…
+  options:
+    - Se bloquea siempre
+    - Ejecuta default
+    - Provoca panic
+  answer: 1
+  explanation: Una comunicación sobre nil no está lista; default permite continuar.

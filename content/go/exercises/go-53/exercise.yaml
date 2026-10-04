@@ -1,0 +1,39 @@
+title: Un conjunto que conserva la primera aparición
+intro: Querés eliminar duplicados de códigos o nombres, manteniendo el orden de llegada. La pertenencia necesita una clave de map válida.
+why: comparable permite usar T como clave y compararlo por igualdad. No supone que T se pueda ordenar; el orden se conserva recorriendo el slice original.
+objective: Unique[T comparable] devuelve cada valor sólo la primera vez que aparece, en memoria independiente.
+instructions:
+  - Usá un map[T]bool para recordar elementos vistos.
+  - Agregá al resultado sólo la primera aparición.
+tests:
+  - id: t1
+    label: Orden de números
+    expression: fmt.Sprint(Unique([]int{3,1,3,2,1})) == "[3 1 2]"
+    why: Un conjunto no requiere ordenar la salida.
+    failure: Recorré la entrada, no el map final.
+  - id: t2
+    label: Strings y cero del tipo
+    expression: fmt.Sprint(Unique([]string{"","go","","rust","go"})) == "[ go rust]"
+    why: Un string vacío también puede ser un valor único.
+    failure: No uses el cero como marca de posición inexistente.
+  - id: t3
+    label: Independencia y vacío
+    expression: func() bool { a:=[]int{4,4}; b:=Unique(a); if len(b)!=1{return false}; b[0]=9; return a[0]==4 && len(Unique[int](nil))==0 }()
+    why: La salida filtrada no modifica la fuente.
+    failure: Creá otro slice para el resultado.
+hints:
+  - El cero de un map[T]bool es false.
+  - Marcá el elemento después de decidir que es nuevo.
+  - append conserva el orden de primeras apariciones.
+review:
+  success: Combinaste restricción estática, índice de pertenencia y orden de entrada. Para tipos con igualdad peculiar, como float NaN, el significado de duplicado requiere más diseño.
+  pitfall: '[]int no es comparable y no puede usarse como clave directamente.'
+transfer: Explicá por qué Unique([][]int{...}) no cumple esta restricción.
+prediction:
+  question: ¿Por qué necesitamos comparable y no any?
+  options:
+    - Para ordenar de menor a mayor
+    - Para permitir T como clave del map
+    - Para convertir T a string
+  answer: 1
+  explanation: El map necesita claves comparables por igualdad.

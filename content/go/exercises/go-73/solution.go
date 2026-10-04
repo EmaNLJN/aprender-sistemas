@@ -1,0 +1,7 @@
+package main
+
+func ReverseBytes(text string) string {
+    data:=[]byte(text)
+    for i,j:=0,len(data)-1;i<j;i,j=i+1,j-1{data[i],data[j]=data[j],data[i]}
+    return string(data)
+}

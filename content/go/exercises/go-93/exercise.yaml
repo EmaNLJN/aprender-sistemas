@@ -1,0 +1,42 @@
+title: La caché que recuerda qué usaste último
+kind: reparar
+imports:
+  - container/list
+intro: 'Una caché LRU expulsa el elemento usado menos recientemente. Leer un dato también cuenta como uso: olvidarlo hace que se expulse una entrada todavía importante.'
+why: El map localiza entradas y una lista mantiene recencia. Mover al frente al leer o actualizar permite retirar del final al exceder la capacidad.
+objective: Corregí Get para actualizar recencia; conservá Put y una capacidad no positiva como caché desactivada.
+instructions:
+  - Cuando Get encuentra una clave, mové su elemento al frente de order.
+  - Una lectura fallida no cambia la estructura.
+tests:
+  - id: t1
+    label: Leer evita la expulsión
+    expression: func() bool {c:=NewLRU(2);c.Put("a","A");c.Put("b","B");c.Get("a");c.Put("c","C");a,ok:=c.Get("a");_,gone:=c.Get("b");return ok && a=="A" && !gone}()
+    why: La consulta debe renovar recencia.
+    failure: Mové el elemento encontrado antes de devolverlo.
+  - id: t2
+    label: Actualizar no duplica
+    expression: func() bool {c:=NewLRU(2);c.Put("a","1");c.Put("b","2");c.Put("a","3");c.Put("c","4");a,ok:=c.Get("a");_,b:=c.Get("b");return ok && a=="3" && !b && len(c.index)==2 && c.order.Len()==2}()
+    why: Actualizar conserva una sola entrada y cuenta como uso.
+    failure: El map y la lista deben describir los mismos elementos.
+  - id: t3
+    label: Desactivada y ausencias
+    expression: func() bool {c:=NewLRU(0);c.Put("x","X");_,ok:=c.Get("x");d:=NewLRU(1);d.Put("a","A");_,missing:=d.Get("z");return !ok && !missing && d.order.Len()==1}()
+    why: Una lectura ausente no fabrica entradas.
+    failure: Conservá la guardia de clave inexistente.
+hints:
+  - e ya es *list.Element.
+  - La lista ofrece MoveToFront(e).
+  - Insertá esa operación sólo en la ruta encontrada.
+review:
+  success: La política de recencia quedó reflejada en secuencias de operaciones, no sólo en valores aislados. La caché es secuencial y necesita NewLRU para inicializarse.
+  pitfall: Esta estructura no es segura para acceso concurrente sin sincronización adicional.
+transfer: Agregá estadísticas de hits y misses sin alterar la política de expulsión.
+prediction:
+  question: En una LRU, consultar una clave existente…
+  options:
+    - No modifica el orden
+    - La vuelve la usada más recientemente
+    - Siempre la elimina
+  answer: 1
+  explanation: Least recently used considera tanto lecturas exitosas como escrituras según este contrato.

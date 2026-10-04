@@ -1,0 +1,17 @@
+id: go-protocol
+title: Definí una conversación por red
+minutes: 25
+objective: Especificar límites de mensajes y respuestas antes de implementar el transporte.
+task: 'Definí cómo usar SET y GET por una conexión: un comando por línea y una respuesta por línea. Escribí respuestas para éxito, clave ausente y comando inválido. Mantené una conexión y procesamiento secuencial como alcance. Prepará tres conversaciones y pasá sus comandos por el intérprete que ya construiste.'
+doneWhen: Las tres conversaciones tienen respuestas inequívocas y una regla explícita para reconocer un comando completo.
+resourceIds:
+  - protohackers
+  - codecrafters
+quiz:
+  question: ¿Puede una lectura de una conexión TCP entregar solo una parte de un comando?
+  options:
+    - No, cada envío conserva exactamente sus límites al leerlo.
+    - Solo si el comando está escrito en Rust.
+    - Sí; la aplicación debe reunir bytes hasta reconocer un mensaje completo.
+  answer: 2
+  explanation: TCP ofrece un flujo de bytes. Tus reglas de delimitación o longitud permiten reconstruir los mensajes independientemente de cómo se distribuyan las lecturas.

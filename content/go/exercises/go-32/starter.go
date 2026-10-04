@@ -1,0 +1,7 @@
+package main
+
+type BrokenReader struct{}
+func (BrokenReader) Read(p []byte) (int,error) { return 0, fmt.Errorf("fuente rota") }
+func ReadText(r io.Reader) (string,error) {
+    return "", nil
+}

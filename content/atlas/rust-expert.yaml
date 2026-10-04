@@ -1,0 +1,38 @@
+id: rust-expert
+level: expert
+category: Datos y memoria
+title: 'Límites avanzados: Drop, punteros y macros'
+summary: Box posee una asignación; Rc/Weak modelan propiedad compartida en un thread; RefCell comprueba préstamos en ejecución. Drop gestiona limpieza. unsafe y macros requieren revisar contratos específicos.
+why: Estas herramientas cubren representaciones o abstracciones que el modelo cotidiano no expresa por sí solo. Su uso debe tener una necesidad y una justificación local claras.
+code: |-
+  fn primero(datos: &[u32]) -> Option<u32> {
+      if datos.is_empty() { return None; }
+      // SAFETY: el slice mantiene un u32 válido y alineado.
+      Some(unsafe { *datos.as_ptr() })
+  }
+  // La versión habitual sería datos.first().copied().
+  macro_rules! doble { ($x:expr) => { 2 * $x }; }
+explanation: 'Drop enlaza limpieza con vida del dueño; Weak evita retener contenido por un enlace no propietario. unsafe permite operaciones concretas cuya validez debés garantizar: no desactiva todas las reglas. macro_rules genera Rust que después se verifica.'
+comparison: Frente al GC, Drop permite limpieza asociada al alcance pero no sustituye todas las políticas de recursos. Frente a metaprogramación por strings, macro_rules reconoce fragmentos sintácticos y genera código tipado.
+pitfall: Pasar tests no prueba que un bloque unsafe sea correcto. Rc puede formar ciclos; RefCell puede rechazar préstamos; una macro puede duplicar efectos si repite una expresión.
+quiz:
+  question: ¿Unsafe vuelve válida cualquier dirección de memoria?
+  options:
+    - Sí
+    - 'No: las obligaciones de validez siguen existiendo'
+    - Solo con optimizaciones
+  answer: 1
+  explanation: Quien escribe unsafe debe demostrar que respeta las reglas que esa operación requiere.
+labId: rust-72
+source:
+  title: Rust Book · Advanced features
+  url: https://doc.rust-lang.org/book/ch20-00-advanced-features.html
+furtherSources:
+  - title: Especialización · Punteros inteligentes
+    url: https://doc.rust-lang.org/book/ch15-00-smart-pointers.html
+  - title: Especialización · Drop y recursos
+    url: https://doc.rust-lang.org/std/ops/trait.Drop.html
+  - title: Especialización · Macros declarativas
+    url: https://doc.rust-lang.org/reference/macros-by-example.html
+  - title: Especialización · Unsafe
+    url: https://doc.rust-lang.org/reference/unsafe-keyword.html

@@ -1,0 +1,30 @@
+# Talleres de Sistemas por dominio, en orden. Los IDs son inmutables: indexan el progreso.
+lowlevel:
+  - cache
+  - heap
+  - mmu
+  - tlb
+  - vm
+  - stack
+  - scheduler
+  - interrupts
+infra:
+  - wal
+  - lsm
+  - quorum
+  - clocks
+  - network
+  - backpressure
+  - balancing
+  - sharding
+play:
+  - transforms
+  - raster
+  - raycast
+  - pathfinding
+  - physics
+  - life
+  - algebra
+  - minimax
+pc:
+  - pc

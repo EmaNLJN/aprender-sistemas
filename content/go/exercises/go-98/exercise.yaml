@@ -1,0 +1,48 @@
+title: Un byte extra para detectar el exceso
+kind: reparar
+imports:
+  - io
+  - strings
+intro: Leer como máximo limit bytes protege la memoria, pero no permite saber si la entrada tenía exactamente ese tamaño o era mayor. Para distinguirlos, alcanza observar un byte adicional.
+why: LimitReader limita consumo y ReadAll recoge sólo esa vista. Si llegan limit+1 bytes, sabemos que el contrato de tamaño se excedió sin consumir toda la fuente.
+objective: ReadLimited acepta hasta limit bytes; si excede, devuelve nil y error. limit está entre 0 y 1000000; un negativo es error.
+instructions:
+  - Leé mediante io.LimitReader con limit+1.
+  - Después compará la cantidad obtenida y rechazá el exceso.
+tests:
+  - id: t1
+    label: Exactamente al límite
+    expression: func() bool {data,e:=ReadLimited(strings.NewReader("abcd"),4);return e==nil && string(data)=="abcd"}()
+    why: El tamaño máximo está permitido.
+    failure: La comparación de exceso debe ser estricta.
+  - id: t2
+    label: Exceso con consumo acotado
+    expression: func() bool {r:=strings.NewReader("abcdef");data,e:=ReadLimited(r,3);return data==nil && e!=nil && r.Len()==2}()
+    why: Sólo se consumen limit+1 bytes para decidir.
+    failure: Truncar en limit ocultaría que la fuente era mayor.
+  - id: t3
+    label: Límite cero y negativo
+    expression: func() bool {a,e:=ReadLimited(strings.NewReader(""),0);b,f:=ReadLimited(strings.NewReader("x"),0);_,g:=ReadLimited(strings.NewReader("x"),-1);return e==nil && len(a)==0 && b==nil && f!=nil && g!=nil}()
+    why: Cero permite únicamente una fuente vacía.
+    failure: Aun con límite cero, necesitás inspeccionar si existe un byte.
+hints:
+  - Leé un byte más que el máximo permitido.
+  - Si len(data)>limit, devolvé nil y error.
+  - Conservá la guardia antes de sumar uno.
+review:
+  success: Diferenciaste limitar consumo de validar tamaño. La técnica detecta exceso con memoria acotada y deja sin consumir el resto de la fuente.
+  pitfall: El llamador debe decidir qué hacer con una fuente parcialmente consumida después del rechazo.
+transfer: Usá el mismo patrón para acotar un cuerpo HTTP antes de decodificarlo.
+prediction:
+  question: Si sólo leés limit bytes, ¿podés distinguir tamaño exacto de exceso?
+  options:
+    - Sí, siempre
+    - No, ambos pueden devolver esa cantidad
+    - Sólo con strings ASCII
+  answer: 1
+  explanation: Necesitás una observación adicional para saber si había más datos.
+sources:
+  - title: io.LimitReader
+    url: https://pkg.go.dev/io#LimitReader
+  - title: io.ReadAll
+    url: https://pkg.go.dev/io#ReadAll

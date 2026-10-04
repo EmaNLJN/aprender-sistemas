@@ -1,0 +1,17 @@
+id: rust-measure
+title: Medí antes de optimizar
+minutes: 25
+objective: Formular una pregunta de rendimiento que tus datos puedan responder.
+task: Prepará un lote fijo de búsquedas sobre el mismo conjunto de claves. Medí el lote completo varias veces sin imprimir en cada iteración. Anotá cantidad de operaciones, configuración de compilación y resultados. Si comparás dos variantes, cambiá solo una decisión y verificá que produzcan los mismos resultados. No interpretes una sola ejecución como una tendencia.
+doneWhen: Tenés varias mediciones comparables y una frase que explica qué mediste y qué todavía no sabés.
+resourceIds:
+  - rust-google
+  - context7
+quiz:
+  question: Una variante tardó menos una sola vez. ¿Qué podés concluir?
+  options:
+    - Que siempre será más rápida para cualquier carga.
+    - Que esa ejecución fue más corta; hacen falta mediciones comparables para evaluar una tendencia.
+    - Que sus resultados necesariamente son correctos.
+  answer: 1
+  explanation: La carga, la compilación, otras tareas y el ruido pueden afectar los tiempos. Medir varias veces bajo condiciones comparables ayuda a sostener una conclusión limitada.

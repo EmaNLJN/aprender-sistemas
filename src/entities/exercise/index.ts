@@ -5,14 +5,11 @@ export { mergeRecord } from './model/merge-record';
 export type {
   ChallengeType,
   Exercise,
-  ExerciseDraft,
   ExerciseKind,
   ExercisePrediction,
   ExerciseReview,
   ExerciseSource,
   ExerciseTest,
-  ExerciseTestDraft,
   ExerciseVisual,
   ExerciseLanguage,
-  QuestDraft,
 } from './model/types';

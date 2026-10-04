@@ -1,0 +1,1 @@
+fn interseccion(a:[i32;4],b:[i32;4])->Option<[i32;4]>{None}

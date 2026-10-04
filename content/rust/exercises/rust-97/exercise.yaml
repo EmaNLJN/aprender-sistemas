@@ -1,0 +1,47 @@
+title: 'Tiempo lógico: expiración sin sleeps'
+level: expert
+minutes: 18
+visual: collections
+intro: Una caché con TTL puede recibir el tiempo como dato. Así se prueban fronteras exactas sin esperar ni depender del reloj del sistema.
+why: Inyectar tiempo separa política de infraestructura. La aritmética del deadline también debe manejarse como una operación que puede fallar.
+objective: CacheTtl::poner guarda valor hasta ahora + ttl, devolviendo Err("tiempo") sin cambios si desborda. leer devuelve Some solo mientras ahora < vence; si venció, elimina la entrada. TTL cero vence de inmediato.
+instructions:
+  - Usá checked_add antes de insertar.
+  - leer recibe &mut self porque puede eliminar datos vencidos.
+tests:
+  - id: t1
+    label: Frontera y limpieza
+    expression: '{ let mut c = CacheTtl::default(); c.poner("x", 4, 10, 5).unwrap(); c.leer("x", 14) == Some(4) && c.leer("x", 15) == None && !c.datos.contains_key("x") }'
+    why: La igualdad con vence ya es expiración y elimina el dato.
+    failure: Usá ahora < vence, no <=.
+  - id: t2
+    label: Reemplazo y TTL cero
+    expression: '{ let mut c = CacheTtl::default(); c.poner("x", 1, 0, 5).unwrap(); c.poner("x", 2, 4, 10).unwrap(); c.poner("z", 9, 4, 0).unwrap(); c.leer("x", 5) == Some(2) && c.leer("z", 5) == None }'
+    why: Poner reemplaza contenido y deadline; cero no implica eternidad.
+    failure: Guardá ambos valores nuevos en la inserción.
+  - id: t3
+    label: Overflow sin modificación
+    expression: '{ let mut c = CacheTtl::default(); c.poner("x", 7, 0, 100).unwrap(); let err = c.poner("x", 9, u64::MAX, 1); err == Err("tiempo") && c.leer("x", 1) == Some(7) && c.leer("ausente", 1) == None }'
+    why: Una escritura inválida conserva la entrada previa.
+    failure: Calculá checked_add antes de mutar el mapa.
+hints:
+  - (i32, u64) es Copy; copied libera el préstamo de get antes de remove.
+  - La guarda de match puede comprobar ahora < vence.
+  - Un Result temprano evita cualquier inserción tras overflow.
+review:
+  success: Los tests controlan el tiempo y verifican exactamente el límite, la renovación y los errores sin efectos. No necesitaste temporizadores reales.
+  pitfall: El ejercicio admite consultas con tiempo explícito; una implementación real debe elegir una fuente monotónica y política de limpieza. No hay garantías de persistencia ni sincronización concurrente aquí.
+transfer: Agregá limpiar_vencidos(ahora) con retain y distinguí limpieza proactiva de eliminación al consultar.
+prediction:
+  question: Si vence = 15, ¿leer a tiempo 15 devuelve el dato según este contrato?
+  options:
+    - Sí, todavía queda ese instante
+    - 'No: la validez es ahora < vence'
+    - Depende de la carga del sistema
+  answer: 1
+  explanation: La frontera es una regla matemática explícita y no depende de scheduling.
+sources:
+  - title: std · HashMap
+    url: https://doc.rust-lang.org/std/collections/struct.HashMap.html
+  - title: std · u64::checked_add
+    url: https://doc.rust-lang.org/std/primitive.u64.html#method.checked_add

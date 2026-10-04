@@ -1,0 +1,47 @@
+title: Buscá al dueño después del último token
+level: advanced
+minutes: 20
+workshopId: sharding
+challengeType: kata
+intro: Los hashes ya están calculados. Cada token posee los hashes mayores que el token anterior y menores o iguales al propio; después del último token, el anillo vuelve al primero.
+why: Ordenar una copia conserva la configuración del llamador. Rechazar posiciones duplicadas evita que el dueño de un hash dependa accidentalmente del orden de entrada.
+objective: Devolvé el nodo del primer token con posición ≥ hash; si no existe, el del token mínimo. Rechazá anillo vacío, posiciones duplicadas o nombres vacíos.
+instructions:
+  - La entrada puede estar desordenada y no debe modificarse.
+  - Un mismo nodo puede tener varios tokens distintos; eso permite virtual nodes. Una posición repetida es inválida aunque repita el nodo.
+  - Validá todo el anillo antes de devolver, incluso si el primer candidato ya parece suficiente.
+tests:
+  - id: t1
+    label: Fronteras, desorden y vuelta
+    expression: '{ let ring=[token(70,"C"),token(10,"A"),token(40,"B")]; owner(&ring,10)==Ok("A".into()) && owner(&ring,11)==Ok("B".into()) && owner(&ring,40)==Ok("B".into()) && owner(&ring,71)==Ok("A".into()) && ring[0].position==70 }'
+    why: Comprueba límite inclusivo, wrap e independencia del orden.
+    failure: Elegí >=; cuando no existe, volvé al mínimo.
+  - id: t2
+    label: Validar todo el anillo
+    expression: owner(&[],0).is_err() && owner(&[token(1,"A"),token(9,"B"),token(9,"C")],0).is_err() && owner(&[token(1,"A"),token(9,"")],0).is_err()
+    why: Un candidato temprano no autoriza a ignorar ambigüedades posteriores.
+    failure: Validá duplicados y nombres antes de buscar el dueño.
+  - id: t3
+    label: Nuevo intervalo y virtual nodes
+    expression: '{ let ring=[token(10,"A"),token(25,"D"),token(40,"B"),token(70,"C")]; owner(&ring,15)==Ok("D".into()) && owner(&ring,30)==Ok("B".into()) && owner(&ring,5)==Ok("A".into()) && owner(&[token(10,"A"),token(90,"A")],80)==Ok("A".into()) }'
+    why: Agregar un token cambia su intervalo; repetir nodo en otro token sí es válido.
+    failure: Distinguí duplicar posición de asignar varias posiciones al mismo nodo.
+hints:
+  - Cloná los tokens y ordenalos por posición.
+  - Buscá posiciones repetidas en vecinos y validá nombres.
+  - Si no encontrás posición ≥ hash, elegí la primera de la copia ordenada.
+review:
+  success: La propiedad queda definida en las fronteras y no depende del orden del slice. Esto calcula destinos, no migra valores, replica datos ni demuestra distribución uniforme de carga.
+  pitfall: Agregar un nodo cambia un dueño lógico; los bytes todavía pueden estar en el servidor anterior. La transición de membresía requiere un protocolo adicional.
+transfer: Agregá virtual nodes y compará dispersión de carga sobre una muestra grande de hashes reproducibles.
+prediction:
+  question: Tokens 10/A,40/B,70/C. ¿Hash 40 pertenece a…?
+  options:
+    - A
+    - B
+    - C
+  answer: 1
+  explanation: 'El límite derecho es inclusivo: el primer token ≥40 es 40/B.'
+sources:
+  - title: Envoy · Ring hash
+    url: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/load_balancers#ring-hash

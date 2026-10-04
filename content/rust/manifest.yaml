@@ -1,0 +1,391 @@
+# Etapas de Rust en orden. La etapa de un ejercicio es la posición de su etapa en este
+# archivo, contando las secciones en orden: lab, quests y systems. Los IDs son inmutables:
+# indexan el progreso guardado. El orden sale de acá, nunca del número del ID.
+# Cada ejercicio toma `defaults`, después los valores de su etapa y encima su exercise.yaml.
+defaults:
+  kind: completar
+  imports: []
+  visual: flow
+lab:
+  - topicId: rust-basics
+    topic: Expresiones y mutabilidad
+    minutes: 8
+    sources:
+      - title: The Rust Book · Expresiones y mutabilidad
+        url: https://doc.rust-lang.org/book/ch03-01-variables-and-mutability.html
+    exercises:
+      - rust-01
+      - rust-02
+      - rust-03
+      - rust-04
+      - rust-05
+  - topicId: rust-control
+    topic: Funciones y decisiones
+    minutes: 8
+    sources:
+      - title: The Rust Book · Funciones y decisiones
+        url: https://doc.rust-lang.org/book/ch03-05-control-flow.html
+    exercises:
+      - rust-06
+      - rust-07
+      - rust-08
+      - rust-09
+      - rust-10
+  - topicId: rust-ownership
+    topic: Ownership y préstamos
+    minutes: 8
+    sources:
+      - title: The Rust Book · Ownership y préstamos
+        url: https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html
+    exercises:
+      - rust-11
+      - rust-12
+      - rust-13
+      - rust-14
+      - rust-15
+  - topicId: rust-text
+    topic: Texto, Unicode y slices
+    minutes: 12
+    sources:
+      - title: The Rust Book · Texto, Unicode y slices
+        url: https://doc.rust-lang.org/book/ch04-03-slices.html
+    exercises:
+      - rust-16
+      - rust-17
+      - rust-18
+      - rust-19
+      - rust-20
+  - topicId: rust-models
+    topic: Structs, enums y estados
+    minutes: 12
+    sources:
+      - title: The Rust Book · Structs, enums y estados
+        url: https://doc.rust-lang.org/book/ch06-01-defining-an-enum.html
+    exercises:
+      - rust-21
+      - rust-22
+      - rust-23
+      - rust-24
+      - rust-25
+  - topicId: rust-errors
+    topic: Option y Result
+    minutes: 12
+    sources:
+      - title: The Rust Book · Option y Result
+        url: https://doc.rust-lang.org/book/ch09-02-recoverable-errors-with-result.html
+    exercises:
+      - rust-26
+      - rust-27
+      - rust-28
+      - rust-29
+      - rust-30
+  - topicId: rust-collections
+    topic: Colecciones para sistemas
+    minutes: 12
+    sources:
+      - title: The Rust Book · Colecciones para sistemas
+        url: https://doc.rust-lang.org/book/ch08-03-hash-maps.html
+    exercises:
+      - rust-31
+      - rust-32
+      - rust-33
+      - rust-34
+      - rust-35
+  - topicId: rust-iterators
+    topic: Iteradores y traits
+    minutes: 12
+    sources:
+      - title: The Rust Book · Iteradores y traits
+        url: https://doc.rust-lang.org/book/ch13-02-iterators.html
+    exercises:
+      - rust-36
+      - rust-37
+      - rust-38
+      - rust-39
+      - rust-40
+  - topicId: rust-generics
+    topic: Genéricos y lifetimes
+    minutes: 12
+    sources:
+      - title: The Rust Book · Genéricos y lifetimes
+        url: https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html
+    exercises:
+      - rust-41
+      - rust-42
+      - rust-43
+      - rust-44
+      - rust-45
+  - topicId: rust-systems
+    topic: Threads y mini sistemas
+    minutes: 12
+    sources:
+      - title: The Rust Book · Threads y mini sistemas
+        url: https://doc.rust-lang.org/book/ch16-01-threads.html
+    exercises:
+      - rust-46
+      - rust-47
+      - rust-48
+      - rust-49
+      - rust-50
+  - topicId: rust-pointers
+    topic: Box, Rc y mutabilidad interior
+    minutes: 12
+    sources:
+      - title: The Rust Book · Box, Rc y mutabilidad interior
+        url: https://doc.rust-lang.org/book/ch15-00-smart-pointers.html
+    exercises:
+      - rust-51
+      - rust-52
+      - rust-53
+      - rust-54
+      - rust-55
+  - topicId: rust-advanced-traits
+    topic: Traits avanzados y const generics
+    minutes: 12
+    sources:
+      - title: The Rust Book · Traits avanzados y const generics
+        url: https://doc.rust-lang.org/book/ch20-02-advanced-traits.html
+    exercises:
+      - rust-56
+      - rust-57
+      - rust-58
+      - rust-59
+      - rust-60
+  - topicId: rust-modules
+    topic: Módulos, macros y pruebas
+    minutes: 12
+    sources:
+      - title: The Rust Book · Módulos, macros y pruebas
+        url: https://doc.rust-lang.org/book/ch07-02-defining-modules-to-control-scope-and-privacy.html
+    exercises:
+      - rust-61
+      - rust-62
+      - rust-63
+      - rust-64
+      - rust-65
+  - topicId: rust-async
+    topic: Future, Pin y concurrencia segura
+    minutes: 12
+    sources:
+      - title: The Rust Book · Future, Pin y concurrencia segura
+        url: https://doc.rust-lang.org/book/ch17-00-async-await.html
+    exercises:
+      - rust-66
+      - rust-67
+      - rust-68
+      - rust-69
+      - rust-70
+  - topicId: rust-contracts
+    topic: RAII, unsafe y costo explícito
+    minutes: 12
+    sources:
+      - title: The Rust Book · RAII, unsafe y costo explícito
+        url: https://doc.rust-lang.org/book/ch15-03-drop.html
+    exercises:
+      - rust-71
+      - rust-72
+      - rust-73
+      - rust-74
+      - rust-75
+  - topicId: rust-rule-puzzles
+    topic: Reglas, números y permisos
+    minutes: 12
+    sources:
+      - title: The Rust Book · Reglas, números y permisos
+        url: https://doc.rust-lang.org/book/ch03-05-control-flow.html
+    exercises:
+      - rust-76
+      - rust-77
+      - rust-78
+      - rust-79
+      - rust-80
+  - topicId: rust-text-puzzles
+    topic: Desafíos de texto y Unicode
+    minutes: 12
+    sources:
+      - title: The Rust Book · Desafíos de texto y Unicode
+        url: https://doc.rust-lang.org/book/ch08-02-strings.html
+    exercises:
+      - rust-81
+      - rust-82
+      - rust-83
+      - rust-84
+      - rust-85
+  - topicId: rust-sequence-puzzles
+    topic: Pilas, búsqueda y secuencias
+    minutes: 12
+    sources:
+      - title: The Rust Book · Pilas, búsqueda y secuencias
+        url: https://doc.rust-lang.org/book/ch08-01-vectors.html
+    exercises:
+      - rust-86
+      - rust-87
+      - rust-88
+      - rust-89
+      - rust-90
+  - topicId: rust-parsing-puzzles
+    topic: Parsers y buffers acotados
+    minutes: 12
+    sources:
+      - title: The Rust Book · Parsers y buffers acotados
+        url: https://doc.rust-lang.org/book/ch09-02-recoverable-errors-with-result.html
+    exercises:
+      - rust-91
+      - rust-92
+      - rust-93
+      - rust-94
+      - rust-95
+  - topicId: rust-system-puzzles
+    topic: Cachés, journals y transacciones
+    minutes: 12
+    sources:
+      - title: The Rust Book · Cachés, journals y transacciones
+        url: https://doc.rust-lang.org/book/ch08-03-hash-maps.html
+    exercises:
+      - rust-96
+      - rust-97
+      - rust-98
+      - rust-99
+      - rust-100
+quests:
+  - topicId: rust-quest-robot
+    topic: Estación del robot
+    level: beginner
+    minutes: 12
+    bossMinutes: 20
+    exercises:
+      - rust-101
+      - rust-102
+      - rust-103
+  - topicId: rust-quest-signal
+    topic: Puerto de señales
+    level: medium
+    minutes: 12
+    bossMinutes: 20
+    exercises:
+      - rust-104
+      - rust-105
+      - rust-106
+  - topicId: rust-quest-routes
+    topic: Archivo de rutas
+    level: advanced
+    minutes: 12
+    bossMinutes: 20
+    exercises:
+      - rust-107
+      - rust-108
+      - rust-109
+  - topicId: rust-quest-machine
+    topic: Núcleo de la máquina
+    level: expert
+    minutes: 12
+    bossMinutes: 20
+    exercises:
+      - rust-110
+      - rust-111
+      - rust-112
+systems:
+  lowlevel:
+    - topicId: rust-systems-cache
+      topic: Una caché que aprende tus visitas
+      exercises:
+        - rust-113
+    - topicId: rust-systems-heap
+      topic: El estacionamiento de la memoria
+      exercises:
+        - rust-114
+    - topicId: rust-systems-mmu
+      topic: Direcciones con pasaporte
+      exercises:
+        - rust-115
+    - topicId: rust-systems-tlb
+      topic: La dirección que quedó vieja
+      exercises:
+        - rust-116
+    - topicId: rust-systems-vm
+      topic: Construí una máquina diminuta
+      exercises:
+        - rust-117
+    - topicId: rust-systems-stack
+      topic: Las mochilas de cada llamada
+      exercises:
+        - rust-118
+    - topicId: rust-systems-scheduler
+      topic: Un kernel que reparte turnos
+      exercises:
+        - rust-119
+    - topicId: rust-systems-interrupts
+      topic: El timbre del hardware
+      exercises:
+        - rust-120
+  infra:
+    - topicId: rust-systems-wal
+      topic: WAL y recuperación
+      exercises:
+        - rust-121
+    - topicId: rust-systems-lsm
+      topic: LSM y tombstones
+      exercises:
+        - rust-122
+    - topicId: rust-systems-quorum
+      topic: Quórums e intersección
+      exercises:
+        - rust-123
+    - topicId: rust-systems-clocks
+      topic: Relojes Lamport
+      exercises:
+        - rust-124
+    - topicId: rust-systems-network
+      topic: Reensamblado de mensajes
+      exercises:
+        - rust-125
+    - topicId: rust-systems-backpressure
+      topic: Backpressure y buffers circulares
+      exercises:
+        - rust-126
+    - topicId: rust-systems-balancing
+      topic: Balanceo y elegibilidad
+      exercises:
+        - rust-127
+    - topicId: rust-systems-sharding
+      topic: Anillo de hash consistente
+      exercises:
+        - rust-128
+  play:
+    - topicId: play-transforms
+      topic: Coreografía de matrices
+      exercises:
+        - rust-129
+    - topicId: play-raster
+      topic: El taller de los píxeles
+      exercises:
+        - rust-130
+    - topicId: play-raycast
+      topic: Linterna entre planetas
+      exercises:
+        - rust-131
+    - topicId: play-pathfinding
+      topic: El mapa que piensa
+      exercises:
+        - rust-132
+    - topicId: play-physics
+      topic: La cancha de los rebotes
+      exercises:
+        - rust-133
+    - topicId: play-life
+      topic: Un jardín de reglas
+      exercises:
+        - rust-134
+    - topicId: play-algebra
+      topic: La máquina de polinomios
+      exercises:
+        - rust-135
+    - topicId: play-minimax
+      topic: El duelo de las últimas fichas
+      exercises:
+        - rust-136
+  pc:
+    - topicId: rust-systems-pc
+      topic: Construí una PC de bolsillo
+      exercises:
+        - rust-137

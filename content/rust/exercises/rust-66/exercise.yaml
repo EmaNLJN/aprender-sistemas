@@ -1,0 +1,45 @@
+title: Preguntale a un Future si ya está listo
+visual: concurrency
+intro: Future representa un cálculo que puede avanzar al recibir poll. Poll::Ready entrega el resultado; Poll::Pending indica que todavía no lo tiene.
+why: El protocolo permite esperar progreso sin bloquear necesariamente un thread por tarea. El executor y el mecanismo de despertar coordinan cuándo volver a consultar.
+objective: Creá ready(n × 2), consultalo una vez y devolvé Some(resultado) si está Ready, o None si está Pending. n está entre -100 y 100.
+instructions:
+  - Usá el Waker seguro provisto y Context::from_waker.
+  - 'ready es Unpin: podés prestarlo con Pin::new.'
+tests:
+  - id: t1
+    label: Resultado disponible
+    expression: consultar_listo(4) == Some(8)
+    why: ready entrega el valor en el primer poll.
+    failure: No confundas construir el Future con obtener su salida.
+  - id: t2
+    label: Cero listo
+    expression: consultar_listo(0) == Some(0)
+    why: Cero no significa Pending.
+    failure: La variante Poll determina disponibilidad, no el contenido.
+  - id: t3
+    label: Valor negativo
+    expression: consultar_listo(-3) == Some(-6)
+    why: El cálculo preserva el signo.
+    failure: Envolvé el resultado de Ready en Some.
+hints:
+  - El futuro se crea con std::future::ready(n * 2).
+  - Context toma prestado el Waker durante poll.
+  - Hacé match sobre Pin::new(&mut futuro).poll(&mut contexto).
+review:
+  success: Los casos verifican el resultado de un Future ya listo. La solución propuesta muestra el protocolo de poll sin necesitar un runtime externo.
+  pitfall: 'Este Waker no agenda tareas: sirve solo para los polls explícitos y acotados del laboratorio. No es un executor general ni implementa I/O asíncrona.'
+transfer: Leé Future::poll y describí qué debe hacer una implementación antes de devolver Pending.
+prediction:
+  question: ¿Qué diferencia Some(0) de None en esta API didáctica?
+  options:
+    - Ninguna
+    - Uno indica resultado listo; el otro Pending
+    - Some(0) implica un error
+  answer: 1
+  explanation: Disponibilidad y contenido son dimensiones distintas, igual que las variantes de Poll.
+sources:
+  - title: std · Future::poll
+    url: https://doc.rust-lang.org/std/future/trait.Future.html
+  - title: std · Wake
+    url: https://doc.rust-lang.org/std/task/trait.Wake.html

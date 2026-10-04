@@ -1,0 +1,45 @@
+title: Un contador compartido con puerta
+kind: reparar
+imports:
+  - sync
+intro: Muchas goroutines agregan puntajes al mismo acumulador. La operación leer-modificar-escribir necesita exclusión para que dos actualizaciones no se pisen.
+why: Un Mutex protege un estado compartido; WaitGroup espera que los workers terminen. Sus roles son distintos y ninguno reemplaza automáticamente al otro.
+objective: Corregí SafeTotal.Add para acumular bajo el mutex y conservar todas las contribuciones.
+instructions:
+  - Mantené Lock y defer Unlock alrededor de la actualización.
+  - Conservá la espera de ParallelTotal antes de leer el total.
+tests:
+  - id: t1
+    label: Estado secuencial
+    expression: func() bool { var s SafeTotal; s.Add(8);s.Add(-3);return s.Value()==5 }()
+    why: Add suma al estado anterior.
+    failure: Reemplazar value pierde contribuciones.
+  - id: t2
+    label: Todos los workers cuentan
+    expression: ParallelTotal([]int{1,2,3,4,5}) == 15
+    why: El total final conserva todos los aportes.
+    failure: El mutex protege la actualización compuesta.
+  - id: t3
+    label: Vacío y repetidos
+    expression: ParallelTotal(nil)==0 && ParallelTotal([]int{2,2,2})==6
+    why: Repetir un valor no elimina trabajo.
+    failure: No confundas conjunto de valores con lista de contribuciones.
+hints:
+  - El bug funcional está en la asignación.
+  - value += n acumula dentro de la sección protegida.
+  - Value también toma el lock porque lee el mismo estado.
+review:
+  success: Separaste exclusión y espera. Estas pruebas funcionales no sustituyen go test -race sobre un proyecto local, que ayuda a detectar accesos sin sincronización.
+  pitfall: Un Mutex no debe copiarse después de empezar a usarse; mantené receptores puntero y la misma instancia.
+transfer: Llevá el contador a un módulo local y ejecutá pruebas con el detector de carreras.
+prediction:
+  question: ¿WaitGroup por sí solo evita que dos goroutines pisen una actualización?
+  options:
+    - Sí, siempre
+    - No; espera finalización, no protege esa sección
+    - Sólo si Add usa int
+  answer: 1
+  explanation: La exclusión del estado compartido la aporta el mutex en este diseño.
+sources:
+  - title: sync.Mutex y WaitGroup
+    url: https://pkg.go.dev/sync

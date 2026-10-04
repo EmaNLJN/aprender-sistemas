@@ -1,0 +1,41 @@
+title: Leer sin llevarte el String
+kind: reparar
+visual: ownership
+intro: Pasar String por valor transfiere su propiedad. Para observar su contenido sin consumirlo, la función puede recibir &str.
+why: El préstamo permite leer el mismo almacenamiento con un dueño claro. La firma expresa si una llamada conserva o entrega el recurso.
+objective: Repará medir para que inspeccionar pueda medir y después devolver el String original, sin clone.
+instructions:
+  - Cambiá medir para aceptar &str.
+  - Pasale una referencia desde inspeccionar; medimos bytes.
+tests:
+  - id: t1
+    label: Dueño disponible
+    expression: inspeccionar(String::from("cpu")) == (String::from("cpu"), 3)
+    why: La lectura no consume el texto.
+    failure: El movimiento ocurre al pasar String por valor; prestalo con &.
+  - id: t2
+    label: Texto vacío
+    expression: inspeccionar(String::new()) == (String::new(), 0)
+    why: Un recurso vacío también conserva propiedad.
+    failure: Devolvé el mismo texto recibido.
+  - id: t3
+    label: Bytes Unicode
+    expression: inspeccionar(String::from("ñ")) == (String::from("ñ"), 2)
+    why: El contrato sigue contando bytes.
+    failure: String::len no cuenta letras.
+hints:
+  - El primer llamado mueve texto y el retorno intenta usarlo otra vez.
+  - 'medir necesita lectura: su parámetro puede ser &str.'
+  - Usá medir(&texto); Rust convierte &String en &str.
+review:
+  success: medir tomó un préstamo temporal. Al finalizar la lectura, inspeccionar todavía puede transferir texto al resultado.
+  pitfall: clone haría desaparecer este error duplicando datos, pero ocultaría la intención de una lectura prestada.
+transfer: Agregá otra función de lectura y llamala sobre el mismo texto antes de devolverlo.
+prediction:
+  question: Después de let b = a; donde a es String, ¿podés usar a?
+  options:
+    - 'Siempre: es una copia barata'
+    - No, salvo que hayas clonado o prestado explícitamente
+    - Sí, si b es inmutable
+  answer: 1
+  explanation: String no implementa Copy. La asignación transfiere la propiedad del contenido a b.

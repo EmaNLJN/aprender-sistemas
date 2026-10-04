@@ -1,0 +1,48 @@
+title: Una cola que reutiliza sus huecos
+level: medium
+kind: reparar
+minutes: 20
+workshopId: backpressure
+challengeType: kata
+intro: La capacidad ya está reservada. Push rechaza cuando está lleno y Pop retira el elemento más antiguo. Un índice circular permite volver al inicio sin desplazar todos los valores.
+why: head y longitud describen qué parte del almacenamiento contiene elementos válidos. El cero almacenado es un dato como cualquier otro, no un indicador de slot vacío.
+objective: Repará Pop/pop para mantener FIFO, liberar un slot y devolver ausencia al estar vacío. Conservá NewRing/new y Push/push provistos.
+instructions:
+  - Capacidad no negativa; cero es válida y siempre rechaza Push. Una operación rechazada no modifica la cola.
+  - Pop lee en head, avanza head con módulo y reduce longitud, solo si había un elemento.
+  - 'El núcleo es local y no concurrente: no afirma seguridad entre threads o goroutines.'
+tests:
+  - id: t1
+    label: FIFO a través del wrap
+    expression: func() bool { r:=NewRing(2); if !r.Push(1)||!r.Push(2) { return false }; a,ok:=r.Pop(); if !ok||a!=1||!r.Push(3) { return false }; b,x:=r.Pop(); c,y:=r.Pop(); _,z:=r.Pop(); return x&&y&&!z&&b==2&&c==3 }()
+    why: La reutilización física no cambia el orden lógico.
+    failure: Pop debe avanzar head, no leer el último insertado.
+  - id: t2
+    label: Rechazo conserva lo anterior
+    expression: func() bool { r:=NewRing(2); if !r.Push(0)||!r.Push(-7)||r.Push(99) { return false }; a,x:=r.Pop(); b,y:=r.Pop(); _,z:=r.Pop(); return x&&y&&!z&&a==0&&b==-7 }()
+    why: Un Push fallido no sobrescribe elementos ni confunde cero con vacío.
+    failure: La longitud define presencia, no el valor de una celda.
+  - id: t3
+    label: Capacidades cero y uno
+    expression: func() bool { zero:=NewRing(0); if zero.Push(1) { return false }; _,ok:=zero.Pop(); if ok { return false }; one:=NewRing(1); if !one.Push(4)||one.Push(8) { return false }; a,x:=one.Pop(); if !x||a!=4||!one.Push(8) { return false }; b,y:=one.Pop(); return y&&b==8 }()
+    why: Prueba guardas antes de módulo y reutilización mínima.
+    failure: No calcules un módulo por cero cuando la cola no tiene capacidad.
+hints:
+  - La última posición insertada corresponde a una pila, no una cola.
+  - El elemento más antiguo está en head.
+  - Después de leer, head=(head+1)%capacidad; comprobá vacío antes del módulo.
+review:
+  success: La cola conserva FIFO a través del wrap-around y mantiene el límite sin crecer. Rechazar una inserción comunica saturación; el llamador todavía debe decidir esperar, reintentar o descartar explícitamente.
+  pitfall: 'Capacidad acotada no significa que todo el pipeline use esa misma cantidad de memoria: también hay trabajo activo y productores con datos pendientes.'
+transfer: Generalizá el buffer sin exigir que sus valores sean Copy y definí cómo se liberan recursos al retirar elementos.
+prediction:
+  question: 'Capacidad2: push1,push2,pop,push3. ¿Qué queda en orden?'
+  options:
+    - 3,2
+    - 2,3
+    - 1,3
+  answer: 1
+  explanation: Pop retira1; el slot liberado se reutiliza para3, pero2 sigue siendo el más antiguo.
+sources:
+  - title: Go · pipelines y coordinación
+    url: https://go.dev/blog/pipelines
