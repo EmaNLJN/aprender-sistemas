@@ -45,8 +45,26 @@ En la pasada de calidad también se instaló
 [code-review](../.agents/skills/code-review/SKILL.md), de
 [Matt Pocock](https://www.skills.sh/mattpocock/skills/code-review), con unas
 657 mil instalaciones consultadas el 2026-10-03. Requiere un punto de comparación
-y una especificación para revisar estándares y requisitos por separado. El total
-actual es de once skills locales.
+y una especificación para revisar estándares y requisitos por separado.
+
+Para la adopción de Tailwind en las vistas React y el backend Laravel se buscaron
+skills con `find-skills` (`npx skills find`) el 2026-10-03, verificando instalaciones,
+reputación del repositorio de origen y licencia, y revisando el contenido antes de
+exponerlo (sólo Markdown, sin scripts ni instrucciones de red):
+
+| Skill | Fuente | Señales consultadas | Uso en este proyecto |
+| --- | --- | --- | --- |
+| [tailwind-design-system](../.agents/skills/tailwind-design-system/SKILL.md) | [wshobson/agents](https://skills.sh/wshobson/agents/tailwind-design-system) | 67 mil instalaciones; ★40 mil; MIT | Tokens, theming y componentes con Tailwind v4 al reemplazar CSS ad hoc. |
+| [laravel-specialist](../.agents/skills/laravel-specialist/SKILL.md) | [Jeffallan/claude-skills](https://skills.sh/jeffallan/claude-skills/laravel-specialist) | 22 mil; ★11,7 mil; MIT | API, Eloquent, Sanctum y configuración del backend Laravel. |
+| [laravel-tdd](../.agents/skills/laravel-tdd/SKILL.md) | [affaan-m/ECC](https://skills.sh/affaan-m/ecc/laravel-tdd) | 9,6 mil; ★272 mil; MIT | Pruebas con Pest/PHPUnit en ciclos TDD. |
+| [laravel-security](../.agents/skills/laravel-security/SKILL.md) | [affaan-m/ECC](https://skills.sh/affaan-m/ecc/laravel-security) | 10,7 mil; ★272 mil; MIT | Revisión de autenticación, validación y despliegue del backend. |
+
+Se descartaron `tailwind-4-docs` (repositorio con 75 estrellas; la documentación de
+Tailwind se consulta con Context7) y skills atadas a shadcn o Expo. Estas cuatro se
+instalaron con `npx skills add <repo> --skill <nombre> -a codex -y`, que copia la skill
+en `.agents/skills/` y registra fuente y hash en `skills-lock.json`
+(`npx skills experimental_install` las restaura). El total actual es de quince skills
+locales.
 
 Para ESLint/Prettier se buscó `eslint prettier` con `find-skills`: `antfu` tenía
 16,4 mil instalaciones, pero recomienda una combinación de herramientas distinta
