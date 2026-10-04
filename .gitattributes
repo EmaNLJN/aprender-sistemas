@@ -1,2 +1,6 @@
 # El código de content/ se publica tal cual: sin CRLF en ningún sistema.
 content/** text eol=lf
+
+# Las skills importadas conservan el formato de su fuente (AGENTS.md): git diff --check no
+# marca sus espacios finales.
+.agents/skills/** -whitespace
