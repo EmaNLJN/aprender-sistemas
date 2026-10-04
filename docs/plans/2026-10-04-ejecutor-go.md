@@ -1,5 +1,9 @@
 # B1 — Ejecutor Go con sandbox gVisor: plan de implementación
 
+> **Histórico.** Este plan se ejecutó el 2026-10-04. Las desviaciones (contrato 500/503, flags
+> y límites nuevos, compilación a ejecutable, apagado, pruebas de integración) están en la
+> enmienda del ADR 0005 y en `executor/AGENTS.md`, que mandan sobre este texto.
+
 > **Para agentes:** SUB-SKILL REQUERIDA: usá superpowers:subagent-driven-development
 > (recomendado) o superpowers:executing-plans para implementar este plan tarea por tarea. Los
 > pasos usan casillas (`- [ ]`) para el seguimiento.
@@ -2276,7 +2280,7 @@ exec docker run --rm \
 - [ ] **Paso 5: Correr la integración con runc**
 
 Ejecutar: `sh executor/scripts/integration.sh`
-Esperado: las 12 pruebas `TestIntegration…` en PASS. Si alguna falla, el implementador
+Esperado: las pruebas `TestIntegration…` en PASS (12 en este plan; 21 al cierre de B1, ver la enmienda del ADR 0005). Si alguna falla, el implementador
 reporta la salida exacta y se detiene; no ajusta límites por su cuenta.
 
 - [ ] **Paso 6: Crear la prueba de humo que corre el usuario**
@@ -2320,7 +2324,7 @@ git commit -m "test(ejecutor): imágenes de sandbox, integración con Docker y p
 - [ ] **Paso 8: Repetir con gVisor** (cuando el usuario haya instalado `runsc` y la prueba de humo pase)
 
 Ejecutar: `EXECUTOR_RUNTIME=runsc sh executor/scripts/integration.sh`
-Esperado: las mismas 12 pruebas en PASS. Si alguna difiere, por ejemplo por cómo gVisor
+Esperado: las mismas pruebas en PASS. Si alguna difiere, por ejemplo por cómo gVisor
 informa un OOM, se documenta en el ADR 0005 antes de ajustar la prueba.
 
 ---

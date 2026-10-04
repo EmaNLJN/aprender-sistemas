@@ -60,3 +60,5 @@ Thumbs.db
 *.swp
 *.swo
 *~
+# Scratch de los flujos con subagentes (ledger, briefs, informes y paquetes de revisión).
+.superpowers/

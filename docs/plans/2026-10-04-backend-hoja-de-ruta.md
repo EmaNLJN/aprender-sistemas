@@ -38,6 +38,12 @@ Opus (`revisor`) e integra el agente principal.
 | D1 | Progreso en tablas y sincronización | C2, C3 | Tablas de progreso, cliente v2 (fecha por campo, lápidas, IDs de etapa, `proof`), `POST /api/sync`; el fixture de master entra y sale sin pérdida | a escribir |
 | E1 | Sesión Esenciales | A1, D1 | Con su decisión de IDs (ADR propio) | a escribir |
 
+## Estado
+
+- **B1** (2026-10-04): implementado en la rama `feat/b1-ejecutor` (PR #3). Las 19 pruebas de
+  integración pasan con runc y con runsc (gVisor instalado por apt). Falta que el usuario
+  agregue `--network=none` a runsc; la prueba de humo lo marca hasta entonces.
+
 ## Orden y paralelismo
 
 - **Primera ola, en paralelo** (archivos disjuntos): B1, A1 y C1.
