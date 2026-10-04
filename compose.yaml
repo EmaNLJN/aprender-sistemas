@@ -79,7 +79,8 @@ services:
     # /api/up) necesitan dónde escribirse.
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=32m
-      - /var/www/html/storage/framework/views:rw,noexec,nosuid,size=16m
+      # uid/gid 82: www-data de la imagen Alpine; sin esto el tmpfs queda root:root y php no compila vistas.
+      - /var/www/html/storage/framework/views:rw,noexec,nosuid,size=16m,uid=82,gid=82
     depends_on:
       mysql:
         condition: service_healthy
