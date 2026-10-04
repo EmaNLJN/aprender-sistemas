@@ -34,7 +34,8 @@ abstract class TestCase extends BaseTestCase
         $host = $effective['host'] ?? null;
         $database = (string) ($effective['database'] ?? '');
         $socket = (string) ($effective['unix_socket'] ?? '');
-        // ConnectionFactory usa los hosts de `read` y `write` cuando existen, en lugar de `host`.
+        // Si existe `read`, ConnectionFactory conecta con los hosts de `read`/`write` en lugar de
+        // `host`; la guarda rechaza cualquiera de los dos.
         if (isset($effective['read']) || isset($effective['write'])) {
             throw new RuntimeException('Las pruebas sólo corren contra mysql-test/taller_test; la conexión efectiva define hosts propios de lectura o escritura.');
         }
