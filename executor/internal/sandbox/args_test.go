@@ -40,6 +40,7 @@ func TestCompileContainerIsHardened(t *testing.T) {
 		t.Fatalf("debe crear el contenedor, no correrlo: %v", args)
 	}
 	mustHavePair(t, args, "--runtime", "runsc")
+	mustHavePair(t, args, "--pull", "never")
 	mustHavePair(t, args, "--network", "none")
 	mustHavePair(t, args, "--cap-drop", "ALL")
 	mustHavePair(t, args, "--security-opt", "no-new-privileges")

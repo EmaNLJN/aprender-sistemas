@@ -40,9 +40,12 @@ type Spec struct {
 	Runtime string
 }
 
+// State es lo que Docker informa de un contenedor. Status es "created", "running", "exited",
+// etc.: después de `docker start --attach`, sólo "exited" significa que el programa terminó.
 type State struct {
 	ExitCode  int
 	OOMKilled bool
+	Status    string
 }
 
 type Resource struct {

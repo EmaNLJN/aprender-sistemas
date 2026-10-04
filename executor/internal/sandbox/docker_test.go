@@ -15,9 +15,10 @@ type commandCall struct {
 	args []string
 }
 
-// scripted devuelve un Commander que registra cada llamada y responde según el subcomando.
+// scripted devuelve un Commander que registra cada llamada y responde según el subcomando. Si la
+// llamada falla, escribe en stderr un mensaje como el del daemon.
 func scripted(calls *[]commandCall, stdout map[string]string, fail map[string]error) Commander {
-	return func(_ context.Context, name string, args []string, _ io.Reader, out, _ io.Writer) error {
+	return func(_ context.Context, name string, args []string, _ io.Reader, out, errOut io.Writer) error {
 		if name != "docker" {
 			return errors.New("sólo se invoca docker")
 		}
@@ -26,7 +27,11 @@ func scripted(calls *[]commandCall, stdout map[string]string, fail map[string]er
 		if text, ok := stdout[key]; ok {
 			io.WriteString(out, text)
 		}
-		return fail[key]
+		if err := fail[key]; err != nil {
+			io.WriteString(errOut, "Error response from daemon: No such image: rust-img\n")
+			return err
+		}
+		return nil
 	}
 }
 
@@ -47,7 +52,7 @@ func TestCreateErrorIncludesDockerMessage(t *testing.T) {
 	fail := map[string]error{"create --name": errors.New("exit status 125")}
 	cli := DockerCLI{Exec: scripted(&calls, nil, fail)}
 	err := cli.Create(context.Background(), specFor("rust", false))
-	if err == nil || !strings.Contains(err.Error(), "docker create") {
+	if err == nil || !strings.Contains(err.Error(), "docker create") || !strings.Contains(err.Error(), "No such image") {
 		t.Fatalf("err = %v", err)
 	}
 }
@@ -74,18 +79,22 @@ func TestStartReportsCancellation(t *testing.T) {
 	}
 }
 
-func TestInspectParsesExitCodeAndOOM(t *testing.T) {
+func TestInspectParsesTheState(t *testing.T) {
 	var calls []commandCall
-	cli := DockerCLI{Exec: scripted(&calls, map[string]string{"inspect --format": `137 true ""`}, nil)}
+	cli := DockerCLI{Exec: scripted(&calls, map[string]string{"inspect --format": `exited 137 true ""`}, nil)}
 	state, err := cli.Inspect(context.Background(), "taller-r-1")
-	if err != nil || state != (State{ExitCode: 137, OOMKilled: true}) {
+	if err != nil || state != (State{ExitCode: 137, OOMKilled: true, Status: "exited"}) {
 		t.Fatalf("state = %+v, err = %v", state, err)
+	}
+	want := []string{"inspect", "--format", "{{.State.Status}} {{.State.ExitCode}} {{.State.OOMKilled}} {{json .State.Error}}", "taller-r-1"}
+	if !slices.Equal(calls[0].args, want) {
+		t.Fatalf("args = %v", calls[0].args)
 	}
 }
 
 func TestInspectFailsWhenDockerCouldNotStartTheContainer(t *testing.T) {
 	var calls []commandCall
-	out := map[string]string{"inspect --format": `128 false "failed to create task for container: runsc: exit status 1"`}
+	out := map[string]string{"inspect --format": `created 128 false "failed to create task for container: runsc: exit status 1"`}
 	cli := DockerCLI{Exec: scripted(&calls, out, nil)}
 	_, err := cli.Inspect(context.Background(), "taller-r-1")
 	if err == nil || !strings.Contains(err.Error(), "failed to create task") {
@@ -94,10 +103,12 @@ func TestInspectFailsWhenDockerCouldNotStartTheContainer(t *testing.T) {
 }
 
 func TestInspectRejectsUnexpectedOutput(t *testing.T) {
-	var calls []commandCall
-	cli := DockerCLI{Exec: scripted(&calls, map[string]string{"inspect --format": "basura"}, nil)}
-	if _, err := cli.Inspect(context.Background(), "x"); err == nil {
-		t.Fatal("una salida inesperada debe ser un error")
+	for _, raw := range []string{"basura", `exited x false ""`, `exited 0 quizás ""`, `exited 0 false sin-json`} {
+		var calls []commandCall
+		cli := DockerCLI{Exec: scripted(&calls, map[string]string{"inspect --format": raw}, nil)}
+		if _, err := cli.Inspect(context.Background(), "x"); err == nil {
+			t.Fatalf("la salida %q debe ser un error", raw)
+		}
 	}
 }
 
@@ -120,8 +131,11 @@ func TestListLabeledReadsContainersAndVolumes(t *testing.T) {
 	if !slices.Equal(resources, want) {
 		t.Fatalf("resources = %+v", resources)
 	}
-	if !slices.Contains(calls[0].args, "label="+RunLabel+"=1") {
-		t.Fatalf("debe filtrar por la etiqueta del ejecutor: %v", calls[0].args)
+	created := `{{.Label "` + CreatedLabel + `"}}`
+	wantPS := []string{"ps", "--all", "--filter", "label=" + RunLabel + "=1", "--format", "{{.Names}}\t" + created}
+	wantVolumes := []string{"volume", "ls", "--filter", "label=" + RunLabel + "=1", "--format", "{{.Name}}\t" + created}
+	if len(calls) != 2 || !slices.Equal(calls[0].args, wantPS) || !slices.Equal(calls[1].args, wantVolumes) {
+		t.Fatalf("las dos listas filtran por la etiqueta del ejecutor: %v", calls)
 	}
 }
 

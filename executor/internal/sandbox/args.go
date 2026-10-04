@@ -13,6 +13,8 @@ func createArgs(s Spec) []string {
 	memory := strconv.Itoa(p.MemoryMiB) + "m"
 	args := []string{
 		"create", "--name", s.Name, "--interactive",
+		// Un pedido nunca descarga imágenes: tienen que estar construidas y fijadas de antemano.
+		"--pull", "never",
 		"--runtime", s.Runtime,
 		"--network", "none",
 		"--cap-drop", "ALL",
@@ -28,9 +30,7 @@ func createArgs(s Spec) []string {
 		"--tmpfs", fmt.Sprintf("/tmp:rw,noexec,nosuid,nodev,size=%dm", p.TmpfsMiB),
 		"--mount", volumeMount(s.Volume, p.OutReadOnly),
 	}
-	for _, key := range sortedKeys(s.Labels) {
-		args = append(args, "--label", key+"="+s.Labels[key])
-	}
+	args = append(args, labelArgs(s.Labels)...)
 	if p.ReadOnly {
 		args = append(args, "--read-only")
 	}
@@ -53,4 +53,14 @@ func sortedKeys(values map[string]string) []string {
 	}
 	slices.Sort(keys)
 	return keys
+}
+
+// labelArgs convierte las etiquetas en flags --label, ordenadas para que los argumentos sean
+// estables entre llamadas.
+func labelArgs(labels map[string]string) []string {
+	var args []string
+	for _, key := range sortedKeys(labels) {
+		args = append(args, "--label", key+"="+labels[key])
+	}
+	return args
 }

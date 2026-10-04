@@ -61,44 +61,41 @@ func (d DockerCLI) Remove(ctx context.Context, name string) error {
 
 func (d DockerCLI) Inspect(ctx context.Context, name string) (State, error) {
 	var out bytes.Buffer
-	format := "{{.State.ExitCode}} {{.State.OOMKilled}} {{json .State.Error}}"
+	format := "{{.State.Status}} {{.State.ExitCode}} {{.State.OOMKilled}} {{json .State.Error}}"
 	if err := d.run(ctx, []string{"inspect", "--format", format, name}, &out); err != nil {
 		return State{}, err
 	}
 	return parseState(out.String())
 }
 
-// parseState lee "código oom error", con el error de Docker en JSON. Si Docker no pudo arrancar
-// el contenedor, `docker start` sale igual con un código distinto de 0 y Start no lo distingue
-// del programa: ese código no es del alumno, así que se devuelve como error del sandbox.
+// parseState lee "estado código oom error", con el error de Docker en JSON. Si Docker no pudo
+// arrancar el contenedor, `docker start` sale igual con un código distinto de 0 y Start no lo
+// distingue del programa: ese código no es del alumno, así que se devuelve como error del sandbox.
 func parseState(raw string) (State, error) {
-	fields := strings.SplitN(strings.TrimSpace(raw), " ", 3)
-	if len(fields) != 3 {
+	fields := strings.SplitN(strings.TrimSpace(raw), " ", 4)
+	if len(fields) != 4 {
 		return State{}, fmt.Errorf("salida inesperada de docker inspect: %q", raw)
 	}
-	code, err := strconv.Atoi(fields[0])
+	code, err := strconv.Atoi(fields[1])
 	if err != nil {
-		return State{}, fmt.Errorf("código de salida inválido: %q", fields[0])
+		return State{}, fmt.Errorf("código de salida inválido: %q", fields[1])
 	}
-	oom, err := strconv.ParseBool(fields[1])
+	oom, err := strconv.ParseBool(fields[2])
 	if err != nil {
-		return State{}, fmt.Errorf("OOMKilled inválido: %q", fields[1])
+		return State{}, fmt.Errorf("OOMKilled inválido: %q", fields[2])
 	}
 	var startErr string
-	if err := json.Unmarshal([]byte(fields[2]), &startErr); err != nil {
-		return State{}, fmt.Errorf("error de arranque ilegible: %q", fields[2])
+	if err := json.Unmarshal([]byte(fields[3]), &startErr); err != nil {
+		return State{}, fmt.Errorf("error de arranque ilegible: %q", fields[3])
 	}
 	if startErr != "" {
 		return State{}, fmt.Errorf("docker no pudo arrancar el contenedor: %s", startErr)
 	}
-	return State{ExitCode: code, OOMKilled: oom}, nil
+	return State{ExitCode: code, OOMKilled: oom, Status: fields[0]}, nil
 }
 
 func (d DockerCLI) CreateVolume(ctx context.Context, name string, labels map[string]string) error {
-	args := []string{"volume", "create"}
-	for _, key := range sortedKeys(labels) {
-		args = append(args, "--label", key+"="+labels[key])
-	}
+	args := append([]string{"volume", "create"}, labelArgs(labels)...)
 	return d.run(ctx, append(args, name), nil)
 }
 

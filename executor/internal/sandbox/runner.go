@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -18,10 +19,12 @@ var ErrUnknownLanguage = errors.New("lenguaje no soportado")
 // se haya cancelado, el contenedor y el volumen se borran igual.
 const cleanupTimeout = 10 * time.Second
 
+// Runner compila y ejecuta un envío. Instance es el valor de RunLabel en todos sus recursos.
 type Runner struct {
 	Engine   Engine
 	Profiles map[string]Profile
 	Runtime  string
+	Instance string
 	Now      func() time.Time
 	NewID    func() string
 }
@@ -40,12 +43,14 @@ func (r *Runner) Execute(ctx context.Context, language string, program []byte) (
 		return Result{}, ErrUnknownLanguage
 	}
 	id := r.NewID()
-	labels := map[string]string{RunLabel: "1", CreatedLabel: strconv.FormatInt(r.Now().Unix(), 10)}
+	labels := map[string]string{RunLabel: r.Instance, CreatedLabel: strconv.FormatInt(r.Now().Unix(), 10)}
 	volume := "taller-out-" + id
+	// El borrado se registra antes de crear: si cancelan con la creación en curso, el daemon puede
+	// terminarla igual. Borrar algo que no existe falla sin efecto.
+	defer r.cleanup(func(c context.Context) error { return r.Engine.RemoveVolume(c, volume) })
 	if err := r.Engine.CreateVolume(ctx, volume, labels); err != nil {
 		return Result{}, err
 	}
-	defer r.cleanup(func(c context.Context) error { return r.Engine.RemoveVolume(c, volume) })
 
 	compileOut, compileErr := newStreams(profile.OutputLimit)
 	compiled, err := r.phase(ctx, r.spec("taller-c-"+id, profile.Image, profile.Compile, volume, labels),
@@ -81,10 +86,10 @@ func (r *Runner) Execute(ctx context.Context, language string, program []byte) (
 }
 
 func (r *Runner) phase(ctx context.Context, spec Spec, stdin []byte, stdout, stderr io.Writer) (phaseOutcome, error) {
+	defer r.cleanup(func(c context.Context) error { return r.Engine.Remove(c, spec.Name) })
 	if err := r.Engine.Create(ctx, spec); err != nil {
 		return phaseOutcome{}, err
 	}
-	defer r.cleanup(func(c context.Context) error { return r.Engine.Remove(c, spec.Name) })
 
 	phaseCtx, cancel := context.WithTimeout(ctx, spec.Phase.Timeout)
 	defer cancel()
@@ -92,7 +97,7 @@ func (r *Runner) phase(ctx context.Context, spec Spec, stdin []byte, stdout, std
 	startErr := r.Engine.Start(phaseCtx, spec.Name, bytes.NewReader(stdin), stdout, stderr)
 	elapsed := r.Now().Sub(started)
 
-	if phaseCtx.Err() != nil {
+	if startErr != nil && phaseCtx.Err() != nil {
 		// Vencido o cancelado: el cliente de Docker murió, pero el contenedor puede seguir vivo.
 		r.cleanup(func(c context.Context) error { return r.Engine.Kill(c, spec.Name) })
 		if ctx.Err() != nil {
@@ -102,14 +107,23 @@ func (r *Runner) phase(ctx context.Context, spec Spec, stdin []byte, stdout, std
 		if err != nil {
 			return phaseOutcome{}, err
 		}
+		if state.Status == "created" {
+			return phaseOutcome{}, fmt.Errorf("el contenedor %s no llegó a arrancar antes del plazo", spec.Name)
+		}
 		return phaseOutcome{state: state, elapsed: elapsed, timedOut: true}, nil
 	}
 	if startErr != nil {
 		return phaseOutcome{}, startErr
 	}
+	// Start volvió sin error: el programa terminó, aunque el plazo haya vencido un instante después.
 	state, err := r.inspect(spec.Name)
 	if err != nil {
 		return phaseOutcome{}, err
+	}
+	if state.Status != "exited" {
+		// La CLI puede terminar por un fallo propio (attach cortado, espera fallida) con el
+		// contenedor vivo: ese código no es un resultado del alumno.
+		return phaseOutcome{}, fmt.Errorf("docker start terminó con %s en estado %q", spec.Name, state.Status)
 	}
 	return phaseOutcome{state: state, elapsed: elapsed}, nil
 }

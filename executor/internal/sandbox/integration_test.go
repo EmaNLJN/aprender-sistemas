@@ -4,6 +4,7 @@ package sandbox
 
 import (
 	"context"
+	"io"
 	"os"
 	"strings"
 	"testing"
@@ -26,7 +27,7 @@ func integrationRunner(t *testing.T) *Runner {
 		profile.Run.Timeout = 3 * time.Second // acelera los casos de tiempo agotado
 		profiles[language] = profile
 	}
-	return &Runner{Engine: DockerCLI{Exec: ExecCommand}, Profiles: profiles, Runtime: runtime, Now: time.Now, NewID: RandomID}
+	return &Runner{Engine: DockerCLI{Exec: ExecCommand}, Profiles: profiles, Runtime: runtime, Instance: "integracion", Now: time.Now, NewID: RandomID}
 }
 
 func execute(t *testing.T, language, program string) Result {
@@ -161,9 +162,59 @@ func main() {
 	}
 }
 
+func TestIntegrationContainerThatCannotStartIsAnError(t *testing.T) {
+	runner := integrationRunner(t)
+	profile := runner.Profiles["go"]
+	profile.Run.Cmd = []string{"/no/existe"}
+	runner.Profiles["go"] = profile
+	_, err := runner.Execute(context.Background(), "go", []byte("package main\n\nfunc main() {}\n"))
+	if err == nil {
+		t.Fatal("un contenedor que no arranca es un error del sandbox, no un resultado del alumno")
+	}
+}
+
+func TestIntegrationSweepRemovesOnlyOldExecutorResources(t *testing.T) {
+	ctx := context.Background()
+	cli := DockerCLI{Exec: ExecCommand}
+	id := RandomID()
+	old := map[string]string{RunLabel: "integracion", CreatedLabel: "1"} // 1970: más viejo que cualquier MaxAge
+	volume, foreign := "taller-out-"+id, "taller-out-ajeno-"+id
+	if err := cli.CreateVolume(ctx, volume, old); err != nil {
+		t.Fatal(err)
+	}
+	if err := cli.CreateVolume(ctx, foreign, nil); err != nil { // sin la etiqueta del ejecutor
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { cli.RemoveVolume(context.Background(), foreign) })
+	runner := integrationRunner(t)
+	profile := runner.Profiles["go"]
+	spec := Spec{Name: "taller-r-" + id, Image: profile.Image, Phase: profile.Run, Volume: volume, Labels: old, Runtime: runner.Runtime}
+	if err := cli.Create(ctx, spec); err != nil {
+		t.Fatal(err)
+	}
+	if err := (Sweeper{Engine: cli, Now: time.Now, MaxAge: 2 * time.Minute, Instance: "integracion"}).Sweep(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := cli.Inspect(ctx, spec.Name); err == nil {
+		t.Fatal("el contenedor viejo del ejecutor debía borrarse")
+	}
+	resources, err := cli.ListLabeled(ctx, RunLabel+"=integracion")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, resource := range resources {
+		if strings.HasSuffix(resource.Name, id) {
+			t.Fatalf("quedó %s", resource.Name)
+		}
+	}
+	if err := ExecCommand(ctx, "docker", []string{"volume", "inspect", foreign}, nil, io.Discard, io.Discard); err != nil {
+		t.Fatalf("un volumen sin la etiqueta del ejecutor no se toca: %v", err)
+	}
+}
+
 func TestIntegrationLeavesNothingBehind(t *testing.T) {
 	execute(t, "rust", `fn main() {}`)
-	resources, err := DockerCLI{Exec: ExecCommand}.ListLabeled(context.Background(), RunLabel+"=1")
+	resources, err := DockerCLI{Exec: ExecCommand}.ListLabeled(context.Background(), RunLabel+"=integracion")
 	if err != nil {
 		t.Fatal(err)
 	}
