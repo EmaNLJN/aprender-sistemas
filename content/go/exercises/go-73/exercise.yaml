@@ -1,0 +1,45 @@
+title: La semilla que rompió tu supuesto Unicode
+kind: reparar
+intro: Tu herramienta debe invertir bytes de un string, incluso si no contiene UTF-8 válido. Una propiedad útil es que invertir dos veces devuelve exactamente la entrada.
+why: Un string Go puede contener bytes arbitrarios. Convertirlo a []rune decodifica UTF-8 y puede reemplazar secuencias inválidas, perdiendo información.
+objective: ReverseBytes invierte bytes sin interpretar Unicode; debe cumplir ReverseBytes(ReverseBytes(s)) == s.
+instructions:
+  - Trabajá con []byte en lugar de []rune.
+  - Intercambiá extremos hacia el centro y conservá bytes cero y bytes inválidos.
+tests:
+  - id: t1
+    label: Una dirección conocida
+    expression: ReverseBytes("abc")=="cba" && ReverseBytes("")==""
+    why: La propiedad de ida y vuelta sola también la cumpliría no hacer nada.
+    failure: Incluí ejemplos que definan realmente la transformación.
+  - id: t2
+    label: Semilla UTF-8 inválida
+    expression: func() bool { s:=string([]byte{255,0,128,65});return ReverseBytes(ReverseBytes(s))==s && ReverseBytes(s)==string([]byte{65,128,0,255}) }()
+    why: No debe reemplazar bytes al decodificar.
+    failure: El contrato habla de bytes, no de runes.
+  - id: t3
+    label: Conjunto determinista de semillas
+    expression: func() bool { for n:=0;n<256;n++ {s:=string([]byte{byte(n),42,0,byte(255-n)});if ReverseBytes(ReverseBytes(s))!=s{return false}};return true }()
+    why: Prueba la propiedad sobre todos los valores posibles de un byte en estas posiciones.
+    failure: No descartes ceros ni bytes altos.
+hints:
+  - El bug no está en el loop de inversión.
+  - '[]byte preserva los bytes originales.'
+  - string(data) recompone exactamente esos bytes.
+review:
+  success: Encontraste un supuesto oculto usando una propiedad y semillas adversas. Esto es una muestra determinista; el fuzzing real genera y minimiza más entradas con go test -fuzz en un proyecto.
+  pitfall: Invertir bytes puede producir texto UTF-8 inválido; acá es correcto por contrato y sería incorrecto para una interfaz de texto humano.
+transfer: Creá FuzzReverseBytes y agregá las semillas; incluí el ejemplo abc para evitar una propiedad demasiado débil.
+prediction:
+  question: ¿La identidad Reverse(Reverse(s))==s demuestra por sí sola que invertiste?
+  options:
+    - Sí, completamente
+    - 'No: devolver s sin cambiar también la cumple'
+    - Sólo si s contiene ASCII
+  answer: 1
+  explanation: Una propiedad necesita complementarse con ejemplos o propiedades que distingan implementaciones incorrectas.
+sources:
+  - title: Tutorial oficial de fuzzing
+    url: https://go.dev/doc/tutorial/fuzz
+  - title: Strings y bytes
+    url: https://go.dev/blog/strings

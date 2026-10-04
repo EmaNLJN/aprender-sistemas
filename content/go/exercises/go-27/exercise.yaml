@@ -1,0 +1,45 @@
+title: El puerto tiene dos validaciones
+kind: reparar
+imports:
+  - strconv
+intro: 'Una configuración puede fallar porque no es un número o porque es un número fuera del rango permitido. Son etapas distintas: interpretar y validar.'
+why: 'strconv.Atoi informa errores de conversión. Después, tu aplicación agrega su propia regla: acá sólo aceptamos puertos entre 1 y 65535.'
+objective: Parseá un puerto decimal y rechazá texto inválido o valores fuera de 1..65535.
+instructions:
+  - Propagá el error de strconv.Atoi.
+  - Si el número está fuera de rango, devolvé 0 y un error descriptivo.
+tests:
+  - id: t1
+    label: Puertos permitidos
+    expression: func() bool { a,e:=ParsePort("8080"); b,f:=ParsePort("65535"); return a==8080 && e==nil && b==65535 && f==nil }()
+    why: Incluye una entrada común y el máximo.
+    failure: El extremo 65535 está permitido.
+  - id: t2
+    label: Texto inválido
+    expression: func() bool { n,e:=ParsePort("http"); return n==0 && e!=nil }()
+    why: La conversión debe fallar de manera explícita.
+    failure: No descartes el error de Atoi.
+  - id: t3
+    label: Número fuera de rango
+    expression: func() bool { a,e:=ParsePort("0"); b,f:=ParsePort("65536"); return a==0 && b==0 && e!=nil && f!=nil }()
+    why: Ser entero no basta para cumplir el contrato.
+    failure: Aplicá ambas cotas después de convertir.
+hints:
+  - Recibí port y err de Atoi.
+  - Atendé primero err != nil.
+  - La condición inválida usa port < 1 || port > 65535.
+review:
+  success: Separaste validez sintáctica y semántica. Esta función elige un contrato de configuración; otros usos de redes pueden dar un significado especial al puerto cero.
+  pitfall: No confundas una regla de tu aplicación con una prohibición universal del sistema operativo.
+transfer: Agregá un mensaje diferente para texto vacío sin aceptar silenciosamente un puerto.
+prediction:
+  question: Atoi("70000") funciona. ¿ParsePort debe aceptarlo?
+  options:
+    - Sí, porque es entero
+    - No, excede el rango elegido
+    - Sólo si tiene cinco dígitos
+  answer: 1
+  explanation: Convertir correctamente no garantiza que el número sea válido para este dominio.
+sources:
+  - title: strconv.Atoi
+    url: https://pkg.go.dev/strconv#Atoi

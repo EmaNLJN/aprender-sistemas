@@ -1,0 +1,39 @@
+title: El panel de permisos binarios
+intro: Un byte puede guardar ocho interruptores. Una máscara selecciona cuáles querés inspeccionar. Necesitamos saber si todos los permisos pedidos están activados.
+why: El operador & conserva solamente los bits presentes en ambos operandos. Comparar esa intersección con la máscara distingue “todos” de “alguno”.
+objective: Implementá HasFlags(flags, mask uint8) bool; una máscara cero se considera satisfecha.
+instructions:
+  - Calculá la intersección bit a bit.
+  - Comparala con mask, no solamente con cero.
+tests:
+  - id: t1
+    label: Permisos extra
+    expression: HasFlags(7, 3)
+    why: Tener bits extra no invalida los pedidos.
+    failure: 7 incluye los bits que forman 3.
+  - id: t2
+    label: Falta uno
+    expression: '!HasFlags(1, 3)'
+    why: Todos los bits pedidos son necesarios.
+    failure: Una intersección no nula puede ser insuficiente.
+  - id: t3
+    label: Ningún requisito
+    expression: HasFlags(8, 0)
+    why: Define explícitamente la máscara vacía.
+    failure: Cualquier valor AND cero da cero.
+hints:
+  - Pensá 7 como 111 y 3 como 011.
+  - Necesitás &, no &&.
+  - La intersección debe conservar la máscara completa.
+review:
+  success: Expresaste un conjunto de permisos con bits. La prueba de máscara vacía obliga a pensar el contrato, no solamente los casos típicos.
+  pitfall: '&& combina booleanos; & combina bits de enteros.'
+transfer: Diseñá una función que active permisos sin borrar los existentes.
+prediction:
+  question: ¿Cuánto vale 5 & 3? (101 y 011)
+  options:
+    - '7'
+    - '1'
+    - '5'
+  answer: 1
+  explanation: 'Solamente comparten el bit de menor valor: 001.'

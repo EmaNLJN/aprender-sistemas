@@ -1,0 +1,39 @@
+title: Dividir y avisar si se pudo
+intro: Una operación puede producir un número o ser inválida. Separar resultado y estado evita usar un número especial que también podría ser legítimo.
+why: Go permite varios resultados. El llamador recibe tanto el dato como un bool que explica si debe usarlo.
+objective: Devolvé el cociente entero y true; si b es cero, devolvé 0 y false.
+instructions:
+  - Comprobá b antes de dividir.
+  - Conservá resultados negativos y ceros válidos.
+tests:
+  - id: t1
+    label: División válida
+    expression: func() bool { n,ok := Divide(9,2); return n == 4 && ok }()
+    why: El cociente entero descarta la fracción.
+    failure: El contrato devuelve int, no float64.
+  - id: t2
+    label: Divisor cero
+    expression: func() bool { n,ok := Divide(7,0); return n == 0 && !ok }()
+    why: No debe intentar una operación inválida.
+    failure: La guardia tiene que ejecutarse antes de dividir.
+  - id: t3
+    label: Cero y signo legítimos
+    expression: func() bool { n,ok := Divide(0,3); m,yes := Divide(-9,2); return n == 0 && ok && m == -4 && yes }()
+    why: Un resultado cero no significa automáticamente error.
+    failure: El bool representa validez, no si el resultado es positivo.
+hints:
+  - b == 0 es el caso excepcional.
+  - Un return admite valor y estado.
+  - Los casos válidos terminan con true.
+review:
+  success: El resultado cero ahora se distingue de una división imposible. Este patrón prepara el camino para (valor, error).
+  pitfall: Ignorar el segundo resultado elimina la información que diseñaste.
+transfer: Usá el mismo contrato para buscar un elemento en una lista.
+prediction:
+  question: Divide(0, 2) debería devolver…
+  options:
+    - 0, false
+    - 0, true
+    - Un panic
+  answer: 1
+  explanation: El numerador cero es válido; lo que invalidaría la división es el divisor cero.

@@ -1,0 +1,40 @@
+title: También puede fallar el cierre
+kind: reparar
+intro: 'El trabajo y la limpieza pueden fallar. Elegimos una política precisa: conservar el error de trabajo si existe; si no, informar el error del cierre.'
+why: Una función diferida puede actualizar un resultado nombrado. Eso permite observar el error de Close sin duplicar la limpieza en cada salida.
+objective: Use cierra una vez y prioriza workErr sobre el error de Close.
+instructions:
+  - Conservá el resultado nombrado err.
+  - En el defer, reemplazalo por el error de cierre sólo si err era nil.
+tests:
+  - id: t1
+    label: Todo funciona
+    expression: func() bool { r:=&Resource{}; e:=Use(r,nil); return e==nil && r.Closes==1 }()
+    why: Un éxito no fabrica errores ni duplica cierres.
+    failure: Close debe ejecutarse una vez.
+  - id: t2
+    label: Sólo falla el cierre
+    expression: func() bool { failure:=fmt.Errorf("cerrar"); r:=&Resource{CloseErr:failure}; e:=Use(r,nil); return e==failure && r.Closes==1 }()
+    why: No debe ocultarse el error de limpieza.
+    failure: El resultado nombrado se puede actualizar desde defer.
+  - id: t3
+    label: Dos fallos, prioridad definida
+    expression: func() bool { work:=fmt.Errorf("trabajo"); r:=&Resource{CloseErr:fmt.Errorf("cerrar")}; e:=Use(r,work); return e==work && r.Closes==1 }()
+    why: El error primario no se reemplaza según este contrato.
+    failure: Sólo asigná closeErr cuando err == nil.
+hints:
+  - defer r.Close() ignora el valor devuelto.
+  - Usá una función anónima diferida.
+  - Consultá err antes de asignar el error del cierre.
+review:
+  success: Hiciste explícita la prioridad de fallos. Otras APIs pueden combinar errores con errors.Join; acá elegimos conservar el primero por contrato.
+  pitfall: El valor nombrado recibe workErr al ejecutar return, antes de que corra el defer.
+transfer: Diseñá una variante que conserve ambos errores cuando ambos ocurren.
+prediction:
+  question: Si workErr existe y Close también falla, este contrato devuelve…
+  options:
+    - Sólo el error de cierre
+    - El error de trabajo
+    - Siempre nil
+  answer: 1
+  explanation: La política elegida conserva el error primario; el cierre igualmente se ejecuta.

@@ -1,0 +1,41 @@
+title: 'Misión KV: interpretar una orden'
+imports:
+  - strings
+intro: Tu motor acepta SET clave valor, GET clave y DEL clave. Las palabras de operación ignoran mayúsculas; las claves y valores conservan su texto y no pueden contener espacios.
+why: Separar parsing y ejecución permite rechazar órdenes incompletas antes de tocar datos. Fields resuelve el whitespace, pero el protocolo decide cuántos campos admite.
+objective: Devolvé operación normalizada, clave, valor y error según ese protocolo.
+instructions:
+  - Validá cantidad exacta de campos para cada operación.
+  - Ante un error devolvé tres cadenas vacías y un error; GET y DEL válidos llevan valor vacío.
+tests:
+  - id: t1
+    label: Guardar con whitespace
+    expression: func() bool { op,k,v,e:=ParseCommand(" set\tNombre   Ana "); return op=="SET" && k=="Nombre" && v=="Ana" && e==nil }()
+    why: Normaliza sólo la operación y separa campos.
+    failure: Conservá mayúsculas en clave y valor.
+  - id: t2
+    label: Lectura y borrado
+    expression: func() bool { a,k,v,e:=ParseCommand("GET x"); b,j,w,f:=ParseCommand("del y"); return a=="GET" && k=="x" && v=="" && e==nil && b=="DEL" && j=="y" && w=="" && f==nil }()
+    why: Las órdenes sin valor tienen dos campos.
+    failure: No exijas tres campos a todas las operaciones.
+  - id: t3
+    label: Rechazo de entradas incompletas y extra
+    expression: func() bool { for _,s:=range []string{"","SET x","GET x extra","DROP x"} { a,b,c,e:=ParseCommand(s); if e==nil || a!="" || b!="" || c!="" {return false} }; return true }()
+    why: El parser no acepta órdenes ambiguas o desconocidas.
+    failure: Validá longitud antes de indexar y exigí la cantidad exacta.
+hints:
+  - Primero comprobá len(fields)==0.
+  - strings.ToUpper se aplica solamente a fields[0].
+  - Cada orden válida puede retornar inmediatamente.
+review:
+  success: 'Convertiste texto libre en una orden con contrato preciso. Todavía no ejecutás nada: esa separación facilita probar y extender el protocolo.'
+  pitfall: Fields no entiende valores entre comillas; soportarlos requeriría otro parser y otro contrato.
+transfer: Diseñá una operación EXISTS y decidí su cantidad exacta de argumentos.
+prediction:
+  question: ¿SET nombre Ana María es válido con este protocolo?
+  options:
+    - Sí, siempre une el resto
+    - No, tiene un campo extra
+    - Sí, si Nombre empieza con mayúscula
+  answer: 1
+  explanation: El contrato actual limita el valor a un único campo.

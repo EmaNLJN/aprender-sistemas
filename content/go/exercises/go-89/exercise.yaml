@@ -1,0 +1,39 @@
+title: La suma que se desliza
+intro: 'Un monitor suma cada bloque contiguo de k muestras. Entre ventanas vecinas sale un valor y entra otro: no hace falta volver a sumar el bloque completo.'
+why: La suma anterior conserva casi todo el trabajo. Restar el elemento que sale y sumar el que entra actualiza exactamente la nueva ventana.
+objective: WindowSums devuelve sumas de ventanas de ancho k; k<=0 es error y k>len(values) produce una salida vacía válida.
+instructions:
+  - Calculá la primera ventana una vez.
+  - Deslizá la suma y conservá el orden de las ventanas.
+tests:
+  - id: t1
+    label: Ventanas vecinas
+    expression: func() bool {out,e:=WindowSums([]int{1,3,2,6,4},3);return e==nil && fmt.Sprint(out)=="[6 11 12]"}()
+    why: Cada ventana avanza una posición.
+    failure: Restá values[i-k] antes de conservar el nuevo total.
+  - id: t2
+    label: Signos y ancho uno
+    expression: func() bool {a,e:=WindowSums([]int{-2,5,-1},2);b,f:=WindowSums([]int{-2,5},1);return e==nil && f==nil && fmt.Sprint(a)=="[3 4]" && fmt.Sprint(b)=="[-2 5]"}()
+    why: La actualización conserva signos y funciona con una sola muestra.
+    failure: No descartes negativos ni cambies la longitud de ventana.
+  - id: t3
+    label: No cabe y ancho inválido
+    expression: func() bool {a,e:=WindowSums(nil,1);b,f:=WindowSums([]int{1},3);_,g:=WindowSums([]int{1},0);return e==nil && f==nil && len(a)==0 && len(b)==0 && g!=nil}()
+    why: No existir una ventana es distinto de pedir ancho inválido.
+    failure: Validá k antes de preparar la primera suma.
+hints:
+  - La primera suma usa posiciones 0 hasta k-1.
+  - Al entrar i, sale i-k.
+  - Hay len(values)-k+1 ventanas cuando k cabe.
+review:
+  success: La suma es un estado derivado que se actualiza localmente. Los tests comprueban valores; el loop de actualización explica por qué evitás recomputar cada bloque.
+  pitfall: Las sumas usan int; cantidades fuera de su rango requieren otro contrato numérico.
+transfer: Devolvé promedios flotantes usando estas sumas y la conversión antes de dividir.
+prediction:
+  question: Al avanzar una ventana de k elementos, cambian…
+  options:
+    - Todos los elementos necesariamente
+    - El que sale y el que entra
+    - Sólo el tamaño
+  answer: 1
+  explanation: Los k-1 elementos centrales permanecen en común.

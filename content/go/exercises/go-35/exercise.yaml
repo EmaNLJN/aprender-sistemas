@@ -1,0 +1,43 @@
+title: El error nil que no era nil
+kind: reparar
+intro: La función parece devolver un puntero nil cuando todo sale bien, pero el llamador ve err != nil. Una interfaz puede conservar un tipo dinámico aunque su puntero sea nil.
+why: Una interfaz nil no contiene tipo ni valor. Envolver (*Problem)(nil) en error conserva el tipo *Problem, por lo que la interfaz no es nil.
+objective: Validate(true) debe devolver nil real; Validate(false), un error con mensaje.
+instructions:
+  - Retorná nil explícitamente cuando valid sea true.
+  - Creá *Problem solamente para el camino inválido.
+tests:
+  - id: t1
+    label: Éxito sin tipo escondido
+    expression: Validate(true) == nil
+    why: El éxito requiere una interfaz nil auténtica.
+    failure: Retorná el literal nil, no un puntero tipado nil.
+  - id: t2
+    label: Fallo informativo
+    expression: func() bool { e:=Validate(false); return e!=nil && e.Error()=="inválido" }()
+    why: El error existente sí tiene un objeto válido.
+    failure: Creá un Problem cuando corresponda.
+  - id: t3
+    label: Llamadas independientes
+    expression: func() bool { _=Validate(false); return Validate(true)==nil }()
+    why: Un fallo previo no contamina un éxito siguiente.
+    failure: La decisión debe depender únicamente del parámetro actual.
+hints:
+  - Distinguí *Problem de la interfaz error.
+  - El camino válido no necesita una variable tipada.
+  - Un return nil elimina tipo y valor dinámicos.
+review:
+  success: Diferenciaste nil como puntero de nil como interfaz. Esta distinción explica una clase frecuente de errores que parecen contradictorios.
+  pitfall: Invocar Error sobre un *Problem nil podría desreferenciar un puntero inexistente.
+transfer: Compará var e error con var p *Problem; var e error = p.
+prediction:
+  question: var p *Problem; var e error = p. ¿e == nil?
+  options:
+    - Sí, siempre
+    - No, contiene el tipo *Problem
+    - No compila
+  answer: 1
+  explanation: La interfaz guarda el tipo dinámico *Problem además del valor puntero nil.
+sources:
+  - title: 'FAQ: por qué un error nil puede no ser nil'
+    url: https://go.dev/doc/faq#nil_error

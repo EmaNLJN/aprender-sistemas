@@ -1,0 +1,40 @@
+title: El guardián de los números primos
+kind: reparar
+intro: Un número primo es mayor que 1 y sólo admite los divisores positivos 1 y él mismo. Si tiene un divisor grande, también tiene otro pequeño que forma su pareja.
+why: Basta buscar divisores hasta la raíz cuadrada. La comparación d<=n/d evita multiplicar d*d y no necesita aritmética flotante.
+objective: IsPrime decide si un int no negativo es primo.
+instructions:
+  - Rechazá n menor que 2.
+  - Probá divisores y retorná false al encontrar un resto cero.
+tests:
+  - id: t1
+    label: Casos que no son primos
+    expression: '!IsPrime(0) && !IsPrime(1)'
+    why: La definición exige ser mayor que 1.
+    failure: No confundir ausencia de divisores probados con primalidad.
+  - id: t2
+    label: Primos pequeños
+    expression: IsPrime(2) && IsPrime(3) && IsPrime(97)
+    why: No rechaza el primer primo ni los impares válidos.
+    failure: El loop debe empezar en 2.
+  - id: t3
+    label: Compuestos y cuadrados
+    expression: '!IsPrime(9) && !IsPrime(49) && !IsPrime(100)'
+    why: El divisor exactamente en la raíz debe revisarse.
+    failure: La comparación de límite incluye igualdad.
+hints:
+  - El starter falla antes del loop.
+  - 0 y 1 no cumplen la definición de primo.
+  - Conservá <= para detectar cuadrados perfectos.
+review:
+  success: Separaste los casos de definición del procedimiento general. La frontera de la raíz explica por qué 49 es una prueba importante.
+  pitfall: Este método es educativo para números moderados; no es una herramienta de generación criptográfica de primos.
+transfer: Construí una lista de primos hasta N y compará el trabajo con una criba.
+prediction:
+  question: Para detectar que 49 no es primo, ¿hay que probar 7?
+  options:
+    - Sí, el límite es inclusivo
+    - No, sólo menores que 7
+    - No, todos los impares son primos
+  answer: 0
+  explanation: '7×7=49: omitir el límite perdería ese divisor.'

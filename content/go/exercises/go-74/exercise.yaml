@@ -1,0 +1,48 @@
+title: Optimizar con una medición de memoria
+kind: reparar
+imports:
+  - strings
+  - testing
+intro: Un reporte concatena muchas piezas. Volver a construir la cadena completa en cada paso puede asignar memoria repetidamente. Vamos a observar asignaciones, sin competir por milisegundos.
+why: strings.Builder permite preparar capacidad y escribir por partes. testing.AllocsPerRun mide el promedio de asignaciones de llamadas reales para esta implementación y entorno.
+objective: JoinParts concatena sin separadores y usa como máximo una asignación para el lote de prueba.
+instructions:
+  - Calculá primero el total de bytes y usá Builder.Grow.
+  - Escribí cada parte con WriteString y devolvé String.
+tests:
+  - id: t1
+    label: Contenido exacto
+    expression: JoinParts([]string{"Go","/","Rust"})=="Go/Rust"
+    why: Optimizar no autoriza cambiar la salida.
+    failure: No agregues espacios ni separadores.
+  - id: t2
+    label: Vacío y Unicode
+    expression: JoinParts(nil)=="" && JoinParts([]string{"ni","ño","🚀"})=="niño🚀"
+    why: La reserva cuenta bytes, pero preserva el texto.
+    failure: len(part) aporta el tamaño en bytes.
+  - id: t3
+    label: Asignaciones observadas
+    expression: func() bool { parts:=make([]string,100);for i:=range parts{parts[i]="abcdef"};allocs:=testing.AllocsPerRun(10,func(){JoinedSink=JoinParts(parts)});return len(JoinedSink)==600 && allocs<=1 }()
+    why: La medición distingue reconstrucciones repetidas de una reserva suficiente.
+    failure: Grow debe ocurrir antes de escribir y con la capacidad total.
+hints:
+  - Sumá len de todas las partes.
+  - Un Builder empieza útil con su valor cero.
+  - Grow(total) evita ampliar el buffer varias veces.
+review:
+  success: La mejora preserva comportamiento y tiene evidencia de asignaciones para este lote. No demuestra un tiempo menor en todos los casos; un benchmark local debe comparar cargas representativas.
+  pitfall: No copies un Builder ya usado. El presupuesto de asignaciones es una medición del entorno, no una promesa eterna del lenguaje.
+transfer: Creá benchmarks locales de ambas versiones y revisá allocs/op además de ns/op.
+prediction:
+  question: ¿Menos asignaciones garantiza menos tiempo en toda entrada?
+  options:
+    - Sí, siempre
+    - No; hay que medir cargas y costos relevantes
+    - Sólo con strings ASCII
+  answer: 1
+  explanation: Las asignaciones son una métrica útil, pero el tiempo también depende de otros costos.
+sources:
+  - title: strings.Builder
+    url: https://pkg.go.dev/strings#Builder
+  - title: testing.AllocsPerRun
+    url: https://pkg.go.dev/testing#AllocsPerRun

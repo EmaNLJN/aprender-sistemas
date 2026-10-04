@@ -5,7 +5,6 @@ import { goWorlds } from '../../entities/campaign/content/go-worlds';
 import { rustWorlds } from '../../entities/campaign/content/rust-worlds';
 import type { CampaignWorldDefinition } from '../../entities/campaign';
 import type { Exercise } from '../../entities/exercise';
-import { goLab } from '../../entities/exercise/content/go-lab';
 import { goQuests } from '../../entities/exercise/content/go-quests';
 import { rustQuests } from '../../entities/exercise/content/rust-quests';
 import { guideData, type GuideData } from '../../entities/guide';
@@ -24,7 +23,7 @@ declare global {
 
 window.GUIDE_DATA = guideData;
 window.RUST_LAB = curriculum.lab.rust as Exercise[];
-window.GO_LAB = goLab;
+window.GO_LAB = curriculum.lab.go as Exercise[];
 window.RUST_QUESTS = rustQuests;
 window.GO_QUESTS = goQuests;
 window.RUST_CAMPAIGN = rustWorlds;

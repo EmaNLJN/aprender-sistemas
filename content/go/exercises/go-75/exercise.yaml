@@ -1,0 +1,48 @@
+title: Tu taller termina con una herramienta del lenguaje
+kind: reparar
+imports:
+  - go/format
+  - strings
+intro: Construiste una acción para ordenar código Go. La biblioteca go/format conoce su sintaxis y formato; si recibe una fuente rota, debe explicar el problema en lugar de fingir éxito.
+why: Formatear, compilar, testear y analizar son pasos distintos. format.Source resuelve formato y errores sintácticos, pero no reemplaza comprobación de tipos ni pruebas.
+objective: FormatGo devuelve el código formateado o cadena vacía y el error de formato.
+instructions:
+  - Conservá la llamada a format.Source.
+  - Propagá su error antes de devolver éxito; el formato debe ser idempotente.
+tests:
+  - id: t1
+    label: Formato real
+    expression: func() bool { out,e:=FormatGo("package sample\nfunc Double(n int)int{return n*2}\n");return e==nil && strings.Contains(out,"func Double(n int) int") && strings.Contains(out,"n * 2") }()
+    why: La herramienta aplica el formato sintáctico de Go.
+    failure: No basta recortar espacios a mano.
+  - id: t2
+    label: Error informativo
+    expression: func() bool { out,e:=FormatGo("package sample\nfunc Broken(");return out=="" && e!=nil }()
+    why: La fuente rota no debe presentarse como un éxito vacío.
+    failure: No descartes el error de format.Source.
+  - id: t3
+    label: Idempotencia
+    expression: func() bool { a,e:=FormatGo("package sample\nvar Answer=42\n");b,f:=FormatGo(a);return e==nil && f==nil && a==b }()
+    why: Formatear dos veces no sigue cambiando el código.
+    failure: Retorná exactamente la salida de format.Source.
+hints:
+  - Recibí out y err, no out y _.
+  - Si err != nil, retorná "", err.
+  - El camino exitoso termina con string(out), nil.
+review:
+  success: Terminaste el recorrido conectando código, documentación, pruebas y herramientas oficiales. Para practicar módulos, imports entre paquetes, archivos _test.go, fuzzing sostenido, perfiles y carreras, el siguiente paso es un proyecto local real.
+  pitfall: Código formateado puede no compilar o estar lógicamente mal; ninguna herramienta aislada sustituye a las demás.
+transfer: 'Llevá tu KV a un módulo: organizá paquetes, agregá tests y ejecutá formato, pruebas, race detector y benchmarks desde la terminal.'
+prediction:
+  question: Si format.Source tiene éxito, el programa necesariamente…
+  options:
+    - Tiene sintaxis formateable, pero aún puede fallar en tipos o comportamiento
+    - Ya pasó todos los tests
+    - No tiene carreras
+  answer: 0
+  explanation: Formatear resuelve un problema concreto, no verifica todos los aspectos del programa.
+sources:
+  - title: go/format
+    url: https://pkg.go.dev/go/format
+  - title: Estructura de código y módulos
+    url: https://go.dev/doc/code

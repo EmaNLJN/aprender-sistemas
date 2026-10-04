@@ -1,0 +1,41 @@
+title: Errores con datos útiles
+imports:
+  - errors
+intro: Una subida excedió el límite. El llamador necesita el tamaño recibido y el máximo para explicar cuánto sobra, sin extraer números de una frase.
+why: error es una interfaz. Un tipo propio puede implementar Error() y conservar campos estructurados que errors.As permite recuperar.
+objective: Devolvé *LimitError con Got y Max cuando size > max; en otro caso nil.
+instructions:
+  - Conservá el tipo y su método Error.
+  - Retorná un puntero al error solamente cuando se exceda el límite.
+tests:
+  - id: t1
+    label: Datos recuperables
+    expression: func() bool { var e *LimitError; ok:=errors.As(CheckSize(14,10), &e); return ok && e.Got==14 && e.Max==10 }()
+    why: El error debe conservar sus campos, no sólo texto.
+    failure: Devolvé &LimitError con ambos valores.
+  - id: t2
+    label: Exactamente al límite
+    expression: CheckSize(10,10) == nil && CheckSize(0,10) == nil
+    why: El límite es inclusivo.
+    failure: La condición es >, no >=.
+  - id: t3
+    label: A través de contexto
+    expression: 'func() bool { root:=CheckSize(7,3); if root==nil{return false}; wrapped:=fmt.Errorf("subir: %w",root); var e *LimitError; return errors.As(wrapped,&e) && e.Got-e.Max==4 }()'
+    why: El tipo puede recuperarse incluso envuelto.
+    failure: No conviertas el error estructurado a una cadena suelta.
+hints:
+  - 'Creá &LimitError{Got: size, Max: max}.'
+  - El error sólo se necesita cuando size > max.
+  - El camino válido termina en nil.
+review:
+  success: El error ahora transporta una explicación y datos reutilizables. errors.Is pregunta por una causa; errors.As busca un tipo compatible.
+  pitfall: La variable destino de errors.As debe permitir que la función escriba el error encontrado.
+transfer: Usá Got-Max para mostrar cuánto debería reducirse una subida.
+prediction:
+  question: Para acceder a campos de un error tipado envuelto conviene…
+  options:
+    - Partir Error() con Split
+    - errors.As
+    - Ignorar el wrapper
+  answer: 1
+  explanation: errors.As encuentra el error del tipo solicitado y lo guarda en el destino.

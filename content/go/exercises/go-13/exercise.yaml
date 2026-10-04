@@ -1,0 +1,40 @@
+title: Una copia que sea de verdad
+kind: reparar
+intro: El historial original debe sobrevivir a los cambios del editor. Asignar un slice a otro copia su descriptor, pero ambos siguen viendo el mismo almacenamiento.
+why: Para independizar sus elementos necesitás otro array subyacente. make reserva el destino y copy traslada los elementos.
+objective: Cloná un []int de manera que modificar el resultado no cambie el original.
+instructions:
+  - Creá un destino del mismo largo.
+  - Copiá los valores; para nil alcanza devolver un slice de largo cero.
+tests:
+  - id: t1
+    label: Contenido
+    expression: fmt.Sprint(Clone([]int{4,8,15})) == "[4 8 15]"
+    why: Una copia preserva valores y orden.
+    failure: Crear espacio sin copy produce ceros.
+  - id: t2
+    label: Memoria independiente
+    expression: func() bool { src:=[]int{5,7}; dst:=Clone(src); if len(dst)!=2{return false}; dst[0]=99; return src[0]==5 }()
+    why: Modificar el clon no debe tocar la fuente.
+    failure: Una asignación de slice sigue compartiendo el array.
+  - id: t3
+    label: Vacío
+    expression: len(Clone(nil)) == 0
+    why: Copiar cero elementos es válido.
+    failure: No accedas al primer elemento sin comprobar longitud.
+hints:
+  - make([]int, len(values)) reserva los elementos.
+  - copy recibe destino primero.
+  - Retorná el destino nuevo.
+review:
+  success: La prueba de mutación distingue una copia real de dos referencias a los mismos datos. Para []int alcanza copiar sus elementos.
+  pitfall: Si los elementos contienen otros slices o punteros, esta copia sería superficial.
+transfer: Explicá qué cambiaría con un slice de slices.
+prediction:
+  question: Después de b := a, si a es []int, b[0] = 9…
+  options:
+    - Siempre clona a
+    - Puede modificar a[0]
+    - No compila
+  answer: 1
+  explanation: Ambos descriptors apuntan al mismo array cuando existe ese elemento.

@@ -1,0 +1,40 @@
+title: El método que olvidaba cada incremento
+kind: reparar
+intro: Un contador expone un método Increment, pero su valor nunca cambia. El método actual incrementa un receptor copiado que desaparece al terminar.
+why: Un receptor puntero expresa que la operación modifica la instancia. Para una variable direccionable, Go permite llamar c.Increment() cómodamente.
+objective: Hacé que Increment actualice Count de la instancia original.
+instructions:
+  - Conservá el nombre y el campo Count.
+  - Cambiá el receptor al tipo adecuado para mutación; se invoca sobre instancias válidas.
+tests:
+  - id: t1
+    label: Primer incremento
+    expression: func() bool { c:=Counter{}; c.Increment(); return c.Count==1 }()
+    why: El cero útil debe pasar a uno.
+    failure: El receptor por valor descarta el cambio.
+  - id: t2
+    label: Incrementos acumulados
+    expression: func() bool { c:=Counter{Count:5}; c.Increment(); c.Increment(); return c.Count==7 }()
+    why: Cada llamada parte del estado actualizado.
+    failure: No asignes siempre 1.
+  - id: t3
+    label: Instancias separadas
+    expression: func() bool { a:=Counter{}; b:=Counter{}; a.Increment(); return a.Count==1 && b.Count==0 }()
+    why: El estado pertenece a cada objeto.
+    failure: No uses una variable global para el conteo.
+hints:
+  - El cambio necesario está en la firma.
+  - El receptor puede ser *Counter.
+  - c.Count++ funciona también con receptor puntero.
+review:
+  success: La firma ahora refleja el efecto de la operación. Mutar una instancia y devolver una copia son contratos diferentes, ambos útiles.
+  pitfall: Los métodos con receptor puntero influyen en qué tipos satisfacen una interfaz.
+transfer: Contrastá Increment con una operación Next que devuelva otra instancia.
+prediction:
+  question: ¿Por qué no funcionaba c Counter?
+  options:
+    - Count no puede cambiar
+    - Incrementaba una copia
+    - Faltaba exportar Increment
+  answer: 1
+  explanation: El método mutaba su receptor local, no el contador original.

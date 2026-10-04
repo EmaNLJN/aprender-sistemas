@@ -1,0 +1,47 @@
+title: El archivo que se cortó en silencio
+kind: reparar
+imports:
+  - bufio
+  - io
+  - strings
+intro: Leés líneas desde un io.Reader y descartás las vacías. Scanner termina tanto al alcanzar EOF como al encontrar un error; salir del loop no demuestra éxito.
+why: 'Scanner.Err distingue fin normal de fallo. Su límite de token también forma parte del contrato: acá fijamos 4096 bytes para detectar líneas demasiado grandes.'
+objective: ReadLines devuelve líneas recortadas no vacías; ante un error del scanner devuelve nil y error.
+instructions:
+  - Conservá Buffer con máximo 4096 y el recorrido existente.
+  - Consultá scanner.Err después del loop antes de declarar éxito.
+tests:
+  - id: t1
+    label: Líneas con espacios
+    expression: func() bool { lines,e:=ReadLines(strings.NewReader(" uno \n\n dos\n"));return e==nil && fmt.Sprint(lines)=="[uno dos]" }()
+    why: Separa líneas y elimina vacías.
+    failure: Conservá la limpieza del texto.
+  - id: t2
+    label: Entrada vacía
+    expression: func() bool { lines,e:=ReadLines(strings.NewReader(""));return e==nil && len(lines)==0 }()
+    why: EOF normal no es un error.
+    failure: Scanner.Err devuelve nil al agotarse normalmente.
+  - id: t3
+    label: Línea demasiado grande
+    expression: func() bool { lines,e:=ReadLines(strings.NewReader("ok\n"+strings.Repeat("x",6000)));return e!=nil && lines==nil }()
+    why: No devuelve un éxito parcial si el scanner falló.
+    failure: Consultá Err después de Scan y respetá el contrato todo-o-nada.
+hints:
+  - Scan devuelve false por más de un motivo.
+  - El error está disponible después del recorrido.
+  - Ante err != nil retorná nil, err.
+review:
+  success: Ahora la lectura no confunde truncamiento con finalización correcta. En este laboratorio el Reader está en memoria; el mismo patrón sirve para otros orígenes.
+  pitfall: El máximo de Scanner incluye detalles del token y separadores; no lo presentes como un límite exacto de caracteres visibles.
+transfer: Probá localmente con un archivo real y cerralo en el código que lo abre.
+prediction:
+  question: Cuando Scan devuelve false, sabemos…
+  options:
+    - Que todo se leyó sin errores
+    - Que el recorrido terminó; falta consultar Err
+    - Que el archivo estaba vacío
+  answer: 1
+  explanation: El estado final puede ser EOF normal o un error.
+sources:
+  - title: bufio.Scanner
+    url: https://pkg.go.dev/bufio#Scanner

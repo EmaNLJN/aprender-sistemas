@@ -1,0 +1,47 @@
+title: El escritor que guardó sólo la mitad
+kind: reparar
+imports:
+  - io
+  - bytes
+  - errors
+intro: Una salida puede rechazar una escritura o aceptar menos bytes. No queremos reportar éxito si el registro quedó incompleto.
+why: io.Writer entrega cantidad y error. Un escritor correcto debe indicar error si escribe menos; esta función también detecta una implementación defectuosa que devuelve corto con nil.
+objective: WriteRecord devuelve el error original o io.ErrShortWrite si faltaron bytes, y nil sólo si escribió todo.
+instructions:
+  - Revisá primero el error de io.WriteString.
+  - Después compará la cantidad escrita con len(record).
+tests:
+  - id: t1
+    label: Destino completo
+    expression: func() bool { var b bytes.Buffer;e:=WriteRecord(&b,"hola🚀");return e==nil && b.String()=="hola🚀" }()
+    why: La cantidad esperada se mide en bytes.
+    failure: len(record) usa la misma unidad que Writer.
+  - id: t2
+    label: Escritura incompleta
+    expression: errors.Is(WriteRecord(LimitedWriter{Limit:2},"abcd"),io.ErrShortWrite)
+    why: Un resultado corto no puede convertirse en éxito.
+    failure: Compará n con len(record).
+  - id: t3
+    label: Causa original y vacío
+    expression: func() bool { failure:=fmt.Errorf("disco");e:=WriteRecord(LimitedWriter{Err:failure},"x");return errors.Is(e,failure) && WriteRecord(LimitedWriter{},"")==nil }()
+    why: Preserva la causa real y admite un registro vacío.
+    failure: El error original tiene prioridad sobre el conteo corto.
+hints:
+  - No descartes n con _.
+  - El error original se retorna antes de comprobar la cantidad.
+  - io.ErrShortWrite expresa que no se escribió todo.
+review:
+  success: Tu función comprueba el contrato completo de escritura. No reintenta automáticamente porque repetir un registro parcialmente escrito puede necesitar una política de recuperación.
+  pitfall: LimitedWriter es un doble de prueba intencionalmente defectuoso para ejercitar defensa ante escrituras cortas con nil.
+transfer: Diseñá un protocolo que informe cuántos bytes quedaron pendientes para reintentar con precisión.
+prediction:
+  question: Writer cuenta longitud en…
+  options:
+    - Caracteres visuales
+    - Bytes
+    - Runes siempre
+  answer: 1
+  explanation: Su entrada es []byte y n cuenta bytes escritos.
+sources:
+  - title: io.Writer y ErrShortWrite
+    url: https://pkg.go.dev/io#Writer

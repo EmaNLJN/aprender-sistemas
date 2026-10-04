@@ -1,0 +1,45 @@
+title: Leer sin conocer el origen
+imports:
+  - io
+  - strings
+intro: Tu función recibe io.Reader. Puede leer desde una cadena o desde otro origen compatible sin cambiar el algoritmo; acá usamos memoria para mantener el ejercicio aislado.
+why: io.ReadAll consume un Reader y entrega bytes más error. La interfaz evita que tu función dependa de una fuente concreta.
+objective: Leé todo un io.Reader y devolvé su texto; si falla, devolvé cadena vacía y el error.
+instructions:
+  - Llamá io.ReadAll y atendé su error.
+  - Convertí los bytes a string sólo en el camino exitoso.
+tests:
+  - id: t1
+    label: Texto Unicode
+    expression: func() bool { s,e:=ReadText(strings.NewReader("red 🚀")); return s=="red 🚀" && e==nil }()
+    why: El contenido debe conservarse íntegro.
+    failure: Convertí los bytes recibidos, no el objeto Reader.
+  - id: t2
+    label: Origen vacío
+    expression: func() bool { s,e:=ReadText(strings.NewReader("")); return s=="" && e==nil }()
+    why: EOF normal no se trata como un fallo de ReadAll.
+    failure: El fin de una fuente vacía puede ser un éxito.
+  - id: t3
+    label: Origen fallido
+    expression: func() bool { s,e:=ReadText(BrokenReader{}); return s=="" && e!=nil }()
+    why: El consumidor no debe ocultar errores de la fuente.
+    failure: Propagá el error de ReadAll.
+hints:
+  - io.ReadAll(r) devuelve []byte y error.
+  - El camino de error termina antes de convertir.
+  - string(data) construye el texto.
+review:
+  success: La misma función sirve para fuentes diferentes porque depende de una interfaz. En producción, leer todo requiere controlar el tamaño de entrada.
+  pitfall: ReadAll puede devolver datos junto con un error; este contrato decide descartarlos explícitamente.
+transfer: Diseñá una variante que lea como máximo una cantidad elegida de bytes.
+prediction:
+  question: ReadAll al llegar normalmente a EOF devuelve…
+  options:
+    - Siempre io.EOF como error
+    - Los datos y nil
+    - Solamente nil
+  answer: 1
+  explanation: El fin normal de la entrada es éxito para ReadAll.
+sources:
+  - title: io.Reader y ReadAll
+    url: https://pkg.go.dev/io#ReadAll

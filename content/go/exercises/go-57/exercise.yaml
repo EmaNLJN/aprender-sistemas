@@ -1,0 +1,39 @@
+title: Componer un dispositivo sin herencia
+intro: Un dispositivo tiene nombre y un medidor reutilizable. Un campo embebido permite acceder a métodos del medidor desde el dispositivo.
+why: La promoción de métodos facilita composición. El medidor sigue siendo un campo real; embeberlo no crea una jerarquía de subtipos como herencia clásica.
+objective: Feed agrega cada muestra al medidor embebido de Device y devuelve su total.
+instructions:
+  - Usá el método promovido d.Add para cada muestra.
+  - Conservá el nombre y el total anterior del dispositivo.
+tests:
+  - id: t1
+    label: Método promovido
+    expression: func() bool { d:=Device{Name:"sensor"}; n:=Feed(&d,[]int{2,4}); return n==6 && d.Meter.Total==6 && d.Name=="sensor" }()
+    why: La promoción opera sobre el campo embebido real.
+    failure: No calcules un total separado y descartes el medidor.
+  - id: t2
+    label: Acumulación previa
+    expression: func() bool { d:=Device{Meter:Meter{Total:10}}; return Feed(&d,[]int{-3,1})==8 }()
+    why: El componente conserva estado entre operaciones.
+    failure: No reinicies Total dentro de Feed.
+  - id: t3
+    label: Entrada vacía
+    expression: func() bool { d:=Device{Meter:Meter{Total:5}}; return Feed(&d,nil)==5 }()
+    why: No recibir muestras no borra el estado.
+    failure: El recorrido vacío deja el campo intacto.
+hints:
+  - d.Add está disponible gracias al campo Meter embebido.
+  - Add ya sabe actualizar Total.
+  - Retorná d.Total después del recorrido.
+review:
+  success: Reutilizaste comportamiento por composición. d.Total y d.Meter.Total seleccionan aquí el mismo campo a través de promoción.
+  pitfall: Si varios campos embebidos promueven un mismo nombre, el acceso puede ser ambiguo y exigir selección explícita.
+transfer: Agregá un segundo componente embebido y observá qué nombres promueve.
+prediction:
+  question: ¿Device puede pasarse automáticamente donde se exige un Meter concreto?
+  options:
+    - Sí, porque hereda de Meter
+    - No, la composición no lo convierte en Meter
+    - Solamente con Total cero
+  answer: 1
+  explanation: Podés seleccionar d.Meter, pero Device y Meter siguen siendo tipos diferentes.

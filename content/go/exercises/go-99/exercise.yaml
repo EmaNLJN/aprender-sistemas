@@ -1,0 +1,48 @@
+title: La huella de un stream, fragmento a fragmento
+imports:
+  - crypto/sha256
+  - io
+  - strings
+intro: Un stream puede ser grande o venir dividido. Un hash incremental recibe fragmentos y conserva un estado pequeño; no necesita juntar primero toda la entrada.
+why: hash.Hash implementa io.Writer, por lo que io.Copy puede conectar un Reader directamente con el cálculo. Sum(nil) obtiene la huella sin agregar datos al hash.
+objective: Digest devuelve SHA-256 en hexadecimal del Reader completo; ante error de lectura devuelve cadena vacía y error.
+instructions:
+  - Creá sha256.New y alimentalo con io.Copy.
+  - Atendé el error antes de formatear Sum(nil) con %x.
+tests:
+  - id: t1
+    label: Huella conocida
+    expression: func() bool {s,e:=Digest(strings.NewReader("abc"));return e==nil && s=="ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"}()
+    why: El hash tiene que recibir el contenido antes de consultarse.
+    failure: Un hash recién creado describe la entrada vacía.
+  - id: t2
+    label: Los fragmentos no cambian el contenido
+    expression: func() bool {a,e:=Digest(io.MultiReader(strings.NewReader("a"),strings.NewReader("bc")));b,f:=Digest(strings.NewReader("abc"));z,g:=Digest(strings.NewReader(""));return e==nil && f==nil && g==nil && a==b && z==fmt.Sprintf("%x",sha256.Sum256(nil))}()
+    why: La huella depende de bytes concatenados, no de las fronteras de lectura.
+    failure: io.Copy entrega todo el stream al Writer.
+  - id: t3
+    label: Un fallo no produce una huella de éxito
+    expression: func() bool {s,e:=Digest(io.MultiReader(strings.NewReader("parcial"),FailedSource{}));return s=="" && e!=nil}()
+    why: Un prefijo leído no equivale al documento completo.
+    failure: Retorná antes de Sum cuando Copy falla.
+hints:
+  - El hash puede pasarse como primer argumento de io.Copy.
+  - El Reader es el segundo argumento.
+  - Sum(nil) devuelve bytes que %x representa en hexadecimal.
+review:
+  success: Compusiste interfaces de lectura, escritura y cálculo incremental. Los tests verifican la huella; el uso de Copy muestra cómo evitás materializar la entrada entera.
+  pitfall: Una huella sin una referencia confiable no autentica por sí sola el origen del contenido.
+transfer: Usá TeeReader para calcular una huella mientras otra operación consume los mismos bytes.
+prediction:
+  question: Escribir "a" y después "bc" en el mismo hash produce…
+  options:
+    - La misma huella que escribir "abc"
+    - Una huella diferente por cada fragmentación
+    - Sólo la huella de "bc"
+  answer: 0
+  explanation: El estado incremental incorpora los bytes en orden sin reiniciarse entre fragmentos.
+sources:
+  - title: crypto/sha256.New
+    url: https://pkg.go.dev/crypto/sha256#New
+  - title: hash.Hash
+    url: https://pkg.go.dev/hash#Hash

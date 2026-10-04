@@ -1,0 +1,42 @@
+title: Cancelar sin temporizadores mágicos
+imports:
+  - context
+  - errors
+intro: Una operación espera un dato, pero su dueño puede cancelar. Debe atender ambas señales y preservar la causa de cancelación.
+why: Context expone Done para coordinar cancelación y Err para explicarla. Una comprobación inicial da prioridad a un contexto que ya estaba cancelado al entrar.
+objective: Await devuelve un mensaje o ctx.Err(); si el canal se cierra sin datos, devuelve un error.
+instructions:
+  - Comprobá ctx.Err() antes del select.
+  - Luego seleccioná entre ctx.Done() y la recepción con ok; no uses sleeps.
+tests:
+  - id: t1
+    label: Respuesta lista
+    expression: func() bool { ch:=make(chan int,1); ch<-7; n,e:=Await(context.Background(),ch); return n==7 && e==nil }()
+    why: La ruta normal entrega el mensaje.
+    failure: No devuelvas antes de leer el canal.
+  - id: t2
+    label: Ya cancelado tiene prioridad
+    expression: func() bool { ctx,cancel:=context.WithCancel(context.Background()); cancel(); ch:=make(chan int,1); ch<-9; n,e:=Await(ctx,ch); return n==0 && errors.Is(e,context.Canceled) && len(ch)==1 }()
+    why: Un contexto ya cancelado no debe consumir un mensaje.
+    failure: La comprobación anterior al select define esta prioridad.
+  - id: t3
+    label: Cierre sin dato
+    expression: func() bool { ch:=make(chan int); close(ch); n,e:=Await(context.Background(),ch); return n==0 && e!=nil }()
+    why: El cero de un canal agotado no es una respuesta.
+    failure: Consultá ok al recibir.
+hints:
+  - ctx.Err() no bloquea.
+  - ctx.Done() devuelve un canal de señal.
+  - Si ambos eventos se vuelven listos durante select, puede elegirse cualquiera.
+review:
+  success: Expresaste cancelación como parte del protocolo. El prechequeo prioriza cancelación previa; no promete prioridad absoluta si dato y cancelación aparecen simultáneamente después.
+  pitfall: 'Crear un Context cancelable no detiene goroutines por sí solo: el trabajo debe observar su señal.'
+transfer: Diseñá un productor que observe el mismo contexto al enviar resultados.
+prediction:
+  question: Si dos cases de select están listos, Go…
+  options:
+    - Siempre elige el primero escrito
+    - Elige uno de los casos listos sin prioridad por orden textual
+    - Ejecuta ambos
+  answer: 1
+  explanation: No podés implementar prioridad suponiendo que el primer case gana.

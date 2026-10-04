@@ -1,0 +1,39 @@
+title: Una primera pieza de cualquier tipo
+intro: 'Tu inventario necesita obtener el primer elemento de una lista de números, nombres o posiciones. El algoritmo es idéntico: el tipo del elemento puede convertirse en un parámetro.'
+why: T any permite transportar valores de cualquier tipo, pero no aplicarles cualquier operación. El resultado sigue siendo T y el compilador conserva esa relación.
+objective: First[T any] devuelve el primer elemento y true, o el valor cero de T y false si no hay elementos.
+instructions:
+  - Conservá la firma genérica y atendé el slice vacío.
+  - Usá var zero T para construir un cero del tipo apropiado.
+tests:
+  - id: t1
+    label: Lista de números
+    expression: func() bool { n,ok:=First([]int{8,3}); return ok && n==8 }()
+    why: T se infiere como int.
+    failure: Devolvé el elemento cero del slice, no el valor cero del tipo.
+  - id: t2
+    label: Lista de nombres
+    expression: func() bool { s,ok:=First([]string{"Ada","Go"}); return ok && s=="Ada" }()
+    why: El mismo código conserva el tipo string.
+    failure: No conviertas los elementos a interface{}.
+  - id: t3
+    label: Vacíos con tipos distintos
+    expression: func() bool { n,a:=First[int](nil); s,b:=First[string](nil); return n==0 && !a && s=="" && !b }()
+    why: El cero depende del parámetro de tipo.
+    failure: var zero T funciona sin conocer T por adelantado.
+hints:
+  - Comprobá len antes de indexar.
+  - Los parámetros de tipo van entre corchetes.
+  - Para una entrada no vacía retorná values[0], true.
+review:
+  success: Escribiste un único algoritmo con resultados tipados. La inferencia evita escribir [int] cuando los argumentos ya revelan el tipo.
+  pitfall: any no autoriza sumar ni ordenar T; la restricción debe garantizar esas operaciones.
+transfer: Implementá Last[T any] y compará sus casos límite.
+prediction:
+  question: ¿Qué tipo tiene el resultado de First([]string{"x"})?
+  options:
+    - interface{}
+    - string
+    - Siempre int
+  answer: 1
+  explanation: La entrada permite inferir T como string.

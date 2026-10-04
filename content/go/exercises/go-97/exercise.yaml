@@ -1,0 +1,46 @@
+title: El último fragmento viene con EOF
+kind: reparar
+imports:
+  - io
+  - errors
+intro: Un Reader puede devolver bytes y un error en la misma llamada. Si mirás el error antes de procesar n, podés perder el último fragmento de la entrada.
+why: Cantidad y error responden preguntas distintas. Además, acá definimos un límite de tres lecturas consecutivas sin progreso para evitar un loop infinito con un origen defectuoso.
+objective: CountStream cuenta bytes, conserva cantidad parcial ante error, trata EOF como fin normal y tres (0,nil) seguidos como io.ErrNoProgress.
+instructions:
+  - Sumá n antes de evaluar err.
+  - Conservá la detección de falta de progreso y reiniciala cuando lleguen datos.
+tests:
+  - id: t1
+    label: Datos junto a EOF
+    expression: func() bool {n,e:=CountStream(&FinalReader{Data:[]byte("abcdef")});return n==6 && e==nil}()
+    why: Cuenta el último bloque antes de atender el final.
+    failure: Los dos bytes finales pueden venir junto con EOF.
+  - id: t2
+    label: Datos junto a otro error
+    expression: func() bool {failure:=fmt.Errorf("fuente falló");n,e:=CountStream(&FinalReader{Data:[]byte("xy"),End:failure});return n==2 && errors.Is(e,failure)}()
+    why: Una causa de error no borra bytes ya recibidos.
+    failure: El contrato conserva cantidad parcial.
+  - id: t3
+    label: Origen sin progreso
+    expression: func() bool {r:=&IdleReader{};n,e:=CountStream(r);return n==0 && r.Calls==3 && errors.Is(e,io.ErrNoProgress)}()
+    why: La política acota reintentos vacíos determinísticamente.
+    failure: No trates un único (0,nil) como EOF.
+hints:
+  - Mové total += n antes de las ramas de error.
+  - EOF termina normalmente después de contar sus bytes.
+  - Otros errores terminan conservando total.
+review:
+  success: Interpretaste conjuntamente ambos resultados de Read. El límite de tres lecturas vacías pertenece a esta función; la interfaz Reader no establece ese número.
+  pitfall: Un error junto con datos exige que el llamador defina si usa, conserva o descarta ese resultado parcial.
+transfer: Agregá un Reader que alterne progreso y pausas para probar el reinicio de idle.
+prediction:
+  question: Read devuelve n=2 y err=io.EOF. ¿Cuántos bytes nuevos hay?
+  options:
+    - Ninguno porque hay error
+    - Dos, que deben considerarse antes del final
+    - No se puede saber
+  answer: 1
+  explanation: n sigue describiendo datos válidos devueltos por esa llamada.
+sources:
+  - title: Contrato de io.Reader
+    url: https://pkg.go.dev/io#Reader

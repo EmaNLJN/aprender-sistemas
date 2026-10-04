@@ -1,0 +1,45 @@
+title: La calculadora de operaciones pospuestas
+imports:
+  - strings
+  - strconv
+intro: En notación posfija, 3 4 + significa sumar los dos últimos números disponibles. Los operadores no necesitan paréntesis porque sus operandos ya están en la pila.
+why: 'Cada número apila un valor y cada operación binaria consume dos. El orden importa: primero sale el operando derecho y después el izquierdo.'
+objective: EvalRPN acepta enteros y los operadores +, - y * separados por whitespace; debe terminar con un único valor.
+instructions:
+  - Validá dos operandos antes de aplicar un operador.
+  - Rechazá tokens inválidos, falta de operandos y resultados sobrantes; usá valores pequeños sin overflow.
+tests:
+  - id: t1
+    label: Composición de operaciones
+    expression: func() bool {n,e:=EvalRPN("3 4 + 2 *");return e==nil && n==14}()
+    why: El resultado de una operación vuelve a la pila.
+    failure: Cada operación reemplaza dos valores por uno.
+  - id: t2
+    label: Orden y enteros negativos
+    expression: func() bool {a,e:=EvalRPN("3 10 -");b,f:=EvalRPN("-2 3 *");return e==nil && f==nil && a == -7 && b == -6}()
+    why: La resta distingue operando izquierdo y derecho.
+    failure: La cima es el operando derecho.
+  - id: t3
+    label: Errores estructurales
+    expression: func() bool {for _,s:=range []string{"","1 +","1 2","hola"}{n,e:=EvalRPN(s);if e==nil || n!=0{return false}};return true}()
+    why: Un resultado parcial no convierte una expresión rota en válida.
+    failure: Verificá también el tamaño final de la pila.
+hints:
+  - La pila mantiene resultados pendientes.
+  - Retirá dos valores antes de agregar su resultado.
+  - Al terminar debe quedar exactamente uno.
+review:
+  success: Construiste un evaluador con un contrato pequeño y errores explícitos. La pila representa dependencias de cálculo ya disponibles.
+  pitfall: Atoi distingue -2 de un operador - aislado; no alcanza inspeccionar sólo el primer carácter.
+transfer: Agregá división y documentá división entera y divisor cero.
+prediction:
+  question: En 3 10 -, el primer valor que se retira es…
+  options:
+    - 3, y se calcula 10-3
+    - 10, que será el operando derecho
+    - El operador como número
+  answer: 1
+  explanation: La pila retira 10 primero; la cuenta es 3-10.
+sources:
+  - title: strconv.Atoi
+    url: https://pkg.go.dev/strconv#Atoi

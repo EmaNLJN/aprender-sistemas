@@ -1,0 +1,39 @@
+title: El semáforo de un servicio
+intro: 'Un monitor clasifica códigos: 200–299 significa ok, 400–499 cliente, 500–599 servidor y cualquier otro valor otro.'
+why: Un switch sin expresión evalúa condiciones en orden. El primer caso verdadero selecciona el resultado y no cae automáticamente al siguiente.
+objective: Clasificá cada código según los intervalos indicados.
+instructions:
+  - Usá comparaciones para los rangos completos.
+  - Agregá un resultado para códigos fuera de esos rangos.
+tests:
+  - id: t1
+    label: Éxito completo
+    expression: Category(200) == "ok" && Category(299) == "ok"
+    why: Verifica ambos extremos del primer rango.
+    failure: 200 es un ejemplo, no el único éxito.
+  - id: t2
+    label: Los dos errores
+    expression: Category(404) == "cliente" && Category(503) == "servidor"
+    why: Separa responsabilidad de cliente y servidor.
+    failure: Cada rango necesita sus límites.
+  - id: t3
+    label: Fuera del contrato HTTP común
+    expression: Category(300) == "otro" && Category(600) == "otro"
+    why: Evita rangos que se extienden indefinidamente.
+    failure: También necesitás una cota superior.
+hints:
+  - switch { } permite condiciones booleanas.
+  - Un rango usa && para combinar límites.
+  - default cubre lo que no coincidió.
+review:
+  success: Clasificaste por intervalos y verificaste fronteras. Pensar en los bordes detecta errores que un único ejemplo no revela.
+  pitfall: No hace falta break al final de cada case de Go.
+transfer: Agregá una categoría para redirecciones sin modificar las otras.
+prediction:
+  question: Después de un case coincidente, Go normalmente…
+  options:
+    - Continúa todos los cases
+    - Sale del switch
+    - Exige break para compilar
+  answer: 1
+  explanation: La continuación a otro case requiere fallthrough explícito; acá no lo necesitamos.

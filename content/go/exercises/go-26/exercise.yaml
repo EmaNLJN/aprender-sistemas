@@ -1,0 +1,44 @@
+title: Un error que el llamador puede atender
+imports:
+  - errors
+intro: Un bool permite avisar que una cuenta falló, pero no explica la causa. La convención (valor, error) entrega un resultado o información sobre el problema.
+why: El error se devuelve como un valor. El llamador decide si lo muestra, lo registra o intenta una alternativa; un caso esperable no necesita panic.
+objective: Dividí dos enteros y devolvé un error si el divisor es cero.
+instructions:
+  - En el caso inválido devolvé 0 y errors.New con un mensaje.
+  - En el caso válido devolvé el cociente y nil.
+tests:
+  - id: t1
+    label: Camino feliz
+    expression: func() bool { n,err:=Quotient(12,3); return n==4 && err==nil }()
+    why: Un resultado correcto se acompaña de nil.
+    failure: No devuelvas un error cuando la operación funciona.
+  - id: t2
+    label: Error esperado
+    expression: func() bool { n,err:=Quotient(9,0); return n==0 && err!=nil && err.Error()!="" }()
+    why: El error debe existir y aportar un mensaje.
+    failure: Comprobá el divisor antes de calcular.
+  - id: t3
+    label: Resultado negativo
+    expression: func() bool { n,err:=Quotient(-7,2); return n == -3 && err==nil }()
+    why: Negativo no significa inválido.
+    failure: La división entera trunca hacia cero.
+hints:
+  - El único divisor inválido en este contrato es cero.
+  - errors.New recibe una explicación en string.
+  - nil representa ausencia de error.
+review:
+  success: Separaste la salida de negocio de la explicación del fallo. El llamador puede tratar el error sin interrumpir todo el programa.
+  pitfall: No ignores err solamente porque el valor devuelto parece utilizable.
+transfer: Agregá contexto al error desde una función que llame a Quotient.
+prediction:
+  question: Si err != nil, lo primero que conviene hacer es…
+  options:
+    - Usar el cociente sin mirar
+    - Elegir cómo manejar el fallo
+    - Terminar siempre con panic
+  answer: 1
+  explanation: Devolver un error deja la decisión de recuperación al llamador.
+sources:
+  - title: Devolver y manejar errores
+    url: https://go.dev/doc/tutorial/handle-errors

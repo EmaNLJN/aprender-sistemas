@@ -1,0 +1,39 @@
+title: La ventana sin símbolos repetidos
+intro: Buscás la mayor racha contigua de runes sin repetir. Cuando aparece una repetida dentro de la ventana actual, su inicio debe saltar después de la aparición anterior.
+why: 'Guardar el último índice de cada rune evita volver a comparar toda la ventana. El inicio nunca retrocede: una aparición que quedó afuera no invalida el tramo actual.'
+objective: LongestUnique devuelve la longitud en runes del tramo contiguo más largo sin duplicados.
+instructions:
+  - Usá índices de runes, no offsets de bytes.
+  - Actualizá start sólo si la aparición previa está dentro de la ventana.
+tests:
+  - id: t1
+    label: Ventana, no conjunto global
+    expression: LongestUnique("dvdf")==3 && LongestUnique("abba")==2 && LongestUnique("aabbcc")==2
+    why: La longitud debe corresponder a un tramo contiguo; aabbcc tiene tres símbolos distintos pero ninguna ventana válida de tres.
+    failure: No cuentes sólo runes distintas en todo el texto.
+  - id: t2
+    label: Unicode con índices coherentes
+    expression: LongestUnique("你好你🙂")==3
+    why: Los índices y longitudes usan runes.
+    failure: range sobre el string entrega offsets de bytes; acá recorré []rune.
+  - id: t3
+    label: Vacío y repetición total
+    expression: LongestUnique("")==0 && LongestUnique("aaaa")==1
+    why: La ventana puede empezar vacía y tener un único símbolo.
+    failure: El máximo no debe inicializarse artificialmente en 1.
+hints:
+  - El mapa guarda índice, no un bool.
+  - Si prev < start, esa repetición ya quedó fuera.
+  - La longitud actual es i-start+1.
+review:
+  success: 'La ventana mantiene una invariancia: dentro no hay símbolos repetidos. Cada paso usa esa invariancia para avanzar sin reiniciar desde cero.'
+  pitfall: Contar runes no equivale a contar grafemas visuales; el contrato vuelve a importar.
+transfer: Devolvé también el tramo ganador y definí qué hacer ante empates.
+prediction:
+  question: Si una rune apareció antes de start, conviene mover start hacia atrás…
+  options:
+    - Sí
+    - No, ya estaba fuera de la ventana
+    - Sólo si era ASCII
+  answer: 1
+  explanation: Retroceder reintroduciría posiciones descartadas y podría romper la invariancia.

@@ -1,0 +1,39 @@
+title: Una función con memoria propia
+intro: Cada contador necesita recordar su valor entre llamadas. Una función interna puede conservar acceso a una variable de la función que la creó.
+why: La clausura captura la variable. Cada llamada a NewCounter crea un estado independiente que sigue vivo mientras la función retornada lo necesita.
+objective: 'NewCounter(start) devuelve una función: cada llamada incrementa y retorna su propio contador.'
+instructions:
+  - Retorná una función anónima con firma func() int.
+  - Actualizá start dentro de esa función.
+tests:
+  - id: t1
+    label: Primera llamada
+    expression: NewCounter(4)() == 5
+    why: La primera llamada ya incrementa.
+    failure: Incrementá antes de retornar.
+  - id: t2
+    label: Estado persistente
+    expression: func() bool { c:=NewCounter(0); return c()==1 && c()==2 && c()==3 }()
+    why: Tres llamadas deben recordar el avance.
+    failure: Sumar sin asignar no actualiza la variable capturada.
+  - id: t3
+    label: Contadores independientes
+    expression: func() bool { a:=NewCounter(1); b:=NewCounter(10); return a()==2 && b()==11 && a()==3 }()
+    why: Crear otro contador no comparte el primero.
+    failure: Evitá una variable global común.
+hints:
+  - start pertenece a cada invocación de NewCounter.
+  - start++ modifica el valor guardado.
+  - La función interna retorna start después del incremento.
+review:
+  success: 'Una función se convirtió en un pequeño objeto con estado privado. Estas pruebas son secuenciales: no hacen al contador seguro para llamadas concurrentes.'
+  pitfall: Una clausura que modifica estado compartido requiere coordinación si varias goroutines la llaman.
+transfer: Creá un contador que avance de dos en dos.
+prediction:
+  question: Si creo a := NewCounter(0) y b := NewCounter(0), comparten estado…
+  options:
+    - Sí, por tener la misma firma
+    - Solamente si llaman a a primero
+    - No
+  answer: 2
+  explanation: Cada invocación crea su propia variable capturada.

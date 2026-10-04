@@ -1,0 +1,39 @@
+title: Una capacidad, dos implementaciones
+intro: El planificador calcula espacio para figuras distintas. Sólo le interesa que cada figura sepa entregar su área, no cómo guarda sus dimensiones.
+why: Una interfaz pequeña describe el comportamiento requerido. Los tipos la satisfacen implementando los métodos, sin declarar una relación de herencia.
+objective: Sumá Area() de todas las figuras recibidas.
+instructions:
+  - Conservá la interfaz Shape y los tipos dados.
+  - Invocá el método de cada elemento sin preguntar su tipo concreto.
+tests:
+  - id: t1
+    label: Tipos mezclados
+    expression: TotalArea([]Shape{Square{3},Rectangle{2,5}}) == 19
+    why: El consumidor trabaja con la capacidad común.
+    failure: Llamá Area sobre cada Shape.
+  - id: t2
+    label: Sin figuras
+    expression: TotalArea(nil) == 0
+    why: El caso vacío usa un acumulador cero.
+    failure: No accedas al primer elemento directamente.
+  - id: t3
+    label: Área cero y repetidas
+    expression: TotalArea([]Shape{Rectangle{0,8},Square{2},Square{2}}) == 8
+    why: Cada figura aporta exactamente su área.
+    failure: No dedupliques ni supongas una única implementación.
+hints:
+  - La interfaz promete Area() int.
+  - No necesitás un switch por tipos.
+  - El acumulador suma shape.Area().
+review:
+  success: El algoritmo depende de una capacidad pequeña. Un nuevo tipo con Area() puede participar sin editar TotalArea.
+  pitfall: Una interfaz no transforma automáticamente un []Square en []Shape; los slices tienen tipos diferentes.
+transfer: Agregá un tercer tipo y usalo sin cambiar TotalArea.
+prediction:
+  question: Para que un tipo satisfaga Shape necesita…
+  options:
+    - Heredar explícitamente de Shape
+    - Un método Area() int
+    - Llamarse Shape
+  answer: 1
+  explanation: La satisfacción de interfaces es implícita y se basa en métodos.

@@ -1,0 +1,48 @@
+title: Tu primer handler, probado sin abrir puertos
+imports:
+  - net/http
+  - net/http/httptest
+  - strings
+intro: 'El endpoint GET /health responde JSON. Otros métodos reciben 405 y otras rutas 404. httptest crea petición y respuesta en memoria: no abrimos un servidor de red.'
+why: Un handler depende de ResponseWriter y Request, por lo que puede probarse directamente. Los headers deben prepararse antes de escribir el cuerpo o el estado.
+objective: Implementá Health con ruta, método, Content-Type y cuerpo según el contrato.
+instructions:
+  - Rechazá primero rutas distintas de /health.
+  - 'Para métodos distintos de GET devolvé 405 y Allow: GET; para GET devolvé {"status":"ok"}.'
+tests:
+  - id: t1
+    label: Contrato de éxito
+    expression: func() bool { w:=httptest.NewRecorder();Health(w,httptest.NewRequest("GET","/health",nil));return w.Code==200 && w.Header().Get("Content-Type")=="application/json" && strings.TrimSpace(w.Body.String())==`{"status":"ok"}` }()
+    why: Estado, headers y cuerpo conforman juntos la respuesta.
+    failure: Prepará el Content-Type antes de escribir.
+  - id: t2
+    label: Método no permitido
+    expression: func() bool { w:=httptest.NewRecorder();Health(w,httptest.NewRequest("POST","/health",nil));return w.Code==405 && w.Header().Get("Allow")=="GET" }()
+    why: El cliente recibe un método permitido.
+    failure: Un return evita escribir luego la respuesta de éxito.
+  - id: t3
+    label: Ruta inexistente
+    expression: func() bool { w:=httptest.NewRecorder();Health(w,httptest.NewRequest("GET","/missing",nil));return w.Code==404 }()
+    why: El handler no convierte cualquier ruta en éxito.
+    failure: Validá URL.Path.
+hints:
+  - r.Method y r.URL.Path separan método y ruta.
+  - http.Error y http.NotFound escriben una respuesta y necesitan return después.
+  - w.Header().Set debe ocurrir antes del cuerpo.
+review:
+  success: Probaste un límite HTTP real en memoria, sin depender de red. Levantar un servidor, administrar timeouts y apagarlo con gracia son ejercicios de proyecto local posteriores.
+  pitfall: Este handler no agrega autenticación, routing general ni políticas de producción automáticamente.
+transfer: Conectá el handler a un servidor local y agregá una prueba de método HEAD con contrato explícito.
+prediction:
+  question: ¿Por qué httptest.NewRecorder evita abrir un puerto?
+  options:
+    - Simula HTTP con JavaScript
+    - Implementa ResponseWriter y registra la respuesta en memoria
+    - Desactiva todos los tests
+  answer: 1
+  explanation: El handler puede invocarse directamente con las interfaces de net/http.
+sources:
+  - title: httptest.ResponseRecorder
+    url: https://pkg.go.dev/net/http/httptest#ResponseRecorder
+  - title: net/http.Handler
+    url: https://pkg.go.dev/net/http#Handler

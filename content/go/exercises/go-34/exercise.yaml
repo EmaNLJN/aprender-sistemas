@@ -1,0 +1,40 @@
+title: Preguntar por un tipo sin explotar
+kind: reparar
+intro: Un evento trae un valor de tipo desconocido. Querés aceptar únicamente int y rechazar otros tipos sin provocar un panic.
+why: La aserción de tipo con dos resultados responde con un valor y un bool. Pregunta por el tipo dinámico; no convierte automáticamente strings o float64.
+objective: Devolvé el int contenido en value, o 0 y false cuando no sea int.
+instructions:
+  - Usá value.(int) con dos variables a la izquierda.
+  - No parses strings ni conviertas otros números.
+tests:
+  - id: t1
+    label: Tipo esperado
+    expression: func() bool { n,ok:=AsInt(-8); return n == -8 && ok }()
+    why: El int conserva su valor.
+    failure: El signo no cambia el tipo.
+  - id: t2
+    label: String parecido
+    expression: func() bool { n,ok:=AsInt("8"); return n==0 && !ok }()
+    why: Parecer un número no equivale a contener un int.
+    failure: La aserción no hace parsing.
+  - id: t3
+    label: nil y float64
+    expression: func() bool { a,x:=AsInt(nil); b,y:=AsInt(float64(8)); return a==0 && !x && b==0 && !y }()
+    why: Otros tipos se rechazan de forma segura.
+    failure: Usá la variante con ok para evitar panic.
+hints:
+  - La aserción de un resultado puede fallar con panic.
+  - La variante n, ok := value.(int) es comprobable.
+  - Retorná ambos resultados.
+review:
+  success: Preguntaste por el tipo dinámico con un resultado explícito. Elegiste inspección de tipos, no conversión permisiva.
+  pitfall: interface{} y any describen el mismo tipo; ninguno implica que cualquier operación sea válida sobre el valor.
+transfer: Agregá una función separada para convertir explícitamente texto a int.
+prediction:
+  question: AsInt(float64(8)) debería aceptar el dato…
+  options:
+    - Sí, porque no tiene decimales
+    - No, el tipo dinámico es float64
+    - Sólo en 64 bits
+  answer: 1
+  explanation: La aserción comprueba el tipo, no la equivalencia matemática.

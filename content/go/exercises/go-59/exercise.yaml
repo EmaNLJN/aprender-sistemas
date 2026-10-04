@@ -1,0 +1,40 @@
+title: Actualizar el descriptor del slice ajeno
+kind: reparar
+intro: Una función agrega varias muestras a un historial, pero el llamador debe ver la nueva longitud. Un slice pasado por valor no permite reemplazar su descriptor externo.
+why: '*[]int permite actualizar el descriptor del llamador. El parámetro variádico recibe cero o más valores, que append expande mediante ...'
+objective: AppendInto actualiza el slice apuntado por dst; si dst es nil, devuelve false sin escribir.
+instructions:
+  - Validá dst antes de desreferenciar.
+  - Guardá append(*dst, values...) en *dst y devolvé true.
+tests:
+  - id: t1
+    label: Slice inicialmente nil
+    expression: func() bool { var s []int; ok:=AppendInto(&s,3,4); return ok && fmt.Sprint(s)=="[3 4]" }()
+    why: El descriptor del llamador recibe longitud y almacenamiento.
+    failure: Guardar sólo una variable local no actualiza s.
+  - id: t2
+    label: Con capacidad extra
+    expression: func() bool { s:=make([]int,1,8); s[0]=2; AppendInto(&s,5,7); return len(s)==3 && fmt.Sprint(s)=="[2 5 7]" }()
+    why: La longitud externa cambia incluso sin realocación.
+    failure: Siempre asigná el resultado de append.
+  - id: t3
+    label: Sin valores y sin dirección
+    expression: func() bool { s:=[]int{1}; ok:=AppendInto(&s); return ok && len(s)==1 && !AppendInto(nil,2) }()
+    why: Un variádico vacío es válido; un puntero nil no.
+    failure: No confundas slice nil con puntero a slice nil.
+hints:
+  - El asterisco selecciona la variable slice externa.
+  - values... expande los argumentos para append.
+  - La asignación destino es *dst.
+review:
+  success: 'Separaste dos niveles: los elementos del array y el descriptor de la secuencia. En muchas APIs resulta más simple retornar el nuevo slice, como hace append.'
+  pitfall: Usar un puntero a slice no impide compartir el array con otras vistas existentes.
+transfer: Reescribí la API para retornar []int y compará cuál comunica mejor el cambio.
+prediction:
+  question: ¿Por qué no basta cambiar local?
+  options:
+    - Porque append está prohibido en funciones
+    - Porque local es otro descriptor
+    - Porque los slices no tienen longitud
+  answer: 1
+  explanation: El descriptor del llamador necesita una asignación explícita o un resultado retornado.

@@ -1,0 +1,40 @@
+title: El porcentaje que perdió sus decimales
+kind: reparar
+intro: El monitor calcula qué fracción de tareas terminó. Con dos int, dividir primero descarta la parte fraccionaria. Convertir el resultado después llega demasiado tarde.
+why: 'Las conversiones son explícitas: float64(done) cambia el tipo antes de hacer la operación. El orden determina qué información conservás.'
+objective: Devolvé done / total como float64; total siempre será positivo.
+instructions:
+  - Convertí ambos operandos antes de dividir.
+  - 'No redondees ni multipliques por 100: buscamos una fracción.'
+tests:
+  - id: t1
+    label: La mitad
+    expression: Fraction(1, 2) == 0.5
+    why: Detecta división entera prematura.
+    failure: Convertí antes de dividir.
+  - id: t2
+    label: Sin progreso
+    expression: Fraction(0, 4) == 0
+    why: Cero tareas debe producir cero.
+    failure: No agregues un ajuste artificial al resultado.
+  - id: t3
+    label: Tres cuartos
+    expression: Fraction(3, 4) == 0.75
+    why: Comprueba una fracción diferente.
+    failure: Cada operando necesita el tipo correcto.
+hints:
+  - El cast exterior no recupera información perdida.
+  - float64(x) convierte un valor.
+  - Dividí float64(done) por float64(total).
+review:
+  success: Elegiste el tipo de la operación antes de ejecutarla. Los valores de prueba tienen representación binaria exacta; con otros decimales puede haber redondeo.
+  pitfall: Usar float64 no vuelve exacta cualquier cuenta decimal.
+transfer: Decidí qué contrato usarías si total fuese cero.
+prediction:
+  question: ¿Cuánto vale float64(3 / 4)?
+  options:
+    - '0.75'
+    - '0'
+    - No compila
+  answer: 1
+  explanation: Primero se divide entre enteros y queda 0; la conversión produce 0.0.

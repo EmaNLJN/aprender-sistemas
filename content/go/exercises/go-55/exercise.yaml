@@ -1,0 +1,40 @@
+title: Una caja tipada que intercambia contenido
+kind: reparar
+intro: Tu inventario necesita una caja que pueda guardar un valor de un tipo elegido al crearla. Reemplazar su contenido debe entregar el valor anterior.
+why: Un tipo genérico declara parámetros que sus métodos reutilizan. El receptor puntero permite actualizar la instancia conservando su T concreto.
+objective: Box[T].Replace(next) guarda next y devuelve el contenido anterior.
+instructions:
+  - Conservá el receptor *Box[T].
+  - Guardá el valor anterior antes de sobrescribirlo.
+tests:
+  - id: t1
+    label: Intercambio numérico
+    expression: func() bool { b:=Box[int]{Value:4}; old:=b.Replace(9); return old==4 && b.Value==9 }()
+    why: El retorno representa el pasado y el campo el presente.
+    failure: Leé el valor viejo antes de escribir.
+  - id: t2
+    label: Caja de strings
+    expression: func() bool { b:=Box[string]{Value:"rojo"}; old:=b.Replace("azul"); return old=="rojo" && b.Value=="azul" }()
+    why: El método conserva el parámetro string.
+    failure: No uses conversiones innecesarias.
+  - id: t3
+    label: Valor cero útil
+    expression: func() bool { var b Box[bool]; old:=b.Replace(true); return !old && b.Value }()
+    why: La caja también funciona sin constructor.
+    failure: El contenido inicial usa el cero de T.
+hints:
+  - old := b.Value captura el contenido anterior.
+  - Después asigná next.
+  - El return debe devolver old.
+review:
+  success: Uniste tipo genérico, estado y receptor puntero. Los métodos usan los parámetros del tipo; no declaran una lista adicional propia de parámetros genéricos.
+  pitfall: 'Cada Box[T] es un tipo instanciado distinto: Box[int] no acepta strings.'
+transfer: Agregá Peek() T y compará receptor por valor y por puntero.
+prediction:
+  question: ¿Box[int].Replace puede recibir un string?
+  options:
+    - Sí, porque T usa any
+    - No, T ya es int en esa instancia
+    - Sólo si el string contiene dígitos
+  answer: 1
+  explanation: any permite elegir el tipo al instanciar; no cambia ese tipo en cada llamada.

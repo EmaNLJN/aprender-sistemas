@@ -1,0 +1,45 @@
+title: Limpiar comandos con espacios reales
+kind: reparar
+imports:
+  - strings
+intro: Un comando puede traer espacios repetidos, tabulaciones y saltos de línea. Queremos convertir sus campos en una etiqueta con guiones, conservando el texto de cada campo.
+why: strings.Fields reconoce espacios en blanco y descarta grupos vacíos. Split con un espacio literal tiene otro contrato.
+objective: Uní los campos separados por espacios en blanco mediante un único guion.
+instructions:
+  - Obtené campos con strings.Fields.
+  - Unilos con strings.Join y el separador "-".
+tests:
+  - id: t1
+    label: Espacios repetidos
+    expression: Label("  motor   Go  ") == "motor-Go"
+    why: Elimina campos vacíos.
+    failure: Split conserva vacíos alrededor de separadores.
+  - id: t2
+    label: Tabulaciones y salto
+    expression: Label("uno\tdos\ntres") == "uno-dos-tres"
+    why: No todo separador es un espacio ASCII.
+    failure: Fields reconoce diferentes espacios en blanco.
+  - id: t3
+    label: Sólo blanco y Unicode
+    expression: Label(" \t\n") == "" && Label("niño azul") == "niño-azul"
+    why: Vacío y Unicode deben conservar un resultado coherente.
+    failure: No modifiques bytes dentro de los campos.
+hints:
+  - Buscá una función que agrupe por whitespace.
+  - Fields devuelve []string.
+  - Join recompone los campos con el nuevo separador.
+review:
+  success: Elegiste una API por su significado y evitaste escribir un parser manual. Esta etiqueta conserva mayúsculas y signos porque el contrato no pide quitarlos.
+  pitfall: Esta transformación no es un parser de comillas ni una normalización completa de URLs.
+transfer: Definí qué debería ocurrir con un campo entre comillas.
+prediction:
+  question: strings.Fields(" a  b ") produce…
+  options:
+    - '["", "a", "", "b", ""]'
+    - '["a", "b"]'
+    - '[" a  b "]'
+  answer: 1
+  explanation: Descarta espacios en los extremos y agrupa secuencias de espacios.
+sources:
+  - title: strings.Fields y Join
+    url: https://pkg.go.dev/strings#Fields

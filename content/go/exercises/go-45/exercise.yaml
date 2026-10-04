@@ -1,0 +1,47 @@
+title: Trabajo paralelo, resultado ordenado
+kind: reparar
+imports:
+  - sync
+intro: Varias goroutines procesan números y pueden terminar en distinto orden. Queremos conservar la posición original de cada resultado y esperar antes de leerlo.
+why: Cada worker escribe en un índice distinto. WaitGroup coordina la finalización; pasar índice y valor como argumentos deja explícito qué trabajo pertenece a cada goroutine.
+objective: Devolvé los cuadrados en el mismo orden, calculados por los workers dados.
+instructions:
+  - Corregí la cuenta de cada worker.
+  - Conservá Add antes de lanzar, Done al terminar y Wait antes del return.
+tests:
+  - id: t1
+    label: Orden independiente del scheduler
+    expression: fmt.Sprint(ParallelSquares([]int{3,1,5,2})) == "[9 1 25 4]"
+    why: Cada respuesta ocupa la posición del dato original.
+    failure: Escribí el cuadrado en out[index].
+  - id: t2
+    label: Vacío y cero
+    expression: len(ParallelSquares(nil)) == 0 && fmt.Sprint(ParallelSquares([]int{0})) == "[0]"
+    why: Wait también funciona sin workers.
+    failure: No agregues un trabajo inexistente al contador.
+  - id: t3
+    label: Fuente intacta y signos
+    expression: func() bool { src:=[]int{-4,-2,-4}; out:=ParallelSquares(src); return fmt.Sprint(out)=="[16 4 16]" && fmt.Sprint(src)=="[-4 -2 -4]" }()
+    why: La salida tiene memoria propia y conserva repeticiones.
+    failure: No escribas los cuadrados sobre values.
+hints:
+  - El cuadrado se calcula n * n.
+  - Cada worker ya tiene su índice propio.
+  - 'No quites Wait: protege la lectura posterior de resultados.'
+review:
+  success: El orden de finalización puede variar sin alterar el orden de salida. Los tests no miden velocidad ni demuestran ausencia general de carreras; el diseño separa escrituras y espera su finalización.
+  pitfall: Una goroutine por elemento no es una estrategia escalable para cualquier tamaño; un pool limita trabajo concurrente.
+transfer: Diseñá cómo limitarías a cuatro workers un lote de un millón de números.
+prediction:
+  question: ¿Por qué Wait va antes de return?
+  options:
+    - Para ordenar por valor
+    - Para leer resultados después de que terminen los workers
+    - Para iniciar las goroutines
+  answer: 1
+  explanation: Sin esperar, el llamador podría observar resultados antes de su escritura.
+sources:
+  - title: sync.WaitGroup
+    url: https://pkg.go.dev/sync#WaitGroup
+  - title: Modelo de memoria de Go
+    url: https://go.dev/ref/mem

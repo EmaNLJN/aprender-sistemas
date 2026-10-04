@@ -1,0 +1,46 @@
+title: Una sola goroutine gana el arranque
+kind: reparar
+imports:
+  - sync/atomic
+  - sync
+intro: Una tarea puede pasar de 0=pendiente a 1=ejecutando y después a 2=terminada. Si dos goroutines intentan arrancarla, una sola debe conseguirlo.
+why: CompareAndSwap combina comprobación y cambio en una operación atómica. Separar Load y Store dejaría una ventana donde varios participantes podrían creer que ganaron.
+objective: Implementá Start y Finish como transiciones válidas; cada una devuelve si logró cambiar el estado.
+instructions:
+  - Start sólo acepta 0→1 y Finish sólo 1→2.
+  - Usá CompareAndSwap y conservá State con Load.
+tests:
+  - id: t1
+    label: Ciclo de vida
+    expression: func() bool { var j Job;return j.State()==0 && j.Start() && !j.Start() && j.Finish() && !j.Finish() && j.State()==2 }()
+    why: Las transiciones se aceptan una vez.
+    failure: Retorná el resultado real de CompareAndSwap.
+  - id: t2
+    label: No terminar antes de empezar
+    expression: func() bool { var j Job;return !j.Finish() && j.State()==0 }()
+    why: Una transición inválida no modifica el estado.
+    failure: Finish necesita estado previo 1.
+  - id: t3
+    label: Un ganador concurrente
+    expression: func() bool { var j Job;var wins atomic.Int32;var wg sync.WaitGroup;for i:=0;i<16;i++{wg.Add(1);go func(){defer wg.Done();if j.Start(){wins.Add(1)}}()};wg.Wait();return wins.Load()==1 && j.State()==1 }()
+    why: Varios intentos deben producir un solo ganador.
+    failure: Load seguido de Store no constituye una comparación y cambio indivisible.
+hints:
+  - CompareAndSwap recibe valor esperado y nuevo.
+  - 'Para Start: esperado 0, nuevo 1.'
+  - 'Para Finish: esperado 1, nuevo 2.'
+review:
+  success: La máquina de estados tiene transiciones atómicas concretas. Esto no hace atómica una operación mayor que combine varios campos independientes.
+  pitfall: Los tipos atomic no deben copiarse después de su primer uso; usalos por puntero.
+transfer: Agregá un estado cancelado y definí exactamente desde cuáles estados se puede entrar.
+prediction:
+  question: ¿Por qué Load()==0 seguido de Store(1) no alcanza?
+  options:
+    - Porque Load siempre devuelve cero
+    - Porque otros pueden actuar entre ambas operaciones
+    - Porque Store no cambia valores
+  answer: 1
+  explanation: CompareAndSwap evita esa separación entre comprobar y actualizar.
+sources:
+  - title: sync/atomic.Int32
+    url: https://pkg.go.dev/sync/atomic#Int32

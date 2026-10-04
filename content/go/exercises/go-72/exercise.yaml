@@ -1,0 +1,44 @@
+title: El reviewer aprende de una tabla de casos
+intro: En vez de repetir bloques de prueba, una tabla describe entradas, resultados esperados y nombres legibles. El loop ejecuta la misma regla para todos.
+why: Separar datos y ejecución hace visibles los bordes que decidiste comprobar. Este ejercicio modela el recorrido; en un módulo local se integra con testing.T y subtests.
+objective: FailedCases devuelve los nombres de todos los casos cuyo resultado difiera de Want, preservando orden.
+instructions:
+  - Ejecutá operation exactamente una vez por caso.
+  - Compará con Want y acumulá los nombres fallidos sin detenerte en el primero.
+tests:
+  - id: t1
+    label: Detecta varias discrepancias
+    expression: fmt.Sprint(FailedCases([]TestCase{{"uno",1,2},{"dos",2,9},{"tres",3,8}},func(n int)int{return n*2}))=="[dos tres]"
+    why: Un reviewer útil informa más que el primer fallo.
+    failure: Compará resultado y Want en cada vuelta.
+  - id: t2
+    label: Cada caso se ejecuta una vez
+    expression: func() bool { calls:=0;failed:=FailedCases([]TestCase{{"a",1,1},{"b",2,2}},func(n int)int{calls++;return n});return calls==2 && len(failed)==0 }()
+    why: No fabriques fallos ni dupliques ejecuciones.
+    failure: Guardá got si necesitás consultarlo más de una vez.
+  - id: t3
+    label: Tabla vacía
+    expression: func() bool { calls:=0;failed:=FailedCases(nil,func(n int)int{calls++;return n});return calls==0 && len(failed)==0 }()
+    why: Sin casos no hay llamadas.
+    failure: La función no necesita una ejecución de prueba previa.
+hints:
+  - Recorré c con range.
+  - got := operation(c.Input) produce el resultado real.
+  - Si got != c.Want, append de c.Name.
+review:
+  success: La tabla se convirtió en una especificación de ejemplos revisable. Los ejemplos no cubren todo el dominio; elegir casos y propiedades sigue siendo trabajo de diseño.
+  pitfall: 'Esta función no reemplaza testing.T: reproduce el patrón para comprenderlo dentro del navegador.'
+transfer: Mové la tabla a un archivo _test.go y usá t.Run con el nombre de cada caso.
+prediction:
+  question: Una tabla con muchos casos casi idénticos garantiza cobertura completa…
+  options:
+    - Sí, por cantidad
+    - No; importa qué propiedades y bordes representan
+    - Sólo si todos pasan
+  answer: 1
+  explanation: La diversidad de condiciones importa más que inflar el número de ejemplos.
+sources:
+  - title: Subtests en Go
+    url: https://go.dev/blog/subtests
+  - title: Paquete testing
+    url: https://pkg.go.dev/testing

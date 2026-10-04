@@ -1,0 +1,40 @@
+title: Modificar el contador original
+kind: reparar
+intro: Una función recibe la dirección de un contador porque debe actualizar el original. Reemplazar el puntero local no escribe en la posición a la que apuntaba.
+why: '*p accede al valor señalado; p es el puntero. Distinguir esos dos niveles evita modificar una copia o cambiar solamente una referencia local.'
+objective: Agregá delta al valor apuntado por p; si p es nil, no hagas nada.
+instructions:
+  - Comprobá nil antes de desreferenciar.
+  - Actualizá *p en vez de reemplazar p.
+tests:
+  - id: t1
+    label: Cambia el original
+    expression: func() bool { n:=8; Add(&n,3); return n==11 }()
+    why: La actualización debe verse fuera de la función.
+    failure: Asignar p = &n sólo modifica el puntero local.
+  - id: t2
+    label: Delta negativo
+    expression: func() bool { n:=3; Add(&n,-5); return n == -2 }()
+    why: La misma operación admite decrementos.
+    failure: No descartes deltas negativos.
+  - id: t3
+    label: Puntero ausente
+    expression: func() bool { Add(nil,4); return true }()
+    why: El contrato define nil como una operación vacía.
+    failure: No leas *p antes de comprobar nil.
+hints:
+  - p == nil detecta falta de dirección.
+  - '*p representa el dato original.'
+  - La operación buscada es *p += delta.
+review:
+  success: La modificación viajó hasta el dato del llamador. El contrato también define qué hacer cuando no hay dirección disponible.
+  pitfall: Go pasa argumentos por valor, incluidos los punteros; la copia del puntero sigue señalando el mismo dato.
+transfer: Cambiá la firma para informar si la actualización pudo realizarse.
+prediction:
+  question: Si p apunta a n, escribir *p = 9 modifica…
+  options:
+    - n
+    - Sólo el puntero p
+    - Ningún valor fuera de Add
+  answer: 0
+  explanation: La desreferencia selecciona el almacenamiento señalado por p.

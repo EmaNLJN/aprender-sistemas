@@ -1,0 +1,39 @@
+title: El engranaje de Euclides
+intro: Dos engranajes necesitan una unidad que divida sus cantidades sin sobrante. El máximo común divisor se puede encontrar reduciendo el par con restos sucesivos.
+why: Los divisores comunes de a y b también dividen a%b. Reemplazar (a,b) por (b,a%b) reduce el problema hasta que el segundo valor es cero.
+objective: GCD calcula el máximo común divisor para enteros no negativos; GCD(0,0) se define como 0.
+instructions:
+  - Mientras b no sea cero, actualizá ambos valores a la vez.
+  - Al terminar, devolvé a.
+tests:
+  - id: t1
+    label: Divisor compartido
+    expression: GCD(54,24)==6 && GCD(24,54)==6
+    why: El orden de entrada no altera el resultado.
+    failure: La reducción debe usar el resto del par anterior.
+  - id: t2
+    label: Coprimos
+    expression: GCD(17,5)==1
+    why: Si sólo comparten la unidad, el resultado es 1.
+    failure: No alcanza con retornar el menor.
+  - id: t3
+    label: Ceros definidos
+    expression: GCD(0,8)==8 && GCD(8,0)==8 && GCD(0,0)==0
+    why: La guardia evita calcular un resto con divisor cero.
+    failure: Comprobá b antes de a%b.
+hints:
+  - El loop termina cuando b == 0.
+  - La asignación múltiple conserva los valores originales de la derecha.
+  - Escribí a, b = b, a % b.
+review:
+  success: La solución avanza mediante una cantidad que disminuye y una propiedad que se conserva. Es una explicación del algoritmo, además de ejemplos que lo prueban.
+  pitfall: El contrato excluye negativos; extenderlo requiere definir normalización y considerar el mínimo int.
+transfer: Usá GCD para simplificar una fracción positiva, cuidando denominador cero.
+prediction:
+  question: Después de un paso con (54,24), el par queda…
+  options:
+    - (24,6)
+    - (30,24)
+    - (6,0)
+  answer: 0
+  explanation: 54%24 vale 6; el nuevo par es (24,6).

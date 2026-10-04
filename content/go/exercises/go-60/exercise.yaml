@@ -1,0 +1,40 @@
+title: Un mapa de objetos, dos niveles de copia
+kind: reparar
+intro: El mapa de personajes guarda punteros a fichas mutables. Copiar el mapa conserva los punteros; editar una ficha del clon todavía podría alterar el original.
+why: La independencia requiere duplicar tanto el mapa como cada objeto señalado. Los valores nil se conservan como ausencia de ficha, sin desreferenciarlos.
+objective: CloneRoster copia map[string]*Player y crea un Player independiente por cada entrada no nil.
+instructions:
+  - Construí un map nuevo.
+  - Copiá el struct de cada puntero válido y guardá la dirección de esa copia.
+tests:
+  - id: t1
+    label: Personaje independiente
+    expression: func() bool { src:=map[string]*Player{"a":{Level:3}}; dst:=CloneRoster(src); if dst["a"]==nil{return false}; dst["a"].Level=9; return src["a"].Level==3 && dst["a"]!=src["a"] }()
+    why: También debe copiarse el objeto, no sólo el mapa.
+    failure: Copiar un puntero mantiene el alias.
+  - id: t2
+    label: Estructura de mapa independiente
+    expression: func() bool { src:=map[string]*Player{"a":{Level:2}}; dst:=CloneRoster(src); delete(dst,"a"); return len(src)==1 }()
+    why: Eliminar una clave del clon no afecta la fuente.
+    failure: Creá un map nuevo.
+  - id: t3
+    label: Entradas nil y fuente vacía
+    expression: func() bool { dst:=CloneRoster(map[string]*Player{"x":nil}); p,ok:=dst["x"]; return ok && p==nil && len(CloneRoster(nil))==0 }()
+    why: Preserva una clave con puntero nil.
+    failure: Comprobá p antes de usar *p.
+hints:
+  - clone := *p copia el struct.
+  - La nueva dirección se obtiene con &clone.
+  - Para p nil, conservá la clave con valor nil.
+review:
+  success: Tu copia cruza los dos niveles mutables de este modelo. Si dos claves originales apuntan al mismo personaje, este contrato crea dos copias independientes.
+  pitfall: Una copia que conserve identidades compartidas requeriría recordar qué objetos ya se clonaron.
+transfer: Diseñá una versión que preserve alias internos usando un mapa de punteros originales a clones.
+prediction:
+  question: out[key] = src[key] copia…
+  options:
+    - El Player completo
+    - Sólo el valor puntero
+    - Todo el grafo de objetos
+  answer: 1
+  explanation: La dirección copiada sigue señalando el objeto original.

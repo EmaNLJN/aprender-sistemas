@@ -1,0 +1,39 @@
+title: Dos turnos, una franja compartida
+intro: 'Los turnos se representan como intervalos [inicio, fin): incluyen el comienzo y excluyen el final. Tocar un extremo no equivale a compartir tiempo.'
+why: La intersección empieza en el mayor inicio y termina en el menor final. Sólo existe duración compartida si el primero es estrictamente menor que el segundo.
+objective: Overlap devuelve inicio, fin y true para una intersección no vacía; en otro caso 0,0,false.
+instructions:
+  - Rechazá intervalos invertidos o vacíos.
+  - Compará el mayor inicio con el menor final.
+tests:
+  - id: t1
+    label: Cruce real
+    expression: func() bool {a,b,ok:=Overlap(2,8,5,10);return ok && a==5 && b==8}()
+    why: Selecciona las fronteras interiores.
+    failure: No devuelvas uno de los turnos completos.
+  - id: t2
+    label: Extremos que se tocan
+    expression: func() bool {a,b,ok:=Overlap(1,3,3,5);return !ok && a==0 && b==0}()
+    why: El final exclusivo no aporta duración.
+    failure: start == end corresponde a una intersección vacía.
+  - id: t3
+    label: Contención e intervalo inválido
+    expression: func() bool {a,b,ok:=Overlap(-3,9,0,2);_,_,bad:=Overlap(4,1,0,8);return ok && a==0 && b==2 && !bad}()
+    why: Contener completamente otro turno es un caso válido.
+    failure: Validá el orden de cada intervalo antes de combinarlo.
+hints:
+  - Elegí el máximo de los inicios.
+  - Elegí el mínimo de los finales.
+  - Usá start < end para decidir si quedó tiempo compartido.
+review:
+  success: La convención de extremos quedó incorporada en los tests. Esa precisión evita que un turno que termina a las 3 choque con otro que empieza a las 3.
+  pitfall: Cambiar de intervalos semiabiertos a cerrados altera la condición de intersección.
+transfer: Definí un contrato para combinar turnos adyacentes sin confundir unión con intersección.
+prediction:
+  question: ¿[1,3) y [3,5) comparten duración?
+  options:
+    - Sí, dos unidades
+    - Sí, el instante 3 pertenece a ambos
+    - No
+  answer: 2
+  explanation: 3 queda fuera del primer intervalo.

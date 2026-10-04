@@ -1,0 +1,40 @@
+title: Cambiar la puerta de entrada a una lista
+kind: reparar
+intro: Una lista enlazada guarda una dirección al primer nodo. Agregar uno al comienzo debe cambiar esa dirección del llamador, incluso cuando la lista está vacía.
+why: '**Node permite acceder a la variable que contiene *Node. No necesitás aritmética de punteros: construís un nodo y actualizás la referencia inicial.'
+objective: Prepend cambia *head por un nodo nuevo que apunte al antiguo primero; head siempre será una dirección válida.
+instructions:
+  - Guardá el valor actual de *head como Next del nodo nuevo.
+  - Escribí la nueva dirección en *head, no en una variable local.
+tests:
+  - id: t1
+    label: Primera pieza
+    expression: func() bool { var head *Node; Prepend(&head,7); return head!=nil && head.Value==7 && head.Next==nil }()
+    why: Debe reemplazarse el puntero del llamador.
+    failure: Reasignar head sólo cambia la copia local del doble puntero.
+  - id: t2
+    label: Enlace al original
+    expression: func() bool { old:=&Node{Value:4}; head:=old; Prepend(&head,9); return head!=old && head.Value==9 && head.Next==old && old.Value==4 }()
+    why: El nodo anterior conserva identidad y contenido.
+    failure: Next debe señalar el nodo anterior, no una copia desconectada.
+  - id: t3
+    label: Dos inserciones
+    expression: func() bool { var h *Node; Prepend(&h,1); Prepend(&h,2); return h!=nil && h.Next!=nil && h.Value==2 && h.Next.Value==1 && h.Next.Next==nil }()
+    why: Cada inserción conserva la cadena completa.
+    failure: Actualizá el comienzo sin perder el resto.
+hints:
+  - head apunta a la variable de entrada.
+  - '*head es la dirección actual del primer nodo.'
+  - Asigná &Node{...} a *head.
+review:
+  success: Diferenciaste cambiar un objeto de cambiar la referencia al objeto. Go mantiene vivos los nodos alcanzables sin liberación manual de memoria.
+  pitfall: Este contrato admite *head nil, pero no admite head nil; son niveles distintos.
+transfer: Implementá Pop que retire el primer nodo y cambie head.
+prediction:
+  question: Si var head *Node, &head tiene tipo…
+  options:
+    - Node
+    - '*Node'
+    - '**Node'
+  answer: 2
+  explanation: La dirección de una variable que contiene *Node agrega otro nivel de indirección.

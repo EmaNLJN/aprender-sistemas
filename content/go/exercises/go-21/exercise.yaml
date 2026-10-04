@@ -1,0 +1,39 @@
+title: Datos que viajan juntos
+intro: Un pedido necesita precio unitario y cantidad. Un struct les da nombres y permite transportarlos como una sola unidad con significado.
+why: Los campos se leen con el selector punto. Nombrarlos reduce la posibilidad de confundir parámetros enteros que representan cosas distintas.
+objective: Calculá el total de un Item usando Price y Quantity.
+instructions:
+  - Conservá el struct Item.
+  - Multiplicá sus dos campos; son cantidades pequeñas y no negativas.
+tests:
+  - id: t1
+    label: Pedido múltiple
+    expression: Cost(Item{Price:7,Quantity:4}) == 28
+    why: Ambos campos intervienen.
+    failure: El precio unitario no es el total.
+  - id: t2
+    label: Sin unidades
+    expression: Cost(Item{Price:9}) == 0
+    why: Un campo omitido usa su valor cero.
+    failure: Quantity es cero si no se especifica.
+  - id: t3
+    label: Entrada por valor
+    expression: func() bool { i:=Item{Price:3,Quantity:2}; n:=Cost(i); return n==6 && i.Price==3 && i.Quantity==2 }()
+    why: El cálculo no necesita modificar el pedido.
+    failure: Devolvé una cuenta, no alteres los campos.
+hints:
+  - Se accede con item.Price.
+  - La cantidad está en item.Quantity.
+  - La fórmula es precio por cantidad.
+review:
+  success: Agrupaste valores relacionados y escribiste una operación sobre ellos. Los literales con nombres de campos facilitan revisar qué representa cada número.
+  pitfall: Un struct puede copiarse; eso no garantiza una copia profunda de campos que contengan slices o maps.
+transfer: Agregá un descuento definido explícitamente en centavos.
+prediction:
+  question: Item{Price:5} deja Quantity en…
+  options:
+    - '1'
+    - nil
+    - '0'
+  answer: 2
+  explanation: El campo int omitido recibe su valor cero.

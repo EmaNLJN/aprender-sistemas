@@ -1,0 +1,45 @@
+title: Una caché con reloj que podés controlar
+kind: reparar
+intro: Un dato vive durante ttl unidades desde su escritura. Pasar now como argumento permite probar vencimientos exactos sin dormir ni depender de la hora de la máquina.
+why: 'La expiración se modela como un instante exclusivo: válido antes, vencido en ese instante o después. Esa frontera evita un paso extra de validez accidental.'
+objective: Corregí Get para expirar cuando now>=expires; TTLCache debe inicializarse con make y usa enteros pequeños sin overflow.
+instructions:
+  - 'Conservá Set: ttl<=0 invalida la clave.'
+  - Al consultar una entrada vencida, borrala y devolvé ausencia.
+tests:
+  - id: t1
+    label: Antes y exactamente al vencer
+    expression: func() bool {c:=make(TTLCache);c.Set("x","A",10,5);v,before:=c.Get("x",14);_,at:=c.Get("x",15);return before && v=="A" && !at && len(c)==0}()
+    why: La igualdad con expires ya representa vencimiento.
+    failure: Usá >= en la frontera.
+  - id: t2
+    label: TTL no positivo invalida
+    expression: func() bool {c:=make(TTLCache);c.Set("x","A",0,10);c.Set("x","B",1,0);_,ok:=c.Get("x",1);return !ok}()
+    why: La escritura no válida no conserva una versión anterior.
+    failure: Conservá delete en la política ttl<=0.
+  - id: t3
+    label: Renovar reemplaza el plazo
+    expression: func() bool {c:=make(TTLCache);c.Set("x","A",0,5);c.Set("x","B",4,10);v,ok:=c.Get("x",6);_,expired:=c.Get("x",14);return ok && v=="B" && !expired}()
+    why: La nueva escritura reinicia el plazo de esa entrada.
+    failure: El vencimiento es now+ttl de la última escritura.
+hints:
+  - La entrada dura en [now, now+ttl).
+  - El bug está en comparar el instante de vencimiento.
+  - Una consulta vencida además limpia la entrada.
+review:
+  success: 'Probaste fronteras temporales con un reloj inyectado como dato. Es una política de expiración perezosa: las entradas se retiran al consultarlas.'
+  pitfall: Una aplicación real necesita una política de reloj, límites numéricos y limpieza de entradas nunca consultadas.
+transfer: Agregá Purge(now) y definí cómo probarlo sin usar time.Sleep.
+prediction:
+  question: Si se escribe en 10 con TTL 5, consultar en 15…
+  options:
+    - Todavía es válido
+    - Ya está vencido
+    - Depende de la velocidad del equipo
+  answer: 1
+  explanation: El intervalo válido excluye el instante 15.
+sources:
+  - title: Maps y borrado
+    url: https://go.dev/blog/maps
+  - title: time y representación de instantes
+    url: https://pkg.go.dev/time
