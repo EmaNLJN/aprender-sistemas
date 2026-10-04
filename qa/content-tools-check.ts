@@ -8,8 +8,8 @@ import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { expectSameIds, listYamlIds } from '../tools/content/catalog-files.ts';
-import { ContentError, filePlace } from '../tools/content/content-error.ts';
+import { expectSameIds, listDirectories, listYamlIds } from '../tools/content/catalog-files.ts';
+import { child, ContentError, fail, filePlace } from '../tools/content/content-error.ts';
 import { checkQuestion, checkRecord, expectText, textList } from '../tools/content/shape.ts';
 import { readYamlFile } from '../tools/content/yaml-file.ts';
 
@@ -79,7 +79,12 @@ test('checkRecord rechaza claves desconocidas y faltantes con su ruta', () => {
 test('checkQuestion exige que la respuesta sea una de las opciones', () => {
   const place = filePlace('content/x.yaml');
   const question = { question: '¿?', options: ['a', 'b', 'c'], answer: 2, explanation: 'Porque.' };
-  assert.deepEqual(checkQuestion(question, place), question);
+  assert.deepEqual(checkQuestion(question, place), {
+    question: '¿?',
+    options: ['a', 'b', 'c'],
+    answer: 2,
+    explanation: 'Porque.',
+  });
   throwsContent(
     () => checkQuestion({ ...question, answer: 3 }, place),
     'content/x.yaml: answer: 3 no es el índice de una opción: hay 3',
@@ -121,6 +126,101 @@ test('listYamlIds ignora el manifiesto y rechaza otros archivos', () => {
     () => listYamlIds(root, 'content/campaign'),
     'content/campaign/notas.md: sólo se admiten archivos <id>.yaml',
   );
+});
+
+test('readYamlFile rechaza lo que JSON no representaría igual', () => {
+  const root = fixture({
+    'content/alias.yaml': 'a: &x [1]\nb: *x\n',
+    'content/vacia.yaml': '"": x\n',
+    'content/compuesta.yaml': '? [a, b]\n: x\n',
+    'content/nan.yaml': 'a: .nan\n',
+    'content/grande.yaml': 'a: 12345678901234567890\n',
+    'content/claves.yaml': '1: x\n"1": y\n',
+    'content/set.yaml': 'a: !!set {x, y}\n',
+  });
+  // Guardado en Latin-1: decodificado como UTF-8 publicaría U+FFFD en lugar de la í y la ó.
+  writeFileSync(join(root, 'content/latin1.yaml'), Buffer.from('título: canción\n', 'latin1'));
+  throwsContent(
+    () => readYamlFile(root, 'content/latin1.yaml'),
+    'content/latin1.yaml: no es UTF-8 válido',
+  );
+  throwsContent(
+    () => readYamlFile(root, 'content/alias.yaml'),
+    'content/alias.yaml: no se admiten alias (*): cada valor se escribe completo',
+  );
+  throwsContent(
+    () => readYamlFile(root, 'content/vacia.yaml'),
+    'content/vacia.yaml: cada clave tiene que ser un texto no vacío',
+  );
+  throwsContent(
+    () => readYamlFile(root, 'content/compuesta.yaml'),
+    'content/compuesta.yaml: cada clave tiene que ser un texto no vacío',
+  );
+  throwsContent(
+    () => readYamlFile(root, 'content/nan.yaml'),
+    'content/nan.yaml: .nan no es un número que JSON represente',
+  );
+  throwsContent(
+    () => readYamlFile(root, 'content/grande.yaml'),
+    'content/grande.yaml: 12345678901234567890 no es un número que JSON represente',
+  );
+  // 1 y "1" quedarían como la misma clave de objeto; un tag de YAML no es un valor JSON.
+  for (const [file, start] of [
+    ['content/claves.yaml', 'Map keys must be unique'],
+    ['content/set.yaml', 'Unresolved tag'],
+  ]) {
+    assert.throws(
+      () => readYamlFile(root, file),
+      (error: unknown) =>
+        error instanceof ContentError &&
+        error.message.startsWith(`${file}: YAML inválido: ${start}`),
+    );
+  }
+});
+
+test('readYamlFile lee YAML 1.2 aunque el archivo declare %YAML 1.1', () => {
+  // Con YAML 1.1, `no` sería false y `010` sería 8.
+  const root = fixture({ 'content/v11.yaml': '%YAML 1.1\n---\na: no\nb: 010\n' });
+  assert.deepEqual(readYamlFile(root, 'content/v11.yaml'), { a: 'no', b: 10 });
+});
+
+test('las carpetas de content/ ignoran ocultos y rechazan entradas de otro tipo', () => {
+  const root = fixture({
+    'content/rust/exercises/rust-01/exercise.yaml': 'title: x\n',
+    'content/rust/exercises/.DS_Store': '',
+    'content/campaign/a.yaml': 'id: a\n',
+    'content/campaign/.a.yaml.swp': '',
+  });
+  assert.deepEqual(listDirectories(root, 'content/rust/exercises'), ['rust-01']);
+  assert.deepEqual(listYamlIds(root, 'content/campaign'), ['a']);
+  writeFileSync(join(root, 'content/rust/exercises/rust-02.yaml'), 'title: x\n');
+  throwsContent(
+    () => listDirectories(root, 'content/rust/exercises'),
+    'content/rust/exercises/rust-02.yaml: sólo se admiten carpetas <id>',
+  );
+  mkdirSync(join(root, 'content/campaign/sub'));
+  throwsContent(
+    () => listYamlIds(root, 'content/campaign'),
+    'content/campaign/sub: sólo se admiten archivos <id>.yaml',
+  );
+  throwsContent(
+    () => listYamlIds(root, 'content/campaign/a.yaml'),
+    'content/campaign/a.yaml: se esperaba una carpeta',
+  );
+});
+
+test('checkRecord valida las claves opcionales presentes y nombra rutas anidadas', () => {
+  const place = filePlace('content/x.yaml');
+  const spec = { title: expectText, tags: textList(1) };
+  throwsContent(
+    () => checkRecord({ title: 'a', tags: [' '] }, place, spec, ['tags']),
+    'content/x.yaml: tags[0]: se esperaba un texto no vacío',
+  );
+  throwsContent(
+    () => fail(child(child(place, 'a'), 'b'), 'mensaje'),
+    'content/x.yaml: a.b: mensaje',
+  );
+  assert.equal(new ContentError('x').name, 'ContentError');
 });
 
 for (const root of roots) rmSync(root, { recursive: true, force: true });

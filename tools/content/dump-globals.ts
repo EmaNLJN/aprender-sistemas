@@ -25,6 +25,9 @@ const esbuild = createRequire(join(root, 'package.json'))('esbuild') as typeof i
 
 // Sólo fuentes de datos y modelos puros: las vistas necesitan un DOM real y las cubren QA y
 // el navegador.
+// No reutiliza qa/lib/sources.ts ni qa/lib/legacy-sources.ts: fijan repoRoot al checkout
+// actual, y el oráculo corre también sobre otra raíz (un commit anterior extraído aparte). Si
+// cambia la lista de adaptadores, actualizá las dos.
 const files = [
   'src/app/legacy/register-catalogs.ts',
   ...['lowlevel', 'infra', 'play', 'pc'].map(
@@ -114,3 +117,6 @@ const atlasModule = (await import(atlasUrl)) as { atlasByLanguage: unknown };
 out.atlas = canonical(atlasModule.atlasByLanguage);
 
 process.stdout.write(JSON.stringify(out));
+// Los errores ya cambian el sha, pero además el proceso falla: un adaptador que se corta no
+// pasa por un volcado válido cuando nadie compara el hash.
+if (Object.keys(errors).length > 0) process.exitCode = 1;

@@ -9,8 +9,10 @@ import vm from 'node:vm';
 const file = process.argv[2];
 if (!file) throw new Error('Uso: node tools/content/dump-dist-globals.ts <dist/index.html>');
 const html = readFileSync(file, 'utf8');
-const script = /<script\b[^>]*>([\s\S]*?)<\/script>/.exec(html)?.[1];
-if (script === undefined) throw new Error(`${file} no tiene un script en línea`);
+// Vite deja el bundle en un <script type="module"> en línea; otro script antes (un tema, por
+// ejemplo) no es el que publica los catálogos.
+const script = /<script\b[^>]*\btype="module"[^>]*>([\s\S]*?)<\/script>/.exec(html)?.[1];
+if (script === undefined) throw new Error(`${file} no tiene un <script type="module"> en línea`);
 
 // Cualquier propiedad, llamada o construcción devuelve otro proxy: el DOM falso nunca lanza, y
 // la evaluación sólo se corta cuando falta una API global (se informa por stderr).
@@ -60,3 +62,7 @@ for (const name of Object.keys(window)
   );
 }
 process.stdout.write(JSON.stringify(globals));
+if (Object.keys(globals).length === 0) {
+  console.error(`${file}: el script no publicó ningún catálogo window.*`);
+  process.exitCode = 1;
+}

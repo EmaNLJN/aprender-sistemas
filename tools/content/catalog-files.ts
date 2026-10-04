@@ -2,25 +2,40 @@ import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fail, filePlace, type Place } from './content-error.ts';
 
-// Entradas de una carpeta de content/, ordenadas. Una carpeta que no existe está vacía: así
-// el manifiesto informa qué falta en lugar de un ENOENT.
-function entries(root: string, folder: string): string[] {
+const EXPECTED = {
+  directory: 'sólo se admiten carpetas <id>',
+  file: 'sólo se admiten archivos <id>.yaml',
+};
+
+// Entradas de una carpeta de content/, ordenadas. Una carpeta que no existe está vacía: así el
+// manifiesto informa qué falta en lugar de un ENOENT. Los nombres que empiezan con punto se
+// ignoran (un .DS_Store de macOS o el .swp de un editor no son contenido); cualquier otra
+// entrada que no sea del tipo esperado es un error: nada queda en content/ sin que el generador
+// lo lea.
+function entries(root: string, folder: string, kind: 'directory' | 'file'): string[] {
   const absolute = join(root, folder);
-  return existsSync(absolute) ? readdirSync(absolute).sort() : [];
+  if (!existsSync(absolute)) return [];
+  if (!statSync(absolute).isDirectory()) fail(filePlace(folder), 'se esperaba una carpeta');
+  const names: string[] = [];
+  for (const entry of readdirSync(absolute, { withFileTypes: true })) {
+    if (entry.name.startsWith('.')) continue;
+    const matches = kind === 'directory' ? entry.isDirectory() : entry.isFile();
+    if (!matches) fail(filePlace(`${folder}/${entry.name}`), EXPECTED[kind]);
+    names.push(entry.name);
+  }
+  return names.sort();
 }
 
 export function listDirectories(root: string, folder: string): string[] {
-  return entries(root, folder).filter((name) => statSync(join(root, folder, name)).isDirectory());
+  return entries(root, folder, 'directory');
 }
 
-// IDs de los <id>.yaml de una carpeta, sin contar su manifest.yaml. Otro archivo o una
-// subcarpeta son un error: nada queda en content/ sin que el generador lo lea.
+// IDs de los <id>.yaml de una carpeta, sin contar su manifest.yaml.
 export function listYamlIds(root: string, folder: string): string[] {
   const ids: string[] = [];
-  for (const name of entries(root, folder)) {
+  for (const name of entries(root, folder, 'file')) {
     if (name === 'manifest.yaml') continue;
-    const isYaml = name.endsWith('.yaml') && statSync(join(root, folder, name)).isFile();
-    if (!isYaml) fail(filePlace(`${folder}/${name}`), 'sólo se admiten archivos <id>.yaml');
+    if (!name.endsWith('.yaml')) fail(filePlace(`${folder}/${name}`), EXPECTED.file);
     ids.push(name.slice(0, -'.yaml'.length));
   }
   return ids;
