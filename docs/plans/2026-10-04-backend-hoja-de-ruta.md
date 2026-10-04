@@ -26,7 +26,7 @@ Opus (`revisor`) e integra el agente principal.
 |---|---|---|---|---|
 | B1 | Ejecutor Go, imágenes de sandbox y prueba de humo de gVisor | — | `POST /v1/run` compila y ejecuta Rust y Go en contenedores endurecidos, con pruebas unitarias e integración | [2026-10-04-ejecutor-go.md](2026-10-04-ejecutor-go.md) |
 | A1 | Contenido en YAML y código real, con oráculo idéntico | — | `content/` reemplaza los catálogos `.ts`; `curriculum.json` generado; bundle y oráculo `dump-globals-v2` idénticos | a escribir |
-| C1 | Base Laravel en Docker | — | Proyecto API-only, servicios `php`, `mysql` y `migrate`, Nginx con `/api/`, healthchecks, Pest contra MySQL de test | a escribir |
+| C1 | Base Laravel en Docker | — | Proyecto API-only, servicios `php`, `mysql` y `migrate`, Nginx con `/api/`, healthchecks, Pest contra MySQL de test | [2026-10-04-laravel-base.md](2026-10-04-laravel-base.md) |
 | A2 | Compuerta de arranque y contenido fuera del bundle | A1 | `main.tsx` espera el contenido antes de evaluar las vistas legacy (spike previo); el HTML deja de embeberlo | a escribir |
 | C2 | Contenido en MySQL | A1, C1 | Migraciones, `content:import` idempotente, `GET /api/content` con ETag; la respuesta es idéntica al oráculo | a escribir |
 | C3 | Autenticación | C1 | Sanctum SPA + Fortify sin vistas, TOTP, límites por IP y vista de login | a escribir |
@@ -40,9 +40,11 @@ Opus (`revisor`) e integra el agente principal.
 
 ## Estado
 
-- **B1** (2026-10-04): implementado en la rama `feat/b1-ejecutor` (PR #3). Las 19 pruebas de
-  integración pasan con runc y con runsc (gVisor instalado por apt). Falta que el usuario
-  agregue `--network=none` a runsc; la prueba de humo lo marca hasta entonces.
+- **B1** (2026-10-04): en `master` (PR #3). Las 21 pruebas de integración pasan con runc y con
+  runsc (gVisor instalado por apt), registrado con `--network=none`.
+- **C1** (2026-10-04): en `master` (PR #4). Pest, prueba de humo y primer arranque con el
+  volumen vacío verificados; la imagen del front con el `nginx.conf` nuevo se prueba en el
+  primer `up --build`.
 
 ## Orden y paralelismo
 

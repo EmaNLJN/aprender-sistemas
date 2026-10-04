@@ -18,7 +18,11 @@
     "pretest": "npm run typecheck",
     "test": "node qa/run-checks.ts",
     "test:executor": "sh executor/scripts/test.sh",
-    "test:executor:integration": "sh executor/scripts/integration.sh"
+    "test:executor:integration": "sh executor/scripts/integration.sh",
+    "api:test": "docker compose --profile test run --rm --build test",
+    "api:test:down": "docker compose --profile test rm --stop --force mysql-test",
+    "api:format:check": "docker compose --profile test run --rm --build --no-deps --entrypoint php test vendor/bin/pint --test",
+    "api:smoke": "sh api/scripts/smoke.sh"
   },
   "dependencies": {
     "@codemirror/autocomplete": "6.20.3",

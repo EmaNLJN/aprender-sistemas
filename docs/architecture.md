@@ -36,7 +36,8 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | Animaciones | `src/shared/lib/celebration.ts`, adaptador `src/app/legacy/register-effects.ts` |
 | Kits ZIP de proyecto | `src/features/download-project-kit/` (archivos puros y ZIP con fflate), `src/shared/lib/download-file.ts`, adaptador `src/app/legacy/register-project-kit.ts` |
 | Construcción y dependencias | configuración Vite, `package.json`, `package-lock.json` |
-| Servicio estático y preview | `Dockerfile`, `compose.yaml`, `compose.preview.yaml`, `nginx.conf` |
+| Servicio web, API y preview: Nginx, PHP-FPM, MySQL y migraciones | `Dockerfile`, `compose.yaml`, `compose.preview.yaml`, `nginx.conf` |
+| API Laravel del ADR 0004: rutas, configuración, migraciones, pruebas Pest e imagen PHP-FPM | `api/` (reglas en `api/AGENTS.md`) |
 | Comprobaciones e investigación educativa | `qa/*-check.ts`, `qa/lib/`, `qa/fixtures/`, `qa/run-checks.ts`, `qa/research-*.md` |
 | Documentación del desarrollo | `AGENTS.md`, `docs/` |
 

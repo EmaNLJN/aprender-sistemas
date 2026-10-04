@@ -1,0 +1,13 @@
+# Contexto de la imagen de la API: fuentes y configuración. Las dependencias se instalan en
+# las etapas de Composer y los secretos llegan por el entorno de Compose, nunca en un archivo.
+vendor
+node_modules
+.env
+.env.*
+.phpunit.cache
+.phpunit.result.cache
+bootstrap/cache/*.php
+storage/logs/*.log
+scripts
+AGENTS.md
+CLAUDE.md
