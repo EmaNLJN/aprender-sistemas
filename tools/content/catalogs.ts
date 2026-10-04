@@ -14,7 +14,7 @@ export type Catalog = 'lab' | 'quests' | SystemsDomain;
 // el oráculo lo observan (Object.keys, JSON.stringify). Sale de `add` (recorrido),
 // `defineQuest` (desafíos) y de los literales de cada dominio de núcleos. El orden del YAML
 // no importa; una clave que no figure acá es un error.
-export const EXERCISE_KEY_ORDER: Record<Catalog, readonly string[]> = {
+export const EXERCISE_KEY_ORDER = {
   lab: [
     'id',
     'language',
@@ -168,7 +168,11 @@ export const EXERCISE_KEY_ORDER: Record<Catalog, readonly string[]> = {
     'solution',
     'tests',
   ],
-};
+} as const satisfies Record<Catalog, readonly string[]>;
+
+// Toda clave que algún catálogo publica: cada una necesita su comprobación en exercises.ts.
+export type ExerciseKey = (typeof EXERCISE_KEY_ORDER)[Catalog][number];
+
 // Sólo el recorrido tiene ejercicios sin nivel (75 de 100 por lenguaje).
 export const OPTIONAL_EXERCISE_KEYS: Record<Catalog, readonly string[]> = {
   lab: ['level'],

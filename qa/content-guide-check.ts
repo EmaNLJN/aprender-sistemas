@@ -6,37 +6,10 @@
  * pasos, en el mismo lugar.
  */
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
-import { ContentError } from '../tools/content/content-error.ts';
 import { loadGuide } from '../tools/content/guide.ts';
+import { fixture, scenarios, throwsContent } from './lib/content-fixtures.ts';
 
-const roots: string[] = [];
-function fixture(files: Record<string, string>): string {
-  const root = mkdtempSync(join(tmpdir(), 'taller-guide-'));
-  roots.push(root);
-  for (const [file, text] of Object.entries(files)) {
-    mkdirSync(dirname(join(root, file)), { recursive: true });
-    writeFileSync(join(root, file), text);
-  }
-  return root;
-}
-
-function throwsContent(run: () => unknown, message: string): void {
-  assert.throws(run, (error: unknown) => {
-    assert.ok(error instanceof ContentError, `se esperaba ContentError: ${String(error)}`);
-    assert.equal(error.message, message);
-    return true;
-  });
-}
-
-let passed = 0;
-function test(name: string, run: () => void): void {
-  run();
-  passed++;
-  console.log('PASS ' + name);
-}
+const { test, done } = scenarios('content-guide');
 
 function resource(id: string, languages: string): string {
   return `id: ${id}
@@ -149,7 +122,23 @@ test('validación: los IDs de módulos y pasos no se repiten entre recorridos', 
   };
   throwsContent(
     () => loadGuide(fixture(files)),
-    'content/guide/go/manifest.yaml: ID repetido en la guía: rust-m1',
+    'content/guide/go/manifest.yaml: modules[0].id: ID repetido en la guía: rust-m1',
+  );
+});
+
+test('un paso de un recorrido no puede ser también paso de otro', () => {
+  const files = guideFiles();
+  delete files['content/guide/go/steps/go-s1.yaml'];
+  throwsContent(
+    () =>
+      loadGuide(
+        fixture({
+          ...files,
+          'content/guide/go/manifest.yaml': track('go', ['rust-s1']),
+          'content/guide/go/steps/rust-s1.yaml': step('rust-s1'),
+        }),
+      ),
+    'content/guide/go/manifest.yaml: modules[0].steps[0]: ID repetido en la guía: rust-s1',
   );
 });
 
@@ -161,6 +150,13 @@ test('validación: nada suelto en content/guide/ ni en cada recorrido', () => {
   throwsContent(
     () => loadGuide(fixture({ ...guideFiles(), 'content/guide/rust/extra.yaml': 'a: 1\n' })),
     'content/guide/rust/extra.yaml: sólo se admiten manifest.yaml y steps/',
+  );
+  const goAsFile = Object.fromEntries(
+    Object.entries(guideFiles()).filter(([file]) => !file.startsWith('content/guide/go/')),
+  );
+  throwsContent(
+    () => loadGuide(fixture({ ...goAsFile, 'content/guide/go': 'no es una carpeta\n' })),
+    'content/guide/go: se esperaba una carpeta',
   );
   const hidden = { ...guideFiles(), 'content/guide/.DS_Store': '', 'content/guide/go/.swp': '' };
   assert.deepEqual(Object.keys(loadGuide(fixture(hidden))), ['resources', 'tracks', 'sources']);
@@ -202,5 +198,4 @@ test('validación: IDs de un recorrido con su campo, recursos huérfanos y fuent
   );
 });
 
-for (const root of roots) rmSync(root, { recursive: true, force: true });
-console.log(`${passed} content-guide scenarios PASS.`);
+done();

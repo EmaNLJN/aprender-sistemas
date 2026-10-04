@@ -95,6 +95,11 @@ export function checkRecord(
   return record;
 }
 
+// El par de `listOf` para un mapa: `checkRecord` como `Check`.
+export function recordOf(spec: Record<string, Check>, optional: readonly string[] = []): Check {
+  return (value, place) => checkRecord(value, place, spec, optional);
+}
+
 export function checkSource(value: unknown, place: Place): JsonRecord {
   return checkRecord(value, place, { title: expectText, url: expectText });
 }

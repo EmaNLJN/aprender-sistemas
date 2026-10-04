@@ -1,18 +1,27 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { isScalar, parseDocument, visit, type ParsedNode } from 'yaml';
+import { isAlias, isScalar, parseDocument, visit, type ParsedNode, type Scalar } from 'yaml';
 import { ContentError } from './content-error.ts';
 
 const utf8 = new TextDecoder('utf-8', { fatal: true });
 
-// Dos claves chocan si quedan iguales como clave de objeto JS: 1 y "1", o null y "".
+// La clave de objeto JS en que termina un nodo escalar: 1 y "1" dan "1"; null y "" dan "".
+function jsKey(node: Scalar): string {
+  return String(node.value ?? '');
+}
+
+// Dos claves chocan si quedan iguales como clave de objeto JS.
 function sameKey(a: ParsedNode, b: ParsedNode): boolean {
-  return isScalar(a) && isScalar(b) && String(a.value ?? '') === String(b.value ?? '');
+  return isScalar(a) && isScalar(b) && jsKey(a) === jsKey(b);
 }
 
 // JSON no representa NaN ni infinitos, y un entero fuera del rango seguro ya perdió dígitos.
 function isJsonNumber(value: number): boolean {
   return Number.isFinite(value) && (!Number.isInteger(value) || Number.isSafeInteger(value));
+}
+
+function throwAlias(file: string): never {
+  throw new ContentError(`${file}: no se admiten alias (*): cada valor se escribe completo`);
 }
 
 // Lee un archivo de texto de content/ (YAML o código). `file` es relativo a `root` y es lo que
@@ -49,10 +58,12 @@ export function readYamlFile(root: string, file: string): unknown {
   }
   visit(document, {
     Alias() {
-      throw new ContentError(`${file}: no se admiten alias (*): cada valor se escribe completo`);
+      throwAlias(file);
     },
     Pair(_key, pair) {
-      if (!isScalar(pair.key) || String(pair.key.value ?? '') === '') {
+      // Un alias como clave es un alias: el visitante lo rechaza con su propio mensaje.
+      if (isAlias(pair.key)) throwAlias(file);
+      if (!isScalar(pair.key) || jsKey(pair.key) === '') {
         throw new ContentError(`${file}: cada clave tiene que ser un texto no vacío`);
       }
     },

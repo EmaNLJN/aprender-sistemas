@@ -9,6 +9,7 @@ import {
   OPTIONAL_EXERCISE_KEYS,
   SYSTEMS_DOMAINS,
   type Catalog,
+  type ExerciseKey,
   type Language,
   type SystemsDomain,
 } from './catalogs.ts';
@@ -24,6 +25,7 @@ import {
   integer,
   listOf,
   oneOf,
+  recordOf,
   textList,
   type Check,
   type JsonRecord,
@@ -37,7 +39,14 @@ export interface LanguageExercises {
 }
 
 // Claves que el manifiesto puede dar por defecto, en `defaults` o en cada etapa.
-const DEFAULT_KEYS = ['kind', 'minutes', 'imports', 'visual', 'sources', 'level'];
+const DEFAULT_KEYS = [
+  'kind',
+  'minutes',
+  'imports',
+  'visual',
+  'sources',
+  'level',
+] as const satisfies readonly ExerciseKey[];
 // Claves que nunca van en exercise.yaml: salen de la carpeta, del manifiesto o del código.
 const DERIVED_KEYS: Record<string, string> = {
   id: 'es el nombre de la carpeta',
@@ -66,7 +75,7 @@ const VISUALS = [
 const CODE_EXTENSION: Record<Language, string> = { rust: 'rs', go: 'go' };
 // Cada .go empieza con esta cabecera para que gofmt lo pueda parsear; el código publicado,
 // como antes, no la incluye.
-export const GO_HEADER = 'package main\n\n';
+const GO_HEADER = 'package main\n\n';
 
 function checkHints(value: unknown, place: Place): string[] {
   const hints = expectTextList(value, place, 1);
@@ -92,7 +101,7 @@ function checkTests(value: unknown, place: Place): unknown[] {
   return tests;
 }
 
-const EXERCISE_CHECKS: Record<string, Check> = {
+const EXERCISE_CHECKS: Record<ExerciseKey, Check> = {
   id: expectText,
   language: expectText,
   topicId: expectText,
@@ -115,7 +124,7 @@ const EXERCISE_CHECKS: Record<string, Check> = {
   solution: expectText,
   tests: checkTests,
   hints: checkHints,
-  review: (value, place) => checkRecord(value, place, { success: expectText, pitfall: expectText }),
+  review: recordOf({ success: expectText, pitfall: expectText }),
   transfer: expectText,
   prediction: checkQuestion,
 };
@@ -138,10 +147,7 @@ const QUEST_STAGE_SPEC: Record<string, Check> = {
 const QUEST_STAGE_OPTIONAL = ['imports', 'visual', 'sources'];
 
 function stageList(spec: Record<string, Check>, optional: readonly string[]): Check {
-  return (value, place) =>
-    expectList(value, place, 1).map((stage, index) =>
-      checkRecord(stage, child(place, index), spec, optional),
-    );
+  return listOf(recordOf(spec, optional), 1);
 }
 
 function checkQuestStages(value: unknown, place: Place): unknown[] {
@@ -158,17 +164,14 @@ function checkQuestStages(value: unknown, place: Place): unknown[] {
 }
 
 const MANIFEST_SPEC: Record<string, Check> = {
-  defaults: (value, place) => checkRecord(value, place, DEFAULTS_SPEC, DEFAULT_KEYS),
+  defaults: recordOf(DEFAULTS_SPEC, DEFAULT_KEYS),
   lab: stageList(STAGE_SPEC, DEFAULT_KEYS),
   quests: checkQuestStages,
-  systems: (value, place) =>
-    checkRecord(
-      value,
-      place,
-      Object.fromEntries(
-        SYSTEMS_DOMAINS.map((domain) => [domain, stageList(STAGE_SPEC, DEFAULT_KEYS)]),
-      ),
+  systems: recordOf(
+    Object.fromEntries(
+      SYSTEMS_DOMAINS.map((domain) => [domain, stageList(STAGE_SPEC, DEFAULT_KEYS)]),
     ),
+  ),
 };
 // El cargador acepta lenguajes sin desafíos ni núcleos (las pruebas los usan); que el currículo
 // real los tenga lo exigen content-check y curriculum-ids-check.
@@ -240,9 +243,10 @@ function readCode(root: string, folder: string, language: Language, name: string
 }
 
 function orderExercise(fields: JsonRecord, catalog: Catalog, place: Place): JsonRecord {
-  const order = EXERCISE_KEY_ORDER[catalog];
+  const order: readonly ExerciseKey[] = EXERCISE_KEY_ORDER[catalog];
   for (const key of Object.keys(fields)) {
-    if (!order.includes(key)) fail(child(place, key), `clave desconocida en ${catalog}`);
+    if (!(order as readonly string[]).includes(key))
+      fail(child(place, key), `clave desconocida en ${catalog}`);
   }
   const exercise: JsonRecord = {};
   for (const key of order) {
@@ -250,7 +254,7 @@ function orderExercise(fields: JsonRecord, catalog: Catalog, place: Place): Json
       EXERCISE_CHECKS[key](fields[key], child(place, key));
       exercise[key] = fields[key];
     } else if (!OPTIONAL_EXERCISE_KEYS[catalog].includes(key)) {
-      fail(place, `falta «${key}»`);
+      fail(place, `falta la clave «${key}»`);
     }
   }
   return exercise;

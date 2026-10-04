@@ -5,11 +5,9 @@
  * Cada error nombra el archivo y el campo: es lo único que ve quien edita un YAML.
  */
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, mkdirSync, symlinkSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import {
   expectSameIds,
   listDirectories,
@@ -19,32 +17,9 @@ import {
 import { child, ContentError, fail, filePlace } from '../tools/content/content-error.ts';
 import { checkQuestion, checkRecord, expectText, textList } from '../tools/content/shape.ts';
 import { readContentText, readYamlFile } from '../tools/content/yaml-file.ts';
+import { fixture, scenarios, throwsContent } from './lib/content-fixtures.ts';
 
-const roots: string[] = [];
-function fixture(files: Record<string, string>): string {
-  const root = mkdtempSync(join(tmpdir(), 'taller-content-'));
-  roots.push(root);
-  for (const [file, text] of Object.entries(files)) {
-    mkdirSync(dirname(join(root, file)), { recursive: true });
-    writeFileSync(join(root, file), text);
-  }
-  return root;
-}
-
-function throwsContent(run: () => unknown, message: string): void {
-  assert.throws(run, (error: unknown) => {
-    assert.ok(error instanceof ContentError, `se esperaba ContentError: ${String(error)}`);
-    assert.equal(error.message, message);
-    return true;
-  });
-}
-
-let passed = 0;
-function test(name: string, run: () => void): void {
-  run();
-  passed++;
-  console.log('PASS ' + name);
-}
+const { test, done } = scenarios('content-tools');
 
 test('readYamlFile conserva el orden de claves del documento', () => {
   const root = fixture({ 'content/a.yaml': 'zeta: 1\nalfa: [x, y]\nmedio: {b: 2, a: 1}\n' });
@@ -138,6 +113,7 @@ test('listYamlIds ignora el manifiesto y rechaza otros archivos', () => {
 test('readYamlFile rechaza lo que JSON no representaría igual', () => {
   const root = fixture({
     'content/alias.yaml': 'a: &x [1]\nb: *x\n',
+    'content/clave-alias.yaml': 'base: &k clave\n*k : valor\n',
     'content/vacia.yaml': '"": x\n',
     'content/compuesta.yaml': '? [a, b]\n: x\n',
     'content/nan.yaml': 'a: .nan\n',
@@ -154,6 +130,10 @@ test('readYamlFile rechaza lo que JSON no representaría igual', () => {
   throwsContent(
     () => readYamlFile(root, 'content/alias.yaml'),
     'content/alias.yaml: no se admiten alias (*): cada valor se escribe completo',
+  );
+  throwsContent(
+    () => readYamlFile(root, 'content/clave-alias.yaml'),
+    'content/clave-alias.yaml: no se admiten alias (*): cada valor se escribe completo',
   );
   throwsContent(
     () => readYamlFile(root, 'content/vacia.yaml'),
@@ -277,5 +257,4 @@ test('build-curriculum: un content/ inválido da error legible y no escribe el J
   assert.equal(existsSync(join(root, 'build', 'curriculum.json')), false);
 });
 
-for (const root of roots) rmSync(root, { recursive: true, force: true });
-console.log(`${passed} content-tools scenarios PASS.`);
+done();

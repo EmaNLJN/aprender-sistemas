@@ -6,40 +6,13 @@
  * las claves en el orden del archivo, y su `id` coincide con el nombre del archivo.
  */
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
 import { loadCampaign } from '../tools/content/campaign.ts';
-import { ContentError } from '../tools/content/content-error.ts';
 import { loadGroupedRecords } from '../tools/content/records.ts';
 import { expectText } from '../tools/content/shape.ts';
 import { loadWorkshops } from '../tools/content/workshops.ts';
+import { fixture, scenarios, throwsContent } from './lib/content-fixtures.ts';
 
-const roots: string[] = [];
-function fixture(files: Record<string, string>): string {
-  const root = mkdtempSync(join(tmpdir(), 'taller-records-'));
-  roots.push(root);
-  for (const [file, text] of Object.entries(files)) {
-    mkdirSync(dirname(join(root, file)), { recursive: true });
-    writeFileSync(join(root, file), text);
-  }
-  return root;
-}
-
-function throwsContent(run: () => unknown, message: string): void {
-  assert.throws(run, (error: unknown) => {
-    assert.ok(error instanceof ContentError, `se esperaba ContentError: ${String(error)}`);
-    assert.equal(error.message, message);
-    return true;
-  });
-}
-
-let passed = 0;
-function test(name: string, run: () => void): void {
-  run();
-  passed++;
-  console.log('PASS ' + name);
-}
+const { test, done } = scenarios('content-records');
 
 const SPEC = { id: expectText, title: expectText, minutes: expectText };
 
@@ -258,5 +231,4 @@ test('talleres: category es una de las que conoce systems.js', () => {
   );
 });
 
-for (const root of roots) rmSync(root, { recursive: true, force: true });
-console.log(`${passed} content-records scenarios PASS.`);
+done();

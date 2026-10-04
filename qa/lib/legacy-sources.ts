@@ -2,10 +2,10 @@
 // Cada loadX evalúa sus archivos con runSource en el orden que exigen las
 // dependencias por window.* (ver qa/load-order-check.ts); los checks no repiten listas.
 import type vm from 'node:vm';
+import { SYSTEMS_DOMAINS, type SystemsDomain } from '../../tools/content/catalogs.ts';
 import { runSource, type RunOptions } from './sources.ts';
 
 export type Language = 'rust' | 'go';
-export type SystemsDomain = 'lowlevel' | 'infra' | 'play' | 'pc';
 
 // Contenido del recorrido, ejercicios, desafíos y mundos: un adaptador publica los 7 globals.
 export const CATALOGS_SOURCE = 'src/app/legacy/register-catalogs.ts';
@@ -19,7 +19,7 @@ export const SYSTEMS_UI_SOURCE = 'systems.js';
 // Ejercicios del recorrido y desafíos de campaña.
 export const LAB_EXERCISE_SOURCES: readonly string[] = [CATALOGS_SOURCE];
 
-export const SYSTEMS_DOMAINS: readonly SystemsDomain[] = ['lowlevel', 'infra', 'play', 'pc'];
+export { SYSTEMS_DOMAINS, type SystemsDomain };
 
 // Cada dominio tiene un adaptador que publica su catálogo, sus modelos y sus núcleos.
 export function systemsDomainSources(domain: SystemsDomain): readonly string[] {

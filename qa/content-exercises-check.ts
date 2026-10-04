@@ -7,11 +7,10 @@
  * esperados están escritos a mano a partir de esas reglas.
  */
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
-import { ContentError } from '../tools/content/content-error.ts';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { expectDistinctIds, interleaveCores, loadLanguage } from '../tools/content/exercises.ts';
+import { fixture, scenarios, throwsContent } from './lib/content-fixtures.ts';
 
 const EXERCISE = `title: Sumar
 intro: Una función suma.
@@ -71,17 +70,6 @@ function exerciseFiles(language: 'rust' | 'go', id: string, yaml = EXERCISE) {
   };
 }
 
-const roots: string[] = [];
-function fixture(files: Record<string, string>): string {
-  const root = mkdtempSync(join(tmpdir(), 'taller-exercises-'));
-  roots.push(root);
-  for (const [file, text] of Object.entries(files)) {
-    mkdirSync(dirname(join(root, file)), { recursive: true });
-    writeFileSync(join(root, file), text);
-  }
-  return root;
-}
-
 function rustLab(extra: Record<string, string> = {}): string {
   return fixture({
     'content/rust/manifest.yaml': `${DEFAULTS}lab:\n${labStage('rust-a', ['rust-01', 'rust-02'])}`,
@@ -91,20 +79,7 @@ function rustLab(extra: Record<string, string> = {}): string {
   });
 }
 
-function throwsContent(run: () => unknown, message: string): void {
-  assert.throws(run, (error: unknown) => {
-    assert.ok(error instanceof ContentError, `se esperaba ContentError: ${String(error)}`);
-    assert.equal(error.message, message);
-    return true;
-  });
-}
-
-let passed = 0;
-function test(name: string, run: () => void): void {
-  run();
-  passed++;
-  console.log('PASS ' + name);
-}
+const { test, done } = scenarios('content-exercises');
 
 const SHARED_TEXT = {
   title: 'Sumar',
@@ -408,7 +383,7 @@ test('validación: pistas, pruebas y predicción', () => {
       EXERCISE.replace('  answer: 1\n', '  answer: 2\n'),
       `${RUST_01}/exercise.yaml: prediction.answer: 2 no es el índice de una opción: hay 2`,
     ],
-    [EXERCISE.replace('title: Sumar\n', ''), `${RUST_01}/exercise.yaml: falta «title»`],
+    [EXERCISE.replace('title: Sumar\n', ''), `${RUST_01}/exercise.yaml: falta la clave «title»`],
     [`color: rojo\n${EXERCISE}`, `${RUST_01}/exercise.yaml: color: clave desconocida en lab`],
     [
       `stage: 3\n${EXERCISE}`,
@@ -575,12 +550,13 @@ test('la carpeta de un ejercicio ignora ocultos y rechaza subcarpetas', () => {
   const hidden = rustLab({ [`${RUST_01}/.DS_Store`]: '' });
   assert.equal(loadLanguage(hidden, 'rust').lab.length, 2);
   const root = rustLab();
-  mkdirSync(join(root, RUST_01, 'starter.rs.d'));
+  // El starter es una carpeta con el nombre del archivo esperado.
+  rmSync(join(root, RUST_01, 'starter.rs'));
+  mkdirSync(join(root, RUST_01, 'starter.rs'));
   throwsContent(
     () => loadLanguage(root, 'rust'),
-    `${RUST_01}/starter.rs.d: sólo se admiten exercise.yaml, starter y solution`,
+    `${RUST_01}/starter.rs: sólo se admiten exercise.yaml, starter y solution`,
   );
 });
 
-for (const root of roots) rmSync(root, { recursive: true, force: true });
-console.log(`${passed} content-exercises scenarios PASS.`);
+done();

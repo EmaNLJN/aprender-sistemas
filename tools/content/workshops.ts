@@ -2,25 +2,23 @@
 // content/workshops/<id>.yaml es la ficha que publica SYSTEMS_<DOMINIO>.workshops. Cada dominio
 // conserva su orden de claves legacy porque el YAML es el objeto tal cual.
 import { LEVEL_IDS } from '../../src/shared/config/levels.ts';
-import { SYSTEMS_DOMAINS, type SystemsDomain } from './catalogs.ts';
+import { LANGUAGES, SYSTEMS_DOMAINS, type SystemsDomain } from './catalogs.ts';
 import { loadGroupedRecords } from './records.ts';
 import {
   checkQuestion,
-  checkRecord,
   checkSource,
   expectText,
   integer,
   listOf,
   oneOf,
+  recordOf,
   textList,
   type Check,
   type JsonRecord,
 } from './shape.ts';
 
-const perLanguage =
-  (check: Check): Check =>
-  (value, place) =>
-    checkRecord(value, place, { rust: check, go: check });
+const perLanguage = (check: Check): Check =>
+  recordOf(Object.fromEntries(LANGUAGES.map((language) => [language, check])));
 
 const WORKSHOP_SPEC: Record<string, Check> = {
   id: expectText,
@@ -36,20 +34,10 @@ const WORKSHOP_SPEC: Record<string, Check> = {
   why: expectText,
   uses: textList(1),
   limits: expectText,
-  objectives: listOf(
-    (value, place) =>
-      checkRecord(value, place, { id: expectText, label: expectText, why: expectText }),
-    1,
-  ),
+  objectives: listOf(recordOf({ id: expectText, label: expectText, why: expectText }), 1),
   prediction: checkQuestion,
   steps: listOf(
-    (value, place) =>
-      checkRecord(value, place, {
-        title: expectText,
-        task: expectText,
-        why: expectText,
-        done: expectText,
-      }),
+    recordOf({ title: expectText, task: expectText, why: expectText, done: expectText }),
     1,
   ),
   sources: listOf(checkSource, 1),

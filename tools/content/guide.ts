@@ -1,12 +1,10 @@
 // Guía (GUIDE_DATA) en content/guide/: la biblioteca ordenada por manifest.yaml, un archivo
 // por recurso y por paso, el manifiesto de cada recorrido (módulos en orden con sus pasos) y
 // las fuentes. Se arma con el mismo orden de claves que publicaba guide-data.ts.
-import { existsSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
-import { expectSameIds, listYamlIds } from './catalog-files.ts';
+import { expectOnlyEntries, expectSameIds, expectUniqueIds, listYamlIds } from './catalog-files.ts';
 import { LANGUAGES, type Language } from './catalogs.ts';
-import { child, fail, filePlace, type Place } from './content-error.ts';
-import { loadRecord } from './records.ts';
+import { child, filePlace, type Place } from './content-error.ts';
+import { loadListedRecords } from './records.ts';
 import {
   checkQuestion,
   checkRecord,
@@ -15,17 +13,32 @@ import {
   integer,
   listOf,
   oneOf,
+  recordOf,
   textList,
   type Check,
   type JsonRecord,
 } from './shape.ts';
 import { readYamlFile } from './yaml-file.ts';
+import type {
+  GuideModule,
+  GuideResource,
+  GuideResourceLanguage,
+  GuideSource,
+  GuideStep,
+  GuideTrack,
+} from '../../src/entities/guide/model/types.ts';
 
-const RESOURCE_SPEC: Record<string, Check> = {
+const RESOURCE_LANGUAGES = [
+  'rust',
+  'go',
+  'both',
+] as const satisfies readonly GuideResourceLanguage[];
+
+const RESOURCE_SPEC = {
   id: expectText,
   title: expectText,
   url: expectText,
-  languages: listOf(oneOf(['rust', 'go', 'both']), 1),
+  languages: listOf(oneOf(RESOURCE_LANGUAGES), 1),
   category: oneOf(['ejercicios', 'lectura', 'proyectos', 'herramientas']),
   cost: oneOf(['gratis', 'mixto']),
   format: expectText,
@@ -33,9 +46,9 @@ const RESOURCE_SPEC: Record<string, Check> = {
   why: expectText,
   caveat: expectText,
   featured: expectBoolean,
-};
+} satisfies Record<keyof GuideResource, Check>;
 
-const STEP_SPEC: Record<string, Check> = {
+const STEP_SPEC = {
   id: expectText,
   title: expectText,
   minutes: integer(1),
@@ -44,57 +57,53 @@ const STEP_SPEC: Record<string, Check> = {
   doneWhen: expectText,
   resourceIds: textList(1),
   quiz: checkQuestion,
-};
+} satisfies Record<keyof GuideStep, Check>;
 
-const TRACK_SPEC: Record<string, Check> = {
+// En el manifiesto del recorrido, `steps` lista los IDs de los pasos.
+const MODULE_SPEC = {
+  id: expectText,
+  title: expectText,
+  subtitle: expectText,
+  steps: textList(1),
+} satisfies Record<keyof GuideModule, Check>;
+
+const TRACK_SPEC = {
   title: expectText,
   description: expectText,
-  modules: listOf(
-    (value, place) =>
-      checkRecord(value, place, {
-        id: expectText,
-        title: expectText,
-        subtitle: expectText,
-        steps: textList(1),
-      }),
-    1,
-  ),
-};
+  modules: listOf(recordOf(MODULE_SPEC), 1),
+} satisfies Record<keyof GuideTrack, Check>;
 
 const SOURCES: Check = listOf(
-  (value, place) =>
-    checkRecord(value, place, { title: expectText, url: expectText, note: expectText }),
+  recordOf({ title: expectText, url: expectText, note: expectText } satisfies Record<
+    keyof GuideSource,
+    Check
+  >),
   1,
 );
 
-// content/guide/ y cada recorrido admiten sólo las entradas de la lista: un YAML suelto no lo
-// lee nadie y quedaría sin publicar. Los nombres con punto se ignoran, como en catalog-files.ts.
-function expectOnlyEntries(root: string, folder: string, allowed: string[], message: string): void {
-  const absolute = join(root, folder);
-  // Una carpeta ausente la informa después la lectura de su manifiesto.
-  if (!existsSync(absolute)) return;
-  for (const name of readdirSync(absolute).sort()) {
-    if (name.startsWith('.') || allowed.includes(name)) continue;
-    fail(filePlace(`${folder}/${name}`), message);
-  }
+// Un ID de módulo o de paso del manifiesto de un recorrido, con su lugar (`modules[i].id` o
+// `modules[i].steps[j]`) para que los errores nombren el campo.
+interface TrackId {
+  id: string;
+  kind: 'module' | 'step';
+  place: Place;
 }
 
-// Cada módulo y cada paso aparece una sola vez en el manifiesto de su recorrido, y cada paso
-// tiene su archivo; el error nombra el campo (`modules[i].id`, `modules[i].steps[j]`).
-function checkTrackIds(modules: JsonRecord[], place: Place, folder: string, found: string[]): void {
-  const seen = new Set<string>();
+interface ModuleIds {
+  id: string;
+  stepIds: string[];
+}
+
+function trackIds(modules: ModuleIds[], manifest: Place): TrackId[] {
+  const ids: TrackId[] = [];
   modules.forEach((module, i) => {
-    const moduleAt = child(child(place, 'modules'), i);
-    const moduleId = module.id as string;
-    if (seen.has(moduleId)) fail(child(moduleAt, 'id'), `ID repetido: ${moduleId}`);
-    seen.add(moduleId);
-    (module.steps as string[]).forEach((id, j) => {
-      const stepAt = child(child(moduleAt, 'steps'), j);
-      if (seen.has(id)) fail(stepAt, `ID repetido: ${id}`);
-      seen.add(id);
-      if (!found.includes(id)) fail(stepAt, `${id} no tiene ${folder}/${id}.yaml`);
+    const moduleAt = child(child(manifest, 'modules'), i);
+    ids.push({ id: module.id, kind: 'module', place: child(moduleAt, 'id') });
+    module.stepIds.forEach((id, j) => {
+      ids.push({ id, kind: 'step', place: child(child(moduleAt, 'steps'), j) });
     });
   });
+  return ids;
 }
 
 function loadTrack(root: string, language: Language): JsonRecord {
@@ -110,38 +119,53 @@ function loadTrack(root: string, language: Language): JsonRecord {
   const track = checkRecord(readYamlFile(root, file), place, TRACK_SPEC);
   const modules = track.modules as JsonRecord[];
   const stepsFolder = `${folder}/steps`;
-  const found = listYamlIds(root, stepsFolder);
-  checkTrackIds(modules, place, stepsFolder, found);
-  // Los repetidos y faltantes ya fallaron con su campo; queda detectar los pasos huérfanos.
-  const stepIds = modules.flatMap((module) => module.steps as string[]);
-  expectSameIds(stepIds, found, place, stepsFolder, '.yaml');
+  const ids = trackIds(
+    modules.map((module) => ({ id: module.id as string, stepIds: module.steps as string[] })),
+    place,
+  );
+  // Un módulo o un paso aparece una sola vez en el manifiesto; los errores nombran el campo.
+  expectUniqueIds(
+    ids.map((entry) => entry.id),
+    (index) => ids[index].place,
+  );
+  const steps = ids.filter((entry) => entry.kind === 'step');
+  const stepIds = steps.map((entry) => entry.id);
+  expectSameIds(
+    stepIds,
+    listYamlIds(root, stepsFolder),
+    place,
+    stepsFolder,
+    '.yaml',
+    (index) => steps[index].place,
+  );
+  // Repite la comprobación de IDs ya hecha arriba, sin campo: así el cargador es el mismo.
+  const records = loadListedRecords(root, stepIds, place, stepsFolder, STEP_SPEC);
+  let next = 0;
   return {
     ...track,
-    modules: modules.map((module) => ({
-      ...module,
-      steps: (module.steps as string[]).map((id) =>
-        loadRecord(root, `${stepsFolder}/${id}.yaml`, id, STEP_SPEC),
-      ),
-    })),
+    modules: modules.map((module) => {
+      const count = (module.steps as string[]).length;
+      const moduleSteps = records.slice(next, next + count);
+      next += count;
+      return { ...module, steps: moduleSteps };
+    }),
   };
 }
 
 // Los IDs de módulos y pasos indexan el progreso del recorrido: no se repiten en toda la guía.
-function expectUniqueTrackIds(tracks: Record<Language, JsonRecord>): void {
-  const seen = new Set<string>();
-  for (const language of LANGUAGES) {
-    for (const module of tracks[language].modules as JsonRecord[]) {
-      const steps = module.steps as JsonRecord[];
-      for (const id of [module.id as string, ...steps.map((step) => step.id as string)]) {
-        if (seen.has(id))
-          fail(
-            filePlace(`content/guide/${language}/manifest.yaml`),
-            `ID repetido en la guía: ${id}`,
-          );
-        seen.add(id);
-      }
-    }
-  }
+function expectUniqueGuideIds(tracks: Record<Language, JsonRecord>): void {
+  const ids = LANGUAGES.flatMap((language) => {
+    const modules = (tracks[language].modules as JsonRecord[]).map((module) => ({
+      id: module.id as string,
+      stepIds: (module.steps as JsonRecord[]).map((step) => step.id as string),
+    }));
+    return trackIds(modules, filePlace(`content/guide/${language}/manifest.yaml`));
+  });
+  expectUniqueIds(
+    ids.map((entry) => entry.id),
+    (index) => ids[index].place,
+    'ID repetido en la guía',
+  );
 }
 
 export function loadGuide(root: string): JsonRecord {
@@ -158,19 +182,16 @@ export function loadGuide(root: string): JsonRecord {
   });
   const resourceIds = manifest.resources as string[];
   const resourcesFolder = 'content/guide/resources';
-  expectSameIds(
+  const resources = loadListedRecords(
+    root,
     resourceIds,
-    listYamlIds(root, resourcesFolder),
     manifestPlace,
     resourcesFolder,
-    '.yaml',
-  );
-  const resources = resourceIds.map((id) =>
-    loadRecord(root, `${resourcesFolder}/${id}.yaml`, id, RESOURCE_SPEC),
+    RESOURCE_SPEC,
   );
   const tracks = {} as Record<Language, JsonRecord>;
   for (const language of LANGUAGES) tracks[language] = loadTrack(root, language);
-  expectUniqueTrackIds(tracks);
+  expectUniqueGuideIds(tracks);
   const sourcesFile = 'content/guide/sources.yaml';
   const sources = SOURCES(readYamlFile(root, sourcesFile), filePlace(sourcesFile)) as JsonRecord[];
   return { resources, tracks, sources };
