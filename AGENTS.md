@@ -31,8 +31,9 @@ están en `api/AGENTS.md`.
 `src/index.html` y `src/app/main.tsx` son las entradas Vite; `dist/` es la salida
 generada. `content/` es la fuente del currículo (YAML y código Rust y Go real);
 `tools/content/` la valida y genera `build/curriculum.json`, otra salida ignorada que
-importan los adaptadores. Los `CLAUDE.md` sólo importan este archivo y los de cada
-carpeta para Claude Code; `.claude/` contiene symlinks de skills y subagentes.
+importan los adaptadores de `src/app/legacy/` y el Atlas
+(`src/pages/atlas/model/atlas-catalog.ts`). Los `CLAUDE.md` sólo importan este archivo y
+los de cada carpeta para Claude Code; `.claude/` contiene symlinks de skills y subagentes.
 
 `executor/` es el ejecutor Go del ADR 0005, un servicio interno que compila y ejecuta Rust y
 Go en contenedores endurecidos (gVisor por omisión); sus reglas están en `executor/AGENTS.md`.

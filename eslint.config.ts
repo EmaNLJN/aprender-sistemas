@@ -41,7 +41,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['qa/**/*.ts', '*.config.ts'],
+    files: ['qa/**/*.ts', 'tools/**/*.ts', '*.config.ts'],
     languageOptions: { globals: globals.node },
   },
   {

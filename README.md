@@ -198,14 +198,16 @@ content/guide/                       biblioteca, fuentes y un manifiesto con sus
 
 Para agregar un ejercicio:
 
-1. Elegí un ID que nunca se haya usado: los IDs indexan el progreso guardado. El orden y la etapa salen del manifiesto, no del número del ID.
+1. Elegí un ID que nunca se haya usado: los IDs indexan el progreso guardado. El generador toma el orden y la etapa del manifiesto, pero `qa/content-check.ts` todavía ata cada ID a su posición (`rust-01`, `rust-02`…), calcula la etapa a partir de ella y espera 100 ejercicios de recorrido y 12 desafíos por lenguaje: el primer ejercicio nuevo cambia esos asserts en el mismo commit.
 2. Agregalo a la lista `exercises` de su etapa en `content/<lenguaje>/manifest.yaml`.
 3. Creá `content/<lenguaje>/exercises/<id>/` con tres archivos:
-   - `exercise.yaml`, sólo con lo que difiere de `defaults` y de la etapa: título, textos, instrucciones, pruebas `t1`, `t2`…, tres pistas, revisión, transferencia y predicción; si hace falta, también `level`, `kind`, `minutes`, `imports`, `visual` o `sources`;
+   - `exercise.yaml`, sólo con lo que difiere de `defaults` y de la etapa: título, textos, instrucciones, pruebas `t1`, `t2`…, tres pistas, revisión, transferencia y predicción; si hace falta, también `level`, `kind`, `minutes`, `imports`, `visual` o `sources`. El generador además exige que un núcleo de infra lleve `workshopId` y `challengeType`; que un desafío no declare `challengeType`, porque lo fija su posición en el mundo (reparación, kata o jefe); y que cada mundo de desafíos tenga exactamente tres ejercicios;
    - `starter.<rs|go>` y `solution.<rs|go>`, con el código tal cual. Los `.go` empiezan con `package main` y una línea en blanco.
 4. Corré `npm run curriculum`, que valida todo `content/` y nombra el archivo y el campo de cada error. Después, `npm test`.
 
-Un ejercicio nuevo cambia a propósito contratos que se actualizan a mano: `qa/fixtures/curriculum-ids.json` y las cantidades que esperan `content-check` y este README. `npm run format` también formatea los YAML.
+En los YAML, un `#` después de un espacio empieza un comentario: un texto con `#` (como `#[test]` o `#2`) va entre comillas, y los comentarios van en su propia línea. `npm run curriculum` rechaza un comentario en la línea de un valor sin comillas.
+
+Un ejercicio nuevo cambia a propósito contratos que se actualizan a mano: `qa/fixtures/curriculum-ids.json`, los asserts de `content-check` (cantidades, ID por posición y etapa) y las cantidades de este README. `npm run format` también formatea los YAML.
 
 ## Verificación
 

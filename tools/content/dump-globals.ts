@@ -2,7 +2,9 @@
 // navegador y en el orden de src/app/main.tsx, los adaptadores que publican catálogos y
 // modelos, y escribe un volcado JSON canónico. Port a TypeScript de dump-globals-v2.mjs
 // (sesión del 2026-10-03): sobre el mismo árbol produce exactamente los mismos bytes.
-// Uso: node tools/content/dump-globals.ts <raíz del repo> > volcado.json
+// Uso: node tools/content/dump-globals.ts <raíz del repo> > volcado.json. En una raíz con
+// content/, corré antes `node tools/content/build-curriculum.ts <raíz>`: el volcado lee
+// build/curriculum.json y no lo regenera.
 import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';

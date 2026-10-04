@@ -3,7 +3,7 @@
 // los de su etapa y, en los desafíos, los que fija su posición; encima, su exercise.yaml y el
 // código de starter y solution. La etapa es la posición de la etapa en el manifiesto.
 import { LEVEL_IDS } from '../../src/shared/config/levels.ts';
-import { expectSameIds, listDirectories, listFiles } from './catalog-files.ts';
+import { expectOnlyEntries, expectSameIds, listDirectories, listFiles } from './catalog-files.ts';
 import {
   EXERCISE_KEY_ORDER,
   OPTIONAL_EXERCISE_KEYS,
@@ -298,6 +298,12 @@ function buildExercise(root: string, slot: Slot): JsonRecord {
 }
 
 export function loadLanguage(root: string, language: Language): LanguageExercises {
+  expectOnlyEntries(
+    root,
+    `content/${language}`,
+    ['manifest.yaml', 'exercises'],
+    'sólo se admiten manifest.yaml y exercises/',
+  );
   const manifestFile = `content/${language}/manifest.yaml`;
   const manifestPlace = filePlace(manifestFile);
   const manifest = checkRecord(

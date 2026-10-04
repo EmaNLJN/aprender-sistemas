@@ -59,7 +59,8 @@ cambies y evitá reformatear las skills importadas o las salidas generadas.
 | Empaquetado, assets u orden de carga | `npm run build`; `node qa/build-check.ts`, `node qa/load-order-check.ts` |
 | Arranque, adaptadores `window.Taller*` o navegación por vistas | `node qa/boot-check.ts` |
 | IDs de ejercicios, mundos, talleres o conceptos | `node qa/curriculum-ids-check.ts` |
-| Contenido en `content/` o generador en `tools/content/` | `npm run curriculum`; el `node qa/content-*-check.ts` del módulo tocado; si ningún catálogo debe cambiar, `npm run curriculum && node tools/content/dump-globals.ts .` da los mismos bytes antes y después |
+| Contenido en `content/` | `npm run curriculum` y los checks que leen el currículo real: `content-check`, `campaign-content-check`, `guide-content-check`, `atlas-check`, `curriculum-ids-check` y el `systems-<dominio>-check` que corresponda (`node qa/<nombre>.ts`); si ningún catálogo debe cambiar, `npm run curriculum && node tools/content/dump-globals.ts .` da los mismos bytes antes y después |
+| Generador en `tools/content/` | El `node qa/content-*-check.ts` del módulo tocado (usan fixtures temporales y no leen `content/`) y el oráculo de la fila anterior |
 | Ejercicios o contratos de revisión | `node qa/content-check.ts`, `node qa/runner-check.ts` |
 | Recorrido, biblioteca o respaldo global | `node qa/guide-content-check.ts`, `node qa/app-shell-check.ts` |
 | Lectura, respaldo o avisos de carga del progreso | `node qa/versioned-storage-check.ts` y el check del almacén afectado |

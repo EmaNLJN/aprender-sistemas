@@ -559,4 +559,16 @@ test('la carpeta de un ejercicio ignora ocultos y rechaza subcarpetas', () => {
   );
 });
 
+test('content/<lenguaje>/ rechaza archivos sueltos e ignora ocultos', () => {
+  const loose = rustLab();
+  writeFileSync(join(loose, 'content/rust/stages-old.yaml'), 'a: 1\n');
+  throwsContent(
+    () => loadLanguage(loose, 'rust'),
+    'content/rust/stages-old.yaml: sólo se admiten manifest.yaml y exercises/',
+  );
+  const hidden = rustLab();
+  writeFileSync(join(hidden, 'content/rust/.DS_Store'), '');
+  assert.doesNotThrow(() => loadLanguage(hidden, 'rust'));
+});
+
 done();

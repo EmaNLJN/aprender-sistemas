@@ -15,6 +15,7 @@ import {
   listYamlIds,
 } from '../tools/content/catalog-files.ts';
 import { child, ContentError, fail, filePlace } from '../tools/content/content-error.ts';
+import { loadCurriculum } from '../tools/content/load-curriculum.ts';
 import { checkQuestion, checkRecord, expectText, textList } from '../tools/content/shape.ts';
 import { readContentText, readYamlFile } from '../tools/content/yaml-file.ts';
 import { fixture, scenarios, throwsContent } from './lib/content-fixtures.ts';
@@ -120,6 +121,8 @@ test('readYamlFile rechaza lo que JSON no representaría igual', () => {
     'content/grande.yaml': 'a: 12345678901234567890\n',
     'content/claves.yaml': '1: x\n"1": y\n',
     'content/set.yaml': 'a: !!set {x, y}\n',
+    'content/comentario.yaml': 'a: Recibir #2 antes de #0\n',
+    'content/comentario-lista.yaml': 'objectives:\n  - label: Recibir #2\n',
   });
   // Guardado en Latin-1: decodificado como UTF-8 publicaría U+FFFD en lugar de la í y la ó.
   writeFileSync(join(root, 'content/latin1.yaml'), Buffer.from('título: canción\n', 'latin1'));
@@ -163,6 +166,43 @@ test('readYamlFile rechaza lo que JSON no representaría igual', () => {
         error.message.startsWith(`${file}: YAML inválido: ${start}`),
     );
   }
+  // Un # después de un espacio empieza un comentario: sin comillas, el texto se cortaría en
+  // «Recibir» sin ningún error.
+  const cuts = (value: string): string =>
+    `un # después de un espacio empieza un comentario y corta el texto en «${value}»: si el # es parte del texto, escribí el valor entre comillas; si es un comentario, pasalo a su propia línea`;
+  throwsContent(
+    () => readYamlFile(root, 'content/comentario.yaml'),
+    `content/comentario.yaml: a: ${cuts('Recibir')}`,
+  );
+  throwsContent(
+    () => readYamlFile(root, 'content/comentario-lista.yaml'),
+    `content/comentario-lista.yaml: objectives[0].label: ${cuts('Recibir')}`,
+  );
+});
+
+test('readYamlFile admite # entre comillas, sin espacio antes, en bloques y en líneas propias', () => {
+  const root = fixture({
+    'content/numeral.yaml':
+      '# cabecera\na: \'Recibir #2 antes de #0\'\nb: "[#2 #5]"\nc: foo#bar\n# entre claves\nd: |\n  #[test]\n',
+  });
+  assert.deepEqual(readYamlFile(root, 'content/numeral.yaml'), {
+    a: 'Recibir #2 antes de #0',
+    b: '[#2 #5]',
+    c: 'foo#bar',
+    d: '#[test]\n',
+  });
+});
+
+test('loadCurriculum: nada suelto en content/', () => {
+  const allowed = 'sólo se admiten atlas/, campaign/, guide/, workshops/, rust/ y go/';
+  throwsContent(
+    () => loadCurriculum(fixture({ 'content/notas.yaml': 'a: 1\n' })),
+    `content/notas.yaml: ${allowed}`,
+  );
+  throwsContent(
+    () => loadCurriculum(fixture({ 'content/esenciales/manifest.yaml': 'a: 1\n' })),
+    `content/esenciales: ${allowed}`,
+  );
 });
 
 test('readYamlFile lee YAML 1.2 aunque el archivo declare %YAML 1.1', () => {

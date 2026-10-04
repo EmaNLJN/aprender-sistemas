@@ -3,7 +3,8 @@
 // por un adaptador: la importa src/pages/atlas/model/atlas-catalog.ts.
 import { loadAtlas } from './atlas.ts';
 import { loadCampaign } from './campaign.ts';
-import type { Language, SystemsDomain } from './catalogs.ts';
+import { expectOnlyEntries } from './catalog-files.ts';
+import { LANGUAGES, type Language, type SystemsDomain } from './catalogs.ts';
 import { expectDistinctIds, interleaveCores, loadLanguage } from './exercises.ts';
 import { loadGuide } from './guide.ts';
 import type { JsonRecord } from './shape.ts';
@@ -20,6 +21,13 @@ export interface Curriculum {
 }
 
 export function loadCurriculum(root: string): Curriculum {
+  // Nada queda en content/ sin que el generador lo lea (la política de catalog-files.ts).
+  expectOnlyEntries(
+    root,
+    'content',
+    ['atlas', 'campaign', 'guide', 'workshops', ...LANGUAGES],
+    'sólo se admiten atlas/, campaign/, guide/, workshops/, rust/ y go/',
+  );
   const rust = loadLanguage(root, 'rust');
   const go = loadLanguage(root, 'go');
   expectDistinctIds(rust, go);
