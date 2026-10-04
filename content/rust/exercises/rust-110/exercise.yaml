@@ -1,0 +1,46 @@
+title: Reparación · El byte que olvidó su signo
+visual: memory
+intro: Encontraste el bytecode de una máquina diminuta. Su decodificador interpreta el operando 0xFF como 255, aunque el protocolo lo define como −1.
+why: 'Los bits no incluyen su propia interpretación. Un campo de ocho bits puede representar u8 o i8: la conversión debe seguir el formato. Ampliar el i8 a i32 conserva su signo.'
+objective: 'Decodificá desde pc y devolvé (Op, pc siguiente). Opcode 0=Fin, tamaño 1; 1=Sumar(operando i8 ampliado a i32), 2=Saltar(destino u8 como usize), 3=SiCero(destino u8 como usize), todos tamaño 2. Errores: pc fuera del slice → "pc"; opcode desconocido → "opcode"; operando faltante de opcode conocido → "operando". Aquí pc y destinos miden bytes.'
+instructions:
+  - Localizá la conversión del operando de Sumar.
+  - Interpretá primero el patrón de ocho bits como i8 y después amplialo a i32.
+  - Conservá los chequeos de formato y los destinos sin signo.
+tests:
+  - id: t1
+    label: El signo depende del campo
+    expression: decodificar(&[1, 255], 0) == Ok((Op::Sumar(-1), 2)) && decodificar(&[1, 128], 0) == Ok((Op::Sumar(-128), 2)) && decodificar(&[1, 7], 0) == Ok((Op::Sumar(7), 2))
+    why: Se conserva el rango firmado de ocho bits al ampliarlo.
+    failure: 'u8→i32 nunca convierte 255 en −1: falta interpretar el i8.'
+  - id: t2
+    label: Tamaños y destinos sin signo
+    expression: decodificar(&[0], 0) == Ok((Op::Fin, 1)) && decodificar(&[9, 2, 255], 1) == Ok((Op::Saltar(255), 3)) && decodificar(&[3, 4], 0) == Ok((Op::SiCero(4), 2))
+    why: El pc siguiente cuenta bytes y los destinos siguen siendo no negativos.
+    failure: La regla con signo solo corresponde al operando Sumar.
+  - id: t3
+    label: Formato incompleto o desconocido
+    expression: decodificar(&[], 0) == Err("pc") && decodificar(&[1], 0) == Err("operando") && decodificar(&[9], 0) == Err("opcode") && decodificar(&[0], 1) == Err("pc")
+    why: Cada error refleja el primer dato que impide decodificar.
+    failure: Un opcode desconocido no debe intentar leer un operando.
+hints:
+  - El cast entre u8 e i8 de igual tamaño conserva el patrón de bits.
+  - Después, i8→i32 extiende el signo del valor.
+  - Para Sumar usá valor as i8 as i32; los destinos quedan con usize::from(valor).
+review:
+  success: Los casos distinguen interpretación firmada, destinos sin signo y tamaño de instrucción. Decodificar transforma bytes en un enum con significado.
+  pitfall: Este decodificador no comprueba si un salto apunta a un comienzo de instrucción. Esa validación pertenece a una etapa posterior; convertir bytes no equivale a ejecutar código.
+transfer: Construí una tabla de los comienzos de instrucciones y rechazá saltos que caigan en medio de un operando.
+prediction:
+  question: ¿Por qué 0xFF significa −1 solo para Sumar?
+  options:
+    - Todo byte 255 es siempre negativo
+    - El opcode define la interpretación del campo
+    - Rust detecta que el número debería ser pequeño
+  answer: 1
+  explanation: El formato asigna a ese campo un i8. Para un destino u8, el mismo patrón representa 255.
+sources:
+  - title: Rust Reference · Numeric casts
+    url: https://doc.rust-lang.org/reference/expressions/operator-expr.html#numeric-cast
+  - title: Rust Book · Enums
+    url: https://doc.rust-lang.org/book/ch06-01-defining-an-enum.html

@@ -1,0 +1,46 @@
+title: La ruta con menos saltos
+visual: collections
+intro: 'Saber que una base es alcanzable no alcanza: el piloto necesita el recorrido. Cada ruta cuesta un salto. Una búsqueda por anchura descubre primero los destinos que están más cerca en cantidad de aristas.'
+why: Guardar el predecesor al descubrir un nodo permite reconstruir su camino al final. La cola conserva el orden por capas; una pila exploraría en profundidad y no garantizaría el mínimo de saltos.
+objective: ShortestRoute devuelve un camino mínimo incluyendo start y target, o nil,false si no existe. Ante empate, usá el primero descubierto respetando el orden de los slices de vecinos.
+instructions:
+  - El grafo es dirigido y sin pesos. start == target devuelve []string{start},true.
+  - Marcá visitados al encolar y guardá un solo predecesor por nodo.
+  - No modifiques graph. Reconstruí desde target hacia start y luego invertí el resultado.
+tests:
+  - id: t1
+    label: La rama descubierta primero puede ser más larga
+    expression: func() bool { g := map[string][]string{"s":{"a","b"},"a":{"c"},"c":{"t"},"b":{"t"}}; path,ok := ShortestRoute(g,"s","t"); return ok && fmt.Sprint(path) == "[s b t]" && fmt.Sprint(g["s"]) == "[a b]" }()
+    why: Distingue BFS de una búsqueda que devuelve la primera ruta profunda encontrada.
+    failure: Procesá la cola en orden de inserción.
+  - id: t2
+    label: Empate reproducible y ciclo
+    expression: func() bool { g := map[string][]string{"s":{"b","a"},"b":{"s","t"},"a":{"t"}}; path,ok := ShortestRoute(g,"s","t"); return ok && fmt.Sprint(path) == "[s b t]" }()
+    why: Comprueba el criterio de empate y que el ciclo no sustituye predecesores.
+    failure: El primer descubrimiento fija parent; no lo sobrescribas luego.
+  - id: t3
+    label: Identidad y destino imposible
+    expression: func() bool { a,ok := ShortestRoute(nil,"x","x"); b,missing := ShortestRoute(map[string][]string{"x":{"y"}},"y","x"); return ok && fmt.Sprint(a) == "[x]" && !missing && b == nil }()
+    why: Define casos sin movimiento y sin camino dirigido.
+    failure: No inventes un camino [start,target] solo porque ambos nombres existen.
+hints:
+  - Reutilizá la idea de queue y seen del explorador.
+  - Al encolar next, guardá parent[next] = node.
+  - Desde target seguí parent hasta start; la secuencia queda inicialmente al revés.
+review:
+  success: Recuperaste una ruta mínima en número de aristas sin guardar una copia del camino por cada candidato. El orden de vecinos hace que los empates sean reproducibles.
+  pitfall: BFS no minimiza distancia, combustible o tiempo cuando las aristas tienen pesos distintos.
+transfer: 'Permití varias bases de salida: inicializá la cola con todas y buscá la ruta desde la más cercana.'
+prediction:
+  question: ¿Cuándo conviene fijar parent[next] para preservar el primer camino BFS?
+  options:
+    - Cada vez que otro nodo menciona next
+    - Cuando terminan todos los recorridos
+    - La primera vez que next se encola
+  answer: 2
+  explanation: Ese descubrimiento corresponde a una capa mínima; sobrescribirlo puede destruir esa ruta.
+sources:
+  - title: Maps y valores ausentes
+    url: https://go.dev/blog/maps
+  - title: Slices y append
+    url: https://go.dev/blog/slices-intro

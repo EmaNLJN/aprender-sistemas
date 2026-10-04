@@ -1,0 +1,46 @@
+title: Boss · Encendé una máquina que sabe detenerse
+minutes: 25
+intro: 'La estación vuelve a funcionar cuando su núcleo ejecuta un programa completo. Los programas pueden contener saltos, errores o ciclos: tu VM necesita semántica precisa y un presupuesto finito.'
+why: Separar instrucciones de su intérprete permite probar programas como datos. Un presupuesto de instrucciones limita el trabajo de esta VM, incluso si el programa contiene un salto hacia sí mismo.
+objective: 'Ejecutá desde pc=0 y acumulador=0. pc y saltos miden índices del slice de Instruccion. Sumar(n) usa checked_add y avanza; Saltar(d) va a d; SiCero(d) salta si acumulador==0, o avanza; Fin devuelve (acumulador, instrucciones ejecutadas). Fin también cuenta. Cada vuelta: 1) buscá instrucción o Err("pc"), 2) si se gastó presupuesto → Err("presupuesto"), 3) contá y ejecutá. Overflow de suma → Err("overflow"). Llegar al final del slice sin ejecutar Fin produce Err("pc").'
+instructions:
+  - Usá get(pc) para obtener la instrucción antes de comprobar el presupuesto.
+  - Contá toda instrucción que efectivamente comience, incluido Fin.
+  - Probá un bucle, una rama que finalmente termina y un salto fuera de programa.
+tests:
+  - id: t1
+    label: Fin es una instrucción ejecutada
+    expression: ejecutar_vm(&[Instruccion::Sumar(2), Instruccion::Sumar(3), Instruccion::Fin], 3) == Ok((5, 3)) && ejecutar_vm(&[Instruccion::Fin], 1) == Ok((0, 1)) && ejecutar_vm(&[Instruccion::Fin], 0) == Err("presupuesto")
+    why: El límite incluye la instrucción de terminación y puede ser exactamente suficiente.
+    failure: Incrementá ejecutadas antes de despachar Fin.
+  - id: t2
+    label: Un bucle que progresa hasta cero
+    expression: '{ let programa = [Instruccion::Sumar(3), Instruccion::Sumar(-1), Instruccion::SiCero(4), Instruccion::Saltar(1), Instruccion::Fin]; ejecutar_vm(&programa, 10) == Ok((0, 10)) && ejecutar_vm(&programa, 9) == Err("presupuesto") }'
+    why: El control vuelve sobre instrucciones anteriores y toma la rama cuando cambia el estado.
+    failure: El salto condicional consulta el acumulador actual en cada iteración.
+  - id: t3
+    label: Ciclo infinito, direcciones y overflow
+    expression: ejecutar_vm(&[Instruccion::Saltar(0)], 5) == Err("presupuesto") && ejecutar_vm(&[Instruccion::Saltar(99)], 1) == Err("pc") && ejecutar_vm(&[Instruccion::Sumar(i32::MAX), Instruccion::Sumar(1), Instruccion::Fin], 3) == Err("overflow") && ejecutar_vm(&[], 0) == Err("pc") && ejecutar_vm(&[Instruccion::Sumar(1)], 3) == Err("pc")
+    why: El intérprete acota ciclos y distingue agotamiento, memoria de programa ausente y error aritmético.
+    failure: 'La búsqueda en programa precede al límite: un pc inexistente siempre reporta pc.'
+hints:
+  - 'Mantené tres variables locales: pc, acumulador y ejecutadas.'
+  - Un loop con retorno en Fin y en cada error expresa las salidas posibles.
+  - Buscá la instrucción con get, comprobá ejecutadas==presupuesto y recién después incrementá y hacé match.
+review:
+  success: Los casos verifican ejecución lineal, un bucle que termina y rechazos acotados. La VM ejecuta instrucciones del enum y define explícitamente cómo fallan los programas.
+  pitfall: 'Este presupuesto cuenta instrucciones de una VM sin operaciones externas. No mide tiempo real ni vuelve segura cualquier extensión con I/O, memoria ilimitada o instrucciones de costo variable. El decodificador anterior cuenta bytes: conectar ambas etapas exige traducir destinos.'
+transfer: Agregá un modo de traza que devuelva los estados visitados antes de cada instrucción y un ensamblador con etiquetas para no escribir destinos a mano.
+prediction:
+  question: Con un programa [Saltar(99)] y presupuesto 1, ¿qué error aparece después del salto?
+  options:
+    - presupuesto
+    - pc
+    - 'No hay error: salir del slice termina'
+  answer: 1
+  explanation: La siguiente vuelta intenta buscar la instrucción primero. El contrato distingue un destino inválido de un programa que necesita más presupuesto.
+sources:
+  - title: Rust Book · Enums and match
+    url: https://doc.rust-lang.org/book/ch06-02-match.html
+  - title: Rust Book · Loops
+    url: https://doc.rust-lang.org/book/ch03-05-control-flow.html

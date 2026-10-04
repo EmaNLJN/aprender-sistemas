@@ -1,0 +1,44 @@
+title: Reparación · Dos señales en un byte
+visual: memory
+intro: El puerto transmite un tipo de mensaje y cuatro banderas en un solo byte. El emisor actual superpone ambos campos y pierde información.
+why: Una representación binaria funciona porque cada campo ocupa posiciones diferentes. Desplazar mueve los bits; OR combina campos que ya no se solapan.
+objective: 'Implementá empaquetar: tipo y banderas deben estar entre 0 y 15. El tipo ocupa los cuatro bits altos y las banderas los cuatro bajos. Devolvé None si algún argumento supera 15.'
+instructions:
+  - Conservá la validación de ambos campos.
+  - Mové el tipo cuatro posiciones antes de combinarlo.
+  - Comprobá un caso donde ambos valores sean distintos.
+tests:
+  - id: t1
+    label: Los campos no se pisan
+    expression: empaquetar(10, 3) == Some(0xA3) && empaquetar(3, 10) == Some(0x3A)
+    why: Intercambiar campos cambia su posición, no su significado.
+    failure: El operando que debés desplazar es tipo.
+  - id: t2
+    label: Extremos de cada mitad
+    expression: empaquetar(0, 15) == Some(0x0F) && empaquetar(15, 0) == Some(0xF0) && empaquetar(15, 15) == Some(255)
+    why: Todos los bits del byte pueden utilizarse sin perder los límites de campo.
+    failure: 'Cada mitad tiene cuatro bits: su máximo es 15.'
+  - id: t3
+    label: Rechazar antes de truncar
+    expression: empaquetar(16, 0) == None && empaquetar(0, 16) == None && empaquetar(255, 255) == None
+    why: La API rechaza datos que no caben; no los oculta con una máscara.
+    failure: Enmascarar un argumento inválido cambiaría silenciosamente el contrato.
+hints:
+  - 'Dibujá tttt bbbb: el tipo necesita quedar a la izquierda.'
+  - Un desplazamiento de cuatro bits multiplica este tipo validado por 16.
+  - La combinación es (tipo << 4) | banderas.
+review:
+  success: Los casos verifican posición y rango de cada campo. El byte resultante conserva ambos valores porque ocupan mitades separadas.
+  pitfall: Que un valor sea u8 no significa que quepa en cualquier campo de un protocolo. Este campo admite cuatro bits, no ocho.
+transfer: Escribí desempaquetar con byte >> 4 y byte & 0x0F, y comprobá el recorrido de ida y vuelta.
+prediction:
+  question: ¿Qué byte representa tipo=2 y banderas=5?
+  options:
+    - '0x07'
+    - '0x52'
+    - '0x25'
+  answer: 2
+  explanation: 'El 2 queda en la mitad alta y el 5 en la baja: 32 + 5 = 37, o 0x25.'
+sources:
+  - title: Rust Reference · Operators
+    url: https://doc.rust-lang.org/reference/expressions/operator-expr.html

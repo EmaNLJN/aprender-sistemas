@@ -1,0 +1,46 @@
+title: Kata · El inventario no puede desbordarse
+visual: memory
+intro: Antes de salir, el robot carga tres clases de repuestos en un array. La posición elige el compartimiento y cada contador cabe en un byte.
+why: Una operación rechazada debe dejar el estado intacto. Validar el índice y el resultado antes de asignar permite ofrecer esa garantía con pocos pasos.
+objective: agregar suma cantidad al compartimiento indicado de [u8; 3]. Devolvé true si es válido; false si el índice no existe o la suma desborda. Un rechazo no modifica el inventario.
+instructions:
+  - Usá get_mut para pedir el compartimiento sin indexar a ciegas.
+  - Calculá checked_add antes de escribir el nuevo contador.
+  - Una cantidad cero sobre un compartimiento válido es una operación exitosa.
+tests:
+  - id: t1
+    label: Carga localizada
+    expression: '{ let mut i = [2, 3, 4]; agregar(&mut i, 1, 5) && i == [2, 8, 4] }'
+    why: Solo cambia el compartimiento elegido.
+    failure: Escribí mediante la referencia que devuelve get_mut.
+  - id: t2
+    label: Índice inválido sin efectos
+    expression: '{ let mut i = [2, 3, 4]; !agregar(&mut i, 3, 1) && i == [2, 3, 4] }'
+    why: El primer índice fuera del array no causa panic ni mutación.
+    failure: get_mut devuelve None si no existe esa posición.
+  - id: t3
+    label: Frontera del byte
+    expression: '{ let mut i = [250, 0, 7]; let rechazo = !agregar(&mut i, 0, 6); rechazo && i == [250, 0, 7] && agregar(&mut i, 0, 5) && agregar(&mut i, 2, 0) && i == [255, 0, 7] }'
+    why: Llegar a 255 es válido; excederlo no, y cero conserva el valor.
+    failure: No uses wrapping_add si el contrato exige rechazar.
+hints:
+  - let Some(actual) = inventario.get_mut(...) else { return false; }; separa el índice inválido.
+  - checked_add devuelve None ante overflow.
+  - Asigná *actual = nuevo solo cuando ambas validaciones pasaron.
+review:
+  success: Los casos verifican ubicación, rango y ausencia de cambios ante errores. El array deja visible que existen exactamente tres compartimientos.
+  pitfall: mut permite escribir, pero no obliga a hacerlo inmediatamente. Preparar el resultado antes de asignar simplifica los fallos sin efectos.
+transfer: Agregá retirar con checked_sub y mantené la misma garantía de estado intacto si faltan unidades.
+prediction:
+  question: Si un contador vale 250 y querés agregar 6, ¿qué exige el contrato?
+  options:
+    - Quedar en 0
+    - Rechazar y conservar 250
+    - Saturar en 255
+  answer: 1
+  explanation: La misión pide una operación comprobada, no wrap ni saturación.
+sources:
+  - title: std · slice::get_mut
+    url: https://doc.rust-lang.org/std/primitive.slice.html#method.get_mut
+  - title: std · u8::checked_add
+    url: https://doc.rust-lang.org/std/primitive.u8.html#method.checked_add

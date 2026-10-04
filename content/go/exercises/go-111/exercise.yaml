@@ -1,0 +1,47 @@
+title: Tres oportunidades, ninguna de más
+imports:
+  - errors
+intro: 'Un envío puede fallar transitoriamente o indicar un problema que repetir no resolverá. La política de reintentos recibe una función inyectada: así probamos decisiones sin red, sleeps ni azar.'
+why: errors.Is reconoce un error centinela aunque esté envuelto. El contador de intentos forma parte del resultado y permite detectar trabajo extra; el límite debe acotar llamadas, no solo vueltas nominales.
+objective: Retry llama attempt con números 1…limit hasta éxito, error permanente o agotamiento. Devuelve valor, llamadas realizadas y error.
+instructions:
+  - Si limit <= 0, devolvé "",0,error sin llamar attempt. En éxito, devolvé su valor y nil inmediatamente.
+  - Si errors.Is(err, ErrPermanent), detenete. Si se agota el límite, conservá el último error. En todo fracaso, el valor devuelto es "".
+  - 'No esperes ni cambies el error por uno genérico: las pruebas necesitan reconocer su causa.'
+tests:
+  - id: t1
+    label: Éxito al tercero y parada inmediata
+    expression: func() bool { var calls []int; value,n,err := Retry(5,func(attempt int)(string,error){ calls = append(calls,attempt); if attempt < 3 { return "parcial",fmt.Errorf("temporal") }; return "entregado",nil }); return err == nil && value == "entregado" && n == 3 && fmt.Sprint(calls) == "[1 2 3]" }()
+    why: Comprueba numeración, reintentos y ausencia de llamadas después del éxito.
+    failure: El callback debe ejecutarse dentro del bucle; nil termina la política.
+  - id: t2
+    label: Permanente envuelto
+    expression: 'func() bool { calls := 0; value,n,err := Retry(4,func(int)(string,error){ calls++; return "no usar",fmt.Errorf("envío rechazado: %w",ErrPermanent) }); return value == "" && n == 1 && calls == 1 && errors.Is(err,ErrPermanent) }()'
+    why: Impide comparar solo con == o repetir un fallo clasificado como definitivo.
+    failure: Usá errors.Is y conservá el error recibido.
+  - id: t3
+    label: Presupuesto agotado e inválido
+    expression: func() bool { transient := errors.New("ocupado"); calls := 0; value,n,err := Retry(2,func(int)(string,error){ calls++; return "parcial",transient }); if value != "" || n != 2 || calls != 2 || !errors.Is(err,transient) { return false }; for _,limit := range []int{0,-1} { value,n,err = Retry(limit,func(int)(string,error){ calls++; return "",nil }); if value != "" || n != 0 || err == nil || calls != 2 { return false } }; return true }()
+    why: Comprueba el máximo de trabajo y validación antes de efectos.
+    failure: Un límite inválido no autoriza ni siquiera un primer intento.
+hints:
+  - El for empieza en 1 y termina en limit inclusive.
+  - 'Separá tres salidas: éxito, permanente y agotamiento.'
+  - Guardá el último error para devolverlo al terminar el bucle.
+review:
+  success: Separaste la política de la operación externa, lo que vuelve sus decisiones observables y deterministas. En un servicio real también definirías backoff, jitter, cancelación e idempotencia según el caso.
+  pitfall: Un error no garantiza que el efecto externo no ocurrió. Reintentar un cobro, por ejemplo, exige una política de idempotencia.
+transfer: Inyectá también una función de espera y probá la secuencia de demoras sin dormir realmente.
+prediction:
+  question: El intento 1 devuelve un error que envuelve ErrPermanent y limit=5. ¿Cuántas llamadas corresponden?
+  options:
+    - Una
+    - Cinco
+    - Cero
+  answer: 0
+  explanation: El primer intento identifica un fallo permanente; repetirlo contradice la política.
+sources:
+  - title: errors.Is
+    url: https://pkg.go.dev/errors#Is
+  - title: Errores envueltos en Go
+    url: https://go.dev/blog/go1.13-errors

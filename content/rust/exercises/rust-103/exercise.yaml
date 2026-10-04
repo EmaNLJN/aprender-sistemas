@@ -1,0 +1,43 @@
+title: Boss · Cruzá el hangar con la energía justa
+intro: La brújula está reparada. Ahora cada orden propone un movimiento, pero el robot solo confirma la transición si queda dentro del hangar y tiene energía.
+why: Separar propuesta, validación y actualización evita gastar recursos en una acción que se rechaza. Un programa de órdenes es una secuencia de estados.
+objective: Empezá en (0,0) dentro de una grilla con x e y entre 0 y 2. N/S/E/O proponen un paso. Solo un paso válido con batería > 0 consume una unidad. Otros chars y choques no consumen. Devolvé (x,y,batería restante).
+instructions:
+  - Procesá las órdenes en su orden original.
+  - Calculá primero la posición candidata y comprobá sus dos límites.
+  - Actualizá posición y batería juntas solo al aceptar el movimiento.
+tests:
+  - id: t1
+    label: Un choque no cobra energía
+    expression: cruzar_hangar("EEEN", 4) == (2, 1, 1)
+    why: El tercer E contra la pared deja posición y batería intactas.
+    failure: Descontá energía dentro del bloque de aceptación.
+  - id: t2
+    label: Se agota en medio del viaje
+    expression: cruzar_hangar("EENN", 2) == (2, 0, 0)
+    why: Las órdenes posteriores no mueven un robot sin energía.
+    failure: La batería es una condición de cada transición.
+  - id: t3
+    label: Ruido, borde inicial y reposo
+    expression: cruzar_hangar("S?OEN", 3) == (1, 1, 1) && cruzar_hangar("NE", 0) == (0, 0, 0) && cruzar_hangar("", 7) == (0, 0, 7)
+    why: Ruido, choques iniciales y programa vacío conservan sus invariantes.
+    failure: continue sirve para una orden ajena al alfabeto.
+hints:
+  - La posición candidata no tiene que convertirse inmediatamente en la posición real.
+  - El rango inclusivo 0..=2 representa cada eje.
+  - Solo dentro del if válido asigná x, y y restá batería.
+review:
+  success: El robot respeta límites y conserva energía ante rechazos. Las pruebas distinguen una propuesta de movimiento de una transición confirmada.
+  pitfall: 'Este modelo tiene un estado pequeño y determinista: no representa movimiento físico continuo ni entradas en tiempo real.'
+transfer: Agregá estaciones de recarga a la grilla y definí si recargar ocurre al entrar o al recibir una orden específica.
+prediction:
+  question: Desde x=2, intentar E contra la pared debe…
+  options:
+    - Consumir una unidad sin avanzar
+    - Conservar posición y batería
+    - Volver a x=0
+  answer: 1
+  explanation: El contrato cobra energía solo por movimientos aceptados.
+sources:
+  - title: Rust Book · Control flow
+    url: https://doc.rust-lang.org/book/ch03-05-control-flow.html

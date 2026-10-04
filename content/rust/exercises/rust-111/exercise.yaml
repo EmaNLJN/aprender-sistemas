@@ -1,0 +1,45 @@
+title: Kata · Una instrucción, una transición completa
+intro: Ahora la máquina opera sobre instrucciones ya decodificadas. Antes de ejecutar programas, necesitás una transición que nunca deje medio actualizado su estado.
+why: Un préstamo mutable da acceso exclusivo, pero no vuelve atómica la lógica de tu función. Calcular sobre una copia y confirmar al final permite conservar el estado ante cualquier error.
+objective: 'avanzar recibe Estado e Instruccion. Si detenido ya era true: Ok sin cambios. Sumar suma con checked_add y avanza pc en 1; Saltar reemplaza pc; SiCero salta cuando acumulador==0, si no avanza pc en 1; Fin marca detenido sin mover pc. Overflow de acumulador → Err("overflow"); de pc al incrementarlo → Err("pc"). En errores, conservá TODO el estado. Saltos aceptan cualquier usize: aquí no hay programa que validar. pc mide índices de instrucciones.'
+instructions:
+  - Trabajá sobre una copia de Estado.
+  - Usá checked_add tanto para el acumulador como para avanzar pc.
+  - Asigná la copia al estado original solo después de completar el match.
+tests:
+  - id: t1
+    label: Sumar, detener y conservar el reposo
+    expression: '{ let mut e = Estado { pc: 2, acumulador: 7, detenido: false }; let a = avanzar(&mut e, Instruccion::Sumar(-3)); let suma = e == Estado { pc: 3, acumulador: 4, detenido: false }; let b = avanzar(&mut e, Instruccion::Fin); let quieto = e; let c = avanzar(&mut e, Instruccion::Sumar(99)); a == Ok(()) && suma && b == Ok(()) && c == Ok(()) && e == quieto && e.detenido && e.pc == 3 }'
+    why: Fin conserva pc y un estado detenido no vuelve a ejecutar instrucciones.
+    failure: La comprobación detenido debe preceder a cualquier transición.
+  - id: t2
+    label: Ramas tomadas y no tomadas
+    expression: '{ let mut e = Estado { pc: 1, acumulador: 0, detenido: false }; let a = avanzar(&mut e, Instruccion::SiCero(8)); let salto = e.pc == 8; e.acumulador = 2; let b = avanzar(&mut e, Instruccion::SiCero(3)); let normal = e.pc == 9; let c = avanzar(&mut e, Instruccion::Saltar(4)); a == Ok(()) && b == Ok(()) && c == Ok(()) && salto && normal && e.pc == 4 && e.acumulador == 2 }'
+    why: Un salto condicional depende del acumulador, y Saltar no lo modifica.
+    failure: Si la condición es falsa, avanzá desde el pc actual, no desde el destino.
+  - id: t3
+    label: Rechazo sin efectos parciales
+    expression: '{ let mut a = Estado { pc: 4, acumulador: i32::MAX, detenido: false }; let antes_a = a; let ra = avanzar(&mut a, Instruccion::Sumar(1)); let mut b = Estado { pc: usize::MAX, acumulador: 2, detenido: false }; let antes_b = b; let rb = avanzar(&mut b, Instruccion::Sumar(3)); ra == Err("overflow") && a == antes_a && rb == Err("pc") && b == antes_b }'
+    why: Incluso si la suma es válida y después falla pc, no queda una suma aplicada parcialmente.
+    failure: Mutar una copia evita deshacer manualmente operaciones ante un error posterior.
+hints:
+  - Estado deriva Copy, por lo que let mut siguiente = *estado no mueve el original.
+  - Los ? pueden retornar temprano mientras solo cambiaste la copia.
+  - La única asignación al préstamo original debe ser *estado = siguiente, después del match.
+review:
+  success: Los casos verifican semántica de instrucciones, reposo y rechazo sin cambios parciales. La garantía es sobre esta transición y este estado en memoria.
+  pitfall: Esta atomicidad lógica no implica sincronización entre hilos ni revierte efectos externos. Si agregás archivos o mensajes, necesitarás definir otro protocolo de confirmación.
+transfer: Agregá multiplicación comprobada y una prueba donde falla pc después de calcular un producto válido.
+prediction:
+  question: La suma puede hacerse, pero avanzar pc desborda. ¿Qué estado debe quedar?
+  options:
+    - El acumulador nuevo con el pc viejo
+    - El estado original completo
+    - detenido=true automáticamente
+  answer: 1
+  explanation: El contrato de transición rechazada conserva todos los campos, aunque un cálculo intermedio ya haya sido posible.
+sources:
+  - title: std · i32::checked_add
+    url: https://doc.rust-lang.org/std/primitive.i32.html#method.checked_add
+  - title: Rust Book · Recoverable errors
+    url: https://doc.rust-lang.org/book/ch09-02-recoverable-errors-with-result.html

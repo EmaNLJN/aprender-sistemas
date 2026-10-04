@@ -258,3 +258,40 @@ lab:
       - go-98
       - go-99
       - go-100
+quests:
+  - topicId: go-rover-quests
+    topic: La estación del rover
+    level: beginner
+    minutes: 12
+    bossMinutes: 25
+    exercises:
+      - go-101
+      - go-102
+      - go-103
+  - topicId: go-packet-quests
+    topic: La antena de telemetría
+    level: medium
+    minutes: 12
+    bossMinutes: 25
+    exercises:
+      - go-104
+      - go-105
+      - go-106
+  - topicId: go-graph-quests
+    topic: El mapa de suministros
+    level: advanced
+    minutes: 12
+    bossMinutes: 25
+    exercises:
+      - go-107
+      - go-108
+      - go-109
+  - topicId: go-resilience-quests
+    topic: El último enlace
+    level: expert
+    minutes: 12
+    bossMinutes: 25
+    exercises:
+      - go-110
+      - go-111
+      - go-112

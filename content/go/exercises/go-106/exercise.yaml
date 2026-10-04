@@ -1,0 +1,49 @@
+title: 'Jefe: abrir el paquete del satélite'
+imports:
+  - encoding/binary
+  - hash/crc32
+visual: memory
+intro: 'La trama tiene una marca 0x47, dos bytes de longitud big-endian, el payload y cuatro bytes de CRC IEEE big-endian. La antena puede recibir basura: leer posiciones sin validar puede provocar un panic.'
+why: Los slices comparten memoria. Después de validar la estructura y el checksum, devolver una copia permite que el llamador use el payload sin modificar el paquete original. encoding/binary resuelve el orden de bytes explícitamente.
+objective: DecodeFrame valida una trama completa y devuelve una copia del payload. Todo paquete inválido devuelve nil y un error no nil.
+instructions:
+  - 'Conservá BuildFrame como ayudante provisto. Formato exacto: [marca:1][longitud:2][payload:N][CRC:4]. CRC cubre solamente el payload.'
+  - Rechazá marca incorrecta, menos de 7 bytes, longitud inconsistente, bytes sobrantes y CRC incorrecto.
+  - El mensaje vacío es válido. Validá antes de indexar y no devuelvas un slice que comparta el buffer de entrada.
+tests:
+  - id: t1
+    label: Binario independiente y longitud multibyte
+    expression: func() bool { frame := BuildFrame([]byte{0, 255, 42}); out, err := DecodeFrame(frame); if err != nil || fmt.Sprint(out) != "[0 255 42]" { return false }; out[0] = 9; if frame[3] != 0 { return false }; large := make([]byte, 260); large[259] = 17; decoded, e := DecodeFrame(BuildFrame(large)); return e == nil && len(decoded) == 260 && decoded[259] == 17 }()
+    why: Comprueba copia y big-endian con longitud mayor que 255.
+    failure: No devuelvas frame[3:…] directamente; la longitud ocupa dos bytes.
+  - id: t2
+    label: Estructura inválida sin panic
+    expression: func() bool { for n := 0; n < 7; n++ { p,e := DecodeFrame(make([]byte,n)); if e == nil || p != nil { return false } }; badMagic := BuildFrame(nil); badMagic[0] = 0; badLength := BuildFrame([]byte{1}); badLength[2] = 2; extra := append(BuildFrame(nil), 0); for _, bad := range [][]byte{badMagic,badLength,extra} { p,e := DecodeFrame(bad); if e == nil || p != nil { return false } }; return true }()
+    why: Rechaza formas estructuralmente imposibles antes de extraer campos.
+    failure: La longitud total debe ser exactamente N + 7, sin tolerar sobrantes.
+  - id: t3
+    label: Vacío válido y payload corrompido
+    expression: func() bool { out, err := DecodeFrame(BuildFrame(nil)); bad := BuildFrame([]byte("SOS")); bad[3] ^= 1; rejected, e := DecodeFrame(bad); return err == nil && len(out) == 0 && e != nil && rejected == nil }()
+    why: Distingue ausencia válida de datos de contenido cuyo checksum ya no coincide.
+    failure: CRC cubre payload; no incluyas cabecera ni el propio checksum.
+hints:
+  - Primero longitud mínima y marca; después leé el uint16.
+  - Usá len(frame) == int(size)+7 antes de crear las ventanas.
+  - Leé CRC con Uint32, compará y copiá el payload a un slice nuevo.
+review:
+  success: Separaste validación estructural, comprobación de contenido y propiedad de memoria. Los tests incluyen corrupción, límites cortos y una longitud de dos bytes; no sustituyen fuzzing de todos los paquetes posibles.
+  pitfall: Un CRC válido no autoriza a ignorar la longitud. Y copiar el slice no es lo mismo que copiar sus bytes.
+transfer: 'Fuera del laboratorio, añadí un fuzz test: DecodeFrame nunca debe provocar panic con bytes arbitrarios.'
+prediction:
+  question: Si retornás frame[3:3+N], cambiar payload[0] después…
+  options:
+    - Nunca afecta frame
+    - También cambia frame[3]
+    - Solo cambia la longitud de frame
+  answer: 1
+  explanation: El slice apunta al mismo array; una copia explícita de bytes rompe ese alias.
+sources:
+  - title: 'encoding/binary: ByteOrder'
+    url: https://pkg.go.dev/encoding/binary#ByteOrder
+  - title: hash/crc32
+    url: https://pkg.go.dev/hash/crc32

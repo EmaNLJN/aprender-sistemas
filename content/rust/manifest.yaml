@@ -247,3 +247,40 @@ lab:
       - rust-98
       - rust-99
       - rust-100
+quests:
+  - topicId: rust-quest-robot
+    topic: Estación del robot
+    level: beginner
+    minutes: 12
+    bossMinutes: 20
+    exercises:
+      - rust-101
+      - rust-102
+      - rust-103
+  - topicId: rust-quest-signal
+    topic: Puerto de señales
+    level: medium
+    minutes: 12
+    bossMinutes: 20
+    exercises:
+      - rust-104
+      - rust-105
+      - rust-106
+  - topicId: rust-quest-routes
+    topic: Archivo de rutas
+    level: advanced
+    minutes: 12
+    bossMinutes: 20
+    exercises:
+      - rust-107
+      - rust-108
+      - rust-109
+  - topicId: rust-quest-machine
+    topic: Núcleo de la máquina
+    level: expert
+    minutes: 12
+    bossMinutes: 20
+    exercises:
+      - rust-110
+      - rust-111
+      - rust-112

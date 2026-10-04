@@ -1,0 +1,46 @@
+title: Carga express para el rover
+visual: collections
+intro: La base presenta cajas en orden de prioridad. Aceptá cada caja si entra en la capacidad restante y seguí revisando las siguientes aunque una no entre. Esta es una política de carga en orden, no una búsqueda de la combinación óptima.
+why: Separar índices seleccionados y capacidad restante hace explícito el estado del recorrido. append construye el resultado sin alterar los pesos originales.
+objective: PackCargo devuelve los índices aceptados en orden y la capacidad sobrante. Pesos y capacidad son no negativos.
+instructions:
+  - Una caja que entra exactamente también se acepta; una caja de peso cero entra aunque no quede espacio.
+  - No ordenes ni modifiques weights. Devolvé los índices originales.
+  - Si una caja no entra, salteala y continuá.
+tests:
+  - id: t1
+    label: La caja gigante no bloquea la fila
+    expression: func() bool { w := []int{4, 9, 2, 1}; ids, left := PackCargo(w, 7); return fmt.Sprint(ids) == "[0 2 3]" && left == 0 && fmt.Sprint(w) == "[4 9 2 1]" }()
+    why: Detecta el corte prematuro y la modificación del inventario.
+    failure: continue salta una caja; break abandona toda la fila.
+  - id: t2
+    label: Cero espacio y carga gratuita
+    expression: func() bool { ids, left := PackCargo([]int{1, 0, 0}, 0); return fmt.Sprint(ids) == "[1 2]" && left == 0 }()
+    why: Distingue no tener espacio de no poder aceptar ningún elemento.
+    failure: La condición de rechazo es peso > capacidad, no >=.
+  - id: t3
+    label: Inventario vacío y política en orden
+    expression: func() bool { empty, left := PackCargo(nil, 5); ids, remaining := PackCargo([]int{3, 2, 2}, 4); return len(empty) == 0 && left == 5 && fmt.Sprint(ids) == "[0]" && remaining == 1 }()
+    why: Comprueba el caso vacío y que no se reemplaza la política por una optimización distinta.
+    failure: Respetá la primera caja aunque otras dos llenarían mejor el espacio.
+hints:
+  - El estado mínimo es la capacidad restante y un slice de índices.
+  - Una decisión se toma por cada caja.
+  - Rechazar una caja debe permitir que el for continúe.
+review:
+  success: 'Tu algoritmo respeta una regla de negocio verificable: aceptar en orden lo que entre. Recorrer una vez cuesta O(n); no resolviste el problema general de la mochila.'
+  pitfall: Una solución que maximiza peso o cantidad puede ser incorrecta cuando el contrato exige prioridad por orden.
+transfer: Cambiá el contrato para devolver también los índices rechazados sin hacer un segundo recorrido.
+prediction:
+  question: 'Pesos [5, 2], capacidad 2: ¿qué índice se acepta?'
+  options:
+    - Ninguno
+    - '0'
+    - '1'
+  answer: 2
+  explanation: La primera caja se saltea y la segunda entra exactamente.
+sources:
+  - title: For y control de bucles
+    url: https://go.dev/ref/spec#For_statements
+  - title: Slices y append
+    url: https://go.dev/blog/slices-intro

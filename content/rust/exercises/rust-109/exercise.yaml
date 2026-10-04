@@ -1,0 +1,47 @@
+title: Boss · Encontrá la salida entre los muros
+minutes: 25
+visual: collections
+intro: La estación quedó dividida por muros. Tu robot necesita la cantidad mínima de pasos hasta la salida, y debe reconocer los mapas inválidos o imposibles.
+why: Cuando cada movimiento cuesta lo mismo, BFS descubre una celda por su distancia mínima. Registrar una celda al encolarla impide trabajo repetido y hace finita la exploración.
+objective: mapa usa true para piso y false para muro; coordenadas (fila,columna). Devolvé la menor cantidad de pasos N/E/S/O entre inicio y fin. Sin diagonales. Devolvé None ante mapa vacío, filas vacías o de distintos largos, extremos fuera del mapa, extremos bloqueados o falta de camino. Misma celda de piso → Some(0). Entradas de hasta 30×30.
+instructions:
+  - Validá forma rectangular y extremos antes de explorar.
+  - Encolá (fila,columna,distancia) y marcá visitados al agregar.
+  - Expandí cuatro vecinos válidos; la primera llegada al destino da la distancia.
+tests:
+  - id: t1
+    label: Rodear un muro por el camino mínimo
+    expression: ruta_corta(&[vec![true, false, true], vec![true, true, true]], (0, 0), (0, 2)) == Some(4) && ruta_corta(&[vec![true, true], vec![true, true]], (0, 0), (1, 1)) == Some(2)
+    why: Se rodean obstáculos y no se toma un atajo diagonal.
+    failure: Cada vecino debe diferir en exactamente una coordenada por una unidad.
+  - id: t2
+    label: Sin ruta o extremo bloqueado
+    expression: ruta_corta(&[vec![true, false, true]], (0, 0), (0, 2)) == None && ruta_corta(&[vec![false, true]], (0, 0), (0, 1)) == None
+    why: Agotar la cola y empezar sobre un muro son dos rechazos diferentes.
+    failure: Los extremos también deben ser piso.
+  - id: t3
+    label: Forma del mapa y distancia cero
+    expression: ruta_corta(&[vec![true]], (0, 0), (0, 0)) == Some(0) && ruta_corta(&[], (0, 0), (0, 0)) == None && ruta_corta(&[vec![true], vec![true, true]], (0, 0), (1, 0)) == None && ruta_corta(&[vec![true]], (0, 0), (1, 0)) == None && ruta_corta(&[vec![]], (0, 0), (0, 0)) == None
+    why: El caso trivial requiere un mapa válido y una celda existente.
+    failure: Comprobá la forma antes de reservar visitados o indexar filas.
+hints:
+  - Una matriz booleana de visitados evita volver a encolar las mismas celdas.
+  - checked_add_signed permite restar uno a usize sin desbordar en el borde cero.
+  - Guardá distancia+1 con cada vecino; devolver al sacar el destino conserva el orden BFS.
+review:
+  success: Los casos verifican distancia, obstáculos y validaciones de entrada. El modelo de cuatro vecinos con costo uniforme justifica resolver por capas.
+  pitfall: Si los terrenos tuvieran costos diferentes, el orden FIFO dejaría de garantizar la distancia de menor costo. Habría que cambiar el algoritmo y el contrato.
+transfer: Devolvé también las coordenadas del camino usando una tabla de predecesores, y explicá cómo resolvés empates.
+prediction:
+  question: ¿Por qué la primera llegada de BFS sirve como distancia mínima en este mapa?
+  options:
+    - Cada movimiento cuesta exactamente un paso
+    - HashSet ordena las distancias
+    - Rust elige automáticamente el camino más corto
+  answer: 0
+  explanation: La cola procesa distancias 0, luego 1, luego 2… siempre que cada arista tenga el mismo costo.
+sources:
+  - title: std · VecDeque
+    url: https://doc.rust-lang.org/std/collections/struct.VecDeque.html
+  - title: std · usize::checked_add_signed
+    url: https://doc.rust-lang.org/std/primitive.usize.html#method.checked_add_signed

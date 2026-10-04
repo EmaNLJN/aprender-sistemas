@@ -1,0 +1,46 @@
+title: Reparación · La cola se convirtió en pila
+visual: collections
+intro: El explorador conoce las conexiones de una estación, pero visita una rama entera antes de volver a los vecinos cercanos. Repará su recorrido por capas.
+why: 'BFS procesa primero los nodos descubiertos antes: una cola FIFO conserva ese orden. Marcar un nodo al encolarlo evita duplicarlo aunque tenga varios caminos de entrada o ciclos.'
+objective: explorar recibe aristas dirigidas y un inicio. Devolvé los nodos alcanzables en orden BFS, incluyendo el inicio. Recorre vecinos en el orden de las aristas originales y visita cada nodo una sola vez. Un nodo sin aristas produce [inicio].
+instructions:
+  - Buscá qué extremo de VecDeque se utiliza para extraer.
+  - Conservá el registro de visitados al momento de encolar.
+  - 'Probá una bifurcación: un camino lineal no revela este bug.'
+tests:
+  - id: t1
+    label: Visitar por capas
+    expression: explorar(&[(0, 1), (0, 2), (1, 3), (2, 4)], 0) == vec![0, 1, 2, 3, 4]
+    why: Los vecinos a distancia uno salen antes que los de distancia dos.
+    failure: Extraer por atrás convierte la estructura en LIFO.
+  - id: t2
+    label: Ciclos y entradas repetidas
+    expression: explorar(&[(0, 1), (1, 0), (0, 1), (1, 2), (2, 2)], 0) == vec![0, 1, 2]
+    why: El registro de visitados evita repeticiones y termina en grafos cíclicos.
+    failure: HashSet::insert devuelve false si el nodo ya estaba registrado.
+  - id: t3
+    label: Origen aislado y dirección
+    expression: explorar(&[], 42) == vec![42] && explorar(&[(0, 1)], 1) == vec![1]
+    why: La relación desde→hasta no agrega automáticamente la arista inversa.
+    failure: El inicio se visita incluso si no aparece como origen de ninguna arista.
+hints:
+  - push_back agrega al final de la fila.
+  - Para respetar llegada primero, extraé por el extremo opuesto.
+  - Cambiá pop_back por pop_front; el resto mantiene la unicidad.
+review:
+  success: La bifurcación verifica el orden FIFO, y los ciclos verifican la visita única. Con vecinos tomados del slice, el resultado no depende del orden interno del HashSet.
+  pitfall: 'Aquí se recorren todas las aristas por nodo: es claro para aprender, pero no tiene la eficiencia de una lista de adyacencia. BFS tampoco resuelve por sí solo caminos con costos diferentes.'
+transfer: Construí una lista de adyacencia una vez y compará cuántas aristas inspeccionás al explorar.
+prediction:
+  question: Al descubrir A y luego B, ¿cuál debe procesar primero una cola FIFO?
+  options:
+    - B, porque llegó después
+    - A, porque llegó antes
+    - Depende del hash de sus nombres
+  answer: 1
+  explanation: 'Primero en entrar, primero en salir: push_back combinado con pop_front.'
+sources:
+  - title: std · VecDeque
+    url: https://doc.rust-lang.org/std/collections/struct.VecDeque.html
+  - title: std · HashSet::insert
+    url: https://doc.rust-lang.org/std/collections/struct.HashSet.html#method.insert

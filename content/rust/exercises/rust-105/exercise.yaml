@@ -1,0 +1,44 @@
+title: Kata · Una huella que recuerda el orden
+visual: memory
+intro: La señal necesita una comprobación pequeña para detectar algunas alteraciones. Vas a combinar una rotación de bits con XOR y observar por qué el orden importa.
+why: 'Rotar desplaza todos los bits y devuelve al otro extremo los que salen. XOR mezcla el nuevo byte con el acumulador. Esta huella tiene solo 256 resultados: puede tener colisiones y no autentica mensajes.'
+objective: checksum empieza en 0. Por cada byte, en orden, reemplazá el acumulador por acumulador.rotate_left(1) ^ byte. Devolvé el u8 final; una entrada vacía produce 0.
+instructions:
+  - Usá un acumulador de tipo u8 para fijar una rotación de ocho bits.
+  - Rotá antes de aplicar XOR en cada iteración.
+  - Compará dos secuencias que solo difieran en el orden.
+tests:
+  - id: t1
+    label: Base y un solo byte
+    expression: checksum(&[]) == 0 && checksum(&[255]) == 255
+    why: El estado inicial no agrega información inexistente.
+    failure: El acumulador inicial debe ser 0u8.
+  - id: t2
+    label: Importa el orden
+    expression: checksum(&[1, 2, 3]) == 3 && checksum(&[1, 3, 2]) == 0
+    why: La rotación entre bytes distingue estas dos permutaciones.
+    failure: Rotar una sola vez al final no equivale a rotar en cada paso.
+  - id: t3
+    label: El bit alto vuelve por abajo
+    expression: checksum(&[128, 0]) == 1 && checksum(&[128, 1]) == 0
+    why: El bit 7 no se descarta como en un desplazamiento ordinario.
+    failure: 'Usá rotate_left: 128 rotado una posición es 1.'
+hints:
+  - 'Un for sobre datos también sirve: el algoritmo no exige fold.'
+  - Si recorrés referencias, desreferenciá byte o usá el patrón &byte.
+  - La actualización completa es acumulado = acumulado.rotate_left(1) ^ byte.
+review:
+  success: La huella sigue el orden de procesamiento y conserva el bit que cruza el borde. Los casos verifican exactamente esta regla, no una propiedad criptográfica.
+  pitfall: Dos mensajes distintos pueden producir el mismo checksum. No lo uses para contraseñas, firmas ni para probar ausencia total de corrupción.
+transfer: Buscá dos mensajes distintos con la misma huella y explicá por qué es inevitable cuando hay más de 256 mensajes posibles.
+prediction:
+  question: ¿Qué aporta rotate_left frente a desplazar un u8 a la izquierda?
+  options:
+    - Conserva el bit que sale y lo reintroduce por abajo
+    - Impide todas las colisiones
+    - Convierte el resultado en u16
+  answer: 0
+  explanation: La rotación opera sobre los mismos ocho bits. Conserva los bits del acumulador, pero no vuelve inyectiva la combinación de mensajes.
+sources:
+  - title: std · u8::rotate_left
+    url: https://doc.rust-lang.org/std/primitive.u8.html#method.rotate_left

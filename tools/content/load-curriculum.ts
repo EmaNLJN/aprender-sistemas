@@ -6,6 +6,7 @@ import type { JsonRecord } from './shape.ts';
 
 export interface Curriculum {
   lab: Record<Language, JsonRecord[]>;
+  quests: Record<Language, JsonRecord[]>;
 }
 
 export function loadCurriculum(root: string): Curriculum {
@@ -14,5 +15,6 @@ export function loadCurriculum(root: string): Curriculum {
   expectDistinctIds(rust, go);
   return {
     lab: { rust: rust.lab, go: go.lab },
+    quests: { rust: rust.quests, go: go.quests },
   };
 }
