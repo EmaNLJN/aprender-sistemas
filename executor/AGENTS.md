@@ -10,9 +10,9 @@ biblioteca estándar: no agregues módulos sin un ADR.
 - Invariantes de seguridad: los límites, imágenes y flags salen de
   `internal/sandbox/profile.go` y `args.go`, nunca del pedido. Todo contenedor usa
   `--network none`, `--cap-drop ALL`, `no-new-privileges`, usuario 65534, memoria sin swap,
-  `--log-driver none` y `/tmp` con `noexec`; la ejecución, además, rootfs y `/out` de sólo
-  lectura. Cambiar un límite exige actualizar el ADR 0005 y la prueba de tabla de
-  `internal/sandbox/args_test.go`.
+  `--log-driver none`, `--ulimit core=0` y `/tmp` con `noexec`; la ejecución, además, rootfs
+  y `/out` de sólo lectura. Cambiar un límite exige actualizar el ADR 0005 y la prueba de
+  tabla de `internal/sandbox/args_test.go`.
 - Docker se usa sólo a través de `Engine`; las pruebas unitarias usan dobles. Un fallo de
   Docker, incluido un contenedor que no pudo arrancar, es un error del sandbox y nunca un
   resultado del alumno.
@@ -21,9 +21,10 @@ biblioteca estándar: no agregues módulos sin un ADR.
   90 s, significa fallo del sandbox (pudo haber corrido: quien llama no reintenta solo);
   400 o 413, pedido inválido.
 - Cada instancia etiqueta lo suyo con `taller.executor.run=<EXECUTOR_INSTANCE>` (`servicio`
-  por defecto; las pruebas de integración usan `integracion`). Al arrancar barre todo lo de su
-  instancia y al recibir SIGTERM cancela los pedidos en curso, cuyos contenedores borra el
-  `Runner`: Compose necesita un `stop_grace_period` de 20 s o más.
+  por defecto; las pruebas de integración usan `integracion`). Al arrancar verifica las
+  imágenes y el runtime, y barre todo lo de su instancia. Al recibir SIGTERM cancela los
+  pedidos en curso y espera hasta 35 s a que el `Runner` borre sus contenedores: Compose
+  necesita un `stop_grace_period` de 40 s o más.
 - Las imágenes base se fijan por digest con el tag delante. Las de sandbox se reconstruyen al
   menos cada semana (seguridad y caché de Go, ver la enmienda del ADR 0005); después de
   actualizarlas, corré otra vez la integración con runc y con runsc.

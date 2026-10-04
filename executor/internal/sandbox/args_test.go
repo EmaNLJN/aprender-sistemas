@@ -2,6 +2,7 @@ package sandbox
 
 import (
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -113,6 +114,7 @@ func TestEveryPhaseHasItsLimits(t *testing.T) {
 		for _, pair := range [][2]string{
 			{"--memory", c.memory}, {"--memory-swap", c.memory}, {"--pids-limit", c.pids},
 			{"--cpus", c.cpus}, {"--tmpfs", c.tmpfs}, {"--ulimit", "nofile=256:256"},
+			{"--ulimit", "core=0"},
 			{"--log-driver", "none"},
 		} {
 			if !containsPair(args, pair[0], pair[1]) {
@@ -130,5 +132,15 @@ func TestSortedKeysOrdersLabels(t *testing.T) {
 	want := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"}
 	if got := sortedKeys(labels); !slices.Equal(got, want) {
 		t.Fatalf("sortedKeys = %v; quiero %v, para que los argumentos no cambien entre llamadas", got, want)
+	}
+}
+
+func TestCompileCommandsAlwaysProduceAnExecutable(t *testing.T) {
+	profiles := Profiles("rust-img", "go-img")
+	for language, flag := range map[string]string{"rust": "--crate-type bin", "go": "-buildmode=exe"} {
+		command := strings.Join(profiles[language].Compile.Cmd, " ")
+		if !strings.Contains(command, flag) {
+			t.Errorf("%s: la compilación tiene que pedir %q; sin eso, el programa puede dejar en /out una biblioteca que la ejecución no corre (500 en vez de un resultado): %s", language, flag, command)
+		}
 	}
 }

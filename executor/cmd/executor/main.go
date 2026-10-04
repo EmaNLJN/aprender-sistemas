@@ -3,8 +3,11 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -21,13 +24,18 @@ import (
 
 // Presupuesto de un pedido: espera de lugar (queueWait) + compilación (hasta 20 s) + ejecución
 // (10 s) + limpieza (hasta 10 s por paso). writeTimeout lo cubre con margen y sweepMaxAge supera
-// la vida de cualquier envío. Si sube un plazo de profile.go, revisá estos valores.
+// la vida de cualquier envío mientras Docker responda: Create y CreateVolume usan el contexto del
+// pedido, sin plazo propio. Si sube un plazo de profile.go, revisá estos valores.
 const (
 	queueWait    = 30 * time.Second
 	writeTimeout = 90 * time.Second
 	sweepMaxAge  = 2 * time.Minute
-	maxProgram   = 128 << 10
-	maxBody      = 1 << 20 // el JSON escapado puede ocupar hasta seis veces el programa
+	// Un pedido cancelado borra lo suyo con Kill, Remove y RemoveVolume, hasta 10 s cada uno
+	// (cleanupTimeout de runner.go): el apagado lo espera. Compose necesita un
+	// stop_grace_period mayor (executor/AGENTS.md).
+	shutdownGrace = 35 * time.Second
+	maxProgram    = 128 << 10
+	maxBody       = 1 << 20 // el JSON escapado puede ocupar hasta seis veces el programa
 )
 
 func main() {
@@ -42,6 +50,19 @@ func main() {
 		if err := sandbox.ExecCommand(root, "docker", []string{"image", "inspect", "--format", "{{.Id}}", image}, nil, io.Discard, io.Discard); err != nil {
 			log.Fatalf("falta la imagen %s (los pedidos nunca descargan imágenes): %v", image, err)
 		}
+	}
+
+	// Sin el runtime, /healthz respondería ok y cada pedido sería un 500.
+	var runtimes bytes.Buffer
+	if err := sandbox.ExecCommand(root, "docker", []string{"info", "--format", "{{json .Runtimes}}"}, nil, &runtimes, io.Discard); err != nil {
+		log.Fatalf("no pude consultar los runtimes de Docker: %v", err)
+	}
+	registered, err := runtimeRegistered(runtimes.Bytes(), cfg.Runtime)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if !registered {
+		log.Fatalf("Docker no tiene registrado el runtime %s (ver docs/adr/0005-ejecucion-en-sandbox-propio.md)", cfg.Runtime)
 	}
 
 	engine := sandbox.DockerCLI{Exec: sandbox.ExecCommand}
@@ -67,25 +88,52 @@ func main() {
 		MaxBody: maxBody, MaxProgram: maxProgram, QueueWait: queueWait, Languages: languages,
 	}
 	httpServer := &http.Server{
-		Addr: cfg.Addr, Handler: server.Handler(),
+		Handler:           server.Handler(),
 		ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second,
 		WriteTimeout: writeTimeout, IdleTimeout: 60 * time.Second,
 		// Los pedidos heredan root: al apagar, el Runner mata y borra sus contenedores.
 		BaseContext: func(net.Listener) context.Context { return root },
 	}
-	go func() {
-		<-root.Done()
-		shutdown, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		defer cancel()
-		if err := httpServer.Shutdown(shutdown); err != nil {
-			log.Printf("apagado: %v", err)
-		}
-	}()
-
-	log.Printf("ejecutor %s en %s con runtime %s", cfg.Instance, cfg.Addr, cfg.Runtime)
-	if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+	listener, err := net.Listen("tcp", cfg.Addr)
+	if err != nil {
 		log.Fatal(err)
 	}
+	log.Printf("ejecutor %s en %s con runtime %s", cfg.Instance, cfg.Addr, cfg.Runtime)
+	if err := serve(root, httpServer, listener, shutdownGrace); err != nil {
+		log.Fatal(err)
+	}
+}
+
+// serve atiende hasta que se cancela root y no vuelve hasta que Shutdown terminó. Serve devuelve
+// ErrServerClosed apenas empieza el apagado; si main saliera ahí, el proceso moriría antes de que
+// los pedidos cancelados borren sus contenedores (la documentación de http.Server.Shutdown pide
+// esperar a que vuelva).
+func serve(root context.Context, server *http.Server, listener net.Listener, grace time.Duration) error {
+	shutdownDone := make(chan error, 1)
+	go func() {
+		<-root.Done()
+		ctx, cancel := context.WithTimeout(context.Background(), grace)
+		defer cancel()
+		shutdownDone <- server.Shutdown(ctx)
+	}()
+	if err := server.Serve(listener); !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+	if err := <-shutdownDone; err != nil {
+		return fmt.Errorf("apagado: %w", err)
+	}
+	return nil
+}
+
+// runtimeRegistered dice si Docker tiene registrado el runtime, a partir de la salida de
+// `docker info --format '{{json .Runtimes}}'`: un objeto JSON con un campo por runtime.
+func runtimeRegistered(runtimesJSON []byte, name string) (bool, error) {
+	var runtimes map[string]json.RawMessage
+	if err := json.Unmarshal(runtimesJSON, &runtimes); err != nil {
+		return false, fmt.Errorf("salida inesperada de docker info: %w", err)
+	}
+	_, ok := runtimes[name]
+	return ok, nil
 }
 
 // sweepForever barre cada minuto los restos de limpiezas fallidas.

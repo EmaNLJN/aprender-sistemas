@@ -60,6 +60,15 @@ func TestIntegrationRustCompileError(t *testing.T) {
 	}
 }
 
+func TestIntegrationRustCrateTypeAttributeStillBuildsABinary(t *testing.T) {
+	// El harness pone el código del alumno al principio del archivo: un atributo de crate suyo no
+	// puede convertir la compilación en una biblioteca que después no se puede ejecutar.
+	r := execute(t, "rust", "#![crate_type = \"lib\"]\nfn main() { println!(\"hola\"); }\n")
+	if r.Phase != "run" || r.ExitCode != 0 || r.Stdout != "hola\n" {
+		t.Fatalf("--crate-type bin manda sobre el atributo del alumno: %+v", r)
+	}
+}
+
 func TestIntegrationRustDebugKeepsOverflowChecks(t *testing.T) {
 	r := execute(t, "rust", `fn main() { let x: u8 = 255; let y = x + std::hint::black_box(1); println!("{y}"); }`)
 	if r.Phase != "run" || r.ExitCode != 101 || !strings.Contains(r.Stderr, "overflow") {
@@ -168,6 +177,13 @@ func main() { var x int = "texto"; _ = x }
 	}
 }
 
+func TestIntegrationGoNonMainPackageIsACompileError(t *testing.T) {
+	r := execute(t, "go", "package foo\n\nfunc F() {}\n")
+	if r.Phase != "compile" || r.ExitCode == 0 || !strings.Contains(r.Stderr, "-buildmode=exe requires exactly one main package") {
+		t.Fatalf("un paquete que no es main es un error de compilación del alumno, no un fallo del sandbox: %+v", r)
+	}
+}
+
 func TestIntegrationRunWritesOnlyToTmp(t *testing.T) {
 	r := execute(t, "go", `package main
 
@@ -204,25 +220,38 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"syscall"
 )
 
 func main() {
+	// Con uid 65534, CapEff ya es 0 aunque falte --cap-drop ALL: CapBnd y CapPrm sí lo delatan.
 	status, _ := os.ReadFile("/proc/self/status")
+	values := map[string]string{}
 	for _, line := range strings.Split(string(status), "\n") {
-		if strings.HasPrefix(line, "CapEff:") || strings.HasPrefix(line, "NoNewPrivs:") {
-			fmt.Println(strings.Join(strings.Fields(line), " "))
+		key, value, found := strings.Cut(line, ":")
+		if found {
+			values[key] = strings.TrimSpace(value)
 		}
 	}
+	for _, key := range []string{"CapPrm", "CapEff", "CapBnd", "NoNewPrivs"} {
+		fmt.Println(key+":", values[key])
+	}
+	var core syscall.Rlimit
+	syscall.Getrlimit(syscall.RLIMIT_CORE, &core)
+	fmt.Println("core", core.Cur, core.Max)
 	os.WriteFile("/tmp/x.sh", []byte("#!/bin/sh\necho ejecutado\n"), 0o755)
 	fmt.Println("exec en /tmp falla:", exec.Command("/tmp/x.sh").Run() != nil)
 }
 `)
-	want := `CapEff: 0000000000000000
+	want := `CapPrm: 0000000000000000
+CapEff: 0000000000000000
+CapBnd: 0000000000000000
 NoNewPrivs: 1
+core 0 0
 exec en /tmp falla: true
 `
 	if r.Stdout != want {
-		t.Fatalf("sin capabilities, sin escalada y /tmp sin exec: %+v", r)
+		t.Fatalf("sin capabilities, sin escalada, sin volcados de memoria y /tmp sin exec: %+v", r)
 	}
 }
 
@@ -256,8 +285,10 @@ func TestIntegrationContainerThatCannotStartIsAnError(t *testing.T) {
 	profile.Run.Cmd = []string{"/no/existe"}
 	runner.Profiles["go"] = profile
 	_, err := runner.Execute(context.Background(), "go", []byte("package main\n\nfunc main() {}\n"))
-	if err == nil {
-		t.Fatal("un contenedor que no arranca es un error del sandbox, no un resultado del alumno")
+	// "no pudo arrancar" sale de State.Error (parseState): sin ese chequeo, el contenedor queda
+	// en "created" y el error vendría de otra rama.
+	if err == nil || !strings.Contains(err.Error(), "no pudo arrancar") {
+		t.Fatalf("un contenedor que no arranca es un error del sandbox, no un resultado del alumno: %v", err)
 	}
 }
 

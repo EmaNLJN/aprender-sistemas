@@ -219,17 +219,26 @@ La implementación del ejecutor (`docs/plans/2026-10-04-ejecutor-go.md`) ajustó
 - **`/tmp`.** tmpfs con `noexec,nosuid,nodev`: 256 MiB al compilar y 16 MiB al ejecutar.
 - **Compilación Go.** Sin `--read-only`: `go build` escribe en el GOCACHE precalentado de la
   imagen, dentro de la capa del contenedor, que se descarta al borrarlo.
-- **Flags nuevos.** `--ulimit nofile=256:256` y `--log-driver none`, para que el daemon no
-  guarde en disco la salida del alumno.
+- **Flags nuevos.** `--ulimit nofile=256:256`, `--ulimit core=0` y `--log-driver none`. Sin
+  volcados de memoria: con runc, el `core_pattern` del host los mandaría a
+  `systemd-coredump`, que corre como root. Sin log del daemon: no guarda en disco la salida
+  del alumno.
 - **`go vet`.** Corre sólo si el programa compiló, como en el Playground, y nunca cambia el
   código de salida.
+- **Compilación siempre a un ejecutable.** `rustc --crate-type bin` y
+  `go build -buildmode=exe`. El harness Rust pone el código del alumno al principio del
+  archivo, así que un `#![crate_type = "lib"]` suyo dejaba en `/out` una biblioteca que la
+  ejecución no podía correr: un fallo del sandbox en vez de un resultado. En Rust manda la
+  línea de comando; en Go, un paquete que no es `main` es un error de compilación.
 - **Errores.** Si Docker no puede arrancar el contenedor (`State.Error`), es un fallo del
   sandbox y no un resultado del alumno. El ejecutor responde 503 con `Retry-After` cuando está
   ocupado (no corrió nada) y 500 ante un fallo del sandbox (pudo haber corrido, así que Laravel
-  no lo reintenta solo).
+  no lo reintenta solo). Al arrancar, el ejecutor no inicia si
+  falta una imagen de sandbox o si Docker no tiene registrado el runtime configurado. Al
+  apagarse espera hasta 35 s a que los pedidos cancelados borren sus contenedores.
 - **Tiempo de ejecución.** 10 s; la tabla decía de 5 a 10 s.
 - **Medido el 2026-10-04** con runsc `release-20260928.0` instalado por apt, plataforma systrap:
-  - las 19 pruebas de integración pasan con runc (19 s) y con runsc (28 s);
+  - las 21 pruebas de integración pasan con runc (27 s) y con runsc (31 s);
   - un programa Go de prueba compila en unos 0,4 s con runc y 1 s con runsc, y se ejecuta en
     unos 0,15–0,2 s con los dos;
   - el OOM llega como `OOMKilled=true` con los dos runtimes;
@@ -241,7 +250,7 @@ La implementación del ejecutor (`docs/plans/2026-10-04-ejecutor-go.md`) ajustó
     de devolverle `EAGAIN`;
   - la bomba queda contenida igual, y con el límite de 64 de la ejecución corren los programas
     concurrentes de las pruebas (8 hilos).
-  La auditoría B3 confirma que ninguna solución del currículo lo excede.
+  La auditoría B3 tiene que confirmar que ninguna solución del currículo lo excede.
 - **Plataforma.** Se queda systrap, la de omisión de gVisor, aunque el host tiene `/dev/kvm`: los
   tiempos medidos alcanzan y KVM agrega otra variable. Se reevalúa si la latencia molesta.
 - **`runtimeArgs: ["--network=none"]`** en `daemon.json` (`sudo runsc install -- --network=none`)
@@ -250,6 +259,32 @@ La implementación del ejecutor (`docs/plans/2026-10-04-ejecutor-go.md`) ajustó
   seguridad, `go build` recorta el caché precalentado que no se usó en 5 días, y cada
   contenedor parte de la capa de la imagen, así que pasada esa semana todos recompilarían vet y
   la stdlib (2–3 s más por envío).
+
+### Para quien consume el ejecutor (B2)
+
+- **Clasificación, en orden:** `timedOut` → tiempo agotado; `oomKilled` → memoria;
+  `phase: "compile"` con código distinto de 0 → error de compilación; `phase: "run"` con
+  código distinto de 0 → error de ejecución (la señal es el código menos 128); después, la
+  evidencia en `stdout`.
+- **Códigos engañosos:** con runsc, un 137 sin `oomKilled` ni `timedOut` es el
+  `--pids-limit`; después de un tiempo agotado, el 137 es del `kill`, no del programa.
+- **Salida:** `truncated` es el OR de los cuatro streams. En la fase `run`, `stderr` suma los
+  avisos de compilación y el `stderr` de la ejecución (hasta 128 KiB, y más si hubo bytes
+  inválidos reemplazados por U+FFFD); `stdout` llega a 65 536 bytes, uno más que un `TEXT`
+  de MySQL: va en `MEDIUMTEXT`. `compileMs` y `runMs` incluyen el arranque del contenedor.
+- **Respuestas:** 503 con `Retry-After` = ocupado, no corrió nada (con `tries = 1`, se
+  reencola con un dispatch nuevo); 500 o conexión cerrada sin respuesta = `infra_error`, sin
+  reintento automático. Al apagarse, los pedidos que esperaban lugar reciben la conexión
+  cerrada aunque no corrió nada.
+- **Plazos:** el cliente HTTP espera más de 90 s (`WriteTimeout`), el job más que el cliente
+  y `retry_after` más que ambos. Los workers de la cola de ejecuciones son como mucho
+  `MaxConcurrent`: el ejecutor no limita cuántos esperan lugar.
+- **Compose:** red interna compartida sólo con el worker, sin puertos publicados; el socket
+  de Docker montado sólo en el ejecutor, con `group_add` igual al GID numérico del socket del
+  host; `stop_grace_period` de 40 s o más; `restart: unless-stopped` para que corra el
+  barrido inicial; un `EXECUTOR_INSTANCE` distinto por proceso (un `docker compose run` con
+  el servicio arriba barrería los contenedores en curso); `/healthz` sirve de liveness, no
+  de readiness, porque no consulta Docker.
 
 ## Fuentes
 

@@ -27,6 +27,9 @@ func createArgs(s Spec) []string {
 		"--memory-swap", memory,
 		"--cpus", p.CPUs,
 		"--ulimit", "nofile=256:256",
+		// Sin volcados de memoria: con runc, el core_pattern del host los mandaría a
+		// systemd-coredump, que corre como root.
+		"--ulimit", "core=0",
 		"--tmpfs", fmt.Sprintf("/tmp:rw,noexec,nosuid,nodev,size=%dm", p.TmpfsMiB),
 		"--mount", volumeMount(s.Volume, p.OutReadOnly),
 	}
