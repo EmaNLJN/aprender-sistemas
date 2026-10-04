@@ -494,5 +494,93 @@ test('validación: bossMinutes sólo existe en los mundos de desafíos', () => {
   );
 });
 
+function questWorld(extra = ''): string {
+  return `${DEFAULTS}lab:\n${labStage('rust-a', ['rust-01'])}quests:
+  - topicId: rust-quest-a
+    topic: Mundo A
+    level: beginner
+    minutes: 12
+    bossMinutes: 20
+${extra}    exercises:
+      - rust-101
+      - rust-102
+      - rust-103
+`;
+}
+
+function questFixture(manifest: string, bossYaml = EXERCISE): string {
+  const sources = `sources:\n  - title: A\n    url: https://a\n`;
+  return fixture({
+    'content/rust/manifest.yaml': manifest,
+    ...exerciseFiles('rust', 'rust-01'),
+    ...exerciseFiles('rust', 'rust-101', EXERCISE + sources),
+    ...exerciseFiles('rust', 'rust-102', EXERCISE + sources),
+    ...exerciseFiles('rust', 'rust-103', bossYaml + sources),
+  });
+}
+
+test('desafíos: la posición fija el rol; challengeType y kind del mundo no se aceptan', () => {
+  throwsContent(
+    () => loadLanguage(questFixture(questWorld(), `challengeType: boss\n${EXERCISE}`), 'rust'),
+    'content/rust/exercises/rust-103/exercise.yaml: challengeType: no va en exercise.yaml: lo fija la posición en el mundo de desafíos',
+  );
+  throwsContent(
+    () => loadLanguage(questFixture(questWorld('    kind: reparar\n')), 'rust'),
+    'content/rust/manifest.yaml: quests[0].kind: clave desconocida',
+  );
+});
+
+test('precedencia: la etapa pisa a defaults y el jefe sin minutes toma bossMinutes', () => {
+  const stage = loadLanguage(
+    fixture({
+      'content/rust/manifest.yaml': `${DEFAULTS}lab:\n${labStage('rust-a', ['rust-01'])}    visual: memory\n`,
+      ...exerciseFiles('rust', 'rust-01'),
+    }),
+    'rust',
+  );
+  assert.equal(stage.lab[0].visual, 'memory');
+  const { quests } = loadLanguage(questFixture(questWorld()), 'rust');
+  assert.equal(quests[0].minutes, 12);
+  assert.equal(quests[2].minutes, 20);
+});
+
+test('código: UTF-8, LF, no vacío y un único salto final se quita', () => {
+  const starter = `${RUST_01}/starter.rs`;
+  const cases: [Buffer | string, string][] = [
+    [Buffer.from('// energía\nfn a() {}', 'latin1'), `${starter}: no es UTF-8 válido`],
+    ['fn a() {\r\n}', `${starter}: tiene finales de línea CRLF; guardalo con LF`],
+    ['', `${starter}: el código está vacío`],
+    ['  \n', `${starter}: el código está vacío`],
+  ];
+  for (const [code, message] of cases) {
+    const root = rustLab();
+    writeFileSync(join(root, starter), code);
+    throwsContent(() => loadLanguage(root, 'rust'), message);
+  }
+  const root = rustLab();
+  writeFileSync(join(root, starter), 'fn a() {}\n\n');
+  assert.equal(loadLanguage(root, 'rust').lab[0].starter, 'fn a() {}\n');
+});
+
+test('Go: sin código después de la cabecera el ejercicio está vacío', () => {
+  const root = coresFixture();
+  writeFileSync(join(root, 'content/go/exercises/go-01/starter.go'), 'package main\n\n');
+  throwsContent(
+    () => loadLanguage(root, 'go'),
+    'content/go/exercises/go-01/starter.go: el código está vacío',
+  );
+});
+
+test('la carpeta de un ejercicio ignora ocultos y rechaza subcarpetas', () => {
+  const hidden = rustLab({ [`${RUST_01}/.DS_Store`]: '' });
+  assert.equal(loadLanguage(hidden, 'rust').lab.length, 2);
+  const root = rustLab();
+  mkdirSync(join(root, RUST_01, 'starter.rs.d'));
+  throwsContent(
+    () => loadLanguage(root, 'rust'),
+    `${RUST_01}/starter.rs.d: sólo se admiten exercise.yaml, starter y solution`,
+  );
+});
+
 for (const root of roots) rmSync(root, { recursive: true, force: true });
 console.log(`${passed} content-exercises scenarios PASS.`);

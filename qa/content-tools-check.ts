@@ -5,13 +5,20 @@
  * Cada error nombra el archivo y el campo: es lo único que ve quien edita un YAML.
  */
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { expectSameIds, listDirectories, listYamlIds } from '../tools/content/catalog-files.ts';
+import {
+  expectSameIds,
+  listDirectories,
+  listFiles,
+  listYamlIds,
+} from '../tools/content/catalog-files.ts';
 import { child, ContentError, fail, filePlace } from '../tools/content/content-error.ts';
 import { checkQuestion, checkRecord, expectText, textList } from '../tools/content/shape.ts';
-import { readYamlFile } from '../tools/content/yaml-file.ts';
+import { readContentText, readYamlFile } from '../tools/content/yaml-file.ts';
 
 const roots: string[] = [];
 function fixture(files: Record<string, string>): string {
@@ -221,6 +228,53 @@ test('checkRecord valida las claves opcionales presentes y nombra rutas anidadas
     'content/x.yaml: a.b: mensaje',
   );
   assert.equal(new ContentError('x').name, 'ContentError');
+});
+
+test('readContentText rechaza lo que no es un archivo y descarta el BOM', () => {
+  const root = fixture({ 'content/dir.yaml/dentro.txt': 'x' });
+  throwsContent(
+    () => readContentText(root, 'content/dir.yaml'),
+    'content/dir.yaml: no es un archivo',
+  );
+  throwsContent(() => readContentText(root, 'content/falta.yaml'), 'content/falta.yaml: no existe');
+  // Un editor de Windows puede guardar el BOM: no forma parte del texto publicado.
+  writeFileSync(join(root, 'content/bom.yaml'), '\uFEFFa: 1\n');
+  assert.equal(readContentText(root, 'content/bom.yaml'), 'a: 1\n');
+  assert.deepEqual(readYamlFile(root, 'content/bom.yaml'), { a: 1 });
+});
+
+test('un enlace simbólico en una carpeta de registros se rechaza con su propio mensaje', () => {
+  const root = fixture({ 'content/campaign/real.yaml': 'id: real\n' });
+  symlinkSync(join(root, 'content/campaign/real.yaml'), join(root, 'content/campaign/a.yaml'));
+  throwsContent(
+    () => listYamlIds(root, 'content/campaign'),
+    'content/campaign/a.yaml: es un enlace simbólico; copiá el archivo o la carpeta',
+  );
+});
+
+test('listFiles ignora ocultos y rechaza lo que no es un archivo con el mensaje dado', () => {
+  const root = fixture({ 'content/e/a.rs': '', 'content/e/.DS_Store': '' });
+  assert.deepEqual(listFiles(root, 'content/e', 'sólo archivos'), ['a.rs']);
+  mkdirSync(join(root, 'content/e/sub'));
+  throwsContent(
+    () => listFiles(root, 'content/e', 'sólo archivos'),
+    'content/e/sub: sólo archivos',
+  );
+});
+
+test('build-curriculum: un content/ inválido da error legible y no escribe el JSON', () => {
+  const root = fixture({ 'content/rust/exercises/.keep': '' });
+  const run = spawnSync(
+    process.execPath,
+    [join(import.meta.dirname, '..', 'tools', 'content', 'build-curriculum.ts'), root],
+    { encoding: 'utf8' },
+  );
+  assert.equal(run.status, 1);
+  assert.ok(
+    run.stderr.startsWith('content/ no es válido: content/'),
+    `stderr inesperado: ${run.stderr}`,
+  );
+  assert.equal(existsSync(join(root, 'build', 'curriculum.json')), false);
 });
 
 for (const root of roots) rmSync(root, { recursive: true, force: true });

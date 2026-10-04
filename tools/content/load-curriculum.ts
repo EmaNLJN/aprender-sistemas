@@ -1,5 +1,6 @@
 // Arma curriculum.json a partir de content/. Cada clave publica uno o más catálogos legacy;
-// los adaptadores de src/app/legacy/ los asignan a window.* sin transformarlos.
+// los adaptadores de src/app/legacy/ los asignan a window.* sin transformarlos; `atlas` no pasa
+// por un adaptador: la importa src/pages/atlas/model/atlas-catalog.ts.
 import { loadAtlas } from './atlas.ts';
 import { loadCampaign } from './campaign.ts';
 import type { Language, SystemsDomain } from './catalogs.ts';

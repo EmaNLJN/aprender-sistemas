@@ -2,10 +2,8 @@
 // se arma como lo hacían las fábricas legacy (`add`, `defineQuest`): los valores de `defaults`,
 // los de su etapa y, en los desafíos, los que fija su posición; encima, su exercise.yaml y el
 // código de starter y solution. La etapa es la posición de la etapa en el manifiesto.
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { LEVEL_IDS } from '../../src/shared/config/levels.ts';
-import { expectSameIds, listDirectories } from './catalog-files.ts';
+import { expectSameIds, listDirectories, listFiles } from './catalog-files.ts';
 import {
   EXERCISE_KEY_ORDER,
   OPTIONAL_EXERCISE_KEYS,
@@ -30,7 +28,7 @@ import {
   type Check,
   type JsonRecord,
 } from './shape.ts';
-import { readYamlFile } from './yaml-file.ts';
+import { readContentText, readYamlFile } from './yaml-file.ts';
 
 export interface LanguageExercises {
   lab: JsonRecord[];
@@ -49,6 +47,11 @@ const DERIVED_KEYS: Record<string, string> = {
   stage: 'es la posición de la etapa en el manifiesto',
   starter: 'va en el archivo starter',
   solution: 'va en el archivo solution',
+};
+// En los desafíos el rol sale de la posición dentro del mundo; en los núcleos de Sistemas,
+// en cambio, `challengeType` es un dato propio del ejercicio.
+const QUEST_DERIVED_KEYS: Record<string, string> = {
+  challengeType: 'lo fija la posición en el mundo de desafíos',
 };
 const QUEST_ROLES = ['repair', 'kata', 'boss'];
 const VISUALS = [
@@ -126,9 +129,13 @@ const STAGE_SPEC: Record<string, Check> = {
   ...DEFAULTS_SPEC,
   exercises: textList(1),
 };
-// Un mundo de desafíos fija nivel y minutos; `bossMinutes` son los del jefe.
-const QUEST_STAGE_SPEC: Record<string, Check> = { ...STAGE_SPEC, bossMinutes: integer(1) };
-const QUEST_STAGE_OPTIONAL = ['kind', 'imports', 'visual', 'sources'];
+// Un mundo de desafíos fija nivel y minutos; `bossMinutes` son los del jefe. No admite `kind`:
+// lo fija la posición (reparación, kata, jefe) y pisaría cualquier valor de la etapa.
+const QUEST_STAGE_SPEC: Record<string, Check> = {
+  ...Object.fromEntries(Object.entries(STAGE_SPEC).filter(([key]) => key !== 'kind')),
+  bossMinutes: integer(1),
+};
+const QUEST_STAGE_OPTIONAL = ['imports', 'visual', 'sources'];
 
 function stageList(spec: Record<string, Check>, optional: readonly string[]): Check {
   return (value, place) =>
@@ -206,7 +213,7 @@ function questDefaults(stage: JsonRecord, position: number): JsonRecord {
 function checkExerciseFiles(root: string, folder: string, language: Language): void {
   const extension = CODE_EXTENSION[language];
   const expected = ['exercise.yaml', `solution.${extension}`, `starter.${extension}`];
-  const found = readdirSync(join(root, folder)).sort();
+  const found = listFiles(root, folder, 'sólo se admiten exercise.yaml, starter y solution');
   if (found.join() !== expected.join()) {
     fail(
       filePlace(folder),
@@ -217,12 +224,19 @@ function checkExerciseFiles(root: string, folder: string, language: Language): v
 
 function readCode(root: string, folder: string, language: Language, name: string): string {
   const file = `${folder}/${name}.${CODE_EXTENSION[language]}`;
-  const text = readFileSync(join(root, file), 'utf8');
-  if (language === 'rust') return text;
-  if (!text.startsWith(GO_HEADER)) {
-    fail(filePlace(file), 'debe empezar con «package main» y una línea en blanco');
+  let code = readContentText(root, file);
+  if (code.includes('\r')) fail(filePlace(file), 'tiene finales de línea CRLF; guardalo con LF');
+  if (language === 'go') {
+    if (!code.startsWith(GO_HEADER)) {
+      fail(filePlace(file), 'debe empezar con «package main» y una línea en blanco');
+    }
+    code = code.slice(GO_HEADER.length);
   }
-  return text.slice(GO_HEADER.length);
+  // Los editores y rustfmt agregan un salto de línea al guardar y los archivos de hoy no lo
+  // tienen: se quita uno, para que el código publicado sea el mismo que antes.
+  if (code.endsWith('\n')) code = code.slice(0, -1);
+  if (code.trim() === '') fail(filePlace(file), 'el código está vacío');
+  return code;
 }
 
 function orderExercise(fields: JsonRecord, catalog: Catalog, place: Place): JsonRecord {
@@ -258,7 +272,9 @@ function buildExercise(root: string, slot: Slot): JsonRecord {
   const file = `${folder}/exercise.yaml`;
   const place = filePlace(file);
   const own = expectRecord(readYamlFile(root, file), place);
-  for (const [key, reason] of Object.entries(DERIVED_KEYS)) {
+  const derived =
+    slot.catalog === 'quests' ? { ...DERIVED_KEYS, ...QUEST_DERIVED_KEYS } : DERIVED_KEYS;
+  for (const [key, reason] of Object.entries(derived)) {
     if (Object.hasOwn(own, key)) fail(child(place, key), `no va en exercise.yaml: ${reason}`);
   }
   const fields: JsonRecord = {

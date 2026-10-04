@@ -22,6 +22,14 @@ function fixture(files: Record<string, string>): string {
   return root;
 }
 
+function throwsContent(run: () => unknown, message: string): void {
+  assert.throws(run, (error: unknown) => {
+    assert.ok(error instanceof ContentError, `se esperaba ContentError: ${String(error)}`);
+    assert.equal(error.message, message);
+    return true;
+  });
+}
+
 let passed = 0;
 function test(name: string, run: () => void): void {
   run();
@@ -88,11 +96,9 @@ test('validación: furtherSources, si está, no puede quedar vacío', () => {
     ...atlasFiles(),
     'content/atlas/go-a.yaml': concept('go-a', 'furtherSources: []\n'),
   };
-  assert.throws(
+  throwsContent(
     () => loadAtlas(fixture(files)),
-    (error: unknown) =>
-      error instanceof ContentError &&
-      error.message === 'content/atlas/go-a.yaml: furtherSources: la lista no puede estar vacía',
+    'content/atlas/go-a.yaml: furtherSources: la lista no puede estar vacía',
   );
 });
 

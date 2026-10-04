@@ -24,7 +24,8 @@ const perLanguage =
 
 const WORKSHOP_SPEC: Record<string, Check> = {
   id: expectText,
-  category: expectText,
+  // Las categorías que conoce systems.js.
+  category: oneOf(['machine', 'infra', 'play']),
   model: expectText,
   level: oneOf(LEVEL_IDS),
   minutes: integer(1),

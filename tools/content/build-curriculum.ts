@@ -1,12 +1,12 @@
 // Valida content/ y escribe build/curriculum.json, que importan los adaptadores legacy.
 // Lo corren `npm run typecheck` (y por eso build y test) y `npm run dev` antes de empezar.
-// Uso: node tools/content/build-curriculum.ts
+// Uso: node tools/content/build-curriculum.ts [raíz]; sin argumento, la raíz del repositorio.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { ContentError } from './content-error.ts';
 import { loadCurriculum } from './load-curriculum.ts';
 
-const root = resolve(import.meta.dirname, '..', '..');
+const root = resolve(process.argv[2] ?? join(import.meta.dirname, '..', '..'));
 try {
   const curriculum = loadCurriculum(root);
   mkdirSync(join(root, 'build'), { recursive: true });

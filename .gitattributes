@@ -1,0 +1,2 @@
+# El código de content/ se publica tal cual: sin CRLF en ningún sistema.
+content/** text eol=lf

@@ -209,5 +209,54 @@ test('talleres: un grupo por dominio y la ficha completa por lenguaje', () => {
   );
 });
 
+test('registros: ID sin archivo, repetido entre grupos, clave y grupo desconocidos', () => {
+  const base = {
+    'content/x/b1.yaml': 'id: b1\ntitle: Uno\nminutes: diez\n',
+    'content/x/c1.yaml': 'id: c1\ntitle: Tres\nminutes: cinco\n',
+  };
+  const load = (files: Record<string, string>) =>
+    loadGroupedRecords(fixture(files), 'content/x', ['a', 'b'], SPEC);
+  throwsContent(
+    () => load({ ...base, 'content/x/manifest.yaml': 'a:\n  - b1\nb:\n  - c1\n  - d1\n' }),
+    'content/x/manifest.yaml: d1 no tiene content/x/d1.yaml',
+  );
+  throwsContent(
+    () => load({ ...base, 'content/x/manifest.yaml': 'a:\n  - b1\nb:\n  - b1\n  - c1\n' }),
+    'content/x/manifest.yaml: ID repetido: b1',
+  );
+  throwsContent(
+    () =>
+      load({
+        ...base,
+        'content/x/manifest.yaml': 'a:\n  - b1\nb:\n  - c1\n',
+        'content/x/c1.yaml': 'id: c1\ntitle: Tres\nminutes: cinco\ncolor: rojo\n',
+      }),
+    'content/x/c1.yaml: color: clave desconocida',
+  );
+  throwsContent(
+    () => load({ ...base, 'content/x/manifest.yaml': 'a:\n  - b1\nb:\n  - c1\nz:\n  - b1\n' }),
+    'content/x/manifest.yaml: z: clave desconocida',
+  );
+});
+
+test('talleres: category es una de las que conoce systems.js', () => {
+  const files: Record<string, string> = {
+    'content/workshops/manifest.yaml': ['lowlevel', 'infra', 'play', 'pc']
+      .map((domain) => `${domain}:\n  - ${domain}-w\n`)
+      .join(''),
+  };
+  for (const domain of ['lowlevel', 'infra', 'play', 'pc']) {
+    const category = domain === 'pc' ? 'inventada' : 'play';
+    files[`content/workshops/${domain}-w.yaml`] = WORKSHOP.replace(
+      'id: cache',
+      `id: ${domain}-w`,
+    ).replace('category: machine', `category: ${category}`);
+  }
+  throwsContent(
+    () => loadWorkshops(fixture(files)),
+    'content/workshops/pc-w.yaml: category: se esperaba uno de: machine, infra, play',
+  );
+});
+
 for (const root of roots) rmSync(root, { recursive: true, force: true });
 console.log(`${passed} content-records scenarios PASS.`);

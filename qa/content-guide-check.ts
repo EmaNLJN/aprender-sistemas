@@ -128,7 +128,7 @@ test('validación: pasos faltantes, quiz y valores admitidos', () => {
   delete missing['content/guide/go/steps/go-s1.yaml'];
   throwsContent(
     () => loadGuide(fixture(missing)),
-    'content/guide/go/manifest.yaml: go-s1 no tiene content/guide/go/steps/go-s1.yaml',
+    'content/guide/go/manifest.yaml: modules[0].steps[0]: go-s1 no tiene content/guide/go/steps/go-s1.yaml',
   );
   const quiz = { ...guideFiles(), 'content/guide/go/steps/go-s1.yaml': step('go-s1', 2) };
   throwsContent(
@@ -150,6 +150,55 @@ test('validación: los IDs de módulos y pasos no se repiten entre recorridos', 
   throwsContent(
     () => loadGuide(fixture(files)),
     'content/guide/go/manifest.yaml: ID repetido en la guía: rust-m1',
+  );
+});
+
+test('validación: nada suelto en content/guide/ ni en cada recorrido', () => {
+  throwsContent(
+    () => loadGuide(fixture({ ...guideFiles(), 'content/guide/notas.yaml': 'a: 1\n' })),
+    'content/guide/notas.yaml: sólo se admiten manifest.yaml, sources.yaml, resources/, rust/ y go/',
+  );
+  throwsContent(
+    () => loadGuide(fixture({ ...guideFiles(), 'content/guide/rust/extra.yaml': 'a: 1\n' })),
+    'content/guide/rust/extra.yaml: sólo se admiten manifest.yaml y steps/',
+  );
+  const hidden = { ...guideFiles(), 'content/guide/.DS_Store': '', 'content/guide/go/.swp': '' };
+  assert.deepEqual(Object.keys(loadGuide(fixture(hidden))), ['resources', 'tracks', 'sources']);
+});
+
+test('validación: IDs de un recorrido con su campo, recursos huérfanos y fuentes inválidas', () => {
+  const repeatedStep = {
+    ...guideFiles(),
+    'content/guide/rust/manifest.yaml': track('rust', ['rust-s1']).replace(
+      '      - rust-s1\n',
+      '      - rust-s1\n  - id: rust-m2\n    title: Dos\n    subtitle: Segundo.\n    steps:\n      - rust-s1\n',
+    ),
+  };
+  throwsContent(
+    () => loadGuide(fixture(repeatedStep)),
+    'content/guide/rust/manifest.yaml: modules[1].steps[0]: ID repetido: rust-s1',
+  );
+  const repeatedModule = {
+    ...guideFiles(),
+    'content/guide/rust/manifest.yaml': track('rust', ['rust-s1']).replace(
+      '      - rust-s1\n',
+      '      - rust-s1\n  - id: rust-m1\n    title: Dos\n    subtitle: Segundo.\n    steps:\n      - rust-s2\n',
+    ),
+  };
+  throwsContent(
+    () => loadGuide(fixture(repeatedModule)),
+    'content/guide/rust/manifest.yaml: modules[1].id: ID repetido: rust-m1',
+  );
+  throwsContent(
+    () =>
+      loadGuide(
+        fixture({ ...guideFiles(), 'content/guide/resources/r3.yaml': resource('r3', 'rust') }),
+      ),
+    'content/guide/resources/r3.yaml: no figura en content/guide/manifest.yaml',
+  );
+  throwsContent(
+    () => loadGuide(fixture({ ...guideFiles(), 'content/guide/sources.yaml': '- title: Sola\n' })),
+    'content/guide/sources.yaml: [0]: falta la clave «url»',
   );
 });
 
