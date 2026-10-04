@@ -123,6 +123,8 @@ test('readYamlFile rechaza lo que JSON no representaría igual', () => {
     'content/set.yaml': 'a: !!set {x, y}\n',
     'content/comentario.yaml': 'a: Recibir #2 antes de #0\n',
     'content/comentario-lista.yaml': 'objectives:\n  - label: Recibir #2\n',
+    'content/comentario-sangria.yaml': 'a: x\n  # n\nb: y\n',
+    'content/comentario-vacio.yaml': 'a: #[test]\n',
   });
   // Guardado en Latin-1: decodificado como UTF-8 publicaría U+FFFD en lugar de la í y la ó.
   writeFileSync(join(root, 'content/latin1.yaml'), Buffer.from('título: canción\n', 'latin1'));
@@ -167,9 +169,12 @@ test('readYamlFile rechaza lo que JSON no representaría igual', () => {
     );
   }
   // Un # después de un espacio empieza un comentario: sin comillas, el texto se cortaría en
-  // «Recibir» sin ningún error.
+  // «Recibir» sin ningún error. Una línea de comentario con más sangría que la clave también se
+  // pega al valor sin comillas, y un valor que queda vacío pierde el texto que se quiso escribir.
+  const advice =
+    'si el # es parte del texto, escribí el valor entre comillas; si es un comentario, pasalo a su propia línea, sin más sangría que la clave';
   const cuts = (value: string): string =>
-    `un # después de un espacio empieza un comentario y corta el texto en «${value}»: si el # es parte del texto, escribí el valor entre comillas; si es un comentario, pasalo a su propia línea`;
+    `un # después de un espacio empieza un comentario y corta el texto en «${value}»: ${advice}`;
   throwsContent(
     () => readYamlFile(root, 'content/comentario.yaml'),
     `content/comentario.yaml: a: ${cuts('Recibir')}`,
@@ -177,6 +182,14 @@ test('readYamlFile rechaza lo que JSON no representaría igual', () => {
   throwsContent(
     () => readYamlFile(root, 'content/comentario-lista.yaml'),
     `content/comentario-lista.yaml: objectives[0].label: ${cuts('Recibir')}`,
+  );
+  throwsContent(
+    () => readYamlFile(root, 'content/comentario-sangria.yaml'),
+    `content/comentario-sangria.yaml: a: ${cuts('x')}`,
+  );
+  throwsContent(
+    () => readYamlFile(root, 'content/comentario-vacio.yaml'),
+    `content/comentario-vacio.yaml: a: un # después de un espacio empieza un comentario y deja el valor vacío: ${advice}`,
   );
 });
 

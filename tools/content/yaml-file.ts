@@ -95,12 +95,16 @@ export function readYamlFile(root: string, file: string): unknown {
     },
     Scalar(key, node, ancestors) {
       // Un # después de un espacio empieza un comentario: en un valor sin comillas corta el
-      // texto sin ningún error (`Recibir #2` publica «Recibir»). Entre comillas, sin espacio
-      // antes, dentro de un bloque | o en su propia línea, el # no corta nada.
+      // texto sin ningún error (`Recibir #2` publica «Recibir»; `a: #[test]` deja `a` vacío).
+      // Una línea de comentario con más sangría que la clave también queda pegada al valor sin
+      // comillas de arriba. Entre comillas, sin espacio antes, dentro de un bloque | o en su
+      // propia línea sin más sangría que la clave, el # no corta nada.
       if (node.type === 'PLAIN' && node.comment !== undefined) {
+        const effect =
+          node.value === null ? 'deja el valor vacío' : `corta el texto en «${String(node.value)}»`;
         fail(
           placeOf(file, ancestors, key),
-          `un # después de un espacio empieza un comentario y corta el texto en «${String(node.value)}»: si el # es parte del texto, escribí el valor entre comillas; si es un comentario, pasalo a su propia línea`,
+          `un # después de un espacio empieza un comentario y ${effect}: si el # es parte del texto, escribí el valor entre comillas; si es un comentario, pasalo a su propia línea, sin más sangría que la clave`,
         );
       }
       if (typeof node.value === 'number' && !isJsonNumber(node.value)) {
