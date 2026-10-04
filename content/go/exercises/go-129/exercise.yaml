@@ -1,0 +1,44 @@
+title: Componé la coreografía
+level: medium
+minutes: 20
+intro: Una nave combina giros, escalas y traslaciones. Vas a componer dos transformaciones sin transformar cada punto por separado.
+why: Una matriz compuesta representa ejecutar B primero y A después. El desplazamiento de B también debe pasar por la parte lineal de A.
+objective: Componé A después de B. Cada array [a,b,c,d,tx,ty] representa (a*x+c*y+tx, b*x+d*y+ty). Coeficientes enteros entre -10 y 10.
+instructions:
+  - Leé el contrato y predecí un caso antes de ejecutar.
+  - Conservá la representación indicada y verificá también sus límites.
+tests:
+  - id: t1
+    label: Orden de giro y traslación
+    expression: Compose([6]int{0,1,-1,0,0,0},[6]int{1,0,0,1,2,0}) == ([6]int{0,1,-1,0,0,2}) && Compose([6]int{1,0,0,1,2,0},[6]int{0,1,-1,0,0,0}) == ([6]int{0,1,-1,0,2,0})
+    why: Un desplazamiento anterior al giro también se gira.
+    failure: Un desplazamiento anterior al giro también se gira.
+  - id: t2
+    label: Identidad
+    expression: func() bool { m:=[6]int{2,1,3,4,-2,5}; id:=[6]int{1,0,0,1,0,0}; return Compose(id,m)==m && Compose(m,id)==m }()
+    why: El array incluye cuatro coeficientes lineales y dos de traslación.
+    failure: El array incluye cuatro coeficientes lineales y dos de traslación.
+  - id: t3
+    label: Escala y cizalla
+    expression: Compose([6]int{2,0,0,3,1,-1},[6]int{1,0,2,1,4,5}) == ([6]int{2,0,4,3,9,14})
+    why: El desplazamiento de B se transforma por A antes de agregar el desplazamiento final.
+    failure: El desplazamiento de B se transforma por A antes de agregar el desplazamiento final.
+hints:
+  - Separá la matriz lineal 2×2 de la traslación.
+  - Las primeras cuatro entradas salen del producto de matrices.
+  - La nueva traslación es A.lineal * B.traslación + A.traslación.
+review:
+  success: Los casos distinguen la identidad, el orden de operaciones y la traslación afectada por una escala o giro.
+  pitfall: Componer A y B no suele conmutar. Este formato usa vectores columna; otra convención cambia la lectura del orden.
+transfer: Aplicá la matriz compuesta a todos los vértices de una figura y comparala con los dos pasos separados.
+prediction:
+  question: Girar90° después de trasladar (2,0) mueve esa traslación a…
+  options:
+    - (2,0)
+    - (0,2)
+    - (-2,0)
+  answer: 1
+  explanation: 'El giro antihorario transforma también el vector de desplazamiento: (2,0) pasa a (0,2).'
+sources:
+  - title: Coreografía de matrices · fundamentos
+    url: https://www.cs.cornell.edu/courses/cs4620/2014fa/lectures/08transforms2d.pdf

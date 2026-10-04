@@ -1,0 +1,1 @@
+fn analizar(coef:&[i64],x:i64)->(i64,Vec<i64>){(0,vec![])}

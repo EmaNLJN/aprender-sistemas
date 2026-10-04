@@ -1,0 +1,49 @@
+title: Compactar sin resucitar una clave
+level: expert
+minutes: 20
+imports:
+  - sort
+workshopId: lsm
+challengeType: kata
+intro: Recibís entradas de varias tablas. Para cada clave gana la secuencia mayor; en un empate se conserva la primera entrada del slice. La salida queda ordenada por clave.
+why: 'El tombstone más reciente debe ganar sobre un valor antiguo. El permiso de retirarlo viene del planificador: esta función no puede adivinar si hay versiones o snapshots fuera de su entrada.'
+objective: Compactá a una entrada por clave. Si drop_tombstones/dropTombstones es false, conservá los tombstones ganadores; si es true, retiralos después de elegir la versión más nueva.
+instructions:
+  - La bandera true presupone que el llamador incluyó todas las versiones relevantes y que no hay snapshots que las necesiten.
+  - 'No elimines tombstones antes de comparar secuencias: eso revelaría un valor anterior.'
+  - Conservá valores vacíos válidos y no modifiques el slice de entrada.
+tests:
+  - id: t1
+    label: Mayor secuencia, no último elemento
+    expression: func() bool { input:=[]Entry{{Key:"z",Seq:9,Value:"nuevo"},{Key:"a",Seq:2,Value:""},{Key:"z",Seq:1,Value:"viejo"}}; out:=Compact(input,false); return len(out)==2 && out[0]==input[1] && out[1]==input[0] }()
+    why: Fuerza orden estable y comparación de versiones.
+    failure: El slice no necesariamente está ordenado por secuencia.
+  - id: t2
+    label: El tombstone se filtra al final
+    expression: func() bool { input:=[]Entry{{Key:"x",Seq:3,Value:"viejo"},{Key:"x",Seq:7,Deleted:true}}; kept:=Compact(input,false); return len(kept)==1 && kept[0].Deleted && kept[0].Seq==7 && len(Compact(input,true))==0 }()
+    why: Evita revelar versiones antiguas al retirar el marcador.
+    failure: Primero elegí seq7; recién después decidí si debe conservarse.
+  - id: t3
+    label: Empates, vacío e independencia
+    expression: func() bool { input:=[]Entry{{Key:"x",Seq:5,Value:"primero"},{Key:"x",Seq:5,Value:"segundo"}}; out:=Compact(input,false); if len(out)!=1 { return false }; out[0].Key="otro"; return out[0].Value=="primero" && input[0].Key=="x" && len(Compact(nil,true))==0 }()
+    why: Define empate e independencia de la salida.
+    failure: Solo una secuencia estrictamente mayor reemplaza al ganador.
+hints:
+  - Elegí primero el ganador por clave, comparando secuencias con >.
+  - Filtrá los ganadores borrados solo al final y solo con permiso.
+  - BTreeMap en Rust o claves ordenadas en Go producen salida reproducible.
+review:
+  success: Separaste selección de versión y descarte autorizado. El test demuestra la lógica de merge bajo el contrato; no puede comprobar que el llamador haya incluido todas las SST o gestionado snapshots correctamente.
+  pitfall: Filtrar un tombstone antes del merge hace que la versión vieja vuelva a ganar.
+transfer: Reemplazá la entrada completa por iteradores de SST ordenadas y medí memoria sin cambiar el contrato.
+prediction:
+  question: Valor seq=4 y tombstone seq=9; no hay permiso para descartar. ¿Qué queda?
+  options:
+    - Valor seq=4
+    - Nada
+    - Tombstone seq=9
+  answer: 2
+  explanation: El borrado gana por secuencia y sigue siendo necesario para ocultar versiones externas.
+sources:
+  - title: RocksDB · Compaction
+    url: https://github.com/facebook/rocksdb/wiki/Compaction

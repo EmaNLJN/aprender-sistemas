@@ -1,0 +1,47 @@
+title: Núcleo · Repartí CPU por quantum
+level: advanced
+minutes: 20
+intro: Implementás el núcleo determinista de un planificador round-robin y después separás listas de tareas listas, bloqueadas y terminadas. En este ejercicio construís un núcleo verificable del proyecto; las cuatro etapas del taller lo convierten después en una herramienta completa.
+why: Bloqueada no significa terminada. El quantum controla cuánto puede ocupar una tarea antes de ceder, pero una política justa necesita definir llegada, espera y costos.
+objective: 'Todas las tareas llegan en orden de índice en tiempo cero. Cada valor indica trabajo restante; cero significa ya terminada y no se encola. Un turno consume min(quantum,restante) y registra una vez el índice. Si queda trabajo, reencolá al final. Devolvé la traza de índices por turno. Quantum cero→"quantum", incluso sin tareas. Entradas: hasta16 tareas, cada una hasta20 unidades. No modifiques la entrada.'
+instructions:
+  - Copiá el trabajo restante y armá una cola de índices con trabajo positivo.
+  - Registrá un índice por turno, no uno por unidad consumida.
+  - Descartá de la cola las tareas al llegar a cero.
+tests:
+  - id: t1
+    label: Turnos de una unidad
+    expression: turnos(&[3,2,1],1) == Ok(vec![0,1,2,0,1,0])
+    why: Una tarea terminada sale mientras las demás siguen rotando.
+    failure: Reencolá solo si queda trabajo.
+  - id: t2
+    label: Quantum grande y tareas vacías
+    expression: turnos(&[3,2,1],2) == Ok(vec![0,1,2,0]) && turnos(&[0,2,0],1) == Ok(vec![1,1])
+    why: Un turno puede consumir varias unidades, pero agrega un único índice.
+    failure: No registres un índice por cada unidad.
+  - id: t3
+    label: Validación y entrada intacta
+    expression: '{ let input=vec![2,1]; let r=turnos(&input,9); r==Ok(vec![0,1]) && input==vec![2,1] && turnos(&[],1)==Ok(vec![]) && turnos(&[],0)==Err("quantum") }'
+    why: Un quantum inválido se rechaza antes del caso vacío.
+    failure: La función mantiene su propio trabajo restante.
+hints:
+  - Una cola FIFO conserva el turno de las otras tareas.
+  - 'Restá quantum solo si alcanza: de lo contrario el restante pasa a cero.'
+  - Con quantum positivo, cada turno reduce el total de trabajo; esa es la razón de terminación.
+review:
+  success: Los casos verifican rotación, quantum mayor a uno y exclusión de tareas vacías. La terminación se apoya en reducir trabajo con un quantum positivo.
+  pitfall: La traza no incluye latencia de I/O, llegada de tareas nuevas ni costo de cambio de contexto. Tampoco ejecuta hilos reales.
+transfer: Devolvé el tiempo de primera ejecución y finalización de cada tarea y compará varios quantums.
+prediction:
+  question: Después de consumir su quantum, A todavía tiene trabajo y B espera lista. ¿Dónde va A?
+  options:
+    - Al final de la cola de listos
+    - A terminadas
+    - De nuevo al frente siempre
+  answer: 0
+  explanation: Round-robin permite que otra tarea lista reciba el próximo turno.
+sources:
+  - title: OSTEP · CPU scheduling
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-sched.pdf
+  - title: xv6 RISC-V · Teaching kernel
+    url: https://pdos.csail.mit.edu/6.828/2025/xv6.html

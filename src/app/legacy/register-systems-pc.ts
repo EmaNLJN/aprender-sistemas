@@ -1,5 +1,5 @@
+import curriculum from '../../../build/curriculum.json';
 import type { Exercise } from '../../entities/exercise';
-import { systemsPcCores } from '../../entities/exercise/content/systems-pc-cores';
 import { pcModel, type PcState, type SystemsModel } from '../../entities/systems-simulation';
 import type { SystemsWorkshop } from '../../entities/systems-workshop';
 import { pcWorkshops } from '../../entities/systems-workshop/content/pc-workshops';
@@ -15,4 +15,4 @@ declare global {
 }
 
 window.SYSTEMS_PC = { workshops: pcWorkshops, models: { pc: pcModel } };
-window.SYSTEMS_PC_LABS = systemsPcCores;
+window.SYSTEMS_PC_LABS = curriculum.cores.pc as Exercise[];

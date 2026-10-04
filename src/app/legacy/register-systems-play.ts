@@ -1,5 +1,5 @@
+import curriculum from '../../../build/curriculum.json';
 import type { Exercise } from '../../entities/exercise';
-import { systemsPlayCores } from '../../entities/exercise/content/systems-play-cores';
 import { playModels } from '../../entities/systems-simulation';
 import type { SystemsWorkshop } from '../../entities/systems-workshop';
 import { playWorkshops } from '../../entities/systems-workshop/content/play-workshops';
@@ -15,4 +15,4 @@ declare global {
 }
 
 window.SYSTEMS_PLAY = { workshops: playWorkshops, models: playModels };
-window.SYSTEMS_PLAY_LABS = systemsPlayCores;
+window.SYSTEMS_PLAY_LABS = curriculum.cores.play as Exercise[];

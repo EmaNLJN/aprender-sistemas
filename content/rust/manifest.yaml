@@ -284,3 +284,108 @@ quests:
       - rust-110
       - rust-111
       - rust-112
+systems:
+  lowlevel:
+    - topicId: rust-systems-cache
+      topic: Una caché que aprende tus visitas
+      exercises:
+        - rust-113
+    - topicId: rust-systems-heap
+      topic: El estacionamiento de la memoria
+      exercises:
+        - rust-114
+    - topicId: rust-systems-mmu
+      topic: Direcciones con pasaporte
+      exercises:
+        - rust-115
+    - topicId: rust-systems-tlb
+      topic: La dirección que quedó vieja
+      exercises:
+        - rust-116
+    - topicId: rust-systems-vm
+      topic: Construí una máquina diminuta
+      exercises:
+        - rust-117
+    - topicId: rust-systems-stack
+      topic: Las mochilas de cada llamada
+      exercises:
+        - rust-118
+    - topicId: rust-systems-scheduler
+      topic: Un kernel que reparte turnos
+      exercises:
+        - rust-119
+    - topicId: rust-systems-interrupts
+      topic: El timbre del hardware
+      exercises:
+        - rust-120
+  infra:
+    - topicId: rust-systems-wal
+      topic: WAL y recuperación
+      exercises:
+        - rust-121
+    - topicId: rust-systems-lsm
+      topic: LSM y tombstones
+      exercises:
+        - rust-122
+    - topicId: rust-systems-quorum
+      topic: Quórums e intersección
+      exercises:
+        - rust-123
+    - topicId: rust-systems-clocks
+      topic: Relojes Lamport
+      exercises:
+        - rust-124
+    - topicId: rust-systems-network
+      topic: Reensamblado de mensajes
+      exercises:
+        - rust-125
+    - topicId: rust-systems-backpressure
+      topic: Backpressure y buffers circulares
+      exercises:
+        - rust-126
+    - topicId: rust-systems-balancing
+      topic: Balanceo y elegibilidad
+      exercises:
+        - rust-127
+    - topicId: rust-systems-sharding
+      topic: Anillo de hash consistente
+      exercises:
+        - rust-128
+  play:
+    - topicId: play-transforms
+      topic: Coreografía de matrices
+      exercises:
+        - rust-129
+    - topicId: play-raster
+      topic: El taller de los píxeles
+      exercises:
+        - rust-130
+    - topicId: play-raycast
+      topic: Linterna entre planetas
+      exercises:
+        - rust-131
+    - topicId: play-pathfinding
+      topic: El mapa que piensa
+      exercises:
+        - rust-132
+    - topicId: play-physics
+      topic: La cancha de los rebotes
+      exercises:
+        - rust-133
+    - topicId: play-life
+      topic: Un jardín de reglas
+      exercises:
+        - rust-134
+    - topicId: play-algebra
+      topic: La máquina de polinomios
+      exercises:
+        - rust-135
+    - topicId: play-minimax
+      topic: El duelo de las últimas fichas
+      exercises:
+        - rust-136
+  pc:
+    - topicId: rust-systems-pc
+      topic: Construí una PC de bolsillo
+      exercises:
+        - rust-137

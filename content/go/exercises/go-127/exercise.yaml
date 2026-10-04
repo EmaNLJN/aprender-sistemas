@@ -1,0 +1,49 @@
+title: Elegí un destino que sí puede trabajar
+level: advanced
+minutes: 20
+workshopId: balancing
+challengeType: kata
+intro: La selección recibe una foto de los backends. Primero filtra nodos sanos, con circuito cerrado y cupo; después elige menor cantidad de peticiones activas, con desempate por nombre.
+why: Elegir la carga mínima de todos los nodos puede dirigir trabajo a un servidor caído. Separar selección pura y reserva de cupo permite probar la política, aunque la reserva concurrente requiera coordinación.
+objective: Devolvé el nombre del backend elegible con menor inflight. Ante empate elegí el nombre lexicalmente menor; si no hay candidato, devolvé ausencia.
+instructions:
+  - Elegible significa healthy, !open, limit>0 e inflight<limit. En Go inflight negativo también debe excluirse.
+  - Los nombres son únicos y no vacíos. Compará carga absoluta, no proporción respecto del límite.
+  - 'No modifiques los backends ni incrementes inflight: esta función solo decide.'
+tests:
+  - id: t1
+    label: Filtrar antes de elegir
+    expression: func() bool { name,ok:=PickBackend([]Backend{{"A",false,false,0,4},{"B",true,false,1,4},{"C",true,true,0,4}}); return ok&&name=="B" }()
+    why: Impide que carga baja oculte un backend no elegible.
+    failure: Salud y circuito se revisan antes de la comparación.
+  - id: t2
+    label: Menor carga y empate por nombre
+    expression: func() bool { nodes:=[]Backend{{"Z",true,false,1,10},{"A",true,false,1,2},{"M",true,false,2,9}}; a,x:=PickBackend(nodes); b,y:=PickBackend([]Backend{{"A",true,false,2,9},{"Z",true,false,1,2}}); return x&&a=="A"&&nodes[1].Inflight==1&&y&&b=="Z" }()
+    why: Comprueba desempate estable, carga absoluta y ausencia de mutación.
+    failure: El nombre desempata solo cuando las cargas son iguales.
+  - id: t3
+    label: Sin capacidad ni nodos
+    expression: func() bool { a,x:=PickBackend(nil); b,y:=PickBackend([]Backend{{"A",true,false,2,2},{"B",true,false,0,0},{"C",true,false,3,2},{"D",true,false,-1,2}}); return !x&&a==""&&!y&&b=="" }()
+    why: Define ausencia de candidatos y límites inclusivos.
+    failure: Estar exactamente al límite significa no tener cupo.
+hints:
+  - Mantené un candidato opcional y descartá antes los no elegibles.
+  - Reemplazalo por carga menor o por nombre menor si hay empate.
+  - El orden del slice no es una regla de desempate.
+review:
+  success: La decisión es reproducible y respeta tres filtros distintos. Los tests no prueban que dos llamadas concurrentes no elijan el mismo cupo; la reserva debe coordinarse con la selección en un sistema real.
+  pitfall: Un health check sano no garantiza que la próxima petición funcione. Un circuit breaker tampoco reemplaza límites de recursos o métricas.
+transfer: Implementá selección+reserva atómica y medí cómo se comporta una política de menor carga frente a cargas largas y cortas.
+prediction:
+  question: A está sano pero lleno; B está sano y libre; C tiene carga cero pero circuito abierto. ¿Quién entra?
+  options:
+    - A
+    - B
+    - C
+  answer: 1
+  explanation: Solo B cumple todas las condiciones antes de comparar cargas.
+sources:
+  - title: Envoy · load balancing
+    url: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/overview
+  - title: Envoy · circuit breaking y cupos
+    url: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/circuit_breaking

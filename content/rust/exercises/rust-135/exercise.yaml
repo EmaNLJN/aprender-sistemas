@@ -1,0 +1,44 @@
+title: Derivá una estructura, no un string
+level: advanced
+minutes: 20
+intro: 'Un mini sistema algebraico guarda un polinomio como coeficientes: [3,-2,0,1] representa3−2x+x³. Ahora evaluá y derivá esa estructura.'
+why: 'Horner acumula desde el coeficiente de mayor grado. La derivada cambia cada aᵢxⁱ por i·aᵢxⁱ⁻¹: la posición del coeficiente lleva significado.'
+objective: Recibí coeficientes en orden creciente de potencias. Devolvé valor en x y coeficientes de la derivada, sin eliminar ceros finales. Vacío representa0; la derivada de un constante es vacía. Hasta9 coeficientes, cada uno entre-10 y10; |x|<=5.
+instructions:
+  - Leé el contrato y predecí un caso antes de ejecutar.
+  - Conservá la representación indicada y verificá también sus límites.
+tests:
+  - id: t1
+    label: Cúbico con huecos
+    expression: analizar(&[3,-2,0,1],2)==(7,vec![-2,0,3]) && analizar(&[3,-2,0,1],-1)==(4,vec![-2,0,3])
+    why: El índice marca la potencia; un hueco no desaparece.
+    failure: El índice marca la potencia; un hueco no desaparece.
+  - id: t2
+    label: Cero y constante
+    expression: analizar(&[],5)==(0,vec![]) && analizar(&[9],-3)==(9,vec![])
+    why: No inventes una entrada para la derivada de un constante.
+    failure: No inventes una entrada para la derivada de un constante.
+  - id: t3
+    label: Ceros finales preservados
+    expression: analizar(&[0,5,0],-2)==(-10,vec![5,0]) && analizar(&[1,2,3],0)==(1,vec![2,6])
+    why: La derivada conserva las posiciones, incluso con coeficientes0.
+    failure: La derivada conserva las posiciones, incluso con coeficientes0.
+hints:
+  - Para evaluar, recorré los coeficientes desde el último hacia el primero.
+  - El acumulador se actualiza como valor*x+coeficiente.
+  - Para derivar, omití el coeficiente0 y multiplicá cada coeficiente restante por su índice.
+review:
+  success: Los casos comprueban orden de coeficientes, signos, constantes y ceros que conservan la representación.
+  pitfall: Este es un CAS mínimo para polinomios enteros acotados. No simplifica expresiones arbitrarias ni usa números de precisión ilimitada.
+transfer: Derivá dos veces y compará la pendiente calculada con diferencias finitas.
+prediction:
+  question: En [3,-2,0,1], la derivada se representa como…
+  options:
+    - '[-2,0,3]'
+    - '[3,-2,0]'
+    - '[0,-2,3]'
+  answer: 0
+  explanation: La constante desaparece, −2x aporta−2 y x³ aporta3x².
+sources:
+  - title: La máquina de polinomios · fundamentos
+    url: https://dlmf.nist.gov/1.11

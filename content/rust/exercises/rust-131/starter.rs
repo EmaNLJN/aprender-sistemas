@@ -1,0 +1,1 @@
+fn impacto(o:[f64;2],d:[f64;2],centro:[f64;2],r:f64)->Option<f64>{None}

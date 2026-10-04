@@ -1,0 +1,49 @@
+title: Núcleo · Invalidá solo las traducciones correctas
+level: expert
+minutes: 20
+imports:
+  - reflect
+intro: Observás hits y misses de una TLB, provocás una traducción obsoleta y la recuperás con invalidación explícita. En este ejercicio construís un núcleo verificable del proyecto; las cuatro etapas del taller lo convierten después en una herramienta completa.
+why: Modificar el dato principal y mantener sus copias coherentes son operaciones distintas. El software del sistema debe cumplir las reglas de invalidación y orden de la arquitectura.
+objective: Invalidar devuelve un slice nuevo y cantidad eliminada. Elimina coincidencias de ASID y VPN; todo=true ignora VPN. Conservá orden y todas las entradas de otros espacios. No modifiques el slice recibido. Eliminá todos los duplicados coincidentes; ASID=0 es válido.
+instructions:
+  - La condición exige coincidencia de espacio Y de página, salvo invalidación de todo el espacio.
+  - Una página idéntica de otro ASID no se elimina.
+  - Contá eliminadas a partir de tamaños o durante el filtrado.
+tests:
+  - id: t1
+    label: Aislar por espacio
+    expression: func() bool { input:=[]Entrada{{1,2,8},{2,2,9},{1,3,4}}; o,n:=Invalidar(input,1,2,false); return n==1 && reflect.DeepEqual(o,[]Entrada{{2,2,9},{1,3,4}}) && reflect.DeepEqual(input,[]Entrada{{1,2,8},{2,2,9},{1,3,4}}) }()
+    why: El filtro conserva el original y las entradas ajenas.
+    failure: Reservá salida propia; no filtres sobre tlb[:0].
+  - id: t2
+    label: Todas las páginas del ASID cero
+    expression: func() bool { o,n:=Invalidar([]Entrada{{0,1,2},{4,1,2},{0,9,3}},0,999,true); return n==2 && reflect.DeepEqual(o,[]Entrada{{4,1,2}}) }()
+    why: todo ignora VPN pero mantiene el filtro de ASID.
+    failure: La conjunción con ASID sigue siendo obligatoria.
+  - id: t3
+    label: Duplicados e idempotencia
+    expression: func() bool { o,a:=Invalidar([]Entrada{{3,7,1},{3,7,2}},3,7,false); p,b:=Invalidar(o,3,7,false); return a==2 && b==0 && len(p)==0 }()
+    why: La segunda invalidación no encuentra nada más.
+    failure: Recorré todas las entradas.
+hints:
+  - Pensá primero qué entrada debe borrarse; después negá la condición para conservar.
+  - 'Una invalidación repetida es idempotente: la segunda elimina cero.'
+  - 'No elimines por marco físico: la clave del pedido es ASID/VPN.'
+review:
+  success: Los casos verifican aislamiento entre espacios, invalidación total de un ASID e idempotencia. Es un filtro de datos que modela selección de entradas.
+  pitfall: Borrar una lista no ejecuta una instrucción privilegiada real. Las TLB de otros núcleos y las barreras requieren un protocolo adicional.
+transfer: Modelá dos núcleos y no declares completado el cambio hasta recibir ambas confirmaciones de invalidación.
+prediction:
+  question: Cambiaste la tabla de marco 1 a 3, pero conservaste una TLB con marco 1. En este modelo, ¿qué usa el siguiente hit?
+  options:
+    - Marco 1
+    - Marco 3 automáticamente
+    - El promedio de ambos
+  answer: 0
+  explanation: 'Un hit usa la copia cacheada: esa es precisamente la inconsistencia que hay que resolver.'
+sources:
+  - title: OSTEP · TLBs
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/vm-tlbs.pdf
+  - title: Writing an OS in Rust · Paging
+    url: https://os.phil-opp.com/paging-implementation/

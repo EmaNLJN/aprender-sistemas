@@ -1,0 +1,44 @@
+title: Detectá la región del choque
+level: medium
+minutes: 20
+intro: Antes de resolver un choque, el motor necesita saber qué región comparten dos cajas alineadas con los ejes.
+why: La intersección existe cuando los intervalos se superponen estrictamente en ambos ejes. Tocar un borde no produce área.
+objective: Cada caja es [x,y,ancho,alto]. Devolvé su rectángulo de intersección si tiene área positiva; ausencia para cajas de tamaño no positivo o solo contacto. Coordenadas entre-1000 y1000 y tamaños hasta1000.
+instructions:
+  - Leé el contrato y predecí un caso antes de ejecutar.
+  - Conservá la representación indicada y verificá también sus límites.
+tests:
+  - id: t1
+    label: Penetración parcial
+    expression: interseccion([0,0,4,4],[3,1,4,4])==Some([3,1,1,3])
+    why: Intersecá los intervalos horizontal y vertical por separado.
+    failure: Intersecá los intervalos horizontal y vertical por separado.
+  - id: t2
+    label: Contención y simetría
+    expression: interseccion([-5,-5,10,10],[-2,-1,3,2])==Some([-2,-1,3,2]) && interseccion([-2,-1,3,2],[-5,-5,10,10])==Some([-2,-1,3,2])
+    why: La caja contenida es toda la intersección, sin depender del orden.
+    failure: La caja contenida es toda la intersección, sin depender del orden.
+  - id: t3
+    label: Contacto y tamaños inválidos
+    expression: interseccion([0,0,2,2],[2,0,2,2])==None && interseccion([0,0,0,2],[0,0,3,3])==None && interseccion([0,0,2,2],[0,0,2,-1])==None
+    why: No conviertas área0 ni dimensiones negativas en colisión.
+    failure: No conviertas área0 ni dimensiones negativas en colisión.
+hints:
+  - La esquina inicial usa máximos de los inicios.
+  - La esquina final usa mínimos de los extremos.
+  - Rechazá si ancho o alto de la intersección no es positivo.
+review:
+  success: Los casos incluyen contención, posiciones negativas y contacto sin penetración.
+  pitfall: Una intersección AABB no calcula por sí sola la respuesta física ni evita que un objeto muy rápido atraviese una pared entre pasos.
+transfer: Usá la región para visualizar el choque; después agregá velocidades y una política de respuesta.
+prediction:
+  question: Dos cajas que solo comparten un borde tienen…
+  options:
+    - Intersección de área positiva
+    - Área de intersección cero
+    - Velocidad compartida
+  answer: 1
+  explanation: El intervalo común tiene longitud0 en un eje; este contrato lo trata como ausencia de penetración.
+sources:
+  - title: La cancha de los rebotes · fundamentos
+    url: https://gafferongames.com/post/fix_your_timestep/

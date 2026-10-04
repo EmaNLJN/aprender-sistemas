@@ -1,0 +1,44 @@
+title: Buscá antes de tomar una ficha
+level: expert
+minutes: 20
+intro: Dos jugadores retiran una o dos fichas. Gana quien toma la última. La computadora explora cómo respondería un oponente que también juega bien.
+why: Negamax cambia el signo de la evaluación al cambiar de jugador. Un estado sin fichas es derrota para quien debe jugar; una jugada es ganadora si deja una derrota al rival.
+objective: Elegí1 o2 fichas para maximizar el resultado con juego perfecto. Con0 fichas devolvé ausencia. En empate elegí la menor jugada. Entrada entre0 y12; resolver por búsqueda completa es suficientemente pequeño.
+instructions:
+  - Leé el contrato y predecí un caso antes de ejecutar.
+  - Conservá la representación indicada y verificá también sus límites.
+tests:
+  - id: t1
+    label: Últimas fichas
+    expression: mejor_jugada(1)==Some(1)&&mejor_jugada(2)==Some(2)
+    why: Si podés terminar, esa acción gana.
+    failure: Si podés terminar, esa acción gana.
+  - id: t2
+    label: Ganar y desempatar
+    expression: mejor_jugada(3)==Some(1)&&mejor_jugada(4)==Some(1)&&mejor_jugada(5)==Some(2)&&mejor_jugada(6)==Some(1)
+    why: En posiciones perdedoras ambas acciones empatan; elegí1.
+    failure: En posiciones perdedoras ambas acciones empatan; elegí1.
+  - id: t3
+    label: Terminal y patrón completo
+    expression: mejor_jugada(0)==None && (1..=12).all(|n|{let k=mejor_jugada(n).unwrap();if n%3==0{k==1}else{(n-k)%3==0}})
+    why: Contrastá la búsqueda con la propiedad matemática en todo el dominio pequeño.
+    failure: Contrastá la búsqueda con la propiedad matemática en todo el dominio pequeño.
+hints:
+  - 'Definí la utilidad del jugador al turno: sin fichas vale−1.'
+  - Evaluá una acción como el negativo del valor del estado hijo.
+  - Recorré acciones1 y2 y cambiá la elegida solo al encontrar un valor estrictamente mejor.
+review:
+  success: Las pruebas separan ganar inmediatamente, dejar una posición perdedora y desempatar una derrota inevitable.
+  pitfall: La fórmula de este juego admite una solución por módulo3, pero la búsqueda sirve para aprender minimax. Juegos mayores necesitan límites de profundidad y evaluaciones aproximadas.
+transfer: Permití retirar1 o3 fichas y verificá si el patrón de posiciones perdedoras cambia.
+prediction:
+  question: Si al rival le queda una posición de valor−1, tu jugada vale…
+  options:
+    - −1
+    - '0'
+    - '+1'
+  answer: 2
+  explanation: 'La utilidad cambia de perspectiva al alternar el jugador: −(−1)=+1.'
+sources:
+  - title: El duelo de las últimas fichas · fundamentos
+    url: https://inst.eecs.berkeley.edu/~cs188/textbook/games/

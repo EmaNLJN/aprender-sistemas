@@ -1,0 +1,49 @@
+title: Núcleo · Repartí CPU por quantum
+level: advanced
+minutes: 20
+imports:
+  - reflect
+intro: Implementás el núcleo determinista de un planificador round-robin y después separás listas de tareas listas, bloqueadas y terminadas. En este ejercicio construís un núcleo verificable del proyecto; las cuatro etapas del taller lo convierten después en una herramienta completa.
+why: Bloqueada no significa terminada. El quantum controla cuánto puede ocupar una tarea antes de ceder, pero una política justa necesita definir llegada, espera y costos.
+objective: Turnos devuelve (traza,motivo), motivo="" en éxito. Todas llegan en orden de índice. Omití trabajo cero. Cada turno consume min(quantum,restante), registra una vez el índice y reencola si queda trabajo. Quantum cero→(nil,"quantum") aun sin tareas. Hasta16 tareas y20 unidades por tarea. No modifiques trabajo.
+instructions:
+  - Copiá el trabajo restante y armá una cola de índices con trabajo positivo.
+  - Registrá un índice por turno, no uno por unidad consumida.
+  - Descartá de la cola las tareas al llegar a cero.
+tests:
+  - id: t1
+    label: Rotación justa
+    expression: func() bool { r,e:=Turnos([]uint32{3,2,1},1); return e=="" && reflect.DeepEqual(r,[]int{0,1,2,0,1,0}) }()
+    why: El orden FIFO reparte turnos mientras cada tarea progresa.
+    failure: Sacá del frente y reencolá al final.
+  - id: t2
+    label: Quantum y tareas en cero
+    expression: func() bool { a,e:=Turnos([]uint32{3,2,1},2); b,f:=Turnos([]uint32{0,2,0},1); return e=="" && f=="" && reflect.DeepEqual(a,[]int{0,1,2,0}) && reflect.DeepEqual(b,[]int{1,1}) }()
+    why: Trabajo cero no necesita un turno ficticio.
+    failure: Filtrá antes de formar la cola inicial.
+  - id: t3
+    label: Validación y copia del estado
+    expression: func() bool { in:=[]uint32{2,1}; r,e:=Turnos(in,9); a,f:=Turnos(nil,1); b,g:=Turnos(nil,0); return e=="" && reflect.DeepEqual(r,[]int{0,1}) && reflect.DeepEqual(in,[]uint32{2,1}) && len(a)==0 && f=="" && b==nil && g=="quantum" }()
+    why: El cálculo no modifica el trabajo recibido.
+    failure: Copiá el slice antes de decrementar restantes.
+hints:
+  - Una cola FIFO conserva el turno de las otras tareas.
+  - 'Restá quantum solo si alcanza: de lo contrario el restante pasa a cero.'
+  - Con quantum positivo, cada turno reduce el total de trabajo; esa es la razón de terminación.
+review:
+  success: Los casos verifican rotación, quantum mayor a uno y exclusión de tareas vacías. La terminación se apoya en reducir trabajo con un quantum positivo.
+  pitfall: La traza no incluye latencia de I/O, llegada de tareas nuevas ni costo de cambio de contexto. Tampoco ejecuta hilos reales.
+transfer: Devolvé el tiempo de primera ejecución y finalización de cada tarea y compará varios quantums.
+prediction:
+  question: Después de consumir su quantum, A todavía tiene trabajo y B espera lista. ¿Dónde va A?
+  options:
+    - Al final de la cola de listos
+    - A terminadas
+    - De nuevo al frente siempre
+  answer: 0
+  explanation: Round-robin permite que otra tarea lista reciba el próximo turno.
+sources:
+  - title: OSTEP · CPU scheduling
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-sched.pdf
+  - title: xv6 RISC-V · Teaching kernel
+    url: https://pdos.csail.mit.edu/6.828/2025/xv6.html

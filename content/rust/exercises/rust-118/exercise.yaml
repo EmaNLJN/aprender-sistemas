@@ -1,0 +1,47 @@
+title: Núcleo · CALL y RET conservan al llamador
+level: medium
+minutes: 20
+intro: Representás una pila de frames con variables locales propias, continuación y límites de profundidad. En este ejercicio construís un núcleo verificable del proyecto; las cuatro etapas del taller lo convierten después en una herramienta completa.
+why: Una variable local pertenece a una invocación, no al nombre global de su función. La continuación explica adónde vuelve RET, incluso al anidar llamadas.
+objective: 'La pila contiene un frame raíz y después los de llamadas activas. CALL agrega un frame con retorno y local dados si la pila no está vacía y su longitud es menor al límite; si no, rechaza sin cambios. RET solo quita un frame si hay más de uno y devuelve su retorno; el raíz nunca sale. En todo rechazo conservá la pila. No ejecutes el PC devuelto: solo gestionás frames.'
+instructions:
+  - Comprobá límites antes de modificar el vector o slice.
+  - El dato devuelto por RET sale del frame quitado, no del llamador.
+  - Los locales del llamador deben quedar intactos.
+tests:
+  - id: t1
+    label: Llamadas anidadas y retornos LIFO
+    expression: '{ let mut p=vec![Marco{retorno:0,local:2}]; let a=llamar(&mut p,7,10,4); let b=llamar(&mut p,12,20,4); let r=retornar(&mut p); let s=retornar(&mut p); a && b && r==Some(12) && s==Some(7) && p==vec![Marco{retorno:0,local:2}] }'
+    why: La última llamada vuelve primero sin reemplazar al raíz.
+    failure: RET devuelve el retorno del frame retirado.
+  - id: t2
+    label: Locales independientes
+    expression: '{ let mut p=vec![Marco{retorno:0,local:9}]; let ok=llamar(&mut p,3,0,2); p[1].local=5; let r=retornar(&mut p); ok && r==Some(3) && p[0].local==9 }'
+    why: Modificar el callee no cambia el local guardado en el llamador.
+    failure: No guardes todos los locales en una única variable global.
+  - id: t3
+    label: Límites sin efectos parciales
+    expression: '{ let mut p=vec![Marco{retorno:0,local:4}]; let antes=p.clone(); let a=llamar(&mut p,9,1,1); let b=retornar(&mut p); let mut vacia=Vec::new(); let c=llamar(&mut vacia,1,0,3); !a && b==None && !c && p==antes && vacia.is_empty() }'
+    why: No crear sobre pila vacía ni quitar raíz forma parte del contrato.
+    failure: Validá todas las condiciones antes de push o pop.
+hints:
+  - CALL necesita !pila.is_empty() y len<limite.
+  - RET necesita len>1; recién entonces pop es válido.
+  - Guardar frames como valores mantiene separados los locales de cada llamada.
+review:
+  success: Los casos verifican orden LIFO, continuación y conservación del frame raíz. La pila modela invocaciones; no depende de la ubicación física de estos datos.
+  pitfall: Un límite de profundidad del intérprete no es el tamaño de la pila de ejecución del compilador anfitrión. Este código administra un vector explícito.
+transfer: Agregá un identificador de función a cada frame y generá un backtrace sin modificar la pila.
+prediction:
+  question: main tiene local=2, f crea local=0 y lo cambia a 1. Al retornar, ¿cuánto vale el local de main?
+  options:
+    - '1'
+    - '2'
+    - '0'
+  answer: 1
+  explanation: Son locales de invocaciones diferentes.
+sources:
+  - title: Nand2Tetris · Function calls
+    url: https://www.nand2tetris.org/project08
+  - title: Rust Book · Ownership and stack/heap
+    url: https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html

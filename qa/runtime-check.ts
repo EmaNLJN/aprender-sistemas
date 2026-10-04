@@ -110,12 +110,13 @@ const context = vm.createContext({
   window,
   localStorage: { getItem: () => null, setItem: () => {} },
 });
-// Catálogos del lenguaje: los publica el adaptador desde los módulos TS; el hash
-// sólo cubre las fuentes del lenguaje elegido (no el adaptador ni el otro lenguaje).
-const catalogSources = [
-  'src/entities/exercise/content/' + language + '-lab.ts',
-  'src/entities/exercise/content/' + language + '-quests.ts',
-];
+// Catálogos del lenguaje: content/<lenguaje>/ (manifiesto, exercise.yaml y código); el hash
+// sólo cubre las fuentes del lenguaje elegido (no el generador ni el otro lenguaje).
+const catalogSources = fs
+  .readdirSync(path.join(root, 'content', language), { recursive: true, encoding: 'utf8' })
+  .map((entry) => path.posix.join('content', language, entry))
+  .filter((file) => fs.statSync(path.join(root, file)).isFile())
+  .sort();
 // Mismas fuentes y orden que el resto de QA: los dominios portados tienen un adaptador.
 const systemFiles = SYSTEMS_DOMAINS.flatMap((domain) => systemsDomainSources(domain));
 const hashedSources = [...catalogSources, ...systemFiles].filter((file) =>

@@ -1,0 +1,44 @@
+title: Elegí el próximo píxel
+level: medium
+minutes: 20
+intro: Una línea geométrica atraviesa casilleros, pero la pantalla necesita coordenadas enteras. Conservá un error acumulado para elegir el próximo píxel.
+why: Bresenham compara el error sin dividir ni acumular fracciones. Ambos ejes pueden avanzar durante una misma iteración.
+objective: Devolvé los píxeles de ambos extremos incluidos, en orden desde el inicio. Coordenadas entre -20 y20. Usá dx=abs(x1-x0), dy=-abs(y1-y0), error=dx+dy; guardá e2=2*error y avanzá x si e2>=dy, y si e2<=dx.
+instructions:
+  - Leé el contrato y predecí un caso antes de ejecutar.
+  - Conservá la representación indicada y verificá también sus límites.
+tests:
+  - id: t1
+    label: Pendiente con empate
+    expression: pixeles(0,0,4,2)==vec![(0,0),(1,1),(2,1),(3,2),(4,2)]
+    why: Guardá e2 antes de modificar el error.
+    failure: Guardá e2 antes de modificar el error.
+  - id: t2
+    label: Ambos ejes decrecen
+    expression: pixeles(2,3,0,-1)==vec![(2,3),(1,2),(1,1),(0,0),(0,-1)]
+    why: El signo del incremento no debe fijarse siempre en +1.
+    failure: El signo del incremento no debe fijarse siempre en +1.
+  - id: t3
+    label: Horizontal y punto
+    expression: pixeles(2,-1,-1,-1)==vec![(2,-1),(1,-1),(0,-1),(-1,-1)] && pixeles(3,3,3,3)==vec![(3,3)]
+    why: El último extremo cuenta incluso cuando también es el primero.
+    failure: El último extremo cuenta incluso cuando también es el primero.
+hints:
+  - Incluí el píxel actual antes de comprobar si llegaste.
+  - Las dos decisiones usan el mismo e2, calculado antes de cambiar error.
+  - Los signos de avance dependen de cada eje; un segmento de longitud cero contiene un píxel.
+review:
+  success: Las pruebas cubren pendientes distintas, coordenadas decrecientes y extremos coincidentes.
+  pitfall: 'La regla de empate es parte del contrato. No es antialiasing: cada píxel queda encendido o apagado.'
+transfer: Dibujá los resultados en una grilla y compará otra política de desempate.
+prediction:
+  question: Cuando ambas condiciones de error se cumplen…
+  options:
+    - Se avanza solo x
+    - Se avanza solo y
+    - Se avanzan ambos ejes
+  answer: 2
+  explanation: 'Son dos if independientes: una diagonal necesita avanzar x e y en la misma vuelta.'
+sources:
+  - title: El taller de los píxeles · fundamentos
+    url: https://zingl.github.io/bresenham.html

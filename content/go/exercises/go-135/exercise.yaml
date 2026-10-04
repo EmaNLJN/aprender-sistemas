@@ -1,0 +1,44 @@
+title: Derivá una estructura, no un string
+level: advanced
+minutes: 20
+intro: 'Un mini sistema algebraico guarda un polinomio como coeficientes: [3,-2,0,1] representa3−2x+x³. Ahora evaluá y derivá esa estructura.'
+why: 'Horner acumula desde el coeficiente de mayor grado. La derivada cambia cada aᵢxⁱ por i·aᵢxⁱ⁻¹: la posición del coeficiente lleva significado.'
+objective: Recibí coeficientes en orden creciente de potencias. Devolvé valor en x y coeficientes de la derivada, sin eliminar ceros finales. Vacío representa0; la derivada de un constante es vacía. Hasta9 coeficientes, cada uno entre-10 y10; |x|<=5.
+instructions:
+  - Leé el contrato y predecí un caso antes de ejecutar.
+  - Conservá la representación indicada y verificá también sus límites.
+tests:
+  - id: t1
+    label: Cúbico con huecos
+    expression: func()bool{a,d:=Analyze([]int64{3,-2,0,1},2);b,e:=Analyze([]int64{3,-2,0,1},-1);return a==7&&b==4&&fmt.Sprint(d)=="[-2 0 3]"&&fmt.Sprint(e)=="[-2 0 3]"}()
+    why: Recorré al revés para Horner, pero preservá el orden de la derivada.
+    failure: Recorré al revés para Horner, pero preservá el orden de la derivada.
+  - id: t2
+    label: Constantes
+    expression: func()bool{a,d:=Analyze(nil,5);b,e:=Analyze([]int64{9},-3);return a==0&&b==9&&len(d)==0&&len(e)==0}()
+    why: Un polinomio vacío vale0 y la derivada de una constante no tiene términos.
+    failure: Un polinomio vacío vale0 y la derivada de una constante no tiene términos.
+  - id: t3
+    label: Representación con ceros
+    expression: func()bool{a,d:=Analyze([]int64{0,5,0},-2);b,e:=Analyze([]int64{1,2,3},0);return a == -10&&b==1&&fmt.Sprint(d)=="[5 0]"&&fmt.Sprint(e)=="[2 6]"}()
+    why: No elimines ceros finales si el contrato pide conservarlos.
+    failure: No elimines ceros finales si el contrato pide conservarlos.
+hints:
+  - Para evaluar, recorré los coeficientes desde el último hacia el primero.
+  - El acumulador se actualiza como valor*x+coeficiente.
+  - Para derivar, omití el coeficiente0 y multiplicá cada coeficiente restante por su índice.
+review:
+  success: Los casos comprueban orden de coeficientes, signos, constantes y ceros que conservan la representación.
+  pitfall: Este es un CAS mínimo para polinomios enteros acotados. No simplifica expresiones arbitrarias ni usa números de precisión ilimitada.
+transfer: Derivá dos veces y compará la pendiente calculada con diferencias finitas.
+prediction:
+  question: En [3,-2,0,1], la derivada se representa como…
+  options:
+    - '[-2,0,3]'
+    - '[3,-2,0]'
+    - '[0,-2,3]'
+  answer: 0
+  explanation: La constante desaparece, −2x aporta−2 y x³ aporta3x².
+sources:
+  - title: La máquina de polinomios · fundamentos
+    url: https://dlmf.nist.gov/1.11
