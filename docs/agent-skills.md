@@ -73,6 +73,45 @@ oficial de ESLint y el ejemplo oficial de instalación/configuración de Prettie
 consultados mediante Context7; no se agregó una skill redundante para imponer
 otro formatter, package manager o framework.
 
+## Pruebas del front, E2E y API (2026-10-04)
+
+A pedido del usuario se buscaron skills con `find-skills` (`npx skills find`) para:
+
+- specs de React (Vitest o Jest con Testing Library);
+- factories con fishery;
+- E2E con Page Object Model;
+- diseño de la API y de esquemas de base de datos.
+
+Antes de exponerlas se verificaron instalaciones, estrellas, licencia y contenido: sólo Markdown,
+sin scripts ni instrucciones de red.
+
+| Skill | Fuente | Señales consultadas | Uso en este proyecto |
+| --- | --- | --- | --- |
+| [vitest](../.agents/skills/vitest/SKILL.md) | [antfu/skills](https://skills.sh/antfu/skills/vitest) | 39 mil instalaciones; ★5,9 mil; MIT; el autor integra el equipo de Vitest | Configuración, API, mocks, cobertura y filtros de Vitest para las specs del front. |
+| [react-testing](../.agents/skills/react-testing/SKILL.md) | [affaan-m/ECC](https://skills.sh/affaan-m/ecc/react-testing) | 5,2 mil; ★272 mil; MIT | Specs de componentes y hooks con Testing Library, MSW, accesibilidad con axe y el límite con E2E. |
+| [playwright-best-practices](../.agents/skills/playwright-best-practices/SKILL.md) | [currents-dev/playwright-best-practices-skill](https://skills.sh/currents-dev/playwright-best-practices-skill/playwright-best-practices) | 89,7 mil; ★386; MIT | E2E con Playwright Test en TypeScript: page objects frente a fixtures, locators, datos de prueba y tests inestables. |
+| [api-and-interface-design](../.agents/skills/api-and-interface-design/SKILL.md) | [addyosmani/agent-skills](https://skills.sh/addyosmani/agent-skills/api-and-interface-design) | 45,3 mil; ★101 mil; MIT | Contratos estables de la API REST y del límite entre front y backend. |
+| [laravel-patterns](../.agents/skills/laravel-patterns/SKILL.md) | [affaan-m/ECC](https://skills.sh/affaan-m/ecc/laravel-patterns) | 10,5 mil; ★272 mil; MIT | Controladores, API Resources, servicios, colas y Eloquent del backend. |
+
+- **fishery:** no tiene skill. Su API se consulta con Context7 al escribir factories.
+- **Diseño de esquemas en MySQL:** no apareció ninguna skill de calidad; las candidatas eran de
+  Postgres o de servicios en la nube. Valen `laravel-specialist`, `laravel-patterns` y la revisión
+  de un agente de base de datos.
+- **TDD:** ya lo cubren `tdd` (front y TypeScript) y `laravel-tdd` (Pest).
+- **Descartadas:**
+  - `wshobson/agents@javascript-testing-patterns`, porque se superpone con `vitest` y
+    `react-testing`;
+  - `affaan-m/ecc@e2e-testing`, porque mezcla una sección de Web3 ajena al taller;
+  - `mattpocock/skills@domain-modeling`, porque trata glosarios y ADR, no esquemas.
+- **Descargas:** `playwright-best-practices` sugiere `npx playwright install --with-deps`, que
+  descarga navegadores. La regla de pedir permiso antes de cada descarga sigue valiendo.
+- **Alcance:** hasta que un ADR adopte Vitest y Playwright, las specs nuevas no tienen dónde
+  correr. Estas skills preparan esa decisión; no la toman.
+
+Se instalaron con `npx skills add <repo> --skill <nombre> -a codex -y`, con su enlace en
+`.claude/skills/`. `.gitattributes` exime a `.agents/skills/` de `git diff --check`, para que las
+skills conserven el formato de su fuente. El total actual es de veinte skills locales.
+
 ## Claude Code
 
 Consultado el 2026-10-03 en la documentación oficial de Claude Code
