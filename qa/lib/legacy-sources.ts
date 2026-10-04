@@ -21,15 +21,9 @@ export const LAB_EXERCISE_SOURCES: readonly string[] = [CATALOGS_SOURCE];
 
 export const SYSTEMS_DOMAINS: readonly SystemsDomain[] = ['lowlevel', 'infra', 'play', 'pc'];
 
-// Fuentes de cada dominio en orden de evaluación. Los dominios legacy publican su
-// catálogo y luego sus núcleos, que lo leen; los portados tienen un único adaptador.
-const PORTED_SYSTEMS_DOMAINS: Partial<Record<SystemsDomain, string>> = {
-  pc: 'src/app/legacy/register-systems-pc.ts',
-};
-
+// Cada dominio tiene un adaptador que publica su catálogo, sus modelos y sus núcleos.
 export function systemsDomainSources(domain: SystemsDomain): readonly string[] {
-  const adapter = PORTED_SYSTEMS_DOMAINS[domain];
-  return adapter ? [adapter] : [`systems-${domain}.js`, `systems-${domain}-labs.js`];
+  return [`src/app/legacy/register-systems-${domain}.ts`];
 }
 
 export const SYSTEMS_CATALOG_SOURCES: readonly string[] =

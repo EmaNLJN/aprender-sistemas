@@ -117,7 +117,7 @@ loadSystemsDomain(context, 'infra');
 loadLabExercises(context);
 const infra = context.window.SYSTEMS_INFRA;
 const labs = context.window.SYSTEMS_INFRA_LABS;
-if (!infra || !labs) throw new Error('SYSTEMS_INFRA was not published by systems-infra.js');
+if (!infra || !labs) throw new Error('SYSTEMS_INFRA was not published by its adapter');
 const { workshops, models } = infra;
 const expected: ModelId[] = [
   'wal',

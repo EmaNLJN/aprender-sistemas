@@ -90,7 +90,7 @@ const context: { window: PcWindow } = { window: {} };
 vm.createContext(context);
 loadSystemsDomain(context, 'pc');
 const pcDomain = context.window.SYSTEMS_PC;
-if (!pcDomain) throw new Error('SYSTEMS_PC was not published by systems-pc.js');
+if (!pcDomain) throw new Error('SYSTEMS_PC was not published by its adapter');
 const { workshops, models } = pcDomain,
   w = workshops[0],
   model = models.pc;
@@ -185,7 +185,7 @@ test('One workshop, two correctly linked original cores and full teaching metada
   assert.equal(new Set(w.objectives.map((o) => o.id)).size, 3);
   for (const source of w.sources) assert.equal(new URL(source.url).protocol, 'https:');
   const labs = context.window.SYSTEMS_PC_LABS;
-  assert(labs, 'SYSTEMS_PC_LABS must be published by systems-pc-labs.js');
+  assert(labs, 'SYSTEMS_PC_LABS must be published by its adapter');
   assert.equal(labs.length, 2);
   for (const language of ['rust', 'go'] as const) {
     const item: PcLab | undefined = labs.find((x) => x.language === language);

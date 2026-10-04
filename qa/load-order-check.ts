@@ -23,16 +23,12 @@ const ATLAS = 'src/app/legacy/register-atlas.tsx';
 const CAMPAIGN_ENGINE = 'src/app/legacy/register-campaign-engine.ts';
 const SYSTEMS_ENGINE = 'src/app/legacy/register-systems-engine.ts';
 const CATALOGS = 'src/app/legacy/register-catalogs.ts';
-const SYSTEMS_PC = 'src/app/legacy/register-systems-pc.ts';
+const SYSTEMS_DOMAINS = ['lowlevel', 'infra', 'play', 'pc'].map(
+  (domain) => `src/app/legacy/register-systems-${domain}.ts`,
+);
 
-const BEFORE_LAB = [
-  CATALOGS,
-  'systems-lowlevel-labs.js',
-  'systems-infra-labs.js',
-  'systems-play-labs.js',
-  SYSTEMS_PC,
-];
-const SYSTEMS_CATALOGS = ['systems-lowlevel.js', 'systems-infra.js', 'systems-play.js', SYSTEMS_PC];
+const BEFORE_LAB = [CATALOGS, ...SYSTEMS_DOMAINS];
+const SYSTEMS_CATALOGS = SYSTEMS_DOMAINS;
 const BEFORE_APP_REASONS: Record<string, string> = {
   [LAB]:
     'render() de app.js llama a window.TallerLab.mount(); app.js también usa getExercises() en syncLinkedLanguage()',
@@ -55,11 +51,6 @@ const CONSTRAINTS: Constraint[] = [
     APP,
     'TallerSystems.init() lee el catálogo de Sistemas (window.SYSTEMS_*) cuando app.js carga',
   ]),
-  [
-    'systems-lowlevel.js',
-    'systems-lowlevel-labs.js',
-    'systems-lowlevel-labs.js lee window.SYSTEMS_LOWLEVEL.workshops al evaluarse (pair() usa workshops[index])',
-  ],
   [
     CAMPAIGN_ENGINE,
     'campaign.js',

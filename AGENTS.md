@@ -17,8 +17,8 @@ Atlas es la primera vista migrada; el resto conserva adaptadores legacy temporal
 - Para usar o reinstalar React Doctor y Desloppify, leé `tools/quality/AGENTS.md`.
 - Para continuar el refactor en curso, leé `docs/refactor-roadmap.md`.
 
-La raíz conserva sólo las fuentes legacy que faltan portar: las vistas (`app.js`,
-`lab.js`, `campaign.js`, `systems.js` y los exploradores) y tres dominios de Sistemas.
+La raíz conserva sólo las vistas legacy que faltan migrar a React (`app.js`,
+`lab.js`, `campaign.js`, `systems.js`, `lab-explorers.js` y `quest-explorers.js`).
 El resto vive en `src/` por capas FSD (`app`, `pages`, `features`, `entities`,
 `shared`); el mapa está en `docs/architecture.md`. `qa/` reúne verificaciones e investigación; `docs/` contiene reglas
 específicas de desarrollo; `.agents/skills/` contiene las skills del proyecto.

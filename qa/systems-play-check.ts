@@ -143,7 +143,7 @@ vm.createContext(context);
 loadSystemsDomain(context, 'play', { timeout: 3000 });
 const playDomain = context.window.SYSTEMS_PLAY;
 const labs = context.window.SYSTEMS_PLAY_LABS;
-if (!playDomain || !labs) throw new Error('SYSTEMS_PLAY was not published by systems-play.js');
+if (!playDomain || !labs) throw new Error('SYSTEMS_PLAY was not published by its adapter');
 const { workshops, models } = playDomain;
 function equal(actual: unknown, expected: unknown, message?: string): void {
   if (message === undefined) assert.deepEqual(plain(actual), plain(expected));

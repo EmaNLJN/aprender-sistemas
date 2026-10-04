@@ -107,7 +107,7 @@ const context: { window: LowLevelWindow } = { window: {} };
 vm.createContext(context);
 loadSystemsDomain(context, 'lowlevel');
 const lowLevel = context.window.SYSTEMS_LOWLEVEL;
-if (!lowLevel) throw new Error('SYSTEMS_LOWLEVEL was not published by systems-lowlevel.js');
+if (!lowLevel) throw new Error('SYSTEMS_LOWLEVEL was not published by its adapter');
 const { workshops, models } = lowLevel;
 let passed = 0;
 function test(name: string, fn: () => void): void {
@@ -169,7 +169,7 @@ function assertResetYieldsFreshState<Id extends ModelId>(w: LowLevelWorkshop & {
 test('Eight models, sixteen executable cores and unambiguous links', () => {
   assert.equal(workshops.length, 8);
   const labs = context.window.SYSTEMS_LOWLEVEL_LABS;
-  assert(labs, 'SYSTEMS_LOWLEVEL_LABS must be published by systems-lowlevel-labs.js');
+  assert(labs, 'SYSTEMS_LOWLEVEL_LABS must be published by its adapter');
   assert.equal(labs.length, 16);
   assert.equal(new Set(labs.map((x) => x.id)).size, 16);
   for (const [index, w] of workshops.entries()) {

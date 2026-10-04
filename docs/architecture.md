@@ -26,8 +26,10 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | Reglas, validación y progreso de campaña | `src/entities/campaign/`, adaptador `src/app/legacy/register-campaign-engine.ts` |
 | Interfaz y exploradores de campaña | `campaign.js`, `campaign.css`, `quest-explorers.js`, `quest-explorers.css` |
 | Contrato de simulaciones de Sistemas | `src/entities/systems-simulation/` (`defineModel`, tipos de vista y escena) |
-| Catálogos y modelos de Sistemas | portado: `pc` (modelo en `src/entities/systems-simulation/models/pc/`, ficha en `src/entities/systems-workshop/content/`, adaptador `src/app/legacy/register-systems-pc.ts`); legacy: `systems-{lowlevel,infra,play}.js` |
-| Núcleos Rust/Go de Sistemas | portado: `src/entities/exercise/content/systems-pc-cores.ts`; legacy: `systems-{lowlevel,infra,play}-labs.js` |
+| Modelos de Sistemas | `src/entities/systems-simulation/models/{lowlevel,infra,play,pc}/` (un archivo por modelo, con `defineModel`) |
+| Fichas de los talleres | `src/entities/systems-workshop/content/{lowlevel,infra,play,pc}-workshops.ts` |
+| Núcleos Rust/Go de Sistemas | `src/entities/exercise/content/systems-{lowlevel,infra,play,pc}-cores.ts` |
+| Catálogos de Sistemas publicados en `window.SYSTEMS_*` | adaptadores `src/app/legacy/register-systems-{lowlevel,infra,play,pc}.ts` |
 | Sellos y progreso de Sistemas | `src/entities/systems-workshop/`, adaptador `src/app/legacy/register-systems-engine.ts` |
 | Interfaz de Sistemas | `systems.js`, `systems.css` |
 | Animaciones | `src/shared/lib/celebration.ts`, adaptador `src/app/legacy/register-effects.ts` |
