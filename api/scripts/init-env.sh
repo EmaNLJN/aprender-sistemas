@@ -11,13 +11,18 @@ if [ -s "$env_file" ] && [ -n "$(tail -c 1 "$env_file")" ]; then
   echo >> "$env_file"
 fi
 
-# Una clave presente con valor vacío (copiada de api/.env.example, por ejemplo) no se completa:
-# Compose la rechazaría y correr este script de nuevo no la arreglaría.
+# Una clave cuenta con o sin `export` y con espacios alrededor del =; un valor de sólo espacios
+# es vacío. Compose se queda con la última definición: agregar una segunda pisaría la que MySQL
+# tomó al crear su volumen.
+key_pattern() {
+  printf '^[[:space:]]*(export[[:space:]]+)?%s[[:space:]]*=' "$1"
+}
+
 add_missing() {
-  if grep -q "^$1=." "$env_file"; then
+  if grep -Eq "$(key_pattern "$1")[[:space:]]*[^[:space:]]" "$env_file"; then
     return 0
   fi
-  if grep -q "^$1=\$" "$env_file"; then
+  if grep -Eq "$(key_pattern "$1")" "$env_file"; then
     echo "$1 está vacía en $env_file: completala o borrá la línea y volvé a correr este script" >&2
     exit 1
   fi

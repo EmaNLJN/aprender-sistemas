@@ -15,3 +15,11 @@ it('responde 404 en JSON también en la raíz /api/', function () {
         ->assertNotFound()
         ->assertHeader('Content-Type', 'application/json');
 });
+
+// Nginx normaliza /x/../api/zzz y entra por /api/, pero PHP recibe el REQUEST_URI crudo: el
+// error igual tiene que ser JSON.
+it('responde JSON aunque la ruta cruda no empiece con /api', function () {
+    $this->get('/fuera')
+        ->assertNotFound()
+        ->assertHeader('Content-Type', 'application/json');
+});

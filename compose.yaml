@@ -45,6 +45,9 @@ x-laravel-runtime: &laravel-runtime
   mem_limit: 256m
   pids_limit: 64
 
+# Un solo digest para mysql y mysql-test.
+x-mysql-image: &mysql-image mysql:9.7@sha256:e2bde46db6563855d7177adb5f0b57b9dc663f5a20927a90f4259d3312068497
+
 # Por TCP y no por socket: mientras se inicializa, el servidor temporal de MySQL sólo escucha
 # el socket y respondería al ping antes de estar listo (ADR 0004).
 x-mysql-healthcheck: &mysql-healthcheck
@@ -109,7 +112,10 @@ services:
     restart: 'no'
 
   mysql:
-    image: mysql:9.7@sha256:e2bde46db6563855d7177adb5f0b57b9dc663f5a20927a90f4259d3312068497
+    image: *mysql-image
+    # La base que crea MYSQL_DATABASE también nace en español: un CREATE TABLE crudo (sin
+    # Laravel) hereda la colación del esquema.
+    command: ['--character-set-server=utf8mb4', '--collation-server=utf8mb4_es_0900_ai_ci']
     environment:
       MYSQL_DATABASE: taller
       MYSQL_USER: taller
@@ -130,7 +136,10 @@ services:
   # nada que proteger.
   mysql-test:
     profiles: [test]
-    image: mysql:9.7@sha256:e2bde46db6563855d7177adb5f0b57b9dc663f5a20927a90f4259d3312068497
+    image: *mysql-image
+    # La base que crea MYSQL_DATABASE también nace en español: un CREATE TABLE crudo (sin
+    # Laravel) hereda la colación del esquema.
+    command: ['--character-set-server=utf8mb4', '--collation-server=utf8mb4_es_0900_ai_ci']
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
       MYSQL_DATABASE: taller_test

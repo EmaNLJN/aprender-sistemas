@@ -25,3 +25,11 @@ it('compara textos en español: la ñ es otra letra y los acentos no cuentan', f
     expect((int) $row->enie_es_ene)->toBe(0)
         ->and((int) $row->acento_ignorado)->toBe(1);
 });
+
+it('crea la base con la colación española también para lo que no cree Laravel', function () {
+    $schema = DB::selectOne(
+        'select default_collation_name as collation_name from information_schema.schemata where schema_name = database()',
+    );
+
+    expect($schema->collation_name)->toBe('utf8mb4_es_0900_ai_ci');
+});

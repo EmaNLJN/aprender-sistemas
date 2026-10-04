@@ -18,5 +18,7 @@ it('corta si la conexión efectiva no es la de pruebas', function (array $connec
     'DB_URL hacia la base de desarrollo' => [['host' => 'mysql-test', 'database' => 'taller_test', 'url' => 'mysql://taller:x@mysql:3306/taller']],
     'socket' => [['host' => 'mysql-test', 'database' => 'taller_test', 'unix_socket' => '/run/mysqld/mysqld.sock']],
     'otra base' => [['host' => 'mysql-test', 'database' => 'taller']],
+    'hosts de lectura y escritura' => [['host' => 'mysql-test', 'database' => 'taller_test', 'read' => ['host' => ['mysql']], 'write' => ['host' => ['mysql']]]],
+    'DB_URL con lectura y escritura' => [['host' => 'mysql-test', 'database' => 'taller_test', 'url' => 'mysql://taller:x@mysql-test:3306/taller_test?read[host][]=mysql&write[host][]=mysql']],
     'otro host' => [['host' => 'mysql', 'database' => 'taller_test']],
 ])->throws(RuntimeException::class, 'Las pruebas sólo corren contra mysql-test/taller_test');
