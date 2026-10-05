@@ -38,7 +38,7 @@
 
 | ID | Ítem | Intención | Depende de | Estado | Spec |
 | --- | --- | --- | --- | --- | --- |
-| F1 | Red de seguridad | Fijar en un navegador real lo que hace hoy el front (enlaces, recargas, arranque con progreso real, puentes entre vistas) y probar los dos riesgos altos del mapa, sin cambiar código de producción | ADR 0008 aprobado | Pendiente | — |
+| F1 | Red de seguridad | Fijar en un navegador real lo que hace hoy el front (enlaces, recargas, arranque con progreso real, puentes entre vistas) y probar los dos riesgos altos del mapa, sin cambiar código de producción | ADR 0008 aprobado | En especificación | [003-f1-red-de-seguridad](../003-f1-red-de-seguridad/spec.md) |
 | F2 | Seams sin cambio visible | Dejar los almacenes, los motores, el catálogo, el arranque, los puentes y el respaldo como módulos importables, para portar cada vista sin tocar a las demás | F1 | Pendiente | — |
 | F3 | Biblioteca | Portar la página de Biblioteca (búsqueda, filtros, favoritos y categorías) | F2 | Pendiente | — |
 | F4 | Proyecto | Portar la página de Proyecto y sus hitos, con los 10 IDs de hitos fijados | F2 | Pendiente | — |
