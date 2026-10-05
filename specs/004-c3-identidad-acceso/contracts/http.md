@@ -4,7 +4,7 @@
 
 ## Convenciones
 
-- Todo va bajo `/api`, del mismo origen, sin CORS y sin versionado público (R6).
+- Todo va bajo `/api`, del mismo origen, sin CORS y sin versionado público (R6 del ADR).
 - El cuerpo es JSON en `camelCase`; los instantes, ISO 8601 en UTC con milisegundos y `Z` (`2026-10-12T15:30:00.000Z`). Los errores salen siempre como JSON, haya o no `Accept: application/json`: un pedido de `curl` sin esa cabecera recibe 401, no una redirección.
 - Los pedidos que modifican (`POST`, `PUT`, `PATCH` y `DELETE`) llevan `X-XSRF-TOKEN` (el valor de la cookie `XSRF-TOKEN`) y, si hay sesión, `X-Taller-User: <id de la cuenta>`.
 - El cliente empieza con `GET /api/session`: devuelve la cookie `XSRF-TOKEN`, y sin ella un `POST` recibe 419.
@@ -69,7 +69,7 @@ Los errores de C2 (`content_retired`, `content_not_imported` y `maintenance`) si
 | --- | --- | --- |
 | `taller-session` | Respuesta | HttpOnly, `SameSite=Lax`, ruta `/`, cifrada; la sesión vence a los 30 minutos de inactividad y a las 8 horas de iniciada |
 | `XSRF-TOKEN` | Respuesta | La deja toda respuesta que pasa por el grupo `api`; no es HttpOnly. El front la copia a `X-XSRF-TOKEN` |
-| `taller-device` (el nombre sale de `taller.device_cookie.name`) | Respuesta | La emite el ingreso correcto; HttpOnly, `SameSite=Lax`, ruta `/`, sin `Domain`, 180 días. Con C4 pasa a llamarse `__Host-taller-device` y a ser `Secure` sólo por configuración: el nombre y los atributos no dependen de `APP_ENV` |
+| `taller-device` (el nombre sale de `taller.device_cookie.name`) | Respuesta | La emite el ingreso correcto; HttpOnly, `SameSite=Lax`, ruta `/`, sin `Domain`, 180 días. Con TLS (C4) alcanza con `DEVICE_COOKIE_NAME=__Host-taller-device` y `DEVICE_COOKIE_SECURE=true`: el nombre y los atributos salen de la configuración y no dependen de `APP_ENV` |
 | `remember_web_*` | Respuesta | La emite el ingreso de un estudiante que pidió `remember`; HttpOnly, 30 días. Nunca a un admin |
 | `X-Taller-User` | Pedido | Id decimal de la cuenta; obligatoria en los pedidos autenticados que modifican |
 | `X-Request-Id` | Respuesta | 32 hexadecimales; el mismo que figura en los registros |

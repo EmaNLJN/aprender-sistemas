@@ -71,7 +71,7 @@ ALTER TABLE `users`
 | `remember_token` | `VARCHAR(100) NULL` | Sin cambios; sólo estudiantes; se rota al salir y al cambiar o restablecer la contraseña |
 | `created_at`, `updated_at` | `DATETIME(3) NOT NULL` | UTC; antes `TIMESTAMP` |
 
-La clave única `users_email_unique` de C1 se reconstruye sola con la colación nueva. No hay `last_login_at` ni columnas de 2FA (R3, R5).
+La clave única `users_email_unique` de C1 se reconstruye sola con la colación nueva. No hay `last_login_at` ni columnas de 2FA (R3 y R5 del ADR).
 
 ## 2. `invitations`
 

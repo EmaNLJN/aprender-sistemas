@@ -14,9 +14,9 @@
 
 C3a le da identidad al taller sin paquetes nuevos. Hay cuentas con rol y estado, una sesión de Laravel con CSRF, el ingreso con sus límites y su bloqueo, el alta por invitación de un solo uso, la recuperación por consola, el contenido de C2 detrás de la sesión, `GET /api/session` y la cuenta esperada en cada pedido que modifica. Además cierra lo que C2 le dejó a C3: los errores del framework en español y con `code`, el chequeo de transacciones largas con `db-grants`, el `scheduler`, la poda de lo vencido y el reenvío DNS. El enfoque:
 
-- **Sin Fortify ni Sanctum.** El guard de sesión, `Hash`, el broker de contraseñas, `RateLimiter` y `Timebox` hacen lo que el ADR 0006 le pedía a Fortify (research.md, R1 y R2). El montaje es un grupo `api` con cinco middleware y un grupo `account` que B2 y D1 usan para sus rutas.
+- **Sin Fortify ni Sanctum.** El guard de sesión, `Hash`, el broker de contraseñas, `RateLimiter` y `Timebox` hacen lo que el ADR 0006 le pedía a Fortify (research.md, R1 y R2). El montaje es un grupo `api` con seis middleware (cinco de D16 con `DropInvalidSession` en lugar de `AuthenticateSession`, más el identificador del pedido) y un grupo `account` que B2 y D1 usan para sus rutas.
 - **La revocación no depende del driver.** `DropInvalidSession` descarta una sesión de una cuenta que dejó de estar `active`, que cambió su contraseña o que pasó su máximo; el grupo `account` responde 403 o 401. `GET /api/session`, que es pública, responde `user: null` en esos casos (R3).
-- **Un solo punto para toda contraseña.** `PlainPassword` normaliza a NFC y sólo `AccountPasswords` toca `Hash` (R5).
+- **Un solo punto para toda contraseña.** `PlainPassword` normaliza a NFC y sólo `AccountPasswords` toca `Hash` (research.md, R5).
 - **El esquema primero.** Siete migraciones en el bloque `2026_10_05_2000NN`, con la prueba de esquema escrita desde el ADR antes que el DDL.
 - **Los contratos están escritos antes del código.** Los errores, las rutas, los comandos y las cookies están en `contracts/`; B2 y D1 se apoyan en ellos sin leer el código.
 - **Operación probada.** El chequeo de transacciones largas falla cerrado y se prueba con un usuario restringido (criterio J); el DNS, los límites de Nginx y los registros sin secretos tienen su comprobación contra el stack.
@@ -45,7 +45,7 @@ C3a le da identidad al taller sin paquetes nuevos. Hay cuentas con rol y estado,
 - los tokens viajan sólo en el fragmento y en el cuerpo de un `POST`;
 - sin `@phpstan-ignore` ni baseline.
 
-**Scale/Scope**: 12 endpoints nuevos y las 6 rutas de contenido protegidas; 7 tablas; 2 servicios de Compose (`scheduler` y `db-grants`); unos 70 archivos nuevos en `app/`, 7 migraciones, unos 55 archivos de prueba y 28 tareas en cuatro ondas.
+**Scale/Scope**: 12 endpoints nuevos y las 6 rutas de contenido protegidas; 7 tablas; 2 servicios de Compose (`scheduler` y `db-grants`); unos 70 archivos nuevos en `app/`, 7 migraciones, unos 55 archivos de prueba y 28 tareas en cinco ondas (de la 0 a la 4).
 
 ## Constitution Check
 
@@ -133,6 +133,7 @@ Lo que el revisor mira primero, porque es lo que más cuesta equivocar o lo que 
 - **El contenido no cambia.** Con sesión, el sha256 de cada porción y de cada ejercicio es el del generador; `Cache-Control: private, no-cache` sin tocar y sin `Vary`. El diff de `ContentEndpointTest` no cambia ningún valor esperado, sólo autentica.
 - **Nivel 9.** Sin baseline, sin `@phpstan-ignore` y sin casts de `mixed`: los accesores tipados de la configuración y del pedido (research.md, R18).
 - **Falla cerrado.** El chequeo de transacciones largas (error 1142, instrumentación apagada, no verse a sí mismo), la lista blanca de rutas y el ancla de pruebas de `LOG_HMAC_KEY`.
+- **Lo que C4 endurece sin tocar código.** El nombre y los atributos de la cookie de dispositivo salen de `taller.device_cookie` (no de `APP_ENV`) y ya cumplen las reglas de `__Host-`; `docker/mysql/db-grants.sql` es el único archivo de usuarios y privilegios; `trustProxies` queda vacío y una prueba lo exige (los límites por red cuentan `REMOTE_ADDR`); `init-env.sh` tiene un solo dueño de su estructura.
 - **El esquema.** Las colaciones (`as_ci` y `0900_bin`), la cascada de `sessions`, el `SET NULL` de `invitations`, los CHECK con nombre y el intercambio atómico de `cache` y `cache_locks`.
 - **Complejidad.** `LoginPipeline` y `DropInvalidSession` pueden pasar de 10 caminos: se revisan por pasos con nombre y por su tabla de pruebas, no se fragmentan por una cuota.
 
@@ -156,7 +157,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 | --- | --- | --- | --- |
 | Coordinador | `backend/api/composer.json`, `backend/api/composer.lock`, `backend/api/resources/passwords/blocked-15plus.txt`, `backend/api/resources/passwords/SOURCE.md`, `backend/api/routes/api.php`, `backend/api/app/Providers/AppServiceProvider.php`, `backend/api/tests/Content/ContentEndpointTest.php`, `backend/api/tests/Content/ContentAccessTest.php`, `backend/api/tests/Feature/RouteAccessTest.php`, `backend/api/tests/Feature/ExpectedAccountMatrixTest.php`, `backend/api/tests/Feature/MassAssignmentTest.php`, `backend/api/tests/Feature/LogsWithoutSecretsTest.php`, `backend/api/AGENTS.md`, `AGENTS.md`, `README.md`, `docs/architecture.md`, `specs/backend-multiusuario/roadmap.md` | todo | la línea de base, las dos descargas, el contenido detrás de la sesión, los recorridos, la documentación y la evidencia de cierre |
 | S · Esquema | `backend/api/database/migrations/2026_10_05_2000NN_*.php` (siete), `backend/api/app/Models/User.php`, `backend/api/app/Models/Invitation.php`, `backend/api/app/Auth/Role.php`, `backend/api/app/Auth/AccountStatus.php`, `backend/api/database/factories/UserFactory.php`, `backend/api/app/Database/WriteTransaction.php`, `backend/api/tests/Feature/IdentitySchemaTest.php`, `backend/api/tests/Feature/UserIdForeignKeyTest.php`, `backend/api/tests/Feature/UserModelTest.php`, `backend/api/tests/Feature/WriteTransactionTest.php`, `backend/api/tests/Content/MigrationsTest.php` | — | las tablas, `User` con `Role` y `AccountStatus`, `Invitation`, la fábrica con sus estados y `WriteTransaction::run()` |
-| P · Piezas puras | `backend/api/app/Auth/{Email,EmailFingerprint,NetworkKey,PlainPassword,AccountPasswords,PasswordPolicy,PasswordViolation,BlockedPasswords,PrivacyNotice,PublishedUser,InvitationToken}.php`, `backend/api/app/Support/Iso8601.php`, `backend/api/lang/es/password-policy.php`, `backend/api/tests/Unit/Auth/`, `backend/api/tests/Unit/Support/Iso8601Test.php`, `backend/api/tests/Unit/ArchitectureTest.php`, `backend/api/tests/Support/fixtures/blocked-sample.txt` | — | los valores y reglas que usan todos |
+| P · Piezas puras | `backend/api/app/Auth/{Email,EmailFingerprint,NetworkKey,PlainPassword,AccountPasswords,PasswordPolicy,PasswordViolation,BlockedPasswords,PrivacyNotice,PublishedUser,InvitationToken}.php`, `backend/api/app/Support/Iso8601.php`, `backend/api/lang/es/password-policy.php`, `backend/api/tests/Unit/Auth/`, `backend/api/tests/Unit/Support/`, `backend/api/tests/Unit/ArchitectureTest.php`, `backend/api/tests/Support/fixtures/blocked-sample.txt` | — | los valores y reglas que usan todos |
 | F · Fundación HTTP | `backend/api/app/Http/{ApiCode,ApiError,ApiExceptions}.php`, `backend/api/app/Http/Middleware/`, `backend/api/app/Auth/{AccountSessions,DropReason}.php`, `backend/api/bootstrap/app.php`, `backend/api/config/{taller,hashing,app,session,auth}.php`, `backend/api/lang/es/{api,validation,auth,passwords}.php`, `backend/api/tests/Support/Browser.php`, `backend/api/tests/Unit/ApiCodeTest.php`, `backend/api/tests/Feature/{ApiExceptionsTest,ApiErrorsTest,ConfigTest,HealthTest}.php`, `backend/api/tests/Feature/Session/` | S y P | los errores con código, los grupos `account` y `api`, `AccountSessions` y el `Browser` de pruebas |
 | L · Límites | `backend/api/app/Auth/{LoginThrottle,AccountLockout,LockoutState,DeviceCookie,DeviceToken,PasswordProof,ProofResult,Limiters}.php`, `backend/api/tests/Feature/Limits/` | S, P y F | el límite, el bloqueo, la cookie de dispositivo y la prueba de contraseña |
 | O · Operación | `docker/compose.yaml`, `docker/nginx/nginx.conf`, `docker/mysql/db-grants.sql`, `backend/api/scripts/{init-env,smoke,deploy,deploy-check}.sh`, `backend/api/scripts/check-account.sh`, `backend/api/.env.example`, `backend/api/docker/migrate.sh`, `backend/api/app/Operations/`, `backend/api/app/Console/Commands/{CheckLongTransactions,PruneSessions,PruneCache}.php`, `backend/api/routes/console.php`, `backend/api/app/Logging/`, `backend/api/config/logging.php`, `qa/lib/api-account.ts`, `qa/api-content-check.ts`, `backend/api/tests/Content/LongTransactionTest.php`, `backend/api/tests/Unit/MigrateScriptTest.php`, `backend/api/tests/Feature/{PruneTest,ScheduleTest}.php`, `backend/api/tests/Unit/Logging/`, `backend/api/tests/Support/RestrictedMysqlUser.php` | S, P y F | el stack con sus servicios, el chequeo previo, las podas, los registros y los checks |
@@ -179,7 +180,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 
 **Puntos de integración con otros frentes** (los resuelve el coordinador):
 
-- **B2 y D1** se planifican a la vez y dependen de C3a por `Auth::id()`, `users.status`, `X-Taller-User` y el cuerpo `{message, code}`. Lo que consumen está en [contracts/http.md](./contracts/http.md), «Para los ítems que se apoyan en C3a». Comparten con C3a `bootstrap/app.php`, `routes/console.php`, `config/`, `composer.json`, `phpstan.neon`, `docker/compose.yaml`, `docker/nginx/nginx.conf`, `lang/es` y `backend/api/AGENTS.md`. Mientras C3a se implementa, los dueños de arriba son los únicos que los editan; B2 y D1 empiezan cuando C3a se entrega (ola 3 de la hoja de ruta), y cada uno agrega su archivo en `routes/api/` en lugar de editar los de C3a.
+- **B2 y D1** se planifican a la vez y dependen de C3a por `Auth::id()`, `users.status`, `X-Taller-User` y el cuerpo `{message, code}`. Lo que consumen está en [contracts/http.md](./contracts/http.md), «Para los ítems que se apoyan en C3a». Comparten con C3a `bootstrap/app.php`, `routes/console.php`, `config/`, `composer.json`, `phpstan.neon`, `docker/compose.yaml`, `docker/nginx/nginx.conf`, `lang/es` y `backend/api/AGENTS.md`. C3a no cambia `phpstan.neon` (el nivel 9 viene de C6) y sólo suma una línea a `composer.json` (T002). Mientras C3a se implementa, los dueños de arriba son los únicos que los editan; B2 y D1 empiezan cuando C3a se entrega (ola 3 de la hoja de ruta), y cada uno agrega su archivo en `routes/api/` en lugar de editar los de C3a.
 - **El punto de extensión que B2 espera** (cancelar ejecuciones al deshabilitar, degradar o suprimir una cuenta) y `UserData` **no** los entrega C3a: ningún código de C3a hace esas tres cosas. Los trae C3b, y la prueba de esquema de FR-004 ya cubre las tablas de B2 y D1 sin cambiarse.
 - **Zonas de Nginx.** B2 espera `limit_req_status 429` (T012); sus ubicaciones nuevas repiten el límite y los `fastcgi_param`. Las zonas y los límites por red suponen que `trustProxies` queda vacío (R22): C3a no lo configura y una prueba lo exige.
 - **Timestamps de migraciones.** C3a reserva `2026_10_05_200001` a `200099`; C3b, B2 y D1 usan un bloque posterior, porque sus claves apuntan a `users`.
@@ -228,7 +229,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 
 1. Traé `master` con el PR #17 a la rama de trabajo (`git merge master`). Si `master` todavía no lo trae, integrá `feat/c6-registros-tipados` y avisá.
 2. Corré `npm run api:format:check`, `npm run api:analyse` y `npm run api:test`. El análisis tiene que dar 0 errores en el nivel 9 que trae C6, sin baseline. Anotá el número de pruebas y de aserciones.
-3. Confirmá que `backend/api/app/Content/Record/Language.php` tiene `fromRow` y que `Catalog.php` no (T020 lo suma).
+3. Mirá si `backend/api/app/Content/Record/Catalog.php` tiene `fromRow`. En `afd00ac` no la tiene (`Language.php` sí, y C6 dejó la de `Catalog` para su primer lector); T020 la suma si falta y, si el PR #17 mergeado ya la trae, sólo la usa.
 4. Reservá el bloque de migraciones `2026_10_05_200001` a `200099` y avisá a quien planifica B2 y D1.
 
 **Compuerta:** la suite en verde sobre la base y `git status` limpio.
@@ -345,7 +346,7 @@ final class WriteTransaction
 
 ### Tarea 2.1 · Email, red, token y hora (T007)
 
-- **Crea:** `backend/api/app/Auth/{Email,EmailFingerprint,NetworkKey,InvitationToken}.php`, `backend/api/app/Support/Iso8601.php` y sus pruebas en `backend/api/tests/Unit/Auth/` y `tests/Unit/Support/`.
+- **Crea:** `backend/api/app/Auth/{Email,EmailFingerprint,NetworkKey,InvitationToken}.php`, `backend/api/app/Support/Iso8601.php` y sus pruebas en `backend/api/tests/Unit/Auth/` y `backend/api/tests/Unit/Support/`.
 - **Entrega** (firmas de referencia):
 
 ```php
@@ -459,7 +460,7 @@ Mensajes de `lang/es/password-policy.php` (las pruebas los exigen tal cual):
    - **`AccountPasswords`**: `hash` empieza con `$2y$` y su costo es `config('hashing.bcrypt.rounds')`; `verify` acepta la misma contraseña; `verifyOrDummy(null, …)` es falso y `dummyHash()` tiene ese mismo costo; fijar con la `á` descompuesta y verificar con la compuesta da verdadero.
    - **`PrivacyNotice`**: `isCurrent` con la versión de la configuración; `acceptedBy` falso sin versión o con otra; `accept` fija la versión y el instante.
    - **`PublishedUser`**: las cinco claves exactas y en ese orden; el rol como texto; ningún `status`, `password` ni `remember_token`.
-   - **`ArchitectureTest`**: una prueba de arquitectura de Pest (`arch()`) y un recorrido de texto de `app/**/*.php` que exigen que `Hash::`, `Auth::attempt(`, `->attempt(` y `logoutOtherDevices(` sólo aparezcan en `app/Auth/AccountPasswords.php`.
+   - **`ArchitectureTest`**: una prueba de arquitectura de Pest (`arch()`) y un recorrido de texto de `app/**/*.php` que exigen que `Hash::`, `Auth::attempt(`, `attemptWhen(` y `logoutOtherDevices(` sólo aparezcan en `app/Auth/AccountPasswords.php`.
 2. Implementá. `PasswordPolicy` rechaza el email completo, la parte local del email y el nombre completo sólo si tienen 4 o más caracteres, siempre sin distinguir mayúsculas (research.md, R5). `BlockedPasswords` lee el archivo una vez por proceso, en minúsculas.
 3. `npm run api:analyse`: 0 errores.
 
@@ -680,7 +681,7 @@ final class Limiters { public static function register(): void; }   // 'invitati
 
 ## 5. Operación (dueño O, ondas 1 y 2)
 
-**Cubre:** FR-039 a FR-046 y FR-045; FR-021 en lo que toca a los registros y a Nginx.
+**Cubre:** FR-039 a FR-046; FR-021 en lo que toca a los registros y a Nginx.
 
 **Entrega:** el stack con `scheduler` y `db-grants`, el chequeo previo a migrar, las podas, los registros sin secretos y los checks autenticados.
 
@@ -695,7 +696,7 @@ final class Limiters { public static function register(): void; }   // 'invitati
 1. Escribí en `smoke.sh` las comprobaciones, que fallan por lo que falta:
    - `docker compose exec -T taller nginx -t` da `successful`.
    - **DNS:** desde `php`, `scheduler`, `mysql` y `taller`, resolver `example.com` falla y resolver `mysql` o `php` funciona (`nslookup` o `getent hosts`, según lo que traiga cada imagen); desde `migrate` (`docker compose run --rm --no-deps --entrypoint php migrate -r '…gethostbyname…'`), lo mismo.
-   - **Ráfaga:** 150 pedidos a `/api/session` en paralelo (por ejemplo `xargs -P 50`) dan al menos un 429 con `Content-Type: application/json`, el cuerpo `{"message":"Demasiados intentos. Esperá un momento antes de volver a probar.","code":"too_many_requests"}` y `Retry-After`; pasados 15 segundos el mismo pedido vuelve a responder sin 429.
+   - **Ráfaga:** 150 pedidos a `/api/session` en paralelo (por ejemplo `xargs -P 50`) dan al menos un 429 con `Content-Type: application/json`, el cuerpo `{"message":"Demasiados intentos. Esperá un momento antes de volver a probar.","code":"too_many_requests"}` y `Retry-After`; pasados 15 segundos el mismo pedido vuelve a responder sin 429. La ruta todavía no existe en esta onda (la crea T020): el límite es de Nginx y responde antes que PHP, así que la comprobación vale igual.
    - **Registro:** un pedido a `/api/exercises?catalog=lab&language=rust&secreto=XYZ` no deja `secreto=XYZ` en el registro de Nginx, y la línea del pedido lleva un `request_id` de 32 hexadecimales; la respuesta trae `X-Request-Id`.
    - **Servicios:** `scheduler` corre; `docker compose config --services` no lista `db-grants`, y con `--profile ops` sí.
 2. Corré el smoke: falla en el 429 (hoy Nginx no limita), en el registro y en los servicios, y en el DNS si el motor reenvía. Anotá si el DNS ya falla sin la opción.
@@ -989,7 +990,7 @@ El ingreso no usa `Auth::attempt`: su rehash automático hashearía la cadena si
 - **Entrega** (firmas de referencia):
 
 ```php
-// Catalog (C6) suma, con el patrón de Language::fromRow:
+// Catalog (C6) suma, si todavía no lo tiene (T001), con el patrón de Language::fromRow:
 public static function fromRow(array $row): self;                              // RowFields: code, slice_by, chain_position
 /** @return array{code: string, sliceBy: string, chainPosition: int|null} */
 public function toPublished(): array;
@@ -1113,7 +1114,7 @@ Estas pruebas recorren lo que entregaron los demás, y por eso nacen en verde. P
 
 **Pasos:**
 
-1. Escribí el escenario nuevo, que falla mientras el chequeo no esté cableado (en la práctica ya lo está desde T013, así que el rojo es el script sin el escenario: la compuerta SC-008 todavía no tiene su comprobación): con `root`, en segundo plano, `START TRANSACTION; SELECT COUNT(*) FROM users; SELECT SLEEP(40)`; esperá 32 segundos; corré `docker compose run --rm migrate` con la imagen vigente.
+1. Escribí el escenario nuevo: con `root`, en segundo plano, `START TRANSACTION; SELECT COUNT(*) FROM users; SELECT SLEEP(40)`; esperá 32 segundos; corré `docker compose run --rm migrate` con la imagen vigente. Nace en verde, porque T013 ya cableó el chequeo en `migrate.sh`. Para ver que detecta, comentá esa línea de `migrate.sh` en una copia de trabajo, comprobá que el escenario falla (`migrate` no se detiene) y restaurala.
 2. El escenario exige: `migrate` sale con un código distinto de cero; su salida contiene «transacciones abiertas»; `php` sigue siendo el mismo contenedor y no se reinició; la cantidad de filas de `migrations` no cambió. Después se corta la sesión y el mismo `migrate` sale bien.
 3. Confirmá que el escenario 3 del script (el sostenedor `LOCK TABLES … SELECT SLEEP(180)`, sin transacción) sigue dando «migrate reintentó 3 veces y se rindió»: el chequeo corre en los primeros segundos y ese sostenedor no abre una transacción de InnoDB. Si el chequeo lo detectara, el escenario se ajusta, no el chequeo.
 4. Corré `sh backend/api/scripts/deploy-check.sh`: pasa. Anotá cuánto tarda.
@@ -1154,30 +1155,36 @@ Estas pruebas recorren lo que entregaron los demás, y por eso nacen en verde. P
 
 ## Cobertura de requisitos
 
+Cada requisito con las tareas que lo implementan o lo prueban. `tasks.md` cita los mismos requisitos en cada línea.
+
 | Requisito | Tareas |
 | --- | --- |
-| FR-001, FR-003, FR-004 | T004, T005 (FR-001 también T006) |
+| FR-001 | T004, T005, T006 |
 | FR-002 | T006, T017, T021, T023 |
-| FR-005, FR-006 | T009, T010 (FR-006 también T019) |
+| FR-003, FR-004 | T004, T005 |
+| FR-005 | T009, T010 |
+| FR-006 | T009, T010, T019 |
 | FR-007 | T010, T019, T021, T023 |
 | FR-008 | T017, T019, T021 |
 | FR-009 | T010, T020 |
-| FR-010, FR-011, FR-015, FR-016 | T019 |
-| FR-012, FR-014 | T011, T019 |
+| FR-010 | T007, T019 |
+| FR-011, FR-015, FR-016 | T019 |
+| FR-012 | T007, T011, T019 |
 | FR-013 | T011, T019, T021 |
-| FR-017 | T005, T016 |
+| FR-014 | T011, T019 |
+| FR-017 | T005, T007, T016 |
 | FR-018 | T016 |
 | FR-019 | T017 |
 | FR-020 | T016, T017 |
-| FR-021 | T012, T015, T016, T017, T018, T023 |
+| FR-021 | T007, T012, T015, T016, T017, T018, T023 |
 | FR-022 | T008, T017, T021 |
-| FR-023 | T002, T003, T007, T008, T017, T018, T021 |
+| FR-023 | T002, T003, T008, T017, T018, T021 |
 | FR-024 | T003, T008 |
 | FR-025 | T018 |
 | FR-026 | T011, T018 |
-| FR-027, FR-028, FR-029 | T021 |
+| FR-027 a FR-029 | T021 |
 | FR-030 | T010, T011, T021 |
-| FR-031, FR-032, FR-033 | T022 |
+| FR-031 a FR-033 | T022 |
 | FR-034 | T020 |
 | FR-035 | T008, T019, T020, T021 |
 | FR-036 | T010, T023 |
@@ -1185,15 +1192,16 @@ Estas pruebas recorren lo que entregaron los demás, y por eso nacen en verde. P
 | FR-038 | T009 |
 | FR-039 | T012, T014 |
 | FR-040 | T012, T013 |
-| FR-041, FR-042 | T013 (FR-041 también T025) |
+| FR-041 | T013, T025 |
+| FR-042 | T013 |
 | FR-043, FR-044 | T012 |
-| FR-045 | T015, T023 |
+| FR-045 | T007, T015, T023 |
 | FR-046 | T024 |
-| FR-047 | T010 y las pruebas de todas las tareas |
+| FR-047 | T010 |
 | FR-048 | T023 |
 | FR-049 | T021, T023 |
 | FR-050 | T027 |
-| FR-051 | T001, T028 y la compuerta de cada tarea |
+| FR-051 | T001, T028 |
 | FR-052 | T009, T012, T026 |
 | SC-001 | T022 |
 | SC-002 | T016, T017 |

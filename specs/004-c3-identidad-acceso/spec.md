@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-05
 
-**Status**: Clarificada el 2026-10-05 (Q1 a Q5, la partición de C3 y la decisión de no usar Fortify); falta el plan
+**Status**: Planificada el 2026-10-05, sobre su clarify (Q1 a Q5, la partición de C3 y la decisión de no usar Fortify): [plan.md](./plan.md), [tasks.md](./tasks.md) y su análisis están hechos; sin implementar
 
 **Input**: Ítem **C3** de la hoja de ruta [`specs/backend-multiusuario/roadmap.md`](../backend-multiusuario/roadmap.md), «Identidad y acceso», en su primera parte: **C3a**, la autenticación y el acceso. La segunda parte, **C3b** (correo, administración y ciclo de vida de la cuenta), queda en la hoja de ruta sin spec (ver «Partición de C3»). Fuente técnica: ADR 0006 (propuesta) §4, §5.2, D16 a D20, D35 (el chequeo previo), D36, la parte de identidad de §7 y §8, y la fila C3 de §10 ([ADR 0006](../../docs/adr/0006-modelo-de-datos-y-api-multiusuario.md)). Recibe de [C2](../001-c2-contenido-mysql/spec.md) lo que esa spec le dejó a C3 (ver «Relación con C2, C6 y C3b»). Donde esta spec se aparta del ADR, lo dice en Assumptions.
 
@@ -196,7 +196,7 @@ Cuando una cuenta se deshabilita o cambia su contraseña, las sesiones viejas de
 
 **Acceptance Scenarios**:
 
-1. **Dado** una cuenta con una sesión abierta, **cuando** su estado pasa a `disabled`, **entonces** el siguiente pedido de esa sesión recibe 403 `account_disabled` y deja de servir, aunque la fila de `sessions` siga ahí.
+1. **Dado** una cuenta con una sesión abierta, **cuando** su estado pasa a `disabled`, **entonces** el siguiente pedido de esa sesión a una ruta que pide sesión recibe 403 `account_disabled` y deja de servir, aunque la fila de `sessions` siga ahí (`GET /api/session`, que es pública, responde `user: null`: ver FR-034).
 2. **Dado** un alumno con dos sesiones abiertas, **cuando** cambia su contraseña en una (con la actual), **entonces** esa sigue con un ID nuevo y la otra recibe 401 en su siguiente pedido.
 3. **Dado** un alumno con varias sesiones, **cuando** usa «cerrar las otras sesiones» con su contraseña, **entonces** las demás dejan de servir y la actual sigue.
 4. **Dado** un alumno que confirma su contraseña, **cuando** consulta el estado, **entonces** `confirmed` es verdadero durante 900 segundos; sin confirmar, una ruta que exige confirmación responde 423 `password_confirmation_required`, y cada fallo de la confirmación suma al bloqueo.
@@ -298,7 +298,7 @@ Quien despliega necesita que un error de la API siempre se entienda, que un desp
 **Sesión**
 
 - **FR-005**: La autenticación DEBE usar la sesión de Laravel, con una cookie HttpOnly y `SameSite=Lax` y protección contra CSRF (`XSRF-TOKEN` → `X-XSRF-TOKEN`), montada sin el paquete Sanctum. NO DEBE usar tokens de acceso ni JWT. *(D16, §4.9; R11; Clarifications, Q1)*
-- **FR-006**: La sesión DEBE vencer a los 30 minutos de inactividad y, como máximo, a las 8 horas de iniciada, y su contenido DEBE guardarse cifrado. *(§4.2; Clarifications, Q5)*
+- **FR-006**: La sesión DEBE vencer a los 30 minutos de inactividad y, como máximo, a las 8 horas de iniciada, y su contenido DEBE guardarse cifrado. El máximo de 8 horas no rige para un pedido que lleva la cookie de «recordarme» (FR-015): al vencer la sesión, esa cookie vuelve a ingresar al estudiante. *(§4.2; Clarifications, Q5)*
 - **FR-007**: La revocación NO DEBE depender del driver de sesiones. En cada pedido con sesión, el estado de la cuenta DEBE ser `active` (si es `disabled`, responde 403 `account_disabled`; si es `deleting`, 401 `unauthenticated`); el hash de la contraseña guardado en la sesión DEBE coincidir con el de la cuenta; y el token de «recordarme» se rota al salir y al cambiar o restablecer la contraseña. Borrar la fila de `sessions` es limpieza, no una garantía. *(D16, §4.5)*
 - **FR-008**: El ID de la sesión DEBE regenerarse al ingresar, al aceptar una invitación, al cambiar la contraseña y al reconfirmarla; al salir, la sesión DEBE invalidarse. *(§4.2)*
 - **FR-009**: Las rutas que no usan sesión, como el health check `GET /api/up`, DEBEN quedar fuera del middleware de sesión. `GET /api/session`, que es pública, DEBE crear una sesión de invitado por cada cliente nuevo y dejar la cookie `XSRF-TOKEN`. *(D16, §4.2, §7)*
@@ -341,7 +341,7 @@ Quien despliega necesita que un error de la API siempre se entienda, que un desp
 - **FR-031**: Las seis rutas de contenido (los 17 recursos) DEBEN exigir una sesión activa y el email verificado: sin sesión, 401 `unauthenticated`; con la cuenta sin verificar, 403 `email_unverified`, que emite un `verified` propio porque el de Laravel responde 403 sin `code`. *(C2 FR-025; §7, §8)*
 - **FR-032**: Con sesión, el contenido DEBE seguir saliendo como en C2: los mismos bytes (el sha256 del cuerpo es el de su huella del generador), el mismo `ETag` y `Content-Version`, el 304 ante un `If-None-Match` fuerte o débil, `Cache-Control: private, no-cache` sin tocar, sin `Vary: Cookie` y sin límite de tasa de Laravel. El middleware de sesión NO DEBE agregar `Vary: Cookie` ni modificar `Cache-Control` en esas respuestas. *(C2 FR-014, FR-017, FR-021; D11)*
 - **FR-033**: Una cuenta con rol `admin` DEBE poder usar el contenido igual que una de alumno: la cuenta de admin separada se recomienda, no se exige. *(S5, §13.7; Clarifications, Q3)*
-- **FR-034**: `GET /api/session` DEBE ser pública y responder `{user, features: {passwordReset, registration}, contentVersion, catalogs: [{code, sliceBy, chainPosition}]}`, con `Cache-Control: no-store` y la cookie `XSRF-TOKEN`. `user` es el usuario de la sesión o `null`. `contentVersion` y los catálogos activos salen del último import (C2 FR-026) con una lectura por clave primaria y la de los catálogos, sin armar contenido. En C3a, `features.passwordReset` y `features.registration` valen `false`. Un `appBuild` opaco entra sólo si A3 lo pide. *(§7, D13; C2 Q2 y Q3)*
+- **FR-034**: `GET /api/session` DEBE ser pública y responder `{user, features: {passwordReset, registration}, contentVersion, catalogs: [{code, sliceBy, chainPosition}]}`, con `Cache-Control: no-store` y la cookie `XSRF-TOKEN`. `user` es el usuario de la sesión o `null`. `contentVersion` y los catálogos activos salen del último import (C2 FR-026) con una lectura por clave primaria y la de los catálogos, sin armar contenido. En C3a, `features.passwordReset` y `features.registration` valen `false`, y salen de la configuración para que C3b los encienda sin tocar código. Un `appBuild` opaco entra sólo si A3 lo pide. Con una sesión que dejó de valer (cuenta deshabilitada o en `deleting`, contraseña cambiada o pasadas las 8 horas), responde 200 con `user: null` y descarta la sesión: el arranque del front nunca recibe un 401 ni un 403 de este pedido. *(§7, D13; C2 Q2 y Q3)*
 - **FR-035**: El usuario que devuelve la API DEBE llevar sólo `id`, `name`, `email`, `role` y `privacyAccepted` (si la versión que aceptó es la vigente), con sus claves en camelCase; nunca el hash, el token de «recordarme» ni el estado. *(§8; propuesta, ver Assumptions)*
 
 **Cuenta esperada**
@@ -350,7 +350,7 @@ Quien despliega necesita que un error de la API siempre se entienda, que un desp
 
 **Errores y mensajes**
 
-- **FR-037**: Todo error bajo `/api` DEBE tener el cuerpo `{message, code}` con el mensaje en español, también los que genera el framework: el 404 de una ruta, el 405 y el 500. Los códigos son los de §8 que C3a o el framework pueden producir: `unauthenticated` (401); `forbidden`, `account_disabled` y `email_unverified` (403); `not_found` e `invitation_not_found` (404); `email_taken` y `account_mismatch` (409); `invitation_expired` (410); `csrf_token_mismatch` (419); `validation_failed`, con `errors`, y `auth_failed` (422); `password_confirmation_required` (423); y `too_many_requests` (429, con `Retry-After`). El 405 y el 500 no tienen código en §8: se proponen `method_not_allowed` y `server_error`. Ningún error expone una traza. *(§8; C2 FR-024)*
+- **FR-037**: Todo error bajo `/api` DEBE tener el cuerpo `{message, code}` con el mensaje en español, también los que genera el framework: el 404 de una ruta, el 405 y el 500. Los códigos son los de §8 que C3a o el framework pueden producir: `unauthenticated` (401); `forbidden`, `account_disabled` y `email_unverified` (403); `not_found` e `invitation_not_found` (404); `email_taken` y `account_mismatch` (409); `invitation_expired` (410); `csrf_token_mismatch` (419); `validation_failed`, con `errors`, y `auth_failed` (422); `password_confirmation_required` (423); y `too_many_requests` (429, con `Retry-After`). El 405 y el 500 no tienen código en §8: se proponen `method_not_allowed` y `server_error`, y `bad_request` para los demás 4xx del framework que §8 no lista (un cuerpo ilegible, por ejemplo). Ningún error expone una traza. *(§8; C2 FR-024)*
 - **FR-038**: `APP_LOCALE` DEBE valer `es`, y `lang/es` DEBE existir con la validación, la autenticación y las contraseñas traducidas (hoy `api/lang/` no existe y el idioma es `en`). *(§8)*
 
 **Operación**
@@ -360,7 +360,7 @@ Quien despliega necesita que un error de la API siempre se entienda, que un desp
 - **FR-041**: Antes de migrar, el despliegue DEBE abortar si hay transacciones abiertas hace más de 30 segundos, consultando `performance_schema.events_transactions_current` con el privilegio mínimo (`SELECT` sobre esa tabla, que `taller` no tiene hoy), y DEBE fallar cerrado: si falta el permiso, se detiene con un mensaje que dice cómo aplicarlo. *(D35; C2 FR-036)*
 - **FR-042**: Una prueba con un usuario de MySQL restringido (no root y sin `PROCESS`) DEBE comprobar que el privilegio mínimo alcanza para detectar una transacción abierta hace más de 30 segundos y que, sin él, el chequeo falla cerrado. Es el criterio J del DBA. *(Plan de C2, decisión 5; ver Assumptions)*
 - **FR-043**: Ningún contenedor de una red `internal` DEBE poder resolver nombres de Internet a través del DNS de Docker, y los nombres internos (`php`, `mysql`) DEBEN seguir resolviéndose. *(§10; estacionado de C1)*
-- **FR-044**: Nginx DEBE limitar por IP los pedidos a `/api/`, con una ráfaga que admita un aula tras un mismo NAT, y `GET /api/session` con una zona propia, porque cada cliente nuevo crea una fila de sesión. DEBE además registrar las rutas de `/api/` sin la query string. *(§4.6, §4.2, D20)*
+- **FR-044**: Nginx DEBE limitar por IP los pedidos a `/api/`, con una ráfaga que admita un aula tras un mismo NAT, y `GET /api/session` con una zona propia, porque cada cliente nuevo crea una fila de sesión. Al pasarse responde 429 (no el 503 por omisión de Nginx, que se confundiría con `queue_full` de B2) con `Retry-After` y el cuerpo `{message, code}`. DEBE además registrar las rutas de `/api/` sin la query string. *(§4.6, §4.2, D20)*
 - **FR-045**: Los registros de la aplicación DEBEN ser estructurados, ir a stderr y llevar el id del usuario, un HMAC del email con una clave propia, la IP y el id del pedido, y NO DEBEN contener nunca contraseñas, tokens, links ni IDs de sesión. *(D20, §8)*
 - **FR-046**: `sh backend/api/scripts/deploy-check.sh` (que hoy pide `/api/guide`) y `npm run api:content:check` (que pide las 17 porciones) DEBEN seguir pasando con el contenido detrás de la sesión: sin cookie recibirían 401. DEBEN autenticarse con una cuenta de prueba propia, que crean y retiran ellos. `npm run api:smoke` DEBE seguir pasando y sumar que una porción sin sesión responde 401. *(C6 FR-019 y SC-007 dependen de los dos primeros)*
 
@@ -423,6 +423,12 @@ Quien despliega necesita que un error de la API siempre se entienda, que un desp
   - Un pedido autenticado sin `X-Taller-User` recibe 409, igual que uno con la cuenta equivocada.
   - Una sesión viva de una cuenta `deleting` recibe 401.
   - El usuario sale con cinco campos (FR-035).
+  - `GET /api/session` con una sesión inválida responde 200 con `user: null` y no 401 ni 403 (FR-034): el 403 `account_disabled` de FR-007 rige para las rutas que piden sesión.
+  - El máximo de 8 horas no rige con la cookie de «recordarme» (FR-006).
+  - El nombre y los atributos de la cookie de dispositivo salen de la configuración y cumplen las reglas de `__Host-`, para que C4 los endurezca sin tocar código; `trustProxies` queda vacío hasta C4.
+  - Cambiar la contraseña y cerrar las otras sesiones prueban la contraseña actual con el mismo límite y el mismo bloqueo que confirmarla (FR-030).
+  - `taller:password-reset-link` y `reset-password` sólo valen para cuentas `active`.
+  - Los demás errores 4xx del framework salen como `bad_request`. El resto de lo que el plan completó está en `research.md`, «Decisiones del plan que la spec no fija».
 - **El criterio J.** Su texto original no está en el repositorio, sólo su resumen en el plan de C2 («privilegios con un usuario restringido»). FR-042 lo interpreta así; hay que confirmarlo.
 - **PHP-FPM y el buffer pool.** §12 dice «ajustarlos en C3 y B2». Esta spec los deja para B2, salvo que una medición de pedidos con sesión en C3a lo exija.
 - **Dependencias.** C1 y C2 (entregados). C3a habilita a A3, B2 y D1, que necesitan la sesión, y a C3b. Esta spec no toca la hoja de ruta de A2, A3 y A4.
@@ -495,6 +501,7 @@ Los agentes no hacen estas acciones. Las descargas piden permiso con nombre, ori
 | Cuándo | Acción |
 | --- | --- |
 | Antes de implementar | Aprobar o enmendar el ADR 0006, con la enmienda de D17 (sin Fortify) y las propuestas de «Propuestas que no vienen del ADR». Ya figura en la hoja de ruta. |
+| Antes de implementar | **Permiso para declarar `symfony/polyfill-intl-normalizer` en `composer.json`** (FR-023: la normalización a NFC). El paquete ya está en `composer.lock`, así que no baja uno nuevo, pero `composer require` consulta Packagist. |
 | Antes de implementar | **Origen de la lista de contraseñas bloqueadas** (Q2, opción A) y permiso para descargarla: `100k-most-used-passwords-NCSC.txt` de SecLists (github.com/danielmiessler/SecLists), 835 538 bytes. SecLists es MIT; el origen y la licencia de los datos del NCSC no se pudieron confirmar. |
 | Antes de verificar | **La prueba en navegador real (FR-050).** Playwright no está adoptado (`docs/agent-skills.md`: hasta que un ADR lo adopte, las specs nuevas no tienen dónde correr). Adoptarlo exige un ADR y permiso para descargar `@playwright/test` 1.63.0 (npm; con `playwright` y `playwright-core`, unos 18,6 MB desempaquetados según `npm view`) y los navegadores, que se bajan aparte con `npx playwright install` (tamaño no medido). Si el épico del front adopta Playwright antes, C3a lo usa. Si no, se acepta la verificación manual declarada. |
 | Antes del despliegue público | **El texto del aviso de privacidad** y su versión inicial (§13.14): quién es el responsable de la base, si hay que inscribirla ante la AAIP y si hay alumnos menores de edad. C3a guarda sólo la versión aceptada. |

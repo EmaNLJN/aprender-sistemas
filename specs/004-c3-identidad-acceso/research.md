@@ -2,6 +2,8 @@
 
 **Input**: [spec.md](./spec.md) con su clarify del 2026-10-05, ADR 0006 y el código de `backend/api/` en `master` más el de C6. Cada decisión dice qué se eligió, por qué y qué se descartó. Las que la spec no fija y el plan completó están en la primera tabla, para que el coordinador las vea juntas.
 
+Las referencias «R1» a «R23» de este archivo son sus propias secciones. Los requisitos del ADR 0006 se citan como «R3 del ADR», y las decisiones, como D16 o D35.
+
 ## Cómo se verificó
 
 - **Qué se leyó.** El código de `backend/api/` de esta rama (`bootstrap/app.php`, `config/`, migraciones, tests, scripts, `docker/`); el de C6, de la rama `feat/c6-registros-tipados` (`afd00ac`) con `git show`, porque esta rama sólo tiene `master` en `0df5b07` y no trae el PR #17; y el ADR 0006 completo en lo que toca a C3a.
@@ -48,7 +50,7 @@
 
 **Enmienda pendiente del ADR 0006** (se registra en la hoja de ruta): D17 («Fortify sin vistas»), §4.2 (el pipeline con `Fortify::authenticateThrough`), §4.3 (`NewPasswordController`), la fila «Fortify» de la tabla de §4.9 y la fila C3 de §10 (`laravel/fortify` con permiso). §4.9 deja de decir que Fortify es nativo de la sesión: la sesión de Laravel no lo necesita.
 
-**Descartado.** Fortify 1.40.0 (15 paquetes: 2FA y passkeys, que R3 excluye) y 1.36.2 (5 paquetes: sigue trayendo 2FA y queda fuera de las versiones que se publican). D17 descartó «controladores propios para todo»; el usuario reabrió esa decisión, y la contrapartida está en el riesgo 5 de la spec y en el «Review Focus» del plan.
+**Descartado.** Fortify 1.40.0 (15 paquetes: 2FA y passkeys, que el R3 del ADR excluye) y 1.36.2 (5 paquetes: sigue trayendo 2FA y queda fuera de las versiones que se publican). D17 descartó «controladores propios para todo»; el usuario reabrió esa decisión, y la contrapartida está en el riesgo 5 de la spec y en el «Review Focus» del plan.
 
 ## R2. Sin Sanctum: el montaje de la sesión
 
@@ -97,7 +99,7 @@
 
 ## R5. Contraseñas
 
-- **Un solo punto de entrada para todo texto de contraseña.** Toda contraseña en claro entra a la aplicación como un `PlainPassword` (normalizado a NFC, con sus conteos en caracteres y en bytes), y sólo `AccountPasswords` llama a `Hash` y a `Auth::logoutOtherDevices`. El motivo: `logoutOtherDevices` vuelve a hashear lo que se le pase, y una cadena sin normalizar dejaría a la persona afuera en su próximo ingreso. Las rutas que lo ejercitan (ingreso, rehash al ingresar, aceptación, restablecimiento, cambio, confirmación y cerrar las otras sesiones) tienen cada una una prueba con la `á` descompuesta al fijar y compuesta al ingresar. Una prueba de arquitectura de Pest (`arch()`) exige que ninguna otra clase de `app/` use `Hash`.
+- **Un solo punto de entrada para todo texto de contraseña.** Toda contraseña en claro entra a la aplicación como un `PlainPassword` (normalizado a NFC, con sus conteos en caracteres y en bytes), y sólo `AccountPasswords` llama a `Hash` y a `Auth::logoutOtherDevices`. El motivo: `logoutOtherDevices` vuelve a hashear lo que se le pase, y una cadena sin normalizar dejaría a la persona afuera en su próximo ingreso. Las rutas que lo ejercitan (ingreso, aceptación, restablecimiento, cambio, confirmación y cerrar las otras sesiones) tienen cada una una prueba con la `á` descompuesta al fijar y compuesta al verificar. El ingreso no usa `Auth::attempt`: su rehash automático hashearía la cadena sin normalizar; hace `Auth::login`. Una prueba de arquitectura de Pest (`arch()`) exige que ninguna otra clase de `app/` use `Hash`.
 - **Política (FR-023).** De 15 a 64 caracteres y a lo sumo 72 bytes después de normalizar; sin reglas de composición. Se rechaza una contraseña que, sin distinguir mayúsculas, esté en la lista o contenga el email completo, la parte local del email (si tiene 4 caracteres o más) o el nombre completo (si tiene 4 caracteres o más). Los 4 caracteres evitan rechazar a quien se llama «Ana». Los motivos salen en español por campo.
 - **La lista (Q2).** `100k-most-used-passwords-NCSC.txt` de SecLists, filtrada a las entradas de 15 caracteres o más y guardada en minúsculas en `backend/api/resources/passwords/blocked-15plus.txt`, con un `SOURCE.md` que dice el origen, la fecha, el tamaño, la licencia (SecLists es MIT; la de los datos del NCSC está sin confirmar) y el comando del filtro. La descarga la hace el coordinador con permiso (T003). Las pruebas no dependen de ella: usan una lista de muestra propia. Qué fracción de la lista alcanza los 15 caracteres es una hipótesis que sólo se mide al bajarla; si resulta casi vacía, la política sigue valiendo (el mínimo de 15 es la defensa real) y se decide si se conserva.
 - **`Normalizer`.** La imagen sólo instala `pdo_mysql`. `Normalizer::normalize` existe por `symfony/polyfill-intl-normalizer` v1.43.0, que `composer.lock` ya trae como dependencia de `symfony/string`. El ADR 0006 §4.7 pide declararlo si se usa directo: T002 lo agrega a `composer.json` con `composer require --no-install --no-scripts 'symfony/polyfill-intl-normalizer:^1.43'`. No suma un paquete al lock, pero la resolución consulta Packagist: necesita el permiso del usuario.
@@ -111,7 +113,7 @@
 1. Canonicaliza el email (`Email::canonical`: recorte y `mb_strtolower`) y calcula la clave `sha256(email)` y la red (`NetworkKey`: la IPv4, o el /64 de una IPv6).
 2. `LoginThrottle`: más de 5 intentos por minuto por email y red, o 60 por red, es 429. Cuenta todo intento que llega. Un ingreso correcto limpia el contador de email y red.
 3. Busca la cuenta por email (una consulta, exista o no).
-4. **Dispositivo.** `DeviceCookie` lee la cookie `taller-device`: es válida si descifra, trae `{uid, did}`, `uid` es la cuenta de este email y el dispositivo no sumó 10 fallos seguidos. Un dispositivo válido se limita a 5 fallos por minuto (429) y se salta el bloqueo por cuenta. Cualquier otro pasa por `AccountLockout`.
+4. **Dispositivo.** `DeviceCookie` lee la cookie de dispositivo (`taller.device_cookie.name`, por omisión `taller-device`): es válida si descifra, trae `{uid, did}`, `uid` es la cuenta de este email y el dispositivo no sumó 10 fallos seguidos. Un dispositivo válido se limita a 5 fallos por minuto (429) y se salta el bloqueo por cuenta. Cualquier otro pasa por `AccountLockout`.
 5. **Bloqueo por cuenta** (`AccountLockout`, clave por email canónico exista o no la cuenta): desde el 10.º fallo seguido de dispositivos desconocidos, bloqueado `min(900, 60 × 2^(fallos − 10))` segundos; con 100 o más, hasta restablecer. Un intento bloqueado responde 429 sin evaluar la contraseña y no suma un fallo.
 6. **Verifica dentro de un `Timebox` de 200 ms**: `AccountPasswords::verifyOrDummy`, con un hash ficticio del mismo costo (se genera una vez por proceso con `Hash::make`, así que usa las rondas configuradas) cuando la cuenta no existe.
 7. Un fallo (cuenta inexistente, contraseña equivocada o cuenta `deleting`) suma al contador del dispositivo si lo había, o al de la cuenta si no, y responde 422 `auth_failed`. Una cuenta `disabled` con la contraseña correcta responde 403 sin tocar los contadores.
@@ -123,7 +125,7 @@
 
 **Su nombre y sus atributos salen de la configuración** (`taller.device_cookie`: `name`, `secure`, `same_site` y `days`), no de `APP_ENV`. El diseño cumple de antemano las reglas del prefijo `__Host-`: ruta `/`, sin `Domain` y, cuando el nombre lo lleva, `Secure`. Con C4 (TLS) alcanza con `DEVICE_COOKIE_NAME=__Host-taller-device` y `DEVICE_COOKIE_SECURE=true`. Un nombre con ese prefijo sin `Secure` es una configuración que el navegador descartaría sin avisar, y sin la cookie el titular pierde su exención del bloqueo: `DeviceCookie` lanza una `LogicException` al crearse en ese caso, para que falle en voz alta. La cookie de sesión ya es configurable por `SESSION_COOKIE` y `SESSION_SECURE_COOKIE`, y la de recuerdo la nombra Laravel.
 
-**Descartado.** Contar todos los fallos contra la cuenta (deja afuera al titular); una tabla de dispositivos (R5 la excluye).
+**Descartado.** Contar todos los fallos contra la cuenta (deja afuera al titular); una tabla de dispositivos (el R5 del ADR, sin auditoría de logins, la excluye).
 
 ## R7. Cuenta esperada, CSRF y cómo se prueban
 
@@ -178,7 +180,7 @@
 
 - **Consulta.** `performance_schema.events_transactions_current` tiene una fila por hilo con su última transacción: `STATE` es `ACTIVE` mientras no termina, y para un evento sin terminar `TIMER_WAIT` es el tiempo transcurrido en picosegundos. El umbral de 30 segundos son 3 × 10¹³. Un `COMMITTED` conserva su duración final, así que hay que filtrar por `ACTIVE`.
 - **Falla cerrado, de tres maneras.** El error 1142 (falta el privilegio) detiene con el mensaje que dice cómo aplicarlo. Cualquier otro error de la consulta detiene. Y el chequeo se **autoverifica**: abre una transacción propia y exige verse como `ACTIVE`; si el consumidor o el instrumento están apagados, o el usuario no ve la tabla, no se ve y falla (`performance_schema` vacío no pasa por «no hay transacciones»).
-- **Privilegio mínimo.** `GRANT SELECT` sobre esa tabla y nada más. Con `information_schema.INNODB_TRX` haría falta `PROCESS`, un privilegio global; una prueba del criterio J muestra que un usuario sin `PROCESS` ve cero filas ahí y sí ve la transacción en `performance_schema`.
+- **Privilegio mínimo.** `GRANT SELECT` sobre esa tabla y nada más. Con `information_schema.INNODB_TRX` haría falta `PROCESS`, un privilegio global; una prueba del criterio J muestra que un usuario sin `PROCESS` no ve la transacción ahí (error o cero filas) y sí la ve en `performance_schema`.
 - **Dónde corre.** Dentro de `docker/migrate.sh`, una vez, antes del ciclo de reintentos (`php artisan taller:check-transactions || exit $?`). Así protege a `deploy.sh` y a un `docker compose up`, no se reintenta (es una decisión, no un bloqueo) y `MigrateScriptTest` lo prueba con el `php` falso. El costo es que todos los escenarios de esa prueba suman una llamada al principio.
 - **El criterio J** (FR-042): su texto original no está en el repositorio. Se interpreta como la prueba de FR-042: un usuario de MySQL creado por la prueba, sin `PROCESS` y con sólo ese `SELECT`, detecta una transacción abierta de otra conexión (con el umbral reducido a 1 segundo), y sin el privilegio el chequeo falla cerrado. La prueba va en la suite `Content` (`DatabaseTruncation`), porque la transacción que envuelve a una prueba de `Feature` se vería a sí misma como una transacción larga.
 - **`deploy-check.sh`.** El sostenedor de ese script (`LOCK TABLES … ; SELECT SLEEP(180)`) no abre una transacción de InnoDB, y el chequeo corre en los primeros segundos del despliegue; el plan verifica que el escenario siga dando «migrate reintentó 3 veces» y lo ajusta si no.
@@ -205,7 +207,7 @@
 - **Contexto.** `RequestContext` (un procesador de Monolog) agrega `request_id`, `ip` y `user_id`. No consulta la base: lee lo que el middleware dejó en el pedido.
 - **Sin secretos.** `SecretScrubber` (otro procesador) reemplaza, en el mensaje y en el contexto: el ID de la sesión actual, todo email por su HMAC, el valor de las claves `password`, `token`, `secret`, `authorization` y `cookie`, y los fragmentos `invitacion=` y `restablecer=`. El motivo no es teórico: el mensaje de una `QueryException` incluye el SQL con los valores ya sustituidos, y una consulta de `sessions` lleva el ID de la sesión y una de `users`, el email.
 - **HMAC.** `EmailFingerprint::of(email)` es `hash_hmac('sha256', canónico, LOG_HMAC_KEY)` recortado a 16 hexadecimales; sin clave configurada lanza una excepción (en producción, el arranque falla) y el ancla de pruebas la fija.
-- **Qué se registra.** La aceptación de una invitación (id de quien invitó e id de la cuenta), el escalón del bloqueo por cuenta (HMAC, IP y fallos) y los errores no esperados. No hay registro de cada ingreso: R5 descarta la auditoría de logins.
+- **Qué se registra.** La aceptación de una invitación (id de quien invitó e id de la cuenta), el escalón del bloqueo por cuenta (HMAC, IP y fallos) y los errores no esperados. No hay registro de cada ingreso: el R5 del ADR descarta la auditoría de logins.
 
 ## R16. Los checks autenticados (FR-046)
 
