@@ -90,7 +90,7 @@ Quien opera el taller corre el import, o lo corre el despliegue, y el contenido 
 6. **Dado** un import en curso, **cuando** se lanza otro, **entonces** el segundo no corre, lo informa y sale con error.
 7. **Dado** un cambio deliberado del formato de las porciones, hecho a la vez en el generador y en el código que las arma, sobre el mismo contenido, **cuando** se importa, **entonces** el auto-chequeo pasa, no se escribe ninguna tabla de contenido, se registra un import nuevo (cambiaron las huellas de porción) y cambian los validadores.
 
-*Cubre: FR-001 a FR-012, FR-039 y FR-041; SC-002, SC-003 y SC-005.*
+*Cubre: FR-001 a FR-012, FR-039, FR-041 y FR-048; SC-002, SC-003 y SC-005.*
 
 ---
 
@@ -265,7 +265,7 @@ Quien opera el taller necesita que aplicar migraciones e importar contenido nunc
 - **FR-033**: El servicio de migraciones DEBE correr el import después de las migraciones. *(§7)*
 - **FR-034**: Si las migraciones o el import fallan, el servicio web NO DEBE arrancar ni recrearse: el que ya atendía sigue sirviendo el último contenido. *(§13.11; Clarifications, Q5)*
 - **FR-035**: Cada intento de migración o de import DEBE fallar en 5 segundos o menos, con un mensaje claro, cuando no consigue un bloqueo; el servicio de migraciones reintenta hasta 3 veces con espera creciente, sólo ante un bloqueo, y si no lo consigue, aborta. Esa espera acotada vale sólo para el servicio de migraciones, no para la API. *(D35; Clarifications, sesión 2026-10-05)*
-- **FR-036** *(movido a C3)*: El chequeo previo de transacciones abiertas hace más de 30 segundos pasa a C3, junto con `db-grants`: necesita un privilegio de la base que el usuario de la aplicación no tiene y, mientras no haya tablas de usuarios con tráfico, no protege nada. *(D35; Clarifications, sesión 2026-10-05)*
+- **FR-036** *(movido a C3)*: El chequeo previo de transacciones abiertas hace más de 30 segundos pasa a C3, junto con `db-grants` y su prueba de privilegios con un usuario restringido: necesita un privilegio de la base que el usuario de la aplicación no tiene y, mientras no haya tablas de usuarios con tráfico, no protege nada. *(D35; Clarifications, sesión 2026-10-05)*
 - **FR-037**: El commit de origen del contenido (`CONTENT_SOURCE_COMMIT`) DEBE llegar al generador como argumento de construcción de la imagen; si falta, queda nulo y el import lo avisa, y un valor mal formado hace fallar la construcción. `APP_BUILD` queda fuera de C2: C3 lo suma como `appBuild` opaco si lo necesita. *(§10, §13.11; Clarifications, Q3 y Q6)*
 
 **Verificación** (pruebas que el cambio DEBE traer, antes de la implementación, según la constitución II)
@@ -273,13 +273,14 @@ Quien opera el taller necesita que aplicar migraciones e importar contenido nunc
 - **FR-038**: Una prueba de contrato DEBE comparar el sha256 del cuerpo de cada una de las 17 porciones y de cada ejercicio con su huella del meta del generador (`portions` y `contentHash`), y su contenido con su parte del documento, sensible al orden de claves. *(D10, §8)*
 - **FR-039**: Las pruebas del import DEBEN cubrir: idempotencia; retiro sin borrado; reactivación; rechazo de un `test_key` reutilizado, de un índice v1 cambiado o repetido y de un par documento y meta inconsistente; `--dry-run` sin escrituras; atomicidad ante un auto-chequeo fallido (con un códec roto o un hash adulterado, la base queda igual); un cambio de código que altera bytes con el mismo documento hace fallar el import; un formato nuevo con el mismo contenido registra un import sin escribir tablas; y que la caché de cuerpos queda con los 17 cuerpos y sin las claves reemplazadas. *(D12, D14)*
 - **FR-040**: Las pruebas de HTTP DEBEN cubrir: 200; 304 con validador fuerte y débil; `Content-Version` en 200 y 304; 404, 410, 422 y 503 (`content_not_imported` y `maintenance`); y la caché de cuerpos vacía o adulterada. La compresión de Nginx se cubre en FR-047. *(D11, D15)*
-- **FR-041**: Una prueba de esquema DEBE verificar las reglas de tabla que el ADR fija para el contenido (motor y colación, restricciones nombradas y su comportamiento, sólo la clave primaria como índice único, y referencias que impiden borrar). *(§5.1, §8)*
-- **FR-042**: Una prueba de migración DEBE comprobar que, con una transacción abierta en paralelo, una migración falla en 5 segundos o menos en lugar de colgarse, y que el servicio de migraciones reintenta sólo ante un bloqueo. *(§8, D35)*
+- **FR-041**: Una prueba de esquema DEBE verificar las reglas de tabla que el ADR fija para el contenido (motor y colación, restricciones nombradas y su comportamiento, sólo la clave primaria como índice único, y referencias que impiden borrar), y una prueba de conexión, que la base trabaja en UTC y que los upserts usan alias de fila. *(§5.1, §8)*
+- **FR-042**: Una prueba de migración DEBE comprobar que, con una transacción abierta en paralelo, una migración falla en 5 segundos o menos en lugar de colgarse, que el servicio de migraciones reintenta sólo ante un bloqueo, y que `migrate`, `rollback` y `migrate` dejan el mismo esquema. *(§8, D35)*
 - **FR-043**: Las pruebas de la API DEBEN correr con Pest contra MySQL 9.7 real (`npm run api:test`), y los checks TypeScript de `npm test` DEBEN seguir en verde. *(constitución II, `api/AGENTS.md`)*
 - **FR-044**: Antes de servir o guardar un cuerpo armado desde las tablas, la API DEBE verificar que su sha256 sea el del último import; si no coincide, no lo sirve: lo deja en el registro y responde 503 `maintenance` con `Retry-After`. *(D11; Clarifications, Q3)*
 - **FR-045**: La imagen de la API DEBE traer `curriculum.json` y su meta generados en su construcción con el mismo generador que el front, de modo que `docker compose up --build` siga siendo un solo paso y sólo TypeScript lea el YAML. *(§10; ADR 0004 §2)*
 - **FR-046**: Una prueba de despliegue DEBE comprobar que, si las migraciones o el import fallan, el servicio web no se recrea y el anterior sigue sirviendo. *(§13.11; Clarifications, Q3)*
 - **FR-047**: Un check contra el stack levantado (`npm run api:content:check`, fuera de `npm test`, como `api:smoke`) DEBE comprobar, a través de Nginx: las 17 porciones con y sin compresión, con su `ETag`, su `Content-Version` y su `Cache-Control`; el 304 con el validador fuerte y con el débil; y que clientes lentos reciben las porciones más grandes completas, sin `No space left on device` en el registro de Nginx. *(D11, §8)*
+- **FR-048**: Una prueba de esquema DEBE medir, contra la imagen de MySQL fijada, los cuatro casos de D07 (ampliar un ENUM al final; agregar una columna a una tabla con un CHECK sobre DATETIME; agregar una columna con CHECK; agregar una clave foránea a una tabla con filas) y dejar fijado el resultado, para que B2 sepa en qué tablas que crecen puede ir un CHECK sobre DATETIME. *(D07, §8)*
 
 ### Key Entities *(include if feature involves data)*
 
