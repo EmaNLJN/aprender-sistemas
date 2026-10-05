@@ -210,8 +210,10 @@ it('responds 404 to an exercise that does not exist, and to a malformed ID witho
 
     $this->get('/api/exercises/rust-999')->assertNotFound()->assertJson(['code' => 'not_found']);
     $malformed = [];
-    foreach (['RUST-01', 'rust 01', str_repeat('a', 65), '-rust', "rust-01\n"] as $id) {
-        $queries = ContentDatabase::queriesDuring(fn () => $this->get('/api/exercises/'.rawurlencode($id))->assertNotFound());
+    foreach (['RUST-01', 'rust 01', str_repeat('a', 65), '-rust', "rust-01\n", 'rust/01', '../rust-01'] as $id) {
+        $queries = ContentDatabase::queriesDuring(fn () => $this->get('/api/exercises/'.rawurlencode($id))
+            ->assertNotFound()
+            ->assertJson(['code' => 'not_found']));
         if ($queries !== []) {
             $malformed[] = $id;
         }
