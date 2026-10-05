@@ -11,7 +11,16 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 
+/**
+ * Larastan reads columns from Schema calls only, and these come from raw DDL.
+ *
+ * @property Role $role
+ * @property AccountStatus $status
+ * @property string|null $privacy_version
+ * @property Carbon|null $privacy_accepted_at
+ */
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail

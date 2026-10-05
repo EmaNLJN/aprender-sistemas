@@ -18,17 +18,16 @@ final readonly class PublishedUser
     public static function from(User $user): self
     {
         $id = $user->getKey();
-        $role = $user->getAttributes()['role'] ?? null;
 
-        if (! is_int($id) || ! is_string($role)) {
-            throw new LogicException('A published user needs an integer id and a role.');
+        if (! is_int($id)) {
+            throw new LogicException('A published user needs an integer id.');
         }
 
         return new self(
             $id,
-            (string) $user->name,
-            (string) $user->email,
-            $role,
+            $user->name,
+            $user->email,
+            $user->role->value,
             (new PrivacyNotice)->acceptedBy($user),
         );
     }
