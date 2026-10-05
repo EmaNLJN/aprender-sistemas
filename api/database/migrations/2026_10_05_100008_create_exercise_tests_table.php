@@ -1,0 +1,40 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+// exercise_tests (ADR 0006 §5.1, C2): un único CREATE TABLE con sus índices, claves foráneas y CHECK en
+// línea (D35). Su DDL es el de specs/001-c2-contenido-mysql/data-model.md.
+return new class extends Migration
+{
+    public function up(): void
+    {
+        DB::statement(<<<'SQL'
+            CREATE TABLE `exercise_tests` (
+              `exercise_id` VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+              `test_key` VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+              `position` TINYINT UNSIGNED NULL,
+              `label` VARCHAR(255) NOT NULL,
+              `expression` TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_bin NOT NULL,
+              `why` TEXT NOT NULL,
+              `failure` TEXT NOT NULL,
+              `key_order` VARCHAR(1024) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+              `status` ENUM('active','deprecated') CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT 'active',
+              `retired_at` DATETIME(3) NULL,
+              `created_at` DATETIME(3) NOT NULL,
+              `updated_at` DATETIME(3) NOT NULL,
+              PRIMARY KEY (`exercise_id`, `test_key`),
+              CONSTRAINT `exercise_tests_exercise_id_foreign` FOREIGN KEY (`exercise_id`) REFERENCES `exercises` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+              CONSTRAINT `exercise_tests_lifecycle_check` CHECK ((`status` = 'active') = (`retired_at` IS NULL)),
+              CONSTRAINT `exercise_tests_position_check` CHECK ((`status` = 'active') = (`position` IS NOT NULL)),
+              CONSTRAINT `exercise_tests_json_check` CHECK (JSON_VALID(`key_order`))
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_es_0900_ai_ci
+            SQL);
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('exercise_tests');
+    }
+};
