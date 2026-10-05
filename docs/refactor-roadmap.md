@@ -162,13 +162,16 @@ posición de la entrada.
 | P7 | Correcciones de integridad con TDD y almacén versionado común. | Sonnet + revisión Opus | Pruebas nuevas que fallan antes y pasan después. |
 | P8 | Port a TS: runner, motores, efectos y kits; luego datos con IDs explícitos; luego `defineModel` y partición de los dominios de Sistemas. | Sonnet | Oráculo, auditoría de runtime y suite. |
 | P9 | Integridad antes de sincronizar, a partir de una revisión adversarial del ADR 0003: respaldos en ranuras, detección de pérdida, sin escrituras al cargar ni al renderizar, fusión entre pestañas, importación en dos fases, regla única de aprobación y respaldos descargables en Método. | Sonnet + revisión Opus | Pruebas que fallan antes; fixtures congeladas con progreso real de master. |
-| Después | Backend Laravel + MySQL según el ADR 0004 (contenido y progreso en tablas, sincronización); vistas a React (biblioteca, proyecto y método; Sistemas; campaña; laboratorio; recorrido; shell) y la sesión «Esenciales». | — | Un ADR por decisión; criterios de aceptación del ADR 0004. |
+| Después | Backend Laravel + MySQL según el ADR 0004 (contenido y progreso en tablas, sincronización): [hoja de ruta del backend](../specs/backend-multiusuario/roadmap.md). Vistas a React (biblioteca, proyecto, Sistemas, campaña, laboratorio, método, recorrido y shell): [hoja de ruta del front](../specs/front-react/roadmap.md), de F1 a F11. Sesión «Esenciales»: E1 del backend. | — | Un ADR por decisión; criterios de aceptación de cada hoja de ruta. |
 
 ## Riesgos
 
-- **Tamaño del documento autónomo:** 2,04 MB frente al límite de 2,5 MB de `qa/build-check`.
-  El ADR 0004 saca del bundle unos 1,07 MB de contenido, que pasa a servir la API; hasta
-  entonces la sesión «Esenciales» no entra.
+- **Tamaño del documento autónomo:** después de A1 el HTML pesa 2 202 074 bytes, unos 2,2 MB,
+  frente al límite de 2 500 000 de `qa/build-check`: quedan unos 300 KB de margen. La cifra de
+  2,04 MB era la de antes de A1. El check compara `html.length`, que cuenta caracteres y no
+  bytes, así que el margen real es algo mayor. A2 saca del HTML unos 1,07 MB de contenido, que
+  pasa a servir la API, y el tamaño deja de restringir. Hasta entonces cada dependencia de
+  runtime nueva se mide antes de entrar y la sesión «Esenciales» (E1) no entra.
 - **Orden de evaluación:** varios módulos leen globals al cargarse; cualquier adaptador nuevo
   ocupa la posición exacta del archivo que reemplaza.
 - **IDs y formato del progreso:** son contrato del currículo y del progreso guardado.
