@@ -10,7 +10,7 @@ Sync Impact Report
 - Secciones agregadas: «Épicos y hojas de ruta» (1.4.0).
 - Secciones modificadas: «Flujo de trabajo y verificación», viñeta «Planificación con Spec Kit»
   (1.4.0: ahora cubre los dos épicos y remite a la sección nueva); la tabla de «Épicos y hojas de
-  ruta» (1.4.1: ya no marca el ADR 0008 como propuesta).
+  ruta» (1.4.1: ya no marca el ADR 0008 como propuesta y cuenta F1…F13).
 - Secciones eliminadas: ninguna.
 - Archivos que cambian en el mismo commit (1.4.1): AGENTS.md (los comandos de las pruebas del front,
   que llegan con F1), qa/AGENTS.md, docs/agent-skills.md y docs/adr/0008-pruebas-del-front.md.
@@ -134,7 +134,7 @@ recorre el flujo de Spec Kit de «Flujo de trabajo y verificación».
 | Épico | Hoja de ruta | Fuente técnica |
 | --- | --- | --- |
 | Backend multiusuario | `specs/backend-multiusuario/roadmap.md` (B1…E1, C5 y C6) | ADR 0004, 0005 y 0006 |
-| Port del front legacy a React | `specs/front-react/roadmap.md` (F1…F11) | ADR 0001, 0003, 0007 y 0008, `docs/architecture.md` y el mapa del front legacy |
+| Port del front legacy a React | `specs/front-react/roadmap.md` (F1…F13) | ADR 0001, 0003, 0007 y 0008, `docs/architecture.md` y el mapa del front legacy |
 
 - **Una hoja de ruta por épico, con las mismas convenciones:** los IDs no se renumeran ni se
   reutilizan, cada ítem tiene una spec en `specs/NNN-<id>-<nombre>/`, los estados van de
