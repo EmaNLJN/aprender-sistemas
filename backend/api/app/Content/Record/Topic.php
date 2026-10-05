@@ -2,7 +2,6 @@
 
 namespace App\Content\Record;
 
-/** The label of a topic, shared by the exercises of a language with the same `topicId`: a `topics` row. */
 final readonly class Topic
 {
     public function __construct(

@@ -4,7 +4,6 @@ namespace App\Content\Record;
 
 use stdClass;
 
-/** A test of an exercise: `tests[i]` of the document ↔ an `exercise_tests` row. */
 final readonly class ExerciseTest
 {
     public const KEYS = ['id', 'label', 'expression', 'why', 'failure'];

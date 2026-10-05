@@ -4,7 +4,6 @@ namespace App\Content\Record;
 
 use App\Content\InvalidContent;
 
-/** A hint of an exercise: `hints[i]` of the document ↔ an `exercise_hints` row. */
 final readonly class ExerciseHint
 {
     public function __construct(

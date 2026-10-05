@@ -4,7 +4,6 @@ namespace App\Content\Record;
 
 use stdClass;
 
-/** A source of the guide: `guide.sources[i]` of the document ↔ a `guide_sources` row. */
 final readonly class GuideSource
 {
     public const KEYS = ['title', 'url', 'note'];

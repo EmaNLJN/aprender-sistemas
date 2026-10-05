@@ -46,8 +46,6 @@ final readonly class Guide
     }
 
     /**
-     * A non-empty list of objects: what the document holds wherever a record has children.
-     *
      * @return list<stdClass>
      */
     public static function objectsAt(mixed $value, string $path): array

@@ -4,7 +4,6 @@ namespace App\Content\Record;
 
 use App\Content\InvalidContent;
 
-/** A catalog of the meta (`catalogs[i]`) ↔ a `catalogs` row. */
 final readonly class Catalog
 {
     public function __construct(

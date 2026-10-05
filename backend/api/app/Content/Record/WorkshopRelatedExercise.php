@@ -2,7 +2,6 @@
 
 namespace App\Content\Record;
 
-/** An exercise related to a workshop: a `workshop_related_exercises` row. */
 final readonly class WorkshopRelatedExercise
 {
     public function __construct(

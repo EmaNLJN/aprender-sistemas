@@ -4,7 +4,6 @@ namespace App\Content\Record;
 
 use LogicException;
 
-/** An exercise of a world: a `world_exercises` row. */
 final readonly class WorldExercise
 {
     public function __construct(

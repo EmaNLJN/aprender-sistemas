@@ -7,7 +7,6 @@ use App\Content\PublishedJson;
 use Illuminate\Support\Arr;
 use stdClass;
 
-/** A step of a module: `steps[i]` of the document ↔ a `guide_steps` row. */
 final readonly class GuideStep
 {
     public const KEYS = ['id', 'title', 'minutes', 'objective', 'task', 'doneWhen', 'quiz', 'resourceIds'];

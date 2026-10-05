@@ -4,7 +4,6 @@ namespace App\Content\Record;
 
 use stdClass;
 
-/** A module of a track: `modules[i]` of the document ↔ a `guide_modules` row. */
 final readonly class GuideModule
 {
     public const KEYS = ['id', 'title', 'subtitle', 'steps'];

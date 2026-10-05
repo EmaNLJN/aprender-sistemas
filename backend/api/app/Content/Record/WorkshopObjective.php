@@ -4,7 +4,6 @@ namespace App\Content\Record;
 
 use stdClass;
 
-/** An objective of a workshop: `objectives[i]` of the document ↔ a `workshop_objectives` row. */
 final readonly class WorkshopObjective
 {
     public const KEYS = ['id', 'label', 'why'];

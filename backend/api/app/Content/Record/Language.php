@@ -2,7 +2,6 @@
 
 namespace App\Content\Record;
 
-/** A language of the curriculum, which fixes the order of every per-language map ↔ a `languages` row. */
 final readonly class Language
 {
     public function __construct(

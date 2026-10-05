@@ -4,7 +4,6 @@ namespace App\Content\Record;
 
 use stdClass;
 
-/** A concept of the Atlas: `atlas.<language>[i]` of the document ↔ an `atlas_concepts` row. */
 final readonly class AtlasConcept
 {
     public const KEYS = ['id', 'level', 'category', 'title', 'summary', 'why', 'code', 'explanation', 'comparison', 'pitfall', 'quiz', 'labId', 'source', 'furtherSources'];

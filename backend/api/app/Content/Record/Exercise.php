@@ -6,10 +6,6 @@ use App\Content\InvalidContent;
 use Illuminate\Support\Arr;
 use stdClass;
 
-/**
- * An exercise: `lab.<language>[i]`, `quests.<language>[i]` or `cores.<domain>[i]` of the document
- * ↔ an `exercises` row, its `exercise_tests` and `exercise_hints`, and its topic (`topics`).
- */
 final readonly class Exercise
 {
     public const KEYS = ['id', 'language', 'topicId', 'stage', 'level', 'challengeType', 'kind', 'minutes', 'visual', 'title', 'intro', 'why', 'objective', 'transfer', 'starter', 'solution', 'imports', 'sources', 'instructions', 'review', 'prediction', 'topic', 'workshopId', 'tests', 'hints'];

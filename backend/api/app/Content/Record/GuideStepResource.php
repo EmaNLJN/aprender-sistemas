@@ -2,7 +2,6 @@
 
 namespace App\Content\Record;
 
-/** A resource a step points to: a `guide_step_resources` row. */
 final readonly class GuideStepResource
 {
     public function __construct(

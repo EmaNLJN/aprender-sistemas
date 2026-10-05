@@ -4,7 +4,6 @@ namespace App\Content\Record;
 
 use stdClass;
 
-/** The track of a language: `guide.tracks.<language>` of the document ↔ a `guide_tracks` row. */
 final readonly class GuideTrack
 {
     public const KEYS = ['title', 'description', 'modules'];
