@@ -27,6 +27,13 @@ function importContent(): void
     }
 }
 
+/** Asked from another connection: the lock is re-entrant, so the connection that took it cannot tell if it leaked. */
+function importLockIsFree(): bool
+{
+    return (int) DB::connectUsing('lock-probe', config('database.connections.mysql'), true)
+        ->scalar("select is_free_lock(concat(database(), ':content-import'))") === 1;
+}
+
 function importImageContent(): void
 {
     useContentAt(ContentFixture::imagePath());
@@ -52,7 +59,8 @@ it('imports the image content: the 21 tables, its record and the 274 grading ver
         ->and(json_decode($import->changes, true)['new'])->toHaveCount(274)
         ->and(DB::table('exercises')->where('status', 'active')->count())->toBe(274)
         // FR-032: lab, quests and cores have no position in the chain until Essentials arrives.
-        ->and(DB::table('catalogs')->pluck('chain_position', 'code')->all())->toBe(['cores' => null, 'lab' => null, 'quests' => null]);
+        ->and(DB::table('catalogs')->pluck('chain_position', 'code')->all())->toBe(['cores' => null, 'lab' => null, 'quests' => null])
+        ->and(importLockIsFree())->toBeTrue();
 });
 
 it('with the same content it writes nothing: migrate runs it on every up', function () {
@@ -171,7 +179,7 @@ it('a tampered hash in the meta fails the self-check and leaves nothing behind',
         ->expectsOutputToContain('La porción lab.rust armada desde las tablas no coincide con el hash de curriculum.meta.json')
         ->assertExitCode(1);
 
-    expect(array_sum(ContentDatabase::counts()))->toBe(0);
+    expect(array_sum(ContentDatabase::counts()))->toBe(0)->and(importLockIsFree())->toBeTrue();
 });
 
 it('a database error halfway through leaves nothing half-done and releases the lock', function () {
@@ -182,9 +190,35 @@ it('a database error halfway through leaves nothing half-done and releases the l
 
     expect(fn () => Artisan::call('content:import'))->toThrow(QueryException::class);
 
-    expect(array_sum(ContentDatabase::counts()))->toBe(0);
+    expect(array_sum(ContentDatabase::counts()))->toBe(0)->and(importLockIsFree())->toBeTrue();
     importImageContent();
     expect(DB::table('exercises')->count())->toBe(274);
+});
+
+it('a lock wait timeout surfaces the MySQL error, which migrate retries on, and leaves nothing half-done', function () {
+    importImageContent();
+    $fixture = ContentFixture::fromImage();
+    $id = $fixture->document->quests->go[0]->id;
+    $fixture->exercise($id)->intro .= ' (revisado)';
+    useContentAt($fixture->write());
+    $checksums = ContentDatabase::checksums();
+    $holder = DB::connectUsing('holder', config('database.connections.mysql'), true);
+    $holder->beginTransaction();
+    $holder->table('exercises')->where('id', $id)->lockForUpdate()->first();
+    DB::statement('set session innodb_lock_wait_timeout = 1');
+
+    $message = null;
+    try {
+        Artisan::call('content:import');
+    } catch (QueryException $error) {
+        $message = $error->getMessage();
+    }
+    $holder->rollBack();
+
+    expect($message)->toContain('General error: 1205')
+        ->and(ContentDatabase::checksums())->toBe($checksums)
+        ->and(importLockIsFree())->toBeTrue();
+    $this->artisan('content:import')->expectsOutputToContain('Importado el contenido')->assertExitCode(0);
 });
 
 it('only one import runs at a time: the second exits with an error instead of being skipped', function () {
