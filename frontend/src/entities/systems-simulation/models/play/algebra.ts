@@ -19,7 +19,6 @@ type AlgebraLog = ActionContext<AlgebraState, ModelWorkshop>['log'];
 
 interface Polynomial {
   name: string;
-  // Coefficients in increasing order of powers.
   coef: number[];
 }
 
@@ -80,7 +79,6 @@ const hornerOne: AlgebraHandler = (s, { log }) => {
   rememberStationary(s);
 };
 
-// Horner finishes in as many steps as there are coefficients; the longest polynomial has 4.
 const hornerAll: AlgebraHandler = (s, { log }) => {
   for (let i = 0; i < 4; i++) hornerStep(s, log);
   rememberStationary(s);
@@ -108,7 +106,6 @@ function axesShapes(): SceneShape[] {
   return shapes;
 }
 
-// 80 segments between x=-2 and x=2; the derivative is drawn after each stretch of P.
 function curveShapes(p: Polynomial, d: number[], derived: boolean): SceneShape[] {
   const shapes: SceneShape[] = [];
   for (let i = 0; i < 80; i++) {

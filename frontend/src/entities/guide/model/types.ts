@@ -1,6 +1,5 @@
 export type GuideLanguage = 'rust' | 'go';
 
-// `both` marks resources useful for both routes.
 export type GuideResourceLanguage = GuideLanguage | 'both';
 
 export type GuideResourceCategory = 'ejercicios' | 'lectura' | 'proyectos' | 'herramientas';

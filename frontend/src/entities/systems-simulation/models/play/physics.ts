@@ -6,7 +6,6 @@ import { circle, line, rect, scene, text } from './shapes';
 import { PLAY_LOG_LIMIT, achievedGoals, remember, type PlayHandler, type PlayState } from './state';
 
 type Point = [number, number];
-// [x, y, width, height]
 type Box = [number, number, number, number];
 type PhysicsPreset = 'brick' | 'wall' | 'touch';
 type PhysicsAction = 'preset' | 'step';
@@ -23,7 +22,6 @@ interface PhysicsState extends PlayState {
 }
 type PhysicsHandler = PlayHandler<PhysicsState>;
 
-// Candidate position and velocity of the step, before resolving collisions.
 interface Motion {
   x: number;
   y: number;
@@ -44,7 +42,6 @@ const PRESET_CONFIGS: Record<PhysicsPreset, [number, number, number, number]> = 
 const isPhysicsPreset = (value: string | undefined): value is PhysicsPreset =>
   value !== undefined && PRESET_NAMES.includes(value);
 
-// Region shared by two boxes, or null if they only touch or one has no area.
 function intersection(a: Box, b: Box): Box | null {
   if (a[2] <= 0 || a[3] <= 0 || b[2] <= 0 || b[3] <= 0) return null;
   const x = Math.max(a[0], b[0]);
@@ -78,7 +75,6 @@ const choosePreset: PhysicsHandler = (s, { value, log }) => {
   return log(physicsPreset(value, s.seen, s.log), 'Nueva escena: ' + value + '.');
 };
 
-// Walls reflect the position that went past the edge: x in [0, 19] and y in [0, 9].
 function reflectWalls(s: PhysicsState, motion: Motion): void {
   if (motion.x < 0 || motion.x > 19) {
     motion.x = motion.x < 0 ? -motion.x : 38 - motion.x;
@@ -94,7 +90,6 @@ function reflectWalls(s: PhysicsState, motion: Motion): void {
   }
 }
 
-// Decides from the previous position (`s.x`) whether the square entered from the side or from above/below.
 function resolveBrick(s: PhysicsState, motion: Motion): void {
   if (s.x + 1 <= BRICK[0] || s.x >= BRICK[0] + BRICK[2]) {
     motion.x = motion.vx > 0 ? BRICK[0] - 1 : BRICK[0] + BRICK[2];

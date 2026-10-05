@@ -12,8 +12,6 @@ export function cell(label: string, value: string | number, tone: CellTone = 'mu
   return { label, value: String(value), tone };
 }
 
-// Appends a message and keeps only the last `limit` entries. Accepts a missing log
-// because play tolerates it; the result is always a new array.
 export function appendLog(
   log: readonly string[] | undefined,
   message: string,

@@ -48,7 +48,6 @@ const invalidate: LowlevelHandler<TlbState> = (s, { log }) => {
   log(s, 'Invalidamos VPN 0 en esta TLB. El próximo acceso deberá consultar otra vez la tabla.');
 };
 
-// Returns the frame the TLB uses for this read: the cached one or, after a miss, the page table's.
 function lookup(s: TlbState, log: (message: string) => void): number {
   if (s.cachedFrame === null) {
     s.misses++;

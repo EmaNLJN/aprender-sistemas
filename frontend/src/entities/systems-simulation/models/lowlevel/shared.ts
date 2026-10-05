@@ -2,8 +2,6 @@ import type { ActionContext, ActionHandler, SimulationState } from '../../model/
 import type { ModelWorkshop } from '../../model/types';
 import { button } from '../../lib/view-builders';
 
-// Common state of the eight lowlevel models: the observed goals (`flags`, only those
-// that are true) and the log. Each model narrows its goal ids with a union.
 export interface LowlevelState<Flag extends string> extends SimulationState {
   flags: Partial<Record<Flag, boolean>>;
 }
@@ -22,7 +20,6 @@ export function baseState<Flag extends string>(): LowlevelState<Flag> {
   return { flags: {}, log: [] };
 }
 
-// Achieved goals are the true flags, in the order they were observed.
 export function achievedFlags(state: LowlevelState<string>): string[] {
   return Object.keys(state.flags).filter((id) => state.flags[id]);
 }

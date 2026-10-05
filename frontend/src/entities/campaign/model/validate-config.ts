@@ -44,7 +44,6 @@ function validateExercises(rawExercises: unknown[]): Map<string, CampaignExercis
   return exercises;
 }
 
-// Accepts a flat list of worlds (grouped by language) or one object per language.
 function groupWorldsByLanguage(worlds: unknown): Raw {
   if (!Array.isArray(worlds)) {
     if (!isPlainObject(worlds)) throw new Error('Faltan los mundos de la campaña.');
@@ -130,7 +129,6 @@ function validateLanguageWorlds(
   return validated;
 }
 
-// Validates everything in local variables: `init` replaces the catalog only if nothing failed.
 export function validateCampaignConfig(config: unknown): CampaignCatalog {
   if (!isPlainObject(config) || !Array.isArray(config.exercises))
     throw new Error('Faltan los ejercicios de la campaña.');

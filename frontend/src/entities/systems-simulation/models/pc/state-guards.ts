@@ -1,7 +1,6 @@
 import { cloneJson } from '../../../../shared/lib/clone-json';
 import type { DataInstruction, PageEntry, PcState, TimerTrap } from './types';
 
-// The phases of an in-flight instruction assume these fields; a missing one is a corrupt state.
 function required<T>(value: T | null | undefined, name: string): T {
   if (value === null || value === undefined)
     throw new Error(`Estado de PC inconsistente: falta ${name}`);

@@ -1,5 +1,3 @@
-// Catalogs come from content/ (YAML and code) through build/curriculum.json, which
-// tools/content/build-curriculum.ts generates before `npm run typecheck` and `npm run dev`.
 import curriculum from '../../../../build/curriculum.json';
 import type { CampaignWorldDefinition } from '../../entities/campaign';
 import type { Exercise } from '../../entities/exercise';

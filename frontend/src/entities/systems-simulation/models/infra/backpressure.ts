@@ -63,7 +63,6 @@ const produce: BackpressureHandler = (s, ctx) => {
   else admitTask(s, ctx, s.pending);
 };
 
-// Returns false if the worker had nothing to do.
 function takeNextTask(s: BackpressureState, ctx: BackpressureContext): boolean {
   const id = s.queue.shift();
   if (id === undefined) {

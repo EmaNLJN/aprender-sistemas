@@ -1,6 +1,3 @@
-// Colors of the play scenes. Shares five hex values with the pc palette
-// (background, ink, green, gold and the `grid` line, which pc calls `muted`) but each domain
-// keeps its own: `muted` names different colors and the others do not match.
 export const PLAY_PALETTE = {
   background: '#14271f',
   grid: '#355044',

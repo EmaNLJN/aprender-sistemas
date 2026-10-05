@@ -68,7 +68,6 @@ async function parseBody(
   return parseResponse(language, data);
 }
 
-// Never rejects: every failure comes back as RunFailure with its errorType.
 export async function runCode(input: RunInput): Promise<RunResult> {
   const valid = validateInput(input);
   if ('errorType' in valid) return valid;

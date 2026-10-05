@@ -1,8 +1,6 @@
 import type { ActionContext, ActionHandler, SimulationState } from '../../model/define-model';
 import type { ModelView, ModelWorkshop } from '../../model/types';
 
-// The eight infrastructure models share base state, an 8-message log and
-// a view that adds the log and the explanation to each model's own description.
 export const INFRA_LOG_LIMIT = 8;
 
 const INTRO_NOTICE = 'Elegí una acción y observá qué garantía cambia.';

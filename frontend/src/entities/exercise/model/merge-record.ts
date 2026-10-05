@@ -22,13 +22,10 @@ interface ExpectedTest {
   id: string;
 }
 
-// Evidence is measured against the exercise's expected tests, not against the ones the
-// result carries: a result with `tests: []` proves nothing.
 function resultProves(record: LabRecord, expectedTests: readonly ExpectedTest[]): boolean {
   return hasPassingEvidence(record.result, expectedTests);
 }
 
-// Valid resolution date: only positive values count.
 function isSolvedAt(value: unknown): value is number {
   return typeof value === 'number' && value > 0;
 }

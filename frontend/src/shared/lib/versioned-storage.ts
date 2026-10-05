@@ -1,5 +1,3 @@
-// Versioned reads and writes of the progress keys. Knows no business rules: each store
-// provides `blank` and `parse`. See docs/adr/0003-integridad-del-progreso.md.
 import { isLosslessNormalization } from './is-lossless-normalization';
 
 export type StorageStatus = 'empty' | 'loaded' | 'unreadable' | 'unavailable';
@@ -26,12 +24,7 @@ export function backupKeysFor(key: string): string[] {
 
 export interface VersionedStoreOptions<T> {
   blank: () => T;
-  // Returns the normalized state and how many records it dropped; throws if the shape or
-  // version is not recognized.
   parse: (raw: unknown) => ParsedState<T>;
-  // Merges what another tab saved with the local state. Used only if the key changed since
-  // this store's last read or write. May return `local` modified in place. If missing, the
-  // local state wins.
   merge?: (stored: T, local: T) => T;
   storage?: StorageLike;
 }
@@ -39,10 +32,10 @@ export interface VersionedStoreOptions<T> {
 export interface LoadResult<T> {
   status: StorageStatus;
   state: T;
-  dropped: number; // whole records dropped by parse
-  lossy: boolean; // dropped > 0 or normalization removed or changed data
-  backupKey: string | null; // slot holding the original text when the load degraded and the copy was secured
-  writable: boolean; // false if there is no storage, or if the load degraded without a secured copy
+  dropped: number;
+  lossy: boolean;
+  backupKey: string | null;
+  writable: boolean;
 }
 
 export interface WriteResult<T> {
@@ -81,9 +74,6 @@ function readItem(storage: StorageLike, key: string): { available: boolean; text
   }
 }
 
-// Secures a copy of `text` in a slot and returns its key, or null if there is no room.
-// Reuses the slot that already holds exactly that text; otherwise uses the first empty one.
-// Never overwrites another slot, and a storage failure counts as having no copy.
 function secureBackup(storage: StorageLike, key: string, text: string): string | null {
   try {
     let firstEmpty: string | null = null;
@@ -101,7 +91,7 @@ function secureBackup(storage: StorageLike, key: string, text: string): string |
 }
 
 interface InspectedText<T> {
-  parsed: ParsedState<T> | null; // null if the text is not JSON or parse rejected it
+  parsed: ParsedState<T> | null;
   lossy: boolean;
 }
 
@@ -122,7 +112,6 @@ export function openVersionedStore<T>(
   options: VersionedStoreOptions<T>,
 ): VersionedStore<T> {
   const storage = resolveStorage(options.storage);
-  // Last text read or written by this store; null if the key did not exist.
   let lastText: string | null = null;
   let writable = storage !== null;
 
@@ -157,17 +146,14 @@ export function openVersionedStore<T>(
     return result('loaded', parsed.state, { dropped: parsed.dropped, lossy, backupKey, writable });
   }
 
-  // State to write when another tab changed the key, or null if it cannot be written.
   function reconcile(state: T, current: string | null, target: StorageLike): T | null {
     if (current === null) return state;
     const { parsed, lossy } = inspectText(current, options.parse);
     if (parsed && !lossy) return options.merge ? options.merge(parsed.state, state) : state;
-    // Unreadable or lossy text: the original copy is secured before overwriting it.
     if (secureBackup(target, key, current) === null) {
       writable = false;
       return null;
     }
-    // If readable, even with loss, what this version recognizes is rescued.
     if (parsed && options.merge) return options.merge(parsed.state, state);
     return state;
   }
@@ -193,7 +179,6 @@ export function openVersionedStore<T>(
   }
 
   function remove(): boolean {
-    // Without storage there is nothing to delete.
     if (!storage) return true;
     let allRemoved = true;
     let mainKeyRemoved = true;
@@ -231,8 +216,6 @@ export function openVersionedStore<T>(
   };
 }
 
-// Warning for the student depending on the load. `area` names the progress («del recorrido»,
-// «de campaña»…). Blocked storage is reported by the shell, so it yields ''.
 export function describeLoadResult(
   result: Pick<LoadResult<unknown>, 'status' | 'dropped' | 'lossy' | 'backupKey'>,
   area: string,

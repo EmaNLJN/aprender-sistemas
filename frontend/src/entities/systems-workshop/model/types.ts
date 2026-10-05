@@ -6,7 +6,6 @@ export interface SystemsTest {
   id: string;
 }
 
-// Programmable core of a workshop: the Rust/Go exercise whose approval seals the code.
 export interface SystemsExercise {
   id: string;
   language: SystemsLanguage;
@@ -18,15 +17,12 @@ export interface WorkshopObjective {
   [content: string]: unknown;
 }
 
-// `explanation` is guaranteed by the catalog (qa/systems-check), not by `init`.
 export interface WorkshopPrediction {
   options: string[];
   answer: number;
   explanation: string;
 }
 
-// Workshop as delivered by the catalog. The engine validates only the typed fields here;
-// the rest of the content (title, level, interactive model…) is kept uninterpreted.
 export interface SystemsWorkshop {
   id: string;
   model: string;
@@ -43,7 +39,6 @@ export interface SystemsConfig {
   exercises: SystemsExercise[];
 }
 
-// Catalog validated by `init`; progress is interpreted against it.
 export interface SystemsCatalog {
   workshops: Map<string, SystemsWorkshop>;
   exercises: Map<string, SystemsExercise>;
@@ -85,15 +80,11 @@ export interface SystemsInitResult {
   loadWarning: string;
 }
 
-// `changed`: in `syncLab`, there were unsaved changes and persisting was attempted; in
-// `refreshFromLab`, something changed in memory.
 export interface SystemsSyncResult {
   changed: boolean;
   storageAvailable: boolean;
 }
 
-// Import planned without side effects: `state` is the resulting progress and `lossy` warns
-// that sanitizing dropped or changed data from the copy.
 export interface SystemsImportPlan {
   state: SystemsStateV1;
   lossy: boolean;
@@ -112,9 +103,7 @@ export interface SystemsEngine {
   get(id: string, language: string): WorkshopView;
   observe(id: string, language: string, goals: unknown): ObserveResult;
   answer(id: string, language: string, index: number): AnswerResult;
-  // Seals in memory with lab evidence and never writes. Used by renders.
   refreshFromLab(lab?: unknown): SystemsSyncResult;
-  // Seals and saves what is pending. Used by student actions.
   syncLab(lab?: unknown): SystemsSyncResult;
   planImport(raw: unknown): SystemsImportPlan;
   applyImport(plan: SystemsImportPlan): SystemsSyncResult;

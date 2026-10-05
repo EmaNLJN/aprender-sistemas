@@ -1,4 +1,3 @@
-// Escapes text for interpolation into HTML templates; null and undefined yield ''.
 const HTML_ESCAPES: Record<string, string> = {
   '&': '&amp;',
   '<': '&lt;',

@@ -16,7 +16,6 @@ interface OpenNode {
   g: number;
 }
 
-// What each configuration fixes on the map; the search restarts on top of it.
 interface PathSetup extends PlayState {
   algorithm: Algorithm;
   weighted: boolean;
@@ -57,7 +56,6 @@ const DIRECTIONS: [number, number][] = [
   [-1, 0],
 ];
 
-// Effective map: without swamps everything walkable costs 1; blocked isolates the exit.
 function pathMap(s: PathSetup): number[][] {
   const g = cloneJson(GAME_MAP);
   if (!s.weighted)
@@ -85,7 +83,6 @@ function freshSearch(): PathSearch {
   };
 }
 
-// Completes `s` with a fresh search and returns it; existing keys keep their place.
 function resetSearch(s: PathSetup): PathfindingState {
   return Object.assign(s, freshSearch());
 }
@@ -94,7 +91,6 @@ function createInitialState(): PathfindingState {
   return resetSearch({ algorithm: 'bfs', weighted: false, blocked: false, seen: {}, log: [] });
 }
 
-// Manhattan distance to the goal: the lower bound A* uses.
 const estimate = (n: OpenNode): number => n.g + 5 - n.r + 7 - n.c;
 
 function indexOfLowestEstimate(open: OpenNode[]): number {
@@ -103,7 +99,6 @@ function indexOfLowestEstimate(open: OpenNode[]): number {
   return lowest;
 }
 
-// Pops the next current node off the frontier; discards entries with an already-beaten cost.
 function popBest(s: PathfindingState): OpenNode | null {
   let node: OpenNode | null = null;
   while (s.open.length && !node) {
@@ -124,7 +119,6 @@ function reconstructPath(parents: Record<string, string>, goal: string): string[
   return path;
 }
 
-// BFS visits a cell only once; A* reopens it if it finds a lower cost.
 function improvesBest(s: PathfindingState, key: string, cost: number): boolean {
   if (s.best[key] === undefined) return true;
   return s.algorithm !== 'bfs' && cost < s.best[key];
@@ -188,12 +182,10 @@ const toggleBlock: PathfindingHandler = (s, { log }) => {
   log(s, s.blocked ? 'La salida quedó aislada.' : 'La salida vuelve a estar conectada.');
 };
 
-// Cap of 150 expansions: the map has fewer cells, so it always terminates.
 const expandAll: PathfindingHandler = (s, context) => {
   for (let i = 0; i < 150 && !s.done; i++) pathStep(s, context);
 };
 
-// Color priority: wall, route, explored, frontier and finally terrain type.
 function tileColor(s: PathfindingState, r: number, c: number, cost: number): string {
   const key = cellKey(r, c);
   if (!cost) return grid;

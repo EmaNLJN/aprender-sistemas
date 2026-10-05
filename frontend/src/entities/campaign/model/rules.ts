@@ -14,7 +14,6 @@ import type {
 
 export const CODE_XP = 20;
 export const PREDICTION_XP = 10;
-// A world is worth 6 missions of CODE_XP + PREDICTION_XP; it passes with PASS_SCORE.
 export const PASS_SCORE = 150;
 export const WORLD_MAX_SCORE = 180;
 
@@ -24,7 +23,6 @@ export function isCampaignLanguage(value: unknown): value is CampaignLanguage {
   return CAMPAIGN_LANGUAGES.includes(value as CampaignLanguage);
 }
 
-// Integer index within a list of `count` options.
 export function isOptionIndex(value: unknown, count: number): value is number {
   return Number.isInteger(value) && (value as number) >= 0 && (value as number) < count;
 }
@@ -52,7 +50,6 @@ export function totalXP(
     .reduce((sum, exercise) => sum + pointsOf(state, exercise.id), 0);
 }
 
-// `init` guarantees that every mission of the world exists in the catalog.
 function titleOf(catalog: CampaignCatalog, id: string): string {
   return catalog.exercises.get(id)!.title;
 }
@@ -100,7 +97,6 @@ function bossRequirements(
   return requirements;
 }
 
-// Gathers why a world is locked, what its boss still needs and what completing it needs.
 function evaluateWorldGate(
   catalog: CampaignCatalog,
   state: CampaignStateV1,
@@ -177,7 +173,6 @@ function deriveWorld(
   };
 }
 
-// Each world requires completing the previous ones of the same language.
 export function deriveWorlds(
   catalog: CampaignCatalog,
   state: CampaignStateV1,

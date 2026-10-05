@@ -23,9 +23,6 @@ function mergeNotes(base: RouteNotes, incoming: RouteNotes): RouteNotes {
   };
 }
 
-// Merges `incoming` over `base` without mutating either: sets are unioned (`base` first),
-// answers and notes with text from `incoming` win, and the language and minutes come
-// from `base`.
 export function mergeRouteProgress(
   base: RouteProgressV1,
   incoming: RouteProgressV1,

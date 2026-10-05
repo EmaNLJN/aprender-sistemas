@@ -19,7 +19,6 @@ export interface LowlevelModels {
   interrupts: SystemsModel<InterruptsState>;
 }
 
-// Map of workshop id → model, in card order.
 export const lowlevelModels: LowlevelModels = {
   cache: cacheModel,
   heap: heapModel,

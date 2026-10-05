@@ -56,7 +56,6 @@ function sanitizeCheckpoint(
   return { passed: value.passed, lastAnswer: answer };
 }
 
-// Import: strict and all-or-nothing; one invalid record rejects the copy.
 export function sanitizeCampaignState(catalog: CampaignCatalog, raw: unknown): CampaignStateV1 {
   assertBackupShape(raw);
   const clean = blankCampaignState();
@@ -70,7 +69,6 @@ export function sanitizeCampaignState(catalog: CampaignCatalog, raw: unknown): C
   return clean;
 }
 
-// Load: tolerant per record. Drops and counts invalid records and unknown IDs.
 export function parseSavedCampaignState(
   catalog: CampaignCatalog,
   raw: unknown,
@@ -119,7 +117,6 @@ function mergeCheckpoints(state: CampaignStateV1, incoming: CampaignStateV1): vo
   }
 }
 
-// Monotonic merge: never removes a seal or an approved checkpoint from the current state.
 export function mergeImportedState(state: CampaignStateV1, incoming: CampaignStateV1): void {
   mergeSeals(state, incoming);
   mergeCheckpoints(state, incoming);
@@ -146,7 +143,6 @@ function sealsDiffer(a: CampaignSeal, b: CampaignSeal): boolean {
   return a.code !== b.code || a.prediction !== b.prediction || a.assisted !== b.assisted;
 }
 
-// Records lab evidence in `state` and returns whether any seal changed.
 export function applyLabEvidence(
   state: CampaignStateV1,
   catalog: CampaignCatalog,

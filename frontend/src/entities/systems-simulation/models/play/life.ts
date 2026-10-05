@@ -55,7 +55,6 @@ function lifeBoard(pattern: string): Board {
   return g;
 }
 
-// All cells read the same generation; the board is finite and its edge counts as dead.
 function lifeNext(g: Board): Board {
   return g.map((row, r) =>
     row.map((live, c) => {
@@ -79,7 +78,6 @@ function createInitialState(): LifeState {
   };
 }
 
-// Cells that are born and that die going from `previous` to `next`, in reading order.
 function changedCells(previous: Board, next: Board): { born: string[]; died: string[] } {
   const born: string[] = [];
   const died: string[] = [];
@@ -91,7 +89,6 @@ function changedCells(previous: Board, next: Board): { born: string[]; died: str
   return { born, died };
 }
 
-// The glider reappears one cell down and to the right after four generations.
 function glidedBoard(): Board {
   const expected = emptyBoard();
   lifePatterns.glider.forEach(([r, c]) => (expected[r + 1][c + 1] = true));

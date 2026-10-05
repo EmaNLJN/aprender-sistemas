@@ -49,14 +49,11 @@ function requireLanguage(language: string): CampaignLanguage {
   return language;
 }
 
-// Each call creates an independent engine: catalog, progress and storage state
-// live in this closure, not in the module.
 export function createCampaignEngine(): CampaignEngine {
   let state: CampaignStateV1 = blankCampaignState();
   let catalog: CampaignCatalog | null = null;
   let storageAvailable = true;
   let store: VersionedStore<CampaignStateV1> | null = null;
-  // Total XP already reported to the `syncLab` caller; renders (`refreshFromLab`) do not move it.
   let lastReportedXP = 0;
 
   function assertReady(): CampaignCatalog {
@@ -88,7 +85,6 @@ export function createCampaignEngine(): CampaignEngine {
     store = openVersionedStore(STORAGE_KEY, {
       blank: blankCampaignState,
       parse: (raw) => parseSavedCampaignState(validated, raw),
-      // Local state wins on the editable fields; achievements from the other tab survive.
       merge(stored, local) {
         const merged = cloneJson(stored);
         mergeImportedState(merged, local);
@@ -117,7 +113,6 @@ export function createCampaignEngine(): CampaignEngine {
   function syncLab(labState?: CampaignLabState | null): SyncLabResult {
     const ready = assertReady();
     applyLabEvidence(state, ready, labState);
-    // Also writes what an earlier `refreshFromLab` derived and left unsaved.
     const changed = requireStore().hasUnsavedChanges(state);
     if (changed) persist();
     const total = totalXP(ready, state);
@@ -130,7 +125,6 @@ export function createCampaignEngine(): CampaignEngine {
     const ready = assertReady();
     const world = ready.worldById.get(worldId);
     if (!world) return rejectedAnswer(false, ['Ese mundo no existe.']);
-    // The language list always contains the world: it comes from that same catalog.
     const status = worldsFor(world.language).find((item) => item.id === worldId)!;
     if (!status.checkpointReady)
       return rejectedAnswer(status.checkpointPassed, status.checkpointReasons);
@@ -149,7 +143,6 @@ export function createCampaignEngine(): CampaignEngine {
     };
   }
 
-  // Computes the resulting state without touching `state`, `raw` or storage.
   function planImport(raw: unknown): CampaignImportPlan {
     const ready = assertReady();
     const planned = cloneJson(state);

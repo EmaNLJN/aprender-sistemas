@@ -14,12 +14,10 @@ export function isSystemsLanguage(value: unknown): value is SystemsLanguage {
   return SYSTEMS_LANGUAGES.includes(value as SystemsLanguage);
 }
 
-// Integer index within a list of `count` items.
 export function isOptionIndex(value: unknown, count: number): value is number {
   return Number.isInteger(value) && (value as number) >= 0 && (value as number) < count;
 }
 
-// Each workshop needs, per language, a core exercise with tests of unique id.
 function requireCore(
   workshop: Raw,
   language: SystemsLanguage,
@@ -37,7 +35,6 @@ function requireCore(
   const validIds = tests.every(
     (test) => isPlainObject(test) && typeof test.id === 'string' && test.id.trim(),
   );
-  // Ids are read only if every test is an object: a null must not throw here.
   if (!validIds || new Set(tests.map((test: Raw) => test.id)).size !== tests.length) {
     throw new Error(`IDs de pruebas de núcleo inválidos: ${exercise.id}`);
   }
@@ -80,7 +77,6 @@ function assertPrediction(workshop: Raw): void {
     throw new Error('Checkpoint de taller inválido.');
 }
 
-// Validates everything in local variables: `init` replaces the catalog only if nothing failed.
 export function validateSystemsConfig(config: unknown): SystemsCatalog {
   const input = config as Raw | null | undefined;
   if (!Array.isArray(input?.workshops) || !input.models || !Array.isArray(input.exercises))

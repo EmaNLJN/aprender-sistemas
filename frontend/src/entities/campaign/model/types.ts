@@ -26,9 +26,6 @@ export interface CampaignCheckpoint {
   explanation: string;
 }
 
-// World as delivered by the catalog. The engine validates only the typed fields here; the
-// rest of the content (subtitle, story, concepts…) is declared by the catalogs and kept
-// uninterpreted. campaign-content-check guarantees `badge`, not `init`.
 export interface CampaignWorldDefinition {
   id: string;
   level: LevelId;
@@ -47,7 +44,6 @@ export interface CampaignWorldDefinition {
   [content: string]: unknown;
 }
 
-// Validated world: `init` adds its language and the six missions in order.
 export interface CampaignWorld extends CampaignWorldDefinition {
   language: CampaignLanguage;
   missionIds: string[];
@@ -58,7 +54,6 @@ export interface CampaignConfig {
   worlds: CampaignWorldDefinition[] | Record<CampaignLanguage, CampaignWorldDefinition[]>;
 }
 
-// Catalog validated by `init`; progress state is interpreted against it.
 export interface CampaignCatalog {
   exercises: Map<string, CampaignExercise>;
   worlds: Record<CampaignLanguage, CampaignWorld[]>;
@@ -144,8 +139,6 @@ export interface CheckpointAnswerResult {
   reasons: string[];
 }
 
-// Result of applying evidence or an import: `changed` says whether there is anything to
-// save (or, in `refreshFromLab`, whether something changed in memory).
 export interface RefreshResult {
   changed: boolean;
   storageAvailable: boolean;
@@ -156,8 +149,6 @@ export interface ImportResult {
   storageAvailable: boolean;
 }
 
-// Import planned without side effects: `state` is the resulting progress and `lossy` warns
-// that sanitizing dropped or changed data from the copy.
 export interface CampaignImportPlan {
   state: CampaignStateV1;
   lossy: boolean;
@@ -168,19 +159,13 @@ export interface ResetResult {
   removed: boolean;
 }
 
-// Lab snapshot read by `refreshFromLab` and `syncLab`: only `records` and, per record, the fields
-// the engine interprets. Any other shape is tolerated and ignored.
 export interface CampaignLabState {
   records?: Record<string, unknown>;
 }
 
 export interface CampaignEngine {
-  // With `labState`, lab evidence is applied in memory (no writes) before fixing the
-  // already-reported XP.
   init(config: CampaignConfig, labState?: CampaignLabState | null): InitResult;
-  // Applies lab evidence in memory only: never writes. Used by renders.
   refreshFromLab(labState?: CampaignLabState | null): RefreshResult;
-  // Applies the evidence and saves what is pending. Used by student actions.
   syncLab(labState?: CampaignLabState | null): SyncLabResult;
   getWorlds(language: string): DerivedWorld[];
   canAttempt(id: string, language: string): AttemptPermission;

@@ -34,8 +34,6 @@ export interface RunOutcome {
 
 const MARKER_PATTERN = /^__TALLER_TEST__(\w+):(PASS|FAIL)\s*$/gm;
 
-// Reads the markers the check program prints; an id that appears more than once
-// counts as a failure, even if all its occurrences are PASS.
 function readMarkers(stdout: string): Map<string, boolean> {
   const markers = new Map<string, boolean>();
   for (const match of stdout.matchAll(MARKER_PATTERN)) {
@@ -45,8 +43,6 @@ function readMarkers(stdout: string): Map<string, boolean> {
   return markers;
 }
 
-// Translates the compiler response into the record the lab stores. Pure:
-// it does not save, notify or read the clock. `solved` uses the single evidence rule.
 export function interpretRun(
   exercise: ExerciseTests,
   runnerResult: RunnerResult,

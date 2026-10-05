@@ -9,13 +9,10 @@ export interface SimulationState {
 export interface ActionContext<State extends SimulationState, Workshop extends ModelWorkshop> {
   value: string | undefined;
   workshop: Workshop;
-  // Initial state of the workshop: what the reset action returns.
   initial(): State;
-  // Appends to the `state` log (model cap) and returns it.
   log(state: State, message: string): State;
 }
 
-// Receives a copy it may mutate. If it returns a state, that replaces the copy.
 export type ActionHandler<State extends SimulationState, Workshop extends ModelWorkshop> = (
   draft: State,
   context: ActionContext<State, Workshop>,
@@ -26,7 +23,6 @@ export interface ModelDefinition<
   Action extends string,
   Workshop extends ModelWorkshop,
 > {
-  // Number of messages the log keeps: 12, 8 or 6 depending on the domain.
   logLimit: number;
   initial(workshop: Workshop): State;
   actions: Record<Action, ActionHandler<State, Workshop>>;
@@ -34,9 +30,6 @@ export interface ModelDefinition<
   achieved(state: State, workshop: Workshop): string[];
 }
 
-// Common mechanics of the models: clones the state, dispatches the action by table and treats
-// an unknown action as no action (the copy, unchanged). Each model keeps
-// the shape of its state and view.
 export function defineModel<
   State extends SimulationState,
   Action extends string,

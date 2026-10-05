@@ -6,7 +6,6 @@ import type { PcPhase, PcState } from './types';
 
 type PageFault = 'absent' | 'protection';
 
-// A fault is synchronous: it enters the kernel without retiring the instruction or touching RAM.
 function raiseFault(s: PcState, cause: PageFault, { log }: PcContext): void {
   s.trap = { cause, pc: s.pc, acc: s.acc, mapped: false };
   s.mode = 'kernel';
@@ -134,7 +133,6 @@ const retireInstruction: PcHandler = (s, context) => {
   );
 };
 
-// One handler per user-mode CPU phase; kernel, IRQ and HALT do not advance with `step`.
 const STEP_PHASES: Partial<Record<PcPhase, PcHandler>> = {
   fetch: fetchInstruction,
   tlb: consultTlb,

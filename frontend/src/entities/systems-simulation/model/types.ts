@@ -1,6 +1,3 @@
-// Common contract of the Systems simulations (lowlevel, infra, play and pc): each workshop
-// publishes a pure state machine and a data-only view that `systems.js` draws.
-
 export type CellTone = 'active' | 'good' | 'bad' | 'muted';
 
 export interface ViewMetric {
@@ -12,7 +9,6 @@ export interface ViewCell extends ViewMetric {
   tone: CellTone;
 }
 
-// `value` travels as text: the renderer reads it from `data-value`.
 export interface ViewControl {
   action: string;
   label: string;
@@ -85,7 +81,6 @@ export interface ModelView {
   scene?: Scene;
 }
 
-// The minimum a model may ask of the workshop card that uses it.
 export interface ModelWorkshop {
   id: string;
   model: string;
@@ -94,7 +89,6 @@ export interface ModelWorkshop {
 
 export interface SystemsModel<State, Workshop extends ModelWorkshop = ModelWorkshop> {
   initial(workshop: Workshop): State;
-  // Returns a NEW state: never mutates `state`.
   act(state: State, action: string, value: string | undefined, workshop: Workshop): State;
   view(state: State, workshop: Workshop): ModelView;
   achieved(state: State, workshop: Workshop): string[];

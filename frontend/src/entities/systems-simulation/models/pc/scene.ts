@@ -33,7 +33,6 @@ function createSketch() {
     text(x + 10, y + 23, name, active ? green : ink);
     text(x + 10, y + 45, detail);
   };
-  // Only horizontal arrows get an arrowhead.
   const arrow = (x1: number, y1: number, x2: number, y2: number) => {
     line(x1, y1, x2, y2);
     if (y1 === y2)

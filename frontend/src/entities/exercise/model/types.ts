@@ -2,10 +2,8 @@ import type { LevelId } from '../../../shared/config/levels';
 
 export type ExerciseLanguage = 'rust' | 'go';
 
-// `reparar` marks exercises whose starter code has a defect to fix.
 export type ExerciseKind = 'completar' | 'reparar';
 
-// Only campaign challenges declare their type; route exercises do not.
 export type ChallengeType = 'repair' | 'kata' | 'boss';
 
 export type ExerciseVisual =
@@ -36,9 +34,6 @@ export interface ExercisePrediction {
   explanation: string;
 }
 
-// Real shape of RUST_LAB, GO_LAB, RUST_QUESTS and GO_QUESTS. `level` appears on 25 of
-// the 100 exercises of each language and on every challenge; `challengeType` only on
-// challenges. `imports` is [] in Rust and lists standard-library packages in Go.
 export interface Exercise {
   id: string;
   language: ExerciseLanguage;

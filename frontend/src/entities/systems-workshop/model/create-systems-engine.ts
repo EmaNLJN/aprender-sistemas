@@ -44,7 +44,6 @@ function recordKey(id: string, language: string): string {
   return `${language}:${id}`;
 }
 
-// Compiler result the lab stored for an exercise, if any.
 function labResultFor(lab: unknown, exerciseId: string): unknown {
   const records = (lab as { records?: Record<string, { result?: unknown } | undefined> } | null)
     ?.records;
@@ -67,8 +66,6 @@ function describeWorkshop(
   };
 }
 
-// Each call creates an independent engine: catalog, progress and storage state
-// live in this closure, not in the module.
 export function createSystemsEngine(): SystemsEngine {
   let state: SystemsStateV1 = blankSystemsState();
   let catalog: SystemsCatalog = { workshops: new Map(), exercises: new Map() };
@@ -96,7 +93,6 @@ export function createSystemsEngine(): SystemsEngine {
     return workshop;
   }
 
-  // Reading creates the empty record in `state` without persisting it; exportState shows it.
   function record(id: string, language: string): WorkshopRecord {
     requireWorkshop(id, language);
     const key = recordKey(id, language);
@@ -109,7 +105,6 @@ export function createSystemsEngine(): SystemsEngine {
     store = openVersionedStore(STORAGE_KEY, {
       blank: blankSystemsState,
       parse: (raw) => parseSavedSystemsState(validated, raw),
-      // Local state wins on the editable fields; achievements from the other tab survive.
       merge(stored, local) {
         const merged = cloneJson(stored);
         mergeImportedRecords(merged, local);
@@ -157,7 +152,6 @@ export function createSystemsEngine(): SystemsEngine {
     };
   }
 
-  // Seals in memory and returns whether any workshop changed; never writes.
   function refreshFromLab(lab?: unknown): SystemsSyncResult {
     let changed = false;
     for (const workshop of catalog.workshops.values())
@@ -169,13 +163,11 @@ export function createSystemsEngine(): SystemsEngine {
 
   function syncLab(lab?: unknown): SystemsSyncResult {
     refreshFromLab(lab);
-    // Also writes what an earlier `refreshFromLab` derived and left unsaved.
     const changed = requireStore().hasUnsavedChanges(state);
     if (changed) persist();
     return { changed, storageAvailable };
   }
 
-  // Seals the workshop code if the lab has passed evidence for its core.
   function markCodeSealed(
     workshop: SystemsWorkshop,
     language: SystemsLanguage,
@@ -189,7 +181,6 @@ export function createSystemsEngine(): SystemsEngine {
     return true;
   }
 
-  // Computes the resulting state without touching `state`, `raw` or storage.
   function planImport(raw: unknown): SystemsImportPlan {
     const planned = cloneJson(state);
     const incoming = validateSystemsImport(catalog, raw);
