@@ -1,13 +1,10 @@
 #!/bin/sh
-# Paso `migrate` del despliegue (ADR 0006 D35, enmendado en C2): aplica las migraciones y corre
-# content:import. Si falla por una espera de bloqueo vencida (1205) o un interbloqueo (1213), lo
-# repite con pausas crecientes; cualquier otro error termina el paso sin reintentar. Es la única
-# capa de reintentos: el import usa `attempts: 1` para que no se multipliquen. Cada intento espera
-# como mucho 5 s por un bloqueo (MYSQL_ATTR_INIT_COMMAND de compose.yaml).
-# El código se busca con los espacios normalizados: la consola puede partirlo entre dos líneas.
+# The deployment's `migrate` step (ADR 0006 D35): runs the migrations, then content:import. It retries
+# with growing pauses only on a lock wait timeout (1205) or a deadlock (1213); any other error ends the
+# step. This is the single retry layer: the import runs with `attempts: 1` so retries do not multiply.
+# Each attempt waits at most 5 s for a lock (MYSQL_ATTR_INIT_COMMAND in compose.yaml).
 #
-# MIGRATE_PAUSES son las pausas, en segundos, entre intentos: «5 15» son 3 intentos. Las pruebas
-# la ponen en «0 0».
+# MIGRATE_PAUSES: seconds to wait between attempts; "5 15" means 3 attempts. Tests set "0 0".
 set -u
 
 pauses=${MIGRATE_PAUSES:-"5 15"}
@@ -21,6 +18,7 @@ while :; do
   cat "$log"
   [ "$status" -eq 0 ] && exit 0
 
+  # The error is matched with whitespace squeezed: the console may wrap it across two lines.
   if ! tr -s '[:space:]' ' ' <"$log" | grep -Eq 'General error: 1205|Serialization failure: 1213'; then
     exit "$status"
   fi

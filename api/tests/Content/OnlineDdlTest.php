@@ -3,21 +3,15 @@
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
-// Medición de ADR 0006 D07 contra el mysql:9.7 fijado en compose.yaml: si un CHECK sobre DATETIME
-// impide que ampliar un ENUM o agregar una columna sea INSTANT (bugs #117450 y #121124), el
-// invariante de las tablas que crecen (runs, attempts, exercise_progress…) queda en el escritor.
-// Cada caso fija ALGORITHM y LOCK para que MySQL falle en lugar de copiar la tabla. INSTANT sólo
-// admite LOCK=DEFAULT: con NONE, SHARED o EXCLUSIVE MySQL responde 1221 («Incorrect usage») sin
-// mirar la operación, y esa respuesta no mide nada. Se prueba con una tabla de descarte, nunca
-// con una de contenido. D07_MEASURED es lo que midió MySQL: «ok» si aceptó el DDL con ese
-// algoritmo, o el código del error si lo rechazó (1845 y 1846: no se puede sin copiar la tabla).
-// Si la imagen cambia y el resultado también, esta prueba falla: hay que revisar la decisión de
-// D07 antes de actualizarlo.
+// ADR 0006 D07 on the mysql:9.7 pinned in compose.yaml: a CHECK on a DATETIME column can keep an ENUM widening or
+// an ADD COLUMN from being INSTANT (MySQL bugs #117450, #121124). INSTANT only accepts LOCK=DEFAULT: any other LOCK
+// gets error 1221 before MySQL looks at the operation, which measures nothing. D07_MEASURED holds what MySQL answered,
+// "ok" or its error code (1845, 1846: not possible without copying the table); if a new image changes it, review D07 first.
 const D07_MEASURED = [
-    'ampliar un ENUM al final, con un CHECK sobre DATETIME en la tabla' => '1845',
-    'ADD COLUMN en una tabla con un CHECK sobre DATETIME' => 'ok',
-    'ADD COLUMN con su propio CHECK' => '1845',
-    'ADD FOREIGN KEY sobre una tabla con filas, con las comprobaciones activas' => '1846',
+    'widen an ENUM at the end, with a CHECK on a DATETIME in the table' => '1845',
+    'ADD COLUMN on a table with a CHECK on a DATETIME' => 'ok',
+    'ADD COLUMN with its own CHECK' => '1845',
+    'ADD FOREIGN KEY on a table with rows, with checks enabled' => '1846',
 ];
 
 function ddlOutcome(string $statement): string
@@ -45,13 +39,13 @@ afterEach(function () {
     DB::statement('drop table if exists d07_probe');
 });
 
-it('mide los cuatro casos de D07 en mysql:9.7', function () {
+it('measures the four D07 cases on mysql:9.7', function () {
     $measured = [
-        'ampliar un ENUM al final, con un CHECK sobre DATETIME en la tabla' => ddlOutcome("alter table d07_probe modify state enum('a','b','c') not null, algorithm=instant, lock=default"),
-        'ADD COLUMN en una tabla con un CHECK sobre DATETIME' => ddlOutcome('alter table d07_probe add column extra int null, algorithm=instant, lock=default'),
-        'ADD COLUMN con su propio CHECK' => ddlOutcome('alter table d07_probe add column positive int null check (positive > 0), algorithm=instant, lock=default'),
-        'ADD FOREIGN KEY sobre una tabla con filas, con las comprobaciones activas' => ddlOutcome('alter table d07_child add constraint d07_child_probe_foreign foreign key (probe_id) references d07_probe (id), algorithm=inplace, lock=none'),
+        'widen an ENUM at the end, with a CHECK on a DATETIME in the table' => ddlOutcome("alter table d07_probe modify state enum('a','b','c') not null, algorithm=instant, lock=default"),
+        'ADD COLUMN on a table with a CHECK on a DATETIME' => ddlOutcome('alter table d07_probe add column extra int null, algorithm=instant, lock=default'),
+        'ADD COLUMN with its own CHECK' => ddlOutcome('alter table d07_probe add column positive int null check (positive > 0), algorithm=instant, lock=default'),
+        'ADD FOREIGN KEY on a table with rows, with checks enabled' => ddlOutcome('alter table d07_child add constraint d07_child_probe_foreign foreign key (probe_id) references d07_probe (id), algorithm=inplace, lock=none'),
     ];
 
-    expect($measured)->toBe(D07_MEASURED ?? ['sin medir: copiá este resultado a D07_MEASURED' => $measured]);
+    expect($measured)->toBe(D07_MEASURED ?? ['unmeasured: copy this result into D07_MEASURED' => $measured]);
 });

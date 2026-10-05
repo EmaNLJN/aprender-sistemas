@@ -1,15 +1,13 @@
 #!/bin/sh
-# Prueba de despliegue de C2 (spec 001, FR-046), contra el stack real. Con una imagen nueva cuyo
-# `migrate` falla porque otro cliente retiene un bloqueo, `php` no se recrea y el anterior sigue
-# sirviendo; y, ya sin el bloqueo, esa imagen nueva con el mismo contenido deja el mismo ETag y el
-# mismo `Content-Version`. Construye imágenes, deja el stack levantado y tarda unos minutos:
-# `migrate` reintenta 3 veces, con pausas de 5 y 15 s, antes de rendirse. No forma parte de
-# `npm test`, como api:smoke. Necesita el .env de la raíz (sh api/scripts/init-env.sh) y el puerto
-# del taller libre. Uso, desde la raíz: sh api/scripts/deploy-check.sh
+# C2 deployment check (spec 001, FR-046) against the real stack: with a new image whose `migrate` fails on
+# a lock held by another client, `php` is not recreated and the old one keeps serving; once the lock is
+# released, the same content under that image keeps the same ETag and Content-Version.
+# Builds images, leaves the stack up and takes minutes (`migrate` retries 3 times, pausing 5 and 15 s).
+# Not part of `npm test`, like api:smoke. Needs the root .env (sh api/scripts/init-env.sh) and the
+# workshop port free. Run from the root: sh api/scripts/deploy-check.sh
 #
-# Depende de que compose.yaml pase CONTENT_SOURCE_COMMIT a la construcción de la imagen (otro
-# commit es otra imagen, así que `php` tiene que recrearse) y de que `migrate` corra
-# migrate-and-import con la espera de bloqueos acotada a 5 s.
+# Depends on compose.yaml passing CONTENT_SOURCE_COMMIT to the image build (another commit, another
+# image, so `php` is recreated) and on `migrate` running migrate-and-import with lock waits capped at 5 s.
 set -u
 
 old_commit=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
@@ -32,12 +30,11 @@ abort() {
   exit 1
 }
 
-# MySQL como root, dentro del contenedor: la contraseña ya está en su entorno (compose.yaml).
+# MySQL as root inside the container, where the password is already in the environment (compose.yaml).
 sql() {
   docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" taller -N -B -e "$1" 2>/dev/null' sh "$1"
 }
 
-# Corta la sesión que retiene el bloqueo, si sigue viva, y borra el registro temporal.
 cleanup() {
   if [ -n "$holder_id" ]; then
     sql "kill $holder_id" >/dev/null 2>&1
@@ -45,11 +42,11 @@ cleanup() {
   rm -f "$log"
 }
 trap cleanup EXIT
-# Con Ctrl-C o una señal, el EXIT de arriba también corre: sin esto la sesión seguiría reteniendo
-# el bloqueo sobre exercises hasta que termine su SLEEP.
+# On Ctrl-C or a signal, abort exits and so runs the EXIT trap above; without this the session would keep
+# the lock on exercises until its SLEEP ends.
 trap 'abort "interrumpido"' INT TERM HUP
 
-# ETag y Content-Version de /api/guide, sin \r, en dos líneas: «etag …» y «version …».
+# ETag and Content-Version of /api/guide, without \r, as two lines: "etag …" and "version …".
 guide() {
   curl -s -D - -o /dev/null "http://$addr/api/guide" | tr -d '\r' \
     | sed -n -e 's/^[Ee][Tt]ag: /etag /p' -e 's/^[Cc]ontent-[Vv]ersion: /version /p'
@@ -65,11 +62,9 @@ guide_before=$(guide)
 check "$(printf '%s\n' "$guide_before" | wc -l | tr -d ' ')" 2 "la guía responde con ETag y Content-Version"
 
 echo "== 2. Otro cliente retiene un bloqueo sobre exercises: el import de migrate no puede leerla"
-# La imagen nueva se construye antes de tomar el bloqueo: así el `up --build` del paso 3 sólo
-# reutiliza la caché y los 180 s del bloqueo alcanzan para los 3 intentos de migrate, por lenta
-# que sea la construcción.
+# Build the new image before taking the lock: step 3's `up --build` then only reuses the cache, and the
+# 180 s of lock cover migrate's 3 attempts however slow the build is.
 CONTENT_SOURCE_COMMIT=$new_commit docker compose build php migrate || abort "no se pudo construir la imagen nueva"
-# La sesión de MySQL vive mientras dure el SLEEP, o hasta que cleanup la corte.
 sql 'LOCK TABLES exercises WRITE; SELECT SLEEP(180)' >/dev/null 2>&1 &
 for i in 1 2 3 4 5 6 7 8 9 10; do
   holder_id=$(sql 'show processlist' | awk -F '\t' '$8 ~ /^SELECT SLEEP\(180\)/ { print $1 }')
@@ -85,7 +80,6 @@ if CONTENT_SOURCE_COMMIT=$new_commit docker compose up --build -d --wait >"$log"
 else
   echo "ok    el despliegue con migrate bloqueado falló, como debía"
 fi
-# Las últimas líneas de compose dicen por qué falló, o qué pasó si no falló.
 tail -n 5 "$log" | sed 's/^/      compose: /'
 check "$(docker compose logs --no-color migrate 2>&1 | grep -c 'sigue fallando por bloqueos después de 3 intentos')" 1 \
   "migrate reintentó 3 veces y se rindió"
