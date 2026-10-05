@@ -15,7 +15,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -33,11 +33,11 @@
 
 ## Notes
 
-- Quedan tres marcadores `[NEEDS CLARIFICATION]`: FR-004 (Q1, la fuente del contenido entre A2 y A3), FR-007 (Q2, qué ve el alumno si el contenido no llega) y FR-014 (Q4, el «HTML autónomo» y `build-check`). FR-009 (Q2), FR-015 (Q4), FR-018 (Q3) y FR-024 (Q5) llevan su opción recomendada como «(propuesta)». FR-010 y FR-011 son propuestas de la spec sin pregunta propia, y las lista «Assumptions». Las cinco preguntas están en «Preguntas abiertas», cada una con sus opciones, su costo y su opción recomendada; el clarify las cierra antes del plan. El mecanismo para diferir las vistas legacy no es una pregunta: lo decide el spike.
+- Clarify del 2026-10-05: no quedan marcadores `[NEEDS CLARIFICATION]`. El usuario respondió las cinco preguntas (Q1 a Q5), que quedaron en «Clarifications» con su decisión. FR-004, FR-007 y FR-014 se resolvieron, y FR-009, FR-015, FR-018 y FR-024 dejaron de ser propuestas. FR-010 y FR-011 siguen como propuestas de la spec, sin pregunta propia: el usuario no las objetó y el plan fija sus números y su mecanismo.
 - Excepciones deliberadas en «implementation details»: la feature es un cambio del build y del arranque del front, así que nombrar la herramienta de build, los checks de `qa/` y los artefactos es parte del requisito. Los FR piden resultados (todo o nada, el progreso intacto, el HTML sin currículo, el mismo volcado de globals). La técnica para diferir la evaluación (`import()` encadenados, top-level await, una función por vista, chunks) aparece sólo en el spike y en «Alternativas consideradas», como hipótesis con su regla de decisión. FR-018 y FR-020 nombran un `fetch` simulado porque es la forma de probar la compuerta sin red (ADR 0004, §5).
 - «Non-technical stakeholders»: el lector es el dueño del taller, que conoce los ADR 0004 y 0006 y el mapa del front. Los términos técnicos son los suyos.
 - «Technology-agnostic»: el sha256 del documento y de las porciones, el volcado de `dump-globals` y los checks de `qa/` son los criterios que ya usan C2 y A1 para probar que el contenido no cambió. La feature no tiene otro resultado observable: su valor es que nada cambia cuando el contenido llega y que nada se rompe cuando no llega.
 - «Testable and unambiguous»: el tope de espera de FR-007 y el umbral del estado de carga de FR-010 los fija el plan con su motivo, y el tope de tamaño de FR-015 sale de la medida del spike (P3). El criterio es verificable una vez fijados.
 - «Scope is clearly bounded»: la spec lista lo que entra, lo que queda fuera y lo que no se hace a propósito. No toca las seis vistas legacy (FR-023), la API ni el generador, y deja a A3 el protocolo completo.
-- El spike (P1 a P5) está definido con su pregunta, su medida y su regla de decisión; todavía no corrió sobre el `main.tsx` real. La observación preliminar salió de una sonda fuera del repositorio (`vite build` sobre tres módulos de prueba), sin correr `npm run build` ni Docker.
+- El spike está definido con su pregunta, su medida y su regla de decisión (P1 a P4; P5 la miden los E2E de A2). Es la primera tarea del plan (T001) y corre sobre la base con F1 y las unidades 1 a 4 de F2 integradas: todavía no corrió. La observación preliminar salió de una sonda fuera del repositorio (`vite build` sobre tres módulos de prueba), sin correr `npm run build` ni Docker.
 - `/speckit-analyze` corre con `plan.md` y `tasks.md`, que todavía no existen.
