@@ -25,7 +25,8 @@ corre contra MySQL 9.7 real, sin SQLite (`api/AGENTS.md`).
 Se prefiere código simple y explícito a uno ingenioso, y una abstracción se justifica cuando
 reduce complejidad real. Más de 10 de complejidad ciclomática por función y un archivo grande
 son señales de revisión, no órdenes de fragmentar: se modulariza por seams con nombre y contrato
-(`docs/architecture.md`). Los comentarios explican decisiones, límites y efectos no evidentes.
+(`docs/architecture.md`). El código y las pruebas, en inglés, se explican solos: un comentario
+sólo acompaña una función, clase o método complejo, o deja una referencia puntual.
 
 ### IV. Contenido en Git, IDs estables, nada se borra
 
@@ -44,7 +45,9 @@ y, si es un backend o un cambio de arquitectura, con un ADR.
 
 ### VI. Español, accesibilidad y portabilidad
 
-La documentación y la interfaz están en español rioplatense, con el voseo de `AGENTS.md`. Los
+La documentación, la interfaz, los mensajes para quien usa u opera el taller y todo lo que
+genera Spec Kit están en español rioplatense, con el voseo de `AGENTS.md`; el código y las
+pruebas, en inglés (principio III). Los
 encabezados y las etiquetas estructurales de las plantillas de Spec Kit se conservan en inglés,
 porque las skills los usan para ubicarse; el contenido va en español. Se conservan la
 accesibilidad de teclado, el diseño móvil y el movimiento reducido, y se prefieren soluciones
@@ -110,4 +113,4 @@ artefacto entregado no se edita, se continúa con otro. Cada feature vive en
 
 [persistencia]: https://github.com/github/spec-kit/blob/main/docs/concepts/spec-persistence.md
 
-**Version**: 1.2.2 | **Ratified**: 2026-10-04 (aprobada por el usuario) | **Last Amended**: 2026-10-04
+**Version**: 1.3.0 | **Ratified**: 2026-10-04 (aprobada por el usuario) | **Last Amended**: 2026-10-05 (código y pruebas en inglés, comentarios mínimos; pedido del usuario)
