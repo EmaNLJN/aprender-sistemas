@@ -18,4 +18,4 @@ it('rejects a connection that is not the test one', function (array $connection)
     'read and write hosts' => [['host' => 'mysql-test', 'database' => 'taller_test', 'read' => ['host' => ['mysql']], 'write' => ['host' => ['mysql']]]],
     'DB_URL with read and write hosts' => [['host' => 'mysql-test', 'database' => 'taller_test', 'url' => 'mysql://taller:x@mysql-test:3306/taller_test?read[host][]=mysql&write[host][]=mysql']],
     'another host' => [['host' => 'mysql', 'database' => 'taller_test']],
-])->throws(RuntimeException::class, 'Las pruebas sólo corren contra mysql-test/taller_test');
+])->throws(RuntimeException::class, 'Tests only run against mysql-test/taller_test');

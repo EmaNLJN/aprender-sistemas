@@ -29,11 +29,11 @@ abstract class TestCase extends BaseTestCase
         $socket = (string) ($effective['unix_socket'] ?? '');
         // `read`/`write` hosts replace `host` in ConnectionFactory.
         if (isset($effective['read']) || isset($effective['write'])) {
-            throw new RuntimeException('Las pruebas sólo corren contra mysql-test/taller_test; la conexión efectiva define hosts propios de lectura o escritura.');
+            throw new RuntimeException('Tests only run against mysql-test/taller_test; the effective connection defines its own read or write hosts.');
         }
         if ($host !== 'mysql-test' || $socket !== '' || ! str_starts_with($database, 'taller_test')) {
-            $where = $socket !== '' ? "el socket {$socket}" : "{$host}/{$database}";
-            throw new RuntimeException("Las pruebas sólo corren contra mysql-test/taller_test; la conexión efectiva apunta a {$where}.");
+            $where = $socket !== '' ? "socket {$socket}" : "{$host}/{$database}";
+            throw new RuntimeException("Tests only run against mysql-test/taller_test; the effective connection points to {$where}.");
         }
     }
 }

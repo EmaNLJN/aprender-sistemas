@@ -14,7 +14,6 @@ x-laravel-env: &laravel-env
   DB_USERNAME: taller
   DB_PASSWORD: *mysql-password
 
-# `test` gets the production environment on purpose: phpunit.xml forces the test database.
 x-laravel-test-env: &laravel-test-env
   <<: *laravel-env
   APP_KEY: 'base64:dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtISE='
