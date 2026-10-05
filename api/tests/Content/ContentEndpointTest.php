@@ -10,16 +10,95 @@ use Tests\Support\ContentFixture;
 
 afterEach(fn () => ContentFixture::cleanup());
 
+function metaAt(string $directory): array
+{
+    return json_decode(file_get_contents("{$directory}/curriculum.meta.json"), true);
+}
+
 function importedMeta(): array
 {
     Artisan::call('content:import');
 
-    return json_decode(file_get_contents(ContentFixture::imagePath().'/curriculum.meta.json'), true);
+    return metaAt(ContentFixture::imagePath());
 }
 
 function etagOf(string $hash): string
 {
     return '"'.substr($hash, 0, 32).'"';
+}
+
+/**
+ * Runs `$act` once, right after the first query on `$table` that the request makes outside a transaction
+ * (or inside one, with `$insideTransaction`): the exact point where a race is staged. A failure of `$act`
+ * is for the test to check afterwards, because an exception thrown inside a query listener only surfaces
+ * as a 500.
+ */
+function afterFirstQueryOn(string $table, Closure $act, bool $insideTransaction = false): void
+{
+    $fired = false;
+    DB::listen(function ($query) use (&$fired, $table, $act, $insideTransaction) {
+        if ($fired || ! str_contains($query->sql, "from `{$table}`") || (DB::transactionLevel() > 0) !== $insideTransaction) {
+            return;
+        }
+        $fired = true;
+        $act();
+    });
+}
+
+/** An import of `$directory` that commits right after the request's first query on `$table`. */
+function importAfterFirstQueryOn(string $table, string $directory): stdClass
+{
+    $import = (object) ['exit' => null, 'output' => ''];
+    afterFirstQueryOn($table, function () use ($import, $directory) {
+        config(['content.path' => $directory]);
+        $import->exit = Artisan::call('content:import');
+        $import->output = Artisan::output();
+    });
+
+    return $import;
+}
+
+/** Without this the race never happened and the test proves nothing. */
+function expectImportedInTheMiddle(stdClass $import): void
+{
+    if ($import->exit !== 0) {
+        throw new RuntimeException('The import in the middle of the request '.($import->exit === null ? 'never ran' : "exited with {$import->exit}: {$import->output}"));
+    }
+    expect(DB::table('content_imports')->count())->toBe(2);
+}
+
+/**
+ * A write to the intro of `$id` that another connection commits once the request's snapshot has started:
+ * the first query it makes inside a transaction is the one that fixes what the snapshot sees. A whole
+ * import cannot be staged here, because the snapshot's connection is in a read-only transaction.
+ */
+function writeAfterSnapshotStarts(string $id): stdClass
+{
+    $write = (object) ['updated' => null];
+    afterFirstQueryOn('content_imports', function () use ($write, $id) {
+        $write->updated = DB::connectUsing('race-writer', config('database.connections.mysql'), true)
+            ->table('exercises')->where('id', $id)->update(['intro' => 'Edited by a writer that commits while the body is built.']);
+    }, insideTransaction: true);
+
+    return $write;
+}
+
+function expectWrittenInTheMiddle(stdClass $write): void
+{
+    if ($write->updated === null) {
+        throw new RuntimeException('The write in the middle of the request never ran: the request did not read inside a transaction.');
+    }
+    expect($write->updated)->toBe(1);
+}
+
+/** @return array{string, string} the directory of the image content with one lab.rust exercise revised, and that exercise's ID */
+function reviseLabExercise(): array
+{
+    $fixture = ContentFixture::fromImage();
+    $id = $fixture->document->lab->rust[3]->id;
+    $fixture->exercise($id)->intro .= ' (revised)';
+
+    return [$fixture->write(), $id];
 }
 
 it('responds 503 in JSON, with Retry-After, while there is no import', function (string $url) {
@@ -232,4 +311,87 @@ it('does not serve a built exercise that lacks its content_hash: 503 maintenance
     $this->get("/api/exercises/{$id}")->assertStatus(503)->assertHeader('Retry-After', '5')->assertJson(['code' => 'maintenance']);
 
     Log::shouldHaveReceived('error')->once();
+});
+
+it('serves the new import whole when one commits right after the request read the latest (FR-044)', function () {
+    importedMeta();
+    [$directory] = reviseLabExercise();
+    $next = metaAt($directory);
+    $import = importAfterFirstQueryOn('content_imports', $directory);
+
+    $response = $this->get(ContentDatabase::url(Portion::LabRust));
+
+    expectImportedInTheMiddle($import);
+    $response->assertOk()
+        ->assertHeader('ETag', etagOf($next['portions']['lab.rust']))
+        ->assertHeader('Content-Version', substr($next['documentHash'], 0, 32));
+    expect(hash('sha256', $response->getContent()))->toBe($next['portions']['lab.rust']);
+});
+
+it('answers 304 when the import that committed in the middle is the one the client already has (FR-044)', function () {
+    importedMeta();
+    [$directory] = reviseLabExercise();
+    $next = metaAt($directory);
+    $import = importAfterFirstQueryOn('content_imports', $directory);
+
+    $response = $this->withHeaders(['If-None-Match' => etagOf($next['portions']['lab.rust'])])->get(ContentDatabase::url(Portion::LabRust));
+
+    expectImportedInTheMiddle($import);
+    $response->assertStatus(304)
+        ->assertHeader('ETag', etagOf($next['portions']['lab.rust']))
+        ->assertHeader('Content-Version', substr($next['documentHash'], 0, 32));
+    expect($response->getContent())->toBe('');
+});
+
+it('answers 410 to an exercise that an import retires right after the request read its row (FR-015)', function () {
+    importedMeta();
+    $fixture = ContentFixture::fromImage();
+    $gone = $fixture->unreferencedLabExercise();
+    $title = $fixture->exercise($gone)->title;
+    $import = importAfterFirstQueryOn('exercises', $fixture->withoutExercise($gone)->write());
+
+    $response = $this->get("/api/exercises/{$gone}");
+
+    expectImportedInTheMiddle($import);
+    $response->assertStatus(410)->assertJson(['code' => 'content_retired', 'id' => $gone, 'title' => $title]);
+    expect($response->json('retiredAt'))->toMatch('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/');
+});
+
+it('serves an exercise with the bytes an import changed right after the request read its row (FR-044)', function () {
+    importedMeta();
+    [$directory, $id] = reviseLabExercise();
+    $next = metaAt($directory);
+    $import = importAfterFirstQueryOn('exercises', $directory);
+
+    $response = $this->get("/api/exercises/{$id}");
+
+    expectImportedInTheMiddle($import);
+    $response->assertOk()
+        ->assertHeader('ETag', etagOf($next['exercises'][$id]['contentHash']))
+        ->assertHeader('Content-Version', substr($next['documentHash'], 0, 32));
+    expect(hash('sha256', $response->getContent()))->toBe($next['exercises'][$id]['contentHash']);
+});
+
+it('builds a portion from one snapshot: a write that commits while it is built does not reach it (FR-044)', function () {
+    $meta = importedMeta();
+    DB::table('cache')->delete();
+    $write = writeAfterSnapshotStarts(ContentFixture::fromImage()->document->lab->rust[3]->id);
+
+    $response = $this->get(ContentDatabase::url(Portion::LabRust));
+
+    expectWrittenInTheMiddle($write);
+    $response->assertOk()->assertHeader('ETag', etagOf($meta['portions']['lab.rust']));
+    expect(hash('sha256', $response->getContent()))->toBe($meta['portions']['lab.rust']);
+});
+
+it('builds an exercise from one snapshot: a write that commits while it is built does not reach it (FR-044)', function () {
+    $meta = importedMeta();
+    $id = array_key_first($meta['exercises']);
+    $write = writeAfterSnapshotStarts($id);
+
+    $response = $this->get("/api/exercises/{$id}");
+
+    expectWrittenInTheMiddle($write);
+    $response->assertOk()->assertHeader('ETag', etagOf($meta['exercises'][$id]['contentHash']));
+    expect(hash('sha256', $response->getContent()))->toBe($meta['exercises'][$id]['contentHash']);
 });
