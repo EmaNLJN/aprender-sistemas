@@ -89,9 +89,14 @@ usan Docker y no forman parte de `npm test`.
   simulaciones y pasos manuales. Las reglas detalladas están en `docs/architecture.md`.
 - Usá TDD para cambios de comportamiento: una prueba que falle por la razón
   esperada, una implementación mínima y revisión antes de refactorizar en verde.
-- Conservá español, accesibilidad de teclado, diseño móvil y movimiento reducido.
-- Preferí soluciones portables entre Linux y macOS. Comentá atajos y automatizaciones
-  no obvias con su disparador, acción y efectos visibles.
+- El código y las pruebas van en inglés: identificadores, nombres de tests y comentarios. Van en
+  español la interfaz, el contenido, los mensajes que lee quien usa u opera el taller, la
+  documentación y todo lo que genera Spec Kit. Conservá accesibilidad de teclado, diseño móvil
+  y movimiento reducido.
+- Preferí soluciones portables entre Linux y macOS.
+- El código se explica solo, con nombres precisos y pruebas que documentan el comportamiento
+  (TDD). Comentá sólo una función, clase o método cuya complejidad lo exija, o para dejar una
+  referencia puntual: un bug, una RFC o una decisión de un ADR.
 - Editá fuentes y regenerá assets; conservá licencias y sincronizá el lockfile.
 - Usá ESLint para reglas de código y Prettier para formato, con configuraciones
   separadas. Los avisos de complejidad requieren revisión; no desactives reglas
@@ -99,6 +104,10 @@ usan Docker y no forman parte de `npm test`.
   Registrá en `.git-blame-ignore-revs` los commits que sólo cambien formato.
 - Mantené credenciales, rutas locales, cachés, progreso y resultados generados fuera
   de Git; actualizá `.gitignore` y `.dockerignore` al introducir nuevas salidas.
+- Entregá cada cambio como pull request, con título y descripción en inglés. El título sigue
+  la notación de Angular (`type(scope): subject`, por ejemplo `feat(api): serve the curriculum
+  from MySQL`); la descripción cuenta el problema completo: el contexto, qué faltaba o fallaba
+  y por qué, qué cambia, cómo se verificó y qué queda pendiente.
 
 ## Módulos y frameworks JavaScript
 
@@ -130,7 +139,7 @@ export function filterConcepts(concepts: Concept[], filters: Filters): Concept[]
   return concepts.filter(concept => concept.level === filters.level);
 }
 
-// Consumidor ESM.
+// ESM consumer.
 import {filterConcepts} from './filter-concepts';
 ```
 
@@ -213,29 +222,28 @@ import {filterConcepts} from './filter-concepts';
   Cada test debe poder detectar un comportamiento incorrecto concreto.
 - Probá comportamiento observable; evitá tests de funciones privadas, snapshots
   indiscriminados o mocks que sólo confirmen cómo está escrita la implementación.
-- Conservá comentarios que expliquen decisiones, límites o efectos no evidentes.
-  Refactorizá con un motivo concreto y pruebas de comportamiento en verde.
+- Refactorizá con un motivo concreto y pruebas de comportamiento en verde.
 
 Ejemplo de legibilidad: preferí una condición explícita a coerciones compactas.
 
 ```js
-// Evitar: exige descifrar una coerción numérica dentro del acumulador.
-const total = pruebas.reduce((n, p) => n + +(p.passed === true), 0);
+// Avoid: the reader has to decode a numeric coercion inside the accumulator.
+const total = tests.reduce((n, t) => n + +(t.passed === true), 0);
 
-// Preferir: expresa directamente qué se está contando.
-const aprobadas = pruebas.filter(prueba => prueba.passed === true).length;
+// Prefer: it says directly what is being counted.
+const passedCount = tests.filter(test => test.passed === true).length;
 ```
 
 Ejemplo de pruebas para ese contrato:
 
 ```js
-const pruebas = [{passed: true}, {passed: false}, {passed: true}];
+const tests = [{passed: true}, {passed: false}, {passed: true}];
 
-// Tautológico: vuelve a calcular el esperado con la misma implementación.
-assert.equal(contarAprobadas(pruebas), pruebas.filter(p => p.passed === true).length);
+// Tautological: recomputes the expected value with the same implementation.
+assert.equal(countPassed(tests), tests.filter(t => t.passed === true).length);
 
-// Útil: el esperado se obtiene del ejemplo, contando sus dos casos aprobados.
-assert.equal(contarAprobadas(pruebas), 2);
+// Useful: the expected value comes from the example, which has two passing cases.
+assert.equal(countPassed(tests), 2);
 ```
 
 Estos ejemplos ilustran el criterio; no agregan funciones ni reglas nuevas al currículo.
