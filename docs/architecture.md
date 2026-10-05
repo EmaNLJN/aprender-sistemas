@@ -16,6 +16,7 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | Navegación, recorrido y progreso general | `app.js`, `styles.css` |
 | Contenido del recorrido y biblioteca | `content/guide/`; tipos y progreso en `src/entities/guide/` |
 | Catálogos de contenido (publicados en `window.*`) | `content/` → `tools/content/` → `build/curriculum.json`; adaptador `src/app/legacy/register-catalogs.ts` |
+| Contenido en MySQL (ADR 0006, C2) | `tools/content/` también escribe `build/curriculum.meta.json` (huellas y claves de etapa) → etapa `curriculum` de `api/Dockerfile` → `content:import` y `api/app/Content/` → 17 recursos de sólo lectura (`GET /api/exercises`, `worlds`, `workshops`, `atlas` y `guide`); los bytes de cada porción los fija el generador, nunca `JsonResource` |
 | Ejercicios del recorrido y tipo `Exercise` | sección `lab` de `content/{rust,go}/manifest.yaml` y `content/{rust,go}/exercises/<id>/`; `src/entities/exercise/model/types.ts` |
 | Laboratorio, revisión y modelos educativos | `lab.js`, `lab-explorers.js`, `lab.css` |
 | Transporte a los Playgrounds oficiales | `src/shared/api/playground/`, adaptador `src/app/legacy/register-runner.ts` |

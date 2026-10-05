@@ -137,7 +137,8 @@ prediction:
   answer: 1
   explanation: Sale B.
 steps:
-  - title: Dibujá
+  - id: e1
+    title: Dibujá
     task: Dibujá la traza.
     why: Para ver la política.
     done: Hay una traza.
@@ -167,7 +168,7 @@ test('talleres: un grupo por dominio y la ficha completa por lenguaje', () => {
   for (const domain of domains) {
     files[`content/workshops/${domain}-w.yaml`] = WORKSHOP.replace('id: cache', `id: ${domain}-w`);
   }
-  const workshops = loadWorkshops(fixture(files));
+  const { workshops } = loadWorkshops(fixture(files));
   assert.deepEqual(
     domains.map((domain) => workshops[domain as keyof typeof workshops][0].id),
     ['lowlevel-w', 'infra-w', 'play-w', 'pc-w'],
@@ -180,6 +181,69 @@ test('talleres: un grupo por dominio y la ficha completa por lenguaje', () => {
     () => loadWorkshops(fixture(files)),
     'content/workshops/pc-w.yaml: bridge: falta la clave «go»',
   );
+});
+
+function workshopsWithSteps(steps: string): Record<string, string> {
+  const domains = ['lowlevel', 'infra', 'play', 'pc'];
+  const files: Record<string, string> = {
+    'content/workshops/manifest.yaml': domains
+      .map((domain) => `${domain}:\n  - ${domain}-w\n`)
+      .join(''),
+  };
+  for (const domain of domains) {
+    files[`content/workshops/${domain}-w.yaml`] = WORKSHOP.replace(
+      'id: cache',
+      `id: ${domain}-w`,
+    ).replace(/steps:\n[\s\S]*?sources:/, `steps:\n${steps}sources:`);
+  }
+  return files;
+}
+
+function step(id: string, v1Index: number | null, title: string): string {
+  const index = v1Index === null ? '' : `    v1Index: ${v1Index}\n`;
+  return `  - id: ${id}\n${index}    title: ${title}\n    task: Hacé ${title}.\n    why: Por ${title}.\n    done: ${title} listo.\n`;
+}
+
+test('workshops: step keys travel separately and the published step keeps its four texts', () => {
+  const steps = step('e1', 0, 'Uno') + step('e2', 1, 'Dos') + step('e3', null, 'Tres');
+  const { workshops, stepKeys } = loadWorkshops(fixture(workshopsWithSteps(steps)));
+  assert.deepEqual(stepKeys['lowlevel-w'], [
+    { id: 'e1', v1Index: 0 },
+    { id: 'e2', v1Index: 1 },
+    { id: 'e3', v1Index: null },
+  ]);
+  const published = workshops.lowlevel[0].steps as Record<string, unknown>[];
+  assert.deepEqual(published[2], {
+    title: 'Tres',
+    task: 'Hacé Tres.',
+    why: 'Por Tres.',
+    done: 'Tres listo.',
+  });
+  assert.deepEqual(Object.keys(published[0]), ['title', 'task', 'why', 'done']);
+});
+
+test('workshops: the step key must exist, be valid and not repeat', () => {
+  const where = 'content/workshops/lowlevel-w.yaml: ';
+  const load = (steps: string) => () => loadWorkshops(fixture(workshopsWithSteps(steps)));
+  throwsContent(
+    load(step('e1', 0, 'Uno') + step('e1', 1, 'Dos')),
+    `${where}steps[1].id: «e1» se repite en el taller`,
+  );
+  throwsContent(
+    load(step('e1', 0, 'Uno') + step('e2', 0, 'Dos')),
+    `${where}steps[1].v1Index: 0 se repite en el taller`,
+  );
+  throwsContent(
+    load(step('E1', 0, 'Uno')),
+    `${where}steps[0].id: se esperaba una clave en minúsculas, dígitos y guiones (hasta 64), como e1`,
+  );
+  throwsContent(
+    load(step('e1', -1, 'Uno')),
+    `${where}steps[0].v1Index: se esperaba un entero mayor o igual que 0`,
+  );
+  const withoutKey =
+    '  - title: Uno\n    task: Hacé Uno.\n    why: Por Uno.\n    done: Uno listo.\n';
+  throwsContent(load(withoutKey), `${where}steps[0]: falta la clave «id»`);
 });
 
 test('registros: ID sin archivo, repetido entre grupos, clave y grupo desconocidos', () => {

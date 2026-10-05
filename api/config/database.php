@@ -63,8 +63,13 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
+            'timezone' => '+00:00',
+            // VALUES() in ON DUPLICATE KEY UPDATE is deprecated since MySQL 8.0.20 (ADR 0006 D09).
+            'use_upsert_alias' => true,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                // Set only by the migrate service, to bound lock waits (ADR 0006 D35).
+                Mysql::ATTR_INIT_COMMAND => env('MYSQL_ATTR_INIT_COMMAND'),
             ]) : [],
         ],
 

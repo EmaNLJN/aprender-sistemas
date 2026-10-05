@@ -17,6 +17,10 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
   `composer.json` y `composer.lock`:
   `docker run --rm --user "$(id -u):$(id -g)" -v "$PWD/api":/app -w /app composer:2.10 require --no-install --no-scripts 'vendor/paquete:^1.0'`.
   Cada descarga necesita permiso del usuario.
+- **Arreglos:** se transforman con Collections (`collect()`) o con los helpers `Arr::` de
+  Laravel, no encadenando `array_map`, `array_filter`, `array_values` o `array_column`. En los
+  bordes entran y salen arreglos: con `->all()`, y una lista filtrada lleva antes `->values()`.
+  `PublishedJson` y el query builder reciben siempre arreglos, nunca una Collection.
 - **Rutas:** van en `routes/api.php`, con prefijo `/api`. Sin rutas web y sin
   `php artisan install:api`, que instala Sanctum; la autenticación llega en C3 con
   `composer require`.
@@ -28,6 +32,11 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
   - Los textos usan la colación de la conexión, `utf8mb4_es_0900_ai_ci`.
   - Los IDs de contenido van en `ascii_bin`, por columna, en cada migración.
   - Sin SQLite, ni en pruebas.
+- **Contenido (C2):**
+  - `app/Content/` arma las 17 porciones desde las tablas con los bytes que fija el generador (`PublishedJson`): la respuesta es ese texto, nunca `response()->json()` ni un `JsonResource`. Las huellas las calcula sólo `tools/content`; PHP las guarda y las compara.
+  - `content:import` corre en el servicio `migrate` (`docker/migrate.sh`, el único backoff), toma el candado `GET_LOCK` y se auto-chequea en cada corrida.
+  - Para desplegar, desde la raíz, `sh api/scripts/deploy.sh`: corre `migrate` con la imagen nueva antes de reemplazar `php`, así un fallo deja sirviendo al anterior (FR-034). `docker compose up --build` no lo garantiza, y `sh api/scripts/deploy-check.sh` lo prueba contra el stack.
+  - Las tablas se escriben a mano en un único `CREATE TABLE` por migración, con el DDL de `specs/001-c2-contenido-mysql/data-model.md`.
 - **Pruebas:**
   - `RefreshDatabase` es el default (`tests/Pest.php`). `DatabaseTruncation` queda para el
     código que hace `TRUNCATE` o abre sus propias transacciones.
@@ -36,5 +45,7 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
   - `tests/TestCase.php` corta antes de tocar una base que no sea `mysql-test`/`taller_test*`,
     con la conexión efectiva (DB_URL, socket y hosts de lectura o escritura incluidos) y antes de las bases de cada proceso
     en paralelo.
+  - Tres suites: `tests/Unit` (PHP puro, sin aplicación), `tests/Feature` (`RefreshDatabase`) y `tests/Content`
+    (`DatabaseTruncation`: el import, HTTP y el DDL confirman sus propias transacciones).
 - **Contenedores:** `php` y `migrate` corren como `www-data` y con disco de sólo lectura. Lo
   que necesite escribir va a un tmpfs declarado en `compose.yaml`.

@@ -30,19 +30,27 @@ prediction:
   answer: 0
   explanation: 'Un objeto puede estar antes y después de la pared sin superponerla en ninguna muestra: es tunneling.'
 steps:
-  - title: Detectar
+  - id: e1
+    v1Index: 0
+    title: Detectar
     task: Implementá la intersección de intervalos en x e y.
     why: La geometría debe tener un contrato para bordes y cajas degeneradas.
     done: Contacto sin área devuelve ausencia.
-  - title: Integrar
+  - id: e2
+    v1Index: 1
+    title: Integrar
     task: Avanzá posición con un intervalo de tiempo fijo.
     why: Separar simulación y frecuencia de dibujo mejora reproducibilidad.
     done: La misma secuencia de pasos da el mismo estado.
-  - title: Responder
+  - id: e3
+    v1Index: 2
+    title: Responder
     task: Reflejás velocidad y corregís la penetración.
     why: Cambiar velocidad sin corregir posición deja el objeto dentro de la pared.
     done: Tras el choque, la caja queda fuera y puede alejarse.
-  - title: Investigar
+  - id: e4
+    v1Index: 3
+    title: Investigar
     task: Aumentá la velocidad y documentá los límites.
     why: Un ejemplo que falla enseña cuándo hace falta barrido continuo o subpasos.
     done: Podés explicar qué casos cubre tu detector.

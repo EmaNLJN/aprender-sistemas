@@ -42,19 +42,27 @@ prediction:
   answer: 1
   explanation: Los conjuntos se superponen. La consistencia final depende además del protocolo, versiones, concurrencia y fallos.
 steps:
-  - title: Conjuntos antes de protocolos
+  - id: e1
+    v1Index: 0
+    title: Conjuntos antes de protocolos
     task: Implementá la validación N,W,R y la condición de intersección sin overflow.
     why: Una propiedad matemática pequeña no debe confundirse con un servicio completo.
     done: Rechazás R/W fuera de rango y distinguís W+R=N.
-  - title: Versiones observables
+  - id: e2
+    v1Index: 1
+    title: Versiones observables
     task: Guardá versiones y respuestas por réplica en un simulador.
     why: El valor de cada nodo permite explicar lecturas atrasadas.
     done: La réplica aislada conserva su versión anterior.
-  - title: Protocolo con referencias
+  - id: e3
+    v1Index: 2
+    title: Protocolo con referencias
     task: Seguí los laboratorios MIT y visualizaciones de Raft para elegir un protocolo completo.
     why: Términos, elecciones y commits requieren reglas conjuntas.
     done: Podés describir qué propiedad no garantiza tu modelo de quórum.
-  - title: Fallos reproducibles
+  - id: e4
+    v1Index: 3
+    title: Fallos reproducibles
     task: Prepará trazas de partición, retraso y reinicio; documentá supuestos de membresía.
     why: Dormir unos milisegundos no define un modelo de fallos.
     done: Cada traza produce un historial que se puede revisar y repetir.

@@ -59,8 +59,8 @@ cambies y evitá reformatear las skills importadas o las salidas generadas.
 | Empaquetado, assets u orden de carga | `npm run build`; `node qa/build-check.ts`, `node qa/load-order-check.ts` |
 | Arranque, adaptadores `window.Taller*` o navegación por vistas | `node qa/boot-check.ts` |
 | IDs de ejercicios, mundos, talleres o conceptos | `node qa/curriculum-ids-check.ts` |
-| Contenido en `content/` | `npm run curriculum` y, entre los checks que leen el currículo real, `content-check`, `campaign-content-check`, `guide-content-check`, `atlas-check`, `curriculum-ids-check`, `systems-check` y el `systems-<dominio>-check` que corresponda (`node qa/<nombre>.ts`); `npm test` los corre todos; si ningún catálogo debe cambiar, `npm run curriculum && node tools/content/dump-globals.ts .` da los mismos bytes antes y después |
-| Generador en `tools/content/` | El `node qa/content-*-check.ts` del módulo tocado (usan fixtures temporales y no leen `content/`) y el oráculo de la fila anterior |
+| Contenido en `content/` | `npm run curriculum` y, entre los checks que leen el currículo real, `content-check`, `campaign-content-check`, `guide-content-check`, `atlas-check`, `curriculum-meta-check`, `curriculum-ids-check`, `systems-check` y el `systems-<dominio>-check` que corresponda (`node qa/<nombre>.ts`); `npm test` los corre todos; si ningún catálogo debe cambiar, `npm run curriculum && node tools/content/dump-globals.ts .` da los mismos bytes antes y después |
+| Generador en `tools/content/` | El `node qa/content-*-check.ts` del módulo tocado (usan fixtures temporales y no leen `content/`), `node qa/curriculum-meta-check.ts` si toca el meta (`build/curriculum.meta.json`) y el oráculo de la fila anterior |
 | Ejercicios o contratos de revisión | `node qa/content-check.ts`, `node qa/runner-check.ts` |
 | Recorrido, biblioteca o respaldo global | `node qa/guide-content-check.ts`, `node qa/app-shell-check.ts` |
 | Lectura, respaldo o avisos de carga del progreso | `node qa/versioned-storage-check.ts` y el check del almacén afectado |
@@ -74,7 +74,7 @@ cambies y evitá reformatear las skills importadas o las salidas generadas.
 | Modelo lowlevel, infra, play o pc | El correspondiente `node qa/systems-<dominio>-check.ts` |
 | Generación de proyectos o ZIP | `node qa/project-kit-check.ts` |
 | Ejecutor Go (`executor/`) | `npm run test:executor`; con Docker real, `npm run test:executor:integration` (no forman parte de `npm test`) |
-| API Laravel (`api/`) | `npm run api:test`, `npm run api:format:check` y `npm run api:analyse`; con el stack levantado, `npm run api:smoke` (no forman parte de `npm test`) |
+| API Laravel (`api/`) | `npm run api:test`, `npm run api:format:check` y `npm run api:analyse`; con el stack levantado, `npm run api:smoke` y `npm run api:content:check` (las 17 porciones a través de Nginx; no forman parte de `npm test`) |
 | Sólo documentación | Verificar rutas, comandos y enlaces locales; `git diff --check` |
 
 Para una reorganización de archivos o un cambio transversal, regenerá la página

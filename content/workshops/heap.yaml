@@ -31,19 +31,27 @@ prediction:
   answer: 1
   explanation: La suma no vuelve contiguos los intervalos.
 steps:
-  - title: Representá intervalos
+  - id: e1
+    v1Index: 0
+    title: Representá intervalos
     task: Usá rangos [inicio,fin) ordenados sin solapamientos.
     why: Un invariante geométrico permite revisar todas las operaciones.
     done: Cada unidad está libre o asignada exactamente una vez.
-  - title: Encontrá first-fit alineado
+  - id: e2
+    v1Index: 1
+    title: Encontrá first-fit alineado
     task: Implementá el núcleo y explicitá padding, tamaño y overflow.
     why: La primera dirección libre puede no cumplir la alineación.
     done: Pasan casos con padding y falta de espacio.
-  - title: Reservá y liberá
+  - id: e3
+    v1Index: 2
+    title: Reservá y liberá
     task: Agregá IDs de asignación, split y rechazo de liberaciones desconocidas.
     why: El dueño de cada rango evita liberar dos veces.
     done: Una secuencia alloc/free conserva la capacidad total.
-  - title: Coalescé y mostrálos
+  - id: e4
+    v1Index: 3
+    title: Coalescé y mostrálos
     task: Uní vecinos libres y exportá una traza de bloques en tu CLI.
     why: Un modelo visible permite explicar fragmentación sin punteros peligrosos.
     done: Reproducís un fallo por fragmentación y su recuperación.

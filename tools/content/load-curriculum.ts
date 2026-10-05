@@ -8,7 +8,7 @@ import { LANGUAGES, type Language, type SystemsDomain } from './catalogs.ts';
 import { expectDistinctIds, interleaveCores, loadLanguage } from './exercises.ts';
 import { loadGuide } from './guide.ts';
 import type { JsonRecord } from './shape.ts';
-import { loadWorkshops } from './workshops.ts';
+import { loadWorkshops, type WorkshopStepKeys } from './workshops.ts';
 
 export interface Curriculum {
   lab: Record<Language, JsonRecord[]>;
@@ -20,7 +20,12 @@ export interface Curriculum {
   atlas: Record<Language, JsonRecord[]>;
 }
 
-export function loadCurriculum(root: string): Curriculum {
+export interface CurriculumSource {
+  curriculum: Curriculum;
+  workshopSteps: WorkshopStepKeys;
+}
+
+export function loadCurriculumSource(root: string): CurriculumSource {
   // Nada queda en content/ sin que el generador lo lea (la política de catalog-files.ts).
   expectOnlyEntries(
     root,
@@ -31,13 +36,19 @@ export function loadCurriculum(root: string): Curriculum {
   const rust = loadLanguage(root, 'rust');
   const go = loadLanguage(root, 'go');
   expectDistinctIds(rust, go);
-  return {
+  const { workshops, stepKeys } = loadWorkshops(root);
+  const curriculum: Curriculum = {
     lab: { rust: rust.lab, go: go.lab },
     quests: { rust: rust.quests, go: go.quests },
     cores: interleaveCores(rust, go),
     campaign: loadCampaign(root),
-    workshops: loadWorkshops(root),
+    workshops,
     guide: loadGuide(root),
     atlas: loadAtlas(root),
   };
+  return { curriculum, workshopSteps: stepKeys };
+}
+
+export function loadCurriculum(root: string): Curriculum {
+  return loadCurriculumSource(root).curriculum;
 }

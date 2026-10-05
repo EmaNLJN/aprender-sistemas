@@ -33,6 +33,10 @@ x-laravel-runtime: &laravel-runtime
   build:
     context: ./api
     target: runtime
+    additional_contexts:
+      repo: .
+    args:
+      CONTENT_SOURCE_COMMIT: '${CONTENT_SOURCE_COMMIT:-}'
   environment: *laravel-env
   networks: [app]
   read_only: true
@@ -107,11 +111,14 @@ services:
       start_interval: 1s
     restart: unless-stopped
 
-  # Aplica las migraciones pendientes y termina; corre en cada `up`. php espera a que termine
-  # bien (service_completed_successfully), y por esa dependencia `up --wait` acepta que salga.
+  # The only service with bounded lock waits (ADR 0006 D35). php starts only after it succeeds,
+  # which is also why `up --wait` accepts that it exits.
   migrate:
     <<: *laravel-runtime
-    command: ['php', 'artisan', 'migrate', '--force']
+    environment:
+      <<: *laravel-env
+      MYSQL_ATTR_INIT_COMMAND: 'SET SESSION lock_wait_timeout=5, innodb_lock_wait_timeout=5'
+    command: ['migrate-and-import']
     depends_on:
       mysql:
         condition: service_healthy
@@ -141,7 +148,11 @@ services:
   mysql-test:
     profiles: [test]
     image: *mysql-image
-    command: *mysql-command
+    # Without --skip-log-bin each run adds about 135 MB of binlog to the 1 GB tmpfs.
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_es_0900_ai_ci
+      - --skip-log-bin
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
       MYSQL_DATABASE: taller_test
@@ -158,6 +169,8 @@ services:
     build:
       context: ./api
       target: dev
+      additional_contexts:
+        repo: .
     entrypoint: ['php', 'vendor/bin/pest']
     environment: *laravel-test-env
     networks: [testing]

@@ -31,19 +31,27 @@ prediction:
   answer: 1
   explanation: Leer A produce [B,C,A]; D expulsa B.
 steps:
-  - title: Definí el contrato
+  - id: e1
+    v1Index: 0
+    title: Definí el contrato
     task: Elegí capacidad, representación y comportamiento con capacidad cero.
     why: Un caso borde ambiguo se propaga a todas las operaciones.
     done: Tenés ejemplos de vacío, hit y miss.
-  - title: Implementá el núcleo
+  - id: e2
+    v1Index: 1
+    title: Implementá el núcleo
     task: Resolvés el ejercicio enlazado y comparás el orden después de cada lectura.
     why: Una traza permite detectar errores de recencia.
     done: Pasan las pruebas y una traza propia.
-  - title: Agregá una fuente de datos
+  - id: e3
+    v1Index: 2
+    title: Agregá una fuente de datos
     task: Creá get(key) que consulte una fuente contada en los misses y almacene su resultado.
     why: La caché debe ahorrar trabajo sin cambiar el valor devuelto.
     done: Una clave repetida devuelve igual dato con menos consultas.
-  - title: Evaluá otra carga
+  - id: e4
+    v1Index: 3
+    title: Evaluá otra carga
     task: Compará una secuencia repetida con un barrido mayor a la capacidad; registrá hits y misses.
     why: El rendimiento depende de la carga, no del nombre del algoritmo.
     done: Tu informe incluye la traza y ambas tasas, sin tiempos inventados.

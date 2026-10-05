@@ -30,19 +30,27 @@ prediction:
   answer: 0
   explanation: Una transición diagonal cambia ambas coordenadas con el mismo error previo.
 steps:
-  - title: Definir
+  - id: e1
+    v1Index: 0
+    title: Definir
     task: Fijá extremos incluidos y una política de empate.
     why: Dos algoritmos pueden elegir píxeles distintos en una frontera.
     done: El contrato describe exactamente la secuencia esperada.
-  - title: Acumular
+  - id: e2
+    v1Index: 1
+    title: Acumular
     task: Actualizá un error entero al mover cada eje.
     why: Evita recalcular una pendiente fraccional a cada paso.
     done: Una línea horizontal, vertical y diagonal termina.
-  - title: Visualizar
+  - id: e3
+    v1Index: 2
+    title: Visualizar
     task: Superponé el segmento ideal con los píxeles calculados.
     why: Ver ambas representaciones explica la aproximación.
     done: Cada casilla elegida se corresponde con un elemento de la salida.
-  - title: Generalizar
+  - id: e4
+    v1Index: 3
+    title: Generalizar
     task: Probá todos los sentidos y el extremo coincidente.
     why: Los signos y los casos degenerados exponen supuestos escondidos.
     done: Tus pruebas cubren reversos y un solo punto.

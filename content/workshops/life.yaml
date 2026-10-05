@@ -30,19 +30,27 @@ prediction:
   answer: 0
   explanation: B3 significa nacimiento con 3 vecinas; S23 conserva una viva con 2 o 3.
 steps:
-  - title: Representar
+  - id: e1
+    v1Index: 0
+    title: Representar
     task: Construí una grilla de booleanos y definí sus bordes.
     why: Sin un contrato del exterior, contar vecinos es ambiguo.
     done: Una celda aislada no ve vecinos al otro lado del tablero.
-  - title: Actualizar
+  - id: e2
+    v1Index: 1
+    title: Actualizar
     task: Calculá la siguiente generación en otro buffer.
     why: Leer estados nuevos durante el mismo paso rompe la simultaneidad.
     done: Un blinker rota y recupera su forma después de dos pasos.
-  - title: Observar
+  - id: e3
+    v1Index: 2
+    title: Observar
     task: Marcá nacimientos y muertes con colores diferentes.
     why: Contar población no alcanza para entender cómo cambia una forma.
     done: El bloque es estable y el glider se traslada.
-  - title: Experimentar
+  - id: e4
+    v1Index: 3
+    title: Experimentar
     task: Diseñá semillas y anotá predicciones.
     why: Reglas simples no vuelven triviales los resultados globales.
     done: Podés comparar tu hipótesis con una secuencia de generaciones.

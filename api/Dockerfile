@@ -20,6 +20,18 @@ RUN --mount=type=cache,target=/tmp/cache composer install --no-interaction --no-
 COPY . .
 RUN composer dump-autoload --optimize --no-interaction
 
+# The first three instructions mirror the root Dockerfile so BuildKit reuses its npm ci layer;
+# keep them in sync.
+FROM node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS curriculum
+WORKDIR /app
+COPY --from=repo package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY --from=repo content content
+COPY --from=repo tools/content tools/content
+COPY --from=repo src/shared/config src/shared/config
+ARG CONTENT_SOURCE_COMMIT=""
+RUN node tools/content/build-curriculum.ts
+
 # PHP-FPM con pdo_mysql y php.ini de producción. fcgi trae cgi-fcgi para el healthcheck de
 # compose.yaml. docker-php-ext-install instala y borra solo las herramientas de compilación.
 # Los paquetes de apk no llevan versión fija: Alpine retira las viejas de sus repositorios; el
@@ -31,6 +43,7 @@ RUN apk add --no-cache fcgi \
 COPY docker/opcache.ini /usr/local/etc/php/conf.d/zz-opcache.ini
 COPY docker/fpm-pool.conf /usr/local/etc/php-fpm.d/zz-taller.conf
 COPY docker/php.ini /usr/local/etc/php/conf.d/zz-taller.ini
+COPY --chmod=0755 docker/migrate.sh /usr/local/bin/migrate-and-import
 WORKDIR /var/www/html
 
 # Producción: el código es de root y PHP sólo lo lee. storage/ y bootstrap/cache/ son de
@@ -38,6 +51,7 @@ WORKDIR /var/www/html
 # las vistas compiladas van a un tmpfs.
 FROM base AS runtime
 COPY --from=vendor /app /var/www/html
+COPY --from=curriculum /app/build/curriculum.json /app/build/curriculum.meta.json resources/content/
 # /var/www/html viene de la imagen base como www-data 1777: con eso, PHP podría renombrar o
 # borrar public/ o vendor/ aunque sean de root.
 RUN chown root:root /var/www/html && chmod 755 /var/www/html \
@@ -48,6 +62,7 @@ USER www-data
 # cachés dentro del proyecto.
 FROM base AS dev
 COPY --from=dev-vendor /app /var/www/html
+COPY --from=curriculum /app/build/curriculum.json /app/build/curriculum.meta.json resources/content/
 # Laravel lee .env al arrancar, antes de registrar su manejador de errores. Sin el archivo,
 # phpdotenv avisa y Pest registra el aviso en cada corrida. Va vacío: el entorno llega de Compose.
 RUN touch .env

@@ -18,7 +18,7 @@ El script agrega `APP_KEY`, `MYSQL_PASSWORD` y `MYSQL_ROOT_PASSWORD` aleatorios 
 docker compose up --build -d --wait
 ```
 
-Abrí **http://localhost:8080/#sistemas**. También podés entrar por `#campana`, `#laboratorio` o `#atlas`. Compose construye la web, el editor, las animaciones y el generador de kits ZIP con Node en una etapa de construcción, y los sirve con Nginx dentro del contenedor. También levanta la API Laravel (PHP-FPM), MySQL y un servicio que aplica las migraciones y termina. Nginx pasa `/api/` a la API en el mismo origen, y **http://localhost:8080/api/up** responde si arrancó. En la PC anfitriona sólo necesitás Docker y Compose: no hace falta instalar Python, Node, PHP ni un servidor web. La primera construcción descarga las imágenes y las dependencias. Las siguientes aprovechan la caché.
+Abrí **http://localhost:8080/#sistemas**. También podés entrar por `#campana`, `#laboratorio` o `#atlas`. Compose construye la web, el editor, las animaciones y el generador de kits ZIP con Node en una etapa de construcción, y los sirve con Nginx dentro del contenedor. También levanta la API Laravel (PHP-FPM), MySQL y un servicio que aplica las migraciones, importa el contenido del currículo a la base y termina; si falla, PHP no arranca. Nginx pasa `/api/` a la API en el mismo origen, y **http://localhost:8080/api/up** responde si arrancó. En la PC anfitriona sólo necesitás Docker y Compose: no hace falta instalar Python, Node, PHP ni un servidor web. La primera construcción descarga las imágenes y las dependencias, también las de Node de la etapa que genera el contenido de la API. Las siguientes aprovechan la caché.
 
 Para detenerlo:
 
@@ -29,6 +29,10 @@ docker compose down
 Todos los comandos de `docker compose` leen `.env`: sin los secretos, hasta `down` se niega a correr. `down` conserva la base, que vive en el volumen `taller-rust-go_mysql-data`; `docker compose down -v` la borra. MySQL toma las contraseñas al crear ese volumen: cambiarlas después en `.env` no cambia las de la base.
 
 Para usar otro puerto, agregá `TALLER_PORT=8090` al `.env` y ejecutá el mismo comando. El puerto se publica solo en tu equipo (127.0.0.1); MySQL (3306) y PHP-FPM (9000) no se publican. Compose crea redes propias: `edge`, la única con salida, para Nginx; `web`, interna, entre Nginx y PHP; `app`, interna, entre PHP y MySQL (Nginx no llega a MySQL), y `testing`, interna, para `npm run api:test`. Las imágenes base están fijadas por digest para reproducir esta entrega.
+
+La imagen de la API genera su propio `curriculum.json` y `curriculum.meta.json` con el mismo generador que usa el front, y el servicio de migraciones los importa. Para que la base registre el commit del contenido, pasalo al construir: `CONTENT_SOURCE_COMMIT=$(git rev-parse HEAD) docker compose up --build -d --wait`; sin él queda nulo y el import lo avisa.
+
+Para desplegar una versión nueva sin cortar el servicio si fallan las migraciones o el import, usá `sh api/scripts/deploy.sh`: construye las imágenes, corre las migraciones y el import con la nueva y recién entonces reemplaza PHP; si fallan, el PHP anterior sigue sirviendo. Con `docker compose up --build`, Compose detiene el PHP anterior antes de esperar a las migraciones. `sh api/scripts/deploy-check.sh` comprueba ese comportamiento contra el stack.
 
 ## Aprender en el taller
 
@@ -188,6 +192,10 @@ Sistemas separa los datos y modelos puros: `src/entities/systems-simulation/` de
 
 El currículo se edita en `content/`; `build/curriculum.json` es una salida generada que no se versiona.
 
+El generador también escribe `build/curriculum.meta.json`, que acompaña al documento: la huella de cada una de las 17 porciones que sirve la API y de cada ejercicio, las claves de las etapas de taller y el commit de origen. Es lo único que `content:import` y la API toman como verdad de esas huellas; no se edita ni se versiona.
+
+Cada etapa de `content/workshops/<id>.yaml` lleva una clave estable `id: e<N>` y, si ya existía en la versión 1, su `v1Index`. Las claves no se renumeran ni se reutilizan, y todavía no se publican: `qa/fixtures/workshop-steps-v1.json` es el contrato de las 100 etapas actuales. Una etapa nueva lleva la clave siguiente y no lleva `v1Index`.
+
 ```
 content/<rust|go>/manifest.yaml      etapas en orden (recorrido, desafíos y núcleos) y sus valores por defecto
 content/<rust|go>/exercises/<id>/    exercise.yaml, starter.<rs|go> y solution.<rs|go>
@@ -204,6 +212,8 @@ Para agregar un ejercicio:
    - `exercise.yaml`, sólo con lo que difiere de `defaults` y de la etapa: título, textos, instrucciones, pruebas `t1`, `t2`…, tres pistas, revisión, transferencia y predicción; si hace falta, también `level`, `kind`, `minutes`, `imports`, `visual` o `sources`. El generador además exige que un núcleo de infra lleve `workshopId` y `challengeType`; que un desafío no declare `challengeType`, porque lo fija su posición en el mundo (reparación, kata o jefe); y que cada mundo de desafíos tenga exactamente tres ejercicios;
    - `starter.<rs|go>` y `solution.<rs|go>`, con el código tal cual. Los `.go` empiezan con `package main` y una línea en blanco.
 4. Corré `npm run curriculum`, que valida todo `content/` y nombra el archivo y el campo de cada error. Después, `npm test`.
+
+Una prueba quitada de un ejercicio no puede volver con el mismo número hasta B2 (la API de ejecuciones): `content:import` no reutiliza un `test_key` retirado y el generador todavía exige `t1`, `t2`… en orden.
 
 En los YAML, un `#` después de un espacio empieza un comentario: un texto con `#` (como `#[test]` o `#2`) va entre comillas, y los comentarios van en su propia línea, sin más sangría que la clave: con más sangría, YAML la pega al valor sin comillas de arriba. `npm run curriculum` rechaza los dos casos.
 
@@ -250,6 +260,7 @@ npm run api:test:down     # apaga esa base de prueba
 npm run api:format:check  # formato PHP con Pint
 npm run api:analyse       # análisis estático de PHP con PHPStan (Larastan, nivel 6)
 npm run api:smoke         # con el stack levantado: Nginx, PHP-FPM y Laravel
+npm run api:content:check # con el stack levantado: las 17 porciones del contenido a través de Nginx
 ```
 
 ## Fuentes y atribución

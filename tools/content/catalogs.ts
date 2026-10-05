@@ -3,6 +3,14 @@
 export type Language = 'rust' | 'go';
 export const LANGUAGES: readonly Language[] = ['rust', 'go'];
 
+// FR-032 (ADR 0006 D13): the C2 catalogs sit outside the chain (chainPosition null); E1 adds
+// essentials at position 1.
+export const CATALOGS = [
+  { code: 'lab', sliceBy: 'language', chainPosition: null },
+  { code: 'quests', sliceBy: 'language', chainPosition: null },
+  { code: 'cores', sliceBy: 'domain', chainPosition: null },
+] as const;
+
 export type SystemsDomain = 'lowlevel' | 'infra' | 'play' | 'pc';
 export const SYSTEMS_DOMAINS: readonly SystemsDomain[] = ['lowlevel', 'infra', 'play', 'pc'];
 

@@ -31,19 +31,27 @@ prediction:
   answer: 0
   explanation: Round-robin permite que otra tarea lista reciba el próximo turno.
 steps:
-  - title: Modelá los estados
+  - id: e1
+    v1Index: 0
+    title: Modelá los estados
     task: Diferenciá lista, bloqueada, ejecutando y terminada.
     why: Estados explícitos evitan ejecutar tareas que esperan un evento.
     done: Cada tarea ocupa un único estado.
-  - title: Implementá round-robin
+  - id: e2
+    v1Index: 1
+    title: Implementá round-robin
     task: Completá el núcleo con quantum positivo y tareas de trabajo cero.
     why: Un quantum cero impediría progresar.
     done: Tenés una traza manual y una verificada.
-  - title: Agregá eventos de I/O
+  - id: e3
+    v1Index: 2
+    title: Agregá eventos de I/O
     task: Permití bloquear y despertar con un orden determinista de eventos.
     why: Los tiempos de espera cambian la cola disponible.
     done: Una tarea bloqueada no consume CPU antes de despertar.
-  - title: Medí respuesta
+  - id: e4
+    v1Index: 3
+    title: Medí respuesta
     task: Registrá primer turno y finalización para varias duraciones de quantum.
     why: La elección del quantum tiene compromisos observables.
     done: Comparás métricas y declarás que omitiste costos de contexto.
