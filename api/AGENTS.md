@@ -15,6 +15,10 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
   `composer.json` y `composer.lock`:
   `docker run --rm --user "$(id -u):$(id -g)" -v "$PWD/api":/app -w /app composer:2.10 require --no-install --no-scripts 'vendor/paquete:^1.0'`.
   Cada descarga necesita permiso del usuario.
+- **Arreglos:** se transforman con Collections (`collect()`) o con los helpers `Arr::` de
+  Laravel, no encadenando `array_map`, `array_filter`, `array_values` o `array_column`. En los
+  bordes entran y salen arreglos: con `->all()`, y una lista filtrada lleva antes `->values()`.
+  `PublishedJson` y el query builder reciben siempre arreglos, nunca una Collection.
 - **Rutas:** van en `routes/api.php`, con prefijo `/api`. Sin rutas web y sin
   `php artisan install:api`, que instala Sanctum; la autenticación llega en C3 con
   `composer require`.
