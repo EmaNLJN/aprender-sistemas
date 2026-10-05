@@ -4,6 +4,7 @@ use App\Content\ContentSnapshot;
 use App\Content\Portion;
 use App\Content\PortionRenderer;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\ContentFixture;
@@ -42,7 +43,7 @@ it('what is retired leaves the portions and renderExercise does not assemble it'
 
     $lab = json_decode(app(PortionRenderer::class)->render(Portion::LabRust));
 
-    expect(array_column($lab, 'id'))->not->toContain($gone)
+    expect(Arr::pluck($lab, 'id'))->not->toContain($gone)
         ->and(app(PortionRenderer::class)->renderExercise($gone))->toBeNull()
         ->and(DB::table('exercises')->where('id', $gone)->value('status'))->toBe('deprecated');
 });
