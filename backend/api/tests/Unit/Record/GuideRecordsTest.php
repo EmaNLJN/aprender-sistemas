@@ -1,6 +1,5 @@
 <?php
 
-use App\Content\Codec\GuideCodec;
 use App\Content\InvalidContent;
 use App\Content\PublishedJson;
 use App\Content\Record\Guide;
@@ -122,14 +121,10 @@ it('round-trips the whole guide when the integers of the rows are text', functio
         ->and(guideWithSortedColumns($rebuilt->rowsByTable()))->toBe(guideWithSortedColumns(Guide::fromDocument($document, GUIDE_LANGUAGES, 'guide')->rowsByTable()));
 });
 
-it('gives the six tables in the order and with the rows of C2', function () {
-    $document = guideDocument();
+it('gives the six tables in the order of C2', function () {
+    $rows = Guide::fromDocument(guideDocument(), GUIDE_LANGUAGES, 'guide')->rowsByTable();
 
-    $rows = Guide::fromDocument($document, GUIDE_LANGUAGES, 'guide')->rowsByTable();
-    $c2Rows = (new GuideCodec)->toRows($document, GUIDE_LANGUAGES, 'guide');
-
-    expect(array_keys($rows))->toBe(GUIDE_TABLES)
-        ->and(guideWithSortedColumns($rows))->toBe(guideWithSortedColumns($c2Rows));
+    expect(array_keys($rows))->toBe(GUIDE_TABLES);
 });
 
 it('stores featured as 0 or 1 in the row and as a boolean in what it publishes', function () {

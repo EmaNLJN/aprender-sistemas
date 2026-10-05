@@ -7,7 +7,6 @@ use stdClass;
 /** A concept of the Atlas: `atlas.<language>[i]` of the document ↔ an `atlas_concepts` row. */
 final readonly class AtlasConcept
 {
-    /** The published keys, in the order C2's AtlasCodec declared them. */
     public const KEYS = ['id', 'level', 'category', 'title', 'summary', 'why', 'code', 'explanation', 'comparison', 'pitfall', 'quiz', 'labId', 'source', 'furtherSources'];
 
     public function __construct(
