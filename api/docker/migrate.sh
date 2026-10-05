@@ -4,6 +4,7 @@
 # repite con pausas crecientes; cualquier otro error termina el paso sin reintentar. Es la única
 # capa de reintentos: el import usa `attempts: 1` para que no se multipliquen. Cada intento espera
 # como mucho 5 s por un bloqueo (MYSQL_ATTR_INIT_COMMAND de compose.yaml).
+# El código se busca con los espacios normalizados: la consola puede partirlo entre dos líneas.
 #
 # MIGRATE_PAUSES son las pausas, en segundos, entre intentos: «5 15» son 3 intentos. Las pruebas
 # la ponen en «0 0».
@@ -20,7 +21,7 @@ while :; do
   cat "$log"
   [ "$status" -eq 0 ] && exit 0
 
-  if ! grep -Eq 'General error: 1205|Serialization failure: 1213' "$log"; then
+  if ! tr -s '[:space:]' ' ' <"$log" | grep -Eq 'General error: 1205|Serialization failure: 1213'; then
     exit "$status"
   fi
 

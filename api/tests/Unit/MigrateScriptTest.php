@@ -4,7 +4,8 @@ use Symfony\Component\Process\Process;
 
 // docker/migrate.sh es el paso `migrate` del despliegue: reintenta sólo ante una espera de
 // bloqueo (1205) o un interbloqueo (1213), 3 intentos como mucho. Se prueba con un `php` de
-// mentira, que responde lo que dice un guion (una línea «código|texto» por llamada).
+// mentira, que responde lo que dice un guion (una línea «código|texto» por llamada; un `\n` en el
+// texto es un salto de línea, para simular un mensaje que la consola parte).
 function runMigrateScript(array $script): array
 {
     $directory = sys_get_temp_dir().'/migrate-script-'.bin2hex(random_bytes(6));
@@ -17,7 +18,7 @@ function runMigrateScript(array $script): array
         echo "$n" > "$FAKE_DIR/calls"
         line=$(sed -n "${n}p" "$FAKE_DIR/script")
         text=${line#*|}
-        [ -n "$text" ] && echo "$text"
+        [ -n "$text" ] && printf '%b\n' "$text"
         exit "${line%%|*}"
         SH);
     chmod("{$directory}/php", 0700);
@@ -37,6 +38,9 @@ function runMigrateScript(array $script): array
 
 const MIGRATE_LOCK_TIMEOUT = '1|SQLSTATE[HY000]: General error: 1205 Lock wait timeout exceeded; try restarting transaction';
 const MIGRATE_DEADLOCK = '1|SQLSTATE[40001]: Serialization failure: 1213 Deadlock found when trying to get lock; try restarting transaction';
+// El mismo 1205 como lo deja una consola angosta: partido entre «General» y «error:», con el
+// relleno de la primera línea y la sangría de la segunda.
+const MIGRATE_LOCK_TIMEOUT_WRAPPED = '1|SQLSTATE[HY000]: General  \n    error: 1205 Lock wait timeout exceeded; try restarting transaction';
 
 it('sale con 0 si las migraciones y el import andan, sin reintentar', function () {
     [$exit, $output, $calls] = runMigrateScript(['0|migrated', '0|imported']);
@@ -54,6 +58,14 @@ it('reintenta un interbloqueo del import', function () {
     [$exit, , $calls] = runMigrateScript(['0|migrated', MIGRATE_DEADLOCK, '0|migrated', '0|imported']);
 
     expect($exit)->toBe(0)->and($calls)->toBe(4);
+});
+
+it('reintenta aunque la consola parta el mensaje del bloqueo en dos líneas, con sangría', function () {
+    [$exit, $output, $calls] = runMigrateScript([MIGRATE_LOCK_TIMEOUT_WRAPPED, '0|migrated', '0|imported']);
+
+    // El log se muestra tal como salió: la normalización sólo es para decidir si reintenta.
+    expect($exit)->toBe(0)->and($calls)->toBe(3)->and($output)->toContain('reintento en 0 s')
+        ->toContain("General  \n    error: 1205");
 });
 
 it('se rinde después de 3 intentos', function () {
