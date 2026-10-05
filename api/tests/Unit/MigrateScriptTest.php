@@ -2,10 +2,12 @@
 
 use Symfony\Component\Process\Process;
 
-// docker/migrate.sh es el paso `migrate` del despliegue: reintenta sólo ante una espera de
-// bloqueo (1205) o un interbloqueo (1213), 3 intentos como mucho. Se prueba con un `php` de
-// mentira, que responde lo que dice un guion (una línea «código|texto» por llamada; un `\n` en el
-// texto es un salto de línea, para simular un mensaje que la consola parte).
+/**
+ * Runs docker/migrate.sh with a fake `php` that answers from `$script`: one "exit code|output" line per
+ * call, where a literal `\n` in the output is a line break (it simulates a console that wraps the message).
+ *
+ * @return array{int|null, string, int} exit code, combined output and number of `php` calls
+ */
 function runMigrateScript(array $script): array
 {
     $directory = sys_get_temp_dir().'/migrate-script-'.bin2hex(random_bytes(6));
@@ -38,44 +40,41 @@ function runMigrateScript(array $script): array
 
 const MIGRATE_LOCK_TIMEOUT = '1|SQLSTATE[HY000]: General error: 1205 Lock wait timeout exceeded; try restarting transaction';
 const MIGRATE_DEADLOCK = '1|SQLSTATE[40001]: Serialization failure: 1213 Deadlock found when trying to get lock; try restarting transaction';
-// El mismo 1205 como lo deja una consola angosta: partido entre «General» y «error:», con el
-// relleno de la primera línea y la sangría de la segunda.
 const MIGRATE_LOCK_TIMEOUT_WRAPPED = '1|SQLSTATE[HY000]: General  \n    error: 1205 Lock wait timeout exceeded; try restarting transaction';
 
-it('sale con 0 si las migraciones y el import andan, sin reintentar', function () {
+it('exits 0 when the migrations and the import work, without retrying', function () {
     [$exit, $output, $calls] = runMigrateScript(['0|migrated', '0|imported']);
 
     expect($exit)->toBe(0)->and($calls)->toBe(2)->and($output)->toContain('migrated')->toContain('imported');
 });
 
-it('reintenta una espera de bloqueo vencida y sale bien si el segundo intento anda', function () {
+it('retries a lock wait timeout and exits 0 if the second attempt works', function () {
     [$exit, $output, $calls] = runMigrateScript([MIGRATE_LOCK_TIMEOUT, '0|migrated', '0|imported']);
 
     expect($exit)->toBe(0)->and($calls)->toBe(3)->and($output)->toContain('reintento en 0 s');
 });
 
-it('reintenta un interbloqueo del import', function () {
+it('retries a deadlock in the import', function () {
     [$exit, , $calls] = runMigrateScript(['0|migrated', MIGRATE_DEADLOCK, '0|migrated', '0|imported']);
 
     expect($exit)->toBe(0)->and($calls)->toBe(4);
 });
 
-it('reintenta aunque la consola parta el mensaje del bloqueo en dos líneas, con sangría', function () {
+it('retries even if the console splits the lock message in two indented lines, and logs it as it came out', function () {
     [$exit, $output, $calls] = runMigrateScript([MIGRATE_LOCK_TIMEOUT_WRAPPED, '0|migrated', '0|imported']);
 
-    // El log se muestra tal como salió: la normalización sólo es para decidir si reintenta.
     expect($exit)->toBe(0)->and($calls)->toBe(3)->and($output)->toContain('reintento en 0 s')
         ->toContain("General  \n    error: 1205");
 });
 
-it('se rinde después de 3 intentos', function () {
+it('gives up after 3 attempts', function () {
     [$exit, $output, $calls] = runMigrateScript([MIGRATE_LOCK_TIMEOUT, MIGRATE_LOCK_TIMEOUT, MIGRATE_LOCK_TIMEOUT, MIGRATE_LOCK_TIMEOUT]);
 
     expect($exit)->toBe(1)->and($calls)->toBe(3)->and($output)->toContain('sigue fallando por bloqueos después de 3 intentos');
 });
 
-it('no reintenta otros errores: un contenido inválido corta el paso', function () {
-    [$exit, $output, $calls] = runMigrateScript(['0|migrated', '1|curriculum.json: lab.rust[0].extra: clave desconocida', '0|nunca']);
+it('does not retry other errors: invalid content stops the step', function () {
+    [$exit, $output, $calls] = runMigrateScript(['0|migrated', '1|curriculum.json: lab.rust[0].extra: clave desconocida', '0|never']);
 
     expect($exit)->toBe(1)->and($calls)->toBe(2)->and($output)->toContain('clave desconocida');
 });
