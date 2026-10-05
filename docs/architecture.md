@@ -40,6 +40,7 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | API Laravel del ADR 0004: rutas, configuración, migraciones, pruebas Pest e imagen PHP-FPM | `api/` (reglas en `api/AGENTS.md`) |
 | Comprobaciones e investigación educativa | `qa/*-check.ts`, `qa/lib/`, `qa/fixtures/`, `qa/run-checks.ts`, `qa/research-*.md` |
 | Documentación del desarrollo | `AGENTS.md`, `docs/` |
+| Planificación del backend con Spec Kit | `specs/` (hoja de ruta y una carpeta por feature), `.specify/` (constitución, plantillas, scripts y extensión `bug`) |
 
 ## Cómo mantener el orden
 
@@ -71,8 +72,8 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 - La salida autónoma `dist/index.html` es un contrato actual. Si la migración necesita
   varios assets, definí ese cambio de entrega y actualizá Docker, Nginx, QA y README
   antes de reemplazar el build. Un framework no exige compilar Rust/Go en el host.
-- Preferí comandos y rutas portables entre Linux y macOS. Comentá automatizaciones
-  y atajos no obvios con su disparador, acción y efectos visibles.
+- Preferí comandos y rutas portables entre Linux y macOS. Los comentarios siguen la regla de
+  «Convenciones» en `AGENTS.md`.
 - Excluí credenciales, rutas de máquina, cachés, progreso exportado y estado generado.
   Al agregar una nueva salida o configuración privada, revisá `.gitignore` y
   `.dockerignore`.
@@ -98,8 +99,8 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 - El progreso vive en `localStorage`, separado por origen y lenguaje. Preservá la
   exportación/importación, los logros ya obtenidos y el manejo de almacenamiento
   bloqueado. Las simulaciones no deben otorgar aprobación de código.
-- Conservá español, navegación por teclado, foco visible, diseño móvil y movimiento
-  reducido. Limpiá listeners, timers, editor y efectos al desmontar una vista.
+- Conservá la interfaz en español, navegación por teclado, foco visible, diseño móvil y
+  movimiento reducido. Limpiá listeners, timers, editor y efectos al desmontar una vista.
 - El editor y los ZIP funcionan con dependencias empaquetadas, sin CDN. Si cambia
   el transporte o los recursos externos, revisá también la CSP de `nginx.conf`.
 

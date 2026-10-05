@@ -110,7 +110,29 @@ sin scripts ni instrucciones de red.
 
 Se instalaron con `npx skills add <repo> --skill <nombre> -a codex -y`, con su enlace en
 `.claude/skills/`. `.gitattributes` exime a `.agents/skills/` de `git diff --check`, para que las
-skills conserven el formato de su fuente. El total actual es de veinte skills locales.
+skills conserven el formato de su fuente.
+
+## Spec Kit (2026-10-04)
+
+El CLI `specify` 1.0.13, instalado aparte, sostiene la planificación del backend; las reglas del
+flujo están en `.specify/memory/constitution.md`. Con sus trece skills, el total actual es de
+treinta y tres skills locales.
+
+- **Origen:** las diez `speckit-*` y las tres `speckit-bug-*` (extensión empaquetada `bug`) salen
+  del CLI, no de `npx skills`, así que no figuran en `skills-lock.json`. Lo instalado queda
+  registrado en `.specify/integrations/*.manifest.json` y `.specify/extensions/.registry`.
+- **Layout:** como el resto, la skill real vive en `.agents/skills/` y `.claude/skills/` la
+  enlaza. Para sumar una extensión, creá primero `.agents/skills/<nombre>/` y su symlink, y
+  después corré `specify extension add <nombre>`: el CLI escribe a través del enlace.
+- **Actualizar:** el manifiesto commiteado ya registra `.agents/skills/`. Con un manifiesto que
+  apunte a `.claude/skills/`, el primer `specify integration upgrade` borra los `SKILL.md`
+  enlazados y recién el segundo los repone.
+- **Una sola integración:** la de Claude. La de `codex` escribe en las mismas rutas de
+  `.agents/skills/`.
+- **Reinicializar:** `specify init --here --force` pisa la constitución y el override de
+  `.specify/templates/overrides/tasks-template.md`; para actualizar, usá `specify integration upgrade`.
+- **Sin `agent-context`:** esa extensión escribe un bloque propio en `AGENTS.md` o `CLAUDE.md`,
+  que acá sólo cambian a mano.
 
 ## Claude Code
 
