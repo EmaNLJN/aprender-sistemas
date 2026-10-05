@@ -39,10 +39,10 @@
 Cada línea nombra lo que entra y lo que queda fuera. Los detalles están en el ADR 0006 (§10 por subplan) y se bajan a la spec de cada ítem.
 
 - **C2:**
-  - Entra: las 21 tablas de contenido (§5.1), `content:import` incremental y sin borrados, los 17 recursos de sólo lectura con validador por porción y `Content-Version`, `curriculum.meta.json`, las claves estables de las etapas de taller, y migraciones que no se cuelgan esperando bloqueos.
-  - Fuera: sesión y `GET /api/session` (C3), `test_key` inmutable y plantilla del harness (B2), vista del front (A2 y A3) y Esenciales (E1).
+  - Entra: las 21 tablas de contenido (§5.1), `content:import` incremental y sin borrados, con auto-chequeo en cada corrida, los 17 recursos de sólo lectura con los bytes exactos del generador, validador por porción (sin build) y `Content-Version`, `curriculum.meta.json` (con la huella de cada porción), las claves estables de las etapas de taller, la etapa `curriculum` de la imagen de la API y migraciones que no se cuelgan esperando bloqueos. Hasta C3 el contenido responde sin sesión, con el puerto sólo en `127.0.0.1`.
+  - Fuera: sesión y `GET /api/session` (C3), el chequeo de transacciones largas con `db-grants` (C3), `test_key` inmutable y plantilla del harness (B2), vista del front (A2 y A3) y Esenciales (E1).
 - **C3:**
-  - Entra: `users` con rol y estado, invitaciones, recuperación por email, sesión de Laravel sin el paquete Sanctum, Fortify sin vistas, límites por cuenta y por red, cuenta esperada en todo pedido que muta, rutas `/api/auth`, `/api/me` y `/api/admin` (usuarios e invitaciones), `worker-mail` aislado, `db-grants`, `scheduler` y `lang/es`. Cierra el reenvío DNS de los contenedores sin egreso (estacionado de C1). Dos puntos dependen de la spec de C2: `GET /api/session` (Q2) y poner el contenido de C2 detrás de la sesión (Q1).
+  - Entra: `users` con rol y estado, invitaciones, recuperación por email, sesión de Laravel sin el paquete Sanctum, Fortify sin vistas, límites por cuenta y por red, cuenta esperada en todo pedido que muta, rutas `/api/auth`, `/api/me` y `/api/admin` (usuarios e invitaciones), `worker-mail` aislado, `db-grants`, `scheduler` y `lang/es`. Cierra el reenvío DNS de los contenedores sin egreso (estacionado de C1). Por las decisiones del clarify de C2 (2026-10-04 y 2026-10-05), C3 también entrega: `GET /api/session` (usuario o null, `contentVersion` y catálogos a partir del último import, y un `appBuild` opaco si el front lo necesita); el contenido de C2 detrás de la sesión, con «sin sesión, 401» en su aceptación y sin que el middleware de sesión agregue `Vary: Cookie` ni toque `Cache-Control` en el contenido; el chequeo de transacciones largas antes de migrar (D35), dentro de `db-grants`, con su prueba de privilegios con un usuario restringido (criterio J del DBA); y la limpieza programada de la caché de cuerpos vencida, en el `scheduler`.
   - Fuera: 2FA, login social, passkeys, registro abierto activo (queda detrás de `REGISTRATION_OPEN=false`) y TLS (C4). Si queda grande, se parte en C3a (autenticación) y C3b (invitaciones y admin).
 - **B2:**
   - Entra: `progress_heads` y `exercise_progress` completas, `attempts`, `attempt_tests`, `attempt_payloads` y `runs`; `/api/runs` con cola propia, cuotas por usuario y tope global; `executor` y `worker-runs`; la plantilla del harness como recurso. Precondición: `test_key` único e inmutable (el generador deja de exigir `t{índice+1}`).
@@ -93,13 +93,13 @@ Las evidencias salen de los mensajes de los commits y de la hoja de ruta anterio
 | Cuándo | Acción |
 | --- | --- |
 | Siempre | Cada descarga (imágenes, paquetes npm o Composer) pide permiso con nombre, origen y tamaño antes de bajarse. |
-| Ahora | Aprobar o enmendar el ADR 0006 y responder las preguntas abiertas de la spec de C2. |
+| Ahora | Aprobar o enmendar el ADR 0006, con las enmiendas del 2026-10-05 que dejó el clarify de C2 (también ratifica que la entrega sea un controlador con un servicio, y no un middleware). |
 | C3 | `laravel/fortify` (sin Sanctum); proveedor, remitente y dominio del correo (§13.3); `axllent/mailpit` sólo con permiso, en el perfil `dev`; origen de la lista de contraseñas bloqueadas (§13.4). |
 | C4 | Dominio, DNS (o DNS dinámico) y puertos 80 y 443 abiertos en el router. |
 
 ## Criterios de aceptación globales
 
-- **C2:** cada porción de contenido que sirve la API es idéntica a su parte de `build/curriculum.json`, y el oráculo `dump-globals` no cambia. Antes lo decía `GET /api/content`, que el ADR 0006 reemplaza.
+- **C2:** cada porción de contenido que sirve la API es idéntica a su parte de `build/curriculum.json` (el sha256 del cuerpo es la huella que escribe el generador), y el oráculo `dump-globals` no cambia. Antes lo decía `GET /api/content`, que el ADR 0006 reemplaza.
 - **D1:** el progreso real de master (`qa/fixtures/progress-master-2a278ad-storage.json` y los dos exports de `qa/fixtures`) entra a las tablas y vuelve a salir sin pérdida (`isLosslessNormalization`, ADR 0006 D24).
 - **B3:** en el ejecutor local, todas las soluciones de referencia aprueban y todos los códigos iniciales fallan.
 - **Todo subplan** cierra con `npm test`, `npm run lint`, `npm run format:check` y `git diff --check` en verde, y con las pruebas propias de su lenguaje (Pest o Go).
@@ -110,7 +110,7 @@ Se cierran en el paso clarify de la spec de cada ítem.
 
 | Ítem | Preguntas |
 | --- | --- |
-| C2 | 1 (cadena de Esenciales, sólo lo que siembra C2), 10 (contenido público), 11 (despliegue), 12 (contenido) y las nuevas de su spec |
+| C2 | Cerradas en su clarify (2026-10-04 y 2026-10-05): 1 (sólo lo que siembra C2), 10, 11 y 12, más las nuevas de su spec. Las que pasan a C3 están en su alcance |
 | C3 | 2 (sesión sin Sanctum), 3 (correo), 4 (contraseñas), 5 (tiempos de sesión), 7 (cuenta de admin), 8 (invitaciones), 9 (cambio de email), 20 (registro abierto) |
 | B2 | 16 (cuotas de ejecución), 18 (fase en vivo del run) |
 | D1 | 17 (progreso) |

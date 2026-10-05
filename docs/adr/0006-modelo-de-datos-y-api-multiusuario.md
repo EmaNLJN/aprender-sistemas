@@ -3,6 +3,7 @@
 - Estado: propuesta. Es la base de las specs de Spec Kit; las preguntas de §13 se cierran en el paso «clarify» de la spec de cada subplan.
 - Fecha: 2026-10-04
 - Relacionado: enmienda el ADR 0004 (deja la premisa de un solo usuario, el TOTP y el paquete Sanctum) y el ADR 0005 (cuotas por usuario y tope global); conserva el ADR 0003.
+- Enmiendas del 2026-10-05: el clarify de C2 ([spec 001](../../specs/001-c2-contenido-mysql/spec.md), sección Clarifications) cambió lo siguiente, en línea. Los validadores no llevan `APP_BUILD`: son el hash de los bytes servidos (§1, §3.1, D11, §5.1, §10). Los bytes de cada porción los fija el generador, y el import se auto-chequea en cada corrida (D10, D11). El import se excluye con `GET_LOCK` en lugar de `Isolatable`, y su transacción intenta una vez, con un único reintento externo (D12, D35, §8). El chequeo de transacciones largas pasa de C2 a C3, con `db-grants` (D35, §10, §12). Hasta C3 el contenido responde sin sesión (§7, §10). La entrega es un controlador con un servicio, no un middleware: decisión del plan de C2, a ratificar con este ADR (D11, §10).
 
 Propuesta del 2026-10-04 que integra los análisis de los cinco dominios: contenido, identidad y acceso, progreso, ejecuciones y transversal. Las contradicciones entre dominios se resuelven en §3.1. Contrasté contra el repositorio y la documentación oficial lo siguiente:
 
@@ -23,7 +24,7 @@ Los tamaños, capacidades y detalles internos de Laravel que no pude verificar v
 | Operación | 6 | C1; C3 suma `mail_jobs` | `cache`, `cache_locks`, `jobs`, `mail_jobs`, `job_batches`, `failed_jobs`. |
 
 - **Autenticación:** sesión de Laravel con cookie HttpOnly y CSRF (el modelo SPA de Sanctum), montada sin el paquete Sanctum. JWT y tokens de Sanctum quedan descartados (§4.9). Login con email y contraseña, recuperación por email, alta por invitación y registro abierto detrás de `REGISTRATION_OPEN=false`. El bloqueo por cuenta sólo alcanza a dispositivos desconocidos. No hay 2FA; la falta de segundo factor del admin es un riesgo señalado.
-- **Contenido:** 17 porciones por recurso. El ETag de cada porción sale del hash de su cuerpo, que guarda el import, más el build de la API; la versión del contenido viaja en `Content-Version` y en `GET /api/session`. Los cuerpos salen de una caché que precalienta el import.
+- **Contenido:** 17 porciones por recurso, con los bytes exactos que fija el generador. El ETag de cada porción sale del hash de esos bytes (`portions` de `curriculum.meta.json`, que guarda el import), sin el build de la API; la versión del contenido viaja en `Content-Version` y en `GET /api/session`. Los cuerpos salen de una caché que deja el import, y el import se auto-chequea en cada corrida.
 - **Integridad:** CASCADE desde `users`, RESTRICT hacia el contenido y SET NULL sólo hacia el autor de una invitación. Borrar una cuenta es una supresión física (Ley 25.326): un job borra por lotes, CASCADE queda como red de seguridad y `account_deletions` permite reaplicarla después de restaurar.
 - **Concurrencia:** una fila `progress_heads` por usuario serializa sincronización, importación, borrado, admisión y cierre de ejecuciones. Los escritores usan READ COMMITTED. No hay candados globales. Todo pedido que muta declara la cuenta para la que se armó.
 - **Escala:** un servidor, con sesiones, caché y colas en MySQL. El camino de crecimiento, con sus disparadores, está en §9: Redis, más PHP-FPM, más ejecutores y rollups de estadísticas.
@@ -112,7 +113,7 @@ Sistemas es casi todo intermedio, avanzado y experto, y eso calza con la frase d
 | `runs.id` | UUIDv7 (ejecuciones) frente a BIGINT (transversal) | **UUIDv7 `CHAR(36)`.** Es público y la tabla se poda, así que el tamaño de la PK pesa poco. `attempts.id` es BIGINT en ambos análisis. |
 | Colación del código | `utf8mb4_bin` (contenido) frente a `utf8mb4_0900_bin` | **`utf8mb4_0900_bin`** (NO PAD: compara byte a byte). |
 | Precisión temporal | DATETIME (contenido) frente a DATETIME(3) | **DATETIME(3) en todas las columnas nuevas**, por los relojes LWW. |
-| ETag del contenido | sha256 del cuerpo (contenido) frente a versión (transversal) | **Por porción: el hash del cuerpo que guarda el import, más APP_BUILD**, comparado antes de consultar; la versión viaja aparte, en `Content-Version`. Un 304 no arma nada y un import sólo invalida las porciones que cambiaron. |
+| ETag del contenido | sha256 del cuerpo (contenido) frente a versión (transversal) | **Por porción: el hash de los bytes que fija el generador y guarda el import, sin build**, comparado antes de consultar; la versión viaja aparte, en `Content-Version`. Un 304 no arma nada y un import sólo invalida las porciones que cambiaron. |
 | TIMESTAMP de C1 | Conservar (identidad) frente a convertir (transversal) | **Convertir en C3** mientras las tablas están vacías, por el límite de 2038. |
 | FK de `sessions.user_id` | Sin FK por ser camino caliente (identidad) frente a CASCADE (transversal) | **CASCADE**, como limpieza del driver `database`: una sola regla para todo `user_id`. La revocación no depende de esa FK (D16). |
 | Rol | VARCHAR + CHECK (identidad) frente a ENUM (resto) | **ENUM** para todos los conjuntos cerrados (D05). |
@@ -214,34 +215,35 @@ Sistemas es casi todo intermedio, avanzado y experto, y eso calza con la frase d
 **D10. Contenido según R8.**
 - Columnas para lo escalar (`visual` incluido) y tablas hijas para pruebas, pistas y todo lo que el progreso referencia.
 - Texto JSON en LONGTEXT `utf8mb4_0900_bin` con `JSON_VALID` para lo anidado.
-- Cada fila guarda `key_order`, copiado del documento. Un codec por tipo de registro mapea clave ↔ almacenamiento en las dos direcciones, para el importador y para el API Resource.
-- **Prueba de contrato:** compara con `assertSame` cada porción con su parte de `curriculum.json`.
-- **Auto-chequeo:** el import renderiza las 17 porciones con el serializador de la API y exige igualdad de bytes con su parte de `curriculum.json` antes del COMMIT.
+- Cada fila guarda `key_order`, copiado del documento. Un codec por tipo de registro mapea clave ↔ almacenamiento en las dos direcciones, para el importador y para la lectura que arma la porción (puede llamarse `*Resource`, pero la respuesta es el texto exacto: nunca pasa por `JsonResource`).
+- **Bytes exactos:** el generador fija la serialización (`JSON.stringify` compacto, con el orden de claves publicado) y calcula el hash de cada porción y de cada ejercicio sobre esos bytes. PHP produce los mismos bytes con un único encoder y nunca recalcula esos hashes.
+- **Prueba de contrato:** compara el sha256 del cuerpo de cada porción con su `portions` del meta y el de cada ejercicio con su `contentHash`. Los calcula el generador, así que son una implementación independiente de la de PHP.
+- **Auto-chequeo:** en cada corrida, también sin cambios, el import arma las 17 porciones desde las tablas con el mismo código que usa la API y exige que su sha256 sea el de `portions` del meta antes del COMMIT. Es la defensa ante un cambio de código que altere un byte, y reemplaza a `APP_BUILD` como invalidador.
 - *Razón:* hay 7 órdenes de claves de ejercicio y 4 de taller, y el oráculo es sensible al orden (`tools/content/dump-globals.ts`). MySQL reordena las claves de una columna JSON nativa.
 - *Descartado:* un payload por registro; columnas JSON nativas; constantes de orden en PHP.
 
 **D11. Entrega del contenido.**
 - 17 porciones sin envoltura `data`. Cada respuesta, también un 304, lleva:
-  - `ETag: "<32 hex>"`: los primeros 32 hex de `sha256(hash de la porción ‖ APP_BUILD)`. El hash de cada porción lo guarda el import en `content_imports.portion_hashes`; `GET /api/exercises/{id}` usa el `content_hash` del ejercicio.
-  - `Content-Version: <32 hex>`: los primeros 32 hex de `sha256(document_hash ‖ APP_BUILD)`.
-- Un middleware lee el último `content_imports` (una lectura por PK), compara `If-None-Match` (también si llega débil) y responde 304 sin armar nada.
-- Si no coincide, el cuerpo sale de la caché de cuerpos (store `database`, clave build + porción + hash). Si falta, se arma en una transacción de lectura que empieza leyendo `content_imports`, para que todas las consultas vean un mismo snapshot, y el ETag y `Content-Version` salen de esa misma fila.
+  - `ETag: "<32 hex>"`: los primeros 32 hex del hash de los bytes de la porción, que calcula el generador (`portions`) y guarda el import en `content_imports.portion_hashes`. `GET /api/exercises/{id}` usa los primeros 32 hex del `content_hash` del ejercicio, el sha256 de sus bytes publicados.
+  - `Content-Version: <32 hex>`: los primeros 32 hex de `document_hash`.
+- El controlador (con el servicio `ContentDelivery`) lee el último `content_imports` (una lectura por PK; el de un ejercicio suma su fila por PK, porque retirado responde 410 antes que 304), compara `If-None-Match` (también si llega débil) y responde 304 sin armar nada.
+- Si no coincide, el cuerpo sale de la caché de cuerpos (store `database`, clave `content-body:<porción>:<sha256>`, sin build, con 30 días de vida como respaldo). Si falta, se arma en una transacción REPEATABLE READ de sólo lectura que empieza leyendo `content_imports`, para que todas las consultas vean un mismo snapshot, y el ETag y `Content-Version` salen de esa misma fila; el cuerpo se guarda después de cerrarla. Antes de servir o guardar un cuerpo armado se verifica que su sha256 sea el del último import; si no coincide (un `php` anterior que sigue atendiendo después de un import nuevo), se deja en el log y responde 503 `maintenance` con `Retry-After`.
 - Un 304 cuesta, además, la lectura y la escritura de la fila de `sessions` que hace todo pedido con sesión: `DatabaseSessionHandler::write` actualiza payload, `last_activity`, usuario, IP y agente en cada pedido (laravel/framework 13.x).
 - `Cache-Control: private, no-cache`, sin `Vary: Cookie`. Sin throttle de Laravel. Responde 503 `content_not_imported` si no hay import.
-- `APP_BUILD` es un build arg de la imagen (el commit), expuesto como variable de entorno. Hoy no existe en Compose, en los Dockerfile ni en `config/`.
+- `APP_BUILD` no interviene en C2: ni en los validadores ni en la clave de la caché. C3 puede sumar un `appBuild` opaco a `GET /api/session` si el front lo necesita.
 - El protocolo de arranque del front está en §7.
-- *Razón:* `cache.headers` hashea el cuerpo después de armarlo, y cada 304 costaría el render completo. Con un ETag único por versión, cualquier import invalidaría las 17 porciones (1,36 MB por alumno) aunque cambiara una. APP_BUILD invalida cuando cambia el serializador sin cambiar el contenido. Nginx debilita el ETag al comprimir (`nginx.conf:16-18`).
-- *Descartado:* el ETag calculado sobre el cuerpo en cada pedido; un ETag único por versión; `GET /api/content` (reemplazado por R7).
+- *Razón:* `cache.headers` hashea el cuerpo después de armarlo, y cada 304 costaría el render completo. Con un ETag único por versión, cualquier import invalidaría las 17 porciones (1,07 MB por alumno, la suma compacta) aunque cambiara una. Con el commit de la imagen en el validador, cada despliegue invalidaría todo y arrastraría `Content-Version` (D23, D25). Sin libertad de PHP sobre los bytes (los fija el generador) y con el auto-chequeo del import (D10), un cambio de código que altere un byte bloquea el despliegue en lugar de servir contenido distinto con el mismo validador. Nginx debilita el ETag al comprimir (`nginx.conf:16-18`).
+- *Descartado:* el ETag calculado sobre el cuerpo en cada pedido; un ETag único por versión; `APP_BUILD` o una versión del serializador en el validador; `GET /api/content` (reemplazado por R7).
 
 **D12. Import incremental.**
-- `content:import` es Isolatable. Valida, arma las filas, calcula la diferencia y los hashes de las 17 porciones (con el serializador de la API sobre `curriculum.json`) **antes** de abrir la transacción. Si no cambió nada, no escribe tablas: sólo precalienta la caché de cuerpos del build.
-- La transacción usa `DB::transaction(…, attempts: 3)`:
-  - inserta `content_imports` con `portion_hashes`;
+- `content:import` toma `GET_LOCK(CONCAT(DATABASE(), ':content-import'), 0)` en lugar de ser Isolatable: un Isolatable ocupado sale con 0 y su candado dura una hora, y el de MySQL se libera solo si muere la conexión. Si está ocupado, sale con código distinto de cero; antes de abrir la transacción verifica `IS_USED_LOCK(...) = CONNECTION_ID()`. Valida, arma las filas y calcula la diferencia, fila por fila y con `key_order`, **antes** de abrir la transacción; los hashes de las 17 porciones y de cada ejercicio los trae `curriculum.meta.json`, porque los calcula el generador. Si no cambió nada, no escribe tablas ni registra un import: sólo se auto-chequea y renueva la caché de cuerpos.
+- La transacción usa `DB::transaction(…, attempts: 1)`; el único reintento es externo, alrededor del paso `migrate` del despliegue (las migraciones y el import: 3 intentos, pausas de 5 y 15 s, sólo ante los errores 1205 y 1213), y cada intento queda en 5 s o menos (D35):
+  - inserta `content_imports` con `portion_hashes`, sólo si cambió una tabla, el `document_hash` o el hash de alguna porción respecto del último registro (un `source_commit` distinto no cuenta);
   - escribe sólo lo nuevo, cambiado o reactivado;
   - retira lo ausente (`deprecated`, `retired_at`, `position` NULL);
   - agrega las versiones de corrección nuevas;
   - auto-chequea (D10) y confirma.
-- Después del COMMIT precalienta la caché de cuerpos.
+- Después del COMMIT guarda en la caché de cuerpos los 17 cuerpos que armó para el auto-chequeo (`put`, también sin cambios) y borra las claves de los hashes reemplazados.
 - Nunca usa DELETE ni TRUNCATE y nunca toca tablas de usuarios. `--dry-run` informa los cambios.
 - *Razón:* acorta los candados exclusivos que chocan con los inserts de progreso (ADR 0004:137-146).
 - *Descartado:* upsert de todas las filas en cada deploy.
@@ -423,7 +425,8 @@ Sistemas es casi todo intermedio, avanzado y experto, y eso calza con la frase d
 **D35. Migraciones.**
 - Una tabla por archivo, creada con un único `CREATE TABLE` (columnas, PK, índices, FK y CHECK en línea) por `DB::statement`. Es un DDL atómico y toma los bloqueos de metadatos una sola vez. Con `Schema::create`, Laravel agrega cada FK con un ALTER aparte, y un fallo intermedio deja la tabla a medias y la migración sin registrar.
 - **Espera de bloqueos de metadatos:** todo DDL, incluso INSTANT, necesita un bloqueo exclusivo breve; mientras espera a las transacciones abiertas, frena las lecturas y escrituras nuevas (refman, alter-table). El bloqueo se extiende a las tablas ligadas por FK (refman, create-table-foreign-keys): `users` tiene 16 hijas directas y `exercises`, 12. Y `lock_wait_timeout` vale 31.536.000 s, un año, por defecto (refman, server-system-variables).
-- Por eso el servicio `migrate` fija `lock_wait_timeout=5` e `innodb_lock_wait_timeout=5` (por `ATTR_INIT_COMMAND`, sólo en su entorno) y reintenta con espera creciente. Antes de migrar, un chequeo aborta el deploy si `information_schema.INNODB_TRX` tiene transacciones de más de 30 s.
+- Por eso el servicio `migrate` fija `lock_wait_timeout=5` e `innodb_lock_wait_timeout=5` (por `ATTR_INIT_COMMAND`, sólo en su entorno) y reintenta con espera creciente: un único reintento externo, alrededor de las migraciones y el import juntos (3 intentos, pausas de 5 y 15 s, sólo ante 1205 y 1213), sin otra capa de reintentos dentro de la transacción del import (D12).
+- **Chequeo previo (C3):** antes de migrar, un chequeo aborta el deploy si hay transacciones abiertas hace más de 30 s. Pasa de C2 a C3: en C2 no hay tablas de usuarios con tráfico que proteger, y `information_schema.INNODB_TRX` exige el privilegio `PROCESS`, que el usuario `taller` no tiene. Recomendación del DBA para C3: consultar `performance_schema.events_transactions_current` con un `GRANT SELECT` sobre esa tabla que aplique `db-grants` (un script initdb en volúmenes nuevos y un comando único de root en los existentes), y fallar cerrado si falta el permiso.
 - `->instant()` y `->lock('none')` eligen el algoritmo y el bloqueo de DML; no acotan esa espera.
 - En producción, expand/contract y respaldo previo; `down()` sólo sirve en desarrollo. La vuelta atrás por subplan está en §10.
 
@@ -695,7 +698,7 @@ El importador valida que la cadena sea única y contigua.
 | id | BIGINT UNSIGNED AUTO_INCREMENT | |
 | document_hash | CHAR(64) ascii | sha256 de `curriculum.json`; fuente de `contentVersion` |
 | source_commit | VARCHAR(64) ascii NULL | `CONTENT_SOURCE_COMMIT` de la imagen |
-| portion_hashes | JSON | sha256 del cuerpo de cada una de las 17 porciones, calculado antes de la transacción con el serializador de la API; base del ETag por porción (JSON nativo: el orden no importa) |
+| portion_hashes | JSON | sha256 de los bytes de cada una de las 17 porciones, tal como los calcula el generador (`portions` de `curriculum.meta.json`; PHP no los recalcula y los usa como oráculo del auto-chequeo); base del ETag por porción (JSON nativo: el orden no importa) |
 | counts | JSON | Filas activas por tabla |
 | changes | JSON | Informe de `--dry-run` persistido |
 | created_at | DATETIME(3) | |
@@ -706,7 +709,7 @@ CHECK:
 - `content_imports_document_hash_check`: `REGEXP '^[0-9a-f]{64}$'`;
 - `content_imports_source_commit_check`: NULL, o 40 o 64 caracteres hex.
 
-Sólo registra imports exitosos que cambian algo, y no guarda el documento.
+Sólo registra imports exitosos que cambian algo (alguna tabla, el `document_hash` o el hash de alguna porción), y no guarda el documento.
 
 #### `topics` (98)
 | Columna | Tipo | Notas |
@@ -2336,7 +2339,7 @@ erDiagram
 
 ## 7. Mapa API ↔ tablas
 
-Todas las rutas van bajo `/api` con sesión y CSRF (D16). En las rutas con sesión rigen `EnsureUserIsActive` y, para contenido, progreso y ejecuciones, `verified`. Todo pedido autenticado que muta lleva la cuenta esperada (D36). Los errores siguen la tabla de §8.
+Todas las rutas van bajo `/api` con sesión y CSRF (D16). En las rutas con sesión rigen `EnsureUserIsActive` y, para contenido, progreso y ejecuciones, `verified`. Todo pedido autenticado que muta lleva la cuenta esperada (D36). Los errores siguen la tabla de §8. Hasta C3 no hay sesión: las rutas de contenido responden sin ella, con el puerto del taller sólo en `127.0.0.1`, y C3 las pone detrás de la sesión (§10).
 
 | Endpoint | Auth y rol | Lee / escribe | Respuesta |
 |---|---|---|---|
@@ -2395,7 +2398,7 @@ Todas las rutas van bajo `/api` con sesión y CSRF (D16). En las rutas con sesi�
 4. Si alguna `Content-Version` difiere de la de la sesión, hubo un import en el medio: vuelve a pedir la sesión y repite, con un tope de intentos. Así las vistas legacy, que necesitan el currículo completo antes de evaluarse (`src/app/legacy/register-catalogs.ts:3, 20-26`; `src/app/main.tsx:9-26`), nunca mezclan porciones de dos versiones.
 
 Consola, jobs y tareas programadas:
-- **`php artisan content:import [--dry-run]`:** escribe las tablas de contenido y precalienta la caché de cuerpos. Corre en el servicio `migrate`, después de `migrate --force` (`compose.yaml:114`).
+- **`php artisan content:import [--dry-run]`:** escribe las tablas de contenido, se auto-chequea en cada corrida (las 17 porciones contra `portions` del meta) y deja la caché de cuerpos. Sale con código distinto de cero si otro import tiene el candado. Corre en el servicio `migrate`, después de `migrate --force` (`compose.yaml:114`).
 - **`taller:invite`:** imprime un link de invitación.
 - **`taller:password-reset-link`:** imprime un link de recuperación; es el único camino para un admin y para el modo sólo link.
 - **`taller:change-email`:** cambia un email y avisa a las dos direcciones.
@@ -2430,7 +2433,7 @@ Consola, jobs y tareas programadas:
 - **Transacciones y bloqueos:**
   - Escritores en READ COMMITTED y lecturas en snapshot en REPEATABLE READ (D08).
   - Orden único y regla sobre `users` según D08.
-  - `DB::transaction(…, attempts: 3)` en todo escritor.
+  - `DB::transaction(…, attempts: 3)` en todo escritor, salvo el import de contenido: `attempts: 1`, con un único reintento externo alrededor de las migraciones y el import (D12, D35).
   - Nada externo dentro de una transacción: ni el ejecutor ni SMTP.
   - `after_commit` en true para las colas `default` y `mail`, y en false para `runs`, que se encola dentro de la transacción de admisión (D27).
   - Toda escritura o borrado usa un índice selectivo y va por lotes.
@@ -2508,8 +2511,8 @@ Consola, jobs y tareas programadas:
 
 | Subplan | Depende de | Migraciones (una tabla por archivo, un CREATE TABLE con sus CHECK) | Otras entregas |
 |---|---|---|---|
-| C2 | A1, C1 | `languages`, `catalogs`, `content_imports`, `topics`, `workshops`, `exercises`, `exercise_grading_versions`, `exercise_tests`, `exercise_hints`, `workshop_objectives`, `workshop_steps`, `workshop_related_exercises`, `worlds`, `world_exercises`, `atlas_concepts`, `guide_resources`, `guide_sources`, `guide_tracks`, `guide_modules`, `guide_steps`, `guide_step_resources` | `tools/content` genera `build/curriculum.meta.json` (documentHash, sourceCommit, hashes, `workshopSteps` con clave y `v1Index`, catálogos). Codemod de etapas. Conexión con `timezone` y `use_upsert_alias`. `APP_BUILD` como build arg. `content:import` en `migrate`, con hashes de porción y caché de cuerpos. Codecs y Resources. Middleware de ETag por porción y `Content-Version`. `migrate` con espera de bloqueos acotada y chequeo de transacciones largas. Prueba de contrato y de esquema. |
-| C3 | C1 | `users`: ADD `role`, `status` y `privacy_*` con default; backfill de `email_verified_at`; CHECK; índice `(role, status)`; email a `as_ci`; timestamps a DATETIME(3). La tabla está vacía, así que el COPY no pesa. CREATE `invitations`, `account_deletions` y `mail_jobs`. Recrear `password_reset_tokens` (email `as_ci`, DATETIME(3)), `sessions` (id `ascii`, FK CASCADE, `last_activity` UNSIGNED), `cache` y `cache_locks` (`key` en `bin`), que están vacías o son efímeras. `failed_jobs.failed_at` a DATETIME(3). | `laravel/fortify` con permiso, sin Sanctum. `User` implementa `MustVerifyEmail`. Middleware de sesión en el grupo `api`, `lottery` en 0 y poda programada. Rutas `/api/auth`, `/api/me` y `/api/admin` (usuarios e invitaciones). Paso de login propio, límites, bloqueo y cookie de dispositivo. Cuenta esperada (D36). `worker-mail` con su red, su usuario y `mail_jobs`; `db-grants`; `scheduler`. `after_commit` en true para `default` y `mail`. `lang/es`. Cerrar el reenvío DNS de todos los contenedores sin egreso (`docs/plans/2026-10-04-contenido-mysql.md:38`). Si queda grande, se parte en C3a (autenticación) y C3b (invitaciones y admin). |
+| C2 | A1, C1 | `languages`, `catalogs`, `content_imports`, `topics`, `workshops`, `exercises`, `exercise_grading_versions`, `exercise_tests`, `exercise_hints`, `workshop_objectives`, `workshop_steps`, `workshop_related_exercises`, `worlds`, `world_exercises`, `atlas_concepts`, `guide_resources`, `guide_sources`, `guide_tracks`, `guide_modules`, `guide_steps`, `guide_step_resources` | `tools/content` genera `build/curriculum.meta.json` (documentHash, sourceCommit, hashes, `workshopSteps` con clave y `v1Index`, catálogos). Codemod de etapas. Conexión con `timezone` y `use_upsert_alias`. `CONTENT_SOURCE_COMMIT` como build arg y una etapa `curriculum` en `api/Dockerfile` que genera el documento y su meta (`portions` incluido). `content:import` en `migrate`, con candado `GET_LOCK`, auto-chequeo de las 17 porciones y caché de cuerpos. Codecs por tipo de registro y `PublishedJson`. Entrega con ETag por porción y `Content-Version`, sin build en los validadores (controlador y servicio). `migrate` con espera de bloqueos acotada y un único reintento externo; el chequeo de transacciones largas pasa a C3. Hasta C3 el contenido responde sin sesión. Prueba de contrato y de esquema, y `npm run api:content:check` contra el stack levantado. |
+| C3 | C1 | `users`: ADD `role`, `status` y `privacy_*` con default; backfill de `email_verified_at`; CHECK; índice `(role, status)`; email a `as_ci`; timestamps a DATETIME(3). La tabla está vacía, así que el COPY no pesa. CREATE `invitations`, `account_deletions` y `mail_jobs`. Recrear `password_reset_tokens` (email `as_ci`, DATETIME(3)), `sessions` (id `ascii`, FK CASCADE, `last_activity` UNSIGNED), `cache` y `cache_locks` (`key` en `bin`), que están vacías o son efímeras. `failed_jobs.failed_at` a DATETIME(3). | `laravel/fortify` con permiso, sin Sanctum. `User` implementa `MustVerifyEmail`. Middleware de sesión en el grupo `api`, `lottery` en 0 y poda programada. Rutas `/api/auth`, `/api/me` y `/api/admin` (usuarios e invitaciones), y `GET /api/session` (usuario o null, `contentVersion`, catálogos y, si hace falta, un `appBuild` opaco). El contenido de C2 pasa detrás de la sesión (la aceptación incluye «sin sesión, 401»), y el middleware de sesión no agrega `Vary: Cookie` ni toca `Cache-Control` en el contenido. Paso de login propio, límites, bloqueo y cookie de dispositivo. Cuenta esperada (D36). `worker-mail` con su red, su usuario y `mail_jobs`; `db-grants`, con el chequeo de transacciones largas antes de migrar (D35); `scheduler`, que también limpia la caché de cuerpos vencida. `after_commit` en true para `default` y `mail`. `lang/es`. Cerrar el reenvío DNS de todos los contenedores sin egreso (`docs/plans/2026-10-04-contenido-mysql.md:38`). Si queda grande, se parte en C3a (autenticación) y C3b (invitaciones y admin). |
 | B2 | B1, C2, C3 | `progress_heads` y `exercise_progress` completas (D28), `attempts`, `attempt_tests`, `attempt_payloads`, `runs` | Precondición: `test_key` único e inmutable (D14). Conexión `runs` con `after_commit` en false, `worker-runs`, `executor`, PCNTL en `api/Dockerfile`, barrido y podas. Enum PHP de `reason`. Plantilla del harness en el import y su recurso (S3). |
 | D1 | C2, C3, B2 | CREATE `sync_operations`, `progress_imports`, `drafts`, `campaign_seals`, `campaign_checkpoints`, `workshop_progress`, `workshop_observations`, `workshop_step_marks`, `route_marks`, `route_quiz_answers`, `route_notes`, `preferences`. No altera las tablas de B2 | Cliente v2 con espacios por cuenta y cuenta esperada. El contenido publica el id de cada etapa. Locations de Nginx (sync 2m, import 24m) y `post_max_size` 24M. Fixture compartido de fusión. |
 | C5 (nuevo) | D1, B2 | Ninguna al principio. Los índices de estadística, como `attempts (attempted_at, outcome)`, entran después de EXPLAIN sobre 5.000 alumnos sintéticos, con `ALGORITHM=INPLACE, LOCK=NONE`, en horario de poca escritura y con `innodb_online_alter_log_max_size` dimensionado | Endpoints de estadísticas del admin, `GET /api/admin/runs` y `GET /api/admin/queue`; resumen de la ficha de usuario; caché de 10 min |
@@ -2532,7 +2535,7 @@ El resto sigue la hoja de ruta (`docs/plans/2026-10-04-backend-hoja-de-ruta.md:4
 | E1 | Hacia adelante: el catálogo se retira con `deprecated` |
 
 - Cada `down()` se prueba con migrate → rollback → migrate contra `mysql-test`, pero en producción nunca se corre uno destructivo.
-- Antes de migrar: respaldo y chequeo de transacciones largas. Nunca se migra durante un volcado.
+- Antes de migrar: respaldo y, desde C3, chequeo de transacciones largas (D35). Nunca se migra durante un volcado.
 - Expand/contract: columnas nuevas nullable o con default y backfill por lotes. En una tabla grande, una restricción agregada después es COPY: un CHECK valida todas las filas, y un ADD FOREIGN KEY sólo es INPLACE con `foreign_key_checks=0`, que la deja sin validar (refman, innodb-online-ddl-operations). Por eso las restricciones nacen con la tabla.
 - `->instant()` y `->lock('none')` hacen que MySQL falle en vez de copiar, y el `lock_wait_timeout` corto, que falle en vez de esperar.
 - No se cambian tipos en tablas grandes, porque sólo admite COPY.
@@ -2605,13 +2608,13 @@ El resto sigue la hoja de ruta (`docs/plans/2026-10-04-backend-hoja-de-ruta.md:4
 | El correo no sale (redes `internal`), o un mailer `log` en el despliegue público escribe tokens en los logs | `worker-mail` con egreso; guarda atada a `MAIL_REQUIRED`; modo sólo link |
 | `worker-mail` es el único contenedor con salida a Internet y tiene APP_KEY | Red propia compartida sólo con `mysql`, usuario de MySQL restringido a `mail_jobs` y `failed_jobs`, notificaciones con datos primitivos. Riesgo residual: con APP_KEY podría falsificar links firmados y cookies de dispositivo, no leer otras tablas |
 | Contención en MySQL: cada pedido con sesión escribe su fila de `sessions` (también los 304 y el polling) y el limiter bloquea filas de `cache`; picos de aula | `contentVersion` y caché de cuerpos; sin throttle en los GET; poda de sesiones fuera de los pedidos; disparadores hacia un handler que escribe menos y hacia Redis (§9) |
-| Un deploy espera un bloqueo de metadatos detrás de una transacción larga y congela el tráfico de `users` o `exercises` y sus hijas | `lock_wait_timeout` corto en `migrate`, chequeo previo de transacciones largas, exportación en transacciones cortas y `MAX_EXECUTION_TIME` en las estadísticas (D35) |
+| Un deploy espera un bloqueo de metadatos detrás de una transacción larga y congela el tráfico de `users` o `exercises` y sus hijas | `lock_wait_timeout` corto en `migrate` con un único reintento externo, chequeo previo de transacciones largas (desde C3, con `db-grants`), exportación en transacciones cortas y `MAX_EXECUTION_TIME` en las estadísticas (D35) |
 | Capacidad del ejecutor (4 slots, unos 130 alumnos ejecutando; estimación) y un único ejecutor | Cuotas; 503 con `Retry-After`; reencolado por 10 min; camino de 6 slots y un segundo ejecutor |
 | Evidencia autodeclarada (ADR 0005:123-127): el código del alumno puede imprimir los marcadores, así que también contamina los agregados del admin | `server_solved_at` y los intentos no legados separan lo ejecutado en el servidor de lo importado; se nombra «ejecutado en el servidor», nunca «verificado» |
 | Bugs #117450 y #121124 (un CHECK impide INSTANT al agregar columnas o ampliar un ENUM) | Las restricciones nacen con la tabla; prueba de esquema de cuatro casos en 9.7; esos CHECK no van en tablas grandes si fallan; `reason` en VARCHAR |
 | FK de la capa SQL desde la 9.6: candados y cascadas distintos de los de InnoDB nativo | Pruebas de concurrencia y de `DELETE FROM users` completo; `attempts: 3`; purga por lotes |
 | Interbloqueos entre acciones del admin, admisión, cierre y purga | Regla de D08: los cambios de `users` confirman solos, las cancelaciones van después y la purga toma `progress_heads` antes de borrar la cuenta; escritores en READ COMMITTED |
-| Un import que choca con las escrituras de progreso | Diferencia fuera de la transacción, sólo filas cambiadas y reintentos |
+| Un import que choca con las escrituras de progreso | Diferencia fuera de la transacción, sólo filas cambiadas y espera acotada con un reintento externo (D12, D35) |
 | Computadoras compartidas: las claves v1 son globales del navegador (`app.js:11`, `lab.js:9`, `create-campaign-engine.ts:41`, `create-systems-engine.ts:41`) | Importación nunca automática, con resumen y confirmación; claves v1 archivadas por cuenta después de importar; espacios v2 por cuenta, limpieza al arrancar y opción «computadora compartida». Riesgo residual: sin logout, los borradores de un alumno quedan en el navegador hasta que otro arranque la app o venza el espacio |
 | Cambio de cuenta en el mismo navegador: una pestaña de A actúa con la sesión de B | Cuenta esperada en todo pedido que muta y comparación de cuenta antes de reintentar (D36) |
 | Una restauración resucita cuentas suprimidas; la supresión persiste 7 días en el binlog y 35 en los respaldos | Libro de supresiones copiado junto a cada respaldo y reaplicado antes de abrir el tráfico (D37); decirlo en el aviso de privacidad |
@@ -2633,7 +2636,7 @@ El resto sigue la hoja de ruta (`docs/plans/2026-10-04-backend-hoja-de-ruta.md:4
 
 ## 13. Preguntas abiertas para el usuario
 
-1. **Cadena de Esenciales.** ¿Por niveles (Esenciales → Intermedio → Avanzado → Experto), por catálogos (esenciales → lab → quests → cores) o como el primero de una serie de catálogos nuevos (intermedios, avanzados y otro más)? ¿Esenciales va antes de Inicial o lo reemplaza? ¿Qué código lleva el catálogo (por ejemplo, `essentials`)?
+1. **Cadena de Esenciales.** ¿Por niveles (Esenciales → Intermedio → Avanzado → Experto), por catálogos (esenciales → lab → quests → cores) o como el primero de una serie de catálogos nuevos (intermedios, avanzados y otro más)? ¿Esenciales va antes de Inicial o lo reemplaza? ¿Qué código lleva el catálogo (por ejemplo, `essentials`)? *Para C2, cerrada el 2026-10-04: `lab`, `quests` y `cores` quedan sin posición y E1 suma `essentials` con posición 1 (spec 001, Q8); el resto es de E1.*
 2. **Montaje de la sesión.** ¿Aceptás la sesión de Laravel sin el paquete Sanctum, que enmienda el ADR 0004 §1? ¿O mantenemos `statefulApi()` con `Sanctum::currentRequestHost()` y `referrerPolicy: 'same-origin'` en cada `fetch`?
 3. **Correo.** ¿Qué proveedor, con qué remitente y con qué dominio (SPF, DKIM, DMARC)? ¿El worker sale directo a Internet o usamos un relay propio (imagen nueva, con permiso)? Si el proveedor procesa los datos fuera del país, es una transferencia internacional (Ley 25.326, art. 12). ¿Autorizás descargar `axllent/mailpit`? Antes de bajarla se informan tag, digest y tamaño.
 4. **Contraseñas.** ¿Mínimo de 15 caracteres (NIST para factor único) o de 12? ¿De qué fuente y con qué licencia sale la lista de bloqueo? Descargarla también necesita permiso.
@@ -2642,13 +2645,13 @@ El resto sigue la hoja de ruta (`docs/plans/2026-10-04-backend-hoja-de-ruta.md:4
 7. **Cuenta de admin.** ¿Exigimos una cuenta de admin separada de la de estudio, o sólo la recomendamos (propuesta)?
 8. **Invitaciones.** ¿Siempre ligadas a un email y de un solo uso (propuesta), o también links de curso multiuso con cupo, que exigirían verificar el email?
 9. **Cambio de email.** ¿Sólo por consola en C3 (propuesta), o autoservicio con confirmación al email nuevo y aviso al anterior?
-10. **Contenido público.** ¿El contenido puede ser público? Permitiría caché pública en Nginx o un CDN, pero contradice ADR 0004:60-61.
-11. **Despliegue.** ¿Un `content:import` fallido debe impedir que arranque `php`, como pasa hoy porque `php` depende de `migrate`? ¿Exigimos `CONTENT_SOURCE_COMMIT` en la imagen de producción?
+10. **Contenido público.** ¿El contenido puede ser público? Permitiría caché pública en Nginx o un CDN, pero contradice ADR 0004:60-61. *Cerrada el 2026-10-04: exige sesión desde C3, y hasta entonces responde sin sesión con el puerto sólo en `127.0.0.1` (spec 001, Q1).*
+11. **Despliegue.** ¿Un `content:import` fallido debe impedir que arranque `php`, como pasa hoy porque `php` depende de `migrate`? ¿Exigimos `CONTENT_SOURCE_COMMIT` en la imagen de producción? *Cerrada el 2026-10-04: un import fallido impide el arranque de `php`, y el commit es opcional (spec 001, Q5 y Q6).*
 12. **Contenido.**
-    - ¿`grading_hash` debería incluir los imports y la versión de la plantilla del harness?
-    - ¿Sumamos hashes de pregunta para quiz, checkpoint y predicción de taller?
-    - ¿Movemos los hitos (`app.js:29-68`) a `content/`?
-    - ¿Aprobás el codemod de etapas `e1..eN` con `v1_position` congelado?
+    - ¿`grading_hash` debería incluir los imports y la versión de la plantilla del harness? *No en C2: la decide B2 (spec 001, Q4).*
+    - ¿Sumamos hashes de pregunta para quiz, checkpoint y predicción de taller? *No: alcanza con `contentVersion` (spec 001, Q9).*
+    - ¿Movemos los hitos (`app.js:29-68`) a `content/`? *No: siguen en el código (spec 001, Q10).*
+    - ¿Aprobás el codemod de etapas `e1..eN` con `v1_position` congelado? *Sí (spec 001, Q7).*
 13. **Retenciones.** ¿Runs 14 días, `sync_operations` 14 días, invitaciones vencidas 30 días, payloads de intentos 90 días (salvo el proof y el último) y crudos importados 90 días? ¿Cuántos días de logs y de respaldos? ¿Se borran las cuentas inactivas después de N años?
 14. **Ley 25.326.** Falta definir:
     - el texto del aviso de privacidad;
@@ -2675,7 +2678,7 @@ Verifiqué cada hallazgo contra el repositorio, Context7 (Laravel 13, Fortify), 
 
 ### DBA
 
-- **[Importante] Migraciones y bloqueos de metadatos.** Incorporado. `migrate` acota la espera (`lock_wait_timeout` e `innodb_lock_wait_timeout` en 5 s, con reintentos) y aborta si hay transacciones largas. Cada tabla nace en un CREATE TABLE atómico. La exportación usa transacciones cortas y las estadísticas, `MAX_EXECUTION_TIME`. Corregí lo que se decía de `->instant()` y `->lock('none')` (D31, D33, D35, §8).
+- **[Importante] Migraciones y bloqueos de metadatos.** Incorporado. `migrate` acota la espera (`lock_wait_timeout` e `innodb_lock_wait_timeout` en 5 s, con reintentos) y aborta si hay transacciones largas (desde el 2026-10-05, ese chequeo es de C3). Cada tabla nace en un CREATE TABLE atómico. La exportación usa transacciones cortas y las estadísticas, `MAX_EXECUTION_TIME`. Corregí lo que se decía de `->instant()` y `->lock('none')` (D31, D33, D35, §8).
 - **[Importante] CHECK frente a INSTANT.** Incorporado; verifiqué el bug #117450. B2 crea completas `progress_heads` y `exercise_progress`, y con eso desaparece la incoherencia de `review_due_at`. Los CHECK nunca se agregan a una tabla que crece; la prueba de D07 cubre cuatro casos, y §10 corrige expand/contract (D07, D28).
 - **[Importante] Upserts LWW.** Incorporado en D09: el valor se asigna antes que su reloj, hay regla de empate y `use_upsert_alias`, con su prueba. Elegí `>=` (gana la que llega después) sobre el `>` estricto: el servidor aplica en un orden único bajo el candado, y el fixture cubre los dos órdenes de llegada.
 - **[Importante] Sesiones en MySQL.** Incorporado. `lottery` pasa a 0 y la poda por lotes al scheduler; el health check queda sin sesión y `GET /api/session` tiene un límite por IP. Corregí el costo del 304 y el motivo de no limitar los GET, y sumé el disparador de un handler que escribe menos (§3.1, §4.2, D11, §9).
@@ -2694,7 +2697,7 @@ Verifiqué cada hallazgo contra el repositorio, Context7 (Laravel 13, Fortify), 
 
 ### Arquitectura
 
-- **[Importante] Arranque con 17 recursos y ETag.** Incorporado. Protocolo de arranque en §7, ETag por porción tomado de `content_imports.portion_hashes`, `Content-Version` también en los 304, ETag y versión leídos del snapshot y `APP_BUILD` como build arg (D11, D12).
+- **[Importante] Arranque con 17 recursos y ETag.** Incorporado. Protocolo de arranque en §7, ETag por porción tomado de `content_imports.portion_hashes`, `Content-Version` también en los 304, ETag y versión leídos del snapshot y `APP_BUILD` como build arg (D11, D12); el 2026-10-05 el validador quedó sin build (D11).
 - **[Importante] Delta y ETag del progreso frente al contenido.** Incorporado. `contentVersion` entra en el ETag y en el sobre de sync; si cambió, la respuesta trae la foto completa. El cliente manda `If-None-Match` a mano (D23, D25).
 - **[Importante] Frontera de autoridad.** Incorporado en D39: correcciones, repasos, XP y sellos los decide el cliente. Sale `GET /api/progress/stats` del alumno. La importación recibe la salida de los parsers TS, y la proyección v1 deja el export y queda en las pruebas (D24, D31).
 - **[Importante] Privacidad del admin.** Incorporado. Sale la exportación de admin. El link de recuperación para terceros sale sólo por consola; por API sólo se dispara el correo, con 503 en modo sólo link (D33, §4.3).
