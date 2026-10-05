@@ -24,3 +24,9 @@ it('fails loudly without a configured key', function (mixed $key) {
 
     EmailFingerprint::of('ana@x.com');
 })->with([null, ''])->throws(LogicException::class);
+
+it('is the same for a decomposed and a composed accent', function () {
+    config(['taller.log_hmac_key' => 'secret']);
+
+    expect(EmailFingerprint::of("pa\u{0301}pa@x.com"))->toBe(EmailFingerprint::of("p\u{00E1}pa@x.com"));
+});
