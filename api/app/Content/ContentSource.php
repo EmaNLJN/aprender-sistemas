@@ -6,10 +6,10 @@ use JsonException;
 use stdClass;
 
 /**
- * Los dos archivos que genera tools/content/ (build-curriculum.ts), leídos y verificados:
- * curriculum.json, con la forma que publica la API, y curriculum.meta.json, con las huellas y las
- * claves que PHP guarda y compara pero nunca recalcula (ADR 0006 D10 a D14). Un meta de otro build
- * se rechaza: sus huellas no describirían el contenido que se importa.
+ * The two files tools/content generates, read and verified: curriculum.json, shaped as the API
+ * publishes it, and curriculum.meta.json, with the hashes and keys that PHP stores and compares
+ * but never recomputes (ADR 0006 D10 to D14). A meta from another build is rejected: its hashes
+ * would not describe the content being imported.
  */
 final readonly class ContentSource
 {
@@ -50,13 +50,12 @@ final readonly class ContentSource
         return $this->meta['sourceCommit'];
     }
 
-    /** @return list<string> en el orden de `languages.position` */
+    /** @return list<string> in the order of `languages.position` */
     public function languages(): array
     {
         return $this->meta['languages'];
     }
 
-    /** La parte del documento que corresponde a una porción, para explicar una diferencia. */
     public function part(Portion $portion): mixed
     {
         $group = $this->decoded->{$portion->group()};

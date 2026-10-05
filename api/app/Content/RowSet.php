@@ -3,9 +3,8 @@
 namespace App\Content;
 
 /**
- * Las filas de contenido de todas las tablas de ContentTables, cada una por su clave primaria.
- * Sólo las columnas de datos: el ciclo de vida (status, retired_at, created_at, updated_at) lo
- * pone el escritor.
+ * The content rows of every table in ContentTables, each keyed by its primary key. Data columns
+ * only: the lifecycle (status, retired_at, created_at, updated_at) is set by the writer.
  */
 final class RowSet
 {
@@ -37,7 +36,7 @@ final class RowSet
         }
     }
 
-    /** @return array<string, array<string, int|string|null>> por clave primaria */
+    /** @return array<string, array<string, int|string|null>> */
     public function keyed(string $table): array
     {
         return $this->tables[$table];

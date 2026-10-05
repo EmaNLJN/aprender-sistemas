@@ -7,7 +7,7 @@ use Tests\Support\ContentFixture;
 
 afterEach(fn () => ContentFixture::cleanup());
 
-it('lee el documento y su meta de la imagen', function () {
+it('reads the document and its meta from the image', function () {
     $source = ContentSource::fromDirectory(ContentFixture::imagePath());
 
     expect($source->document)->toBe(file_get_contents(ContentFixture::imagePath().'/curriculum.json'))
@@ -18,7 +18,7 @@ it('lee el documento y su meta de la imagen', function () {
         ->and($source->meta['workshopSteps'])->toHaveCount(25);
 });
 
-it('rechaza un meta de otro build', function () {
+it('rejects a meta from another build', function () {
     $directory = ContentFixture::fromImage()->write();
     file_put_contents("{$directory}/curriculum.json", file_get_contents("{$directory}/curriculum.json").' ');
 
@@ -26,7 +26,7 @@ it('rechaza un meta de otro build', function () {
         ->toThrow(InvalidContent::class, 'curriculum.meta.json no corresponde a este curriculum.json');
 });
 
-it('nombra el archivo que falta o que no es JSON', function () {
+it('names the file that is missing or is not JSON', function () {
     $directory = ContentFixture::fromImage()->write();
     unlink("{$directory}/curriculum.meta.json");
     expect(fn () => ContentSource::fromDirectory($directory))
@@ -38,56 +38,56 @@ it('nombra el archivo que falta o que no es JSON', function () {
         ->toThrow(InvalidContent::class, 'curriculum.json: no es JSON válido');
 });
 
-it('exige que el documento y el meta sean objetos', function () {
+it('requires the document and the meta to be objects', function () {
     $directory = ContentFixture::fromImage()->write();
     file_put_contents("{$directory}/curriculum.json", '[]');
     expect(fn () => ContentSource::fromDirectory($directory))
         ->toThrow(InvalidContent::class, 'curriculum.json: (raíz): se esperaba un objeto');
 
     $directory = ContentFixture::fromImage()->write();
-    file_put_contents("{$directory}/curriculum.meta.json", '"texto"');
+    file_put_contents("{$directory}/curriculum.meta.json", '"text"');
     expect(fn () => ContentSource::fromDirectory($directory))
         ->toThrow(InvalidContent::class, 'curriculum.meta.json: (raíz): se esperaba un objeto');
 });
 
-// FR-037: el commit de origen es null o el hash completo (40 o 64 hexadecimales en minúsculas).
-it('devuelve el commit de origen tal cual cuando es null o un hash completo', function (?string $commit) {
+// FR-037: the source commit is null or the full hash (40 or 64 lowercase hexadecimal characters).
+it('returns the source commit as is when it is null or a full hash', function (?string $commit) {
     $directory = ContentFixture::fromImage()->write(editMeta: fn (array $meta) => ['sourceCommit' => $commit] + $meta);
 
     expect(ContentSource::fromDirectory($directory)->sourceCommit())->toBe($commit);
 })->with([
-    'sin commit' => [null],
-    'de 40 caracteres' => [str_repeat('a', 40)],
-    'de 64 caracteres' => [str_repeat('0123456789abcdef', 4)],
+    'no commit' => [null],
+    '40 characters' => [str_repeat('a', 40)],
+    '64 characters' => [str_repeat('0123456789abcdef', 4)],
 ]);
 
-it('rechaza un commit de origen que no es el hash completo', function (string $commit) {
+it('rejects a source commit that is not the full hash', function (string $commit) {
     $directory = ContentFixture::fromImage()->write(editMeta: fn (array $meta) => ['sourceCommit' => $commit] + $meta);
 
     expect(fn () => ContentSource::fromDirectory($directory))
         ->toThrow(InvalidContent::class, 'curriculum.meta.json: sourceCommit: se esperaba null o el hash completo de un commit');
 })->with([
-    'abreviado' => ['0123456'],
-    'de 39 caracteres' => [str_repeat('a', 39)],
-    'de 41 caracteres' => [str_repeat('a', 41)],
-    'en mayúsculas' => [str_repeat('A', 40)],
-    'con un salto de línea al final' => [str_repeat('a', 40)."\n"],
+    'abbreviated' => ['0123456'],
+    '39 characters' => [str_repeat('a', 39)],
+    '41 characters' => [str_repeat('a', 41)],
+    'uppercase' => [str_repeat('A', 40)],
+    'with a trailing newline' => [str_repeat('a', 40)."\n"],
 ]);
 
-it('valida el meta y nombra el campo', function (Closure $break, string $message) {
+it('validates the meta and names the field', function (Closure $break, string $message) {
     $directory = ContentFixture::fromImage()->write(editMeta: $break);
 
     expect(fn () => ContentSource::fromDirectory($directory))->toThrow(InvalidContent::class, $message);
 })->with([
-    'commit que no es un hash' => [
+    'commit that is not a hash' => [
         fn (array $meta) => ['sourceCommit' => 'master'] + $meta,
         'curriculum.meta.json: sourceCommit: se esperaba null o el hash completo de un commit',
     ],
-    'sin lenguajes' => [
+    'no languages' => [
         fn (array $meta) => ['languages' => []] + $meta,
         'curriculum.meta.json: languages: se esperaba la lista de lenguajes',
     ],
-    'catálogo sin el parámetro de corte' => [
+    'catalog without the slice parameter' => [
         function (array $meta) {
             unset($meta['catalogs'][1]['sliceBy']);
 
@@ -95,7 +95,7 @@ it('valida el meta y nombra el campo', function (Closure $break, string $message
         },
         'curriculum.meta.json: catalogs[1]: se esperaba {code, sliceBy, chainPosition}',
     ],
-    'posición de la cadena de catálogos menor que 1' => [
+    'catalog chain position below 1' => [
         function (array $meta) {
             $meta['catalogs'][0]['chainPosition'] = 0;
 
@@ -103,7 +103,7 @@ it('valida el meta y nombra el campo', function (Closure $break, string $message
         },
         'curriculum.meta.json: catalogs[0]: se esperaba {code, sliceBy, chainPosition}',
     ],
-    'una porción menos' => [
+    'one portion fewer' => [
         function (array $meta) {
             unset($meta['portions']['guide']);
 
@@ -111,15 +111,15 @@ it('valida el meta y nombra el campo', function (Closure $break, string $message
         },
         'curriculum.meta.json: portions: se esperaban las 17 porciones',
     ],
-    'huella de porción inválida' => [
+    'invalid portion hash' => [
         function (array $meta) {
-            $meta['portions']['lab.go'] = 'no-es-un-hash';
+            $meta['portions']['lab.go'] = 'not-a-hash';
 
             return $meta;
         },
         'curriculum.meta.json: portions.lab.go: se esperaba un sha256 en hexadecimal',
     ],
-    'huella de ejercicio inválida' => [
+    'invalid exercise hash' => [
         function (array $meta) {
             $meta['exercises']['rust-01']['gradingHash'] = 'x';
 
@@ -127,7 +127,7 @@ it('valida el meta y nombra el campo', function (Closure $break, string $message
         },
         'curriculum.meta.json: exercises.rust-01.gradingHash: se esperaba un sha256 en hexadecimal',
     ],
-    'etapa sin clave' => [
+    'step without a key' => [
         function (array $meta) {
             $meta['workshopSteps']['cache'][0] = ['v1Index' => 0];
 

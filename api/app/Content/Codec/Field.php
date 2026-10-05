@@ -2,10 +2,9 @@
 
 namespace App\Content\Codec;
 
-/** Una clave publicada de un registro y la columna donde se guarda. */
 final readonly class Field
 {
-    /** @param bool $optional la clave puede faltar en el documento: la columna queda NULL */
+    /** @param bool $optional the key may be missing from the document: the column is then NULL */
     public function __construct(
         public string $column,
         public FieldType $type,

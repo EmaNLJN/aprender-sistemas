@@ -7,8 +7,8 @@ use App\Content\PublishedJson;
 use stdClass;
 
 /**
- * Un ejercicio del documento ↔ sus filas: `exercises`, `exercise_tests`, `exercise_hints` y el
- * tema (`topics`), que comparten todos los ejercicios con el mismo `topicId`.
+ * An exercise of the document ↔ its rows: `exercises`, `exercise_tests`, `exercise_hints` and the
+ * topic (`topics`), shared by every exercise with the same `topicId`.
  */
 final class ExerciseCodec
 {
@@ -52,9 +52,9 @@ final class ExerciseCodec
     }
 
     /**
-     * @param  array{contentHash: string, gradingHash: string, starterHash: string}  $hashes  del meta: PHP no las recalcula
-     * @param  ?string  $workshopId  el taller dueño de un núcleo, que sale de `code` en el taller
-     * @return array<string, list<array<string, int|string|null>>> filas por tabla
+     * @param  array{contentHash: string, gradingHash: string, starterHash: string}  $hashes  from the meta: PHP does not recompute them
+     * @param  ?string  $workshopId  the workshop that owns a core, taken from `code` in the workshop
+     * @return array<string, list<array<string, int|string|null>>> rows by table
      */
     public function toRows(stdClass $exercise, string $catalog, ?string $domain, int $position, array $hashes, ?string $workshopId, string $path): array
     {
@@ -101,9 +101,9 @@ final class ExerciseCodec
     }
 
     /**
-     * @param  array<string, mixed>  $exercise  fila de `exercises`
-     * @param  list<array<string, mixed>>  $tests  filas de `exercise_tests` del ejercicio
-     * @param  list<array<string, mixed>>  $hints  filas de `exercise_hints` del ejercicio
+     * @param  array<string, mixed>  $exercise  `exercises` row
+     * @param  list<array<string, mixed>>  $tests  the exercise's `exercise_tests` rows
+     * @param  list<array<string, mixed>>  $hints  the exercise's `exercise_hints` rows
      */
     public function toRecord(array $exercise, array $tests, array $hints, string $topicLabel): stdClass
     {

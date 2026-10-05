@@ -9,10 +9,10 @@ use LogicException;
 use stdClass;
 
 /**
- * Una copia editable del contenido de la imagen (resources/content) para probar el import con
- * cambios. Al escribirla, recalcula el meta del documento editado con PublishedJson y su propio
- * JSON canónico. No es tautológico: ContentFixtureTest ata esas dos piezas al generador, porque
- * la copia sin cambios tiene que reproducir el meta que escribió tools/content.
+ * An editable copy of the image content (resources/content) to test the import with changes. When
+ * written, it recomputes the meta of the edited document with PublishedJson and its own canonical
+ * JSON. Not tautological: ContentFixtureTest ties both to the generator, because the unchanged
+ * copy must reproduce the meta that tools/content wrote.
  */
 final class ContentFixture
 {
@@ -37,7 +37,6 @@ final class ContentFixture
         return dirname(__DIR__, 2).'/resources/content';
     }
 
-    /** El registro de un ejercicio, para editarlo en el lugar. */
     public function exercise(string $id): stdClass
     {
         foreach ($this->exerciseLists() as $list) {
@@ -47,10 +46,9 @@ final class ContentFixture
                 }
             }
         }
-        throw new LogicException("{$id} no está en el contenido");
+        throw new LogicException("{$id} is not in the content");
     }
 
-    /** Saca un ejercicio de su lista y del meta. */
     public function withoutExercise(string $id): self
     {
         foreach (['lab', 'quests', 'cores'] as $catalog) {
@@ -63,7 +61,6 @@ final class ContentFixture
         return $this;
     }
 
-    /** Un ejercicio del recorrido que nada referencia: se puede retirar sin romper referencias. */
     public function unreferencedLabExercise(string $language = 'rust'): string
     {
         $referenced = [];
@@ -83,13 +80,13 @@ final class ContentFixture
                 return $exercise->id;
             }
         }
-        throw new LogicException("todo el recorrido de {$language} está referenciado");
+        throw new LogicException("every lab exercise of {$language} is referenced");
     }
 
     /**
-     * Escribe el par en una carpeta nueva y devuelve su ruta. El documento sale con la sangría del
-     * generador (null: compacto). `$editMeta` retoca el meta ya recalculado, para probar uno roto
-     * con su documentHash al día.
+     * Writes the pair to a new directory and returns its path. The document is written with the
+     * generator's indentation (null: compact). `$editMeta` tweaks the already recomputed meta, to
+     * test a broken one whose documentHash is up to date.
      *
      * @param  ?Closure(array<string, mixed>): array<string, mixed>  $editMeta
      */
@@ -115,7 +112,7 @@ final class ContentFixture
         self::$directories = [];
     }
 
-    /** @return array<string, mixed> el meta con las huellas del documento actual; el resto, tal cual */
+    /** @return array<string, mixed> the meta with the hashes of the current document; the rest, unchanged */
     public function recomputedMeta(string $document): array
     {
         $meta = $this->meta;
@@ -144,7 +141,7 @@ final class ContentFixture
     {
         $text = PublishedJson::encode($this->document);
 
-        // Sangría sin depender de JSON_PRETTY_PRINT (que usa 4 espacios): vuelve a codificar con la que se pida.
+        // Indentation without JSON_PRETTY_PRINT (which uses 4 spaces): re-encodes with the requested one.
         return $indent === null ? $text."\n" : self::indented(json_decode($text), $indent)."\n";
     }
 
@@ -155,7 +152,7 @@ final class ContentFixture
         return $portion->slice() === null ? $group : $group->{$portion->slice()};
     }
 
-    /** @return list<list<stdClass>> las 14 listas de ejercicios del documento */
+    /** @return list<list<stdClass>> */
     private function exerciseLists(): array
     {
         $lists = [];
@@ -168,7 +165,7 @@ final class ContentFixture
         return $lists;
     }
 
-    /** JSON canónico del ADR 0004 §2: claves ordenadas en todos los niveles, sin espacios. */
+    /** Canonical JSON of ADR 0004 §2: keys sorted at every level, no spaces. */
     public static function canonical(mixed $value): string
     {
         return PublishedJson::encode(self::sorted($value));

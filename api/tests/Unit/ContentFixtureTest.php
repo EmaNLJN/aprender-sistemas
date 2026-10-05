@@ -6,9 +6,9 @@ use Tests\Support\ContentFixture;
 
 afterEach(fn () => ContentFixture::cleanup());
 
-// Ata PublishedJson y el JSON canónico de la copia al generador (tools/content/meta.ts): con el
-// contenido sin tocar, el meta que recalcula PHP tiene que ser el que escribió Node.
-it('reproduce el meta del generador cuando el contenido no cambia', function () {
+// Ties PublishedJson and the copy's canonical JSON to the generator (tools/content/meta.ts): with
+// the content untouched, the meta PHP recomputes must be the one Node wrote.
+it('reproduces the generator meta when the content does not change', function () {
     $fixture = ContentFixture::fromImage();
     $original = $fixture->meta;
 
@@ -19,21 +19,19 @@ it('reproduce el meta del generador cuando el contenido no cambia', function () 
         ->and($meta['documentHash'])->toBe($original['documentHash']);
 });
 
-it('escribe un par que ContentSource acepta', function () {
+it('writes a pair that ContentSource accepts', function () {
     $fixture = ContentFixture::fromImage();
-    $fixture->document->guide->sources[0]->note = 'Nota nueva';
+    $fixture->document->guide->sources[0]->note = 'New note';
 
     $source = ContentSource::fromDirectory($fixture->write());
 
-    expect($source->part(Portion::Guide)->sources[0]->note)->toBe('Nota nueva');
+    expect($source->part(Portion::Guide)->sources[0]->note)->toBe('New note');
 });
 
-// Las huellas sin tocar son las del generador (el primer test); acá, que editar un ejercicio mueve
-// las suyas y las de su porción, y sólo esas.
-it('recalcula las huellas de lo que se edita y sólo de eso', function () {
+it('recomputes the hashes of what is edited and only of that', function () {
     $fixture = ContentFixture::fromImage();
     $original = $fixture->meta;
-    $fixture->exercise('rust-01')->title = 'Otro título';
+    $fixture->exercise('rust-01')->title = 'Another title';
 
     $meta = ContentSource::fromDirectory($fixture->write())->meta;
 
@@ -46,11 +44,11 @@ it('recalcula las huellas de lo que se edita y sólo de eso', function () {
         ->and($meta['documentHash'])->not->toBe($original['documentHash']);
 });
 
-it('avisa cuando el ejercicio que se pide no está en el contenido', function () {
-    ContentFixture::fromImage()->exercise('no-existe');
-})->throws(LogicException::class, 'no-existe no está en el contenido');
+it('reports when the requested exercise is not in the content', function () {
+    ContentFixture::fromImage()->exercise('no-such-exercise');
+})->throws(LogicException::class, 'no-such-exercise is not in the content');
 
-it('saca un ejercicio del documento y del meta, y el par sigue siendo válido', function () {
+it('removes an exercise from the document and the meta, and the pair stays valid', function () {
     $fixture = ContentFixture::fromImage();
     $exercises = count($fixture->meta['exercises']);
     $labRust = count($fixture->document->lab->rust);
@@ -62,10 +60,9 @@ it('saca un ejercicio del documento y del meta, y el par sigue siendo válido', 
         ->and(array_column($source->part(Portion::LabRust), 'id'))->toHaveCount($labRust - 1)->not->toContain($id);
 });
 
-it('escribe el documento compacto cuando se pide sin sangría', function () {
+it('writes the document compact when asked for no indentation', function () {
     $directory = ContentFixture::fromImage()->write(indent: null);
 
-    // Un solo salto de línea: el del final. Los de los textos salen escapados.
     expect(substr_count(file_get_contents("{$directory}/curriculum.json"), "\n"))->toBe(1)
         ->and(ContentSource::fromDirectory($directory)->languages())->toBe(['rust', 'go']);
 });

@@ -8,28 +8,27 @@ use LogicException;
 use stdClass;
 
 /**
- * La regla de cada clave publicada de un tipo de registro: a qué columna va y de qué tipo. La
- * usan las dos direcciones, el import (`toColumns`) y la entrega (`fromColumns`), así que cada
- * regla se escribe una sola vez (ADR 0006 D10). Las claves «derivadas» no van en una columna del
- * registro: salen de una tabla hija o de otra tabla, y las resuelve cada códec.
+ * The rule of each published key of a record type: which column it goes to and its type. Both
+ * directions use it, the import (`toColumns`) and the delivery (`fromColumns`), so each rule is
+ * written once (ADR 0006 D10). "Derived" keys have no column in the record: they come from a
+ * child table or another table, and each codec resolves them.
  */
 final class FieldMap
 {
     /**
-     * @param  array<string, Field>  $fields  clave publicada → campo
-     * @param  list<string>  $derived  claves publicadas que salen de otra tabla
+     * @param  array<string, Field>  $fields  published key → field
+     * @param  list<string>  $derived  published keys that come from another table
      */
     public function __construct(private readonly array $fields, private readonly array $derived = []) {}
 
-    /** Las claves de un registro, en el orden en que se publican. */
     public static function keysOf(stdClass $record): array
     {
         return array_map('strval', array_keys(get_object_vars($record)));
     }
 
     /**
-     * Las columnas de un registro del documento. Rechaza una clave sin regla y una clave obligatoria
-     * que falta; las derivadas se ignoran.
+     * The columns of a document record. Rejects a key without a rule and a missing required key;
+     * derived keys are ignored.
      *
      * @return array<string, int|string|null>
      */
@@ -57,11 +56,11 @@ final class FieldMap
     }
 
     /**
-     * El registro tal como se publica, con las claves en el orden de `$keyOrder`.
+     * The record as published, with its keys in the order of `$keyOrder`.
      *
      * @param  array<string, mixed>  $row
      * @param  list<string>  $keyOrder
-     * @param  array<string, mixed>  $derived  el valor de cada clave derivada
+     * @param  array<string, mixed>  $derived  the value of each derived key
      */
     public function fromColumns(array $row, array $keyOrder, array $derived = []): stdClass
     {

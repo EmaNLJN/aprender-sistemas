@@ -9,10 +9,10 @@ use App\Content\Codec\WorkshopCodec;
 use App\Content\Codec\WorldCodec;
 
 /**
- * Las filas → los bytes de una porción: el único camino de las tablas a lo que publica la API
- * (ADR 0006 D10). Es puro: no lee la base, así que el mismo código arma una porción desde las
- * filas que acaba de calcular el import (en las pruebas) y desde las que lee la base. Ordena por
- * `position` y filtra por la porción: sobra cualquier fila que no sea suya.
+ * The rows → the bytes of a portion: the only path from the tables to what the API publishes
+ * (ADR 0006 D10). It is pure and never reads the database, so the same code assembles a portion
+ * from rows the import has just computed (in tests) and from rows read from the database. It sorts
+ * by `position` and filters by portion: any row that is not its own is ignored.
  */
 final class PortionAssembler
 {
@@ -25,8 +25,8 @@ final class PortionAssembler
     ) {}
 
     /**
-     * @param  array<string, list<array<string, mixed>>>  $rows  filas activas por tabla
-     * @param  list<string>  $languages  en el orden de `languages.position`
+     * @param  array<string, list<array<string, mixed>>>  $rows  active rows by table
+     * @param  list<string>  $languages  in the order of `languages.position`
      */
     public function assemble(Portion $portion, array $rows, array $languages): string
     {
@@ -133,7 +133,7 @@ final class PortionAssembler
     }
 
     /**
-     * Las filas por valor de una columna, cada grupo ordenado por `position`.
+     * The rows grouped by the value of a column, each group ordered by `position`.
      *
      * @param  list<array<string, mixed>>  $rows
      * @return array<string, list<array<string, mixed>>>

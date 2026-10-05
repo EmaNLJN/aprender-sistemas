@@ -7,10 +7,10 @@ use App\Content\PublishedJson;
 use stdClass;
 
 /**
- * Un taller de Sistemas del documento ↔ sus filas: `workshops`, `workshop_objectives`,
- * `workshop_steps` y `workshop_related_exercises`. El mapa `code` no tiene tabla: lo da
- * `exercises.workshop_id`. Las etapas no publican su clave ni su índice v1 hasta D1 (ADR 0006
- * D14): llegan del meta, en el mismo orden.
+ * A Systems workshop of the document ↔ its rows: `workshops`, `workshop_objectives`,
+ * `workshop_steps` and `workshop_related_exercises`. The `code` map has no table: it comes from
+ * `exercises.workshop_id`. Steps do not publish their key or v1 index until D1 (ADR 0006 D14):
+ * both come from the meta, in the same order.
  */
 final class WorkshopCodec
 {
@@ -55,9 +55,9 @@ final class WorkshopCodec
     }
 
     /**
-     * @param  list<array{id: string, v1Index: ?int}>  $stepKeys  del meta, una por etapa publicada
-     * @param  list<string>  $languages  en el orden de `languages.position`
-     * @return array<string, list<array<string, int|string|null>>> filas por tabla
+     * @param  list<array{id: string, v1Index: ?int}>  $stepKeys  from the meta, one per published step
+     * @param  list<string>  $languages  in the order of `languages.position`
+     * @return array<string, list<array<string, int|string|null>>> rows by table
      */
     public function toRows(stdClass $workshop, string $domain, int $position, array $stepKeys, array $languages, string $path): array
     {
@@ -111,12 +111,12 @@ final class WorkshopCodec
     }
 
     /**
-     * @param  array<string, mixed>  $workshop  fila de `workshops`
-     * @param  list<array<string, mixed>>  $objectives  del taller
-     * @param  list<array<string, mixed>>  $steps  del taller
-     * @param  array<string, list<string>>  $related  IDs por lenguaje, en el orden de `position`
-     * @param  array<string, string>  $code  ID del núcleo por lenguaje
-     * @param  list<string>  $languages  en el orden de `languages.position`
+     * @param  array<string, mixed>  $workshop  `workshops` row
+     * @param  list<array<string, mixed>>  $objectives  the workshop's objectives
+     * @param  list<array<string, mixed>>  $steps  the workshop's steps
+     * @param  array<string, list<string>>  $related  IDs by language, in `position` order
+     * @param  array<string, string>  $code  core ID by language
+     * @param  list<string>  $languages  in the order of `languages.position`
      */
     public function toRecord(array $workshop, array $objectives, array $steps, array $related, array $code, array $languages): stdClass
     {

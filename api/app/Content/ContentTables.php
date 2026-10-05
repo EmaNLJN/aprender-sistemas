@@ -3,9 +3,9 @@
 namespace App\Content;
 
 /**
- * Las tablas de contenido que escribe `content:import` por filas, en orden de dependencias (cada
- * clave foránea apunta a una anterior), con las columnas de su clave primaria. Faltan dos, que el
- * importador escribe aparte: `content_imports` y `exercise_grading_versions`.
+ * The content tables that `content:import` writes row by row, in dependency order (each foreign
+ * key points to an earlier one), with the columns of their primary key. Two are written
+ * separately by the importer: `content_imports` and `exercise_grading_versions`.
  */
 final class ContentTables
 {
@@ -32,12 +32,12 @@ final class ContentTables
         'guide_step_resources' => ['step_id', 'resource_id'],
     ];
 
-    /** Sin ciclo de vida: no se retiran (ADR 0006 §5.1). */
+    /** Never retired: no lifecycle (ADR 0006 §5.1). */
     public const WITHOUT_LIFECYCLE = ['languages'];
 
     /**
-     * Las tablas cuya `position` no es parte de la clave: al retirarse una fila, queda en NULL
-     * (`<tabla>_position_check`: sólo lo activo tiene posición).
+     * Tables whose `position` is not part of the key: a retired row has it NULL
+     * (`<table>_position_check`: only active rows have a position).
      */
     public const NULL_POSITION_WHEN_RETIRED = [
         'workshops', 'exercises', 'exercise_tests', 'workshop_objectives', 'workshop_steps',

@@ -10,9 +10,9 @@ use App\Content\Codec\WorldCodec;
 use stdClass;
 
 /**
- * El documento → las filas de todas las tablas de contenido, con las referencias entre registros
- * validadas (el generador valida la forma de cada archivo, no que un mundo o el Atlas nombren
- * ejercicios que existen). Cada error nombra el campo del documento.
+ * The document → the rows of every content table, with the references between records validated
+ * (the generator validates the shape of each file, not that a world or the Atlas name exercises
+ * that exist). Each error names the document field.
  */
 final class ContentRows
 {
@@ -63,11 +63,7 @@ final class ContentRows
         }
     }
 
-    /**
-     * Cada ejercicio por ID, con su catálogo, su lenguaje y su dominio.
-     *
-     * @return array<string, array{catalog: string, language: string, domain: ?string}>
-     */
+    /** @return array<string, array{catalog: string, language: string, domain: ?string}> by exercise ID */
     private function indexExercises(ContentSource $source): array
     {
         $index = [];
@@ -95,10 +91,10 @@ final class ContentRows
     }
 
     /**
-     * El taller dueño de cada núcleo, que sale del mapa `code` de los talleres.
+     * The workshop that owns each core, from the `code` map of the workshops.
      *
      * @param  array<string, array{catalog: string, language: string, domain: ?string}>  $index
-     * @return array<string, string>
+     * @return array<string, string> workshop ID by core ID
      */
     private function workshopOwners(ContentSource $source, array $index): array
     {
@@ -124,7 +120,7 @@ final class ContentRows
         return $owners;
     }
 
-    /** @param array<string, string> $owners */
+    /** @param array<string, string> $owners workshop ID by core ID */
     private function addExercises(ContentSource $source, array $owners, RowSet $rows): void
     {
         $topics = [];
@@ -231,7 +227,7 @@ final class ContentRows
     }
 
     /**
-     * Las 17 porciones de ejercicios, en el orden del documento: [catálogo, corte, lista, ruta].
+     * The exercise lists (lab, quests and cores by slice) in document order: [catalog, slice, list, path].
      *
      * @return list<array{0: string, 1: string, 2: list<stdClass>, 3: string}>
      */
@@ -274,7 +270,6 @@ final class ContentRows
         return $value;
     }
 
-    /** Un mapa por lenguaje, con las claves en el orden de `languages`. */
     private function languageMap(mixed $value, ContentSource $source, string $path): stdClass
     {
         if (! $value instanceof stdClass || array_map('strval', array_keys(get_object_vars($value))) !== $source->languages()) {

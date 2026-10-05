@@ -7,9 +7,9 @@ use App\Content\PublishedJson;
 use stdClass;
 
 /**
- * Un mundo de campaña del documento ↔ sus filas: `worlds` y `world_exercises`. Los tres
- * campos de IDs se reparten por rol: `trainingIds` son los `training`, `challengeIds` los
- * `challenge` y el jefe (que es el último desafío) y `bossId` el `boss`.
+ * A campaign world of the document ↔ its rows: `worlds` and `world_exercises`. The three ID
+ * fields are split by role: `trainingIds` are the `training` rows, `challengeIds` the `challenge`
+ * rows plus the boss (the last challenge), and `bossId` the `boss` row.
  */
 final class WorldCodec
 {
@@ -32,7 +32,7 @@ final class WorldCodec
         ], derived: ['trainingIds', 'challengeIds', 'bossId']);
     }
 
-    /** @return array<string, list<array<string, int|string|null>>> filas por tabla */
+    /** @return array<string, list<array<string, int|string|null>>> rows by table */
     public function toRows(stdClass $world, string $language, int $position, string $path): array
     {
         $columns = $this->world->toColumns($world, $path);
@@ -64,8 +64,8 @@ final class WorldCodec
     }
 
     /**
-     * @param  array<string, mixed>  $world  fila de `worlds`
-     * @param  list<array<string, mixed>>  $members  filas de `world_exercises` del mundo
+     * @param  array<string, mixed>  $world  `worlds` row
+     * @param  list<array<string, mixed>>  $members  the world's `world_exercises` rows
      */
     public function toRecord(array $world, array $members): stdClass
     {

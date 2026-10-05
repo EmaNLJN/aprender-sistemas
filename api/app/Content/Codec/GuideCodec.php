@@ -7,9 +7,9 @@ use App\Content\PublishedJson;
 use stdClass;
 
 /**
- * La guía del documento ↔ sus seis tablas: `guide_resources`, `guide_sources`, `guide_tracks`,
- * `guide_modules`, `guide_steps` y `guide_step_resources`. La raíz de la guía no tiene fila: sus
- * claves son siempre estas, en este orden.
+ * The guide of the document ↔ its six tables: `guide_resources`, `guide_sources`, `guide_tracks`,
+ * `guide_modules`, `guide_steps` and `guide_step_resources`. The guide root has no row: its keys
+ * are always these, in this order.
  */
 final class GuideCodec
 {
@@ -67,8 +67,8 @@ final class GuideCodec
     }
 
     /**
-     * @param  list<string>  $languages  en el orden de `languages.position`
-     * @return array<string, list<array<string, int|string|null>>> filas por tabla
+     * @param  list<string>  $languages  in the order of `languages.position`
+     * @return array<string, list<array<string, int|string|null>>> rows by table
      */
     public function toRows(stdClass $guide, array $languages, string $path): array
     {
@@ -136,8 +136,8 @@ final class GuideCodec
     }
 
     /**
-     * @param  array<string, list<array<string, mixed>>>  $rows  filas activas de las seis tablas
-     * @param  list<string>  $languages  en el orden de `languages.position`
+     * @param  array<string, list<array<string, mixed>>>  $rows  active rows of the six tables
+     * @param  list<string>  $languages  in the order of `languages.position`
      */
     public function toRecord(array $rows, array $languages): stdClass
     {

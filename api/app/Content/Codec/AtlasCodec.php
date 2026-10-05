@@ -5,7 +5,6 @@ namespace App\Content\Codec;
 use App\Content\PublishedJson;
 use stdClass;
 
-/** Un concepto del Atlas del documento ↔ su fila de `atlas_concepts`. */
 final class AtlasCodec
 {
     private FieldMap $concept;
@@ -30,7 +29,7 @@ final class AtlasCodec
         ]);
     }
 
-    /** @return array<string, list<array<string, int|string|null>>> filas por tabla */
+    /** @return array<string, list<array<string, int|string|null>>> rows by table */
     public function toRows(stdClass $concept, string $language, int $position, string $path): array
     {
         return ['atlas_concepts' => [$this->concept->toColumns($concept, $path) + [
@@ -40,7 +39,7 @@ final class AtlasCodec
         ]]];
     }
 
-    /** @param array<string, mixed> $row fila de `atlas_concepts` */
+    /** @param array<string, mixed> $row `atlas_concepts` row */
     public function toRecord(array $row): stdClass
     {
         return $this->concept->fromColumns($row, PublishedJson::decode($row['key_order']));
