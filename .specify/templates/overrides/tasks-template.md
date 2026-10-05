@@ -21,6 +21,8 @@ description: "Plantilla de tasks.md del taller: un registro liviano de lo que se
     spec nueva.
   - Las pruebas no son opcionales (constitución, principio II): cada historia abre con sus
     tareas de prueba, que fallan antes de implementar.
+  - El detalle (archivos, interfaces y pasos que empiezan por la prueba) va en `plan.md`: cada
+    tarea de este archivo es una línea y remite a la suya.
 -->
 
 ## Phase 1: Setup

@@ -87,8 +87,15 @@ artefacto entregado no se edita, se continúa con otro. Cada feature vive en
   del épico vive en `specs/backend-multiusuario/roadmap.md` y las specs, en `specs/`. La plantilla
   de `tasks.md` del proyecto (`.specify/templates/overrides/tasks-template.md`) aplica el
   principio VIII.
-- **Origen de estas reglas:** el recorrido con Spec Kit y el principio VIII viven acá hasta que
-  `AGENTS.md` los incorpore; desde entonces manda `AGENTS.md`.
+- **Disciplina de contenido (superpowers):** los archivos son los de Spec Kit, nunca
+  `docs/superpowers/`. La spec sigue los criterios de `brainstorming`: intención y criterio de
+  éxito escritos para que el usuario los corrija, lo que pidió separado de los supuestos, YAGNI
+  y las alternativas consideradas cuando importan. El plan sigue los de `writing-plans`: mapa de
+  archivos, interfaces exactas entre tareas, pasos que empiezan por la prueba, ningún marcador
+  pendiente y una sección «Review Focus». `tasks.md` queda corto: una línea por tarea y, como
+  mucho, su evidencia; el detalle va en el plan.
+- **Origen de estas reglas:** el recorrido con Spec Kit, la disciplina de contenido y el
+  principio VIII viven acá hasta que `AGENTS.md` los incorpore; desde entonces manda `AGENTS.md`.
 
 ## Gobierno
 
@@ -101,4 +108,4 @@ artefacto entregado no se edita, se continúa con otro. Cada feature vive en
 
 [persistencia]: https://github.com/github/spec-kit/blob/main/docs/concepts/spec-persistence.md
 
-**Version**: 1.1.0 | **Ratified**: TODO(RATIFICATION_DATE): a la espera de la aprobación del usuario | **Last Amended**: 2026-10-04
+**Version**: 1.2.0 | **Ratified**: TODO(RATIFICATION_DATE): a la espera de la aprobación del usuario | **Last Amended**: 2026-10-04
