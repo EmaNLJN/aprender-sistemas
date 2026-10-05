@@ -203,6 +203,17 @@ it('the v1 index of a step is frozen', function () {
         ->toThrow(InvalidContent::class, 'curriculum.meta.json: workshopSteps.cache.e1: el v1Index está congelado: era 0 y llega 3');
 });
 
+it('a v1 index cannot belong to two steps of a workshop', function () {
+    [$rows, $source] = diffDesired(editMeta: function (array $meta) {
+        $meta['workshopSteps']['cache'][1]['v1Index'] = 0;
+
+        return $meta;
+    });
+
+    expect(fn () => (new ContentDiff)->between($rows, [], [], null, $source->meta))
+        ->toThrow(InvalidContent::class, 'curriculum.meta.json: workshopSteps.cache.e2: el v1Index 0 ya es el de la etapa e1');
+});
+
 it('records an import when the document or a portion changes, even if no table does', function () {
     [$rows, $source] = diffDesired();
     $stored = storedRowsAfterImport($rows);

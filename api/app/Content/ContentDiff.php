@@ -17,6 +17,7 @@ final class ContentDiff
      */
     public function between(RowSet $desired, array $stored, array $knownVersions, ?LatestImport $latest, array $meta): ContentPlan
     {
+        $this->assertDistinctV1Indexes($desired);
         $writes = [];
         $retires = [];
         foreach (array_keys(ContentTables::KEYS) as $table) {
@@ -140,6 +141,22 @@ final class ContentDiff
         $retiredTogether = $exercise !== null && $exercise['status'] !== 'active' && $exercise['retired_at'] === $current['retired_at'];
         if (! $retiredTogether) {
             throw InvalidContent::at('curriculum.json', "exercise_tests.{$row['exercise_id']}.{$row['test_key']}", 'el test_key se retiró y no se reutiliza: usá uno nuevo');
+        }
+    }
+
+    /** A v1 index belongs to a single step of its workshop (ADR 0006 D14). */
+    private function assertDistinctV1Indexes(RowSet $desired): void
+    {
+        $owners = [];
+        foreach ($desired->rows('workshop_steps') as $step) {
+            if ($step['v1_position'] === null) {
+                continue;
+            }
+            $slot = "{$step['workshop_id']}\x1f{$step['v1_position']}";
+            if (isset($owners[$slot])) {
+                throw InvalidContent::at('curriculum.meta.json', "workshopSteps.{$step['workshop_id']}.{$step['step_key']}", "el v1Index {$step['v1_position']} ya es el de la etapa {$owners[$slot]}");
+            }
+            $owners[$slot] = $step['step_key'];
         }
     }
 
