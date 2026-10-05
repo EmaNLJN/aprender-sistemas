@@ -357,7 +357,8 @@ it('a test_key retired on its own is not reused, and the import leaves no trace'
     useContentAt(ContentFixture::imagePath());
     Artisan::call('content:import');
 
-    expect(Artisan::output())->toContain('el test_key se retiró y no se reutiliza')
+    // The generator still demands t{index+1}, so "use a new one" cannot be done until B2 drops that rule.
+    expect(Artisan::output())->toContain('el test_key se retiró y no se reutiliza: esa prueba no puede volver hasta que B2 quite la regla t{i+1} del generador')
         ->and(ContentDatabase::checksums())->toBe($checksums);
 });
 

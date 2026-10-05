@@ -127,6 +127,8 @@ final class ContentDiff
     /**
      * A retired row only comes back if it was retired together with its exercise. A `test_key`
      * retired on its own is not reused (ADR 0006 D14): its results already point to the old test.
+     * Until B2 the generator still names the tests `t{index+1}`, so there is no other key to give
+     * the test that would take its place.
      *
      * @param  array<string, int|string|null>  $row
      * @param  array<string, mixed>  $current
@@ -140,7 +142,7 @@ final class ContentDiff
         $exercise = $stored['exercises'][$row['exercise_id']] ?? null;
         $retiredTogether = $exercise !== null && $exercise['status'] !== 'active' && $exercise['retired_at'] === $current['retired_at'];
         if (! $retiredTogether) {
-            throw InvalidContent::at('curriculum.json', "exercise_tests.{$row['exercise_id']}.{$row['test_key']}", 'el test_key se retiró y no se reutiliza: usá uno nuevo');
+            throw InvalidContent::at('curriculum.json', "exercise_tests.{$row['exercise_id']}.{$row['test_key']}", 'el test_key se retiró y no se reutiliza: esa prueba no puede volver hasta que B2 quite la regla t{i+1} del generador');
         }
     }
 

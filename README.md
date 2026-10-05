@@ -213,6 +213,8 @@ Para agregar un ejercicio:
    - `starter.<rs|go>` y `solution.<rs|go>`, con el código tal cual. Los `.go` empiezan con `package main` y una línea en blanco.
 4. Corré `npm run curriculum`, que valida todo `content/` y nombra el archivo y el campo de cada error. Después, `npm test`.
 
+Una prueba quitada de un ejercicio no puede volver con el mismo número hasta B2 (la API de ejecuciones): `content:import` no reutiliza un `test_key` retirado y el generador todavía exige `t1`, `t2`… en orden.
+
 En los YAML, un `#` después de un espacio empieza un comentario: un texto con `#` (como `#[test]` o `#2`) va entre comillas, y los comentarios van en su propia línea, sin más sangría que la clave: con más sangría, YAML la pega al valor sin comillas de arriba. `npm run curriculum` rechaza los dos casos.
 
 Un ejercicio nuevo cambia a propósito contratos que se actualizan a mano: `qa/fixtures/curriculum-ids.json`, los asserts de `content-check` (cantidades, ID por posición y etapa) y de `systems-check` (totales), y las cantidades de este README. `npm run format` también formatea los YAML.

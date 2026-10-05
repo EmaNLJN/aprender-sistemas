@@ -178,7 +178,7 @@ it('a test_key retired on its own is not reused, but comes back with its exercis
     $alone = $stored;
     $alone['exercise_tests'][$key]['status'] = 'deprecated';
     $alone['exercise_tests'][$key]['retired_at'] = '2026-10-05 01:00:00.000';
-    expect(fn () => $reuse($alone))->toThrow(InvalidContent::class, "exercise_tests.{$test['exercise_id']}.{$test['test_key']}: el test_key se retiró y no se reutiliza");
+    expect(fn () => $reuse($alone))->toThrow(InvalidContent::class, "exercise_tests.{$test['exercise_id']}.{$test['test_key']}: el test_key se retiró y no se reutiliza: esa prueba no puede volver hasta que B2 quite la regla t{i+1} del generador");
 
     // Retired on its own, and the whole exercise later: the exercise comes back, the test does not.
     $later = retireExercise($alone, $test['exercise_id'], '2026-10-05 02:00:00.000');
