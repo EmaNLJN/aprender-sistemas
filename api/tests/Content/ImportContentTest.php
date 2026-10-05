@@ -149,6 +149,15 @@ it('--dry-run reports new, grading, text and retired, without writing', function
     expect($writes)->toBe([])->and(ContentDatabase::checksums())->toBe($checksums);
 });
 
+it('--dry-run lists only the first 10 IDs of a long list and counts the rest', function () {
+    $total = count(imageMeta()['exercises']);
+
+    // On an empty database every exercise is new.
+    Artisan::call('content:import', ['--dry-run' => true]);
+
+    expect(Artisan::output())->toMatch('/Ejercicios nuevos: '.$total.' \((?:[^,()]+, ){9}[^,()]+ y '.($total - 10).' más\)/');
+});
+
 it('imports a change that differs only in case or accents, which MySQL would compare as equal', function () {
     importImageContent();
     $fixture = ContentFixture::fromImage();
