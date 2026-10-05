@@ -1,16 +1,3 @@
-/* Real compiler QA. Explicit invocation sends the bundled educational source
- * to the official Rust or Go Playground. Requires Node 24+ and internet.
- * Usage: node qa/runtime-check.ts rust
- *        node qa/runtime-check.ts go
- *        node qa/runtime-check.ts rust starters
- *        node qa/runtime-check.ts go starters
- *        node qa/runtime-check.ts go --ids=go-28
- *        node qa/runtime-check.ts rust --from=51
- *        node qa/runtime-check.ts rust starters --all-starters --from=76
- *        node qa/runtime-check.ts go --audit-record
- * Uses the SAME program builder as the browser and isolates each exercise in
- * its own module/package. Go's txtar limit is 20 files, so batches contain 15.
- */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -123,7 +110,6 @@ const context = vm.createContext({
 const catalogSources = fs
   .readdirSync(path.join(root, 'content', language), { recursive: true, encoding: 'utf8' })
   .map((entry) => path.posix.join('content', language, entry))
-  // No hidden entries (.DS_Store, .swp), like the policy of tools/content/catalog-files.ts.
   .filter((file) => !file.split('/').some((part) => part.startsWith('.')))
   .filter((file) => fs.statSync(path.join(root, file)).isFile())
   .sort();
@@ -163,7 +149,6 @@ if (starters && !options.includes('--all-starters')) exercises = [exercises[0]];
 if (!exercises.length || !exercises[0]) throw new Error('No matching exercises');
 
 function built(ex: Exercise, useStarter = starters): string {
-  // Prefix just the test identifiers, preserving the original compiler harness.
   return lab
     .buildProgram(ex, useStarter ? ex.starter : ex.solution)
     .replaceAll('__TALLER_TEST__', '__TALLER_TEST__' + ex.id.replace('-', '_') + '_');

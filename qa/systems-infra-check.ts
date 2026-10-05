@@ -1,4 +1,3 @@
-// Pure-model invariants and observable learning outcomes; no compiler or network.
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { loadLabExercises, loadSystemsDomain } from './lib/legacy-sources.ts';
@@ -129,7 +128,6 @@ const expected: ModelId[] = [
   'balancing',
   'sharding',
 ];
-// A missing catalog global must fail loudly, not shrink the set of known IDs.
 function published<T>(list: T[] | undefined, name: string): T[] {
   if (!Array.isArray(list)) throw new Error(`${name} was not published by its source`);
   return list;
@@ -298,7 +296,6 @@ for (const [index, workshop] of workshops.entries()) {
   validateView(workshop.id, initial);
 }
 
-// WAL: loss before the durability barrier; complete replay after it.
 let wal = simulation('wal');
 wal.step('put', '10');
 wal.step('commit');
@@ -329,7 +326,6 @@ check(
   'WAL durable PUT without COMMIT remains unpublished',
 );
 
-// LSM: reproduce the concrete resurrection, then retain and safely reclaim.
 const lsm = simulation('lsm');
 lsm.step('delete');
 lsm.step('flush');
@@ -360,7 +356,6 @@ check(
 );
 lsm.complete();
 
-// Replication: partitioned write, stale single-copy read, unavailable minority, repair.
 const quorum = simulation('quorum');
 quorum.step('isolate-c');
 quorum.step('write');
@@ -397,7 +392,6 @@ equal(
 );
 quorum.complete();
 
-// Lamport: independent equal stamps, receive max+1, causal chain.
 let clocks = simulation('clocks');
 clocks.step('local-a');
 clocks.step('local-b');
@@ -415,7 +409,6 @@ clocks.step('send-ab');
 clocks.step('deliver');
 check(clocks.state.clocks.B === 6, 'A smaller received stamp cannot move the local clock backward');
 
-// Reassembly: out-of-order, idempotent duplicate, loss/retry and conflicting duplicate.
 const network = simulation('network');
 network.step('deliver', '2');
 network.step('deliver', '0');
@@ -443,7 +436,6 @@ check(
 );
 network.complete();
 
-// Backpressure: a blocked producer retains its identity; consuming frees a slot.
 const backpressure = simulation('backpressure');
 backpressure.step('produce');
 backpressure.step('produce');
@@ -466,7 +458,6 @@ check(
 );
 backpressure.complete();
 
-// Eligibility, circuit trip, and actual work after a successful manual probe.
 const balancing = simulation('balancing');
 balancing.step('health-a');
 balancing.step('route');
@@ -493,7 +484,6 @@ check(
 );
 balancing.complete();
 
-// Consistent hash placement changes only the inserted token's predecessor interval.
 const sharding = simulation('sharding');
 sharding.step('inspect-wrap');
 sharding.step('add');
@@ -511,7 +501,6 @@ check(
   'Removing the added token restores baseline assignments',
 );
 
-// Deterministic adversarial control sequences: valid state and public API invariants.
 function assertAdversarialInvariants(id: ModelId, state: States[ModelId]): void {
   if (id === 'backpressure') {
     const { queue, capacity } = state as BackpressureState;

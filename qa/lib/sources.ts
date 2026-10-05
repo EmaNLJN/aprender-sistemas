@@ -54,7 +54,6 @@ export function bundleSource(relativePath: string, options: BundleOptions = {}):
   return text;
 }
 
-// Separate from bundleSource so its output format and cache stay unchanged.
 export function bundleApp(relativePath: string): string {
   const cached = appCache.get(relativePath);
   if (cached !== undefined) return cached;

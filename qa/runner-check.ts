@@ -1,4 +1,3 @@
-/* Offline boundary tests for the browser compiler adapter. No remote requests. */
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { runSource } from './lib/sources.ts';

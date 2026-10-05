@@ -1,4 +1,3 @@
-/* Systems progress contract + complete catalog. Pure Node; no network/browser. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -447,7 +446,6 @@ test('Sync rejects failed transport, missing/blank code and non-success', () => 
   ];
   for (const invalid of rejected) {
     const { engine, store } = environment();
-    // With the key absent the action saves the empty document: what is observable is that no seal reaches memory or storage.
     engine.syncLab(labResult('rust-113', invalid));
     assert.equal(engine.get('alpha', 'rust').progress.code, false, JSON.stringify(invalid));
     assert.deepEqual(savedCodeSeals(store), [], JSON.stringify(invalid));

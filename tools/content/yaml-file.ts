@@ -58,7 +58,6 @@ export function readContentText(root: string, file: string): string {
   }
 }
 
-// schema 'core' pins YAML 1.2 even if the file declares %YAML 1.1.
 export function readYamlFile(root: string, file: string): unknown {
   const text = readContentText(root, file);
   const document = parseDocument(text, {

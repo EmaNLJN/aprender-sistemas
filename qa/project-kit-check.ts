@@ -1,11 +1,3 @@
-/* Production ZIP roundtrip + optional real Cargo/Go tests in disposable containers.
- * node qa/project-kit-check.ts --docker --write-report
- * --partial allows only domains whose metadata is already available during authoring.
- * --only=pc recompiles PC plus every changed/unverified kit; unchanged exact hashes
- * retain their earlier compiler evidence. ZIP/artifact checks still cover every kit.
- * --changed recompiles only changed/unverified kits, with no forced workshop.
- * This script never pulls images, opens ports, or mounts the application workspace.
- */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';

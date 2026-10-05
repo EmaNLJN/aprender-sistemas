@@ -1,4 +1,3 @@
-// runtime-check is excluded: it reaches the public Playgrounds.
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 

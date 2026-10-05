@@ -1,4 +1,3 @@
-/* Verify the actual campaign curriculum and links, without network or DOM. */
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {

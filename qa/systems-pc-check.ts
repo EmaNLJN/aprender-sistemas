@@ -1,4 +1,3 @@
-/* Pure transition checks for the integrated teaching PC. No browser or compiler requests. */
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { plainJson as plain } from './lib/plain-json.ts';

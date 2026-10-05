@@ -1,4 +1,3 @@
-/* Offline behavior checks for the campaign ledger and its prerequisite chain. */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -231,7 +230,7 @@ test('First world unlocked; later worlds and bosses explain prerequisites', () =
   assert.match(world(engine, 1).reasons.join(' '), /mundo 1/);
   assert.equal(engine.canAttempt('rust-1', 'rust').allowed, true);
   assert.equal(engine.canAttempt('rust-6', 'rust').allowed, false);
-  assert.equal(engine.canAttempt('rust-25', 'rust').allowed, true); // Free-lab exercise outside campaign.
+  assert.equal(engine.canAttempt('rust-25', 'rust').allowed, true);
   assert.equal(engine.canAttempt('rust-1', 'go').allowed, false);
   assert.equal(engine.canAttempt('missing', 'rust').allowed, false);
 });
@@ -332,7 +331,7 @@ test('Checkpoint blocks early answers, then permits retry without granting extra
   assert.equal(engine.answerCheckpoint('rust-world-1', 0).passed, true);
   assert.equal(world(engine, 1).unlocked, true);
   assert.equal(world(engine).checkpointAnswer, 0);
-  assert.equal(engine.answerCheckpoint('rust-world-1', 1).passed, true); // Earned checkpoint stays earned.
+  assert.equal(engine.answerCheckpoint('rust-world-1', 1).passed, true);
   assert.equal(world(engine).score, 150);
   assert.equal(engine.getSummary('rust').completedWorlds, 1);
   assert.deepEqual(plainJson(engine.getSummary('rust').badges), ['Insignia 1']);
@@ -404,7 +403,7 @@ test('Import honors local progress, merges monotonically, and accepts absent leg
   assert.equal(importState(engine, null).changed, false);
   const exported = engine.exportState();
   exported.seals['rust-1'].code = false;
-  assert.equal(world(engine).missions[0].code, true); // Snapshot cannot mutate the ledger.
+  assert.equal(world(engine).missions[0].code, true);
 });
 test('Corrupt imports are rejected atomically, including out-of-range checkpoint answers', () => {
   const { engine } = fresh();

@@ -1,4 +1,3 @@
-/* Behavioral checks for the original visual-computing models. No network. */
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { plainJson as plain } from './lib/plain-json.ts';

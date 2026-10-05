@@ -1,4 +1,3 @@
-/* Pure-model tests: no browser, network, timers or compiler service calls. */
 'use strict';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
