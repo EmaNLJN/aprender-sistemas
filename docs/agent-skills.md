@@ -108,9 +108,10 @@ sin scripts ni instrucciones de red.
   - `mattpocock/skills@domain-modeling`, porque trata glosarios y ADR, no esquemas.
 - **Descargas:** `playwright-best-practices` sugiere `npx playwright install --with-deps`, que
   descarga navegadores. La regla de pedir permiso antes de cada descarga sigue valiendo.
-- **Alcance:** el [ADR 0008](adr/0008-pruebas-del-front.md), en estado «propuesta», adopta Vitest,
-  Testing Library, fishery y Playwright. Hasta que se apruebe y F1 los instale, las specs nuevas no
-  tienen dónde correr.
+- **Alcance:** el [ADR 0008](adr/0008-pruebas-del-front.md), aceptado el 2026-10-05, adopta Vitest,
+  Testing Library, fishery y Playwright. F1 instala Vitest y Playwright; la pila de DOM llega con la
+  primera spec de componente y fishery con la primera factory. Hasta que F1 se integre, las specs
+  nuevas no tienen dónde correr.
 
 Se instalaron con `npx skills add <repo> --skill <nombre> -a codex -y`, con su enlace en
 `.claude/skills/`. `.gitattributes` exime a `.agents/skills/` de `git diff --check`, para que las
