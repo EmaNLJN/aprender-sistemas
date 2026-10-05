@@ -59,7 +59,7 @@ Quien opera el taller corre el import, o lo corre el despliegue, y el contenido 
 
 1. **Dado** una base sin contenido y el documento vigente con su meta, **cuando** se corre el import, **entonces** quedan cargados los idiomas, los catálogos, los temas, los ejercicios (con sus pruebas, pistas y versión de corrección), los talleres (con sus objetivos, etapas y ejercicios relacionados), los mundos, los conceptos del Atlas y la guía completa, y el import informa cuántos registros escribió por tipo.
 2. **Dado** el contenido ya importado, **cuando** se corre otra vez con el mismo documento, **entonces** no se modifica ninguna tabla de contenido, no se agrega ningún registro de import y el comando termina con éxito.
-3. **Dado** un documento que cambia el texto de un ejercicio, **cuando** se importa, **entonces** sólo se escriben las filas de ese ejercicio y el informe lo lista como cambio de texto; si cambia su corrección, lo lista como cambio de corrección y agrega la versión de corrección nueva.
+3. **Dado** un documento que cambia el texto de un ejercicio, **cuando** se importa, **entonces** sólo se escriben las filas de ese ejercicio, además del registro del import, y el informe lo lista como cambio de texto; si cambia su corrección, lo lista como cambio de corrección y agrega la versión de corrección nueva.
 4. **Dado** la opción de simulación (`--dry-run`), **cuando** se corre sobre un documento con cambios, **entonces** informa los ejercicios nuevos, los cambios de corrección, los cambios de texto, los retirados y los reactivados, y no escribe nada.
 5. **Dado** un documento inválido (una referencia a un ejercicio que no existe, un meta que no corresponde al documento, o una porción que no coincide con su parte del documento al auto-chequear), **cuando** se importa, **entonces** el import falla antes de confirmar nada, la base queda como estaba y el mensaje nombra el problema.
 6. **Dado** un import en curso, **cuando** se lanza otro, **entonces** el segundo no corre y lo informa.
@@ -99,12 +99,12 @@ Un alumno que ya tiene el contenido en el navegador no lo vuelve a bajar; si cam
 
 **Acceptance Scenarios**:
 
-1. **Dado** una respuesta con `ETag` y `Content-Version`, **cuando** el cliente repite el pedido con `If-None-Match` igual (también si llega débil, `W/"…"`, como lo deja Nginx al comprimir), **entonces** recibe 304 sin cuerpo, con `ETag` y `Content-Version`, y el servidor no consulta las tablas de contenido: sólo lee el registro del último import.
+1. **Dado** una respuesta con `ETag` y `Content-Version`, **cuando** el cliente repite el pedido con `If-None-Match` igual (también si llega débil, `W/"…"`, como lo deja Nginx al comprimir), **entonces** recibe 304 sin cuerpo, con `ETag` y `Content-Version`, y el servidor no arma el contenido: sólo consulta cuál fue el último import.
 2. **Dado** un import que cambió un ejercicio de `lab` en Rust, **cuando** el cliente repite los 17 pedidos con sus validadores anteriores, **entonces** sólo esa porción responde 200 y las otras 16, 304 (con el mismo build de la API).
 3. **Dado** que el contenido cambió entre dos pedidos de un mismo arranque, **cuando** el cliente compara las respuestas, **entonces** `Content-Version` difiere entre las anteriores y las posteriores, y el cliente puede detectar el import y repetir el arranque.
 4. **Dado** el primer pedido de una porción después de un import, **cuando** se responde, **entonces** el cuerpo sale ya preparado: no se arma al vuelo.
 5. **Dado** cualquier respuesta de contenido, **cuando** se inspeccionan sus cabeceras, **entonces** lleva `Cache-Control: private, no-cache` y no lleva `Vary: Cookie`.
-6. **Dado** una versión de build distinta de la API con el mismo contenido, **cuando** el cliente repite los pedidos con sus validadores anteriores, **entonces** recibe 200 en las 17 porciones: el cambio del serializador invalida lo cacheado.
+6. **Dado** una versión de build distinta de la API con el mismo contenido (Q3, opción A), **cuando** el cliente repite los pedidos con sus validadores anteriores, **entonces** recibe 200 en las 17 porciones: el cambio del serializador invalida lo cacheado.
 7. **Dado** el contenido importado, **cuando** C3 necesite publicar la versión y los catálogos, **entonces** puede leer `contentVersion` y los catálogos activos con su posición en la cadena a partir del último import.
 
 *Cubre: FR-017 a FR-021, FR-023, FR-026 y FR-040; SC-003 y SC-004.*
@@ -210,7 +210,7 @@ Quien opera el taller necesita que aplicar migraciones e importar contenido nunc
 - **FR-015**: `GET /api/exercises/{id}` DEBE devolver el ejercicio idéntico al de su porción; 404 `not_found` si no existe y 410 `content_retired` con `{message, code, id, title, retiredAt}` si está retirado. Los IDs se comparan byte a byte. *(D15, §7)*
 - **FR-016**: Los recursos que se cortan por parámetro DEBEN exigir el que les corresponde (`language` o `domain`; en los ejercicios, el que fija su catálogo); si falta, si sobra el otro o si el valor o el catálogo es desconocido, responden 422 `validation_failed`. *(§5.1, §7)*
 - **FR-017**: Toda respuesta con contenido, también un 304, DEBE llevar `ETag` (el validador de la porción; el de un ejercicio, su `content_hash`) y `Content-Version`. *(D11)*
-- **FR-018**: Con un `If-None-Match` que coincide, también débil, DEBE responder 304 sin cuerpo y sin consultar las tablas de contenido: sólo lee el registro del último import. *(D11)*
+- **FR-018**: Con un `If-None-Match` que coincide, también débil, DEBE responder 304 sin cuerpo y sin armar el contenido: sólo consulta cuál fue el último import. *(D11)*
 - **FR-019**: Con un validador distinto, el cuerpo DEBE salir de la caché de cuerpos precalentada por el import; si falta, se arma en una lectura consistente, y el validador y `Content-Version` salen de la misma fila de import que los datos. *(D11)*
 - **FR-020**: Un import entre dos pedidos DEBE poder detectarse: `Content-Version` cambia cuando cambia el documento. *(D11, §7)*
 - **FR-021**: Los recursos de contenido DEBEN responder `Cache-Control: private, no-cache`, sin `Vary: Cookie` y sin límite de tasa de la aplicación. *(D11, §3.1)*
@@ -286,7 +286,7 @@ Las entidades de contenido (todas menos el import y las versiones de corrección
 
 - **SC-001**: Las 17 porciones y todos los ejercicios del contenido vigente (274 hoy) son idénticos a su parte del documento: 0 diferencias de valor, de tipo y de orden de claves.
 - **SC-002**: Un segundo import del mismo documento termina con éxito sin modificar ninguna tabla de contenido ni agregar registros de import: 0 escrituras de contenido (sólo precalienta la caché de cuerpos).
-- **SC-003**: Un import que cambia un solo ejercicio escribe sólo las filas de ese ejercicio y cambia sólo el validador de la porción que lo contiene, con el mismo build de la API.
+- **SC-003**: Un import que cambia un solo ejercicio escribe sólo las filas de ese ejercicio, además del registro del import, y cambia sólo el validador de la porción que lo contiene, con el mismo build de la API.
 - **SC-004**: Con el validador vigente, las 17 porciones responden 304 sin cuerpo y sin volver a armar el contenido: cada 304 consulta sólo cuál fue el último import.
 - **SC-005**: Un import que falla (documento inválido, referencia rota o auto-chequeo) deja la base idéntica a como estaba: 0 filas cambiadas.
 - **SC-006**: Antes y después de C2, `build/curriculum.json` y el volcado del oráculo `dump-globals` son idénticos (el mismo sha256).
