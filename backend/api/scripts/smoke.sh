@@ -3,7 +3,7 @@
 # Laravel, con el contenedor php de sólo lectura. El contenido y la base los cubre
 # `npm run api:content:check`.
 # Requiere el stack levantado con `docker compose up --build -d --wait`. Uso, desde la raíz:
-# sh api/scripts/smoke.sh.
+# sh backend/api/scripts/smoke.sh.
 set -u
 # La dirección sale de Compose, como en `up`: respeta TALLER_PORT y el proyecto del .env aunque
 # no estén exportados en el shell.

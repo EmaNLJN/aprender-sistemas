@@ -33,7 +33,7 @@ const (
 	sweepMaxAge  = 2 * time.Minute
 	// Un pedido cancelado borra lo suyo con Kill, Remove y RemoveVolume, hasta 10 s cada uno
 	// (cleanupTimeout de runner.go): el apagado lo espera. Compose necesita un
-	// stop_grace_period mayor (executor/AGENTS.md).
+	// stop_grace_period mayor (backend/executor/AGENTS.md).
 	shutdownGrace = 35 * time.Second
 	maxProgram    = 128 << 10
 	maxBody       = 1 << 20 // el JSON escapado puede ocupar hasta seis veces el programa

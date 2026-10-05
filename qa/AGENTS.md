@@ -73,12 +73,12 @@ cambies y evitá reformatear las skills importadas o las salidas generadas.
 | Catálogo, sellos o progreso de Sistemas | `node qa/systems-check.ts` |
 | Modelo lowlevel, infra, play o pc | El correspondiente `node qa/systems-<dominio>-check.ts` |
 | Generación de proyectos o ZIP | `node qa/project-kit-check.ts` |
-| Ejecutor Go (`executor/`) | `npm run test:executor`; con Docker real, `npm run test:executor:integration` (no forman parte de `npm test`) |
-| API Laravel (`api/`) | `npm run api:test`, `npm run api:format:check` y `npm run api:analyse`; con el stack levantado, `npm run api:smoke` y `npm run api:content:check` (las 17 porciones a través de Nginx; no forman parte de `npm test`) |
+| Ejecutor Go (`backend/executor/`) | `npm run test:executor`; con Docker real, `npm run test:executor:integration` (no forman parte de `npm test`) |
+| API Laravel (`backend/api/`) | `npm run api:test`, `npm run api:format:check` y `npm run api:analyse`; con el stack levantado, `npm run api:smoke` y `npm run api:content:check` (las 17 porciones a través de Nginx; no forman parte de `npm test`) |
 | Sólo documentación | Verificar rutas, comandos y enlaces locales; `git diff --check` |
 
 Para una reorganización de archivos o un cambio transversal, regenerá la página
-y ejecutá la suite local completa que también usa `Dockerfile`:
+y ejecutá la suite local completa que también usa `frontend/Dockerfile`:
 
 ```sh
 npm run build
@@ -101,8 +101,8 @@ npm test
   cambiá su escenario en el mismo commit TDD: primero la prueba nueva que falla,
   después la corrección.
 - `qa/lib/app-adapters.ts` lista los métodos de cada `window.Taller*` que consume
-  `app.js`: los fakes de `app-shell-check` salen de esa lista y `boot-check`, que
-  empaqueta `src/app/main.tsx` sobre el DOM falso de `qa/lib/fake-dom.ts`, exige que los
+  `frontend/app.js`: los fakes de `app-shell-check` salen de esa lista y `boot-check`, que
+  empaqueta `frontend/src/app/main.tsx` sobre el DOM falso de `qa/lib/fake-dom.ts`, exige que los
   adaptadores reales los publiquen y que todas las vistas y «Borrar todo» funcionen.
 - `load-order-check` declara qué fuente legacy debe evaluarse antes que otra y por
   qué. Al mover o portar un archivo, actualizá su ruta en la tabla sin relajar la

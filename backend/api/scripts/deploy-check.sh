@@ -1,11 +1,11 @@
 #!/bin/sh
-# C2 deployment check (spec 001, FR-046) against the real stack, deploying with api/scripts/deploy.sh: with
+# C2 deployment check (spec 001, FR-046) against the real stack, deploying with backend/api/scripts/deploy.sh: with
 # a new image whose `migrate` fails on
 # a lock held by another client, `php` is not recreated and the old one keeps serving; once the lock is
 # released, the same content under that image keeps the same ETag and Content-Version.
 # Builds images, leaves the stack up and takes minutes (`migrate` retries 3 times, pausing 5 and 15 s).
-# Not part of `npm test`, like api:smoke. Needs the root .env (sh api/scripts/init-env.sh) and the
-# workshop port free. Run from the root: sh api/scripts/deploy-check.sh
+# Not part of `npm test`, like api:smoke. Needs the root .env (sh backend/api/scripts/init-env.sh) and the
+# workshop port free. Run from the root: sh backend/api/scripts/deploy-check.sh
 #
 # Depends on compose.yaml passing CONTENT_SOURCE_COMMIT to the image build (another commit, another
 # image, so `php` is recreated) and on `migrate` running migrate-and-import with lock waits capped at 5 s.
@@ -54,7 +54,7 @@ guide() {
 }
 
 echo "== 1. Despliegue sano con el commit $old_commit"
-CONTENT_SOURCE_COMMIT=$old_commit sh api/scripts/deploy.sh || abort "el despliegue inicial falló"
+CONTENT_SOURCE_COMMIT=$old_commit sh backend/api/scripts/deploy.sh || abort "el despliegue inicial falló"
 addr=$(docker compose port taller 8080 2>/dev/null) || abort "el servicio taller no está levantado"
 php_before=$(docker compose ps -q php)
 [ -n "$php_before" ] || abort "no hay contenedor php"
@@ -75,7 +75,7 @@ done
 [ -n "$holder_id" ] || abort "no se encontró la sesión que retiene el bloqueo"
 
 echo "== 3. Despliegue con una imagen nueva (commit $new_commit): migrate falla y php no se recrea"
-if CONTENT_SOURCE_COMMIT=$new_commit sh api/scripts/deploy.sh >"$log" 2>&1; then
+if CONTENT_SOURCE_COMMIT=$new_commit sh backend/api/scripts/deploy.sh >"$log" 2>&1; then
   echo "FALLO el despliegue con migrate bloqueado terminó bien: no se dio el escenario"
   fail=1
 else
@@ -91,7 +91,7 @@ check "$(guide)" "$guide_before" "el php anterior sigue sirviendo la guía, con 
 echo "== 4. Se libera el bloqueo: el mismo despliegue sale bien y deja el mismo contenido"
 sql "kill $holder_id" >/dev/null 2>&1
 holder_id=""
-CONTENT_SOURCE_COMMIT=$new_commit sh api/scripts/deploy.sh || abort "el despliegue sin el bloqueo falló"
+CONTENT_SOURCE_COMMIT=$new_commit sh backend/api/scripts/deploy.sh || abort "el despliegue sin el bloqueo falló"
 php_after=$(docker compose ps -q php)
 if [ "$php_after" != "$php_before" ]; then recreated=si; else recreated=no; fi
 check "$recreated" si "con migrate sano, php se recrea con la imagen nueva"

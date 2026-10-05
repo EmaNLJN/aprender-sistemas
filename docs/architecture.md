@@ -9,36 +9,36 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 
 | Responsabilidad | Fuentes |
 | --- | --- |
-| Documento, entrada ESM y adaptadores legacy | `src/index.html`, `src/app/main.tsx`, `src/app/legacy/` |
-| Helpers y constantes compartidos, sin reglas de negocio | `src/shared/lib/`, `src/shared/config/` |
-| Evidencia de aprobación, interpretación de ejecuciones y fusión de registros | `src/entities/exercise/` |
-| Lectura versionada, respaldo y avisos de carga del progreso | `src/shared/lib/versioned-storage.ts` (ADR 0003) |
-| Navegación, recorrido y progreso general | `app.js`, `styles.css` |
-| Contenido del recorrido y biblioteca | `content/guide/`; tipos y progreso en `src/entities/guide/` |
-| Catálogos de contenido (publicados en `window.*`) | `content/` → `tools/content/` → `build/curriculum.json`; adaptador `src/app/legacy/register-catalogs.ts` |
-| Contenido en MySQL (ADR 0006, C2) | `tools/content/` también escribe `build/curriculum.meta.json` (huellas y claves de etapa) → etapa `curriculum` de `api/Dockerfile` → `content:import` y `api/app/Content/` → 17 recursos de sólo lectura (`GET /api/exercises`, `worlds`, `workshops`, `atlas` y `guide`); los bytes de cada porción los fija el generador, nunca `JsonResource` |
-| Ejercicios del recorrido y tipo `Exercise` | sección `lab` de `content/{rust,go}/manifest.yaml` y `content/{rust,go}/exercises/<id>/`; `src/entities/exercise/model/types.ts` |
-| Laboratorio, revisión y modelos educativos | `lab.js`, `lab-explorers.js`, `lab.css` |
-| Transporte a los Playgrounds oficiales | `src/shared/api/playground/`, adaptador `src/app/legacy/register-runner.ts` |
-| Ejecutor Go en sandbox (ADR 0005, todavía sin conectar al laboratorio) | `executor/`: `internal/sandbox` (perfiles, argumentos de Docker, fases y barrido), `internal/api` (HTTP interno), `images/` (sandboxes Rust y Go) |
-| Editor CodeMirror 6 | `src/shared/ui/code-editor/`, adaptador `src/app/legacy/register-editor.ts` |
-| Atlas migrado a React/TypeScript | `src/pages/atlas/` (`ui`, `model`, `lib`), conceptos en `content/atlas/` y adaptador `src/app/legacy/register-atlas.tsx` |
+| Documento, entrada ESM y adaptadores legacy | `frontend/src/index.html`, `frontend/src/app/main.tsx`, `frontend/src/app/legacy/` |
+| Helpers y constantes compartidos, sin reglas de negocio | `frontend/src/shared/lib/`, `frontend/src/shared/config/` |
+| Evidencia de aprobación, interpretación de ejecuciones y fusión de registros | `frontend/src/entities/exercise/` |
+| Lectura versionada, respaldo y avisos de carga del progreso | `frontend/src/shared/lib/versioned-storage.ts` (ADR 0003) |
+| Navegación, recorrido y progreso general | `frontend/app.js`, `frontend/styles.css` |
+| Contenido del recorrido y biblioteca | `content/guide/`; tipos y progreso en `frontend/src/entities/guide/` |
+| Catálogos de contenido (publicados en `window.*`) | `content/` → `tools/content/` → `build/curriculum.json`; adaptador `frontend/src/app/legacy/register-catalogs.ts` |
+| Contenido en MySQL (ADR 0006, C2) | `tools/content/` también escribe `build/curriculum.meta.json` (huellas y claves de etapa) → etapa `curriculum` de `backend/api/Dockerfile` → `content:import` y `backend/api/app/Content/` → 17 recursos de sólo lectura (`GET /api/exercises`, `worlds`, `workshops`, `atlas` y `guide`); los bytes de cada porción los fija el generador, nunca `JsonResource` |
+| Ejercicios del recorrido y tipo `Exercise` | sección `lab` de `content/{rust,go}/manifest.yaml` y `content/{rust,go}/exercises/<id>/`; `frontend/src/entities/exercise/model/types.ts` |
+| Laboratorio, revisión y modelos educativos | `frontend/lab.js`, `frontend/lab-explorers.js`, `frontend/lab.css` |
+| Transporte a los Playgrounds oficiales | `frontend/src/shared/api/playground/`, adaptador `frontend/src/app/legacy/register-runner.ts` |
+| Ejecutor Go en sandbox (ADR 0005, todavía sin conectar al laboratorio) | `backend/executor/`: `internal/sandbox` (perfiles, argumentos de Docker, fases y barrido), `internal/api` (HTTP interno), `images/` (sandboxes Rust y Go) |
+| Editor CodeMirror 6 | `frontend/src/shared/ui/code-editor/`, adaptador `frontend/src/app/legacy/register-editor.ts` |
+| Atlas migrado a React/TypeScript | `frontend/src/pages/atlas/` (`ui`, `model`, `lib`), conceptos en `content/atlas/` y adaptador `frontend/src/app/legacy/register-atlas.tsx` |
 | Desafíos nuevos de campaña | sección `quests` de `content/{rust,go}/manifest.yaml` (la posición en el mundo fija tipo, `kind` y minutos del jefe) |
 | Mundos de campaña | `content/campaign/` |
-| Reglas, validación y progreso de campaña | `src/entities/campaign/`, adaptador `src/app/legacy/register-campaign-engine.ts` |
-| Interfaz y exploradores de campaña | `campaign.js`, `campaign.css`, `quest-explorers.js`, `quest-explorers.css` |
-| Contrato de simulaciones de Sistemas | `src/entities/systems-simulation/` (`defineModel`, tipos de vista y escena) |
-| Modelos de Sistemas | `src/entities/systems-simulation/models/{lowlevel,infra,play,pc}/` (un archivo por modelo, con `defineModel`) |
+| Reglas, validación y progreso de campaña | `frontend/src/entities/campaign/`, adaptador `frontend/src/app/legacy/register-campaign-engine.ts` |
+| Interfaz y exploradores de campaña | `frontend/campaign.js`, `frontend/campaign.css`, `frontend/quest-explorers.js`, `frontend/quest-explorers.css` |
+| Contrato de simulaciones de Sistemas | `frontend/src/entities/systems-simulation/` (`defineModel`, tipos de vista y escena) |
+| Modelos de Sistemas | `frontend/src/entities/systems-simulation/models/{lowlevel,infra,play,pc}/` (un archivo por modelo, con `defineModel`) |
 | Fichas de los talleres | `content/workshops/` |
 | Núcleos Rust/Go de Sistemas | sección `systems` de `content/{rust,go}/manifest.yaml` y una carpeta por núcleo en `content/{rust,go}/exercises/` |
-| Catálogos de Sistemas publicados en `window.SYSTEMS_*` | adaptadores `src/app/legacy/register-systems-{lowlevel,infra,play,pc}.ts` |
-| Sellos y progreso de Sistemas | `src/entities/systems-workshop/`, adaptador `src/app/legacy/register-systems-engine.ts` |
-| Interfaz de Sistemas | `systems.js`, `systems.css` |
-| Animaciones | `src/shared/lib/celebration.ts`, adaptador `src/app/legacy/register-effects.ts` |
-| Kits ZIP de proyecto | `src/features/download-project-kit/` (archivos puros y ZIP con fflate), `src/shared/lib/download-file.ts`, adaptador `src/app/legacy/register-project-kit.ts` |
-| Construcción y dependencias | configuración Vite, `package.json`, `package-lock.json`; generador del currículo en `tools/content/` (`npm run curriculum`, validación, `build/curriculum.json` y oráculos de equivalencia) |
-| Servicio web, API y preview: Nginx, PHP-FPM, MySQL y migraciones | `Dockerfile`, `compose.yaml`, `compose.preview.yaml`, `nginx.conf` |
-| API Laravel del ADR 0004: rutas, configuración, migraciones, pruebas Pest e imagen PHP-FPM | `api/` (reglas en `api/AGENTS.md`) |
+| Catálogos de Sistemas publicados en `window.SYSTEMS_*` | adaptadores `frontend/src/app/legacy/register-systems-{lowlevel,infra,play,pc}.ts` |
+| Sellos y progreso de Sistemas | `frontend/src/entities/systems-workshop/`, adaptador `frontend/src/app/legacy/register-systems-engine.ts` |
+| Interfaz de Sistemas | `frontend/systems.js`, `frontend/systems.css` |
+| Animaciones | `frontend/src/shared/lib/celebration.ts`, adaptador `frontend/src/app/legacy/register-effects.ts` |
+| Kits ZIP de proyecto | `frontend/src/features/download-project-kit/` (archivos puros y ZIP con fflate), `frontend/src/shared/lib/download-file.ts`, adaptador `frontend/src/app/legacy/register-project-kit.ts` |
+| Construcción y dependencias | `frontend/vite.config.ts`, `frontend/tsconfig.app.json`, `package.json`, `package-lock.json`; generador del currículo en `tools/content/` (`npm run curriculum`, validación, `build/curriculum.json` y oráculos de equivalencia) |
+| Servicio web, API y preview: Nginx, PHP-FPM, MySQL y migraciones | `frontend/Dockerfile`, `compose.yaml` (raíz, incluye `docker/compose.yaml`), `docker/compose.preview.yaml`, `docker/nginx/nginx.conf` |
+| API Laravel del ADR 0004: rutas, configuración, migraciones, pruebas Pest e imagen PHP-FPM | `backend/api/` (reglas en `backend/api/AGENTS.md`) |
 | Comprobaciones e investigación educativa | `qa/*-check.ts`, `qa/lib/`, `qa/fixtures/`, `qa/run-checks.ts`, `qa/research-*.md` |
 | Documentación del desarrollo | `AGENTS.md`, `docs/` |
 | Planificación del backend con Spec Kit | `specs/` (hoja de ruta y una carpeta por feature), `.specify/` (constitución, plantillas, scripts y extensión `bug`) |
@@ -46,7 +46,7 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 ## Cómo mantener el orden
 
 - Ubicá cada cambio en su módulo. Separá contenido educativo, modelos puros,
-  persistencia, transporte e interfaz; evitá sumar esas responsabilidades a `app.js`.
+  persistencia, transporte e interfaz; evitá sumar esas responsabilidades a `frontend/app.js`.
 - Para ampliar una familia existente, seguí sus prefijos y contratos. Reservá
   `docs/` para documentación de desarrollo y `qa/` para verificaciones y fuentes
   de investigación; los resultados generados siguen excluidos de Git.
@@ -54,12 +54,12 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
   con nombre descriptivo. Agregá un `AGENTS.md` local sólo si tiene reglas propias.
 - La estructura plana es el estado legacy. Una reorganización a carpetas debe
   resolver un problema concreto y actualizar en el mismo cambio imports de
-  `src/app/main.tsx`, scripts npm, QA, Docker y documentación.
-- `src/app/main.tsx` define temporalmente el orden de los imports legacy. Esos módulos
+  `frontend/src/app/main.tsx`, scripts npm, QA, Docker y documentación.
+- `frontend/src/app/main.tsx` define temporalmente el orden de los imports legacy. Esos módulos
   comparten contratos mediante `window.Taller*`; respetá sus dependencias hasta
   reemplazarlas por imports explícitos dentro de cada funcionalidad.
   `qa/load-order-check.ts` declara esas dependencias.
-- Las fuentes legacy de la raíz son módulos ES: importan helpers de `src/shared/`
+- Las fuentes legacy de `frontend/` son módulos ES: importan helpers de `frontend/src/shared/`
   (escape HTML, normalización de búsqueda, clon JSON, niveles) en lugar de copiarlos.
   Antes de escribir un helper, buscá si ya existe ahí.
 - Al agregar un asset, importalo desde la entrada o la funcionalidad que lo usa para
@@ -95,7 +95,7 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
   Una ampliación debe actualizar las expectativas del build, QA, interfaz y README.
 - Separá resultados reales de compilación, simulaciones y etapas manuales. Un
   fallo de transporte o compilación nunca equivale a aprobar una prueba. La regla
-  única de aprobación es `hasPassingEvidence` de `src/entities/exercise`; las
+  única de aprobación es `hasPassingEvidence` de `frontend/src/entities/exercise`; las
   políticas de lectura, respaldo y fusión del progreso están en el ADR 0003.
 - El progreso vive en `localStorage`, separado por origen y lenguaje. Preservá la
   exportación/importación, los logros ya obtenidos y el manejo de almacenamiento
@@ -103,7 +103,7 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 - Conservá la interfaz en español, navegación por teclado, foco visible, diseño móvil y
   movimiento reducido. Limpiá listeners, timers, editor y efectos al desmontar una vista.
 - El editor y los ZIP funcionan con dependencias empaquetadas, sin CDN. Si cambia
-  el transporte o los recursos externos, revisá también la CSP de `nginx.conf`.
+  el transporte o los recursos externos, revisá también la CSP de `docker/nginx/nginx.conf`.
 
 ## Clean code y arquitectura de React
 
@@ -177,10 +177,10 @@ para infraestructura o UI sin reglas de negocio. Abrí slices en `features` para
 acciones de valor para el alumno y en `entities` para conceptos de dominio estables
 sólo cuando varios consumidores justifiquen ese seam. No agregues `processes` —está
 deprecada— ni `widgets` hasta que exista un bloque autónomo que realmente los necesite.
-Estado actual: `src/app` (entrada y adaptadores legacy), `src/pages/atlas` (primera
-página migrada), `src/entities/exercise` (regla de evidencia, interpretación de la
+Estado actual: `frontend/src/app` (entrada y adaptadores legacy), `frontend/src/pages/atlas` (primera
+página migrada), `frontend/src/entities/exercise` (regla de evidencia, interpretación de la
 ejecución y fusión de registros, compartidas por laboratorio, campaña y Sistemas) y
-`src/shared` (helpers y constantes sin reglas de negocio).
+`frontend/src/shared` (helpers y constantes sin reglas de negocio).
 
 - La dirección permitida es `app → pages → widgets → features → entities → shared`.
   Un módulo sólo importa su propio slice o capas inferiores; dos slices de la misma

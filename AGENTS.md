@@ -4,7 +4,7 @@
 
 Taller educativo en español con ejercicios de Rust/Go y simulaciones de Sistemas.
 La interfaz migra por funcionalidades a **React con TypeScript/TSX**; Vite construye
-un HTML autónomo y Nginx lo sirve; Nginx también pasa `/api/` a la API Laravel de `api/`
+un HTML autónomo y Nginx lo sirve; Nginx también pasa `/api/` a la API Laravel de `backend/api/`
 (ADR 0004). Los compiladores son los Playgrounds oficiales.
 Atlas es la primera vista migrada; el resto conserva adaptadores legacy temporales.
 
@@ -23,24 +23,26 @@ Atlas es la primera vista migrada; el resto conserva adaptadores legacy temporal
 - Para planificar o especificar trabajo del backend (hoja de ruta, specs, planes, tareas o
   bugs), leé `.specify/memory/constitution.md` y `specs/backend-multiusuario/roadmap.md`.
 
-La raíz conserva sólo las vistas legacy que faltan migrar a React (`app.js`,
+El repositorio se reparte en `frontend/` (la web), `backend/` (`api/` y `executor/`) y `docker/`
+(Compose y Nginx), según el ADR 0007; `content/`, `tools/`, `qa/`, `build/` y `dist/` quedan en
+la raíz. `frontend/` conserva sólo las vistas legacy que faltan migrar a React (`app.js`,
 `lab.js`, `campaign.js`, `systems.js`, `lab-explorers.js` y `quest-explorers.js`).
-El resto vive en `src/` por capas FSD (`app`, `pages`, `features`, `entities`,
+El resto vive en `frontend/src/` por capas FSD (`app`, `pages`, `features`, `entities`,
 `shared`); el mapa está en `docs/architecture.md`. `qa/` reúne verificaciones e investigación; `docs/` contiene reglas
 específicas de desarrollo; `.agents/skills/` contiene las skills del proyecto.
 `specs/` guarda la hoja de ruta y las specs de Spec Kit, y `.specify/`, su constitución,
 plantillas y scripts; `docs/plans/` quedó como historia de B1, A1 y C1.
-`api/` es la API Laravel del ADR 0004 (PHP-FPM y MySQL en Docker); sus reglas y comandos
-están en `api/AGENTS.md`.
-`src/index.html` y `src/app/main.tsx` son las entradas Vite; `dist/` es la salida
+`backend/api/` es la API Laravel del ADR 0004 (PHP-FPM y MySQL en Docker); sus reglas y comandos
+están en `backend/api/AGENTS.md`.
+`frontend/src/index.html` y `frontend/src/app/main.tsx` son las entradas Vite; `dist/` es la salida
 generada. `content/` es la fuente del currículo (YAML y código Rust y Go real);
 `tools/content/` la valida y genera `build/curriculum.json`, otra salida ignorada que
-importan los adaptadores de `src/app/legacy/` y el Atlas
-(`src/pages/atlas/model/atlas-catalog.ts`). Los `CLAUDE.md` sólo importan este archivo y
+importan los adaptadores de `frontend/src/app/legacy/` y el Atlas
+(`frontend/src/pages/atlas/model/atlas-catalog.ts`). Los `CLAUDE.md` sólo importan este archivo y
 los de cada carpeta para Claude Code; `.claude/` contiene symlinks de skills y subagentes.
 
-`executor/` es el ejecutor Go del ADR 0005, un servicio interno que compila y ejecuta Rust y
-Go en contenedores endurecidos (gVisor por omisión); sus reglas están en `executor/AGENTS.md`.
+`backend/executor/` es el ejecutor Go del ADR 0005, un servicio interno que compila y ejecuta Rust y
+Go en contenedores endurecidos (gVisor por omisión); sus reglas están en `backend/executor/AGENTS.md`.
 
 ## Comandos
 
@@ -56,7 +58,7 @@ Para la verificación habitual, `npm run build` regenera todos los assets y
 `npm test` ejecuta la suite local completa. `npm run lint` ejecuta ESLint;
 `npm run format:check` comprueba formato sin editar. `npm run format` aplica
 Prettier a todo el código propio; `.prettierignore` excluye skills importadas,
-salidas generadas, Markdown y el shell `src/index.html`.
+salidas generadas, Markdown y el shell `frontend/src/index.html`.
 
 Vite empaqueta React, las fuentes legacy, los estilos y `build/curriculum.json` en
 `dist/index.html`. Ese JSON sale de `content/` con `npm run curriculum`, que corre antes de
@@ -72,13 +74,13 @@ docker compose down
 ```
 
 La web queda en `http://localhost:8080`. Para servir `dist/index.html` generado en
-el host como preview, usá `docker compose -f compose.preview.yaml up --build -d --wait`
+el host como preview, usá `docker compose -f docker/compose.preview.yaml up --build -d --wait`
 y abrí `http://localhost:8765`; detenelo con
-`docker compose -f compose.preview.yaml down`. El progreso de ambos puertos es independiente.
+`docker compose -f docker/compose.preview.yaml down`. El progreso de ambos puertos es independiente.
 
 Docker necesita un `.env` en la raíz con `APP_KEY`, `MYSQL_PASSWORD` y `MYSQL_ROOT_PASSWORD`:
-`sh api/scripts/init-env.sh` agrega los que falten. Ese archivo queda fuera de Git y del
-contexto de Docker. Las pruebas de la API (`npm run api:test` y las demás de `api/AGENTS.md`)
+`sh backend/api/scripts/init-env.sh` agrega los que falten. Ese archivo queda fuera de Git y del
+contexto de Docker. Las pruebas de la API (`npm run api:test` y las demás de `backend/api/AGENTS.md`)
 usan Docker y no forman parte de `npm test`.
 
 ## Convenciones
@@ -126,7 +128,7 @@ usan Docker y no forman parte de `npm test`.
   por responsabilidad o mantené exports nombrados; no elijas un `default` arbitrario.
 
 ```ts
-// src/pages/atlas/model/filter-concepts.ts
+// frontend/src/pages/atlas/model/filter-concepts.ts
 interface Concept {
   level: string;
 }
@@ -148,10 +150,10 @@ import {filterConcepts} from './filter-concepts';
   primitivas, tipos mapeados o condicionales. No conviertas declaraciones
   existentes sólo por estilo; la elección debe expresar una diferencia útil.
 
-- La interfaz nueva usa **React con TypeScript/TSX** y **Vite**. `src/app/` contiene
-  la entrada y los adaptadores `window.Taller*` (`src/app/legacy/`); cada vista migrada
-  es un slice de `src/pages/` (Atlas es el primero). Conservá un adaptador pequeño en
-  `src/app/legacy/` cuando una vista legacy todavía dependa de `window.Taller*`.
+- La interfaz nueva usa **React con TypeScript/TSX** y **Vite**. `frontend/src/app/` contiene
+  la entrada y los adaptadores `window.Taller*` (`frontend/src/app/legacy/`); cada vista migrada
+  es un slice de `frontend/src/pages/` (Atlas es el primero). Conservá un adaptador pequeño en
+  `frontend/src/app/legacy/` cuando una vista legacy todavía dependa de `window.Taller*`.
 - Aplicá Feature-Sliced Design de forma incremental: empezá por `app`, `pages` y
   `shared`, y creá slices en `features` o `entities` sólo cuando exista una
   responsabilidad de negocio estable y reutilizada. Cada slice expone una API
@@ -163,7 +165,7 @@ import {filterConcepts} from './filter-concepts';
   y un ADR. Para ese caso, evaluá primero Hono por portabilidad Web Standards y
   Fastify si el despliegue será exclusivamente Node; Express sigue siendo válido
   cuando su ecosistema o compatibilidad sea una necesidad concreta. El backend vigente es
-  Laravel en `api/` (ADR 0004).
+  Laravel en `backend/api/` (ADR 0004).
 - No mezcles frameworks de interfaz en una misma migración. Astro queda como alternativa
   para una futura arquitectura dominada por contenido estático e islas, no como capa
   adicional sobre React/Vite sin una decisión registrada.
@@ -202,7 +204,7 @@ import {filterConcepts} from './filter-concepts';
 - Revisá siempre el diff producido por el subagente y ejecutá desde el agente principal
   los checks proporcionales al riesgo; delegar implementación no delega la decisión ni
   la responsabilidad por el resultado.
-- Paralelizá sólo slices con archivos disjuntos. `src/app/main.tsx`, `package.json`, las
+- Paralelizá sólo slices con archivos disjuntos. `frontend/src/app/main.tsx`, `package.json`, las
   configuraciones y la documentación se integran desde el agente principal.
 
 ## Código entendible y pruebas útiles
