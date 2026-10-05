@@ -48,6 +48,6 @@ final class ContentTables
     /** @param array<string, mixed> $row */
     public static function keyOf(string $table, array $row): string
     {
-        return implode("\x1f", array_map(fn (string $column) => (string) $row[$column], self::KEYS[$table]));
+        return collect(self::KEYS[$table])->map(fn (string $column) => (string) $row[$column])->implode("\x1f");
     }
 }
