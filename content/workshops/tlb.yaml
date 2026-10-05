@@ -31,19 +31,27 @@ prediction:
   answer: 0
   explanation: 'Un hit usa la copia cacheada: esa es precisamente la inconsistencia que hay que resolver.'
 steps:
-  - title: Dibujá fuente y copia
+  - id: e1
+    v1Index: 0
+    title: Dibujá fuente y copia
     task: Añadí una TLB al traductor con métricas de hit/miss.
     why: Cachear una traducción no cambia el contrato de permisos.
     done: Podés señalar qué lectura consulta cada estructura.
-  - title: Invalidá selectivamente
+  - id: e2
+    v1Index: 1
+    title: Invalidá selectivamente
     task: Implementá el núcleo por ASID y VPN; probá coincidencias parciales.
     why: Invalidar demasiado o demasiado poco tiene consecuencias distintas.
     done: Una entrada de otro espacio permanece intacta.
-  - title: Reproducí el fallo
+  - id: e3
+    v1Index: 2
+    title: Reproducí el fallo
     task: Cambiá tabla sin invalidar, observá la copia vieja y aplicá el protocolo correcto.
     why: Un test negativo muestra por qué existe la operación.
     done: Tenés trazas antes y después de invalidar.
-  - title: Extendé a dos núcleos
+  - id: e4
+    v1Index: 3
+    title: Extendé a dos núcleos
     task: Modelá dos TLB y un mensaje de invalidación con confirmación, sin hilos reales al principio.
     why: La copia de un núcleo no representa las copias de todos.
     done: La prueba no reutiliza el marco hasta ambas confirmaciones.

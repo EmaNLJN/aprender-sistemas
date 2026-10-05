@@ -40,19 +40,27 @@ prediction:
   answer: 1
   explanation: La barrera durable define qué sobrevive. Un commit visible puede perderse si aún estaba fuera de ese prefijo.
 steps:
-  - title: Registro primero
+  - id: e1
+    v1Index: 0
+    title: Registro primero
     task: Definí PUT y COMMIT con un ID de transacción.
     why: Un replay necesita saber qué escrituras forman una unidad.
     done: Una transacción incompleta no modifica el estado recuperado.
-  - title: Núcleo ejecutable
+  - id: e2
+    v1Index: 1
+    title: Núcleo ejecutable
     task: Implementá RecoverWAL / recover_wal con el prefijo durable explícito.
     why: La lógica puede probarse sin depender del disco.
     done: Pasan transacciones intercaladas, commits y un sufijo perdido.
-  - title: Archivo local
+  - id: e3
+    v1Index: 2
+    title: Archivo local
     task: En un proyecto propio, serializá registros y manejá errores de escritura/sync con la API oficial del sistema.
     why: La promesa durable depende de un I/O exitoso y su contrato.
     done: Un error de sync no recibe una confirmación durable al cliente.
-  - title: Recuperación real
+  - id: e4
+    v1Index: 3
+    title: Recuperación real
     task: Agregá checksum, longitud y truncado del último registro; reiniciá el proceso con un archivo preparado.
     why: El log real puede terminar a mitad de registro.
     done: Se recupera el prefijo válido sin publicar la transacción incompleta.

@@ -30,19 +30,27 @@ prediction:
   answer: 1
   explanation: BFS ordena por capas de aristas; no incorpora el precio de entrar a cada terreno.
 steps:
-  - title: Modelar
+  - id: e1
+    v1Index: 0
+    title: Modelar
     task: Convertí casillas transitables en nodos y movimientos en aristas.
     why: La búsqueda opera sobre el grafo, no sobre una imagen.
     done: Paredes y límites no generan vecinos.
-  - title: Explorar
+  - id: e2
+    v1Index: 1
+    title: Explorar
     task: Implementá cola BFS y visualizá su frontera.
     why: Cada capa representa un paso adicional con costo uniforme.
     done: Un mapa sin camino termina al agotar la cola.
-  - title: Priorizar
+  - id: e3
+    v1Index: 2
+    title: Priorizar
     task: Agregá costos y la prioridad g+h de A*.
     why: Una heurística admisible no sobreestima la distancia restante.
     done: El mapa con pantanos elige la ruta barata.
-  - title: Reconstruir
+  - id: e4
+    v1Index: 3
+    title: Reconstruir
     task: Guardá padres y devolvé una secuencia transitable.
     why: Un costo correcto no alcanza para mover al personaje.
     done: Cada paso de la ruta es vecino y su suma coincide con el costo.

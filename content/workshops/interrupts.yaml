@@ -31,19 +31,27 @@ prediction:
   answer: 1
   explanation: La máscara impide la entrega; no borra el registro pendiente.
 steps:
-  - title: Especificá registros
+  - id: e1
+    v1Index: 0
+    title: Especificá registros
     task: Definí RX, PENDING, ENABLE y qué escrituras confirman el evento.
     why: No podés adivinar efectos de MMIO por el nombre del registro.
     done: Tenés una tabla de lectura/escritura y efectos.
-  - title: Elegí una IRQ
+  - id: e2
+    v1Index: 1
+    title: Elegí una IRQ
     task: Implementá el núcleo que elige el menor bit pendiente y habilitado, y solo limpia ese bit.
     why: Atender un evento no debe perder los otros.
     done: Probás múltiples pendientes y una máscara vacía.
-  - title: Separá ISR de trabajo
+  - id: e3
+    v1Index: 2
+    title: Separá ISR de trabajo
     task: La ISR encola un dato; un consumidor lo procesa fuera de la atención.
     why: Una ISR larga retrasa otras tareas e interrupciones.
     done: Definiste capacidad y política de overflow del buffer.
-  - title: Elegí un proyecto externo
+  - id: e4
+    v1Index: 3
+    title: Elegí un proyecto externo
     task: Seguí un target concreto en un emulador o placa con su manual y toolchain.
     why: Arranque, memoria, volatile, barreras y sincronización dependen del entorno.
     done: Podés explicar qué parte probaste en modelo y cuál en hardware/emulador.

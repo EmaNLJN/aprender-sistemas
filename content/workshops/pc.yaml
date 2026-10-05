@@ -32,19 +32,27 @@ prediction:
   answer: 1
   explanation: El miss inicia la búsqueda. La ausencia provoca el fault síncrono; el handler resuelve su causa y vuelve a la instrucción que todavía no completó.
 steps:
-  - title: Dibujá estados y contratos
+  - id: e1
+    v1Index: 0
+    title: Dibujá estados y contratos
     task: Definí CPU, RAM, PTE, TLB y trap frame. Anotá qué campos puede modificar cada etapa y separá VA de PA.
     why: Los tipos de dirección y los efectos permitidos evitan confundir traducción con acceso real.
     done: Podés trazar LOAD 1 sin cambiar RAM y STORE 1 sin confirmar una escritura.
-  - title: Programá el recorrido de memoria
+  - id: e2
+    v1Index: 1
+    title: Programá el recorrido de memoria
     task: Completá el núcleo enlazado. Registrá hit, miss, fault, mapeo y retiro de cada acceso; no consumas PC al fallar.
     why: La traza convierte decisiones ocultas en un contrato que se prueba.
     done: Pasan los tres casos y un caso propio donde la misma página pasa de miss a hit.
-  - title: Agregá interrupciones precisas
+  - id: e3
+    v1Index: 2
+    title: Agregá interrupciones precisas
     task: En el proyecto descargable, agregá el timer pendiente, trap frame, ACK y retorno entre instrucciones. Conservá PC y acumulador.
     why: Interrumpir un programa exige preservar su continuación; la escritura debe confirmarse como máximo una vez.
     done: Una IRQ inyectada durante un acceso espera al retiro, se reconoce y vuelve al PC siguiente.
-  - title: Compará con una máquina mayor
+  - id: e4
+    v1Index: 3
+    title: Compará con una máquina mayor
     task: Usá el IDE web de Nand2Tetris para CPU/Hack o Ripes para RISC-V y contrastá sus instrucciones con las tuyas. Leé traps en xv6 y documentá tres diferencias.
     why: Los límites explícitos permiten transferir conceptos sin asumir que todos los simuladores ejecutan el mismo hardware.
     done: Tu README incluye una traza normal, una por protección y una por IRQ, además de tres simplificaciones del modelo.

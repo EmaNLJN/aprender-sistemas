@@ -30,19 +30,27 @@ prediction:
   answer: 1
   explanation: Una traslación aplicada antes del giro se expresa en los ejes que después giran.
 steps:
-  - title: Representar
+  - id: e1
+    v1Index: 0
+    title: Representar
     task: Guardá vértices y una matriz afín de seis números.
     why: Una representación uniforme separa geometría de posición.
     done: Transformar identidad conserva cada vértice.
-  - title: Componer
+  - id: e2
+    v1Index: 1
+    title: Componer
     task: Implementá A después de B y probá ambos órdenes.
     why: El desplazamiento también participa de la composición.
     done: Un ejemplo con giro y traslación produce dos ubicaciones distintas.
-  - title: Dibujar
+  - id: e3
+    v1Index: 2
+    title: Dibujar
     task: Mostrá original y resultado en la misma grilla.
     why: Una referencia fija hace observable la transformación.
     done: La nave y sus coordenadas concuerdan.
-  - title: Deshacer
+  - id: e4
+    v1Index: 3
+    title: Deshacer
     task: Construí la inversa cuando el determinante no sea 0.
     why: Una matriz singular no puede recuperar información perdida.
     done: Aplicar transformación e inversa recupera los puntos dentro de una tolerancia.
