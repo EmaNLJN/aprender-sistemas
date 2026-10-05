@@ -94,7 +94,7 @@ Los avisos se sirven en las mismas URL que hoy.
 
 Una página portada no importa `getContent`: recibe su porción por props desde su adaptador, como hace el Atlas con `entries`.
 
-**Rationale**: la regla de dependencias es `app → pages → … → shared` (`docs/architecture.md`). Un acceso con los tipos de las entidades no cabe en `shared` (no puede importarlas) y una página no puede importar de `app`. Tampoco cabe en una entidad: los tipos del Atlas viven en una página (`pages/atlas/model/types.ts`), y `@x` sólo existe entre entidades. El almacén sin imports además permite que un archivo de `qa/` lo importe sin que `tsconfig.qa.json` (NodeNext, que exige extensiones) siga los imports de `frontend/src`. La redacción de FR-006 («lo importan las vistas portadas») se corrige.
+**Rationale**: la regla de dependencias es `app → pages → … → shared` (`docs/architecture.md`). Un acceso con los tipos de las entidades no cabe en `shared` (no puede importarlas) y una página no puede importar de `app`. Tampoco cabe en una entidad: los tipos del Atlas viven en una página (`pages/atlas/model/types.ts`), y `@x` sólo existe entre entidades. El almacén sin imports además permite que un archivo de `qa/` lo importe sin que `tsconfig.qa.json` (NodeNext, que exige extensiones) siga los imports de `frontend/src`. Por eso FR-006 dice que una página recibe su porción por props desde su adaptador y no que la importa.
 
 **Alternatives considered**:
 - Un `Content` tipado en `shared`: invierte la dirección de dependencias.
