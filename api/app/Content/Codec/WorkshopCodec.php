@@ -4,6 +4,7 @@ namespace App\Content\Codec;
 
 use App\Content\InvalidContent;
 use App\Content\PublishedJson;
+use Illuminate\Support\Arr;
 use stdClass;
 
 /**
@@ -95,7 +96,7 @@ final class WorkshopCodec
         $related = $workshop->related ?? null;
         foreach ($languages as $language) {
             $ids = $related instanceof stdClass ? ($related->{$language} ?? null) : null;
-            if (! is_array($ids) || ! array_is_list($ids) || $ids === []) {
+            if (! is_array($ids) || ! Arr::isList($ids) || $ids === []) {
                 throw InvalidContent::at('curriculum.json', "{$path}.related.{$language}", 'se esperaba una lista de ejercicios');
             }
             foreach ($ids as $index => $exerciseId) {
@@ -130,14 +131,14 @@ final class WorkshopCodec
         };
 
         return $this->workshop->fromColumns($workshop, PublishedJson::decode($workshop['key_order']), [
-            'objectives' => array_values(array_map(
-                fn (array $row) => $this->objective->fromColumns($row, PublishedJson::decode($row['key_order'])),
-                $objectives,
-            )),
-            'steps' => array_values(array_map(
-                fn (array $row) => $this->step->fromColumns($row, PublishedJson::decode($row['key_order'])),
-                $steps,
-            )),
+            'objectives' => collect($objectives)
+                ->map(fn (array $row) => $this->objective->fromColumns($row, PublishedJson::decode($row['key_order'])))
+                ->values()
+                ->all(),
+            'steps' => collect($steps)
+                ->map(fn (array $row) => $this->step->fromColumns($row, PublishedJson::decode($row['key_order'])))
+                ->values()
+                ->all(),
             'code' => $byLanguage($code),
             'related' => $byLanguage($related),
         ]);
@@ -147,7 +148,7 @@ final class WorkshopCodec
     private function objects(stdClass $record, string $key, string $path): array
     {
         $value = $record->{$key} ?? null;
-        if (! is_array($value) || ! array_is_list($value) || $value === []) {
+        if (! is_array($value) || ! Arr::isList($value) || $value === []) {
             throw InvalidContent::at('curriculum.json', "{$path}.{$key}", 'se esperaba una lista no vacía');
         }
         foreach ($value as $index => $item) {

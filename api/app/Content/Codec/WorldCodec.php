@@ -4,6 +4,7 @@ namespace App\Content\Codec;
 
 use App\Content\InvalidContent;
 use App\Content\PublishedJson;
+use Illuminate\Support\Arr;
 use stdClass;
 
 /**
@@ -40,7 +41,7 @@ final class WorldCodec
         $training = $this->ids($world, 'trainingIds', $path);
         $challenges = $this->ids($world, 'challengeIds', $path);
         $boss = $world->bossId ?? null;
-        if ($boss !== end($challenges)) {
+        if ($boss !== Arr::last($challenges)) {
             throw InvalidContent::at('curriculum.json', "{$path}.bossId", 'el jefe tiene que ser el último de challengeIds');
         }
 
@@ -69,12 +70,11 @@ final class WorldCodec
      */
     public function toRecord(array $world, array $members): stdClass
     {
-        $ofRole = function (array $roles) use ($members): array {
-            $selected = array_filter($members, fn (array $row) => in_array($row['role'], $roles, true));
-            usort($selected, fn (array $a, array $b) => $a['position'] <=> $b['position']);
-
-            return array_values(array_map(fn (array $row) => $row['exercise_id'], $selected));
-        };
+        $ofRole = fn (array $roles): array => collect($members)
+            ->whereIn('role', $roles, true)
+            ->sortBy('position')
+            ->pluck('exercise_id')
+            ->all();
 
         return $this->world->fromColumns($world, PublishedJson::decode($world['key_order']), [
             'trainingIds' => $ofRole(['training']),
@@ -87,7 +87,7 @@ final class WorldCodec
     private function ids(stdClass $world, string $key, string $path): array
     {
         $value = $world->{$key} ?? null;
-        if (! is_array($value) || ! array_is_list($value) || $value === [] || array_filter($value, fn ($id) => ! is_string($id)) !== []) {
+        if (! is_array($value) || ! Arr::isList($value) || $value === [] || ! Arr::every($value, fn (mixed $id) => is_string($id))) {
             throw InvalidContent::at('curriculum.json', "{$path}.{$key}", 'se esperaba una lista de IDs');
         }
 

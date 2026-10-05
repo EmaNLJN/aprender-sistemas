@@ -4,6 +4,7 @@ namespace App\Content\Codec;
 
 use App\Content\InvalidContent;
 use App\Content\PublishedJson;
+use Illuminate\Support\Arr;
 use stdClass;
 
 /**
@@ -110,11 +111,11 @@ final class ExerciseCodec
         return $this->exercise->fromColumns($exercise, PublishedJson::decode($exercise['key_order']), [
             'topic' => $topicLabel,
             'workshopId' => $exercise['workshop_id'],
-            'tests' => array_values(array_map(
-                fn (array $test) => $this->test->fromColumns($test, PublishedJson::decode($test['key_order'])),
-                $tests,
-            )),
-            'hints' => array_values(array_map(fn (array $hint) => $hint['text'], $hints)),
+            'tests' => collect($tests)
+                ->map(fn (array $test) => $this->test->fromColumns($test, PublishedJson::decode($test['key_order'])))
+                ->values()
+                ->all(),
+            'hints' => collect($hints)->pluck('text')->all(),
         ]);
     }
 
@@ -122,7 +123,7 @@ final class ExerciseCodec
     private function list(stdClass $record, string $key, string $path): array
     {
         $value = $record->{$key} ?? null;
-        if (! is_array($value) || ! array_is_list($value) || $value === []) {
+        if (! is_array($value) || ! Arr::isList($value) || $value === []) {
             throw InvalidContent::at('curriculum.json', "{$path}.{$key}", 'se esperaba una lista no vacía');
         }
 
