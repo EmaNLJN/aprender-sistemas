@@ -253,8 +253,9 @@ Estos ejemplos ilustran el criterio; no agregan funciones ni reglas nuevas al cu
 Leé el `SKILL.md` local de la capacidad pertinente antes de aplicarla; activá sólo
 las necesarias. Usá `clean-code` para legibilidad, `codebase-design` para interfaces,
 `tdd` para cambios de comportamiento, las skills de Vercel para código React,
-`tailwind-design-system` para estilos con Tailwind y `laravel-specialist`,
-`laravel-tdd` y `laravel-security` para el backend Laravel.
+`tailwind-design-system` para estilos con Tailwind, `laravel-specialist`,
+`laravel-tdd` y `laravel-security` para el backend Laravel, y `php-pro` para DTOs,
+value objects y tipos de PHP moderno.
 `.agents/skills/` es la fuente única; `.claude/skills/` sólo contiene symlinks por skill.
 El inventario y los criterios de uso están en `docs/agent-skills.md`.
 
