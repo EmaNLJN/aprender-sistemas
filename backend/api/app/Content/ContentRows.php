@@ -8,6 +8,7 @@ use App\Content\Codec\FieldMap;
 use App\Content\Codec\GuideCodec;
 use App\Content\Codec\WorkshopCodec;
 use App\Content\Codec\WorldCodec;
+use App\Content\Record\Language;
 use Illuminate\Support\Arr;
 use stdClass;
 
@@ -46,17 +47,13 @@ final class ContentRows
     private function languagesAndCatalogs(ContentSource $source, RowSet $rows): void
     {
         foreach ($source->languages() as $position => $code) {
-            $rows->add('languages', ['code' => $code, 'position' => $position + 1]);
+            $rows->add('languages', (new Language($code, $position + 1))->toRow());
         }
         $chain = [];
-        foreach ($source->meta['catalogs'] as $catalog) {
-            $rows->add('catalogs', [
-                'code' => $catalog['code'],
-                'slice_by' => $catalog['sliceBy'],
-                'chain_position' => $catalog['chainPosition'],
-            ]);
-            if ($catalog['chainPosition'] !== null) {
-                $chain[] = $catalog['chainPosition'];
+        foreach ($source->meta->catalogs as $catalog) {
+            $rows->add('catalogs', $catalog->toRow());
+            if ($catalog->chainPosition !== null) {
+                $chain[] = $catalog->chainPosition;
             }
         }
         sort($chain);
@@ -86,7 +83,7 @@ final class ContentRows
                 $index[$id] = ['catalog' => $catalog, 'language' => $language, 'domain' => $domain];
             }
         }
-        $this->requireInDocument('exercises', $source->meta['exercises'], $index);
+        $this->requireInDocument('exercises', $source->meta->exerciseHashes, $index);
 
         return $index;
     }
@@ -129,13 +126,13 @@ final class ContentRows
             foreach ($list as $position => $exercise) {
                 $at = "{$path}[{$position}]";
                 $id = $exercise->id;
-                $hashes = $source->meta['exercises'][$id]
+                $hashes = $source->meta->exerciseHashes[$id]
                     ?? throw InvalidContent::at('curriculum.meta.json', "exercises.{$id}", 'falta: regenerá los dos archivos juntos');
                 if (property_exists($exercise, 'workshopId') && ($owners[$id] ?? null) !== $exercise->workshopId) {
                     throw InvalidContent::at(self::FILE, "{$at}.workshopId", 'no es el taller que lista a '.$id.' en code');
                 }
                 $domain = $catalog === 'cores' ? $slice : null;
-                $fragment = $this->exercises->toRows($exercise, $catalog, $domain, $position, $hashes, $owners[$id] ?? null, $at);
+                $fragment = $this->exercises->toRows($exercise, $catalog, $domain, $position, ['contentHash' => $hashes->contentHash, 'gradingHash' => $hashes->gradingHash, 'starterHash' => $hashes->starterHash], $owners[$id] ?? null, $at);
                 foreach ($fragment['topics'] as $topic) {
                     $key = "{$topic['language']}|{$topic['topic_key']}";
                     if (! isset($topics[$key])) {
@@ -168,12 +165,16 @@ final class ContentRows
                         }
                     }
                 }
-                $stepKeys = $source->meta['workshopSteps'][$id]
+                $stepKeys = $source->meta->workshopSteps[$id]
                     ?? throw InvalidContent::at('curriculum.meta.json', "workshopSteps.{$id}", 'falta: regenerá los dos archivos juntos');
-                $rows->addAll($this->workshops->toRows($workshop, $domain, $position, $stepKeys, $source->languages(), $path));
+                $keys = [];
+                foreach ($stepKeys as $key) {
+                    $keys[] = ['id' => $key->id, 'v1Index' => $key->v1Index];
+                }
+                $rows->addAll($this->workshops->toRows($workshop, $domain, $position, $keys, $source->languages(), $path));
             }
         }
-        $this->requireInDocument('workshopSteps', $source->meta['workshopSteps'], $rows->keyed('workshops'));
+        $this->requireInDocument('workshopSteps', $source->meta->workshopSteps, $rows->keyed('workshops'));
     }
 
     /** @param array<string, array{catalog: string, language: string, domain: ?string}> $index */

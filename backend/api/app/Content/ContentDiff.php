@@ -16,9 +16,8 @@ final class ContentDiff
     /**
      * @param  array<string, array<string, array<string, mixed>>>  $stored  rows by table and key (ContentStore::rows)
      * @param  array<string, bool>  $knownVersions  ContentStore::gradingVersions
-     * @param  array<string, mixed>  $meta  curriculum.meta.json
      */
-    public function between(RowSet $desired, array $stored, array $knownVersions, ?LatestImport $latest, array $meta): ContentPlan
+    public function between(RowSet $desired, array $stored, array $knownVersions, ?LatestImport $latest, ContentMeta $meta): ContentPlan
     {
         $this->assertDistinctV1Indexes($desired, $stored['workshop_steps'] ?? []);
         $writes = $this->rowsByTable(fn (string $table) => $this->rowsToWrite($table, $desired->keyed($table), $stored[$table] ?? [], $stored));
@@ -114,19 +113,14 @@ final class ContentDiff
     /**
      * An import leaves a record if the tables, the document or the hash of any portion change. A
      * different source commit with the same content does not count.
-     *
-     * @param  array<string, mixed>  $meta
      */
-    private function mustRecord(bool $changesTables, ?LatestImport $latest, array $meta): bool
+    private function mustRecord(bool $changesTables, ?LatestImport $latest, ContentMeta $meta): bool
     {
-        if ($changesTables || $latest === null || $latest->documentHash !== $meta['documentHash']) {
+        if ($changesTables || $latest === null || $latest->documentHash !== $meta->documentHash) {
             return true;
         }
 
-        /** @var array<string, string> $portions */
-        $portions = $meta['portions'];
-
-        return collect($latest->portionHashes)->sortKeys()->all() !== collect($portions)->sortKeys()->all();
+        return collect($latest->portionHashes)->sortKeys()->all() !== collect($meta->portionHashes)->sortKeys()->all();
     }
 
     /**

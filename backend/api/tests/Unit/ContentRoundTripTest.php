@@ -32,7 +32,7 @@ beforeEach(function () {
 it('assembles each of the 17 portions with the bytes the generator fixed', function (Portion $portion) {
     $bytes = $this->assembler->assemble($portion, $this->rows, $this->source->languages());
 
-    expect(hash('sha256', $bytes))->toBe($this->source->meta['portions'][$portion->value]);
+    expect(hash('sha256', $bytes))->toBe($this->source->meta->portionHash($portion));
 })->with(Portion::cases());
 
 it('assembles each exercise with its contentHash', function () {
@@ -49,7 +49,7 @@ it('assembles each exercise with its contentHash', function () {
             $hints->get($exercise['id'], collect())->sortBy('position')->values()->all(),
             $topics["{$exercise['language']}|{$exercise['topic_key']}"],
         );
-        if (hash('sha256', PublishedJson::encode($record)) !== $this->source->meta['exercises'][$exercise['id']]['contentHash']) {
+        if (hash('sha256', PublishedJson::encode($record)) !== ContentFixture::fromImage()->meta['exercises'][$exercise['id']]['contentHash']) {
             $wrong[] = $exercise['id'];
         }
     }
@@ -94,7 +94,7 @@ it('assembles the same bytes even if the rows arrive in another order', function
 
     $bytes = $this->assembler->assemble($portion, $reversed, $this->source->languages());
 
-    expect(hash('sha256', $bytes))->toBe($this->source->meta['portions'][$portion->value]);
+    expect(hash('sha256', $bytes))->toBe($this->source->meta->portionHash($portion));
 })->with(Portion::cases());
 
 it('assembles the same bytes when the database returns numbers as text', function (Portion $portion) {
@@ -105,5 +105,5 @@ it('assembles the same bytes when the database returns numbers as text', functio
 
     $bytes = $this->assembler->assemble($portion, $asText, $this->source->languages());
 
-    expect(hash('sha256', $bytes))->toBe($this->source->meta['portions'][$portion->value]);
+    expect(hash('sha256', $bytes))->toBe($this->source->meta->portionHash($portion));
 })->with(Portion::cases());
