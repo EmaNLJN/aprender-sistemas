@@ -66,7 +66,7 @@ final readonly class Guide
         return $objects;
     }
 
-    /** @return array<string, list<array<string, int|string|null>>> rows by table, as GuideCodec gave them */
+    /** @return array<string, list<array<string, int|string|null>>> rows by table */
     public function rowsByTable(): array
     {
         $resourceRows = [];

@@ -1,10 +1,10 @@
 <?php
 
-use App\Content\Codec\WorldCodec;
 use App\Content\ContentRows;
 use App\Content\ContentSource;
 use App\Content\ContentTables;
 use App\Content\InvalidContent;
+use App\Content\Record\World;
 use App\Content\RowSet;
 use Tests\Support\ContentFixture;
 use Tests\Support\ContentPipeline;
@@ -85,12 +85,12 @@ it('requires the boss to be the last challenge of the world', function () {
     expect(fn () => rowsOf($fixture))->toThrow(InvalidContent::class, 'curriculum.json: campaign.go[0].bossId: el jefe tiene que ser el último de challengeIds');
 });
 
-// ContentRows checks that each ID exists before the codec runs, so the codec's own check is only reachable directly.
+// ContentRows checks that each ID exists before World runs, so its own check is only reachable directly.
 it('rejects a world that lists an ID that is not a text', function () {
     $world = ContentFixture::fromImage()->document->campaign->rust[0];
     $world->trainingIds[0] = 7;
 
-    expect(fn () => (new WorldCodec)->toRows($world, 'rust', 0, 'campaign.rust[0]'))
+    expect(fn () => World::fromDocument($world, 'rust', 0, 'campaign.rust[0]'))
         ->toThrow(InvalidContent::class, 'curriculum.json: campaign.rust[0].trainingIds: se esperaba una lista de IDs');
 });
 

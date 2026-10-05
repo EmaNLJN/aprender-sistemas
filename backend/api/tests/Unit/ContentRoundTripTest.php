@@ -1,6 +1,5 @@
 <?php
 
-use App\Content\Codec\ExerciseCodec;
 use App\Content\ContentSource;
 use App\Content\Portion;
 use App\Content\PublishedJson;
@@ -31,20 +30,19 @@ it('assembles each of the 17 portions with the bytes the generator fixed', funct
 })->with(Portion::cases());
 
 it('assembles each exercise with its contentHash', function () {
-    $codec = new ExerciseCodec;
     $tests = collect($this->rows['exercise_tests'])->groupBy('exercise_id');
     $hints = collect($this->rows['exercise_hints'])->groupBy('exercise_id');
-    $topics = collect($this->rows['topics'])->mapWithKeys(fn (array $topic) => ["{$topic['language']}|{$topic['topic_key']}" => $topic['label']]);
+    $topics = collect($this->rows['topics'])->mapWithKeys(fn (array $topic) => ["{$topic['language']}|{$topic['topic_key']}" => $topic]);
 
     $wrong = [];
     foreach ($this->rows['exercises'] as $exercise) {
-        $record = $codec->toRecord(
+        $record = $this->assembler->exercise(
             $exercise,
             $tests->get($exercise['id'], collect())->sortBy('position')->values()->all(),
             $hints->get($exercise['id'], collect())->sortBy('position')->values()->all(),
             $topics["{$exercise['language']}|{$exercise['topic_key']}"],
         );
-        if (hash('sha256', PublishedJson::encode($record)) !== ContentFixture::fromImage()->meta['exercises'][$exercise['id']]['contentHash']) {
+        if (hash('sha256', PublishedJson::encode($record->toPublished())) !== ContentFixture::fromImage()->meta['exercises'][$exercise['id']]['contentHash']) {
             $wrong[] = $exercise['id'];
         }
     }
@@ -102,3 +100,10 @@ it('assembles the same bytes when the database returns numbers as text', functio
 
     expect(hash('sha256', $bytes))->toBe($this->source->meta->portionHash($portion));
 })->with(Portion::cases());
+
+it('fails fast when an active exercise has no topic row', function () {
+    $exercise = $this->rows['exercises'][0];
+
+    expect(fn () => $this->assembler->exercise($exercise, [], [], null))
+        ->toThrow(LogicException::class, "topics: no hay un tema activo {$exercise['language']}|{$exercise['topic_key']} para el ejercicio {$exercise['id']}");
+});
