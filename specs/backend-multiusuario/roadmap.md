@@ -22,7 +22,7 @@
 | B1 | Ejecutor Go con sandbox gVisor | Compilar y ejecutar Rust y Go en contenedores endurecidos, detrás de un servicio interno | — | Entregado | [plan histórico](../../docs/plans/2026-10-04-ejecutor-go.md) |
 | A1 | Contenido en YAML y código real | Sacar el currículo de los `.ts` a `content/`, con un generador y un oráculo que prueban que nada cambió | — | Entregado | [plan histórico](../../docs/plans/2026-10-04-contenido-yaml.md) |
 | C1 | Base Laravel en Docker | Proyecto API-only con PHP-FPM, MySQL 9.7 y Pest contra MySQL real | — | Entregado | [plan histórico](../../docs/plans/2026-10-04-laravel-base.md) |
-| C2 | Contenido en MySQL | Pasar el currículo de un documento embebido a tablas y servirlo por recurso, idéntico al oráculo, para que el progreso apunte a filas estables | A1, C1 | En especificación | [001-c2-contenido-mysql](../001-c2-contenido-mysql/spec.md) |
+| C2 | Contenido en MySQL | Pasar el currículo de un documento embebido a tablas y servirlo por recurso, idéntico al oráculo, para que el progreso apunte a filas estables | A1, C1 | Planificado | [001-c2-contenido-mysql](../001-c2-contenido-mysql/spec.md) |
 | C3 | Identidad y acceso | Cuentas para muchos usuarios: alta por invitación, sesión, recuperación por email, roles y límites por cuenta | C1 | Pendiente | — |
 | B2 | API de ejecuciones | Ejecutar el código del alumno en el sandbox propio, de forma asincrónica y con cuotas por usuario, y dejar un intento liviano por ejecución | B1, C2, C3 | Pendiente | — |
 | D1 | Progreso y sincronización | Guardar el progreso en tablas, con sincronización local-first, importación combinable del progreso v1 y fusión por campo | C2, C3, B2 | Pendiente | — |
@@ -84,7 +84,7 @@ Cada línea nombra lo que entra y lo que queda fuera. Los detalles están en el 
 - **B1** (2026-10-04): entregado en `master`, PR #3 → `15063e3`. Las 21 pruebas de integración pasan con runc y con runsc (gVisor instalado por apt), registrado con `--network=none`.
 - **A1** (2026-10-04): entregado en `master`, PR #5 → `f924109`. `content/` (YAML y código real) y `tools/content/` generan `build/curriculum.json`. El oráculo `dump-globals` da el mismo volcado que la línea base (`cd1f9e62…`), los catálogos del `dist` coinciden con los del oráculo y la auditoría pasa 137/137 programas de referencia por lenguaje (411 aserciones cada uno). El `dist/index.html` cambió de tamaño (2 044 640 → 2 202 074 bytes), como se esperaba: lo que se verificó es que los catálogos que publica son iguales.
 - **C1** (2026-10-04): entregado en `master`, PR #4 → `0f4bad8`. Pest, la prueba de humo y el primer arranque con el volumen vacío están verificados. Límite que declaró su hoja de ruta: la imagen del front con el `nginx.conf` nuevo se prueba en el primer `up --build`.
-- **C2:** spec redactada, con 5 preguntas que bloquean el plan. Falta la opinión del arquitecto y del DBA. No hay plan ni tareas.
+- **C2** (2026-10-05): spec clarificada (sesiones del 2026-10-04 y 2026-10-05), modelo de datos, plan y 28 tareas. El plan reparte la implementación entre la base del coordinador, tres agentes a la vez y después otros dos, con archivos disjuntos. El análisis cruzado por script (los 48 requisitos y los 11 criterios en el plan y las tareas, dueño único de cada archivo, enlaces) no dejó hallazgos. Sin implementar. El código PHP, SQL y de Docker del plan es referencia sin ejecutar; el TypeScript del generador y de los checks se ejecutó.
 
 Las evidencias salen de los mensajes de los commits y de la hoja de ruta anterior.
 
@@ -94,6 +94,7 @@ Las evidencias salen de los mensajes de los commits y de la hoja de ruta anterio
 | --- | --- |
 | Siempre | Cada descarga (imágenes, paquetes npm o Composer) pide permiso con nombre, origen y tamaño antes de bajarse. |
 | Ahora | Aprobar o enmendar el ADR 0006, con las enmiendas del 2026-10-05 que dejó el clarify de C2 (también ratifica que la entrega sea un controlador con un servicio, y no un middleware). |
+| C2 (implementación) | Permiso para la primera construcción de la etapa `curriculum` de `api/Dockerfile`: `npm ci` baja las 243 dependencias del `package-lock.json` (unos 150 MB instalados; la descarga ronda los 40 o 50 MB, estimación) sobre `node:24-alpine`, la imagen que ya usa el front. Hay que dárselo antes de la tarea T007. |
 | C3 | `laravel/fortify` (sin Sanctum); proveedor, remitente y dominio del correo (§13.3); `axllent/mailpit` sólo con permiso, en el perfil `dev`; origen de la lista de contraseñas bloqueadas (§13.4). |
 | C4 | Dominio, DNS (o DNS dinámico) y puertos 80 y 443 abiertos en el router. |
 
