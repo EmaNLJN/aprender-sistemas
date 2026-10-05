@@ -8,6 +8,14 @@ function mysqlErrorCode(QueryException $error): int
     return (int) $error->errorInfo[1];
 }
 
+function contentImportRow(?string $sourceCommit): array
+{
+    return [
+        'document_hash' => str_repeat('a', 64), 'source_commit' => $sourceCommit,
+        'portion_hashes' => '{}', 'counts' => '{}', 'changes' => '{}', 'created_at' => '2026-10-05 00:00:00.000',
+    ];
+}
+
 $now = '2026-10-05 00:00:00.000';
 
 it('CHECK constraints reject a row that breaks their rule (error 3819)', function (string $table, array $row) {
@@ -34,6 +42,33 @@ it('CHECK constraints reject a row that breaks their rule (error 3819)', functio
         'guide source whose key_order is not JSON' => ['guide_sources', ['position' => 0, 'title' => 't', 'url' => 'u', 'note' => 'n', 'key_order' => 'not json'] + $lifecycle],
     ];
 });
+
+// ICU lets `$` match before a final line break, so a pattern ending in `$` needs the exact length around it.
+it('content_imports_source_commit_check rejects what is not exactly 40 or 64 lowercase hexadecimals', function (string $commit) {
+    try {
+        DB::table('content_imports')->insert(contentImportRow($commit));
+        $this->fail('expected content_imports_source_commit_check to reject the commit');
+    } catch (QueryException $error) {
+        expect(mysqlErrorCode($error))->toBe(3819)
+            ->and($error->errorInfo[2])->toContain('content_imports_source_commit_check');
+    }
+})->with([
+    '39 hexadecimals and a line break' => [str_repeat('a', 39)."\n"],
+    '63 hexadecimals and a line break' => [str_repeat('a', 63)."\n"],
+    '40 hexadecimals and a line break' => [str_repeat('a', 40)."\n"],
+    'uppercase hexadecimals' => [str_repeat('A', 40)],
+    '40 characters that are not hexadecimals' => [str_repeat('g', 40)],
+]);
+
+it('content_imports_source_commit_check accepts no commit, and 40 or 64 lowercase hexadecimals', function (?string $commit) {
+    DB::table('content_imports')->insert(contentImportRow($commit));
+
+    expect(DB::table('content_imports')->value('source_commit'))->toBe($commit);
+})->with([
+    'no commit' => [null],
+    '40 hexadecimals' => [str_repeat('a', 40)],
+    '64 hexadecimals' => [str_repeat('0123456789abcdef', 4)],
+]);
 
 it('foreign keys do not allow deleting what another row references (RESTRICT)', function () {
     $now = '2026-10-05 00:00:00.000';

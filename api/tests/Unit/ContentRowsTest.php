@@ -41,6 +41,35 @@ it('rejects a repeated exercise ID', function () {
     expect(fn () => rowsOf($fixture))->toThrow(InvalidContent::class, "curriculum.json: lab.go[0].id: «{$id}» se repite");
 });
 
+it('rejects an exercise ID the API could never serve', function (string $id) {
+    $fixture = ContentFixture::fromImage();
+    $unreferenced = $fixture->unreferencedLabExercise();
+    $position = array_search($unreferenced, array_column($fixture->document->lab->rust, 'id'), true);
+    $fixture->exercise($unreferenced)->id = $id;
+
+    expect(fn () => rowsOf($fixture))->toThrow(
+        InvalidContent::class,
+        "curriculum.json: lab.rust[{$position}].id: «{$id}» no es un ID de ejercicio válido: se esperaban minúsculas, dígitos y guiones, de 1 a 64 caracteres y sin empezar con guion",
+    );
+})->with([
+    'an uppercase letter' => ['Rust-42'],
+    'an underscore' => ['rust_42'],
+    'a leading hyphen' => ['-rust-42'],
+    'more than 64 characters' => [str_repeat('a', 65)],
+    'a trailing line break' => ["rust-42\n"],
+]);
+
+it('accepts the shortest and the longest exercise ID, and one that starts with a digit', function (string $id) {
+    $fixture = ContentFixture::fromImage();
+    $fixture->exercise($fixture->unreferencedLabExercise())->id = $id;
+
+    expect(rowsOf($fixture)->keyed('exercises'))->toHaveKey($id);
+})->with([
+    'one character' => ['a'],
+    'a digit first' => ['0-intro'],
+    'the longest, 64 characters' => [str_repeat('a', 64)],
+]);
+
 it('rejects a key without a rule and a missing required key', function () {
     $extra = ContentFixture::fromImage();
     $extra->document->lab->rust[0]->extra = 1;

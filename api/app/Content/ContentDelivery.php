@@ -41,16 +41,17 @@ final class ContentDelivery
         $hash = $latest->portionHashes[$portion->value];
         $body = $this->bodies->get($portion, $hash);
         if ($body === null) {
-            [$latest, $body] = ContentSnapshot::read(function () use ($portion) {
+            $built = ContentSnapshot::read(function () use ($portion) {
                 $latest = $this->imports->latest();
 
-                return [$latest, $latest === null ? null : $this->renderer->render($portion)];
+                return $latest === null ? null : [$latest, $this->renderer->render($portion)];
             });
-            if ($latest === null) {
+            if ($built === null) {
                 return $this->notImported();
             }
+            [$latest, $body] = $built;
             $hash = $latest->portionHashes[$portion->value];
-            if ($body === null || hash('sha256', $body) !== $hash) {
+            if (hash('sha256', $body) !== $hash) {
                 return $this->maintenance("la porción {$portion->value} armada desde las tablas no tiene el hash del import {$latest->id}");
             }
             $this->bodies->put($portion, $hash, $body);
@@ -64,7 +65,7 @@ final class ContentDelivery
 
     public function exercise(Request $request, string $id): SymfonyResponse
     {
-        if (preg_match('/\A[a-z0-9][a-z0-9-]{0,63}\z/', $id) !== 1) {
+        if (! ExerciseId::isValid($id)) {
             return $this->notFound();
         }
         $latest = $this->imports->latest();

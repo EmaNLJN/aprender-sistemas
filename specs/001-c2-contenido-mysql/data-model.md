@@ -91,7 +91,7 @@ CREATE TABLE `content_imports` (
   `created_at` DATETIME(3) NOT NULL,
   PRIMARY KEY (`id`),
   CONSTRAINT `content_imports_document_hash_check` CHECK (REGEXP_LIKE(`document_hash`, '^[0-9a-f]{64}$', 'c')),
-  CONSTRAINT `content_imports_source_commit_check` CHECK (`source_commit` IS NULL OR (CHAR_LENGTH(`source_commit`) IN (40, 64) AND REGEXP_LIKE(`source_commit`, '^[0-9a-f]+$', 'c')))
+  CONSTRAINT `content_imports_source_commit_check` CHECK (`source_commit` IS NULL OR (CHAR_LENGTH(`source_commit`) IN (40, 64) AND REGEXP_LIKE(`source_commit`, '^([0-9a-f]{40}|[0-9a-f]{64})$', 'c')))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_es_0900_ai_ci;
 ```
 
