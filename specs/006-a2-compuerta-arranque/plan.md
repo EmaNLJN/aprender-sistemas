@@ -184,6 +184,8 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 | E · E2E | El archivo de specs de A2 en `qa/e2e/` y la parte del Page Object del shell que usa | El build de C (T008) | Los escenarios de A2 en la red de F1 |
 | C · Coordinador | `frontend/src/app/main.tsx`, `frontend/src/app/boot/legacy-views.ts`, `frontend/src/app/legacy/register-{catalogs,systems-lowlevel,systems-infra,systems-play,systems-pc,atlas}.ts(x)`, `frontend/src/pages/atlas/{index.ts (en T008),model/atlas-catalog.ts}`, el módulo de catálogo de F2.2 si hay que cambiarle la fuente (T001 anota su ruta), `frontend/vite.config.ts`, `frontend/Dockerfile`, `docker/compose.preview.yaml`, `qa/build-check.ts`, `qa/run-checks.ts`, `package.json` (sin cambios), la documentación de T012 y `tasks.md` | Todo | El build, el corte y el cierre |
 
+G, Q y E son slices delegables en el subagente `implementador` (`AGENTS.md`, «Trabajo con subagentes»): se le dan sus archivos, sus interfaces y sus checks, y se le dice que no deje comentarios. C lo hace el agente principal, que además revisa cada diff y corre los checks de cada integración.
+
 **Puntos de sincronización** (el coordinador integra y avisa):
 
 - **S0:** T001 con «sigue» y T002 hechos. G, Q y C parten de ahí.
@@ -219,7 +221,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 - **Hashes portables.** Donde el plan escribe `sha256` (un archivo o una salida por tubería), usá el `node -e` de [quickstart.md](./quickstart.md): funciona igual en Linux y en macOS.
 - **Estilo.**
   - Código y pruebas en inglés, mensajes para el alumno en español con voseo.
-  - Comentarios sólo en lo complejo o como referencia puntual.
+  - Sin comentarios por defecto. El código de referencia del plan trae algunos para quien lo lee, y al implementar se borran, salvo los que explican una restricción que el código no muestra (como el de los temporizadores de `attemptOnce`) o dejan una referencia puntual (un bug, una RFC o una decisión de un ADR).
   - `interface` para formas de objetos y exports nombrados.
   - Sin `style=`.
   - Una función de más de 10 de complejidad se revisa y se justifica.
@@ -241,7 +243,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
   4. Armar un prototipo descartable: la lista de imports de `main.tsx` detrás de `import()`, con una marca por módulo (`window.__marks.push(nombre)`); el contenido en un archivo que un plugin mínimo copia a `dist/content/`; los adaptadores leyendo de un objeto de prueba; y un evento «contenido publicado» despachado a mano antes de la cadena.
   5. **P1.** `npm run build`. Contar los `<script>` de `dist/index.html` (esperado: 1) y los archivos o enlaces externos del documento (esperado: ninguno; el único archivo extra es el del contenido). Ejecutar el bundle en el vm con el mecanismo de P2 y en Chromium con el Playwright de F1: las marcas empiezan después del evento y cumplen las restricciones de orden de la base. Con `grep`, listar qué módulos leen contenido de `window.*` al evaluarse.
   6. **P2.** `node --check` sobre el script del dist copiado a un `.mjs`; `vm.SourceTextModule` con el relanzamiento de [research.md](./research.md) (R9): ¿evalúa la salida? Si no, probar el desvío del IIFE con esbuild. Anotar el cambio mínimo de `build-check` y del check del bundle.
-  7. **P3.** `html.length` y bytes de `dist/index.html` antes (la base) y después (el prototipo), y los bytes del contenido sin comprimir y con `gzip -1`. Calcular el tope de `build-check`: `techo(medido × 1,10)`, redondeado hacia arriba a la decena de miles.
+  7. **P3.** `html.length` y bytes de `dist/index.html` antes (la base) y después (el prototipo), y los bytes del contenido sin comprimir y con `gzip -1`. Calcular el tope de `build-check`: `piso(medido × 1,10)`, redondeado hacia abajo a la decena de miles, para no pasar del 10 % que fija la spec.
   8. **P4.** Empaquetar el prototipo con el patrón de `bundleApp` y correr `boot-check` con un `fetch` simulado que sirve el documento: los casos pasan sin cambiar sus valores esperados. Con un `fetch` que no responde, anotar qué temporizadores corren en `flush()`.
   9. **Tiempo hasta la primera vista, antes:** con el Playwright de F1, sobre la base, con y sin caché del navegador (R13).
   10. Decidir y registrar.
@@ -263,7 +265,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 
 ## 2. Transporte y compuerta (dueño G, onda 1)
 
-**Cubre:** FR-001, FR-006 a FR-013, FR-020 (la parte de la lógica) y FR-012 con US4.
+**Cubre:** FR-001, FR-006 a FR-013 y FR-025, y de FR-020 la parte de la lógica; US4, con FR-012.
 
 **Entrega:** el transporte, el almacén, el tipo `Content`, la compuerta y su vista, sin cablear: nada de esto se importa desde `main.tsx` hasta T008, así que el taller sigue como estaba.
 
@@ -419,7 +421,7 @@ export function createStaticContentSource({
 ```
 
 ```ts
-// frontend/src/shared/api/content/content-holder.ts (sin imports: lo importa también qa/lib)
+// frontend/src/shared/api/content/content-holder.ts (no imports: qa/lib imports it too)
 let stored: unknown;
 let hasContent = false;
 
@@ -451,7 +453,7 @@ export type { StaticContentSourceOptions } from './static-content-source';
 ### Tarea 2.2 · El contenido tipado y la compuerta (T004)
 
 - **Crea** `frontend/src/app/content/{content,assemble-content}.ts` y `frontend/src/app/boot/{run-boot,content-gate,gate-view,content-stage}.ts`, con los specs `assemble-content.spec.ts`, `run-boot.spec.ts`, `content-gate.spec.ts` y `gate-view.spec.ts`. **Cambia** `frontend/src/pages/atlas/index.ts` con una línea: `export type { AtlasByLanguage } from './model/types';`.
-- **Entrega:** `createContentGate(options): BootStage`, `Content`, `getContent()`, `CONTENT_PUBLISHED_EVENT`, `assembleContent`, `runBoot`, `BootStage`, `GateView`, `createGateView`, `failureMarkup` y `contentGate` (el cableado de A2).
+- **Entrega:** `createContentGate(options): BootStage`, `Content`, `getContent()`, `CONTENT_PUBLISHED_EVENT`, `assembleContent`, `runBoot`, `BootStage`, `GateView`, `createGateView`, `failureMarkup` y `contentGate` (el cableado de A2, con el tope de 20 s y el umbral de 400 ms que explica [research.md](./research.md), R6).
 - **Pasos:**
   1. Los specs y las firmas con `not implemented`. Casos:
      - `content-gate.spec.ts`, con `vi.useFakeTimers()`, una vista falsa, `vi.stubGlobal('window', new EventTarget())` y fuentes de prueba:
@@ -703,19 +705,14 @@ export function createGateView(): GateView {
 ```
 
 ```ts
-// frontend/src/app/boot/content-stage.ts: el cableado de A2, que A3 reemplaza por la fuente de la API
+// frontend/src/app/boot/content-stage.ts: the A2 wiring, which A3 replaces with the API source
 import { createStaticContentSource } from '../../shared/api/content';
 import { createContentGate } from './content-gate';
 import { createGateView } from './gate-view';
 
 declare const __CONTENT_VERSION__: string;
 
-// Tope de espera (FR-007): el documento pesa unos 391 KB con el gzip de Nginx; a 50 KB/s (un 3G
-// lento) tarda unos 8 s, y 20 s deja 2,5 veces de margen sin dejar al alumno frente a una espera
-// más larga.
 const CONTENT_TIMEOUT_MS = 20_000;
-// Umbral de la carga (FR-010): del mismo origen y en un enlace local llega en decenas de
-// milisegundos; una pausa menor que 0,4 s no se percibe y el estado sólo parpadearía.
 const LOADING_DELAY_MS = 400;
 
 export const contentGate = createContentGate({
@@ -738,17 +735,17 @@ export const contentGate = createContentGate({
 
 - **Cambia** `qa/lib/sources.ts`, `qa/lib/legacy-sources.ts`, `qa/runtime-check.ts`, `qa/atlas-check.ts`, `qa/curriculum-ids-check.ts`, `qa/fixtures/atlas-page-render.tsx` y `tools/content/dump-globals.ts`. **Crea** `qa/lib/content-document.ts`, `qa/lib/publish-content-fixture.ts` y `qa/lib/built-page.ts`.
 - **Entrega:** `runSource(context, ruta, { withContent: true })`, `bundleApp` con `__CONTENT_VERSION__`, `curriculumDocumentText()`, `curriculumDocument<T>()`, `curriculumMeta()` y `contentVersion()`; `readBuiltPage()` y `readBuiltContent()`, el único módulo que sabe cómo arranca la página construida; y un `dump-globals` que da los mismos bytes en las dos disposiciones.
-- **Por qué no hay una prueba que falle sola.** Este paso no cambia comportamiento: hasta T008 los adaptadores siguen leyendo el JSON estático y el fixture publica un contenido que nadie lee. La red es la suite y el volcado de T002; la ruta nueva la ejercen de verdad T007 (las pruebas) y T008 (el corte).
+- **La prueba que falla.** Este paso no cambia el comportamiento de ningún check: la red es la suite entera y el volcado de T002. Lo que falla primero es un check existente con un adaptador que ya lee el contenido publicado mientras el arnés todavía no lo publica (paso 2).
 - **Pasos:**
   1. Línea de base: `npm run curriculum && npm test` en verde, y el volcado de `dump-globals` con el hash de T002.
-  2. Implementar los cambios de abajo.
-  3. Otra vez, igual: `npm test` en verde y el volcado con el mismo hash. Ninguna prueba cambia un valor esperado.
-  4. **Humo de la ruta nueva**, a mano y sin commitear: cambiar `register-catalogs.ts` para leer `getContent()` y correr `node qa/content-check.ts`: pasa. Quitar el fixture (`withContent: false`) y repetir: falla con «El contenido todavía no se publicó». Descartar el cambio.
+  2. **Rojo.** A mano y sin commitear, cambiar `register-catalogs.ts` para que lea `getContent()` en lugar del JSON y correr `node qa/content-check.ts`: falla con «El contenido todavía no se publicó», que es la razón esperada.
+  3. **Verde.** Implementar los cambios de abajo. El mismo check, con el adaptador cambiado, pasa. Después, descartar el cambio del adaptador.
+  4. Otra vez la línea de base: `npm test` en verde y el volcado con el mismo hash. Ninguna prueba cambia un valor esperado.
   5. **Humo de `built-page.ts`**, con un `dist/` construido: `node -e "import('./qa/lib/built-page.ts').then((m) => { const page = m.readBuiltPage(); console.log(page.scripts.length, page.bootSize === page.html.length); })"` imprime `1 true`. Hasta T008 el HTML todavía lleva el currículo: lo que se mira es la forma.
 - **Código de referencia** (sin ejecutar):
 
 ```ts
-// qa/lib/content-document.ts (calcula su raíz: importar sources.ts sería circular)
+// qa/lib/content-document.ts (it computes its own root: importing sources.ts would be circular)
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
@@ -801,22 +798,22 @@ function entryWithContent(adapter: string): esbuild.BuildOptions {
     },
   };
 }
-// El caché de bundleSource incluye withContent en su clave. runSource, con withContent, hace
-// context.__TALLER_QA_CONTENT__ = curriculumDocumentText() antes de evaluar.
-// bundleApp suma a `define`: __CONTENT_VERSION__: JSON.stringify(contentVersion()).
+// bundleSource caches by path, minify and withContent.
+// runSource with withContent sets context.__TALLER_QA_CONTENT__ = curriculumDocumentText() before evaluating.
+// bundleApp adds __CONTENT_VERSION__: JSON.stringify(contentVersion()) to its define.
 ```
 
 ```ts
-// qa/lib/legacy-sources.ts: loadGuideContent, loadLabExercises, loadCampaignWorlds y
-// loadSystemsDomain evalúan los adaptadores con runAdapter, y los demás loadX no cambian.
+// qa/lib/legacy-sources.ts: loadGuideContent, loadLabExercises, loadCampaignWorlds and
+// loadSystemsDomain evaluate the adapters with runAdapter; the other loadX do not change.
 function runAdapter(context: vm.Context, source: string, options?: RunOptions): void {
   runSource(context, source, { ...options, withContent: true });
 }
 ```
 
 ```ts
-// qa/lib/built-page.ts: lo único que sabe cómo arranca la página construida. C4 retira
-// vite-plugin-singlefile y el dist pasa a varios archivos: cambia este archivo y no cada check.
+// qa/lib/built-page.ts: the only place that knows how the built page boots. C4 retires
+// vite-plugin-singlefile and dist becomes several files: this file changes, not every check.
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -865,12 +862,12 @@ export function readBuiltContent(root: string = repoRoot): { fileName: string; b
 - **`dump-globals.ts`.** Detecta la disposición de la raíz que recibe: si `register-catalogs.ts` todavía importa `curriculum.json`, corre el código de hoy sin cambios (también sobre la raíz de un commit anterior a A2). Si no, empaqueta una entrada temporal (en `os.tmpdir()`, que borra al salir) y la evalúa en el mismo contexto:
 
 ```ts
-// entrada de la disposición nueva (se genera con las rutas absolutas de la raíz recibida)
+// entry of the new layout (generated with the absolute paths of the root it receives)
 //   import '<tmp>/publish.ts';                      // storeContent(JSON.parse(globalThis.__DUMP_CONTENT__))
-//   import '<raíz>/frontend/src/app/legacy/register-catalogs.ts';
-//   import '<raíz>/frontend/src/app/legacy/register-systems-lowlevel.ts';   // infra, play y pc, igual
-//   import { getContent } from '<raíz>/frontend/src/app/content/content.ts';
-//   globalThis.__dumpedAtlas = getContent().atlas;  // en el contexto, no en `window`: no entra en `globals`
+//   import '<root>/frontend/src/app/legacy/register-catalogs.ts';
+//   import '<root>/frontend/src/app/legacy/register-systems-lowlevel.ts';   // and infra, play, pc
+//   import { getContent } from '<root>/frontend/src/app/content/content.ts';
+//   globalThis.__dumpedAtlas = getContent().atlas;  // on the context, not on `window`: it stays out of `globals`
 ```
 
   El volcado conserva su forma (`errors`, `globals`, `models`, `atlas`) y, como `window` sólo recibe los ocho globals de siempre, los mismos bytes.
@@ -944,14 +941,14 @@ function webRootFiles(): Plugin {
 ```
 
 ```dockerfile
-# frontend/Dockerfile, etapa final: una línea en lugar de las tres COPY de hoy (index.html y los
-# dos avisos de licencia). dist/ es la raíz web completa.
+# frontend/Dockerfile, final stage: one line instead of today's three COPY (index.html and the
+# two license notices). dist/ is the whole web root.
 COPY --from=build /app/dist/ /usr/share/nginx/html/
 ```
 
 ```yaml
-# docker/compose.preview.yaml: monta dist/ entero, como pide FR-016 (antes, sólo index.html).
-# Corré npm run build antes: si dist/ no existe, Docker lo crea vacío y a nombre de root.
+# docker/compose.preview.yaml: mount the whole dist/, as FR-016 asks (it was only index.html).
+# Run npm run build first: if dist/ does not exist, Docker creates it empty and owned by root.
     volumes:
       - ../dist:/usr/share/nginx/html:ro
 ```
@@ -1122,7 +1119,8 @@ window.GO_CAMPAIGN = content.campaign.go;
   1. Escribir el check (abajo) con sus aserciones y correrlo sobre el build de T008: tiene que pasar. Una prueba de un oráculo se muestra con mutaciones, hechas a mano y descartadas:
      - la compuerta descarta una porción (`quests.go`) antes de publicar: falla la igualdad de las 17 huellas;
      - un byte cambiado en `dist/content/curriculum.<versión>.json`: falla el sha256;
-     - un adaptador que publica un global distinto: falla la igualdad con `dump-globals`.
+     - un adaptador que publica un global distinto: falla la igualdad con `dump-globals`;
+     - la compuerta no despacha el evento: el check falla porque no hay publicación observable.
   2. Retirar `dump-dist-globals.ts` en el mismo commit, y sus menciones.
 - **Resumen del check** (sin ejecutar; con el mecanismo y el desvío de [research.md](./research.md), R9):
   - se relanza con `--experimental-vm-modules --disable-warning=ExperimentalWarning` si `vm.SourceTextModule` no existe;
@@ -1183,7 +1181,7 @@ export async function evaluateBuiltPage(page: BuiltPage, context: vm.Context): P
      - el móvil: `test.use({ viewport: { width: 390, height: 844 } })`.
   3. Si F1 hace fallar el test con un `console.error`, cada escenario de falla declara la entrada «Failed to load resource» de su pedido y nada más.
   4. `npm run build && npm run test:e2e` en verde, cinco veces seguidas sin reintentos (el criterio de F1).
-- **Ejemplo** (sin ejecutar):
+- **Ejemplo** (sin ejecutar; `shell` y sus métodos son los nombres que F1 dé a su Page Object del shell, que T001 anota):
 
 ```ts
 test('shows the error with «Reintentar» focused when the content request is aborted', async ({ page, shell }) => {
@@ -1205,7 +1203,7 @@ test('shows the error with «Reintentar» focused when the content request is ab
 
 - **Pasos:**
   1. `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `npm run test:e2e` y `git diff --check`, todos en verde (FR-024).
-  2. **Los oráculos:** `node tools/content/dump-globals.ts . | sha256` da el hash de T002 (SC-001), y lo mismo sobre la raíz de un commit anterior a A2 (`git worktree add <dir> <commit>`, FR-017).
+  2. **Los oráculos:** `node tools/content/dump-globals.ts . | sha256` da el hash de T002 (SC-001), y lo mismo sobre la raíz de un commit anterior a A2 (`git worktree add <dir> <commit>`, con `ln -s "$PWD/node_modules" <dir>/node_modules` y `npm run curriculum` adentro: el volcado resuelve esbuild desde esa raíz; FR-017).
   3. **Dependencias:** `git diff <base> -- package.json package-lock.json` vacío (FR-022, SC-006). **Vistas legacy:** `git diff --stat <base>` sin ningún `frontend/*.js` (FR-023). **Scripts en línea:** `frontend/src/index.html` sin cambios.
   4. **Docker, con permiso** (el único paso que lo usa; las imágenes ya están en la máquina, `--pull never`):
      - `docker compose up --build -d --wait`, y `curl -s http://localhost:8080/content/curriculum.<versión>.json | sha256` da el `documentHash` (SC-002, también con `--compressed`);
@@ -1247,11 +1245,12 @@ La edita T012. Hoy llaman «autónomo» al HTML o describen cómo se carga el co
 | `README.md` | «También podés abrir `dist/index.html`, que es autónomo; algunos navegadores restringen…» (cerca de la línea 145) | Que `dist/index.html` ya no es autónomo: pide el contenido a `dist/content/` del mismo origen y, abierto desde un archivo, muestra el aviso de que no pudo cargarlo; que se sirve con Docker o `npm run preview` |
 | `README.md` | «Vite … empaqueta estilos, datos, editor y aplicación en el documento autónomo `dist/index.html`» (cerca de la 185) | Que empaqueta estilos, editor y aplicación en `dist/index.html` y deja el currículo junto a él, en `dist/content/` |
 | `README.md` | «Comprueban paquete autónomo y orden de carga» (cerca de la 229) | Que comprueban el documento y su contenido, y el orden de arranque |
-| `README.md` | La vista previa «con el archivo montado en modo lectura» (cerca de la 280) | Que monta `dist/index.html` y `dist/content/` |
+| `README.md` | «`frontend/src/app/` (entrada y adaptadores legacy, que publican los catálogos de `build/curriculum.json`)» (cerca de la línea 187) | Que los adaptadores publican los catálogos del contenido que carga la compuerta de arranque |
+| `README.md` | La vista previa «con el archivo montado en modo lectura» (cerca de la 280) | Que monta `dist/` entero, con el HTML, el contenido y los avisos de licencia |
 | `AGENTS.md` | «Vite construye un HTML autónomo y Nginx lo sirve» (línea 7) | Que Vite construye un HTML y su contenido, y Nginx los sirve |
 | `AGENTS.md` | `build/curriculum.json` «que importan los adaptadores … y el Atlas (`…/atlas-catalog.ts`)» (líneas 36 a 41) | Que lo copia el build a `dist/content/` y lo lee la compuerta de arranque (`frontend/src/app/boot/`) |
 | `AGENTS.md` | «Vite empaqueta … `build/curriculum.json` en `dist/index.html`» y «`vite-plugin-singlefile` conserva el contrato de un documento autónomo» (líneas 63 a 67) | Que el currículo ya no va en el HTML y que singlefile conserva un solo documento de código y estilos hasta C4 |
-| `AGENTS.md` | «Para servir `dist/index.html` generado en el host como preview» (línea 76) | Que la vista previa sirve el HTML y `dist/content/` |
+| `AGENTS.md` | «Para servir `dist/index.html` generado en el host como preview» (línea 76) | Que la vista previa monta `dist/` entero, con el HTML, el contenido y los avisos de licencia |
 | `docs/architecture.md` | Filas «Documento, entrada ESM y adaptadores legacy», «Catálogos de contenido», «Atlas migrado», «Catálogos de Sistemas», «Construcción y dependencias» y «Servicio web, API y preview» (líneas 12, 18, 25, 34, 39 y 40) | Suma `frontend/src/app/boot/` y `content/`, `getContent()`, el plugin de `vite.config.ts` y el contenido junto al HTML |
 | `docs/architecture.md` | «`frontend/src/app/main.tsx` define temporalmente el orden de los imports legacy» (línea 58) | Que la secuencia de etapas está en `main.tsx` y el orden de la cadena legacy, en `legacy-views.ts` |
 | `docs/architecture.md` | «La salida autónoma `dist/index.html` es un contrato actual…» (línea 73) | El contrato nuevo: el HTML y `dist/content/curriculum.<versión>.json`, que A3 retira; el cambio de entrega ya está hecho en Docker, Nginx, QA y README |
@@ -1286,13 +1285,14 @@ La edita T012. Hoy llaman «autónomo» al HTML o describen cómo se carga el co
 | FR-022 | T013 |
 | FR-023 | T008, T013 |
 | FR-024 | T011, T013 |
-| SC-001 | T009, T013 |
+| FR-025 | T004, T007, T009 |
+| SC-001 | T008, T009, T013 |
 | SC-002 | T009, T013 |
 | SC-003 | T010 |
 | SC-004 | T003, T004, T007, T011 |
 | SC-005 | T013 |
 | SC-006 | T013 |
-| SC-007 | T011, T013 |
+| SC-007 | T001, T011, T013 |
 | SC-008 | T001 |
 
 ## Descargas y permisos

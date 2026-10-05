@@ -160,4 +160,5 @@ function evaluateBuiltPage(page: BuiltPage, context: vm.Context): Promise<void>;
 | FR-007, FR-009 a FR-011 | Fallos, estados y parámetros; la versión en el nombre del artefacto |
 | FR-012, FR-013 | `ContentSource` y `BootStage` |
 | FR-004, FR-014 a FR-016 | El artefacto servido |
-| FR-018 | La señal de publicación y las 17 porciones |
+| FR-018 | Las 17 porciones y los globals, que el check del bundle construido lee con la señal de publicación |
+| FR-025 | La señal de publicación |

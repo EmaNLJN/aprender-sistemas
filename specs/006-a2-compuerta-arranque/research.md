@@ -126,7 +126,7 @@ Una página portada no importa `getContent`: recibe su porción por props desde 
 
 ## R7. La señal de que el contenido está publicado
 
-**Decision**: tras guardar el contenido, la compuerta despacha `window.dispatchEvent(new CustomEvent('taller:content-published', { detail: content }))`. Es la señal de arranque que observan los tres usos de A2:
+**Decision**: tras guardar el contenido, la compuerta despacha `window.dispatchEvent(new CustomEvent('taller:content-published', { detail: content }))`. Es la señal de arranque (FR-025) que observan los tres usos de A2:
 - la marca «contenido publicado» del spike (P1);
 - el check del bundle construido, que sólo puede ver por esa vía lo que publicó la compuerta, incluidos los dos catálogos del Atlas, que no son globals;
 - `boot-check`, que toma en ese instante qué globals existen para probar que ninguna vista ni catálogo existe antes.
@@ -170,8 +170,8 @@ Una página portada no importa `getContent`: recibe su porción por props desde 
 **Decision**:
 - **Estructura:** sigue exigiendo un `<script>`, un `<style>`, un solo documento y ningún enlace ni script externo, y las licencias retenidas.
 - **Módulo:** parsea el script con `node --check` (R9).
-- **Tope:** `html.length < tope`, con `tope = techo(medido × 1,10)` redondeado hacia arriba a la decena de miles. `medido` es el `html.length` que mide T001 sobre el prototipo (P3); T010 escribe el valor y la medida que lo respalda en el mensaje de su commit. Hoy es 2.500.000 y el HTML pesa 2.202.074 bytes (cierre de A1); sin los 1,07 MB que estimó el ADR 0004 sería del orden de 1,1 MB.
-- **Oráculo de ausencia:** de `build/curriculum.json`, por cada una de las siete familias (`lab`, `quests`, `cores`, `campaign`, `workshops`, `atlas`, `guide`), el `id` y los dos textos más largos de la primera entrada, elegidos entre los que sólo tienen caracteres ASCII imprimibles sin comillas, barras ni saltos (el bundle los escapa y un marcador con comillas daría un falso «ausente»). Se descarta el marcador que aparece en las fuentes de `frontend/`, y quedan al menos dos por familia. Cada marcador tiene que estar en el archivo servido (control positivo: un oráculo que busca texto que no existe pasaría siempre) y no puede estar en el HTML.
+- **Tope:** `html.length < tope`, con `tope = piso(medido × 1,10)` redondeado hacia abajo a la decena de miles, que no pasa del 10 % de la spec (FR-015 y SC-003). `medido` es el `html.length` que mide T001 sobre el prototipo (P3); T010 escribe el valor y la medida que lo respalda en el mensaje de su commit. Hoy es 2.500.000 y el HTML pesa 2.202.074 bytes (cierre de A1); sin los 1,07 MB que estimó el ADR 0004 sería del orden de 1,1 MB.
+- **Oráculo de ausencia:** de `build/curriculum.json`, por cada una de las siete familias (`lab`, `quests`, `cores`, `campaign`, `workshops`, `atlas`, `guide`), el `id` y los dos textos más largos de la primera entrada, elegidos entre los que sólo tienen caracteres ASCII imprimibles sin comillas, barras ni saltos (el bundle los escapa y un marcador con comillas daría un falso «ausente»). Se descarta el marcador que aparece en las fuentes de `frontend/`, y quedan al menos dos por familia. Cada marcador tiene que estar en el archivo servido (control positivo: un oráculo que busca texto que no existe pasaría siempre) y no puede estar en el HTML. SC-003 pedía un ID, un título y una pista por familia: se usan los dos textos más largos que sean seguros porque los títulos y las pistas suelen llevar acentos o comillas que el bundle escapa.
 - **Artefacto:** `dist/content/curriculum.<versión>.json` existe, tiene el sha256 del `documentHash` del meta, y el HTML contiene la versión.
 - **Mutación (T010):** un import estático del JSON, hecho a mano y descartado, tiene que hacer fallar el check por el tope y por los marcadores (US3, escenario 3).
 

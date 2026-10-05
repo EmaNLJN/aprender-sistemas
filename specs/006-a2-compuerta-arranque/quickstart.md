@@ -86,10 +86,11 @@ npm run build && npm run test:e2e
 ```sh
 node tools/content/dump-globals.ts . | sha256
 git worktree add ../a2-anterior <commit anterior a A2>
+ln -s "$PWD/node_modules" ../a2-anterior/node_modules
 (cd ../a2-anterior && npm run curriculum && node tools/content/dump-globals.ts .) | sha256
 ```
 
-**Resultado esperado:** los dos hashes son el de T002 (SC-001, FR-017). La segunda corrida usa la raíz de un commit anterior, que todavía importa el JSON en estático. Después, `git worktree remove ../a2-anterior`.
+**Resultado esperado:** los dos hashes son el de T002 (SC-001, FR-017). La segunda corrida usa la raíz de un commit anterior, que todavía importa el JSON en estático. Después, `rm ../a2-anterior/node_modules` (el enlace, no su destino) y `git worktree remove ../a2-anterior`.
 
 ## 8. Docker (T013, con permiso)
 
