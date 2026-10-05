@@ -1,3 +1,22 @@
+<!--
+Sync Impact Report
+- Versión: 1.3.1 → 1.4.0 (MINOR: el gobierno reserva MINOR para una sección o un principio nuevos).
+- Principios modificados: ninguno. Del I al VIII quedan como estaban; en particular, el II no
+  nombra todavía Vitest ni Playwright, porque el ADR 0008 está en estado «propuesta» y una regla
+  entra primero en AGENTS.md.
+- Secciones agregadas: «Épicos y hojas de ruta».
+- Secciones modificadas: «Flujo de trabajo y verificación», viñeta «Planificación con Spec Kit»
+  (ahora cubre los dos épicos y remite a la sección nueva).
+- Secciones eliminadas: ninguna.
+- Archivos que cambian en el mismo commit: AGENTS.md (el puntero de planificación y «las hojas
+  de ruta»).
+- Plantillas: ninguna requiere cambios; las de spec, plan, tasks y checklist son genéricas.
+- Pendiente en otros cambios: la fila «Planificación del backend» de docs/architecture.md y la
+  frase «sostiene la planificación del backend» de docs/agent-skills.md; al adoptar el ADR 0008,
+  el principio II, qa/AGENTS.md y el «Alcance» de docs/agent-skills.md.
+- Este informe es material de revisión: puede quitarse al integrar la enmienda.
+-->
+
 # Constitución del Taller Rust y Go
 
 `AGENTS.md` es la fuente de las reglas del proyecto. Esta constitución las resume para que las
@@ -87,11 +106,11 @@ artefacto entregado no se edita, se continúa con otro. Cada feature vive en
 - **Subagentes:** el agente principal analiza, decide, revisa e integra. Los subagentes
   implementan slices con archivos disjuntos, y el principal integra `frontend/src/app/main.tsx`,
   `package.json`, las configuraciones y la documentación.
-- **Planificación con Spec Kit:** cada subplan del backend recorre specify, clarify, plan, tasks
-  y analyze antes de implementarse. La spec dice qué y por qué; el plan, cómo. La hoja de ruta
-  del épico vive en `specs/backend-multiusuario/roadmap.md` y las specs, en `specs/`. La plantilla
-  de `tasks.md` del proyecto (`.specify/templates/overrides/tasks-template.md`) aplica el
-  principio VIII.
+- **Planificación con Spec Kit:** cada subplan del backend y cada ítem del épico del front
+  recorren specify, clarify, plan, tasks y analyze antes de implementarse. La spec dice qué y por
+  qué; el plan, cómo. Las hojas de ruta de los épicos están en «Épicos y hojas de ruta» y las
+  specs, en `specs/`. La plantilla de `tasks.md` del proyecto
+  (`.specify/templates/overrides/tasks-template.md`) aplica el principio VIII.
 - **Disciplina de contenido (superpowers):** los archivos son los de Spec Kit, nunca
   `docs/superpowers/`. La spec sigue los criterios de `brainstorming`: intención y criterio de
   éxito escritos para que el usuario los corrija, lo que pidió separado de los supuestos, YAGNI
@@ -101,6 +120,30 @@ artefacto entregado no se edita, se continúa con otro. Cada feature vive en
   mucho, su evidencia; el detalle va en el plan.
 - **Origen de estas reglas:** el recorrido con Spec Kit, la disciplina de contenido y el
   principio VIII viven en esta constitución; `AGENTS.md` apunta acá en lugar de repetirlos.
+
+## Épicos y hojas de ruta
+
+Cada épico de planificación tiene su hoja de ruta, con IDs estables, y cada uno de sus ítems
+recorre el flujo de Spec Kit de «Flujo de trabajo y verificación».
+
+| Épico | Hoja de ruta | Fuente técnica |
+| --- | --- | --- |
+| Backend multiusuario | `specs/backend-multiusuario/roadmap.md` (B1…E1, C5 y C6) | ADR 0004, 0005 y 0006 |
+| Port del front legacy a React | `specs/front-react/roadmap.md` (F1…F11) | ADR 0001, 0003, 0007 y 0008 (propuesta), `docs/architecture.md` y el mapa del front legacy |
+
+- **Una hoja de ruta por épico, con las mismas convenciones:** los IDs no se renumeran ni se
+  reutilizan, cada ítem tiene una spec en `specs/NNN-<id>-<nombre>/`, los estados van de
+  `Pendiente` a `Entregado` y una entrega exige la implementación integrada y la evidencia de QA.
+  Cada hoja de ruta las escribe en su sección «Convenciones».
+- **Un ítem, un dueño:** un ítem que toca los dos épicos (A2, A3 y A4 del backend tocan el
+  arranque y el laboratorio del front) se especifica una sola vez, en la hoja de ruta que lo
+  posee. La otra lo referencia y cablea la dependencia, sin copiar su alcance.
+- **El front no se rediseña:** un ítem de port se especifica como port, contra el comportamiento
+  actual, y cita las pruebas que lo protegen. Conserva los IDs y el progreso guardado
+  (`AGENTS.md`, ADR 0003) y, por criterio de la hoja de ruta del front, el aspecto, el
+  comportamiento y las URLs.
+- **ADR en estado «propuesta»:** cada spec que lo usa como base lo dice, como hace el ADR 0006
+  con el backend. Una regla llega a esta constitución cuando ya está en `AGENTS.md`.
 
 ## Gobierno
 
@@ -113,4 +156,4 @@ artefacto entregado no se edita, se continúa con otro. Cada feature vive en
 
 [persistencia]: https://github.com/github/spec-kit/blob/main/docs/concepts/spec-persistence.md
 
-**Version**: 1.3.1 | **Ratified**: 2026-10-04 (aprobada por el usuario) | **Last Amended**: 2026-10-05 (rutas de los AGENTS.md locales tras el ADR 0007)
+**Version**: 1.4.0 | **Ratified**: 2026-10-04 (aprobada por el usuario) | **Last Amended**: 2026-10-05 (planificación del épico del front)
