@@ -26,6 +26,10 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
   - Los textos usan la colación de la conexión, `utf8mb4_es_0900_ai_ci`.
   - Los IDs de contenido van en `ascii_bin`, por columna, en cada migración.
   - Sin SQLite, ni en pruebas.
+- **Contenido (C2):**
+  - `app/Content/` arma las 17 porciones desde las tablas con los bytes que fija el generador (`PublishedJson`): la respuesta es ese texto, nunca `response()->json()` ni un `JsonResource`. Las huellas las calcula sólo `tools/content`; PHP las guarda y las compara.
+  - `content:import` corre en el servicio `migrate` (`docker/migrate.sh`, el único backoff), toma el candado `GET_LOCK` y se auto-chequea en cada corrida.
+  - Las tablas se escriben a mano en un único `CREATE TABLE` por migración, con el DDL de `specs/001-c2-contenido-mysql/data-model.md`.
 - **Pruebas:**
   - `RefreshDatabase` es el default (`tests/Pest.php`). `DatabaseTruncation` queda para el
     código que hace `TRUNCATE` o abre sus propias transacciones.
@@ -34,5 +38,7 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
   - `tests/TestCase.php` corta antes de tocar una base que no sea `mysql-test`/`taller_test*`,
     con la conexión efectiva (DB_URL, socket y hosts de lectura o escritura incluidos) y antes de las bases de cada proceso
     en paralelo.
+  - Tres suites: `tests/Unit` (PHP puro, sin aplicación), `tests/Feature` (`RefreshDatabase`) y `tests/Content`
+    (`DatabaseTruncation`: el import, HTTP y el DDL confirman sus propias transacciones).
 - **Contenedores:** `php` y `migrate` corren como `www-data` y con disco de sólo lectura. Lo
   que necesite escribir va a un tmpfs declarado en `compose.yaml`.
