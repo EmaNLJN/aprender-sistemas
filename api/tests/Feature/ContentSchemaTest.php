@@ -3,8 +3,7 @@
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
-// El esquema de contenido del ADR 0006 §5.1, comprobado contra information_schema. Los esperados
-// están escritos acá desde el ADR y no se derivan de las migraciones.
+// ADR 0006 §5.1 content schema against information_schema; the expectations come from the ADR, not from the migrations.
 const CONTENT_TABLES = [
     'languages' => 2, 'catalogs' => 7, 'content_imports' => 7, 'topics' => 7, 'workshops' => 22, 'exercises' => 33,
     'exercise_grading_versions' => 4, 'exercise_tests' => 12, 'exercise_hints' => 7, 'workshop_objectives' => 10,
@@ -18,9 +17,8 @@ function schemaRows(string $sql, array $bindings = []): Collection
     return collect(DB::select($sql, $bindings));
 }
 
-it('A: crea las 21 tablas en InnoDB y con la colación española', function () {
-    // MySQL 8 en adelante devuelve las columnas de information_schema en mayúsculas (ENGINE) si no
-    // llevan alias: sin `as engine`, la propiedad `engine` del resultado no existe.
+it('A: creates the 21 tables in InnoDB with the Spanish collation', function () {
+    // MySQL 8+ uppercases information_schema column names unless aliased: without `as engine` there is no `engine` property.
     $tables = schemaRows(
         'select table_name as name, engine as engine, table_collation as collation_name from information_schema.tables where table_schema = database() and table_name in ('.implode(',', array_fill(0, 21, '?')).')',
         array_keys(CONTENT_TABLES),
@@ -31,7 +29,7 @@ it('A: crea las 21 tablas en InnoDB y con la colación española', function () {
         ->and($tables->pluck('collation_name')->unique()->all())->toBe(['utf8mb4_es_0900_ai_ci']);
 });
 
-it('B: cada tabla tiene sus columnas, con los tipos de ID, hash, JSON, fecha y texto del ADR', function () {
+it('B: every table has its columns, with the ADR types for ID, hash, JSON, date and text', function () {
     $columns = schemaRows('select table_name as t, column_name as c, column_type as type, collation_name as collation_name from information_schema.columns where table_schema = database() and table_name in ('.implode(',', array_fill(0, 21, '?')).') order by table_name, ordinal_position', array_keys(CONTENT_TABLES));
 
     $counts = $columns->countBy('t')->all();
@@ -40,8 +38,7 @@ it('B: cada tabla tiene sus columnas, con los tipos de ID, hash, JSON, fecha y t
     ksort($expectedCounts);
     expect($counts)->toBe($expectedCounts);
 
-    // Lo que no coincide queda en $wrong, con su nombre: así el fallo dice qué columna es.
-    $wrong = [];
+    $mismatches = [];
     foreach ($columns as $column) {
         $expected = match (true) {
             str_ends_with($column->c, '_hash') => ['char(64)', 'ascii_bin'],
@@ -50,7 +47,6 @@ it('B: cada tabla tiene sus columnas, con los tipos de ID, hash, JSON, fecha y t
             in_array($column->c, ['created_at', 'updated_at', 'retired_at'], true) => ['datetime(3)', null],
             in_array($column->c, ['starter', 'solution'], true) => ['mediumtext', 'utf8mb4_0900_bin'],
             $column->c === 'expression', $column->t === 'atlas_concepts' && $column->c === 'code' => ['text', 'utf8mb4_0900_bin'],
-            // Los ID, las claves y los nombres de lenguaje comparan byte a byte.
             in_array("{$column->t}.{$column->c}", ['exercises.id', 'workshops.id', 'topics.topic_key', 'exercise_tests.test_key', 'workshop_steps.step_key', 'languages.code', 'catalogs.code'], true) => [null, 'ascii_bin'],
             "{$column->t}.{$column->c}" === 'exercises.title' => [null, 'utf8mb4_es_0900_ai_ci'],
             default => null,
@@ -58,14 +54,14 @@ it('B: cada tabla tiene sus columnas, con los tipos de ID, hash, JSON, fecha y t
         if ($expected !== null) {
             $actual = [$expected[0] === null ? null : $column->type, $expected[1] === null ? null : $column->collation_name];
             if ($actual !== $expected) {
-                $wrong["{$column->t}.{$column->c}"] = $actual;
+                $mismatches["{$column->t}.{$column->c}"] = $actual;
             }
         }
     }
-    expect($wrong)->toBe([]);
+    expect($mismatches)->toBe([]);
 });
 
-it('B: los ENUM tienen sus valores en el orden del ADR', function () {
+it('B: ENUM columns list their values in the ADR order', function () {
     $enums = schemaRows("select concat(table_name, '.', column_name) as path, column_type as type from information_schema.columns where table_schema = database() and data_type = 'enum' and table_name in (".implode(',', array_fill(0, 21, '?')).')', array_keys(CONTENT_TABLES))
         ->pluck('type', 'path')->all();
     $levels = "enum('beginner','medium','advanced','expert')";
@@ -89,7 +85,7 @@ it('B: los ENUM tienen sus valores en el orden del ADR', function () {
     expect($enums)->toBe($expected);
 });
 
-it('C: la clave primaria es el único índice único, y los índices son los del ADR', function () {
+it('C: the primary key is the only unique index, and the indexes are the ADR ones', function () {
     $unique = schemaRows("select table_name as t, index_name as i from information_schema.statistics where table_schema = database() and non_unique = 0 and index_name <> 'PRIMARY' and table_name in (".implode(',', array_fill(0, 21, '?')).')', array_keys(CONTENT_TABLES));
     $indexes = schemaRows("select distinct index_name as i from information_schema.statistics where table_schema = database() and index_name <> 'PRIMARY' and table_name in (".implode(',', array_fill(0, 21, '?')).')', array_keys(CONTENT_TABLES))
         ->pluck('i')->sort()->values()->all();
@@ -106,7 +102,7 @@ it('C: la clave primaria es el único índice único, y los índices son los del
         ])->sort()->values()->all());
 });
 
-it('D: las 22 claves foráneas apuntan a donde dice el ADR y no dejan borrar ni cambiar', function () {
+it('D: the 22 foreign keys point where the ADR says and block deletes and key changes', function () {
     $foreign = schemaRows(
         "select k.constraint_name as name, concat(k.table_name, '(', group_concat(k.column_name order by k.ordinal_position), ') -> ', k.referenced_table_name, '(', group_concat(k.referenced_column_name order by k.ordinal_position), ')') as definition, any_value(r.delete_rule) as on_delete, any_value(r.update_rule) as on_update
          from information_schema.key_column_usage k join information_schema.referential_constraints r on r.constraint_schema = k.constraint_schema and r.constraint_name = k.constraint_name
@@ -143,7 +139,7 @@ it('D: las 22 claves foráneas apuntan a donde dice el ADR y no dejan borrar ni 
         ->and($foreign->pluck('on_update')->unique()->all())->toBe(['RESTRICT']);
 });
 
-it('E: los CHECK están por nombre y se hacen cumplir', function () {
+it('E: CHECK constraints exist by name and are enforced', function () {
     $lifecycle = ['catalogs', 'topics', 'workshops', 'exercises', 'exercise_tests', 'exercise_hints', 'workshop_objectives', 'workshop_steps', 'workshop_related_exercises', 'worlds', 'world_exercises', 'atlas_concepts', 'guide_resources', 'guide_sources', 'guide_tracks', 'guide_modules', 'guide_steps', 'guide_step_resources'];
     $position = ['workshops', 'exercises', 'exercise_tests', 'workshop_objectives', 'workshop_steps', 'workshop_related_exercises', 'worlds', 'world_exercises', 'atlas_concepts', 'guide_resources', 'guide_modules', 'guide_steps', 'guide_step_resources'];
     $json = ['workshops', 'exercises', 'exercise_tests', 'workshop_objectives', 'workshop_steps', 'worlds', 'atlas_concepts', 'guide_resources', 'guide_sources', 'guide_tracks', 'guide_modules', 'guide_steps'];

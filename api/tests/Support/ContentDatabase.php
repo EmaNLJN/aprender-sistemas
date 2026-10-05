@@ -6,10 +6,9 @@ use App\Content\Portion;
 use Closure;
 use Illuminate\Support\Facades\DB;
 
-/** Lo que las pruebas de contenido miran de la base: conteos, checksums y las sentencias que se ejecutan. */
 final class ContentDatabase
 {
-    /** Las 21 tablas de contenido, en el orden de sus migraciones. */
+    /** The 21 content tables, in migration order (parents before children). */
     public const TABLES = [
         'languages', 'catalogs', 'content_imports', 'topics', 'workshops', 'exercises', 'exercise_grading_versions',
         'exercise_tests', 'exercise_hints', 'workshop_objectives', 'workshop_steps', 'workshop_related_exercises',
@@ -17,14 +16,14 @@ final class ContentDatabase
         'guide_modules', 'guide_steps', 'guide_step_resources',
     ];
 
-    /** @return array<string, int> filas por tabla, activas o retiradas */
+    /** @return array<string, int> rows per table, active or retired */
     public static function counts(): array
     {
         return array_combine(self::TABLES, array_map(fn (string $table) => DB::table($table)->count(), self::TABLES));
     }
 
     /**
-     * El oráculo de «no cambió nada»: CHECKSUM TABLE de cada tabla (MySQL lo calcula sobre sus filas).
+     * CHECKSUM TABLE of every content table: the "nothing changed" oracle.
      *
      * @return array<string, int>
      */
@@ -35,11 +34,7 @@ final class ContentDatabase
         return array_combine(self::TABLES, array_map(fn (object $row) => (int) $row->Checksum, $rows));
     }
 
-    /**
-     * Toda sentencia que ejecuta `$run`.
-     *
-     * @return list<string>
-     */
+    /** @return list<string> */
     public static function queriesDuring(Closure $run): array
     {
         $queries = [];
@@ -52,8 +47,8 @@ final class ContentDatabase
     }
 
     /**
-     * Las sentencias que escriben una tabla de contenido mientras corre `$run`. La caché y las
-     * sesiones quedan afuera: el import precalienta la primera aunque no cambie nada.
+     * Statements that write a content table while `$run` runs. The cache and sessions are excluded:
+     * the import warms the cache even when nothing changes.
      *
      * @return list<string>
      */
@@ -67,7 +62,6 @@ final class ContentDatabase
         ));
     }
 
-    /** La URL del recurso que sirve una porción. */
     public static function url(Portion $portion): string
     {
         return match ($portion->group()) {

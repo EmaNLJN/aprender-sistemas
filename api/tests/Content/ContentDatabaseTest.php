@@ -3,9 +3,7 @@
 use Illuminate\Support\Facades\DB;
 use Tests\Support\ContentDatabase;
 
-// ContentDatabase es el oráculo de las pruebas del import y de la entrega: si miente, esas pruebas
-// pasan sin comprobar nada. Estas le piden lo mismo que ellas.
-it('counts da las 21 tablas, vacías, en el orden de sus migraciones', function () {
+it('counts returns the 21 tables, empty, in migration order', function () {
     $counts = ContentDatabase::counts();
 
     expect(array_keys($counts))->toBe(ContentDatabase::TABLES)
@@ -13,7 +11,7 @@ it('counts da las 21 tablas, vacías, en el orden de sus migraciones', function 
         ->and(array_sum($counts))->toBe(0);
 });
 
-it('checksums cambia sólo en la tabla que cambió', function () {
+it('checksums changes only for the table that changed', function () {
     $before = ContentDatabase::checksums();
     DB::table('languages')->insert(['code' => 'rust', 'position' => 1]);
     $after = ContentDatabase::checksums();
@@ -22,14 +20,13 @@ it('checksums cambia sólo en la tabla que cambió', function () {
         ->and(array_keys(array_diff_assoc($after, $before)))->toBe(['languages']);
 });
 
-it('contentWritesDuring ve toda escritura a una tabla de contenido, TRUNCATE incluido, y nada más', function () {
+it('contentWritesDuring sees every write to a content table, TRUNCATE included, and nothing else', function () {
     $writes = ContentDatabase::contentWritesDuring(function () {
         DB::table('languages')->insert(['code' => 'go', 'position' => 2]);
         DB::table('languages')->upsert([['code' => 'go', 'position' => 3]], ['code'], ['position']);
         DB::table('languages')->where('code', 'go')->update(['position' => 4]);
         DB::table('exercise_hints')->truncate();
         DB::table('languages')->where('code', 'zz')->delete();
-        // Lo que no escribe contenido: una lectura y la caché.
         DB::table('languages')->count();
         DB::table('cache')->upsert([['key' => 'k', 'value' => 'v', 'expiration' => 1]], ['key'], ['value', 'expiration']);
     });
