@@ -4,4 +4,4 @@
 set -eu
 docker compose build
 docker compose run --rm migrate
-docker compose up -d --wait --no-deps mysql php taller
+docker compose up -d --wait --no-deps mysql php taller scheduler
