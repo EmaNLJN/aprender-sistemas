@@ -43,38 +43,50 @@ const MIGRATE_DEADLOCK = '1|SQLSTATE[40001]: Serialization failure: 1213 Deadloc
 const MIGRATE_LOCK_TIMEOUT_WRAPPED = '1|SQLSTATE[HY000]: General  \n    error: 1205 Lock wait timeout exceeded; try restarting transaction';
 
 it('exits 0 when the migrations and the import work, without retrying', function () {
-    [$exit, $output, $calls] = runMigrateScript(['0|migrated', '0|imported']);
+    [$exit, $output, $calls] = runMigrateScript(['0|checked', '0|migrated', '0|imported']);
 
-    expect($exit)->toBe(0)->and($calls)->toBe(2)->and($output)->toContain('migrated')->toContain('imported');
+    expect($exit)->toBe(0)->and($calls)->toBe(3)->and($output)->toContain('migrated')->toContain('imported');
 });
 
 it('retries a lock wait timeout and exits 0 if the second attempt works', function () {
-    [$exit, $output, $calls] = runMigrateScript([MIGRATE_LOCK_TIMEOUT, '0|migrated', '0|imported']);
+    [$exit, $output, $calls] = runMigrateScript(['0|checked', MIGRATE_LOCK_TIMEOUT, '0|migrated', '0|imported']);
 
-    expect($exit)->toBe(0)->and($calls)->toBe(3)->and($output)->toContain('reintento en 0 s');
+    expect($exit)->toBe(0)->and($calls)->toBe(4)->and($output)->toContain('reintento en 0 s');
 });
 
 it('retries a deadlock in the import', function () {
-    [$exit, , $calls] = runMigrateScript(['0|migrated', MIGRATE_DEADLOCK, '0|migrated', '0|imported']);
+    [$exit, , $calls] = runMigrateScript(['0|checked', '0|migrated', MIGRATE_DEADLOCK, '0|migrated', '0|imported']);
 
-    expect($exit)->toBe(0)->and($calls)->toBe(4);
+    expect($exit)->toBe(0)->and($calls)->toBe(5);
 });
 
 it('retries even if the console splits the lock message in two indented lines, and logs it as it came out', function () {
-    [$exit, $output, $calls] = runMigrateScript([MIGRATE_LOCK_TIMEOUT_WRAPPED, '0|migrated', '0|imported']);
+    [$exit, $output, $calls] = runMigrateScript(['0|checked', MIGRATE_LOCK_TIMEOUT_WRAPPED, '0|migrated', '0|imported']);
 
-    expect($exit)->toBe(0)->and($calls)->toBe(3)->and($output)->toContain('reintento en 0 s')
+    expect($exit)->toBe(0)->and($calls)->toBe(4)->and($output)->toContain('reintento en 0 s')
         ->toContain("General  \n    error: 1205");
 });
 
 it('gives up after 3 attempts', function () {
-    [$exit, $output, $calls] = runMigrateScript([MIGRATE_LOCK_TIMEOUT, MIGRATE_LOCK_TIMEOUT, MIGRATE_LOCK_TIMEOUT, MIGRATE_LOCK_TIMEOUT]);
+    [$exit, $output, $calls] = runMigrateScript(['0|checked', MIGRATE_LOCK_TIMEOUT, MIGRATE_LOCK_TIMEOUT, MIGRATE_LOCK_TIMEOUT, MIGRATE_LOCK_TIMEOUT]);
 
-    expect($exit)->toBe(1)->and($calls)->toBe(3)->and($output)->toContain('sigue fallando por bloqueos después de 3 intentos');
+    expect($exit)->toBe(1)->and($calls)->toBe(4)->and($output)->toContain('sigue fallando por bloqueos después de 3 intentos');
 });
 
 it('does not retry other errors: invalid content stops the step', function () {
-    [$exit, $output, $calls] = runMigrateScript(['0|migrated', '1|curriculum.json: lab.rust[0].extra: clave desconocida', '0|never']);
+    [$exit, $output, $calls] = runMigrateScript(['0|checked', '0|migrated', '1|curriculum.json: lab.rust[0].extra: clave desconocida', '0|never']);
 
-    expect($exit)->toBe(1)->and($calls)->toBe(2)->and($output)->toContain('clave desconocida');
+    expect($exit)->toBe(1)->and($calls)->toBe(3)->and($output)->toContain('clave desconocida');
+});
+
+it('stops before migrating when the long transaction check exits 1, and does not retry it', function () {
+    [$exit, $output, $calls] = runMigrateScript(['1|Hay 1 transacción abierta hace más de 30 segundos', '0|migrated', '0|imported']);
+
+    expect($exit)->toBe(1)->and($calls)->toBe(1)->and($output)->toContain('Hay 1 transacción abierta')->not->toContain('migrated');
+});
+
+it('stops before migrating when the long transaction check cannot run and exits 2', function () {
+    [$exit, $output, $calls] = runMigrateScript(['2|Falta el privilegio: db-grants', '0|migrated', '0|imported']);
+
+    expect($exit)->toBe(2)->and($calls)->toBe(1)->and($output)->toContain('db-grants')->not->toContain('migrated');
 });
