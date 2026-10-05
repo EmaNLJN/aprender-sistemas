@@ -3,6 +3,7 @@
 namespace App\Content;
 
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -32,7 +33,7 @@ final class ContentReader
             'workshops' => $this->workshopRows($portion),
             'campaign' => $this->worldRows($portion),
             'atlas' => ['atlas_concepts' => $this->get($this->active('atlas_concepts')->where('language', $portion->slice()))],
-            'guide' => array_combine(self::GUIDE_TABLES, array_map(fn (string $table) => $this->get($this->active($table)), self::GUIDE_TABLES)),
+            'guide' => collect(self::GUIDE_TABLES)->mapWithKeys(fn (string $table) => [$table => $this->get($this->active($table))])->all(),
         };
     }
 
@@ -63,13 +64,14 @@ final class ContentReader
     {
         $column = $portion->group() === 'cores' ? 'domain' : 'language';
         $exercises = $this->get($this->active('exercises')->where('catalog', $portion->group())->where($column, $portion->slice()));
-        $ids = array_column($exercises, 'id');
+        $ids = Arr::pluck($exercises, 'id');
+        $languages = collect($exercises)->pluck('language')->unique()->values()->all();
 
         return [
             'exercises' => $exercises,
             'exercise_tests' => $this->get($this->active('exercise_tests')->whereIn('exercise_id', $ids)),
             'exercise_hints' => $this->get($this->active('exercise_hints')->whereIn('exercise_id', $ids)),
-            'topics' => $this->get($this->active('topics')->whereIn('language', array_values(array_unique(array_column($exercises, 'language'))))),
+            'topics' => $this->get($this->active('topics')->whereIn('language', $languages)),
         ];
     }
 
@@ -77,13 +79,13 @@ final class ContentReader
     private function workshopRows(Portion $portion): array
     {
         $workshops = $this->get($this->active('workshops')->where('domain', $portion->slice()));
-        $ids = array_column($workshops, 'id');
+        $ids = Arr::pluck($workshops, 'id');
         $related = $this->get($this->active('workshop_related_exercises')->whereIn('workshop_id', $ids));
         // Of the exercises only the language is needed and, for the cores, their workshop.
         $exercises = $this->get(
             $this->active('exercises')
                 ->select(['id', 'language', 'workshop_id'])
-                ->where(fn (Builder $query) => $query->whereIn('workshop_id', $ids)->orWhereIn('id', array_column($related, 'exercise_id'))),
+                ->where(fn (Builder $query) => $query->whereIn('workshop_id', $ids)->orWhereIn('id', Arr::pluck($related, 'exercise_id'))),
         );
 
         return [
@@ -102,7 +104,7 @@ final class ContentReader
 
         return [
             'worlds' => $worlds,
-            'world_exercises' => $this->get($this->active('world_exercises')->whereIn('world_id', array_column($worlds, 'id'))),
+            'world_exercises' => $this->get($this->active('world_exercises')->whereIn('world_id', Arr::pluck($worlds, 'id'))),
         ];
     }
 
