@@ -15,4 +15,15 @@ final class ApiError
     {
         return response()->json(['message' => $message, 'code' => $code] + $extra, $status, $headers);
     }
+
+    /**
+     * `$status` is only for `BadRequest`, which keeps the original 4xx.
+     *
+     * @param  array<string, mixed>  $extra
+     * @param  array<string, string>  $headers
+     */
+    public static function of(ApiCode $code, array $extra = [], array $headers = [], ?int $status = null): JsonResponse
+    {
+        return self::response($status ?? $code->status(), $code->value, $code->message(), $extra, $headers);
+    }
 }

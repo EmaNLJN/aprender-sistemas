@@ -1,0 +1,36 @@
+<?php
+
+use App\Http\ApiCode;
+use Tests\TestCase;
+
+uses(TestCase::class);
+
+dataset('contract codes', [
+    'unauthenticated' => [ApiCode::Unauthenticated, 'unauthenticated', 401, 'Iniciá sesión para continuar.'],
+    'forbidden' => [ApiCode::Forbidden, 'forbidden', 403, 'No tenés permiso para hacer esto.'],
+    'account_disabled' => [ApiCode::AccountDisabled, 'account_disabled', 403, 'Tu cuenta está deshabilitada. Consultá con quien administra el taller.'],
+    'email_unverified' => [ApiCode::EmailUnverified, 'email_unverified', 403, 'Verificá tu email para continuar.'],
+    'not_found' => [ApiCode::NotFound, 'not_found', 404, 'No existe lo que pedís.'],
+    'invitation_not_found' => [ApiCode::InvitationNotFound, 'invitation_not_found', 404, 'La invitación no existe o ya se usó.'],
+    'method_not_allowed' => [ApiCode::MethodNotAllowed, 'method_not_allowed', 405, 'Ese método no está permitido en esta ruta.'],
+    'email_taken' => [ApiCode::EmailTaken, 'email_taken', 409, 'Ya hay una cuenta con ese email.'],
+    'account_mismatch' => [ApiCode::AccountMismatch, 'account_mismatch', 409, 'La sesión cambió de cuenta: recargá la página.'],
+    'invitation_expired' => [ApiCode::InvitationExpired, 'invitation_expired', 410, 'La invitación venció. Pedí una nueva a quien te invitó.'],
+    'csrf_token_mismatch' => [ApiCode::CsrfTokenMismatch, 'csrf_token_mismatch', 419, 'La página venció: recargala e intentá de nuevo.'],
+    'validation_failed' => [ApiCode::ValidationFailed, 'validation_failed', 422, 'Hay datos que corregir.'],
+    'auth_failed' => [ApiCode::AuthFailed, 'auth_failed', 422, 'El email o la contraseña no son correctos.'],
+    'password_confirmation_required' => [ApiCode::PasswordConfirmationRequired, 'password_confirmation_required', 423, 'Confirmá tu contraseña para continuar.'],
+    'too_many_requests' => [ApiCode::TooManyRequests, 'too_many_requests', 429, 'Demasiados intentos. Esperá un momento antes de volver a probar.'],
+    'bad_request' => [ApiCode::BadRequest, 'bad_request', 400, 'No se pudo entender el pedido.'],
+    'server_error' => [ApiCode::ServerError, 'server_error', 500, 'Algo salió mal de nuestro lado. Probá de nuevo en un rato.'],
+]);
+
+it('maps each code to the status and Spanish message of the HTTP contract', function (ApiCode $code, string $value, int $status, string $message) {
+    expect($code->value)->toBe($value)
+        ->and($code->status())->toBe($status)
+        ->and($code->message())->toBe($message);
+})->with('contract codes');
+
+it('has exactly the 17 codes of the contract', function () {
+    expect(ApiCode::cases())->toHaveCount(17);
+});
