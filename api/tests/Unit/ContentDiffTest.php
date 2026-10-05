@@ -214,6 +214,28 @@ it('a v1 index cannot belong to two steps of a workshop', function () {
         ->toThrow(InvalidContent::class, 'curriculum.meta.json: workshopSteps.cache.e2: el v1Index 0 ya es el de la etapa e1');
 });
 
+it('a new step cannot take the v1 index of a step that left the document', function (string $status) {
+    [$base] = diffDesired();
+    $stored = storedRowsAfterImport($base);
+    $leaving = ContentTables::keyOf('workshop_steps', ['workshop_id' => 'cache', 'step_key' => 'e3']);
+    expect($stored['workshop_steps'][$leaving]['v1_position'])->toBe(2);
+    if ($status === 'deprecated') {
+        $stored['workshop_steps'][$leaving] = ['status' => 'deprecated', 'retired_at' => '2026-10-05 01:00:00.000', 'position' => null] + $stored['workshop_steps'][$leaving];
+    }
+    // The document no longer has e3 and a new e5 asks for its index.
+    [$rows, $source] = diffDesired(editMeta: function (array $meta) {
+        $meta['workshopSteps']['cache'][2]['id'] = 'e5';
+
+        return $meta;
+    });
+
+    expect(fn () => (new ContentDiff)->between($rows, $stored, gradingVersionsOf($base), null, $source->meta))
+        ->toThrow(InvalidContent::class, 'curriculum.meta.json: workshopSteps.cache.e5: el v1Index 2 ya es el de la etapa e3, que lo conserva aunque se retire');
+})->with([
+    'retired by an earlier import' => ['deprecated'],
+    'retired by this very import' => ['active'],
+]);
+
 it('records an import when the document or a portion changes, even if no table does', function () {
     [$rows, $source] = diffDesired();
     $stored = storedRowsAfterImport($rows);
