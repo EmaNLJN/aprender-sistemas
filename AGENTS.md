@@ -20,12 +20,16 @@ Atlas es la primera vista migrada; el resto conserva adaptadores legacy temporal
 - Para activar, instalar o actualizar skills, leé `docs/agent-skills.md`.
 - Para usar o reinstalar React Doctor y Desloppify, leé `tools/quality/AGENTS.md`.
 - Para continuar el refactor en curso, leé `docs/refactor-roadmap.md`.
+- Para planificar o especificar trabajo del backend (hoja de ruta, specs, planes, tareas o
+  bugs), leé `.specify/memory/constitution.md` y `specs/backend-multiusuario/roadmap.md`.
 
 La raíz conserva sólo las vistas legacy que faltan migrar a React (`app.js`,
 `lab.js`, `campaign.js`, `systems.js`, `lab-explorers.js` y `quest-explorers.js`).
 El resto vive en `src/` por capas FSD (`app`, `pages`, `features`, `entities`,
 `shared`); el mapa está en `docs/architecture.md`. `qa/` reúne verificaciones e investigación; `docs/` contiene reglas
 específicas de desarrollo; `.agents/skills/` contiene las skills del proyecto.
+`specs/` guarda la hoja de ruta y las specs de Spec Kit, y `.specify/`, su constitución,
+plantillas y scripts; `docs/plans/` quedó como historia de B1, A1 y C1.
 `api/` es la API Laravel del ADR 0004 (PHP-FPM y MySQL en Docker); sus reglas y comandos
 están en `api/AGENTS.md`.
 `src/index.html` y `src/app/main.tsx` son las entradas Vite; `dist/` es la salida

@@ -97,7 +97,7 @@ artefacto entregado no se edita, se continúa con otro. Cada feature vive en
   pendiente y una sección «Review Focus». `tasks.md` queda corto: una línea por tarea y, como
   mucho, su evidencia; el detalle va en el plan.
 - **Origen de estas reglas:** el recorrido con Spec Kit, la disciplina de contenido y el
-  principio VIII viven acá hasta que `AGENTS.md` los incorpore; desde entonces manda `AGENTS.md`.
+  principio VIII viven en esta constitución; `AGENTS.md` apunta acá en lugar de repetirlos.
 
 ## Gobierno
 
@@ -110,4 +110,4 @@ artefacto entregado no se edita, se continúa con otro. Cada feature vive en
 
 [persistencia]: https://github.com/github/spec-kit/blob/main/docs/concepts/spec-persistence.md
 
-**Version**: 1.2.1 | **Ratified**: TODO(RATIFICATION_DATE): a la espera de la aprobación del usuario | **Last Amended**: 2026-10-04
+**Version**: 1.2.2 | **Ratified**: 2026-10-04 (aprobada por el usuario) | **Last Amended**: 2026-10-04

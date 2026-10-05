@@ -11,6 +11,9 @@
 # Laravel API: PHP is formatted with Pint and Composer writes composer.json.
 api/
 
+# Spec Kit state, templates and scripts are written by the specify CLI.
+.specify/
+
 # Generated output.
 dist/
 build/

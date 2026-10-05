@@ -13,6 +13,9 @@ tools/quality
 # El ejecutor Go tiene su propio Dockerfile (executor/) y el scratch de agentes no es un asset.
 executor
 .superpowers
+# Planificación con Spec Kit: documentos y scripts de desarrollo, no assets de la web.
+.specify
+specs
 .desloppify
 *.map
 dist

@@ -40,6 +40,7 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | API Laravel del ADR 0004: rutas, configuración, migraciones, pruebas Pest e imagen PHP-FPM | `api/` (reglas en `api/AGENTS.md`) |
 | Comprobaciones e investigación educativa | `qa/*-check.ts`, `qa/lib/`, `qa/fixtures/`, `qa/run-checks.ts`, `qa/research-*.md` |
 | Documentación del desarrollo | `AGENTS.md`, `docs/` |
+| Planificación del backend con Spec Kit | `specs/` (hoja de ruta y una carpeta por feature), `.specify/` (constitución, plantillas, scripts y extensión `bug`) |
 
 ## Cómo mantener el orden
 
