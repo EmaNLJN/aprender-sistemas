@@ -15,7 +15,7 @@ final class ContentDiff
 {
     /**
      * @param  array<string, array<string, array<string, mixed>>>  $stored  rows by table and key (ContentStore::rows)
-     * @param  array<string, true>  $knownVersions  ContentStore::gradingVersions
+     * @param  array<string, bool>  $knownVersions  ContentStore::gradingVersions
      * @param  array<string, mixed>  $meta  curriculum.meta.json
      */
     public function between(RowSet $desired, array $stored, array $knownVersions, ?LatestImport $latest, array $meta): ContentPlan
@@ -96,7 +96,7 @@ final class ContentDiff
     }
 
     /**
-     * @param  array<string, true>  $knownVersions
+     * @param  array<string, bool>  $knownVersions
      * @return list<array{exercise_id: string, grading_hash: string}>
      */
     private function newGradingVersions(RowSet $desired, array $knownVersions): array
@@ -123,7 +123,10 @@ final class ContentDiff
             return true;
         }
 
-        return collect($latest->portionHashes)->sortKeys()->all() !== collect($meta['portions'])->sortKeys()->all();
+        /** @var array<string, string> $portions */
+        $portions = $meta['portions'];
+
+        return collect($latest->portionHashes)->sortKeys()->all() !== collect($portions)->sortKeys()->all();
     }
 
     /**

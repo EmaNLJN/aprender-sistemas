@@ -21,6 +21,7 @@ final class FieldMap
      */
     public function __construct(private readonly array $fields, private readonly array $derived = []) {}
 
+    /** @return list<string> */
     public static function keysOf(stdClass $record): array
     {
         return collect(get_object_vars($record))->keys()->map(fn (int|string $key) => (string) $key)->all();

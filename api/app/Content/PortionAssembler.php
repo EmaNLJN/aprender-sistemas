@@ -8,6 +8,8 @@ use App\Content\Codec\GuideCodec;
 use App\Content\Codec\WorkshopCodec;
 use App\Content\Codec\WorldCodec;
 use Illuminate\Support\Collection;
+use LogicException;
+use stdClass;
 
 /**
  * The rows → the bytes of a portion: the only path from the tables to what the API publishes
@@ -39,12 +41,13 @@ final class PortionAssembler
                 ->map(fn (array $row) => $this->atlas->toRecord($row))
                 ->all(),
             'guide' => $this->guide->toRecord($rows, $languages),
+            default => throw new LogicException("Grupo de porción desconocido: {$portion->group()}"),
         });
     }
 
     /**
      * @param  array<string, list<array<string, mixed>>>  $rows
-     * @return list<\stdClass>
+     * @return list<stdClass>
      */
     private function exerciseList(Portion $portion, array $rows): array
     {
@@ -73,6 +76,7 @@ final class PortionAssembler
     /**
      * @param  array<string, list<array<string, mixed>>>  $rows
      * @param  list<string>  $languages
+     * @return list<stdClass>
      */
     private function workshopList(Portion $portion, array $rows, array $languages): array
     {
@@ -101,7 +105,10 @@ final class PortionAssembler
             ->all();
     }
 
-    /** @param array<string, list<array<string, mixed>>> $rows */
+    /**
+     * @param  array<string, list<array<string, mixed>>>  $rows
+     * @return list<stdClass>
+     */
     private function worldList(Portion $portion, array $rows): array
     {
         $members = $this->groupBy($rows['world_exercises'], 'world_id');

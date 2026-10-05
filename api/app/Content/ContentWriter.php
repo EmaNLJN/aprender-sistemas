@@ -54,7 +54,7 @@ final class ContentWriter
             ? Arr::map($rows, fn (array $row) => $row + ['status' => 'active', 'retired_at' => null, 'created_at' => $now, 'updated_at' => $now])
             : $rows;
         // Everything but the key and created_at: a row that comes back recovers status, retired_at and position.
-        $update = collect($stamped[0])->except([...$keys, 'created_at'])->keys()->all();
+        $update = array_keys(Arr::except($stamped[0], [...$keys, 'created_at']));
         foreach (array_chunk($stamped, 100) as $chunk) {
             DB::table($table)->upsert($chunk, $keys, $update);
         }

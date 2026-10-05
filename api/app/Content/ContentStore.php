@@ -13,7 +13,7 @@ final class ContentStore
         return collect(ContentTables::KEYS)->map(fn (array $keys, string $table) => $this->rowsOf($table))->all();
     }
 
-    /** @return array<string, true> "exercise\x1fhash" of every grading version that already applied */
+    /** @return array<string, bool> "exercise\x1fhash" of every grading version that already applied */
     public function gradingVersions(): array
     {
         return DB::table('exercise_grading_versions')

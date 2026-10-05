@@ -5,6 +5,7 @@ namespace App\Content;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use LogicException;
 
 /**
  * The active rows a portion (or an exercise) needs, read with the current connection: the import
@@ -34,6 +35,7 @@ final class ContentReader
             'campaign' => $this->worldRows($portion),
             'atlas' => ['atlas_concepts' => $this->get($this->active('atlas_concepts')->where('language', $portion->slice()))],
             'guide' => collect(self::GUIDE_TABLES)->mapWithKeys(fn (string $table) => [$table => $this->get($this->active($table))])->all(),
+            default => throw new LogicException("Grupo de porción desconocido: {$portion->group()}"),
         };
     }
 
