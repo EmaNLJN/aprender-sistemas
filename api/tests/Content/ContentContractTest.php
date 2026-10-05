@@ -12,7 +12,7 @@ use Tests\Support\ContentFixture;
 // JSON.stringify: an oracle independent of the PHP code under test.
 afterEach(fn () => ContentFixture::cleanup());
 
-it('assembles from the tables each of the 17 portions and the 274 exercises with the generator hashes', function () {
+it('assembles from the tables each of the 17 portions and every exercise with the generator hashes', function () {
     expect(Artisan::call('content:import'))->toBe(0);
     $meta = json_decode(file_get_contents(ContentFixture::imagePath().'/curriculum.meta.json'), true);
     $renderer = app(PortionRenderer::class);

@@ -34,16 +34,22 @@ function importLockIsFree(): bool
         ->scalar("select is_free_lock(concat(database(), ':content-import'))") === 1;
 }
 
+/** @return array<string, mixed> the meta the generator wrote for the image content */
+function imageMeta(): array
+{
+    return json_decode(file_get_contents(ContentFixture::imagePath().'/curriculum.meta.json'), true);
+}
+
 function importImageContent(): void
 {
     useContentAt(ContentFixture::imagePath());
     importContent();
 }
 
-it('imports the image content: the 21 tables, its record and the 274 grading versions', function () {
+it('imports the image content: the 21 tables, its record and one grading version per exercise', function () {
     $this->artisan('content:import')->expectsOutputToContain('Importado el contenido sha256')->assertExitCode(0);
 
-    $meta = json_decode(file_get_contents(ContentFixture::imagePath().'/curriculum.meta.json'), true);
+    $meta = imageMeta();
     expect(ContentDatabase::counts())->toBe([
         'languages' => 2, 'catalogs' => 3, 'content_imports' => 1, 'topics' => 98, 'workshops' => 25, 'exercises' => 274,
         'exercise_grading_versions' => 274, 'exercise_tests' => 822, 'exercise_hints' => 822, 'workshop_objectives' => 75,
@@ -56,8 +62,8 @@ it('imports the image content: the 21 tables, its record and the 274 grading ver
         ->and($import->source_commit)->toBeNull()
         ->and(json_decode($import->portion_hashes, true))->toEqualCanonicalizing($meta['portions'])
         ->and(json_decode($import->counts, true))->toMatchArray(['exercises' => 274, 'exercise_tests' => 822, 'workshops' => 25, 'atlas_concepts' => 32])
-        ->and(json_decode($import->changes, true)['new'])->toHaveCount(274)
-        ->and(DB::table('exercises')->where('status', 'active')->count())->toBe(274)
+        ->and(json_decode($import->changes, true)['new'])->toHaveCount(count($meta['exercises']))
+        ->and(DB::table('exercises')->where('status', 'active')->count())->toBe(count($meta['exercises']))
         // FR-032: lab, quests and cores have no position in the chain until Essentials arrives.
         ->and(DB::table('catalogs')->pluck('chain_position', 'code')->all())->toBe(['cores' => null, 'lab' => null, 'quests' => null])
         ->and(importLockIsFree())->toBeTrue();
@@ -192,7 +198,7 @@ it('a database error halfway through leaves nothing half-done and releases the l
 
     expect(array_sum(ContentDatabase::counts()))->toBe(0)->and(importLockIsFree())->toBeTrue();
     importImageContent();
-    expect(DB::table('exercises')->count())->toBe(274);
+    expect(DB::table('exercises')->count())->toBe(count(imageMeta()['exercises']));
 });
 
 it('a lock wait timeout surfaces the MySQL error, which migrate retries on, and leaves nothing half-done', function () {
@@ -312,7 +318,7 @@ it('every grading version that applied stays: A, B and A again add only one', fu
         ->and(DB::table('exercises')->where('id', $id)->value('grading_hash'))->toBe($hashA)
         ->and(DB::table('exercise_grading_versions')->where('exercise_id', $id)->pluck('grading_hash')->sort()->values()->all())
         ->toBe(collect([$hashA, $hashB])->sort()->values()->all())
-        ->and(DB::table('exercise_grading_versions')->count())->toBe(275);
+        ->and(DB::table('exercise_grading_versions')->count())->toBe(count(imageMeta()['exercises']) + 1);
 });
 
 it('a test_key retired on its own is not reused, and the import leaves no trace', function () {

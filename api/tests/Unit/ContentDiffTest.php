@@ -77,7 +77,7 @@ it('with the same document there is nothing to write or record', function () {
 
     expect($plan->isEmpty())->toBeTrue()
         ->and($plan->report->new)->toBe([])
-        ->and($plan->report->counts['exercises'])->toBe(274);
+        ->and($plan->report->counts['exercises'])->toBe(count($source->meta['exercises']));
 });
 
 it('with an empty database everything is new and each exercise starts its grading version', function () {
@@ -86,8 +86,8 @@ it('with an empty database everything is new and each exercise starts its gradin
     $plan = (new ContentDiff)->between($rows, [], [], null, $source->meta);
 
     expect($plan->recordImport)->toBeTrue()
-        ->and($plan->report->new)->toHaveCount(274)
-        ->and($plan->gradingVersions)->toHaveCount(274)
+        ->and($plan->report->new)->toHaveCount(count($source->meta['exercises']))
+        ->and($plan->gradingVersions)->toHaveCount(count($source->meta['exercises']))
         ->and(array_map('count', $plan->writes))->toBe(array_map('count', $rows->toArray()));
 });
 
