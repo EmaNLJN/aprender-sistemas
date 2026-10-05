@@ -1,10 +1,5 @@
-// build/curriculum.meta.json corresponde al build/curriculum.json que generó el mismo
-// `npm run curriculum` (pretypecheck) y respeta lo que content:import da por sentado (ADR 0006):
-// - documentHash es el sha256 del documento;
-// - hay una huella por cada una de las 17 porciones y por cada ejercicio publicado, ni una más
-//   ni una menos, calculadas sobre los bytes que se publican (JSON.stringify de la parte);
-// - cada etapa de taller tiene su clave estable, y las 100 etapas de v1 conservan la suya y su
-//   índice congelado (qa/fixtures/workshop-steps-v1.json: contrato, nunca se regenera).
+// FR-028 to FR-031 (ADR 0006 D10, D14): curriculum.meta.json describes the curriculum.json written
+// by the same build. qa/fixtures/workshop-steps-v1.json is a frozen contract: never regenerate it.
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -49,7 +44,6 @@ const curriculum = JSON.parse(document.toString('utf8')) as Curriculum;
 
 assert.equal(meta.documentHash, sha256(document), 'documentHash es el sha256 de curriculum.json');
 
-// Las 17 porciones, derivadas del documento ya escrito y no del objeto en memoria del generador.
 const languages = ['rust', 'go'];
 const domains = ['lowlevel', 'infra', 'play', 'pc'];
 const parts: [string, unknown][] = [
@@ -89,7 +83,6 @@ for (const exercise of exercises) {
   }
 }
 
-// Una clave por etapa publicada, en el mismo orden, y ninguna repetida dentro del taller.
 const workshops = domains.flatMap((d) => curriculum.workshops[d]);
 assert.deepEqual(
   Object.keys(meta.workshopSteps).sort(),
@@ -106,8 +99,7 @@ for (const workshop of workshops) {
   );
 }
 
-// Contrato v1: cada etapa que ya existía conserva su clave y su índice. Se pueden sumar etapas
-// nuevas (v1Index null), nunca cambiar ni quitar estas.
+// FR-029: new stages (v1Index null) may be added; the v1 ones never change or disappear.
 const frozen = JSON.parse(
   readFileSync(join(import.meta.dirname, 'fixtures', 'workshop-steps-v1.json'), 'utf8'),
 ) as Record<string, StepKey[]>;

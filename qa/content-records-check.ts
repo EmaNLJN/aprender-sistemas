@@ -183,7 +183,6 @@ test('talleres: un grupo por dominio y la ficha completa por lenguaje', () => {
   );
 });
 
-// Las fichas de los cuatro dominios, con las etapas dadas en lugar de la de WORKSHOP.
 function workshopsWithSteps(steps: string): Record<string, string> {
   const domains = ['lowlevel', 'infra', 'play', 'pc'];
   const files: Record<string, string> = {
@@ -200,13 +199,12 @@ function workshopsWithSteps(steps: string): Record<string, string> {
   return files;
 }
 
-// Una etapa del YAML; sin v1Index es una etapa nueva.
 function step(id: string, v1Index: number | null, title: string): string {
   const index = v1Index === null ? '' : `    v1Index: ${v1Index}\n`;
   return `  - id: ${id}\n${index}    title: ${title}\n    task: Hacé ${title}.\n    why: Por ${title}.\n    done: ${title} listo.\n`;
 }
 
-test('talleres: las claves de etapa viajan aparte y la etapa publicada conserva sus cuatro textos', () => {
+test('workshops: step keys travel separately and the published step keeps its four texts', () => {
   const steps = step('e1', 0, 'Uno') + step('e2', 1, 'Dos') + step('e3', null, 'Tres');
   const { workshops, stepKeys } = loadWorkshops(fixture(workshopsWithSteps(steps)));
   assert.deepEqual(stepKeys['lowlevel-w'], [
@@ -224,7 +222,7 @@ test('talleres: las claves de etapa viajan aparte y la etapa publicada conserva 
   assert.deepEqual(Object.keys(published[0]), ['title', 'task', 'why', 'done']);
 });
 
-test('talleres: la clave de etapa debe existir, ser válida y no repetirse', () => {
+test('workshops: the step key must exist, be valid and not repeat', () => {
   const where = 'content/workshops/lowlevel-w.yaml: ';
   const load = (steps: string) => () => loadWorkshops(fixture(workshopsWithSteps(steps)));
   throwsContent(
