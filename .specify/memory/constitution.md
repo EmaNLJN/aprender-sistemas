@@ -1,50 +1,79 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# Constitución del Taller Rust y Go
 
-## Core Principles
+`AGENTS.md` es la fuente de las reglas del proyecto. Esta constitución las resume para que las
+specs, los planes y las tareas de Spec Kit se contrasten contra ellas, y remite a cada fuente
+en lugar de copiarla. Si una frase de acá difiere de `AGENTS.md`, manda `AGENTS.md`.
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+## Principios centrales
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### I. AGENTS.md es la fuente
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+Las reglas viven en `AGENTS.md` y en los `AGENTS.md` locales (`api/`, `qa/`, `executor/`,
+`tools/quality/`). La constitución, las specs y los planes remiten a ellas y no las duplican.
+Un plan que las contradiga se corrige; una regla cambia sólo en `AGENTS.md`, en su propio cambio.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### II. TDD y pruebas útiles (no negociable)
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+Todo cambio de comportamiento empieza con una prueba que falla por la razón esperada, sigue con
+la implementación mínima y se revisa antes de refactorizar en verde (`qa/AGENTS.md`, skill
+`tdd`). El valor esperado sale del contrato, de la consigna o de un ejemplo resuelto aparte,
+nunca del algoritmo que se prueba, y se prueba comportamiento observable. En el backend, Pest
+corre contra MySQL 9.7 real, sin SQLite (`api/AGENTS.md`).
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+### III. Código entendible
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+Se prefiere código simple y explícito a uno ingenioso, y una abstracción se justifica cuando
+reduce complejidad real. Más de 10 de complejidad ciclomática por función y un archivo grande
+son señales de revisión, no órdenes de fragmentar: se modulariza por seams con nombre y contrato
+(`docs/architecture.md`). Los comentarios explican decisiones, límites y efectos no evidentes.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+### IV. Contenido en Git, IDs estables, nada se borra
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+`content/` es la fuente del currículo y `build/` es salida generada. Los IDs son inmutables y
+nunca se reutilizan, porque indexan el progreso: se conserva su compatibilidad y la distinción
+entre compilación real, simulaciones y pasos manuales (`README.md`). Lo que desaparece del
+contenido se retira, no se borra (ADR 0004).
 
-## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+### V. Capas y contratos explícitos
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+Se separan contenido, modelos, persistencia, transporte e interfaz. El front usa React con
+TypeScript y Feature-Sliced Design de forma incremental, con una API pública pequeña por slice;
+el backend es Laravel en `api/` sobre MySQL, con interfaces explícitas (ADR 0004). No se agregan
+capas, stores, servidores ni frameworks por anticipado: cada uno entra con su primer caso real
+y, si es un backend o un cambio de arquitectura, con un ADR.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+### VI. Español, accesibilidad y portabilidad
+
+La documentación y la interfaz están en español rioplatense, con el voseo de `AGENTS.md`. Se
+conservan la accesibilidad de teclado, el diseño móvil y el movimiento reducido, y se prefieren
+soluciones portables entre Linux y macOS.
+
+### VII. Secretos y salidas generadas fuera de Git
+
+Credenciales, rutas locales, cachés, progreso y resultados generados no entran en Git ni en el
+contexto de Docker (`.gitignore`, `.dockerignore`). Se editan las fuentes y se regeneran los
+assets, y el lockfile se sincroniza. Las dependencias de la API se agregan sólo con permiso del
+usuario (`api/AGENTS.md`).
+
+## Flujo de trabajo y verificación
+
+- **Verificación:** antes de cerrar un cambio se ejecutan los checks de `qa/AGENTS.md` que
+  apliquen y `git diff --check`, y se informan resultados y límites. Una documentación se
+  comprueba por rutas, comandos y enlaces locales; una interfaz, también en el navegador.
+- **Subagentes:** el agente principal analiza, decide, revisa e integra. Los subagentes
+  implementan slices con archivos disjuntos, y el principal integra `src/app/main.tsx`,
+  `package.json`, las configuraciones y la documentación.
+- **Planificación con Spec Kit:** cada subplan del backend recorre specify, clarify, plan, tasks
+  y analyze antes de implementarse. La spec dice qué y por qué; el plan, cómo. La hoja de ruta
+  del épico vive en `specs/backend-multiusuario/roadmap.md` y las specs, en `specs/`.
+
+## Gobierno
+
+- `AGENTS.md` prevalece sobre esta constitución. Cuando `AGENTS.md` cambia una regla que acá se
+  resume, la constitución se actualiza en el mismo cambio.
+- Versionado semántico: MAJOR si se quita o redefine un principio, MINOR si se agrega un
+  principio o una sección, PATCH si sólo se aclara el texto.
+- Cumplimiento: cada plan incluye su «Constitution Check», y `/speckit-analyze` trata un
+  conflicto con esta constitución como crítico: se corrige la spec, el plan o las tareas.
+
+**Version**: 1.0.0 | **Ratified**: TODO(RATIFICATION_DATE): a la espera de la aprobación del usuario | **Last Amended**: 2026-10-04
