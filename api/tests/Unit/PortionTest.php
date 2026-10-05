@@ -2,9 +2,10 @@
 
 use App\Content\InvalidPortionRequest;
 use App\Content\Portion;
+use Illuminate\Support\Arr;
 
 it('has 17 portions, in the order the generator publishes them', function () {
-    expect(array_map(fn (Portion $portion) => $portion->value, Portion::cases()))->toBe([
+    expect(Arr::pluck(Portion::cases(), 'value'))->toBe([
         'lab.rust', 'lab.go', 'quests.rust', 'quests.go',
         'cores.lowlevel', 'cores.infra', 'cores.play', 'cores.pc',
         'campaign.rust', 'campaign.go',

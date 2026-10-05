@@ -4,9 +4,11 @@ namespace App\Content;
 
 use App\Content\Codec\AtlasCodec;
 use App\Content\Codec\ExerciseCodec;
+use App\Content\Codec\FieldMap;
 use App\Content\Codec\GuideCodec;
 use App\Content\Codec\WorkshopCodec;
 use App\Content\Codec\WorldCodec;
+use Illuminate\Support\Arr;
 use stdClass;
 
 /**
@@ -84,11 +86,7 @@ final class ContentRows
                 $index[$id] = ['catalog' => $catalog, 'language' => $language, 'domain' => $domain];
             }
         }
-        foreach (array_keys($source->meta['exercises']) as $id) {
-            if (! isset($index[$id])) {
-                throw InvalidContent::at('curriculum.meta.json', "exercises.{$id}", 'no está en curriculum.json: regenerá los dos archivos juntos');
-            }
-        }
+        $this->requireInDocument('exercises', $source->meta['exercises'], $index);
 
         return $index;
     }
@@ -175,11 +173,7 @@ final class ContentRows
                 $rows->addAll($this->workshops->toRows($workshop, $domain, $position, $stepKeys, $source->languages(), $path));
             }
         }
-        foreach (array_keys($source->meta['workshopSteps']) as $id) {
-            if (! isset($rows->keyed('workshops')[$id])) {
-                throw InvalidContent::at('curriculum.meta.json', "workshopSteps.{$id}", 'no está en curriculum.json: regenerá los dos archivos juntos');
-            }
-        }
+        $this->requireInDocument('workshopSteps', $source->meta['workshopSteps'], $rows->keyed('workshops'));
     }
 
     /** @param array<string, array{catalog: string, language: string, domain: ?string}> $index */
@@ -220,7 +214,7 @@ final class ContentRows
     private function addGuide(ContentSource $source, RowSet $rows): void
     {
         $guide = $this->guide->toRows($source->decoded->guide, $source->languages(), 'guide');
-        $resources = array_column($guide['guide_resources'], 'id');
+        $resources = Arr::pluck($guide['guide_resources'], 'id');
         foreach ($guide['guide_step_resources'] as $link) {
             if (! in_array($link['resource_id'], $resources, true)) {
                 throw InvalidContent::at(self::FILE, "guide.steps.{$link['step_id']}.resourceIds", "«{$link['resource_id']}» no es un recurso de guide.resources");
@@ -251,7 +245,7 @@ final class ContentRows
     /** @return list<stdClass> */
     private function list(mixed $value, string $path): array
     {
-        if (! is_array($value) || ! array_is_list($value)) {
+        if (! is_array($value) || ! Arr::isList($value)) {
             throw InvalidContent::at(self::FILE, $path, 'se esperaba una lista');
         }
         foreach ($value as $index => $item) {
@@ -275,10 +269,24 @@ final class ContentRows
 
     private function languageMap(mixed $value, ContentSource $source, string $path): stdClass
     {
-        if (! $value instanceof stdClass || array_map('strval', array_keys(get_object_vars($value))) !== $source->languages()) {
+        if (! $value instanceof stdClass || FieldMap::keysOf($value) !== $source->languages()) {
             throw InvalidContent::at(self::FILE, $path, 'un valor por lenguaje, en el orden de languages: '.implode(', ', $source->languages()));
         }
 
         return $value;
+    }
+
+    /**
+     * Every ID the meta lists under `$section` has to be one the document defines.
+     *
+     * @param  array<string, mixed>  $entries  the meta entries by ID
+     * @param  array<string, mixed>  $documented  what the document defines by ID
+     */
+    private function requireInDocument(string $section, array $entries, array $documented): void
+    {
+        $orphan = collect($entries)->keys()->first(fn (int|string $id) => ! isset($documented[$id]));
+        if ($orphan !== null) {
+            throw InvalidContent::at('curriculum.meta.json', "{$section}.{$orphan}", 'no está en curriculum.json: regenerá los dos archivos juntos');
+        }
     }
 }

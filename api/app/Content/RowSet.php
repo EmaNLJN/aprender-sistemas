@@ -2,6 +2,8 @@
 
 namespace App\Content;
 
+use Illuminate\Support\Arr;
+
 /**
  * The content rows of every table in ContentTables, each keyed by its primary key. Data columns
  * only: the lifecycle (status, retired_at, created_at, updated_at) is set by the writer.
@@ -13,7 +15,7 @@ final class RowSet
 
     public function __construct()
     {
-        $this->tables = array_fill_keys(array_keys(ContentTables::KEYS), []);
+        $this->tables = Arr::map(ContentTables::KEYS, fn () => []);
     }
 
     /** @param array<string, int|string|null> $row */
@@ -51,6 +53,6 @@ final class RowSet
     /** @return array<string, list<array<string, int|string|null>>> */
     public function toArray(): array
     {
-        return array_map('array_values', $this->tables);
+        return Arr::map($this->tables, fn (array $keyed) => array_values($keyed));
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Content;
 
+use Illuminate\Support\Arr;
 use JsonException;
 use stdClass;
 
@@ -93,11 +94,11 @@ final readonly class ContentSource
             $fail('sourceCommit', 'se esperaba null o el hash completo de un commit');
         }
         $languages = $meta['languages'] ?? null;
-        if (! is_array($languages) || $languages === [] || ! array_is_list($languages) || array_filter($languages, 'is_string') !== $languages) {
+        if (! is_array($languages) || $languages === [] || ! Arr::isList($languages) || ! Arr::every($languages, fn (mixed $language) => is_string($language))) {
             $fail('languages', 'se esperaba la lista de lenguajes');
         }
         $catalogs = $meta['catalogs'] ?? null;
-        if (! is_array($catalogs) || $catalogs === [] || ! array_is_list($catalogs)) {
+        if (! is_array($catalogs) || $catalogs === [] || ! Arr::isList($catalogs)) {
             $fail('catalogs', 'se esperaba la lista de catálogos');
         }
         foreach ($catalogs as $index => $catalog) {
@@ -109,7 +110,7 @@ final readonly class ContentSource
             }
         }
         $portions = $meta['portions'] ?? null;
-        $names = array_map(fn (Portion $portion) => $portion->value, Portion::cases());
+        $names = Arr::pluck(Portion::cases(), 'value');
         if (! is_array($portions) || array_keys($portions) !== $names) {
             $fail('portions', 'se esperaban las 17 porciones, en el orden de la API');
         }
@@ -134,7 +135,7 @@ final readonly class ContentSource
             $fail('workshopSteps', 'se esperaba un objeto con las claves de etapa de cada taller');
         }
         foreach ($steps as $workshop => $keys) {
-            if (! is_array($keys) || ! array_is_list($keys)) {
+            if (! is_array($keys) || ! Arr::isList($keys)) {
                 $fail("workshopSteps.{$workshop}", 'se esperaba una lista de claves de etapa');
             }
             foreach ($keys as $index => $key) {

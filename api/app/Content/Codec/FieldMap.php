@@ -23,7 +23,7 @@ final class FieldMap
 
     public static function keysOf(stdClass $record): array
     {
-        return array_map('strval', array_keys(get_object_vars($record)));
+        return collect(get_object_vars($record))->keys()->map(fn (int|string $key) => (string) $key)->all();
     }
 
     /**

@@ -4,6 +4,8 @@ namespace App\Content\Codec;
 
 use App\Content\InvalidContent;
 use App\Content\PublishedJson;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use stdClass;
 
 /**
@@ -118,7 +120,7 @@ final class GuideCodec
                         'key_order' => PublishedJson::encode(FieldMap::keysOf($step)),
                     ];
                     $resourceIds = $step->resourceIds ?? null;
-                    if (! is_array($resourceIds) || ! array_is_list($resourceIds) || $resourceIds === []) {
+                    if (! is_array($resourceIds) || ! Arr::isList($resourceIds) || $resourceIds === []) {
                         throw InvalidContent::at('curriculum.json', "{$stepPath}.resourceIds", 'se esperaba una lista de recursos');
                     }
                     foreach ($resourceIds as $index => $resourceId) {
@@ -141,24 +143,16 @@ final class GuideCodec
      */
     public function toRecord(array $rows, array $languages): stdClass
     {
-        $byPosition = function (array $list): array {
-            usort($list, fn (array $a, array $b) => $a['position'] <=> $b['position']);
-
-            return $list;
-        };
         $record = fn (FieldMap $map, array $row, array $derived = []) => $map->fromColumns($row, PublishedJson::decode($row['key_order']), $derived);
 
         $tracks = new stdClass;
         foreach ($languages as $language) {
             $trackRow = $this->only($rows['guide_tracks'], 'language', $language);
             $modules = [];
-            foreach ($byPosition($this->all($rows['guide_modules'], 'track_language', $language)) as $moduleRow) {
+            foreach ($this->childrenOf($rows['guide_modules'], 'track_language', $language) as $moduleRow) {
                 $steps = [];
-                foreach ($byPosition($this->all($rows['guide_steps'], 'module_id', $moduleRow['id'])) as $stepRow) {
-                    $resourceIds = array_map(
-                        fn (array $link) => $link['resource_id'],
-                        $byPosition($this->all($rows['guide_step_resources'], 'step_id', $stepRow['id'])),
-                    );
+                foreach ($this->childrenOf($rows['guide_steps'], 'module_id', $moduleRow['id']) as $stepRow) {
+                    $resourceIds = $this->childrenOf($rows['guide_step_resources'], 'step_id', $stepRow['id'])->pluck('resource_id')->all();
                     $steps[] = $record($this->step, $stepRow, ['resourceIds' => $resourceIds]);
                 }
                 $modules[] = $record($this->module, $moduleRow, ['steps' => $steps]);
@@ -167,9 +161,17 @@ final class GuideCodec
         }
 
         $guide = new stdClass;
-        $guide->resources = array_map(fn (array $row) => $record($this->resource, $row), $byPosition($rows['guide_resources']));
+        $guide->resources = collect($rows['guide_resources'])
+            ->sortBy('position')
+            ->map(fn (array $row) => $record($this->resource, $row))
+            ->values()
+            ->all();
         $guide->tracks = $tracks;
-        $guide->sources = array_map(fn (array $row) => $record($this->source, $row), $byPosition($rows['guide_sources']));
+        $guide->sources = collect($rows['guide_sources'])
+            ->sortBy('position')
+            ->map(fn (array $row) => $record($this->source, $row))
+            ->values()
+            ->all();
 
         return $guide;
     }
@@ -177,7 +179,7 @@ final class GuideCodec
     /** @return list<stdClass> */
     private function objects(mixed $value, string $path): array
     {
-        if (! is_array($value) || ! array_is_list($value) || $value === []) {
+        if (! is_array($value) || ! Arr::isList($value) || $value === []) {
             throw InvalidContent::at('curriculum.json', $path, 'se esperaba una lista no vacía');
         }
         foreach ($value as $index => $item) {
@@ -190,12 +192,14 @@ final class GuideCodec
     }
 
     /**
+     * The rows of a child table that belong to one parent, in `position` order.
+     *
      * @param  list<array<string, mixed>>  $rows
-     * @return list<array<string, mixed>>
+     * @return Collection<int, array<string, mixed>>
      */
-    private function all(array $rows, string $column, string $value): array
+    private function childrenOf(array $rows, string $column, string $parent): Collection
     {
-        return array_values(array_filter($rows, fn (array $row) => $row[$column] === $value));
+        return collect($rows)->whereStrict($column, $parent)->sortBy('position')->values();
     }
 
     /**
@@ -204,7 +208,7 @@ final class GuideCodec
      */
     private function only(array $rows, string $column, string $value): array
     {
-        return $this->all($rows, $column, $value)[0]
+        return collect($rows)->whereStrict($column, $value)->first()
             ?? throw new InvalidContent("guide_tracks: no hay una fila activa con {$column} = {$value}");
     }
 }
