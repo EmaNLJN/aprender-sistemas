@@ -7,16 +7,16 @@
 FROM composer:2.10@sha256:af98f42dfff7c68ba8d53c2164fd9fde1087b7d449514baa38c418b1f6bc4bac AS vendor
 WORKDIR /app
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-interaction --no-progress --prefer-dist --no-scripts --no-autoloader
+RUN --mount=type=cache,target=/tmp/cache composer install --no-dev --no-interaction --no-progress --prefer-dist --no-scripts --no-autoloader
 COPY . .
 RUN composer dump-autoload --no-dev --classmap-authoritative --no-interaction \
-    && rm -rf tests phpunit.xml Dockerfile docker
+    && rm -rf tests phpunit.xml phpstan.neon Dockerfile docker
 
 # Lo mismo con las dependencias de desarrollo (Pest), para la etapa dev.
 FROM composer:2.10@sha256:af98f42dfff7c68ba8d53c2164fd9fde1087b7d449514baa38c418b1f6bc4bac AS dev-vendor
 WORKDIR /app
 COPY composer.json composer.lock ./
-RUN composer install --no-interaction --no-progress --prefer-dist --no-scripts --no-autoloader
+RUN --mount=type=cache,target=/tmp/cache composer install --no-interaction --no-progress --prefer-dist --no-scripts --no-autoloader
 COPY . .
 RUN composer dump-autoload --optimize --no-interaction
 
