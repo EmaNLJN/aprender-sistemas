@@ -1,4 +1,4 @@
-/* Contrato de src/shared/lib/versioned-storage.ts con un almacenamiento falso.
+/* Contrato de frontend/src/shared/lib/versioned-storage.ts con un almacenamiento falso.
  * node qa/versioned-storage-check.ts
  * Los esperados están escritos a mano desde el ADR 0003: estados empty/loaded/unreadable/
  * unavailable, cinco ranuras de respaldo antes de perder datos, detección de pérdida por
@@ -57,7 +57,7 @@ interface VersionedStorage {
 }
 
 const { BACKUP_SLOTS, backupKeysFor, openVersionedStore, describeLoadResult } =
-  await importModule<VersionedStorage>('src/shared/lib/versioned-storage.ts');
+  await importModule<VersionedStorage>('frontend/src/shared/lib/versioned-storage.ts');
 
 const KEY = 'taller-demo-v1';
 const BACKUP = 'taller-demo-v1:respaldo';

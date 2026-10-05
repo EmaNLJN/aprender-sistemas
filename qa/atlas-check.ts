@@ -44,12 +44,14 @@ interface RenderModule {
 (globalThis as { require?: NodeJS.Require }).require ??= createRequire(import.meta.url);
 
 const { atlasByLanguage } = await importModule<AtlasContentModule>(
-  'src/pages/atlas/model/atlas-catalog.ts',
+  'frontend/src/pages/atlas/model/atlas-catalog.ts',
 );
 const { filterConcepts } = await importModule<FilterModule>(
-  'src/pages/atlas/model/filter-concepts.ts',
+  'frontend/src/pages/atlas/model/filter-concepts.ts',
 );
-const session = await importModule<SessionModule>('src/pages/atlas/model/atlas-session.ts');
+const session = await importModule<SessionModule>(
+  'frontend/src/pages/atlas/model/atlas-session.ts',
+);
 const { renderAtlasPage } = await importModule<RenderModule>('qa/fixtures/atlas-page-render.tsx');
 
 for (const language of ['rust', 'go']) {

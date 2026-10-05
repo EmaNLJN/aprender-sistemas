@@ -65,7 +65,7 @@ almacenamiento bloqueado y la copia ilegible se distinguen.
 - Ningún check cubre `app.js` (exportar, importar, borrar), `content.js`, el puente de
   `campaign.js`/`systems.js` con el laboratorio (`exerciseContextHTML`,
   `lockedExerciseHTML`, `returnURL`, `missionIDs`), la interpretación de la ejecución en
-  `lab.js` ni las dependencias de orden de `src/main.tsx`.
+  `lab.js` ni las dependencias de orden de `frontend/src/main.tsx`.
 
 ### Duplicación
 
@@ -79,7 +79,7 @@ almacenamiento bloqueado y la copia ilegible se distinguen.
 | Etiquetas y listas de niveles y lenguajes | `lab.js`, `campaign.js`, `systems.js`, Atlas, `app.js`, motores | Atlas dice «Principiante» y el resto «Inicial». |
 | Guarda de objeto plano | `campaign-engine.js`, `systems-engine.js` | — |
 | Portapapeles y descarga de archivos | `app.js`, `lab.js`, `project-kit-source.js` | `execCommand('copy')` obsoleto como fallback. |
-| Diálogo de confirmación | `src/index.html` + `app.js`; `lab.js` crea otro | — |
+| Diálogo de confirmación | `frontend/src/index.html` + `app.js`; `lab.js` crea otro | — |
 | Andamiaje de modelos de Sistemas | `button`, `cell`, `metric`, `log`, `copy`, `achieved` en los 4 dominios | `defineModel` generaliza la fábrica de `systems-infra.js`. |
 | Fábricas de ejercicios | 8 copias con 3 estrategias de ID | Una fábrica tipada con IDs explícitos. |
 | Validadores y helpers de QA | `plain` ×7, contrato de vista ×5 | `qa/lib/`. |
@@ -113,7 +113,7 @@ almacenamiento bloqueado y la copia ilegible se distinguen.
 
 `AtlasView.tsx` reúne seis componentes, usa `type` para props y sesión, exporta con nombre en
 lugar de `export default`, filtra dentro del componente y usa un `useEffect` sin dependencias
-para mover el foco. `src/features/atlas` es una vista completa: en FSD corresponde a
+para mover el foco. `frontend/src/features/atlas` es una vista completa: en FSD corresponde a
 `pages/atlas`.
 
 ### Herramientas y guía de agentes
@@ -132,7 +132,7 @@ para mover el foco. `src/features/atlas` es una vista completa: en FSD correspon
 Feature-Sliced Design incremental; cada carpeta nace con su primer consumidor real.
 
 ```text
-src/
+frontend/src/
   index.html
   app/                 entrada, orden legacy, adaptadores window.Taller* tipados
   pages/               atlas primero; luego biblioteca, proyecto, método, Sistemas, campaña…
@@ -155,7 +155,7 @@ posición de la entrada.
 | --- | --- | --- | --- |
 | P1 | Guía de agentes: `CLAUDE.md` con `@AGENTS.md` (raíz, `qa/`, `tools/quality/`), symlinks de skills, subagentes en `.claude/agents/`, correcciones de `AGENTS.md` y docs. | Opus | Rutas y enlaces; `git diff --check`. |
 | P2 | Formato con Prettier de todas las fuentes propias en un commit aislado, más `.git-blame-ignore-revs` y scripts de formato sin depender del shell. | Opus | Bundle JS idéntico; oráculo idéntico; suite completa. |
-| P3 | Red de seguridad sin cambios de producción: fixture ID→título de los 274 ejercicios, tabla taller→núcleos y etapa, conjuntos de IDs del recorrido, restricciones de orden de `src/main.tsx`, caracterización del respaldo de `app.js` y del puente de campaña y Sistemas con el lab, e interpretación de la ejecución. | Sonnet | Checks nuevos en verde sobre el código actual. |
+| P3 | Red de seguridad sin cambios de producción: fixture ID→título de los 274 ejercicios, tabla taller→núcleos y etapa, conjuntos de IDs del recorrido, restricciones de orden de `frontend/src/main.tsx`, caracterización del respaldo de `app.js` y del puente de campaña y Sistemas con el lab, e interpretación de la ejecución. | Sonnet | Checks nuevos en verde sobre el código actual. |
 | P4 | Arnés de QA en TypeScript: `qa/lib`, lista única de checks, `tsconfig` de QA, retiro de `build:kits`, configuraciones en TS. | Sonnet | Mismos escenarios y conteos que la línea base. |
 | P5 | `shared/lib` y conversión de las fuentes legacy a módulos ES que importan los helpers comunes. | Sonnet | Oráculo y suite. |
 | P6 | Atlas a `pages/atlas` con las convenciones y pruebas de su modelo. | Sonnet | Suite, React Doctor y navegador. |
@@ -186,13 +186,13 @@ posición de la entrada.
 | P8 (Sistemas) | Hecha: dominios lowlevel, infra y play con `defineModel`, fichas y núcleos con IDs explícitos; recorridos diferenciales de 96 320, 72 000 y 143 959 pasos sin diferencias; complejidad máxima por función ≤ 9 (antes hasta 22). En la raíz quedan sólo las 6 vistas legacy | (este commit) |
 | P8 (catálogos y `pc`) | Hecha: guía, ejercicios, desafíos (fábrica única `defineQuest`, IDs explícitos) y mundos en TS publicados por `register-catalogs`; contrato `systems-simulation` con `defineModel` y dominio `pc` portado (complejidad de `act` 46 → 5). Los 7 globals y SYSTEMS_PC son idénticos, el recorrido diferencial de `pc` da 0 diferencias en 12 000 pasos y runtime-check sigue en 137/137 | (este commit) |
 | Red (auditoría) | Hecha: objetivos de los talleres en el fixture, `boot-check` con la entrada real y contrato de adaptadores, escape HTML, escrituras bloqueadas, accesibilidad del shell y rutas de `load-order` relativas a la raíz | (este commit) |
-| P8 (motores) | Hecha: `src/entities/campaign` y `src/entities/systems-workshop` con fábricas tipadas y adaptadores; paridad diferencial de 3 668 y 2 916 operaciones sin diferencias; `qa/lib/legacy-sources.ts` centraliza la carga de fuentes en QA | (este commit) |
+| P8 (motores) | Hecha: `frontend/src/entities/campaign` y `frontend/src/entities/systems-workshop` con fábricas tipadas y adaptadores; paridad diferencial de 3 668 y 2 916 operaciones sin diferencias; `qa/lib/legacy-sources.ts` centraliza la carga de fuentes en QA | (este commit) |
 | P7b | Hecha: `versioned-storage` común a los cuatro almacenes, sin escrituras al cargar, respaldo `<clave>:respaldo`, descarte por registro, avisos acumulados, importación atómica y «Borrar todo» con respaldos; verificado en navegador | (este commit) |
-| P8 (infraestructura) | Hecha: runner en `src/shared/api/playground` (paridad idéntica en 32 casos), editor en `src/shared/ui/code-editor`, celebración en `src/shared/lib`; adaptadores en `src/app/legacy` | (este commit) |
-| P8 (kits) | Hecha: `src/features/download-project-kit/` con archivos puros, ZIP y adaptador; 300 kits y sus ZIP idénticos byte a byte al generador anterior | (este commit) |
+| P8 (infraestructura) | Hecha: runner en `frontend/src/shared/api/playground` (paridad idéntica en 32 casos), editor en `frontend/src/shared/ui/code-editor`, celebración en `frontend/src/shared/lib`; adaptadores en `frontend/src/app/legacy` | (este commit) |
+| P8 (kits) | Hecha: `frontend/src/features/download-project-kit/` con archivos puros, ZIP y adaptador; 300 kits y sus ZIP idénticos byte a byte al generador anterior | (este commit) |
 | P7a | Hecha: regla única de evidencia (equivalencia probada en 19 casos), `interpretRun` puro, sincronización aislada del transporte (verificada en navegador) y fusión monótona al importar en el laboratorio | (este commit) |
-| P6 | Hecha: Atlas en `src/pages/atlas` (un componente por archivo, modelo puro probado, foco con `flushSync`), entrada en `src/app/main.tsx`; «Principiante» pasa a «Inicial» como en el resto de la app | (este commit) |
-| P5 | Hecha la parte pura: 10 fuentes legacy importan `src/shared` (escape ×4, normalización ×3, clon JSON ×7, objeto plano ×2, niveles ×3); oráculo idéntico y smoke test en navegador. Queda el escape de los exploradores, que cambia la salida con valores nulos | (este commit) |
+| P6 | Hecha: Atlas en `frontend/src/pages/atlas` (un componente por archivo, modelo puro probado, foco con `flushSync`), entrada en `frontend/src/app/main.tsx`; «Principiante» pasa a «Inicial» como en el resto de la app | (este commit) |
+| P5 | Hecha la parte pura: 10 fuentes legacy importan `frontend/src/shared` (escape ×4, normalización ×3, clon JSON ×7, objeto plano ×2, niveles ×3); oráculo idéntico y smoke test en navegador. Queda el escape de los exploradores, que cambia la salida con valores nulos | (este commit) |
 | P9 | Hecha: almacén `openVersionedStore` con cinco ranuras de respaldo y detección de pérdida, carga y render sin escrituras, fusión entre pestañas (en el lugar en el laboratorio), importación en dos fases con aviso de omisiones, regla única de aprobación, `syncAfterRun` por separado y respaldos descargables en Método; fixtures congeladas de master 2a278ad y d0e1b49 | `e3bc74c`, `8793480`, `74765e8` y siguientes |
 
 Hallazgos de la caracterización que quedan para P7:

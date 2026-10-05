@@ -8,7 +8,7 @@ en lugar de copiarla. Si una frase de acá difiere de `AGENTS.md`, manda `AGENTS
 
 ### I. AGENTS.md es la fuente
 
-Las reglas viven en `AGENTS.md` y en los `AGENTS.md` locales (`api/`, `qa/`, `executor/`,
+Las reglas viven en `AGENTS.md` y en los `AGENTS.md` locales (`backend/api/`, `qa/`, `backend/executor/`,
 `tools/quality/`). La constitución, las specs y los planes remiten a ellas y no las duplican.
 Un plan que las contradiga se corrige; una regla cambia sólo en `AGENTS.md`, en su propio cambio.
 
@@ -18,7 +18,7 @@ Todo cambio de comportamiento empieza con una prueba que falla por la razón esp
 la implementación mínima y se revisa antes de refactorizar en verde (`qa/AGENTS.md`, skill
 `tdd`). El valor esperado sale del contrato, de la consigna o de un ejemplo resuelto aparte,
 nunca del algoritmo que se prueba, y se prueba comportamiento observable. En el backend, Pest
-corre contra MySQL 9.7 real, sin SQLite (`api/AGENTS.md`).
+corre contra MySQL 9.7 real, sin SQLite (`backend/api/AGENTS.md`).
 
 ### III. Código entendible
 
@@ -39,7 +39,7 @@ contenido se retira, no se borra (ADR 0004).
 
 Se separan contenido, modelos, persistencia, transporte e interfaz. El front usa React con
 TypeScript y Feature-Sliced Design de forma incremental, con una API pública pequeña por slice;
-el backend es Laravel en `api/` sobre MySQL, con interfaces explícitas (ADR 0004). No se agregan
+el backend es Laravel en `backend/api/` sobre MySQL, con interfaces explícitas (ADR 0004). No se agregan
 capas, stores, servidores ni frameworks por anticipado: cada uno entra con su primer caso real
 y, si es un backend o un cambio de arquitectura, con un ADR.
 
@@ -58,7 +58,7 @@ portables entre Linux y macOS.
 Credenciales, rutas locales, cachés, progreso y resultados generados no entran en Git ni en el
 contexto de Docker (`.gitignore`, `.dockerignore`). Se editan las fuentes y se regeneran los
 assets, y el lockfile se sincroniza. Las dependencias de la API se agregan sólo con permiso del
-usuario (`api/AGENTS.md`).
+usuario (`backend/api/AGENTS.md`).
 
 ### VIII. Persistencia de las specs: flow-forward
 
@@ -85,7 +85,7 @@ artefacto entregado no se edita, se continúa con otro. Cada feature vive en
   apliquen y `git diff --check`, y se informan resultados y límites. Una documentación se
   comprueba por rutas, comandos y enlaces locales; una interfaz, también en el navegador.
 - **Subagentes:** el agente principal analiza, decide, revisa e integra. Los subagentes
-  implementan slices con archivos disjuntos, y el principal integra `src/app/main.tsx`,
+  implementan slices con archivos disjuntos, y el principal integra `frontend/src/app/main.tsx`,
   `package.json`, las configuraciones y la documentación.
 - **Planificación con Spec Kit:** cada subplan del backend recorre specify, clarify, plan, tasks
   y analyze antes de implementarse. La spec dice qué y por qué; el plan, cómo. La hoja de ruta
@@ -113,4 +113,4 @@ artefacto entregado no se edita, se continúa con otro. Cada feature vive en
 
 [persistencia]: https://github.com/github/spec-kit/blob/main/docs/concepts/spec-persistence.md
 
-**Version**: 1.3.0 | **Ratified**: 2026-10-04 (aprobada por el usuario) | **Last Amended**: 2026-10-05 (código y pruebas en inglés, comentarios mínimos; pedido del usuario)
+**Version**: 1.3.1 | **Ratified**: 2026-10-04 (aprobada por el usuario) | **Last Amended**: 2026-10-05 (rutas de los AGENTS.md locales tras el ADR 0007)

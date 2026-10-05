@@ -54,7 +54,7 @@ const { mergeRecord } = await importModule<{
     incoming: Record<string, unknown>,
     expectedTests: { id: string }[],
   ) => { result?: { code?: string } };
-}>('src/entities/exercise/index.ts');
+}>('frontend/src/entities/exercise/index.ts');
 let passed = 0,
   failed = 0;
 

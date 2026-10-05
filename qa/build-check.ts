@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import { repoRoot as root } from './lib/sources.ts';
 
 const html = fs.readFileSync(path.join(root, 'dist', 'index.html'), 'utf8');
-const source = fs.readFileSync(path.join(root, 'src', 'index.html'), 'utf8');
+const source = fs.readFileSync(path.join(root, 'frontend', 'src', 'index.html'), 'utf8');
 const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)];
 const styles = [...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/g)];
 const documentMarkup = html

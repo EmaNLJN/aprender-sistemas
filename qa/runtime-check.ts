@@ -135,7 +135,11 @@ const systemFiles = SYSTEMS_DOMAINS.flatMap((domain) => systemsDomainSources(dom
 const hashedSources = [...catalogSources, ...systemFiles].filter((file) =>
   fs.existsSync(path.join(root, file)),
 );
-for (const file of ['src/app/legacy/register-catalogs.ts', ...systemFiles, 'lab.js']) {
+for (const file of [
+  'frontend/src/app/legacy/register-catalogs.ts',
+  ...systemFiles,
+  'frontend/lab.js',
+]) {
   runSource(context, file);
 }
 const lab = requireLab();

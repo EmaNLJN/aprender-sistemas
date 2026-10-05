@@ -1,4 +1,4 @@
-/* Arranque real de la aplicación: empaqueta src/app/main.tsx con esbuild (CSS ignorado,
+/* Arranque real de la aplicación: empaqueta frontend/src/app/main.tsx con esbuild (CSS ignorado,
  * JSX automático, plataforma browser) y lo ejecuta en un contexto vm con el DOM falso
  * de qa/lib/fake-dom.ts. node qa/boot-check.ts
  *
@@ -18,7 +18,7 @@ import { missingAdapterMethods } from './lib/app-adapters.ts';
 import { FakeElement, FakeText } from './lib/fake-dom.ts';
 import { bundleApp } from './lib/sources.ts';
 
-const ENTRY = 'src/app/main.tsx';
+const ENTRY = 'frontend/src/app/main.tsx';
 const VIEWS = [
   'recorrido',
   'campana',

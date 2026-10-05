@@ -13,7 +13,7 @@
 - **Estados:** `Pendiente` (sin spec), `En especificación` (spec redactada, con preguntas abiertas o sin plan), `Planificado` (plan, tareas y análisis hechos), `En curso`, `Entregado`.
 - **Entregado** exige la implementación integrada y la evidencia de QA: PR, commit y qué se ejecutó. Si algo quedó sin verificar, se escribe.
 - **Persistencia flow-forward** (constitución, principio VIII): al entregar, el directorio de la feature queda inmutable. Un cambio sustancial o un requisito nuevo es una spec nueva, enlazada a la original («extiende» o «reemplaza a»), y la fila del ítem apunta a las dos. Los bugs van a `.specify/bugs/<slug>/` (extensión `bug`) y no tocan el `tasks.md` de la feature.
-- **Integración:** `src/app/main.tsx`, `package.json`, las configuraciones y la documentación las integra el agente principal, aunque dos ítems corran en paralelo ([AGENTS.md](../../AGENTS.md)).
+- **Integración:** `frontend/src/app/main.tsx`, `package.json`, las configuraciones y la documentación las integra el agente principal, aunque dos ítems corran en paralelo ([AGENTS.md](../../AGENTS.md)).
 
 ## Subplanes
 

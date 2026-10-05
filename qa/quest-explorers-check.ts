@@ -27,7 +27,7 @@ interface Fixture {
 }
 
 const context = vm.createContext({ window: {} as { TallerQuestExplorers?: unknown } });
-runSource(context, 'quest-explorers.js');
+runSource(context, 'frontend/quest-explorers.js');
 const api = context.window.TallerQuestExplorers as ExplorerApi;
 let assertions = 0;
 

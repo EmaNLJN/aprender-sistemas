@@ -2,7 +2,7 @@
 // se arma como lo hacían las fábricas legacy (`add`, `defineQuest`): los valores de `defaults`,
 // los de su etapa y, en los desafíos, los que fija su posición; encima, su exercise.yaml y el
 // código de starter y solution. La etapa es la posición de la etapa en el manifiesto.
-import { LEVEL_IDS } from '../../src/shared/config/levels.ts';
+import { LEVEL_IDS } from '../../frontend/src/shared/config/levels.ts';
 import { expectOnlyEntries, expectSameIds, listDirectories, listFiles } from './catalog-files.ts';
 import {
   EXERCISE_KEY_ORDER,

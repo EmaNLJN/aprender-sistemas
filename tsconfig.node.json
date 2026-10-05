@@ -6,5 +6,10 @@
     "moduleResolution": "Bundler",
     "types": ["node"]
   },
-  "include": ["vite.config.ts", "eslint.config.ts", "prettier.config.ts", "doctor.config.ts"]
+  "include": [
+    "frontend/vite.config.ts",
+    "eslint.config.ts",
+    "prettier.config.ts",
+    "frontend/doctor.config.ts"
+  ]
 }

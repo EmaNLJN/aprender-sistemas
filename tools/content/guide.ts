@@ -26,7 +26,7 @@ import type {
   GuideSource,
   GuideStep,
   GuideTrack,
-} from '../../src/entities/guide/model/types.ts';
+} from '../../frontend/src/entities/guide/model/types.ts';
 
 const RESOURCE_LANGUAGES = [
   'rust',

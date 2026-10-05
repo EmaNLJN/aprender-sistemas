@@ -1,5 +1,5 @@
 // Oráculo de equivalencia para refactors puros: evalúa en una VM, con stubs mínimos de
-// navegador y en el orden de src/app/main.tsx, los adaptadores que publican catálogos y
+// navegador y en el orden de frontend/src/app/main.tsx, los adaptadores que publican catálogos y
 // modelos, y escribe un volcado JSON canónico. Port a TypeScript de dump-globals-v2.mjs
 // (sesión del 2026-10-03): sobre el mismo árbol produce exactamente los mismos bytes.
 // Uso: node tools/content/dump-globals.ts <raíz del repo> > volcado.json. En una raíz con
@@ -31,9 +31,9 @@ const esbuild = createRequire(join(root, 'package.json'))('esbuild') as typeof i
 // actual, y el oráculo corre también sobre otra raíz (un commit anterior extraído aparte). Si
 // cambia la lista de adaptadores, actualizá las dos.
 const files = [
-  'src/app/legacy/register-catalogs.ts',
+  'frontend/src/app/legacy/register-catalogs.ts',
   ...['lowlevel', 'infra', 'play', 'pc'].map(
-    (domain) => `src/app/legacy/register-systems-${domain}.ts`,
+    (domain) => `frontend/src/app/legacy/register-systems-${domain}.ts`,
   ),
 ];
 
@@ -98,8 +98,8 @@ out.models = models;
 
 // Contenido del Atlas, con el mismo empaquetador. La primera ruta que exista gana.
 const atlasCandidates = [
-  'src/pages/atlas/model/atlas-catalog.ts',
-  'src/pages/atlas/content/atlas-content.ts',
+  'frontend/src/pages/atlas/model/atlas-catalog.ts',
+  'frontend/src/pages/atlas/content/atlas-content.ts',
 ];
 const atlasEntry = atlasCandidates
   .map((candidate) => join(root, candidate))

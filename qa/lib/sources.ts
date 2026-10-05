@@ -57,7 +57,7 @@ export function bundleSource(relativePath: string, options: BundleOptions = {}):
   return text;
 }
 
-// Empaqueta una entrada de aplicación completa (como src/app/main.tsx) para ejecutarla
+// Empaqueta una entrada de aplicación completa (como frontend/src/app/main.tsx) para ejecutarla
 // sin navegador: las hojas de estilo se ignoran (loader `empty`), el JSX usa el runtime
 // automático de React y `process.env.NODE_ENV` queda fijo en producción. Es una función
 // aparte de `bundleSource` para no alterar su formato ni su caché.
