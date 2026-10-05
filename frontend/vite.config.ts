@@ -5,7 +5,7 @@ import { defineConfig } from 'vite';
 import { viteSingleFile } from 'vite-plugin-singlefile';
 
 const reactLicense = readFileSync(
-  resolve(import.meta.dirname, 'node_modules/react/LICENSE'),
+  resolve(import.meta.dirname, '../node_modules/react/LICENSE'),
   'utf8',
 );
 const reactLicenseBanner = `/*! React, ReactDOM and Scheduler\n${reactLicense.trim()}\n*/`;
@@ -15,7 +15,7 @@ export default defineConfig({
   publicDir: false,
   plugins: [react(), viteSingleFile({ removeViteModuleLoader: true })],
   build: {
-    outDir: resolve(import.meta.dirname, 'dist'),
+    outDir: resolve(import.meta.dirname, '../dist'),
     emptyOutDir: true,
     target: 'es2020',
     minify: true,

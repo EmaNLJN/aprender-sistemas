@@ -15,7 +15,7 @@ export default defineConfig([
     '.desloppify/**',
     'dist/**',
     // Laravel API: PHP with its own tooling (Pint and Pest).
-    'api/**',
+    'backend/api/**',
   ]),
   js.configs.recommended,
   ...tseslint.configs.recommended.map((config) => ({
@@ -25,15 +25,15 @@ export default defineConfig([
   {
     // Official React rules, including the compiler-powered purity, refs and effect checks.
     ...reactHooks.configs.flat.recommended,
-    files: ['src/**/*.{ts,tsx}'],
+    files: ['frontend/src/**/*.{ts,tsx}'],
   },
   {
     // Legacy browser scripts still publish window.Taller* globals, but are ES modules for Vite.
-    files: ['*.js'],
+    files: ['frontend/*.js'],
     languageOptions: { sourceType: 'module', globals: globals.browser },
   },
   {
-    files: ['src/**/*.{js,jsx,ts,tsx}'],
+    files: ['frontend/src/**/*.{js,jsx,ts,tsx}'],
     languageOptions: {
       sourceType: 'module',
       parserOptions: { ecmaFeatures: { jsx: true } },
@@ -41,7 +41,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['qa/**/*.ts', 'tools/**/*.ts', '*.config.ts'],
+    files: ['qa/**/*.ts', 'tools/**/*.ts', '*.config.ts', 'frontend/*.config.ts'],
     languageOptions: { globals: globals.node },
   },
   {

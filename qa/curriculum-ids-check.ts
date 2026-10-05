@@ -8,7 +8,7 @@
  *
  * Vínculo taller-núcleo: la app no calcula posiciones. Cada taller declara
  * `code: { rust, go }` con los IDs de sus ejercicios núcleo y los consume así:
- * src/entities/systems-workshop (requireCore) resuelve `workshop.code[language]` contra el
+ * frontend/src/entities/systems-workshop (requireCore) resuelve `workshop.code[language]` contra el
  * catálogo de ejercicios, y systems.js usa `workshop.code[lang]` para elegir el
  * núcleo ejecutable y marcar "Núcleo del taller". Este check lee ese mismo campo.
  *
@@ -135,7 +135,7 @@ function collectWorkshops(win: CatalogWindow): Table {
 }
 
 async function collectAtlas(): Promise<Table> {
-  const atlas = await importModule<AtlasModule>('src/pages/atlas/model/atlas-catalog.ts');
+  const atlas = await importModule<AtlasModule>('frontend/src/pages/atlas/model/atlas-catalog.ts');
   const result: Table = {};
   for (const language of ['rust', 'go'] as const) {
     for (const concept of atlas.atlasByLanguage[language]) {

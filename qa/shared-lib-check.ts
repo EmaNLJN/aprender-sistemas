@@ -2,27 +2,27 @@ import assert from 'node:assert/strict';
 import { importModule } from './lib/sources.ts';
 
 const { escapeHtml } = await importModule<{ escapeHtml: (value: unknown) => string }>(
-  'src/shared/lib/escape-html.ts',
+  'frontend/src/shared/lib/escape-html.ts',
 );
 const { normalizeSearchText } = await importModule<{
   normalizeSearchText: (value: unknown) => string;
-}>('src/shared/lib/normalize-search-text.ts');
+}>('frontend/src/shared/lib/normalize-search-text.ts');
 const { cloneJson } = await importModule<{ cloneJson: <T>(value: T) => T }>(
-  'src/shared/lib/clone-json.ts',
+  'frontend/src/shared/lib/clone-json.ts',
 );
 const { isPlainObject } = await importModule<{ isPlainObject: (value: unknown) => boolean }>(
-  'src/shared/lib/is-plain-object.ts',
+  'frontend/src/shared/lib/is-plain-object.ts',
 );
 const { isBlankText } = await importModule<{ isBlankText: (value: unknown) => boolean }>(
-  'src/shared/lib/is-blank-text.ts',
+  'frontend/src/shared/lib/is-blank-text.ts',
 );
 const { isLosslessNormalization } = await importModule<{
   isLosslessNormalization: (original: unknown, normalized: unknown) => boolean;
-}>('src/shared/lib/is-lossless-normalization.ts');
+}>('frontend/src/shared/lib/is-lossless-normalization.ts');
 const { LEVEL_IDS, LEVEL_LABELS } = await importModule<{
   LEVEL_IDS: string[];
   LEVEL_LABELS: Record<string, string>;
-}>('src/shared/config/levels.ts');
+}>('frontend/src/shared/config/levels.ts');
 
 assert.equal(escapeHtml('<a href="x">\'&'), '&lt;a href=&quot;x&quot;&gt;&#39;&amp;');
 assert.equal(escapeHtml(null), '');

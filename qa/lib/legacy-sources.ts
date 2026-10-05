@@ -8,13 +8,13 @@ import { runSource, type RunOptions } from './sources.ts';
 export type Language = 'rust' | 'go';
 
 // Contenido del recorrido, ejercicios, desafíos y mundos: un adaptador publica los 7 globals.
-export const CATALOGS_SOURCE = 'src/app/legacy/register-catalogs.ts';
-export const APP_SHELL_SOURCE = 'app.js';
-export const LAB_SOURCE = 'lab.js';
-export const CAMPAIGN_ENGINE_SOURCE = 'src/app/legacy/register-campaign-engine.ts';
-export const CAMPAIGN_UI_SOURCE = 'campaign.js';
-export const SYSTEMS_ENGINE_SOURCE = 'src/app/legacy/register-systems-engine.ts';
-export const SYSTEMS_UI_SOURCE = 'systems.js';
+export const CATALOGS_SOURCE = 'frontend/src/app/legacy/register-catalogs.ts';
+export const APP_SHELL_SOURCE = 'frontend/app.js';
+export const LAB_SOURCE = 'frontend/lab.js';
+export const CAMPAIGN_ENGINE_SOURCE = 'frontend/src/app/legacy/register-campaign-engine.ts';
+export const CAMPAIGN_UI_SOURCE = 'frontend/campaign.js';
+export const SYSTEMS_ENGINE_SOURCE = 'frontend/src/app/legacy/register-systems-engine.ts';
+export const SYSTEMS_UI_SOURCE = 'frontend/systems.js';
 
 // Ejercicios del recorrido y desafíos de campaña.
 export const LAB_EXERCISE_SOURCES: readonly string[] = [CATALOGS_SOURCE];
@@ -23,7 +23,7 @@ export { SYSTEMS_DOMAINS, type SystemsDomain };
 
 // Cada dominio tiene un adaptador que publica su catálogo, sus modelos y sus núcleos.
 export function systemsDomainSources(domain: SystemsDomain): readonly string[] {
-  return [`src/app/legacy/register-systems-${domain}.ts`];
+  return [`frontend/src/app/legacy/register-systems-${domain}.ts`];
 }
 
 export const SYSTEMS_CATALOG_SOURCES: readonly string[] =

@@ -1,0 +1,5 @@
+name: taller-rust-go
+
+include:
+  - path: docker/compose.yaml
+    project_directory: .

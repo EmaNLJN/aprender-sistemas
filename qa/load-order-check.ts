@@ -1,4 +1,4 @@
-/* Dependencias de evaluación entre los imports de src/app/main.tsx.
+/* Dependencias de evaluación entre los imports de frontend/src/app/main.tsx.
  * node qa/load-order-check.ts
  *
  * Los scripts legacy se comunican por window.* y leen sus dependencias al
@@ -16,15 +16,15 @@ import { repoRoot } from './lib/sources.ts';
 
 type Constraint = [before: string, after: string, reason: string];
 
-const APP = 'app.js';
-const LAB = 'lab.js';
-const STYLES = 'styles.css';
-const ATLAS = 'src/app/legacy/register-atlas.tsx';
-const CAMPAIGN_ENGINE = 'src/app/legacy/register-campaign-engine.ts';
-const SYSTEMS_ENGINE = 'src/app/legacy/register-systems-engine.ts';
-const CATALOGS = 'src/app/legacy/register-catalogs.ts';
+const APP = 'frontend/app.js';
+const LAB = 'frontend/lab.js';
+const STYLES = 'frontend/styles.css';
+const ATLAS = 'frontend/src/app/legacy/register-atlas.tsx';
+const CAMPAIGN_ENGINE = 'frontend/src/app/legacy/register-campaign-engine.ts';
+const SYSTEMS_ENGINE = 'frontend/src/app/legacy/register-systems-engine.ts';
+const CATALOGS = 'frontend/src/app/legacy/register-catalogs.ts';
 const SYSTEMS_DOMAINS = ['lowlevel', 'infra', 'play', 'pc'].map(
-  (domain) => `src/app/legacy/register-systems-${domain}.ts`,
+  (domain) => `frontend/src/app/legacy/register-systems-${domain}.ts`,
 );
 
 const BEFORE_LAB = [CATALOGS, ...SYSTEMS_DOMAINS];
@@ -32,8 +32,10 @@ const SYSTEMS_CATALOGS = SYSTEMS_DOMAINS;
 const BEFORE_APP_REASONS: Record<string, string> = {
   [LAB]:
     'render() de app.js llama a window.TallerLab.mount(); app.js también usa getExercises() en syncLinkedLanguage()',
-  'campaign.js': 'app.js llama a window.TallerCampaign?.init() al cargar y a mount() en render()',
-  'systems.js': 'app.js llama a window.TallerSystems?.init() al cargar y a mount() en render()',
+  'frontend/campaign.js':
+    'app.js llama a window.TallerCampaign?.init() al cargar y a mount() en render()',
+  'frontend/systems.js':
+    'app.js llama a window.TallerSystems?.init() al cargar y a mount() en render()',
   [CATALOGS]:
     'app.js lee window.GUIDE_DATA al cargar; syncLinkedLanguage() lee window.RUST_CAMPAIGN/GO_CAMPAIGN y campaign.js init() los pasa al motor al cargar app.js',
   [ATLAS]:
@@ -53,12 +55,12 @@ const CONSTRAINTS: Constraint[] = [
   ]),
   [
     CAMPAIGN_ENGINE,
-    'campaign.js',
+    'frontend/campaign.js',
     'campaign.js captura window.TallerCampaignEngine en const engine al evaluarse',
   ],
   [
     SYSTEMS_ENGINE,
-    'systems.js',
+    'frontend/systems.js',
     'systems.js captura window.TallerSystemsEngine en const engine al evaluarse',
   ],
   ...Object.entries(BEFORE_APP_REASONS).map(([module, reason]): Constraint => [
@@ -111,13 +113,13 @@ function checkLoadOrder(imports: string[]): string[] {
   return problems;
 }
 
-const mainPath = path.join(repoRoot, 'src', 'app', 'main.tsx');
+const mainPath = path.join(repoRoot, 'frontend', 'src', 'app', 'main.tsx');
 const imports = readImports(fs.readFileSync(mainPath, 'utf8'), path.dirname(mainPath));
 const problems = checkLoadOrder(imports);
 assert.deepEqual(
   problems,
   [],
-  `Orden de carga inválido en src/app/main.tsx:\n${problems.join('\n')}`,
+  `Orden de carga inválido en frontend/src/app/main.tsx:\n${problems.join('\n')}`,
 );
 console.log(
   `load-order-check OK: ${imports.length} imports, ${CONSTRAINTS.length} restricciones de orden.`,

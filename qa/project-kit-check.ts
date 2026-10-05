@@ -194,14 +194,14 @@ const previous: PriorReport | null = previousText ? JSON.parse(previousText) : n
 const IMAGE: Record<Language, string> = { rust: 'rust:1.90-alpine', go: 'golang:1.25-alpine' };
 const digest = (data: string | Uint8Array): string =>
   crypto.createHash('sha256').update(data).digest('hex');
-const ADAPTER = 'src/app/legacy/register-project-kit.ts';
+const ADAPTER = 'frontend/src/app/legacy/register-project-kit.ts';
 // Fuentes que componen el generador, en orden alfabético para un hash estable.
 const KIT_SOURCES = [
   ADAPTER,
-  'src/features/download-project-kit/index.ts',
-  'src/features/download-project-kit/lib/archive.ts',
-  'src/features/download-project-kit/model/kit-files.ts',
-  'src/shared/lib/download-file.ts',
+  'frontend/src/features/download-project-kit/index.ts',
+  'frontend/src/features/download-project-kit/lib/archive.ts',
+  'frontend/src/features/download-project-kit/model/kit-files.ts',
+  'frontend/src/shared/lib/download-file.ts',
 ].sort();
 const bundle = bundleSource(ADAPTER, { minify: true });
 const report: Report = {

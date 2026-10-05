@@ -1,14 +1,16 @@
-# Optional local preview. Production uses compose.yaml.
+# Optional local preview. Production uses compose.yaml (en la raíz).
 name: taller-rust-go-preview
 services:
   preview:
     image: taller-rust-go-taller:latest
-    build: .
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
     network_mode: bridge
     ports:
       - '127.0.0.1:8765:8080'
     volumes:
-      - ./dist/index.html:/usr/share/nginx/html/index.html:ro
+      - ../dist/index.html:/usr/share/nginx/html/index.html:ro
     read_only: true
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=32m

@@ -28,7 +28,7 @@ COPY --from=repo package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY --from=repo content content
 COPY --from=repo tools/content tools/content
-COPY --from=repo src/shared/config src/shared/config
+COPY --from=repo frontend/src/shared/config frontend/src/shared/config
 ARG CONTENT_SOURCE_COMMIT=""
 RUN node tools/content/build-curriculum.ts
 

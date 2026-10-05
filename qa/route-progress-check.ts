@@ -22,7 +22,7 @@ interface RouteProgress {
 
 const { mergeRouteProgress } = await importModule<{
   mergeRouteProgress(base: RouteProgress, incoming: RouteProgress): RouteProgress;
-}>('src/entities/guide/model/route-progress.ts');
+}>('frontend/src/entities/guide/model/route-progress.ts');
 
 function route(overrides: Partial<RouteProgress> = {}): RouteProgress {
   return {

@@ -1,4 +1,4 @@
-import curriculum from '../../../build/curriculum.json';
+import curriculum from '../../../../build/curriculum.json';
 import type { Exercise } from '../../entities/exercise';
 import { playModels } from '../../entities/systems-simulation';
 import type { SystemsWorkshop } from '../../entities/systems-workshop';

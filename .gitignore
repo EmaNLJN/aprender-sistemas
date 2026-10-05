@@ -7,7 +7,7 @@ __pycache__/
 .cache/
 .desloppify/
 # Composer dependencies of the Laravel API live only inside its images.
-/api/vendor/
+/backend/api/vendor/
 
 # Local configuration and secrets; sanitized templates may be committed.
 CLAUDE.local.md

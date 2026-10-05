@@ -9,7 +9,7 @@
 **/.venv/
 **/venv/
 # Laravel API: PHP is formatted with Pint and Composer writes composer.json.
-api/
+backend/api/
 
 # Spec Kit state, templates and scripts are written by the specify CLI.
 .specify/
@@ -30,4 +30,4 @@ package-lock.json
 *.md
 
 # Prettier's whitespace-sensitive HTML output would change text nodes of the static shell.
-src/index.html
+frontend/src/index.html

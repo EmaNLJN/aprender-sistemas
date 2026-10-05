@@ -25,7 +25,7 @@ interface ExerciseApi {
 }
 
 const { testPassed, hasPassingEvidence, interpretRun, syncAfterRun } =
-  await importModule<ExerciseApi>('src/entities/exercise/index.ts');
+  await importModule<ExerciseApi>('frontend/src/entities/exercise/index.ts');
 
 const expected = [{ id: 't1' }, { id: 't2' }];
 const pass = (id: string): Evidence => ({ id, passed: true });

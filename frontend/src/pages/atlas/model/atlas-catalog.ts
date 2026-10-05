@@ -1,4 +1,4 @@
-import curriculum from '../../../../build/curriculum.json';
+import curriculum from '../../../../../build/curriculum.json';
 import type { AtlasByLanguage } from './types';
 
 // Los conceptos viven en content/atlas/; tools/content/build-curriculum.ts los valida y los

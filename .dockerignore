@@ -7,12 +7,12 @@ node_modules
 .codex
 **/CLAUDE.md
 CLAUDE.local.md
-# The Laravel API has its own image (api/Dockerfile); the web image never needs it.
-api
+# The Laravel API has its own image (backend/api/Dockerfile); the web image never needs it.
+backend/api
 # Quality tools are installed separately and never shipped with the workshop.
 tools/quality
-# El ejecutor Go tiene su propio Dockerfile (executor/) y el scratch de agentes no es un asset.
-executor
+# El ejecutor Go tiene su propio Dockerfile (backend/executor/) y el scratch de agentes no es un asset.
+backend/executor
 .superpowers
 # Planificación con Spec Kit: documentos y scripts de desarrollo, no assets de la web.
 .specify

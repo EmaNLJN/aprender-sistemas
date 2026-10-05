@@ -1,15 +1,13 @@
-name: taller-rust-go
-
 # Entorno de Laravel para php, migrate y test. Los secretos salen del .env de la raíz (fuera
-# de Git y del contexto de Docker; lo completa sh api/scripts/init-env.sh). Si falta uno,
+# de Git y del contexto de Docker; lo completa sh backend/api/scripts/init-env.sh). Si falta uno,
 # Compose no arranca.
-x-mysql-password: &mysql-password '${MYSQL_PASSWORD:?falta MYSQL_PASSWORD en .env (sh api/scripts/init-env.sh)}'
+x-mysql-password: &mysql-password '${MYSQL_PASSWORD:?falta MYSQL_PASSWORD en .env (sh backend/api/scripts/init-env.sh)}'
 
 x-laravel-env: &laravel-env
   APP_NAME: Taller
   APP_ENV: production
   APP_DEBUG: 'false'
-  APP_KEY: '${APP_KEY:?falta APP_KEY en .env (sh api/scripts/init-env.sh)}'
+  APP_KEY: '${APP_KEY:?falta APP_KEY en .env (sh backend/api/scripts/init-env.sh)}'
   APP_URL: 'http://localhost:${TALLER_PORT:-8080}'
   LOG_CHANNEL: stderr
   DB_CONNECTION: mysql
@@ -31,7 +29,7 @@ x-laravel-test-env: &laravel-test-env
 # que necesite escribir va a un tmpfs declarado acá.
 x-laravel-runtime: &laravel-runtime
   build:
-    context: ./api
+    context: ./backend/api
     target: runtime
     additional_contexts:
       repo: .
@@ -70,7 +68,9 @@ x-mysql-healthcheck: &mysql-healthcheck
 
 services:
   taller:
-    build: .
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
     networks: [edge, web]
     ports:
       - '127.0.0.1:${TALLER_PORT:-8080}:8080'
@@ -100,7 +100,7 @@ services:
       migrate:
         condition: service_completed_successfully
     healthcheck:
-      # cgi-fcgi pide el ping.path del pool (api/docker/fpm-pool.conf); FPM responde sin PHP.
+      # cgi-fcgi pide el ping.path del pool (backend/api/docker/fpm-pool.conf); FPM responde sin PHP.
       test:
         - CMD-SHELL
         - SCRIPT_NAME=/ping SCRIPT_FILENAME=/ping REQUEST_METHOD=GET cgi-fcgi -bind -connect 127.0.0.1:9000 | grep -q pong
@@ -131,7 +131,7 @@ services:
       MYSQL_DATABASE: taller
       MYSQL_USER: taller
       MYSQL_PASSWORD: *mysql-password
-      MYSQL_ROOT_PASSWORD: '${MYSQL_ROOT_PASSWORD:?falta MYSQL_ROOT_PASSWORD en .env (sh api/scripts/init-env.sh)}'
+      MYSQL_ROOT_PASSWORD: '${MYSQL_ROOT_PASSWORD:?falta MYSQL_ROOT_PASSWORD en .env (sh backend/api/scripts/init-env.sh)}'
     volumes:
       - mysql-data:/var/lib/mysql
     networks: [app]
@@ -167,7 +167,7 @@ services:
   test:
     profiles: [test]
     build:
-      context: ./api
+      context: ./backend/api
       target: dev
       additional_contexts:
         repo: .
