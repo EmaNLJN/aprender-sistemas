@@ -9,6 +9,8 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
     `npm run api:test -- --filter=Nombre`.
   - `npm run api:test:down`: apaga la base de pruebas.
   - `npm run api:format:check`: Pint.
+  - `npm run api:analyse`: PHPStan con Larastan, nivel 6 (`phpstan.neon`), sobre `app`, `config`,
+    `database`, `routes` y `bootstrap/app.php`.
   - `npm run api:smoke`: con `docker compose up --build -d --wait` corriendo.
   - Ninguno forma parte de `npm test`.
 - **Dependencias:** se agregan con `composer:2.10` y `--no-install`, para que sólo cambien
