@@ -64,7 +64,7 @@ final class ContentDelivery
 
     public function exercise(Request $request, string $id): SymfonyResponse
     {
-        if (preg_match('/\A[a-z0-9][a-z0-9-]{0,63}\z/', $id) !== 1) {
+        if (! ExerciseId::isValid($id)) {
             return $this->notFound();
         }
         $latest = $this->imports->latest();

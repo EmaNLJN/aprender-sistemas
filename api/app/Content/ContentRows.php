@@ -70,6 +70,9 @@ final class ContentRows
         foreach ($this->portions($source) as [$catalog, $slice, $list, $path]) {
             foreach ($list as $position => $exercise) {
                 $id = $this->text($exercise, 'id', "{$path}[{$position}]");
+                if (! ExerciseId::isValid($id)) {
+                    throw InvalidContent::at(self::FILE, "{$path}[{$position}].id", "«{$id}» no es un ID de ejercicio válido: se esperaban ".ExerciseId::RULE);
+                }
                 if (isset($index[$id])) {
                     throw InvalidContent::at(self::FILE, "{$path}[{$position}].id", "«{$id}» se repite");
                 }
