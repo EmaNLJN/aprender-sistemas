@@ -58,18 +58,17 @@ for (const blank of ['', '  \n', undefined, null, 1]) assert.equal(isBlankText(b
 assert.equal(isBlankText('a'), false);
 assert.equal(isBlankText(' a '), false);
 
-// Agregar claves o elementos al final es normalizar sin perder; todo lo demás es pérdida.
 const lossless = isLosslessNormalization;
 assert.equal(lossless({ a: 1 }, { a: 1, b: 2 }), true);
 assert.equal(lossless([1, 2], [1, 2, 3]), true);
 assert.equal(lossless({ a: [{ b: 'x' }] }, { a: [{ b: 'x', c: 0 }], d: null }), true);
-assert.equal(lossless({ a: 1, b: 2 }, { a: 1 }), false, 'clave ausente');
-assert.equal(lossless({ a: 1 }, { a: 2 }), false, 'valor cambiado');
-assert.equal(lossless({ a: ' x ' }, { a: 'x' }), false, 'string recortado');
-assert.equal(lossless([1, 2, 3], [1, 3]), false, 'elemento filtrado');
-assert.equal(lossless([1, 2], [2, 1]), false, 'array reordenado');
-assert.equal(lossless({ a: 1 }, { a: '1' }), false, 'cambio de tipo');
-assert.equal(lossless({ a: null }, {}), false, 'null frente a clave ausente');
+assert.equal(lossless({ a: 1, b: 2 }, { a: 1 }), false, 'missing key');
+assert.equal(lossless({ a: 1 }, { a: 2 }), false, 'changed value');
+assert.equal(lossless({ a: ' x ' }, { a: 'x' }), false, 'trimmed string');
+assert.equal(lossless([1, 2, 3], [1, 3]), false, 'filtered item');
+assert.equal(lossless([1, 2], [2, 1]), false, 'reordered array');
+assert.equal(lossless({ a: 1 }, { a: '1' }), false, 'type change');
+assert.equal(lossless({ a: null }, {}), false, 'null versus missing key');
 assert.equal(lossless({ a: { b: { c: 1 } } }, { a: { b: { c: 2 } } }), false, 'tercer nivel');
 
 assert.deepEqual(LEVEL_IDS, ['beginner', 'medium', 'advanced', 'expert']);

@@ -1,6 +1,3 @@
-// FR-047 (ADR 0006 R7, D11): what the API serves, through Nginx, matches the generator's meta.
-// Needs the stack up from this same tree (`docker compose up --build -d --wait`); not in
-// `npm test`. TALLER_URL=http://host:port targets another deployment.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -86,11 +83,11 @@ const strong = new Map<string, string>();
 for (const [portion, hash] of portions) {
   const url = urlOf(base, portion);
   const reply = await request(url);
-  assert.equal(reply.status, 200, `${url} respondió ${reply.status}`);
-  assert.equal(sha256(reply.body), hash, `${portion}: el cuerpo no es el que fijó el generador`);
+  assert.equal(reply.status, 200, `${url} replied ${reply.status}`);
+  assert.equal(sha256(reply.body), hash, `${portion}: the body is not the one the generator fixed`);
   const etag = String(reply.headers.etag);
   assert.match(etag, /^"[0-9a-f]{32}"$/, `${portion}: ETag`);
-  assert.equal(etag, `"${hash.slice(0, 32)}"`, `${portion}: el ETag no es el hash del cuerpo`);
+  assert.equal(etag, `"${hash.slice(0, 32)}"`, `${portion}: the ETag is not the body hash`);
   assert.equal(reply.headers['content-version'], version, `${portion}: Content-Version`);
   const cacheControl = String(reply.headers['cache-control']);
   assert.ok(
@@ -103,9 +100,9 @@ for (const [portion, hash] of portions) {
 
 for (const [portion, hash] of portions) {
   const reply = await request(urlOf(base, portion), { 'Accept-Encoding': 'gzip' });
-  assert.equal(reply.headers['content-encoding'], 'gzip', `${portion}: Nginx no comprimió`);
-  assert.equal(reply.headers.etag, `W/${strong.get(portion)}`, `${portion}: ETag con gzip`);
-  assert.equal(sha256(gunzipSync(reply.body)), hash, `${portion}: el cuerpo descomprimido`);
+  assert.equal(reply.headers['content-encoding'], 'gzip', `${portion}: Nginx did not compress`);
+  assert.equal(reply.headers.etag, `W/${strong.get(portion)}`, `${portion}: ETag with gzip`);
+  assert.equal(sha256(gunzipSync(reply.body)), hash, `${portion}: the decompressed body`);
 }
 
 for (const [portion] of portions) {
@@ -119,13 +116,13 @@ for (const [portion] of portions) {
     const headers: Record<string, string> = { 'If-None-Match': validator };
     if (encoding) headers['Accept-Encoding'] = encoding;
     const reply = await request(urlOf(base, portion), headers);
-    assert.equal(reply.status, 304, `${portion} con ${validator}: ${reply.status}`);
-    assert.equal(reply.body.length, 0, `${portion}: el 304 trae cuerpo`);
-    assert.equal(reply.headers.etag, etag, `${portion}: el 304 sin ETag fuerte`);
+    assert.equal(reply.status, 304, `${portion} with ${validator}: ${reply.status}`);
+    assert.equal(reply.body.length, 0, `${portion}: the 304 carries a body`);
+    assert.equal(reply.headers.etag, etag, `${portion}: the 304 lacks a strong ETag`);
     assert.equal(
       reply.headers['content-version'],
       version,
-      `${portion}: el 304 sin Content-Version`,
+      `${portion}: the 304 lacks Content-Version`,
     );
   }
 }
@@ -139,12 +136,12 @@ const slow = await Promise.all(
   }),
 );
 for (const { portion, reply } of slow) {
-  assert.equal(reply.status, 200, `${portion} lento: ${reply.status}`);
-  assert.equal(sha256(reply.body), meta.portions[portion], `${portion} lento: cuerpo incompleto`);
+  assert.equal(reply.status, 200, `${portion} slow: ${reply.status}`);
+  assert.equal(sha256(reply.body), meta.portions[portion], `${portion} slow: incomplete body`);
 }
 if (process.env.TALLER_URL) {
   console.log(
-    'api-content-check: con TALLER_URL no se lee el log de Nginx; ese chequeo se omitió.',
+    'api-content-check: with TALLER_URL the Nginx log is not read; that check was skipped.',
   );
 } else {
   const log = execFileSync(
@@ -158,20 +155,20 @@ if (process.env.TALLER_URL) {
   assert.equal(
     log.includes('No space left on device'),
     false,
-    'Nginx se quedó sin espacio en su tmpfs',
+    'Nginx ran out of space on its tmpfs',
   );
 }
 
 const [exerciseId, { contentHash }] = Object.entries(meta.exercises)[0];
 const exercise = await request(`${base}/api/exercises/${exerciseId}`);
-assert.equal(exercise.status, 200, `${exerciseId}: respondió ${exercise.status}`);
+assert.equal(exercise.status, 200, `${exerciseId}: replied ${exercise.status}`);
 assert.equal(
   sha256(exercise.body),
   contentHash,
-  `${exerciseId}: el cuerpo no es el que fijó el generador`,
+  `${exerciseId}: the body is not the one the generator fixed`,
 );
 assert.equal(exercise.headers.etag, `"${contentHash.slice(0, 32)}"`, `${exerciseId}: ETag`);
 
 console.log(
-  `api-content-check: ${portions.length} porciones idénticas a las del generador (con y sin gzip, con 304 fuerte y débil) y ${SLOW_CLIENTS} clientes lentos con su cuerpo completo. PASS.`,
+  `api-content-check: ${portions.length} portions identical to the generator's (with and without gzip, with strong and weak 304) and ${SLOW_CLIENTS} slow clients with their full body. PASS.`,
 );

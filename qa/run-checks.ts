@@ -1,6 +1,4 @@
-// Lista única de la suite local: `npm test` la ejecuta en orden y se detiene en el
-// primer fallo. Cada check sigue siendo ejecutable por separado con `node qa/<check>.ts`.
-// runtime-check queda fuera: envía código a los Playgrounds o audita registros locales.
+// runtime-check is excluded: it reaches the public Playgrounds.
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 

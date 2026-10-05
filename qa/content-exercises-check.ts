@@ -1,11 +1,3 @@
-/* Ejercicios de content/<lenguaje>/ (tools/content/exercises.ts).
- * node qa/content-exercises-check.ts
- *
- * Contrato: cada ejercicio hereda `defaults`, después su etapa y, en los desafíos, lo que
- * `defineQuest` derivaba de la posición; su exercise.yaml manda sobre todo eso. La etapa es la
- * posición en el manifiesto y las claves salen en el orden de cada catálogo legacy. Los
- * esperados están escritos a mano a partir de esas reglas.
- */
 import assert from 'node:assert/strict';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -109,7 +101,7 @@ const SHARED_TAIL = {
   },
 };
 
-test('recorrido: defaults, etapa y exercise.yaml se combinan en el orden de RUST_LAB', () => {
+test('walkthrough: defaults, stage and exercise.yaml combine in the order of RUST_LAB', () => {
   const { lab } = loadLanguage(rustLab(), 'rust');
   const stageFields = {
     topicId: 'rust-a',
@@ -148,7 +140,6 @@ test('recorrido: defaults, etapa y exercise.yaml se combinan en el orden de RUST
       ...SHARED_TAIL,
     },
   ]);
-  // deepEqual no mira el orden de las claves: el oráculo sí.
   assert.deepEqual(Object.keys(lab[1]), [
     'id',
     'language',
@@ -176,7 +167,7 @@ test('recorrido: defaults, etapa y exercise.yaml se combinan en el orden de RUST
   ]);
 });
 
-test('desafíos: la etapa sigue al recorrido y la posición fija tipo, kind y minutos', () => {
+test('challenges: the stage follows the walkthrough and the position fixes type, kind and minutes', () => {
   const root = fixture({
     'content/rust/manifest.yaml': `${DEFAULTS}lab:
 ${labStage('rust-a', ['rust-01'])}${labStage('rust-b', ['rust-02'])}quests:
@@ -292,7 +283,7 @@ function coresFixture(): string {
   return fixture(files);
 }
 
-test('núcleos: cada dominio con su orden de claves y Rust y Go intercalados', () => {
+test('cores: each domain with its key order and Rust and Go interleaved', () => {
   const root = coresFixture();
   const rust = loadLanguage(root, 'rust');
   const go = loadLanguage(root, 'go');
@@ -347,7 +338,7 @@ test('núcleos: cada dominio con su orden de claves y Rust y Go intercalados', (
   );
 });
 
-test('Go: el archivo empieza con package main y una línea en blanco, que no se publica', () => {
+test('Go: the file starts with package main and a blank line, which is not published', () => {
   const root = coresFixture();
   const { lab } = loadLanguage(root, 'go');
   assert.equal(lab[0].starter, '// go-01: inicial');
@@ -361,7 +352,7 @@ test('Go: el archivo empieza con package main y una línea en blanco, que no se 
   );
 });
 
-test('Rust: el código se publica byte a byte, sin agregar un salto final', () => {
+test('Rust: the code is published byte for byte, without adding a trailing newline', () => {
   const root = rustLab();
   writeFileSync(join(root, 'content/rust/exercises/rust-01/starter.rs'), 'fn a() {\n\tb()\n}');
   assert.equal(loadLanguage(root, 'rust').lab[0].starter, 'fn a() {\n\tb()\n}');
@@ -369,7 +360,7 @@ test('Rust: el código se publica byte a byte, sin agregar un salto final', () =
 
 const RUST_01 = 'content/rust/exercises/rust-01';
 
-test('validación: pistas, pruebas y predicción', () => {
+test('validation: hints, tests and prediction', () => {
   const cases: [string, string][] = [
     [
       EXERCISE.replace('  - Pista tres.\n', ''),
@@ -400,7 +391,7 @@ test('validación: pistas, pruebas y predicción', () => {
   }
 });
 
-test('validación: manifiesto y carpetas sin faltantes, huérfanos ni repetidos', () => {
+test('validation: manifest and folders without missing, orphans or duplicates', () => {
   const manifest = 'content/rust/manifest.yaml';
   const orphan = rustLab(exerciseFiles('rust', 'rust-03'));
   throwsContent(
@@ -424,7 +415,7 @@ test('validación: manifiesto y carpetas sin faltantes, huérfanos ni repetidos'
   );
 });
 
-test('validación: cada mundo de desafíos tiene reparación, kata y jefe', () => {
+test('validation: each challenge world has repair, kata and boss', () => {
   const root = rustLab({
     'content/rust/manifest.yaml': `${DEFAULTS}lab:\n${labStage('rust-a', ['rust-01', 'rust-02'])}quests:
   - topicId: rust-quest-a
@@ -443,7 +434,7 @@ test('validación: cada mundo de desafíos tiene reparación, kata y jefe', () =
   );
 });
 
-test('validación: un ID no se repite entre lenguajes y cada taller tiene núcleo en los dos', () => {
+test('validation: an ID does not repeat across languages and each workshop has a core in both', () => {
   const root = coresFixture();
   const rust = loadLanguage(root, 'rust');
   const go = loadLanguage(root, 'go');
@@ -459,7 +450,7 @@ test('validación: un ID no se repite entre lenguajes y cada taller tiene núcle
   );
 });
 
-test('validación: bossMinutes sólo existe en los mundos de desafíos', () => {
+test('validation: bossMinutes exists only in challenge worlds', () => {
   const root = rustLab({
     'content/rust/manifest.yaml': `${DEFAULTS}lab:\n${labStage('rust-a', ['rust-01', 'rust-02'])}    bossMinutes: 20\n`,
   });
@@ -494,7 +485,7 @@ function questFixture(manifest: string, bossYaml = EXERCISE): string {
   });
 }
 
-test('desafíos: la posición fija el rol; challengeType y kind del mundo no se aceptan', () => {
+test('challenges: the position fixes the role; challengeType and the world kind are not accepted', () => {
   throwsContent(
     () => loadLanguage(questFixture(questWorld(), `challengeType: boss\n${EXERCISE}`), 'rust'),
     'content/rust/exercises/rust-103/exercise.yaml: challengeType: no va en exercise.yaml: lo fija la posición en el mundo de desafíos',
@@ -505,7 +496,7 @@ test('desafíos: la posición fija el rol; challengeType y kind del mundo no se 
   );
 });
 
-test('precedencia: la etapa pisa a defaults y el jefe sin minutes toma bossMinutes', () => {
+test('precedence: the stage overrides defaults and the boss without minutes takes bossMinutes', () => {
   const stage = loadLanguage(
     fixture({
       'content/rust/manifest.yaml': `${DEFAULTS}lab:\n${labStage('rust-a', ['rust-01'])}    visual: memory\n`,
@@ -519,7 +510,7 @@ test('precedencia: la etapa pisa a defaults y el jefe sin minutes toma bossMinut
   assert.equal(quests[2].minutes, 20);
 });
 
-test('código: UTF-8, LF, no vacío y un único salto final se quita', () => {
+test('code: UTF-8, LF, non-empty and a single trailing newline is removed', () => {
   const starter = `${RUST_01}/starter.rs`;
   const cases: [Buffer | string, string][] = [
     [Buffer.from('// energía\nfn a() {}', 'latin1'), `${starter}: no es UTF-8 válido`],
@@ -537,7 +528,7 @@ test('código: UTF-8, LF, no vacío y un único salto final se quita', () => {
   assert.equal(loadLanguage(root, 'rust').lab[0].starter, 'fn a() {}\n');
 });
 
-test('Go: sin código después de la cabecera el ejercicio está vacío', () => {
+test('Go: without code after the header the exercise is empty', () => {
   const root = coresFixture();
   writeFileSync(join(root, 'content/go/exercises/go-01/starter.go'), 'package main\n\n');
   throwsContent(
@@ -546,11 +537,10 @@ test('Go: sin código después de la cabecera el ejercicio está vacío', () => 
   );
 });
 
-test('la carpeta de un ejercicio ignora ocultos y rechaza subcarpetas', () => {
+test('an exercise folder ignores hidden entries and rejects subfolders', () => {
   const hidden = rustLab({ [`${RUST_01}/.DS_Store`]: '' });
   assert.equal(loadLanguage(hidden, 'rust').lab.length, 2);
   const root = rustLab();
-  // El starter es una carpeta con el nombre del archivo esperado.
   rmSync(join(root, RUST_01, 'starter.rs'));
   mkdirSync(join(root, RUST_01, 'starter.rs'));
   throwsContent(
@@ -559,7 +549,7 @@ test('la carpeta de un ejercicio ignora ocultos y rechaza subcarpetas', () => {
   );
 });
 
-test('content/<lenguaje>/ rechaza archivos sueltos e ignora ocultos', () => {
+test('content/<language>/ rejects loose files and ignores hidden entries', () => {
   const loose = rustLab();
   writeFileSync(join(loose, 'content/rust/stages-old.yaml'), 'a: 1\n');
   throwsContent(

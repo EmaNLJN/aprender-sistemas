@@ -98,8 +98,7 @@ interface PlaygroundResponse {
 const language = process.argv[2];
 const options = process.argv.slice(3);
 const starters = options.includes('starters');
-// Los programas salen de build/curriculum.json: se regenera antes de auditar, porque un JSON
-// viejo daría verde a código que nadie validó (o mandaría al Playground otro programa).
+// A stale curriculum.json would turn green for code nobody validated, so it is regenerated first.
 const generated = spawnSync(process.execPath, ['tools/content/build-curriculum.ts'], {
   cwd: root,
   stdio: 'inherit',
@@ -121,16 +120,13 @@ const context = vm.createContext({
   window,
   localStorage: { getItem: () => null, setItem: () => {} },
 });
-// Catálogos del lenguaje: content/<lenguaje>/ (manifiesto, exercise.yaml y código); el hash
-// sólo cubre las fuentes del lenguaje elegido (no el generador ni el otro lenguaje).
 const catalogSources = fs
   .readdirSync(path.join(root, 'content', language), { recursive: true, encoding: 'utf8' })
   .map((entry) => path.posix.join('content', language, entry))
-  // Sin ocultos (.DS_Store, .swp), como la política de tools/content/catalog-files.ts.
+  // No hidden entries (.DS_Store, .swp), like the policy of tools/content/catalog-files.ts.
   .filter((file) => !file.split('/').some((part) => part.startsWith('.')))
   .filter((file) => fs.statSync(path.join(root, file)).isFile())
   .sort();
-// Mismas fuentes y orden que el resto de QA: los dominios portados tienen un adaptador.
 const systemFiles = SYSTEMS_DOMAINS.flatMap((domain) => systemsDomainSources(domain));
 const hashedSources = [...catalogSources, ...systemFiles].filter((file) =>
   fs.existsSync(path.join(root, file)),

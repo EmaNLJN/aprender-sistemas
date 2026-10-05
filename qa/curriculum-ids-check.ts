@@ -1,21 +1,4 @@
-/* Contrato de IDs del currículo: ejercicios, mundos, talleres y conceptos del atlas.
- * node qa/curriculum-ids-check.ts
- *
- * Los IDs indexan el progreso guardado en localStorage (docs/architecture.md los
- * declara contrato). qa/fixtures/curriculum-ids.json es ese contrato: cambiar un ID
- * exige migrar el progreso guardado y actualizar el fixture a mano. Nunca se
- * regenera para que este check pase.
- *
- * Vínculo taller-núcleo: la app no calcula posiciones. Cada taller declara
- * `code: { rust, go }` con los IDs de sus ejercicios núcleo y los consume así:
- * frontend/src/entities/systems-workshop (requireCore) resuelve `workshop.code[language]` contra el
- * catálogo de ejercicios, y systems.js usa `workshop.code[lang]` para elegir el
- * núcleo ejecutable y marcar "Núcleo del taller". Este check lee ese mismo campo.
- *
- * Objetivos: el progreso de cada taller guarda en `observed` los IDs de
- * `workshop.objectives`; renombrar uno descarta lo observado (progress.ts lo filtra
- * contra los IDs vigentes). Por eso el fixture fija esa lista, en orden.
- */
+/* IDs index saved progress: qa/fixtures/curriculum-ids.json is the contract and is never regenerated to make this check pass. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -89,7 +72,7 @@ function loadWindow(): CatalogWindow {
 
 function list<T>(win: CatalogWindow, name: string): T[] {
   const value = win[name];
-  assert.ok(Array.isArray(value), `window.${name} debe ser una lista`);
+  assert.ok(Array.isArray(value), `window.${name} must be a list`);
   return plainJson(value) as T[];
 }
 
@@ -97,7 +80,7 @@ function collectExercises(win: CatalogWindow): Table {
   const result: Table = {};
   for (const catalog of EXERCISE_CATALOGS) {
     for (const exercise of list<ExerciseSource>(win, catalog)) {
-      assert.ok(!(exercise.id in result), `ID de ejercicio duplicado: ${exercise.id}`);
+      assert.ok(!(exercise.id in result), `duplicate exercise ID: ${exercise.id}`);
       result[exercise.id] = { language: exercise.language, title: exercise.title };
     }
   }
@@ -152,14 +135,14 @@ function fieldChangeMessage(
   wanted: unknown,
   found: unknown,
 ): string {
-  const detail = `esperado ${JSON.stringify(wanted)}, actual ${JSON.stringify(found)}`;
-  if (field === 'title') return `${section}: ${id} título editado: ${detail}`;
-  return `${section}: ${id}.${field} cambió: ${detail}`;
+  const detail = `expected ${JSON.stringify(wanted)}, actual ${JSON.stringify(found)}`;
+  if (field === 'title') return `${section}: ${id} title edited: ${detail}`;
+  return `${section}: ${id}.${field} changed: ${detail}`;
 }
 
 function diffEntry(section: string, id: string, expected: unknown, actual: unknown): string[] {
-  if (expected === undefined) return [`${section}: ID nuevo no declarado en el fixture: ${id}`];
-  if (actual === undefined) return [`${section}: falta el ID ${id} que declara el fixture`];
+  if (expected === undefined) return [`${section}: new ID not declared in the fixture: ${id}`];
+  if (actual === undefined) return [`${section}: ID ${id} declared by the fixture is missing`];
   const wanted = expected as Record<string, unknown>;
   const found = actual as Record<string, unknown>;
   const fields = new Set([...Object.keys(wanted), ...Object.keys(found)]);
@@ -175,9 +158,8 @@ function fieldOf(entry: unknown, field: string): unknown {
   return (entry as Record<string, unknown> | undefined)?.[field];
 }
 
-// Un título ya declarado bajo otro ID (y bajo uno solo del mismo lenguaje) delata un
-// cambio de ID, no una edición de texto: el progreso guardado queda apuntando al ID
-// viejo. El lenguaje desambigua porque Rust y Go repiten títulos (p. ej. los núcleos).
+// A title moved to another ID means an ID change, not a text edit: saved progress would point at the old ID.
+// Rust and Go repeat titles, so the language disambiguates.
 function findPreviousId(id: string, expected: Table, actual: Table): string | undefined {
   const title = fieldOf(actual[id], 'title');
   if (typeof title !== 'string' || fieldOf(expected[id], 'title') === title) return undefined;
@@ -205,7 +187,7 @@ function compareSection(section: string, expected: Table, actual: Table): string
       previous === undefined
         ? []
         : [
-            `${section}: ${id} cambió de ID (antes ${previous}): restaurá el orden o migrá el progreso; no actualices el fixture`,
+            `${section}: ${id} changed ID (was ${previous}): restore the order or migrate the progress; do not update the fixture`,
           ];
     if (actual[id] === undefined && movedAway.has(id)) return renameNotice;
     if (previous === undefined) return diffEntry(section, id, expected[id], actual[id]);
@@ -235,9 +217,13 @@ const actual: Fixture = {
 };
 
 const differences = compareCurriculum(fixture, actual);
-assert.deepEqual(differences, [], `El currículo difiere del contrato:\n${differences.join('\n')}`);
+assert.deepEqual(
+  differences,
+  [],
+  `The curriculum differs from the contract:\n${differences.join('\n')}`,
+);
 console.log(
-  `curriculum-ids-check OK: ${Object.keys(actual.exercises).length} ejercicios, ` +
-    `${Object.keys(actual.worlds).length} mundos, ${Object.keys(actual.workshops).length} talleres, ` +
-    `${Object.keys(actual.atlas).length} conceptos del atlas.`,
+  `curriculum-ids-check OK: ${Object.keys(actual.exercises).length} exercises, ` +
+    `${Object.keys(actual.worlds).length} worlds, ${Object.keys(actual.workshops).length} workshops, ` +
+    `${Object.keys(actual.atlas).length} Atlas concepts.`,
 );

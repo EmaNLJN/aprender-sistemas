@@ -1,10 +1,3 @@
-/* Registros literales de content/: mundos de campaña y talleres de Sistemas
- * (tools/content/records.ts, campaign.ts y workshops.ts).
- * node qa/content-records-check.ts
- *
- * Contrato: el manifiesto agrupa y ordena los IDs; cada <id>.yaml se publica tal cual, con
- * las claves en el orden del archivo, y su `id` coincide con el nombre del archivo.
- */
 import assert from 'node:assert/strict';
 import { loadCampaign } from '../tools/content/campaign.ts';
 import { loadGroupedRecords } from '../tools/content/records.ts';
@@ -16,7 +9,7 @@ const { test, done } = scenarios('content-records');
 
 const SPEC = { id: expectText, title: expectText, minutes: expectText };
 
-test('el manifiesto ordena los grupos y cada registro conserva el orden del YAML', () => {
+test('the manifest orders the groups and each record keeps the YAML order', () => {
   const root = fixture({
     'content/x/manifest.yaml': 'a:\n  - b2\n  - b1\nb:\n  - c1\n',
     'content/x/b1.yaml': 'id: b1\ntitle: Uno\nminutes: diez\n',
@@ -34,7 +27,7 @@ test('el manifiesto ordena los grupos y cada registro conserva el orden del YAML
   assert.deepEqual(Object.keys(groups.a[0]), ['minutes', 'id', 'title']);
 });
 
-test('el id coincide con el archivo y no hay registros fuera del manifiesto', () => {
+test('the id matches the file and there are no records outside the manifest', () => {
   const mismatch = fixture({
     'content/x/manifest.yaml': 'a:\n  - b1\nb:\n  - c1\n',
     'content/x/b1.yaml': 'id: otro\ntitle: Uno\nminutes: diez\n',
@@ -92,7 +85,7 @@ function campaignFixture(world = WORLD): string {
   });
 }
 
-test('campaña: mundos por lenguaje, con el checkpoint validado', () => {
+test('campaign: worlds per language, with the checkpoint validated', () => {
   const campaign = loadCampaign(campaignFixture());
   assert.deepEqual(
     campaign.rust.map((world) => world.id),
@@ -158,7 +151,7 @@ bridge:
   go: Exportá a un módulo.
 `;
 
-test('talleres: un grupo por dominio y la ficha completa por lenguaje', () => {
+test('workshops: one group per domain and the full sheet per language', () => {
   const domains = ['lowlevel', 'infra', 'play', 'pc'];
   const files: Record<string, string> = {
     'content/workshops/manifest.yaml': domains
@@ -246,7 +239,7 @@ test('workshops: the step key must exist, be valid and not repeat', () => {
   throwsContent(load(withoutKey), `${where}steps[0]: falta la clave «id»`);
 });
 
-test('registros: ID sin archivo, repetido entre grupos, clave y grupo desconocidos', () => {
+test('records: ID without file, repeated across groups, unknown key and group', () => {
   const base = {
     'content/x/b1.yaml': 'id: b1\ntitle: Uno\nminutes: diez\n',
     'content/x/c1.yaml': 'id: c1\ntitle: Tres\nminutes: cinco\n',
@@ -276,7 +269,7 @@ test('registros: ID sin archivo, repetido entre grupos, clave y grupo desconocid
   );
 });
 
-test('talleres: category es una de las que conoce systems.js', () => {
+test('workshops: category is one that systems.js knows', () => {
   const files: Record<string, string> = {
     'content/workshops/manifest.yaml': ['lowlevel', 'infra', 'play', 'pc']
       .map((domain) => `${domain}:\n  - ${domain}-w\n`)

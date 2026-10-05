@@ -1,4 +1,4 @@
-/* Regla única de evidencia e interpretación de la ejecución (ADR 0003, puntos 7 y 8). */
+/* Single evidence rule and run interpretation (ADR 0003, points 7 and 8). */
 import assert from 'node:assert/strict';
 import { importModule } from './lib/sources.ts';
 
@@ -44,55 +44,51 @@ function scenario(name: string, run: () => void): void {
   console.log('PASS ' + name);
 }
 
-scenario('hasPassingEvidence: tabla de casos límite', () => {
+scenario('hasPassingEvidence: edge-case table', () => {
   const cases: [string, unknown, boolean][] = [
-    ['aprobado completo', approved(), true],
-    ['sin result', undefined, false],
+    ['fully approved', approved(), true],
+    ['no result', undefined, false],
     ['result null', null, false],
-    ['result es arreglo', [pass('t1'), pass('t2')], false],
-    ['result es string', 'success', false],
-    ['success en string', approved({ success: 'true' }), false],
-    ['success falso', approved({ success: false }), false],
+    ['result is an array', [pass('t1'), pass('t2')], false],
+    ['result is a string', 'success', false],
+    ['success as string', approved({ success: 'true' }), false],
+    ['success false', approved({ success: false }), false],
     ['transportError true', approved({ transportError: true }), false],
     ['transportError false', approved({ transportError: false }), true],
-    ['code vacío', approved({ code: '' }), false],
-    ['code sólo espacios', approved({ code: ' \n\t ' }), false],
-    ['code no es string', approved({ code: 42 }), false],
-    ['tests ausentes', { success: true, code: 'x' }, false],
-    ['tests no es arreglo', approved({ tests: { t1: true } }), false],
-    [
-      'duplicados contradictorios',
-      approved({ tests: [pass('t1'), fail('t1'), pass('t2')] }),
-      false,
-    ],
-    ['duplicados aprobados', approved({ tests: [pass('t1'), pass('t1'), pass('t2')] }), false],
-    ['falta una prueba', approved({ tests: [pass('t1')] }), false],
-    ['prueba extra', approved({ tests: [pass('t1'), pass('t2'), pass('t3')] }), true],
-    ['passed en string', approved({ tests: [pass('t1'), { id: 't2', passed: 'true' }] }), false],
-    ['entrada null entre las pruebas', approved({ tests: [null, pass('t1'), pass('t2')] }), true],
+    ['empty code', approved({ code: '' }), false],
+    ['whitespace-only code', approved({ code: ' \n\t ' }), false],
+    ['code is not a string', approved({ code: 42 }), false],
+    ['tests missing', { success: true, code: 'x' }, false],
+    ['tests is not an array', approved({ tests: { t1: true } }), false],
+    ['contradictory duplicates', approved({ tests: [pass('t1'), fail('t1'), pass('t2')] }), false],
+    ['passing duplicates', approved({ tests: [pass('t1'), pass('t1'), pass('t2')] }), false],
+    ['a test is missing', approved({ tests: [pass('t1')] }), false],
+    ['extra test', approved({ tests: [pass('t1'), pass('t2'), pass('t3')] }), true],
+    ['passed as string', approved({ tests: [pass('t1'), { id: 't2', passed: 'true' }] }), false],
+    ['null entry among the tests', approved({ tests: [null, pass('t1'), pass('t2')] }), true],
   ];
   for (const [name, result, outcome] of cases)
     assert.equal(hasPassingEvidence(result, expected), outcome, name);
-  assert.equal(hasPassingEvidence(approved(), []), false, 'sin pruebas esperadas');
+  assert.equal(hasPassingEvidence(approved(), []), false, 'no expected tests');
   assert.equal(
     hasPassingEvidence(approved({ tests: [] }), []),
     false,
-    'tests vacíos y esperadas vacías',
+    'empty tests and empty expected',
   );
 });
 
-scenario('testPassed: exactamente una entrada aprobada con ese id', () => {
+scenario('testPassed: exactly one passing entry with that id', () => {
   const cases: [string, unknown, string, boolean][] = [
-    ['aprobada', { tests: [pass('t1')] }, 't1', true],
-    ['fallida', { tests: [fail('t1')] }, 't1', false],
-    ['ausente', { tests: [pass('t2')] }, 't1', false],
-    ['duplicada aprobada', { tests: [pass('t1'), pass('t1')] }, 't1', false],
-    ['duplicada contradictoria', { tests: [fail('t1'), pass('t1')] }, 't1', false],
-    ['passed en string', { tests: [{ id: 't1', passed: 'true' }] }, 't1', false],
-    ['tests ausentes', {}, 't1', false],
-    ['tests no es arreglo', { tests: 'x' }, 't1', false],
+    ['passing', { tests: [pass('t1')] }, 't1', true],
+    ['failing', { tests: [fail('t1')] }, 't1', false],
+    ['absent', { tests: [pass('t2')] }, 't1', false],
+    ['passing duplicate', { tests: [pass('t1'), pass('t1')] }, 't1', false],
+    ['contradictory duplicate', { tests: [fail('t1'), pass('t1')] }, 't1', false],
+    ['passed as string', { tests: [{ id: 't1', passed: 'true' }] }, 't1', false],
+    ['tests missing', {}, 't1', false],
+    ['tests is not an array', { tests: 'x' }, 't1', false],
     ['result null', null, 't1', false],
-    ['entrada null', { tests: [null, pass('t1')] }, 't1', true],
+    ['null entry', { tests: [null, pass('t1')] }, 't1', true],
   ];
   for (const [name, result, id, outcome] of cases)
     assert.equal(testPassed(result, id), outcome, name);
@@ -104,7 +100,7 @@ const marker = (id: string, outcome: 'PASS' | 'FAIL') => `__TALLER_TEST__${id}:$
 const run = (runnerResult: Record<string, unknown>) =>
   interpretRun(exercise, runnerResult, context);
 
-scenario('interpretRun: todas las pruebas PASS resuelven el ejercicio', () => {
+scenario('interpretRun: all PASS tests solve the exercise', () => {
   const stdout = [marker('t1', 'PASS'), marker('t2', 'PASS'), marker('custom', 'PASS')].join('\n');
   const outcome = run({ success: true, stdout, stderr: 'warning' });
   assert.equal(outcome.solved, true);
@@ -135,7 +131,7 @@ scenario('interpretRun: todas las pruebas PASS resuelven el ejercicio', () => {
   ]);
 });
 
-scenario('interpretRun: una prueba FAIL no resuelve', () => {
+scenario('interpretRun: a FAIL test does not solve it', () => {
   const outcome = run({
     success: true,
     stdout: marker('t1', 'PASS') + '\n' + marker('t2', 'FAIL'),
@@ -148,7 +144,7 @@ scenario('interpretRun: una prueba FAIL no resuelve', () => {
   assert.equal(outcome.result.customPassed, false);
 });
 
-scenario('interpretRun: un marcador ausente cuenta como fallo', () => {
+scenario('interpretRun: a missing marker counts as a failure', () => {
   const outcome = run({ success: true, stdout: marker('t1', 'PASS') });
   assert.equal(outcome.solved, false);
   assert.deepEqual(outcome.result.tests, [
@@ -157,7 +153,7 @@ scenario('interpretRun: un marcador ausente cuenta como fallo', () => {
   ]);
 });
 
-scenario('interpretRun: un id repetido en los marcadores cuenta como fallo', () => {
+scenario('interpretRun: a repeated id in the markers counts as a failure', () => {
   const stdout = [
     marker('t1', 'FAIL'),
     marker('t1', 'PASS'),
@@ -172,7 +168,7 @@ scenario('interpretRun: un id repetido en los marcadores cuenta como fallo', () 
   assert.equal(outcome.solved, false);
 });
 
-scenario('interpretRun: solved coincide con hasPassingEvidence y success 1 no resuelve', () => {
+scenario('interpretRun: solved matches hasPassingEvidence and success 1 does not solve', () => {
   const stdout = marker('t1', 'PASS') + '\n' + marker('t2', 'PASS');
   const solving = run({ success: true, stdout });
   assert.equal(solving.solved, hasPassingEvidence(solving.result, exercise.tests));
@@ -182,7 +178,7 @@ scenario('interpretRun: solved coincide con hasPassingEvidence y success 1 no re
   assert.equal(truthy.solved, false);
 });
 
-scenario('interpretRun: texto alrededor no oculta los marcadores de línea completa', () => {
+scenario('interpretRun: surrounding text does not hide full-line markers', () => {
   const stdout = `hola\n${marker('t1', 'PASS')}  \nruido ${marker('t2', 'PASS')}\n${marker('t2', 'PASS')}\r\nfin`;
   const outcome = run({ success: true, stdout });
   assert.deepEqual(outcome.result.tests, [
@@ -192,7 +188,7 @@ scenario('interpretRun: texto alrededor no oculta los marcadores de línea compl
   assert.equal(outcome.solved, true);
 });
 
-scenario('interpretRun: un marcador pegado a otro texto en su línea no cuenta', () => {
+scenario('interpretRun: a marker glued to other text on its line does not count', () => {
   const outcome = run({
     success: true,
     stdout: `ruido ${marker('t1', 'PASS')}\n${marker('t2', 'PASS')}`,
@@ -203,11 +199,11 @@ scenario('interpretRun: un marcador pegado a otro texto en su línea no cuenta',
   ]);
 });
 
-scenario('interpretRun: error de transporte usa error como stderr', () => {
-  const outcome = run({ success: false, error: 'No se pudo conectar' });
+scenario('interpretRun: transport error uses error as stderr', () => {
+  const outcome = run({ success: false, error: 'Could not connect' });
   assert.equal(outcome.solved, false);
   assert.equal(outcome.result.transportError, true);
-  assert.equal(outcome.result.stderr, 'No se pudo conectar');
+  assert.equal(outcome.result.stderr, 'Could not connect');
   assert.equal(outcome.result.stdout, '');
   assert.equal(outcome.result.success, false);
   assert.deepEqual(outcome.result.tests, [
@@ -216,26 +212,29 @@ scenario('interpretRun: error de transporte usa error como stderr', () => {
   ]);
 });
 
-scenario('interpretRun: success false con stderr de compilación no es transporte', () => {
+scenario('interpretRun: success false with compilation stderr is not transport', () => {
   const outcome = run({ success: false, stderr: 'error[E0308]: mismatched types', stdout: '' });
   assert.equal(outcome.result.transportError, false);
   assert.equal(outcome.result.stderr, 'error[E0308]: mismatched types');
   assert.equal(outcome.solved, false);
 });
 
-scenario('interpretRun: error con success true no es transporte y stderr gana sobre error', () => {
-  const outcome = run({ success: true, error: 'aviso', stderr: 'salida' });
-  assert.equal(outcome.result.transportError, false);
-  assert.equal(outcome.result.stderr, 'salida');
-});
+scenario(
+  'interpretRun: error with success true is not transport and stderr wins over error',
+  () => {
+    const outcome = run({ success: true, error: 'aviso', stderr: 'salida' });
+    assert.equal(outcome.result.transportError, false);
+    assert.equal(outcome.result.stderr, 'salida');
+  },
+);
 
-scenario('interpretRun: recorta stdout a 12000 y stderr a 18000', () => {
+scenario('interpretRun: trims stdout to 12000 and stderr to 18000', () => {
   const outcome = run({ success: false, stdout: 'a'.repeat(13000), stderr: 'b'.repeat(19000) });
   assert.equal((outcome.result.stdout as string).length, 12000);
   assert.equal((outcome.result.stderr as string).length, 18000);
 });
 
-scenario('interpretRun: el marcador custom no cuenta como prueba del ejercicio', () => {
+scenario('interpretRun: the custom marker does not count as an exercise test', () => {
   const stdout = [marker('t1', 'PASS'), marker('t2', 'PASS'), marker('custom', 'FAIL')].join('\n');
   const outcome = run({ success: true, stdout });
   assert.equal(outcome.solved, true);
@@ -244,7 +243,7 @@ scenario('interpretRun: el marcador custom no cuenta como prueba del ejercicio',
   assert.equal((outcome.result.tests as unknown[]).length, 2);
 });
 
-scenario('interpretRun: success distinto de true se guarda como false', () => {
+scenario('interpretRun: success other than true is stored as false', () => {
   const outcome = run({ success: 'yes', stdout: marker('t1', 'PASS') });
   assert.equal(outcome.result.success, false);
 });
@@ -263,13 +262,13 @@ function syncRun(overrides: Partial<Parameters<ExerciseApi['syncAfterRun']>[0]> 
   return { notices, errors };
 }
 
-scenario('syncAfterRun: avisa los XP de campaña ganados', () => {
+scenario('syncAfterRun: announces the campaign XP earned', () => {
   const { notices, errors } = syncRun({ syncCampaign: () => ({ xpGained: 20 }) });
   assert.deepEqual(notices, ['+20 XP. Tu progreso de campaña está actualizado.']);
   assert.deepEqual(errors, []);
 });
 
-scenario('syncAfterRun: no avisa sin XP ni fuera de una misión de campaña', () => {
+scenario('syncAfterRun: does not announce without XP or outside a campaign mission', () => {
   assert.deepEqual(syncRun({ syncCampaign: () => ({ xpGained: 0 }) }).notices, []);
   assert.deepEqual(
     syncRun({ syncCampaign: () => ({ xpGained: 20 }), isCampaignMission: () => false }).notices,
@@ -277,8 +276,8 @@ scenario('syncAfterRun: no avisa sin XP ni fuera de una misión de campaña', ()
   );
 });
 
-scenario('syncAfterRun: si Sistemas falla informa y no propaga', () => {
-  const failure = new Error('Sistemas roto');
+scenario('syncAfterRun: if Systems fails it reports and does not propagate', () => {
+  const failure = new Error('Systems broken');
   const { notices, errors } = syncRun({
     syncSystems: () => {
       throw failure;
@@ -290,15 +289,15 @@ scenario('syncAfterRun: si Sistemas falla informa y no propaga', () => {
   assert.deepEqual(errors, [failure]);
 });
 
-scenario('syncAfterRun: si Sistemas lanza, campaña igual se llama y se avisan sus XP', () => {
+scenario('syncAfterRun: if Systems throws, campaign is still called and its XP announced', () => {
   const calls: string[] = [];
   const { notices, errors } = syncRun({
     syncSystems: () => {
-      throw new Error('Sistemas roto');
+      throw new Error('Systems broken');
     },
-    syncCampaign: () => (calls.push('campaña'), { xpGained: 20 }),
+    syncCampaign: () => (calls.push('campaign'), { xpGained: 20 }),
   });
-  assert.deepEqual(calls, ['campaña']);
+  assert.deepEqual(calls, ['campaign']);
   assert.equal(errors.length, 1);
   assert.deepEqual(notices, [
     '+20 XP. Tu progreso de campaña está actualizado.',
@@ -306,9 +305,9 @@ scenario('syncAfterRun: si Sistemas lanza, campaña igual se llama y se avisan s
   ]);
 });
 
-scenario('syncAfterRun: con los dos fallando registra ambos errores y avisa una sola vez', () => {
-  const systemsFailure = new Error('Sistemas roto');
-  const campaignFailure = new Error('Campaña rota');
+scenario('syncAfterRun: with both failing it records both errors and announces once', () => {
+  const systemsFailure = new Error('Systems broken');
+  const campaignFailure = new Error('Campaign broken');
   const { notices, errors } = syncRun({
     syncSystems: () => {
       throw systemsFailure;
@@ -323,16 +322,16 @@ scenario('syncAfterRun: con los dos fallando registra ambos errores y avisa una 
   ]);
 });
 
-scenario('syncAfterRun: un formatXp personalizado da el texto del aviso', () => {
+scenario('syncAfterRun: a custom formatXp gives the notice text', () => {
   const { notices } = syncRun({
     syncCampaign: () => ({ xpGained: 7 }),
-    formatXp: (xp) => `Ganaste ${xp} puntos`,
+    formatXp: (xp) => `You earned ${xp} points`,
   });
-  assert.deepEqual(notices, ['Ganaste 7 puntos']);
+  assert.deepEqual(notices, ['You earned 7 points']);
 });
 
-scenario('syncAfterRun: si campaña o su consulta fallan informa y no propaga', () => {
-  const failure = new Error('Campaña rota');
+scenario('syncAfterRun: if campaign or its query fails it reports and does not propagate', () => {
+  const failure = new Error('Campaign broken');
   const throwing = () => {
     throw failure;
   };

@@ -1,9 +1,3 @@
-/* Contrato de frontend/src/shared/lib/versioned-storage.ts con un almacenamiento falso.
- * node qa/versioned-storage-check.ts
- * Los esperados están escritos a mano desde el ADR 0003: estados empty/loaded/unreadable/
- * unavailable, cinco ranuras de respaldo antes de perder datos, detección de pérdida por
- * normalización, fusión sólo ante cambios de otra pestaña y la clave principal intacta al cargar.
- */
 import assert from 'node:assert/strict';
 import { importModule } from './lib/sources.ts';
 
@@ -94,25 +88,21 @@ interface Demo {
   items: string[];
 }
 const blank = (): Demo => ({ version: 1, items: [] });
-// Parser de prueba: exige version 1 y descarta los elementos que no son texto.
 function parse(raw: unknown): Parsed<Demo> {
   const value = raw as { version?: unknown; items?: unknown };
   if (value?.version !== 1 || !Array.isArray(value.items)) throw new Error('formato desconocido');
   const items = value.items.filter((item): item is string => typeof item === 'string');
   return { state: { version: 1, items }, dropped: value.items.length - items.length };
 }
-// Pérdida sin registros descartados: recorta cada texto y quita los vacíos sin contarlos.
 function parseTrimming(raw: unknown): Parsed<Demo> {
   const { state } = parse(raw);
   const items = state.items.map((item) => item.trim()).filter((item) => item !== '');
   return { state: { version: 1, items }, dropped: 0 };
 }
-// Normalización aditiva: agrega una clave nueva sin tocar lo existente.
 function parseAdding(raw: unknown): Parsed<Demo> {
   const { state } = parse(raw);
   return { state: { ...state, nuevo: true } as Demo, dropped: 0 };
 }
-// Unión de conjuntos, conservando el orden: lo guardado primero y luego lo local nuevo.
 const union = (stored: Demo, local: Demo): Demo => ({
   version: 1,
   items: [...new Set([...stored.items, ...local.items])],
@@ -135,12 +125,12 @@ function test(name: string, run: () => void): void {
   console.log('PASS ' + name);
 }
 
-test('hay cinco ranuras: la histórica :respaldo y de :respaldo-2 a :respaldo-5', () => {
+test('there are five slots: the historical :respaldo and :respaldo-2 to :respaldo-5', () => {
   assert.equal(BACKUP_SLOTS, 5);
   assert.deepEqual(backupKeysFor('taller-demo-v1'), SLOTS);
 });
 
-test('clave ausente: empty, estado en blanco, escribible y ninguna escritura', () => {
+test('missing key: empty, blank state, writable and no writes', () => {
   const storage = fakeStorage();
   assert.deepEqual(load(storage), {
     status: 'empty',
@@ -153,7 +143,7 @@ test('clave ausente: empty, estado en blanco, escribible y ninguna escritura', (
   assert.deepEqual(storage.writes, []);
 });
 
-test('copia válida: loaded con el estado parseado, sin pérdida y sin escrituras', () => {
+test('valid copy: loaded with the parsed state, no loss and no writes', () => {
   const original = text(['a', 'b']);
   const storage = fakeStorage({ [KEY]: original });
   assert.deepEqual(load(storage), {
@@ -168,7 +158,7 @@ test('copia válida: loaded con el estado parseado, sin pérdida y sin escritura
   assert.equal(storage.data.has(BACKUP), false);
 });
 
-test('JSON inválido: unreadable, estado en blanco y el texto original queda en el respaldo', () => {
+test('invalid JSON: unreadable, blank state and the original text goes to the backup', () => {
   const storage = fakeStorage({ [KEY]: '{roto' });
   const result = load(storage);
   assert.equal(result.status, 'unreadable');
@@ -180,7 +170,7 @@ test('JSON inválido: unreadable, estado en blanco y el texto original queda en 
   assert.deepEqual(storage.writes, [BACKUP]);
 });
 
-test('versión desconocida: unreadable con el texto original respaldado', () => {
+test('unknown version: unreadable with the original text backed up', () => {
   const original = JSON.stringify({ version: 2, items: ['futuro'] });
   const storage = fakeStorage({ [KEY]: original });
   const result = load(storage);
@@ -190,7 +180,7 @@ test('versión desconocida: unreadable con el texto original respaldado', () => 
   assert.equal(storage.data.get(KEY), original);
 });
 
-test('descartes: loaded con dropped, lossy y el texto original respaldado', () => {
+test('discards: loaded with dropped, lossy and the original text backed up', () => {
   const original = text(['a', 7, 'b', null]);
   const storage = fakeStorage({ [KEY]: original });
   assert.deepEqual(load(storage), {
@@ -205,7 +195,7 @@ test('descartes: loaded con dropped, lossy y el texto original respaldado', () =
   assert.deepEqual(storage.writes, [BACKUP]);
 });
 
-test('un segundo texto degradado distinto va a la ranura siguiente y no pisa la primera', () => {
+test('a second, different degraded text goes to the next slot and does not overwrite the first', () => {
   const first = text([1]);
   const second = text([2]);
   const storage = fakeStorage({ [KEY]: second, [BACKUP]: first });
@@ -222,7 +212,7 @@ test('un segundo texto degradado distinto va a la ranura siguiente y no pisa la 
   assert.equal(unreadable.data.get(BACKUP), first);
 });
 
-test('el mismo texto degradado cargado dos veces reutiliza la misma ranura', () => {
+test('the same degraded text loaded twice reuses the same slot', () => {
   const storage = fakeStorage({ [KEY]: text([1]) });
   assert.equal(load(storage).backupKey, BACKUP);
   assert.equal(load(storage).backupKey, BACKUP);
@@ -230,7 +220,7 @@ test('el mismo texto degradado cargado dos veces reutiliza la misma ranura', () 
   assert.equal(storage.data.has(SLOTS[1]), false);
 });
 
-test('con las cinco ranuras ocupadas por otros textos no hay copia y no se puede escribir', () => {
+test('with the five slots taken by other texts there is no copy and writing is impossible', () => {
   const full = Object.fromEntries(SLOTS.map((slot, index) => [slot, `otro ${index}`]));
   const storage = fakeStorage({ [KEY]: text([1]), ...full });
   const result = load(storage);
@@ -240,7 +230,7 @@ test('con las cinco ranuras ocupadas por otros textos no hay copia y no se puede
   assert.deepEqual(storage.writes, []);
 });
 
-test('si el respaldo no se puede escribir, la carga no lanza, no hay copia ni escritura', () => {
+test('if the backup cannot be written, loading does not throw and there is no copy or write', () => {
   const storage = fakeStorage({ [KEY]: '{roto' }, ['setItem']);
   const result = load(storage);
   assert.equal(result.status, 'unreadable');
@@ -251,7 +241,7 @@ test('si el respaldo no se puede escribir, la carga no lanza, no hay copia ni es
   assert.doesNotMatch(describeLoadResult(result, 'de prueba'), /se conservó una copia/);
 });
 
-test('una normalización con pérdida y sin descartes da lossy, copia y aviso de datos', () => {
+test('a lossy normalization without discards gives lossy, a copy and a data notice', () => {
   const original = text([' a ', '  ', 'b']);
   const storage = fakeStorage({ [KEY]: original });
   const result = openVersionedStore(KEY, { blank, parse: parseTrimming, storage }).load();
@@ -265,7 +255,7 @@ test('una normalización con pérdida y sin descartes da lossy, copia y aviso de
   );
 });
 
-test('una normalización aditiva no da pérdida, copia ni aviso', () => {
+test('an additive normalization gives no loss, copy or notice', () => {
   const storage = fakeStorage({ [KEY]: text(['a']) });
   const result = openVersionedStore(KEY, { blank, parse: parseAdding, storage }).load();
   assert.equal(result.lossy, false);
@@ -274,7 +264,7 @@ test('una normalización aditiva no da pérdida, copia ni aviso', () => {
   assert.deepEqual(storage.writes, []);
 });
 
-test('un parse que muta su entrada no oculta la pérdida', () => {
+test('a parse that mutates its input does not hide the loss', () => {
   const mutating = (raw: unknown): Parsed<Demo> => {
     const value = raw as Demo;
     value.items.pop();
@@ -286,7 +276,7 @@ test('un parse que muta su entrada no oculta la pérdida', () => {
   assert.equal(result.backupKey, BACKUP);
 });
 
-test('getItem lanza: unavailable, estado en blanco, no escribible y ninguna escritura', () => {
+test('getItem throws: unavailable, blank state, not writable and no writes', () => {
   const storage = fakeStorage({ [KEY]: '{}' }, ['getItem']);
   assert.deepEqual(load(storage), {
     status: 'unavailable',
@@ -299,7 +289,7 @@ test('getItem lanza: unavailable, estado en blanco, no escribible y ninguna escr
   assert.deepEqual(storage.writes, []);
 });
 
-test('sin storage explícito lee globalThis.localStorage; si el acceso lanza, unavailable', () => {
+test('without explicit storage it reads globalThis.localStorage; if access throws, unavailable', () => {
   const holder = globalThis as { localStorage?: unknown };
   const stored = fakeStorage({ [KEY]: text(['g']) });
   Object.defineProperty(globalThis, 'localStorage', { value: stored, configurable: true });
@@ -318,14 +308,13 @@ test('sin storage explícito lee globalThis.localStorage; si el acceso lanza, un
     assert.equal(blocked.status, 'unavailable');
     assert.equal(blocked.writable, false);
     assert.deepEqual(blockedStore.write(blank()), { saved: false, state: blank() });
-    // Sin almacenamiento no hay nada que borrar.
     assert.equal(blockedStore.remove(), true);
   } finally {
     delete holder.localStorage;
   }
 });
 
-test('write en un almacén no escribible devuelve saved false y la clave no cambia', () => {
+test('write on a non-writable store returns saved false and the key does not change', () => {
   const full = Object.fromEntries(SLOTS.map((slot, index) => [slot, `otro ${index}`]));
   const original = text([1]);
   const storage = fakeStorage({ [KEY]: original, ...full });
@@ -337,7 +326,7 @@ test('write en un almacén no escribible devuelve saved false y la clave no camb
   assert.deepEqual(storage.writes, []);
 });
 
-test('en una sola pestaña, quitar un ítem, escribir y recargar lo deja quitado', () => {
+test('in a single tab, removing an item, writing and reloading leaves it removed', () => {
   const storage = fakeStorage({ [KEY]: text(['a', 'b']) });
   const store = openVersionedStore(KEY, options(storage));
   store.load();
@@ -350,7 +339,7 @@ test('en una sola pestaña, quitar un ítem, escribir y recargar lo deja quitado
   assert.equal(storage.data.get(KEY), '{"version":1,"items":[]}');
 });
 
-test('si otra pestaña cambió la clave tras cargar, write fusiona con merge(stored, local)', () => {
+test('if another tab changed the key after loading, write merges with merge(stored, local)', () => {
   const storage = fakeStorage({ [KEY]: text(['a']) });
   const store = openVersionedStore(KEY, options(storage));
   store.load();
@@ -361,11 +350,10 @@ test('si otra pestaña cambió la clave tras cargar, write fusiona con merge(sto
     state: { version: 1, items: ['a', 'otra-pestaña', 'local'] },
   });
   assert.equal(storage.data.get(KEY), text(['a', 'otra-pestaña', 'local']));
-  // Tras escribir, lastText ya es el texto propio: la siguiente escritura no fusiona.
   assert.deepEqual(store.write({ version: 1, items: ['local'] }).state.items, ['local']);
 });
 
-test('sin merge, ante un cambio externo gana el estado local', () => {
+test('without merge, the local state wins over an external change', () => {
   const storage = fakeStorage({ [KEY]: text(['a']) });
   const store = openVersionedStore(KEY, { blank, parse, storage });
   store.load();
@@ -373,7 +361,7 @@ test('sin merge, ante un cambio externo gana el estado local', () => {
   assert.deepEqual(store.write({ version: 1, items: ['local'] }).state.items, ['local']);
 });
 
-test('si otra pestaña borró la clave, write escribe el estado local sin fusionar', () => {
+test('if another tab deleted the key, write saves the local state without merging', () => {
   const storage = fakeStorage({ [KEY]: text(['a']) });
   const store = openVersionedStore(KEY, options(storage));
   store.load();
@@ -385,7 +373,7 @@ test('si otra pestaña borró la clave, write escribe el estado local sin fusion
   assert.equal(storage.data.get(KEY), text(['local']));
 });
 
-test('texto ilegible de otra pestaña: write asegura una copia y escribe el estado local', () => {
+test('unreadable text from another tab: write secures a copy and saves the local state', () => {
   const storage = fakeStorage({ [KEY]: text(['a']) });
   const store = openVersionedStore(KEY, options(storage));
   store.load();
@@ -397,7 +385,7 @@ test('texto ilegible de otra pestaña: write asegura una copia y escribe el esta
   assert.equal(storage.data.get(KEY), text(['local']));
 });
 
-test('texto legible con pérdida de otra pestaña: asegura copia y conserva lo reconocido', () => {
+test('readable lossy text from another tab: secures a copy and keeps what is recognized', () => {
   const storage = fakeStorage({ [KEY]: text(['a']) });
   const store = openVersionedStore(KEY, options(storage));
   store.load();
@@ -410,7 +398,7 @@ test('texto legible con pérdida de otra pestaña: asegura copia y conserva lo r
   assert.equal(storage.data.get(KEY), text(['reconocido', 'local']));
 });
 
-test('texto legible con pérdida sin lugar para la copia: no escribe', () => {
+test('readable lossy text with no room for the copy: does not write', () => {
   const storage = fakeStorage({ [KEY]: text(['a']) });
   const store = openVersionedStore(KEY, options(storage));
   store.load();
@@ -420,19 +408,19 @@ test('texto legible con pérdida sin lugar para la copia: no escribe', () => {
   assert.equal(storage.data.get(KEY), text(['reconocido', 42]));
 });
 
-test('remove sin almacenamiento disponible devuelve true: no hay nada que borrar', () => {
+test('remove without available storage returns true: nothing to delete', () => {
   const noStorage = (globalThis as { localStorage?: unknown }).localStorage;
   assert.equal(noStorage, undefined);
   assert.equal(openVersionedStore(KEY, { blank, parse, merge: union }).remove(), true);
 });
 
-test('si remove no pudo borrar la clave, la escritura siguiente no fusiona el texto viejo', () => {
+test('if remove could not delete the key, the next write does not merge the old text', () => {
   const data = new Map([[KEY, text(['viejo'])]]);
   const storage: StorageLike = {
     getItem: (key) => data.get(key) ?? null,
     setItem: (key, value) => void data.set(key, value),
     removeItem: (key) => {
-      if (key === KEY) throw new Error('no se puede borrar la clave principal');
+      if (key === KEY) throw new Error('cannot delete the main key');
       data.delete(key);
     },
   };
@@ -443,7 +431,7 @@ test('si remove no pudo borrar la clave, la escritura siguiente no fusiona el te
   assert.equal(data.get(KEY), text([]));
 });
 
-test('texto ilegible de otra pestaña sin lugar para la copia: no escribe y bloquea las siguientes', () => {
+test('unreadable text from another tab with no room for the copy: does not write and blocks the next ones', () => {
   const storage = fakeStorage({ [KEY]: text(['a']) });
   const store = openVersionedStore(KEY, options(storage));
   store.load();
@@ -454,7 +442,7 @@ test('texto ilegible de otra pestaña sin lugar para la copia: no escribe y bloq
   assert.equal(storage.data.get(KEY), '{roto');
 });
 
-test('hasUnsavedChanges compara el estado con el último texto leído o escrito', () => {
+test('hasUnsavedChanges compares the state with the last text read or written', () => {
   const storage = fakeStorage({ [KEY]: text(['a']) });
   const store = openVersionedStore(KEY, options(storage));
   const loaded = store.load().state;
@@ -467,7 +455,7 @@ test('hasUnsavedChanges compara el estado con el último texto leído o escrito'
   assert.equal(empty.hasUnsavedChanges(blank()), true);
 });
 
-test('remove borra la clave y las cinco ranuras', () => {
+test('remove deletes the key and the five slots', () => {
   const all = Object.fromEntries([KEY, ...SLOTS].map((name) => [name, 'x']));
   const storage = fakeStorage({ ...all, otra: 'c' });
   const store = openVersionedStore(KEY, options(storage));
@@ -475,7 +463,7 @@ test('remove borra la clave y las cinco ranuras', () => {
   assert.deepEqual([...storage.data.keys()], ['otra']);
 });
 
-test('remove devuelve false si una borrada lanza, pero intenta todas las demás', () => {
+test('remove returns false if a deletion throws, but tries all the others', () => {
   const removed: string[] = [];
   const data = new Map([
     [KEY, 'a'],
@@ -485,7 +473,7 @@ test('remove devuelve false si una borrada lanza, pero intenta todas las demás'
     getItem: (key) => data.get(key) ?? null,
     setItem: (key, value) => void data.set(key, value),
     removeItem: (key) => {
-      if (key === SLOTS[1]) throw new Error('falla una ranura');
+      if (key === SLOTS[1]) throw new Error('a slot fails');
       removed.push(key);
       data.delete(key);
     },
@@ -496,7 +484,7 @@ test('remove devuelve false si una borrada lanza, pero intenta todas las demás'
   assert.equal(openVersionedStore(KEY, options(blocked)).remove(), false);
 });
 
-test('remove vuelve a habilitar la escritura de un almacén que quedó no escribible', () => {
+test('remove re-enables writing on a store that was left non-writable', () => {
   const full = Object.fromEntries(SLOTS.map((slot, index) => [slot, `otro ${index}`]));
   const storage = fakeStorage({ [KEY]: text([1]), ...full });
   const store = openVersionedStore(KEY, options(storage));
@@ -506,7 +494,7 @@ test('remove vuelve a habilitar la escritura de un almacén que quedó no escrib
   assert.equal(storage.data.get(KEY), text(['nuevo']));
 });
 
-test('backups devuelve las ranuras existentes en orden de ranura', () => {
+test('backups returns the existing slots in slot order', () => {
   const storage = fakeStorage({ [SLOTS[3]]: 'cuarta', [SLOTS[0]]: 'primera' });
   const store = openVersionedStore(KEY, options(storage));
   assert.deepEqual(store.backups(), [
@@ -515,7 +503,7 @@ test('backups devuelve las ranuras existentes en orden de ranura', () => {
   ]);
 });
 
-test('write serializa el estado y devuelve saved false si setItem lanza', () => {
+test('write serializes the state and returns saved false if setItem throws', () => {
   const storage = fakeStorage();
   const store = openVersionedStore(KEY, options(storage));
   store.load();
@@ -529,7 +517,7 @@ test('write serializa el estado y devuelve saved false si setItem lanza', () => 
   assert.deepEqual(blocked.write(blank()), { saved: false, state: blank() });
 });
 
-test('describeLoadResult: todas las variantes, con y sin copia', () => {
+test('describeLoadResult: all variants, with and without a copy', () => {
   const area = 'de campaña';
   const kept = 'se conservó una copia en taller-demo-v1:respaldo-2.';
   const notKept =

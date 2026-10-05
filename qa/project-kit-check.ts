@@ -195,7 +195,6 @@ const IMAGE: Record<Language, string> = { rust: 'rust:1.90-alpine', go: 'golang:
 const digest = (data: string | Uint8Array): string =>
   crypto.createHash('sha256').update(data).digest('hex');
 const ADAPTER = 'frontend/src/app/legacy/register-project-kit.ts';
-// Fuentes que componen el generador, en orden alfabético para un hash estable.
 const KIT_SOURCES = [
   ADAPTER,
   'frontend/src/features/download-project-kit/index.ts',

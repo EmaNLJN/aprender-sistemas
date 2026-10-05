@@ -15,7 +15,6 @@ import {
 import type { ModelView, ModelWorkshop, SystemsModel } from './lib/systems-model-contract.ts';
 
 type Language = 'rust' | 'go';
-// Una forma por tipo de figura: los campos que no aplican quedan ausentes en runtime.
 interface Shape {
   type: string;
   x: number;
