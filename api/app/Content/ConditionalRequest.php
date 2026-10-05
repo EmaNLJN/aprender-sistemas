@@ -4,13 +4,12 @@ namespace App\Content;
 
 use Illuminate\Http\Request;
 
-/** `If-None-Match` contra el ETag actual, con comparación débil (RFC 9110 §13.1.2). */
+/**
+ * `If-None-Match` against the current ETag, with weak comparison (RFC 9110 §13.1.2): Nginx turns the
+ * ETag into `W/"…"` when it compresses, and the browser sends it back that way.
+ */
 final class ConditionalRequest
 {
-    /**
-     * Nginx debilita el ETag al comprimir (`W/"…"`) y el navegador lo reenvía así: el prefijo `W/`
-     * no cuenta. `*` coincide con cualquier representación que exista.
-     */
     public static function matches(Request $request, string $etag): bool
     {
         $header = $request->headers->get('If-None-Match');

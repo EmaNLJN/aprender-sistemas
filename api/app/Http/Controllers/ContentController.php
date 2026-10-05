@@ -9,10 +9,6 @@ use App\Http\ApiError;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-/**
- * Los recursos de contenido (ADR 0006 §7): una porción por pedido, validada por sus parámetros, y
- * un ejercicio suelto. Sin sesión hasta C3, que los pone detrás de ella; sin throttle de Laravel.
- */
 final class ContentController
 {
     public function __construct(private ContentDelivery $delivery) {}

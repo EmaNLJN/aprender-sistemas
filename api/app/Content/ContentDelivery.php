@@ -11,11 +11,14 @@ use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
- * Entrega de una porción o de un ejercicio (ADR 0006 D11). La respuesta son los bytes tal cual, sin
- * volver a codificarlos: nunca `response()->json()` ni un JsonResource, que usarían otras flags. Un
- * 304 no arma nada: sólo lee cuál fue el último import (y, para un ejercicio, su fila por clave
- * primaria, porque uno retirado responde 410 antes que 304). El cuerpo sale de la caché; si falta,
- * se arma en un snapshot y se verifica contra el hash del import antes de servirlo.
+ * Delivers a portion or an exercise (ADR 0006 D11). The response is the stored bytes untouched, never
+ * re-encoded: no `response()->json()` and no JsonResource, which would use other flags.
+ *
+ * A 304 builds nothing: it reads only the latest import, plus the exercise row for an exercise, because
+ * a retired one answers 410 before 304. A missing portion body, and every exercise (they are never
+ * cached), is built inside a snapshot that re-reads the latest import, so everything comes from the same
+ * one. The built body is verified against its hash before it is served or cached; a mismatch is a logged
+ * 503 `maintenance`. An ID that cannot be an ID gets a 404 without touching the database.
  */
 final class ContentDelivery
 {
@@ -38,7 +41,6 @@ final class ContentDelivery
         $hash = $latest->portionHashes[$portion->value];
         $body = $this->bodies->get($portion, $hash);
         if ($body === null) {
-            // El snapshot relee el último import: si hubo uno en el medio, todo sale de ése.
             [$latest, $body] = ContentSnapshot::read(function () use ($portion) {
                 $latest = $this->imports->latest();
 
@@ -62,7 +64,6 @@ final class ContentDelivery
 
     public function exercise(Request $request, string $id): SymfonyResponse
     {
-        // Un ID con otra forma no puede existir: 404 sin consultar la base.
         if (preg_match('/\A[a-z0-9][a-z0-9-]{0,63}\z/', $id) !== 1) {
             return $this->notFound();
         }
@@ -82,7 +83,6 @@ final class ContentDelivery
             return $this->notModified($latest, $etag);
         }
 
-        // El ejercicio no se cachea: se arma en un snapshot y se verifica contra su content_hash.
         [$latest, $row, $body] = ContentSnapshot::read(function () use ($id) {
             $latest = $this->imports->latest();
             $row = DB::table('exercises')->where('id', $id)->first(['status', 'title', 'retired_at', 'content_hash']);
@@ -140,7 +140,6 @@ final class ContentDelivery
         return ApiError::response(503, 'content_not_imported', 'Todavía no hay contenido importado.', headers: ['Retry-After' => '60']);
     }
 
-    /** Un pedido que cayó entre un deploy y su caché: se deja en el log y se pide reintentar. */
     private function maintenance(string $detail): SymfonyResponse
     {
         Log::error("Contenido no servido: {$detail}.");
