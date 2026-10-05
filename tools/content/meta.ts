@@ -1,12 +1,5 @@
-// Metadatos del contenido (ADR 0006 D10 a D14): build/curriculum.meta.json acompaña a
-// curriculum.json y es lo único que content:import y la API toman como verdad de las huellas.
-// Se calculan acá y en ningún otro lado; PHP las guarda y las compara, nunca las recalcula.
-//
-// Dos clases de huella, a propósito:
-// - de bytes publicados (portions, contentHash): sha256 de JSON.stringify(valor), compacto y con
-//   el orden de claves del documento. Es lo que sirve la API y de ahí salen los ETag.
-// - de contenido canónico (gradingHash, starterHash): sobre JSON con las claves ordenadas, para
-//   que reordenar claves no cuente como un cambio de corrección (ADR 0004 §2, «Hashes»).
+// Meta for content:import (ADR 0006 D10 to D14; FR-028, FR-031): the hashes are computed only
+// here, so PHP stores and compares them but never recomputes them.
 import { createHash } from 'node:crypto';
 import { CATALOGS, LANGUAGES, SYSTEMS_DOMAINS } from './catalogs.ts';
 import { ContentError } from './content-error.ts';
@@ -48,10 +41,8 @@ export function sha256Hex(text: string): string {
   return createHash('sha256').update(text, 'utf8').digest('hex');
 }
 
-// contentHash: los bytes publicados del ejercicio (así un cambio de orden de claves mueve el
-// ETag del ejercicio). gradingHash: el id y la expresión de cada prueba, más las opciones y la
-// respuesta de la predicción; un cambio de texto no obliga a volver a verificar. starterHash:
-// el código inicial, para que D1 detecte un borrador hecho sobre un inicio viejo.
+// contentHash covers the published bytes (FR-031); gradingHash and starterHash use canonical JSON,
+// so reordering keys is not a grading change (ADR 0004 §2, "Hashes").
 export function exerciseHashes(exercise: JsonRecord): ExerciseHashes {
   const tests = exercise.tests as JsonRecord[];
   const prediction = exercise.prediction as JsonRecord;
@@ -67,8 +58,7 @@ export function exerciseHashes(exercise: JsonRecord): ExerciseHashes {
   };
 }
 
-// Las 17 porciones que sirve la API, en el orden de `Portion` (PHP): su nombre es la ruta
-// dentro de curriculum.json, y su valor, la parte que se publica.
+// The 17 portions of ADR 0006 D11, in the order of PHP's Portion enum.
 export function portionsOf(curriculum: Curriculum): Record<string, unknown> {
   const portions: Record<string, unknown> = {};
   for (const language of LANGUAGES) portions[`lab.${language}`] = curriculum.lab[language];
@@ -84,8 +74,7 @@ export function portionsOf(curriculum: Curriculum): Record<string, unknown> {
   return portions;
 }
 
-// El commit de Git del contenido, si quien construye lo pasa: la imagen de PHP lo recibe como
-// build arg, porque el contexto de Docker no trae .git. Vacío o ausente: null.
+// FR-037: the commit arrives as a build arg, because the Docker context has no .git.
 export function sourceCommitFrom(env: Record<string, string | undefined>): string | null {
   const commit = env.CONTENT_SOURCE_COMMIT ?? '';
   if (commit === '') return null;
