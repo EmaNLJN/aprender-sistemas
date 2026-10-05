@@ -1,5 +1,6 @@
-// FR-028 to FR-031 (ADR 0006 D10, D14): curriculum.meta.json describes the curriculum.json written
-// by the same build. qa/fixtures/workshop-steps-v1.json is a frozen contract: never regenerate it.
+// FR-028, FR-029, FR-031 (ADR 0006 D10, D14): curriculum.meta.json describes the curriculum.json
+// written by the same build. qa/fixtures/workshop-steps-v1.json is a frozen contract: never
+// regenerate it.
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';

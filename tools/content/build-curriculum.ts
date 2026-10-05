@@ -7,7 +7,6 @@ import { ContentError } from './content-error.ts';
 import { loadCurriculumSource } from './load-curriculum.ts';
 import { curriculumMeta, sourceCommitFrom } from './meta.ts';
 
-// Concurrent runs (two audits, or one with `npm test`) must never read a half-written file.
 function writeAtomically(output: string, text: string): void {
   const temporary = `${output}.${process.pid}.tmp`;
   writeFileSync(temporary, text);
