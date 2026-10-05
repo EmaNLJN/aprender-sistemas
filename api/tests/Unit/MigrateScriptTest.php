@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
 
 /**
@@ -32,8 +33,7 @@ function runMigrateScript(array $script): array
     ]);
     $process->run();
     $calls = (int) trim((string) @file_get_contents("{$directory}/calls"));
-    array_map('unlink', glob("{$directory}/*"));
-    rmdir($directory);
+    (new Filesystem)->deleteDirectory($directory);
 
     return [$process->getExitCode(), $process->getOutput().$process->getErrorOutput(), $calls];
 }

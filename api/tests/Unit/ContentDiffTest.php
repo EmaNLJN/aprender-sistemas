@@ -6,12 +6,14 @@ use App\Content\Codec\GuideCodec;
 use App\Content\Codec\WorkshopCodec;
 use App\Content\Codec\WorldCodec;
 use App\Content\ContentDiff;
+use App\Content\ContentPlan;
 use App\Content\ContentRows;
 use App\Content\ContentSource;
 use App\Content\ContentTables;
 use App\Content\InvalidContent;
 use App\Content\LatestImport;
 use App\Content\RowSet;
+use Illuminate\Support\Arr;
 use Tests\Support\ContentFixture;
 
 afterEach(fn () => ContentFixture::cleanup());
@@ -70,6 +72,12 @@ function latestImportFor(ContentSource $source, ?string $commit = null): LatestI
     return new LatestImport(1, $source->documentHash(), $commit, $source->meta['portions']);
 }
 
+/** @return array<string, int> how many rows the plan writes, for each table that has any */
+function writtenCounts(ContentPlan $plan): array
+{
+    return collect($plan->writes)->filter()->map(fn (array $rows) => count($rows))->all();
+}
+
 it('with the same document there is nothing to write or record', function () {
     [$rows, $source] = diffDesired();
 
@@ -88,7 +96,7 @@ it('with an empty database everything is new and each exercise starts its gradin
     expect($plan->recordImport)->toBeTrue()
         ->and($plan->report->new)->toHaveCount(count($source->meta['exercises']))
         ->and($plan->gradingVersions)->toHaveCount(count($source->meta['exercises']))
-        ->and(array_map('count', $plan->writes))->toBe(array_map('count', $rows->toArray()));
+        ->and(writtenCounts($plan))->toBe(Arr::map($rows->toArray(), fn (array $tableRows) => count($tableRows)));
 });
 
 it('a text change writes only the rows of that exercise and leaves the grading alone', function () {
@@ -98,7 +106,7 @@ it('a text change writes only the rows of that exercise and leaves the grading a
 
     $plan = (new ContentDiff)->between($rows, storedRowsAfterImport($base), gradingVersionsOf($base), latestImportFor(ContentSource::fromDirectory(ContentFixture::imagePath())), $source->meta);
 
-    expect(array_map('count', array_filter($plan->writes)))->toBe(['exercises' => 1])
+    expect(writtenCounts($plan))->toBe(['exercises' => 1])
         ->and($plan->report->textChanged)->toBe([$id])
         ->and($plan->report->gradingChanged)->toBe([])
         ->and($plan->gradingVersions)->toBe([])
@@ -112,7 +120,7 @@ it('a change in a test changes the grading and adds its version', function () {
 
     $plan = (new ContentDiff)->between($rows, storedRowsAfterImport($base), gradingVersionsOf($base), null, $source->meta);
 
-    expect(array_map('count', array_filter($plan->writes)))->toBe(['exercises' => 1, 'exercise_tests' => 1])
+    expect(writtenCounts($plan))->toBe(['exercises' => 1, 'exercise_tests' => 1])
         ->and($plan->report->gradingChanged)->toBe([$id])
         ->and($plan->gradingVersions)->toHaveCount(1)
         ->and($plan->gradingVersions[0]['exercise_id'])->toBe($id);
@@ -130,7 +138,7 @@ it('a change that only reorders keys is written too', function () {
 
     $plan = (new ContentDiff)->between($rows, storedRowsAfterImport($base), gradingVersionsOf($base), null, $source->meta);
 
-    expect(array_map('count', array_filter($plan->writes)))->toBe(['exercises' => 1])
+    expect(writtenCounts($plan))->toBe(['exercises' => 1])
         ->and($plan->report->textChanged)->toBe([$id]);
 });
 
@@ -140,7 +148,7 @@ it('exercises that only change position are written but not reported as changed'
 
     $plan = (new ContentDiff)->between($rows, storedRowsAfterImport($base), gradingVersionsOf($base), null, $source->meta);
 
-    expect(array_keys(array_filter($plan->writes)))->toBe(['exercises'])
+    expect(collect($plan->writes)->filter()->keys()->all())->toBe(['exercises'])
         ->and(count($plan->writes['exercises']))->toBeGreaterThan(1)
         ->and($plan->report->textChanged)->toBe([])
         ->and($plan->report->gradingChanged)->toBe([])
@@ -155,16 +163,16 @@ it('retires what leaves the document and reactivates what comes back', function 
     $retiring = (new ContentDiff)->between($without, storedRowsAfterImport($full), gradingVersionsOf($full), null, $source->meta);
 
     expect($retiring->report->retired)->toBe([$id])
-        ->and(array_keys(array_filter($retiring->retires)))->toContain('exercises', 'exercise_tests', 'exercise_hints')
-        ->and(array_column($retiring->retires['exercises'], 'id'))->toBe([$id])
+        ->and(collect($retiring->retires)->filter()->keys()->all())->toContain('exercises', 'exercise_tests', 'exercise_hints')
+        ->and(Arr::pluck($retiring->retires['exercises'], 'id'))->toBe([$id])
         // Positions are the index inside the portion, so the exercises after the retired one shift.
-        ->and(array_column($retiring->writes['exercises'] ?? [], 'id'))->not->toContain($id);
+        ->and(Arr::pluck($retiring->writes['exercises'] ?? [], 'id'))->not->toContain($id);
 
     $stored = retireExercise(storedRowsAfterImport($full), $id, '2026-10-05 01:00:00.000');
     $returning = (new ContentDiff)->between($full, $stored, gradingVersionsOf($full), null, ContentSource::fromDirectory(ContentFixture::imagePath())->meta);
 
     expect($returning->report->reactivated)->toBe([$id])
-        ->and(array_column($returning->writes['exercises'], 'id'))->toBe([$id]);
+        ->and(Arr::pluck($returning->writes['exercises'], 'id'))->toBe([$id]);
 });
 
 it('a test_key retired on its own is not reused, but comes back with its exercise', function () {
@@ -264,5 +272,5 @@ it('grading versions only grow: going back to one that already applied adds no o
 
     expect($plan->gradingVersions)->toBe([])
         ->and($plan->report->gradingChanged)->toBe([$id])
-        ->and(array_column($plan->writes['exercises'], 'id'))->toBe([$id]);
+        ->and(Arr::pluck($plan->writes['exercises'], 'id'))->toBe([$id]);
 });
