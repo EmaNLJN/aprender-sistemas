@@ -2,12 +2,12 @@
 
 namespace App\Content;
 
-use App\Content\Codec\AtlasCodec;
 use App\Content\Codec\ExerciseCodec;
 use App\Content\Codec\FieldMap;
 use App\Content\Codec\GuideCodec;
 use App\Content\Codec\WorkshopCodec;
 use App\Content\Codec\WorldCodec;
+use App\Content\Record\AtlasConcept;
 use App\Content\Record\Language;
 use Illuminate\Support\Arr;
 use stdClass;
@@ -25,7 +25,6 @@ final class ContentRows
         private ExerciseCodec $exercises,
         private WorkshopCodec $workshops,
         private WorldCodec $worlds,
-        private AtlasCodec $atlas,
         private GuideCodec $guide,
     ) {}
 
@@ -207,7 +206,7 @@ final class ContentRows
                 if ($known === null || $known['catalog'] !== 'lab' || $known['language'] !== $language) {
                     throw InvalidContent::at(self::FILE, "{$path}.labId", "se esperaba un ejercicio de lab en {$language}");
                 }
-                $rows->addAll($this->atlas->toRows($concept, $language, $position, $path));
+                $rows->add('atlas_concepts', AtlasConcept::fromDocument($concept, $language, $position, $path)->toRow());
             }
         }
     }

@@ -2,11 +2,11 @@
 
 namespace App\Content;
 
-use App\Content\Codec\AtlasCodec;
 use App\Content\Codec\ExerciseCodec;
 use App\Content\Codec\GuideCodec;
 use App\Content\Codec\WorkshopCodec;
 use App\Content\Codec\WorldCodec;
+use App\Content\Record\AtlasConcept;
 use Illuminate\Support\Collection;
 use LogicException;
 use stdClass;
@@ -23,7 +23,6 @@ final class PortionAssembler
         private ExerciseCodec $exercises,
         private WorkshopCodec $workshops,
         private WorldCodec $worlds,
-        private AtlasCodec $atlas,
         private GuideCodec $guide,
     ) {}
 
@@ -38,7 +37,7 @@ final class PortionAssembler
             'workshops' => $this->workshopList($portion, $rows, $languages),
             'campaign' => $this->worldList($portion, $rows),
             'atlas' => $this->inPortion($rows['atlas_concepts'], 'language', $portion->slice())
-                ->map(fn (array $row) => $this->atlas->toRecord($row))
+                ->map(fn (array $row) => AtlasConcept::fromRow($row)->toPublished())
                 ->all(),
             'guide' => $this->guide->toRecord($rows, $languages),
             default => throw new LogicException("Grupo de porción desconocido: {$portion->group()}"),

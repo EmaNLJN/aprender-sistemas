@@ -1,24 +1,19 @@
 <?php
 
-use App\Content\Codec\AtlasCodec;
 use App\Content\Codec\ExerciseCodec;
-use App\Content\Codec\GuideCodec;
-use App\Content\Codec\WorkshopCodec;
-use App\Content\Codec\WorldCodec;
-use App\Content\ContentRows;
 use App\Content\ContentSource;
 use App\Content\Portion;
-use App\Content\PortionAssembler;
 use App\Content\PublishedJson;
 use Illuminate\Support\Arr;
 use Tests\Support\ContentFixture;
+use Tests\Support\ContentPipeline;
 
 // The contract without a database: the real document → rows → bytes. The expected values are the
 // hashes the generator computed over the bytes of JSON.stringify (curriculum.meta.json), an oracle
 // independent of the PHP code under test.
 function contentRowsFor(ContentSource $source): array
 {
-    $rows = (new ContentRows(new ExerciseCodec, new WorkshopCodec, new WorldCodec, new AtlasCodec, new GuideCodec))->fromSource($source);
+    $rows = (ContentPipeline::rows())->fromSource($source);
 
     return $rows->toArray();
 }
@@ -26,7 +21,7 @@ function contentRowsFor(ContentSource $source): array
 beforeEach(function () {
     $this->source = ContentSource::fromDirectory(ContentFixture::imagePath());
     $this->rows = contentRowsFor($this->source);
-    $this->assembler = new PortionAssembler(new ExerciseCodec, new WorkshopCodec, new WorldCodec, new AtlasCodec, new GuideCodec);
+    $this->assembler = ContentPipeline::assembler();
 });
 
 it('assembles each of the 17 portions with the bytes the generator fixed', function (Portion $portion) {

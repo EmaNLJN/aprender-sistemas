@@ -1,13 +1,7 @@
 <?php
 
-use App\Content\Codec\AtlasCodec;
-use App\Content\Codec\ExerciseCodec;
-use App\Content\Codec\GuideCodec;
-use App\Content\Codec\WorkshopCodec;
-use App\Content\Codec\WorldCodec;
 use App\Content\ContentDiff;
 use App\Content\ContentPlan;
-use App\Content\ContentRows;
 use App\Content\ContentSource;
 use App\Content\ContentTables;
 use App\Content\InvalidContent;
@@ -15,6 +9,7 @@ use App\Content\LatestImport;
 use App\Content\RowSet;
 use Illuminate\Support\Arr;
 use Tests\Support\ContentFixture;
+use Tests\Support\ContentPipeline;
 
 afterEach(fn () => ContentFixture::cleanup());
 
@@ -26,7 +21,7 @@ function diffDesired(?Closure $edit = null, ?Closure $editMeta = null): array
         $edit($fixture);
     }
     $source = ContentSource::fromDirectory($fixture->write(editMeta: $editMeta));
-    $rows = new ContentRows(new ExerciseCodec, new WorkshopCodec, new WorldCodec, new AtlasCodec, new GuideCodec);
+    $rows = ContentPipeline::rows();
 
     return [$rows->fromSource($source), $source];
 }
