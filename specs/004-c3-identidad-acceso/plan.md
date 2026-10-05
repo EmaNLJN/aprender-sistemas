@@ -333,7 +333,7 @@ final class WriteTransaction
    - `User::create(['name' => 'Ana', 'email' => 'ana@x.com', 'password' => 'x', 'role' => 'admin', 'status' => 'disabled'])` guarda `student` y `active` (FR-002).
    - `role` y `status` salen como `Role` y `AccountStatus`; el estado `unverified()` no tiene el email verificado y `hasVerifiedEmail()` es falso; `created_at` guarda y devuelve `2026-10-05 12:00:00.123` con los milisegundos.
    - Dentro de `WriteTransaction::run`, `SELECT @@transaction_isolation` es `READ-COMMITTED`; fuera, `REPEATABLE-READ`.
-2. Implementá `Role`, `AccountStatus`, `User`, `Invitation` (`Prunable`: `expires_at` de hace más de 30 días), la fábrica y `WriteTransaction` (`SET TRANSACTION ISOLATION LEVEL READ COMMITTED` justo antes de `DB::transaction`).
+2. Implementá `Role`, `AccountStatus`, `User`, `Invitation` (`Prunable`: `expires_at` de hace más de 30 días), la fábrica y `WriteTransaction` (la sesión en `READ COMMITTED` durante `DB::transaction` y el nivel anterior restaurado en un `finally`, para que cada reintento de un deadlock también corra en READ COMMITTED; research.md, «READ COMMITTED»).
 3. `npm run api:analyse`: 0 errores en el nivel 9.
 
 **Compuerta:** las pruebas en verde y la suite entera en verde. `backend/api/database/seeders/DatabaseSeeder.php` sigue creando su usuario por la fábrica, sin cambios.
