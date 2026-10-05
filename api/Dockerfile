@@ -43,6 +43,7 @@ RUN apk add --no-cache fcgi \
 COPY docker/opcache.ini /usr/local/etc/php/conf.d/zz-opcache.ini
 COPY docker/fpm-pool.conf /usr/local/etc/php-fpm.d/zz-taller.conf
 COPY docker/php.ini /usr/local/etc/php/conf.d/zz-taller.ini
+COPY --chmod=0755 docker/migrate.sh /usr/local/bin/migrate-and-import
 WORKDIR /var/www/html
 
 # Producción: el código es de root y PHP sólo lo lee. storage/ y bootstrap/cache/ son de

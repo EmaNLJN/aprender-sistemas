@@ -111,11 +111,14 @@ services:
       start_interval: 1s
     restart: unless-stopped
 
-  # Aplica las migraciones pendientes y termina; corre en cada `up`. php espera a que termine
-  # bien (service_completed_successfully), y por esa dependencia `up --wait` acepta que salga.
+  # The only service with bounded lock waits (ADR 0006 D35). php starts only after it succeeds,
+  # which is also why `up --wait` accepts that it exits.
   migrate:
     <<: *laravel-runtime
-    command: ['php', 'artisan', 'migrate', '--force']
+    environment:
+      <<: *laravel-env
+      MYSQL_ATTR_INIT_COMMAND: 'SET SESSION lock_wait_timeout=5, innodb_lock_wait_timeout=5'
+    command: ['migrate-and-import']
     depends_on:
       mysql:
         condition: service_healthy
