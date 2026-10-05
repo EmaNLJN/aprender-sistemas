@@ -22,10 +22,8 @@
     </source>
     <php>
         <!--
-            El servicio test de compose.yaml trae el entorno de producción (APP_ENV=production,
-            DB_HOST=mysql). Cada variable que apunta a la base va dos veces: force="true"
-            reemplaza getenv() y $_ENV, y <server> reemplaza $_SERVER, que es lo primero que lee
-            Laravel. Sin <server>, Laravel seguiría usando la base de desarrollo.
+            The compose.yaml test service brings the production environment. force="true" replaces
+            getenv() and $_ENV; <server> replaces $_SERVER, which Laravel reads first.
         -->
         <env name="APP_ENV" value="testing" force="true"/>
         <server name="APP_ENV" value="testing"/>

@@ -1,19 +1,14 @@
 #!/bin/sh
-# Agrega al .env de la raíz los secretos que faltan para compose.yaml: APP_KEY,
-# MYSQL_PASSWORD y MYSQL_ROOT_PASSWORD. Nunca reemplaza un valor existente, porque MySQL toma
-# las contraseñas sólo al crear su volumen. Uso: sh backend/api/scripts/init-env.sh
+# Never replaces an existing value: MySQL takes its passwords only when it creates the volume.
 set -eu
 env_file="$(cd "$(dirname "$0")/../../.." && pwd)/.env"
 touch "$env_file"
-chmod 600 "$env_file" # guarda secretos: sólo lo lee el usuario
-# Sin salto de línea final, el primer agregado se pegaría a la última línea del archivo.
+chmod 600 "$env_file"
 if [ -s "$env_file" ] && [ -n "$(tail -c 1 "$env_file")" ]; then
   echo >> "$env_file"
 fi
 
-# Una clave cuenta con o sin `export` y con espacios alrededor del =; un valor de sólo espacios
-# es vacío. Compose se queda con la última definición: agregar una segunda pisaría la que MySQL
-# tomó al crear su volumen.
+# Compose keeps the last definition: a second one would override the one MySQL took.
 key_pattern() {
   printf '^[[:space:]]*(export[[:space:]]+)?%s[[:space:]]*=' "$1"
 }
@@ -30,7 +25,6 @@ add_missing() {
   echo "$1 agregada a $env_file"
 }
 
-# Cada valor se genera en su propia asignación: si openssl falla, set -e corta antes de escribir.
 app_key=$(openssl rand -base64 32)
 mysql_password=$(openssl rand -hex 24)
 mysql_root_password=$(openssl rand -hex 24)

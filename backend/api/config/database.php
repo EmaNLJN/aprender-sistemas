@@ -54,10 +54,7 @@ return [
             'password' => env('DB_PASSWORD', ''),
             'unix_socket' => env('DB_SOCKET', ''),
             'charset' => env('DB_CHARSET', 'utf8mb4'),
-            // Textos en español (ADR 0004): la ñ es otra letra y no se distinguen acentos ni
-            // mayúsculas. Laravel la aplica a la conexión (SET NAMES) y a cada CREATE TABLE.
-            // Los IDs de contenido van en ascii_bin, columna por columna, en las migraciones de
-            // C2: $table->string('id')->charset('ascii')->collation('ascii_bin').
+            // Spanish text (ADR 0004): ñ is a distinct letter; accents and case are ignored.
             'collation' => env('DB_COLLATION', 'utf8mb4_es_0900_ai_ci'),
             'prefix' => '',
             'prefix_indexes' => true,
