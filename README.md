@@ -258,6 +258,7 @@ La API Laravel tiene pruebas propias, fuera de `npm test` porque necesitan Docke
 npm run api:test          # Pest contra una MySQL de prueba descartable (tmpfs)
 npm run api:test:down     # apaga esa base de prueba
 npm run api:format:check  # formato PHP con Pint
+npm run api:analyse       # análisis estático de PHP con PHPStan (Larastan, nivel 6)
 npm run api:smoke         # con el stack levantado: Nginx, PHP-FPM y Laravel
 npm run api:content:check # con el stack levantado: las 17 porciones del contenido a través de Nginx
 ```

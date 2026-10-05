@@ -1,5 +1,8 @@
 # Skills del proyecto
 
+Las skills de `.agents/skills/` son copias de terceros. Sus fuentes, licencias y avisos de copyright están en
+[THIRD-PARTY-NOTICES.md](../.agents/skills/THIRD-PARTY-NOTICES.md); una skill nueva suma su fila ahí.
+
 Selección e instalación del 2026-10-03. Se usaron `find-skills`, búsquedas CLI de
 arquitectura, clean code, React y testing, el [directorio skills.sh](https://www.skills.sh/)
 y los repositorios originales. Se priorizó alcance útil para el taller y adopción;
@@ -261,3 +264,23 @@ se hizo en fuentes de Internet; Context7 se usó para documentación del build.
 Al actualizar dependencias, resolvé su ID y consultá un tema concreto,
 contrastando la versión con `package-lock.json`. Usá documentación oficial si
 el MCP no está disponible y conservá las consultas libres de datos sensibles.
+
+## PHP moderno: DTOs y value objects (2026-10-05)
+
+El usuario pidió pasar los registros del contenido de arreglos asociativos a objetos con mappers,
+en una spec aparte después de C2. Se buscó con `find-skills` (`npx skills find` sobre «laravel
+data dto», «php design patterns», «data mapper dto», «spatie laravel-data», «php value objects» y
+«php-pro»). Ninguna skill trata mappers de objetos ni `spatie/laravel-data`. La más cercana es
+`php-pro`, del mismo autor que `laravel-specialist`. Se revisó antes de exponerla: cinco archivos
+Markdown, sin scripts ni instrucciones de red.
+
+| Skill | Fuente | Señales consultadas | Uso en este proyecto |
+| --- | --- | --- | --- |
+| [php-pro](../.agents/skills/php-pro/SKILL.md) | [Jeffallan/claude-skills](https://skills.sh/jeffallan/claude-skills/php-pro) | 14,8 mil instalaciones; ★11,7 mil; MIT; v1.1.0 | DTOs `readonly`, value objects, enums y tipos de PHP moderno para los registros tipados del contenido (Data Mapper) y para C3. |
+
+- **Límites:** la skill exige PHPStan nivel 9, `declare(strict_types=1)` y un 80 % de cobertura. El
+  proyecto no tiene PHPStan ni una meta de cobertura, y adoptarlos pide dependencias y una
+  decisión propias. Manda `AGENTS.md`: de la skill se usan los patrones, no esas exigencias.
+- **Instalación:** `npx skills add jeffallan/claude-skills --skill php-pro -a codex -y`, con su
+  enlace en `.claude/skills/` y su hash en `skills-lock.json`. El total actual es de treinta y
+  cuatro skills locales.

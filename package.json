@@ -25,6 +25,7 @@
     "api:test": "docker compose --profile test run --rm --build test",
     "api:test:down": "docker compose --profile test rm --stop --force mysql-test",
     "api:format:check": "docker compose --profile test run --rm --build --no-deps --entrypoint php test vendor/bin/pint --test",
+    "api:analyse": "docker compose --profile test run --rm --build --no-deps --entrypoint php test vendor/bin/phpstan analyse --memory-limit=1G --no-progress",
     "api:smoke": "sh api/scripts/smoke.sh",
     "api:content:check": "node qa/api-content-check.ts"
   },
