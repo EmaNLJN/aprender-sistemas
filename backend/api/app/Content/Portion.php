@@ -80,6 +80,7 @@ enum Portion: string
 
         $allowed = ['language' => self::LANGUAGES, 'domain' => self::DOMAINS];
         $errors = [];
+        $slice = '';
         foreach ($allowed as $param => $values) {
             if ($param !== $sliceBy) {
                 if (array_key_exists($param, $query)) {
@@ -94,13 +95,15 @@ enum Portion: string
                 $errors[$param] = ["Falta el parámetro {$param}: usá {$options}."];
             } elseif (! is_string($value) || ! in_array($value, $values, true)) {
                 $errors[$param] = ["El valor de {$param} no es válido: usá {$options}."];
+            } else {
+                $slice = $value;
             }
         }
         if ($errors !== []) {
             throw new InvalidPortionRequest($errors);
         }
 
-        return self::from("{$group}.{$query[$sliceBy]}");
+        return self::from("{$group}.{$slice}");
     }
 
     /** @param array<string, mixed> $query */

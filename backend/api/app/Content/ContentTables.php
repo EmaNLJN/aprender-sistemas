@@ -2,6 +2,8 @@
 
 namespace App\Content;
 
+use LogicException;
+
 /**
  * The content tables that `content:import` writes row by row, in dependency order (each foreign
  * key points to an earlier one), with the columns of their primary key. Two are written
@@ -9,7 +11,7 @@ namespace App\Content;
  */
 final class ContentTables
 {
-    /** @var array<string, list<string>> */
+    /** @var array<string, non-empty-list<non-empty-string>> */
     public const KEYS = [
         'languages' => ['code'],
         'catalogs' => ['code'],
@@ -48,6 +50,13 @@ final class ContentTables
     /** @param array<string, mixed> $row */
     public static function keyOf(string $table, array $row): string
     {
-        return collect(self::KEYS[$table])->map(fn (string $column) => (string) $row[$column])->implode("\x1f");
+        return collect(self::KEYS[$table])->map(function (string $column) use ($table, $row): string {
+            $value = $row[$column] ?? null;
+            if (! is_int($value) && ! is_string($value)) {
+                throw new LogicException("{$table}: la columna {$column} de la clave no es un texto ni un entero");
+            }
+
+            return (string) $value;
+        })->implode("\x1f");
     }
 }
