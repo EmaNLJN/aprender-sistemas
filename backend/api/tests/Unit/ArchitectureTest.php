@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Hash;
 
 const PASSWORD_GATE = 'app/Auth/AccountPasswords.php';
 
-const PASSWORD_GATE_CALLS = ['Hash::', 'Auth::attempt(', '->attempt(', 'logoutOtherDevices('];
+const PASSWORD_GATE_CALLS = ['Hash::', 'Auth::attempt(', 'attemptWhen(', 'logoutOtherDevices('];
 
 arch('only AccountPasswords uses the Hash facade')
     ->expect('App')
@@ -29,7 +29,7 @@ it('recognizes each call that has to go through the password gate', function (st
 })->with([
     ['Hash::make($x);', 'Hash::'],
     ['Auth::attempt($credentials);', 'Auth::attempt('],
-    ['$guard->attempt($credentials);', '->attempt('],
+    ['Auth::attemptWhen($credentials, $callback);', 'attemptWhen('],
     ['Auth::logoutOtherDevices($x);', 'logoutOtherDevices('],
 ]);
 
