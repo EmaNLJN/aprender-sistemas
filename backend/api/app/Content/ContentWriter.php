@@ -18,7 +18,7 @@ final class ContentWriter
         return (int) DB::table('content_imports')->insertGetId([
             'document_hash' => $source->documentHash(),
             'source_commit' => $source->sourceCommit(),
-            'portion_hashes' => PublishedJson::encode($source->meta['portions']),
+            'portion_hashes' => PublishedJson::encode($source->meta->portionHashes),
             'counts' => PublishedJson::encode($plan->report->counts),
             'changes' => PublishedJson::encode($plan->report->toArray()),
             'created_at' => $this->now(),

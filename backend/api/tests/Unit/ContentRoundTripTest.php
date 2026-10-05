@@ -1,24 +1,19 @@
 <?php
 
-use App\Content\Codec\AtlasCodec;
 use App\Content\Codec\ExerciseCodec;
-use App\Content\Codec\GuideCodec;
-use App\Content\Codec\WorkshopCodec;
-use App\Content\Codec\WorldCodec;
-use App\Content\ContentRows;
 use App\Content\ContentSource;
 use App\Content\Portion;
-use App\Content\PortionAssembler;
 use App\Content\PublishedJson;
 use Illuminate\Support\Arr;
 use Tests\Support\ContentFixture;
+use Tests\Support\ContentPipeline;
 
 // The contract without a database: the real document → rows → bytes. The expected values are the
 // hashes the generator computed over the bytes of JSON.stringify (curriculum.meta.json), an oracle
 // independent of the PHP code under test.
 function contentRowsFor(ContentSource $source): array
 {
-    $rows = (new ContentRows(new ExerciseCodec, new WorkshopCodec, new WorldCodec, new AtlasCodec, new GuideCodec))->fromSource($source);
+    $rows = (ContentPipeline::rows())->fromSource($source);
 
     return $rows->toArray();
 }
@@ -26,13 +21,13 @@ function contentRowsFor(ContentSource $source): array
 beforeEach(function () {
     $this->source = ContentSource::fromDirectory(ContentFixture::imagePath());
     $this->rows = contentRowsFor($this->source);
-    $this->assembler = new PortionAssembler(new ExerciseCodec, new WorkshopCodec, new WorldCodec, new AtlasCodec, new GuideCodec);
+    $this->assembler = ContentPipeline::assembler();
 });
 
 it('assembles each of the 17 portions with the bytes the generator fixed', function (Portion $portion) {
     $bytes = $this->assembler->assemble($portion, $this->rows, $this->source->languages());
 
-    expect(hash('sha256', $bytes))->toBe($this->source->meta['portions'][$portion->value]);
+    expect(hash('sha256', $bytes))->toBe($this->source->meta->portionHash($portion));
 })->with(Portion::cases());
 
 it('assembles each exercise with its contentHash', function () {
@@ -49,7 +44,7 @@ it('assembles each exercise with its contentHash', function () {
             $hints->get($exercise['id'], collect())->sortBy('position')->values()->all(),
             $topics["{$exercise['language']}|{$exercise['topic_key']}"],
         );
-        if (hash('sha256', PublishedJson::encode($record)) !== $this->source->meta['exercises'][$exercise['id']]['contentHash']) {
+        if (hash('sha256', PublishedJson::encode($record)) !== ContentFixture::fromImage()->meta['exercises'][$exercise['id']]['contentHash']) {
             $wrong[] = $exercise['id'];
         }
     }
@@ -94,7 +89,7 @@ it('assembles the same bytes even if the rows arrive in another order', function
 
     $bytes = $this->assembler->assemble($portion, $reversed, $this->source->languages());
 
-    expect(hash('sha256', $bytes))->toBe($this->source->meta['portions'][$portion->value]);
+    expect(hash('sha256', $bytes))->toBe($this->source->meta->portionHash($portion));
 })->with(Portion::cases());
 
 it('assembles the same bytes when the database returns numbers as text', function (Portion $portion) {
@@ -105,5 +100,5 @@ it('assembles the same bytes when the database returns numbers as text', functio
 
     $bytes = $this->assembler->assemble($portion, $asText, $this->source->languages());
 
-    expect(hash('sha256', $bytes))->toBe($this->source->meta['portions'][$portion->value]);
+    expect(hash('sha256', $bytes))->toBe($this->source->meta->portionHash($portion));
 })->with(Portion::cases());

@@ -13,9 +13,9 @@ it('reads the document and its meta from the image', function () {
     expect($source->document)->toBe(file_get_contents(ContentFixture::imagePath().'/curriculum.json'))
         ->and($source->documentHash())->toBe(hash('sha256', $source->document))
         ->and($source->languages())->toBe(['rust', 'go'])
-        ->and($source->meta['portions'])->toHaveCount(17)
-        ->and($source->meta['exercises'])->toHaveCount(274)
-        ->and($source->meta['workshopSteps'])->toHaveCount(25);
+        ->and($source->meta->portionHashes)->toHaveCount(17)
+        ->and($source->meta->exerciseHashes)->toHaveCount(274)
+        ->and($source->meta->workshopSteps)->toHaveCount(25);
 });
 
 it('rejects a meta from another build', function () {

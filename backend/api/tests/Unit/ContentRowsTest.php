@@ -1,9 +1,5 @@
 <?php
 
-use App\Content\Codec\AtlasCodec;
-use App\Content\Codec\ExerciseCodec;
-use App\Content\Codec\GuideCodec;
-use App\Content\Codec\WorkshopCodec;
 use App\Content\Codec\WorldCodec;
 use App\Content\ContentRows;
 use App\Content\ContentSource;
@@ -11,12 +7,13 @@ use App\Content\ContentTables;
 use App\Content\InvalidContent;
 use App\Content\RowSet;
 use Tests\Support\ContentFixture;
+use Tests\Support\ContentPipeline;
 
 afterEach(fn () => ContentFixture::cleanup());
 
 function rowsOf(ContentFixture $fixture, ?Closure $editMeta = null): RowSet
 {
-    $rows = new ContentRows(new ExerciseCodec, new WorkshopCodec, new WorldCodec, new AtlasCodec, new GuideCodec);
+    $rows = ContentPipeline::rows();
 
     return $rows->fromSource(ContentSource::fromDirectory($fixture->write(editMeta: $editMeta)));
 }
