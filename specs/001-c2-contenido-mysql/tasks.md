@@ -92,6 +92,6 @@ Ondas, dueños de archivos, interfaces y puntos de sincronización (S0, S1, S2):
 - [x] T026 [P] Documentación en `README.md`, `qa/AGENTS.md`, `docs/architecture.md`, `api/AGENTS.md` y `api/scripts/smoke.sh` (FR-043; plan 7.3)
   - Commit: 2411ef4
 - [x] T027 [US3] Medición del tmpfs de Nginx con 40 clientes lentos, con 24 MB y 100 MiB como máximo, y su comentario en `compose.yaml` (FR-047; plan 7.4)
-  - Evidencia: medido sin cambios en compose.yaml: pico de /tmp 0 MB y de memoria 17,3 MiB con 40 clientes lentos
+  - Evidencia: sin cambios en compose.yaml. En loopback el desborde casi no se ejercitó (4 con 40 curl a 2 KB/s); /tmp quedó cerca de 0 MB y la memoria llegó a 17,3 MiB. El tamaño se sostiene por cuenta: 40 × 285 KB son unos 11,5 MB.
 - [x] T028 Compuerta final: `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `npm run api:test`, `api:smoke`, `api:content:check` y `deploy-check.sh` (FR-043, FR-046, SC-006, SC-010; plan 7.5)
   - Commit: b955269 (despliegue con api/scripts/deploy.sh); arreglos de la revisión en 425b63f y 9156b44, y de QA en 04b7e72; compuerta en verde
