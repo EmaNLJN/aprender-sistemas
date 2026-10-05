@@ -126,7 +126,7 @@ Lo que el revisor mira primero, porque es lo que más cuesta equivocar o lo que 
   - El 429 del bloqueo depende del email canónico y de la cookie, nunca de si la cuenta existe.
   - `reset-password` da el mismo 422 para un token inválido, uno vencido, una cuenta inexistente y una que no está `active`; el 422 por política no revela si el token servía.
   - La invitación usada, revocada o inventada da el mismo 404.
-- **La revocación sin el driver.** Cada prueba de revocación deja intacta la fila de `sessions` y comprueba que la sesión ya no sirve. `AuthenticateSession` se usa como sonda, no se copia. Mirá el orden efectivo del grupo `api` (el ordenador de middleware de Laravel puede reubicar los que están en su lista de prioridad).
+- **La revocación sin el driver.** Ninguna prueba de revocación borra la fila de `sessions` al preparar el escenario (sólo cambia la cuenta) y todas comprueban que la sesión ya no sirve en el pedido siguiente. `AuthenticateSession` se usa como sonda, no se copia. Mirá el orden efectivo del grupo `api` (el ordenador de middleware de Laravel puede reubicar los que están en su lista de prioridad).
 - **Una sola puerta para las contraseñas.** Ninguna clase fuera de `AccountPasswords` usa `Hash`, ni `Auth::attempt` (su rehash automático hashearía la cadena sin normalizar). Cada ruta que fija o verifica una contraseña tiene su prueba con la `á` descompuesta y compuesta.
 - **CSRF y cuenta esperada.** El orden es 419, sesión descartada, 401, 409 y 403 de `verified`. Las pruebas de 419 tienen que cambiar el entorno (el CSRF se salta en las pruebas); sin eso, pasarían sin probar nada. El recorrido de rutas es por defecto cerrado: una ruta nueva sin el grupo `account` y fuera de la lista blanca falla.
 - **Secretos.** Los tokens de invitación y de restablecimiento viajan sólo en el fragmento y en el cuerpo de un `POST`; `SecretScrubber` los quita de los registros (también de un `QueryException`); Nginx registra `/api/` sin la query string; la base guarda sólo hashes.
@@ -350,7 +350,7 @@ final class WriteTransaction
 - **Entrega** (firmas de referencia):
 
 ```php
-final class Email { public static function canonical(string $raw): string; }   // recorte y mb_strtolower; conserva los acentos
+final class Email { public static function canonical(string $raw): string; }   // recorte, NFC y mb_strtolower; conserva los acentos
 final class EmailFingerprint { public static function of(string $email): string; }   // HMAC-SHA256 del email canónico con LOG_HMAC_KEY, 16 hexadecimales
 final class NetworkKey { public static function of(?string $ip): string; }
 final class InvitationToken {
@@ -367,6 +367,7 @@ final class Iso8601 { public static function utc(CarbonInterface $instant): stri
 | --- | --- | --- |
 | `Email::canonical` | `'  Ana@X.com '` | `ana@x.com` |
 | `Email::canonical` | `'PAPÁ@Ejemplo.com.ar'` | `papá@ejemplo.com.ar` (conserva la tilde) |
+| `Email::canonical` | `"PA\u{0301}PA@Ejemplo.com"` (la `A` y U+0301) | `pápa@ejemplo.com`, con la `á` compuesta |
 | `NetworkKey::of` | `'203.0.113.7'` | `203.0.113.7` |
 | `NetworkKey::of` | `'2001:db8:1:2:aaaa:bbbb:cccc:dddd'` | `v6:20010db800010002` |
 | `NetworkKey::of` | `'2001:db8:1:2::1'` y `'2001:db8:1:2:ffff:ffff:ffff:ffff'` | la misma clave que la anterior |
@@ -593,7 +594,7 @@ $middleware->group('account', ['account.active', 'auth:web', 'account.expected']
    - **`Browser`** (`tests/Support/Browser.php`): guarda los `Set-Cookie` de cada respuesta y los reenvía con `withUnencryptedCookies`; copia `XSRF-TOKEN` a `X-XSRF-TOKEN`; agrega `X-Taller-User` si se le dijo `signedInAs($user)`; ofrece `useDatabaseDrivers()` (`session.driver` y `cache.default` en `database`, FR-047), `enforceCsrf()` (cambia `$app['env']` a `local` para que `PreventRequestForgery` no se salte), `fromIp()`, `withAccountHeader()`, `cookie()` y `forget()`. Tiene su propia prueba.
    - **Cookies y sesión**: `taller-session` sale HttpOnly y `SameSite=Lax`, y su valor no es el id de la sesión (va cifrada); `XSRF-TOKEN` no es HttpOnly; un pedido de invitado deja una fila de `sessions` con `user_id` nulo y el `payload` cifrado; la sesión vence a los 31 minutos de inactividad (`travel`).
    - **Salud**: `GET /api/up` no crea ninguna fila en `sessions` y no manda `Set-Cookie` (FR-009).
-   - **`DropInvalidSessionTest`**, una fila por situación de la tabla: la cuenta pasa a `disabled`, `deleting` o cambia su contraseña (una segunda sesión con el hash viejo); pasan 9 horas sin y con cookie de recuerdo; cada una con la fila de `sessions` intacta y la sesión ya sin servir.
+   - **`DropInvalidSessionTest`**, una fila por situación de la tabla: la cuenta pasa a `disabled`, `deleting` o cambia su contraseña (una segunda sesión con el hash viejo); pasan 9 horas sin y con cookie de recuerdo; ninguna prepara el escenario borrando la fila de `sessions`: sólo cambia la cuenta o el reloj, y la sesión ya no sirve en el pedido siguiente.
    - **Grupo `account`**: sin sesión y sin `Accept`, 401 `unauthenticated` en JSON; con la sesión descartada por una cuenta `disabled`, 403 `account_disabled` y el pedido siguiente, 401; la ruta pública con una sesión inválida devuelve `null`.
    - **`EnsureExpectedAccountTest`**: un `GET` sin cabecera pasa; un `POST` con el id de la cuenta pasa; sin cabecera, con otro id, vacía o con un valor que no es un entero positivo, 409 `account_mismatch` sin una sola escritura (el registro de consultas no tiene `insert`, `update` ni `delete`, salvo `sessions` y `cache`).
    - **`EnsureEmailIsVerifiedTest`**: una cuenta sin verificar recibe 403 `email_unverified`; una verificada pasa.
@@ -928,7 +929,7 @@ El flujo de `ResetPasswordController`: valida la forma; busca la cuenta por emai
 
 1. Las pruebas, con `Carbon::setTestNow()`. Fallan porque las clases no existen:
    - **Consola**: una cuenta `active` (también un admin) sale con 0 y el link `<APP_URL>/#restablecer=<token>&email=ana%40x.com`; la base guarda un hash bcrypt y no el token; una segunda corrida a los 10 segundos sale con 1 y dice que faltan 50; a los 61 segundos emite; un email sin cuenta, una cuenta `disabled` y una `deleting` salen con 1; no se envía ningún correo ni notificación (`Mail::fake()` y `Notification::fake()` sin nada enviado).
-   - **El restablecimiento, camino feliz**: 200 `{}`; la contraseña nueva verifica (fijada con la `á` descompuesta y verificada con la compuesta); el `remember_token` cambió; las filas de `sessions` de la cuenta ya no existen; el estado del bloqueo (fijado en 12 fallos) quedó en cero; no hay una sesión abierta en la respuesta; el token no sirve una segunda vez.
+   - **El restablecimiento, camino feliz**: 200 con el objeto `{}` (el cuerpo es `{}` y no `[]`: `response()->json((object) [])`); la contraseña nueva verifica (fijada con la `á` descompuesta y verificada con la compuesta); el `remember_token` cambió; las filas de `sessions` de la cuenta ya no existen; el estado del bloqueo (fijado en 12 fallos) quedó en cero; no hay una sesión abierta en la respuesta; el token no sirve una segunda vez.
    - **El mismo 422**: un token inválido, uno vencido (a los 61 minutos), un email sin cuenta, una cuenta `disabled` y una `deleting` dan cuerpos idénticos (`errors.token`).
    - **La política va primero**: una contraseña de 14 caracteres da 422 con `errors.password` con un token válido y con uno inválido, igual en los dos.
    - **Límites**: 10 por minuto por red y 5 por minuto por email (el sexto pedido con el mismo email desde otra red da 429).
@@ -1032,11 +1033,11 @@ El flujo de `PUT /api/me/password`: valida la forma; `PasswordProof::verify` de 
 
 1. Las pruebas, con `Browser::useDatabaseDrivers()`. Fallan porque las rutas no existen:
    - **`PATCH /api/me`**: 200 `{data: user}` con el nombre nuevo; un cuerpo con `email`, `role`, `status` o `user_id` los ignora (el rol y el estado guardados no cambian); un nombre de 0 o de 81 caracteres, o con un carácter de control, da 422.
-   - **Revocación** (FR-007, FR-049): una cuenta con una sesión viva pasa a `disabled` y el siguiente pedido a una ruta de `account` recibe 403 `account_disabled`, con la fila de `sessions` todavía en la tabla, y el que sigue recibe 401. Con dos sesiones abiertas, cambiar la contraseña en la primera da 200 con un ID de sesión nuevo, y la segunda recibe 401 en su siguiente pedido, también con su cookie de recuerdo (un estudiante con «recordarme»); la primera conserva su cookie de recuerdo, ya con el token nuevo.
+   - **Revocación** (FR-007, FR-049): una cuenta con una sesión viva pasa a `disabled` y el siguiente pedido a una ruta de `account` recibe 403 `account_disabled` aunque la prueba no haya tocado la fila de `sessions`, y el que sigue recibe 401. Con dos sesiones abiertas, cambiar la contraseña en la primera da 200 con un ID de sesión nuevo, y la segunda recibe 401 en su siguiente pedido, también con su cookie de recuerdo (un estudiante con «recordarme»); la primera conserva su cookie de recuerdo, ya con el token nuevo.
    - **`PUT /api/me/password`**: la actual equivocada da 422 `auth_failed` y suma un fallo al bloqueo; una nueva que no cumple la política da 422 `errors.password`; 5 pedidos por minuto, el sexto 429. La nueva fijada con la `á` descompuesta ingresa con la compuesta.
    - **`POST /api/me/sessions/logout-others`**: 204; las otras sesiones dejan de servir, la actual sigue y el token de «recordarme» cambió; con la contraseña equivocada, 422 `auth_failed`.
    - **`POST /api/me/privacy`**: 204 con la versión vigente y las columnas guardadas; 422 con otra.
-   - **Confirmación**: `POST /api/auth/confirm-password` con la contraseña correcta da 201 `{}`, cambia el ID de la sesión y `confirmed-password-status` pasa a `{"confirmed": true}` durante 900 segundos (899 sí, 901 no); sin confirmar, una ruta de prueba con `password.confirm` da 423 `password_confirmation_required`; con la contraseña equivocada, 422 `auth_failed`, un fallo más para el bloqueo; el sexto intento en un minuto, 429.
+   - **Confirmación**: `POST /api/auth/confirm-password` con la contraseña correcta da 201 con el objeto `{}` (no `[]`), cambia el ID de la sesión y `confirmed-password-status` pasa a `{"confirmed": true}` durante 900 segundos (899 sí, 901 no); sin confirmar, una ruta de prueba con `password.confirm` da 423 `password_confirmation_required`; con la contraseña equivocada, 422 `auth_failed`, un fallo más para el bloqueo; el sexto intento en un minuto, 429.
    - **Pasada por el bloqueo**: diez contraseñas equivocadas en confirmar, cambiar o cerrar las otras sesiones, desde un dispositivo sin cookie, bloquean el ingreso de esa cuenta para dispositivos desconocidos.
    - **Cuenta esperada**: cada una de estas rutas sin `X-Taller-User` da 409 (el recorrido general es T023).
 2. Implementá los controladores, los `FormRequest` y las rutas.

@@ -17,7 +17,7 @@ Crea o renueva la invitación de un email y imprime su link. Es el único camino
 | Email que ya tiene una cuenta | No crea nada; dice que la cuenta ya existe | 1 |
 | `--role` que no es `admin` ni `student`, o un email inválido | Dice cuál es el valor válido | 2 |
 
-- El email se canonicaliza (sin espacios y en minúsculas) y se compara sin distinguir mayúsculas pero sí acentos.
+- El email se canonicaliza (sin espacios, en NFC y en minúsculas) y se compara sin distinguir mayúsculas pero sí acentos.
 - El vencimiento es de 7 días para `student` y de 48 horas para `admin`, desde que se crea o se renueva.
 - El link es `<APP_URL>/#invitacion=<token>`, armado desde `config('app.url')` y nunca desde `Host`. El token tiene 43 caracteres. La base guarda sólo su sha256.
 - La salida dice a quién se invitó, con qué rol y cuándo vence (en UTC), seguida del link en su propia línea.

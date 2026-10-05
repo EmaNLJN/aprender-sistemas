@@ -33,6 +33,7 @@ Las referencias «R1» a «R23» de este archivo son sus propias secciones. Los 
 | 16 | `trustProxies` queda vacío, y una prueba lo exige y comprueba que `X-Forwarded-For` no evade los límites por red | R22 |
 | 17 | `init-env.sh` tiene un solo dueño de su estructura: C3a | R23 |
 | 18 | `features.passwordReset` y `features.registration` salen de la configuración, para que C3b los encienda sin tocar código | R23 |
+| 19 | El email canónico también se normaliza a NFC, para que las claves de los límites y del bloqueo no se partan en variantes que MySQL compara como iguales | R6 |
 
 ## R1. Sin Fortify: qué reemplaza a qué
 
@@ -110,7 +111,7 @@ Las referencias «R1» a «R23» de este archivo son sus propias secciones. Los 
 
 `LoginPipeline` hace, en orden (ADR 0006 §4.2):
 
-1. Canonicaliza el email (`Email::canonical`: recorte y `mb_strtolower`) y calcula la clave `sha256(email)` y la red (`NetworkKey`: la IPv4, o el /64 de una IPv6).
+1. Canonicaliza el email (`Email::canonical`: recorte, NFC y `mb_strtolower`) y calcula la clave `sha256(email)` y la red (`NetworkKey`: la IPv4, o el /64 de una IPv6).
 2. `LoginThrottle`: más de 5 intentos por minuto por email y red, o 60 por red, es 429. Cuenta todo intento que llega. Un ingreso correcto limpia el contador de email y red.
 3. Busca la cuenta por email (una consulta, exista o no).
 4. **Dispositivo.** `DeviceCookie` lee la cookie de dispositivo (`taller.device_cookie.name`, por omisión `taller-device`): es válida si descifra, trae `{uid, did}`, `uid` es la cuenta de este email y el dispositivo no sumó 10 fallos seguidos. Un dispositivo válido se limita a 5 fallos por minuto (429) y se salta el bloqueo por cuenta. Cualquier otro pasa por `AccountLockout`.
@@ -118,6 +119,8 @@ Las referencias «R1» a «R23» de este archivo son sus propias secciones. Los 
 6. **Verifica dentro de un `Timebox` de 200 ms**: `AccountPasswords::verifyOrDummy`, con un hash ficticio del mismo costo (se genera una vez por proceso con `Hash::make`, así que usa las rondas configuradas) cuando la cuenta no existe.
 7. Un fallo (cuenta inexistente, contraseña equivocada o cuenta `deleting`) suma al contador del dispositivo si lo había, o al de la cuenta si no, y responde 422 `auth_failed`. Una cuenta `disabled` con la contraseña correcta responde 403 sin tocar los contadores.
 8. Éxito: limpia los contadores, hace `Auth::login($user, $remember)` (que ya regenera el ID de la sesión), con `remember` sólo para estudiantes, marca `taller.authenticated_at` y emite o renueva la cookie de dispositivo.
+
+**El email en NFC.** MySQL compara `papá` compuesta y descompuesta como iguales (el UCA les da los mismos pesos), pero las claves de la caché se arman con los bytes. Sin normalizar, quien prueba contraseñas contra una cuenta con tilde podría partir su intento en dos claves y duplicar el tope. `Email::canonical` aplica NFC antes de pasar a minúsculas, con el mismo `Normalizer` de las contraseñas; para un email sin caracteres fuera de ASCII no cambia nada.
 
 **Decisiones.** El contador de fallos tiene un TTL para que un atacante no llene la tabla `cache` con emails inventados: 24 horas desde el último fallo, y 30 días si llegó a 100 fallos. Los fallos de un dispositivo conocido suman al contador del dispositivo y no al de la cuenta (la spec dice que el bloqueo de la cuenta cuenta los de dispositivos desconocidos). Confirmar la contraseña, cambiarla y cerrar las otras sesiones usan `PasswordProof`: 5 por minuto por usuario, y un fallo suma al bloqueo por cuenta como uno de ingreso. La spec lo exige sólo para confirmar; las otras dos prueban la contraseña actual igual y son la misma superficie de fuerza bruta para quien tiene una sesión robada.
 

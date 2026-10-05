@@ -96,7 +96,7 @@ Pública; límite de Nginx por IP. Crea la sesión de invitado de un cliente nue
 
 Pública; CSRF; los límites de FR-012 y FR-013.
 
-- **Cuerpo:** `{email: string, password: string, remember?: boolean}`. El email se canonicaliza (sin espacios y en minúsculas) antes de usarse. La contraseña se normaliza a NFC.
+- **Cuerpo:** `{email: string, password: string, remember?: boolean}`. El email se canonicaliza (sin espacios, en NFC y en minúsculas) antes de usarse. La contraseña se normaliza a NFC.
 - **200** `{"data": {id, name, email, role, privacyAccepted}}`, con la sesión nueva (ID nuevo), la cookie de dispositivo y, sólo si es un estudiante que pidió `remember`, la de recuerdo.
 - **422 `auth_failed`**: un email que no existe, una contraseña equivocada y una cuenta en `deleting` dan el mismo estado, el mismo cuerpo y el mismo piso de tiempo (200 ms).
 - **403 `account_disabled`**: cuenta `disabled` con la contraseña correcta, sin abrir sesión. Con la incorrecta, 422 `auth_failed`.
@@ -131,14 +131,14 @@ Pública; CSRF; 10 por minuto por red.
 Pública; CSRF; 10 por minuto por red y 5 por minuto por email.
 
 - **Cuerpo:** `{token, email, password, password_confirmation}`.
-- **200** `{}`: fija la contraseña, rota el token de «recordarme», borra todas las sesiones de la cuenta y limpia el bloqueo. **No inicia sesión.**
+- **200** con el objeto `{}`: fija la contraseña, rota el token de «recordarme», borra todas las sesiones de la cuenta y limpia el bloqueo. **No inicia sesión.**
 - **422 `validation_failed`** con `errors.token`, igual para un token inválido, uno vencido, una cuenta inexistente y una cuenta que no está `active`. Si la contraseña no cumple la política, el 422 trae `errors.password`, con o sin token válido.
 
 ## `POST /api/auth/confirm-password`
 
 Grupo `account`; 5 por minuto por usuario.
 
-- **Cuerpo:** `{password}`. **201** `{}`: guarda el instante de la confirmación y regenera el ID de la sesión.
+- **Cuerpo:** `{password}`. **201** con el objeto `{}`: guarda el instante de la confirmación y regenera el ID de la sesión.
 - **422 `auth_failed`** si la contraseña es incorrecta: el fallo suma al bloqueo por cuenta.
 
 ## `GET /api/auth/confirmed-password-status`

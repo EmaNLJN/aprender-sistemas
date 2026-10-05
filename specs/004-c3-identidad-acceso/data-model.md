@@ -184,7 +184,7 @@ El bloqueo progresivo (FR-013): con `fails` de 1 a 9 no hay bloqueo; desde el d�
 | --- | --- | --- |
 | `login_web_<hash>` | El guard de Laravel | El id de la cuenta |
 | `password_hash_web` | El guard (`login`) | El hash de la contraseña con que se ingresó; `AuthenticateSession` lo compara con el de la cuenta |
-| `taller.authenticated_at` | `LoginPipeline` y `Invitations::accept`; `DropInvalidSession` la completa si falta (un ingreso por la cookie de recuerdo) | Instante (epoch) del ingreso, para el máximo de 8 horas |
+| `taller.authenticated_at` | `LoginPipeline` y `InvitationController` (al aceptar); `DropInvalidSession` la completa si falta (un ingreso por la cookie de recuerdo) | Instante (epoch) del ingreso, para el máximo de 8 horas |
 | `auth.password_confirmed_at` | `ConfirmPasswordController` | Instante de la última confirmación; vale 900 segundos |
 | `_token` | `PreventRequestForgery` | El token CSRF |
 
