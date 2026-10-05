@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-05
 
-**Status**: Borrador con preguntas abiertas (Q1 a Q5); falta el clarify
+**Status**: Clarificada (sesión del 2026-10-05); lista para el plan
 
 **Input**: Ítem **C6** de la hoja de ruta [`specs/backend-multiusuario/roadmap.md`](../backend-multiusuario/roadmap.md), «Registros tipados del contenido». Extiende a [`specs/001-c2-contenido-mysql/`](../001-c2-contenido-mysql/spec.md), entregada e inmutable: cambia cómo el código de la API representa los registros del contenido, no lo que publica ni lo que guarda. Pedido del usuario del 2026-10-05 (ver «Lo que pidió el usuario»).
 
@@ -17,19 +17,19 @@
 1. Las 17 porciones y cada ejercicio salen con los mismos bytes de hoy, y un despliegue sobre una base que importó el código de C2 no escribe ninguna fila ni cambia un validador.
 2. El import acepta y rechaza los mismos documentos, con los mismos mensajes.
 3. Si el código lee un dato con un nombre que el registro no tiene, o lo usa con otro tipo, el análisis estático lo detecta sin correr pruebas.
-4. El análisis estático corre en el nivel que se elija (Q3), sin errores ni excepciones, y no se agrega ninguna dependencia.
+4. El análisis estático corre en el nivel 9, sin errores ni excepciones, y no se agrega ninguna dependencia.
 
-**Entra:** una forma tipada para cada registro del alcance (Q1), construida desde el documento o desde la fila, que da su fila y su forma publicada. También las pruebas que fijan que nada cambió, incluido un oráculo de filas tomado del código de C2, y la subida del nivel del análisis estático (Q3), con la CI y la documentación que lo citan.
+**Entra:** una forma tipada para cada registro del contenido (los 12 con forma publicada, las 7 filas auxiliares y el meta del generador), construida desde el documento o desde la fila, que da su fila y su forma publicada. También las pruebas que fijan que nada cambió, incluido un oráculo de filas tomado del código de C2, y la subida del análisis estático al nivel 9, con la CI y la documentación que lo citan.
 
 **Queda fuera:** el generador, `curriculum.json` y su meta, los bytes publicados, las tablas (no hay migraciones), el contrato HTTP y el comportamiento del import (resultado, informe y mensajes), que no cambian; y los registros de otros módulos de la API (cuentas en C3, ejecuciones en B2, progreso en D1), que adoptan el patrón en sus propias specs si les sirve.
 
-**Sin hacer a propósito (YAGNI):** `spatie/laravel-data` u otra biblioteca de mapeo; modelos de Eloquent para el contenido (ADR 0006 D09 escribe con el query builder); registros que se serializan solos o recursos de Laravel (C2 FR-014); validaciones nuevas del contenido, como enumeraciones para valores que hoy son texto libre; formas tipadas para los valores JSON anidados (propuesta, Q4); una meta de cobertura; `declare(strict_types=1)` (ver Assumptions).
+**Sin hacer a propósito (YAGNI):** `spatie/laravel-data` u otra biblioteca de mapeo; modelos de Eloquent para el contenido (ADR 0006 D09 escribe con el query builder); registros que se serializan solos o recursos de Laravel (C2 FR-014); validaciones nuevas del contenido, como enumeraciones para valores que hoy son texto libre; formas tipadas para los valores JSON anidados; una meta de cobertura; `declare(strict_types=1)` (ver Assumptions).
 
 **Actores:** quien mantiene la API (el usuario y los agentes que implementan), quien opera el taller (corre el despliegue y el import), el cliente del front (A3 y las vistas legacy, que no deben notar nada) y los equipos de C3, B2 y D1, que van a leer estos registros.
 
 ## Lo que pidió el usuario
 
-Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumptions) o una pregunta abierta (Preguntas abiertas).
+Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumptions) o una decisión del clarify que tomó el coordinador (Clarifications).
 
 | Pedido | Fuente |
 | --- | --- |
@@ -42,62 +42,20 @@ Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumption
 | La skill de apoyo es [`php-pro`](../../.agents/skills/php-pro/SKILL.md): se adoptan sus patrones, no su nivel 9 obligatorio ni su 80 % de cobertura | Usuario, 2026-10-05 |
 | Los arreglos se transforman con Collections y `Arr::`; TDD; código y pruebas en inglés; los documentos de Spec Kit, en español | `backend/api/AGENTS.md`; [constitución](../../.specify/memory/constitution.md), principios II y VI |
 | C2 queda inmutable y esta spec la extiende (flow-forward) | Constitución, principio VIII |
+| Se tipa todo el contenido: los 12 registros con forma publicada, las 7 filas auxiliares y el meta del generador | Usuario, clarify del 2026-10-05 (Q1) |
+| El análisis estático sube al nivel 9, sin baseline ni ignores, como decisión de C6 y no como regla general de `php-pro` | Usuario, clarify del 2026-10-05 (Q3) |
+| C6 va en la ola 2, en paralelo con C3, y se entrega antes de B2, que pasa a depender de C6 | Usuario, clarify del 2026-10-05 (Q5) |
 
-## Preguntas abiertas
+## Clarifications
 
-Son para el clarify y se plantearon el 2026-10-05. Cada una trae la opción recomendada y su motivo. Al responderlas, el clarify las registra en `## Clarifications`, bajo `### Session`, y reemplaza esta sección. Hasta entonces, los requisitos que señalan una de estas preguntas (con su marcador o con «(propuesta)») usan la opción recomendada como borrador.
+### Session 2026-10-05
 
-**Q1. ¿Qué registros se tipan en esta feature?** *(FR-001)* Fija el tamaño del cambio, y si el análisis estático puede subir al final sin parches.
-
-| Opción | Descripción |
-| --- | --- |
-| A | Todo el contenido: los 12 registros con forma publicada, las 7 filas auxiliares y el meta del generador (ver Key Entities). |
-| B | Sólo los 12 registros con forma publicada, los que hoy tienen su `FieldMap`. Las filas auxiliares y el meta siguen como arreglos validados. |
-| C | Un piloto: sólo el concepto del Atlas, de punta a punta. El resto y la subida del análisis quedan para specs siguientes. |
-
-**Recomendada: A.** Una clave mal escrita también puede esconderse en las filas auxiliares, porque el armado de las porciones lee de ellas `exercise_id`, `role`, `resource_id`, `label` y `text`. Lo mismo pasa con el meta, que cinco clases leen por clave. Con B, subir el análisis al nivel 9 obliga a comprobar a mano esas mismas lecturas. El piloto entra como primera tarea de A sin partir la spec.
-
-**Q2. ¿Los registros tipados reemplazan también a las filas dentro de la diferencia del import?** *(FR-010)* La diferencia decide qué escribe cada import: la idempotencia, el retiro, la reactivación, el índice v1 congelado y el `test_key` retirado. Es lo más delicado de tocar.
-
-| Opción | Descripción |
-| --- | --- |
-| A | No: los registros terminan en su fila. La diferencia, el plan y la escritura siguen comparando y escribiendo filas, el borde del query builder. Comprueban el tipo de las pocas columnas que leen por su nombre. |
-| B | Sí: lo deseado y lo guardado son registros tipados, con su estado de retiro. La diferencia los compara, y la escritura los vuelve filas recién al llamar al query builder. |
-| C | A medias: la comparación genérica, fila por fila, sigue sobre filas. Las reglas propias (índice v1, `test_key`, versiones de corrección e informe) leen registros construidos desde la fila guardada. |
-
-**Recomendada: A.** La diferencia es genérica a propósito: una sola comparación para las 19 tablas, `key_order` incluido (C2 FR-002), que ya tiene sus pruebas. B le suma a cada tipo de registro el estado de retiro y reescribe la parte más riesgosa del import sin un error concreto que corregir. C duplica las conversiones. A coincide con la decisión de que en el query builder entran y salen arreglos.
-
-**Q3. ¿A qué nivel sube el análisis estático (PHPStan) cuando los registros estén tipados?** *(FR-012, SC-004)* El nivel es el criterio que prueba que el tipado se sostiene, y cada nivel pide algo distinto.
-
-La medición es del 2026-10-05. Se usó el PHPStan 2.2.17 de la imagen de pruebas, con el código de esta rama montado de sólo lectura, la configuración de hoy y sólo el nivel cambiado. El nivel 6 da 0 errores, como en la CI.
-
-| Opción | Descripción |
-| --- | --- |
-| A | Nivel 8. Hoy da 11 errores, que vienen de tipos de listas, de valores de fila y de algunos bordes. Se corrigen sin tipar los registros, así que el nivel no prueba que el tipado se mantenga. |
-| B | Nivel 9. No deja usar un valor sin tipo (`mixed`) sin comprobarlo antes, y hoy lo es cada dato leído de una fila o del JSON. Por eso es el nivel que falla si un registro vuelve a viajar como arreglo. Hoy da 106 errores, 104 de ellos en `app/Content`. La mayoría viene de filas, del meta y de registros leídos como arreglos. Unos 25 a 30 vienen de bordes: la lectura en una foto de la base, que devuelve un valor sin tipo y explica la mayor parte de los 20 de la entrega (algunos son lecturas de la fila de un ejercicio); el candado del import; la configuración de la caché; un parámetro del pedido; y `config/filesystems.php`. |
-| C | Nivel 10. También reporta los tipos implícitos. Hoy da 154 errores, 48 más que el 9, y suma trabajo fuera del objetivo. |
-
-**Recomendada: B.** El nivel 8 se alcanza casi igual sin esta feature, así que no mide su resultado. El 9 es el primero que rechaza los datos de registro sin tipo, y 104 de sus 106 errores están en el contenido. Se elige por lo que prueba en esta feature, no como el nivel 9 obligatorio de `php-pro` que el usuario descartó como regla general. Si en Q1 se elige B o C, el nivel 9 obliga igual a comprobar a mano lo que quede sin tipar.
-
-**Q4. ¿Cómo se representan los valores JSON anidados de un registro y su orden de claves?** *(FR-004)* Es la fuente principal de riesgo para los bytes. Hay 18 valores anidados en 6 tipos de registro, por ejemplo `quiz`, `sources`, `prediction`, `review`, `instructions` y `checkpoint`. El orden de las claves dentro de cada uno sólo vive en su texto JSON.
-
-| Opción | Descripción |
-| --- | --- |
-| A | Opacos: cada valor anidado se conserva tal como lo escribió el generador, sin forma tipada propia. El orden de claves del registro pasa a ser una lista tipada de las claves que el registro conoce. |
-| B | Tipados: cada valor anidado (pregunta, fuente, predicción, consigna, revisión, punto de control…) tiene su propia forma tipada. Eso pide guardar o fijar el orden de claves de cada objeto anidado, y ADR 0006 D10 descartó las constantes de orden. |
-| C | Como texto: los valores anidados y el orden de claves quedan como texto JSON dentro del registro, sin decodificar hasta la salida. |
-
-**Recomendada: A.** Ni el progreso ni otra tabla referencian los valores anidados, y su orden de claves sólo sobrevive en su texto. Tiparlos (B) agrega el mayor riesgo para los bytes sin un consumidor que lo necesite. C deja sin tipo justamente el orden de claves, el dato que decide los bytes de cada registro. A tipa ese orden y deja los valores anidados como los escribió el generador.
-
-**Q5. ¿Dónde va C6 en la hoja de ruta respecto de C3?** *(hoja de ruta, «Orden y paralelismo»)* C3 es el próximo paso del tronco, C6 toca el mismo módulo que B2, y el nivel nuevo del análisis rige para todo el código.
-
-| Opción | Descripción |
-| --- | --- |
-| A | En paralelo con C3, en la ola 2, con archivos casi disjuntos, y entregada antes de B2, que cambia las pruebas de ejercicio y el generador. El código de C3 se escribe para el nivel nuevo del análisis. |
-| B | Antes de C3: C3 espera y nace con el patrón de registros tipados y el nivel nuevo, pero el tronco se retrasa. |
-| C | Después de C3 y antes de B2: no compite con C3, pero la subida del análisis tiene que corregir también el código de C3. |
-
-**Recomendada: A.** No retrasa el tronco, y C3 cruza poco con C6: lee el último import y los catálogos para `GET /api/session` y pone el contenido detrás de la sesión, sin tocar los códecs. `composer.json`, `phpstan.neon` y la documentación los integra el coordinador. El que sí choca es B2, y por eso C6 va antes.
+- Q: **Q1**, ¿qué registros se tipan en esta feature? → A: Todo el contenido: los 12 registros con forma publicada, las 7 filas auxiliares y el meta del generador. Decidió el usuario. (FR-001)
+- Q: **Q2**, ¿los registros tipados reemplazan también a las filas dentro de la diferencia del import? → A: No. La comparación, el plan y la escritura del import siguen sobre filas; los registros terminan en su fila, y sólo se comprueba el tipo de las columnas que la diferencia lee por su nombre. Decidió el coordinador: la comparación genérica ya tiene pruebas, y reescribirla no corrige ningún error concreto. (FR-010)
+- Q: **Q3**, ¿a qué nivel sube el análisis estático? → A: Al 9, sin baseline ni ignores. Es una decisión de C6 por lo que prueba, no la vuelta del nivel 9 obligatorio de `php-pro` como regla general. Decidió el usuario. (FR-012, SC-004)
+- Q: **Q4**, ¿cómo se representan los valores JSON anidados de un registro y su orden de claves? → A: Los valores anidados quedan opacos, tal como los escribe el generador, y `key_order` pasa a ser una lista tipada de las claves que el registro conoce. Decidió el coordinador: es lo que menos arriesga los bytes, y ningún consumidor necesita tipar los anidados. (FR-004)
+- Q: **Q5**, ¿dónde va C6 respecto de C3? → A: En la ola 2, en paralelo con C3, y se entrega antes de B2, que pasa a depender de C6. Decidió el usuario. (hoja de ruta)
+- `declare(strict_types=1)` sigue fuera, como supuesto que cita la exclusión de `docs/agent-skills.md`; el coordinador no lo volvió a preguntar. (Assumptions)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -150,7 +108,7 @@ Quien mantiene la API cambia un registro: suma un dato, renombra una columna o m
 
 1. **Dado** un registro tipado, **cuando** el código lee un dato con un nombre que el registro no tiene, **entonces** el análisis estático falla y nombra el archivo y la línea, sin correr pruebas.
 2. **Dado** un dato de registro de un tipo, por ejemplo un entero, **cuando** el código lo pasa donde se espera otro incompatible, **entonces** el análisis estático falla.
-3. **Dado** el nivel elegido en Q3, **cuando** el código usa sin comprobarlo un valor sin tipo leído de una fila o del JSON, **entonces** el análisis estático falla. *(Si Q3 elige el nivel 8, este escenario sale: ese nivel acepta valores sin tipo.)*
+3. **Dado** el nivel 9 del análisis, **cuando** el código usa sin comprobarlo un valor sin tipo leído de una fila o del JSON, **entonces** el análisis estático falla.
 
 *Cubre: FR-001 a FR-004, FR-012 y FR-017; SC-004 y SC-005.*
 
@@ -158,7 +116,7 @@ Quien mantiene la API cambia un registro: suma un dato, renombra una columna o m
 
 ### User Story 4 - El análisis estático sube de nivel y se queda ahí (Priority: P2)
 
-Con los registros tipados, el análisis estático corre en el nivel elegido, en la máquina de quien desarrolla y en la CI, sin errores ni excepciones. Así el código que llegue después, también el de C3, B2 y D1, no vuelve a los arreglos sin tipo.
+Con los registros tipados, el análisis estático corre en el nivel 9, en la máquina de quien desarrolla y en la CI, sin errores ni excepciones. Así el código que llegue después, también el de C3, B2 y D1, no vuelve a los arreglos sin tipo.
 
 **Why this priority**: sin el nivel nuevo, el tipado se degrada con el primer cambio apurado. Pero el nivel sólo sube después de tipar los registros, como decidió el usuario.
 
@@ -166,7 +124,7 @@ Con los registros tipados, el análisis estático corre en el nivel elegido, en 
 
 **Acceptance Scenarios**:
 
-1. **Dado** el código con los registros tipados, **cuando** corre el análisis estático, **entonces** termina sin errores en el nivel elegido, sobre las mismas rutas de hoy, sin baseline ni errores ignorados.
+1. **Dado** el código con los registros tipados, **cuando** corre el análisis estático, **entonces** termina sin errores en el nivel 9, sobre las mismas rutas de hoy, sin baseline ni errores ignorados.
 2. **Dado** un PR, **cuando** corre la CI, **entonces** analiza en el nivel nuevo.
 3. **Dado** la documentación del proyecto, **cuando** se busca el nivel del análisis, **entonces** dice el nuevo, en `backend/api/AGENTS.md` y en `docs/agent-skills.md`.
 
@@ -193,10 +151,10 @@ Con los registros tipados, el análisis estático corre en el nivel elegido, en 
 
 **Registros tipados**
 
-- **FR-001**: Cada tipo de registro del contenido dentro del alcance DEBE tener una forma tipada e inmutable: un dato por propiedad, con su tipo, que no cambia después de construirse. Los hijos de un registro que entren en el alcance (por ejemplo, las pruebas de un ejercicio, los objetivos y etapas de un taller, los módulos y pasos de la guía) son registros tipados como él. [NEEDS CLARIFICATION: Q1, qué registros entran. La recomendada: los 12 registros con forma publicada, las 7 filas auxiliares y el meta del generador.] *(Usuario, 2026-10-05)*
+- **FR-001**: Cada tipo de registro del contenido DEBE tener una forma tipada e inmutable: un dato por propiedad, con su tipo, que no cambia después de construirse. Entran los 12 registros con forma publicada, las 7 filas auxiliares y el meta del generador (Key Entities). Los hijos de un registro (las pruebas y pistas de un ejercicio, los objetivos, etapas y ejercicios relacionados de un taller, los ejercicios de un mundo, los módulos, pasos y recursos de la guía) son registros tipados como él. *(Usuario, 2026-10-05; clarify, Q1)*
 - **FR-002**: Cada registro DEBE construirse desde el documento y desde su fila con constructores con nombre (`fromDocument` y `fromRow`), y DEBE dar su fila y su forma publicada con salidas explícitas (`toRow()` y `toPublished()`). Las conversiones que no corresponden a un tipo no se agregan: una fila auxiliar no tiene forma publicada propia, y el meta no tiene fila. *(Usuario, 2026-10-05)*
 - **FR-003**: En los bordes DEBEN seguir entrando y saliendo arreglos. El query builder recibe y devuelve filas como arreglos, y el único codificador (`PublishedJson`) recibe la forma publicada como los valores que recibe hoy. Ningún registro tipado DEBE llegar al query builder ni al codificador, ni serializarse a sí mismo. *(Usuario, 2026-10-05; `backend/api/AGENTS.md`, «Arreglos»)*
-- **FR-004**: La forma publicada de cada registro DEBE llevar sus claves en el orden guardado con su fila (`key_order`), y sólo las claves de ese orden: una clave opcional ausente sigue ausente, no `null`. El orden NO DEBE salir del orden de las propiedades ni de constantes en el código (ADR 0006 D10); sólo la raíz de la guía, que no tiene fila, conserva su orden fijo de C2. [NEEDS CLARIFICATION: Q4, cómo se representan los valores JSON anidados y el orden de claves. La recomendada: los valores anidados quedan opacos, sin forma tipada propia, y el orden de claves pasa a ser una lista tipada de las claves que el registro conoce.]
+- **FR-004**: La forma publicada de cada registro DEBE llevar sus claves en el orden guardado con su fila (`key_order`), y sólo las claves de ese orden: una clave opcional ausente sigue ausente, no `null`. El orden NO DEBE salir del orden de las propiedades ni de constantes en el código (ADR 0006 D10); sólo la raíz de la guía, que no tiene fila, conserva su orden fijo de C2. El orden de claves es una lista tipada de las claves que el registro conoce, y los valores JSON anidados quedan opacos, sin forma tipada propia: se guardan y se publican tal como los escribe el generador. *(Clarify, Q4)*
 
 **Sin cambios observables**
 
@@ -205,12 +163,12 @@ Con los registros tipados, el análisis estático corre en el nivel elegido, en 
 - **FR-007**: La conversión desde la fila DEBE aceptar los valores como los devuelve el driver de la base (enteros como texto, banderas como 0 o 1 y el texto de las columnas JSON), y DEBE dar la misma forma publicada que con enteros y booleanos, como hoy.
 - **FR-008**: La conversión desde el documento DEBE aceptar y rechazar exactamente lo que hoy acepta y rechaza el import, con el mismo mensaje para cada error (archivo, ruta JSON y problema, en español). Eso incluye una clave sin regla, una clave obligatoria ausente, un texto vacío, un entero o un booleano que no lo es, una lista vacía o que no es lista, un objeto donde va otro valor y las referencias entre registros que valida C2. Tipar NO DEBE agregar rechazos, por ejemplo convirtiendo en enumeraciones valores que hoy son texto libre, ni quitar ninguno.
 - **FR-009**: El import DEBE conservar el comportamiento que fija C2 (FR-001 a FR-012): la diferencia incremental e idempotente, el retiro y la reactivación, las versiones de corrección, el auto-chequeo de las 17 porciones, el informe de `--dry-run`, el registro del import con sus conteos y su informe, y la caché de cuerpos.
-- **FR-010** *(propuesta, Q2)*: Los registros tipados DEBEN terminar en su fila. La diferencia del import, su plan y la escritura siguen comparando y escribiendo filas, que son el borde del query builder. Las columnas que la diferencia lee por su nombre (el índice v1 de una etapa, el `test_key`, las huellas y el estado de un ejercicio) DEBEN comprobar su tipo antes de usarse.
+- **FR-010**: Los registros tipados DEBEN terminar en su fila. La diferencia del import, su plan y la escritura siguen comparando y escribiendo filas, que son el borde del query builder. Las columnas que la diferencia lee por su nombre (el índice v1 de una etapa, el `test_key`, las huellas y el estado de un ejercicio) DEBEN comprobar su tipo antes de usarse. *(Clarify, Q2)*
 - **FR-011**: La entrega HTTP DEBE conservar el comportamiento que fija C2 (FR-013 a FR-026 y FR-044): rutas, parámetros, estados, cabeceras, validadores, cuerpos de error y caché de cuerpos.
 
 **Análisis estático y dependencias**
 
-- **FR-012**: Cuando los registros estén tipados, el análisis estático (`npm run api:analyse`) DEBE subir del nivel 6 a un nivel más alto. Corre sobre las mismas rutas de hoy (`app`, `config`, `database`, `routes` y `bootstrap/app.php`), con 0 errores, sin baseline y sin ignorar errores ni en la configuración ni en el código. El mismo cambio corrige lo que ese nivel reporta fuera del contenido; hoy, `config/filesystems.php`. [NEEDS CLARIFICATION: Q3, nivel 8, 9 o 10. La recomendada es 9.]
+- **FR-012**: Cuando los registros estén tipados, el análisis estático (`npm run api:analyse`) DEBE subir del nivel 6 al 9. Corre sobre las mismas rutas de hoy (`app`, `config`, `database`, `routes` y `bootstrap/app.php`), con 0 errores, sin baseline y sin ignorar errores ni en la configuración ni en el código. El mismo cambio corrige lo que ese nivel reporta fuera del contenido; hoy, `config/filesystems.php`. *(Usuario; clarify, Q3)*
 - **FR-013**: La CI DEBE analizar en el nivel nuevo. En el mismo cambio, la documentación que cita el nivel DEBE pasar a decir el nuevo: `backend/api/AGENTS.md`, que hoy dice «nivel 6», y `docs/agent-skills.md`, que además dice que el proyecto no tiene PHPStan.
 - **FR-014**: NO DEBE agregarse ninguna dependencia: `require` y `require-dev` de `composer.json` no suman paquetes. *(Usuario, 2026-10-05)*
 
@@ -265,7 +223,7 @@ Los tipos de registro, con las cantidades del contenido vigente, que fijan las p
 - **SC-001**: Las 17 porciones y los 274 ejercicios del contenido vigente salen con el sha256 que fija el generador, armados sin base, desde las tablas y a través de Nginx: 0 diferencias.
 - **SC-002**: Al desplegar la imagen nueva sobre un stack que importó el código de C2, el import escribe 0 filas de contenido y registra 0 imports, y las 17 porciones responden 304 a sus validadores anteriores con el mismo `Content-Version`: 0 validadores distintos.
 - **SC-003**: Cada rechazo del import que la suite cubre hoy da el mismo mensaje (0 mensajes cambiados), y ningún documento que hoy se acepta se rechaza.
-- **SC-004**: `npm run api:analyse` termina con 0 errores en el nivel elegido (Q3), sin baseline ni errores ignorados. La línea de base, medida el 2026-10-05 sobre esta rama, es de 0 errores en el nivel 6, 10 en el 7, 11 en el 8, 106 en el 9 (104 en `app/Content`) y 154 en el 10.
+- **SC-004**: `npm run api:analyse` termina con 0 errores en el nivel 9, sin baseline ni errores ignorados. La línea de base, medida el 2026-10-05 sobre esta rama, es de 0 errores en el nivel 6, 10 en el 7, 11 en el 8, 106 en el 9 (104 en `app/Content`) y 154 en el 10.
 - **SC-005**: Escribir mal el nombre de un dato en una lectura de cada familia de registros (ejercicio, taller, mundo, Atlas y guía) hace fallar el análisis estático: 5 de 5 mutaciones detectadas, sin correr pruebas.
 - **SC-006**: `composer.json` no suma ningún paquete.
 - **SC-007**: Las pruebas observables de C2 pasan sin cambiar sus valores esperados, y pasan `npm run api:test` (Pest contra MySQL real), `npm run api:format:check`, `npm run api:analyse`, `npm test`, `npm run lint`, `npm run format:check`, `git diff --check`, `npm run api:content:check` y `sh backend/api/scripts/deploy-check.sh`.
@@ -276,8 +234,8 @@ Los tipos de registro, con las cantidades del contenido vigente, que fijan las p
 2. **Igualdad de filas.** Las huellas de las porciones no ven las filas. La diferencia del import compara los escalares como texto, pero el texto de `key_order` y de las columnas JSON lo compara tal cual. Si `toRow()` vuelve a codificar distinto uno de esos textos, las 17 huellas quedan intactas, y en el primer despliegue se reescriben todas las filas y se registra un import que nadie pidió. *Mitigación:* el oráculo de filas, tomado antes del primer cambio de código (FR-006 y FR-018), y el despliegue sobre una base de C2 (SC-002).
 3. **Mensajes del import.** Reescribir la validación del documento puede cambiar el texto, la ruta o el orden de las comprobaciones. *Mitigación:* FR-008 y las pruebas de rechazo existentes, que fijan el texto exacto.
 4. **Nombres repetidos.** Con conversiones explícitas, el nombre de una columna aparece al leer la fila y al escribirla, y el de una clave publicada, al leer el documento y al publicar. Si dos lugares escriben distinto un mismo nombre, se rompe la ida y vuelta. *Mitigación:* las pruebas de ida y vuelta y el oráculo de filas.
-5. **Lo que arrastra el nivel del análisis.** En el nivel 9, unos 25 a 30 de los 106 errores de hoy no vienen de los registros sino de bordes: la lectura en una foto de la base, que devuelve un valor sin tipo; el candado del import; la configuración de la caché; un parámetro del pedido; y `config/filesystems.php`. Subir el nivel obliga a corregirlos también; son correcciones chicas y locales.
-6. **Trabajo en paralelo.** B2 cambia las pruebas de ejercicio y el generador. C3 pone el contenido detrás de la sesión y lee el último import y los catálogos para `GET /api/session`. Los dos tocan cerca de C6, y el nivel nuevo del análisis rige también para el código que llegue después. Ver Q5.
+5. **Lo que arrastra el nivel del análisis.** En el nivel 9, 31 de los 106 errores de hoy no vienen de los registros sino de bordes. Hay 20 en la entrega, porque la lectura en una foto de la base devuelve un valor sin tipo. Los otros 11 se reparten entre el candado del import, la configuración de la caché y del comando, un parámetro del pedido, las claves de las tablas, las huellas del último import, la lectura de los archivos y `config/filesystems.php`. Subir el nivel obliga a corregirlos también; son correcciones chicas y locales, y el plan las verificó.
+6. **Trabajo en paralelo.** B2 cambia las pruebas de ejercicio y el generador. C3 pone el contenido detrás de la sesión y lee el último import y los catálogos para `GET /api/session`. Los dos tocan cerca de C6, y el nivel nuevo del análisis rige también para el código que llegue después. Por eso C6 corre en paralelo con C3, con los puntos de integración que marca el plan, y se entrega antes de B2 (clarify, Q5).
 7. **Compose compartido.** `compose.yaml` fija el nombre de proyecto `taller-rust-go`, el mismo del stack que corre en el checkout principal. Por eso `npm run api:test`, `npm run api:analyse`, `npm run api:content:check` y `deploy-check.sh`, corridos desde otro worktree sin un `COMPOSE_PROJECT_NAME` propio, construyen y tocan ese stack.
 8. **Costo de crear objetos.** El import y el armado de una porción crean unos pocos miles de objetos. *Supuesto:* no importa, porque la entrega sirve los cuerpos desde la caché y sólo arma uno cuando falta, y el import corre en el despliegue. No se mide.
 
@@ -293,7 +251,7 @@ Los tipos de registro, con las cantidades del contenido vigente, que fijan las p
 
 - C2 está entregada en `master` (PR #8, `4573457`). Al entregarla pasaban su suite de la API (328 pruebas), los 30 checks de `npm test`, `npm run api:content:check` y `deploy-check.sh`. Esta rama se apila sobre la reorganización del ADR 0007 (PR #13), y por eso las rutas son `backend/api/`.
 - La imagen corre PHP 8.5 (`php:8.5-fpm-alpine`) y `composer.json` declara `php: ^8.3`. Si el plan usa una característica posterior a 8.3, sube esa restricción a la versión de la imagen en el mismo cambio. No es una dependencia nueva.
-- Sin `declare(strict_types=1)` ni meta de cobertura. `docs/agent-skills.md` deja fuera de `php-pro` su nivel 9 obligatorio, `strict_types` y su 80 % de cobertura. El pedido del 2026-10-05 nombra sólo el nivel y la cobertura, y no cambia eso. Como las conversiones desde la fila son explícitas, el resultado no depende del modo de tipos. Si el usuario quiso adoptar `strict_types`, lo corrige en el clarify.
+- Sin `declare(strict_types=1)` ni meta de cobertura. `docs/agent-skills.md` deja fuera de `php-pro` su nivel 9 obligatorio, `strict_types` y su 80 % de cobertura. El pedido del 2026-10-05 nombra sólo el nivel y la cobertura, y no cambia eso. Como las conversiones desde la fila son explícitas, el resultado no depende del modo de tipos. El coordinador lo confirmó en el clarify sin volver a preguntarlo.
 - Rigen las reglas de `backend/api/AGENTS.md`: los arreglos con Collections y `Arr::`, Pest contra MySQL 9.7 real con sus tres suites, y Pint.
 - Con un documento que tiene un solo error, el mensaje es el de hoy (FR-008). Con varios, el import sigue rechazándolo, pero el primero que informa puede cambiar: ninguna prueba ni operación depende de ese orden.
 - La entrega puede partirse en unidades de trabajo por familia de registros, cada una con las pruebas de bytes y de filas en verde. El concepto del Atlas sirve de piloto: una tabla, sin hijos y con una clave opcional. Cómo se parte lo decide el plan; la entrega en Git, el coordinador.
@@ -311,3 +269,6 @@ Sólo las que cambian lo que se construye. Las que dicen «usuario» son decisio
 | Qué cruza los bordes | Registros hasta el query builder y el codificador, que se serializan solos; arreglos en los bordes | Arreglos (usuario): el codificador y el query builder no cambian, y los bytes siguen bajo control |
 | De dónde sale el orden publicado | Del orden de las propiedades; de constantes en el código; del `key_order` de cada fila | Del `key_order` (ADR 0006 D10): hay 7 órdenes de ejercicio y 4 de taller |
 | Cómo se prueba que nada cambió | Sólo con las huellas de porción; también con un oráculo de filas tomado de C2 | También con el oráculo de filas, porque las huellas no ven las filas (Riesgos, 2) |
+| Hasta dónde llegan los registros en el import | Hasta la diferencia y la escritura; hasta su fila | Hasta su fila (coordinador, Q2): la comparación genérica ya tiene pruebas |
+| Valores JSON anidados | Con forma tipada propia; opacos; como texto, con el orden de claves | Opacos, con el orden de claves tipado (coordinador, Q4): es lo que menos arriesga los bytes |
+| Nivel del análisis estático | 8, 9 o 10 | 9 (usuario, Q3): el 8 casi no depende de esta feature, y el 10 suma trabajo fuera del objetivo |
