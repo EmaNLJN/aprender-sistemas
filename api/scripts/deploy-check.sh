@@ -1,5 +1,6 @@
 #!/bin/sh
-# C2 deployment check (spec 001, FR-046) against the real stack: with a new image whose `migrate` fails on
+# C2 deployment check (spec 001, FR-046) against the real stack, deploying with api/scripts/deploy.sh: with
+# a new image whose `migrate` fails on
 # a lock held by another client, `php` is not recreated and the old one keeps serving; once the lock is
 # released, the same content under that image keeps the same ETag and Content-Version.
 # Builds images, leaves the stack up and takes minutes (`migrate` retries 3 times, pausing 5 and 15 s).
@@ -53,7 +54,7 @@ guide() {
 }
 
 echo "== 1. Despliegue sano con el commit $old_commit"
-CONTENT_SOURCE_COMMIT=$old_commit docker compose up --build -d --wait || abort "el despliegue inicial falló"
+CONTENT_SOURCE_COMMIT=$old_commit sh api/scripts/deploy.sh || abort "el despliegue inicial falló"
 addr=$(docker compose port taller 8080 2>/dev/null) || abort "el servicio taller no está levantado"
 php_before=$(docker compose ps -q php)
 [ -n "$php_before" ] || abort "no hay contenedor php"
@@ -62,7 +63,7 @@ guide_before=$(guide)
 check "$(printf '%s\n' "$guide_before" | wc -l | tr -d ' ')" 2 "la guía responde con ETag y Content-Version"
 
 echo "== 2. Otro cliente retiene un bloqueo sobre exercises: el import de migrate no puede leerla"
-# Build the new image before taking the lock: step 3's `up --build` then only reuses the cache, and the
+# Build the new image before taking the lock: step 3's deploy then only reuses the cache, and the
 # 180 s of lock cover migrate's 3 attempts however slow the build is.
 CONTENT_SOURCE_COMMIT=$new_commit docker compose build php migrate || abort "no se pudo construir la imagen nueva"
 sql 'LOCK TABLES exercises WRITE; SELECT SLEEP(180)' >/dev/null 2>&1 &
@@ -74,14 +75,14 @@ done
 [ -n "$holder_id" ] || abort "no se encontró la sesión que retiene el bloqueo"
 
 echo "== 3. Despliegue con una imagen nueva (commit $new_commit): migrate falla y php no se recrea"
-if CONTENT_SOURCE_COMMIT=$new_commit docker compose up --build -d --wait >"$log" 2>&1; then
+if CONTENT_SOURCE_COMMIT=$new_commit sh api/scripts/deploy.sh >"$log" 2>&1; then
   echo "FALLO el despliegue con migrate bloqueado terminó bien: no se dio el escenario"
   fail=1
 else
   echo "ok    el despliegue con migrate bloqueado falló, como debía"
 fi
 tail -n 5 "$log" | sed 's/^/      compose: /'
-check "$(docker compose logs --no-color migrate 2>&1 | grep -c 'sigue fallando por bloqueos después de 3 intentos')" 1 \
+check "$(grep -c 'sigue fallando por bloqueos después de 3 intentos' "$log")" 1 \
   "migrate reintentó 3 veces y se rindió"
 check "$(docker compose ps -q php)" "$php_before" "php no se recreó: sigue el mismo contenedor"
 check "$(docker inspect -f '{{.State.StartedAt}}' "$php_before")" "$started_before" "php no se reinició"
@@ -90,7 +91,7 @@ check "$(guide)" "$guide_before" "el php anterior sigue sirviendo la guía, con 
 echo "== 4. Se libera el bloqueo: el mismo despliegue sale bien y deja el mismo contenido"
 sql "kill $holder_id" >/dev/null 2>&1
 holder_id=""
-CONTENT_SOURCE_COMMIT=$new_commit docker compose up --build -d --wait || abort "el despliegue sin el bloqueo falló"
+CONTENT_SOURCE_COMMIT=$new_commit sh api/scripts/deploy.sh || abort "el despliegue sin el bloqueo falló"
 php_after=$(docker compose ps -q php)
 if [ "$php_after" != "$php_before" ]; then recreated=si; else recreated=no; fi
 check "$recreated" si "con migrate sano, php se recrea con la imagen nueva"

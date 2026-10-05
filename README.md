@@ -18,7 +18,7 @@ El script agrega `APP_KEY`, `MYSQL_PASSWORD` y `MYSQL_ROOT_PASSWORD` aleatorios 
 docker compose up --build -d --wait
 ```
 
-Abrí **http://localhost:8080/#sistemas**. También podés entrar por `#campana`, `#laboratorio` o `#atlas`. Compose construye la web, el editor, las animaciones y el generador de kits ZIP con Node en una etapa de construcción, y los sirve con Nginx dentro del contenedor. También levanta la API Laravel (PHP-FPM), MySQL y un servicio que aplica las migraciones, importa el contenido del currículo a la base y termina; si falla, PHP no arranca y el que ya estaba sigue sirviendo. Nginx pasa `/api/` a la API en el mismo origen, y **http://localhost:8080/api/up** responde si arrancó. En la PC anfitriona sólo necesitás Docker y Compose: no hace falta instalar Python, Node, PHP ni un servidor web. La primera construcción descarga las imágenes y las dependencias, también las de Node de la etapa que genera el contenido de la API. Las siguientes aprovechan la caché.
+Abrí **http://localhost:8080/#sistemas**. También podés entrar por `#campana`, `#laboratorio` o `#atlas`. Compose construye la web, el editor, las animaciones y el generador de kits ZIP con Node en una etapa de construcción, y los sirve con Nginx dentro del contenedor. También levanta la API Laravel (PHP-FPM), MySQL y un servicio que aplica las migraciones, importa el contenido del currículo a la base y termina; si falla, PHP no arranca. Nginx pasa `/api/` a la API en el mismo origen, y **http://localhost:8080/api/up** responde si arrancó. En la PC anfitriona sólo necesitás Docker y Compose: no hace falta instalar Python, Node, PHP ni un servidor web. La primera construcción descarga las imágenes y las dependencias, también las de Node de la etapa que genera el contenido de la API. Las siguientes aprovechan la caché.
 
 Para detenerlo:
 
@@ -31,6 +31,8 @@ Todos los comandos de `docker compose` leen `.env`: sin los secretos, hasta `dow
 Para usar otro puerto, agregá `TALLER_PORT=8090` al `.env` y ejecutá el mismo comando. El puerto se publica solo en tu equipo (127.0.0.1); MySQL (3306) y PHP-FPM (9000) no se publican. Compose crea redes propias: `edge`, la única con salida, para Nginx; `web`, interna, entre Nginx y PHP; `app`, interna, entre PHP y MySQL (Nginx no llega a MySQL), y `testing`, interna, para `npm run api:test`. Las imágenes base están fijadas por digest para reproducir esta entrega.
 
 La imagen de la API genera su propio `curriculum.json` y `curriculum.meta.json` con el mismo generador que usa el front, y el servicio de migraciones los importa. Para que la base registre el commit del contenido, pasalo al construir: `CONTENT_SOURCE_COMMIT=$(git rev-parse HEAD) docker compose up --build -d --wait`; sin él queda nulo y el import lo avisa.
+
+Para desplegar una versión nueva sin cortar el servicio si fallan las migraciones o el import, usá `sh api/scripts/deploy.sh`: construye las imágenes, corre las migraciones y el import con la nueva y recién entonces reemplaza PHP; si fallan, el PHP anterior sigue sirviendo. Con `docker compose up --build`, Compose detiene el PHP anterior antes de esperar a las migraciones. `sh api/scripts/deploy-check.sh` comprueba ese comportamiento contra el stack.
 
 ## Aprender en el taller
 
