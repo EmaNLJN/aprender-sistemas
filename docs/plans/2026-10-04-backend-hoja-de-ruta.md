@@ -1,5 +1,7 @@
 # Hoja de ruta del backend (ADR 0004 y ADR 0005)
 
+> **Reemplazada** por [`specs/backend-multiusuario/roadmap.md`](../../specs/backend-multiusuario/roadmap.md), que sigue el ADR 0006 y se mantiene con Spec Kit. Queda como historia de B1, A1 y C1 y ya no se actualiza.
+
 > **Para agentes:** cada subplan es un plan propio. Ejecutalo con
 > superpowers:subagent-driven-development o superpowers:executing-plans. Los subplanes que
 > todavía no tienen archivo se escriben con superpowers:writing-plans cuando se desbloquean,
