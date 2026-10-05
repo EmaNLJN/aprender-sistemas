@@ -207,14 +207,15 @@ it('rechaza una prueba repetida dentro de un ejercicio', function () {
 // documento sin ese ejercicio siga siendo válido lo comprueban las referencias de ContentRows,
 // que no dependen del fixture.
 it('arma las filas de un documento al que se le saca un ejercicio que nada referencia', function (string $language) {
+    $before = rowsOf(ContentFixture::fromImage());
     $fixture = ContentFixture::fromImage();
     $id = $fixture->unreferencedLabExercise($language);
     $removedTests = count($fixture->exercise($id)->tests);
 
-    $rows = rowsOf($fixture->withoutExercise($id));
+    $after = rowsOf($fixture->withoutExercise($id));
 
-    expect($rows->keyed('exercises'))->toHaveCount(273)->not->toHaveKey($id)
-        ->and($rows->keyed('exercise_tests'))->toHaveCount(822 - $removedTests);
+    expect($after->keyed('exercises'))->toHaveCount(count($before->keyed('exercises')) - 1)->not->toHaveKey($id)
+        ->and($after->keyed('exercise_tests'))->toHaveCount(count($before->keyed('exercise_tests')) - $removedTests);
 })->with(['rust', 'go']);
 
 // Las columnas de la clave se unen con \x1f: un carácter que ningún ID ni clave del contenido usa.

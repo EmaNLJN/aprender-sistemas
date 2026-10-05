@@ -52,12 +52,14 @@ it('avisa cuando el ejercicio que se pide no está en el contenido', function ()
 
 it('saca un ejercicio del documento y del meta, y el par sigue siendo válido', function () {
     $fixture = ContentFixture::fromImage();
+    $exercises = count($fixture->meta['exercises']);
+    $labRust = count($fixture->document->lab->rust);
     $id = $fixture->unreferencedLabExercise();
 
     $source = ContentSource::fromDirectory($fixture->withoutExercise($id)->write());
 
-    expect($source->meta['exercises'])->toHaveCount(273)->not->toHaveKey($id)
-        ->and(array_column($source->part(Portion::LabRust), 'id'))->toHaveCount(99)->not->toContain($id);
+    expect($source->meta['exercises'])->toHaveCount($exercises - 1)->not->toHaveKey($id)
+        ->and(array_column($source->part(Portion::LabRust), 'id'))->toHaveCount($labRust - 1)->not->toContain($id);
 });
 
 it('escribe el documento compacto cuando se pide sin sangría', function () {
