@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -12,31 +13,28 @@ const CONTENT_TABLES = [
     'guide_steps' => 14, 'guide_step_resources' => 7,
 ];
 
-function schemaRows(string $sql, array $bindings = []): Collection
+/** Runs a query over the content tables: `{tables}` stands for their `?` placeholders, bound to their names. */
+function schemaRows(string $sql): Collection
 {
-    return collect(DB::select($sql, $bindings));
+    $tables = collect(CONTENT_TABLES)->keys();
+    $placeholders = $tables->map(fn () => '?')->implode(',');
+
+    return collect(DB::select(str_replace('{tables}', $placeholders, $sql), $tables->all()));
 }
 
 it('A: creates the 21 tables in InnoDB with the Spanish collation', function () {
     // MySQL 8+ uppercases information_schema column names unless aliased: without `as engine` there is no `engine` property.
-    $tables = schemaRows(
-        'select table_name as name, engine as engine, table_collation as collation_name from information_schema.tables where table_schema = database() and table_name in ('.implode(',', array_fill(0, 21, '?')).')',
-        array_keys(CONTENT_TABLES),
-    );
+    $tables = schemaRows('select table_name as name, engine as engine, table_collation as collation_name from information_schema.tables where table_schema = database() and table_name in ({tables})');
 
-    expect($tables->pluck('name')->sort()->values()->all())->toBe(collect(array_keys(CONTENT_TABLES))->sort()->values()->all())
+    expect($tables->pluck('name')->sort()->values()->all())->toBe(collect(CONTENT_TABLES)->keys()->sort()->values()->all())
         ->and($tables->pluck('engine')->unique()->all())->toBe(['InnoDB'])
         ->and($tables->pluck('collation_name')->unique()->all())->toBe(['utf8mb4_es_0900_ai_ci']);
 });
 
 it('B: every table has its columns, with the ADR types for ID, hash, JSON, date and text', function () {
-    $columns = schemaRows('select table_name as t, column_name as c, column_type as type, collation_name as collation_name from information_schema.columns where table_schema = database() and table_name in ('.implode(',', array_fill(0, 21, '?')).') order by table_name, ordinal_position', array_keys(CONTENT_TABLES));
+    $columns = schemaRows('select table_name as t, column_name as c, column_type as type, collation_name as collation_name from information_schema.columns where table_schema = database() and table_name in ({tables}) order by table_name, ordinal_position');
 
-    $counts = $columns->countBy('t')->all();
-    ksort($counts);
-    $expectedCounts = CONTENT_TABLES;
-    ksort($expectedCounts);
-    expect($counts)->toBe($expectedCounts);
+    expect($columns->countBy('t')->sortKeys()->all())->toBe(collect(CONTENT_TABLES)->sortKeys()->all());
 
     $mismatches = [];
     foreach ($columns as $column) {
@@ -62,8 +60,8 @@ it('B: every table has its columns, with the ADR types for ID, hash, JSON, date 
 });
 
 it('B: ENUM columns list their values in the ADR order', function () {
-    $enums = schemaRows("select concat(table_name, '.', column_name) as path, column_type as type from information_schema.columns where table_schema = database() and data_type = 'enum' and table_name in (".implode(',', array_fill(0, 21, '?')).')', array_keys(CONTENT_TABLES))
-        ->pluck('type', 'path')->all();
+    $enums = schemaRows("select concat(table_name, '.', column_name) as path, column_type as type from information_schema.columns where table_schema = database() and data_type = 'enum' and table_name in ({tables})")
+        ->pluck('type', 'path');
     $levels = "enum('beginner','medium','advanced','expert')";
     $domains = "enum('lowlevel','infra','play','pc')";
     $lifecycle = "enum('active','deprecated')";
@@ -80,14 +78,12 @@ it('B: ENUM columns list their values in the ADR order', function () {
         $expected["{$table}.status"] = $lifecycle;
     }
 
-    ksort($expected);
-    ksort($enums);
-    expect($enums)->toBe($expected);
+    expect($enums->sortKeys()->all())->toBe(collect($expected)->sortKeys()->all());
 });
 
 it('C: the primary key is the only unique index, and the indexes are the ADR ones', function () {
-    $unique = schemaRows("select table_name as t, index_name as i from information_schema.statistics where table_schema = database() and non_unique = 0 and index_name <> 'PRIMARY' and table_name in (".implode(',', array_fill(0, 21, '?')).')', array_keys(CONTENT_TABLES));
-    $indexes = schemaRows("select distinct index_name as i from information_schema.statistics where table_schema = database() and index_name <> 'PRIMARY' and table_name in (".implode(',', array_fill(0, 21, '?')).')', array_keys(CONTENT_TABLES))
+    $unique = schemaRows("select table_name as t, index_name as i from information_schema.statistics where table_schema = database() and non_unique = 0 and index_name <> 'PRIMARY' and table_name in ({tables})");
+    $indexes = schemaRows("select distinct index_name as i from information_schema.statistics where table_schema = database() and index_name <> 'PRIMARY' and table_name in ({tables})")
         ->pluck('i')->sort()->values()->all();
 
     expect($unique)->toHaveCount(0)
@@ -106,9 +102,8 @@ it('D: the 22 foreign keys point where the ADR says and block deletes and key ch
     $foreign = schemaRows(
         "select k.constraint_name as name, concat(k.table_name, '(', group_concat(k.column_name order by k.ordinal_position), ') -> ', k.referenced_table_name, '(', group_concat(k.referenced_column_name order by k.ordinal_position), ')') as definition, any_value(r.delete_rule) as on_delete, any_value(r.update_rule) as on_update
          from information_schema.key_column_usage k join information_schema.referential_constraints r on r.constraint_schema = k.constraint_schema and r.constraint_name = k.constraint_name
-         where k.table_schema = database() and k.referenced_table_name is not null and k.table_name in (".implode(',', array_fill(0, 21, '?')).')
-         group by k.constraint_name, k.table_name, k.referenced_table_name',
-        array_keys(CONTENT_TABLES),
+         where k.table_schema = database() and k.referenced_table_name is not null and k.table_name in ({tables})
+         group by k.constraint_name, k.table_name, k.referenced_table_name",
     );
 
     expect($foreign->pluck('definition', 'name')->sortKeys()->all())->toBe(collect([
@@ -143,15 +138,16 @@ it('E: CHECK constraints exist by name and are enforced', function () {
     $lifecycle = ['catalogs', 'topics', 'workshops', 'exercises', 'exercise_tests', 'exercise_hints', 'workshop_objectives', 'workshop_steps', 'workshop_related_exercises', 'worlds', 'world_exercises', 'atlas_concepts', 'guide_resources', 'guide_sources', 'guide_tracks', 'guide_modules', 'guide_steps', 'guide_step_resources'];
     $position = ['workshops', 'exercises', 'exercise_tests', 'workshop_objectives', 'workshop_steps', 'workshop_related_exercises', 'worlds', 'world_exercises', 'atlas_concepts', 'guide_resources', 'guide_modules', 'guide_steps', 'guide_step_resources'];
     $json = ['workshops', 'exercises', 'exercise_tests', 'workshop_objectives', 'workshop_steps', 'worlds', 'atlas_concepts', 'guide_resources', 'guide_sources', 'guide_tracks', 'guide_modules', 'guide_steps'];
+    $checkNames = fn (string $check, array $tables) => Arr::map($tables, fn (string $table) => "{$table}_{$check}_check");
     $expected = [
-        ...array_map(fn (string $table) => "{$table}_lifecycle_check", $lifecycle),
-        ...array_map(fn (string $table) => "{$table}_position_check", $position),
-        ...array_map(fn (string $table) => "{$table}_json_check", $json),
+        ...$checkNames('lifecycle', $lifecycle),
+        ...$checkNames('position', $position),
+        ...$checkNames('json', $json),
         'catalogs_chain_position_check', 'catalogs_chain_lifecycle_check', 'content_imports_document_hash_check',
         'content_imports_source_commit_check', 'workshops_minutes_check', 'exercises_numbers_check', 'exercises_hashes_check',
         'exercise_grading_versions_hash_check', 'guide_resources_featured_check', 'guide_steps_minutes_check',
     ];
-    $found = schemaRows("select c.constraint_name as name, c.enforced as enforced from information_schema.table_constraints c where c.table_schema = database() and c.constraint_type = 'CHECK' and c.table_name in (".implode(',', array_fill(0, 21, '?')).')', array_keys(CONTENT_TABLES));
+    $found = schemaRows("select c.constraint_name as name, c.enforced as enforced from information_schema.table_constraints c where c.table_schema = database() and c.constraint_type = 'CHECK' and c.table_name in ({tables})");
 
     expect($found->pluck('name')->sort()->values()->all())->toBe(collect($expected)->sort()->values()->all())
         ->and($found->pluck('enforced')->unique()->all())->toBe(['YES']);
