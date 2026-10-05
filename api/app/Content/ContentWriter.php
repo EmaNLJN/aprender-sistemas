@@ -2,6 +2,7 @@
 
 namespace App\Content;
 
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -50,10 +51,10 @@ final class ContentWriter
         }
         $hasLifecycle = ! in_array($table, ContentTables::WITHOUT_LIFECYCLE, true);
         $stamped = $hasLifecycle
-            ? array_map(fn (array $row) => $row + ['status' => 'active', 'retired_at' => null, 'created_at' => $now, 'updated_at' => $now], $rows)
+            ? Arr::map($rows, fn (array $row) => $row + ['status' => 'active', 'retired_at' => null, 'created_at' => $now, 'updated_at' => $now])
             : $rows;
         // Everything but the key and created_at: a row that comes back recovers status, retired_at and position.
-        $update = array_values(array_diff(array_keys($stamped[0]), [...$keys, 'created_at']));
+        $update = collect($stamped[0])->except([...$keys, 'created_at'])->keys()->all();
         foreach (array_chunk($stamped, 100) as $chunk) {
             DB::table($table)->upsert($chunk, $keys, $update);
         }
@@ -88,9 +89,9 @@ final class ContentWriter
     {
         foreach (array_chunk($versions, 100) as $chunk) {
             // A plain INSERT, never IGNORE: a repeated version would be a bug in whoever computed the plan.
-            DB::table('exercise_grading_versions')->insert(array_map(
-                fn (array $version) => $version + ['first_import_id' => $importId, 'created_at' => $now],
+            DB::table('exercise_grading_versions')->insert(Arr::map(
                 $chunk,
+                fn (array $version) => $version + ['first_import_id' => $importId, 'created_at' => $now],
             ));
         }
     }
