@@ -30,19 +30,27 @@ prediction:
   answer: 2
   explanation: El rival puede responder para ganar; desear una respuesta equivocada no cambia minimax.
 steps:
-  - title: Definir
+  - id: e1
+    v1Index: 0
+    title: Definir
     task: Escribí acciones legales, terminales y utilidad.
     why: La búsqueda solo puede ser correcta respecto de esas reglas.
     done: El estado con 0 fichas es derrota para quien debería mover.
-  - title: Explorar
+  - id: e2
+    v1Index: 1
+    title: Explorar
     task: Evaluá hijos cambiando la perspectiva del jugador.
     why: Negar la utilidad expresa que lo bueno para el rival es malo para vos.
     done: Con 2 fichas, la búsqueda recomienda retirar 2.
-  - title: Elegir
+  - id: e3
+    v1Index: 2
+    title: Elegir
     task: Definí un desempate determinista.
     why: Una derrota forzada puede tener varias acciones igual de malas.
     done: Con 3 fichas se elige 1 según el contrato, sin inventar una victoria.
-  - title: Escalar
+  - id: e4
+    v1Index: 3
+    title: Escalar
     task: Probá otro juego y límites de profundidad.
     why: La búsqueda completa crece rápido; una heurística ya no garantiza el resultado final.
     done: Distinguís resultado exacto de evaluación aproximada.

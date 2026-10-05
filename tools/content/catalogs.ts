@@ -3,6 +3,16 @@
 export type Language = 'rust' | 'go';
 export const LANGUAGES: readonly Language[] = ['rust', 'go'];
 
+// Catálogos de ejercicios que registra content:import (ADR 0006 §5.1). `sliceBy` dice por qué
+// parámetro se corta el recurso de cada uno: lab y quests por lenguaje, cores por dominio.
+// `chainPosition` es el lugar en la cadena de catálogos; null = fuera de la cadena, porque abarcan
+// varios niveles. E1 suma `essentials` con la posición 1.
+export const CATALOGS = [
+  { code: 'lab', sliceBy: 'language', chainPosition: null },
+  { code: 'quests', sliceBy: 'language', chainPosition: null },
+  { code: 'cores', sliceBy: 'domain', chainPosition: null },
+] as const;
+
 export type SystemsDomain = 'lowlevel' | 'infra' | 'play' | 'pc';
 export const SYSTEMS_DOMAINS: readonly SystemsDomain[] = ['lowlevel', 'infra', 'play', 'pc'];
 

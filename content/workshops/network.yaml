@@ -38,19 +38,27 @@ prediction:
   answer: 1
   explanation: Un mismo índice con bytes distintos hace ambiguo el mensaje. No se elige silenciosamente una versión.
 steps:
-  - title: Identidad de fragmento
+  - id: e1
+    v1Index: 0
+    title: Identidad de fragmento
     task: Definí índice y bytes, más una cantidad total confiable.
     why: Sin identidad, una repetición parece un fragmento nuevo.
     done: Un índice fuera de rango devuelve error.
-  - title: Reensamblado
+  - id: e2
+    v1Index: 1
+    title: Reensamblado
     task: Implementá el núcleo con almacenamiento por índice.
     why: La llegada desordenada no debe cambiar el resultado.
     done: Duplicados iguales no agrandan el mensaje y los diferentes fallan.
-  - title: Límites de recursos
+  - id: e3
+    v1Index: 2
+    title: Límites de recursos
     task: En un proyecto local, agregá ID de mensaje, máximo de bytes y expiración con reloj monotónico.
     why: Un emisor incompleto no debe retener memoria indefinidamente.
     done: Mensajes distintos no comparten buffer y se respeta el presupuesto.
-  - title: Transporte real
+  - id: e4
+    v1Index: 3
+    title: Transporte real
     task: Usá una biblioteca de transporte mantenida y leé su política de reintentos.
     why: Congestión y seguridad no se resuelven con un bucle de resend.
     done: Podés provocar pérdida en pruebas sin prometer entrega exactamente una vez.

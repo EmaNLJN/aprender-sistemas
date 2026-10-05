@@ -40,19 +40,27 @@ prediction:
   answer: 0
   explanation: No hay token ≥95; la búsqueda vuelve al primer token del anillo.
 steps:
-  - title: Contrato del anillo
+  - id: e1
+    v1Index: 0
+    title: Contrato del anillo
     task: Definí tokens únicos y orden de desempate; rechazá ambigüedades.
     why: Dos dueños en el mismo token requieren una política explícita.
     done: Un token repetido produce error en este núcleo.
-  - title: Asignación
+  - id: e2
+    v1Index: 1
+    title: Asignación
     task: Ordená una copia y buscá el sucesor con vuelta al inicio.
     why: El orden de entrada no debe cambiar la propiedad de una clave.
     done: Pasan fronteras exactas, wrap y anillo vacío.
-  - title: Movimiento medido
+  - id: e3
+    v1Index: 2
+    title: Movimiento medido
     task: Compará el destino de miles de hashes antes y después de agregar un nodo.
     why: Un dibujo con pocos puntos no demuestra balance.
     done: Registrás fracción movida y dispersión de carga por nodo.
-  - title: Proyecto distribuido
+  - id: e4
+    v1Index: 3
+    title: Proyecto distribuido
     task: Usá una implementación mantenida con virtual nodes o ring hash; diseñá transferencia y réplicas.
     why: Asignar un dueño nuevo no mueve los bytes que ya estaban guardados.
     done: Durante una migración de prueba no se pierden lecturas ni escrituras confirmadas.

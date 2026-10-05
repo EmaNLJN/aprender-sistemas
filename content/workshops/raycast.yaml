@@ -30,19 +30,27 @@ prediction:
   answer: 1
   explanation: La entrada puede quedar detrás del origen; la salida sigue estando delante.
 steps:
-  - title: Parametrizar
+  - id: e1
+    v1Index: 0
+    title: Parametrizar
     task: Representá el rayo como origen+t·dirección.
     why: Separar trayectoria y parámetro permite comparar intersecciones.
     done: Un cambio de escala en dirección modifica t pero no el punto.
-  - title: Resolver
+  - id: e2
+    v1Index: 1
+    title: Resolver
     task: Sustituí el rayo en la ecuación del círculo.
     why: La cuadrática conecta álgebra y geometría.
     done: Hay pruebas para tangencia, ausencia y origen interior.
-  - title: Ordenar
+  - id: e3
+    v1Index: 2
+    title: Ordenar
     task: Elegí el menor t no negativo de todos los objetos.
     why: Encontrar un objeto no demuestra que sea el primero visible.
     done: Un planeta cercano oculta uno lejano.
-  - title: Extender
+  - id: e4
+    v1Index: 3
+    title: Extender
     task: Añadí normales y un color según su orientación.
     why: La normal permite conectar geometría con sombreado.
     done: El color cambia de forma consistente sobre la superficie.

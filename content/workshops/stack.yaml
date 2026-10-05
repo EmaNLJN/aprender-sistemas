@@ -31,19 +31,27 @@ prediction:
   answer: 1
   explanation: Son locales de invocaciones diferentes.
 steps:
-  - title: Definí el frame
+  - id: e1
+    v1Index: 0
+    title: Definí el frame
     task: Elegí campos para retorno y locales; reservá un frame raíz.
     why: Separar contexto evita sobrescribir al llamador.
     done: Podés dibujar main→f→g.
-  - title: Implementá CALL/RET
+  - id: e2
+    v1Index: 1
+    title: Implementá CALL/RET
     task: Completá el núcleo con límite de profundidad y rechazo sin cambios.
     why: Los errores de estructura deben conservar la pila.
     done: Probás llamada, retorno y ambos límites.
-  - title: Integrá con una VM
+  - id: e3
+    v1Index: 2
+    title: Integrá con una VM
     task: Añadí CALL y RET al proyecto bytecode, validando destinos de función.
     why: Los frames conectan control de flujo y estado local.
     done: Una función llama a otra y ambas vuelven correctamente.
-  - title: Construí un backtrace
+  - id: e4
+    v1Index: 3
+    title: Construí un backtrace
     task: Mostrá nombres, PC y locales desde el frame activo hasta main.
     why: Depurar es reconstruir el camino de ejecución.
     done: Ante un error obtenés una traza que explica la cadena de llamadas.

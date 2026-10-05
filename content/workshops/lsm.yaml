@@ -38,19 +38,27 @@ prediction:
   answer: 2
   explanation: El marcador impide que una versión anterior siga siendo visible; retirarlo requiere conocer el contexto fuera del conjunto.
 steps:
-  - title: Representar historia
+  - id: e1
+    v1Index: 0
+    title: Representar historia
     task: Definí clave, secuencia y valor opcional; None/Deleted representa tombstone.
     why: Vacío y borrado son estados distintos.
     done: Una cadena vacía se conserva como valor válido.
-  - title: Fusionar
+  - id: e2
+    v1Index: 1
+    title: Fusionar
     task: Implementá la selección de mayor secuencia por clave.
     why: El orden de los archivos no debe reemplazar el orden de versiones.
     done: Los tests incluyen entradas desordenadas y un borrado reciente.
-  - title: Contexto de descarte
+  - id: e3
+    v1Index: 2
+    title: Contexto de descarte
     task: Exponé una bandera que solo el planificador autorizado pueda activar.
     why: La función de merge no conoce por sí sola todos los archivos y snapshots.
     done: Con descarte deshabilitado, el tombstone continúa en el resultado.
-  - title: Proyecto con tablas
+  - id: e4
+    v1Index: 3
+    title: Proyecto con tablas
     task: Escribí SST pequeñas e integrá un iterador de merge antes de experimentar con RocksDB.
     why: Reutilizar un motor real evita reinventar durabilidad, índices y compactación concurrente.
     done: Compará la lectura antes/después de compactar y revisá snapshots antes de eliminar marcas.

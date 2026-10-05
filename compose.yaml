@@ -33,6 +33,14 @@ x-laravel-runtime: &laravel-runtime
   build:
     context: ./api
     target: runtime
+    # `repo` es la raíz del repositorio, un contexto adicional: la etapa `curriculum` de
+    # api/Dockerfile corre ahí el generador de contenido (tools/content/).
+    additional_contexts:
+      repo: .
+    # Para registrar el commit del contenido en content_imports:
+    # CONTENT_SOURCE_COMMIT=$(git rev-parse HEAD) docker compose up --build -d --wait
+    args:
+      CONTENT_SOURCE_COMMIT: '${CONTENT_SOURCE_COMMIT:-}'
   environment: *laravel-env
   networks: [app]
   read_only: true
@@ -158,6 +166,8 @@ services:
     build:
       context: ./api
       target: dev
+      additional_contexts:
+        repo: .
     entrypoint: ['php', 'vendor/bin/pest']
     environment: *laravel-test-env
     networks: [testing]
