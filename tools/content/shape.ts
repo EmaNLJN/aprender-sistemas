@@ -1,12 +1,10 @@
 import { child, fail, type Place } from './content-error.ts';
 
-// Valor JSON tal como lo devuelve el parser de YAML con el esquema core.
 export type Json = string | number | boolean | null | Json[] | JsonRecord;
 export interface JsonRecord {
   [key: string]: Json;
 }
 
-// Comprobación de un valor: falla con su ubicación o devuelve el valor ya tipado.
 export type Check = (value: unknown, place: Place) => unknown;
 
 export function expectRecord(value: unknown, place: Place): JsonRecord {
@@ -76,8 +74,6 @@ export function listOf(check: Check, minimum: number): Check {
     expectList(value, place, minimum).map((item, index) => check(item, child(place, index)));
 }
 
-// Un mapa con exactamente las claves de `spec`, salvo las opcionales; cada valor pasa su
-// comprobación. No reordena: las claves quedan en el orden del YAML.
 export function checkRecord(
   value: unknown,
   place: Place,
@@ -95,7 +91,6 @@ export function checkRecord(
   return record;
 }
 
-// El par de `listOf` para un mapa: `checkRecord` como `Check`.
 export function recordOf(spec: Record<string, Check>, optional: readonly string[] = []): Check {
   return (value, place) => checkRecord(value, place, spec, optional);
 }
@@ -104,7 +99,6 @@ export function checkSource(value: unknown, place: Place): JsonRecord {
   return checkRecord(value, place, { title: expectText, url: expectText });
 }
 
-// Predicción, quiz o checkpoint: `answer` es el índice de una de las opciones.
 export function checkQuestion(value: unknown, place: Place): JsonRecord {
   const question = checkRecord(value, place, {
     question: expectText,

@@ -1,10 +1,3 @@
-// Oráculo de equivalencia para refactors puros: evalúa en una VM, con stubs mínimos de
-// navegador y en el orden de frontend/src/app/main.tsx, los adaptadores que publican catálogos y
-// modelos, y escribe un volcado JSON canónico. Port a TypeScript de dump-globals-v2.mjs
-// (sesión del 2026-10-03): sobre el mismo árbol produce exactamente los mismos bytes.
-// Uso: node tools/content/dump-globals.ts <raíz del repo> > volcado.json. En una raíz con
-// content/, corré antes `node <raíz>/tools/content/build-curriculum.ts`, que genera con el
-// generador de esa raíz: el volcado lee build/curriculum.json y no lo regenera.
 import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
@@ -22,14 +15,9 @@ interface SystemsGroup {
 
 if (!process.argv[2]) throw new Error('Uso: node tools/content/dump-globals.ts <raíz del repo>');
 const root = resolve(process.argv[2]);
-// esbuild sale del árbol que se vuelca, así el oráculo también corre sobre otro checkout.
 const esbuild = createRequire(join(root, 'package.json'))('esbuild') as typeof import('esbuild');
 
-// Sólo fuentes de datos y modelos puros: las vistas necesitan un DOM real y las cubren QA y
-// el navegador.
-// No reutiliza qa/lib/sources.ts ni qa/lib/legacy-sources.ts: fijan repoRoot al checkout
-// actual, y el oráculo corre también sobre otra raíz (un commit anterior extraído aparte). Si
-// cambia la lista de adaptadores, actualizá las dos.
+// Not shared with qa/lib/sources.ts: the oracle also runs on another root (an earlier commit).
 const files = [
   'frontend/src/app/legacy/register-catalogs.ts',
   ...['lowlevel', 'infra', 'play', 'pc'].map(
@@ -71,7 +59,6 @@ const out: Record<string, unknown> = { errors, globals: {} };
 const globals = out.globals as Record<string, unknown>;
 for (const name of Object.keys(window).sort()) globals[name] = canonical(window[name]);
 
-// Modelos de Sistemas: estado inicial y primera vista por taller vuelven observable un port.
 const models: Record<string, unknown> = {};
 for (const domain of ['SYSTEMS_LOWLEVEL', 'SYSTEMS_INFRA', 'SYSTEMS_PLAY', 'SYSTEMS_PC']) {
   const group = window[domain] as SystemsGroup | undefined;
@@ -96,7 +83,6 @@ for (const domain of ['SYSTEMS_LOWLEVEL', 'SYSTEMS_INFRA', 'SYSTEMS_PLAY', 'SYST
 }
 out.models = models;
 
-// Contenido del Atlas, con el mismo empaquetador. La primera ruta que exista gana.
 const atlasCandidates = [
   'frontend/src/pages/atlas/model/atlas-catalog.ts',
   'frontend/src/pages/atlas/content/atlas-content.ts',
@@ -119,6 +105,4 @@ const atlasModule = (await import(atlasUrl)) as { atlasByLanguage: unknown };
 out.atlas = canonical(atlasModule.atlasByLanguage);
 
 process.stdout.write(JSON.stringify(out));
-// Los errores ya cambian el sha, pero además el proceso falla: un adaptador que se corta no
-// pasa por un volcado válido cuando nadie compara el hash.
 if (Object.keys(errors).length > 0) process.exitCode = 1;

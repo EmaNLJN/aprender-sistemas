@@ -1,6 +1,3 @@
-// Registros literales de content/ (mundos, talleres, conceptos del Atlas y la guía): cada
-// <id>.yaml es el objeto publicado tal cual, con su `id` igual al nombre del archivo y las
-// claves en el orden del YAML. Un manifest.yaml agrupa y ordena los IDs.
 import { expectSameIds, listYamlIds } from './catalog-files.ts';
 import { child, fail, filePlace, type Place } from './content-error.ts';
 import { checkRecord, textList, type Check, type JsonRecord } from './shape.ts';
@@ -19,8 +16,6 @@ export function loadRecord(
   return record;
 }
 
-// Un <id>.yaml por ID del manifiesto, en su orden: los IDs y los archivos de la carpeta
-// coinciden (`expectSameIds`) y cada archivo es un registro con su `id`.
 export function loadListedRecords(
   root: string,
   ids: readonly string[],
@@ -33,7 +28,6 @@ export function loadListedRecords(
   return ids.map((id) => loadRecord(root, `${folder}/${id}.yaml`, id, spec, optional));
 }
 
-// Lee <folder>/manifest.yaml (cada grupo con su lista de IDs, en orden) y un <id>.yaml por ID.
 export function loadGroupedRecords<Group extends string>(
   root: string,
   folder: string,

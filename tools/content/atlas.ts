@@ -1,5 +1,3 @@
-// Conceptos del Atlas: content/atlas/manifest.yaml los ordena por lenguaje y cada
-// content/atlas/<id>.yaml es un concepto de atlasByLanguage. `furtherSources` es opcional.
 import { LEVEL_IDS } from '../../frontend/src/shared/config/levels.ts';
 import { LANGUAGES, type Language } from './catalogs.ts';
 import { loadGroupedRecords } from './records.ts';

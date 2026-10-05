@@ -1,10 +1,7 @@
-// Errores de content/: cada mensaje nombra el archivo y el campo que fallan, para que quien
-// edita un YAML sepa dónde mirar.
 export class ContentError extends Error {
   override name = 'ContentError';
 }
 
-// Ubicación de un valor: archivo relativo a la raíz y ruta dentro del documento.
 export interface Place {
   file: string;
   path: string;

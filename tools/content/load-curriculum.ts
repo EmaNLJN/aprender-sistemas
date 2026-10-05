@@ -1,6 +1,3 @@
-// Arma curriculum.json a partir de content/. Cada clave publica uno o más catálogos legacy;
-// los adaptadores de frontend/src/app/legacy/ los asignan a window.* sin transformarlos; `atlas` no pasa
-// por un adaptador: la importa frontend/src/pages/atlas/model/atlas-catalog.ts.
 import { loadAtlas } from './atlas.ts';
 import { loadCampaign } from './campaign.ts';
 import { expectOnlyEntries } from './catalog-files.ts';
@@ -26,7 +23,6 @@ export interface CurriculumSource {
 }
 
 export function loadCurriculumSource(root: string): CurriculumSource {
-  // Nada queda en content/ sin que el generador lo lea (la política de catalog-files.ts).
   expectOnlyEntries(
     root,
     'content',

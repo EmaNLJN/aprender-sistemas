@@ -1,6 +1,3 @@
-// Talleres de Sistemas: content/workshops/manifest.yaml ordena los IDs por dominio y cada
-// content/workshops/<id>.yaml es la ficha que publica SYSTEMS_<DOMINIO>.workshops. Cada dominio
-// conserva su orden de claves legacy porque el YAML es el objeto tal cual.
 import { LEVEL_IDS } from '../../frontend/src/shared/config/levels.ts';
 import { LANGUAGES, SYSTEMS_DOMAINS, type SystemsDomain } from './catalogs.ts';
 import { child, fail, filePlace } from './content-error.ts';
@@ -54,7 +51,6 @@ const STEP_SPEC: Record<string, Check> = {
 
 const WORKSHOP_SPEC: Record<string, Check> = {
   id: expectText,
-  // Las categorías que conoce systems.js.
   category: oneOf(['machine', 'infra', 'play']),
   model: expectText,
   level: oneOf(LEVEL_IDS),
