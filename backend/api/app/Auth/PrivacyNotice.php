@@ -19,15 +19,13 @@ final class PrivacyNotice
 
     public function acceptedBy(User $user): bool
     {
-        $accepted = $user->getAttribute('privacy_version');
-
-        return is_string($accepted) && $this->isCurrent($accepted);
+        return $user->privacy_version !== null && $this->isCurrent($user->privacy_version);
     }
 
     public function accept(User $user): void
     {
-        $user->setAttribute('privacy_version', $this->current());
-        $user->setAttribute('privacy_accepted_at', Date::now());
+        $user->privacy_version = $this->current();
+        $user->privacy_accepted_at = Date::now();
         $user->save();
     }
 }
