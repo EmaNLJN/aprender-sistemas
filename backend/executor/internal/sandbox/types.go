@@ -1,18 +1,14 @@
-// Package sandbox compiles and runs student programs in ephemeral containers.
 package sandbox
 
 import "time"
 
 const (
-	// RunLabel marks every executor resource so the sweeper never touches anything else.
-	RunLabel = "taller.executor.run"
-	// CreatedLabel stores the creation time in Unix seconds.
+	RunLabel     = "taller.executor.run"
 	CreatedLabel = "taller.executor.created"
 )
 
-// Phase holds the limits and the command of a container. They come from ADR 0005, never from the
-// request. ReadOnly mounts the rootfs read-only; OutReadOnly does the same for /out, so the run
-// can read the binary without being able to write to a host volume that has no quota.
+// OutReadOnly mounts /out read-only so the run can read the binary without writing to a host
+// volume that has no quota.
 type Phase struct {
 	Timeout     time.Duration
 	MemoryMiB   int
@@ -49,12 +45,11 @@ type State struct {
 }
 
 type Resource struct {
-	Kind    string // "container" or "volume"
+	Kind    string
 	Name    string
 	Created time.Time
 }
 
-// Result is the response of POST /v1/run. Phase is the last phase reached.
 type Result struct {
 	Phase     string `json:"phase"`
 	ExitCode  int    `json:"exitCode"`

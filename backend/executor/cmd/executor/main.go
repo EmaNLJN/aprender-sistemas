@@ -1,5 +1,3 @@
-// Command executor is the internal service that compiles and runs workshop programs in gVisor
-// containers. See docs/adr/0005-ejecucion-en-sandbox-propio.md.
 package main
 
 import (
@@ -54,7 +52,6 @@ func main() {
 		}
 	}
 
-	// Without the runtime, /healthz would answer ok and every request would be a 500.
 	var runtimes bytes.Buffer
 	var runtimesStderr bytes.Buffer
 	if err := sandbox.ExecCommand(root, "docker", []string{"info", "--format", "{{json .Runtimes}}"}, nil, &runtimes, &runtimesStderr); err != nil {
@@ -107,10 +104,8 @@ func main() {
 	}
 }
 
-// serve serves until root is cancelled and does not return until Shutdown has finished. Serve
-// returns ErrServerClosed as soon as shutdown begins; if main exited there, the process would die
-// before cancelled requests remove their containers (the http.Server.Shutdown documentation says
-// to wait for it to return).
+// serve returns only after Shutdown finishes: Serve returns ErrServerClosed as soon as shutdown
+// begins, and exiting then would kill cancelled requests before they remove their containers.
 func serve(root context.Context, server *http.Server, listener net.Listener, grace time.Duration) error {
 	shutdownDone := make(chan error, 1)
 	go func() {
@@ -128,8 +123,6 @@ func serve(root context.Context, server *http.Server, listener net.Listener, gra
 	return nil
 }
 
-// runtimeRegistered reports whether Docker has the runtime registered, from the output of
-// `docker info --format '{{json .Runtimes}}'`: a JSON object with one field per runtime.
 func runtimeRegistered(runtimesJSON []byte, name string) (bool, error) {
 	var runtimes map[string]json.RawMessage
 	if err := json.Unmarshal(runtimesJSON, &runtimes); err != nil {
@@ -139,7 +132,6 @@ func runtimeRegistered(runtimesJSON []byte, name string) (bool, error) {
 	return ok, nil
 }
 
-// sweepForever sweeps every minute the leftovers of failed cleanups.
 func sweepForever(sweeper sandbox.Sweeper) {
 	for {
 		time.Sleep(time.Minute)

@@ -15,8 +15,6 @@ type commandCall struct {
 	args []string
 }
 
-// scripted returns a Commander that records every call and answers by subcommand. If the call
-// fails, it writes a daemon-like message to stderr.
 func scripted(calls *[]commandCall, stdout map[string]string, fail map[string]error) Commander {
 	return func(_ context.Context, name string, args []string, _ io.Reader, out, errOut io.Writer) error {
 		if name != "docker" {

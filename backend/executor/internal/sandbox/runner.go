@@ -15,11 +15,8 @@ import (
 
 var ErrUnknownLanguage = errors.New("lenguaje no soportado")
 
-// cleanupTimeout bounds Kill, Inspect and Remove, which use their own context: even if the
-// request was cancelled, the container and the volume are still removed.
 const cleanupTimeout = 10 * time.Second
 
-// Runner compiles and runs a submission. Instance is the value of RunLabel on all its resources.
 type Runner struct {
 	Engine   Engine
 	Profiles map[string]Profile
@@ -35,8 +32,6 @@ type phaseOutcome struct {
 	timedOut bool
 }
 
-// Execute compiles and, if that worked, runs. An error means the sandbox failed (Docker or a
-// cancelled request); problems with the program come back in Result.
 func (r *Runner) Execute(ctx context.Context, language string, program []byte) (Result, error) {
 	profile, ok := r.Profiles[language]
 	if !ok {
@@ -98,7 +93,6 @@ func (r *Runner) phase(ctx context.Context, spec Spec, stdin []byte, stdout, std
 	elapsed := r.Now().Sub(started)
 
 	if startErr != nil && phaseCtx.Err() != nil {
-		// Expired or cancelled: the Docker client died, but the container may still be alive.
 		r.cleanup(func(c context.Context) error { return r.Engine.Kill(c, spec.Name) })
 		if ctx.Err() != nil {
 			return phaseOutcome{}, ctx.Err()
@@ -138,7 +132,6 @@ func (r *Runner) inspect(name string) (State, error) {
 	return r.Engine.Inspect(c, name)
 }
 
-// cleanup ignores the error: the sweeper removes whatever remains (sweeper.go).
 func (r *Runner) cleanup(step func(context.Context) error) {
 	c, cancel := context.WithTimeout(context.Background(), cleanupTimeout)
 	defer cancel()
@@ -149,7 +142,6 @@ func newStreams(limit int) (*output.Limited, *output.Limited) {
 	return &output.Limited{Max: limit}, &output.Limited{Max: limit}
 }
 
-// joinOutput joins the compile warnings with the run stderr.
 func joinOutput(compile, run string) string {
 	if compile == "" {
 		return run

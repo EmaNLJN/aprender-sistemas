@@ -1,6 +1,4 @@
 #!/bin/sh
-# Builds the sandbox images and runs the integration tests against real Docker.
-# Uses runc unless EXECUTOR_RUNTIME=runsc is set (after the gVisor smoke test).
 set -eu
 here=$(cd "$(dirname "$0")/.." && pwd)
 docker build -t taller-sandbox-rust:dev "$here/images/rust"

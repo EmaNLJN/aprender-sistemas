@@ -56,9 +56,7 @@ func TestLimitedDropsACharacterCutByTheCap(t *testing.T) {
 		input string
 		want  string
 	}{
-		// a(1) ñ(2) ñ(2) o(1): a 4-byte cap leaves only the first byte of the second "ñ".
 		{"ñ cut after its first byte", 4, "añño", "añ"},
-		// "€" takes 3 bytes: a 3-byte cap leaves the "a" and two bytes of the "€".
 		{"€ cut after its second byte", 3, "a€", "a"},
 	}
 	for _, c := range cases {
@@ -75,7 +73,7 @@ func TestLimitedDropsACharacterCutByTheCap(t *testing.T) {
 
 func TestLimitedKeepsACompleteCharacterAtTheCap(t *testing.T) {
 	l := &Limited{Max: 3}
-	l.Write([]byte("añb")) // "añ" takes exactly 3 bytes: the cut falls between two characters
+	l.Write([]byte("añb"))
 	if got := l.String(); got != "añ" {
 		t.Fatalf("String = %q; want %q", got, "añ")
 	}

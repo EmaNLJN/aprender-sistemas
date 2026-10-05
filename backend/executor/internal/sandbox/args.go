@@ -6,8 +6,7 @@ import (
 	"strconv"
 )
 
-// createArgs builds `docker create` with the hardening from ADR 0005. It is pure: the tests pin
-// every security flag.
+// createArgs applies the ADR 0005 hardening.
 func createArgs(s Spec) []string {
 	p := s.Phase
 	memory := strconv.Itoa(p.MemoryMiB) + "m"
@@ -20,7 +19,6 @@ func createArgs(s Spec) []string {
 		"--cap-drop", "ALL",
 		"--security-opt", "no-new-privileges",
 		"--user", "65534:65534",
-		// No daemon log: output is read through attach and only 64 KiB are kept.
 		"--log-driver", "none",
 		"--pids-limit", strconv.Itoa(p.Pids),
 		"--memory", memory,
@@ -58,7 +56,6 @@ func sortedKeys(values map[string]string) []string {
 	return keys
 }
 
-// labelArgs turns labels into --label flags, sorted so the arguments are stable across calls.
 func labelArgs(labels map[string]string) []string {
 	var args []string
 	for _, key := range sortedKeys(labels) {

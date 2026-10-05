@@ -24,7 +24,6 @@ func ExecCommand(ctx context.Context, name string, args []string, stdin io.Reade
 	return cmd.Run()
 }
 
-// DockerCLI implements Engine with the Docker CLI. It accepts no flags other than those of createArgs.
 type DockerCLI struct{ Exec Commander }
 
 func (d DockerCLI) run(ctx context.Context, args []string, stdout io.Writer) error {
@@ -46,7 +45,7 @@ func (d DockerCLI) Start(ctx context.Context, name string, stdin io.Reader, stdo
 	err := d.Exec(ctx, "docker", []string{"start", "--attach", "--interactive", name}, stdin, stdout, stderr)
 	var exitErr *exec.ExitError
 	if errors.As(err, &exitErr) && ctx.Err() == nil {
-		return nil // the program exited with a non-zero code; Inspect reports it
+		return nil
 	}
 	return err
 }
@@ -68,9 +67,8 @@ func (d DockerCLI) Inspect(ctx context.Context, name string) (State, error) {
 	return parseState(out.String())
 }
 
-// parseState reads "status code oom error", with the Docker error as JSON. If Docker could not
-// start the container, `docker start` still exits non-zero and Start cannot tell it apart from
-// the program: that code is not the student's, so it is returned as a sandbox error.
+// If Docker could not start the container, `docker start` still exits non-zero and Start cannot
+// tell it apart from the program: that code is not the student's, so it is a sandbox error.
 func parseState(raw string) (State, error) {
 	fields := strings.SplitN(strings.TrimSpace(raw), " ", 4)
 	if len(fields) != 4 {
@@ -115,8 +113,6 @@ func (d DockerCLI) ListLabeled(ctx context.Context, label string) ([]Resource, e
 	return append(parseResources("container", containers.String()), parseResources("volume", volumes.String())...), nil
 }
 
-// parseResources reads "name<TAB>Unix seconds". Without a valid time, Created stays zero and the
-// sweeper treats it as old.
 func parseResources(kind, raw string) []Resource {
 	var resources []Resource
 	for _, line := range strings.Split(strings.TrimSpace(raw), "\n") {

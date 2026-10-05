@@ -15,8 +15,8 @@ import (
 type fakePhase struct {
 	stdout, stderr string
 	state          State
-	block          bool          // simulates a program that never ends: waits for the context to expire
-	delay          time.Duration // simulates a program that ends after the deadline without checking the context
+	block          bool
+	delay          time.Duration
 }
 
 type fakeEngine struct {
@@ -28,9 +28,9 @@ type fakeEngine struct {
 	compile      fakePhase
 	run          fakePhase
 	createErr    error
-	startErr     error // a Start failure that does not come from the context
+	startErr     error
 	inspectErr   error
-	onStart      func() // called on entering Start (to cancel the request midway)
+	onStart      func()
 }
 
 func (f *fakeEngine) record(call string) {
@@ -86,7 +86,6 @@ func (f *fakeEngine) Kill(_ context.Context, name string) error {
 	return nil
 }
 
-// Inspect returns the phase state; without an explicit Status, the container exited.
 func (f *fakeEngine) Inspect(_ context.Context, name string) (State, error) {
 	f.record("inspect " + name)
 	state := f.phaseFor(name).state
@@ -289,7 +288,6 @@ func TestContainerThatNeverStartedIsAnErrorEvenAtTheDeadline(t *testing.T) {
 }
 
 func TestAProgramThatFinishedIsNotReportedAsTimedOut(t *testing.T) {
-	// The test deadline is 200 ms: the program ends later, but Start returned without error.
 	engine := &fakeEngine{run: fakePhase{delay: 300 * time.Millisecond, stdout: "done\n"}}
 	result, err := newTestRunner(engine).Execute(context.Background(), "go", []byte("x"))
 	if err != nil {

@@ -1,8 +1,4 @@
 #!/bin/sh
-# gVisor smoke test. Run it after installing runsc (the apt package registers it in Docker),
-# adding `--network=none` with `sudo runsc install -- --network=none` and reloading Docker
-# (`sudo systemctl reload docker`). It checks the ADR 0005 configuration and that, with the
-# systemd cgroup driver, memory, process and network limits apply.
 # Every check requires the sandbox to have started: a sandbox that fails to start proves nothing.
 set -u
 image=alpine:3.24

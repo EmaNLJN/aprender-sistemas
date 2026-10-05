@@ -13,15 +13,11 @@ type Config struct {
 	RustImage     string
 	GoImage       string
 	MaxConcurrent int
-	// Instance is the value of the taller.executor.run label: it separates the resources of each
-	// service (and of the integration tests) sharing the daemon.
-	Instance string
+	Instance      string
 }
 
 const minTokenLength = 32
 
-// FromEnv fails if there is no long token, an image is missing or the runtime is neither runsc
-// nor runc: the executor must never start with an insecure default configuration.
 func FromEnv(getenv func(string) string) (Config, error) {
 	cfg := Config{
 		Addr:          valueOr(getenv("EXECUTOR_ADDR"), ":8080"),

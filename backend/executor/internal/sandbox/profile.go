@@ -4,8 +4,6 @@ import "time"
 
 const outputLimit = 64 << 10
 
-// Profiles returns the ADR 0005 limits per language. Compilation writes the binary to /out; the
-// run executes it with a read-only rootfs and /out.
 func Profiles(rustImage, goImage string) map[string]Profile {
 	run := Phase{
 		Timeout: 10 * time.Second, MemoryMiB: 256, Pids: 64, TmpfsMiB: 16, CPUs: "1",

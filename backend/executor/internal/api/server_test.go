@@ -94,7 +94,7 @@ func TestRunValidatesTheRequest(t *testing.T) {
 func TestRunAnswersBusyWhenNoSlotFrees(t *testing.T) {
 	exec := &fakeExecutor{}
 	s := newServer(exec)
-	s.Slots <- struct{}{} // the only slot is taken
+	s.Slots <- struct{}{}
 	rec := post(t, s, `{"language":"rust","program":"fn main(){}"}`, "Bearer "+token)
 	if rec.Code != http.StatusServiceUnavailable || exec.calls != 0 {
 		t.Fatalf("code %d, calls %d", rec.Code, exec.calls)
@@ -155,7 +155,7 @@ func TestRunWaitsForASlotWithinQueueWait(t *testing.T) {
 	s.Slots <- struct{}{}
 	go func() {
 		time.Sleep(50 * time.Millisecond)
-		<-s.Slots // another execution finishes and frees its slot
+		<-s.Slots
 	}()
 	rec := post(t, s, `{"language":"rust","program":"fn main(){}"}`, "Bearer "+token)
 	if rec.Code != http.StatusOK || exec.calls != 1 {
@@ -213,7 +213,7 @@ func TestCancellationWhileWaitingForASlotAnswers503(t *testing.T) {
 	exec := &fakeExecutor{}
 	s := newServer(exec)
 	s.QueueWait = 2 * time.Second
-	s.Slots <- struct{}{} // taken: the request waits for a slot
+	s.Slots <- struct{}{}
 	ctx, cancel := context.WithCancel(context.Background())
 	req := httptest.NewRequest(http.MethodPost, "/v1/run", strings.NewReader(`{"language":"go","program":"x"}`)).WithContext(ctx)
 	req.Header.Set("Authorization", "Bearer "+token)
@@ -224,7 +224,6 @@ func TestCancellationWhileWaitingForASlotAnswers503(t *testing.T) {
 	if rec.Code != http.StatusServiceUnavailable || rec.Header().Get("Retry-After") != "1" || exec.calls != 0 {
 		t.Fatalf("cancelled while waiting (shutdown): nothing ran, so 503 with Retry-After and no execution; got %d %q, calls %d", rec.Code, rec.Body.String(), exec.calls)
 	}
-	// The slot wait observes cancellation: it does not wait the 2 s of QueueWait.
 	if elapsed := time.Since(start); elapsed > time.Second {
 		t.Fatalf("cancelled at 50 ms, answered at %v: the wait ignores cancellation", elapsed)
 	}
@@ -232,7 +231,7 @@ func TestCancellationWhileWaitingForASlotAnswers503(t *testing.T) {
 
 func TestAlreadyCancelledRequestWithAFreeSlotAnswers503(t *testing.T) {
 	exec := &fakeExecutor{}
-	s := newServer(exec) // one free slot
+	s := newServer(exec)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	// select picks at random between the free slot and cancellation: several rounds.

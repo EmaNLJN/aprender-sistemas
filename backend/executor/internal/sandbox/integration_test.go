@@ -11,7 +11,6 @@ import (
 	"time"
 )
 
-// Runs with scripts/integration.sh: it needs the Docker socket and the sandbox images.
 func integrationRunner(t *testing.T) *Runner {
 	t.Helper()
 	rust, goImage := os.Getenv("EXECUTOR_RUST_IMAGE"), os.Getenv("EXECUTOR_GO_IMAGE")
@@ -24,7 +23,7 @@ func integrationRunner(t *testing.T) *Runner {
 	}
 	profiles := Profiles(rust, goImage)
 	for language, profile := range profiles {
-		profile.Run.Timeout = 3 * time.Second // speeds up the timeout cases
+		profile.Run.Timeout = 3 * time.Second
 		profiles[language] = profile
 	}
 	return &Runner{Engine: DockerCLI{Exec: ExecCommand}, Profiles: profiles, Runtime: runtime, Instance: "integration", Now: time.Now, NewID: RandomID}
@@ -296,12 +295,12 @@ func TestIntegrationSweepRemovesOnlyOldExecutorResources(t *testing.T) {
 	ctx := context.Background()
 	cli := DockerCLI{Exec: ExecCommand}
 	id := RandomID()
-	old := map[string]string{RunLabel: "integration", CreatedLabel: "1"} // 1970: older than any MaxAge
+	old := map[string]string{RunLabel: "integration", CreatedLabel: "1"}
 	volume, foreign := "taller-out-"+id, "taller-out-foreign-"+id
 	if err := cli.CreateVolume(ctx, volume, old); err != nil {
 		t.Fatal(err)
 	}
-	if err := cli.CreateVolume(ctx, foreign, nil); err != nil { // without the executor label
+	if err := cli.CreateVolume(ctx, foreign, nil); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { cli.RemoveVolume(context.Background(), foreign) })

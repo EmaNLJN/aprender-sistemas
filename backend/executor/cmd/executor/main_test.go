@@ -10,8 +10,6 @@ import (
 	"time"
 )
 
-// startServe starts serve with a handler that mimics the Runner: the request inherits root, sees
-// its context cancelled and only then removes its containers, with contexts of its own.
 func startServe(t *testing.T, cleanup time.Duration, grace time.Duration) (cancel context.CancelFunc, cleaned *atomic.Bool, served chan error) {
 	t.Helper()
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
@@ -84,8 +82,6 @@ func TestServeReportsAShutdownThatRanOutOfTime(t *testing.T) {
 }
 
 func TestRuntimeRegisteredReadsDockerInfo(t *testing.T) {
-	// Shape of `docker info --format '{{json .Runtimes}}'` with gVisor installed (status field
-	// trimmed).
 	info := []byte(`{"io.containerd.runc.v2":{"path":"runc"},"runc":{"path":"runc"},"runsc":{"path":"/usr/bin/runsc","runtimeArgs":["--network=none"],"status":{}}}` + "\n")
 	for name, want := range map[string]bool{"runsc": true, "runc": true, "kata": false, "": false} {
 		got, err := runtimeRegistered(info, name)

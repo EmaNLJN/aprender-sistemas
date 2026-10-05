@@ -32,7 +32,7 @@ func TestSweepRemovesOldContainersBeforeVolumesAndKeepsFreshOnes(t *testing.T) {
 		{Kind: "container", Name: "taller-r-old", Created: now.Add(-10 * time.Minute)},
 		{Kind: "container", Name: "taller-r-new", Created: now.Add(-10 * time.Second)},
 		{Kind: "container", Name: "taller-r-no-time"},
-		{Kind: "volume", Name: "mysql-data"}, // foreign name: even if it slipped in, it is never removed
+		{Kind: "volume", Name: "mysql-data"},
 	}}
 	sweeper := Sweeper{Engine: engine, Now: func() time.Time { return now }, MaxAge: 2 * time.Minute, Instance: "tests"}
 	if err := sweeper.Sweep(context.Background()); err != nil {

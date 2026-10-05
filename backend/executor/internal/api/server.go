@@ -1,4 +1,3 @@
-// Package api exposes the executor on the internal network. It never accepts images or limits.
 package api
 
 import (
@@ -22,7 +21,7 @@ type Executor interface {
 type Server struct {
 	Token      string
 	Exec       Executor
-	Slots      chan struct{} // semaphore: its capacity is the maximum concurrency
+	Slots      chan struct{}
 	MaxBody    int64
 	MaxProgram int
 	QueueWait  time.Duration
@@ -34,8 +33,6 @@ type runRequest struct {
 	Program  string `json:"program"`
 }
 
-// Handler builds the routes. It panics on an insecure configuration: a short token or a
-// semaphore without slots are programming errors, not request errors.
 func (s *Server) Handler() http.Handler {
 	if len(s.Token) < 32 {
 		panic("api: el token debe tener al menos 32 bytes")
@@ -77,7 +74,6 @@ func (s *Server) run(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "JSON inválido")
 		return
 	}
-	// A single object and nothing else: reading up to EOF also lets Go detect a client that left.
 	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
 		var tooLarge *http.MaxBytesError
 		if errors.As(err, &tooLarge) {
