@@ -7,7 +7,7 @@ $record = (object) ['title' => 'T', 'stage' => 1, 'featured' => true, 'quiz' => 
 $path = 'lab.rust[0]';
 $known = ['title', 'stage', 'featured', 'quiz'];
 
-it('rejects an unknown key before reading any field', function () use ($record, $path) {
+it('rejects an unknown key before reading any field', function () use ($path) {
     $badRecord = (object) ['title' => 'T', 'extra' => 'x'];
     expect(fn () => DocumentFields::of($badRecord, $path, ['title']))
         ->toThrow(InvalidContent::class, 'clave desconocida');
@@ -35,14 +35,14 @@ it('rejects empty text', function () use ($record, $path, $known) {
         ->toThrow(InvalidContent::class, 'se esperaba un texto no vacío');
 });
 
-it('rejects a non-integer where an integer is expected', function () use ($record, $path) {
+it('rejects a non-integer where an integer is expected', function () use ($path) {
     $badRecord = (object) ['stage' => '1'];
     $fields = DocumentFields::of($badRecord, $path, ['stage']);
     expect(fn () => $fields->number('stage'))
         ->toThrow(InvalidContent::class, 'se esperaba un entero');
 });
 
-it('rejects a non-boolean where a boolean is expected', function () use ($record, $path) {
+it('rejects a non-boolean where a boolean is expected', function () use ($path) {
     $badRecord = (object) ['featured' => 'yes'];
     $fields = DocumentFields::of($badRecord, $path, ['featured']);
     expect(fn () => $fields->flag('featured'))
