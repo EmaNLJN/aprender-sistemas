@@ -87,6 +87,10 @@ it('validates the meta and names the field', function (Closure $break, string $m
         fn (array $meta) => ['languages' => []] + $meta,
         'curriculum.meta.json: languages: se esperaba la lista de lenguajes',
     ],
+    'a language that is not a text' => [
+        fn (array $meta) => ['languages' => ['rust', 2]] + $meta,
+        'curriculum.meta.json: languages: se esperaba la lista de lenguajes',
+    ],
     'catalog without the slice parameter' => [
         function (array $meta) {
             unset($meta['catalogs'][1]['sliceBy']);

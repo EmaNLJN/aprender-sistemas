@@ -88,6 +88,15 @@ it('requires the boss to be the last challenge of the world', function () {
     expect(fn () => rowsOf($fixture))->toThrow(InvalidContent::class, 'curriculum.json: campaign.go[0].bossId: el jefe tiene que ser el último de challengeIds');
 });
 
+// ContentRows checks that each ID exists before the codec runs, so the codec's own check is only reachable directly.
+it('rejects a world that lists an ID that is not a text', function () {
+    $world = ContentFixture::fromImage()->document->campaign->rust[0];
+    $world->trainingIds[0] = 7;
+
+    expect(fn () => (new WorldCodec)->toRows($world, 'rust', 0, 'campaign.rust[0]'))
+        ->toThrow(InvalidContent::class, 'curriculum.json: campaign.rust[0].trainingIds: se esperaba una lista de IDs');
+});
+
 it('ties each world, workshop and concept to existing exercises of the right catalog and language', function (Closure $break, string $message) {
     $fixture = ContentFixture::fromImage();
     $break($fixture->document, $fixture);
@@ -163,6 +172,12 @@ it('requires the meta and the document to have the same exercises and workshops'
 
         return $meta;
     }))->toThrow(InvalidContent::class, 'curriculum.meta.json: workshopSteps.cache: falta: regenerá los dos archivos juntos');
+
+    expect(fn () => rowsOf(ContentFixture::fromImage(), function (array $meta) {
+        $meta['workshopSteps']['no-such-workshop'] = $meta['workshopSteps']['cache'];
+
+        return $meta;
+    }))->toThrow(InvalidContent::class, 'curriculum.meta.json: workshopSteps.no-such-workshop: no está en curriculum.json: regenerá los dos archivos juntos');
 });
 
 it('rejects a malformed record and names the field', function (Closure $break, string $message) {
