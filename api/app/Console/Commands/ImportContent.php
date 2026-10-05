@@ -55,11 +55,12 @@ final class ImportContent extends Command
             return self::SUCCESS;
         }
         if (! $lock->stillHeld()) {
-            $this->error('Se perdió el candado de content:import (la conexión se reabrió): no se escribió nada.');
-
-            return self::FAILURE;
+            return $this->lockLost();
         }
-        $importer->import($source, $plan);
+        // The importer checks it again as the first statement of its transaction.
+        if (! $importer->import($source, $plan)) {
+            return $this->lockLost();
+        }
 
         if ($plan->isEmpty()) {
             $this->info("El contenido ya está importado (sha256 {$hash}): se verificaron y precalentaron las 17 porciones, sin escribir nada.");
@@ -70,6 +71,13 @@ final class ImportContent extends Command
         $this->summary($plan);
 
         return self::SUCCESS;
+    }
+
+    private function lockLost(): int
+    {
+        $this->error('Se perdió el candado de content:import (la conexión se reabrió): no se escribió nada.');
+
+        return self::FAILURE;
     }
 
     private function summary(ContentPlan $plan): void

@@ -271,6 +271,23 @@ it('writes nothing when the connection that held the lock is lost before the tra
     expect(array_sum(ContentDatabase::counts()))->toBe(0);
 });
 
+it('writes nothing when the connection is lost after the lock check and before the transaction begins', function () {
+    $lockChecked = false;
+    $reconnected = false;
+    DB::listen(function ($query) use (&$lockChecked, &$reconnected) {
+        if (str_contains($query->sql, 'is_used_lock')) {
+            $lockChecked = true;
+        } elseif ($lockChecked && ! $reconnected && str_contains($query->sql, 'from `content_imports`')) {
+            $reconnected = true;
+            DB::purge();
+        }
+    });
+
+    $this->artisan('content:import')->expectsOutputToContain('Se perdió el candado')->assertExitCode(1);
+
+    expect(array_sum(ContentDatabase::counts()))->toBe(0);
+});
+
 it('records an import without touching the tables when only the document format changes', function () {
     importImageContent();
     $checksums = ContentDatabase::checksums();
@@ -340,7 +357,8 @@ it('a test_key retired on its own is not reused, and the import leaves no trace'
     useContentAt(ContentFixture::imagePath());
     Artisan::call('content:import');
 
-    expect(Artisan::output())->toContain('el test_key se retiró y no se reutiliza')
+    // The generator still demands t{index+1}, so "use a new one" cannot be done until B2 drops that rule.
+    expect(Artisan::output())->toContain('el test_key se retiró y no se reutiliza: esa prueba no puede volver hasta que B2 quite la regla t{i+1} del generador')
         ->and(ContentDatabase::checksums())->toBe($checksums);
 });
 
@@ -371,6 +389,21 @@ it('the rules between rows are checked with queries, and each one breaks by hand
     ],
     'a catalog chain that does not start at 1' => [
         "update catalogs set chain_position = 2 where code = 'lab'",
+        'la cadena de catálogos no es única y contigua desde 1',
+    ],
+    // A challenge moves above the boss, with no position repeated: only the boss being last breaks.
+    'a boss that is not the last of its world' => [
+        "update world_exercises set position = 9 where role = 'challenge' limit 1",
+        'un mundo activo no tiene exactamente un jefe, último de sus desafíos',
+    ],
+    // 1, 1 and 3: it starts at 1 and ends at the count, so only the repeated position breaks.
+    'two catalogs at the same chain position' => [
+        "update catalogs set chain_position = if(code = 'quests', 3, 1)",
+        'la cadena de catálogos no es única y contigua desde 1',
+    ],
+    // 1 and 3, the third catalog off the chain: it starts at 1 and repeats nothing, so only the gap breaks.
+    'a catalog chain with a gap' => [
+        "update catalogs set chain_position = if(code = 'lab', 1, 3) where code in ('lab', 'quests')",
         'la cadena de catálogos no es única y contigua desde 1',
     ],
 ]);

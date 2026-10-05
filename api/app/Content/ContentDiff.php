@@ -17,7 +17,7 @@ final class ContentDiff
      */
     public function between(RowSet $desired, array $stored, array $knownVersions, ?LatestImport $latest, array $meta): ContentPlan
     {
-        $this->assertDistinctV1Indexes($desired);
+        $this->assertDistinctV1Indexes($desired, $stored['workshop_steps'] ?? []);
         $writes = [];
         $retires = [];
         foreach (array_keys(ContentTables::KEYS) as $table) {
@@ -127,6 +127,8 @@ final class ContentDiff
     /**
      * A retired row only comes back if it was retired together with its exercise. A `test_key`
      * retired on its own is not reused (ADR 0006 D14): its results already point to the old test.
+     * Until B2 the generator still names the tests `t{index+1}`, so there is no other key to give
+     * the test that would take its place.
      *
      * @param  array<string, int|string|null>  $row
      * @param  array<string, mixed>  $current
@@ -140,24 +142,48 @@ final class ContentDiff
         $exercise = $stored['exercises'][$row['exercise_id']] ?? null;
         $retiredTogether = $exercise !== null && $exercise['status'] !== 'active' && $exercise['retired_at'] === $current['retired_at'];
         if (! $retiredTogether) {
-            throw InvalidContent::at('curriculum.json', "exercise_tests.{$row['exercise_id']}.{$row['test_key']}", 'el test_key se retiró y no se reutiliza: usá uno nuevo');
+            throw InvalidContent::at('curriculum.json', "exercise_tests.{$row['exercise_id']}.{$row['test_key']}", 'el test_key se retiró y no se reutiliza: esa prueba no puede volver hasta que B2 quite la regla t{i+1} del generador');
         }
     }
 
-    /** A v1 index belongs to a single step of its workshop (ADR 0006 D14). */
-    private function assertDistinctV1Indexes(RowSet $desired): void
+    /**
+     * A v1 index belongs to a single step of its workshop (ADR 0006 D14): among the steps of the
+     * document and, because a retired step keeps its own, among the stored steps the document no
+     * longer has. The stored steps that stay are not compared here: assertFrozen compares each
+     * one's index with the stored one.
+     *
+     * @param  array<string, array<string, mixed>>  $storedSteps  `workshop_steps` rows by key, in any status
+     */
+    private function assertDistinctV1Indexes(RowSet $desired, array $storedSteps): void
     {
+        $steps = $desired->keyed('workshop_steps');
+        $keptByLeavers = [];
+        foreach (array_diff_key($storedSteps, $steps) as $leaver) {
+            if ($leaver['v1_position'] !== null) {
+                $keptByLeavers[$this->v1Slot($leaver)] = $leaver['step_key'];
+            }
+        }
         $owners = [];
-        foreach ($desired->rows('workshop_steps') as $step) {
+        foreach ($steps as $step) {
             if ($step['v1_position'] === null) {
                 continue;
             }
-            $slot = "{$step['workshop_id']}\x1f{$step['v1_position']}";
+            $slot = $this->v1Slot($step);
+            $at = "workshopSteps.{$step['workshop_id']}.{$step['step_key']}";
             if (isset($owners[$slot])) {
-                throw InvalidContent::at('curriculum.meta.json', "workshopSteps.{$step['workshop_id']}.{$step['step_key']}", "el v1Index {$step['v1_position']} ya es el de la etapa {$owners[$slot]}");
+                throw InvalidContent::at('curriculum.meta.json', $at, "el v1Index {$step['v1_position']} ya es el de la etapa {$owners[$slot]}");
+            }
+            if (isset($keptByLeavers[$slot])) {
+                throw InvalidContent::at('curriculum.meta.json', $at, "el v1Index {$step['v1_position']} ya es el de la etapa {$keptByLeavers[$slot]}, que lo conserva aunque se retire");
             }
             $owners[$slot] = $step['step_key'];
         }
+    }
+
+    /** @param array<string, mixed> $step */
+    private function v1Slot(array $step): string
+    {
+        return "{$step['workshop_id']}\x1f{$step['v1_position']}";
     }
 
     /**

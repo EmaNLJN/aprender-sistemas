@@ -178,7 +178,7 @@ it('a test_key retired on its own is not reused, but comes back with its exercis
     $alone = $stored;
     $alone['exercise_tests'][$key]['status'] = 'deprecated';
     $alone['exercise_tests'][$key]['retired_at'] = '2026-10-05 01:00:00.000';
-    expect(fn () => $reuse($alone))->toThrow(InvalidContent::class, "exercise_tests.{$test['exercise_id']}.{$test['test_key']}: el test_key se retiró y no se reutiliza");
+    expect(fn () => $reuse($alone))->toThrow(InvalidContent::class, "exercise_tests.{$test['exercise_id']}.{$test['test_key']}: el test_key se retiró y no se reutiliza: esa prueba no puede volver hasta que B2 quite la regla t{i+1} del generador");
 
     // Retired on its own, and the whole exercise later: the exercise comes back, the test does not.
     $later = retireExercise($alone, $test['exercise_id'], '2026-10-05 02:00:00.000');
@@ -213,6 +213,28 @@ it('a v1 index cannot belong to two steps of a workshop', function () {
     expect(fn () => (new ContentDiff)->between($rows, [], [], null, $source->meta))
         ->toThrow(InvalidContent::class, 'curriculum.meta.json: workshopSteps.cache.e2: el v1Index 0 ya es el de la etapa e1');
 });
+
+it('a new step cannot take the v1 index of a step that left the document', function (string $status) {
+    [$base] = diffDesired();
+    $stored = storedRowsAfterImport($base);
+    $leaving = ContentTables::keyOf('workshop_steps', ['workshop_id' => 'cache', 'step_key' => 'e3']);
+    expect($stored['workshop_steps'][$leaving]['v1_position'])->toBe(2);
+    if ($status === 'deprecated') {
+        $stored['workshop_steps'][$leaving] = ['status' => 'deprecated', 'retired_at' => '2026-10-05 01:00:00.000', 'position' => null] + $stored['workshop_steps'][$leaving];
+    }
+    // The document no longer has e3 and a new e5 asks for its index.
+    [$rows, $source] = diffDesired(editMeta: function (array $meta) {
+        $meta['workshopSteps']['cache'][2]['id'] = 'e5';
+
+        return $meta;
+    });
+
+    expect(fn () => (new ContentDiff)->between($rows, $stored, gradingVersionsOf($base), null, $source->meta))
+        ->toThrow(InvalidContent::class, 'curriculum.meta.json: workshopSteps.cache.e5: el v1Index 2 ya es el de la etapa e3, que lo conserva aunque se retire');
+})->with([
+    'retired by an earlier import' => ['deprecated'],
+    'retired by this very import' => ['active'],
+]);
 
 it('records an import when the document or a portion changes, even if no table does', function () {
     [$rows, $source] = diffDesired();
