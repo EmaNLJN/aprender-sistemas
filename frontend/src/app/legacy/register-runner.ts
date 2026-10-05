@@ -6,5 +6,5 @@ declare global {
   }
 }
 
-// Consumidor real: lab.js usa sólo run (endpoints y timeoutMs no tenían usos).
+// Real consumer: lab.js uses only run (endpoints and timeoutMs had no uses).
 window.TallerRunner = Object.freeze({ run: runCode });

@@ -1,4 +1,4 @@
-// Sólo admite enlaces https; cualquier otra cosa se reemplaza por '#'.
+// Allows only https links; anything else is replaced with '#'.
 const safeHttpsUrl = (value: string): string => {
   try {
     const url = new URL(value);

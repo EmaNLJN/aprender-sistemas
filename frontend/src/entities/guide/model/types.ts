@@ -1,6 +1,6 @@
 export type GuideLanguage = 'rust' | 'go';
 
-// `both` marca los recursos útiles para los dos recorridos.
+// `both` marks resources useful for both routes.
 export type GuideResourceLanguage = GuideLanguage | 'both';
 
 export type GuideResourceCategory = 'ejercicios' | 'lectura' | 'proyectos' | 'herramientas';

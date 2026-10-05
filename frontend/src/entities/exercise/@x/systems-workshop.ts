@@ -1,2 +1,2 @@
-// Notación @x de FSD: la entidad systems-workshop consume sólo esta superficie de exercise.
+// FSD @x notation: the systems-workshop entity consumes only this surface of exercise.
 export { hasPassingEvidence } from '../model/passing-evidence';

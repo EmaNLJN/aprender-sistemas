@@ -75,7 +75,7 @@ const dispatch: LowlevelHandler<InterruptsState> = (s, { log }) => {
   log(s, `Entrada a ISR: leemos RX=${s.data}. Todavía falta confirmar el evento antes de volver.`);
 };
 
-// Un evento en servicio siempre tiene su byte en RX; si falta, el estado está corrupto.
+// A serviced event always has its byte in RX; if it is missing, the state is corrupt.
 function servicedByte(s: InterruptsState): number {
   if (s.data === null) throw new Error('Estado de interrupciones inconsistente: falta RX');
   return s.data;

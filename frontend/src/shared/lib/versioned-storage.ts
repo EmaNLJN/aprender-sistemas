@@ -1,5 +1,5 @@
-// Lectura y escritura versionadas de las claves de progreso. No conoce reglas de
-// negocio: cada almacén aporta `blank` y `parse`. Ver docs/adr/0003-integridad-del-progreso.md.
+// Versioned reads and writes of the progress keys. Knows no business rules: each store
+// provides `blank` and `parse`. See docs/adr/0003-integridad-del-progreso.md.
 import { isLosslessNormalization } from './is-lossless-normalization';
 
 export type StorageStatus = 'empty' | 'loaded' | 'unreadable' | 'unavailable';
@@ -17,7 +17,7 @@ export interface ParsedState<T> {
 
 export const BACKUP_SLOTS = 5;
 
-// `${key}:respaldo` (la ranura histórica, sin cambio de nombre), `${key}:respaldo-2` … `${key}:respaldo-5`.
+// `${key}:respaldo` (the historical slot, name unchanged), `${key}:respaldo-2` … `${key}:respaldo-5`.
 export function backupKeysFor(key: string): string[] {
   const historic = `${key}:respaldo`;
   const others = Array.from({ length: BACKUP_SLOTS - 1 }, (_, index) => `${historic}-${index + 2}`);
@@ -26,12 +26,12 @@ export function backupKeysFor(key: string): string[] {
 
 export interface VersionedStoreOptions<T> {
   blank: () => T;
-  // Devuelve el estado normalizado y cuántos registros descartó; lanza si la forma o la
-  // versión no se reconocen.
+  // Returns the normalized state and how many records it dropped; throws if the shape or
+  // version is not recognized.
   parse: (raw: unknown) => ParsedState<T>;
-  // Combina lo que guardó otra pestaña con el estado local. Sólo se usa si la clave cambió
-  // desde la última lectura o escritura de este almacén. Puede devolver `local` modificado
-  // en el lugar. Si falta, gana el estado local.
+  // Merges what another tab saved with the local state. Used only if the key changed since
+  // this store's last read or write. May return `local` modified in place. If missing, the
+  // local state wins.
   merge?: (stored: T, local: T) => T;
   storage?: StorageLike;
 }
@@ -39,10 +39,10 @@ export interface VersionedStoreOptions<T> {
 export interface LoadResult<T> {
   status: StorageStatus;
   state: T;
-  dropped: number; // registros enteros descartados por parse
-  lossy: boolean; // dropped > 0 o la normalización quitó o cambió datos
-  backupKey: string | null; // ranura con el texto original cuando la carga se degradó y la copia quedó asegurada
-  writable: boolean; // false si no hay almacenamiento, o si la carga se degradó sin copia asegurada
+  dropped: number; // whole records dropped by parse
+  lossy: boolean; // dropped > 0 or normalization removed or changed data
+  backupKey: string | null; // slot holding the original text when the load degraded and the copy was secured
+  writable: boolean; // false if there is no storage, or if the load degraded without a secured copy
 }
 
 export interface WriteResult<T> {
@@ -63,7 +63,7 @@ export interface VersionedStore<T> {
   backups(): BackupEntry[];
 }
 
-// En navegadores con almacenamiento bloqueado el solo acceso a `localStorage` lanza.
+// In browsers with blocked storage, merely accessing `localStorage` throws.
 function resolveStorage(storage?: StorageLike): StorageLike | null {
   if (storage) return storage;
   try {
@@ -81,9 +81,9 @@ function readItem(storage: StorageLike, key: string): { available: boolean; text
   }
 }
 
-// Asegura una copia de `text` en una ranura y devuelve su clave, o null si no hay lugar.
-// Reutiliza la ranura que ya contiene exactamente ese texto; si no, usa la primera vacía.
-// Nunca pisa otra ranura y un fallo del almacenamiento equivale a no tener copia.
+// Secures a copy of `text` in a slot and returns its key, or null if there is no room.
+// Reuses the slot that already holds exactly that text; otherwise uses the first empty one.
+// Never overwrites another slot, and a storage failure counts as having no copy.
 function secureBackup(storage: StorageLike, key: string, text: string): string | null {
   try {
     let firstEmpty: string | null = null;
@@ -101,12 +101,12 @@ function secureBackup(storage: StorageLike, key: string, text: string): string |
 }
 
 interface InspectedText<T> {
-  parsed: ParsedState<T> | null; // null si el texto no es JSON o parse lo rechazó
+  parsed: ParsedState<T> | null; // null if the text is not JSON or parse rejected it
   lossy: boolean;
 }
 
-// Normaliza el texto guardado y decide si perdió datos. Compara contra un segundo
-// `JSON.parse` para que un parse que muta su entrada no oculte la pérdida.
+// Normalizes the saved text and decides whether it lost data. Compares against a second
+// `JSON.parse` so a parse that mutates its input cannot hide the loss.
 function inspectText<T>(text: string, parse: (raw: unknown) => ParsedState<T>): InspectedText<T> {
   try {
     const parsed = parse(JSON.parse(text));
@@ -122,7 +122,7 @@ export function openVersionedStore<T>(
   options: VersionedStoreOptions<T>,
 ): VersionedStore<T> {
   const storage = resolveStorage(options.storage);
-  // Último texto leído o escrito por este almacén; null si la clave no existía.
+  // Last text read or written by this store; null if the key did not exist.
   let lastText: string | null = null;
   let writable = storage !== null;
 
@@ -157,17 +157,17 @@ export function openVersionedStore<T>(
     return result('loaded', parsed.state, { dropped: parsed.dropped, lossy, backupKey, writable });
   }
 
-  // Estado a escribir cuando otra pestaña cambió la clave, o null si no se puede escribir.
+  // State to write when another tab changed the key, or null if it cannot be written.
   function reconcile(state: T, current: string | null, target: StorageLike): T | null {
     if (current === null) return state;
     const { parsed, lossy } = inspectText(current, options.parse);
     if (parsed && !lossy) return options.merge ? options.merge(parsed.state, state) : state;
-    // Texto ilegible o con pérdida: antes de pisarlo se asegura la copia original.
+    // Unreadable or lossy text: the original copy is secured before overwriting it.
     if (secureBackup(target, key, current) === null) {
       writable = false;
       return null;
     }
-    // Si es legible, aunque con pérdida, se rescata lo que esta versión reconoce.
+    // If readable, even with loss, what this version recognizes is rescued.
     if (parsed && options.merge) return options.merge(parsed.state, state);
     return state;
   }
@@ -193,7 +193,7 @@ export function openVersionedStore<T>(
   }
 
   function remove(): boolean {
-    // Sin almacenamiento no hay nada que borrar.
+    // Without storage there is nothing to delete.
     if (!storage) return true;
     let allRemoved = true;
     let mainKeyRemoved = true;
@@ -205,8 +205,8 @@ export function openVersionedStore<T>(
         if (name === key) mainKeyRemoved = false;
       }
     }
-    // Si la clave principal sigue guardada, `lastText` conserva ese texto: la escritura
-    // siguiente lo sobrescribe en vez de tratarlo como un cambio de otra pestaña.
+    // If the main key is still stored, `lastText` keeps that text: the next write
+    // overwrites it instead of treating it as a change from another tab.
     if (mainKeyRemoved) lastText = null;
     writable = true;
     return allRemoved;
@@ -231,8 +231,8 @@ export function openVersionedStore<T>(
   };
 }
 
-// Aviso para el alumno según la carga. `area` nombra el progreso («del recorrido»,
-// «de campaña»…). El almacenamiento bloqueado lo informa el shell, así que da ''.
+// Warning for the student depending on the load. `area` names the progress («del recorrido»,
+// «de campaña»…). Blocked storage is reported by the shell, so it yields ''.
 export function describeLoadResult(
   result: Pick<LoadResult<unknown>, 'status' | 'dropped' | 'lossy' | 'backupKey'>,
   area: string,

@@ -19,7 +19,7 @@ type AlgebraLog = ActionContext<AlgebraState, ModelWorkshop>['log'];
 
 interface Polynomial {
   name: string;
-  // Coeficientes en orden creciente de potencias.
+  // Coefficients in increasing order of powers.
   coef: number[];
 }
 
@@ -50,7 +50,7 @@ function hornerStep(s: AlgebraState, log: AlgebraLog): void {
   remember(s, 'algebra-horner', s.index === p.length && s.acc === evaluate(p, s.x));
 }
 
-// Se evalúa tras cada acción conocida: derivar y luego mover x puede llegar a P′(x)=0.
+// Evaluated after every known action: differentiating and then moving x can reach P′(x)=0.
 function rememberStationary(s: AlgebraState): void {
   const coef = POLYNOMIALS[s.preset].coef;
   remember(s, 'algebra-stationary', s.derived && evaluate(derivative(coef), s.x) === 0);
@@ -80,7 +80,7 @@ const hornerOne: AlgebraHandler = (s, { log }) => {
   rememberStationary(s);
 };
 
-// Horner termina en tantos pasos como coeficientes; el polinomio más largo tiene 4.
+// Horner finishes in as many steps as there are coefficients; the longest polynomial has 4.
 const hornerAll: AlgebraHandler = (s, { log }) => {
   for (let i = 0; i < 4; i++) hornerStep(s, log);
   rememberStationary(s);
@@ -108,7 +108,7 @@ function axesShapes(): SceneShape[] {
   return shapes;
 }
 
-// 80 segmentos entre x=-2 y x=2; la derivada se dibuja a continuación de cada tramo de P.
+// 80 segments between x=-2 and x=2; the derivative is drawn after each stretch of P.
 function curveShapes(p: Polynomial, d: number[], derived: boolean): SceneShape[] {
   const shapes: SceneShape[] = [];
   for (let i = 0; i < 80; i++) {

@@ -1,6 +1,6 @@
-/* Transporte a los Playgrounds oficiales de Rust y Go (CORS habilitado).
- * No se envía código hasta que la persona ejecuta explícitamente.
- * Fuentes de las APIs:
+/* Transport to the official Rust and Go Playgrounds (CORS enabled).
+ * No code is sent until the person explicitly runs it.
+ * API sources:
  * https://github.com/rust-lang/rust-playground/blob/main/ui/src/server_axum.rs
  * https://go.googlesource.com/playground/+/HEAD/sandbox.go
  */
@@ -162,7 +162,7 @@ export function parseGoResponse(data: unknown): GoRunResult | RunFailure {
     );
   }
   const { stdout, stderr: collected } = collectGoOutput(record);
-  // Number() conserva la coerción de `TestsFailed > 0` del código original.
+  // Number() keeps the `TestsFailed > 0` coercion of the original code.
   const success = !record.Errors && record.Status === 0 && !(Number(record.TestsFailed) > 0);
   const stderr =
     !success && !collected && record.Status !== 0

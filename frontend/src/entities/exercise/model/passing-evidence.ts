@@ -4,8 +4,8 @@ interface ExpectedTest {
   id: string;
 }
 
-// Una prueba cuenta sólo con exactamente una entrada de ese id y `passed === true`:
-// un duplicado, aunque esté aprobado, no es evidencia única.
+// A test counts only with exactly one entry of that id and `passed === true`:
+// a duplicate, even if passed, is not unique evidence.
 export function testPassed(result: unknown, testId: string): boolean {
   if (!isPlainObject(result) || !Array.isArray(result.tests)) return false;
   const entries = result.tests.filter(
@@ -14,9 +14,9 @@ export function testPassed(result: unknown, testId: string): boolean {
   return entries.length === 1 && entries[0].passed === true;
 }
 
-// Cuándo un resultado del compilador prueba un ejercicio: éxito sin error de
-// transporte, código no vacío y evidencia aprobada por cada prueba esperada. Sin pruebas
-// esperadas no hay evidencia: una lista vacía no puede probar nada.
+// When a compiler result proves an exercise: success without transport error,
+// non-empty code and passed evidence for every expected test. With no expected tests
+// there is no evidence: an empty list cannot prove anything.
 export function hasPassingEvidence(
   result: unknown,
   expectedTests: readonly ExpectedTest[],

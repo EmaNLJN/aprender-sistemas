@@ -19,7 +19,7 @@ export interface LowlevelModels {
   interrupts: SystemsModel<InterruptsState>;
 }
 
-// Mapa id de taller → modelo, en el orden de las fichas.
+// Map of workshop id → model, in card order.
 export const lowlevelModels: LowlevelModels = {
   cache: cacheModel,
   heap: heapModel,

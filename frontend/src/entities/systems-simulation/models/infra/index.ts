@@ -7,7 +7,7 @@ import { quorumModel } from './quorum';
 import { shardingModel } from './sharding';
 import { walModel } from './wal';
 
-// El orden de claves es el que publicaba systems-infra.js.
+// Key order is the one systems-infra.js used to publish.
 export const infraModels = {
   wal: walModel,
   lsm: lsmModel,

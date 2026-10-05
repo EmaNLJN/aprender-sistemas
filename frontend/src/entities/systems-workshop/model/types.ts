@@ -6,7 +6,7 @@ export interface SystemsTest {
   id: string;
 }
 
-// Núcleo programable de un taller: el ejercicio Rust/Go cuya aprobación sella el código.
+// Programmable core of a workshop: the Rust/Go exercise whose approval seals the code.
 export interface SystemsExercise {
   id: string;
   language: SystemsLanguage;
@@ -18,15 +18,15 @@ export interface WorkshopObjective {
   [content: string]: unknown;
 }
 
-// `explanation` lo garantiza el catálogo (qa/systems-check), no `init`.
+// `explanation` is guaranteed by the catalog (qa/systems-check), not by `init`.
 export interface WorkshopPrediction {
   options: string[];
   answer: number;
   explanation: string;
 }
 
-// Taller tal como lo entrega el catálogo. El motor sólo valida los campos tipados aquí;
-// el resto del contenido (título, nivel, modelo interactivo…) se conserva sin interpretarlo.
+// Workshop as delivered by the catalog. The engine validates only the typed fields here;
+// the rest of the content (title, level, interactive model…) is kept uninterpreted.
 export interface SystemsWorkshop {
   id: string;
   model: string;
@@ -43,7 +43,7 @@ export interface SystemsConfig {
   exercises: SystemsExercise[];
 }
 
-// Catálogo validado por `init`; el progreso se interpreta contra él.
+// Catalog validated by `init`; progress is interpreted against it.
 export interface SystemsCatalog {
   workshops: Map<string, SystemsWorkshop>;
   exercises: Map<string, SystemsExercise>;
@@ -85,15 +85,15 @@ export interface SystemsInitResult {
   loadWarning: string;
 }
 
-// `changed`: en `syncLab`, había cambios sin guardar y se intentó persistir; en
-// `refreshFromLab`, cambió algo en memoria.
+// `changed`: in `syncLab`, there were unsaved changes and persisting was attempted; in
+// `refreshFromLab`, something changed in memory.
 export interface SystemsSyncResult {
   changed: boolean;
   storageAvailable: boolean;
 }
 
-// Importación planificada sin efectos: `state` es el progreso resultante y `lossy` avisa
-// que el saneado descartó o cambió datos de la copia.
+// Import planned without side effects: `state` is the resulting progress and `lossy` warns
+// that sanitizing dropped or changed data from the copy.
 export interface SystemsImportPlan {
   state: SystemsStateV1;
   lossy: boolean;
@@ -112,9 +112,9 @@ export interface SystemsEngine {
   get(id: string, language: string): WorkshopView;
   observe(id: string, language: string, goals: unknown): ObserveResult;
   answer(id: string, language: string, index: number): AnswerResult;
-  // Sella en memoria con la evidencia del laboratorio y nunca escribe. Lo usan los renders.
+  // Seals in memory with lab evidence and never writes. Used by renders.
   refreshFromLab(lab?: unknown): SystemsSyncResult;
-  // Sella y guarda lo pendiente. Lo usan las acciones del alumno.
+  // Seals and saves what is pending. Used by student actions.
   syncLab(lab?: unknown): SystemsSyncResult;
   planImport(raw: unknown): SystemsImportPlan;
   applyImport(plan: SystemsImportPlan): SystemsSyncResult;

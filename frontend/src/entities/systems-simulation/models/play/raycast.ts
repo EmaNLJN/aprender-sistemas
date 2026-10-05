@@ -36,7 +36,7 @@ const PLANETS: Planet[] = [
   { x: 335, y: 75, r: 30, name: 'Luna', color: green },
 ];
 
-// Menor t no negativo de la intersección del rayo origen + t·dirección con el círculo.
+// Smallest non-negative t where the ray origin + t·direction meets the circle.
 function hitCircle(o: Vector, d: Vector, c: Vector, r: number): number | null {
   const x = o[0] - c[0];
   const y = o[1] - c[1];
@@ -87,7 +87,7 @@ const castRay: RaycastHandler = (s, { log }) => {
   );
 };
 
-// Distancia hasta el borde de la escena en la dirección del rayo.
+// Distance to the scene edge in the ray's direction.
 function rayLimitFor(dy: number): number {
   return Math.min(490, dy < 0 ? 145 / -dy : dy > 0 ? 125 / dy : Infinity);
 }

@@ -68,7 +68,7 @@ async function parseBody(
   return parseResponse(language, data);
 }
 
-// Nunca rechaza: todo fallo vuelve como RunFailure con su errorType.
+// Never rejects: every failure comes back as RunFailure with its errorType.
 export async function runCode(input: RunInput): Promise<RunResult> {
   const valid = validateInput(input);
   if ('errorType' in valid) return valid;
@@ -78,7 +78,7 @@ export async function runCode(input: RunInput): Promise<RunResult> {
   let timedOut = false;
   const abort = () => controller.abort();
   signal?.addEventListener('abort', abort, { once: true });
-  // setTimeout y no AbortSignal.timeout: el check inyecta un temporizador falso.
+  // setTimeout and not AbortSignal.timeout: the check injects a fake timer.
   const timer = setTimeout(() => {
     timedOut = true;
     controller.abort();

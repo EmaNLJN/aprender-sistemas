@@ -22,21 +22,21 @@ interface ExpectedTest {
   id: string;
 }
 
-// La evidencia se mide contra las pruebas esperadas del ejercicio, no contra las que trae
-// el propio resultado: un resultado con `tests: []` no prueba nada.
+// Evidence is measured against the exercise's expected tests, not against the ones the
+// result carries: a result with `tests: []` proves nothing.
 function resultProves(record: LabRecord, expectedTests: readonly ExpectedTest[]): boolean {
   return hasPassingEvidence(record.result, expectedTests);
 }
 
-// Fecha de resolución válida: sólo cuentan los valores positivos.
+// Valid resolution date: only positive values count.
 function isSolvedAt(value: unknown): value is number {
   return typeof value === 'number' && value > 0;
 }
 
-// Fusiona un registro importado con el local sin perder logros (ADR 0003, punto 5):
-// las marcas de ayuda se combinan con OR, `solvedAt` conserva el valor positivo más antiguo,
-// un resultado con evidencia no se reemplaza por uno sin ella y los textos en blanco no pisan.
-// El resto de los campos importados reemplaza a los locales.
+// Merges an imported record with the local one without losing achievements (ADR 0003, point 5):
+// help flags combine with OR, `solvedAt` keeps the oldest positive value, a result with
+// evidence is not replaced by one without it, and blank texts do not overwrite.
+// The remaining imported fields replace the local ones.
 export function mergeRecord(
   local: LabRecord | undefined,
   incoming: LabRecord,

@@ -24,7 +24,7 @@ export type DataInstruction = LoadInstruction | StoreInstruction;
 
 export type Instruction = DataInstruction | { op: 'HALT' };
 
-// El kernel educativo nombra la causa de cada excepción; el resto del marco la acompaña.
+// The educational kernel names the cause of each exception; the rest of the frame accompanies it.
 export interface AbsentPageTrap {
   cause: 'absent';
   pc: number;

@@ -21,8 +21,8 @@ let canvas: HTMLCanvasElement | null = null;
 let fire: ConfettiCannon | null = null;
 
 export function celebrate(): void {
-  // Chequeo en vivo: la librería guarda la preferencia al crear el cañón, así que
-  // un cambio posterior de movimiento reducido sólo se respeta consultándolo acá.
+  // Live check: the library stores the preference when it creates the cannon, so
+  // a later reduced-motion change is respected only by querying it here.
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   if (!fire) {
     canvas = document.createElement('canvas');

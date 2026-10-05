@@ -35,7 +35,7 @@ function assertBackupShape(raw: unknown): asserts raw is BackupShape {
     throw new Error('La copia de Sistemas no es compatible.');
 }
 
-// Un registro pertenece al catálogo si su nombre es `lenguaje:taller` conocido.
+// A record belongs to the catalog if its name is a known `language:workshop`.
 function workshopFor(catalog: SystemsCatalog, name: string): SystemsWorkshop | null {
   const [language, id, ...rest] = name.split(':');
   if (rest.length || !isSystemsLanguage(language) || !catalog.workshops.has(id)) return null;
@@ -70,7 +70,7 @@ function sanitizeRecord(workshop: SystemsWorkshop, value: unknown): WorkshopReco
   };
 }
 
-// Importación: estricta y todo-o-nada; un registro inválido rechaza la copia.
+// Import: strict and all-or-nothing; one invalid record rejects the copy.
 export function validateSystemsImport(
   catalog: SystemsCatalog,
   raw: unknown,
@@ -85,7 +85,7 @@ export function validateSystemsImport(
   return clean;
 }
 
-// Carga: tolerante por registro. Descarta y cuenta los inválidos o de talleres desconocidos.
+// Load: tolerant per record. Drops and counts invalid records and unknown workshops.
 export function parseSavedSystemsState(
   catalog: SystemsCatalog,
   raw: unknown,
@@ -112,7 +112,7 @@ function unionOf<T>(first: T[], second: T[]): T[] {
   return [...new Set([...first, ...second])];
 }
 
-// Fusión monótona: nunca quita observaciones, sellos ni etapas del estado actual.
+// Monotonic merge: never removes observations, seals or stages from the current state.
 export function mergeImportedRecords(state: SystemsStateV1, incoming: SystemsStateV1): void {
   for (const [name, next] of Object.entries(incoming.records)) {
     const prev = state.records[name] || emptyRecord();

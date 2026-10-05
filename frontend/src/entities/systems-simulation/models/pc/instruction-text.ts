@@ -1,6 +1,6 @@
 import type { DataInstruction } from './types';
 
-// « ← valor» sólo acompaña a un STORE; un LOAD no lleva sufijo.
+// « ← valor» accompanies only a STORE; a LOAD carries no suffix.
 export const storeSuffix = (instruction: DataInstruction): string =>
   instruction.op === 'STORE' ? ` ← ${instruction.value}` : '';
 

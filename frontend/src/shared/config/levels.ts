@@ -1,4 +1,4 @@
-// Niveles de dificultad compartidos por campaña y Sistemas, en orden de progreso.
+// Difficulty levels shared by campaign and Systems, in progress order.
 export const LEVEL_IDS = ['beginner', 'medium', 'advanced', 'expert'] as const;
 
 export type LevelId = (typeof LEVEL_IDS)[number];

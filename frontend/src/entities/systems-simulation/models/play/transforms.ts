@@ -118,7 +118,7 @@ const applyInverse: TransformsHandler = (s, { log }) => {
   log(s, 'La inversa devuelve todos los vértices a su posición inicial.');
 };
 
-// Y crece hacia arriba: el origen queda a la izquierda y abajo del centro de la escena.
+// Y grows upward: the origin sits to the left of and below the scene center.
 const toScreen = ([x, y]: Point): Point => [220 + x * 38, 230 - y * 38];
 
 function gridShapes(): SceneShape[] {

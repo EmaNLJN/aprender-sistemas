@@ -7,7 +7,7 @@ import type { PcScenario, PcState } from './types';
 const isScenario = (value: string | undefined): value is PcScenario =>
   value === 'normal' || value === 'protection';
 
-// Cargar un programa reinicia la máquina pero conserva observaciones y registro.
+// Loading a program resets the machine but keeps observations and log.
 export const loadProgram: PcHandler = (s, { value, log }) => {
   if (!isScenario(value)) return;
   const fresh: PcState = createInitialState();
@@ -112,7 +112,7 @@ const retryAbsentAccess: PcHandler = (s, { log }) => {
   );
 };
 
-// `return` significa algo distinto en cada excepción: retomar tras IRQ o reintentar el fault.
+// `return` means something different for each exception: resume after an IRQ or retry the fault.
 export const returnToUser: PcHandler = (s, context) => {
   if (s.phase === 'irq') return returnFromIrq(s, context);
   if (s.phase === 'fault') return retryAbsentAccess(s, context);

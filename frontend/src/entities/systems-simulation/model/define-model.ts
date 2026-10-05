@@ -9,13 +9,13 @@ export interface SimulationState {
 export interface ActionContext<State extends SimulationState, Workshop extends ModelWorkshop> {
   value: string | undefined;
   workshop: Workshop;
-  // Estado inicial del taller: lo que devuelve la acción de reinicio.
+  // Initial state of the workshop: what the reset action returns.
   initial(): State;
-  // Agrega al registro de `state` (tope del modelo) y lo devuelve.
+  // Appends to the `state` log (model cap) and returns it.
   log(state: State, message: string): State;
 }
 
-// Recibe una copia que puede mutar. Si devuelve un estado, ese reemplaza a la copia.
+// Receives a copy it may mutate. If it returns a state, that replaces the copy.
 export type ActionHandler<State extends SimulationState, Workshop extends ModelWorkshop> = (
   draft: State,
   context: ActionContext<State, Workshop>,
@@ -26,7 +26,7 @@ export interface ModelDefinition<
   Action extends string,
   Workshop extends ModelWorkshop,
 > {
-  // Cantidad de mensajes que conserva el registro: 12, 8 o 6 según el dominio.
+  // Number of messages the log keeps: 12, 8 or 6 depending on the domain.
   logLimit: number;
   initial(workshop: Workshop): State;
   actions: Record<Action, ActionHandler<State, Workshop>>;
@@ -34,9 +34,9 @@ export interface ModelDefinition<
   achieved(state: State, workshop: Workshop): string[];
 }
 
-// Mecánica común de los modelos: clona el estado, despacha la acción por tabla y trata
-// una acción desconocida como ninguna acción (la copia, sin cambios). Cada modelo conserva
-// la forma de su estado y su vista.
+// Common mechanics of the models: clones the state, dispatches the action by table and treats
+// an unknown action as no action (the copy, unchanged). Each model keeps
+// the shape of its state and view.
 export function defineModel<
   State extends SimulationState,
   Action extends string,

@@ -54,7 +54,7 @@ const loadLoop: LowlevelHandler<VmState> = (s, { log }) => {
   );
 };
 
-// Vuelve al programa inicial pero conserva lo observado: flags y registro del estado actual.
+// Returns to the initial program but keeps what was observed: flags and log of the current state.
 const loadNormal: LowlevelHandler<VmState> = (s, { initial, log }) => {
   const fresh = initial();
   fresh.flags = s.flags;
