@@ -8,13 +8,11 @@ export default defineConfig([
   globalIgnores([
     '**/node_modules/**',
     '**/.venv/**',
-    // Imported skills keep their upstream code; .claude/skills only links to them.
     '.agents/**',
     '.claude/**',
     '.codex/**',
     '.desloppify/**',
     'dist/**',
-    // Laravel API: PHP with its own tooling (Pint and Pest).
     'backend/api/**',
   ]),
   js.configs.recommended,
@@ -23,12 +21,10 @@ export default defineConfig([
     files: ['**/*.{ts,tsx}'],
   })),
   {
-    // Official React rules, including the compiler-powered purity, refs and effect checks.
     ...reactHooks.configs.flat.recommended,
     files: ['frontend/src/**/*.{ts,tsx}'],
   },
   {
-    // Legacy browser scripts still publish window.Taller* globals, but are ES modules for Vite.
     files: ['frontend/*.js'],
     languageOptions: { sourceType: 'module', globals: globals.browser },
   },

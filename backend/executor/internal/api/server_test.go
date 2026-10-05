@@ -57,14 +57,14 @@ func TestHealthzNeedsNoToken(t *testing.T) {
 
 func TestRunRequiresTheToken(t *testing.T) {
 	sameLength := "Bearer " + token[:len(token)-1] + "x"
-	for _, auth := range []string{"", "Bearer otro-token", token, sameLength} {
+	for _, auth := range []string{"", "Bearer other-token", token, sameLength} {
 		exec := &fakeExecutor{}
 		rec := post(t, newServer(exec), `{"language":"rust","program":"fn main(){}"}`, auth)
 		if rec.Code != http.StatusUnauthorized || exec.calls != 0 {
-			t.Fatalf("Authorization %q: código %d, llamadas %d; quiero 401 sin ejecutar", auth, rec.Code, exec.calls)
+			t.Fatalf("Authorization %q: code %d, calls %d; want 401 without executing", auth, rec.Code, exec.calls)
 		}
 		if rec.Header().Get("WWW-Authenticate") != "Bearer" {
-			t.Fatalf("el 401 dice qué esquema espera: %q", rec.Header().Get("WWW-Authenticate"))
+			t.Fatalf("the 401 states the expected scheme: %q", rec.Header().Get("WWW-Authenticate"))
 		}
 	}
 }
@@ -74,19 +74,19 @@ func TestRunValidatesTheRequest(t *testing.T) {
 		body string
 		code int
 	}{
-		"campo desconocido": {`{"language":"rust","program":"x","limits":{"memory":"9g"}}`, http.StatusBadRequest},
-		"lenguaje":          {`{"language":"python","program":"x"}`, http.StatusBadRequest},
-		"programa vacío":    {`{"language":"go","program":"   "}`, http.StatusBadRequest},
-		"programa grande":   {`{"language":"go","program":"` + strings.Repeat("x", 101) + `"}`, http.StatusRequestEntityTooLarge},
-		"cuerpo grande":     {`{"language":"go","program":"` + strings.Repeat("x", 2000) + `"}`, http.StatusRequestEntityTooLarge},
-		"JSON roto":         {`{"language":`, http.StatusBadRequest},
-		"datos después":     {`{"language":"go","program":"x"} basura`, http.StatusBadRequest},
+		"unknown field": {`{"language":"rust","program":"x","limits":{"memory":"9g"}}`, http.StatusBadRequest},
+		"language":      {`{"language":"python","program":"x"}`, http.StatusBadRequest},
+		"empty program": {`{"language":"go","program":"   "}`, http.StatusBadRequest},
+		"large program": {`{"language":"go","program":"` + strings.Repeat("x", 101) + `"}`, http.StatusRequestEntityTooLarge},
+		"large body":    {`{"language":"go","program":"` + strings.Repeat("x", 2000) + `"}`, http.StatusRequestEntityTooLarge},
+		"broken JSON":   {`{"language":`, http.StatusBadRequest},
+		"trailing data": {`{"language":"go","program":"x"} garbage`, http.StatusBadRequest},
 	}
 	for name, tc := range cases {
 		exec := &fakeExecutor{}
 		rec := post(t, newServer(exec), tc.body, "Bearer "+token)
 		if rec.Code != tc.code || exec.calls != 0 {
-			t.Fatalf("%s: código %d (quiero %d), llamadas %d", name, rec.Code, tc.code, exec.calls)
+			t.Fatalf("%s: code %d (want %d), calls %d", name, rec.Code, tc.code, exec.calls)
 		}
 	}
 }
@@ -94,33 +94,33 @@ func TestRunValidatesTheRequest(t *testing.T) {
 func TestRunAnswersBusyWhenNoSlotFrees(t *testing.T) {
 	exec := &fakeExecutor{}
 	s := newServer(exec)
-	s.Slots <- struct{}{} // el único lugar está ocupado
+	s.Slots <- struct{}{}
 	rec := post(t, s, `{"language":"rust","program":"fn main(){}"}`, "Bearer "+token)
 	if rec.Code != http.StatusServiceUnavailable || exec.calls != 0 {
-		t.Fatalf("código %d, llamadas %d", rec.Code, exec.calls)
+		t.Fatalf("code %d, calls %d", rec.Code, exec.calls)
 	}
 	if rec.Header().Get("Retry-After") != "1" {
-		t.Fatalf("ocupado no ejecutó nada y se puede reintentar: Retry-After = %q", rec.Header().Get("Retry-After"))
+		t.Fatalf("busy ran nothing and can be retried: Retry-After = %q", rec.Header().Get("Retry-After"))
 	}
 }
 
 func TestRunMapsSandboxFailuresTo500(t *testing.T) {
-	rec := post(t, newServer(&fakeExecutor{err: errors.New("docker caído")}),
+	rec := post(t, newServer(&fakeExecutor{err: errors.New("docker down")}),
 		`{"language":"rust","program":"fn main(){}"}`, "Bearer "+token)
 	if rec.Code != http.StatusInternalServerError {
-		t.Fatalf("código %d; quiero 500: el programa pudo haber corrido y no se reintenta solo", rec.Code)
+		t.Fatalf("code %d; want 500: the program may have run and is not retried on its own", rec.Code)
 	}
 	if rec.Header().Get("Retry-After") != "" {
-		t.Fatal("un fallo del sandbox no invita a reintentar")
+		t.Fatal("a sandbox failure does not invite a retry")
 	}
 }
 
 func TestRunReturnsTheResultAsJSON(t *testing.T) {
-	want := sandbox.Result{Phase: "run", Stdout: "hola\n", CompileMs: 900, RunMs: 12}
+	want := sandbox.Result{Phase: "run", Stdout: "hello\n", CompileMs: 900, RunMs: 12}
 	s := newServer(&fakeExecutor{result: want})
 	rec := post(t, s, `{"language":"rust","program":"fn main(){}"}`, "Bearer "+token)
 	if rec.Code != http.StatusOK {
-		t.Fatalf("código %d: %s", rec.Code, rec.Body.String())
+		t.Fatalf("code %d: %s", rec.Code, rec.Body.String())
 	}
 	var got sandbox.Result
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil || got != want {
@@ -133,10 +133,10 @@ func TestRunReturnsTheResultAsJSON(t *testing.T) {
 	keys := slices.Sorted(maps.Keys(fields))
 	wantKeys := []string{"compileMs", "exitCode", "oomKilled", "phase", "runMs", "stderr", "stdout", "timedOut", "truncated"}
 	if !slices.Equal(keys, wantKeys) {
-		t.Fatalf("el contrato tiene exactamente estas claves: %v", keys)
+		t.Fatalf("the contract has exactly these keys: %v", keys)
 	}
 	if len(s.Slots) != 0 {
-		t.Fatal("el lugar del semáforo se libera al terminar")
+		t.Fatal("the semaphore slot is released when done")
 	}
 }
 
@@ -144,7 +144,7 @@ func TestRunAcceptsAProgramOfExactlyMaxProgram(t *testing.T) {
 	exec := &fakeExecutor{}
 	rec := post(t, newServer(exec), `{"language":"go","program":"`+strings.Repeat("x", 100)+`"}`, "Bearer "+token)
 	if rec.Code != http.StatusOK || exec.calls != 1 {
-		t.Fatalf("código %d, llamadas %d; MaxProgram es un tope inclusivo", rec.Code, exec.calls)
+		t.Fatalf("code %d, calls %d; MaxProgram is an inclusive cap", rec.Code, exec.calls)
 	}
 }
 
@@ -155,11 +155,11 @@ func TestRunWaitsForASlotWithinQueueWait(t *testing.T) {
 	s.Slots <- struct{}{}
 	go func() {
 		time.Sleep(50 * time.Millisecond)
-		<-s.Slots // otra ejecución termina y libera su lugar
+		<-s.Slots
 	}()
 	rec := post(t, s, `{"language":"rust","program":"fn main(){}"}`, "Bearer "+token)
 	if rec.Code != http.StatusOK || exec.calls != 1 {
-		t.Fatalf("código %d, llamadas %d; un lugar que se libera a tiempo se usa", rec.Code, exec.calls)
+		t.Fatalf("code %d, calls %d; a slot freed in time is used", rec.Code, exec.calls)
 	}
 }
 
@@ -186,26 +186,26 @@ func TestCancelledExecutionAnswers500(t *testing.T) {
 		newServer(exec).Handler().ServeHTTP(rec, req)
 		close(done)
 	}()
-	// Cancela con la ejecución en curso, como el apagado (BaseContext: root): antes de tomar
-	// lugar, la cancelación compite con el semáforo.
+	// Cancel while the execution is running, like shutdown (BaseContext: root): before taking a
+	// slot, cancellation races with the semaphore.
 	select {
 	case <-exec.started:
 	case <-time.After(2 * time.Second):
-		t.Fatal("el Executor nunca arrancó")
+		t.Fatal("the Executor never started")
 	}
 	cancel()
 	select {
 	case err := <-exec.seen:
 		if !errors.Is(err, context.Canceled) {
-			t.Fatalf("el Executor recibe el contexto del pedido: %v", err)
+			t.Fatalf("the Executor receives the request context: %v", err)
 		}
 	case <-time.After(2 * time.Second):
-		t.Fatal("el Executor nunca vio la cancelación")
+		t.Fatal("the Executor never saw the cancellation")
 	}
 	<-done
-	// Sin una respuesta explícita, net/http mandaría un 200 vacío que parece un resultado.
+	// Without an explicit response, net/http would send an empty 200 that looks like a result.
 	if rec.Code != http.StatusInternalServerError || !strings.Contains(rec.Body.String(), `"error"`) {
-		t.Fatalf("una ejecución cancelada pudo haber corrido: 500, nunca un 200 vacío; llegó %d %q", rec.Code, rec.Body.String())
+		t.Fatalf("a cancelled execution may have run: 500, never an empty 200; got %d %q", rec.Code, rec.Body.String())
 	}
 }
 
@@ -213,7 +213,7 @@ func TestCancellationWhileWaitingForASlotAnswers503(t *testing.T) {
 	exec := &fakeExecutor{}
 	s := newServer(exec)
 	s.QueueWait = 2 * time.Second
-	s.Slots <- struct{}{} // ocupado: el pedido queda esperando lugar
+	s.Slots <- struct{}{}
 	ctx, cancel := context.WithCancel(context.Background())
 	req := httptest.NewRequest(http.MethodPost, "/v1/run", strings.NewReader(`{"language":"go","program":"x"}`)).WithContext(ctx)
 	req.Header.Set("Authorization", "Bearer "+token)
@@ -222,43 +222,42 @@ func TestCancellationWhileWaitingForASlotAnswers503(t *testing.T) {
 	start := time.Now()
 	s.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusServiceUnavailable || rec.Header().Get("Retry-After") != "1" || exec.calls != 0 {
-		t.Fatalf("cancelado mientras esperaba (apagado): nada corrió, así que 503 con Retry-After y sin ejecutar; llegó %d %q, llamadas %d", rec.Code, rec.Body.String(), exec.calls)
+		t.Fatalf("cancelled while waiting (shutdown): nothing ran, so 503 with Retry-After and no execution; got %d %q, calls %d", rec.Code, rec.Body.String(), exec.calls)
 	}
-	// La espera de lugar observa la cancelación: no espera los 2 s de QueueWait.
 	if elapsed := time.Since(start); elapsed > time.Second {
-		t.Fatalf("cancelado a los 50 ms, respondió a los %v: la espera ignora la cancelación", elapsed)
+		t.Fatalf("cancelled at 50 ms, answered at %v: the wait ignores cancellation", elapsed)
 	}
 }
 
 func TestAlreadyCancelledRequestWithAFreeSlotAnswers503(t *testing.T) {
 	exec := &fakeExecutor{}
-	s := newServer(exec) // un lugar libre
+	s := newServer(exec)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	// El select elige al azar entre el lugar libre y la cancelación: varias vueltas.
+	// select picks at random between the free slot and cancellation: several rounds.
 	for range 50 {
 		req := httptest.NewRequest(http.MethodPost, "/v1/run", strings.NewReader(`{"language":"go","program":"x"}`)).WithContext(ctx)
 		req.Header.Set("Authorization", "Bearer "+token)
 		rec := httptest.NewRecorder()
 		s.Handler().ServeHTTP(rec, req)
 		if rec.Code != http.StatusServiceUnavailable || rec.Header().Get("Retry-After") != "1" {
-			t.Fatalf("un pedido ya cancelado no ejecuta nada: 503 con Retry-After; llegó %d %q", rec.Code, rec.Body.String())
+			t.Fatalf("an already cancelled request runs nothing: 503 with Retry-After; got %d %q", rec.Code, rec.Body.String())
 		}
 	}
 	if exec.calls != 0 {
-		t.Fatalf("un pedido ya cancelado no llega al Executor: %d llamadas", exec.calls)
+		t.Fatalf("an already cancelled request never reaches the Executor: %d calls", exec.calls)
 	}
 }
 
 func TestHandlerRefusesAnUnsafeConfiguration(t *testing.T) {
 	for name, s := range map[string]*Server{
-		"token corto": {Token: "corto", Slots: make(chan struct{}, 1)},
-		"sin lugares": {Token: token, Slots: make(chan struct{})},
+		"short token": {Token: "short", Slots: make(chan struct{}, 1)},
+		"no slots":    {Token: token, Slots: make(chan struct{})},
 	} {
 		func() {
 			defer func() {
 				if recover() == nil {
-					t.Fatalf("%s: Handler debe negarse a armar el servidor", name)
+					t.Fatalf("%s: Handler must refuse to build the server", name)
 				}
 			}()
 			s.Handler()

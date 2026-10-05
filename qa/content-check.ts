@@ -1,4 +1,3 @@
-/* Offline validation of exercise structure and minimum learning scaffolding. */
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { loadLabExercises, loadSystemsCatalogs } from './lib/legacy-sources.ts';
@@ -142,7 +141,6 @@ for (const language of ['rust', 'go'] as const) {
         !/^(true|false|\d+\s*==\s*\d+)$/.test(test.expression.trim()),
         ex.id + ': trivial constant-only test',
       );
-      // Control bytes are intentionally rejected from curriculum expressions.
       assert.ok(
         // eslint-disable-next-line no-control-regex
         !/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/.test(test.expression),

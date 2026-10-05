@@ -1,4 +1,3 @@
-// Descarga un Blob mediante un anchor temporal y libera la URL un segundo después.
 export function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob),
     anchor = document.createElement('a');

@@ -1,5 +1,3 @@
-// Forma de los catálogos que publica curriculum.json: lenguajes, dominios de Sistemas y el
-// orden de claves de cada catálogo de ejercicios.
 export type Language = 'rust' | 'go';
 export const LANGUAGES: readonly Language[] = ['rust', 'go'];
 
@@ -14,14 +12,9 @@ export const CATALOGS = [
 export type SystemsDomain = 'lowlevel' | 'infra' | 'play' | 'pc';
 export const SYSTEMS_DOMAINS: readonly SystemsDomain[] = ['lowlevel', 'infra', 'play', 'pc'];
 
-// Catálogo publicado al que pertenece un ejercicio: RUST_LAB/GO_LAB, RUST_QUESTS/GO_QUESTS o
-// uno de los SYSTEMS_<DOMINIO>_LABS.
 export type Catalog = 'lab' | 'quests' | SystemsDomain;
 
-// Orden de claves con que cada catálogo legacy publicaba sus ejercicios: las vistas legacy y
-// el oráculo lo observan (Object.keys, JSON.stringify). Sale de `add` (recorrido),
-// `defineQuest` (desafíos) y de los literales de cada dominio de núcleos. El orden del YAML
-// no importa; una clave que no figure acá es un error.
+// Key order the legacy catalogs published; the oracle observes it (Object.keys, JSON.stringify).
 export const EXERCISE_KEY_ORDER = {
   lab: [
     'id',
@@ -178,10 +171,8 @@ export const EXERCISE_KEY_ORDER = {
   ],
 } as const satisfies Record<Catalog, readonly string[]>;
 
-// Toda clave que algún catálogo publica: cada una necesita su comprobación en exercises.ts.
 export type ExerciseKey = (typeof EXERCISE_KEY_ORDER)[Catalog][number];
 
-// Sólo el recorrido tiene ejercicios sin nivel (75 de 100 por lenguaje).
 export const OPTIONAL_EXERCISE_KEYS: Record<Catalog, readonly string[]> = {
   lab: ['level'],
   quests: [],

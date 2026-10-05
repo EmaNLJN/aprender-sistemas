@@ -5,7 +5,7 @@ import type { PcState } from './types';
 
 const { ink, green, muted, gold } = PC_PALETTE;
 
-// Acumula figuras en el orden en que se dibujan: ese orden es el contrato de la escena.
+// Accumulates shapes in the order they are drawn: that order is the scene contract.
 function createSketch() {
   const shapes: SceneShape[] = [];
   const line = (x1: number, y1: number, x2: number, y2: number, color: string = muted) =>
@@ -33,7 +33,6 @@ function createSketch() {
     text(x + 10, y + 23, name, active ? green : ink);
     text(x + 10, y + 45, detail);
   };
-  // Sólo las flechas horizontales llevan punta.
   const arrow = (x1: number, y1: number, x2: number, y2: number) => {
     line(x1, y1, x2, y2);
     if (y1 === y2)

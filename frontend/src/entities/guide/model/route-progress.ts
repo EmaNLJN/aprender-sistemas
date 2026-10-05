@@ -23,9 +23,6 @@ function mergeNotes(base: RouteNotes, incoming: RouteNotes): RouteNotes {
   };
 }
 
-// Combina `incoming` sobre `base` sin mutar ninguno de los dos: los conjuntos se unen
-// (primero los de `base`), las respuestas y las notas con texto de `incoming` ganan, y el
-// idioma y los minutos son los de `base`.
 export function mergeRouteProgress(
   base: RouteProgressV1,
   incoming: RouteProgressV1,

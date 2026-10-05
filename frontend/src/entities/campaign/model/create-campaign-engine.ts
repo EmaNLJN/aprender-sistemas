@@ -49,14 +49,11 @@ function requireLanguage(language: string): CampaignLanguage {
   return language;
 }
 
-// Cada llamada crea un motor independiente: catálogo, progreso y estado del almacenamiento
-// viven en esta clausura, no en el módulo.
 export function createCampaignEngine(): CampaignEngine {
   let state: CampaignStateV1 = blankCampaignState();
   let catalog: CampaignCatalog | null = null;
   let storageAvailable = true;
   let store: VersionedStore<CampaignStateV1> | null = null;
-  // XP total ya informado a quien llamó a `syncLab`; los renders (`refreshFromLab`) no lo mueven.
   let lastReportedXP = 0;
 
   function assertReady(): CampaignCatalog {
@@ -69,8 +66,8 @@ export function createCampaignEngine(): CampaignEngine {
     return store;
   }
 
-  // El almacén puede fusionar con lo que otra pestaña guardó y devuelve el estado final:
-  // después de persistir no se conserva ninguna referencia al estado anterior.
+  // The store may merge with what another tab saved and returns the final state:
+  // no reference to the previous state is kept after persisting.
   function persist(): void {
     const result = requireStore().write(state);
     state = result.state;
@@ -88,7 +85,6 @@ export function createCampaignEngine(): CampaignEngine {
     store = openVersionedStore(STORAGE_KEY, {
       blank: blankCampaignState,
       parse: (raw) => parseSavedCampaignState(validated, raw),
-      // Gana el estado local en los campos editables; los logros de la otra pestaña sobreviven.
       merge(stored, local) {
         const merged = cloneJson(stored);
         mergeImportedState(merged, local);
@@ -98,8 +94,8 @@ export function createCampaignEngine(): CampaignEngine {
     const loaded = store.load();
     state = loaded.state;
     storageAvailable = loaded.writable;
-    // Los sellos que la clave guardada no tiene pero el laboratorio sí se derivan en memoria
-    // (sin escribir) antes de fijar la línea base: así el primer `syncLab` sólo informa el XP nuevo.
+    // Seals the saved key lacks but the lab has are derived in memory (without writing)
+    // before fixing the baseline, so the first `syncLab` reports only the new XP.
     if (labState) applyLabEvidence(state, validated, labState);
     lastReportedXP = totalXP(validated, state);
     return {
@@ -117,7 +113,6 @@ export function createCampaignEngine(): CampaignEngine {
   function syncLab(labState?: CampaignLabState | null): SyncLabResult {
     const ready = assertReady();
     applyLabEvidence(state, ready, labState);
-    // También escribe lo que un `refreshFromLab` anterior derivó y dejó sin guardar.
     const changed = requireStore().hasUnsavedChanges(state);
     if (changed) persist();
     const total = totalXP(ready, state);
@@ -130,7 +125,6 @@ export function createCampaignEngine(): CampaignEngine {
     const ready = assertReady();
     const world = ready.worldById.get(worldId);
     if (!world) return rejectedAnswer(false, ['Ese mundo no existe.']);
-    // La lista del lenguaje siempre contiene el mundo: nace de ese mismo catálogo.
     const status = worldsFor(world.language).find((item) => item.id === worldId)!;
     if (!status.checkpointReady)
       return rejectedAnswer(status.checkpointPassed, status.checkpointReasons);
@@ -149,7 +143,6 @@ export function createCampaignEngine(): CampaignEngine {
     };
   }
 
-  // Calcula el estado resultante sin tocar `state`, `raw` ni el almacenamiento.
   function planImport(raw: unknown): CampaignImportPlan {
     const ready = assertReady();
     const planned = cloneJson(state);

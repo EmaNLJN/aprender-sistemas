@@ -1,8 +1,6 @@
 import type { ActionContext, ActionHandler, SimulationState } from '../../model/define-model';
 import type { ModelView, ModelWorkshop } from '../../model/types';
 
-// Los ocho modelos de infraestructura comparten estado base, registro de 8 mensajes y
-// una vista que agrega el registro y la explicación a la descripción propia de cada uno.
 export const INFRA_LOG_LIMIT = 8;
 
 const INTRO_NOTICE = 'Elegí una acción y observá qué garantía cambia.';
@@ -16,7 +14,7 @@ export type InfraContext<State extends InfraState> = ActionContext<State, ModelW
 export type InfraHandler<State extends InfraState> = ActionHandler<State, ModelWorkshop>;
 export type InfraDescription = Omit<ModelView, 'log' | 'explanation'>;
 
-// El orden de claves es parte del contrato: lo propio del dominio y después la base.
+// Key order is part of the contract: the domain's own fields first, then the base.
 export function withInfraBase<Domain extends object>(
   domain: Domain,
 ): Domain & { flags: Record<string, boolean>; log: string[]; notice: string } {

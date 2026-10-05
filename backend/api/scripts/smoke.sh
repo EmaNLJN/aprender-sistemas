@@ -1,12 +1,5 @@
 #!/bin/sh
-# Prueba de humo del stack de compose.yaml, por Nginx como lo usa el navegador: Nginx, PHP-FPM y
-# Laravel, con el contenedor php de sólo lectura. El contenido y la base los cubre
-# `npm run api:content:check`.
-# Requiere el stack levantado con `docker compose up --build -d --wait`. Uso, desde la raíz:
-# sh backend/api/scripts/smoke.sh.
 set -u
-# La dirección sale de Compose, como en `up`: respeta TALLER_PORT y el proyecto del .env aunque
-# no estén exportados en el shell.
 addr=$(docker compose port taller 8080 2>/dev/null) || addr=""
 if [ -z "$addr" ]; then
   echo "FALLO: el servicio taller no está levantado en este proyecto de Compose"
@@ -24,7 +17,6 @@ check() {
   fi
 }
 
-# Cabeceras de una respuesta, sin \r, para buscarlas con grep.
 headers() {
   curl -s -D - -o /dev/null "$1" | tr -d '\r'
 }

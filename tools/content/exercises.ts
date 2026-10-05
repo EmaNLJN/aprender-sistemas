@@ -1,7 +1,3 @@
-// Ejercicios de content/<lenguaje>/. El manifiesto ordena etapas y ejercicios; cada ejercicio
-// se arma como lo hacían las fábricas legacy (`add`, `defineQuest`): los valores de `defaults`,
-// los de su etapa y, en los desafíos, los que fija su posición; encima, su exercise.yaml y el
-// código de starter y solution. La etapa es la posición de la etapa en el manifiesto.
 import { LEVEL_IDS } from '../../frontend/src/shared/config/levels.ts';
 import { expectOnlyEntries, expectSameIds, listDirectories, listFiles } from './catalog-files.ts';
 import {
@@ -38,7 +34,6 @@ export interface LanguageExercises {
   cores: Record<SystemsDomain, JsonRecord[]>;
 }
 
-// Claves que el manifiesto puede dar por defecto, en `defaults` o en cada etapa.
 const DEFAULT_KEYS = [
   'kind',
   'minutes',
@@ -47,7 +42,6 @@ const DEFAULT_KEYS = [
   'sources',
   'level',
 ] as const satisfies readonly ExerciseKey[];
-// Claves que nunca van en exercise.yaml: salen de la carpeta, del manifiesto o del código.
 const DERIVED_KEYS: Record<string, string> = {
   id: 'es el nombre de la carpeta',
   language: 'sale de content/<lenguaje>/',
@@ -57,8 +51,6 @@ const DERIVED_KEYS: Record<string, string> = {
   starter: 'va en el archivo starter',
   solution: 'va en el archivo solution',
 };
-// En los desafíos el rol sale de la posición dentro del mundo; en los núcleos de Sistemas,
-// en cambio, `challengeType` es un dato propio del ejercicio.
 const QUEST_DERIVED_KEYS: Record<string, string> = {
   challengeType: 'lo fija la posición en el mundo de desafíos',
 };
@@ -73,8 +65,7 @@ const VISUALS = [
   'concurrency',
 ];
 const CODE_EXTENSION: Record<Language, string> = { rust: 'rs', go: 'go' };
-// Cada .go empieza con esta cabecera para que gofmt lo pueda parsear; el código publicado,
-// como antes, no la incluye.
+// gofmt needs this header to parse each .go; the published code omits it.
 const GO_HEADER = 'package main\n\n';
 
 function checkHints(value: unknown, place: Place): string[] {
@@ -83,7 +74,6 @@ function checkHints(value: unknown, place: Place): string[] {
   return hints;
 }
 
-// Las pruebas se identifican t1, t2…, en orden: así sus IDs son únicos y estables.
 function checkTests(value: unknown, place: Place): unknown[] {
   const tests = expectList(value, place, 1);
   tests.forEach((item, index) => {
@@ -138,8 +128,6 @@ const STAGE_SPEC: Record<string, Check> = {
   ...DEFAULTS_SPEC,
   exercises: textList(1),
 };
-// Un mundo de desafíos fija nivel y minutos; `bossMinutes` son los del jefe. No admite `kind`:
-// lo fija la posición (reparación, kata, jefe) y pisaría cualquier valor de la etapa.
 const QUEST_STAGE_SPEC: Record<string, Check> = {
   ...Object.fromEntries(Object.entries(STAGE_SPEC).filter(([key]) => key !== 'kind')),
   bossMinutes: integer(1),
@@ -173,8 +161,6 @@ const MANIFEST_SPEC: Record<string, Check> = {
     ),
   ),
 };
-// El cargador acepta lenguajes sin desafíos ni núcleos (las pruebas los usan); que el currículo
-// real los tenga lo exigen content-check y curriculum-ids-check.
 const MANIFEST_OPTIONAL = ['quests', 'systems'];
 
 interface Section {
@@ -182,7 +168,6 @@ interface Section {
   stages: JsonRecord[];
 }
 
-// Secciones en el orden en que cuentan las etapas: recorrido, desafíos y núcleos por dominio.
 function sectionsOf(manifest: JsonRecord): Section[] {
   const systems = (manifest.systems ?? {}) as JsonRecord;
   return [
@@ -203,7 +188,6 @@ function pickDefaults(record: JsonRecord): JsonRecord {
   return defaults;
 }
 
-// Lo que `defineQuest` derivaba de la posición dentro del mundo.
 function questDefaults(stage: JsonRecord, position: number): JsonRecord {
   const challengeType = QUEST_ROLES[position];
   return {
@@ -235,8 +219,7 @@ function readCode(root: string, folder: string, language: Language, name: string
     }
     code = code.slice(GO_HEADER.length);
   }
-  // Los editores y rustfmt agregan un salto de línea al guardar y los archivos de hoy no lo
-  // tienen: se quita uno, para que el código publicado sea el mismo que antes.
+  // Editors add a trailing newline: one is removed so the published code stays the same.
   if (code.endsWith('\n')) code = code.slice(0, -1);
   if (code.trim() === '') fail(filePlace(file), 'el código está vacío');
   return code;
@@ -349,7 +332,6 @@ function allExercises(exercises: LanguageExercises): JsonRecord[] {
   ];
 }
 
-// Un ID indexa el progreso: no puede repetirse entre content/rust y content/go.
 export function expectDistinctIds(rust: LanguageExercises, go: LanguageExercises): void {
   const rustIds = new Set(allExercises(rust).map((exercise) => exercise.id));
   for (const exercise of allExercises(go)) {
@@ -362,7 +344,6 @@ export function expectDistinctIds(rust: LanguageExercises, go: LanguageExercises
   }
 }
 
-// Cada SYSTEMS_<DOMINIO>_LABS publica, etapa por etapa, el núcleo Rust y después el Go.
 export function interleaveCores(
   rust: LanguageExercises,
   go: LanguageExercises,

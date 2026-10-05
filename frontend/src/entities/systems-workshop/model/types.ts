@@ -6,7 +6,6 @@ export interface SystemsTest {
   id: string;
 }
 
-// Núcleo programable de un taller: el ejercicio Rust/Go cuya aprobación sella el código.
 export interface SystemsExercise {
   id: string;
   language: SystemsLanguage;
@@ -18,15 +17,12 @@ export interface WorkshopObjective {
   [content: string]: unknown;
 }
 
-// `explanation` lo garantiza el catálogo (qa/systems-check), no `init`.
 export interface WorkshopPrediction {
   options: string[];
   answer: number;
   explanation: string;
 }
 
-// Taller tal como lo entrega el catálogo. El motor sólo valida los campos tipados aquí;
-// el resto del contenido (título, nivel, modelo interactivo…) se conserva sin interpretarlo.
 export interface SystemsWorkshop {
   id: string;
   model: string;
@@ -43,7 +39,6 @@ export interface SystemsConfig {
   exercises: SystemsExercise[];
 }
 
-// Catálogo validado por `init`; el progreso se interpreta contra él.
 export interface SystemsCatalog {
   workshops: Map<string, SystemsWorkshop>;
   exercises: Map<string, SystemsExercise>;
@@ -85,15 +80,11 @@ export interface SystemsInitResult {
   loadWarning: string;
 }
 
-// `changed`: en `syncLab`, había cambios sin guardar y se intentó persistir; en
-// `refreshFromLab`, cambió algo en memoria.
 export interface SystemsSyncResult {
   changed: boolean;
   storageAvailable: boolean;
 }
 
-// Importación planificada sin efectos: `state` es el progreso resultante y `lossy` avisa
-// que el saneado descartó o cambió datos de la copia.
 export interface SystemsImportPlan {
   state: SystemsStateV1;
   lossy: boolean;
@@ -112,9 +103,7 @@ export interface SystemsEngine {
   get(id: string, language: string): WorkshopView;
   observe(id: string, language: string, goals: unknown): ObserveResult;
   answer(id: string, language: string, index: number): AnswerResult;
-  // Sella en memoria con la evidencia del laboratorio y nunca escribe. Lo usan los renders.
   refreshFromLab(lab?: unknown): SystemsSyncResult;
-  // Sella y guarda lo pendiente. Lo usan las acciones del alumno.
   syncLab(lab?: unknown): SystemsSyncResult;
   planImport(raw: unknown): SystemsImportPlan;
   applyImport(plan: SystemsImportPlan): SystemsSyncResult;

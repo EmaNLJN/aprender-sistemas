@@ -1,4 +1,3 @@
-// canvas-confetti 1.9.4 no publica tipos; sólo se declara lo que usa celebration.ts.
 declare module 'canvas-confetti' {
   export interface ConfettiOptions {
     particleCount?: number;

@@ -1,14 +1,5 @@
 #!/bin/sh
-# C2 deployment check (spec 001, FR-046) against the real stack, deploying with backend/api/scripts/deploy.sh: with
-# a new image whose `migrate` fails on
-# a lock held by another client, `php` is not recreated and the old one keeps serving; once the lock is
-# released, the same content under that image keeps the same ETag and Content-Version.
-# Builds images, leaves the stack up and takes minutes (`migrate` retries 3 times, pausing 5 and 15 s).
-# Not part of `npm test`, like api:smoke. Needs the root .env (sh backend/api/scripts/init-env.sh) and the
-# workshop port free. Run from the root: sh backend/api/scripts/deploy-check.sh
-#
-# Depends on compose.yaml passing CONTENT_SOURCE_COMMIT to the image build (another commit, another
-# image, so `php` is recreated) and on `migrate` running migrate-and-import with lock waits capped at 5 s.
+# FR-046: while a lock blocks migrate, php is not recreated and keeps serving the same ETag.
 set -u
 
 old_commit=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
@@ -31,7 +22,6 @@ abort() {
   exit 1
 }
 
-# MySQL as root inside the container, where the password is already in the environment (compose.yaml).
 sql() {
   docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" taller -N -B -e "$1" 2>/dev/null' sh "$1"
 }
@@ -43,11 +33,9 @@ cleanup() {
   rm -f "$log"
 }
 trap cleanup EXIT
-# On Ctrl-C or a signal, abort exits and so runs the EXIT trap above; without this the session would keep
-# the lock on exercises until its SLEEP ends.
+# An interrupt must run the EXIT trap, or the session keeps its lock until SLEEP ends.
 trap 'abort "interrumpido"' INT TERM HUP
 
-# ETag and Content-Version of /api/guide, without \r, as two lines: "etag …" and "version …".
 guide() {
   curl -s -D - -o /dev/null "http://$addr/api/guide" | tr -d '\r' \
     | sed -n -e 's/^[Ee][Tt]ag: /etag /p' -e 's/^[Cc]ontent-[Vv]ersion: /version /p'
@@ -63,8 +51,7 @@ guide_before=$(guide)
 check "$(printf '%s\n' "$guide_before" | wc -l | tr -d ' ')" 2 "la guía responde con ETag y Content-Version"
 
 echo "== 2. Otro cliente retiene un bloqueo sobre exercises: el import de migrate no puede leerla"
-# Build the new image before taking the lock: step 3's deploy then only reuses the cache, and the
-# 180 s of lock cover migrate's 3 attempts however slow the build is.
+# Built before taking the lock so the 180 s cover migrate's 3 attempts however slow the build is.
 CONTENT_SOURCE_COMMIT=$new_commit docker compose build php migrate || abort "no se pudo construir la imagen nueva"
 sql 'LOCK TABLES exercises WRITE; SELECT SLEEP(180)' >/dev/null 2>&1 &
 for i in 1 2 3 4 5 6 7 8 9 10; do

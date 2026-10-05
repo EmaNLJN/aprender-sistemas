@@ -1,5 +1,3 @@
-// Mundos de campaña: content/campaign/manifest.yaml ordena los IDs por lenguaje y cada
-// content/campaign/<id>.yaml es un mundo de RUST_CAMPAIGN o GO_CAMPAIGN.
 import { LEVEL_IDS } from '../../frontend/src/shared/config/levels.ts';
 import { LANGUAGES, type Language } from './catalogs.ts';
 import { loadGroupedRecords } from './records.ts';

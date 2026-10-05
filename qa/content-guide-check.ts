@@ -1,10 +1,3 @@
-/* Guía de content/guide/ (tools/content/guide.ts).
- * node qa/content-guide-check.ts
- *
- * Contrato: GUIDE_DATA se arma como { resources, tracks: { rust, go }, sources }; la biblioteca
- * sigue el orden de manifest.yaml y cada módulo del recorrido reemplaza sus IDs de pasos por los
- * pasos, en el mismo lugar.
- */
 import assert from 'node:assert/strict';
 import { loadGuide } from '../tools/content/guide.ts';
 import { fixture, scenarios, throwsContent } from './lib/content-fixtures.ts';
@@ -73,7 +66,7 @@ function guideFiles(): Record<string, string> {
   };
 }
 
-test('la guía se arma con la forma y el orden de GUIDE_DATA', () => {
+test('the guide is built with the shape and order of GUIDE_DATA', () => {
   const guide = loadGuide(fixture(guideFiles())) as {
     resources: { id: string }[];
     tracks: Record<string, { modules: { id: string; steps: { id: string }[] }[] }>;
@@ -96,7 +89,7 @@ test('la guía se arma con la forma y el orden de GUIDE_DATA', () => {
   ]);
 });
 
-test('validación: pasos faltantes, quiz y valores admitidos', () => {
+test('validation: missing steps, quiz and admitted values', () => {
   const missing = guideFiles();
   delete missing['content/guide/go/steps/go-s1.yaml'];
   throwsContent(
@@ -115,7 +108,7 @@ test('validación: pasos faltantes, quiz y valores admitidos', () => {
   );
 });
 
-test('validación: los IDs de módulos y pasos no se repiten entre recorridos', () => {
+test('validation: module and step IDs do not repeat across paths', () => {
   const files = {
     ...guideFiles(),
     'content/guide/go/manifest.yaml': track('go', ['go-s1']).replace('go-m1', 'rust-m1'),
@@ -126,7 +119,7 @@ test('validación: los IDs de módulos y pasos no se repiten entre recorridos', 
   );
 });
 
-test('un paso de un recorrido no puede ser también paso de otro', () => {
+test('a step of one path cannot also be a step of another', () => {
   const files = guideFiles();
   delete files['content/guide/go/steps/go-s1.yaml'];
   throwsContent(
@@ -142,7 +135,7 @@ test('un paso de un recorrido no puede ser también paso de otro', () => {
   );
 });
 
-test('validación: nada suelto en content/guide/ ni en cada recorrido', () => {
+test('validation: nothing loose in content/guide/ or in each path', () => {
   throwsContent(
     () => loadGuide(fixture({ ...guideFiles(), 'content/guide/notas.yaml': 'a: 1\n' })),
     'content/guide/notas.yaml: sólo se admiten manifest.yaml, sources.yaml, resources/, rust/ y go/',
@@ -162,7 +155,7 @@ test('validación: nada suelto en content/guide/ ni en cada recorrido', () => {
   assert.deepEqual(Object.keys(loadGuide(fixture(hidden))), ['resources', 'tracks', 'sources']);
 });
 
-test('validación: IDs de un recorrido con su campo, recursos huérfanos y fuentes inválidas', () => {
+test("validation: a path's IDs with their field, orphan resources and invalid sources", () => {
   const repeatedStep = {
     ...guideFiles(),
     'content/guide/rust/manifest.yaml': track('rust', ['rust-s1']).replace(

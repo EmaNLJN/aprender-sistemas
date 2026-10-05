@@ -1,4 +1,3 @@
-/* Offline behavior checks for the campaign ledger and its prerequisite chain. */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -114,7 +113,6 @@ interface CampaignEngine {
   backups(): BackupEntry[];
   reset(): { storageAvailable: boolean; removed: boolean };
 }
-// Importa en dos fases, como app.js: planifica la copia y aplica el plan.
 function importState(engine: CampaignEngine, raw: unknown): RefreshResult {
   return engine.applyImport(engine.planImport(raw));
 }
@@ -163,7 +161,6 @@ const backupKey = 'taller-campaign-v1:respaldo';
 interface FreshOptions {
   failStorage?: boolean;
   failRemove?: boolean;
-  // Almacenamiento compartido: dos motores sobre el mismo mapa son dos pestañas.
   store?: Map<string, string>;
 }
 function freshWith(options: FreshOptions): Fresh {
@@ -233,7 +230,7 @@ test('First world unlocked; later worlds and bosses explain prerequisites', () =
   assert.match(world(engine, 1).reasons.join(' '), /mundo 1/);
   assert.equal(engine.canAttempt('rust-1', 'rust').allowed, true);
   assert.equal(engine.canAttempt('rust-6', 'rust').allowed, false);
-  assert.equal(engine.canAttempt('rust-25', 'rust').allowed, true); // Free-lab exercise outside campaign.
+  assert.equal(engine.canAttempt('rust-25', 'rust').allowed, true);
   assert.equal(engine.canAttempt('rust-1', 'go').allowed, false);
   assert.equal(engine.canAttempt('missing', 'rust').allowed, false);
 });
@@ -334,7 +331,7 @@ test('Checkpoint blocks early answers, then permits retry without granting extra
   assert.equal(engine.answerCheckpoint('rust-world-1', 0).passed, true);
   assert.equal(world(engine, 1).unlocked, true);
   assert.equal(world(engine).checkpointAnswer, 0);
-  assert.equal(engine.answerCheckpoint('rust-world-1', 1).passed, true); // Earned checkpoint stays earned.
+  assert.equal(engine.answerCheckpoint('rust-world-1', 1).passed, true);
   assert.equal(world(engine).score, 150);
   assert.equal(engine.getSummary('rust').completedWorlds, 1);
   assert.deepEqual(plainJson(engine.getSummary('rust').badges), ['Insignia 1']);
@@ -406,7 +403,7 @@ test('Import honors local progress, merges monotonically, and accepts absent leg
   assert.equal(importState(engine, null).changed, false);
   const exported = engine.exportState();
   exported.seals['rust-1'].code = false;
-  assert.equal(world(engine).missions[0].code, true); // Snapshot cannot mutate the ledger.
+  assert.equal(world(engine).missions[0].code, true);
 });
 test('Corrupt imports are rejected atomically, including out-of-range checkpoint answers', () => {
   const { engine } = fresh();
@@ -536,7 +533,6 @@ test('Configuration rejects duplicate missions and invalid checkpoints before re
   badQuestion.rust[0].checkpoint.answer = 3;
   assert.throws(() => engine.init({ exercises, worlds: badQuestion }));
 });
-// Las cinco ranuras ocupadas con otros textos: la copia de un texto ilegible no tiene lugar.
 function fullBackupSlots(mainText: string): Fresh {
   const store = new Map<string, string>([[storageKey, mainText]]);
   for (const slot of [backupKey, ...[2, 3, 4, 5].map((n) => `${backupKey}-${n}`)])
@@ -555,7 +551,6 @@ test('refreshFromLab derives evidence in memory without writing; syncLab then wr
   assert.equal(refreshed.storageAvailable, true);
   assert.equal(store.has(storageKey), false);
   assert.equal(engine.getSummary('rust').totalXP, 20);
-  // Trampa del render intermedio: el XP derivado antes no se pierde ni deja de escribirse.
   const synced = engine.syncLab(lab);
   assert.equal(synced.xpGained, 20);
   assert.equal(synced.changed, true);
@@ -564,7 +559,6 @@ test('refreshFromLab derives evidence in memory without writing; syncLab then wr
 });
 test('init with the lab state derives its evidence in memory, so the first sync reports only new XP', () => {
   const { engine, store } = fresh();
-  // Sin clave de campaña: los sellos de rust-2 y rust-6 sólo existen en el laboratorio.
   engine.init({ exercises, worlds }, labWith(['rust-2', 'rust-6']));
   assert.equal(store.has(storageKey), false);
   assert.equal(engine.getSummary('rust').totalXP, 40);
@@ -576,7 +570,7 @@ test('init with the lab state derives its evidence in memory, so the first sync 
 test('Two tabs: a stale tab keeps the checkpoint the other one passed when it saves its own evidence', () => {
   const store = new Map<string, string>();
   const tabA = freshWith({ store }).engine;
-  const tabB = freshWith({ store }).engine; // Carga antes de que A escriba.
+  const tabB = freshWith({ store }).engine;
   eligible(tabA);
   assert.equal(tabA.answerCheckpoint('rust-world-1', 0).passed, true);
   sync(tabB, ['rust-1', 'go-1']);
@@ -622,7 +616,7 @@ test('planImport is pure: it leaves memory, storage and its input untouched, and
   const plan = engine.planImport(raw);
   assert.equal(plan.lossy, false);
   assert.equal(plan.state.seals['go-1'].code, true);
-  assert.equal(plan.state.seals['rust-1'].code, true); // Fusión con lo local.
+  assert.equal(plan.state.seals['rust-1'].code, true);
   assert.equal(JSON.stringify(engine.exportState()), memory);
   assert.equal(store.get(storageKey), stored);
   assert.equal(JSON.stringify(raw), input);

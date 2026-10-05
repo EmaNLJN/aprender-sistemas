@@ -1,10 +1,3 @@
-/* Contenido de la guía (window.GUIDE_DATA de content.js).
- * node qa/guide-content-check.ts
- *
- * Los IDs de pasos y recursos indexan el progreso de la guía (app.js los valida
- * contra estos conjuntos). Los conjuntos esperados están escritos a mano: cambiar
- * uno exige migrar el progreso guardado y actualizar este check.
- */
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { loadGuideContent } from './lib/legacy-sources.ts';
@@ -84,7 +77,7 @@ const EXPECTED_RESOURCE_IDS = [
 function loadGuide(): GuideData {
   const fakeWindow: { GUIDE_DATA?: unknown } = {};
   loadGuideContent(vm.createContext({ window: fakeWindow }));
-  assert.ok(fakeWindow.GUIDE_DATA, 'el adaptador de catálogos debe publicar window.GUIDE_DATA');
+  assert.ok(fakeWindow.GUIDE_DATA, 'the catalog adapter must publish window.GUIDE_DATA');
   return plainJson(fakeWindow.GUIDE_DATA) as GuideData;
 }
 
@@ -101,57 +94,57 @@ const guide = loadGuide();
 const allSteps = LANGUAGES.flatMap((language) => stepsOf(guide, language));
 const resourceIds = new Set(guide.resources.map((resource) => resource.id));
 
-assert.deepEqual(Object.keys(guide.tracks).sort(), [...LANGUAGES].sort(), 'Recorridos esperados');
+assert.deepEqual(Object.keys(guide.tracks).sort(), [...LANGUAGES].sort(), 'Expected tracks');
 
 assertUnique(
   allSteps.map((step) => step.id),
-  'IDs de pasos',
+  'step IDs',
 );
 assertUnique(
   guide.resources.map((resource) => resource.id),
-  'IDs de recursos',
+  'resource IDs',
 );
 assert.deepEqual(
   allSteps.map((step) => step.id).sort(),
   [...EXPECTED_STEP_IDS].sort(),
-  'El conjunto de pasos de la guía cambió',
+  'The guide step set changed',
 );
 assert.deepEqual(
   [...resourceIds].sort(),
   [...EXPECTED_RESOURCE_IDS].sort(),
-  'El conjunto de recursos de la guía cambió',
+  'The guide resource set changed',
 );
 
 for (const language of LANGUAGES) {
   const { modules } = guide.tracks[language];
-  assert.equal(modules.length, 4, `${language}: se esperan 4 módulos`);
+  assert.equal(modules.length, 4, `${language}: 4 modules expected`);
   for (const module of modules) {
-    assert.equal(module.steps.length, 3, `${module.id}: se esperan 3 pasos`);
+    assert.equal(module.steps.length, 3, `${module.id}: 3 steps expected`);
   }
   for (const step of stepsOf(guide, language)) {
-    assert.ok(step.id.startsWith(`${language}-`), `${step.id}: falta el prefijo ${language}-`);
+    assert.ok(step.id.startsWith(`${language}-`), `${step.id}: missing the ${language}- prefix`);
   }
 }
 
 for (const step of allSteps) {
-  assert.ok(step.resourceIds.length > 0, `${step.id}: sin recursos`);
+  assert.ok(step.resourceIds.length > 0, `${step.id}: no resources`);
   for (const id of step.resourceIds) {
     assert.ok(resourceIds.has(id), `${step.id}: resourceId inexistente ${id}`);
   }
-  assert.equal(step.quiz.options.length, 3, `${step.id}: el quiz necesita 3 opciones`);
+  assert.equal(step.quiz.options.length, 3, `${step.id}: the quiz needs 3 options`);
   assert.ok(
     Number.isInteger(step.quiz.answer) && step.quiz.answer >= 0 && step.quiz.answer < 3,
-    `${step.id}: answer fuera de rango (${step.quiz.answer})`,
+    `${step.id}: answer out of range (${step.quiz.answer})`,
   );
 }
 
 for (const { id, url } of guide.resources) {
-  assert.ok(url.startsWith('https://'), `${id}: la URL debe ser https (${url})`);
+  assert.ok(url.startsWith('https://'), `${id}: the URL must be https (${url})`);
 }
 for (const { url } of guide.sources) {
-  assert.ok(url.startsWith('https://'), `fuente: la URL debe ser https (${url})`);
+  assert.ok(url.startsWith('https://'), `source: the URL must be https (${url})`);
 }
 
 console.log(
-  `guide-content-check OK: ${allSteps.length} pasos, ${guide.resources.length} recursos.`,
+  `guide-content-check OK: ${allSteps.length} steps, ${guide.resources.length} resources.`,
 );

@@ -40,7 +40,7 @@ interface RenderModule {
   renderAtlasPage: (language: string) => string;
 }
 
-// El bundle ESM de esbuild resuelve los builtins de Node con require global.
+// The esbuild ESM bundle resolves Node builtins through a global require.
 (globalThis as { require?: NodeJS.Require }).require ??= createRequire(import.meta.url);
 
 const { atlasByLanguage } = await importModule<AtlasContentModule>(
@@ -56,19 +56,18 @@ const { renderAtlasPage } = await importModule<RenderModule>('qa/fixtures/atlas-
 
 for (const language of ['rust', 'go']) {
   const concepts = atlasByLanguage[language];
-  assert.equal(concepts.length, 16, `Atlas ${language}: se esperan 16 conceptos`);
+  assert.equal(concepts.length, 16, `Atlas ${language}: 16 concepts expected`);
   assert.equal(
     new Set(concepts.map((concept) => concept.id)).size,
     16,
-    `Atlas ${language}: IDs únicos`,
+    `Atlas ${language}: unique IDs`,
   );
   assert(
     concepts.every((concept) => concept.labId.startsWith(`${language}-`)),
-    `Atlas ${language}: ejercicios relacionados`,
+    `Atlas ${language}: related exercises`,
   );
 }
 
-// Esperados contados a mano sobre el contenido de rust, en el orden del catálogo.
 const rust = atlasByLanguage.rust;
 const all = { query: '', level: 'all', category: 'all' };
 const ids = (filters: Partial<ConceptFilters>) =>
@@ -77,7 +76,7 @@ const ids = (filters: Partial<ConceptFilters>) =>
 assert.deepEqual(
   ids({}),
   rust.map((concept) => concept.id),
-  'sin filtros devuelve todo',
+  'no filters returns everything',
 );
 assert.deepEqual(ids({ level: 'beginner' }), [
   'rust-identity',
@@ -100,19 +99,15 @@ assert.deepEqual(ids({ level: 'medium', category: 'Abstracción' }), [
   'rust-functional',
 ]);
 assert.deepEqual(ids({ level: 'expert', category: 'Herramientas' }), []);
-// «Genéricos» lleva tilde en el título y en la comparación de rust-generics.
 assert.deepEqual(ids({ query: 'genericos' }), ['rust-generics']);
 assert.deepEqual(ids({ query: 'GENÉRICOS' }), ['rust-generics']);
-// «polimorfismo» aparece en rust-structs (comparación) y rust-interfaces (título).
 assert.deepEqual(ids({ query: 'polimorfismo' }), ['rust-structs', 'rust-interfaces']);
-// Cada palabra debe aparecer; «estático» sólo está junto a «polimorfismo» en rust-interfaces.
 assert.deepEqual(ids({ query: 'polimorfismo estatico' }), ['rust-interfaces']);
 assert.deepEqual(ids({ query: '  polimorfismo   ' }), ['rust-structs', 'rust-interfaces']);
 assert.deepEqual(ids({ query: 'polimorfismo', level: 'advanced' }), ['rust-interfaces']);
 assert.deepEqual(ids({ query: 'polimorfismo', category: 'Herramientas' }), []);
 assert.deepEqual(ids({ query: 'palabra-inexistente-xyz' }), []);
 
-// Actualizadores de sesión: puros, reversibles y con limpieza selectiva.
 const initial = session.createAtlasSession();
 const snapshot = structuredClone(initial);
 assert.deepEqual(snapshot, {
@@ -140,28 +135,28 @@ for (const [name, update] of updates) {
   const input = session.answerQuiz(session.togglePitfall(initial, 'x'), 'x', 1);
   const before = structuredClone(input);
   update(input);
-  assert.deepEqual(input, before, `${name} no muta su entrada`);
-  assert.notEqual(update(input), input, `${name} devuelve una sesión nueva`);
+  assert.deepEqual(input, before, `${name} does not mutate its input`);
+  assert.notEqual(update(input), input, `${name} returns a new session`);
 }
-assert.deepEqual(initial, snapshot, 'la sesión inicial no cambió');
+assert.deepEqual(initial, snapshot, 'the initial session did not change');
 
 for (const toggle of [session.toggleCompared, session.togglePitfall]) {
   const once = toggle(initial, 'rust-types');
   const record = toggle === session.toggleCompared ? 'compared' : 'pitfalls';
-  assert.equal(once[record]['rust-types'], true, 'alternar una vez activa');
+  assert.equal(once[record]['rust-types'], true, 'toggling once activates');
   const twice = toggle(once, 'rust-types');
-  assert.equal(twice[record]['rust-types'], false, 'alternar dos veces desactiva');
+  assert.equal(twice[record]['rust-types'], false, 'toggling twice deactivates');
   assert.deepEqual(
     { ...twice, [record]: {} },
     initial,
-    'alternar dos veces vuelve al estado inicial salvo la clave en falso',
+    'toggling twice returns to the initial state except for the false key',
   );
 }
 
 const answered = session.answerQuiz(initial, 'rust-types', 2);
 assert.deepEqual(answered.answers, { 'rust-types': 2 });
 const retried = session.retryQuiz(answered, 'rust-types');
-assert.deepEqual(retried.answers, {}, 'reintentar elimina la respuesta');
+assert.deepEqual(retried.answers, {}, 'retrying removes the answer');
 assert.equal('rust-types' in retried.answers, false);
 
 const busy = session.answerQuiz(
@@ -185,21 +180,20 @@ const cleared = session.clearFilters(busy);
 assert.deepEqual(
   [cleared.query, cleared.level, cleared.category],
   ['', 'all', 'all'],
-  'limpiar filtros restablece búsqueda, nivel y área',
+  'clearing filters resets query, level and category',
 );
 assert.equal(cleared.selected, 'rust-types');
 assert.deepEqual(cleared.answers, { 'rust-types': 1 });
 assert.deepEqual(cleared.compared, { 'rust-types': true });
 assert.deepEqual(cleared.pitfalls, { 'rust-flow': true });
 
-// Render del servidor: la página rust completa con el primer concepto seleccionado.
 const html = renderAtlasPage('rust');
-assert(html.includes('Entender el'), 'AtlasPage: título');
-assert(html.includes('16 conceptos'), 'AtlasPage: cantidad de conceptos');
-assert(html.includes(rust[0].title), 'AtlasPage: título del primer concepto');
-assert(html.includes('Qué lenguaje estás aprendiendo'), 'AtlasPage: primer concepto literal');
-assert(html.includes('Inicial'), 'AtlasPage: etiqueta de nivel inicial');
-assert(!html.includes('Principiante'), 'AtlasPage: ya no usa «Principiante»');
-assert(html.includes('Todos los niveles'), 'AtlasPage: opción de todos los niveles');
+assert(html.includes('Entender el'), 'AtlasPage: title');
+assert(html.includes('16 conceptos'), 'AtlasPage: concept count');
+assert(html.includes(rust[0].title), 'AtlasPage: title of the first concept');
+assert(html.includes('Qué lenguaje estás aprendiendo'), 'AtlasPage: first concept literal');
+assert(html.includes('Inicial'), 'AtlasPage: beginner level label');
+assert(!html.includes('Principiante'), 'AtlasPage: no longer uses «Principiante»');
+assert(html.includes('Todos los niveles'), 'AtlasPage: all-levels option');
 
-console.log('Atlas: contenido, filtros, sesión y render de AtlasPage. PASS');
+console.log('Atlas: content, filters, session and AtlasPage render. PASS');

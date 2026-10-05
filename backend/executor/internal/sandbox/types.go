@@ -1,18 +1,14 @@
-// Package sandbox compila y ejecuta programas del alumno en contenedores efímeros.
 package sandbox
 
 import "time"
 
 const (
-	// RunLabel marca todo recurso del ejecutor para que el barrido no toque nada ajeno.
-	RunLabel = "taller.executor.run"
-	// CreatedLabel guarda la hora de creación en segundos Unix.
+	RunLabel     = "taller.executor.run"
 	CreatedLabel = "taller.executor.created"
 )
 
-// Phase son los límites y el comando de un contenedor. Vienen del ADR 0005, nunca del pedido.
-// ReadOnly monta el rootfs de sólo lectura; OutReadOnly hace lo mismo con /out, para que la
-// ejecución lea el binario sin poder escribir en un volumen sin cuota del host.
+// OutReadOnly mounts /out read-only so the run can read the binary without writing to a host
+// volume that has no quota.
 type Phase struct {
 	Timeout     time.Duration
 	MemoryMiB   int
@@ -40,8 +36,8 @@ type Spec struct {
 	Runtime string
 }
 
-// State es lo que Docker informa de un contenedor. Status es "created", "running", "exited",
-// etc.: después de `docker start --attach`, sólo "exited" significa que el programa terminó.
+// State is what Docker reports about a container. Status is "created", "running", "exited",
+// etc.: after `docker start --attach`, only "exited" means the program finished.
 type State struct {
 	ExitCode  int
 	OOMKilled bool
@@ -49,12 +45,11 @@ type State struct {
 }
 
 type Resource struct {
-	Kind    string // "container" o "volume"
+	Kind    string
 	Name    string
 	Created time.Time
 }
 
-// Result es la respuesta de POST /v1/run. Phase indica la última fase alcanzada.
 type Result struct {
 	Phase     string `json:"phase"`
 	ExitCode  int    `json:"exitCode"`

@@ -14,23 +14,18 @@ import { child, ContentError, fail, filePlace, type Place } from './content-erro
 
 const utf8 = new TextDecoder('utf-8', { fatal: true });
 
-// La clave de objeto JS en que termina un nodo escalar: 1 y "1" dan "1"; null y "" dan "".
 function jsKey(node: Scalar): string {
   return String(node.value ?? '');
 }
 
-// Dos claves chocan si quedan iguales como clave de objeto JS.
 function sameKey(a: ParsedNode, b: ParsedNode): boolean {
   return isScalar(a) && isScalar(b) && jsKey(a) === jsKey(b);
 }
 
-// JSON no representa NaN ni infinitos, y un entero fuera del rango seguro ya perdió dígitos.
 function isJsonNumber(value: number): boolean {
   return Number.isFinite(value) && (!Number.isInteger(value) || Number.isSafeInteger(value));
 }
 
-// El lugar de un nodo según sus ancestros, con el formato de child(): objectives[0].label.
-// `key` es la posición del nodo en su padre, como la pasa visit().
 function placeOf(file: string, ancestors: readonly unknown[], key: unknown): Place {
   let place = filePlace(file);
   ancestors.forEach((ancestor, index) => {
@@ -50,10 +45,7 @@ function throwAlias(file: string): never {
   throw new ContentError(`${file}: no se admiten alias (*): cada valor se escribe completo`);
 }
 
-// Lee un archivo de texto de content/ (YAML o código). `file` es relativo a `root` y es lo que
-// muestran los errores. Los bytes se leen fuera del try: un EACCES u otro error de E/S no debe
-// salir rotulado como «no es UTF-8 válido». TextDecoder descarta por omisión el BOM inicial
-// (ignoreBOM: false): un editor de Windows no lo cuela en el texto publicado.
+// Bytes are read outside the try: an I/O error must not be reported as invalid UTF-8.
 export function readContentText(root: string, file: string): string {
   const absolute = join(root, file);
   if (!existsSync(absolute)) throw new ContentError(`${file}: no existe`);
@@ -66,11 +58,6 @@ export function readContentText(root: string, file: string): string {
   }
 }
 
-// Lee un YAML de content/.
-// Después de esta función no hay otra barrera entre el YAML editado a mano y el JSON publicado:
-// lo que JSON no represente igual (texto que no es UTF-8, tags, alias, claves que chocan,
-// números no finitos, un comentario en la línea de un valor sin comillas, que lo cortaría) es
-// un error. schema 'core' fija YAML 1.2 aunque el archivo declare %YAML 1.1.
 export function readYamlFile(root: string, file: string): unknown {
   const text = readContentText(root, file);
   const document = parseDocument(text, {
@@ -87,18 +74,13 @@ export function readYamlFile(root: string, file: string): unknown {
       throwAlias(file);
     },
     Pair(_key, pair) {
-      // Un alias como clave es un alias: el visitante lo rechaza con su propio mensaje.
       if (isAlias(pair.key)) throwAlias(file);
       if (!isScalar(pair.key) || jsKey(pair.key) === '') {
         throw new ContentError(`${file}: cada clave tiene que ser un texto no vacío`);
       }
     },
     Scalar(key, node, ancestors) {
-      // Un # después de un espacio empieza un comentario: en un valor sin comillas corta el
-      // texto sin ningún error (`Recibir #2` publica «Recibir»; `a: #[test]` deja `a` vacío).
-      // Una línea de comentario con más sangría que la clave también queda pegada al valor sin
-      // comillas de arriba. Entre comillas, sin espacio antes, dentro de un bloque | o en su
-      // propia línea sin más sangría que la clave, el # no corta nada.
+      // A # after a space starts a comment and silently cuts an unquoted value (`Recibir #2` publishes «Recibir»).
       if (node.type === 'PLAIN' && node.comment !== undefined) {
         const effect =
           node.value === null ? 'deja el valor vacío' : `corta el texto en «${String(node.value)}»`;

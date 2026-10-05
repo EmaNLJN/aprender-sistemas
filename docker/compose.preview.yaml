@@ -1,4 +1,3 @@
-# Optional local preview. Production uses compose.yaml (en la raíz).
 name: taller-rust-go-preview
 services:
   preview:

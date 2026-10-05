@@ -1,9 +1,3 @@
-/* Base del generador de content/ (tools/content): lectura de YAML, comprobaciones de forma
- * y correspondencia entre un manifiesto y su carpeta.
- * node qa/content-tools-check.ts
- *
- * Cada error nombra el archivo y el campo: es lo único que ve quien edita un YAML.
- */
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, symlinkSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
@@ -22,7 +16,7 @@ import { fixture, scenarios, throwsContent } from './lib/content-fixtures.ts';
 
 const { test, done } = scenarios('content-tools');
 
-test('readYamlFile conserva el orden de claves del documento', () => {
+test('readYamlFile keeps the document key order', () => {
   const root = fixture({ 'content/a.yaml': 'zeta: 1\nalfa: [x, y]\nmedio: {b: 2, a: 1}\n' });
   const value = readYamlFile(root, 'content/a.yaml');
   assert.deepEqual(value, { zeta: 1, alfa: ['x', 'y'], medio: { b: 2, a: 1 } });
@@ -30,7 +24,7 @@ test('readYamlFile conserva el orden de claves del documento', () => {
   assert.deepEqual(Object.keys((value as { medio: object }).medio), ['b', 'a']);
 });
 
-test('readYamlFile nombra el archivo inexistente o inválido', () => {
+test('readYamlFile names the missing or invalid file', () => {
   const root = fixture({ 'content/doble.yaml': 'a: 1\na: 2\n' });
   throwsContent(() => readYamlFile(root, 'content/falta.yaml'), 'content/falta.yaml: no existe');
   assert.throws(
@@ -41,7 +35,7 @@ test('readYamlFile nombra el archivo inexistente o inválido', () => {
   );
 });
 
-test('checkRecord rechaza claves desconocidas y faltantes con su ruta', () => {
+test('checkRecord rejects unknown and missing keys with their path', () => {
   const place = filePlace('content/x.yaml');
   const spec = { title: expectText, tags: textList(1) };
   throwsContent(
@@ -59,7 +53,7 @@ test('checkRecord rechaza claves desconocidas y faltantes con su ruta', () => {
   assert.deepEqual(checkRecord({ title: 'a' }, place, spec, ['tags']), { title: 'a' });
 });
 
-test('checkQuestion exige que la respuesta sea una de las opciones', () => {
+test('checkQuestion requires the answer to be one of the options', () => {
   const place = filePlace('content/x.yaml');
   const question = { question: '¿?', options: ['a', 'b', 'c'], answer: 2, explanation: 'Porque.' };
   assert.deepEqual(checkQuestion(question, place), {
@@ -78,7 +72,7 @@ test('checkQuestion exige que la respuesta sea una de las opciones', () => {
   );
 });
 
-test('expectSameIds detecta repetidos, faltantes y huérfanos', () => {
+test('expectSameIds detects duplicates, missing and orphans', () => {
   const manifest = filePlace('content/campaign/manifest.yaml');
   expectSameIds(['b', 'a'], ['a', 'b'], manifest, 'content/campaign', '.yaml');
   throwsContent(
@@ -95,14 +89,13 @@ test('expectSameIds detecta repetidos, faltantes y huérfanos', () => {
   );
 });
 
-test('listYamlIds ignora el manifiesto y rechaza otros archivos', () => {
+test('listYamlIds ignores the manifest and rejects other files', () => {
   const root = fixture({
     'content/campaign/manifest.yaml': 'rust: []\n',
     'content/campaign/b.yaml': 'id: b\n',
     'content/campaign/a.yaml': 'id: a\n',
   });
   assert.deepEqual(listYamlIds(root, 'content/campaign'), ['a', 'b']);
-  // Una carpeta que no existe está vacía: el manifiesto informa después qué falta.
   assert.deepEqual(listYamlIds(root, 'content/atlas'), []);
   writeFileSync(join(root, 'content/campaign/notas.md'), '');
   throwsContent(
@@ -111,7 +104,7 @@ test('listYamlIds ignora el manifiesto y rechaza otros archivos', () => {
   );
 });
 
-test('readYamlFile rechaza lo que JSON no representaría igual', () => {
+test('readYamlFile rejects what JSON would not represent identically', () => {
   const root = fixture({
     'content/alias.yaml': 'a: &x [1]\nb: *x\n',
     'content/clave-alias.yaml': 'base: &k clave\n*k : valor\n',
@@ -126,7 +119,6 @@ test('readYamlFile rechaza lo que JSON no representaría igual', () => {
     'content/comentario-sangria.yaml': 'a: x\n  # n\nb: y\n',
     'content/comentario-vacio.yaml': 'a: #[test]\n',
   });
-  // Guardado en Latin-1: decodificado como UTF-8 publicaría U+FFFD en lugar de la í y la ó.
   writeFileSync(join(root, 'content/latin1.yaml'), Buffer.from('título: canción\n', 'latin1'));
   throwsContent(
     () => readYamlFile(root, 'content/latin1.yaml'),
@@ -156,7 +148,6 @@ test('readYamlFile rechaza lo que JSON no representaría igual', () => {
     () => readYamlFile(root, 'content/grande.yaml'),
     'content/grande.yaml: 12345678901234567890 no es un número que JSON represente',
   );
-  // 1 y "1" quedarían como la misma clave de objeto; un tag de YAML no es un valor JSON.
   for (const [file, start] of [
     ['content/claves.yaml', 'Map keys must be unique'],
     ['content/set.yaml', 'Unresolved tag'],
@@ -168,9 +159,6 @@ test('readYamlFile rechaza lo que JSON no representaría igual', () => {
         error.message.startsWith(`${file}: YAML inválido: ${start}`),
     );
   }
-  // Un # después de un espacio empieza un comentario: sin comillas, el texto se cortaría en
-  // «Recibir» sin ningún error. Una línea de comentario con más sangría que la clave también se
-  // pega al valor sin comillas, y un valor que queda vacío pierde el texto que se quiso escribir.
   const advice =
     'si el # es parte del texto, escribí el valor entre comillas; si es un comentario, pasalo a su propia línea, sin más sangría que la clave';
   const cuts = (value: string): string =>
@@ -193,7 +181,7 @@ test('readYamlFile rechaza lo que JSON no representaría igual', () => {
   );
 });
 
-test('readYamlFile admite # entre comillas, sin espacio antes, en bloques y en líneas propias', () => {
+test('readYamlFile admits # inside quotes, without a preceding space, in blocks and on their own lines', () => {
   const root = fixture({
     'content/numeral.yaml':
       '# cabecera\na: \'Recibir #2 antes de #0\'\nb: "[#2 #5]"\nc: foo#bar\n# entre claves\nd: |\n  #[test]\n',
@@ -218,13 +206,12 @@ test('loadCurriculum: nada suelto en content/', () => {
   );
 });
 
-test('readYamlFile lee YAML 1.2 aunque el archivo declare %YAML 1.1', () => {
-  // Con YAML 1.1, `no` sería false y `010` sería 8.
+test('readYamlFile reads YAML 1.2 even if the file declares %YAML 1.1', () => {
   const root = fixture({ 'content/v11.yaml': '%YAML 1.1\n---\na: no\nb: 010\n' });
   assert.deepEqual(readYamlFile(root, 'content/v11.yaml'), { a: 'no', b: 10 });
 });
 
-test('las carpetas de content/ ignoran ocultos y rechazan entradas de otro tipo', () => {
+test('content/ folders ignore hidden entries and reject entries of another kind', () => {
   const root = fixture({
     'content/rust/exercises/rust-01/exercise.yaml': 'title: x\n',
     'content/rust/exercises/.DS_Store': '',
@@ -249,7 +236,7 @@ test('las carpetas de content/ ignoran ocultos y rechazan entradas de otro tipo'
   );
 });
 
-test('checkRecord valida las claves opcionales presentes y nombra rutas anidadas', () => {
+test('checkRecord validates the optional keys present and names nested paths', () => {
   const place = filePlace('content/x.yaml');
   const spec = { title: expectText, tags: textList(1) };
   throwsContent(
@@ -263,20 +250,19 @@ test('checkRecord valida las claves opcionales presentes y nombra rutas anidadas
   assert.equal(new ContentError('x').name, 'ContentError');
 });
 
-test('readContentText rechaza lo que no es un archivo y descarta el BOM', () => {
+test('readContentText rejects what is not a file and drops the BOM', () => {
   const root = fixture({ 'content/dir.yaml/dentro.txt': 'x' });
   throwsContent(
     () => readContentText(root, 'content/dir.yaml'),
     'content/dir.yaml: no es un archivo',
   );
   throwsContent(() => readContentText(root, 'content/falta.yaml'), 'content/falta.yaml: no existe');
-  // Un editor de Windows puede guardar el BOM: no forma parte del texto publicado.
   writeFileSync(join(root, 'content/bom.yaml'), '\uFEFFa: 1\n');
   assert.equal(readContentText(root, 'content/bom.yaml'), 'a: 1\n');
   assert.deepEqual(readYamlFile(root, 'content/bom.yaml'), { a: 1 });
 });
 
-test('un enlace simbólico en una carpeta de registros se rechaza con su propio mensaje', () => {
+test('a symlink in a records folder is rejected with its own message', () => {
   const root = fixture({ 'content/campaign/real.yaml': 'id: real\n' });
   symlinkSync(join(root, 'content/campaign/real.yaml'), join(root, 'content/campaign/a.yaml'));
   throwsContent(
@@ -285,7 +271,7 @@ test('un enlace simbólico en una carpeta de registros se rechaza con su propio 
   );
 });
 
-test('listFiles ignora ocultos y rechaza lo que no es un archivo con el mensaje dado', () => {
+test('listFiles ignores hidden entries and rejects what is not a file with the given message', () => {
   const root = fixture({ 'content/e/a.rs': '', 'content/e/.DS_Store': '' });
   assert.deepEqual(listFiles(root, 'content/e', 'sólo archivos'), ['a.rs']);
   mkdirSync(join(root, 'content/e/sub'));
@@ -295,7 +281,7 @@ test('listFiles ignora ocultos y rechaza lo que no es un archivo con el mensaje 
   );
 });
 
-test('build-curriculum: un content/ inválido da error legible y no escribe el JSON', () => {
+test('build-curriculum: an invalid content/ gives a readable error and writes no JSON', () => {
   const root = fixture({ 'content/rust/exercises/.keep': '' });
   const run = spawnSync(
     process.execPath,
@@ -305,7 +291,7 @@ test('build-curriculum: un content/ inválido da error legible y no escribe el J
   assert.equal(run.status, 1);
   assert.ok(
     run.stderr.startsWith('content/ no es válido: content/'),
-    `stderr inesperado: ${run.stderr}`,
+    `unexpected stderr: ${run.stderr}`,
   );
   assert.equal(existsSync(join(root, 'build', 'curriculum.json')), false);
 });

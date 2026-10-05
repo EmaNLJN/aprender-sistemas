@@ -1,5 +1,3 @@
-// Los catálogos salen de content/ (YAML y código) a través de build/curriculum.json, que
-// genera tools/content/build-curriculum.ts antes de `npm run typecheck` y de `npm run dev`.
 import curriculum from '../../../../build/curriculum.json';
 import type { CampaignWorldDefinition } from '../../entities/campaign';
 import type { Exercise } from '../../entities/exercise';

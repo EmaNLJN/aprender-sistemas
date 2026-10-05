@@ -1,4 +1,3 @@
-// Escapa texto para interpolarlo en plantillas HTML; null y undefined dan ''.
 const HTML_ESCAPES: Record<string, string> = {
   '&': '&amp;',
   '<': '&lt;',

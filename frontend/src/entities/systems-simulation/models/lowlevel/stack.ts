@@ -68,7 +68,6 @@ const incrementLocal: LowlevelHandler<StackState> = (s, { log }) => {
   );
 };
 
-// Un frame llamado siempre guarda su continuación; sólo `main` carece de ella.
 function savedReturn(frame: Frame): number {
   if (frame.returnPC === null)
     throw new Error(`Estado de pila inconsistente: ${frame.name} no guardó su retorno`);

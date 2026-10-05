@@ -1,21 +1,12 @@
-// Vuelca los catálogos que publica un dist/index.html ya construido: evalúa su script en una
-// VM con un DOM permisivo hasta donde llegue (los adaptadores de catálogos corren primero) y
-// escribe los globals de datos con la forma de la sección `globals` de dump-globals.ts.
-// Compara el artefacto real de Vite, que no puede quedar idéntico byte a byte (plan A1).
-// Uso: node tools/content/dump-dist-globals.ts dist/index.html > globals.json
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
 const file = process.argv[2];
 if (!file) throw new Error('Uso: node tools/content/dump-dist-globals.ts <dist/index.html>');
 const html = readFileSync(file, 'utf8');
-// Vite deja el bundle en un <script type="module"> en línea; otro script antes (un tema, por
-// ejemplo) no es el que publica los catálogos.
 const script = /<script\b[^>]*\btype="module"[^>]*>([\s\S]*?)<\/script>/.exec(html)?.[1];
 if (script === undefined) throw new Error(`${file} no tiene un <script type="module"> en línea`);
 
-// Cualquier propiedad, llamada o construcción devuelve otro proxy: el DOM falso nunca lanza, y
-// la evaluación sólo se corta cuando falta una API global (se informa por stderr).
 function permissive(): unknown {
   const target = function () {};
   return new Proxy(target, {

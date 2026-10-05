@@ -11,6 +11,6 @@ func TestRandomIDIsHexAndDistinct(t *testing.T) {
 		t.Fatalf("RandomID = %q", first)
 	}
 	if first == second {
-		t.Fatal("dos IDs seguidos no pueden coincidir")
+		t.Fatal("two consecutive IDs must differ")
 	}
 }

@@ -24,7 +24,7 @@ function hasUniqueNonBlankTestIds(tests: unknown[]): boolean {
 
 function isValidExercise(exercise: unknown, known: Map<string, CampaignExercise>): boolean {
   if (!isPlainObject(exercise)) return false;
-  // String(): el patrón coacciona el id igual que RegExp.test en el original.
+  // String(): the pattern coerces the id just like RegExp.test in the original.
   if (!EXERCISE_ID_PATTERN.test(String(exercise.id))) return false;
   if (!isCampaignLanguage(exercise.language)) return false;
   if (typeof exercise.id !== 'string' || !exercise.id.startsWith(exercise.language + '-'))
@@ -44,7 +44,6 @@ function validateExercises(rawExercises: unknown[]): Map<string, CampaignExercis
   return exercises;
 }
 
-// Acepta una lista plana de mundos (se agrupa por lenguaje) o un objeto por lenguaje.
 function groupWorldsByLanguage(worlds: unknown): Raw {
   if (!Array.isArray(worlds)) {
     if (!isPlainObject(worlds)) throw new Error('Faltan los mundos de la campaña.');
@@ -130,7 +129,6 @@ function validateLanguageWorlds(
   return validated;
 }
 
-// Valida todo en variables locales: `init` sólo reemplaza el catálogo si nada falló.
 export function validateCampaignConfig(config: unknown): CampaignCatalog {
   if (!isPlainObject(config) || !Array.isArray(config.exercises))
     throw new Error('Faltan los ejercicios de la campaña.');

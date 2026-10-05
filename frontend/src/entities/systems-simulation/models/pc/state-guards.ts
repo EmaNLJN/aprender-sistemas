@@ -1,7 +1,6 @@
 import { cloneJson } from '../../../../shared/lib/clone-json';
 import type { DataInstruction, PageEntry, PcState, TimerTrap } from './types';
 
-// Las fases de una instrucción en curso suponen estos campos; faltar es un estado corrupto.
 function required<T>(value: T | null | undefined, name: string): T {
   if (value === null || value === undefined)
     throw new Error(`Estado de PC inconsistente: falta ${name}`);

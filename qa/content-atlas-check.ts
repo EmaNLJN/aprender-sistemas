@@ -1,9 +1,3 @@
-/* Conceptos del Atlas en content/atlas/ (tools/content/atlas.ts).
- * node qa/content-atlas-check.ts
- *
- * Contrato: el manifiesto ordena los conceptos por lenguaje; cada concepto se publica tal cual y
- * `furtherSources` es la única clave opcional.
- */
 import assert from 'node:assert/strict';
 import { loadAtlas } from '../tools/content/atlas.ts';
 import { fixture, scenarios, throwsContent } from './lib/content-fixtures.ts';
@@ -50,7 +44,7 @@ function atlasFiles(): Record<string, string> {
   };
 }
 
-test('el Atlas sigue el orden del manifiesto y furtherSources es opcional', () => {
+test('the Atlas follows the manifest order and furtherSources is optional', () => {
   const atlas = loadAtlas(fixture(atlasFiles()));
   assert.deepEqual(Object.keys(atlas), ['rust', 'go']);
   assert.deepEqual(
@@ -64,7 +58,7 @@ test('el Atlas sigue el orden del manifiesto y furtherSources es opcional', () =
   assert.equal(Object.hasOwn(atlas.rust[1], 'furtherSources'), false);
 });
 
-test('validación: furtherSources, si está, no puede quedar vacío', () => {
+test('validation: furtherSources, when present, cannot be empty', () => {
   const files = {
     ...atlasFiles(),
     'content/atlas/go-a.yaml': concept('go-a', 'furtherSources: []\n'),

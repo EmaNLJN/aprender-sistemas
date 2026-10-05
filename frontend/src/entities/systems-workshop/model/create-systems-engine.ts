@@ -44,7 +44,6 @@ function recordKey(id: string, language: string): string {
   return `${language}:${id}`;
 }
 
-// Resultado del compilador que el laboratorio guardó para un ejercicio, si existe.
 function labResultFor(lab: unknown, exerciseId: string): unknown {
   const records = (lab as { records?: Record<string, { result?: unknown } | undefined> } | null)
     ?.records;
@@ -67,8 +66,6 @@ function describeWorkshop(
   };
 }
 
-// Cada llamada crea un motor independiente: catálogo, progreso y estado del almacenamiento
-// viven en esta clausura, no en el módulo.
 export function createSystemsEngine(): SystemsEngine {
   let state: SystemsStateV1 = blankSystemsState();
   let catalog: SystemsCatalog = { workshops: new Map(), exercises: new Map() };
@@ -80,9 +77,9 @@ export function createSystemsEngine(): SystemsEngine {
     return store;
   }
 
-  // El almacén puede fusionar con lo que otra pestaña guardó y devuelve el estado final:
-  // los registros que se obtuvieron antes de persistir quedan viejos; cada método vuelve a
-  // pedirlos con `record()`.
+  // The store may merge with what another tab saved and returns the final state:
+  // records obtained before persisting go stale; each method requests them again
+  // with `record()`.
   function persist(): void {
     const result = requireStore().write(state);
     state = result.state;
@@ -96,7 +93,6 @@ export function createSystemsEngine(): SystemsEngine {
     return workshop;
   }
 
-  // Leer crea el registro vacío en `state` sin persistirlo; exportState lo muestra.
   function record(id: string, language: string): WorkshopRecord {
     requireWorkshop(id, language);
     const key = recordKey(id, language);
@@ -109,7 +105,6 @@ export function createSystemsEngine(): SystemsEngine {
     store = openVersionedStore(STORAGE_KEY, {
       blank: blankSystemsState,
       parse: (raw) => parseSavedSystemsState(validated, raw),
-      // Gana el estado local en los campos editables; los logros de la otra pestaña sobreviven.
       merge(stored, local) {
         const merged = cloneJson(stored);
         mergeImportedRecords(merged, local);
@@ -157,7 +152,6 @@ export function createSystemsEngine(): SystemsEngine {
     };
   }
 
-  // Sella en memoria y devuelve si cambió algún taller; nunca escribe.
   function refreshFromLab(lab?: unknown): SystemsSyncResult {
     let changed = false;
     for (const workshop of catalog.workshops.values())
@@ -169,13 +163,11 @@ export function createSystemsEngine(): SystemsEngine {
 
   function syncLab(lab?: unknown): SystemsSyncResult {
     refreshFromLab(lab);
-    // También escribe lo que un `refreshFromLab` anterior derivó y dejó sin guardar.
     const changed = requireStore().hasUnsavedChanges(state);
     if (changed) persist();
     return { changed, storageAvailable };
   }
 
-  // Sella el código del taller si el laboratorio tiene evidencia aprobada de su núcleo.
   function markCodeSealed(
     workshop: SystemsWorkshop,
     language: SystemsLanguage,
@@ -189,7 +181,6 @@ export function createSystemsEngine(): SystemsEngine {
     return true;
   }
 
-  // Calcula el estado resultante sin tocar `state`, `raw` ni el almacenamiento.
   function planImport(raw: unknown): SystemsImportPlan {
     const planned = cloneJson(state);
     const incoming = validateSystemsImport(catalog, raw);

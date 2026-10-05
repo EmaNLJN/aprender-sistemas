@@ -22,7 +22,6 @@ const { grid, ink, muted, gold, green, red, blue, background } = PLAY_PALETTE;
 
 const START_OPTIONS: readonly string[] = ['6', '7'];
 
-// Negamax: valor de la posición para quien debe mover; sin fichas es derrota (−1).
 function gameValue(n: number): number {
   if (n === 0) return -1;
   let best = -2;
@@ -30,7 +29,6 @@ function gameValue(n: number): number {
   return best;
 }
 
-// Primera jugada de mayor valor: ante un empate elige retirar 1.
 function gameBest(n: number): number {
   let chosen = 0;
   let best = -2;
@@ -91,7 +89,6 @@ const aiMove: MinimaxHandler = (s, { log }) => {
   if (s.turn === 'IA') gameMove(s, gameBest(s.n), log);
 };
 
-// Una rama por cada jugada posible, hasta dos; el color sólo se revela tras analizar.
 function branchShapes(s: MinimaxState): SceneShape[] {
   const shapes: SceneShape[] = [];
   for (let k = 1; k <= 2 && k <= s.n; k++) {

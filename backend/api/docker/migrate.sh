@@ -1,10 +1,5 @@
 #!/bin/sh
-# The deployment's `migrate` step (ADR 0006 D35): runs the migrations, then content:import. It retries
-# with growing pauses only on a lock wait timeout (1205) or a deadlock (1213); any other error ends the
-# step. This is the single retry layer: the import runs with `attempts: 1` so retries do not multiply.
-# Each attempt waits at most 5 s for a lock (MYSQL_ATTR_INIT_COMMAND in compose.yaml).
-#
-# MIGRATE_PAUSES: seconds to wait between attempts; "5 15" means 3 attempts. Tests set "0 0".
+# ADR 0006 D35: the single retry layer (the import runs with `attempts: 1`), only on lock wait timeout 1205 or deadlock 1213.
 set -u
 
 pauses=${MIGRATE_PAUSES:-"5 15"}

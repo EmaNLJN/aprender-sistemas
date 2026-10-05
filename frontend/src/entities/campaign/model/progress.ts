@@ -56,7 +56,6 @@ function sanitizeCheckpoint(
   return { passed: value.passed, lastAnswer: answer };
 }
 
-// Importación: estricta y todo-o-nada; un registro inválido rechaza la copia.
 export function sanitizeCampaignState(catalog: CampaignCatalog, raw: unknown): CampaignStateV1 {
   assertBackupShape(raw);
   const clean = blankCampaignState();
@@ -70,7 +69,6 @@ export function sanitizeCampaignState(catalog: CampaignCatalog, raw: unknown): C
   return clean;
 }
 
-// Carga: tolerante por registro. Descarta y cuenta los inválidos o de IDs desconocidos.
 export function parseSavedCampaignState(
   catalog: CampaignCatalog,
   raw: unknown,
@@ -119,7 +117,6 @@ function mergeCheckpoints(state: CampaignStateV1, incoming: CampaignStateV1): vo
   }
 }
 
-// Fusión monótona: nunca quita un sello ni un checkpoint aprobado del estado actual.
 export function mergeImportedState(state: CampaignStateV1, incoming: CampaignStateV1): void {
   mergeSeals(state, incoming);
   mergeCheckpoints(state, incoming);
@@ -146,7 +143,6 @@ function sealsDiffer(a: CampaignSeal, b: CampaignSeal): boolean {
   return a.code !== b.code || a.prediction !== b.prediction || a.assisted !== b.assisted;
 }
 
-// Registra en `state` la evidencia del laboratorio y devuelve si cambió algún sello.
 export function applyLabEvidence(
   state: CampaignStateV1,
   catalog: CampaignCatalog,

@@ -1,4 +1,3 @@
-/* Behavioral checks for the original visual-computing models. No network. */
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { plainJson as plain } from './lib/plain-json.ts';
@@ -15,7 +14,6 @@ import {
 import type { ModelView, ModelWorkshop, SystemsModel } from './lib/systems-model-contract.ts';
 
 type Language = 'rust' | 'go';
-// Una forma por tipo de figura: los campos que no aplican quedan ausentes en runtime.
 interface Shape {
   type: string;
   x: number;

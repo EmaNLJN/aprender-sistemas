@@ -26,9 +26,6 @@ export interface CampaignCheckpoint {
   explanation: string;
 }
 
-// Mundo tal como lo entrega el catálogo. El motor sólo valida los campos tipados
-// aquí; el resto del contenido (subtítulo, historia, conceptos…) lo declaran los
-// catálogos y el motor lo conserva sin interpretarlo. `badge` lo garantiza campaign-content-check, no `init`.
 export interface CampaignWorldDefinition {
   id: string;
   level: LevelId;
@@ -47,7 +44,6 @@ export interface CampaignWorldDefinition {
   [content: string]: unknown;
 }
 
-// Mundo validado: `init` le agrega su lenguaje y las seis misiones en orden.
 export interface CampaignWorld extends CampaignWorldDefinition {
   language: CampaignLanguage;
   missionIds: string[];
@@ -58,7 +54,6 @@ export interface CampaignConfig {
   worlds: CampaignWorldDefinition[] | Record<CampaignLanguage, CampaignWorldDefinition[]>;
 }
 
-// Catálogo validado por `init`; el estado de progreso se interpreta contra él.
 export interface CampaignCatalog {
   exercises: Map<string, CampaignExercise>;
   worlds: Record<CampaignLanguage, CampaignWorld[]>;
@@ -144,8 +139,6 @@ export interface CheckpointAnswerResult {
   reasons: string[];
 }
 
-// Resultado de aplicar evidencia o una importación: `changed` dice si hubo cambios que
-// guardar (o, en `refreshFromLab`, si cambió algo en memoria).
 export interface RefreshResult {
   changed: boolean;
   storageAvailable: boolean;
@@ -156,8 +149,6 @@ export interface ImportResult {
   storageAvailable: boolean;
 }
 
-// Importación planificada sin efectos: `state` es el progreso resultante y `lossy` avisa
-// que el saneado descartó o cambió datos de la copia.
 export interface CampaignImportPlan {
   state: CampaignStateV1;
   lossy: boolean;
@@ -168,19 +159,13 @@ export interface ResetResult {
   removed: boolean;
 }
 
-// Foto del laboratorio que leen `refreshFromLab` y `syncLab`: sólo `records` y, por registro, los campos que
-// el motor interpreta. El motor tolera cualquier otra forma (ignora lo que no reconoce).
 export interface CampaignLabState {
   records?: Record<string, unknown>;
 }
 
 export interface CampaignEngine {
-  // Con `labState`, la evidencia del laboratorio se aplica en memoria (sin escribir) antes de
-  // fijar el XP ya informado.
   init(config: CampaignConfig, labState?: CampaignLabState | null): InitResult;
-  // Aplica la evidencia del laboratorio sólo en memoria: nunca escribe. Lo usan los renders.
   refreshFromLab(labState?: CampaignLabState | null): RefreshResult;
-  // Aplica la evidencia y guarda lo pendiente. Lo usan las acciones del alumno.
   syncLab(labState?: CampaignLabState | null): SyncLabResult;
   getWorlds(language: string): DerivedWorld[];
   canAttempt(id: string, language: string): AttemptPermission;

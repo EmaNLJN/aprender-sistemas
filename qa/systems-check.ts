@@ -1,4 +1,3 @@
-/* Systems progress contract + complete catalog. Pure Node; no network/browser. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -155,7 +154,6 @@ interface Engine {
   backups(): { key: string; text: string }[];
   reset(): { removed: boolean };
 }
-// Importa en dos fases, como app.js: planifica la copia y aplica el plan.
 function importState(engine: Engine, raw: unknown): void {
   engine.applyImport(engine.planImport(raw));
 }
@@ -448,8 +446,6 @@ test('Sync rejects failed transport, missing/blank code and non-success', () => 
   ];
   for (const invalid of rejected) {
     const { engine, store } = environment();
-    // `changed` de syncLab ya no mide la evidencia: con la clave aún ausente, la acción guarda el
-    // documento vacío. Lo observable es que ningún sello llega ni a memoria ni al almacenamiento.
     engine.syncLab(labResult('rust-113', invalid));
     assert.equal(engine.get('alpha', 'rust').progress.code, false, JSON.stringify(invalid));
     assert.deepEqual(savedCodeSeals(store), [], JSON.stringify(invalid));
@@ -492,7 +488,7 @@ test('Sync requires all three expected test IDs exactly once and truly passed', 
   ];
   for (const tests of rejected) {
     const { engine, store } = environment();
-    engine.syncLab(labResult('rust-113', { tests })); // Ver arriba: se verifica el sello, no `changed`.
+    engine.syncLab(labResult('rust-113', { tests }));
     assert.equal(engine.get('alpha', 'rust').progress.code, false, JSON.stringify(tests));
     assert.deepEqual(savedCodeSeals(store), [], JSON.stringify(tests));
   }
@@ -629,7 +625,6 @@ test('Unavailable storage keeps session progress exportable; the shell reports t
   store.failWrite = true;
   const { engine, status } = environment(store);
   assert.equal(status.storageAvailable, false);
-  // El shell ya avisa que el almacenamiento está bloqueado; Sistemas no lo repite.
   assert.equal(status.loadWarning, '');
   engine.observe('alpha', 'rust', ['a', 'b', 'c']);
   engine.answer('alpha', 'rust', 1);
@@ -639,8 +634,7 @@ test('Unavailable storage keeps session progress exportable; the shell reports t
   assert.equal(engine.exportState().records['rust:alpha'].code, true);
   store.failRead = false;
   store.failWrite = false;
-  // La carga no pudo leer la clave: sobrescribirla podría pisar progreso que no se vio.
-  // La sesión sigue en memoria y avisa; recién una carga nueva vuelve a guardar.
+  // The load could not read the key: overwriting it could clobber unseen progress, so the session stays in memory until a new load.
   engine.setNote('alpha', 'rust', 'Storage returned');
   assert.equal(engine.get('alpha', 'rust').storageAvailable, false);
   assert.equal(store.data.has(KEY), false);
@@ -692,7 +686,7 @@ test('Loading drops only invalid or unknown records, keeps the rest and backs up
   });
   assert.equal(store.data.get(BACKUP_KEY), saved);
   assert.equal(store.data.get(KEY), saved);
-  assert.equal(store.writes, 1); // Sólo la copia de respaldo.
+  assert.equal(store.writes, 1);
 });
 
 test('Loading a record with unknown objectives or out-of-range steps keeps the valid ones, backs up the original and warns', () => {
@@ -761,14 +755,12 @@ test('Reset clears all languages, removes the saved progress and its backup, and
 });
 
 const BACKUP_SLOTS = [BACKUP_KEY, ...[2, 3, 4, 5].map((n) => `${BACKUP_KEY}-${n}`)];
-// Clave principal ilegible y las cinco ranuras ocupadas con otros textos: no hay lugar para copiar.
 function fullBackupSlots(mainText = '{broken'): Storage {
   return storage({
     [KEY]: mainText,
     ...Object.fromEntries(BACKUP_SLOTS.map((slot) => [slot, 'otro texto ' + slot])),
   });
 }
-// Nombres de los registros con el sello de código en lo guardado; [] si la clave no existe.
 function savedCodeSeals(store: Storage): string[] {
   if (!store.data.has(KEY)) return [];
   return Object.entries(savedRecords(store))
@@ -796,7 +788,7 @@ test('refreshFromLab derives the core seal in memory without writing; syncLab th
 test('Two tabs: a stale tab keeps the objectives the other one observed when it saves a note', () => {
   const shared = storage();
   const tabA = environment(shared).engine;
-  const tabB = environment(shared).engine; // Carga antes de que A escriba.
+  const tabB = environment(shared).engine;
   tabA.observe('alpha', 'rust', ['a', 'b', 'c']);
   tabB.setNote('alpha', 'rust', 'nota de B');
   const saved = savedRecords(shared)['rust:alpha'];
@@ -845,7 +837,7 @@ test('planImport is pure, and applyImport merges it into memory and persists', (
   const plan = engine.planImport(raw);
   assert.equal(plan.lossy, false);
   assert.equal(plan.state.records['rust:alpha'].code, true);
-  assert.equal(plan.state.records['rust:alpha'].note, 'mi nota'); // Fusión con lo local.
+  assert.equal(plan.state.records['rust:alpha'].note, 'mi nota');
   assert.equal(JSON.stringify(engine.exportState()), memory);
   assert.equal(store.data.get(KEY), stored);
   assert.equal(store.writes, writes);

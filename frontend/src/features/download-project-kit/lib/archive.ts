@@ -32,7 +32,7 @@ export interface KitArchive {
 export function zipKit(project: Kit): KitArchive {
   return {
     name: project.name + '.zip',
-    // fflate asigna un ArrayBuffer propio; el tipo genérico lo declara más ancho.
+    // fflate allocates its own ArrayBuffer; the generic type declares it wider.
     bytes: zipSync(
       Object.fromEntries(
         Object.entries(project.files).map(([name, text]) => [

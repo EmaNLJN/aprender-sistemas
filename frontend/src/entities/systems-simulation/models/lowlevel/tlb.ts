@@ -48,7 +48,6 @@ const invalidate: LowlevelHandler<TlbState> = (s, { log }) => {
   log(s, 'Invalidamos VPN 0 en esta TLB. El próximo acceso deberá consultar otra vez la tabla.');
 };
 
-// Devuelve el marco que la TLB usa para esta lectura: el cacheado o, tras un miss, el de la tabla.
 function lookup(s: TlbState, log: (message: string) => void): number {
   if (s.cachedFrame === null) {
     s.misses++;

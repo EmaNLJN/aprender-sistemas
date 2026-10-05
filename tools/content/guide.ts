@@ -1,6 +1,3 @@
-// Guía (GUIDE_DATA) en content/guide/: la biblioteca ordenada por manifest.yaml, un archivo
-// por recurso y por paso, el manifiesto de cada recorrido (módulos en orden con sus pasos) y
-// las fuentes. Se arma con el mismo orden de claves que publicaba guide-data.ts.
 import { expectOnlyEntries, expectSameIds, expectUniqueIds, listYamlIds } from './catalog-files.ts';
 import { LANGUAGES, type Language } from './catalogs.ts';
 import { child, filePlace, type Place } from './content-error.ts';
@@ -59,7 +56,6 @@ const STEP_SPEC = {
   quiz: checkQuestion,
 } satisfies Record<keyof GuideStep, Check>;
 
-// En el manifiesto del recorrido, `steps` lista los IDs de los pasos.
 const MODULE_SPEC = {
   id: expectText,
   title: expectText,
@@ -81,8 +77,6 @@ const SOURCES: Check = listOf(
   1,
 );
 
-// Un ID de módulo o de paso del manifiesto de un recorrido, con su lugar (`modules[i].id` o
-// `modules[i].steps[j]`) para que los errores nombren el campo.
 interface TrackId {
   id: string;
   kind: 'module' | 'step';
@@ -123,7 +117,6 @@ function loadTrack(root: string, language: Language): JsonRecord {
     modules.map((module) => ({ id: module.id as string, stepIds: module.steps as string[] })),
     place,
   );
-  // Un módulo o un paso aparece una sola vez en el manifiesto; los errores nombran el campo.
   expectUniqueIds(
     ids.map((entry) => entry.id),
     (index) => ids[index].place,
@@ -138,7 +131,6 @@ function loadTrack(root: string, language: Language): JsonRecord {
     '.yaml',
     (index) => steps[index].place,
   );
-  // Repite la comprobación de IDs ya hecha arriba, sin campo: así el cargador es el mismo.
   const records = loadListedRecords(root, stepIds, place, stepsFolder, STEP_SPEC);
   let next = 0;
   return {
@@ -152,7 +144,6 @@ function loadTrack(root: string, language: Language): JsonRecord {
   };
 }
 
-// Los IDs de módulos y pasos indexan el progreso del recorrido: no se repiten en toda la guía.
 function expectUniqueGuideIds(tracks: Record<Language, JsonRecord>): void {
   const ids = LANGUAGES.flatMap((language) => {
     const modules = (tracks[language].modules as JsonRecord[]).map((module) => ({

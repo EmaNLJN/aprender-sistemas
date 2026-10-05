@@ -36,7 +36,6 @@ const RASTER_PRESETS: RasterPreset[] = [
   { name: 'Un solo punto', a: [6, 4], b: [6, 4] },
 ];
 
-// Bresenham de Zingl: dos decisiones independientes, por lo que x e y pueden avanzar a la vez.
 function rasterPoints(a: Point, b: Point): RasterPixel[] {
   let [x, y] = a;
   const [x1, y1] = b;
@@ -71,7 +70,6 @@ function createInitialState(): RasterState {
   return { preset: 0, index: 1, seen: {}, log: [] };
 }
 
-// Se evalúa tras cada acción conocida, también cuando no cambió nada.
 function rememberRasterGoals(s: RasterState): void {
   const p = RASTER_PRESETS[s.preset];
   const points = rasterPoints(p.a, p.b);

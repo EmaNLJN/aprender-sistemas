@@ -142,8 +142,8 @@ const wal = defineModel<WalState, WalAction>({
   achieved: achievedFlags,
 });
 
-// Caído, el proceso sólo atiende `crash` y `recover`: cualquier otra acción, conocida o no,
-// recibe el aviso. La tabla de acciones no ve las desconocidas, por eso la guarda va afuera.
+// While crashed, the process handles only `crash` and `recover`: any other action, known or not,
+// gets the warning. The action table does not see unknown ones, hence the guard outside.
 function rejectWhileDown(state: WalState): WalState {
   const next = cloneJson(state);
   next.notice = DOWN_NOTICE;

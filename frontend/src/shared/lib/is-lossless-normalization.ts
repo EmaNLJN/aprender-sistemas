@@ -1,7 +1,5 @@
 import { isPlainObject } from './is-plain-object';
 
-// true si `normalized` conserva todos los datos de `original` (un valor JSON recién parseado):
-// puede agregar claves u elementos al final, pero no quitar, cambiar ni reordenar ninguno.
 export function isLosslessNormalization(original: unknown, normalized: unknown): boolean {
   if (Array.isArray(original)) {
     return (

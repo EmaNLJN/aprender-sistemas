@@ -4,8 +4,6 @@ import "time"
 
 const outputLimit = 64 << 10
 
-// Profiles devuelve los límites del ADR 0005 por lenguaje. La compilación escribe el binario
-// en /out; la ejecución lo corre con rootfs y /out de sólo lectura.
 func Profiles(rustImage, goImage string) map[string]Profile {
 	run := Phase{
 		Timeout: 10 * time.Second, MemoryMiB: 256, Pids: 64, TmpfsMiB: 16, CPUs: "1",
@@ -17,8 +15,8 @@ func Profiles(rustImage, goImage string) map[string]Profile {
 			Compile: Phase{
 				Timeout: 20 * time.Second, MemoryMiB: 1024, Pids: 256, TmpfsMiB: 256, CPUs: "2",
 				ReadOnly: true,
-				// --crate-type bin manda sobre un #![crate_type] del alumno (el harness pone su
-				// código al principio del archivo): la compilación deja un ejecutable o falla.
+				// --crate-type bin overrides a student #![crate_type] (the harness puts their code
+				// at the top of the file): compilation yields an executable or fails.
 				Cmd: []string{"sh", "-c",
 					"cat > /tmp/main.rs && rustc --edition 2024 --crate-type bin /tmp/main.rs -o /out/main"},
 			},
@@ -27,10 +25,10 @@ func Profiles(rustImage, goImage string) map[string]Profile {
 		},
 		"go": {
 			Image: goImage,
-			// Sin --read-only: go build escribe en el GOCACHE precalentado de la imagen, en la
-			// capa del contenedor, que se descarta al borrarlo. go vet es informativo: como en el
-			// Playground, corre sólo si compiló y nunca cambia el código de salida.
-			// -buildmode=exe convierte un paquete que no es main en un error de compilación.
+			// No --read-only: go build writes to the image's pre-warmed GOCACHE, in the container
+			// layer, which is discarded on removal. go vet is informative: as in the Playground, it
+			// runs only if the build succeeded and never changes the exit code.
+			// -buildmode=exe turns a non-main package into a compile error.
 			Compile: Phase{
 				Timeout: 15 * time.Second, MemoryMiB: 1024, Pids: 256, TmpfsMiB: 256, CPUs: "2",
 				ReadOnly: false,

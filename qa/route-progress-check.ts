@@ -1,6 +1,3 @@
-/* Fusión del recorrido al importar una copia: node qa/route-progress-check.ts
- * Los valores esperados están escritos a mano desde la regla de importación vigente.
- */
 import assert from 'node:assert/strict';
 import { importModule } from './lib/sources.ts';
 
@@ -71,30 +68,30 @@ function test(name: string, run: () => void): void {
   process.stdout.write(`PASS ${name}\n`);
 }
 
-test('une los conjuntos sin repetidos: primero los de base y después los nuevos', () => {
+test('unions the sets without duplicates: base entries first, then the new ones', () => {
   const merged = mergeRouteProgress(base, incoming);
   assert.deepEqual(merged.completed, ['a', 'b', 'c']);
   assert.deepEqual(merged.milestones, ['go-memory', 'rust-files']);
   assert.deepEqual(merged.favorites, ['rustlings', 'go-tour']);
 });
 
-test('en las respuestas del quiz gana incoming y se conservan las de base', () => {
+test('incoming wins in quiz answers and the base ones are kept', () => {
   assert.deepEqual(mergeRouteProgress(base, incoming).quizAnswers, { a: 2, b: 0, c: 1 });
 });
 
-test('una nota en blanco de incoming no pisa la de base; una con texto sí', () => {
+test('a blank incoming note does not overwrite the base one; one with text does', () => {
   assert.deepEqual(mergeRouteProgress(base, incoming).notes, {
     rust: { learned: 'rust importado', next: 'siguiente base' },
     go: { learned: 'go base', next: 'go importado' },
   });
 });
 
-test('una nota de sólo espacios cuenta como en blanco', () => {
+test('a whitespace-only note counts as blank', () => {
   const merged = mergeRouteProgress(base, incoming);
   assert.equal(merged.notes.go.learned, 'go base');
 });
 
-test('el idioma y los minutos son los de base', () => {
+test('the language and minutes are the base ones', () => {
   const merged = mergeRouteProgress(base, incoming);
   assert.equal(merged.language, 'go');
   assert.equal(merged.minutes, 45);

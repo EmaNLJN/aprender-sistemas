@@ -16,7 +16,6 @@ interface OpenNode {
   g: number;
 }
 
-// Lo que cada configuración fija del mapa; la búsqueda se reinicia sobre ella.
 interface PathSetup extends PlayState {
   algorithm: Algorithm;
   weighted: boolean;
@@ -57,7 +56,6 @@ const DIRECTIONS: [number, number][] = [
   [-1, 0],
 ];
 
-// Mapa efectivo: sin pantanos todo lo transitable cuesta 1; bloqueado aísla la salida.
 function pathMap(s: PathSetup): number[][] {
   const g = cloneJson(GAME_MAP);
   if (!s.weighted)
@@ -85,7 +83,6 @@ function freshSearch(): PathSearch {
   };
 }
 
-// Completa `s` con una búsqueda nueva y lo devuelve; las claves existentes conservan su lugar.
 function resetSearch(s: PathSetup): PathfindingState {
   return Object.assign(s, freshSearch());
 }
@@ -94,7 +91,6 @@ function createInitialState(): PathfindingState {
   return resetSearch({ algorithm: 'bfs', weighted: false, blocked: false, seen: {}, log: [] });
 }
 
-// Distancia Manhattan a la meta: la cota inferior que usa A*.
 const estimate = (n: OpenNode): number => n.g + 5 - n.r + 7 - n.c;
 
 function indexOfLowestEstimate(open: OpenNode[]): number {
@@ -103,7 +99,6 @@ function indexOfLowestEstimate(open: OpenNode[]): number {
   return lowest;
 }
 
-// Saca de la frontera el próximo nodo vigente; descarta las entradas con un costo ya superado.
 function popBest(s: PathfindingState): OpenNode | null {
   let node: OpenNode | null = null;
   while (s.open.length && !node) {
@@ -124,7 +119,6 @@ function reconstructPath(parents: Record<string, string>, goal: string): string[
   return path;
 }
 
-// BFS sólo visita una casilla una vez; A* la reabre si encuentra un costo menor.
 function improvesBest(s: PathfindingState, key: string, cost: number): boolean {
   if (s.best[key] === undefined) return true;
   return s.algorithm !== 'bfs' && cost < s.best[key];
@@ -188,12 +182,10 @@ const toggleBlock: PathfindingHandler = (s, { log }) => {
   log(s, s.blocked ? 'La salida quedó aislada.' : 'La salida vuelve a estar conectada.');
 };
 
-// Tope de 150 expansiones: el mapa tiene menos casillas, así que siempre termina.
 const expandAll: PathfindingHandler = (s, context) => {
   for (let i = 0; i < 150 && !s.done; i++) pathStep(s, context);
 };
 
-// Prioridad de color: pared, ruta, explorada, frontera y por último el tipo de terreno.
 function tileColor(s: PathfindingState, r: number, c: number, cost: number): string {
   const key = cellKey(r, c);
   if (!cost) return grid;

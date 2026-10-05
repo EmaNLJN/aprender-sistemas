@@ -2,11 +2,6 @@ import { existsSync, readdirSync, statSync, type Dirent } from 'node:fs';
 import { join } from 'node:path';
 import { fail, filePlace, type Place } from './content-error.ts';
 
-// Entradas de una carpeta de content/, ordenadas: la única política de carpetas. Una carpeta
-// que no existe está vacía: así el manifiesto informa qué falta en lugar de un ENOENT. Los
-// nombres que empiezan con punto se ignoran (un .DS_Store de macOS o el .swp de un editor no
-// son contenido); un enlace simbólico y cualquier entrada que `accepts` rechace son un error,
-// con `rejected` como mensaje: nada queda en content/ sin que el generador lo lea.
 function entries(
   root: string,
   folder: string,
@@ -29,8 +24,6 @@ function entries(
   return names;
 }
 
-// La carpeta admite sólo las entradas de `allowed` (archivos o carpetas): un YAML suelto no lo
-// lee nadie y quedaría sin publicar. `rejected` es el mensaje para cualquier otra.
 export function expectOnlyEntries(
   root: string,
   folder: string,
@@ -44,13 +37,10 @@ export function listDirectories(root: string, folder: string): string[] {
   return entries(root, folder, (entry) => entry.isDirectory(), 'sólo se admiten carpetas <id>');
 }
 
-// Archivos de una carpeta, con la misma política de ocultos y rechazos; `expected` es el
-// mensaje para lo que no sea un archivo.
 export function listFiles(root: string, folder: string, expected: string): string[] {
   return entries(root, folder, (entry) => entry.isFile(), expected);
 }
 
-// IDs de los <id>.yaml de una carpeta, sin contar su manifest.yaml.
 export function listYamlIds(root: string, folder: string): string[] {
   const expected = 'sólo se admiten archivos <id>.yaml';
   const ids: string[] = [];
@@ -62,8 +52,6 @@ export function listYamlIds(root: string, folder: string): string[] {
   return ids;
 }
 
-// Ningún ID de `listed` se repite. `placeOf` da el lugar de cada elemento, para que el error
-// nombre el campo; `repeated` es el comienzo del mensaje.
 export function expectUniqueIds(
   listed: readonly string[],
   placeOf: (index: number) => Place,
@@ -76,9 +64,6 @@ export function expectUniqueIds(
   });
 }
 
-// Un manifiesto y su carpeta listan los mismos IDs: sin repetidos, faltantes ni huérfanos.
-// `suffix` es '.yaml' para registros y '' para las carpetas de ejercicios. Por omisión los
-// errores de lo listado se ubican en el manifiesto; `placeOf` los ubica en el campo de cada ID.
 export function expectSameIds(
   listed: readonly string[],
   found: readonly string[],

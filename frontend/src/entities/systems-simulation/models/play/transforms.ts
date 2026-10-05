@@ -8,7 +8,6 @@ import { circle, line, scene, text } from './shapes';
 import { PLAY_LOG_LIMIT, achievedGoals, remember, type PlayHandler, type PlayState } from './state';
 
 type Point = [number, number];
-// [a, b, c, d, tx, ty]: (a*x + c*y + tx, b*x + d*y + ty).
 type Matrix = [number, number, number, number, number, number];
 type Operation = 'T' | 'R';
 type TransformsAction = 'order' | 'step' | 'inverse';
@@ -118,7 +117,6 @@ const applyInverse: TransformsHandler = (s, { log }) => {
   log(s, 'La inversa devuelve todos los vértices a su posición inicial.');
 };
 
-// Y crece hacia arriba: el origen queda a la izquierda y abajo del centro de la escena.
 const toScreen = ([x, y]: Point): Point => [220 + x * 38, 230 - y * 38];
 
 function gridShapes(): SceneShape[] {

@@ -51,7 +51,6 @@ export const text = (
   fill,
 });
 
-// Todas las escenas de play miden lo mismo; el orden de las figuras es su contrato.
 export const scene = (alt: string, shapes: SceneShape[]): Scene => ({
   width: 560,
   height: 310,

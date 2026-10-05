@@ -1,5 +1,3 @@
-// Programa de precalentamiento: importa la stdlib que usan los ejercicios del taller (campo
-// `imports` de los catálogos Go) para dejarla compilada en GOCACHE dentro de la imagen.
 package main
 
 import (

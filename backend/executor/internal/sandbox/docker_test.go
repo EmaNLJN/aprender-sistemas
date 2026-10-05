@@ -15,12 +15,10 @@ type commandCall struct {
 	args []string
 }
 
-// scripted devuelve un Commander que registra cada llamada y responde según el subcomando. Si la
-// llamada falla, escribe en stderr un mensaje como el del daemon.
 func scripted(calls *[]commandCall, stdout map[string]string, fail map[string]error) Commander {
 	return func(_ context.Context, name string, args []string, _ io.Reader, out, errOut io.Writer) error {
 		if name != "docker" {
-			return errors.New("sólo se invoca docker")
+			return errors.New("only docker is invoked")
 		}
 		*calls = append(*calls, commandCall{args: args})
 		key := strings.Join(args[:min(2, len(args))], " ")
@@ -63,7 +61,7 @@ func TestStartTreatsANonZeroProgramExitAsSuccess(t *testing.T) {
 		return exitErr
 	}}
 	if err := cli.Start(context.Background(), "taller-r-1", nil, io.Discard, io.Discard); err != nil {
-		t.Fatalf("el código del programa se lee con Inspect, no es un error: %v", err)
+		t.Fatalf("the program code is read with Inspect, it is not an error: %v", err)
 	}
 }
 
@@ -75,7 +73,7 @@ func TestStartReportsCancellation(t *testing.T) {
 		return exitErr
 	}}
 	if err := cli.Start(ctx, "taller-r-1", nil, io.Discard, io.Discard); err == nil {
-		t.Fatal("con el contexto cancelado debe devolver el error")
+		t.Fatal("with a cancelled context it must return the error")
 	}
 }
 
@@ -98,16 +96,16 @@ func TestInspectFailsWhenDockerCouldNotStartTheContainer(t *testing.T) {
 	cli := DockerCLI{Exec: scripted(&calls, out, nil)}
 	_, err := cli.Inspect(context.Background(), "taller-r-1")
 	if err == nil || !strings.Contains(err.Error(), "failed to create task") {
-		t.Fatalf("un arranque fallido es un error del sandbox, no un código del programa: %v", err)
+		t.Fatalf("a failed start is a sandbox error, not a program code: %v", err)
 	}
 }
 
 func TestInspectRejectsUnexpectedOutput(t *testing.T) {
-	for _, raw := range []string{"basura", `exited x false ""`, `exited 0 quizás ""`, `exited 0 false sin-json`} {
+	for _, raw := range []string{"garbage", `exited x false ""`, `exited 0 maybe ""`, `exited 0 false not-json`} {
 		var calls []commandCall
 		cli := DockerCLI{Exec: scripted(&calls, map[string]string{"inspect --format": raw}, nil)}
 		if _, err := cli.Inspect(context.Background(), "x"); err == nil {
-			t.Fatalf("la salida %q debe ser un error", raw)
+			t.Fatalf("output %q must be an error", raw)
 		}
 	}
 }
@@ -135,7 +133,7 @@ func TestListLabeledReadsContainersAndVolumes(t *testing.T) {
 	wantPS := []string{"ps", "--all", "--filter", "label=" + RunLabel + "=1", "--format", "{{.Names}}\t" + created}
 	wantVolumes := []string{"volume", "ls", "--filter", "label=" + RunLabel + "=1", "--format", "{{.Name}}\t" + created}
 	if len(calls) != 2 || !slices.Equal(calls[0].args, wantPS) || !slices.Equal(calls[1].args, wantVolumes) {
-		t.Fatalf("las dos listas filtran por la etiqueta del ejecutor: %v", calls)
+		t.Fatalf("both lists filter by the executor label: %v", calls)
 	}
 }
 

@@ -1,4 +1,3 @@
-// Package config lee la configuración del ejecutor desde el entorno.
 package config
 
 import (
@@ -7,7 +6,6 @@ import (
 	"strconv"
 )
 
-// Config es la configuración del ejecutor, ya validada por FromEnv.
 type Config struct {
 	Addr          string
 	Token         string
@@ -15,15 +13,11 @@ type Config struct {
 	RustImage     string
 	GoImage       string
 	MaxConcurrent int
-	// Instance es el valor de la etiqueta taller.executor.run: separa los recursos de cada
-	// servicio (y de las pruebas de integración) que comparten el daemon.
-	Instance string
+	Instance      string
 }
 
 const minTokenLength = 32
 
-// FromEnv falla si falta un token largo, alguna imagen o el runtime no es runsc ni runc:
-// el ejecutor nunca debe arrancar con una configuración insegura por omisión.
 func FromEnv(getenv func(string) string) (Config, error) {
 	cfg := Config{
 		Addr:          valueOr(getenv("EXECUTOR_ADDR"), ":8080"),

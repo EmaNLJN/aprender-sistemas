@@ -33,7 +33,6 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            // API-only: Nginx sólo pasa /api/ a PHP; sin rutas storage/{path}.
             'serve' => false,
             'throw' => false,
             'report' => false,

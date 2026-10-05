@@ -8,18 +8,14 @@ import (
 	"time"
 )
 
-// Sweeper borra contenedores y volúmenes del ejecutor más viejos que MaxAge: restos de una
-// caída o de una limpieza fallida. Los contenedores van primero porque un volumen en uso no
-// se puede borrar.
+// Containers go first because a volume in use cannot be removed.
 type Sweeper struct {
 	Engine   Engine
 	Now      func() time.Time
 	MaxAge   time.Duration
-	Instance string // valor de RunLabel: sólo barre lo de esta instancia
+	Instance string
 }
 
-// Sweep sólo toca nombres propios: aunque fallara el filtro por etiqueta, un volumen ajeno (por
-// ejemplo, los datos de MySQL) nunca se borra. Junta los errores para que una fuga llegue al log.
 func (s Sweeper) Sweep(ctx context.Context) error {
 	if s.Instance == "" {
 		return errors.New("Sweeper sin Instance: barrería recursos de otro servicio")

@@ -8,11 +8,7 @@ use RuntimeException;
 
 abstract class TestCase extends BaseTestCase
 {
-    /**
-     * Corta antes de cualquier operación de base: refreshApplication corre antes de que
-     * ParallelTesting cree o borre bases y antes de que RefreshDatabase o DatabaseTruncation
-     * corran migrate:fresh en setUpTraits.
-     */
+    // Runs before ParallelTesting touches databases and before migrate:fresh in setUpTraits.
     protected function refreshApplication()
     {
         parent::refreshApplication();
@@ -23,9 +19,6 @@ abstract class TestCase extends BaseTestCase
     }
 
     /**
-     * Mira la conexión efectiva, como la arma Laravel al conectar: DB_URL pisa host y base, y un
-     * socket hace que MySQL ignore el host.
-     *
      * @param  array<string, mixed>  $connection
      */
     public static function ensureTestDatabase(array $connection): void
@@ -34,14 +27,13 @@ abstract class TestCase extends BaseTestCase
         $host = $effective['host'] ?? null;
         $database = (string) ($effective['database'] ?? '');
         $socket = (string) ($effective['unix_socket'] ?? '');
-        // Si existe `read`, ConnectionFactory conecta con los hosts de `read`/`write` en lugar de
-        // `host`; la guarda rechaza cualquiera de los dos.
+        // `read`/`write` hosts replace `host` in ConnectionFactory.
         if (isset($effective['read']) || isset($effective['write'])) {
-            throw new RuntimeException('Las pruebas sólo corren contra mysql-test/taller_test; la conexión efectiva define hosts propios de lectura o escritura.');
+            throw new RuntimeException('Tests only run against mysql-test/taller_test; the effective connection defines its own read or write hosts.');
         }
         if ($host !== 'mysql-test' || $socket !== '' || ! str_starts_with($database, 'taller_test')) {
-            $where = $socket !== '' ? "el socket {$socket}" : "{$host}/{$database}";
-            throw new RuntimeException("Las pruebas sólo corren contra mysql-test/taller_test; la conexión efectiva apunta a {$where}.");
+            $where = $socket !== '' ? "socket {$socket}" : "{$host}/{$database}";
+            throw new RuntimeException("Tests only run against mysql-test/taller_test; the effective connection points to {$where}.");
         }
     }
 }

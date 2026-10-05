@@ -2,7 +2,6 @@ import path from 'node:path';
 import vm from 'node:vm';
 import esbuild from 'esbuild';
 
-// Raíz absoluta del repo: los checks viven en qa/ y cargan fuentes de la raíz.
 export const repoRoot: string = path.resolve(import.meta.dirname, '..', '..');
 
 export interface BundleOptions {
@@ -35,12 +34,10 @@ function build(relativePath: string, options: esbuild.BuildOptions): string {
     const details = failure.errors?.length
       ? failure.errors.map((message) => message.text).join('\n')
       : (failure.message ?? String(error));
-    throw new Error(`No se pudo empaquetar ${relativePath}:\n${details}`, { cause: error });
+    throw new Error(`Could not bundle ${relativePath}:\n${details}`, { cause: error });
   }
 }
 
-// Empaqueta en memoria una fuente JS/TS con sus imports como IIFE de navegador,
-// igual que Vite/esbuild en producción, sin dejar archivos *.bundle.js en disco.
 export function bundleSource(relativePath: string, options: BundleOptions = {}): string {
   const minify = options.minify ?? false;
   const key = `${relativePath}|minify=${minify}`;
@@ -57,10 +54,6 @@ export function bundleSource(relativePath: string, options: BundleOptions = {}):
   return text;
 }
 
-// Empaqueta una entrada de aplicación completa (como frontend/src/app/main.tsx) para ejecutarla
-// sin navegador: las hojas de estilo se ignoran (loader `empty`), el JSX usa el runtime
-// automático de React y `process.env.NODE_ENV` queda fijo en producción. Es una función
-// aparte de `bundleSource` para no alterar su formato ni su caché.
 export function bundleApp(relativePath: string): string {
   const cached = appCache.get(relativePath);
   if (cached !== undefined) return cached;
@@ -76,8 +69,6 @@ export function bundleApp(relativePath: string): string {
   return text;
 }
 
-// Ejecuta una fuente de navegador (script legacy o módulo empaquetado) en un
-// contexto vm con window falso, para que publique sus globales Taller*.
 export function runSource(
   context: vm.Context,
   relativePath: string,
@@ -89,9 +80,7 @@ export function runSource(
   });
 }
 
-// Importa un módulo TS/TSX del repo desde un check de Node. Node no resuelve
-// imports relativos sin extensión, así que se empaqueta como ESM y se carga
-// desde una URL data:.
+// Node does not resolve extensionless relative imports, so the module is bundled as ESM and loaded from a data: URL.
 export async function importModule<T>(relativePath: string): Promise<T> {
   let text = esmCache.get(relativePath);
   if (text === undefined) {

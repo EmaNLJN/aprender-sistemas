@@ -12,8 +12,6 @@ export function cell(label: string, value: string | number, tone: CellTone = 'mu
   return { label, value: String(value), tone };
 }
 
-// Agrega un mensaje y conserva sólo las últimas `limit` entradas. Acepta un registro
-// ausente porque play lo tolera; el resultado es siempre un arreglo nuevo.
 export function appendLog(
   log: readonly string[] | undefined,
   message: string,

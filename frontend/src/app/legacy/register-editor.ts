@@ -6,5 +6,4 @@ declare global {
   }
 }
 
-// Consumidor real: lab.js usa sólo mount (name y controller.view no tenían usos).
 window.TallerEditor = Object.freeze({ mount: mountCodeEditor });

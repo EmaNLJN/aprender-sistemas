@@ -34,8 +34,6 @@ export interface RunOutcome {
 
 const MARKER_PATTERN = /^__TALLER_TEST__(\w+):(PASS|FAIL)\s*$/gm;
 
-// Lee los marcadores que imprime el programa de revisión; un id que aparece más de una
-// vez cuenta como fallo, aunque todas sus apariciones sean PASS.
 function readMarkers(stdout: string): Map<string, boolean> {
   const markers = new Map<string, boolean>();
   for (const match of stdout.matchAll(MARKER_PATTERN)) {
@@ -45,8 +43,6 @@ function readMarkers(stdout: string): Map<string, boolean> {
   return markers;
 }
 
-// Traduce la respuesta del compilador al registro que guarda el laboratorio. Es pura:
-// no guarda, no notifica ni consulta el reloj. `solved` usa la regla única de evidencia.
 export function interpretRun(
   exercise: ExerciseTests,
   runnerResult: RunnerResult,

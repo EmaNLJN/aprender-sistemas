@@ -14,12 +14,10 @@ export function isSystemsLanguage(value: unknown): value is SystemsLanguage {
   return SYSTEMS_LANGUAGES.includes(value as SystemsLanguage);
 }
 
-// Índice entero dentro de una lista de `count` elementos.
 export function isOptionIndex(value: unknown, count: number): value is number {
   return Number.isInteger(value) && (value as number) >= 0 && (value as number) < count;
 }
 
-// Cada taller necesita, por lenguaje, un ejercicio de núcleo con pruebas de id único.
 function requireCore(
   workshop: Raw,
   language: SystemsLanguage,
@@ -37,7 +35,6 @@ function requireCore(
   const validIds = tests.every(
     (test) => isPlainObject(test) && typeof test.id === 'string' && test.id.trim(),
   );
-  // Los ids sólo se leen si todas las pruebas son objetos: un null no debe lanzar aquí.
   if (!validIds || new Set(tests.map((test: Raw) => test.id)).size !== tests.length) {
     throw new Error(`IDs de pruebas de núcleo inválidos: ${exercise.id}`);
   }
@@ -48,7 +45,7 @@ function assertWorkshopIdentity(
   known: Map<string, SystemsWorkshop>,
   models: Raw,
 ): void {
-  // RegExp.test coacciona el id: un taller sin id pasa este patrón, como en el original.
+  // RegExp.test coerces the id: a workshop without id passes this pattern, as in the original.
   if (
     !WORKSHOP_ID_PATTERN.test(workshop.id as string) ||
     known.has(workshop.id as string) ||
@@ -80,7 +77,6 @@ function assertPrediction(workshop: Raw): void {
     throw new Error('Checkpoint de taller inválido.');
 }
 
-// Valida todo en variables locales: `init` sólo reemplaza el catálogo si nada falló.
 export function validateSystemsConfig(config: unknown): SystemsCatalog {
   const input = config as Raw | null | undefined;
   if (!Array.isArray(input?.workshops) || !input.models || !Array.isArray(input.exercises))

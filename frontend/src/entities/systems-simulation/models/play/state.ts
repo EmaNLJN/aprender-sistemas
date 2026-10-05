@@ -1,10 +1,8 @@
 import type { ActionHandler, SimulationState } from '../../model/define-model';
 import type { ModelWorkshop } from '../../model/types';
 
-// Cantidad de mensajes que conserva el registro de cada modelo de play.
 export const PLAY_LOG_LIMIT = 6;
 
-// `seen` recuerda qué metas se observaron; las acciones nunca la borran.
 export interface PlayState extends SimulationState {
   seen: Record<string, boolean>;
 }

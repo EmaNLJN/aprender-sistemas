@@ -43,7 +43,7 @@ const document = readFileSync(join(build, 'curriculum.json'));
 const meta = JSON.parse(readFileSync(join(build, 'curriculum.meta.json'), 'utf8')) as Meta;
 const curriculum = JSON.parse(document.toString('utf8')) as Curriculum;
 
-assert.equal(meta.documentHash, sha256(document), 'documentHash es el sha256 de curriculum.json');
+assert.equal(meta.documentHash, sha256(document), 'documentHash is the sha256 of curriculum.json');
 
 const languages = ['rust', 'go'];
 const domains = ['lowlevel', 'infra', 'play', 'pc'];
@@ -60,7 +60,7 @@ assert.equal(parts.length, 17);
 assert.deepEqual(
   Object.keys(meta.portions),
   parts.map(([name]) => name),
-  'las 17 porciones, en orden',
+  'the 17 portions, in order',
 );
 for (const [name, part] of parts) {
   assert.equal(meta.portions[name], sha256(JSON.stringify(part)), `portions.${name}`);
@@ -74,7 +74,7 @@ const exercises = [
 assert.deepEqual(
   Object.keys(meta.exercises).sort(),
   exercises.map((exercise) => exercise.id as string).sort(),
-  'un juego de huellas por ejercicio',
+  'one set of fingerprints per exercise',
 );
 for (const exercise of exercises) {
   const hashes = meta.exercises[exercise.id as string];
@@ -88,16 +88,12 @@ const workshops = domains.flatMap((d) => curriculum.workshops[d]);
 assert.deepEqual(
   Object.keys(meta.workshopSteps).sort(),
   workshops.map((workshop) => workshop.id).sort(),
-  'claves de etapa para cada taller',
+  'stage keys for each workshop',
 );
 for (const workshop of workshops) {
   const keys = meta.workshopSteps[workshop.id];
-  assert.equal(keys.length, workshop.steps.length, `${workshop.id}: una clave por etapa`);
-  assert.equal(
-    new Set(keys.map((key) => key.id)).size,
-    keys.length,
-    `${workshop.id}: claves únicas`,
-  );
+  assert.equal(keys.length, workshop.steps.length, `${workshop.id}: one key per stage`);
+  assert.equal(new Set(keys.map((key) => key.id)).size, keys.length, `${workshop.id}: unique keys`);
 }
 
 // FR-029: new stages (v1Index null) may be added; the v1 ones never change or disappear.
@@ -110,12 +106,12 @@ for (const [workshop, keys] of Object.entries(frozen)) {
       meta.workshopSteps[workshop]?.some(
         (key) => key.id === frozenKey.id && key.v1Index === frozenKey.v1Index,
       ),
-      `${workshop}: la etapa ${frozenKey.id} (v1Index ${frozenKey.v1Index}) cambió o desapareció`,
+      `${workshop}: stage ${frozenKey.id} (v1Index ${frozenKey.v1Index}) changed or disappeared`,
     );
   }
 }
-assert.equal(Object.values(frozen).flat().length, 100, 'el contrato v1 fija las 100 etapas');
+assert.equal(Object.values(frozen).flat().length, 100, 'the v1 contract fixes the 100 stages');
 
 console.log(
-  `curriculum-meta-check: ${parts.length} porciones, ${exercises.length} ejercicios y ${Object.values(meta.workshopSteps).flat().length} etapas con su huella y su clave PASS.`,
+  `curriculum-meta-check: ${parts.length} portions, ${exercises.length} exercises and ${Object.values(meta.workshopSteps).flat().length} stages with their fingerprint and key PASS.`,
 );

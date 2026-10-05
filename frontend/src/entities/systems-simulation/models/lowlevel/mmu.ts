@@ -57,7 +57,6 @@ interface Access {
   mode: 'r' | 'w';
 }
 
-// Acepta "VA:modo" como el original: lo que sobra después del segundo ":" se ignora.
 function parseAccess(value: string | undefined): Access | null {
   const [addressText, mode] = String(value).split(':');
   const address = Number(addressText);

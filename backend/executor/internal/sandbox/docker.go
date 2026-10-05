@@ -15,8 +15,8 @@ import (
 
 type Commander func(ctx context.Context, name string, args []string, stdin io.Reader, stdout, stderr io.Writer) error
 
-// ExecCommand corre un binario del sistema. Si el contexto vence, WaitDelay evita esperar sin
-// fin a que se cierren los pipes que mantiene abiertos el cliente de Docker.
+// ExecCommand runs a system binary. If the context expires, WaitDelay avoids waiting forever for
+// the pipes the Docker client keeps open to close.
 func ExecCommand(ctx context.Context, name string, args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = stdin, stdout, stderr
@@ -24,7 +24,6 @@ func ExecCommand(ctx context.Context, name string, args []string, stdin io.Reade
 	return cmd.Run()
 }
 
-// DockerCLI implementa Engine con la CLI de Docker. No acepta otros flags que los de createArgs.
 type DockerCLI struct{ Exec Commander }
 
 func (d DockerCLI) run(ctx context.Context, args []string, stdout io.Writer) error {
@@ -46,7 +45,7 @@ func (d DockerCLI) Start(ctx context.Context, name string, stdin io.Reader, stdo
 	err := d.Exec(ctx, "docker", []string{"start", "--attach", "--interactive", name}, stdin, stdout, stderr)
 	var exitErr *exec.ExitError
 	if errors.As(err, &exitErr) && ctx.Err() == nil {
-		return nil // el programa terminó con un código distinto de 0; Inspect lo informa
+		return nil
 	}
 	return err
 }
@@ -68,9 +67,8 @@ func (d DockerCLI) Inspect(ctx context.Context, name string) (State, error) {
 	return parseState(out.String())
 }
 
-// parseState lee "estado código oom error", con el error de Docker en JSON. Si Docker no pudo
-// arrancar el contenedor, `docker start` sale igual con un código distinto de 0 y Start no lo
-// distingue del programa: ese código no es del alumno, así que se devuelve como error del sandbox.
+// If Docker could not start the container, `docker start` still exits non-zero and Start cannot
+// tell it apart from the program: that code is not the student's, so it is a sandbox error.
 func parseState(raw string) (State, error) {
 	fields := strings.SplitN(strings.TrimSpace(raw), " ", 4)
 	if len(fields) != 4 {
@@ -115,8 +113,6 @@ func (d DockerCLI) ListLabeled(ctx context.Context, label string) ([]Resource, e
 	return append(parseResources("container", containers.String()), parseResources("volume", volumes.String())...), nil
 }
 
-// parseResources lee "nombre<TAB>segundos Unix". Sin hora válida, Created queda en cero y el
-// barrido lo trata como viejo.
 func parseResources(kind, raw string) []Resource {
 	var resources []Resource
 	for _, line := range strings.Split(strings.TrimSpace(raw), "\n") {
