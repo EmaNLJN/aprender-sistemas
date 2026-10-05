@@ -3,10 +3,8 @@
 export type Language = 'rust' | 'go';
 export const LANGUAGES: readonly Language[] = ['rust', 'go'];
 
-// Catálogos de ejercicios que registra content:import (ADR 0006 §5.1). `sliceBy` dice por qué
-// parámetro se corta el recurso de cada uno: lab y quests por lenguaje, cores por dominio.
-// `chainPosition` es el lugar en la cadena de catálogos; null = fuera de la cadena, porque abarcan
-// varios niveles. E1 suma `essentials` con la posición 1.
+// FR-032 (ADR 0006 D13): the C2 catalogs sit outside the chain (chainPosition null); E1 adds
+// essentials at position 1.
 export const CATALOGS = [
   { code: 'lab', sliceBy: 'language', chainPosition: null },
   { code: 'quests', sliceBy: 'language', chainPosition: null },

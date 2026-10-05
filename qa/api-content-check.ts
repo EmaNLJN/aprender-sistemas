@@ -1,11 +1,6 @@
-// Criterio de aceptación de C2 contra el stack vivo (ADR 0006 R7 y D11): las 17 porciones que sirve
-// la API, a través de Nginx y de su compresión, son las que fijó el generador. Requiere el stack
-// levantado con `docker compose up --build -d --wait`, construido desde este mismo árbol; no forma
-// parte de `npm test`. Uso: npm run api:content:check. Con TALLER_URL=http://host:puerto apunta a
-// otro despliegue (sin el log de Nginx, que sólo se lee del Compose de este directorio).
-//
-// node:http no manda Accept-Encoding salvo que se lo pidan: sin gzip, el cuerpo y el ETag llegan
-// tal cual; con gzip, Nginx comprime y debilita el ETag (W/"…"), como lo ve un navegador.
+// FR-047 (ADR 0006 R7, D11): what the API serves, through Nginx, matches the generator's meta.
+// Needs the stack up from this same tree (`docker compose up --build -d --wait`); not in
+// `npm test`. TALLER_URL=http://host:port targets another deployment.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -26,13 +21,15 @@ interface Meta {
   exercises: Record<string, { contentHash: string }>;
 }
 
-// Los clientes lentos simultáneos sobre las dos porciones de lab (unas 300 KB cada una): Nginx
-// desborda a /tmp/fastcgi_temp, un tmpfs de 32 MB que cuenta contra el mem_limit de `taller`.
+// FR-047: enough slow clients on the two ~300 KB lab portions for Nginx to spill to
+// /tmp/fastcgi_temp, a 32 MB tmpfs that counts against the mem_limit of `taller`.
 const SLOW_CLIENTS = 40;
 
 const root = join(import.meta.dirname, '..');
 const sha256 = (data: Buffer | string): string => createHash('sha256').update(data).digest('hex');
 
+// node:http sends no Accept-Encoding unless asked; Nginx weakens the ETag only when it compresses
+// (ADR 0006 D11).
 function request(url: string, headers: Record<string, string> = {}, pauseMs = 0): Promise<Reply> {
   return new Promise((resolve, reject) => {
     get(url, { headers, agent: false }, (response) => {
@@ -55,7 +52,6 @@ function request(url: string, headers: Record<string, string> = {}, pauseMs = 0)
   });
 }
 
-// Un recurso por porción, con los parámetros que la cortan.
 function urlOf(base: string, portion: string): string {
   const [group, slice] = portion.split('.');
   const query = (resource: string, parameters: string) => `${base}/api/${resource}?${parameters}`;
@@ -71,7 +67,6 @@ function urlOf(base: string, portion: string): string {
 
 function address(): string {
   if (process.env.TALLER_URL) return process.env.TALLER_URL.replace(/\/$/, '');
-  // La dirección sale de Compose, como en api/scripts/smoke.sh: respeta TALLER_PORT y el proyecto.
   const published = execFileSync('docker', ['compose', 'port', 'taller', '8080'], {
     cwd: root,
     encoding: 'utf8',
@@ -79,7 +74,6 @@ function address(): string {
   return `http://${published}`;
 }
 
-// El meta que genera este árbol: el oráculo de lo que tiene que servir la API.
 execFileSync(process.execPath, [join(root, 'tools', 'content', 'build-curriculum.ts')], {
   stdio: 'inherit',
 });
@@ -88,8 +82,6 @@ const base = address();
 const portions = Object.entries(meta.portions);
 const version = meta.documentHash.slice(0, 32);
 
-// 1. Sin compresión: 200, ETag fuerte con los primeros 32 hex del sha256 del cuerpo, versión
-//    igual en las 17 y las cabeceras de caché.
 const strong = new Map<string, string>();
 for (const [portion, hash] of portions) {
   const url = urlOf(base, portion);
@@ -109,7 +101,6 @@ for (const [portion, hash] of portions) {
   strong.set(portion, etag);
 }
 
-// 2. Con gzip: Nginx comprime y debilita el ETag; el cuerpo descomprimido es el mismo.
 for (const [portion, hash] of portions) {
   const reply = await request(urlOf(base, portion), { 'Accept-Encoding': 'gzip' });
   assert.equal(reply.headers['content-encoding'], 'gzip', `${portion}: Nginx no comprimió`);
@@ -117,7 +108,6 @@ for (const [portion, hash] of portions) {
   assert.equal(sha256(gunzipSync(reply.body)), hash, `${portion}: el cuerpo descomprimido`);
 }
 
-// 3. Revalidar con el ETag tal como llegó, fuerte y débil, con y sin gzip: 304 sin cuerpo.
 for (const [portion] of portions) {
   const etag = strong.get(portion) as string;
   for (const [validator, encoding] of [
@@ -140,7 +130,6 @@ for (const [portion] of portions) {
   }
 }
 
-// 4 y 5. Clientes lentos: reciben el cuerpo completo, aunque Nginx tenga que pasarlo por disco.
 const since = new Date().toISOString();
 const labs = ['lab.rust', 'lab.go'];
 const slow = await Promise.all(
@@ -173,7 +162,6 @@ if (process.env.TALLER_URL) {
   );
 }
 
-// 6. Un ejercicio suelto, a mano: su ETag son los primeros 32 hex de su contentHash.
 const [exerciseId, { contentHash }] = Object.entries(meta.exercises)[0];
 const exercise = await request(`${base}/api/exercises/${exerciseId}`);
 assert.equal(exercise.status, 200, `${exerciseId}: respondió ${exercise.status}`);

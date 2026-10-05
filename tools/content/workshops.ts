@@ -1,10 +1,6 @@
 // Talleres de Sistemas: content/workshops/manifest.yaml ordena los IDs por dominio y cada
 // content/workshops/<id>.yaml es la ficha que publica SYSTEMS_<DOMINIO>.workshops. Cada dominio
 // conserva su orden de claves legacy porque el YAML es el objeto tal cual.
-//
-// Excepción: cada etapa (`steps`) lleva en el YAML una clave estable `id` y, si ya existía en el
-// formato v1, su `v1Index` (ADR 0006 D14). Ninguna de las dos se publica hasta D1: la etapa
-// publicada son sus cuatro textos de siempre y las claves viajan por separado, al meta.
 import { LEVEL_IDS } from '../../src/shared/config/levels.ts';
 import { LANGUAGES, SYSTEMS_DOMAINS, type SystemsDomain } from './catalogs.ts';
 import { child, fail, filePlace } from './content-error.ts';
@@ -26,7 +22,6 @@ export interface WorkshopStepKey {
   id: string;
   v1Index: number | null;
 }
-// Por ID de taller, las claves de sus etapas en el orden publicado.
 export type WorkshopStepKeys = Record<string, WorkshopStepKey[]>;
 
 export interface LoadedWorkshops {
@@ -47,6 +42,7 @@ const expectStepKey: Check = (value, place) => {
   return key;
 };
 
+// FR-029, FR-030 (ADR 0006 D14): id and v1Index feed the meta; they are not published until D1.
 const STEP_SPEC: Record<string, Check> = {
   id: expectStepKey,
   v1Index: integer(0),
@@ -79,7 +75,6 @@ const WORKSHOP_SPEC: Record<string, Check> = {
   bridge: perLanguage(expectText),
 };
 
-// La etapa como se publica: sin `id` ni `v1Index`, y con los demás textos en su orden.
 function publishedStep(step: JsonRecord): JsonRecord {
   const published: JsonRecord = {};
   for (const [key, value] of Object.entries(step)) {
@@ -88,8 +83,6 @@ function publishedStep(step: JsonRecord): JsonRecord {
   return published;
 }
 
-// Las claves de un taller, sin repetir ninguna: ni el `id` ni el `v1Index` de una etapa pueden
-// estar en dos etapas del mismo taller.
 function stepKeysOf(workshop: JsonRecord): WorkshopStepKey[] {
   const file = filePlace(`content/workshops/${workshop.id as string}.yaml`);
   const seenIds = new Set<string>();
