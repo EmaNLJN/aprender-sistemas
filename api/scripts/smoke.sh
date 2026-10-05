@@ -1,6 +1,7 @@
 #!/bin/sh
 # Prueba de humo del stack de compose.yaml, por Nginx como lo usa el navegador: Nginx, PHP-FPM y
-# Laravel, con el contenedor php de sólo lectura. MySQL no: ninguna ruta de C1 usa la base.
+# Laravel, con el contenedor php de sólo lectura. El contenido y la base los cubre
+# `npm run api:content:check`.
 # Requiere el stack levantado con `docker compose up --build -d --wait`. Uso, desde la raíz:
 # sh api/scripts/smoke.sh.
 set -u

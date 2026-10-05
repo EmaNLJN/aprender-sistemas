@@ -63,14 +63,12 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
-            // Los instantes se guardan y se leen en UTC (ADR 0006 D04).
             'timezone' => '+00:00',
-            // upsert() con alias de fila (INSERT … AS laravel_upsert_alias): VALUES() dentro de
-            // ON DUPLICATE KEY UPDATE está deprecado desde MySQL 8.0.20 (ADR 0006 D09).
+            // VALUES() in ON DUPLICATE KEY UPDATE is deprecated since MySQL 8.0.20 (ADR 0006 D09).
             'use_upsert_alias' => true,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-                // Sólo el servicio migrate lo define (compose.yaml): espera acotada de bloqueos, D35.
+                // Set only by the migrate service, to bound lock waits (ADR 0006 D35).
                 Mysql::ATTR_INIT_COMMAND => env('MYSQL_ATTR_INIT_COMMAND'),
             ]) : [],
         ],

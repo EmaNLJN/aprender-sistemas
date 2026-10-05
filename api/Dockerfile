@@ -1,6 +1,5 @@
 # Imagen de la API Laravel (ADR 0004). compose.yaml usa `runtime` para php y migrate, y `dev`
-# para las pruebas; `curriculum` genera el contenido que las dos copian. Composer y Node sólo
-# existen en las etapas de construcción.
+# para las pruebas. Composer sólo existe en las etapas de construcción.
 
 # Dependencias de producción. --no-scripts y --no-autoloader esperan al código: el autoload
 # optimizado y package:discover necesitan la aplicación completa. El runtime no lleva las pruebas
@@ -21,12 +20,8 @@ RUN composer install --no-interaction --no-progress --prefer-dist --no-scripts -
 COPY . .
 RUN composer dump-autoload --optimize --no-interaction
 
-# Contenido (ADR 0006, C2): build/curriculum.json y build/curriculum.meta.json, con el mismo
-# generador que el front (ADR 0004: sólo TypeScript lee los YAML). `repo` es la raíz del
-# repositorio, un contexto adicional de compose.yaml; sólo se copian rutas explícitas, sin
-# depender de qué filtre su .dockerignore. Las tres primeras instrucciones repiten las del
-# Dockerfile de la raíz (mismo digest, mismo lockfile y `npm ci`) para que BuildKit pueda reusar
-# la capa de dependencias: si cambian allá, cambialas acá.
+# The first three instructions mirror the root Dockerfile so BuildKit reuses its npm ci layer;
+# keep them in sync.
 FROM node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS curriculum
 WORKDIR /app
 COPY --from=repo package.json package-lock.json ./
@@ -34,7 +29,6 @@ RUN npm ci --no-audit --no-fund
 COPY --from=repo content content
 COPY --from=repo tools/content tools/content
 COPY --from=repo src/shared/config src/shared/config
-# Después de npm ci: un commit distinto sólo repite el generador. El generador lo escribe en el meta.
 ARG CONTENT_SOURCE_COMMIT=""
 RUN node tools/content/build-curriculum.ts
 
@@ -56,7 +50,6 @@ WORKDIR /var/www/html
 # las vistas compiladas van a un tmpfs.
 FROM base AS runtime
 COPY --from=vendor /app /var/www/html
-# El contenido que lee content:import (config/content.php). Es de root: PHP sólo lo lee.
 COPY --from=curriculum /app/build/curriculum.json /app/build/curriculum.meta.json resources/content/
 # /var/www/html viene de la imagen base como www-data 1777: con eso, PHP podría renombrar o
 # borrar public/ o vendor/ aunque sean de root.

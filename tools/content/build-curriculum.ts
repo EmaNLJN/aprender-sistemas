@@ -1,5 +1,4 @@
-// Valida content/ y escribe build/curriculum.json, que importan los adaptadores legacy, y
-// build/curriculum.meta.json, con las huellas y las claves que necesita content:import (ADR 0006).
+// Valida content/ y escribe build/curriculum.json, que importan los adaptadores legacy.
 // Lo corren `npm run typecheck` (y por eso build y test) y `npm run dev` antes de empezar.
 // Uso: node tools/content/build-curriculum.ts [raíz]; sin argumento, la raíz del repositorio.
 import { mkdirSync, renameSync, writeFileSync } from 'node:fs';
@@ -8,8 +7,6 @@ import { ContentError } from './content-error.ts';
 import { loadCurriculumSource } from './load-curriculum.ts';
 import { curriculumMeta, sourceCommitFrom } from './meta.ts';
 
-// Se escribe a un temporal y se renombra: dos procesos a la vez (dos auditorías, o una con
-// `npm test`) nunca leen un archivo a medio escribir; rename reemplaza de forma atómica.
 function writeAtomically(output: string, text: string): void {
   const temporary = `${output}.${process.pid}.tmp`;
   writeFileSync(temporary, text);
@@ -22,8 +19,8 @@ try {
   const sourceCommit = sourceCommitFrom(process.env);
   const document = JSON.stringify(curriculum, null, 2) + '\n';
   mkdirSync(join(root, 'build'), { recursive: true });
-  // El documento primero y su meta después: si el proceso muere en el medio, queda un meta viejo
-  // que content:import rechaza por documentHash, nunca un par que parezca válido.
+  // Document first, meta second: a crash in between leaves a stale meta that content:import
+  // rejects by documentHash (FR-039).
   writeAtomically(join(root, 'build', 'curriculum.json'), document);
   const meta = curriculumMeta(curriculum, document, sourceCommit, workshopSteps);
   writeAtomically(

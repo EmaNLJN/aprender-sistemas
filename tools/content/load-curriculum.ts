@@ -20,7 +20,6 @@ export interface Curriculum {
   atlas: Record<Language, JsonRecord[]>;
 }
 
-// El documento publicado y lo que viaja aparte, al meta (curriculum.meta.json), sin publicarse.
 export interface CurriculumSource {
   curriculum: Curriculum;
   workshopSteps: WorkshopStepKeys;
