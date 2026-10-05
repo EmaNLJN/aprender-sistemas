@@ -11,7 +11,7 @@ Las skills de esta carpeta son copias de repositorios de terceros, cada una con 
 | `react-doctor` | [millionco/react-doctor](https://github.com/millionco/react-doctor) | MIT modificada (abajo) | Copyright (c) 2026 Million Software, Inc. |
 | `desloppify` | [peteromallet/desloppify](https://github.com/peteromallet/desloppify) | OSNL 0.2 (abajo) | Copyright (c) 2025-2026 Peter O'Malley |
 | `tailwind-design-system` | [wshobson/agents](https://github.com/wshobson/agents) | MIT | Copyright (c) 2024 Seth Hobson |
-| `laravel-specialist` | [Jeffallan/claude-skills](https://github.com/Jeffallan/claude-skills) | MIT | Copyright (c) 2025 (sin titular en el original; autor: Jeffallan) |
+| `laravel-specialist`, `php-pro` | [Jeffallan/claude-skills](https://github.com/Jeffallan/claude-skills) | MIT | Copyright (c) 2025 (sin titular en el original; autor: Jeffallan) |
 | `laravel-patterns`, `laravel-security`, `laravel-tdd`, `react-testing` | [affaan-m/ECC](https://github.com/affaan-m/ECC) | MIT | Copyright (c) 2026 Affaan Mustafa |
 | `vitest` | [antfu/skills](https://github.com/antfu/skills) | MIT | Copyright (c) 2025-PRESENT Anthony Fu |
 | `playwright-best-practices` | [currents-dev/playwright-best-practices-skill](https://github.com/currents-dev/playwright-best-practices-skill) | MIT | Copyright © 2026 Currents Software Inc. |
