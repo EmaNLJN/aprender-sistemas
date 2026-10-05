@@ -17,7 +17,7 @@ it('checksums changes only for the table that changed', function () {
     $after = ContentDatabase::checksums();
 
     expect(array_keys($before))->toBe(ContentDatabase::TABLES)
-        ->and(array_keys(array_diff_assoc($after, $before)))->toBe(['languages']);
+        ->and(collect($after)->diffAssoc($before)->keys()->all())->toBe(['languages']);
 });
 
 it('contentWritesDuring sees every write to a content table, TRUNCATE included, and nothing else', function () {
