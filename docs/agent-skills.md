@@ -108,8 +108,9 @@ sin scripts ni instrucciones de red.
   - `mattpocock/skills@domain-modeling`, porque trata glosarios y ADR, no esquemas.
 - **Descargas:** `playwright-best-practices` sugiere `npx playwright install --with-deps`, que
   descarga navegadores. La regla de pedir permiso antes de cada descarga sigue valiendo.
-- **Alcance:** hasta que un ADR adopte Vitest y Playwright, las specs nuevas no tienen dónde
-  correr. Estas skills preparan esa decisión; no la toman.
+- **Alcance:** el [ADR 0008](adr/0008-pruebas-del-front.md), en estado «propuesta», adopta Vitest,
+  Testing Library, fishery y Playwright. Hasta que se apruebe y F1 los instale, las specs nuevas no
+  tienen dónde correr.
 
 Se instalaron con `npx skills add <repo> --skill <nombre> -a codex -y`, con su enlace en
 `.claude/skills/`. `.gitattributes` exime a `.agents/skills/` de `git diff --check`, para que las
@@ -117,7 +118,7 @@ skills conserven el formato de su fuente.
 
 ## Spec Kit (2026-10-04)
 
-El CLI `specify` 1.0.13, instalado aparte, sostiene la planificación del backend; las reglas del
+El CLI `specify` 1.0.13, instalado aparte, sostiene la planificación del backend y del front; las reglas del
 flujo están en `.specify/memory/constitution.md`. Con sus trece skills, el total actual es de
 treinta y tres skills locales.
 

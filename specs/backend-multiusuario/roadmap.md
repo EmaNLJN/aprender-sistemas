@@ -75,11 +75,16 @@ Cada línea nombra lo que entra y lo que queda fuera. Los detalles están en el 
 ## Orden y paralelismo
 
 - **Tronco del ADR 0006 §10:** C2 → C3 → B2 → D1 → C5 → E1. C3 va después de C2 porque protege las rutas de contenido que C2 publica.
-- **El resto:** A2 sólo depende de A1 y toca el front, así que puede correr en paralelo con C2 y C3. A3 espera a C2 y C3, C4 a A3 y C3, A4 a B2 y A3, y B3 a B2.
+- **El resto:**
+  - **A2** depende de A1 y de F1 y F2 del [épico del front](../front-react/roadmap.md): la red de pruebas y los seams que vuelven explícito el arranque. Corre después de ellos, en paralelo con C3 y C6.
+  - **A3** espera a A2, C2, C3 y F11, las pantallas de acceso. La ubicación de esas pantallas es una propuesta pendiente del usuario.
+  - **C4** espera a A3 y C3.
+  - **A4** espera a B2 y A3, y se coordina con F7, el port del laboratorio.
+  - **B3** espera a B2.
 - **C6** (decidido en su clarify, Q5): depende sólo de C2, corre en paralelo con C3, en la ola 2, y se entrega antes de B2, que cambia las pruebas de ejercicio y el generador y por eso depende de C6. Con C3 comparte `phpstan.neon`, `config/` y la documentación, que integra el agente principal; los puntos de integración están en su plan. Desde que C6 sube el análisis al nivel 9, el código de C3 tiene que pasarlo.
 - **Olas** (un paso puede arrancar cuando terminó el anterior; los de una misma ola corren en paralelo sólo con archivos disjuntos):
-  1. C2 y A2.
-  2. C3 y C6.
+  1. C2.
+  2. C3 y C6. A2 entra en cuanto el front entregue F1 y F2.
   3. B2 y A3.
   4. D1, C4, A4 y B3.
   5. C5 y E1.
