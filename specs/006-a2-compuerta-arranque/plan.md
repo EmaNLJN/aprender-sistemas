@@ -6,7 +6,7 @@
 
 > **Para quien lo implementa.** El trabajo se reparte entre dueños con archivos disjuntos (sección «Reparto en paralelo»). Leé completas «Lo que A2 supone de F1 y F2», las «Reglas para todos los agentes» y la sección de tu dueño. `tasks.md` tiene una línea por tarea (T001…) y remite acá. **T001 es una compuerta:** si el spike no da «sigue», el plan se detiene y el usuario decide; no se empieza nada más. Las rutas marcadas «(PR #16)» existen en la rama del PR #16 y no en ésta: se citan sin enlace hasta que se integre.
 >
-> **Código verificado.** Se planificó sin correr `npm run build`, Docker ni descargas, y sin tocar el repositorio fuera de `specs/` ([research.md](./research.md), «Cómo se verificó»). Corrió de verdad, en un directorio temporal con Node 24.21.0: el código de referencia de `portions.ts`, `content-source.ts`, `static-content-source.ts`, `content-holder.ts`, `assemble-content.ts`, `run-boot.ts`, `content-gate.ts` y `gate-view.ts`, con 16 casos (12 del transporte y la compuerta, 4 de la vista) y con el verificador de tipos de TypeScript en modo estricto; el relanzamiento con `--experimental-vm-modules`; y las dos expresiones regulares de `load-order-check`.
+> **Código verificado.** Se planificó sin correr `npm run build`, Docker ni descargas, y sin tocar el repositorio fuera de `specs/` ([research.md](./research.md), «Cómo se verificó»). Corrió de verdad, en un directorio temporal con Node 24.21.0: el código de referencia de `portions.ts`, `content-source.ts`, `static-content-source.ts`, `content-holder.ts`, `assemble-content.ts`, `run-boot.ts`, `content-gate.ts` y `gate-view.ts`, con 16 casos (12 del transporte y la compuerta, 4 de la vista) y con el verificador de tipos de TypeScript en modo estricto; el relanzamiento con `--experimental-vm-modules`; las dos expresiones regulares de `load-order-check`; y `curriculumMarkers()` contra un `curriculum.json` del 2026-10-04 (las siete familias dan al menos dos marcadores y todos están en el documento).
 >
 > **Código sin ejecutar.** El plugin de `vite.config.ts`, el cableado (`content-stage.ts`, `legacy-views.ts`, `main.tsx`), los cambios de `qa/` y de `dump-globals`, el check del bundle construido y los E2E se dan como referencia. Las pruebas son el contrato.
 
@@ -129,9 +129,9 @@ F1 y F2 no están entregadas y F2 todavía no tiene spec. Esta tabla es lo que A
 
 **Regla.** T001 contrasta cada fila con la base. Si una difiere en algo que cambia un contrato de A2 (la lista de la cadena, el nombre del arranque explícito, la fuente del catálogo o la estructura de F1), se corrige este plan antes de T002, en un commit propio. Si F1 o las unidades 1 a 4 de F2 no están integradas, A2 no empieza.
 
-### Interfaces que F2 tiene que proveer
+### Interfaces y contratos que A2 fija para F2 y el épico
 
-Lo que A2 fija y F2 (unidades 1 a 4) tiene que dejar. T001 verifica cada una sobre la base; si falta alguna, se replanifica antes de T002.
+Lo que A2 fija y F2 (unidades 1 a 4) tiene que dejar. F2-I1 a F2-I5 son interfaces de las unidades; F2-I6 es un contrato de capas para F3 a F10, que la spec de F2 tiene que recoger. T001 verifica cada una sobre la base; si falta alguna, se replanifica antes de T002.
 
 | ID | Unidad | Interfaz | Cómo la usa A2 |
 | --- | --- | --- | --- |
@@ -140,6 +140,7 @@ Lo que A2 fija y F2 (unidades 1 a 4) tiene que dejar. T001 verifica cada una sob
 | F2-I3 | 1, almacenes y motores | Ningún módulo alcanzable por imports estáticos desde `main.tsx` abre un almacén ni crea un motor al evaluarse: los singletons se crean cuando la cadena importa los `register-*`, o cuando se llama el arranque | La compuerta no lee ni escribe almacenamiento (FR-008) |
 | F2-I4 | 1 a 4 | Los `register-*` siguen siendo módulos con efectos que publican `window.*`, y cada cambio de la lista de imports y de la tabla de `qa/load-order-check.ts` se hace sobre la forma vigente: la lista de `main.tsx` antes del corte de A2 y `legacy-views.ts` después | La cadena de A2 es esa lista |
 | F2-I5 | todas | `npm run curriculum && node tools/content/dump-globals.ts .` da los mismos bytes antes y después de cada unidad | Es la línea base de T002 |
+| F2-I6 | contrato del épico, F3 a F10 | Nada por debajo de `app` importa `getContent()`: una página portada recibe su porción del contenido por props desde su adaptador de `frontend/src/app/legacy/` (el patrón del Atlas con `entries`), y lo que una entidad necesita del contenido, como el catálogo de F2-I2, le llega por una función que `app` llama después de la compuerta o por los globals que publican los adaptadores. La raíz única de F10 es de `app` y reparte la porción a cada página | Precisa el «acceso tipado» que el épico espera de A2: no es un import que cada vista haga, porque las capas lo impiden (`app → pages → … → shared`). Las specs de F2 y de F3 a F9 tienen que decir lo mismo |
 
 Las unidades 5 a 8 de F2 que lleguen después del corte de A2 siguen las formas de [research.md](./research.md) (R10).
 
@@ -244,7 +245,7 @@ G, Q y E son slices delegables en el subagente `implementador` (`AGENTS.md`, «T
   5. **P1.** `npm run build`. Contar los `<script>` de `dist/index.html` (esperado: 1) y los archivos o enlaces externos del documento (esperado: ninguno; el único archivo extra es el del contenido). Ejecutar el bundle en el vm con el mecanismo de P2 y en Chromium con el Playwright de F1: las marcas empiezan después del evento y cumplen las restricciones de orden de la base. Con `grep`, listar qué módulos leen contenido de `window.*` al evaluarse.
   6. **P2.** `node --check` sobre el script del dist copiado a un `.mjs`; `vm.SourceTextModule` con el relanzamiento de [research.md](./research.md) (R9): ¿evalúa la salida? Si no, probar el desvío del IIFE con esbuild. Anotar el cambio mínimo de `build-check` y del check del bundle.
   7. **P3.** `html.length` y bytes de `dist/index.html` antes (la base) y después (el prototipo), y los bytes del contenido sin comprimir y con `gzip -1`. Calcular el tope de `build-check`: `piso(medido × 1,10)`, redondeado hacia abajo a la decena de miles, para no pasar del 10 % que fija la spec.
-  8. **P4.** Empaquetar el prototipo con el patrón de `bundleApp` y correr `boot-check` con un `fetch` simulado que sirve el documento: los casos pasan sin cambiar sus valores esperados. Con un `fetch` que no responde, anotar qué temporizadores corren en `flush()`.
+  8. **P4.** Empaquetar el prototipo con el patrón de `bundleApp` y correr `boot-check` con un `fetch` simulado que sirve el documento: los casos pasan sin cambiar sus valores esperados. Con un `fetch` que no responde, anotar qué temporizadores corren en `flush()`. Con el `fetch` que sirve el documento, anotar si el camino feliz se asienta antes de la primera ronda de `flush()`: un `Response` de Node puede tardar más, y el servidor simulado de T007 responde con microtareas.
   9. **Tiempo hasta la primera vista, antes:** con el Playwright de F1, sobre la base, con y sin caché del navegador (R13).
   10. Decidir y registrar.
 - **Regla de decisión.**
@@ -734,7 +735,7 @@ export const contentGate = createContentGate({
 ### Tarea 3.1 · Que los checks sigan cargando los catálogos (T005)
 
 - **Cambia** `qa/lib/sources.ts`, `qa/lib/legacy-sources.ts`, `qa/runtime-check.ts`, `qa/atlas-check.ts`, `qa/curriculum-ids-check.ts`, `qa/fixtures/atlas-page-render.tsx` y `tools/content/dump-globals.ts`. **Crea** `qa/lib/content-document.ts`, `qa/lib/publish-content-fixture.ts` y `qa/lib/built-page.ts`.
-- **Entrega:** `runSource(context, ruta, { withContent: true })`, `bundleApp` con `__CONTENT_VERSION__`, `curriculumDocumentText()`, `curriculumDocument<T>()`, `curriculumMeta()` y `contentVersion()`; `readBuiltPage()` y `readBuiltContent()`, el único módulo que sabe cómo arranca la página construida; y un `dump-globals` que da los mismos bytes en las dos disposiciones.
+- **Entrega:** `runSource(context, ruta, { withContent: true })`, `bundleApp` con `__CONTENT_VERSION__`, `curriculumDocumentText()`, `curriculumDocument<T>()`, `curriculumMeta()`, `contentVersion()` y `curriculumMarkers()`; `readBuiltPage()` y `readBuiltContent()`, el único módulo que sabe cómo arranca la página construida; y un `dump-globals` que da los mismos bytes en las dos disposiciones.
 - **La prueba que falla.** Este paso no cambia el comportamiento de ningún check: la red es la suite entera y el volcado de T002. Lo que falla primero es un check existente con un adaptador que ya lee el contenido publicado mientras el arnés todavía no lo publica (paso 2).
 - **Pasos:**
   1. Línea de base: `npm run curriculum && npm test` en verde, y el volcado de `dump-globals` con el hash de T002.
@@ -858,6 +859,87 @@ export function readBuiltContent(root: string = repoRoot): { fileName: string; b
 }
 ```
 
+```ts
+// qa/lib/content-document.ts (continued): the markers of the absence oracle. C4 reuses them to scan
+// the web image. Checked against a curriculum.json of 2026-10-04, with the text and the folder as
+// parameters.
+import { readdirSync } from 'node:fs'; // joins the existing import of node:fs
+
+export const FAMILIES = ['lab', 'quests', 'cores', 'campaign', 'workshops', 'atlas', 'guide'] as const;
+export type Family = (typeof FAMILIES)[number];
+
+export interface FamilyMarkers {
+  readonly family: Family;
+  readonly markers: readonly string[];
+}
+
+interface Entry {
+  id?: unknown;
+  [field: string]: unknown;
+}
+
+const MIN_LENGTH = 24;
+// The bundle escapes quotes, backslashes and non-ASCII text, so only plain printable ASCII is a
+// reliable marker.
+const PLAIN_ASCII = /^[\x20-\x7e]+$/;
+const ESCAPED_IN_A_BUNDLE = /["'`\\]/;
+const frontendDirectory = path.resolve(import.meta.dirname, '..', '..', 'frontend');
+
+function isMarkerSafe(text: string): boolean {
+  return PLAIN_ASCII.test(text) && !ESCAPED_IN_A_BUNDLE.test(text);
+}
+
+function entriesOf(document: Record<string, unknown>, family: Family): Entry[] {
+  if (family === 'guide') {
+    const guide = document.guide as {
+      resources: Entry[];
+      tracks: Record<string, { modules: (Entry & { steps: Entry[] })[] }>;
+    };
+    const modules = Object.values(guide.tracks).flatMap((track) => track.modules);
+    return [...guide.resources, ...modules.flatMap((module) => [module, ...module.steps])];
+  }
+  return Object.values(document[family] as Record<string, Entry[]>).flat();
+}
+
+function stringsOf(value: unknown): string[] {
+  if (typeof value === 'string') return [value];
+  if (Array.isArray(value)) return value.flatMap(stringsOf);
+  if (value !== null && typeof value === 'object') return Object.values(value).flatMap(stringsOf);
+  return [];
+}
+
+function readSources(directory: string): string {
+  return readdirSync(directory, { withFileTypes: true })
+    .map((item) => {
+      const file = path.join(directory, item.name);
+      if (item.isDirectory()) return readSources(file);
+      return /\.(ts|tsx|js|css|html)$/.test(item.name) ? readFileSync(file, 'utf8') : '';
+    })
+    .join('\n');
+}
+
+// Per family: the two longest plain texts of the first entry that has them and does not share them
+// with the front sources (a marker that the code also contains proves nothing), plus its id when the
+// id is just as plain and absent from the sources (an id like «cache» is common in code).
+export function curriculumMarkers(): FamilyMarkers[] {
+  const document = curriculumDocument<Record<string, unknown>>();
+  const sources = readSources(frontendDirectory);
+  const isUsable = (text: string): boolean => isMarkerSafe(text) && !sources.includes(text);
+  return FAMILIES.map((family) => {
+    for (const entry of entriesOf(document, family)) {
+      const texts = stringsOf(entry)
+        .filter((text) => text.length >= MIN_LENGTH && !/^https?:\/\//.test(text) && isUsable(text))
+        .sort((a, b) => b.length - a.length)
+        .slice(0, 2);
+      if (texts.length < 2) continue;
+      const id = typeof entry.id === 'string' && isUsable(entry.id) ? [entry.id] : [];
+      return { family, markers: [...id, ...texts] };
+    }
+    throw new Error(`La familia «${family}» no tiene una entrada con marcadores seguros`);
+  });
+}
+```
+
 - **Los checks que leían `atlasByLanguage`:** `atlas-check` y `curriculum-ids-check` toman el Atlas de `curriculumDocument<{ atlas: Record<string, AtlasConcept[]> }>().atlas`; `qa/fixtures/atlas-page-render.tsx` exporta `renderAtlasPage(language, entries)` y `atlas-check` le pasa `atlas[language]`. `runtime-check`, que evaluaba `register-catalogs.ts` y los `register-systems-*` con `runSource`, usa `loadLabExercises` y `loadSystemsCatalogs`; sus hashes de fuente cambian con los adaptadores, como en A1.
 - **`dump-globals.ts`.** Detecta la disposición de la raíz que recibe: si `register-catalogs.ts` todavía importa `curriculum.json`, corre el código de hoy sin cambios (también sobre la raíz de un commit anterior a A2). Si no, empaqueta una entrada temporal (en `os.tmpdir()`, que borra al salir) y la evalúa en el mismo contexto:
 
@@ -961,13 +1043,14 @@ COPY --from=build /app/dist/ /usr/share/nginx/html/
 
 - **Crea** `qa/lib/boot-harness.ts` y `qa/lib/content-server.ts`. **Cambia** `qa/boot-check.ts` y `qa/load-order-check.ts`.
 - **Entrega:**
-  - `createBootHarness({ fetch })`: el arnés de hoy (movido de `boot-check.ts`), más `fetch`, `AbortController`, `CustomEvent` y `dispatchEvent` en el contexto; espías de `getItem`, `setItem` y `removeItem` (`storageCalls`); y `published`, con el contenido de cada evento de publicación y los globals que existían en ese instante. `bootError` sigue para lo síncrono (la evaluación del grafo estático); una excepción de la cadena es asíncrona y queda en `errors`, porque `main.tsx` la registra con `console.error`.
-  - `createContentServer(behaviors)`: un `fetch` simulado que sirve los bytes de `build/curriculum.json` en `/content/curriculum.<contentVersion()>.json`, da 404 a cualquier otra ruta y registra cada pedido.
+  - `createBootHarness({ fetch })`: el arnés de hoy (movido de `boot-check.ts`), más `fetch`, `AbortController`, `CustomEvent` y `dispatchEvent` en el contexto; espías de `getItem`, `setItem` y `removeItem` (`storageCalls`); `published`, con el contenido de cada evento de publicación y los globals que existían en ese instante; y `mainWrites`, con cada valor que se asignó a `#main.innerHTML`. `bootError` sigue para lo síncrono (la evaluación del grafo estático); una excepción de la cadena es asíncrona y queda en `errors`, porque `main.tsx` la registra con `console.error`.
+  - `createContentServer(behaviors)`: un `fetch` simulado que sirve los bytes de `build/curriculum.json` en `/content/curriculum.<contentVersion()>.json`, da 404 a cualquier otra ruta y registra cada pedido. Responde con objetos mínimos (`ok`, `status` y un `json()` que se resuelve con microtareas), no con un `Response` de Node.
 - **Pasos:**
   1. En `load-order-check.ts`: la lectura de las dos formas textuales de [research.md](./research.md) (R10), con la tabla de restricciones intacta sobre la lista de `legacy-views.ts` y una restricción de etapas (`contentGate` antes de `legacyViews`). Con `main.tsx` de hoy falla: no encuentra `runBoot`.
   2. En `boot-check.ts`: cada `boot()` usa el arnés con `createContentServer()` y `bundleApp`. Los 10 casos conservan sus valores esperados y siguen en verde con `main.tsx` de hoy (el `fetch` simplemente no se usa).
   3. Los escenarios nuevos, que fallan con `main.tsx` de hoy porque no hay compuerta:
      - **Antes de publicar:** en el instante del evento, ningún global de las vistas ni de los catálogos existe (`published[0].globals` vacío).
+     - **El camino feliz no muestra la carga:** `mainWrites` no contiene «Cargando el contenido del taller»: el pedido se asienta antes de la primera ronda de `flush()`, que corre un temporizador encolado por ronda y empezaría por el del umbral y el del tope. Si no pasara, el arreglo está en `createContentServer` (responde con un objeto mínimo cuyo `json()` se resuelve con microtareas) y no en la compuerta.
      - **Los siete modos del transporte** (red, 404, 500, tope de espera, cuerpo que no es JSON, porción ausente y porción con otra forma), uno por caso: después de `flush()` no existe ningún global `Taller*` ni de catálogo, `storageCalls` está vacío, no hay claves `:respaldo`, el aviso (`toast`) está vacío, `#main` muestra «No se pudo cargar el contenido» y «Reintentar» con `data-failure` del tipo que corresponde (el 404 es `version` y suma «recargá la página»), el foco está en `content-retry` (`focused === 1`) y `errors` está vacío. El tope usa un `fetch` que se cuelga hasta que la señal aborta: `flush()` corre el temporizador del tope.
      - **El reintento que arranca:** el primer pedido falla y el segundo sirve; el clic en `content-retry` hace que arranquen las vistas, `#main` ya no muestra el error y hubo exactamente dos pedidos.
      - **Un pedido por vez:** dos clics seguidos suman un solo pedido más.
@@ -976,7 +1059,6 @@ COPY --from=build /app/dist/ /usr/share/nginx/html/
 
 ```ts
 // qa/lib/content-server.ts
-import { readFileSync } from 'node:fs';
 import { contentVersion, curriculumDocumentText } from './content-document.ts';
 
 export type ContentBehavior =
@@ -987,9 +1069,21 @@ export type ContentBehavior =
   | { kind: 'document'; document: unknown }
   | { kind: 'hang' }; // never answers; rejects with the abort reason when the signal aborts
 
+export interface FakeResponse {
+  ok: boolean;
+  status: number;
+  json(): Promise<unknown>;
+}
+
 export interface ContentServer {
-  fetch: (url: string, init?: { signal?: AbortSignal }) => Promise<Response>;
+  fetch: (url: string, init?: { signal?: AbortSignal }) => Promise<FakeResponse>;
   requests: string[];
+}
+
+// Not a Node `Response`: its json() settles in microtasks. The gate queues its timers before the
+// request settles, and flush() runs one queued timer per round.
+function respond(status: number, body: string): FakeResponse {
+  return { ok: status >= 200 && status < 300, status, json: async () => JSON.parse(body) as unknown };
 }
 
 // Each attempt takes the next behavior; the last one repeats.
@@ -1001,21 +1095,21 @@ export function createContentServer(behaviors: ContentBehavior[] = [{ kind: 'ser
     requests,
     async fetch(requested, init) {
       requests.push(requested);
-      if (requested !== url) return new Response('not found', { status: 404 });
+      if (requested !== url) return respond(404, 'not found');
       const behavior = behaviors[Math.min(attempt++, behaviors.length - 1)] ?? { kind: 'serve' };
       switch (behavior.kind) {
         case 'serve':
-          return new Response(curriculumDocumentText());
+          return respond(200, curriculumDocumentText());
         case 'reject':
           throw new TypeError('fetch failed');
         case 'status':
-          return new Response('error', { status: behavior.status });
+          return respond(behavior.status, 'error');
         case 'text':
-          return new Response(behavior.body);
+          return respond(200, behavior.body);
         case 'document':
-          return new Response(JSON.stringify(behavior.document));
+          return respond(200, JSON.stringify(behavior.document));
         case 'hang':
-          return new Promise<Response>((_resolve, reject) =>
+          return new Promise<FakeResponse>((_resolve, reject) =>
             init?.signal?.addEventListener('abort', () => reject(init.signal?.reason)),
           );
       }
@@ -1165,7 +1259,7 @@ export async function evaluateBuiltPage(page: BuiltPage, context: vm.Context): P
   1. `build-check` lee la página con `readBuiltPage()` y `readBuiltContent()`, no con su propio `matchAll`, y agrupa lo que sólo vale con `vite-plugin-singlefile` (un `<script>`, un `<style>`, ningún enlace ni script externo y ningún `modulepreload`) en una función, `assertSinglefileDocument(page)`, que C4 reemplaza. Las aserciones nuevas: cada script de `page.scripts` parsea como módulo (`node --check` sobre un `.mjs` temporal en lugar de `new vm.Script`); `page.bootSize < tope`, con el valor de T001; las licencias se buscan en `page.bootText`; ningún marcador del currículo está en `page.bootText` y todos están en el archivo servido; `page.bootText` contiene la versión; el artefacto de T006 sigue exigido.
   2. Con el build de T008 pasan. El tope se baja por el `html.length` medido: el commit lo escribe con la medida que lo respalda.
   3. **Mutación**, descartada, que es la prueba de que el oráculo detecta algo: un import estático del JSON desde una página (`import c from '../../../build/curriculum.json'` en un módulo alcanzado) hace fallar el check por el tope y por los marcadores (US3, escenario 3).
-- **Marcadores** (research.md, R11): por cada familia, el `id` y los dos textos más largos de la primera entrada que sólo tengan caracteres ASCII imprimibles sin comillas, barras ni saltos; se descarta el que aparece en las fuentes de `frontend/`, y quedan al menos dos por familia.
+- **Marcadores** (research.md, R11): salen de `curriculumMarkers()` (T005), que fija la regla y que C4 reutiliza: por cada familia, los dos textos más largos de la primera entrada que los tenga (al menos 24 caracteres, ASCII imprimible sin comillas ni barras, y no enlaces) y su `id` si es igual de plano, descartando los que aparecen en las fuentes de `frontend/`. El helper falla si una familia no tiene una entrada así.
 
 ### Tarea 6.3 · Los E2E de A2 (T011, dueño E)
 
@@ -1233,6 +1327,10 @@ A2 es un puente. Esta sección fija cómo se retira y qué cambia C4, para que n
 - `qa/lib/built-page.ts`: `readBuiltPage` (los scripts de arranque pasan a ser los archivos que enlaza el HTML) y `evaluateBuiltPage` (resuelve los `import` entre archivos del `dist/`);
 - `assertSinglefileDocument` de `qa/build-check.ts`, que C4 reemplaza por la comprobación de sus archivos;
 - `frontend/vite.config.ts` (el plugin de singlefile) y `docker/nginx/nginx.conf`, para servir los archivos con la CSP nueva. El `Dockerfile` y la vista previa ya copian y montan `dist/` entero.
+
+**Lo que C4 reutiliza de A2:**
+- `curriculumMarkers()` de `qa/lib/content-document.ts`: los marcadores del currículo que A2 fija. C4 los busca en `/usr/share/nginx/html` de la imagen (su FR-022). Su FR-022 los describe como «un ID, un título y una pista por familia»; con esta regla pasa a ser «los de `curriculumMarkers()`: dos textos largos de una entrada y, si no es una palabra común del código, su ID».
+- Las rutas del puente que el Nginx público tiene que responder con 404 cuando A3 lo retire: `/content/` y `/content/curriculum.<versión>.json` (la versión sale de `contentVersion()`, del mismo módulo).
 
 **La CSP de C4 (sin `'unsafe-inline'`).** A2 no suma scripts ni estilos en línea. La compuerta vive en el módulo que Vite ya emite, hoy en línea por singlefile y, con C4, en un archivo; el botón usa `addEventListener`; el marcado no lleva manejadores ni `style=`; y el pedido del contenido es del mismo origen (`connect-src 'self'`, que no cambia). C4 no tiene que reemplazar nada de la compuerta: lo único en línea es el script que genera Vite, que sale de la página cuando se retira singlefile.
 
