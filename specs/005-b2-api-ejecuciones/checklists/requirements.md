@@ -15,7 +15,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -33,7 +33,7 @@
 
 ## Notes
 
-- Quedan tres marcadores `[NEEDS CLARIFICATION]`: FR-007 (Q1, cuotas), FR-020 (Q2, fase en vivo) y FR-037 (Q3, composición del `grading_hash`). Son las decisiones que el ADR 0006 y la spec de C2 dejaron abiertas para B2. FR-034 (Q4, historial de intentos) y FR-044 (Q5, retenciones) llevan su opción recomendada como «(propuesta)», y FR-010 (qué gasta cuota) es un supuesto de esta spec que se confirma con Q1. Las cinco preguntas están en «Preguntas abiertas», cada una con sus opciones y su costo, la recomendada y su motivo; el clarify las cierra antes del plan. Q1 y Q2 son las preguntas 16 y 18 del ADR 0006 §13.
+- Clarify cerrado el 2026-10-05: las cinco preguntas están en la sección `Clarifications` de la spec, con quién decidió cada una. Los tres marcadores (FR-007, FR-020 y FR-037) quedaron resueltos con Q1, Q2 y Q3, y FR-034 y FR-044 dejaron de ser propuestas (Q4 y Q5). Las cinco respuestas coinciden con las opciones recomendadas de la spec. FR-010 (un `infra_error` no gasta cuota) se planteó dentro de Q1 y queda aceptada con su respuesta. La pregunta 15 del ADR (carga esperada) queda con los supuestos del ADR (S2). Q4 deja sin dueño a los endpoints de historial de intentos: la hoja de ruta lo anota.
 - Excepciones deliberadas en «implementation details»: lo que pidió el usuario nombra la técnica (cola propia, workers, 503 con `Retry-After`, plantilla del harness, `test_key`), así que la spec la nombra como restricción. Los FR describen contratos HTTP (rutas, estados y códigos de error) porque son el entregable de una API y no una elección de implementación; ninguno nombra clases, archivos nuevos ni bibliotecas. Los archivos y componentes de hoy aparecen sólo donde la spec dice qué cambia (el generador, el importador, `frontend/lab.js`), y los tipos de columna quedan en el ADR 0006.
 - «Non-technical stakeholders»: el lector es el dueño del taller, que tomó estas decisiones y conoce los ADR 0005 y 0006. Los términos técnicos son los suyos.
 - «Technology-agnostic»: SC-009 (el sha256 de las porciones) y SC-013 (los comandos de verificación) nombran lo que el proyecto ya usa para comprobar un cambio. El resto de los criterios se expresa en estados, respuestas y conteos, y SC-012 es una medición sin objetivo todavía.

@@ -4,9 +4,9 @@
 
 **Created**: 2026-10-05
 
-**Status**: Borrador con preguntas abiertas (Q1 a Q5); falta el clarify
+**Status**: Clarificada (sesión del 2026-10-05); lista para el plan
 
-**Input**: Ítem **B2** de la hoja de ruta [`specs/backend-multiusuario/roadmap.md`](../backend-multiusuario/roadmap.md), «API de ejecuciones». Fuente técnica: el [ADR 0005](../../docs/adr/0005-ejecucion-en-sandbox-propio.md) (aceptada, enmendada el 2026-10-04) y el [ADR 0006](../../docs/adr/0006-modelo-de-datos-y-api-multiusuario.md) (**propuesta**: el usuario todavía no lo aprobó), en sus §3 (D14, D26 a D30, D38 y D39), §5.3 y §5.4, §6.5, §7, §9, §10 y §12. Donde los dos difieren manda el 0006, pero sólo como propuesta: lo que depende de él lleva la marca «(propuesta)» y cambia si el usuario lo enmienda (ver «Lo que pidió el usuario»).
+**Input**: Ítem **B2** de la hoja de ruta [`specs/backend-multiusuario/roadmap.md`](../backend-multiusuario/roadmap.md), «API de ejecuciones». Fuente técnica: el [ADR 0005](../../docs/adr/0005-ejecucion-en-sandbox-propio.md) (aceptada, enmendada el 2026-10-04) y el [ADR 0006](../../docs/adr/0006-modelo-de-datos-y-api-multiusuario.md) (**propuesta**: el usuario todavía no lo aprobó), en sus §3 (D14, D26 a D30, D38 y D39), §5.3 y §5.4, §6.5, §7, §9, §10 y §12. Donde los dos difieren manda el 0006, pero sólo como propuesta: lo que depende de él cambia si el usuario lo enmienda (ver «Lo que pidió el usuario»).
 
 ## Intención y alcance
 
@@ -37,17 +37,17 @@
 - **D1:** la sincronización del progreso (`/api/sync`, `/api/progress`, la importación v1 y «Borrar todo»), las otras 12 tablas de progreso y la escritura de las columnas de `exercise_progress` que no salen de ejecuciones.
 - **A4:** la vista del laboratorio: el cliente de `/api/runs`, la vista previa con la plantilla, el retiro del cliente de Playgrounds y el id del intento en el `result` v1.
 - **C5:** `GET /api/admin/runs`, `GET /api/admin/queue` y las estadísticas. **B3:** la auditoría de todo el currículo. **C3:** cuentas, sesión, roles, límites de acceso y `scheduler`. **C4:** TLS y la IP real. **E1:** Esenciales.
-- El ejecutor de B1 queda como está, salvo que Q2 elija extenderlo.
+- El ejecutor de B1 queda como está: no se extiende para informar una fase en vivo (Q2).
 - Un veredicto inviolable, que el ADR 0005 §5 deja fuera, y los desbloqueos de la campaña, que decide el cliente (ADR 0006 D39).
-- Los endpoints de historial de intentos (propuesta, Q4) y las cuotas reducidas para cuentas sin verificar, que llegan con el registro abierto, hoy apagado.
+- Los endpoints de historial de intentos (`GET /api/attempts` y `GET /api/attempts/{id}`, Q4) y las cuotas reducidas para cuentas sin verificar, que llegan con el registro abierto, hoy apagado. Ningún ítem de la hoja de ruta trae hoy los endpoints de historial: los traería A4, si suma un historial, o una spec nueva.
 
-**Sin hacer a propósito (YAGNI):** Redis, SSE o Reverb para la espera (el camino de escala del ADR 0006 §9 los trae con sus disparadores); más de un ejecutor o slots dinámicos; prioridades o colas por aula; una cancelación que interrumpa el sandbox; reintentos automáticos del código del alumno; guardar los payloads fuera de MySQL o comprimirlos; una fase en vivo del run (Q2); un panel de la cola (C5).
+**Sin hacer a propósito (YAGNI):** Redis, SSE o Reverb para la espera (el camino de escala del ADR 0006 §9 los trae con sus disparadores); más de un ejecutor o slots dinámicos; prioridades o colas por aula; una cancelación que interrumpa el sandbox; reintentos automáticos del código del alumno; guardar los payloads fuera de MySQL o comprimirlos; una fase en vivo del run (Q2); los endpoints de historial de intentos (Q4); un panel de la cola (C5).
 
 **Actores:** el alumno (hoy a través de un cliente de prueba y, desde A4, del laboratorio), quien opera el taller (levanta el stack, despliega y mira la cola), quien mantiene el currículo (claves de prueba y plantilla), el cliente del front (A4) y los equipos de C3, D1, C5 y B3, que apoyan o consumen lo que B2 deja.
 
 ## Lo que pidió el usuario
 
-Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumptions) o una pregunta abierta (Preguntas abiertas).
+Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumptions) o una decisión del clarify (Clarifications).
 
 | Pedido | Fuente |
 | --- | --- |
@@ -63,73 +63,34 @@ Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumption
 | C6 se entrega antes y B2 depende de C6, porque B2 cambia las pruebas de ejercicio y el generador | [spec 002](../002-c6-registros-tipados/spec.md), Clarifications, Q5 |
 | B2 no incluye la sincronización del progreso (D1) ni la vista del laboratorio (A4) | Hoja de ruta, alcance de B2 |
 | Esta spec deja claro: la cola propia y los workers, las cuotas por usuario y el tope global, el intento liviano con su payload aparte, el 503 con `Retry-After`, la plantilla del harness como recurso y la precondición de `test_key` único e inmutable | Pedido de esta tarea |
+| Cuotas con los valores del ADR 0006 D27, configurables por entorno; la carga esperada queda con los supuestos del ADR (S2) | Usuario, clarify del 2026-10-05 (Q1) |
+| `running` sin subfase: el resultado final informa la fase alcanzada y el ejecutor de B1 no cambia | Usuario, clarify del 2026-10-05 (Q2) |
+| El `grading_hash` suma los `imports` de los ejercicios de Go y no la plantilla del harness, que cuida B3 | Usuario, clarify del 2026-10-05 (Q3) |
+| `GET /api/attempts` y `GET /api/attempts/{id}` quedan fuera de B2 | Usuario, clarify del 2026-10-05 (Q4) |
+| Las ejecuciones se retienen 14 días y los payloads 90, salvo el de la última aprobación y el del último intento de cada ejercicio | Usuario, clarify del 2026-10-05 (Q5) |
 
-**Base del ADR 0006 (propuesta).** Estas decisiones todavía no las aprobó el usuario. La spec las usa como base, cada una está marcada «(propuesta)» donde pesa, y cambian si el ADR se enmienda. Las que chocan con el ADR 0005 aceptado son justamente lo que deciden Q1 y Q2.
+**Base del ADR 0006 (propuesta).** El usuario todavía no lo aprobó: la spec lo usa como base y cambia si lo enmienda. Las filas que chocan con el ADR 0005 aceptado (cuotas, `running` sin fase y retención del payload) las confirmó el usuario el 2026-10-05 en Q1, Q2 y Q5 (ver «Clarifications»): son requisitos de esta spec, y sólo falta registrar la enmienda en el ADR 0005 cuando se apruebe el 0006. Las demás siguen como propuesta del ADR. La aprobación del ADR condiciona la implementación, no la planificación.
 
 | Decisión | Dónde | Qué cambia respecto del ADR 0005 aceptado |
 | --- | --- | --- |
-| Cuotas por usuario (1 activa, 10 por minuto, 300 y 30 minutos de sandbox cada 24 h) y tope global de 32 en cola | D27 | Reemplaza «de 3 a 4 simultáneas en total y 1 o 2 activas por usuario» (§6). Q1 |
-| `running` sin fase en vivo | §10, enmiendas | Cambia «`running`, con fase `compiling` o `executing`» (§3). Q2 |
-| Intento liviano y payload aparte, con retención propia | D26, D38 | Cambia «cada run terminado queda como intento», que guardaba el código en él (§3). Q5 |
+| Cuotas por usuario (1 activa, 10 por minuto, 300 y 30 minutos de sandbox cada 24 h) y tope global de 32 en cola | D27 | Reemplaza «de 3 a 4 simultáneas en total y 1 o 2 activas por usuario» (§6). Confirmada en Q1 |
+| `running` sin fase en vivo | §10, enmiendas | Cambia «`running`, con fase `compiling` o `executing`» (§3). Confirmada en Q2 |
+| Intento liviano y payload aparte, con retención propia | D26, D38 | Cambia «cada run terminado queda como intento», que guardaba el código en él (§3). Confirmada en Q5 |
 | Cola `runs` propia con encolado dentro de la admisión y un worker por slot | D27, §9 | Detalla el §3 |
 | Época por ejecución y por intento; `progress_heads` y `exercise_progress` completas en B2 | D26, D28 | Nuevo |
 | Serialización por usuario con la cabecera de progreso | D08 | Nuevo |
 | `test_key` único e inmutable por ejercicio | D14 | Nuevo |
 | Evidencia autodeclarada como riesgo con muchos usuarios | §12 | Reclasifica el §5 |
 
-## Preguntas abiertas
+## Clarifications
 
-Son para el clarify y se plantearon el 2026-10-05. Cada una trae sus opciones con su costo, la recomendada y su motivo. Al responderlas, el clarify las registra en `## Clarifications`, bajo `### Session`, y reemplaza esta sección. Hasta entonces, los requisitos que señalan una de estas preguntas (con su marcador o con «(propuesta)») usan la opción recomendada como borrador. Q1 y Q2 son las preguntas 16 y 18 del ADR 0006 §13; Q3 viene de la 12 y de C2 Q4, Q5 de la 13 y Q4 es de alcance. La 15 (carga esperada) entra en Q1, y la 19 (imágenes nuevas, el criterio para aprobar Redis) no bloquea a B2: ver Assumptions.
+### Session 2026-10-05
 
-**Q1. ¿Con qué cuotas arranca la ejecución?** *(FR-007 a FR-011; ADR 0006 §13.16, con la 15)* Cada ejecución ocupa un slot del ejecutor (4 al empezar). Las cuotas evitan que una cuenta deje sin sandbox a las demás, y el tope global evita una cola que no se vacía. Los valores del ADR son una propuesta que parte de una estimación de 2,5 s por ejecución (ADR 0006, S2), sin medir con runsc en carga. Como todo valor es configuración de despliegue (FR-009), la pregunta es por los valores iniciales, y equivocarse cuesta cambiar un valor y reiniciar. Va con ellos una regla que el ADR no dice y que esta spec supone (FR-010): un `infra_error` no gasta cuota, porque el fallo no es del alumno.
-
-Qué ve un aula con los valores propuestos, según esa estimación: un aula de 30 alumnos que ejecuta a la vez entra completa (4 corriendo y 26 en cola) y el último espera unos 20 s. Dos aulas de 30 a la vez superan las 36 plazas (4 corriendo y 32 en cola): unas 24 ejecuciones reciben 503 `queue_full` con `Retry-After` y reintentan.
-
-| Opción | Descripción | Costo |
-| --- | --- | --- |
-| A | Los del ADR. Por cuenta: 1 activa, 10 por minuto, 300 y 30 minutos de sandbox cada 24 horas. Global: 32 en cola y 4 slots. | Dos aulas simultáneas ya reciben 503. No suma trabajo. |
-| B | Los del ADR, pero con 2 activas por cuenta (la banda de 1 a 2 del ADR 0005). | Un alumno puede ocupar la mitad de los slots y la protección contra un cliente descontrolado es más débil. La prueba de concurrencia cubre dos casos en vez de uno. |
-| C | Los del ADR por cuenta, y global para dos aulas: 6 slots y 64 en cola. | Dos aulas de 30 entran completas y el último espera unos 25 s, pero 6 slots en 16 núcleos acercan a MySQL a quedarse sin CPU (el ADR 0006 §9 avisa que con 8 ya pasa) y exigen 6 workers. |
-
-**Recomendada: A.** Es lo más conservador y deja medir antes de gastar CPU o equidad por una carga que todavía no se conoce: el aula real (pregunta 15 del ADR, sin responder) decide si hace falta más. **Costo:** si hay aulas simultáneas de más de 36 alumnos, ven 503 y reintentan; el cliente respeta `Retry-After`. Responder también la 15 deja dimensionar los slots.
-
-**Q2. ¿Mostramos la fase del run (compilando o ejecutando) mientras corre?** *(FR-020; ADR 0006 §13.18)* El ADR 0005 §3, ya aceptado, define `running` con fase `compiling` o `executing`. El ejecutor de B1 es sincrónico: devuelve un solo resultado al final, con la fase que alcanzó, y mientras espera el worker no sabe en cuál está. El ADR 0006 propone `running` sin subfase.
-
-| Opción | Descripción | Costo |
-| --- | --- | --- |
-| A | Sin subfase (propuesta del ADR 0006). `running` es un solo estado y el resultado final informa la fase alcanzada. Se enmienda el ADR 0005 §3. | El laboratorio no puede decir «Compilando…» o «Ejecutando…» mientras espera, que según el ADR 0005 suele ser de 1,5 a 3 s en total. Sumar la fase después es aditivo: no rompe a los clientes. |
-| B | Extender el ejecutor para que informe la fase (una respuesta en flujo o un estado consultable) y que el worker la guarde mientras corre. | Cambia el ejecutor entregado en B1 (código, pruebas unitarias y de integración con runc y runsc), deja de ser sincrónico y sin estado (ADR 0005 §1), suma una o dos escrituras por ejecución y un estado que el worker debe mantener al día. |
-
-**Recomendada: A.** Una etiqueta de fase vale poco en una espera de segundos, y el campo se puede agregar después sin romper a nadie: se reabre sólo si la latencia medida (SC-012) lo justifica. **Costo:** una espera sin etiqueta, hasta esa medición.
-
-**Q3. ¿Qué entra en el `grading_hash`: los `imports` de los ejercicios de Go y la plantilla del harness?** *(FR-037; ADR 0006 §13.12; spec 001, Q4)* El `grading_hash` dice contra qué se verificó un intento: cuando cambia, la lectura marca «cambió, volvé a verificarlo». Hoy cubre el id y la expresión de cada prueba más las opciones y la respuesta de la predicción, y lo calcula el generador ([`tools/content/meta.ts`](../../tools/content/meta.ts)), que C6 dejó fuera de su alcance. Para los 49 ejercicios de Go que tienen `imports` (los 137 de Rust no tienen), esa lista decide con qué se compila el programa, porque el harness los importa. La plantilla decide cómo se evalúan las pruebas. Ninguna de las dos entra hoy. C2 lo dejó a B2 porque cambiar la composición vuelve a versionar los `grading_hash`, y eso sólo es gratis antes del primer intento que guarda el servidor.
-
-| Opción | Descripción | Costo |
-| --- | --- | --- |
-| A | Ninguno: queda como en C2. | Si alguien quita un import que usan las soluciones, o cambia la plantilla de modo que cambie qué aprueba, las aprobaciones viejas siguen «vigentes» aunque el programa de hoy ya no compile o evalúe distinto. No toca el generador. |
-| B | Los `imports` sí, la plantilla no. | Cambia el `grading_hash` de los 49 ejercicios de Go con `imports` (o de los 274, según cómo se componga; lo fija el plan), y el primer import lo informa como cambio de corrección. Toca el generador y sus pruebas, que son de B2. La plantilla se cuida con otra regla: no se integra un cambio de plantilla sin la auditoría B3 en verde. |
-| C | Los `imports` y la huella de la plantilla. | Cualquier edición de la plantilla, incluida una de formato, marca «cambió, volvé a verificarlo» en las aprobaciones de todos los alumnos en los 137 ejercicios de ese lenguaje. Editar la plantilla pasa a ser una decisión cara. |
-
-**Recomendada: B.** Los `imports` son contenido de un ejercicio y cambian lo que compila. La plantilla cambia poco y B3 la valida contra todas las soluciones. Y es el último momento barato para decidirlo. **Costo:** un cambio chico en el generador y en el primer import, y la regla de la auditoría B3 para la plantilla.
-
-**Q4. ¿Entran en B2 los endpoints de historial de intentos?** *(FR-034; ADR 0006 §7)* El mapa del ADR 0006 lista `GET /api/attempts?exerciseId=&cursor=` (el historial, sin código) y `GET /api/attempts/{id}` (el código y la salida recortada, o «código no conservado»). La hoja de ruta no los nombra en el alcance de B2, y ningún ítem los pide: A4 no trae un historial (hoy el laboratorio guarda sólo el último resultado), D1 lee los resúmenes de los intentos por su cuenta y C5 por SQL. El payload tiene otro lector: la exportación del titular.
-
-| Opción | Descripción | Costo |
-| --- | --- | --- |
-| A | Los dos endpoints entran en B2. | Dos rutas más, con su política de acceso, la paginación por cursor y sus pruebas (acceso ajeno y retención), sin un cliente que las use hasta que una vista las pida. |
-| B | Quedan fuera, por la lectura literal de la hoja de ruta. B2 guarda los intentos y sus payloads, y el resultado de cada ejecución se lee con `GET /api/runs/{id}` mientras exista. | Hasta que otra spec los agregue, nadie lee un intento viejo ni su payload por la API, y «código no conservado» se prueba contra la base. Después es una lectura sobre tablas que ya existen. |
-
-**Recomendada: B.** Es YAGNI sin consumidor, y es el alcance que ya tiene la hoja de ruta: el modelo de datos queda completo en los dos casos. **Costo:** hay que anotar en la hoja de ruta quién trae esos endpoints (A4, si suma un historial, o una spec nueva), porque hoy ningún ítem es su dueño.
-
-**Q5. ¿Cuánto tiempo se conservan las ejecuciones y el código de los intentos?** *(FR-044; ADR 0006 §13.13)* La ejecución guarda el código y la salida completa y es operativa. El intento guarda sus metadatos para siempre. El payload, que lleva el código, la prueba propia y las salidas recortadas, tiene retención propia. El código de un alumno puede contener datos personales (Ley 25.326): menos retención es menos exposición y menos disco, pero menos para consultar. La retención de las ejecuciones es además la ventana de la idempotencia del `clientRunId` y de `GET /api/runs/{id}`.
-
-| Opción | Descripción | Costo |
-| --- | --- | --- |
-| A | Las del ADR. Ejecuciones: 14 días (el programa armado se borra al cerrar). Payloads: 90 días, salvo el de la última aprobación y el del último intento de cada ejercicio, que se conservan mientras exista la cuenta. | Unos 8 GB móviles y 1,6 MB por alumno (estimación del ADR 0006 D38, sin medir) y dos tareas de poda. |
-| B | Más cortas: 7 días para las ejecuciones y 30 para los payloads, con las mismas excepciones. | Menos disco y menos exposición, pero menos tiempo para ver un intento viejo; la ventana de idempotencia baja a 7 días, que en la práctica da igual. |
-| C | Sin poda de payloads. | Unos 33 GB por año (estimación del ADR, a medir): el disco pasa a ser el límite (alerta al 70 %) y el código personal se conserva sin tope. |
-
-**Recomendada: A.** Es lo que el ADR dimensionó y cubre lo que un alumno o un docente querrían revisar, sin retener código ajeno para siempre. **Costo:** las dos tareas de poda y el disco estimado. Quedan abiertos, y no son de B2, los días de logs y de respaldos y las cuentas inactivas de la pregunta 13.
+- Q: **Q1**, ¿con qué cuotas arranca la ejecución? → A: Con las del ADR 0006 D27, configurables por entorno: por cuenta, 1 activa, 10 por minuto, 300 y 30 minutos de sandbox cada 24 horas; global, 32 en cola y 4 slots. La pregunta 15 del ADR (carga esperada y tamaño de las aulas) queda con los supuestos del ADR (S2). FR-010, que dice que un `infra_error` no gasta cuota, se planteó junto con Q1 y queda aceptada con esa respuesta. Decidió el usuario. (FR-007 a FR-011; ADR 0006 §13.16)
+- Q: **Q2**, ¿mostramos la fase del run (compilando o ejecutando) mientras corre? → A: No. `running` es un solo estado y el resultado final informa la fase alcanzada. Se enmienda el ADR 0005 §3 y el ejecutor de B1 no cambia. Decidió el usuario. (FR-020; ADR 0006 §13.18)
+- Q: **Q3**, ¿qué entra en el `grading_hash`: los `imports` de los ejercicios de Go y la plantilla del harness? → A: Los `imports` de Go, no la plantilla. La plantilla la cuida B3: no se integra un cambio de plantilla sin la auditoría de B3 en verde. Decidió el usuario. (FR-037; ADR 0006 §13.12; spec 001, Q4)
+- Q: **Q4**, ¿entran en B2 los endpoints de historial de intentos? → A: No. `GET /api/attempts` y `GET /api/attempts/{id}` quedan fuera: B2 guarda los intentos y sus payloads, y el resultado de una ejecución se lee con `GET /api/runs/{id}` mientras exista. Ningún ítem de la hoja de ruta los trae hoy. Decidió el usuario. (FR-034)
+- Q: **Q5**, ¿cuánto tiempo se conservan las ejecuciones y el código de los intentos? → A: Las ejecuciones, 14 días, y los payloads, 90, salvo el de la última aprobación y el del último intento de cada ejercicio, que se conservan mientras exista la cuenta. Decidió el usuario. (FR-044; ADR 0006 §13.13)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -180,7 +141,7 @@ Con muchos alumnos y 4 slots, una cuenta descontrolada, o un aula entera a la ve
 
 **Why this priority**: sin esto el sandbox se satura con el primer bucle de reintentos, y el taller deja de servir a todos.
 
-**Independent Test**: con los valores que apruebe el clarify, enviar ráfagas desde una cuenta y desde varias y contar las respuestas; después, el aula simulada de SC-012.
+**Independent Test**: con los valores de Q1 (los del ADR), enviar ráfagas desde una cuenta y desde varias y contar las respuestas; después, el aula simulada de SC-012.
 
 **Acceptance Scenarios**:
 
@@ -288,7 +249,7 @@ Quien opera el taller levanta el stack con el ejecutor y los workers, y sabe qu�
 - **Un import de contenido en el medio.** El programa y el `grading_hash` salen de una misma lectura, y el intento guarda el hash con que se verificó, no el vigente al cerrar. Si el hash vigente cambia después, el «cambió, volvé a verificarlo» lo calcula la lectura de progreso (D1), no B2.
 - **La prueba propia.** Si no compila, falla la compilación de todo el programa, como hoy en el laboratorio. Si entra en pánico, sólo falla `custom`.
 - **Programas que se hacen pasar por aprobados.** Los marcadores llevan el nonce de esa ejecución y se exige exactamente uno por cada prueba esperada más el centinela, así que un código que imprime marcadores sin el nonce, repite uno o sale antes no aprueba. Un código que lee el nonce de su propio binario sí puede imprimir marcadores válidos: es la evidencia autodeclarada que acepta el ADR 0005 §5, y B2 la llama «ejecutado en el servidor», nunca «verificado».
-- **La clave de idempotencia es de la cuenta.** Otra cuenta puede usar el mismo `clientRunId`. Vale mientras exista la ejecución (14 días, propuesta de Q5): pasado ese plazo, el mismo `clientRunId` crea una ejecución nueva. Con la cuenta deshabilitada, un reintento recibe 403 antes que la ejecución.
+- **La clave de idempotencia es de la cuenta.** Otra cuenta puede usar el mismo `clientRunId`. Vale mientras exista la ejecución (14 días, Q5): pasado ese plazo, el mismo `clientRunId` crea una ejecución nueva. Con la cuenta deshabilitada, un reintento recibe 403 antes que la ejecución.
 - **La primera ejecución de una cuenta** no tiene cabecera de progreso: se crea al admitirla.
 - **Dos pestañas o dos dispositivos de una cuenta.** La segunda ejecución simultánea recibe 429 `quota_exceeded` por la cuota de «1 activa».
 - **Consultas ajenas o podadas.** `GET` o `cancel` sobre una ejecución de otra cuenta, inexistente o podada responden 404.
@@ -311,10 +272,10 @@ Quien opera el taller levanta el stack con el ejecutor y los workers, y sabe qu�
 
 **Cuotas y tope global**
 
-- **FR-007**: *[NEEDS CLARIFICATION: Q1, los valores de las cuotas]* Cada cuenta DEBE tener cuotas de ejecución: una activa a la vez (en cola o corriendo), 10 aceptadas por minuto, 300 cada 24 horas y 30 minutos de sandbox (compilación más ejecución) cada 24 horas. Al superarlas, 429 `quota_exceeded` con `Retry-After`. Hasta que responda Q1 valen los del ADR 0006 D27 (propuesta).
+- **FR-007**: Cada cuenta DEBE tener cuotas de ejecución: una activa a la vez (en cola o corriendo), 10 aceptadas por minuto, 300 cada 24 horas y 30 minutos de sandbox (compilación más ejecución) cada 24 horas. Son los valores del ADR 0006 D27 (Q1). Al superarlas, 429 `quota_exceeded` con `Retry-After`.
 - **FR-008**: La cola DEBE tener un tope global: con 32 ejecuciones esperando, un envío nuevo recibe 503 `queue_full` con `Retry-After`. El rechazo no crea ejecución, no encola nada y no gasta cuota. El tope es blando: pedidos simultáneos pueden pasarlo por unas pocas ejecuciones, y las pruebas no exigen exactitud bajo concurrencia.
 - **FR-009**: Cada valor de FR-007 y FR-008, la cantidad de slots y de workers y el plazo de vencimiento DEBEN ser configuración de despliegue y no constantes del código: cambiarlos pide reiniciar, no desplegar código.
-- **FR-010**: *(supuesto, parte de los valores de Q1)* Gasta cuota toda ejecución aceptada, con cualquier resultado menos `infra_error`, porque ese fallo no es del alumno. Lo que se rechaza (422, 429, 503) no gasta.
+- **FR-010**: *(planteada junto con Q1 y aceptada con su respuesta)* Gasta cuota toda ejecución aceptada, con cualquier resultado menos `infra_error`, porque ese fallo no es del alumno. Lo que se rechaza (422, 429, 503) no gasta.
 - **FR-011**: El límite de ritmo de `POST /api/runs` por cuenta (30 por minuto, contando también los pedidos rechazados) es independiente de la cuota y responde 429 `too_many_requests`. Todo 429 y todo 503 de la API DEBEN llevar `Retry-After` en segundos enteros.
 
 **Cola y workers**
@@ -330,7 +291,7 @@ Quien opera el taller levanta el stack con el ejecutor y los workers, y sabe qu�
 
 **Resultado de una ejecución**
 
-- **FR-020**: *[NEEDS CLARIFICATION: Q2, la fase en vivo]* Una ejecución DEBE pasar por `queued` y `running` y terminar en `passed`, `failed`, `compile_error`, `runtime_error`, `timeout`, `infra_error` o `canceled`. `reason` detalla el motivo, y es un conjunto que valida el código y que puede crecer. Hasta que responda Q2, `running` no tiene subfase (propuesta del ADR 0006) y el resultado final informa la fase alcanzada.
+- **FR-020**: Una ejecución DEBE pasar por `queued` y `running` y terminar en `passed`, `failed`, `compile_error`, `runtime_error`, `timeout`, `infra_error` o `canceled`. `reason` detalla el motivo, y es un conjunto que valida el código y que puede crecer. `running` no tiene subfase y el resultado final informa la fase alcanzada (Q2).
 - **FR-021**: El estado final DEBE salir de este orden fijo (ADR 0005, enmienda de B1): tiempo agotado, memoria agotada, error de compilación, error de ejecución y, por último, la evidencia. La tabla de «Key Entities» fija el estado y el motivo de cada caso.
 - **FR-022**: Una ejecución sólo DEBE quedar en `passed` si el programa terminó con código 0, tiene exactamente un marcador `PASS` con el nonce de esa ejecución por cada prueba esperada y trae el centinela con el conteo correcto. Los marcadores con otro nonce no cuentan. Con código 0, una prueba en `FAIL` da `failed`; un marcador o un centinela que falta o se repite da `failed` con motivo `evidence_invalid`; y una salida recortada antes de las pruebas da `failed` con motivo `output_limit`.
 - **FR-023**: La prueba propia DEBE informarse aparte (`pass`, `fail` o `missing`) y NO DEBE contar para aprobar.
@@ -347,13 +308,13 @@ Quien opera el taller levanta el stack con el ejecutor y los workers, y sabe qu�
 - **FR-031**: Al admitir, la ejecución DEBE copiar la época vigente de la cabecera de progreso del usuario. Al cerrar, sólo si esa época sigue siendo la vigente actualiza el progreso del ejercicio. Si hubo un «Borrar todo» en el medio, queda como historia y no toca el progreso.
 - **FR-032**: Al cerrar con la época vigente, DEBE actualizarse la fila de progreso del ejercicio. La fecha de resolución sólo baja (gana la más temprana); se registra la primera aprobación ejecutada en el servidor de la época; el último intento aprobado y el último no cancelado se comparan por fecha y id; y el conteo de intentos es el de los que cuentan en la época. Suben la revisión y la última actividad de la cuenta, y ninguna fila queda con revisión 0. *(ADR 0006 D26, D28 y D39)*
 - **FR-033**: B2 DEBE crear `progress_heads` y `exercise_progress` con todas las columnas, índices y reglas del ADR 0006 §5.3, incluidas las que sólo escribirá D1, mientras están vacías: D1 no las altera. Las reglas de fila que tocan fechas quedan en el escritor y en su prueba, por el resultado de C2 sobre D07.
-- **FR-034**: *(propuesta, Q4)* B2 NO DEBE agregar `GET /api/attempts` ni `GET /api/attempts/{id}`. Los intentos y sus payloads se guardan y se podan, y el resultado de una ejecución se lee con `GET /api/runs/{id}` mientras exista.
+- **FR-034**: B2 NO DEBE agregar `GET /api/attempts` ni `GET /api/attempts/{id}`. Los intentos y sus payloads se guardan y se podan, y el resultado de una ejecución se lee con `GET /api/runs/{id}` mientras exista.
 
 **Plantilla del harness y corrección**
 
 - **FR-035**: La plantilla del harness de cada lenguaje DEBE ser contenido: vivir en `content/`, validarla el generador, importarla `content:import` y publicarse como recurso de sólo lectura con el contrato de las porciones de C2 (bytes y huella que fija el generador, validador por huella, `Content-Version` y 304). Agregarla NO DEBE cambiar los bytes ni los validadores de las 17 porciones. Es una plantilla nueva, con nonce y centinela, y no la de `buildProgram`, que no los tiene: el laboratorio vigente sigue con la suya hasta A4.
 - **FR-036**: Con las mismas entradas y un nonce fijo, el programa que arma el servidor y el que arma el navegador para la vista previa (A4) DEBEN ser el mismo texto, y el nonce ocupa siempre el mismo largo, así que los números de línea que informa el compilador coinciden. Lo prueba un fixture compartido, con textos esperados escritos a mano e independientes de los dos renderizadores: B2 lo produce y A4 lo consume. *(ADR 0005 §4)*
-- **FR-037**: *[NEEDS CLARIFICATION: Q3, la composición del `grading_hash`]* El `grading_hash` DEBE seguir la composición de C2 (id y expresión de cada prueba, más las opciones y la respuesta de la predicción) y, según Q3, sumar los `imports` de los ejercicios de Go o la plantilla. Hasta que responda Q3 vale la opción recomendada (B): la composición de C2 más los `imports`, y la plantilla queda fuera, con la regla de que no se integra un cambio de plantilla sin la auditoría B3 en verde.
+- **FR-037**: El `grading_hash` DEBE seguir la composición de C2 (id y expresión de cada prueba, más las opciones y la respuesta de la predicción) y sumar los `imports` de los ejercicios de Go que los tengan (49 hoy): los otros 225 conservan su `grading_hash`. La plantilla del harness no entra: no se integra un cambio de plantilla sin la auditoría B3 en verde (Q3).
 - **FR-038**: La composición del programa y la lectura de la evidencia NO DEBEN depender de la cola ni de las tablas de ejecución. Se pueden usar con un ejercicio y un código cualquiera sin escribir `runs` ni `attempts`, porque la auditoría B3 las reutiliza.
 
 **Claves de prueba**
@@ -366,7 +327,7 @@ Quien opera el taller levanta el stack con el ejecutor y los workers, y sabe qu�
 - **FR-041**: Sólo el dueño DEBE ver y cancelar sus ejecuciones: lo ajeno responde 404, ningún pedido recibe `user_id` y B2 no le da a ningún rol acceso al código ni a la salida de otra cuenta.
 - **FR-042**: Los registros de log de las ejecuciones DEBEN llevar el id de la ejecución, la cuenta, el estado y el motivo, y NO DEBEN llevar el código, la prueba propia, la salida ni el programa armado.
 - **FR-043**: Las tablas de B2 DEBEN entrar en la supresión de cuentas (las que tienen `user_id`, con FK con CASCADE hacia `users`, y las hijas, por su intento; borrado por lotes en el orden de D06 y con las ejecuciones activas canceladas antes) y los intentos con su payload conservado, en la exportación del titular, según el contrato de `UserData` que fije C3. Una prueba de esquema comprueba que un `DELETE FROM users` con todas las tablas pobladas no falla y no deja filas. *(ADR 0006 D06, D33 y §8)*
-- **FR-044**: *(propuesta, Q5)* La poda DEBE borrar las ejecuciones de más de 14 días y los payloads de más de 90 días, salvo el de la última aprobación y el del último intento de cada ejercicio, que se conservan mientras exista la cuenta. Va por lotes, recorriendo la clave primaria, y la agenda el `scheduler` de C3.
+- **FR-044**: La poda DEBE borrar las ejecuciones de más de 14 días y los payloads de más de 90 días, salvo el de la última aprobación y el del último intento de cada ejercicio, que se conservan mientras exista la cuenta (Q5). Va por lotes, recorriendo la clave primaria, y la agenda el `scheduler` de C3.
 - **FR-045**: El ejecutor DEBE ser alcanzable sólo desde el worker (una red interna compartida sólo entre los dos, sin puertos publicados y con su token) y ser el único componente con el socket de Docker. En un equipo sin gVisor DEBE poder correr con runc, por configuración y sólo para desarrollo, con el riesgo que registra el ADR 0005.
 - **FR-046**: B2 DEBE agregar en Nginx la ubicación de `/api/runs` con el tope de cuerpo de 192 KiB. El límite de ritmo por IP es de C3, que fija las zonas de `limit_req` y DEBE hacerlas responder 429 y no el 503 que Nginx usa por omisión, que se confundiría con `queue_full` (ver la tabla de C3).
 
@@ -415,14 +376,14 @@ Cómo se clasifica un resultado, en este orden (FR-021 y FR-022). Los estados y 
 
 - **SC-001**: Con el ejecutor real, en Rust y en Go, estos seis casos dan el estado y el motivo esperados: la solución de referencia de un ejercicio (`passed`), su código inicial (`failed`), un error de compilación (`compile_error`), un pánico (`runtime_error`), un bucle infinito (`timeout`) y un programa que imprime más de lo que admite la salida y termina (`failed` con `output_limit`). Son 12 de 12 casos. La auditoría de todos los ejercicios es de B3 y queda fuera.
 - **SC-002**: Una batería de 8 programas tramposos o accidentales no llega nunca a `passed`: 0 de 8. Son marcadores con un nonce inventado; un marcador repetido; un marcador de una prueba que no existe sumado a los completos; el centinela ausente; el centinela con un conteo que no coincide; una salida con código 0 antes de las pruebas; una salida enorme recortada antes de los marcadores; y todos los marcadores `PASS` con un código de salida distinto de 0. Con el nonce correcto no hay defensa (evidencia autodeclarada, ADR 0005 §5), y ese caso no está en la batería.
-- **SC-003**: Con los valores que apruebe Q1, contra el stack: la 2.ª ejecución simultánea de una cuenta y la 11.ª de un minuto reciben 429 `quota_exceeded` con `Retry-After`, y la que supera las 32 en espera recibe 503 `queue_full` con `Retry-After`. Hay 0 ejecuciones creadas y 0 cuotas gastadas por pedidos rechazados.
+- **SC-003**: Con los valores de Q1, contra el stack: la 2.ª ejecución simultánea de una cuenta y la 11.ª de un minuto reciben 429 `quota_exceeded` con `Retry-After`, y la que supera las 32 en espera recibe 503 `queue_full` con `Retry-After`. Hay 0 ejecuciones creadas y 0 cuotas gastadas por pedidos rechazados.
 - **SC-004**: Veinte pedidos simultáneos con el mismo `clientRunId` dejan 1 ejecución, 1 trabajo y 1 pedido al ejecutor. Dos pedidos simultáneos de una cuenta con claves distintas dejan 1 aceptado y 1 rechazado. Tras 100 admisiones simultáneas de cuentas distintas hay 0 ejecuciones sin trabajo y 0 trabajos sin ejecución.
 - **SC-005**: Matar el worker con una ejecución en curso deja 0 ejecuciones repetidas en el ejecutor, y la ejecución termina `infra_error` en 4 minutos o menos. Con el ejecutor ocupado, la ejecución corre una sola vez cuando hay lugar, o termina `infra_error` a los 10 minutos con `executor_busy` o con `expired`, según quién la cierre primero.
 - **SC-006**: Después de cerrar ejecuciones en cada estado final hay exactamente un intento por ejecución (0 faltantes y 0 duplicados, también si el cierre se repite) y 0 intentos de ejecuciones en curso. El conteo de intentos de cada fila de progreso es el de los intentos que cuentan de su época.
 - **SC-007**: Una ejecución que se cierra con la época cambiada deja su intento y 0 cambios en el progreso y en la revisión del usuario.
 - **SC-008**: Hay 0 respuestas con el programa armado. La matriz de acceso ajeno (consultar y cancelar) da 404 en el 100 % de los casos, y la de cuenta esperada da 409 en cada ruta que muta. Hay 0 líneas de log con código, salida o programa, comprobado sobre el log de una corrida completa de SC-001.
 - **SC-009**: Los casos del fixture compartido (al menos 8: Rust y Go, con y sin prueba propia, con y sin `imports` en Go) dan el texto esperado línea por línea: 0 diferencias salvo el nonce, que tiene el mismo largo. Las 17 porciones conservan su sha256 y su validador, y la plantilla responde 304 a su validador.
-- **SC-010**: El generador acepta claves no consecutivas y rechaza las repetidas, las de forma inválida y `custom`. El importador rechaza dar a una prueba nueva la clave de una retirada y no escribe nada. Las 822 pruebas actuales conservan sus claves y los 274 ejercicios su `content_hash`: 0 cambios.
+- **SC-010**: El generador acepta claves no consecutivas y rechaza las repetidas, las de forma inválida y `custom`. El importador rechaza dar a una prueba nueva la clave de una retirada y no escribe nada. Las 822 pruebas actuales conservan sus claves y los 274 ejercicios su `content_hash`: 0 cambios. De los 274 `grading_hash`, cambian exactamente los 49 de los ejercicios de Go con `imports` y los otros 225 quedan iguales.
 - **SC-011**: `progress_heads` y `exercise_progress` tienen todas las columnas del ADR 0006 §5.3, y D1 no necesita alterarlas (lista cotejada contra el ADR). La prueba de esquema encuentra todas las columnas `user_id` de B2 con FK en cascada hacia `users`, y un `DELETE FROM users` con todas las tablas pobladas no falla ni deja filas.
 - **SC-012** (una medición, no un criterio de aprobación): con el stack real, en reposo y con un aula simulada de 30 cuentas que ejecutan a la vez, se informan la mediana y el p95 del tiempo hasta el estado final, la espera del último y la cantidad de 503. El ADR 0005 espera una mediana de 1,5 a 3 s en reposo y, con la estimación de 2,5 s por ejecución (ADR 0006 S2), el último de un aula de 30 espera unos 20 s: eso es lo que se contrasta. Todavía no hay un objetivo que cumplir.
 - **SC-013**: Pasan `npm run api:test`, `npm run api:format:check`, `npm run api:analyse` (nivel 9, sin baseline), `npm test`, `npm run lint`, `npm run format:check`, `git diff --check`, `npm run test:executor` (si se toca el ejecutor), `npm run api:content:check` ampliado a la plantilla y el check de punta a punta de FR-048.
@@ -430,14 +391,14 @@ Cómo se clasifica un resultado, en este orden (FR-021 y FR-022). Los estados y 
 ## Riesgos
 
 1. **Evidencia autodeclarada, el principal.** El código del alumno corre en el mismo proceso que el harness y puede imprimir marcadores válidos si lee el nonce de su binario. Con un usuario era aceptable, y con muchos contamina lo que ve el admin. *Mitigación:* el nonce y el centinela frenan los errores y las copias, `server_solved_at` separa lo ejecutado en el servidor de lo importado, y B2 lo llama «ejecutado en el servidor», nunca «verificado» (ADR 0006 §12).
-2. **Capacidad.** Con 4 slots y la estimación de 2,5 s por ejecución, un aula de 30 espera unos 20 s y dos aulas simultáneas superan la cola. *Mitigación:* cuotas, 503 con `Retry-After`, valores configurables (Q1) y el camino de 6 slots y un segundo ejecutor (ADR 0006 §9). Las cifras son estimaciones y SC-012 las mide.
+2. **Capacidad.** Con 4 slots y la estimación de 2,5 s por ejecución, un aula de 30 espera unos 20 s y dos aulas simultáneas superan la cola. *Mitigación:* cuotas, 503 con `Retry-After`, valores configurables (FR-009) y el camino de 6 slots y un segundo ejecutor (ADR 0006 §9). Las cifras son estimaciones y SC-012 las mide.
 3. **Costo de esperar.** Cada consulta del cliente es un pedido PHP que además escribe la fila de `sessions`, y el ADR 0006 §12 ya lo cuenta como contención de MySQL. *Mitigación:* lectura por clave, sin el `throttle` de Laravel y con el `limit_req` de Nginx por IP (FR-025). El disparador hacia SSE o Reverb es que el polling supere el 30 % de los pedidos.
 4. **La cancelación no interrumpe el sandbox.** Un alumno con un bucle infinito que cancela espera hasta que el sandbox termine (hasta unos 30 s con los plazos de B1: una compilación de Rust de 20 s y una ejecución de 10 s) antes de poder volver a ejecutar, por la cuota de «1 activa». *Mitigación:* se acepta, y se reabre si molesta: interrumpir el pedido al ejecutor es posible, pero complica al worker.
 5. **El ejecutor es el componente más sensible.** Tiene el socket de Docker, que equivale a root en el host. *Mitigación:* sólo en la red interna con el worker, sin puertos publicados, con un token de al menos 32 bytes y el único con el socket (FR-045). gVisor es la defensa del sandbox, y con runc el riesgo queda registrado (ADR 0005).
-6. **Datos personales en el código.** El código y las salidas de un alumno pueden contenerlos (Ley 25.326). *Mitigación:* retención acotada (Q5), supresión física con la cuenta, exportación del titular y logs sin código (FR-042 y FR-043). La pregunta 14 (aviso de privacidad, responsable e inscripción) sigue abierta y no es de B2.
+6. **Datos personales en el código.** El código y las salidas de un alumno pueden contenerlos (Ley 25.326). *Mitigación:* retención acotada (FR-044), supresión física con la cuenta, exportación del titular y logs sin código (FR-042 y FR-043). La pregunta 14 (aviso de privacidad, responsable e inscripción) sigue abierta y no es de B2.
 7. **Tablas que D1 no puede alterar.** B2 crea `progress_heads` y `exercise_progress` completas, y agregarles después una columna con restricciones obliga a copiar una tabla con datos (ADR 0006 D07 y D28). Como B2 va antes que D1 y D1 no tiene spec, una columna que D1 necesite y no esté acá sale cara. *Mitigación:* contrastar las columnas con el borrador de D1 antes de cerrar el plan de B2 (ver «Relación con otras specs»).
 8. **C3 sin spec.** B2 apoya en C3 la identidad, el estado de la cuenta, la cuenta esperada, el `scheduler` y `UserData`. *Mitigación:* la tabla de supuestos de «Relación con otras specs» dice qué se rompe con cada uno si C3 lo resuelve distinto, para que la spec de C3 lo cubra.
-9. **El ADR 0006 sigue en propuesta.** Las cuotas, el intento liviano, la falta de fase en vivo y la época dependen de él. *Mitigación:* cada decisión está marcada «(propuesta)», Q1, Q2 y Q5 las confirman o las cambian, y el plan no se cierra sin la aprobación del ADR.
+9. **El ADR 0006 sigue en propuesta.** El intento liviano, la época y la serialización por usuario dependen de él, y las cuotas, la falta de fase en vivo y la retención ya las confirmó el usuario (Q1, Q2 y Q5). *Mitigación:* la aprobación del ADR condiciona la implementación y no la planificación, y si el usuario lo enmienda, esta spec y su plan cambian en lo que dependa de la enmienda.
 10. **Un worker caído deja a un alumno sin ejecutar.** La ejecución queda `running` hasta que el trabajo o el barrido la cierran. *Mitigación:* FR-018 la acota a unos 4 minutos y la libera sola.
 11. **Los límites de gVisor.** El `--pids-limit` cuenta los hilos del sandbox y no los procesos del programa: con runsc, un 137 sin memoria ni tiempo agotados es ese límite, y no un fallo del alumno ni del sandbox. *Mitigación:* la tabla de clasificación lo distingue (`pids_limit`), y B3 confirma que ninguna solución del currículo lo excede (ADR 0005, enmienda de B1).
 12. **Un cliente que todavía no existe.** Hasta A4 nadie usa la API, y puede pudrirse. *Mitigación:* el check de punta a punta de FR-048 y las pruebas de FR-047 la ejercitan en cada cambio.
@@ -463,10 +424,10 @@ C3 va antes que B2 pero todavía no se especificó. Estos supuestos son dependen
 
 ### C6 y C2
 
-- **C2 (entregada, inmutable).** B2 no cambia su spec: cambia código. Toca el generador (`tools/content`: la regla de `test_key`, que hoy exigen `tools/content/exercises.ts` y `qa/content-check.ts`, la composición del `grading_hash` según Q3 y la plantilla nueva), el importador (el mensaje de `test_key`, la plantilla y, si Q3 cambia hashes, el informe de cambios de corrección) y la entrega (un recurso más). Los requisitos de C2 siguen rigiendo, en especial los bytes exactos del generador y las huellas que sólo él calcula. El importador de C2 ya rechaza reutilizar la clave de una prueba retirada, y su mensaje nombra a B2.
+- **C2 (entregada, inmutable).** B2 no cambia su spec: cambia código. Toca el generador (`tools/content`: la regla de `test_key`, que hoy exigen `tools/content/exercises.ts` y `qa/content-check.ts`, la composición del `grading_hash`, que suma los `imports` de Go, y la plantilla nueva), el importador (el mensaje de `test_key`, la plantilla y el informe de cambios de corrección del primer import, que lista los 49 ejercicios de Go) y la entrega (un recurso más). Los requisitos de C2 siguen rigiendo, en especial los bytes exactos del generador y las huellas que sólo él calcula. El importador de C2 ya rechaza reutilizar la clave de una prueba retirada, y su mensaje nombra a B2.
 - **La plantilla pasa de 17 a 18 recursos.** Eso toca `api:content:check`, las menciones de «17 porciones» en la hoja de ruta y el ADR, y el arranque de A3: hay que decidir si el cliente la pide al arrancar o sólo cuando abre el laboratorio (A4).
 - **C6 (planificada, antes de B2).** B2 recibe el nivel 9 del análisis estático: todo su código lo pasa sin baseline, y las respuestas del ejecutor y de la base entran tipadas. Puede adoptar el patrón de registros tipados para sus tablas y para la plantilla si le sirve, como C6 lo deja abierto. C6 deja fuera el generador, así que la regla de `test_key` y la composición del `grading_hash` son de B2. El oráculo de filas de C6 se retira al desplegarla, y por eso no frena a B2.
-- **B1 (entregado).** El contrato del ejecutor ([`backend/executor/AGENTS.md`](../../backend/executor/AGENTS.md) y [`internal/api/server.go`](../../backend/executor/internal/api/server.go)) es `POST /v1/run {language, program}` con token Bearer. Acepta programas de hasta 128 KiB, tiene 4 slots por omisión (de 1 a 8) y espera un lugar hasta 30 s. Responde 503 con `Retry-After` si está ocupado, 500 ante un fallo del sandbox y 400 o 413 ante un pedido inválido. B2 lo consume sin cambiarlo, salvo que Q2 elija B.
+- **B1 (entregado).** El contrato del ejecutor ([`backend/executor/AGENTS.md`](../../backend/executor/AGENTS.md) y [`internal/api/server.go`](../../backend/executor/internal/api/server.go)) es `POST /v1/run {language, program}` con token Bearer. Acepta programas de hasta 128 KiB, tiene 4 slots por omisión (de 1 a 8) y espera un lugar hasta 30 s. Responde 503 con `Retry-After` si está ocupado, 500 ante un fallo del sandbox y 400 o 413 ante un pedido inválido. B2 lo consume sin cambiarlo.
 
 ### Lo que B2 deja a quienes vienen después
 
@@ -482,8 +443,7 @@ Los agentes no las hacen. Ninguna se ejecuta ahora; las de implementación llega
 
 | Cuándo | Acción |
 | --- | --- |
-| Ahora | Aprobar o enmendar el ADR 0006. B2 usa D26 a D29, D38 y §7 como base, y las enmiendas al ADR 0005 que salgan de Q1 y Q2 (§3 y §6) |
-| Ahora | Responder Q1 a Q5. La pregunta 15 del ADR (cuántos usuarios simultáneos y de qué tamaño son las aulas) alimenta a Q1 |
+| Antes de implementar | Aprobar o enmendar el ADR 0006. B2 usa D26 a D29, D38 y §7 como base. Al aprobarlo, registrar en el ADR 0005 las enmiendas que ya decidieron Q1 y Q2 (§3 y §6) |
 | B2, implementación | Permiso para construir o bajar, si el daemon no las tiene, las imágenes del sandbox: `rust:1.99-slim` (unos 330 MB comprimidos) y `golang:1.27-alpine` (unos 75 MB, según el ADR 0005). Y para la etapa `runtime` del ejecutor, que ningún script de B1 construye: `docker-cli` por `apk` sobre `alpine:3.24` |
 | B2, implementación | Permiso para reconstruir la imagen de la API con PCNTL (ADR 0006 §10), que compila la extensión y probablemente baja de Alpine los paquetes de compilación. El plan mide el tamaño antes de pedirlo |
 | B2, despliegue | Correr `sh backend/api/scripts/init-env.sh` para sumar `EXECUTOR_TOKEN` al `.env`, y declarar el GID del socket de Docker que lee el `group_add` del ejecutor (un comando portable entre Linux y macOS) |
@@ -498,7 +458,7 @@ Los agentes no las hacen. Ninguna se ejecuta ahora; las de implementación llega
 - **Límites del texto.** El código admite 64 KiB en bytes (ADR 0005). La prueba propia admite 3.000 caracteres, el límite que hoy tiene el laboratorio en `frontend/lab.js`, que el ADR no fija. Con el código, las pruebas y la plantilla, el programa armado cabe holgado en los 128 KiB del ejecutor. El plan lo confirma.
 - **Idempotencia.** El ADR 0005 dice «mismo código»; se extiende al ejercicio y a la prueba propia porque la ejecución guarda los tres.
 - **Estado y motivo.** El ADR fija los estados y los motivos, pero no cómo se combinan. La tabla de «Key Entities» es de esta spec y el plan la confirma, por ejemplo con memoria agotada al compilar.
-- **Qué gasta cuota.** El ADR 0006 D27 da los números pero no qué cuenta contra ellos. Se supone que gasta cuota toda ejecución aceptada salvo las que terminan `infra_error`, y que lo rechazado no gasta (FR-010). Se confirma con Q1.
+- **Qué gasta cuota.** El ADR 0006 D27 da los números pero no qué cuenta contra ellos. Se supone que gasta cuota toda ejecución aceptada salvo las que terminan `infra_error`, y que lo rechazado no gasta (FR-010). La aceptó el usuario con Q1.
 - **Vencimientos.** Los 10 minutos en cola vienen del ADR 0006 §12 («reencolado por 10 min») y los 140 s corriendo, de la reserva `retry_after` de D27. Que el barrido venza con esos plazos, y la cota de unos 4 minutos que resulta para un worker caído, los deriva esta spec; el plan los confirma.
 - **Cuotas por rol.** Las mismas para todas las cuentas, el admin incluido: todo admin tiene progreso propio (ADR 0006 S5).
 - **Cuentas sin verificar.** El registro abierto está apagado. Las cuotas reducidas hasta verificar (ADR 0006 §4.4) entran cuando se lo active, no en B2.
@@ -513,7 +473,7 @@ Los agentes no las hacen. Ninguna se ejecuta ahora; las de implementación llega
 
 ## Alternativas consideradas
 
-Sólo las que cambian lo que se construye. Q1 a Q5 llevan las suyas en «Preguntas abiertas».
+Sólo las que cambian lo que se construye. Las de Q1 a Q5 van al final de la tabla.
 
 | Tema | Alternativas | Decisión y motivo |
 | --- | --- | --- |
@@ -525,3 +485,8 @@ Sólo las que cambian lo que se construye. Q1 a Q5 llevan las suyas en «Pregunt
 | La plantilla del harness | Duplicada en PHP y en TypeScript; contenido compartido con un fixture | Contenido compartido (ADR 0005 §4; ADR 0006 S3): un solo texto y un fixture que prueba que los dos renderizadores coinciden |
 | Qué protege la idempotencia | Sólo el código; el ejercicio, el código y la prueba propia, por cuenta y `clientRunId` | Lo segundo: la clave es de la cuenta y protege las tres partes del envío |
 | Las claves de prueba | Seguir con `t{índice+1}`; claves libres, únicas e inmutables | Claves libres (ADR 0006 D14). Con `t{índice+1}`, quitar una prueba renumeraría las siguientes y la historia mezclaría pruebas distintas bajo una misma clave |
+| Cuotas iniciales (Q1) | Las del ADR; las del ADR con 2 activas por cuenta; las del ADR por cuenta y 6 slots con 64 en cola | Las del ADR (usuario). Son lo más conservador y dejan medir con SC-012 antes de gastar CPU o equidad por una carga que todavía no se conoce; el aula real (pregunta 15 del ADR) decide si hace falta más |
+| Fase del run (Q2) | `running` sin subfase; extender el ejecutor para que informe la fase | Sin subfase (usuario). Una etiqueta vale poco en una espera de segundos, el ejecutor entregado no cambia y sumarla después es aditivo |
+| Qué entra en el `grading_hash` (Q3) | Nada nuevo; los `imports` de Go; los `imports` y la huella de la plantilla | Los `imports` de Go (usuario). Son contenido de un ejercicio y cambian lo que compila; la plantilla cambia poco y la valida B3, y es el último momento barato para decidirlo |
+| Endpoints de historial de intentos (Q4) | Dentro de B2; fuera | Fuera (usuario). No tienen consumidor y la hoja de ruta no los pide; el modelo de datos queda completo igual |
+| Retención (Q5) | 14 días y 90 días con excepciones; 7 y 30 días; sin poda de payloads | 14 y 90 con excepciones (usuario). Es lo que el ADR dimensionó y cubre lo que un alumno o un docente querrían revisar, sin retener código ajeno para siempre |
