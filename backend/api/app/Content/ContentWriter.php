@@ -41,7 +41,7 @@ final class ContentWriter
     }
 
     /**
-     * @param  list<string>  $keys
+     * @param  non-empty-list<non-empty-string>  $keys
      * @param  list<array<string, int|string|null>>  $rows
      */
     private function upsert(string $table, array $keys, array $rows, string $now): void
