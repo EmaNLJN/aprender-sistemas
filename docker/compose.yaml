@@ -13,11 +13,15 @@ x-laravel-env: &laravel-env
   DB_DATABASE: taller
   DB_USERNAME: taller
   DB_PASSWORD: *mysql-password
+  APP_LOCALE: es
+  LOG_STDERR_FORMATTER: 'Monolog\Formatter\JsonFormatter'
+  LOG_HMAC_KEY: '${LOG_HMAC_KEY:?falta LOG_HMAC_KEY en .env (sh backend/api/scripts/init-env.sh)}'
 
 x-laravel-test-env: &laravel-test-env
   <<: *laravel-env
   APP_KEY: 'base64:dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtISE='
   DB_PASSWORD: no-es-un-secreto
+  LOG_HMAC_KEY: no-es-un-secreto
 
 x-laravel-runtime: &laravel-runtime
   build:
@@ -29,6 +33,7 @@ x-laravel-runtime: &laravel-runtime
       CONTENT_SOURCE_COMMIT: '${CONTENT_SOURCE_COMMIT:-}'
   environment: *laravel-env
   networks: [app]
+  dns: ['127.0.0.1']
   read_only: true
   tmpfs:
     - /tmp:rw,noexec,nosuid,size=32m
@@ -60,6 +65,7 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
     networks: [edge, web]
+    dns: ['127.0.0.1']
     ports:
       - '127.0.0.1:${TALLER_PORT:-8080}:8080'
     restart: unless-stopped
@@ -109,6 +115,33 @@ services:
         condition: service_healthy
     restart: 'no'
 
+  scheduler:
+    <<: *laravel-runtime
+    command: ['php', 'artisan', 'schedule:work']
+    depends_on:
+      mysql:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # The only file with MySQL users and privileges is docker/mysql/db-grants.sql. A volume that already exists
+  # takes it with `docker compose --profile ops run --rm db-grants`; a new one takes it from the init directory.
+  db-grants:
+    profiles: [ops]
+    image: *mysql-image
+    entrypoint: ['sh', '-c', 'mysql -h mysql -uroot -p"$$MYSQL_ROOT_PASSWORD" < /db-grants.sql']
+    environment:
+      MYSQL_ROOT_PASSWORD: '${MYSQL_ROOT_PASSWORD:?falta MYSQL_ROOT_PASSWORD en .env (sh backend/api/scripts/init-env.sh)}'
+    volumes:
+      - ./docker/mysql/db-grants.sql:/db-grants.sql:ro
+    networks: [app]
+    dns: ['127.0.0.1']
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: 'no'
+
   mysql:
     image: *mysql-image
     command: *mysql-command
@@ -119,7 +152,9 @@ services:
       MYSQL_ROOT_PASSWORD: '${MYSQL_ROOT_PASSWORD:?falta MYSQL_ROOT_PASSWORD en .env (sh backend/api/scripts/init-env.sh)}'
     volumes:
       - mysql-data:/var/lib/mysql
+      - ./docker/mysql/db-grants.sql:/docker-entrypoint-initdb.d/10-db-grants.sql:ro
     networks: [app]
+    dns: ['127.0.0.1']
     healthcheck: *mysql-healthcheck
     # No cap_drop: the entrypoint needs chown on the volume before dropping privileges.
     security_opt:
@@ -140,6 +175,7 @@ services:
     tmpfs:
       - /var/lib/mysql:rw,size=1g
     networks: [testing]
+    dns: ['127.0.0.1']
     healthcheck: *mysql-healthcheck
     security_opt:
       - no-new-privileges:true
@@ -154,6 +190,7 @@ services:
     entrypoint: ['php', 'vendor/bin/pest']
     environment: *laravel-test-env
     networks: [testing]
+    dns: ['127.0.0.1']
     security_opt:
       - no-new-privileges:true
     cap_drop:
