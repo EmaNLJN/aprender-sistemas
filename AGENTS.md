@@ -99,6 +99,10 @@ usan Docker y no forman parte de `npm test`.
   Registrá en `.git-blame-ignore-revs` los commits que sólo cambien formato.
 - Mantené credenciales, rutas locales, cachés, progreso y resultados generados fuera
   de Git; actualizá `.gitignore` y `.dockerignore` al introducir nuevas salidas.
+- Entregá cada cambio como pull request, con título y descripción en inglés. El título sigue
+  la notación de Angular (`type(scope): subject`, por ejemplo `feat(api): serve the curriculum
+  from MySQL`); la descripción cuenta el problema completo: el contexto, qué faltaba o fallaba
+  y por qué, qué cambia, cómo se verificó y qué queda pendiente.
 
 ## Módulos y frameworks JavaScript
 
