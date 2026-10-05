@@ -169,6 +169,33 @@ it('only one import runs at a time: the second exits with an error instead of be
     $this->artisan('content:import')->assertExitCode(0);
 });
 
+it('writes under READ COMMITTED', function () {
+    $transaction = null;
+    DB::listen(function ($query) use (&$transaction) {
+        if (str_starts_with($query->sql, 'insert into `content_imports`')) {
+            $transaction = DB::selectOne('select trx_isolation_level as isolation, trx_is_read_only as read_only from information_schema.innodb_trx where trx_mysql_thread_id = connection_id()');
+        }
+    });
+
+    Artisan::call('content:import');
+
+    expect($transaction->isolation)->toBe('READ COMMITTED')->and($transaction->read_only)->toBe(0);
+});
+
+it('writes nothing when the connection that held the lock is lost before the transaction opens', function () {
+    $reconnected = false;
+    DB::listen(function ($query) use (&$reconnected) {
+        if (! $reconnected && str_contains($query->sql, 'from `languages`')) {
+            $reconnected = true;
+            DB::purge();
+        }
+    });
+
+    $this->artisan('content:import')->expectsOutputToContain('Se perdió el candado')->assertExitCode(1);
+
+    expect(array_sum(ContentDatabase::counts()))->toBe(0);
+});
+
 it('records an import without touching the tables when only the document format changes', function () {
     importImageContent();
     $checksums = ContentDatabase::checksums();
