@@ -13,7 +13,7 @@ use Tests\Support\ContentFixture;
 afterEach(fn () => ContentFixture::cleanup());
 
 it('assembles from the tables each of the 17 portions and the 274 exercises with the generator hashes', function () {
-    Artisan::call('content:import');
+    expect(Artisan::call('content:import'))->toBe(0);
     $meta = json_decode(file_get_contents(ContentFixture::imagePath().'/curriculum.meta.json'), true);
     $renderer = app(PortionRenderer::class);
 
@@ -34,11 +34,11 @@ it('assembles from the tables each of the 17 portions and the 274 exercises with
 });
 
 it('what is retired leaves the portions and renderExercise does not assemble it', function () {
-    Artisan::call('content:import');
+    expect(Artisan::call('content:import'))->toBe(0);
     $fixture = ContentFixture::fromImage();
     $gone = $fixture->unreferencedLabExercise();
     config(['content.path' => $fixture->withoutExercise($gone)->write()]);
-    Artisan::call('content:import');
+    expect(Artisan::call('content:import'))->toBe(0);
 
     $lab = json_decode(app(PortionRenderer::class)->render(Portion::LabRust));
 
@@ -48,7 +48,7 @@ it('what is retired leaves the portions and renderExercise does not assemble it'
 });
 
 it('a snapshot reads one import even if another commits in the middle, and accepts no writes', function () {
-    Artisan::call('content:import');
+    expect(Artisan::call('content:import'))->toBe(0);
     $other = DB::connectUsing('other', config('database.connections.mysql'), true);
 
     [$before, $during] = ContentSnapshot::read(function () use ($other) {

@@ -7,6 +7,7 @@ use App\Content\Portion;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Tests\Support\ContentDatabase;
 use Tests\Support\ContentFixture;
 
@@ -17,10 +18,19 @@ function useContentAt(string $directory): void
     config(['content.path' => $directory]);
 }
 
+/** Runs content:import for a setup step, and fails with its output if it does not succeed. */
+function importContent(): void
+{
+    $code = Artisan::call('content:import');
+    if ($code !== 0) {
+        throw new RuntimeException("content:import exited with {$code}: ".Artisan::output());
+    }
+}
+
 function importImageContent(): void
 {
     useContentAt(ContentFixture::imagePath());
-    Artisan::call('content:import');
+    importContent();
 }
 
 it('imports the image content: the 21 tables, its record and the 274 grading versions', function () {
@@ -38,7 +48,11 @@ it('imports the image content: the 21 tables, its record and the 274 grading ver
     expect($import->document_hash)->toBe($meta['documentHash'])
         ->and($import->source_commit)->toBeNull()
         ->and(json_decode($import->portion_hashes, true))->toEqualCanonicalizing($meta['portions'])
-        ->and(DB::table('exercises')->where('status', 'active')->count())->toBe(274);
+        ->and(json_decode($import->counts, true))->toMatchArray(['exercises' => 274, 'exercise_tests' => 822, 'workshops' => 25, 'atlas_concepts' => 32])
+        ->and(json_decode($import->changes, true)['new'])->toHaveCount(274)
+        ->and(DB::table('exercises')->where('status', 'active')->count())->toBe(274)
+        // FR-032: lab, quests and cores have no position in the chain until Essentials arrives.
+        ->and(DB::table('catalogs')->pluck('chain_position', 'code')->all())->toBe(['cores' => null, 'lab' => null, 'quests' => null]);
 });
 
 it('with the same content it writes nothing: migrate runs it on every up', function () {
@@ -79,6 +93,7 @@ it('retires what leaves the document without deleting anything, and reactivates 
         ->and(DB::table('exercise_tests')->where('exercise_id', $gone)->pluck('status')->unique()->all())->toBe(['deprecated'])
         ->and(DB::table('exercise_hints')->where('exercise_id', $gone)->pluck('status')->unique()->all())->toBe(['deprecated'])
         ->and(DB::table('content_imports')->count())->toBe(2)
+        ->and(json_decode(DB::table('content_imports')->orderByDesc('id')->value('changes'), true)['retired'])->toBe([$gone])
         // Nothing was deleted: only this import's record was added.
         ->and(ContentDatabase::counts())->toBe(array_replace($before, ['content_imports' => 2]))
         // The portion changed: the cache keeps the new body and no longer the old one.
@@ -96,7 +111,7 @@ it('--dry-run reports new, grading, text and retired, without writing', function
     $base = ContentFixture::fromImage();
     $added = $base->unreferencedLabExercise('rust');
     useContentAt($base->withoutExercise($added)->write());
-    Artisan::call('content:import');
+    importContent();
 
     $next = ContentFixture::fromImage();
     $graded = $next->document->quests->go[0]->id;
@@ -118,6 +133,21 @@ it('--dry-run reports new, grading, text and retired, without writing', function
     });
 
     expect($writes)->toBe([])->and(ContentDatabase::checksums())->toBe($checksums);
+});
+
+it('imports a change that differs only in case or accents, which MySQL would compare as equal', function () {
+    importImageContent();
+    $fixture = ContentFixture::fromImage();
+    $id = $fixture->document->quests->go[0]->id;
+    $original = $fixture->exercise($id)->title;
+    $changed = mb_strtoupper($original);
+    expect($changed)->not->toBe($original);
+    $fixture->exercise($id)->title = $changed;
+    useContentAt($fixture->write());
+
+    $this->artisan('content:import')->expectsOutputToContain("Cambios de texto: 1 ({$id})")->assertExitCode(0);
+
+    expect(DB::table('exercises')->where('id', $id)->value('title'))->toBe($changed);
 });
 
 it('rejects a meta from another build and writes nothing', function () {
@@ -177,7 +207,7 @@ it('writes under READ COMMITTED', function () {
         }
     });
 
-    Artisan::call('content:import');
+    importContent();
 
     expect($transaction->isolation)->toBe('READ COMMITTED')->and($transaction->read_only)->toBe(0);
 });
@@ -217,7 +247,7 @@ it('records an import without touching the tables when only the document format 
 it('a different source commit with the same content records no import; with a commit, it stores it', function () {
     $commit = str_repeat('c', 40);
     useContentAt(ContentFixture::fromImage()->write(editMeta: fn (array $meta) => ['sourceCommit' => $commit] + $meta));
-    Artisan::call('content:import');
+    importContent();
     expect(DB::table('content_imports')->value('source_commit'))->toBe($commit);
 
     useContentAt(ContentFixture::fromImage()->write(editMeta: fn (array $meta) => ['sourceCommit' => str_repeat('d', 40)] + $meta));
@@ -239,7 +269,7 @@ it('every grading version that applied stays: A, B and A again add only one', fu
 
     $fixture->exercise($id)->tests[0]->expression = $original.' && true';
     useContentAt($fixture->write());
-    Artisan::call('content:import');
+    importContent();
     $hashB = DB::table('exercises')->where('id', $id)->value('grading_hash');
 
     importImageContent();
@@ -258,11 +288,12 @@ it('a test_key retired on its own is not reused, and the import leaves no trace'
     $exercise = $fixture->exercise($id);
     $removed = array_pop($exercise->tests);
     useContentAt($fixture->write());
-    Artisan::call('content:import');
+    importContent();
     expect(DB::table('exercise_tests')->where('exercise_id', $id)->where('test_key', $removed->id)->value('status'))->toBe('deprecated');
     $checksums = ContentDatabase::checksums();
 
-    importImageContent();
+    useContentAt(ContentFixture::imagePath());
+    Artisan::call('content:import');
 
     expect(Artisan::output())->toContain('el test_key se retiró y no se reutiliza')
         ->and(ContentDatabase::checksums())->toBe($checksums);
@@ -298,3 +329,47 @@ it('the rules between rows are checked with queries, and each one breaks by hand
         'la cadena de catálogos no es única y contigua desde 1',
     ],
 ]);
+
+it('each rule between rows detects its own violation', function () {
+    importImageContent();
+    $invariants = new ContentInvariants;
+    $retire = fn (string $table, string $where = '1 = 1') => "update `{$table}` set `status` = 'deprecated', `retired_at` = now(3), `updated_at` = now(3)"
+        .(Schema::hasColumn($table, 'position') ? ', `position` = null' : '')." where {$where}";
+
+    $cases = [];
+    foreach (['exercises', 'exercise_tests', 'workshops', 'workshop_objectives', 'workshop_steps', 'worlds', 'atlas_concepts', 'guide_resources', 'guide_modules', 'guide_steps', 'guide_step_resources'] as $table) {
+        $cases["hay filas activas de {$table} con la misma posición"] = "update `{$table}` set `position` = 0 where `status` = 'active'";
+    }
+    $cases['hay filas activas de workshop_related_exercises con la misma posición en un lenguaje'] = "update `workshop_related_exercises` set `position` = 0 where `status` = 'active'";
+    $cases['hay filas activas de world_exercises con la misma posición en un grupo de roles'] = "update `world_exercises` set `position` = 0 where `status` = 'active'";
+    foreach ([
+        'exercises' => ['topics', 'catalogs', 'workshops'],
+        'exercise_tests' => ['exercises'],
+        'exercise_hints' => ['exercises'],
+        'workshop_objectives' => ['workshops'],
+        'workshop_steps' => ['workshops'],
+        'workshop_related_exercises' => ['workshops', 'exercises'],
+        'world_exercises' => ['worlds', 'exercises'],
+        'atlas_concepts' => ['exercises'],
+        'guide_modules' => ['guide_tracks'],
+        'guide_steps' => ['guide_modules'],
+        'guide_step_resources' => ['guide_steps', 'guide_resources'],
+    ] as $child => $parents) {
+        foreach ($parents as $parent) {
+            $cases["hay filas activas de {$child} que dependen de {$parent} retirados"] = $retire($parent);
+        }
+    }
+    $cases['hay mundos activos sin jefe'] = $retire('world_exercises', "`role` = 'boss'");
+
+    $undetected = [];
+    foreach ($cases as $description => $sql) {
+        DB::beginTransaction();
+        DB::statement($sql);
+        if (! in_array($description, $invariants->violations(), true)) {
+            $undetected[] = $description;
+        }
+        DB::rollBack();
+    }
+
+    expect($undetected)->toBe([])->and($invariants->violations())->toBe([]);
+});
