@@ -76,6 +76,24 @@ it('responde 304 al ETag fuerte, al débil que deja Nginx al comprimir y a *, si
     $this->withHeaders(['If-None-Match' => '"otro"'])->get($url)->assertOk();
 });
 
+it('responde 304 a un ejercicio activo, fuerte o débil: lee el último import y su fila, nada más (FR-018)', function () {
+    $meta = importedMeta();
+    $id = array_key_first($meta['exercises']);
+    $etag = etagOf($meta['exercises'][$id]['contentHash']);
+
+    foreach ([$etag, "W/{$etag}", '*'] as $header) {
+        $response = null;
+        $queries = ContentDatabase::queriesDuring(function () use (&$response, $id, $header) {
+            $response = $this->withHeaders(['If-None-Match' => $header])->get("/api/exercises/{$id}");
+        });
+        $response->assertStatus(304)->assertHeader('ETag', $etag)->assertHeader('Content-Version', substr($meta['documentHash'], 0, 32))->assertHeaderMissing('Vary');
+        expect($response->getContent())->toBe('')
+            ->and($response->headers->get('Cache-Control'))->toContain('private')->toContain('no-cache')
+            // Un ejercicio retirado responde 410 antes que 304: por eso, además del último import, se lee su fila.
+            ->and($queries)->toHaveCount(2)->and($queries[0])->toContain('content_imports')->and($queries[1])->toContain('exercises');
+    }
+});
+
 it('el primer pedido después de un import sale de la caché: no consulta las tablas de contenido', function () {
     importedMeta();
 
@@ -183,6 +201,19 @@ it('una imagen nueva con el mismo contenido da 304 en las 17 porciones y la mism
     expect(array_unique($statuses, SORT_REGULAR))->toBe([[304, $version]]);
 });
 
+it('Content-Version cambia cuando cambia el documento, así un import en medio de un arranque se detecta (FR-020)', function () {
+    importedMeta();
+    $before = $this->get(ContentDatabase::url(Portion::Guide))->headers->get('Content-Version');
+    $fixture = ContentFixture::fromImage();
+    $fixture->exercise($fixture->document->lab->rust[3]->id)->intro .= ' (revisado)';
+    config(['content.path' => $fixture->write()]);
+    Artisan::call('content:import');
+
+    $after = $this->get(ContentDatabase::url(Portion::Guide))->headers->get('Content-Version');
+
+    expect($after)->toMatch('/^[0-9a-f]{32}$/')->not->toBe($before);
+});
+
 it('si el cuerpo armado no tiene el hash del import, no lo sirve: 503 maintenance, y lo deja en el log', function () {
     importedMeta();
     DB::table('cache')->delete();
@@ -196,4 +227,16 @@ it('si el cuerpo armado no tiene el hash del import, no lo sirve: 503 maintenanc
 
     Log::shouldHaveReceived('error')->once();
     expect(DB::table('cache')->where('key', 'like', '%content-body:guide:%')->count())->toBe(0);
+});
+
+it('si el ejercicio armado no tiene su content_hash, no lo sirve: 503 maintenance, y lo deja en el log', function () {
+    $meta = importedMeta();
+    $id = array_key_first($meta['exercises']);
+    // La fila dice otro content_hash que el de los bytes que salen de las tablas.
+    DB::table('exercises')->where('id', $id)->update(['content_hash' => str_repeat('a', 64)]);
+    Log::spy();
+
+    $this->get("/api/exercises/{$id}")->assertStatus(503)->assertHeader('Retry-After', '5')->assertJson(['code' => 'maintenance']);
+
+    Log::shouldHaveReceived('error')->once();
 });
