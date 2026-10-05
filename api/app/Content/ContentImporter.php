@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\DB;
  * difference outside the transaction and, in a single one, writes only what changed, checks the
  * rules between rows and checks itself: it assembles the 17 portions from the tables with the same
  * code the API uses and demands the hash the generator fixed. That runs on every import, also when
- * there is nothing to write. After committing it warms the body cache.
+ * there is nothing to write. After committing it warms the body cache. The first thing it does
+ * inside the transaction is to check that its connection still holds the import lock.
  */
 final class ContentImporter
 {
@@ -22,6 +23,7 @@ final class ContentImporter
         private PortionRenderer $renderer,
         private BodyCache $cache,
         private ContentImports $imports,
+        private ImportLock $lock,
     ) {}
 
     /** What the import would do, without writing anything (`--dry-run`). */
@@ -36,22 +38,37 @@ final class ContentImporter
         );
     }
 
-    /** @throws InvalidContent|ContentMismatch if something does not add up: the whole transaction is rolled back */
-    public function import(ContentSource $source, ContentPlan $plan): void
+    /**
+     * @return bool false if the connection no longer holds the import lock: nothing was written
+     *
+     * @throws InvalidContent|ContentMismatch if something does not add up: the whole transaction is rolled back
+     */
+    public function import(ContentSource $source, ContentPlan $plan): bool
     {
         $before = $this->imports->latest();
         // Writers run in READ COMMITTED, per transaction (D08), and without retries of their own:
         // the only backoff is the `migrate` step's, so they do not multiply (ADR 0006 §8).
         DB::statement('SET TRANSACTION ISOLATION LEVEL READ COMMITTED');
-        $bodies = DB::transaction(function () use ($source, $plan) {
+        $bodies = DB::transaction(function () use ($source, $plan): ?array {
+            // Inside a transaction Laravel no longer reconnects in silence, so a connection that was
+            // replaced since the command checked the lock, and with it lost the lock and the
+            // isolation level above, shows up here and not after writing.
+            if (! $this->lock->stillHeld()) {
+                return null;
+            }
             $importId = $plan->recordImport ? $this->writer->recordImport($source, $plan) : null;
             $this->writer->write($plan, $importId);
             $this->invariants->assert();
 
             return $this->verified($source);
         }, attempts: 1);
+        if ($bodies === null) {
+            return false;
+        }
 
         $this->warm($bodies, $source, $before);
+
+        return true;
     }
 
     /**

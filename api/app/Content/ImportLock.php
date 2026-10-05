@@ -8,7 +8,8 @@ use Illuminate\Support\Facades\DB;
  * The MySQL lock that keeps two `content:import` from running at once (ADR 0006 D12). GET_LOCK with
  * a 0 timeout returns 0 if another session holds it, so the command exits with an error instead
  * of skipping the import. It lives in the connection's session: if the connection is reopened it
- * is lost, so it has to be checked again before opening the transaction.
+ * is lost, so it is checked again before opening the transaction and once more as the first
+ * statement inside it (ContentImporter).
  */
 final class ImportLock
 {

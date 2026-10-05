@@ -271,6 +271,23 @@ it('writes nothing when the connection that held the lock is lost before the tra
     expect(array_sum(ContentDatabase::counts()))->toBe(0);
 });
 
+it('writes nothing when the connection is lost after the lock check and before the transaction begins', function () {
+    $lockChecked = false;
+    $reconnected = false;
+    DB::listen(function ($query) use (&$lockChecked, &$reconnected) {
+        if (str_contains($query->sql, 'is_used_lock')) {
+            $lockChecked = true;
+        } elseif ($lockChecked && ! $reconnected && str_contains($query->sql, 'from `content_imports`')) {
+            $reconnected = true;
+            DB::purge();
+        }
+    });
+
+    $this->artisan('content:import')->expectsOutputToContain('Se perdió el candado')->assertExitCode(1);
+
+    expect(array_sum(ContentDatabase::counts()))->toBe(0);
+});
+
 it('records an import without touching the tables when only the document format changes', function () {
     importImageContent();
     $checksums = ContentDatabase::checksums();
