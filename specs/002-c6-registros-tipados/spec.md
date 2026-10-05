@@ -56,6 +56,7 @@ Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumption
 - Q: **Q4**, ¿cómo se representan los valores JSON anidados de un registro y su orden de claves? → A: Los valores anidados quedan opacos, tal como los escribe el generador, y `key_order` pasa a ser una lista tipada de las claves que el registro conoce. Decidió el coordinador: es lo que menos arriesga los bytes, y ningún consumidor necesita tipar los anidados. (FR-004)
 - Q: **Q5**, ¿dónde va C6 respecto de C3? → A: En la ola 2, en paralelo con C3, y se entrega antes de B2, que pasa a depender de C6. Decidió el usuario. (hoja de ruta)
 - `declare(strict_types=1)` sigue fuera, como supuesto que cita la exclusión de `docs/agent-skills.md`; el coordinador no lo volvió a preguntar. (Assumptions)
+- Q: Después del plan, ¿qué responde la entrega ante una fila que el import no pudo escribir, como un tema retirado a mano mientras su ejercicio sigue activo? → A: 500, con el error en el registro. Una corrupción que no se arregla sola no se anuncia como mantenimiento, y queda igual que lo que C2 ya responde ante un JSON roto o una clave desconocida. Decidió el usuario. (FR-011, Edge Cases; research.md, R10)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -141,7 +142,7 @@ Con los registros tipados, el análisis estático corre en el nivel 9, en la má
 - **Valores que devuelve el driver:** enteros como texto y banderas como 0 o 1. La forma publicada es la misma que con enteros y booleanos; C2 ya lo prueba.
 - **Objetos vacíos:** `{}` sigue siendo `{}` y no pasa a `[]`.
 - **La raíz de la guía** no tiene fila: sus claves son siempre `resources`, `tracks` y `sources`, en ese orden, como en C2.
-- **Una fila que el import no pudo escribir**, por una edición a mano: una clave de `key_order` desconocida o un tema retirado con su ejercicio activo. La lectura falla en lugar de publicar un registro incompleto, y la entrega responde 500. Con una clave desconocida, C2 también respondía 500. Con el tema retirado, C2 respondía 503 `maintenance`, porque los bytes no daban la huella. Si ese caso tiene que seguir en 503 lo decide el usuario (research.md, R10).
+- **Una fila que el import no pudo escribir**, por una edición a mano: una clave de `key_order` desconocida o un tema retirado con su ejercicio activo. La lectura falla en lugar de publicar un registro incompleto, y la entrega responde 500. Con una clave desconocida, C2 también respondía 500. Con el tema retirado, C2 respondía 503 `maintenance`, porque los bytes no daban la huella. C6 responde 500 también en ese caso, por decisión del usuario (Clarifications; research.md, R10).
 - **Un documento con varios errores:** el import lo rechaza igual, pero el primero que informa puede cambiar si cambia el orden de las comprobaciones (ver Assumptions).
 - **El primer despliegue después del cambio:** la base tiene filas escritas por el código de C2. Si una fila nueva difiriera en un solo carácter del texto de una columna JSON o de `key_order`, el import la reescribiría y registraría un import sin que cambie un byte publicado. Eso lo detecta el oráculo de filas (FR-006).
 

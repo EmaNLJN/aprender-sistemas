@@ -1754,7 +1754,7 @@ Las cuatro familias corren a la vez desde S1, cada una con sus archivos. Todas s
    - Filtra por porción con las propiedades (`catalog`, `domain` y `language`), ordena por `position` y publica con `toPublished()`.
    - En `workshops`, lee con `RowFields` las filas parciales de `exercises` (`id`, `language` y `workshop_id`). De ahí saca el lenguaje de cada ejercicio relacionado y el núcleo de cada taller.
    - La guía se arma con `new Guide(...)` desde sus seis tablas. Si falta un recorrido, lanza el `InvalidContent` de C2: «guide_tracks: no hay una fila activa con language = …».
-   - `exercise()` arma un ejercicio con su tema, sus pruebas y sus pistas. Si falta el tema, lanza `LogicException`. Por omisión, ese error y los de `RowFields` llegan como 500 (research.md, R10, opción a). Si el usuario elige la opción b, `ContentDelivery` atrapa la falla del armado, la registra y responde con `maintenance()`, y `ContentEndpointTest` suma un caso que retira a mano el tema de un ejercicio activo.
+   - `exercise()` arma un ejercicio con su tema, sus pruebas y sus pistas. Si falta el tema, lanza `LogicException`. Ese error y los de `RowFields` llegan como 500, con el error en el registro. Lo decidió el usuario el 2026-10-05 (research.md, R10, opción a): `ContentDelivery` no atrapa la falla del armado.
    - El constructor queda sin dependencias.
 3. **`PortionRenderer`** pierde `ExerciseCodec`; `renderExercise()` publica `$this->assembler->exercise(...)->toPublished()`.
 4. **`ContentReader`:**

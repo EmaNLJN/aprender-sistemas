@@ -113,10 +113,11 @@ El esquema impide casi todos estos casos: tipos de columna, `NOT NULL`, `JSON_VA
 
 Aparte, si `file_get_contents` no puede leer un archivo que existe, `ContentSource` dice «no se pudo leer», donde C2 terminaba en «no es JSON válido». Dentro de la imagen, el archivo siempre se puede leer.
 
-**Pendiente del usuario.** El plan sigue la opción (a); si el usuario elige la (b), T011 la suma.
+**Decidido por el usuario el 2026-10-05: opción (a).** Una corrupción que no se arregla sola no se anuncia como mantenimiento, porque un 503 con `Retry-After` haría reintentar para siempre.
 
-- **(a)** Se acepta el 500 para una fila corrupta, con el error en el registro de Laravel. Es la opción por omisión.
-- **(b)** `ContentDelivery` atrapa la falla del armado, la registra y responde `maintenance()`, así se conserva la garantía de FR-044. Suma a T011 un caso de `ContentEndpointTest` que retira a mano el tema de un ejercicio activo. También convierte en 503 los 500 que ya daba C2.
+- **(a), elegida:** se acepta el 500 para una fila corrupta, con el error en el registro de Laravel. Es lo mismo que C2 ya responde ante un JSON roto o una clave desconocida.
+- **(b), descartada:** `ContentDelivery` atrapa la falla del armado, la registra y responde `maintenance()`. Así se conservaba la garantía de FR-044 para el tema retirado, pero también pasaban a 503 los 500 que ya daba C2.
+- **(c), descartada:** responder exactamente como C2, con 503 para el tema retirado y 500 para lo demás. Exigía una excepción propia para un caso que sólo se alcanza editando la base a mano.
 
 **Rationale**: el nivel 9 obliga a decidir qué pasa con un valor sin tipo; fallar rápido no publica nunca un cuerpo armado con datos que el import no escribió. Ninguna prueba de C2 cubre estos casos, así que FR-008 y SC-003 no cambian; FR-011 lo aclara.
 
