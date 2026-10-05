@@ -44,7 +44,7 @@ it('rejects a repeated exercise ID', function () {
 it('rejects an exercise ID the API could never serve', function (string $id) {
     $fixture = ContentFixture::fromImage();
     $unreferenced = $fixture->unreferencedLabExercise();
-    $position = array_search($unreferenced, array_column($fixture->document->lab->rust, 'id'), true);
+    $position = collect($fixture->document->lab->rust)->search(fn (stdClass $exercise) => $exercise->id === $unreferenced);
     $fixture->exercise($unreferenced)->id = $id;
 
     expect(fn () => rowsOf($fixture))->toThrow(

@@ -10,6 +10,7 @@ use App\Content\ContentSource;
 use App\Content\Portion;
 use App\Content\PortionAssembler;
 use App\Content\PublishedJson;
+use Illuminate\Support\Arr;
 use Tests\Support\ContentFixture;
 
 // The contract without a database: the real document → rows → bytes. The expected values are the
@@ -57,7 +58,7 @@ it('assembles each exercise with its contentHash', function () {
 });
 
 it('builds the rows ADR 0006 §5.1 describes', function () {
-    expect(array_map('count', $this->rows))->toBe([
+    expect(Arr::map($this->rows, fn (array $table) => count($table)))->toBe([
         'languages' => 2, 'catalogs' => 3, 'topics' => 98, 'workshops' => 25, 'exercises' => 274,
         'exercise_tests' => 822, 'exercise_hints' => 822, 'workshop_objectives' => 75, 'workshop_steps' => 100,
         'workshop_related_exercises' => 118, 'worlds' => 8, 'world_exercises' => 48, 'atlas_concepts' => 32,
@@ -89,7 +90,7 @@ it('stores the owning workshop of each core, including those that do not publish
 });
 
 it('assembles the same bytes even if the rows arrive in another order', function (Portion $portion) {
-    $reversed = array_map('array_reverse', $this->rows);
+    $reversed = Arr::map($this->rows, fn (array $table) => array_reverse($table));
 
     $bytes = $this->assembler->assemble($portion, $reversed, $this->source->languages());
 
@@ -97,13 +98,10 @@ it('assembles the same bytes even if the rows arrive in another order', function
 })->with(Portion::cases());
 
 it('assembles the same bytes when the database returns numbers as text', function (Portion $portion) {
-    $asText = array_map(
-        fn (array $table) => array_map(
-            fn (array $row) => array_map(fn ($value) => is_int($value) ? (string) $value : $value, $row),
-            $table,
-        ),
-        $this->rows,
-    );
+    $asText = Arr::map($this->rows, fn (array $table) => Arr::map(
+        $table,
+        fn (array $row) => Arr::map($row, fn ($value) => is_int($value) ? (string) $value : $value),
+    ));
 
     $bytes = $this->assembler->assemble($portion, $asText, $this->source->languages());
 

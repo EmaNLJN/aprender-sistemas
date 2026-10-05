@@ -5,6 +5,8 @@ namespace Tests\Support;
 use App\Content\Portion;
 use App\Content\PublishedJson;
 use Closure;
+use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Arr;
 use LogicException;
 use stdClass;
 
@@ -53,7 +55,7 @@ final class ContentFixture
     {
         foreach (['lab', 'quests', 'cores'] as $catalog) {
             foreach ($this->document->{$catalog} as $slice => $list) {
-                $this->document->{$catalog}->{$slice} = array_values(array_filter($list, fn (stdClass $exercise) => $exercise->id !== $id));
+                $this->document->{$catalog}->{$slice} = collect($list)->reject(fn (stdClass $exercise) => $exercise->id === $id)->values()->all();
             }
         }
         unset($this->meta['exercises'][$id]);
@@ -63,24 +65,13 @@ final class ContentFixture
 
     public function unreferencedLabExercise(string $language = 'rust'): string
     {
-        $referenced = [];
-        foreach ($this->document->campaign->{$language} as $world) {
-            array_push($referenced, ...$world->trainingIds, ...$world->challengeIds);
-        }
-        foreach ($this->document->atlas->{$language} as $concept) {
-            $referenced[] = $concept->labId;
-        }
-        foreach ($this->document->workshops as $workshops) {
-            foreach ($workshops as $workshop) {
-                array_push($referenced, ...$workshop->related->{$language});
-            }
-        }
-        foreach ($this->document->lab->{$language} as $exercise) {
-            if (! in_array($exercise->id, $referenced, true)) {
-                return $exercise->id;
-            }
-        }
-        throw new LogicException("every lab exercise of {$language} is referenced");
+        $referenced = collect($this->document->campaign->{$language})
+            ->flatMap(fn (stdClass $world) => [...$world->trainingIds, ...$world->challengeIds])
+            ->concat(Arr::pluck($this->document->atlas->{$language}, 'labId'))
+            ->concat(collect($this->document->workshops)->flatten(1)->flatMap(fn (stdClass $workshop) => $workshop->related->{$language}));
+
+        return collect($this->document->lab->{$language})->pluck('id')->first(fn (string $id) => ! $referenced->containsStrict($id))
+            ?? throw new LogicException("every lab exercise of {$language} is referenced");
     }
 
     /**
@@ -106,8 +97,7 @@ final class ContentFixture
     public static function cleanup(): void
     {
         foreach (self::$directories as $directory) {
-            array_map('unlink', glob("{$directory}/*") ?: []);
-            @rmdir($directory);
+            (new Filesystem)->deleteDirectory($directory);
         }
         self::$directories = [];
     }
@@ -126,7 +116,7 @@ final class ContentFixture
                 $meta['exercises'][$exercise->id] = [
                     'contentHash' => hash('sha256', PublishedJson::encode($exercise)),
                     'gradingHash' => hash('sha256', self::canonical([
-                        'tests' => array_map(fn (stdClass $test) => ['id' => $test->id, 'expression' => $test->expression], $exercise->tests),
+                        'tests' => Arr::map($exercise->tests, fn (stdClass $test) => ['id' => $test->id, 'expression' => $test->expression]),
                         'prediction' => ['options' => $exercise->prediction->options, 'answer' => $exercise->prediction->answer],
                     ])),
                     'starterHash' => hash('sha256', self::canonical($exercise->starter)),
@@ -179,12 +169,12 @@ final class ContentFixture
         if (! is_array($value)) {
             return $value;
         }
-        if (array_is_list($value)) {
-            return array_map(self::sorted(...), $value);
+        if (Arr::isList($value)) {
+            return Arr::map($value, self::sorted(...));
         }
         ksort($value, SORT_STRING);
 
-        return (object) array_map(self::sorted(...), $value);
+        return (object) Arr::map($value, self::sorted(...));
     }
 
     private static function indented(mixed $value, int $indent, int $level = 0): string
@@ -208,7 +198,7 @@ final class ContentFixture
                 return '[]';
             }
 
-            return "[\n".implode(",\n", array_map(fn ($item) => $pad.self::indented($item, $indent, $level + 1), $value))."\n{$close}]";
+            return "[\n".collect($value)->map(fn ($item) => $pad.self::indented($item, $indent, $level + 1))->implode(",\n")."\n{$close}]";
         }
 
         return PublishedJson::encode($value);

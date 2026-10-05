@@ -2,6 +2,7 @@
 
 use App\Content\ContentSource;
 use App\Content\Portion;
+use Illuminate\Support\Arr;
 use Tests\Support\ContentFixture;
 
 afterEach(fn () => ContentFixture::cleanup());
@@ -57,7 +58,7 @@ it('removes an exercise from the document and the meta, and the pair stays valid
     $source = ContentSource::fromDirectory($fixture->withoutExercise($id)->write());
 
     expect($source->meta['exercises'])->toHaveCount($exercises - 1)->not->toHaveKey($id)
-        ->and(array_column($source->part(Portion::LabRust), 'id'))->toHaveCount($labRust - 1)->not->toContain($id);
+        ->and(Arr::pluck($source->part(Portion::LabRust), 'id'))->toHaveCount($labRust - 1)->not->toContain($id);
 });
 
 it('writes the document compact when asked for no indentation', function () {
