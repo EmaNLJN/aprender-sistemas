@@ -2,7 +2,7 @@
 
 **Input**: `specs/001-c2-contenido-mysql/` (`spec.md`, `plan.md` y `data-model.md`)
 
-Ondas, dueños de archivos, interfaces y puntos de sincronización (S0, S1, S2): sección «Reparto en paralelo» de [plan.md](./plan.md). `[P]` marca lo que puede correr a la vez que otras tareas `[P]` de su fase: archivos disjuntos y ninguna tarea anterior sin cerrar; la cola de cada dueño es secuencial. Cada línea remite al paso del plan donde están los archivos, el código de referencia y los comandos. FR-036 y el criterio J del DBA pasan a C3 y no tienen tareas acá.
+Ondas, dueños de archivos, interfaces y puntos de sincronización (S0, S1, S2): sección «Reparto en paralelo» de [plan.md](./plan.md). `[P]` marca lo que puede correr a la vez que otras tareas `[P]` de su fase: archivos disjuntos y ninguna tarea anterior sin cerrar; la cola de cada dueño es secuencial. Cada línea remite al paso del plan donde están los archivos, el código de referencia y los comandos, y lleva su `[US#]` aunque no esté en una fase de historia, para trazarla a la spec. FR-036 y el criterio J del DBA pasan a C3 y no tienen tareas acá.
 
 ## Phase 1: Setup — Base (coordinador, onda 0)
 

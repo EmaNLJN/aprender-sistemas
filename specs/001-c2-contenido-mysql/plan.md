@@ -4,7 +4,7 @@
 
 **Input**: Feature specification from `specs/001-c2-contenido-mysql/spec.md`. Modelo de datos y DDL: [data-model.md](./data-model.md).
 
-> **Para quien lo implementa.** El plan se reparte entre agentes de backend que trabajan a la vez, cada uno en su worktree y con archivos que no comparte con nadie (sección «Reparto en paralelo»). Leé la sección de tu agente completa y las «Reglas para todos los agentes». `tasks.md` tiene una línea por tarea (T001…) y remite acá. El código PHP, SQL, de Docker y de Compose que sigue es **referencia sin ejecutar**: se revisó, no se corrió (la sesión que lo escribió no tenía PHP, MySQL ni Docker). El TypeScript está **verificado**: corrió en un clon del repositorio con `npm run typecheck`, `npm run lint`, `npm run format:check` y `npm test` (30 checks) en verde. Las pruebas son el contrato; el código de referencia se adapta hasta que pasen.
+> **Para quien lo implementa.** El plan se reparte entre agentes de backend que trabajan a la vez, cada uno en su worktree y con archivos que no comparte con nadie (sección «Reparto en paralelo»). Leé la sección de tu agente completa y las «Reglas para todos los agentes». `tasks.md` tiene una línea por tarea (T001…) y remite acá. El código PHP, SQL, de Docker y de Compose que sigue es **referencia sin ejecutar**: se revisó, no se corrió (la sesión que lo escribió no tenía PHP ni MySQL y no usó Docker, por encargo). El TypeScript está **verificado**: corrió en un clon del repositorio con `npm run typecheck`, `npm run lint`, `npm run format:check` y `npm test` (30 checks) en verde. Las pruebas son el contrato; el código de referencia se adapta hasta que pasen.
 
 ## Summary
 
@@ -32,7 +32,7 @@ C2 pasa el currículo de un documento embebido en el paquete del front a 21 tabl
 
 **Performance Goals**: un 304 cuesta una lectura por clave primaria; el primer pedido después de un import no consulta tablas de contenido; cada intento de migración o import espera un bloqueo 5 s como máximo.
 
-**Constraints**: bytes idénticos entre `JSON.stringify` y PHP (el contenido no tiene flotantes, `-0` ni pares surrogate sueltos); sin Docker ni PHP en el host (todo corre en contenedores); sin dependencias nuevas; `curriculum.json` y el oráculo `dump-globals` no cambian (FR-030).
+**Constraints**: bytes idénticos entre `JSON.stringify` y PHP (el contenido no tiene flotantes, `-0` ni pares surrogate sueltos); sin PHP ni Composer en el host (todo corre en contenedores, así que Docker es imprescindible); sin dependencias nuevas; `curriculum.json` y el oráculo `dump-globals` no cambian (FR-030).
 
 **Scale/Scope**: 274 ejercicios, 822 pruebas, 822 pistas, 25 talleres con 100 etapas, 8 mundos, 32 conceptos del Atlas, la guía, 17 porciones y unos 1,07 MB en total (la porción más grande, `lab.go`, 287.343 bytes).
 
@@ -159,9 +159,10 @@ Los archivos compartidos los integra el coordinador, según AGENTS.md: `compose.
 - **TDD, siempre.** Copiá las pruebas de tu sección, corrélas y comprobá que fallan por la razón que dice el paso. Recién entonces implementá, con el código de referencia como punto de partida. Si una prueba falla por un defecto del código de referencia, corregí el código; si creés que la prueba está mal, avisá al coordinador antes de cambiarla.
 - **Archivos que no son tuyos no se tocan.** Si tu tarea necesita algo de otro dueño, pedilo; no lo parchees.
 - **Comandos.** `npm run api:test -- --filter=Nombre` (reconstruye la imagen de pruebas), `npm run api:test -- --testsuite=Unit` y `npm run api:format:check` (Pint; si falla, `docker compose --profile test run --rm --build --no-deps --entrypoint php test vendor/bin/pint --test -v` muestra el diff y lo corregís a mano). `npm run api:test:down` apaga la base de pruebas.
+- **El `.env` de cada worktree.** Es de Git ignorado, así que un worktree nuevo no lo tiene, y sin él `compose.yaml` se niega a correr cualquier comando, `npm run api:test` incluido. Creálo antes de nada con `sh api/scripts/init-env.sh`: agrega `APP_KEY`, `MYSQL_PASSWORD` y `MYSQL_ROOT_PASSWORD` aleatorios, no descarga nada y queda fuera de Git y de las imágenes.
 - **Trabajo en paralelo.** `compose.yaml` fija `name: taller-rust-go`, así que dos worktrees compartirían contenedores, redes y la base de pruebas. En cada terminal exportá un nombre propio antes de usar Compose: `export COMPOSE_PROJECT_NAME=taller-c2-<agente>` (por ejemplo `taller-c2-a`); la variable pesa más que `name:`. Nadie levanta el stack completo (`docker compose up`, puerto 8080) salvo el coordinador. Cada base de pruebas reserva hasta 1 GB de tmpfs.
 - **Estilo.** Español rioplatense en comentarios y mensajes; comentarios sólo para decisiones, límites y efectos no evidentes; PHP con Pint, TypeScript con Prettier y ESLint.
-- **Commits.** Chicos, en español, uno por unidad que un revisor pueda juzgar y revertir (la prueba con la implementación que verifica), con el trailer `Co-Authored-By` de tu modelo y sin `git push`. Anotá el hash de cada tarea cerrada en su sublínea de `tasks.md` sólo si el coordinador te lo pide.
+- **Commits.** Chicos, en español, uno por unidad que un revisor pueda juzgar y revertir (la prueba con la implementación que verifica), con el trailer `Co-Authored-By` de tu modelo y sin `git push`. La evidencia de una tarea cerrada es su commit: el coordinador lo anota como la sublínea de `tasks.md`, sin salidas de comandos ni bitácoras. Lo que midas va en el mensaje del commit y en tu informe.
 - **Al terminar,** informá: tareas cerradas, comandos corridos con su resultado real, lo que no pudiste verificar y cualquier desvío del plan.
 
 ## 1. Base (coordinador, onda 0)
@@ -793,11 +794,13 @@ export function curriculumMeta(
 
 1. `npm run build`, `npm test`, `npm run lint` y `npm run format:check`. **Esperado:** en verde; `npm test` corre 30 checks (el nuevo incluido).
 2. SC-006: sha256 de `build/curriculum.json` y de `node tools/content/dump-globals.ts .` iguales a los de la línea base del paso 1.2.1.
-3. Registrá en `tasks.md` el commit de cierre.
+3. El commit de cierre es la evidencia de T004.
 
 ### Tarea 1.5 · La prueba de conexión, que falla (T005)
 
 **Archivos:** crear `api/tests/Feature/ConnectionTest.php`.
+
+**Antes de correr nada con Compose,** creá el `.env` del worktree con `sh api/scripts/init-env.sh`: sin él, `compose.yaml` se niega a correr, `npm run api:test` incluido. Agrega `APP_KEY`, `MYSQL_PASSWORD` y `MYSQL_ROOT_PASSWORD` aleatorios, no descarga nada y queda fuera de Git y de las imágenes.
 
 **Qué prueba:** la conexión de `php` trabaja en UTC, los upserts se compilan con alias de fila (`INSERT … AS laravel_upsert_alias`, porque `VALUES()` está deprecado) y `php` conserva la espera de bloqueos por omisión: sólo `migrate` la acota (D35).
 
@@ -1040,13 +1043,13 @@ Cambio en `compose.yaml` (referencia sin ejecutar):
 
 **Descarga: necesita permiso del usuario antes del primer paso.** `npm ci` baja las 243 dependencias del `package-lock.json` desde el registro de npm (unos 150 MB instalados; la descarga ronda los 40 o 50 MB, estimación), sobre `node:24-alpine@sha256:ebfe2f90…`, la imagen base que ya usa el front. Pedíselo al usuario con ese nombre, origen y tamaño.
 
-1. Creá el `.env` si falta: `sh api/scripts/init-env.sh`.
+1. Comprobá que el `.env` existe (se creó antes de T005).
 2. `docker compose build php`. **Esperado:** termina bien; la etapa `curriculum` corre `npm ci` y el generador.
 3. Comprobá lo que trae la imagen: `docker compose run --rm --no-deps --entrypoint sh php -c 'sha256sum resources/content/curriculum.json; grep -c documentHash resources/content/curriculum.meta.json'` y, en el host, `npm run curriculum && sha256sum build/curriculum.json`. **Esperado:** el mismo sha256 y un `documentHash` en el meta (el árbol es el mismo).
 4. Reutilización de la capa: corré otra vez `docker compose build php`. **Esperado:** todos los pasos `CACHED`, `npm ci` incluido. Después editá un YAML de `content/`, reconstruí y comprobá que `npm ci` sigue `CACHED` y que sólo se repiten los pasos posteriores al `COPY` de `content/`.
 5. Argumento de commit: `CONTENT_SOURCE_COMMIT=$(git rev-parse HEAD) docker compose build php` sólo repite el último `RUN`, y `grep sourceCommit resources/content/curriculum.meta.json` dentro de la imagen muestra ese commit. Con `CONTENT_SOURCE_COMMIT=zz` la construcción falla con el mensaje del generador (FR-037).
 6. `npm run api:test -- --filter=ConnectionTest` sigue en verde: el servicio `test` construye `dev` con el contexto adicional.
-7. Commit sugerido para T005 a T007: `feat(api): la imagen trae el contenido generado, y la conexión trabaja en UTC con upserts con alias`. Anotá en `tasks.md` lo que midió el paso 4.
+7. Commit sugerido para T005 a T007: `feat(api): la imagen trae el contenido generado, y la conexión trabaja en UTC con upserts con alias`. Poné en el mensaje del commit lo que midió el paso 4 (qué capas se reutilizaron).
 
 ## 2. Agente A · Esquema (onda 1)
 
@@ -1628,7 +1631,7 @@ it('mide los cuatro casos de D07 en mysql:9.7', function () {
 
 2. Corré `npm run api:test -- --filter=OnlineDdlTest`. **Esperado:** falla a propósito, y el mensaje imprime el arreglo medido bajo la clave `sin medir: copiá este resultado a D07_MEASURED`, con un valor por caso: `ok` si MySQL aceptó el DDL con ese algoritmo, o el código del error si lo rechazó.
 3. Copiá ese arreglo (las cuatro claves y sus valores) a `D07_MEASURED` y volvé a correr. **Esperado:** pasa.
-4. Informá los cuatro resultados al coordinador y escribilos en la sublínea de T010. Regla de D07: si los dos primeros casos fallan en 9.7, ningún CHECK que toque `DATETIME` va en las tablas que crecen (`runs`, `attempts`, `exercise_progress`…) y el invariante queda en el escritor, con su prueba; si pasan, B2 puede usarlos. La decisión no se toma acá: el coordinador actualiza D07 y el plan de B2.
+4. Informá los cuatro resultados al coordinador y ponelos en el mensaje del commit; el coordinador los lleva al ADR (D07) en T028. Regla de D07: si los dos primeros casos fallan en 9.7, ningún CHECK que toque `DATETIME` va en las tablas que crecen (`runs`, `attempts`, `exercise_progress`…) y el invariante queda en el escritor, con su prueba; si pasan, B2 puede usarlos. La decisión no se toma acá: el coordinador actualiza D07 y el plan de B2.
 5. Commit sugerido: `test(api): mide los cuatro casos de D07 en mysql:9.7 y fija el resultado`.
 
 ## 3. Agente B · Formato y códecs (onda 1)
@@ -4155,7 +4158,7 @@ final class PortionAssembler
 ```
 
 3. Corré `npm run api:test -- --testsuite=Unit` y `npm run api:format:check`. **Esperado:** todo en verde.
-4. Si un hash de porción no coincide, la prueba lo dice por porción: arreglá el códec o el ensamblador y no la prueba. Para ver el primer byte que difiere, compará `PublishedJson::decode` de las dos partes (`JsonDiff`, de W, hace esto en el import). Commit sugerido para T011 a T015, uno por unidad que verde pueda revertirse sola (`PublishedJson`, `Portion`, `ContentSource` con su fixture, códecs y filas, ensamblador): `feat(api): …`.
+4. Si un hash de porción no coincide, la prueba lo dice por porción: arreglá el códec o el ensamblador y no la prueba. Para ver el primer byte que difiere, compará `PublishedJson::decode` de las dos partes (`JsonDiff`, de W, hace esto en el import). Commits sugeridos, uno por unidad que pueda revertirse sola: `feat(api): PublishedJson, el único encoder de contenido, con los bytes de JSON.stringify`, `feat(api): Portion, las 17 porciones y las reglas del 422`, `feat(api): ContentSource lee y verifica el documento y su meta, y el fixture queda atado al generador`, `feat(api): códecs y filas de cada tipo de registro, con sus referencias validadas` y `feat(api): PortionAssembler arma las 17 porciones y los 274 ejercicios con las huellas del generador`.
 
 ## 4. Agente C · Despliegue (onda 1)
 
@@ -4311,7 +4314,7 @@ done
 
 **Qué comprueba (FR-046):** con un despliegue sano, otro cliente retiene `LOCK TABLES exercises WRITE` y se despliega una imagen nueva (otro `CONTENT_SOURCE_COMMIT`, así que `php` tendría que recrearse): `migrate` agota sus 3 intentos y falla, el `up` falla, `php` sigue siendo el mismo contenedor (mismo `StartedAt`) y sigue sirviendo la guía con el mismo `ETag` y `Content-Version`. Después corta la sesión que retenía el bloqueo, repite el despliegue y comprueba que ahora `php` sí se recrea y que, con otra imagen y el mismo contenido, el `ETag` y el `Content-Version` no cambian (SC-011 y FR-023).
 
-Este archivo es en sí la prueba, así que no tiene otra anterior: se verifica corriéndolo contra el stack, y la sesión que lo escribió no tenía Docker. Escribilo, revisalo con `sh -n` y dejalo para que el coordinador lo corra en T028. Los filtros de `awk` y de `sed` que usa se probaron con entradas de ejemplo.
+Este archivo es en sí la prueba, así que no tiene otra anterior: se verifica corriéndolo contra el stack, y la sesión que lo escribió no usó Docker. Escribilo, revisalo con `sh -n` y dejalo para que el coordinador lo corra en T028. Los filtros de `awk` y de `sed` que usa se probaron con entradas de ejemplo.
 
 1. Creá el script:
 
@@ -7280,7 +7283,7 @@ Cambio en `api/scripts/smoke.sh` (texto revisado):
 1. Con el stack levantado, en una terminal corré `npm run api:content:check` (sus 40 clientes lentos leen las dos porciones de `lab` con pausas de 15 ms). En otra, mientras corre, muestreá cada segundo `docker compose exec -T taller df -k /tmp` y `docker stats --no-stream --format '{{.MemUsage}}' $(docker compose ps -q taller)`.
 2. **Umbrales:** el pico de `/tmp` tiene que quedar en 24 MB o menos (el 75 % de los 32 MB) y la memoria de `taller`, en 100 MiB o menos (el 78 % de 128 MiB), con el log de Nginx sin `No space left on device` y los 40 cuerpos completos (lo comprueba el check).
 3. Si un umbral no se cumple, agrandá el tmpfs de `taller` (48m y después 64m) y subí `mem_limit` lo mismo, porque el tmpfs cuenta contra él, y repetí hasta cumplirlos. No se apaga el buffering (`fastcgi_buffering off`): empujaría la lentitud de los clientes a PHP-FPM.
-4. Dejá en `compose.yaml`, junto al tmpfs de `taller`, un comentario con el resultado: fecha, 40 clientes lentos, pico de `/tmp` y de memoria medidos, y el tamaño final. Anotalo también en la sublínea de T027.
+4. Dejá en `compose.yaml`, junto al tmpfs de `taller`, un comentario con el resultado: fecha, 40 clientes lentos, pico de `/tmp` y de memoria medidos, y el tamaño final. Ponelo también en el mensaje del commit.
 5. Commit sugerido: `chore(compose): tmpfs de Nginx medido con 40 clientes lentos`.
 
 ### Tarea 7.5 · Compuerta final de C2 (T028)
@@ -7336,7 +7339,7 @@ Cada requisito y criterio de la spec tiene al menos una tarea que lo construye y
 
 ## Riesgos y lo que quedó sin verificar
 
-- **El PHP, el SQL, el Dockerfile, Compose y los scripts de `sh` de este plan no se ejecutaron:** se escribieron y revisaron sin PHP, MySQL ni Docker. El TypeScript sí se ejecutó (30 checks, el generador, el check de punta a punta contra un servidor simulado). Las pruebas del plan son la red de seguridad, y los agentes pueden encontrar defectos en el código de referencia: se corrigen, no se esquivan.
+- **El PHP, el SQL, el Dockerfile, Compose y los scripts de `sh` de este plan no se ejecutaron:** se escribieron y revisaron sin PHP ni MySQL en el equipo y sin usar Docker, por encargo. El TypeScript sí se ejecutó (30 checks, el generador, el check de punta a punta contra un servidor simulado). Las pruebas del plan son la red de seguridad, y los agentes pueden encontrar defectos en el código de referencia: se corrigen, no se esquivan.
 - **Mediciones con umbral, que cierran en tareas y no se suponen:** los cuatro casos de D07 (T010, se fija el resultado), la reutilización de la capa de `npm ci` y el `.dockerignore` del contexto con nombre (T007, pasos 4 y 5), que `php` no se recree si `migrate` falla (T017 y T028) y la capacidad del tmpfs de Nginx con 40 clientes lentos (T027, 24 MB y 100 MiB como máximo).
 - **Paralelismo:** los worktrees comparten Docker, así que cada agente usa su `COMPOSE_PROJECT_NAME`; cada base de pruebas reserva hasta 1 GB de tmpfs. E depende de los datos de W: es la cola de la onda 2 (ver «Reparto en paralelo»).
 - **Igualdad de bytes:** vale mientras el contenido no tenga flotantes, `-0` ni pares surrogate sueltos; si algún día los tiene, el auto-chequeo del import bloquea el despliegue en vez de servir otra cosa.
