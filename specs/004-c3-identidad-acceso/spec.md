@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-05
 
-**Status**: Borrador con preguntas abiertas (Q1 a Q5); falta el clarify
+**Status**: Clarificada el 2026-10-05 (Q1 a Q5, la partición de C3 y la decisión de no usar Fortify); falta el plan
 
 **Input**: Ítem **C3** de la hoja de ruta [`specs/backend-multiusuario/roadmap.md`](../backend-multiusuario/roadmap.md), «Identidad y acceso», en su primera parte: **C3a**, la autenticación y el acceso. La segunda parte, **C3b** (correo, administración y ciclo de vida de la cuenta), queda en la hoja de ruta sin spec (ver «Partición de C3»). Fuente técnica: ADR 0006 (propuesta) §4, §5.2, D16 a D20, D35 (el chequeo previo), D36, la parte de identidad de §7 y §8, y la fila C3 de §10 ([ADR 0006](../../docs/adr/0006-modelo-de-datos-y-api-multiusuario.md)). Recibe de [C2](../001-c2-contenido-mysql/spec.md) lo que esa spec le dejó a C3 (ver «Relación con C2, C6 y C3b»). Donde esta spec se aparta del ADR, lo dice en Assumptions.
 
@@ -30,11 +30,11 @@
 
 **Queda fuera, y es de C3b:** el correo (`worker-mail`, `mail_jobs`, las notificaciones y `POST /api/auth/forgot-password`), la administración de usuarios e invitaciones (`/api/admin` y la guardia del último admin), el ciclo de vida de la cuenta (exportar y suprimir: `UserData`, `PurgeUserData` y `account_deletions`), el registro abierto apagado con su verificación de email, `taller:change-email` y `taller:reapply-deletions`.
 
-**Queda fuera de todo el épico:** 2FA, login social, passkeys, JWT y los tokens de Sanctum (R3 y R11); TLS, las cookies `__Host-` y la IP real del cliente (C4); las pantallas, que son del front; el progreso, las ejecuciones y las estadísticas (D1, B2 y C5).
+**Queda fuera de todo el épico:** 2FA, login social, passkeys, JWT y los tokens de Sanctum (R3 y R11); TLS, las cookies `__Host-` y la IP real del cliente (C4); las pantallas, que son del front (F11 las de cuenta y F12 las de administración); el progreso, las ejecuciones y las estadísticas (D1, B2 y C5).
 
 **Sin hacer a propósito (YAGNI):** un camino soportado para cambiar el rol o el estado de una cuenta (lo trae C3b; hasta entonces el operador usa `tinker`); un panel de usuarios; la auditoría de logins (R5); un `appBuild` (no tiene consumidor: A3 lo pide si lo necesita); que el `scheduler` procese la cola `default` (todavía no hay trabajos que encolar); ajustar PHP-FPM y el buffer pool de MySQL sin una medición que lo pida (§9); `declare(strict_types=1)` (C6).
 
-**Actores:** el alumno (rol `student`); quien opera el taller, que también es el primer admin y trabaja por consola; el cliente del front (A3, las pantallas de acceso y las vistas); quien despliega; y los ítems B2, D1, C4 y C3b, que se apoyan en la sesión.
+**Actores:** el alumno (rol `student`); quien opera el taller, que también es el primer admin y trabaja por consola; el cliente del front (A3, las pantallas de cuenta de F11 y las vistas); quien despliega; y los ítems B2, D1, C4 y C3b, que se apoyan en la sesión.
 
 ## Partición de C3: por qué esta spec es C3a
 
@@ -45,7 +45,7 @@ La hoja de ruta prevé partir C3 «si queda grande». Queda grande, y conviene p
 | Endpoints nuevos (26 filas de la tabla de §7) | 27 | 12 | 15 |
 | Tablas que crea, recrea o altera | 9 | 7: `users`, `invitations`, `password_reset_tokens`, `sessions`, `cache`, `cache_locks` y `failed_jobs` | 2: `account_deletions` y `mail_jobs` |
 | Servicios nuevos de Compose | 3, más Mailpit en `dev` | 2: `scheduler` y `db-grants` | 1: `worker-mail`, más Mailpit |
-| Paquetes de Composer nuevos | Fortify, con su cadena (ver «Acciones del usuario») | Fortify, o ninguno si el plan lo evita | ninguno propio: SMTP usa lo que ya está; un proveedor con API suma uno o dos |
+| Paquetes de Composer nuevos | ninguno (sin Fortify, decidido en el clarify) | ninguno: la sesión, el ingreso y la recuperación salen del núcleo de Laravel | ninguno propio: SMTP usa lo que ya está; un proveedor con API suma uno o dos |
 | Preguntas de §13 que la definen | 8 | 5 en esta ronda (2, 4, 5, 7 y 8) | 3 (3, 9 y 20) |
 | Lo que usan A3, B2 y D1 | — | casi todo: sesión, estado, cuenta esperada, `GET /api/session`, `password.confirm` | nada |
 
@@ -65,12 +65,12 @@ Referencia, C2: 6 rutas de contenido, 48 requisitos, 28 tareas y un plan de 375 
 
 ## Lo que pidió el usuario
 
-Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumptions) o una pregunta abierta (Preguntas abiertas).
+Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumptions) o una decisión del clarify (Clarifications).
 
 | Pedido | Fuente |
 | --- | --- |
 | Cuentas para muchos usuarios: alta por invitación, sesión, recuperación por email, roles y límites por cuenta | Hoja de ruta, C3; ADR 0006 R2 a R4 (decisiones del 2026-10-04) |
-| Sesión de Laravel con cookie HttpOnly y CSRF, sin 2FA, login social ni passkeys; JWT y tokens evaluados y descartados | ADR 0006 R3, R11 y §4.9 (propuesta; si se monta sin Sanctum es la Q1) |
+| Sesión de Laravel con cookie HttpOnly y CSRF, sin 2FA, login social ni passkeys; JWT y tokens evaluados y descartados | ADR 0006 R3, R11 y §4.9 (propuesta); montada sin Sanctum: usuario, clarify del 2026-10-05 (Q1) |
 | Roles admin y estudiante; cada estudiante ve y modifica sólo lo suyo | ADR 0006 R4 |
 | Sin auditoría de logins | ADR 0006 R5; usuario, 2026-10-04 |
 | La API la consume sólo este front, del mismo origen y sin versionado público | ADR 0006 R6 |
@@ -81,67 +81,27 @@ Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumption
 | Los errores del framework bajo `/api` en español y con `code` | C2 FR-024; ADR 0006, «Resultados de la implementación de C2» |
 | Cerrar el reenvío DNS de los contenedores sin salida | Hoja de ruta; estacionado de C1 |
 | El código de C3 pasa el nivel 9 de PHPStan desde el principio | Hoja de ruta («Orden y paralelismo»); C6 FR-012 |
-| Partir C3 en C3a y C3b si queda grande; la spec es la de C3a | Hoja de ruta; pedido de esta tarea |
+| Partir C3 en C3a y C3b; la spec es la de C3a, y C3b (correo, recuperación por email y administración) queda para después | Hoja de ruta; usuario, clarify del 2026-10-05 |
+| Sin Fortify: el ingreso, la salida, la confirmación y el cambio y el restablecimiento de contraseña salen del guard de sesión de Laravel, `Hash`, el broker de contraseñas y `RateLimiter`, sin paquetes nuevos | Usuario, clarify del 2026-10-05; enmienda pendiente del ADR 0006 (D17) |
+| Contraseñas de 15 a 64 caracteres, sin reglas de composición, contra una lista local de bloqueadas (SecLists NCSC, unos 816 KiB; la descarga se pide con permiso) | Usuario, clarify del 2026-10-05 (Q2) |
+| La cuenta de admin separada de la de estudio se recomienda, no se exige | Usuario, clarify del 2026-10-05 (Q3) |
+| Invitaciones de un solo uso, una por email | Usuario, clarify del 2026-10-05 (Q4) |
+| Sesión de 30 minutos de inactividad y 8 horas como máximo; «recordarme» de 30 días sólo para estudiantes; cookie de dispositivo de 180 días | Usuario, clarify del 2026-10-05 (Q5) |
 | Las dependencias de la API se agregan sólo con permiso del usuario | Constitución, principio VII; `backend/api/AGENTS.md` |
 | TDD, código y pruebas en inglés, Pest contra MySQL 9.7 real | Constitución, principios II y VI |
 
-## Preguntas abiertas
+## Clarifications
 
-Son para el clarify y se plantearon el 2026-10-05. Son las cinco de §13 que más cambian lo que C3a construye: una tabla, una ruta, una dependencia o un criterio de aceptación. Cada una trae sus opciones, lo que cuesta cada una y la recomendada con su motivo. Al responderlas, el clarify las registra en `## Clarifications`, bajo `### Session`, y reemplaza esta sección. Hasta entonces, los requisitos que señalan una de ellas (con su marcador o con «(propuesta)») usan la opción recomendada como borrador. Las demás preguntas de §13 y otras decisiones que salieron de esta spec están en «Para la segunda ronda».
+### Session 2026-10-05
 
-**Q1. ¿Cómo se monta la sesión?** *(FR-005; §13.2)* Decide una dependencia, lo que el front manda en cada pedido y qué debe cubrir la prueba en navegador real. JWT y los tokens de Sanctum quedaron descartados con R11 (§4.9): no son una opción.
-
-| Opción | Descripción | Cuesta |
-| --- | --- | --- |
-| A | La sesión de Laravel con cookie HttpOnly y CSRF, montada sin el paquete Sanctum (ADR 0006, D16). | Cinco piezas de middleware cableadas a mano en `bootstrap/app.php` y probadas una por una. Ningún paquete. Se aparta de lo que sugiere la documentación de Fortify (combinarlo con Sanctum). |
-| B | El modelo SPA de Sanctum (`statefulApi()` y `Sanctum::currentRequestHost()`). | Un paquete (`laravel/sanctum` 4.3.3, unos 56 KB estimados y sin dependencias nuevas) y su permiso. Sanctum sólo autentica por cookie si el pedido trae `Referer` u `Origin`; un GET del mismo origen no trae `Origin` y `nginx.conf` manda `Referrer-Policy: no-referrer`, así que el front tiene que fijar `referrerPolicy: 'same-origin'` en cada `fetch` (A3 y D1). |
-
-**Recomendada: A.** No hay clientes con token (R6), así que Sanctum no agrega seguridad: agrega una pieza y una condición que el front tiene que recordar en cada `fetch`. El costo de verificación es el mismo con las dos: Pest no manda `Referer`, `Origin` ni `Sec-Fetch-Site`, y hace falta una prueba en navegador real (FR-050).
-
-**Q2. ¿Qué reglas tienen las contraseñas?** *(FR-023 y FR-024; §13.4)* Decide la regla de validación y si hay que descargar, guardar y mantener una lista con su licencia.
-
-| Opción | Descripción | Cuesta |
-| --- | --- | --- |
-| A | De 15 a 64 caracteres, sin reglas de composición, contra una lista local de contraseñas comunes más el nombre y el email de la cuenta (ADR 0006, §4.7; toma NIST SP 800-63B-4 para factor único). | Elegir la lista, una descarga con permiso y mantenerla en el repositorio con su licencia. Con un mínimo de 15, una lista de contraseñas comunes filtra poco (es una hipótesis: medirlo exige bajar el archivo, que necesita permiso del usuario). |
-| B | Lo mismo con un mínimo de 12. | Igual que A, con un piso más bajo que el del ADR y más entradas de la lista que pueden coincidir. |
-| C | De 15 a 64 caracteres sin lista local: sólo se compara con el nombre y el email. | Ninguna descarga ni licencia. Se aparta de la lista de bloqueo local que propone el ADR (§4.7). |
-
-Fuente de la lista, para A y B (tamaños de la API de GitHub, sin descargar los archivos):
-
-- `100k-most-used-passwords-NCSC.txt`, de SecLists: 835 538 bytes, unos 816 KiB.
-- `xato-net-10-million-passwords-100000.txt`, de SecLists: 781 879 bytes, unos 764 KiB.
-- `10k-most-common.txt`, de SecLists: 73 026 bytes, unos 71 KiB.
-- SecLists es MIT (verificado el 2026-10-05 en su `LICENSE`). El origen y la licencia de los datos de cada lista, el del NCSC incluido, no se pudieron confirmar: la página del NCSC que los explicaba ya no existe.
-
-**Recomendada: A,** con la lista del NCSC filtrada a las entradas que alcanzan el mínimo. Es lo que propone el ADR (§4.7). Si al medirla resulta que casi no filtra, C se vuelve defendible, y el clarify o el plan lo reabren con ese número.
-
-**Q3. ¿La cuenta de admin tiene que ser distinta de la que se usa para estudiar?** *(FR-033; §13.7)* Decide una regla de acceso en las rutas de estudio de C3a, B2 y D1.
-
-| Opción | Descripción | Cuesta |
-| --- | --- | --- |
-| A | Sólo se recomienda (ADR 0006, S5). Una cuenta admin puede usar el contenido y estudiar, y las estadísticas excluyen a los admins por rol. | Nada ahora. El riesgo (una sesión de estudio abierta en una computadora de aula, con poder de admin) lo acotan el máximo de 8 horas, la ausencia de «recordarme» para admins y `password.confirm` en cada acción sensible (C3b). |
-| B | Se exige: una cuenta admin no usa el contenido, el progreso ni las ejecuciones (403 `forbidden`), y para estudiar necesita otra cuenta con otro email. | Un chequeo de rol en las rutas de estudio de C3a, B2 y D1; el admin no ve el contenido; promover a un alumno con progreso lo deja sin acceso a su avance (hay que decidir qué pasa); dos emails por persona. |
-
-**Recomendada: A.** La mitigación principal ya está construida y exigir dos cuentas suma fricción a quien administra y enseña a la vez. Hay un plazo: si se elige B, conviene decirlo antes de B2, porque desde ahí las cuentas empiezan a acumular progreso y el costo de agregar la regla después crece con él.
-
-**Q4. ¿Cómo son las invitaciones?** *(FR-017; §13.8)* Decide la forma de la tabla `invitations`, que crea C3a, y el flujo de aceptación.
-
-| Opción | Descripción | Cuesta |
-| --- | --- | --- |
-| A | Siempre ligadas a un email y de un solo uso (ADR 0006, D18). | Nada extra. El alta en lote por correo (hasta 100 emails) es de C3b; mientras tanto, un comando por alumno. |
-| B | Además, links de curso multiuso con cupo. | Otra forma de invitación (cupo, vencimiento, sin email) y su tabla. El link no prueba que el email sea de quien acepta, así que exige verificar el email (el flujo de correo de C3b) y límites contra el abuso. Es un registro abierto con un link compartido, que R2 mantiene apagado. |
-
-**Recomendada: A.** Una invitación enviada por correo prueba que el email es de quien acepta (D18), y el lote de C3b cubre el caso del curso. B se puede sumar después como una tabla aparte, sin tocar `invitations`.
-
-**Q5. ¿Cuánto dura la sesión, y entran «recordarme» y la cookie de dispositivo?** *(FR-006, FR-014 y FR-015; §13.5)* Los valores son configuración, pero «recordarme» y la cookie de dispositivo son mecanismos con código y pruebas propios.
-
-| Opción | Descripción | Cuesta |
-| --- | --- | --- |
-| A | 30 minutos de inactividad, 8 horas de máximo, «recordarme» de 30 días sólo para estudiantes y cookie de dispositivo de 180 días (ADR 0006, §4.2). | Lógica por rol en el ingreso, la cookie de recuerdo con su rotación, la cookie de dispositivo con su límite propio y sus pruebas. Ninguna dependencia. |
-| B | Lo mismo sin «recordarme»: todos vuelven a ingresar cuando vence la sesión (como mucho cada 8 horas). La cookie de dispositivo se queda, porque es lo que impide que un atacante bloquee al titular. | Menos código y menos superficie en una computadora compartida, a cambio de que el alumno vuelva a ingresar a diario: más contraseñas escritas y más ingresos que cuentan para el límite por red. |
-| C | Otros valores (por ejemplo, 2 horas de inactividad). | Cambia un número, no el diseño: más inactividad alarga el valor de una sesión robada. |
-
-**Recomendada: A.** Coincide con una práctica diaria del taller, y el «recordarme» sólo para estudiantes deja al admin sin una cookie de 30 días. Si se elige B, desaparecen FR-015, el `remember` de FR-010, la rotación del token de «recordarme» de FR-007, FR-016, FR-026 y FR-028, y el escenario 6 de la historia 2.
+- Q: Después de medir el tamaño de C3, ¿se parte y esta spec es la parte de autenticación? → A: Sí. C3a es esta spec; C3b (el correo, la recuperación por email y la administración) queda para después, sin spec. Decidió el usuario. (Partición de C3)
+- Q: ¿El ingreso y el resto de la autenticación se arman con Fortify? → A: No. El ingreso, la salida, la confirmación de contraseña, el cambio de contraseña y el `reset-password` de C3a se arman con el guard de sesión de Laravel, `Hash`, el broker de contraseñas y `RateLimiter`, sin paquetes nuevos. La última Fortify (1.40.0) suma 15 paquetes por 2FA y passkeys, que el ADR excluye (R3), y la 1.36.2, la última sin passkeys, suma 5 y queda fuera de las versiones que se siguen publicando. El ADR 0006 nombraba «Fortify sin vistas» (D17, §4.2, §4.3, la tabla de §4.9 y la fila C3 de §10): queda como enmienda pendiente, registrada en la hoja de ruta. Ya no hay que pedir permiso para `laravel/fortify`. Decidió el usuario. (FR-005, FR-010, FR-025, FR-026, FR-028, FR-030)
+- Q: **Q1**, ¿cómo se monta la sesión? → A: La sesión de Laravel con cookie HttpOnly y CSRF, sin el paquete Sanctum (opción A). Sin clientes con token (R6), Sanctum no agrega seguridad y deja una condición en cada `fetch`: mandar `Referer` u `Origin`. Decidió el usuario. (FR-005)
+- Q: **Q2**, ¿qué reglas tienen las contraseñas? → A: De 15 a 64 caracteres, sin reglas de composición, contra una lista local de contraseñas bloqueadas más el nombre y el email de la cuenta (opción A). La lista es `100k-most-used-passwords-NCSC.txt` de SecLists (835 538 bytes, unos 816 KiB), filtrada a las entradas que alcanzan el mínimo. La descarga se pide con permiso al implementar, con nombre, origen, tamaño y licencia: SecLists es MIT, pero el origen y la licencia de los datos del NCSC no se pudieron confirmar y hay que confirmarlos. Decidió el usuario. (FR-023, FR-024)
+- Q: **Q3**, ¿la cuenta de admin tiene que ser distinta de la que se usa para estudiar? → A: Se recomienda, no se exige (opción A): una cuenta admin usa el contenido como una de alumno, y las estadísticas excluyen a los admins por rol. Decidió el usuario. (FR-033)
+- Q: **Q4**, ¿cómo son las invitaciones? → A: Siempre ligadas a un email y de un solo uso, una por email (opción A), sin links de curso multiuso. Decidió el usuario. (FR-017)
+- Q: **Q5**, ¿cuánto dura la sesión, y entran «recordarme» y la cookie de dispositivo? → A: 30 minutos de inactividad y 8 horas como máximo; «recordarme» de 30 días, sólo para estudiantes; cookie de dispositivo de 180 días (opción A). Decidió el usuario. (FR-006, FR-014, FR-015)
+- Las demás propuestas de esta spec no entraron en esta ronda: renovar por consola una invitación vigente, `contentVersion: null` sin import, los códigos `method_not_allowed` y `server_error`, el 404 `invitation_not_found`, el 409 sin `X-Taller-User`, el 401 de una sesión viva de una cuenta en `deleting`, los cinco campos del usuario y el texto del criterio J. Siguen en Assumptions como propuestas, el plan las toma como base y se confirman al aprobar el ADR 0006. (Assumptions)
 
 ### Para la segunda ronda
 
@@ -155,7 +115,7 @@ Cada una con el ítem que la implementa. Ninguna cambia lo que C3a construye.
 | §13.13, retenciones | transversal | C3a aplica las del ADR (sesiones vencidas, tokens de 60 minutos, invitaciones vencidas a los 30 días). Siguen abiertos los días de logs y de respaldos, y si se borran las cuentas inactivas |
 | §13.14, Ley 25.326: texto del aviso, responsable de la base, inscripción ante la AAIP, menores de edad | transversal | C3a guarda sólo la versión aceptada; el texto lo escribe el usuario |
 | §13.15, carga: usuarios simultáneos y tamaño de las aulas | transversal | Dimensiona la ráfaga de Nginx; mientras, el supuesto de trabajo es un aula de 40 |
-| Si `password.confirm` entra en C3a sin consumidor propio; cómo se cambia el rol o el estado antes de C3b; si el front necesita `appBuild`; los códigos de 405 y 500; el texto del criterio J | C3a | Salieron de esta spec y no son del ADR; quedan como propuestas en Assumptions. Las confirma el clarify o el plan |
+| Si `password.confirm` entra en C3a sin consumidor propio; cómo se cambia el rol o el estado antes de C3b; si el front necesita `appBuild`; los códigos de 405 y 500; el texto del criterio J | C3a | Salieron de esta spec y no son del ADR; quedan como propuestas en Assumptions. El plan las toma como base y las confirma la aprobación del ADR 0006 |
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -219,7 +179,7 @@ El front pregunta quién es el usuario con `GET /api/session` y, con sesión, le
 3. **Dado** cualquier respuesta de contenido con sesión, **cuando** se inspeccionan sus cabeceras, **entonces** lleva `Cache-Control: private, no-cache` y no lleva `Vary: Cookie`.
 4. **Dado** un cliente sin sesión, **cuando** pide `GET /api/session`, **entonces** recibe 200 con `user: null`, `contentVersion`, los catálogos con su `chainPosition` y `features`, con `Cache-Control: no-store` y la cookie `XSRF-TOKEN`; con sesión, el mismo pedido trae el usuario.
 5. **Dado** una cuenta con el email sin verificar, **cuando** pide contenido, **entonces** recibe 403 `email_unverified`.
-6. **Dado** una cuenta admin, **cuando** pide contenido, **entonces** lo recibe igual que un alumno *(propuesta, Q3)*.
+6. **Dado** una cuenta admin, **cuando** pide contenido, **entonces** lo recibe igual que un alumno (el rol no cambia el acceso al contenido; Clarifications, Q3).
 7. **Dado** el health check `GET /api/up`, **cuando** se pide sin sesión, **entonces** responde 200 y no crea ninguna fila en `sessions`.
 
 *Cubre: FR-031 a FR-035; SC-001.*
@@ -337,8 +297,8 @@ Quien despliega necesita que un error de la API siempre se entienda, que un desp
 
 **Sesión**
 
-- **FR-005**: [NEEDS CLARIFICATION: Q1, cómo se monta la sesión. La recomendada: la sesión de Laravel con cookie HttpOnly y CSRF, sin el paquete Sanctum.] La autenticación DEBE usar la sesión de Laravel, con una cookie HttpOnly y `SameSite=Lax` y protección contra CSRF (`XSRF-TOKEN` → `X-XSRF-TOKEN`). NO DEBE usar tokens de acceso ni JWT. *(D16, §4.9; R11)*
-- **FR-006** *(propuesta, Q5)*: La sesión DEBE vencer a los 30 minutos de inactividad y, como máximo, a las 8 horas de iniciada, y su contenido DEBE guardarse cifrado. *(§4.2)*
+- **FR-005**: La autenticación DEBE usar la sesión de Laravel, con una cookie HttpOnly y `SameSite=Lax` y protección contra CSRF (`XSRF-TOKEN` → `X-XSRF-TOKEN`), montada sin el paquete Sanctum. NO DEBE usar tokens de acceso ni JWT. *(D16, §4.9; R11; Clarifications, Q1)*
+- **FR-006**: La sesión DEBE vencer a los 30 minutos de inactividad y, como máximo, a las 8 horas de iniciada, y su contenido DEBE guardarse cifrado. *(§4.2; Clarifications, Q5)*
 - **FR-007**: La revocación NO DEBE depender del driver de sesiones. En cada pedido con sesión, el estado de la cuenta DEBE ser `active` (si es `disabled`, responde 403 `account_disabled`; si es `deleting`, 401 `unauthenticated`); el hash de la contraseña guardado en la sesión DEBE coincidir con el de la cuenta; y el token de «recordarme» se rota al salir y al cambiar o restablecer la contraseña. Borrar la fila de `sessions` es limpieza, no una garantía. *(D16, §4.5)*
 - **FR-008**: El ID de la sesión DEBE regenerarse al ingresar, al aceptar una invitación, al cambiar la contraseña y al reconfirmarla; al salir, la sesión DEBE invalidarse. *(§4.2)*
 - **FR-009**: Las rutas que no usan sesión, como el health check `GET /api/up`, DEBEN quedar fuera del middleware de sesión. `GET /api/session`, que es pública, DEBE crear una sesión de invitado por cada cliente nuevo y dejar la cookie `XSRF-TOKEN`. *(D16, §4.2, §7)*
@@ -349,13 +309,13 @@ Quien despliega necesita que un error de la API siempre se entienda, que un desp
 - **FR-011**: El ingreso DEBE responder 200 con `{data: usuario}`; ante cualquier fallo de credenciales, 422 `auth_failed` con el mismo cuerpo exista o no la cuenta; con la contraseña correcta y la cuenta `disabled`, 403 `account_disabled` sin iniciar la sesión; `deleting` falla como una credencial inválida; y al pasarse de un límite, 429 con `Retry-After`. *(§4.2, §3.1, §8)*
 - **FR-012**: El ingreso DEBE limitarse a 5 intentos por minuto por email canónico y red, y a 60 por minuto por red. «Red» es la IPv4 o el /64 de IPv6. *(§4.6)*
 - **FR-013**: El bloqueo por cuenta DEBE ser progresivo y valer sólo para dispositivos sin una cookie de dispositivo válida para esa cuenta: desde el 10.º fallo consecutivo la cuenta queda bloqueada 1 minuto para ellos, el plazo se duplica con cada fallo nuevo hasta 15 minutos, y después de 100 fallos consecutivos los dispositivos desconocidos no entran hasta que se restablezca la contraseña. Su clave es el email canónico, exista o no la cuenta, para que el 429 no revele qué emails existen. Un ingreso correcto o un restablecimiento limpia el contador. *(§4.6, §3.1)*
-- **FR-014** *(propuesta, Q5)*: La cookie de dispositivo DEBE estar cifrada y firmada, ligada a la cuenta, ser HttpOnly y durar 180 días. Sólo exime del bloqueo por cuenta, con un límite propio de 5 fallos por minuto, y después de 10 fallos seguidos deja de eximir. Es estado del cliente, sin tabla: no es auditoría de logins (R5). *(§4.2)*
-- **FR-015** *(propuesta, Q5)*: «Recordarme» DEBE ser opcional, de 30 días y sólo para estudiantes. A un admin NO DEBE emitírsele nunca. *(§4.2)*
+- **FR-014**: La cookie de dispositivo DEBE estar cifrada y firmada, ligada a la cuenta, ser HttpOnly y durar 180 días. Sólo exime del bloqueo por cuenta, con un límite propio de 5 fallos por minuto, y después de 10 fallos seguidos deja de eximir. Es estado del cliente, sin tabla: no es auditoría de logins (R5). *(§4.2; Clarifications, Q5)*
+- **FR-015**: «Recordarme» DEBE ser opcional, de 30 días y sólo para estudiantes. A un admin NO DEBE emitírsele nunca. *(§4.2; Clarifications, Q5)*
 - **FR-016**: `POST /api/auth/logout` DEBE invalidar la sesión, rotar el token de «recordarme» y responder 204. *(§7)*
 
 **Invitaciones y alta**
 
-- **FR-017**: [NEEDS CLARIFICATION: Q4, forma de las invitaciones. La recomendada: una por email y de un solo uso.] Una invitación DEBE estar ligada a un email, ser de un solo uso y llevar el rol inicial; hay a lo sumo una pendiente por email. Su token DEBE tener 256 bits y guardarse sólo como sha256. Vence a los 7 días, y a las 48 horas si es de admin. *(D18, §5.2)*
+- **FR-017**: Una invitación DEBE estar ligada a un email, ser de un solo uso y llevar el rol inicial; hay a lo sumo una pendiente por email. Su token DEBE tener 256 bits y guardarse sólo como sha256. Vence a los 7 días, y a las 48 horas si es de admin. *(D18, §5.2; Clarifications, Q4)*
 - **FR-018**: `taller:invite <email> [--role=admin]` DEBE crear la invitación e imprimir su link, `https://<APP_URL>/#invitacion=<token>`, armado desde la configuración y nunca desde `Host`. Sirve para el primer admin y para dar de alta alumnos mientras no exista la administración de C3b. Ninguna contraseña pasa por la consola. Sobre un email que ya tiene cuenta falla con ese motivo; sobre uno con una invitación vigente o vencida la renueva: rota el token y el vencimiento, y el link anterior deja de valer. *(§4.1, paso 5; D18; la renovación por consola es propuesta)*
 - **FR-019**: `POST /api/auth/invitations/lookup {token}` DEBE devolver `{email, role, expiresAt}`; si la invitación venció, 410 `invitation_expired`; en cualquier otro caso (usada, revocada o desconocida), 404 `invitation_not_found`. *(§4.1, paso 2; §3.1)*
 - **FR-020**: `POST /api/auth/invitations/accept {token, name, password, password_confirmation, privacyVersion}` DEBE hashear la contraseña antes de abrir la transacción; crear en ella la cuenta con el rol de la invitación, `active` y con el email verificado; borrar la invitación; iniciar la sesión, regenerar su ID y responder 201 con `{data: usuario}`. Dos aceptaciones simultáneas del mismo token crean una sola cuenta y la segunda recibe 404; el UNIQUE del email es la última guarda (409 `email_taken`). DEBE rechazar con 422 una `privacyVersion` que no sea la vigente. *(§4.1, paso 3)*
@@ -364,7 +324,7 @@ Quien despliega necesita que un error de la API siempre se entienda, que un desp
 
 **Contraseñas y recuperación sin correo**
 
-- **FR-023** *(propuesta, Q2)*: Las contraseñas DEBEN tener de 15 a 64 caracteres y, como mucho, 72 bytes, sin reglas de composición. DEBEN normalizarse a NFC antes de fijarse y de verificarse (los 72 bytes se cuentan después de normalizar), contrastarse con una lista local de contraseñas comunes más el nombre y el email de la cuenta, y guardarse con bcrypt de 12 rondas. *(§4.7)*
+- **FR-023**: Las contraseñas DEBEN tener de 15 a 64 caracteres y, como mucho, 72 bytes, sin reglas de composición. DEBEN normalizarse a NFC antes de fijarse y de verificarse (los 72 bytes se cuentan después de normalizar), contrastarse con una lista local de contraseñas bloqueadas (la del NCSC de SecLists, filtrada a las entradas de 15 caracteres o más) más el nombre y el email de la cuenta, y guardarse con bcrypt de 12 rondas. *(§4.7; Clarifications, Q2)*
 - **FR-024**: El contraste con la lista DEBE ser local: NO DEBE consultar Internet, porque el contenedor `php` no tiene salida. *(§4.7)*
 - **FR-025**: `taller:password-reset-link <email>` DEBE imprimir un link de recuperación, `https://<APP_URL>/#restablecer=<token>&email=<email>`, que vence a los 60 minutos y no se emite de nuevo antes de 60 segundos. Sirve para cualquier rol y es el único camino de recuperación de un admin. No envía nada. *(§4.3)*
 - **FR-026**: `POST /api/auth/reset-password {token, email, password, password_confirmation}` DEBE fijar la contraseña nueva, rotar el token de «recordarme», borrar todas las sesiones de la cuenta y limpiar su bloqueo; NO DEBE iniciar sesión. El mismo 422 vale para un token inválido, uno vencido y una cuenta inexistente. Se limita a 10 por minuto por red y 5 por minuto por email. *(§4.3, §4.6)*
@@ -380,7 +340,7 @@ Quien despliega necesita que un error de la API siempre se entienda, que un desp
 
 - **FR-031**: Las seis rutas de contenido (los 17 recursos) DEBEN exigir una sesión activa y el email verificado: sin sesión, 401 `unauthenticated`; con la cuenta sin verificar, 403 `email_unverified`, que emite un `verified` propio porque el de Laravel responde 403 sin `code`. *(C2 FR-025; §7, §8)*
 - **FR-032**: Con sesión, el contenido DEBE seguir saliendo como en C2: los mismos bytes (el sha256 del cuerpo es el de su huella del generador), el mismo `ETag` y `Content-Version`, el 304 ante un `If-None-Match` fuerte o débil, `Cache-Control: private, no-cache` sin tocar, sin `Vary: Cookie` y sin límite de tasa de Laravel. El middleware de sesión NO DEBE agregar `Vary: Cookie` ni modificar `Cache-Control` en esas respuestas. *(C2 FR-014, FR-017, FR-021; D11)*
-- **FR-033**: [NEEDS CLARIFICATION: Q3, si el admin puede estudiar con su cuenta. La recomendada: sí, sólo se recomienda una cuenta aparte.] Una cuenta con rol `admin` DEBE poder usar el contenido igual que una de alumno. *(S5, §13.7)*
+- **FR-033**: Una cuenta con rol `admin` DEBE poder usar el contenido igual que una de alumno: la cuenta de admin separada se recomienda, no se exige. *(S5, §13.7; Clarifications, Q3)*
 - **FR-034**: `GET /api/session` DEBE ser pública y responder `{user, features: {passwordReset, registration}, contentVersion, catalogs: [{code, sliceBy, chainPosition}]}`, con `Cache-Control: no-store` y la cookie `XSRF-TOKEN`. `user` es el usuario de la sesión o `null`. `contentVersion` y los catálogos activos salen del último import (C2 FR-026) con una lectura por clave primaria y la de los catálogos, sin armar contenido. En C3a, `features.passwordReset` y `features.registration` valen `false`. Un `appBuild` opaco entra sólo si A3 lo pide. *(§7, D13; C2 Q2 y Q3)*
 - **FR-035**: El usuario que devuelve la API DEBE llevar sólo `id`, `name`, `email`, `role` y `privacyAccepted` (si la versión que aceptó es la vigente), con sus claves en camelCase; nunca el hash, el token de «recordarme» ni el estado. *(§8; propuesta, ver Assumptions)*
 
@@ -410,7 +370,7 @@ Quien despliega necesita que un error de la API siempre se entienda, que un desp
 - **FR-048**: Una prueba DEBE recorrer todas las rutas de `/api` y exigir sesión en todas salvo una lista explícita (`up`, `session`, `auth/login`, `auth/invitations/lookup`, `auth/invitations/accept` y `auth/reset-password`). Otras DEBEN cubrir la asignación en masa de `role` y `status`, `account_mismatch` en cada ruta que modifica con sesión, y `email_unverified` en el contenido. *(§4.5, §8)*
 - **FR-049**: Las pruebas DEBEN cubrir una cuenta deshabilitada con una sesión viva (403 en el siguiente pedido) y un cambio de contraseña con otra sesión abierta (la otra deja de servir). *(D16)*
 - **FR-050**: DEBE existir una prueba de aceptación en un navegador real de la cookie (HttpOnly y SameSite), del CSRF y del cambio de cuenta en el mismo navegador (una pestaña de A, después de que B ingresó, recibe 409), porque Pest no manda `Referer`, `Origin` ni `Sec-Fetch-Site`. Playwright no está adoptado: ver «Acciones del usuario». *(§4.9, §8)*
-- **FR-051**: El código nuevo DEBE pasar el análisis estático en el nivel 9, sin baseline ni errores ignorados, aunque `phpstan.neon` siga en el nivel 6 cuando C3a se integre; y DEBEN pasar Pint, `npm test`, `npm run lint`, `npm run format:check` y `git diff --check`. *(C6 FR-012; hoja de ruta)*
+- **FR-051**: El código nuevo DEBE pasar el análisis estático en el nivel 9, que `phpstan.neon` fija desde C6, sin baseline ni errores ignorados; y DEBEN pasar Pint, `npm test`, `npm run lint`, `npm run format:check` y `git diff --check`. *(C6 FR-012; hoja de ruta)*
 - **FR-052**: La documentación que cita a Sanctum o a la autenticación (`backend/api/AGENTS.md`, el comentario de `backend/api/bootstrap/app.php` y `docs/architecture.md`) DEBE actualizarse en el mismo cambio, igual que las variables y los secretos nuevos (`backend/api/scripts/init-env.sh` y el ancla `x-laravel-env` de `docker/compose.yaml`). *(`AGENTS.md`)*
 
 ### Key Entities *(include if feature involves data)*
@@ -445,14 +405,14 @@ Quien despliega necesita que un error de la API siempre se entienda, que un desp
 
 ## Assumptions
 
-- **Fuente.** La fuente técnica es el ADR 0006, en estado «propuesta» y a la espera de su aprobación (acción del usuario de la hoja de ruta). Si lo enmienda, esta spec se ajusta. Sus preguntas de §13 se cierran en el clarify: las cinco primeras, en «Preguntas abiertas».
-- **Punto de partida.** C1 y C2 están entregados (C2: PR #8, `4573457`). Esta rama se apila sobre la spec de C6 (PR #15), que corre en paralelo con C3 y sube PHPStan al nivel 9.
+- **Fuente.** La fuente técnica es el ADR 0006, en estado «propuesta» y a la espera de su aprobación (acción del usuario de la hoja de ruta). Si lo enmienda, esta spec se ajusta. Las cinco preguntas de §13 que cambian lo que C3a construye se cerraron en el clarify del 2026-10-05 (Clarifications).
+- **Punto de partida.** C1, C2 y C6 están entregados (C2: PR #8, `4573457`; C6: PR #17, que sube PHPStan al nivel 9 y deja los registros tipados en `backend/api/app/Content/Record/`).
 - **Un solo servidor,** con la carga de referencia del ADR (S2: hasta unas 5.000 cuentas y unas 1.000 activas en el pico).
-- **Sin pantallas.** C3a entrega el contrato HTTP. Las pantallas de acceso (ingreso, invitación, restablecimiento, cambio de contraseña, aviso de privacidad) son del front; ningún ítem de la hoja de ruta del backend las asigna.
+- **Sin pantallas.** C3a entrega el contrato HTTP. Las pantallas de cuenta (ingreso, invitación, restablecimiento, cambio de contraseña, aviso de privacidad) son de F11, y las de administración de F12, del épico del front.
 - **Hasta C4, puede ser una sola IP** para PHP: el puerto escucha sólo en `127.0.0.1` y la IP real del cliente la fija C4. No hay clientes externos antes de C4.
 - **Sin correo en C3a.** No se envía nada: las invitaciones y las recuperaciones son links por consola (modo sólo link, S7), y `GET /api/session` informa `features.passwordReset` y `features.registration` en `false`. C3b trae el correo.
 - **Hasta C3b no hay un camino soportado para cambiar el rol o el estado** de una cuenta. El operador usa `tinker` (instalado), y queda documentado. Es deliberado: C3b trae el camino con `password.confirm`, la guardia del último admin y sus efectos.
-- **Fortify.** El ADR monta el ingreso con Fortify sin vistas (D17). La spec no depende de eso: describe comportamiento. El plan decide, con el permiso del usuario, si usa Fortify (y qué versión) o piezas del núcleo de Laravel; ver «Acciones del usuario».
+- **Sin Fortify.** Decidido por el usuario en el clarify: el ingreso, la salida, la confirmación de contraseña y el cambio y el restablecimiento de contraseña se arman con el guard de sesión de Laravel, `Hash`, el broker de contraseñas y `RateLimiter`, sin paquetes nuevos. El ADR 0006 nombraba «Fortify sin vistas» (D17, §4.2, §4.3, la tabla de §4.9 y la fila C3 de §10): queda como enmienda pendiente, registrada en la hoja de ruta.
 - **Las skills no mandan sobre el ADR.** `laravel-specialist`, `laravel-security` y `laravel-tdd` proponen Sanctum, reglas de composición con `Password::uncompromised()` (que consulta Internet y `php` no tiene salida), un `Gate::before` para un super-admin (el ADR pide permisos sin un `before()` que autorice todo), `declare(strict_types=1)` (C6 lo deja fuera) y coberturas del 80 al 85 % (el proyecto no tiene meta de cobertura). Donde difieren, mandan el ADR y las decisiones del usuario.
 - **El aviso de privacidad.** Mientras no exista el texto (§13.14), la versión vigente es un valor de configuración con un valor de desarrollo; el despliegue público exige el real. C3a no bloquea las rutas cuando la versión aceptada no es la vigente: informa `privacyAccepted` y el front pide la aceptación (propuesta); bloquear sería una regla más del grupo de rutas con sesión.
 - **Propuestas que no vienen del ADR:**
@@ -473,29 +433,29 @@ Sólo las que cambian lo que se construye. Las que dicen «usuario» son decisio
 
 | Tema | Alternativas | Decisión y motivo |
 | --- | --- | --- |
-| Cómo se parte C3 | No partirla; partirla en C3a (autenticación) y C3b (invitaciones y administración) con el correo en C3a, como la hoja de ruta; partirla con el correo en C3b (esta spec); partirla en tres (autenticación, correo y administración, ciclo de vida) | Dos mitades con el correo en C3b (propuesta). Sin partir, A3, B2 y D1 esperan 15 endpoints que no usan. Con el correo en C3a, C3a suma `worker-mail`, el único contenedor con salida a Internet, y depende de la decisión del proveedor para probarse de punta a punta. En tres, el ciclo de vida es un corte natural si C3b queda grande, porque necesita las tablas de B2 y D1 |
+| Cómo se parte C3 | No partirla; partirla en C3a (autenticación) y C3b (invitaciones y administración) con el correo en C3a, como la hoja de ruta; partirla con el correo en C3b (esta spec); partirla en tres (autenticación, correo y administración, ciclo de vida) | Dos mitades con el correo en C3b (confirmada en el clarify). Sin partir, A3, B2 y D1 esperan 15 endpoints que no usan. Con el correo en C3a, C3a suma `worker-mail`, el único contenedor con salida a Internet, y depende de la decisión del proveedor para probarse de punta a punta. En tres, el ciclo de vida es un corte natural si C3b queda grande, porque necesita las tablas de B2 y D1 |
 | Dónde va la recuperación de contraseña | Por correo en C3a; por consola en C3a y por correo en C3b | Por consola en C3a (S7): es el camino que un admin necesita siempre, y cubre al alumno hasta que llegue el correo |
 | Dónde van las invitaciones | Todas en C3b; la aceptación y `taller:invite` en C3a y la administración por HTTP en C3b | La aceptación en C3a: sin ella no puede existir ninguna cuenta (§4.1, paso 5) |
 | Dónde van la exportación y la supresión de la cuenta | En C3a, sólo con las tablas de hoy; en C3b | En C3b, con la prueba de esquema que obliga a la FK en cascada en C3a (FR-004): B2 y D1 corren antes que C3b, y la supresión completa necesita sus tablas |
 | `password.confirm` en C3a | Con su primer consumidor (C3b o D1); en C3a sin consumidor propio | En C3a: D1 lo necesita para borrar el progreso, el orden entre C3b y D1 está abierto, y sus fallos suman al bloqueo, que es de C3a |
-| Montaje de la sesión | Sin Sanctum; con `statefulApi()` | Pregunta Q1; recomendada, sin Sanctum |
-| Ingreso con o sin Fortify | Fortify sin vistas (D17); piezas del núcleo de Laravel, que D17 descartó («controladores propios para todo») | Se decide en el plan, con la medición de «Acciones del usuario»: la última Fortify trae 2FA y passkeys, que el ADR excluye |
+| Montaje de la sesión | Sin Sanctum; con `statefulApi()` | Sin Sanctum (Clarifications, Q1): sin clientes con token no agrega seguridad, y deja una condición en cada `fetch` (mandar `Referer` u `Origin`) |
+| Ingreso con o sin Fortify | Fortify sin vistas (D17); piezas del núcleo de Laravel, que D17 descartó («controladores propios para todo») | Piezas del núcleo de Laravel (usuario, clarify del 2026-10-05): la última Fortify (1.40.0) suma 15 paquetes por 2FA y passkeys, que el ADR excluye, y la 1.36.2, la última sin passkeys, suma 5 y queda fuera de las versiones que se siguen publicando |
 | Prueba en navegador real | Playwright; una verificación manual documentada; un script con un jar de cookies | Playwright, si el usuario lo adopta. Si no, la manual, declarada como límite en el PR. El script no prueba `SameSite` ni `Sec-Fetch-Site`, que es lo que hay que ver |
 | Con qué cuenta se autentican los checks del stack | Una cuenta fija en `.env`; una cuenta que el check crea y retira | Una cuenta propia del check: no deja un secreto fijo ni una cuenta olvidada |
 | Con qué privilegios corre el chequeo de transacciones largas | Con root, sin privilegio nuevo; con el usuario `taller` y el mínimo privilegio que aplica `db-grants` | Con el mínimo privilegio que aplica `db-grants` (recomendación del DBA, D35), y falla cerrado. En qué servicio o script corre lo decide el plan |
 
 ## Riesgos
 
-1. **El contenido protegido rompe lo que lo usa sin sesión.** `deploy-check.sh` (pide `/api/guide`) y `qa/api-content-check.ts` (pide las 17 porciones) piden contenido sin cookie, y C6 (FR-019 y SC-007) exige que pasen. *Mitigación:* FR-046. Si C3a se integra antes que C6, el check de despliegue de C6 falla hasta que se adapte.
+1. **El contenido protegido rompe lo que lo usa sin sesión.** `deploy-check.sh` (pide `/api/guide`) y `qa/api-content-check.ts` (pide las 17 porciones) piden contenido sin cookie, y C6 (FR-019 y SC-007) exige que pasen. *Mitigación:* FR-046. C6 ya está integrado, así que esos dos checks pasan hoy sin sesión y fallan en cuanto el contenido la exija: se adaptan en el mismo cambio.
 2. **Posiblemente una sola IP hasta C4.** Los límites «por red» pueden tratar a todos los clientes como uno. *Mitigación:* ráfaga holgada, límites por email y red en el ingreso, y afinarlos en C4; antes de C4 no hay clientes externos.
 3. **Cada pedido con sesión escribe `sessions`,** también el 304 de contenido: contención en MySQL en los picos de aula. *Mitigación:* el sorteo de limpieza en 0, la poda por lotes fuera de los pedidos y sin límite de Laravel en el contenido; el camino de escala está en §9 (escribir sólo si cambió, y después Redis). Se mide antes de ajustar FPM o el buffer pool.
 4. **El bloqueo por cuenta puede dejar afuera al titular** si falla el diseño. *Mitigación:* la cookie de dispositivo, los topes de 15 minutos y de 100 fallos, el restablecimiento por consola, y pruebas con relojes fijados.
-5. **Fortify arrastra 2FA y passkeys.** *Mitigación:* la opción de fijar una versión anterior o de evitarlo, que decide el usuario (ver «Acciones del usuario»).
+5. **El código de autenticación es propio.** Sin Fortify, el ingreso, el bloqueo, la recuperación y la revocación son código de la aplicación, y un error ahí es una vulnerabilidad. *Mitigación:* el ADR fija cada comportamiento; cada pieza entra con su prueba primero (límites con relojes fijados, un caso por regla) y el plan la marca en su «Review Focus». Ninguna regla de composición ni consulta externa.
 6. **La prueba en navegador real no tiene dónde correr:** Playwright no está adoptado. *Mitigación:* FR-050 con su verificación manual declarada como límite.
 7. **Un volumen existente falla cerrado en el primer despliegue** hasta que se aplica el comando único de `db-grants`. *Mitigación:* el mensaje dice cuál es, y queda documentado; es una acción del operador.
 8. **Sin administración hasta C3b,** deshabilitar o promover una cuenta exige `tinker`. *Mitigación:* deliberado y documentado; C3b debería entregarse antes de exponer el taller (C4).
 9. **El front tiene que mandar `X-Taller-User` y manejar 401, 409, 419, 423 y 429.** Si no lo hace, cada modificación recibe 409. *Mitigación:* el contrato está en esta spec, y el coordinador se lo pasa a las specs del front (el acceso y A3).
-10. **Trabajo en paralelo con C6:** `phpstan.neon`, `config/`, `backend/api/AGENTS.md`, `bootstrap/app.php` y `composer.json` los tocan los dos. *Mitigación:* los integra el coordinador, y el código de C3a pasa el nivel 9 desde el principio.
+10. **Trabajo en paralelo con B2 y D1:** se planifican a la vez y dependen de C3a (`Auth::id()`, `users.status`, `X-Taller-User` y el cuerpo `{message, code}`). Comparten con C3a `bootstrap/app.php`, `routes/api.php`, `routes/console.php`, `config/`, `composer.json`, `phpstan.neon`, `docker/compose.yaml`, `docker/nginx/nginx.conf`, `lang/es` y `backend/api/AGENTS.md`. *Mitigación:* los integra el coordinador, y el código de C3a pasa el nivel 9 desde el principio.
 11. **Cerrar el DNS puede romper algo que hoy resuelve afuera sin que nadie lo note.** *Mitigación:* la prueba de FR-043 corre contra todos los contenedores de redes internas.
 12. **El ADR sigue sin aprobar.** Si el usuario lo enmienda, la spec cambia. *Mitigación:* las decisiones que dependen de él están marcadas como propuestas.
 
@@ -514,11 +474,11 @@ Sólo las que cambian lo que se construye. Las que dicen «usuario» son decisio
 | El reenvío DNS de los contenedores sin salida | Estacionado de C1; C2, Assumptions | FR-043 |
 | Un `appBuild` opaco si el front lo necesita | C2 Q3 | No entra (YAGNI); ver FR-034 |
 
-**Con C6** (corre en paralelo, ola 2):
+**Con C6** (entregado, PR #17):
 
-- El nivel 9 de PHPStan rige para el código de C3a desde el principio (FR-051). Si C3a se integra antes que C6, `phpstan.neon` sigue en el 6 y las tareas corren el nivel 9 sobre los archivos propios.
-- El modelo de datos de C6 deja `Catalog::fromRow` «hasta que alguien lea la tabla (C3)», y `GET /api/session` es su primer lector: si C6 se integra antes, C3a lo usa; si no, C6 lo suma después.
-- Los dos tocan `phpstan.neon`, `config/`, `backend/api/AGENTS.md` y `composer.json`; C3a, además, `bootstrap/app.php` y `routes/api.php`. Los integra el coordinador.
+- El nivel 9 de PHPStan rige para el código de C3a desde el principio (FR-051): `phpstan.neon` ya lo fija desde C6.
+- C6 dejó sin escribir `Catalog::fromRow` (su FR-002: una conversión sin lector espera a su primer uso). `GET /api/session` es ese primer lector, así que C3a suma `Catalog::fromRow` en `app/Content/Record/Catalog.php`, con el patrón de `Language::fromRow`.
+- C3a toca `bootstrap/app.php`, `routes/api.php`, `routes/console.php`, `config/` y `backend/api/AGENTS.md`, que integra el coordinador.
 - El check de despliegue y el de contenido, de los que dependen FR-019 y SC-007 de C6, tienen que autenticarse (FR-046).
 
 **Con C3b** (lo que C3a deja listo para que C3b sólo sume):
@@ -534,20 +494,11 @@ Los agentes no hacen estas acciones. Las descargas piden permiso con nombre, ori
 
 | Cuándo | Acción |
 | --- | --- |
-| Antes del plan | Responder las cinco preguntas de «Preguntas abiertas» (el clarify) y aprobar o enmendar el ADR 0006, que ya figura en la hoja de ruta. |
-| Antes de implementar | **Permiso para `laravel/fortify`** (Composer, packagist.org), con el camino que se elija en la tabla de abajo. |
-| Antes de implementar | **Origen de la lista de contraseñas bloqueadas** (Q2, opciones A y B) y permiso para descargarla: `100k-most-used-passwords-NCSC.txt` de SecLists (github.com/danielmiessler/SecLists), 835 538 bytes. SecLists es MIT; el origen y la licencia de los datos del NCSC no se pudieron confirmar. |
+| Antes de implementar | Aprobar o enmendar el ADR 0006, con la enmienda de D17 (sin Fortify) y las propuestas de «Propuestas que no vienen del ADR». Ya figura en la hoja de ruta. |
+| Antes de implementar | **Origen de la lista de contraseñas bloqueadas** (Q2, opción A) y permiso para descargarla: `100k-most-used-passwords-NCSC.txt` de SecLists (github.com/danielmiessler/SecLists), 835 538 bytes. SecLists es MIT; el origen y la licencia de los datos del NCSC no se pudieron confirmar. |
 | Antes de verificar | **La prueba en navegador real (FR-050).** Playwright no está adoptado (`docs/agent-skills.md`: hasta que un ADR lo adopte, las specs nuevas no tienen dónde correr). Adoptarlo exige un ADR y permiso para descargar `@playwright/test` 1.63.0 (npm; con `playwright` y `playwright-core`, unos 18,6 MB desempaquetados según `npm view`) y los navegadores, que se bajan aparte con `npx playwright install` (tamaño no medido). Si el épico del front adopta Playwright antes, C3a lo usa. Si no, se acepta la verificación manual declarada. |
 | Antes del despliegue público | **El texto del aviso de privacidad** y su versión inicial (§13.14): quién es el responsable de la base, si hay que inscribirla ante la AAIP y si hay alumnos menores de edad. C3a guarda sólo la versión aceptada. |
 | Al desplegar C3a | Con un volumen de MySQL existente, correr una vez el comando de `db-grants` (el chequeo falla cerrado hasta entonces) y `sh backend/api/scripts/init-env.sh`, para que agregue los secretos nuevos, como la clave del HMAC de los registros. |
 | De C3b, con plazo largo | **Proveedor, remitente y dominio del correo** (§13.3) y **permiso para `axllent/mailpit`**, sólo en el perfil `dev` de Compose: `axllent/mailpit` v1.31.4 en Docker Hub, índice `sha256:b68349e3a014b90c5610bfb26b2ae36f3892d7b8cf25ee140c6c71c98d2fcf48`, unos 16,8 MB comprimidos para amd64 (metadatos de Docker Hub del 2026-10-05; no se descargó). Un proveedor por SMTP no suma paquetes; Mailgun, Postmark, Brevo, Resend o SES suman uno o dos (Laravel 13, «Driver Prerequisites»). |
 
-**Fortify, medido el 2026-10-05 sin instalar.** `composer show` no se pudo correr: el host no tiene PHP ni Composer, Docker queda fuera de esta tarea y los metadatos de Composer no traen tamaños. Las cifras salen de los metadatos de Packagist (versiones y requisitos) y de los tamaños de archivo de la API de árboles de GitHub, tomando la última versión de cada dependencia. No es una resolución real de Composer: es una estimación del tamaño instalado, sin pruebas ni documentación.
-
-| Camino | Paquetes nuevos | Tamaño estimado | Qué trae |
-| --- | --- | --- | --- |
-| La última, 1.40.0 | 15 en `composer.lock`; 21 en la imagen de producción, porque seis dependencias que hoy sólo están en `require-dev` pasan a runtime | unos 3,4 MB en el lock; unos 5,2 MB en producción | Desde la 1.37.0 (2026-04-28), Fortify exige `laravel/passkeys`: el ADR excluye 2FA y passkeys (R3), y vienen igual. Los 15 son Fortify, `bacon/bacon-qr-code`, `dasprid/enum`, `pragmarx/google2fa`, `paragonie/constant_time_encoding`, `laravel/passkeys`, `web-auth/webauthn-lib`, `web-auth/cose-lib`, `spomky-labs/cbor-php`, `spomky-labs/pki-framework`, `symfony/serializer`, `symfony/property-info`, `symfony/property-access`, `symfony/type-info` y `symfony/polyfill-php81` |
-| La 1.36.2 (2026-03-20) | 5: Fortify, `bacon/bacon-qr-code`, `dasprid/enum`, `pragmarx/google2fa` y `paragonie/constant_time_encoding` | unos 0,6 MB | La última sin passkeys y compatible con Laravel 13. Queda fuera de las versiones 1.37 en adelante, que son las que se siguen publicando |
-| Sin Fortify | 0 | 0 | Piezas del núcleo de Laravel. D17 lo descartó («controladores propios para todo»); reabrirlo es decisión del usuario |
-
-Con la Q1 en B, además, `laravel/sanctum` 4.3.3: 1 paquete, unos 56 KB, sin dependencias nuevas.
+**Fortify, descartado.** Ya no hay que pedir permiso para `laravel/fortify`. La medición del 2026-10-05, hecha sin instalar nada, quedó como motivo del descarte (Clarifications): la última versión suma 15 paquetes y la última sin passkeys, 5, y las dos traen 2FA, que el ADR excluye (R3).
