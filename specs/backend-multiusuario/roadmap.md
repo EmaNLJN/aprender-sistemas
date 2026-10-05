@@ -28,10 +28,10 @@
 | D1 | Progreso y sincronización | Guardar el progreso en tablas, con sincronización local-first, importación combinable del progreso v1 y fusión por campo | C2, C3, B2 | Pendiente | — |
 | C5 | Estadísticas del admin | Dar al admin métricas de uso sin exponer nunca el código ni los textos del alumno | D1, B2 | Pendiente | — |
 | E1 | Sesión Esenciales | Sumar Esenciales como catálogo nuevo, primero de la cadena | A1, D1 | Pendiente | — |
-| A2 | Compuerta de arranque | Que el front espere el contenido antes de evaluar las vistas legacy y que el HTML deje de embeberlo | A1 | Pendiente | — |
-| A3 | El front lee el contenido de la API | Que el front lea las 17 porciones con el protocolo de arranque, guarde la última copia y avise si el backend no responde | A2, C2, C3 | Pendiente | — |
+| A2 | Compuerta de arranque | Que el front espere el contenido antes de evaluar las vistas legacy y que el HTML deje de embeberlo | A1, [F1 y F2](../front-react/roadmap.md) | Pendiente | — |
+| A3 | El front lee el contenido de la API | Que el front lea las 17 porciones con el protocolo de arranque, guarde la última copia y avise si el backend no responde | A2, C2, C3, [F11](../front-react/roadmap.md#pantallas-de-acceso-a3-y-c3) | Pendiente | — |
 | C4 | Exposición | Exponer el taller en Internet con certificado propio, cabeceras estrictas y mínimo privilegio | A3, C3 | Pendiente | — |
-| A4 | Laboratorio con el sandbox propio | Que el laboratorio use `/api/runs` en lugar de los Playgrounds públicos | B2, A3 | Pendiente | — |
+| A4 | Laboratorio con el sandbox propio | Que el laboratorio use `/api/runs` en lugar de los Playgrounds públicos | B2, A3; coordina con [F7](../front-react/roadmap.md) | Pendiente | — |
 | B3 | Auditoría local del currículo | Probar en el ejecutor local que todas las soluciones aprueban y todos los códigos iniciales fallan | B2 | Pendiente | — |
 | C6 | Registros tipados del contenido | Que los registros del contenido viajen por la API como objetos tipados e inmutables, sin cambiar un byte publicado ni una fila, y que el análisis estático suba de nivel | C2 | Planificado | [002-c6-registros-tipados](../002-c6-registros-tipados/spec.md), que extiende a la 001 |
 
@@ -44,7 +44,7 @@ Cada línea nombra lo que entra y lo que queda fuera. Los detalles están en el 
   - Fuera: sesión y `GET /api/session` (C3), el chequeo de transacciones largas con `db-grants` (C3), `test_key` inmutable y plantilla del harness (B2), vista del front (A2 y A3) y Esenciales (E1).
 - **C3:**
   - Entra: `users` con rol y estado, invitaciones, recuperación por email, sesión de Laravel sin el paquete Sanctum, Fortify sin vistas, límites por cuenta y por red, cuenta esperada en todo pedido que muta, rutas `/api/auth`, `/api/me` y `/api/admin` (usuarios e invitaciones), `worker-mail` aislado, `db-grants`, `scheduler` y `lang/es`. Cierra el reenvío DNS de los contenedores sin egreso (estacionado de C1). Por las decisiones del clarify de C2 (2026-10-04 y 2026-10-05), C3 también entrega: `GET /api/session` (usuario o null, `contentVersion` y catálogos a partir del último import, y un `appBuild` opaco si el front lo necesita); el contenido de C2 detrás de la sesión, con «sin sesión, 401» en su aceptación y sin que el middleware de sesión agregue `Vary: Cookie` ni toque `Cache-Control` en el contenido; el chequeo de transacciones largas antes de migrar (D35), dentro de `db-grants`, con su prueba de privilegios con un usuario restringido (criterio J del DBA); y la limpieza programada de la caché de cuerpos vencida, en el `scheduler`.
-  - Fuera: 2FA, login social, passkeys, registro abierto activo (queda detrás de `REGISTRATION_OPEN=false`) y TLS (C4). Si queda grande, se parte en C3a (autenticación) y C3b (invitaciones y admin).
+  - Fuera: 2FA, login social, passkeys, registro abierto activo (queda detrás de `REGISTRATION_OPEN=false`), TLS (C4) y las pantallas de login e invitación (son F11 de la [hoja de ruta del front](../front-react/roadmap.md#pantallas-de-acceso-a3-y-c3)). Si queda grande, se parte en C3a (autenticación) y C3b (invitaciones y admin).
 - **B2:**
   - Entra: `progress_heads` y `exercise_progress` completas, `attempts`, `attempt_tests`, `attempt_payloads` y `runs`; `/api/runs` con cola propia, cuotas por usuario y tope global; `executor` y `worker-runs`; la plantilla del harness como recurso. Precondición: `test_key` único e inmutable (el generador deja de exigir `t{índice+1}`).
   - Fuera: sincronización del progreso (D1) y la vista del laboratorio (A4).
