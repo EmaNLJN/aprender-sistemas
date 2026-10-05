@@ -38,19 +38,27 @@ prediction:
   answer: 2
   explanation: Se toma max(7,3)+1. Usar solo recibido+1 haría retroceder el reloj.
 steps:
-  - title: Evento local
+  - id: e1
+    v1Index: 0
+    title: Evento local
     task: Definí un incremento que detecte overflow.
     why: Un contador que vuelve a cero rompe la monotonía.
     done: El máximo representable produce error sin un sello válido.
-  - title: Recepción
+  - id: e2
+    v1Index: 1
+    title: Recepción
     task: Implementá max(local, remoto)+1.
     why: La recepción debe ser posterior a ambos valores.
     done: Pasan mensajes menores, mayores y límites enteros.
-  - title: Traza causal
+  - id: e3
+    v1Index: 2
+    title: Traza causal
     task: Guardá evento, nodo, sello y vínculo de envío/recepción.
     why: Una lista de números sola no captura las relaciones de mensajes.
     done: La traza diferencia eventos independientes y eventos conectados.
-  - title: Comparación útil
+  - id: e4
+    v1Index: 3
+    title: Comparación útil
     task: Contrastá con vector clocks usando las fuentes originales antes de extender el modelo.
     why: Detectar concurrencia exige más información que un entero.
     done: Explicás por qué L(a)<L(b) no implica a→b y por qué no sirve para TTL.

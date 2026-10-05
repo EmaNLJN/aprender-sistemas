@@ -30,19 +30,27 @@ prediction:
   answer: 1
   explanation: La altura es −3, pero la pendiente en el vértice es 0.
 steps:
-  - title: Representar
+  - id: e1
+    v1Index: 0
+    title: Representar
     task: Guardá coeficientes en orden creciente de potencias.
     why: La posición es parte del significado del dato.
     done: Podés representar términos faltantes sin perder su grado.
-  - title: Evaluar
+  - id: e2
+    v1Index: 1
+    title: Evaluar
     task: Implementá Horner y mostrá su acumulador.
     why: Reutilizar el resultado parcial reduce operaciones.
     done: Coincide con una evaluación directa en casos pequeños.
-  - title: Derivar
+  - id: e3
+    v1Index: 2
+    title: Derivar
     task: Transformá cada coeficiente y su exponente.
     why: Derivar es una operación sobre la estructura, no sobre el texto de una pantalla.
     done: La derivada de una constante es el polinomio 0.
-  - title: Conectar
+  - id: e4
+    v1Index: 3
+    title: Conectar
     task: Dibujá P, P′ y la tangente en un punto elegible.
     why: El gráfico conecta valor, pendiente y representación simbólica.
     done: Encontrás un punto donde la tangente es horizontal sin confundirlo con una raíz.

@@ -31,19 +31,27 @@ prediction:
   answer: 2
   explanation: Offset=1; PA=3×4+1.
 steps:
-  - title: Especificá tu formato
+  - id: e1
+    v1Index: 0
+    title: Especificá tu formato
     task: Elegí tamaño de página y entradas con marco/presente/escritura.
     why: Los formatos reales varían por arquitectura.
     done: Podés descomponer tres direcciones a mano.
-  - title: Implementá traducción
+  - id: e2
+    v1Index: 1
+    title: Implementá traducción
     task: Completá el núcleo con errores de rango, ausencia, permisos y overflow.
     why: No debe surgir una dirección física tras una validación fallida.
     done: Pasaron traducciones y rechazos.
-  - title: Agregá espacios de proceso
+  - id: e3
+    v1Index: 2
+    title: Agregá espacios de proceso
     task: Dos procesos tienen tablas distintas sobre una memoria física simulada.
     why: Aislamiento significa que igual VA puede referir a distinto PA.
     done: Probás dos procesos con VA iguales y datos separados.
-  - title: Conectá con un kernel educativo
+  - id: e4
+    v1Index: 3
+    title: Conectá con un kernel educativo
     task: Leé el manejo de tablas en xv6 o el tutorial Rust y trazá una entrada real.
     why: El simulador prepara vocabulario; el kernel agrega formato y privilegios.
     done: Documentaste qué simplificaciones ya no valen fuera del modelo.

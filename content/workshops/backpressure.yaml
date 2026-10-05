@@ -38,19 +38,27 @@ prediction:
   answer: 2
   explanation: 'No entra a la cola ni se descarta: el productor conserva su identidad hasta reintentar.'
 steps:
-  - title: Invariante de capacidad
+  - id: e1
+    v1Index: 0
+    title: Invariante de capacidad
     task: Definí head, longitud y almacenamiento fijo.
     why: Capacidad reservada no es cantidad de elementos válidos.
     done: La longitud siempre queda entre cero y capacidad.
-  - title: Buffer circular
+  - id: e2
+    v1Index: 1
+    title: Buffer circular
     task: Implementá push/pop sin desplazar todos los elementos.
     why: El índice modular reutiliza huecos al final del array.
     done: Las pruebas fuerzan wrap-around y una capacidad cero.
-  - title: Política de saturación
+  - id: e3
+    v1Index: 2
+    title: Política de saturación
     task: Integra rechazo explícito y reintento del productor.
     why: Un false necesita una decisión del llamador.
     done: La tarea rechazada no se considera completada ni se pierde.
-  - title: Pipeline local
+  - id: e4
+    v1Index: 3
+    title: Pipeline local
     task: Sustituí el modelo por canales acotados y cierre coordinado.
     why: La concurrencia introduce cancelación y propiedad del cierre.
     done: Una prueba cancela con la cola llena y todos los trabajadores terminan.

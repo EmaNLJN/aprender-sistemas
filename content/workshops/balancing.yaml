@@ -42,19 +42,27 @@ prediction:
   answer: 1
   explanation: La carga se compara dentro del conjunto que puede recibir una petición.
 steps:
-  - title: Elegibilidad
+  - id: e1
+    v1Index: 0
+    title: Elegibilidad
     task: Definí healthy, open, inflight y limit.
     why: Son condiciones diferentes que pueden excluir al mismo nodo.
     done: Un nodo sin cupo, abierto o no sano nunca es elegido.
-  - title: Selección pura
+  - id: e2
+    v1Index: 1
+    title: Selección pura
     task: Implementá menor carga y desempate lexical.
     why: Probar la política no necesita red.
     done: Cambiar el orden del slice no cambia un empate por nombre.
-  - title: Contabilidad
+  - id: e3
+    v1Index: 2
+    title: Contabilidad
     task: Incrementá al admitir y decrementá al terminar, también ante error.
     why: Un cupo que no se libera termina simulando una caída permanente.
     done: Una prueba de fallo deja la carga activa correcta.
-  - title: Proxy existente
+  - id: e4
+    v1Index: 3
+    title: Proxy existente
     task: Compará esta política con Envoy y configurá un servicio de prueba.
     why: Un proxy real ya resuelve discovery, métricas y muchas condiciones de fallo.
     done: Documentás qué límite configura circuit breaking y qué mecanismo observa salud.

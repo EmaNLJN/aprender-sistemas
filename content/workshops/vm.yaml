@@ -31,19 +31,27 @@ prediction:
   answer: 1
   explanation: La estructura del programa importa además del rango.
 steps:
-  - title: Escribí la ISA
+  - id: e1
+    v1Index: 0
+    title: Escribí la ISA
     task: Definí formato, tamaño, efecto y errores de HALT, SET, DEC y JNZ.
     why: Sin semántica precisa no hay intérprete comprobable.
     done: Cada opcode tiene una fila en tu especificación.
-  - title: Validá el bytecode
+  - id: e2
+    v1Index: 1
+    title: Validá el bytecode
     task: Implementá el núcleo que descubre inicios y verifica saltos.
     why: Los operandos no se pueden ejecutar como instrucciones por accidente.
     done: Rechazás opcode desconocido, truncado y salto a operando.
-  - title: Interpretá con traza
+  - id: e3
+    v1Index: 2
+    title: Interpretá con traza
     task: Agregá registros, loop de ejecución y presupuesto; imprimí estado antes de cada paso.
     why: Una traza explica el resultado y los bucles.
     done: El programa normal termina y el bucle agota pasos.
-  - title: Agregá etiquetas
+  - id: e4
+    v1Index: 3
+    title: Agregá etiquetas
     task: Creá un ensamblador mínimo que resuelva nombres a offsets y un desensamblador.
     why: Las etiquetas reducen errores manuales de direcciones.
     done: Un programa con etiquetas compila al bytecode esperado.
