@@ -277,7 +277,7 @@ it('gives 304 on all 17 portions, with the same version, after a new image with 
         $statuses[] = [$response->status(), $response->headers->get('Content-Version')];
     }
 
-    expect(array_unique($statuses, SORT_REGULAR))->toBe([[304, $version]]);
+    expect(collect($statuses)->unique()->all())->toBe([[304, $version]]);
 });
 
 it('changes Content-Version when the document changes, so an import in the middle of a startup is detected (FR-020)', function () {
