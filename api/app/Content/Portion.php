@@ -6,8 +6,8 @@ use Illuminate\Support\Arr;
 use InvalidArgumentException;
 
 /**
- * Las 17 porciones de contenido que sirve la API (ADR 0006 D11). El valor es la ruta dentro de
- * curriculum.json y la clave de `portions` en curriculum.meta.json, que fija el generador.
+ * The 17 content portions the API serves (ADR 0006 D11). The value is the path inside
+ * curriculum.json and the key of `portions` in curriculum.meta.json, which the generator fixes.
  */
 enum Portion: string
 {
@@ -35,13 +35,11 @@ enum Portion: string
 
     public const CATALOGS = ['lab', 'quests', 'cores'];
 
-    /** lab, quests, cores, campaign, workshops, atlas o guide. */
     public function group(): string
     {
         return explode('.', $this->value)[0];
     }
 
-    /** El lenguaje o el dominio que corta la porción; null en la guía. */
     public function slice(): ?string
     {
         return explode('.', $this->value)[1] ?? null;
@@ -52,7 +50,6 @@ enum Portion: string
         return in_array($this->group(), self::CATALOGS, true);
     }
 
-    /** El parámetro de consulta que corta el recurso: language, domain o null (la guía). */
     public static function sliceBy(string $group): ?string
     {
         return match ($group) {
@@ -63,8 +60,8 @@ enum Portion: string
     }
 
     /**
-     * La porción que pide un recurso con sus parámetros, o InvalidPortionRequest con un mensaje
-     * por parámetro. $resource es exercises, worlds, workshops, atlas o guide.
+     * The portion a resource asks for with its parameters, or InvalidPortionRequest with one
+     * message per parameter. $resource is exercises, worlds, workshops, atlas or guide.
      *
      * @param  array<string, mixed>  $query
      */
