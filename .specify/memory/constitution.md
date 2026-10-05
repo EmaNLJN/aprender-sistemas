@@ -44,9 +44,11 @@ y, si es un backend o un cambio de arquitectura, con un ADR.
 
 ### VI. Español, accesibilidad y portabilidad
 
-La documentación y la interfaz están en español rioplatense, con el voseo de `AGENTS.md`. Se
-conservan la accesibilidad de teclado, el diseño móvil y el movimiento reducido, y se prefieren
-soluciones portables entre Linux y macOS.
+La documentación y la interfaz están en español rioplatense, con el voseo de `AGENTS.md`. Los
+encabezados y las etiquetas estructurales de las plantillas de Spec Kit se conservan en inglés,
+porque las skills los usan para ubicarse; el contenido va en español. Se conservan la
+accesibilidad de teclado, el diseño móvil y el movimiento reducido, y se prefieren soluciones
+portables entre Linux y macOS.
 
 ### VII. Secretos y salidas generadas fuera de Git
 
@@ -108,4 +110,4 @@ artefacto entregado no se edita, se continúa con otro. Cada feature vive en
 
 [persistencia]: https://github.com/github/spec-kit/blob/main/docs/concepts/spec-persistence.md
 
-**Version**: 1.2.0 | **Ratified**: TODO(RATIFICATION_DATE): a la espera de la aprobación del usuario | **Last Amended**: 2026-10-04
+**Version**: 1.2.1 | **Ratified**: TODO(RATIFICATION_DATE): a la espera de la aprobación del usuario | **Last Amended**: 2026-10-04
