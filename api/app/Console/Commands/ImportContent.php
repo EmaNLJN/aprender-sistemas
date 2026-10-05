@@ -9,6 +9,7 @@ use App\Content\ContentSource;
 use App\Content\ImportLock;
 use App\Content\InvalidContent;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 
 /**
  * Loads into MySQL the content tools/content/ generated (config/content.php). The migrate service
@@ -102,7 +103,7 @@ final class ImportContent extends Command
     /** @param list<string> $ids */
     private function ids(string $label, array $ids): void
     {
-        $shown = array_slice($ids, 0, 10);
+        $shown = Arr::take($ids, 10);
         $rest = count($ids) - count($shown);
         $detail = $ids === [] ? 'ninguno' : count($ids).' ('.implode(', ', $shown).($rest > 0 ? " y {$rest} más" : '').')';
         $this->line("{$label}: {$detail}");

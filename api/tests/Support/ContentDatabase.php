@@ -19,7 +19,7 @@ final class ContentDatabase
     /** @return array<string, int> rows per table, active or retired */
     public static function counts(): array
     {
-        return array_combine(self::TABLES, array_map(fn (string $table) => DB::table($table)->count(), self::TABLES));
+        return collect(self::TABLES)->mapWithKeys(fn (string $table) => [$table => DB::table($table)->count()])->all();
     }
 
     /**
@@ -29,9 +29,10 @@ final class ContentDatabase
      */
     public static function checksums(): array
     {
-        $rows = DB::select('checksum table '.implode(', ', array_map(fn (string $table) => "`{$table}`", self::TABLES)));
+        $tables = collect(self::TABLES)->map(fn (string $table) => "`{$table}`")->implode(', ');
+        $checksums = collect(DB::select("checksum table {$tables}"))->map(fn (object $row) => (int) $row->Checksum);
 
-        return array_combine(self::TABLES, array_map(fn (object $row) => (int) $row->Checksum, $rows));
+        return collect(self::TABLES)->combine($checksums)->all();
     }
 
     /** @return list<string> */
@@ -56,10 +57,10 @@ final class ContentDatabase
     {
         $tables = implode('|', self::TABLES);
 
-        return array_values(array_filter(
-            self::queriesDuring($run),
-            fn (string $sql) => preg_match("/^\\s*(insert\\s+into|update|delete\\s+from|replace\\s+into|truncate(\\s+table)?)\\s+`?({$tables})`?(?:[\\s(]|\$)/i", $sql) === 1,
-        ));
+        return collect(self::queriesDuring($run))
+            ->filter(fn (string $sql) => preg_match("/^\\s*(insert\\s+into|update|delete\\s+from|replace\\s+into|truncate(\\s+table)?)\\s+`?({$tables})`?(?:[\\s(]|\$)/i", $sql) === 1)
+            ->values()
+            ->all();
     }
 
     public static function url(Portion $portion): string

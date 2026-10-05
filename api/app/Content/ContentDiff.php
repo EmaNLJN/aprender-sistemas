@@ -2,6 +2,9 @@
 
 namespace App\Content;
 
+use Closure;
+use Illuminate\Support\Arr;
+
 /**
  * The difference between the document (RowSet) and the tables, computed in PHP with strict
  * equality and never with MySQL's `=` on an `_ai_ci` collation. Which rows get written is decided
@@ -18,16 +21,8 @@ final class ContentDiff
     public function between(RowSet $desired, array $stored, array $knownVersions, ?LatestImport $latest, array $meta): ContentPlan
     {
         $this->assertDistinctV1Indexes($desired, $stored['workshop_steps'] ?? []);
-        $writes = [];
-        $retires = [];
-        foreach (array_keys(ContentTables::KEYS) as $table) {
-            $wanted = $desired->keyed($table);
-            $have = $stored[$table] ?? [];
-            $writes[$table] = $this->rowsToWrite($table, $wanted, $have, $stored);
-            $retires[$table] = $this->rowsToRetire($table, $wanted, $have);
-        }
-        $writes = array_filter($writes);
-        $retires = array_filter($retires);
+        $writes = $this->rowsByTable(fn (string $table) => $this->rowsToWrite($table, $desired->keyed($table), $stored[$table] ?? [], $stored));
+        $retires = $this->rowsByTable(fn (string $table) => $this->rowsToRetire($table, $desired->keyed($table), $stored[$table] ?? []));
         $versions = $this->newGradingVersions($desired, $knownVersions);
         $changesTables = $writes !== [] || $retires !== [] || $versions !== [];
 
@@ -38,6 +33,17 @@ final class ContentDiff
             $this->mustRecord($changesTables, $latest, $meta),
             $this->report($desired, $stored['exercises'] ?? [], $writes, $retires),
         );
+    }
+
+    /**
+     * What `$rowsOf` returns for each table, in dependency order, leaving out the tables where it returns nothing.
+     *
+     * @param  Closure(string): list<array<string, mixed>>  $rowsOf
+     * @return array<string, list<array<string, mixed>>>
+     */
+    private function rowsByTable(Closure $rowsOf): array
+    {
+        return collect(ContentTables::KEYS)->map(fn (array $keys, string $table) => $rowsOf($table))->filter()->all();
     }
 
     /**
@@ -116,12 +122,8 @@ final class ContentDiff
         if ($changesTables || $latest === null || $latest->documentHash !== $meta['documentHash']) {
             return true;
         }
-        $before = $latest->portionHashes;
-        $after = $meta['portions'];
-        ksort($before);
-        ksort($after);
 
-        return $before !== $after;
+        return collect($latest->portionHashes)->sortKeys()->all() !== collect($meta['portions'])->sortKeys()->all();
     }
 
     /**
@@ -157,12 +159,11 @@ final class ContentDiff
     private function assertDistinctV1Indexes(RowSet $desired, array $storedSteps): void
     {
         $steps = $desired->keyed('workshop_steps');
-        $keptByLeavers = [];
-        foreach (array_diff_key($storedSteps, $steps) as $leaver) {
-            if ($leaver['v1_position'] !== null) {
-                $keptByLeavers[$this->v1Slot($leaver)] = $leaver['step_key'];
-            }
-        }
+        $keptByLeavers = collect($storedSteps)
+            ->diffKeys($steps)
+            ->filter(fn (array $leaver) => $leaver['v1_position'] !== null)
+            ->mapWithKeys(fn (array $leaver) => [$this->v1Slot($leaver) => $leaver['step_key']])
+            ->all();
         $owners = [];
         foreach ($steps as $step) {
             if ($step['v1_position'] === null) {
@@ -262,9 +263,18 @@ final class ContentDiff
             $textChanged,
             $retired,
             $reactivated,
-            array_map('count', $writes),
-            array_map('count', $retires),
-            array_map('count', $desired->toArray()),
+            $this->countRows($writes),
+            $this->countRows($retires),
+            $this->countRows($desired->toArray()),
         );
+    }
+
+    /**
+     * @param  array<string, list<mixed>>  $rowsByTable
+     * @return array<string, int>
+     */
+    private function countRows(array $rowsByTable): array
+    {
+        return Arr::map($rowsByTable, fn (array $rows) => count($rows));
     }
 }

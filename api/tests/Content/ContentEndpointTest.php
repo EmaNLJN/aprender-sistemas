@@ -2,6 +2,7 @@
 
 use App\Content\BodyCache;
 use App\Content\Portion;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -174,7 +175,7 @@ it('serves the first request after an import from the cache, without querying th
 
     $queries = ContentDatabase::queriesDuring(fn () => $this->get(ContentDatabase::url(Portion::CoresInfra))->assertOk());
 
-    expect(array_filter($queries, fn (string $sql) => preg_match('/from `(exercises|exercise_tests|exercise_hints|topics)`/', $sql) === 1))->toBe([]);
+    expect(Arr::where($queries, fn (string $sql) => preg_match('/from `(exercises|exercise_tests|exercise_hints|topics)`/', $sql) === 1))->toBe([]);
 });
 
 it('builds the same body when the cache is empty and refills it; a tampered entry is not served', function () {
@@ -252,8 +253,10 @@ it('changes only the validator of the portion an import changed; the other 16 st
         $statuses[$portion->value] = $this->withHeaders(['If-None-Match' => $validators[$portion->value]])->get(ContentDatabase::url($portion))->status();
     }
 
-    expect(array_keys(array_filter($statuses, fn (int $status) => $status === 200)))->toBe(['lab.rust'])
-        ->and(count(array_filter($statuses, fn (int $status) => $status === 304)))->toBe(16);
+    $changed = collect($statuses)->filter(fn (int $status) => $status === 200);
+    $notModified = collect($statuses)->filter(fn (int $status) => $status === 304);
+
+    expect($changed->keys()->all())->toBe(['lab.rust'])->and($notModified)->toHaveCount(16);
 });
 
 it('gives 304 on all 17 portions, with the same version, after a new image with the same content (US3)', function () {
@@ -274,7 +277,7 @@ it('gives 304 on all 17 portions, with the same version, after a new image with 
         $statuses[] = [$response->status(), $response->headers->get('Content-Version')];
     }
 
-    expect(array_unique($statuses, SORT_REGULAR))->toBe([[304, $version]]);
+    expect(collect($statuses)->unique()->all())->toBe([[304, $version]]);
 });
 
 it('changes Content-Version when the document changes, so an import in the middle of a startup is detected (FR-020)', function () {

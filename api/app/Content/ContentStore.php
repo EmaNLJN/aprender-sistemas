@@ -10,26 +10,25 @@ final class ContentStore
     /** @return array<string, array<string, array<string, mixed>>> rows by table and primary key */
     public function rows(): array
     {
-        $tables = [];
-        foreach (array_keys(ContentTables::KEYS) as $table) {
-            $tables[$table] = [];
-            foreach (DB::table($table)->get() as $row) {
-                $row = (array) $row;
-                $tables[$table][ContentTables::keyOf($table, $row)] = $row;
-            }
-        }
-
-        return $tables;
+        return collect(ContentTables::KEYS)->map(fn (array $keys, string $table) => $this->rowsOf($table))->all();
     }
 
     /** @return array<string, true> "exercise\x1fhash" of every grading version that already applied */
     public function gradingVersions(): array
     {
-        $known = [];
-        foreach (DB::table('exercise_grading_versions')->get(['exercise_id', 'grading_hash']) as $row) {
-            $known["{$row->exercise_id}\x1f{$row->grading_hash}"] = true;
-        }
+        return DB::table('exercise_grading_versions')
+            ->get(['exercise_id', 'grading_hash'])
+            ->mapWithKeys(fn (object $row) => ["{$row->exercise_id}\x1f{$row->grading_hash}" => true])
+            ->all();
+    }
 
-        return $known;
+    /** @return array<string, array<string, mixed>> the rows of a table by primary key */
+    private function rowsOf(string $table): array
+    {
+        return DB::table($table)
+            ->get()
+            ->map(fn (object $row) => (array) $row)
+            ->keyBy(fn (array $row) => ContentTables::keyOf($table, $row))
+            ->all();
     }
 }

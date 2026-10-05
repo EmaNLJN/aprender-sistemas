@@ -21,7 +21,9 @@ final readonly class ContentPlan
 
     public function changesTables(): bool
     {
-        return array_filter($this->writes) !== [] || array_filter($this->retires) !== [] || $this->gradingVersions !== [];
+        return collect($this->writes)->filter()->isNotEmpty()
+            || collect($this->retires)->filter()->isNotEmpty()
+            || $this->gradingVersions !== [];
     }
 
     /** Nothing to write and nothing to record: the content is already imported. */
