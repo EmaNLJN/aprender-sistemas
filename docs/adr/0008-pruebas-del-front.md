@@ -1,6 +1,6 @@
 # ADR 0008 · Pruebas del front: Vitest, Testing Library, fishery y Playwright
 
-- **Estado:** propuesta, del 2026-10-05. La aprueba o enmienda el usuario; hasta entonces, cada spec que la usa como base lo dice.
+- **Estado:** aceptada por el usuario el 2026-10-05, sin enmiendas.
 - **Contexto de la decisión:** el usuario eligió el camino «red y seams primero» para portar el front legacy a React y no corrigió sus supuestos: antes de portar van E2E con Playwright y Page Objects contra la versión actual, y las piezas nuevas llevan Vitest, Testing Library y factories con fishery.
 - **Relacionado:** completa el [ADR 0002](0002-qa-y-configuracion-en-typescript.md) (los checks de `qa/` siguen igual), respeta el [ADR 0003](0003-integridad-del-progreso.md) (el progreso guardado es contrato) y el [ADR 0007](0007-organizacion-del-repositorio.md) (`qa/` es transversal e incluye los checks de punta a punta). Es la base del ítem F1 de `specs/front-react/roadmap.md`.
 

@@ -1,19 +1,22 @@
 <!--
 Sync Impact Report
-- Versión: 1.3.1 → 1.4.0 (MINOR: el gobierno reserva MINOR para una sección o un principio nuevos).
-- Principios modificados: ninguno. Del I al VIII quedan como estaban; en particular, el II no
-  nombra todavía Vitest ni Playwright, porque el ADR 0008 está en estado «propuesta» y una regla
-  entra primero en AGENTS.md.
-- Secciones agregadas: «Épicos y hojas de ruta».
+- Versión: 1.3.1 → 1.4.0 (MINOR: el gobierno reserva MINOR para una sección o un principio nuevos)
+  → 1.4.1 (PATCH: el principio II nombra las pruebas del front).
+- Ratificación: el usuario ratificó la 1.4.0 el 2026-10-05, con la sección «Épicos y hojas de ruta».
+  La 1.4.1 sólo aplica lo que manda el ADR 0008, que el usuario aceptó el mismo día (su sección
+  «Consecuencias» pide este PATCH): el usuario la revisa con este cambio.
+- Principios modificados: sólo el II, en la 1.4.1: suma que en el front Vitest prueba la lógica y
+  los componentes y Playwright, la red de punta a punta. Del I al VIII, el resto queda como estaba.
+- Secciones agregadas: «Épicos y hojas de ruta» (1.4.0).
 - Secciones modificadas: «Flujo de trabajo y verificación», viñeta «Planificación con Spec Kit»
-  (ahora cubre los dos épicos y remite a la sección nueva).
+  (1.4.0: ahora cubre los dos épicos y remite a la sección nueva); la tabla de «Épicos y hojas de
+  ruta» (1.4.1: ya no marca el ADR 0008 como propuesta y cuenta F1…F13).
 - Secciones eliminadas: ninguna.
-- Archivos que cambian en el mismo commit: AGENTS.md (el puntero de planificación y «las hojas
-  de ruta»).
+- Archivos que cambian en el mismo commit (1.4.1): AGENTS.md (los comandos de las pruebas del front,
+  que llegan con F1), qa/AGENTS.md, docs/agent-skills.md y docs/adr/0008-pruebas-del-front.md.
 - Plantillas: ninguna requiere cambios; las de spec, plan, tasks y checklist son genéricas.
-- Pendiente en otros cambios: la fila «Planificación del backend» de docs/architecture.md y la
-  frase «sostiene la planificación del backend» de docs/agent-skills.md; al adoptar el ADR 0008,
-  el principio II, qa/AGENTS.md y el «Alcance» de docs/agent-skills.md.
+- Pendiente en otros cambios: F1 reemplaza el aviso «hasta que se integre, no existen» de AGENTS.md y
+  de qa/AGENTS.md por los comandos reales.
 - Este informe es material de revisión: puede quitarse al integrar la enmienda.
 -->
 
@@ -37,7 +40,9 @@ Todo cambio de comportamiento empieza con una prueba que falla por la razón esp
 la implementación mínima y se revisa antes de refactorizar en verde (`qa/AGENTS.md`, skill
 `tdd`). El valor esperado sale del contrato, de la consigna o de un ejemplo resuelto aparte,
 nunca del algoritmo que se prueba, y se prueba comportamiento observable. En el backend, Pest
-corre contra MySQL 9.7 real, sin SQLite (`backend/api/AGENTS.md`).
+corre contra MySQL 9.7 real, sin SQLite (`backend/api/AGENTS.md`). En el front, Vitest prueba la
+lógica y los componentes, y Playwright, la red de punta a punta contra el build servido, sin tocar
+servicios públicos (ADR 0008, `qa/AGENTS.md`).
 
 ### III. Código entendible
 
@@ -129,7 +134,7 @@ recorre el flujo de Spec Kit de «Flujo de trabajo y verificación».
 | Épico | Hoja de ruta | Fuente técnica |
 | --- | --- | --- |
 | Backend multiusuario | `specs/backend-multiusuario/roadmap.md` (B1…E1, C5 y C6) | ADR 0004, 0005 y 0006 |
-| Port del front legacy a React | `specs/front-react/roadmap.md` (F1…F11) | ADR 0001, 0003, 0007 y 0008 (propuesta), `docs/architecture.md` y el mapa del front legacy |
+| Port del front legacy a React | `specs/front-react/roadmap.md` (F1…F13) | ADR 0001, 0003, 0007 y 0008, `docs/architecture.md` y el mapa del front legacy |
 
 - **Una hoja de ruta por épico, con las mismas convenciones:** los IDs no se renumeran ni se
   reutilizan, cada ítem tiene una spec en `specs/NNN-<id>-<nombre>/`, los estados van de
@@ -156,4 +161,4 @@ recorre el flujo de Spec Kit de «Flujo de trabajo y verificación».
 
 [persistencia]: https://github.com/github/spec-kit/blob/main/docs/concepts/spec-persistence.md
 
-**Version**: 1.4.0 | **Ratified**: 2026-10-04 (aprobada por el usuario) | **Last Amended**: 2026-10-05 (planificación del épico del front)
+**Version**: 1.4.1 | **Ratified**: 2026-10-04 (aprobada por el usuario; la 1.4.0, ratificada por el usuario el 2026-10-05) | **Last Amended**: 2026-10-05 (principio II, por el ADR 0008)

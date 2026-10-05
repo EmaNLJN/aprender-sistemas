@@ -61,6 +61,13 @@ Para la verificación habitual, `npm run build` regenera todos los assets y
 Prettier a todo el código propio; `.prettierignore` excluye skills importadas,
 salidas generadas, Markdown y el shell `frontend/src/index.html`.
 
+Las pruebas del front siguen el [ADR 0008](docs/adr/0008-pruebas-del-front.md): Vitest prueba la
+lógica y los componentes (`npm run test:unit`, que `npm test` también corre) y Playwright, la red de
+punta a punta contra el `dist/index.html` construido (`npm run test:e2e` después de `npm run build`,
+con el navegador que baja `npm run test:e2e:install`; no forma parte de `npm test`, porque la imagen
+web no tiene navegador). Esos tres comandos los trae F1 (`specs/003-f1-red-de-seguridad/`): hasta que
+se integre, no existen.
+
 Vite empaqueta React, las fuentes legacy, los estilos y `build/curriculum.json` en
 `dist/index.html`. Ese JSON sale de `content/` con `npm run curriculum`, que corre antes de
 `npm run typecheck` (y por eso de `build` y `test`) y de `npm run dev`.

@@ -15,8 +15,8 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
-- [ ] Requirements are testable and unambiguous
+- [x] No [NEEDS CLARIFICATION] markers remain
+- [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
 - [x] All acceptance scenarios are defined
@@ -33,10 +33,10 @@
 
 ## Notes
 
-- Quedan cinco marcadores `[NEEDS CLARIFICATION]`, uno por pregunta abierta (Q1 a Q5): FR-013, FR-012, FR-011, FR-009 y FR-016. Cada pregunta trae sus opciones y una recomendada. El límite de tres marcadores de `/speckit-specify` se amplió a cinco por pedido del coordinador. Los dos ítems sin marcar se cierran con `/speckit-clarify`.
-- «Requirements are testable and unambiguous» queda sin marcar por esos cinco requisitos: cada uno es comprobable con su respuesta recomendada, pero su forma final la fija el usuario. Los otros diecinueve ya son comprobables.
-- Excepciones deliberadas en «implementation details»: el usuario decidió la técnica (Playwright, Page Objects, Vitest, `vite preview`, `page.route` y el Chrome Headless Shell, en el ADR 0008, que está en estado «propuesta»), así que la spec la nombra como restricción. Los nombres de módulos y de selectores aparecen sólo donde son el objeto que se caracteriza (`openVersionedStore`, `.quest-lab-context`, los adaptadores `window.Taller*`).
+- Clarify cerrado el 2026-10-05: las cinco preguntas están en la sección `Clarifications` de la spec, todas con la opción recomendada y decididas por el usuario. Los cinco marcadores (FR-009, FR-011, FR-012, FR-013 y FR-016) quedaron resueltos con Q4, Q3, Q2, Q1 y Q5, y las opciones que no se eligieron pasaron a «Alternativas consideradas». La lista de chequeo queda en 16 de 16.
+- Al planificar se midió el build actual en una copia aparte y varias afirmaciones de la spec se corrigieron: están en `Clarifications`, bajo «Correcciones del plan», y ya están aplicadas en el texto.
+- Excepciones deliberadas en «implementation details»: el usuario decidió la técnica (Playwright, Page Objects, Vitest, `vite preview`, `page.route` y el Chrome Headless Shell, en el ADR 0008, aceptado el 2026-10-05), así que la spec la nombra como restricción. Los nombres de módulos y de selectores aparecen sólo donde son el objeto que se caracteriza (`openVersionedStore`, `.quest-lab-context`, los adaptadores `window.Taller*`).
 - «Non-technical stakeholders»: el lector es el dueño del taller, que tomó estas decisiones y conoce el mapa del front legacy. Los términos técnicos son los suyos.
 - «Technology-agnostic»: SC-009 nombra los comandos de verificación del proyecto porque son lo que se ejecuta. Los demás criterios hablan de lo que ve o guarda el alumno y de lo que detecta la red.
-- «Success criteria are measurable»: SC-008 depende de la respuesta a Q2; con la recomendada tiene una cifra (9 de 9). Si Q2 se responde distinto, se reescribe en el clarify.
-- `/speckit-analyze` corre con `plan.md` y `tasks.md`, que todavía no existen. El usuario revisa esta spec antes del plan.
+- «Success criteria are measurable»: SC-008 tiene una cifra (9 de 9) desde que Q2 se respondió con el estilo computado; una de las nueve reglas es código muerto y su prueba sólo detecta un cambio de valor, no el borrado (ver `Clarifications`).
+- `/speckit-analyze` corre con `plan.md` y `tasks.md`; sus hallazgos están en la hoja de ruta del front, «Estado y evidencia».
