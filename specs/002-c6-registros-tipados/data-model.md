@@ -333,6 +333,6 @@ Un ejercicio relacionado toma como `position` su índice dentro de la lista de s
 
 - **`RowSet`, `ContentDiff`, `ContentPlan` y `ContentWriter`** siguen con filas (Q2). `ContentDiff` estrecha con `RowFields` las columnas que lee por su nombre.
 - **`LatestImport` y `ContentReport`** ya eran objetos inmutables y no cambian.
-- **`PortionAssembler::exercise(array $exercise, list<array<string, mixed>> $tests, list<array<string, mixed>> $hints, ?array $topic): Exercise`** es la única interfaz nueva fuera de `Record/`. La usan `exerciseList` y `PortionRenderer::renderExercise()`. Un tema que falta lanza `LogicException` (research.md, R10).
+- **`PortionAssembler::exercise(array $exercise, list<array<string, mixed>> $tests, list<array<string, mixed>> $hints, ?array $topic): Exercise`** es, con `ContentMeta`, la única interfaz pública nueva fuera de `Record/`. La usan `exerciseList` y `PortionRenderer::renderExercise()`. Un tema que falta lanza `LogicException` (research.md, R10).
 - **`ContentReader::exercise()`** devuelve la fila del tema (`?array`) en lugar de su etiqueta.
 - **El oráculo de filas** (`tests/Support/RowOracle.php` y `row-oracle.json`) sólo vive mientras dura C6. Guarda `documentHash` y, por tabla, `rows` y `sha256` (research.md, R7).

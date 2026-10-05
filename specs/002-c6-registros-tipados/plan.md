@@ -1813,7 +1813,7 @@ Las cuatro familias corren a la vez desde S1, cada una con sus archivos. Todas s
 
 ### Tarea 5.4 · Despliegue sobre C2 y compuerta final (T015)
 
-- **Cubre:** FR-019, SC-001, SC-002, SC-003, SC-006 y SC-007, con los escenarios 4 y 5 de [quickstart.md](./quickstart.md).
+- **Cubre:** FR-003, FR-019, SC-001, SC-002, SC-003, SC-006 y SC-007, con los escenarios 4 y 5 de [quickstart.md](./quickstart.md).
 - **Resultado esperado:**
   - el import no escribe nada sobre la base de C2;
   - las 17 porciones responden 304, con el mismo `Content-Version`;
@@ -1861,7 +1861,7 @@ Total: 106 = 23 de `Codec/` + 18 del meta + 1 de `read()` + 8 de la diferencia +
 | --- | --- |
 | FR-001 | T003 (meta), T004 y T006 a T009 (registros) |
 | FR-002 | T004 y T006 a T009 |
-| FR-003 | T002, T010 y T011 (Review Focus: ningún registro llega a los bordes) |
+| FR-003 | T002, T010, T011 y T015 (la compuerta busca `JsonSerializable`; Review Focus) |
 | FR-004 | T002 (`KeyOrder`, `JsonValue`) y T004 y T006 a T009 |
 | FR-005 | T004, T011 (`ContentRoundTripTest`, `ContentContractTest`) y T015 |
 | FR-006 | T001, T010 y T015 |

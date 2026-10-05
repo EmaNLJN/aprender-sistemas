@@ -46,5 +46,5 @@ Las ondas, los dueños de archivos, las interfaces y los puntos de sincronizaci�
 ## Phase 7: Polish — Mutaciones, despliegue sobre C2, compuerta y retiro del oráculo (coordinador)
 
 - [ ] T014 [US3] Mutaciones: un nombre mal escrito por familia, 5 de 5 detectadas por `npm run api:analyse` (SC-005; plan 5.3; quickstart.md, escenario 3)
-- [ ] T015 [US1] Despliegue de la imagen nueva sobre un stack que importó el código de C2, y compuerta final (FR-019; SC-001, SC-002, SC-003, SC-007; plan 5.4; quickstart.md, escenarios 4 y 5)
+- [ ] T015 [US1] Despliegue de la imagen nueva sobre un stack que importó el código de C2, y compuerta final (FR-003, FR-019; SC-001, SC-002, SC-003, SC-007; plan 5.4; quickstart.md, escenarios 4 y 5)
 - [ ] T016 [US2] Retiro del oráculo, después de T015: `backend/api/tests/Support/{RowOracle.php,print-row-oracle.php,row-oracle.json}` y `backend/api/tests/Unit/RowOracleTest.php` (research.md, R7; plan 5.5)

@@ -82,7 +82,7 @@ Lo corre el coordinador, con un stack propio que no toca `taller-rust-go` ni su 
 
 ## 5. Compuerta final (SC-007, T015)
 
-Con `phpstan.neon` en el nivel 9, `npm run api:analyse` termina con 0 errores, sin baseline ni `ignoreErrors`.
+Con `phpstan.neon` en el nivel 9, `npm run api:analyse` termina con 0 errores, sin baseline ni `ignoreErrors`. Además, `grep -rn JsonSerializable backend/api/app/Content` no encuentra nada (FR-003).
 
 Además pasan:
 

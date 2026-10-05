@@ -120,7 +120,7 @@ La sesión de planificación no tocó el repositorio. Copió `backend/api/app` y
 
 ## R12. Una sola fábrica para las pruebas
 
-**Decision**: `Tests\Support\ContentPipeline` arma `ContentRows` y `PortionAssembler` para las pruebas de la suite `Unit`. Cuando sus constructores pierden los códecs (T004 y T011), sólo cambia esa clase.
+**Decision**: `Tests\Support\ContentPipeline` arma `ContentRows` y `PortionAssembler` para las pruebas de la suite `Unit`. Cuando sus constructores pierden los códecs (T004, T010 y T011), sólo cambia esa clase.
 
 **Rationale**: hoy cuatro archivos de prueba construyen esas clases a mano con los cinco códecs.
 
