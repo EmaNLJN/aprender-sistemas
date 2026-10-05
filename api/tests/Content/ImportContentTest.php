@@ -218,8 +218,11 @@ it('a lock wait timeout surfaces the MySQL error, which migrate retries on, and 
         Artisan::call('content:import');
     } catch (QueryException $error) {
         $message = $error->getMessage();
+    } finally {
+        // The connection's session outlives the test: leave neither the row lock nor the short timeout behind.
+        $holder->rollBack();
+        DB::statement('set session innodb_lock_wait_timeout = default');
     }
-    $holder->rollBack();
 
     expect($message)->toContain('General error: 1205')
         ->and(ContentDatabase::checksums())->toBe($checksums)
@@ -232,10 +235,12 @@ it('only one import runs at a time: the second exits with an error instead of be
     $name = DB::scalar("select concat(database(), ':content-import')");
     $holder->select('select get_lock(?, 0)', [$name]);
 
-    $this->artisan('content:import')->expectsOutputToContain('Ya hay otro content:import en curso')->assertExitCode(1);
-    expect(array_sum(ContentDatabase::counts()))->toBe(0);
-
-    $holder->select('select release_lock(?)', [$name]);
+    try {
+        $this->artisan('content:import')->expectsOutputToContain('Ya hay otro content:import en curso')->assertExitCode(1);
+        expect(array_sum(ContentDatabase::counts()))->toBe(0);
+    } finally {
+        $holder->select('select release_lock(?)', [$name]);
+    }
     $this->artisan('content:import')->assertExitCode(0);
 });
 
