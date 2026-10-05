@@ -3,7 +3,7 @@
   "private": true,
   "description": "Herramientas locales de calidad, separadas de las dependencias de la web",
   "scripts": {
-    "check:react": "react-doctor ../.. --scope full --verbose --no-telemetry --no-supply-chain"
+    "check:react": "react-doctor ../../frontend --scope full --verbose --no-telemetry --no-supply-chain"
   },
   "devDependencies": {
     "react-doctor": "0.9.14"

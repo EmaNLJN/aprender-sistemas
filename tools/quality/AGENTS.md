@@ -43,7 +43,7 @@ npm --prefix tools/quality run check:react
 tools/quality/node_modules/.bin/react-doctor --help
 ```
 
-El script apunta al repositorio y usa `--no-telemetry`, que también desactiva la
+El script analiza `frontend/`, donde está el código React y su configuración, y usa `--no-telemetry`, que también desactiva la
 puntuación remota según la CLI instalada. Para una regresión contra una referencia
 Git real, usá `--scope changed --base <referencia>` con el binario local.
 El análisis React aplica a las vistas React migradas; la verificación de
