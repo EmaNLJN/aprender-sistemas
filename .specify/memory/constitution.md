@@ -55,6 +55,25 @@ contexto de Docker (`.gitignore`, `.dockerignore`). Se editan las fuentes y se r
 assets, y el lockfile se sincroniza. Las dependencias de la API se agregan sólo con permiso del
 usuario (`api/AGENTS.md`).
 
+### VIII. Persistencia de las specs: flow-forward
+
+Las specs siguen el modelo flow-forward de Spec Kit ([spec-persistence][persistencia]): un
+artefacto entregado no se edita, se continúa con otro. Cada feature vive en
+`specs/NNN-<id>-<nombre>/` con su `spec.md`, su `plan.md` y su `tasks.md`.
+
+- **En curso:** `/speckit-converge` puede agregar tareas al final de `tasks.md` hasta completar
+  la feature. Cada tarea ocupa una línea con su ID y, como mucho, una sublínea de evidencia: el
+  commit o el PR que la cerró. No se pegan salidas de comandos, bitácoras ni narraciones de
+  avance.
+- **Entregada:** su directorio en `specs/` (spec, plan y tasks) queda inmutable, como registro
+  histórico.
+- **Cambios sustanciales o requisitos nuevos, después de entregar:** una spec nueva con
+  `/speckit-specify`, en un directorio nuevo y enlazada a la original («extiende» o «reemplaza a
+  `specs/NNN-…`»). La hoja de ruta apunta a las dos.
+- **Bugs:** la extensión `bug` guarda cada uno en `.specify/bugs/<slug>/`, con su evaluación, su
+  arreglo y su validación (`/speckit-bug-assess`, `/speckit-bug-fix` y `/speckit-bug-test`), sin
+  tocar el `tasks.md` de la feature.
+
 ## Flujo de trabajo y verificación
 
 - **Verificación:** antes de cerrar un cambio se ejecutan los checks de `qa/AGENTS.md` que
@@ -65,7 +84,11 @@ usuario (`api/AGENTS.md`).
   `package.json`, las configuraciones y la documentación.
 - **Planificación con Spec Kit:** cada subplan del backend recorre specify, clarify, plan, tasks
   y analyze antes de implementarse. La spec dice qué y por qué; el plan, cómo. La hoja de ruta
-  del épico vive en `specs/backend-multiusuario/roadmap.md` y las specs, en `specs/`.
+  del épico vive en `specs/backend-multiusuario/roadmap.md` y las specs, en `specs/`. La plantilla
+  de `tasks.md` del proyecto (`.specify/templates/overrides/tasks-template.md`) aplica el
+  principio VIII.
+- **Origen de estas reglas:** el recorrido con Spec Kit y el principio VIII viven acá hasta que
+  `AGENTS.md` los incorpore; desde entonces manda `AGENTS.md`.
 
 ## Gobierno
 
@@ -76,4 +99,6 @@ usuario (`api/AGENTS.md`).
 - Cumplimiento: cada plan incluye su «Constitution Check», y `/speckit-analyze` trata un
   conflicto con esta constitución como crítico: se corrige la spec, el plan o las tareas.
 
-**Version**: 1.0.0 | **Ratified**: TODO(RATIFICATION_DATE): a la espera de la aprobación del usuario | **Last Amended**: 2026-10-04
+[persistencia]: https://github.com/github/spec-kit/blob/main/docs/concepts/spec-persistence.md
+
+**Version**: 1.1.0 | **Ratified**: TODO(RATIFICATION_DATE): a la espera de la aprobación del usuario | **Last Amended**: 2026-10-04
