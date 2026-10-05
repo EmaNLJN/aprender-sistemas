@@ -23,7 +23,7 @@ func TestDefaults(t *testing.T) {
 		t.Fatal(err)
 	}
 	if cfg.Addr != ":8080" || cfg.Runtime != "runsc" || cfg.MaxConcurrent != 4 || cfg.Instance != "servicio" {
-		t.Fatalf("valores por defecto inesperados: %+v", cfg)
+		t.Fatalf("unexpected defaults: %+v", cfg)
 	}
 }
 
@@ -36,13 +36,13 @@ func TestReadsExplicitValues(t *testing.T) {
 		t.Fatal(err)
 	}
 	if cfg.Addr != ":9000" || cfg.Token != strings.Repeat("x", 32) {
-		t.Fatalf("no respetó la dirección o el token del entorno: %+v", cfg)
+		t.Fatalf("address or token from the environment was ignored: %+v", cfg)
 	}
 	if cfg.RustImage != "rust-img" || cfg.GoImage != "go-img" {
-		t.Fatalf("cada lenguaje debe usar su propia imagen: %+v", cfg)
+		t.Fatalf("each language must use its own image: %+v", cfg)
 	}
 	if cfg.Instance != "staging-2" {
-		t.Fatalf("la instancia sale del entorno: %+v", cfg)
+		t.Fatalf("the instance comes from the environment: %+v", cfg)
 	}
 }
 
@@ -50,7 +50,7 @@ func TestRejectsShortToken(t *testing.T) {
 	values := valid()
 	values["EXECUTOR_TOKEN"] = strings.Repeat("x", 31)
 	if _, err := FromEnv(env(values)); err == nil {
-		t.Fatal("un token de 31 bytes debe rechazarse")
+		t.Fatal("a 31-byte token must be rejected")
 	}
 }
 
@@ -58,12 +58,12 @@ func TestRuntimeMustBeRunscOrRunc(t *testing.T) {
 	values := valid()
 	values["EXECUTOR_RUNTIME"] = "kata"
 	if _, err := FromEnv(env(values)); err == nil {
-		t.Fatal("un runtime desconocido debe rechazarse")
+		t.Fatal("an unknown runtime must be rejected")
 	}
 	values["EXECUTOR_RUNTIME"] = "runc"
 	cfg, err := FromEnv(env(values))
 	if err != nil || cfg.Runtime != "runc" {
-		t.Fatalf("runc explícito debe aceptarse: %+v, %v", cfg, err)
+		t.Fatalf("explicit runc must be accepted: %+v, %v", cfg, err)
 	}
 }
 
@@ -72,7 +72,7 @@ func TestRequiresBothImages(t *testing.T) {
 		values := valid()
 		delete(values, key)
 		if _, err := FromEnv(env(values)); err == nil {
-			t.Fatalf("sin %s debe fallar", key)
+			t.Fatalf("without %s it must fail", key)
 		}
 	}
 }
@@ -82,7 +82,7 @@ func TestMaxConcurrentRange(t *testing.T) {
 		values := valid()
 		values["EXECUTOR_MAX_CONCURRENT"] = raw
 		if _, err := FromEnv(env(values)); err == nil {
-			t.Fatalf("EXECUTOR_MAX_CONCURRENT=%q debe rechazarse", raw)
+			t.Fatalf("EXECUTOR_MAX_CONCURRENT=%q must be rejected", raw)
 		}
 	}
 	for raw, want := range map[string]int{"1": 1, "3": 3, "8": 8} {
@@ -90,17 +90,17 @@ func TestMaxConcurrentRange(t *testing.T) {
 		values["EXECUTOR_MAX_CONCURRENT"] = raw
 		cfg, err := FromEnv(env(values))
 		if err != nil || cfg.MaxConcurrent != want {
-			t.Fatalf("EXECUTOR_MAX_CONCURRENT=%q debe aceptarse como %d: %+v, %v", raw, want, cfg, err)
+			t.Fatalf("EXECUTOR_MAX_CONCURRENT=%q must be accepted as %d: %+v, %v", raw, want, cfg, err)
 		}
 	}
 }
 
 func TestInstanceMustBeALabelValue(t *testing.T) {
-	for _, raw := range []string{"Con Espacio", "a_b", "MAYUS", strings.Repeat("a", 33)} {
+	for _, raw := range []string{"With Space", "a_b", "UPPER", strings.Repeat("a", 33)} {
 		values := valid()
 		values["EXECUTOR_INSTANCE"] = raw
 		if _, err := FromEnv(env(values)); err == nil {
-			t.Fatalf("EXECUTOR_INSTANCE=%q debe rechazarse", raw)
+			t.Fatalf("EXECUTOR_INSTANCE=%q must be rejected", raw)
 		}
 	}
 }

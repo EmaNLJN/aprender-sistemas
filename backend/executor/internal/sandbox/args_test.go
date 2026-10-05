@@ -18,7 +18,7 @@ func containsPair(args []string, flag, value string) bool {
 func mustHavePair(t *testing.T, args []string, flag, value string) {
 	t.Helper()
 	if !containsPair(args, flag, value) {
-		t.Fatalf("falta %s %s en %v", flag, value, args)
+		t.Fatalf("missing %s %s in %v", flag, value, args)
 	}
 }
 
@@ -38,7 +38,7 @@ func TestCompileContainerIsHardened(t *testing.T) {
 	spec := specFor("rust", false)
 	args := createArgs(spec)
 	if args[0] != "create" {
-		t.Fatalf("debe crear el contenedor, no correrlo: %v", args)
+		t.Fatalf("must create the container, not run it: %v", args)
 	}
 	mustHavePair(t, args, "--runtime", "runsc")
 	mustHavePair(t, args, "--pull", "never")
@@ -54,11 +54,11 @@ func TestCompileContainerIsHardened(t *testing.T) {
 	mustHavePair(t, args, "--label", CreatedLabel+"=100")
 	mustHavePair(t, args, "--label", RunLabel+"=1")
 	if !slices.Contains(args, "--read-only") {
-		t.Fatal("Rust compila con rootfs de sólo lectura")
+		t.Fatal("Rust compiles with a read-only rootfs")
 	}
 	image := slices.Index(args, "rust-img")
 	if image < 0 || !slices.Equal(args[image+1:], spec.Phase.Cmd) {
-		t.Fatalf("la imagen va después de las opciones y el comando al final: %v", args)
+		t.Fatalf("the image goes after the options and the command last: %v", args)
 	}
 }
 
@@ -70,27 +70,27 @@ func TestRunContainerIsReadOnlyWithSmallLimits(t *testing.T) {
 	mustHavePair(t, args, "--pids-limit", "64")
 	mustHavePair(t, args, "--cpus", "1")
 	if !slices.Contains(args, "--read-only") {
-		t.Fatal("la ejecución siempre usa rootfs de sólo lectura")
+		t.Fatal("the run always uses a read-only rootfs")
 	}
 }
 
 func TestGoCompileKeepsAWritableLayerForTheBuildCache(t *testing.T) {
 	if slices.Contains(createArgs(specFor("go", false)), "--read-only") {
-		t.Fatal("go build escribe en GOCACHE dentro de la capa del contenedor, que se descarta")
+		t.Fatal("go build writes to GOCACHE in the container layer, which is discarded")
 	}
 }
 
 func TestProfilesMatchTheADR(t *testing.T) {
 	profiles := Profiles("rust-img", "go-img")
 	if profiles["rust"].Compile.Timeout.Seconds() != 20 || profiles["go"].Compile.Timeout.Seconds() != 15 {
-		t.Fatal("compilación: Rust 20 s y Go 15 s")
+		t.Fatal("compile: Rust 20 s and Go 15 s")
 	}
 	for language, profile := range profiles {
 		if profile.Run.Timeout.Seconds() != 10 || profile.OutputLimit != 64<<10 {
-			t.Fatalf("%s: ejecución 10 s y salida de 64 KiB", language)
+			t.Fatalf("%s: run 10 s and 64 KiB of output", language)
 		}
 		if !profile.Run.ReadOnly || !profile.Run.OutReadOnly || profile.Compile.OutReadOnly {
-			t.Fatalf("%s: la ejecución corre con rootfs y /out de sólo lectura; la compilación escribe /out", language)
+			t.Fatalf("%s: the run uses a read-only rootfs and /out; compile writes /out", language)
 		}
 	}
 }
@@ -118,7 +118,7 @@ func TestEveryPhaseHasItsLimits(t *testing.T) {
 			{"--log-driver", "none"},
 		} {
 			if !containsPair(args, pair[0], pair[1]) {
-				t.Errorf("%s (ejecución=%v): falta %s %s en %v", c.language, c.run, pair[0], pair[1], args)
+				t.Errorf("%s (run=%v): missing %s %s in %v", c.language, c.run, pair[0], pair[1], args)
 			}
 		}
 	}
@@ -131,7 +131,7 @@ func TestSortedKeysOrdersLabels(t *testing.T) {
 	}
 	want := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"}
 	if got := sortedKeys(labels); !slices.Equal(got, want) {
-		t.Fatalf("sortedKeys = %v; quiero %v, para que los argumentos no cambien entre llamadas", got, want)
+		t.Fatalf("sortedKeys = %v; want %v, so the arguments do not change between calls", got, want)
 	}
 }
 
@@ -140,7 +140,7 @@ func TestCompileCommandsAlwaysProduceAnExecutable(t *testing.T) {
 	for language, flag := range map[string]string{"rust": "--crate-type bin", "go": "-buildmode=exe"} {
 		command := strings.Join(profiles[language].Compile.Cmd, " ")
 		if !strings.Contains(command, flag) {
-			t.Errorf("%s: la compilación tiene que pedir %q; sin eso, el programa puede dejar en /out una biblioteca que la ejecución no corre (500 en vez de un resultado): %s", language, flag, command)
+			t.Errorf("%s: compile must ask for %q; without it, the program can leave a library in /out that the run cannot execute (a 500 instead of a result): %s", language, flag, command)
 		}
 	}
 }

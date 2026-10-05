@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-// startServe levanta serve con un handler que imita al Runner: el pedido hereda root, ve su
-// contexto cancelado y recién después borra sus contenedores, con contextos propios.
+// startServe starts serve with a handler that mimics the Runner: the request inherits root, sees
+// its context cancelled and only then removes its containers, with contexts of its own.
 func startServe(t *testing.T, cleanup time.Duration, grace time.Duration) (cancel context.CancelFunc, cleaned *atomic.Bool, served chan error) {
 	t.Helper()
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
@@ -45,7 +45,7 @@ func startServe(t *testing.T, cleanup time.Duration, grace time.Duration) (cance
 	select {
 	case <-started:
 	case <-time.After(5 * time.Second):
-		t.Fatal("el pedido nunca llegó al handler")
+		t.Fatal("the request never reached the handler")
 	}
 	return cancel, cleaned, served
 }
@@ -61,10 +61,10 @@ func TestServeWaitsForInFlightRequestsToCleanUp(t *testing.T) {
 			t.Fatalf("serve: %v", err)
 		}
 		if !cleaned.Load() {
-			t.Fatal("serve volvió antes de que el pedido en curso terminara su limpieza: el proceso saldría con el contenedor vivo")
+			t.Fatal("serve returned before the in-flight request finished cleaning up: the process would exit with the container alive")
 		}
 	case <-time.After(10 * time.Second):
-		t.Fatal("serve no volvió después de cancelar root")
+		t.Fatal("serve did not return after cancelling root")
 	}
 }
 
@@ -76,24 +76,24 @@ func TestServeReportsAShutdownThatRanOutOfTime(t *testing.T) {
 	select {
 	case err := <-served:
 		if err == nil || !strings.Contains(err.Error(), "apagado") {
-			t.Fatalf("un apagado que vence con pedidos en curso es un error (main sale con código 1): %v", err)
+			t.Fatalf("a shutdown that times out with requests in flight is an error (main exits with code 1): %v", err)
 		}
 	case <-time.After(10 * time.Second):
-		t.Fatal("serve no volvió después de cancelar root")
+		t.Fatal("serve did not return after cancelling root")
 	}
 }
 
 func TestRuntimeRegisteredReadsDockerInfo(t *testing.T) {
-	// Forma de `docker info --format '{{json .Runtimes}}'` con gVisor instalado (campo status
-	// recortado).
+	// Shape of `docker info --format '{{json .Runtimes}}'` with gVisor installed (status field
+	// trimmed).
 	info := []byte(`{"io.containerd.runc.v2":{"path":"runc"},"runc":{"path":"runc"},"runsc":{"path":"/usr/bin/runsc","runtimeArgs":["--network=none"],"status":{}}}` + "\n")
 	for name, want := range map[string]bool{"runsc": true, "runc": true, "kata": false, "": false} {
 		got, err := runtimeRegistered(info, name)
 		if err != nil || got != want {
-			t.Errorf("runtimeRegistered(%q) = %v, %v; quiero %v", name, got, err, want)
+			t.Errorf("runtimeRegistered(%q) = %v, %v; want %v", name, got, err, want)
 		}
 	}
-	if _, err := runtimeRegistered([]byte("no es json"), "runsc"); err == nil {
-		t.Error("una salida ilegible de docker info es un error, no «falta el runtime»")
+	if _, err := runtimeRegistered([]byte("not json"), "runsc"); err == nil {
+		t.Error("unreadable docker info output is an error, not \"runtime missing\"")
 	}
 }

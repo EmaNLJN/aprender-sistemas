@@ -31,19 +31,19 @@ func TestSweepRemovesOldContainersBeforeVolumesAndKeepsFreshOnes(t *testing.T) {
 		{Kind: "volume", Name: "taller-out-old", Created: now.Add(-10 * time.Minute)},
 		{Kind: "container", Name: "taller-r-old", Created: now.Add(-10 * time.Minute)},
 		{Kind: "container", Name: "taller-r-new", Created: now.Add(-10 * time.Second)},
-		{Kind: "container", Name: "taller-r-sin-hora"},
-		{Kind: "volume", Name: "mysql-data"}, // nombre ajeno: aunque se colara, nunca se borra
+		{Kind: "container", Name: "taller-r-no-time"},
+		{Kind: "volume", Name: "mysql-data"}, // foreign name: even if it slipped in, it is never removed
 	}}
-	sweeper := Sweeper{Engine: engine, Now: func() time.Time { return now }, MaxAge: 2 * time.Minute, Instance: "pruebas"}
+	sweeper := Sweeper{Engine: engine, Now: func() time.Time { return now }, MaxAge: 2 * time.Minute, Instance: "tests"}
 	if err := sweeper.Sweep(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if engine.label != RunLabel+"=pruebas" {
-		t.Fatalf("el barrido pide sólo los recursos del ejecutor: %q", engine.label)
+	if engine.label != RunLabel+"=tests" {
+		t.Fatalf("the sweep asks only for the executor resources: %q", engine.label)
 	}
-	want := []string{"rm taller-r-old", "rm taller-r-sin-hora", "volume-rm taller-out-old"}
+	want := []string{"rm taller-r-old", "rm taller-r-no-time", "volume-rm taller-out-old"}
 	if !slices.Equal(engine.calls, want) {
-		t.Fatalf("llamadas = %v\nquiero   %v", engine.calls, want)
+		t.Fatalf("calls = %v\nwant    %v", engine.calls, want)
 	}
 }
 
@@ -53,21 +53,21 @@ func TestSweepReportsRemovalErrorsAndKeepsGoing(t *testing.T) {
 		{Kind: "container", Name: "taller-r-old", Created: now.Add(-10 * time.Minute)},
 		{Kind: "volume", Name: "taller-out-old", Created: now.Add(-10 * time.Minute)},
 	}}
-	sweeper := Sweeper{Engine: engine, Now: func() time.Time { return now }, MaxAge: 2 * time.Minute, Instance: "pruebas"}
+	sweeper := Sweeper{Engine: engine, Now: func() time.Time { return now }, MaxAge: 2 * time.Minute, Instance: "tests"}
 	if err := sweeper.Sweep(context.Background()); err == nil {
-		t.Fatal("una fuga persistente tiene que llegar al log")
+		t.Fatal("a persistent leak must reach the log")
 	}
 	if !slices.Contains(engine.calls, "volume-rm taller-out-old") {
-		t.Fatalf("un error no corta el barrido: %v", engine.calls)
+		t.Fatalf("an error does not stop the sweep: %v", engine.calls)
 	}
 }
 
 func TestSweepRequiresAnInstance(t *testing.T) {
 	engine := &listingEngine{}
 	if err := (Sweeper{Engine: engine, Now: time.Now, MaxAge: 0}).Sweep(context.Background()); err == nil {
-		t.Fatal("sin instancia, el barrido podría tocar recursos de otro servicio")
+		t.Fatal("without an instance, the sweep could touch another service's resources")
 	}
 	if engine.label != "" {
-		t.Fatalf("ni siquiera lista: %q", engine.label)
+		t.Fatalf("it does not even list: %q", engine.label)
 	}
 }

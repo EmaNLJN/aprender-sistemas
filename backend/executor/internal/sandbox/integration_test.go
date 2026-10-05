@@ -11,12 +11,12 @@ import (
 	"time"
 )
 
-// Corre con scripts/integration.sh: necesita el socket de Docker y las imágenes de sandbox.
+// Runs with scripts/integration.sh: it needs the Docker socket and the sandbox images.
 func integrationRunner(t *testing.T) *Runner {
 	t.Helper()
 	rust, goImage := os.Getenv("EXECUTOR_RUST_IMAGE"), os.Getenv("EXECUTOR_GO_IMAGE")
 	if rust == "" || goImage == "" {
-		t.Fatal("definí EXECUTOR_RUST_IMAGE y EXECUTOR_GO_IMAGE")
+		t.Fatal("set EXECUTOR_RUST_IMAGE and EXECUTOR_GO_IMAGE")
 	}
 	runtime := os.Getenv("EXECUTOR_RUNTIME")
 	if runtime == "" {
@@ -24,10 +24,10 @@ func integrationRunner(t *testing.T) *Runner {
 	}
 	profiles := Profiles(rust, goImage)
 	for language, profile := range profiles {
-		profile.Run.Timeout = 3 * time.Second // acelera los casos de tiempo agotado
+		profile.Run.Timeout = 3 * time.Second // speeds up the timeout cases
 		profiles[language] = profile
 	}
-	return &Runner{Engine: DockerCLI{Exec: ExecCommand}, Profiles: profiles, Runtime: runtime, Instance: "integracion", Now: time.Now, NewID: RandomID}
+	return &Runner{Engine: DockerCLI{Exec: ExecCommand}, Profiles: profiles, Runtime: runtime, Instance: "integration", Now: time.Now, NewID: RandomID}
 }
 
 func execute(t *testing.T, language, program string) Result {
@@ -40,39 +40,39 @@ func execute(t *testing.T, language, program string) Result {
 }
 
 func TestIntegrationRustHello(t *testing.T) {
-	r := execute(t, "rust", `fn main() { println!("hola"); }`)
-	if r.Phase != "run" || r.ExitCode != 0 || r.Stdout != "hola\n" {
+	r := execute(t, "rust", `fn main() { println!("hello"); }`)
+	if r.Phase != "run" || r.ExitCode != 0 || r.Stdout != "hello\n" {
 		t.Fatalf("%+v", r)
 	}
 }
 
 func TestIntegrationGoHello(t *testing.T) {
-	r := execute(t, "go", "package main\n\nimport \"fmt\"\n\nfunc main() { fmt.Println(\"hola\") }\n")
-	if r.Phase != "run" || r.ExitCode != 0 || r.Stdout != "hola\n" {
+	r := execute(t, "go", "package main\n\nimport \"fmt\"\n\nfunc main() { fmt.Println(\"hello\") }\n")
+	if r.Phase != "run" || r.ExitCode != 0 || r.Stdout != "hello\n" {
 		t.Fatalf("%+v", r)
 	}
 }
 
 func TestIntegrationRustCompileError(t *testing.T) {
-	r := execute(t, "rust", `fn main() { let x: i32 = "texto"; }`)
+	r := execute(t, "rust", `fn main() { let x: i32 = "text"; }`)
 	if r.Phase != "compile" || r.ExitCode == 0 || !strings.Contains(r.Stderr, "mismatched types") {
 		t.Fatalf("%+v", r)
 	}
 }
 
 func TestIntegrationRustCrateTypeAttributeStillBuildsABinary(t *testing.T) {
-	// El harness pone el código del alumno al principio del archivo: un atributo de crate suyo no
-	// puede convertir la compilación en una biblioteca que después no se puede ejecutar.
-	r := execute(t, "rust", "#![crate_type = \"lib\"]\nfn main() { println!(\"hola\"); }\n")
-	if r.Phase != "run" || r.ExitCode != 0 || r.Stdout != "hola\n" {
-		t.Fatalf("--crate-type bin manda sobre el atributo del alumno: %+v", r)
+	// The harness puts the student's code at the top of the file: a crate attribute of theirs
+	// must not turn the build into a library that cannot be run afterwards.
+	r := execute(t, "rust", "#![crate_type = \"lib\"]\nfn main() { println!(\"hello\"); }\n")
+	if r.Phase != "run" || r.ExitCode != 0 || r.Stdout != "hello\n" {
+		t.Fatalf("--crate-type bin overrides the student attribute: %+v", r)
 	}
 }
 
 func TestIntegrationRustDebugKeepsOverflowChecks(t *testing.T) {
 	r := execute(t, "rust", `fn main() { let x: u8 = 255; let y = x + std::hint::black_box(1); println!("{y}"); }`)
 	if r.Phase != "run" || r.ExitCode != 101 || !strings.Contains(r.Stderr, "overflow") {
-		t.Fatalf("en modo debug el overflow entra en panic, como en el Playground: %+v", r)
+		t.Fatalf("in debug mode overflow panics, as in the Playground: %+v", r)
 	}
 }
 
@@ -84,11 +84,11 @@ func TestIntegrationInfiniteLoopTimesOut(t *testing.T) {
 }
 
 func TestIntegrationMemoryHogIsKilled(t *testing.T) {
-	// 512 MiB acotados: sin límite de memoria, el programa termina enseguida e imprime «sin
-	// límite» en vez de crecer hasta el plazo (un kill por plazo también da 137, sin OOM).
-	r := execute(t, "rust", `fn main() { let mut v = Vec::new(); for _ in 0..512 { v.push(vec![1u8; 1 << 20]); } println!("sin límite {}", v.len()); }`)
+	// Bounded 512 MiB: without a memory limit, the program ends at once and prints "unbounded"
+	// instead of growing until the deadline (a deadline kill also gives 137, without OOM).
+	r := execute(t, "rust", `fn main() { let mut v = Vec::new(); for _ in 0..512 { v.push(vec![1u8; 1 << 20]); } println!("unbounded {}", v.len()); }`)
 	if r.Phase != "run" || r.TimedOut || !r.OOMKilled {
-		t.Fatalf("debe morir por memoria, no por tiempo: %+v", r)
+		t.Fatalf("must die from memory, not from time: %+v", r)
 	}
 }
 
@@ -100,7 +100,7 @@ func TestIntegrationOutputFloodIsTruncated(t *testing.T) {
 }
 
 func TestIntegrationHasNoNetwork(t *testing.T) {
-	// Mira las interfaces, no un dial: sin salida a Internet en el host, un dial fallaría igual.
+	// Looks at the interfaces, not a dial: without Internet access on the host, a dial would fail anyway.
 	r := execute(t, "go", `package main
 
 import (
@@ -123,7 +123,7 @@ func main() {
 }
 `)
 	if r.Stdout != "lo\n" {
-		t.Fatalf("la única interfaz es loopback: %+v", r)
+		t.Fatalf("the only interface is loopback: %+v", r)
 	}
 }
 
@@ -142,16 +142,16 @@ func TestIntegrationLegitConcurrencyFitsThePidsLimit(t *testing.T) {
 }
 
 func TestIntegrationThreadBombHitsThePidsLimit(t *testing.T) {
-	r := execute(t, "rust", `fn main() { let mut hs = Vec::new(); for _ in 0..10000 { match std::thread::Builder::new().spawn(|| std::thread::sleep(std::time::Duration::from_secs(5))) { Ok(h) => hs.push(h), Err(_) => { println!("límite"); return; } } } }`)
-	// Con runc, crear el hilo 64 falla con EAGAIN y el programa lo informa. Con runsc, el límite
-	// cuenta los hilos del host del sandbox: al excederlo, gVisor mata el sandbox entero (137, sin
-	// OOM). Las dos contienen la bomba; ver la enmienda del ADR 0005.
-	contained := r.Stdout == "límite\n"
+	r := execute(t, "rust", `fn main() { let mut hs = Vec::new(); for _ in 0..10000 { match std::thread::Builder::new().spawn(|| std::thread::sleep(std::time::Duration::from_secs(5))) { Ok(h) => hs.push(h), Err(_) => { println!("limit"); return; } } } }`)
+	// With runc, creating the 64th thread fails with EAGAIN and the program reports it. With
+	// runsc, the limit counts the sandbox host threads: when exceeded, gVisor kills the whole
+	// sandbox (137, no OOM). Both contain the bomb; see the ADR 0005 amendment.
+	contained := r.Stdout == "limit\n"
 	if os.Getenv("EXECUTOR_RUNTIME") == "runsc" {
 		contained = r.ExitCode == 137 && !r.OOMKilled && !r.TimedOut
 	}
 	if !contained {
-		t.Fatalf("el límite de procesos corta la bomba de hilos: %+v", r)
+		t.Fatalf("the process limit stops the thread bomb: %+v", r)
 	}
 }
 
@@ -163,24 +163,24 @@ import "fmt"
 func main() { fmt.Printf("%d", "x") }
 `)
 	if r.Phase != "run" || r.ExitCode != 0 || !strings.Contains(r.Stderr, "format %d has arg") {
-		t.Fatalf("go vet avisa en stderr sin impedir que compile y corra, como en el Playground: %+v", r)
+		t.Fatalf("go vet warns on stderr without preventing compile and run, as in the Playground: %+v", r)
 	}
 }
 
 func TestIntegrationGoCompileErrorAppearsOnce(t *testing.T) {
 	r := execute(t, "go", `package main
 
-func main() { var x int = "texto"; _ = x }
+func main() { var x int = "text"; _ = x }
 `)
 	if r.Phase != "compile" || r.ExitCode == 0 || strings.Count(r.Stderr, "cannot use") != 1 {
-		t.Fatalf("el error de compilación sale una sola vez (vet no corre si no compiló): %+v", r)
+		t.Fatalf("the compile error appears once (vet does not run if the build failed): %+v", r)
 	}
 }
 
 func TestIntegrationGoNonMainPackageIsACompileError(t *testing.T) {
 	r := execute(t, "go", "package foo\n\nfunc F() {}\n")
 	if r.Phase != "compile" || r.ExitCode == 0 || !strings.Contains(r.Stderr, "-buildmode=exe requires exactly one main package") {
-		t.Fatalf("un paquete que no es main es un error de compilación del alumno, no un fallo del sandbox: %+v", r)
+		t.Fatalf("a non-main package is a student compile error, not a sandbox failure: %+v", r)
 	}
 }
 
@@ -193,7 +193,7 @@ import (
 )
 
 func main() {
-	// /opt/gocache es de 65534 y /var/tmp es 1777: sólo --read-only impide escribirlos.
+	// /opt/gocache is owned by 65534 and /var/tmp is 1777: only --read-only prevents writing them.
 	for _, path := range []string{"/out/x", "/opt/gocache/x", "/var/tmp/x", "/tmp/x"} {
 		err := os.WriteFile(path, []byte("x"), 0o600)
 		fmt.Println(path, err == nil)
@@ -208,7 +208,7 @@ func main() {
 uid 65534
 `
 	if r.Stdout != want {
-		t.Fatalf("la ejecución corre como 65534 y sólo escribe en /tmp: %+v", r)
+		t.Fatalf("the run executes as 65534 and only writes to /tmp: %+v", r)
 	}
 }
 
@@ -224,7 +224,7 @@ import (
 )
 
 func main() {
-	// Con uid 65534, CapEff ya es 0 aunque falte --cap-drop ALL: CapBnd sí lo delata.
+	// With uid 65534, CapEff is already 0 even without --cap-drop ALL: CapBnd gives it away.
 	status, _ := os.ReadFile("/proc/self/status")
 	values := map[string]string{}
 	for _, line := range strings.Split(string(status), "\n") {
@@ -239,8 +239,8 @@ func main() {
 	var core syscall.Rlimit
 	syscall.Getrlimit(syscall.RLIMIT_CORE, &core)
 	fmt.Println("core", core.Cur, core.Max)
-	os.WriteFile("/tmp/x.sh", []byte("#!/bin/sh\necho ejecutado\n"), 0o755)
-	fmt.Println("exec en /tmp falla:", exec.Command("/tmp/x.sh").Run() != nil)
+	os.WriteFile("/tmp/x.sh", []byte("#!/bin/sh\necho executed\n"), 0o755)
+	fmt.Println("exec in /tmp fails:", exec.Command("/tmp/x.sh").Run() != nil)
 }
 `)
 	want := `CapPrm: 0000000000000000
@@ -248,10 +248,10 @@ CapEff: 0000000000000000
 CapBnd: 0000000000000000
 NoNewPrivs: 1
 core 0 0
-exec en /tmp falla: true
+exec in /tmp fails: true
 `
 	if r.Stdout != want {
-		t.Fatalf("sin capabilities, sin escalada, sin volcados de memoria y /tmp sin exec: %+v", r)
+		t.Fatalf("no capabilities, no escalation, no core dumps and /tmp without exec: %+v", r)
 	}
 }
 
@@ -274,21 +274,21 @@ func main() {
 		want = "true\n"
 	}
 	if r.Stdout != want {
-		t.Fatalf("EXECUTOR_RUNTIME=%q, pero el kernel que ve el programa no coincide: %+v", os.Getenv("EXECUTOR_RUNTIME"), r)
+		t.Fatalf("EXECUTOR_RUNTIME=%q, but the kernel the program sees does not match: %+v", os.Getenv("EXECUTOR_RUNTIME"), r)
 	}
-	t.Logf("runtime %q: compilación %d ms, ejecución %d ms", os.Getenv("EXECUTOR_RUNTIME"), r.CompileMs, r.RunMs)
+	t.Logf("runtime %q: compile %d ms, run %d ms", os.Getenv("EXECUTOR_RUNTIME"), r.CompileMs, r.RunMs)
 }
 
 func TestIntegrationContainerThatCannotStartIsAnError(t *testing.T) {
 	runner := integrationRunner(t)
 	profile := runner.Profiles["go"]
-	profile.Run.Cmd = []string{"/no/existe"}
+	profile.Run.Cmd = []string{"/no/such/file"}
 	runner.Profiles["go"] = profile
 	_, err := runner.Execute(context.Background(), "go", []byte("package main\n\nfunc main() {}\n"))
-	// "no pudo arrancar" sale de State.Error (parseState): sin ese chequeo, el contenedor queda
-	// en "created" y el error vendría de otra rama.
+	// "no pudo arrancar" comes from State.Error (parseState): without that check, the container
+	// stays "created" and the error would come from another branch.
 	if err == nil || !strings.Contains(err.Error(), "no pudo arrancar") {
-		t.Fatalf("un contenedor que no arranca es un error del sandbox, no un resultado del alumno: %v", err)
+		t.Fatalf("a container that cannot start is a sandbox error, not a student result: %v", err)
 	}
 }
 
@@ -296,12 +296,12 @@ func TestIntegrationSweepRemovesOnlyOldExecutorResources(t *testing.T) {
 	ctx := context.Background()
 	cli := DockerCLI{Exec: ExecCommand}
 	id := RandomID()
-	old := map[string]string{RunLabel: "integracion", CreatedLabel: "1"} // 1970: más viejo que cualquier MaxAge
-	volume, foreign := "taller-out-"+id, "taller-out-ajeno-"+id
+	old := map[string]string{RunLabel: "integration", CreatedLabel: "1"} // 1970: older than any MaxAge
+	volume, foreign := "taller-out-"+id, "taller-out-foreign-"+id
 	if err := cli.CreateVolume(ctx, volume, old); err != nil {
 		t.Fatal(err)
 	}
-	if err := cli.CreateVolume(ctx, foreign, nil); err != nil { // sin la etiqueta del ejecutor
+	if err := cli.CreateVolume(ctx, foreign, nil); err != nil { // without the executor label
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { cli.RemoveVolume(context.Background(), foreign) })
@@ -311,33 +311,33 @@ func TestIntegrationSweepRemovesOnlyOldExecutorResources(t *testing.T) {
 	if err := cli.Create(ctx, spec); err != nil {
 		t.Fatal(err)
 	}
-	if err := (Sweeper{Engine: cli, Now: time.Now, MaxAge: 2 * time.Minute, Instance: "integracion"}).Sweep(ctx); err != nil {
+	if err := (Sweeper{Engine: cli, Now: time.Now, MaxAge: 2 * time.Minute, Instance: "integration"}).Sweep(ctx); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := cli.Inspect(ctx, spec.Name); err == nil {
-		t.Fatal("el contenedor viejo del ejecutor debía borrarse")
+		t.Fatal("the old executor container should have been removed")
 	}
-	resources, err := cli.ListLabeled(ctx, RunLabel+"=integracion")
+	resources, err := cli.ListLabeled(ctx, RunLabel+"=integration")
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, resource := range resources {
 		if strings.HasSuffix(resource.Name, id) {
-			t.Fatalf("quedó %s", resource.Name)
+			t.Fatalf("left behind: %s", resource.Name)
 		}
 	}
 	if err := ExecCommand(ctx, "docker", []string{"volume", "inspect", foreign}, nil, io.Discard, io.Discard); err != nil {
-		t.Fatalf("un volumen sin la etiqueta del ejecutor no se toca: %v", err)
+		t.Fatalf("a volume without the executor label is untouched: %v", err)
 	}
 }
 
 func TestIntegrationLeavesNothingBehind(t *testing.T) {
 	execute(t, "rust", `fn main() {}`)
-	resources, err := DockerCLI{Exec: ExecCommand}.ListLabeled(context.Background(), RunLabel+"=integracion")
+	resources, err := DockerCLI{Exec: ExecCommand}.ListLabeled(context.Background(), RunLabel+"=integration")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(resources) != 0 {
-		t.Fatalf("quedaron recursos: %+v", resources)
+		t.Fatalf("resources left behind: %+v", resources)
 	}
 }

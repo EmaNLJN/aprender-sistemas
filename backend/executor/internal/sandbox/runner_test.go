@@ -15,8 +15,8 @@ import (
 type fakePhase struct {
 	stdout, stderr string
 	state          State
-	block          bool          // simula un programa que no termina: espera a que venza el contexto
-	delay          time.Duration // simula un programa que termina después del plazo sin mirar el contexto
+	block          bool          // simulates a program that never ends: waits for the context to expire
+	delay          time.Duration // simulates a program that ends after the deadline without checking the context
 }
 
 type fakeEngine struct {
@@ -28,9 +28,9 @@ type fakeEngine struct {
 	compile      fakePhase
 	run          fakePhase
 	createErr    error
-	startErr     error // un fallo de Start que no viene del contexto
+	startErr     error // a Start failure that does not come from the context
 	inspectErr   error
-	onStart      func() // se llama al entrar a Start (para cancelar el pedido a mitad de camino)
+	onStart      func() // called on entering Start (to cancel the request midway)
 }
 
 func (f *fakeEngine) record(call string) {
@@ -86,7 +86,7 @@ func (f *fakeEngine) Kill(_ context.Context, name string) error {
 	return nil
 }
 
-// Inspect devuelve el estado de la fase; sin Status explícito, el contenedor terminó.
+// Inspect returns the phase state; without an explicit Status, the container exited.
 func (f *fakeEngine) Inspect(_ context.Context, name string) (State, error) {
 	f.record("inspect " + name)
 	state := f.phaseFor(name).state
@@ -111,25 +111,25 @@ func newTestRunner(engine Engine) *Runner {
 		profiles[language] = profile
 	}
 	return &Runner{
-		Engine: engine, Profiles: profiles, Runtime: "runsc", Instance: "pruebas",
+		Engine: engine, Profiles: profiles, Runtime: "runsc", Instance: "tests",
 		Now: time.Now, NewID: func() string { return "id1" },
 	}
 }
 
 func TestRunsCompileThenRunAndReportsBoth(t *testing.T) {
 	engine := &fakeEngine{
-		compile: fakePhase{stderr: "warning: variable sin usar\n"},
-		run:     fakePhase{stdout: "hola\n"},
+		compile: fakePhase{stderr: "warning: unused variable\n"},
+		run:     fakePhase{stdout: "hello\n"},
 	}
 	result, err := newTestRunner(engine).Execute(context.Background(), "rust", []byte("fn main(){}"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.Phase != "run" || result.ExitCode != 0 || result.Stdout != "hola\n" {
-		t.Fatalf("resultado inesperado: %+v", result)
+	if result.Phase != "run" || result.ExitCode != 0 || result.Stdout != "hello\n" {
+		t.Fatalf("unexpected result: %+v", result)
 	}
-	if result.Stderr != "warning: variable sin usar\n" {
-		t.Fatalf("las advertencias de compilación llegan al alumno: %q", result.Stderr)
+	if result.Stderr != "warning: unused variable\n" {
+		t.Fatalf("compile warnings reach the student: %q", result.Stderr)
 	}
 	want := []string{
 		"volume-create taller-out-id1",
@@ -138,7 +138,7 @@ func TestRunsCompileThenRunAndReportsBoth(t *testing.T) {
 		"volume-rm taller-out-id1",
 	}
 	if !slices.Equal(engine.calls, want) {
-		t.Fatalf("llamadas = %v\nquiero   %v", engine.calls, want)
+		t.Fatalf("calls = %v\nwant    %v", engine.calls, want)
 	}
 }
 
@@ -149,13 +149,13 @@ func TestCompileErrorStopsBeforeRunning(t *testing.T) {
 		t.Fatal(err)
 	}
 	if result.Phase != "compile" || result.ExitCode != 1 || !strings.Contains(result.Stderr, "E0308") {
-		t.Fatalf("resultado inesperado: %+v", result)
+		t.Fatalf("unexpected result: %+v", result)
 	}
 	if slices.Contains(engine.calls, "create taller-r-id1") {
-		t.Fatal("no se ejecuta lo que no compiló")
+		t.Fatal("code that did not compile is not run")
 	}
 	if engine.calls[len(engine.calls)-1] != "volume-rm taller-out-id1" {
-		t.Fatalf("el volumen se borra siempre: %v", engine.calls)
+		t.Fatalf("the volume is always removed: %v", engine.calls)
 	}
 }
 
@@ -166,11 +166,11 @@ func TestRunTimeoutKillsAndStillCleansUp(t *testing.T) {
 		t.Fatal(err)
 	}
 	if result.Phase != "run" || !result.TimedOut {
-		t.Fatalf("debe informar el tiempo agotado: %+v", result)
+		t.Fatalf("must report the timeout: %+v", result)
 	}
 	for _, call := range []string{"kill taller-r-id1", "rm taller-r-id1", "volume-rm taller-out-id1"} {
 		if !slices.Contains(engine.calls, call) {
-			t.Fatalf("falta %q en %v", call, engine.calls)
+			t.Fatalf("missing %q in %v", call, engine.calls)
 		}
 	}
 }
@@ -182,7 +182,7 @@ func TestCompileTimeoutIsReported(t *testing.T) {
 		t.Fatal(err)
 	}
 	if result.Phase != "compile" || !result.TimedOut {
-		t.Fatalf("resultado inesperado: %+v", result)
+		t.Fatalf("unexpected result: %+v", result)
 	}
 }
 
@@ -190,7 +190,7 @@ func TestOOMIsReported(t *testing.T) {
 	engine := &fakeEngine{run: fakePhase{state: State{ExitCode: 137, OOMKilled: true}}}
 	result, _ := newTestRunner(engine).Execute(context.Background(), "rust", []byte("x"))
 	if !result.OOMKilled || result.ExitCode != 137 {
-		t.Fatalf("resultado inesperado: %+v", result)
+		t.Fatalf("unexpected result: %+v", result)
 	}
 }
 
@@ -206,17 +206,17 @@ func TestEngineFailureIsAnErrorAndStillRemovesTheVolume(t *testing.T) {
 	engine := &fakeEngine{createErr: errors.New("Cannot connect to the Docker daemon")}
 	_, err := newTestRunner(engine).Execute(context.Background(), "rust", []byte("x"))
 	if err == nil {
-		t.Fatal("un fallo de Docker es un error, no un resultado del alumno")
+		t.Fatal("a Docker failure is an error, not a student result")
 	}
 	if engine.calls[len(engine.calls)-1] != "volume-rm taller-out-id1" {
-		t.Fatalf("el volumen se borra igual: %v", engine.calls)
+		t.Fatalf("the volume is removed anyway: %v", engine.calls)
 	}
 }
 
 func TestUnknownLanguage(t *testing.T) {
 	_, err := newTestRunner(&fakeEngine{}).Execute(context.Background(), "python", []byte("x"))
 	if !errors.Is(err, ErrUnknownLanguage) {
-		t.Fatalf("err = %v; quiero ErrUnknownLanguage", err)
+		t.Fatalf("err = %v; want ErrUnknownLanguage", err)
 	}
 }
 
@@ -230,11 +230,11 @@ func TestClientCancellationKillsWithoutReportingATimeout(t *testing.T) {
 	}
 	_, err := newTestRunner(engine).Execute(ctx, "rust", []byte("x"))
 	if !errors.Is(err, context.Canceled) {
-		t.Fatalf("err = %v; quiero context.Canceled", err)
+		t.Fatalf("err = %v; want context.Canceled", err)
 	}
 	for _, call := range []string{"kill taller-r-id1", "rm taller-r-id1", "volume-rm taller-out-id1"} {
 		if !slices.Contains(engine.calls, call) {
-			t.Fatalf("falta %q en %v", call, engine.calls)
+			t.Fatalf("missing %q in %v", call, engine.calls)
 		}
 	}
 }
@@ -247,12 +247,12 @@ func TestCompileGetsTheProgramAndRunGetsNoStdin(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(engine.stdins) != 2 || engine.stdins[0] != "fn main(){}" || engine.stdins[1] != "" {
-		t.Fatalf("stdin = %q; la compilación recibe el programa y la ejecución nada", engine.stdins)
+		t.Fatalf("stdin = %q; compile gets the program and run gets nothing", engine.stdins)
 	}
 	created := strconv.FormatInt(1_700_000_000, 10)
 	for _, labels := range []map[string]string{engine.volumeLabels, engine.specs[0].Labels, engine.specs[1].Labels} {
-		if labels[RunLabel] != "pruebas" || labels[CreatedLabel] != created {
-			t.Fatalf("el barrido depende de estas etiquetas: %v", labels)
+		if labels[RunLabel] != "tests" || labels[CreatedLabel] != created {
+			t.Fatalf("the sweeper depends on these labels: %v", labels)
 		}
 	}
 }
@@ -260,42 +260,42 @@ func TestCompileGetsTheProgramAndRunGetsNoStdin(t *testing.T) {
 func TestInspectFailureIsAnError(t *testing.T) {
 	engine := &fakeEngine{inspectErr: errors.New("Cannot connect to the Docker daemon")}
 	if _, err := newTestRunner(engine).Execute(context.Background(), "go", []byte("x")); err == nil {
-		t.Fatal("si no se puede leer el estado, es un fallo del sandbox")
+		t.Fatal("if the state cannot be read, it is a sandbox failure")
 	}
 	if engine.calls[len(engine.calls)-1] != "volume-rm taller-out-id1" {
-		t.Fatalf("el volumen se borra igual: %v", engine.calls)
+		t.Fatalf("the volume is removed anyway: %v", engine.calls)
 	}
 }
 
 func TestStartFailureThatIsNotTheDeadlineIsAnError(t *testing.T) {
-	engine := &fakeEngine{startErr: errors.New("error waiting for container: attach cortado")}
+	engine := &fakeEngine{startErr: errors.New("error waiting for container: broken attach")}
 	if _, err := newTestRunner(engine).Execute(context.Background(), "go", []byte("x")); err == nil {
-		t.Fatal("un fallo de la CLI no es un resultado del alumno")
+		t.Fatal("a CLI failure is not a student result")
 	}
 }
 
 func TestContainerStillRunningAfterStartIsAnError(t *testing.T) {
 	engine := &fakeEngine{run: fakePhase{state: State{Status: "running"}}}
 	if _, err := newTestRunner(engine).Execute(context.Background(), "rust", []byte("x")); err == nil {
-		t.Fatal("si la CLI terminó con el contenedor vivo, el código 0 no es del programa")
+		t.Fatal("if the CLI exited with the container alive, code 0 is not the program's")
 	}
 }
 
 func TestContainerThatNeverStartedIsAnErrorEvenAtTheDeadline(t *testing.T) {
 	engine := &fakeEngine{run: fakePhase{block: true, state: State{Status: "created"}}}
 	if _, err := newTestRunner(engine).Execute(context.Background(), "rust", []byte("x")); err == nil {
-		t.Fatal("un arranque que no llegó antes del plazo no es un plazo vencido del alumno")
+		t.Fatal("a start that did not happen before the deadline is not a student timeout")
 	}
 }
 
 func TestAProgramThatFinishedIsNotReportedAsTimedOut(t *testing.T) {
-	// El plazo de las pruebas es de 200 ms: el programa termina después, pero Start volvió sin error.
-	engine := &fakeEngine{run: fakePhase{delay: 300 * time.Millisecond, stdout: "listo\n"}}
+	// The test deadline is 200 ms: the program ends later, but Start returned without error.
+	engine := &fakeEngine{run: fakePhase{delay: 300 * time.Millisecond, stdout: "done\n"}}
 	result, err := newTestRunner(engine).Execute(context.Background(), "go", []byte("x"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.TimedOut || result.Stdout != "listo\n" {
-		t.Fatalf("si Start volvió sin error, el programa terminó: %+v", result)
+	if result.TimedOut || result.Stdout != "done\n" {
+		t.Fatalf("if Start returned without error, the program finished: %+v", result)
 	}
 }
