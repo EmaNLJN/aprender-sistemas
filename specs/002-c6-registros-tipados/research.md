@@ -99,16 +99,28 @@ La sesión de planificación no tocó el repositorio. Copió `backend/api/app` y
 
 **Alternatives considered**: subir a `^8.5` para usar `clone with` o `array_first`, que estos registros, que se construyen una sola vez, no necesitan.
 
-## R10. Dos desvíos deliberados en casos inalcanzables
+## R10. Una fila que el import no pudo escribir falla rápido
 
-**Decision**:
+**Decision**: lo que no debería estar en la base falla antes de armar un cuerpo.
 
-- Si falta la fila del tema de un ejercicio activo, el armado lanza `LogicException`; C2 publicaba el tema vacío y la verificación de la huella respondía 503. La clave foránea y las invariantes del import impiden ese caso.
-- Si `file_get_contents` no puede leer un archivo que existe, `ContentSource` dice «no se pudo leer»; C2 terminaba en «no es JSON válido». Dentro de la imagen, el archivo siempre se puede leer.
+- `RowFields` lanza `LogicException` ante una columna que falta, con otro tipo o con una clave de `key_order` desconocida.
+- `PortionAssembler::exercise()` y el armado de una porción lanzan `LogicException` si falta el tema de un ejercicio activo.
+- `ContentDelivery` arma el cuerpo dentro de `ContentSnapshot::read()` sin atrapar errores, así que en la entrega esa falla llega como 500.
 
-**Rationale**: el nivel 9 obliga a decidir qué pasa con esos valores. Ningún caso lo cubre la suite, ni se alcanza con datos que el import haya escrito, así que FR-008 y SC-003 no cambian.
+C2, en cambio, convertía el valor en silencio, publicaba el tema vacío si faltaba, y los bytes equivocados fallaban la verificación de la huella. La API respondía entonces 503 `maintenance`, con `Retry-After` y una línea en el registro (C2 FR-044). Ante una clave de `key_order` desconocida o un JSON roto, C2 ya respondía 500.
 
-**Alternatives considered**: reproducir el comportamiento de C2 con valores inventados (un tema vacío, un texto vacío), que esconde un dato corrupto.
+El esquema impide casi todos estos casos: tipos de columna, `NOT NULL`, `JSON_VALID`, `featured IN (0, 1)`, la clave foránea del tema y las invariantes del import. Lo que sigue siendo alcanzable es una edición a mano o una migración futura, por ejemplo retirar un tema mientras su ejercicio sigue activo.
+
+Aparte, si `file_get_contents` no puede leer un archivo que existe, `ContentSource` dice «no se pudo leer», donde C2 terminaba en «no es JSON válido». Dentro de la imagen, el archivo siempre se puede leer.
+
+**Pendiente del usuario.** El plan sigue la opción (a); si el usuario elige la (b), T011 la suma.
+
+- **(a)** Se acepta el 500 para una fila corrupta, con el error en el registro de Laravel. Es la opción por omisión.
+- **(b)** `ContentDelivery` atrapa la falla del armado, la registra y responde `maintenance()`, así se conserva la garantía de FR-044. Suma a T011 un caso de `ContentEndpointTest` que retira a mano el tema de un ejercicio activo. También convierte en 503 los 500 que ya daba C2.
+
+**Rationale**: el nivel 9 obliga a decidir qué pasa con un valor sin tipo; fallar rápido no publica nunca un cuerpo armado con datos que el import no escribió. Ninguna prueba de C2 cubre estos casos, así que FR-008 y SC-003 no cambian; FR-011 lo aclara.
+
+**Alternatives considered**: reproducir el comportamiento de C2 con valores inventados (un tema vacío, un texto vacío), que esconde el dato corrupto.
 
 ## R11. Los hijos de un taller llegan validados
 

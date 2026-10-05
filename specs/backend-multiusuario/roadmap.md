@@ -126,7 +126,7 @@ Se cierran en el paso clarify de la spec de cada ítem.
 | D1 | 17 (progreso) |
 | C5 | 6 (qué ve el admin) |
 | E1 | 1 (resto: Esenciales antes de Inicial o en su lugar, y su código) |
-| C6 | Cerradas en su clarify (2026-10-05): Q1 a Q5 de su spec, que no vienen del ADR 0006 |
+| C6 | Cerradas en su clarify (2026-10-05): Q1 a Q5 de su spec, que no vienen del ADR 0006. Queda una del plan: si una fila que el import no pudo escribir responde 500 o 503 `maintenance` (research.md, R10; por omisión, 500) |
 | Transversales | 13 (retenciones), 14 (Ley 25.326), 15 (carga esperada), 19 (imágenes nuevas) |
 
 ## Enmiendas pendientes

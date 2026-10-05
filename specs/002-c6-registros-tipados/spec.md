@@ -141,7 +141,7 @@ Con los registros tipados, el análisis estático corre en el nivel 9, en la má
 - **Valores que devuelve el driver:** enteros como texto y banderas como 0 o 1. La forma publicada es la misma que con enteros y booleanos; C2 ya lo prueba.
 - **Objetos vacíos:** `{}` sigue siendo `{}` y no pasa a `[]`.
 - **La raíz de la guía** no tiene fila: sus claves son siempre `resources`, `tracks` y `sources`, en ese orden, como en C2.
-- **Una clave guardada que el registro no conoce** (por ejemplo, en `key_order`): la lectura desde la fila falla, como hoy, en lugar de publicar un registro incompleto.
+- **Una fila que el import no pudo escribir**, por una edición a mano: una clave de `key_order` desconocida o un tema retirado con su ejercicio activo. La lectura falla en lugar de publicar un registro incompleto, y la entrega responde 500. Con una clave desconocida, C2 también respondía 500. Con el tema retirado, C2 respondía 503 `maintenance`, porque los bytes no daban la huella. Si ese caso tiene que seguir en 503 lo decide el usuario (research.md, R10).
 - **Un documento con varios errores:** el import lo rechaza igual, pero el primero que informa puede cambiar si cambia el orden de las comprobaciones (ver Assumptions).
 - **El primer despliegue después del cambio:** la base tiene filas escritas por el código de C2. Si una fila nueva difiriera en un solo carácter del texto de una columna JSON o de `key_order`, el import la reescribiría y registraría un import sin que cambie un byte publicado. Eso lo detecta el oráculo de filas (FR-006).
 
@@ -164,7 +164,7 @@ Con los registros tipados, el análisis estático corre en el nivel 9, en la má
 - **FR-008**: La conversión desde el documento DEBE aceptar y rechazar exactamente lo que hoy acepta y rechaza el import, con el mismo mensaje para cada error (archivo, ruta JSON y problema, en español). Eso incluye una clave sin regla, una clave obligatoria ausente, un texto vacío, un entero o un booleano que no lo es, una lista vacía o que no es lista, un objeto donde va otro valor y las referencias entre registros que valida C2. Tipar NO DEBE agregar rechazos, por ejemplo convirtiendo en enumeraciones valores que hoy son texto libre, ni quitar ninguno.
 - **FR-009**: El import DEBE conservar el comportamiento que fija C2 (FR-001 a FR-012): la diferencia incremental e idempotente, el retiro y la reactivación, las versiones de corrección, el auto-chequeo de las 17 porciones, el informe de `--dry-run`, el registro del import con sus conteos y su informe, y la caché de cuerpos.
 - **FR-010**: Los registros tipados DEBEN terminar en su fila. La diferencia del import, su plan y la escritura siguen comparando y escribiendo filas, que son el borde del query builder. Las columnas que la diferencia lee por su nombre (el índice v1 de una etapa, el `test_key`, las huellas y el estado de un ejercicio) DEBEN comprobar su tipo antes de usarse. *(Clarify, Q2)*
-- **FR-011**: La entrega HTTP DEBE conservar el comportamiento que fija C2 (FR-013 a FR-026 y FR-044): rutas, parámetros, estados, cabeceras, validadores, cuerpos de error y caché de cuerpos.
+- **FR-011**: La entrega HTTP DEBE conservar el comportamiento que fija C2 (FR-013 a FR-026 y FR-044) para todas las filas que el import puede escribir: rutas, parámetros, estados, cabeceras, validadores, cuerpos de error y caché de cuerpos. Una fila que el import no pudo escribir, por una edición a mano, falla antes de armar el cuerpo (Edge Cases; research.md, R10).
 
 **Análisis estático y dependencias**
 
