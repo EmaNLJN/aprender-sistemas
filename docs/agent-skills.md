@@ -1,5 +1,8 @@
 # Skills del proyecto
 
+Las skills de `.agents/skills/` son copias de terceros. Sus fuentes, licencias y avisos de copyright están en
+[THIRD-PARTY-NOTICES.md](../.agents/skills/THIRD-PARTY-NOTICES.md); una skill nueva suma su fila ahí.
+
 Selección e instalación del 2026-10-03. Se usaron `find-skills`, búsquedas CLI de
 arquitectura, clean code, React y testing, el [directorio skills.sh](https://www.skills.sh/)
 y los repositorios originales. Se priorizó alcance útil para el taller y adopción;
