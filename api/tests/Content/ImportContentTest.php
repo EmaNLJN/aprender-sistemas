@@ -391,6 +391,21 @@ it('the rules between rows are checked with queries, and each one breaks by hand
         "update catalogs set chain_position = 2 where code = 'lab'",
         'la cadena de catálogos no es única y contigua desde 1',
     ],
+    // A challenge moves above the boss, with no position repeated: only the boss being last breaks.
+    'a boss that is not the last of its world' => [
+        "update world_exercises set position = 9 where role = 'challenge' limit 1",
+        'un mundo activo no tiene exactamente un jefe, último de sus desafíos',
+    ],
+    // 1, 1 and 3: it starts at 1 and ends at the count, so only the repeated position breaks.
+    'two catalogs at the same chain position' => [
+        "update catalogs set chain_position = if(code = 'quests', 3, 1)",
+        'la cadena de catálogos no es única y contigua desde 1',
+    ],
+    // 1 and 3, the third catalog off the chain: it starts at 1 and repeats nothing, so only the gap breaks.
+    'a catalog chain with a gap' => [
+        "update catalogs set chain_position = if(code = 'lab', 1, 3) where code in ('lab', 'quests')",
+        'la cadena de catálogos no es única y contigua desde 1',
+    ],
 ]);
 
 it('each rule between rows detects its own violation', function () {
