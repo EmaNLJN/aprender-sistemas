@@ -49,6 +49,10 @@ it('rejects a password that contains the local part of the email when it has 4 o
     expect(violationsOf('my-ANALUZ-secret-phrase', null, 'analuz@x.com'))->toBe([PasswordViolation::ContainsEmail]);
 });
 
+it('rejects the local part of an email written with a decomposed accent', function () {
+    expect(violationsOf("my-p\u{00E1}pa-secret-phrase", null, "pa\u{0301}pa@x.com"))->toBe([PasswordViolation::ContainsEmail]);
+});
+
 it('allows the local part of the email when it has fewer than 4 characters', function () {
     expect(violationsOf('banana-split-sundae', null, 'ana@x.com'))->toBe([]);
 });
