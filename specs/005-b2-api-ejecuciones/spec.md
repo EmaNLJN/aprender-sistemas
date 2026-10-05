@@ -36,14 +36,14 @@
 
 - **D1:** la sincronización del progreso (`/api/sync`, `/api/progress`, la importación v1 y «Borrar todo»), las otras 12 tablas de progreso y la escritura de las columnas de `exercise_progress` que no salen de ejecuciones.
 - **A4:** la vista del laboratorio: el cliente de `/api/runs`, la vista previa con la plantilla, el retiro del cliente de Playgrounds y el id del intento en el `result` v1.
-- **C5:** `GET /api/admin/runs`, `GET /api/admin/queue` y las estadísticas. **B3:** la auditoría de todo el currículo. **C3:** cuentas, sesión, roles, límites de acceso y `scheduler`. **C4:** TLS y la IP real. **E1:** Esenciales.
+- **C5:** `GET /api/admin/runs`, `GET /api/admin/queue` y las estadísticas. **B3:** la auditoría de todo el currículo. **C3a:** cuentas, sesión, roles, límites de acceso y `scheduler`. **C3b:** correo, administración y el ciclo de vida de la cuenta (exportar y suprimir). **C4:** TLS y la IP real. **E1:** Esenciales.
 - El ejecutor de B1 queda como está: no se extiende para informar una fase en vivo (Q2).
 - Un veredicto inviolable, que el ADR 0005 §5 deja fuera, y los desbloqueos de la campaña, que decide el cliente (ADR 0006 D39).
 - Los endpoints de historial de intentos (`GET /api/attempts` y `GET /api/attempts/{id}`, Q4) y las cuotas reducidas para cuentas sin verificar, que llegan con el registro abierto, hoy apagado. Ningún ítem de la hoja de ruta trae hoy los endpoints de historial: los traería A4, si suma un historial, o una spec nueva.
 
 **Sin hacer a propósito (YAGNI):** Redis, SSE o Reverb para la espera (el camino de escala del ADR 0006 §9 los trae con sus disparadores); más de un ejecutor o slots dinámicos; prioridades o colas por aula; una cancelación que interrumpa el sandbox; reintentos automáticos del código del alumno; guardar los payloads fuera de MySQL o comprimirlos; una fase en vivo del run (Q2); los endpoints de historial de intentos (Q4); un panel de la cola (C5).
 
-**Actores:** el alumno (hoy a través de un cliente de prueba y, desde A4, del laboratorio), quien opera el taller (levanta el stack, despliega y mira la cola), quien mantiene el currículo (claves de prueba y plantilla), el cliente del front (A4) y los equipos de C3, D1, C5 y B3, que apoyan o consumen lo que B2 deja.
+**Actores:** el alumno (hoy a través de un cliente de prueba y, desde A4, del laboratorio), quien opera el taller (levanta el stack, despliega y mira la cola), quien mantiene el currículo (claves de prueba y plantilla), el cliente del front (A4) y los equipos de C3a, C3b, D1, C5 y B3, que apoyan o consumen lo que B2 deja.
 
 ## Lo que pidió el usuario
 
@@ -190,8 +190,9 @@ El alumno puede cancelar una ejecución que no quiere esperar. Si su cuenta se d
 2. **Dada** una ejecución que corre, **cuando** el dueño la cancela, **entonces** responde 202, el sandbox sigue hasta terminar y la ejecución termina `canceled` sin tocar el progreso.
 3. **Dada** una ejecución ya terminada, **cuando** se la cancela, **entonces** responde 200 y no cambia nada; si es de otra cuenta, 404.
 4. **Dada** una cuenta deshabilitada con ejecuciones en cola, **cuando** les llega el turno, **entonces** no se ejecutan y terminan `canceled` con motivo `account_disabled`; un envío nuevo recibe 403 `account_disabled`.
+5. **Dada** una cuenta con una ejecución activa, **cuando** se llama a la operación que cancela las ejecuciones activas de una cuenta, **entonces** la que espera termina `canceled` al instante y la que corre queda con la cancelación pedida, como si el dueño la hubiera cancelado.
 
-*Cubre: FR-019, FR-026 y FR-041; SC-007 y SC-008.*
+*Cubre: FR-019, FR-026, FR-041 y FR-050; SC-007 y SC-008.*
 
 ---
 
@@ -253,9 +254,9 @@ Quien opera el taller levanta el stack con el ejecutor y los workers, y sabe qu�
 - **La primera ejecución de una cuenta** no tiene cabecera de progreso: se crea al admitirla.
 - **Dos pestañas o dos dispositivos de una cuenta.** La segunda ejecución simultánea recibe 429 `quota_exceeded` por la cuota de «1 activa».
 - **Consultas ajenas o podadas.** `GET` o `cancel` sobre una ejecución de otra cuenta, inexistente o podada responden 404.
-- **Un pedido con una cuenta esperada distinta de la de la sesión** recibe 409 `account_mismatch` antes de tocar datos (C3, ADR 0006 D36).
+- **Un pedido con una cuenta esperada distinta de la de la sesión** recibe 409 `account_mismatch` antes de tocar datos (C3a, ADR 0006 D36).
 - **«Borrar todo» en el medio.** No existe hasta D1. B2 prueba la época subiéndola a mano en la base, y D1 repite el escenario con el reset real.
-- **Una cuenta en supresión.** Sus ejecuciones activas se cancelan (C3 debe dejar el punto de extensión) y la purga borra sus ejecuciones, intentos y payloads por lotes.
+- **Una cuenta en supresión.** Sus ejecuciones activas se cancelan con la operación de FR-050, que llama C3b al suprimirla, y la purga de C3b borra sus ejecuciones, intentos y payloads por lotes.
 
 ## Requirements *(mandatory)*
 
@@ -263,7 +264,7 @@ Quien opera el taller levanta el stack con el ejecutor y los workers, y sabe qu�
 
 **Envío de una ejecución**
 
-- **FR-001**: `POST /api/runs` DEBE recibir `clientRunId`, `exerciseId`, `code` y, opcional, `customTest`, y responder 202 con el `id` de la ejecución y el estado `queued`, sin esperar al sandbox. La cuenta sale de la sesión y nunca del cuerpo. El pedido lleva la cuenta esperada y la protección contra pedidos de otro origen que fija C3. *(ADR 0005 §3; ADR 0006 D36)*
+- **FR-001**: `POST /api/runs` DEBE recibir `clientRunId`, `exerciseId`, `code` y, opcional, `customTest`, y responder 202 con el `id` de la ejecución y el estado `queued`, sin esperar al sandbox. La cuenta sale de la sesión y nunca del cuerpo. El pedido lleva la cuenta esperada y la protección contra pedidos de otro origen que fija C3a. *(ADR 0005 §3; ADR 0006 D36)*
 - **FR-002**: El pedido DEBE rechazarse sin crear nada, con el cuerpo `{message, code}` y el mensaje en español, si el código está vacío o tiene sólo espacios, si supera los 64 KiB contados en bytes, si la prueba propia supera los 3.000 caracteres, si el `clientRunId` no es un UUID (se guarda en minúsculas) o si el ejercicio no existe o está retirado. *(ADR 0005 §6; ADR 0006 §8)*
 - **FR-003**: El pedido NO DEBE traer pruebas, lenguaje ni programa: el lenguaje y las pruebas salen del ejercicio guardado. *(ADR 0005 §4)*
 - **FR-004**: El servidor DEBE armar el programa con el código, las pruebas activas del ejercicio, la prueba propia como la prueba `custom` y la plantilla del lenguaje. Las pruebas y el `grading_hash` vigente DEBEN salir de una misma lectura consistente de la base, para que sean de la misma versión del contenido. El nonce es único por ejecución y de 128 bits. *(ADR 0005 §4 y §5; ADR 0006 D27)*
@@ -326,16 +327,17 @@ Quien opera el taller levanta el stack con el ejecutor y los workers, y sabe qu�
 
 - **FR-041**: Sólo el dueño DEBE ver y cancelar sus ejecuciones: lo ajeno responde 404, ningún pedido recibe `user_id` y B2 no le da a ningún rol acceso al código ni a la salida de otra cuenta.
 - **FR-042**: Los registros de log de las ejecuciones DEBEN llevar el id de la ejecución, la cuenta, el estado y el motivo, y NO DEBEN llevar el código, la prueba propia, la salida ni el programa armado.
-- **FR-043**: Las tablas de B2 DEBEN entrar en la supresión de cuentas (las que tienen `user_id`, con FK con CASCADE hacia `users`, y las hijas, por su intento; borrado por lotes en el orden de D06 y con las ejecuciones activas canceladas antes) y los intentos con su payload conservado, en la exportación del titular, según el contrato de `UserData` que fije C3. Una prueba de esquema comprueba que un `DELETE FROM users` con todas las tablas pobladas no falla y no deja filas. *(ADR 0006 D06, D33 y §8)*
-- **FR-044**: La poda DEBE borrar las ejecuciones de más de 14 días y los payloads de más de 90 días, salvo el de la última aprobación y el del último intento de cada ejercicio, que se conservan mientras exista la cuenta (Q5). Va por lotes, recorriendo la clave primaria, y la agenda el `scheduler` de C3.
+- **FR-043**: Las tablas de B2 DEBEN poder entrar en la supresión de cuentas y en la exportación del titular, que son de C3b (`UserData` y `PurgeUserData`): las que tienen `user_id` llevan una FK con CASCADE hacia `users` (la prueba de esquema de C3a, FR-004, lo exige), las hijas cuelgan de su intento, y el orden de borrado por lotes de D06 queda documentado para C3b. Una prueba de B2 comprueba que un `DELETE FROM users` con todas las tablas de B2 pobladas no falla y no deja filas. B2 no crea `UserData` ni `PurgeUserData`. *(ADR 0006 D06, D33 y §8)*
+- **FR-044**: La poda DEBE borrar las ejecuciones de más de 14 días y los payloads de más de 90 días, salvo el de la última aprobación y el del último intento de cada ejercicio, que se conservan mientras exista la cuenta (Q5). Va por lotes, recorriendo la clave primaria, y la agenda el `scheduler` de C3a.
 - **FR-045**: El ejecutor DEBE ser alcanzable sólo desde el worker (una red interna compartida sólo entre los dos, sin puertos publicados y con su token) y ser el único componente con el socket de Docker. En un equipo sin gVisor DEBE poder correr con runc, por configuración y sólo para desarrollo, con el riesgo que registra el ADR 0005.
-- **FR-046**: B2 DEBE agregar en Nginx la ubicación de `/api/runs` con el tope de cuerpo de 192 KiB. El límite de ritmo por IP es de C3, que fija las zonas de `limit_req` y DEBE hacerlas responder 429 y no el 503 que Nginx usa por omisión, que se confundiría con `queue_full` (ver la tabla de C3).
+- **FR-046**: B2 DEBE agregar en Nginx la ubicación de `/api/runs` con el tope de cuerpo de 192 KiB. El límite de ritmo por IP es de C3a (su FR-044), que fija las zonas de `limit_req` y DEBE hacerlas responder 429 y no el 503 que Nginx usa por omisión, que se confundiría con `queue_full` (ver la tabla de C3a).
 
 **Verificación** (pruebas que el cambio DEBE traer antes de la implementación, según el principio II de la [constitución](../../.specify/memory/constitution.md))
 
 - **FR-047**: Las pruebas (Pest contra MySQL real, con un doble del ejecutor que devuelve las respuestas de su contrato) DEBEN cubrir, con valores esperados que salen del contrato y no del código que se prueba: la tabla de clasificación (un caso por fila de la tabla de «Key Entities»), la evidencia (la batería de SC-002), la idempotencia y las cuotas bajo concurrencia real (conexiones paralelas), el reencolado y el `infra_error`, la época, el cierre que no duplica el intento, la matriz de acceso ajeno y de cuenta esperada, y la poda.
 - **FR-048**: Un check de punta a punta contra el stack levantado y el ejecutor real (con runsc si está disponible; el plan fija su nombre y su comando) DEBE correr los 12 casos de SC-001 y la medición de SC-012. No forma parte de `npm test`, igual que `api:content:check`.
 - **FR-049**: El código de B2 DEBE pasar el análisis estático en el nivel que deja C6 (el 9, sin baseline ni errores ignorados) y Pint, y las pruebas del ejecutor si se lo toca (`npm run test:executor`). NO DEBE agregar paquetes de Composer sin permiso del usuario (constitución VII).
+- **FR-050**: B2 DEBE ofrecer una operación que cancele las ejecuciones activas de una cuenta: las que esperan, al instante, y las que corren, con la cancelación pedida como en FR-026. Es el punto de extensión que C3b llama al deshabilitar, degradar o suprimir una cuenta. B2 no la dispara por su cuenta ni agrega rutas para llamarla.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -380,7 +382,7 @@ Cómo se clasifica un resultado, en este orden (FR-021 y FR-022). Los estados y 
 - **SC-004**: Veinte pedidos simultáneos con el mismo `clientRunId` dejan 1 ejecución, 1 trabajo y 1 pedido al ejecutor. Dos pedidos simultáneos de una cuenta con claves distintas dejan 1 aceptado y 1 rechazado. Tras 100 admisiones simultáneas de cuentas distintas hay 0 ejecuciones sin trabajo y 0 trabajos sin ejecución.
 - **SC-005**: Matar el worker con una ejecución en curso deja 0 ejecuciones repetidas en el ejecutor, y la ejecución termina `infra_error` en 4 minutos o menos. Con el ejecutor ocupado, la ejecución corre una sola vez cuando hay lugar, o termina `infra_error` a los 10 minutos con `executor_busy` o con `expired`, según quién la cierre primero.
 - **SC-006**: Después de cerrar ejecuciones en cada estado final hay exactamente un intento por ejecución (0 faltantes y 0 duplicados, también si el cierre se repite) y 0 intentos de ejecuciones en curso. El conteo de intentos de cada fila de progreso es el de los intentos que cuentan de su época.
-- **SC-007**: Una ejecución que se cierra con la época cambiada deja su intento y 0 cambios en el progreso y en la revisión del usuario.
+- **SC-007**: Una ejecución que se cierra con la época cambiada deja su intento y 0 cambios en el progreso y en la revisión del usuario. La operación de FR-050 deja a una cuenta con 0 ejecuciones esperando y con la cancelación pedida en la que corre.
 - **SC-008**: Hay 0 respuestas con el programa armado. La matriz de acceso ajeno (consultar y cancelar) da 404 en el 100 % de los casos, y la de cuenta esperada da 409 en cada ruta que muta. Hay 0 líneas de log con código, salida o programa, comprobado sobre el log de una corrida completa de SC-001.
 - **SC-009**: Los casos del fixture compartido (al menos 8: Rust y Go, con y sin prueba propia, con y sin `imports` en Go) dan el texto esperado línea por línea: 0 diferencias salvo el nonce, que tiene el mismo largo. Las 17 porciones conservan su sha256 y su validador, y la plantilla responde 304 a su validador.
 - **SC-010**: El generador acepta claves no consecutivas y rechaza las repetidas, las de forma inválida y `custom`. El importador rechaza dar a una prueba nueva la clave de una retirada y no escribe nada. Las 822 pruebas actuales conservan sus claves y los 274 ejercicios su `content_hash`: 0 cambios. De los 274 `grading_hash`, cambian exactamente los 49 de los ejercicios de Go con `imports` y los otros 225 quedan iguales.
@@ -397,7 +399,7 @@ Cómo se clasifica un resultado, en este orden (FR-021 y FR-022). Los estados y 
 5. **El ejecutor es el componente más sensible.** Tiene el socket de Docker, que equivale a root en el host. *Mitigación:* sólo en la red interna con el worker, sin puertos publicados, con un token de al menos 32 bytes y el único con el socket (FR-045). gVisor es la defensa del sandbox, y con runc el riesgo queda registrado (ADR 0005).
 6. **Datos personales en el código.** El código y las salidas de un alumno pueden contenerlos (Ley 25.326). *Mitigación:* retención acotada (FR-044), supresión física con la cuenta, exportación del titular y logs sin código (FR-042 y FR-043). La pregunta 14 (aviso de privacidad, responsable e inscripción) sigue abierta y no es de B2.
 7. **Tablas que D1 no puede alterar.** B2 crea `progress_heads` y `exercise_progress` completas, y agregarles después una columna con restricciones obliga a copiar una tabla con datos (ADR 0006 D07 y D28). Como B2 va antes que D1 y D1 no tiene spec, una columna que D1 necesite y no esté acá sale cara. *Mitigación:* contrastar las columnas con el borrador de D1 antes de cerrar el plan de B2 (ver «Relación con otras specs»).
-8. **C3 sin spec.** B2 apoya en C3 la identidad, el estado de la cuenta, la cuenta esperada, el `scheduler` y `UserData`. *Mitigación:* la tabla de supuestos de «Relación con otras specs» dice qué se rompe con cada uno si C3 lo resuelve distinto, para que la spec de C3 lo cubra.
+8. **C3a todavía sin integrar y con su clarify abierto.** B2 apoya en C3a la identidad, el estado de la cuenta, la cuenta esperada y el `scheduler`. *Mitigación:* la tabla de supuestos de «Relación con otras specs» dice dónde está cada uno en la spec de C3a y qué se rompe si lo resuelve distinto, y B2 no depende de C3b: le deja a C3b el orden de borrado y la operación de FR-050.
 9. **El ADR 0006 sigue en propuesta.** El intento liviano, la época y la serialización por usuario dependen de él, y las cuotas, la falta de fase en vivo y la retención ya las confirmó el usuario (Q1, Q2 y Q5). *Mitigación:* la aprobación del ADR condiciona la implementación y no la planificación, y si el usuario lo enmienda, esta spec y su plan cambian en lo que dependa de la enmienda.
 10. **Un worker caído deja a un alumno sin ejecutar.** La ejecución queda `running` hasta que el trabajo o el barrido la cierran. *Mitigación:* FR-018 la acota a unos 4 minutos y la libera sola.
 11. **Los límites de gVisor.** El `--pids-limit` cuenta los hilos del sandbox y no los procesos del programa: con runsc, un 137 sin memoria ni tiempo agotados es ese límite, y no un fallo del alumno ni del sandbox. *Mitigación:* la tabla de clasificación lo distingue (`pids_limit`), y B3 confirma que ninguna solución del currículo lo excede (ADR 0005, enmienda de B1).
@@ -405,28 +407,29 @@ Cómo se clasifica un resultado, en este orden (FR-021 y FR-022). Los estados y 
 
 ## Relación con otras specs
 
-### C3 (todavía sin spec): lo que B2 supone
+### C3a: lo que B2 supone
 
-C3 va antes que B2 pero todavía no se especificó. Estos supuestos son dependencias explícitas: si C3 los resuelve distinto, esta spec o la de C3 se ajustan.
+B2 depende de C3a, la parte de autenticación y acceso de C3 (`specs/004-c3-identidad-acceso/spec.md`, en la rama `spec/c3-identidad`, todavía sin integrar y con su clarify abierto). C3b (correo, administración, exportar y suprimir la cuenta) no tiene spec ni va antes que B2. Estos supuestos son dependencias explícitas: la tabla dice dónde está cada uno en la spec de C3a, y si C3a lo resuelve distinto, esta spec o la de C3a se ajustan. Los dos últimos no son de C3a.
 
-| B2 supone de C3 | Si C3 no lo entrega así |
-| --- | --- |
-| Una sesión de Laravel en el grupo `api` que deja el id del usuario en `Auth::id()`, y 401 `unauthenticated` sin sesión | B2 no sabe de quién es una ejecución: no puede empezar |
-| `users.status` con `active`, `disabled` y `deleting`, y un middleware que responde 403 `account_disabled` en toda ruta con sesión | B2 no puede negar a las cuentas deshabilitadas (FR-019) sin esa columna |
-| El `verified` propio, que responde 403 `email_unverified` | Con el registro abierto apagado no hay cuentas sin verificar. Al abrirlo, ejecutarían con las cuotas completas, porque B2 no implementa las reducidas del ADR 0006 §4.4 |
-| Los roles `admin` y `student`, sin distinción para ejecutar: mismas cuotas para todas las cuentas y ningún rol ve el código de otra cuenta por B2 | Si C3 quisiera cuotas por rol, B2 las suma como configuración nueva |
-| La cuenta esperada (`X-Taller-User` y 409 `account_mismatch`) y la protección CSRF (419) en todo pedido que muta | Sin ellas, un reintento después de iniciar otra sesión ejecutaría el código de una cuenta con la sesión de otra (ADR 0006 D36) |
-| El cuerpo de error `{message, code}` con mensajes en español (`lang/es`) y `Retry-After` en 429 y 503 | B2 tendría que traducir y dar forma a sus errores por su cuenta |
-| El límite de ritmo de Laravel sobre el store `database` y las zonas de `limit_req` de Nginx por IP, que son de C3: responden 429 (`limit_req_status`) y son holgadas para el NAT de un aula. B2 sólo suma la ubicación de `/api/runs` con su tope de cuerpo (FR-046) | Un `limit_req` con el 503 por omisión se confunde con `queue_full`, y uno ajustado a una sola IP corta a un aula entera |
-| El servicio `scheduler`, donde B2 registra el barrido y las podas, y que procesa sólo la cola `default` | Sin él nadie cierra ejecuciones vencidas ni poda. Si procesara `runs`, volvería a ejecutar código con una reserva de 90 s |
-| `UserData` (supresión y exportación) y su prueba de esquema, extensibles. Si C3 entrega `DELETE /api/me` antes que B2, B2 suma sus tablas | Sin ese módulo, B2 tendría que crear uno propio y C3 lo rehacería |
-| Un punto de extensión (un evento o un registro) al deshabilitar, degradar o suprimir una cuenta, para cancelar sus ejecuciones activas | Sin él, B2 tiene que reabrir código de C3. FR-019 descarta igual lo que esperaba turno |
+| B2 supone | Dónde está en C3a | Si no se entrega así |
+| --- | --- | --- |
+| Una sesión de Laravel en el grupo `api` que deja el id del usuario en `Auth::id()`, y 401 `unauthenticated` sin sesión | FR-005, FR-009 y FR-037 | B2 no sabe de quién es una ejecución: no puede empezar |
+| `users.status` con `active`, `disabled` y `deleting`, y un middleware que responde 403 `account_disabled` en toda ruta con sesión | FR-001 y FR-007 (`EnsureUserIsActive`; una sesión viva de una cuenta `deleting` recibe 401) | B2 no puede negar a las cuentas deshabilitadas (FR-019) sin esa columna. El worker trata como no activa a toda cuenta que no sea `active` |
+| El `verified` propio, que responde 403 `email_unverified`, reutilizable en `/api/runs` | FR-031, que lo exige en las rutas de contenido | Con el registro abierto apagado no hay cuentas sin verificar. Al abrirlo, ejecutarían con las cuotas completas, porque B2 no implementa las reducidas del ADR 0006 §4.4 |
+| Los roles `admin` y `student`, sin distinción para ejecutar: mismas cuotas para todas las cuentas y ningún rol ve el código de otra cuenta por B2 | FR-033, con su Q3 todavía abierta (recomendada: el admin estudia con su cuenta) | Si C3a eligiera que el admin no estudia, `/api/runs` suma un 403 `forbidden` para el rol `admin`; si quisiera cuotas por rol, B2 las suma como configuración nueva |
+| La cuenta esperada (`X-Taller-User` y 409 `account_mismatch`, también si falta el encabezado) y la protección CSRF (419) en todo pedido que muta | FR-036 y FR-005 | Sin ellas, un reintento después de iniciar otra sesión ejecutaría el código de una cuenta con la sesión de otra (ADR 0006 D36) |
+| El cuerpo de error `{message, code}` con mensajes en español (`lang/es`) y `Retry-After` en los 429 | FR-037 y FR-038. Su tabla de códigos no trae `quota_exceeded`, `queue_full` ni `client_run_id_reused`: son de B2, y se suman a la tabla de §8 del ADR cuando se lo apruebe | B2 tendría que traducir y dar forma a sus errores por su cuenta |
+| Las zonas de `limit_req` de Nginx por IP, que responden 429 (`limit_req_status`) y son holgadas para un aula tras un NAT, también para el polling de `GET /api/runs/{id}` (unos 30 clientes cada 0,3 a 2 s). B2 sólo suma la ubicación de `/api/runs` con su tope de cuerpo (FR-046) | FR-044, que pide una ráfaga que admita un aula, pero no dice `limit_req_status 429` ni cuenta el polling | Un `limit_req` con el 503 por omisión se confunde con `queue_full`, y uno ajustado a una sola IP corta a un aula entera |
+| El servicio `scheduler`, donde B2 registra el barrido y las podas, y que no procesa la cola `runs` | FR-039 (`schedule:work`; no procesa ninguna cola) | Sin él nadie cierra ejecuciones vencidas ni poda. Si procesara `runs`, volvería a ejecutar código con una reserva de 90 s |
+| La prueba de esquema que exige una FK en cascada hacia `users` en toda tabla con `user_id` | FR-004 | Sin ella, una tabla de B2 podría quedar fuera de la supresión sin que nadie lo note. B2 suma su propia prueba de `DELETE FROM users` (FR-043) |
+| `UserData` (exportar y suprimir) | **No es de C3a:** es de C3b, que va después de B2 | B2 no depende de él: entrega las tablas con sus FK, la prueba de FR-043 y el orden de borrado de D06 documentado. C3b arma `UserData` con eso |
+| Un punto de extensión al deshabilitar, degradar o suprimir una cuenta, para cancelar sus ejecuciones activas | **No es de C3a:** hasta C3b no hay un camino soportado para cambiar el estado de una cuenta (el operador usa `tinker`) | B2 entrega la operación de FR-050 y C3b la llama. Hasta entonces, FR-019 descarta igual lo que esperaba turno |
 
 ### C6 y C2
 
 - **C2 (entregada, inmutable).** B2 no cambia su spec: cambia código. Toca el generador (`tools/content`: la regla de `test_key`, que hoy exigen `tools/content/exercises.ts` y `qa/content-check.ts`, la composición del `grading_hash`, que suma los `imports` de Go, y la plantilla nueva), el importador (el mensaje de `test_key`, la plantilla y el informe de cambios de corrección del primer import, que lista los 49 ejercicios de Go) y la entrega (un recurso más). Los requisitos de C2 siguen rigiendo, en especial los bytes exactos del generador y las huellas que sólo él calcula. El importador de C2 ya rechaza reutilizar la clave de una prueba retirada, y su mensaje nombra a B2.
 - **La plantilla pasa de 17 a 18 recursos.** Eso toca `api:content:check`, las menciones de «17 porciones» en la hoja de ruta y el ADR, y el arranque de A3: hay que decidir si el cliente la pide al arrancar o sólo cuando abre el laboratorio (A4).
-- **C6 (planificada, antes de B2).** B2 recibe el nivel 9 del análisis estático: todo su código lo pasa sin baseline, y las respuestas del ejecutor y de la base entran tipadas. Puede adoptar el patrón de registros tipados para sus tablas y para la plantilla si le sirve, como C6 lo deja abierto. C6 deja fuera el generador, así que la regla de `test_key` y la composición del `grading_hash` son de B2. El oráculo de filas de C6 se retira al desplegarla, y por eso no frena a B2.
+- **C6 (implementada en el PR #17, por integrarse antes de B2).** Los registros tipados del contenido viven en `backend/api/app/Content/Record/`, el generador no cambió y B2 recibe el nivel 9 del análisis estático: todo su código lo pasa sin baseline, y las respuestas del ejecutor y de la base entran tipadas. Puede adoptar el patrón de registros tipados para sus tablas y para la plantilla si le sirve, como C6 lo deja abierto. C6 deja fuera el generador, así que la regla de `test_key` y la composición del `grading_hash` son de B2. El oráculo de filas de C6 se retira al desplegarla, y por eso no frena a B2.
 - **B1 (entregado).** El contrato del ejecutor ([`backend/executor/AGENTS.md`](../../backend/executor/AGENTS.md) y [`internal/api/server.go`](../../backend/executor/internal/api/server.go)) es `POST /v1/run {language, program}` con token Bearer. Acepta programas de hasta 128 KiB, tiene 4 slots por omisión (de 1 a 8) y espera un lugar hasta 30 s. Responde 503 con `Retry-After` si está ocupado, 500 ante un fallo del sandbox y 400 o 413 ante un pedido inválido. B2 lo consume sin cambiarlo.
 
 ### Lo que B2 deja a quienes vienen después
@@ -435,6 +438,7 @@ C3 va antes que B2 pero todavía no se especificó. Estos supuestos son dependen
 - **D1:** las dos tablas completas, la definición única de «cuenta como intento» y el cierre que sube la revisión. D1 repite con el reset real el escenario de la época que B2 prueba a mano, y contrasta las columnas de `exercise_progress` y `progress_heads` antes de que B2 cierre su plan.
 - **C5:** los datos de `runs` y `attempts` y la separación entre lo ejecutado en el servidor y lo importado. Sus endpoints son de C5.
 - **B3:** la composición y la lectura de la evidencia reutilizables (FR-038).
+- **C3b:** el orden de borrado de las tablas de B2 y la operación que cancela las ejecuciones activas de una cuenta (FR-043 y FR-050), para su `UserData` y su `PurgeUserData`.
 - **C4:** los usuarios de MySQL con mínimo privilegio para `worker-runs`; hasta entonces usa el de la aplicación.
 
 ## Acciones del usuario
@@ -452,7 +456,7 @@ Los agentes no las hacen. Ninguna se ejecuta ahora; las de implementación llega
 ## Assumptions
 
 - **ADR 0006 en propuesta.** Las decisiones de la tabla «Base del ADR 0006» son la base de esta spec hasta que el usuario lo apruebe.
-- **B1, C2 y C6 entregados antes de B2** (olas 2 y 3 de la hoja de ruta): el código parte de `master` con ellos. **C3 también, y sin spec todavía:** ver la tabla de supuestos.
+- **B1, C2 y C6 entregados antes de B2** (olas 2 y 3 de la hoja de ruta): el código parte de `master` con ellos. **C3a también** (spec 004, todavía sin integrar): ver la tabla de supuestos. B2 no depende de C3b.
 - **Hasta A4 no hay cliente.** Las pruebas usan un cliente de prueba y el ejecutor real. A4 y D1 corren en la misma ola, así que B2 se entrega sin que ninguno de los dos exista.
 - **Carga.** Hasta unas 5.000 cuentas, con unas 1.000 activas en el pico, y 2,5 s por ejecución: es la estimación del ADR 0006 S2, sin medir con runsc en carga.
 - **Límites del texto.** El código admite 64 KiB en bytes (ADR 0005). La prueba propia admite 3.000 caracteres, el límite que hoy tiene el laboratorio en `frontend/lab.js`, que el ADR no fija. Con el código, las pruebas y la plantilla, el programa armado cabe holgado en los 128 KiB del ejecutor. El plan lo confirma.
@@ -466,9 +470,10 @@ Los agentes no las hacen. Ninguna se ejecuta ahora; las de implementación llega
 - **Envoltura de la respuesta.** El ADR 0006 §7 muestra `{id, status}` y el §8 pide la envoltura `data` para lo que no es contenido. El plan lo fija y A4 lo sigue.
 - **Restricciones de esquema.** Los CHECK que tocan fechas no van en las tablas que crecen (resultado de C2 sobre D07), así que `runs`, `attempts` y `exercise_progress` los llevan en el escritor y en su prueba. Cada tabla es un `CREATE TABLE` y se migra sólo hacia adelante: un `down()` destruiría evidencia (ADR 0006 §10).
 - **Imágenes nuevas (pregunta 19).** B2 no necesita Redis: `runs` queda en MySQL porque se encola dentro de la transacción de admisión (ADR 0006 §9). La pregunta 19 no lo bloquea.
+- **PHP-FPM y buffer pool de MySQL.** La spec de C3a le deja a B2 el ajuste de los dos (ADR 0006 §12: «ajustarlos en C3 y B2»), salvo que una medición lo exija. B2 no los toca: los difiere hasta que SC-012 o los avisos de `max_children` de FPM lo pidan, y adelantarlo es una decisión del usuario.
 - **Un host, un ejecutor.** El camino de escala del ADR 0006 §9 no es de B2.
 - **Pruebas de concurrencia.** Necesitan conexiones paralelas, y una prueba de Pest corre en un solo proceso: el plan elige cómo.
-- **Idioma.** Los mensajes para quien usa u opera el taller, en español, con `lang/es` de C3; el código y las pruebas, en inglés (constitución, principios III y VI).
+- **Idioma.** Los mensajes para quien usa u opera el taller, en español, con `lang/es` de C3a; el código y las pruebas, en inglés (constitución, principios III y VI).
 - **Sin dependencias nuevas.** B2 usa el cliente HTTP y la cola de Laravel, y no agrega paquetes de Composer (FR-049).
 
 ## Alternativas consideradas
