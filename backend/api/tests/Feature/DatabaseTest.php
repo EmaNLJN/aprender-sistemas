@@ -2,15 +2,13 @@
 
 use Illuminate\Support\Facades\DB;
 
-// El servicio test de compose.yaml recibe el entorno de producción (DB_HOST=mysql,
-// DB_DATABASE=taller): phpunit.xml tiene que imponer la base de pruebas igual.
-it('usa la base MySQL de pruebas aunque el entorno apunte a la de desarrollo', function () {
+it('uses the MySQL test database even if the environment points to the development one', function () {
     expect(DB::connection()->getDriverName())->toBe('mysql')
         ->and(DB::connection()->getConfig('host'))->toBe('mysql-test')
         ->and(DB::connection()->getDatabaseName())->toStartWith('taller_test');
 });
 
-it('crea las tablas con la colación española', function () {
+it('creates tables with the Spanish collation', function () {
     $table = DB::selectOne(
         'select table_collation as collation_name from information_schema.tables where table_schema = database() and table_name = ?',
         ['migrations'],
@@ -19,14 +17,14 @@ it('crea las tablas con la colación española', function () {
     expect($table->collation_name)->toBe('utf8mb4_es_0900_ai_ci');
 });
 
-it('compara textos en español: la ñ es otra letra y los acentos no cuentan', function () {
-    $row = DB::selectOne("select 'año' = 'ano' as enie_es_ene, 'canción' = 'cancion' as acento_ignorado");
+it('compares Spanish text: ñ is a different letter and accents do not count', function () {
+    $row = DB::selectOne("select 'año' = 'ano' as n_tilde_is_n, 'canción' = 'cancion' as accent_ignored");
 
-    expect((int) $row->enie_es_ene)->toBe(0)
-        ->and((int) $row->acento_ignorado)->toBe(1);
+    expect((int) $row->n_tilde_is_n)->toBe(0)
+        ->and((int) $row->accent_ignored)->toBe(1);
 });
 
-it('crea la base con la colación española también para lo que no cree Laravel', function () {
+it('creates the database with the Spanish collation also for what Laravel does not create', function () {
     $schema = DB::selectOne(
         'select default_collation_name as collation_name from information_schema.schemata where schema_name = database()',
     );
