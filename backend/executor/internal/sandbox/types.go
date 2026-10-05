@@ -1,18 +1,18 @@
-// Package sandbox compila y ejecuta programas del alumno en contenedores efímeros.
+// Package sandbox compiles and runs student programs in ephemeral containers.
 package sandbox
 
 import "time"
 
 const (
-	// RunLabel marca todo recurso del ejecutor para que el barrido no toque nada ajeno.
+	// RunLabel marks every executor resource so the sweeper never touches anything else.
 	RunLabel = "taller.executor.run"
-	// CreatedLabel guarda la hora de creación en segundos Unix.
+	// CreatedLabel stores the creation time in Unix seconds.
 	CreatedLabel = "taller.executor.created"
 )
 
-// Phase son los límites y el comando de un contenedor. Vienen del ADR 0005, nunca del pedido.
-// ReadOnly monta el rootfs de sólo lectura; OutReadOnly hace lo mismo con /out, para que la
-// ejecución lea el binario sin poder escribir en un volumen sin cuota del host.
+// Phase holds the limits and the command of a container. They come from ADR 0005, never from the
+// request. ReadOnly mounts the rootfs read-only; OutReadOnly does the same for /out, so the run
+// can read the binary without being able to write to a host volume that has no quota.
 type Phase struct {
 	Timeout     time.Duration
 	MemoryMiB   int
@@ -40,8 +40,8 @@ type Spec struct {
 	Runtime string
 }
 
-// State es lo que Docker informa de un contenedor. Status es "created", "running", "exited",
-// etc.: después de `docker start --attach`, sólo "exited" significa que el programa terminó.
+// State is what Docker reports about a container. Status is "created", "running", "exited",
+// etc.: after `docker start --attach`, only "exited" means the program finished.
 type State struct {
 	ExitCode  int
 	OOMKilled bool
@@ -49,12 +49,12 @@ type State struct {
 }
 
 type Resource struct {
-	Kind    string // "container" o "volume"
+	Kind    string // "container" or "volume"
 	Name    string
 	Created time.Time
 }
 
-// Result es la respuesta de POST /v1/run. Phase indica la última fase alcanzada.
+// Result is the response of POST /v1/run. Phase is the last phase reached.
 type Result struct {
 	Phase     string `json:"phase"`
 	ExitCode  int    `json:"exitCode"`

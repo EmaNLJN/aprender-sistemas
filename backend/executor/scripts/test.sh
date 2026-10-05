@@ -1,9 +1,8 @@
 #!/bin/sh
-# Corre gofmt, go vet y las pruebas unitarias del ejecutor dentro de golang:1.27-alpine,
-# porque el host no tiene Go. El volumen con nombre conserva el caché de compilación entre
-# corridas. El código se monta de sólo lectura y sin red: las pruebas no deben escribir en
-# el árbol ni salir a Internet.
-# Uso: sh backend/executor/scripts/test.sh [argumentos extra para go test; -race no anda sin cgo]
+# Runs gofmt, go vet and the unit tests inside golang:1.27-alpine, since the host has no Go.
+# The named volume keeps the build cache between runs. The code is mounted read-only and with
+# no network: tests must not write to the tree or reach the Internet.
+# Usage: sh backend/executor/scripts/test.sh [extra go test arguments; -race needs cgo]
 set -eu
 here=$(cd "$(dirname "$0")/.." && pwd)
 exec docker run --rm --network=none \

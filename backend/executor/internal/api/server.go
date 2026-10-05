@@ -1,4 +1,4 @@
-// Package api expone el ejecutor en la red interna. Nunca acepta imágenes ni límites.
+// Package api exposes the executor on the internal network. It never accepts images or limits.
 package api
 
 import (
@@ -22,7 +22,7 @@ type Executor interface {
 type Server struct {
 	Token      string
 	Exec       Executor
-	Slots      chan struct{} // semáforo: su capacidad es la concurrencia máxima
+	Slots      chan struct{} // semaphore: its capacity is the maximum concurrency
 	MaxBody    int64
 	MaxProgram int
 	QueueWait  time.Duration
@@ -34,8 +34,8 @@ type runRequest struct {
 	Program  string `json:"program"`
 }
 
-// Handler arma las rutas. Hace panic ante una configuración insegura: un token corto o un
-// semáforo sin lugares son errores de programación, no de un pedido.
+// Handler builds the routes. It panics on an insecure configuration: a short token or a
+// semaphore without slots are programming errors, not request errors.
 func (s *Server) Handler() http.Handler {
 	if len(s.Token) < 32 {
 		panic("api: el token debe tener al menos 32 bytes")
@@ -77,7 +77,7 @@ func (s *Server) run(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "JSON inválido")
 		return
 	}
-	// Un solo objeto y nada más: leer hasta el EOF también deja que Go detecte si el cliente se fue.
+	// A single object and nothing else: reading up to EOF also lets Go detect a client that left.
 	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
 		var tooLarge *http.MaxBytesError
 		if errors.As(err, &tooLarge) {
@@ -105,9 +105,9 @@ func (s *Server) run(w http.ResponseWriter, r *http.Request) {
 	case s.Slots <- struct{}{}:
 		defer func() { <-s.Slots }()
 	case <-wait.Done():
-		// Nada corrió todavía: el llamador puede reintentar sin repetir una ejecución. Si el
-		// pedido se canceló (el ejecutor se apaga), también se responde: con el cliente ya ido no
-		// tiene efecto, y sin respuesta net/http mandaría un 200 vacío.
+		// Nothing ran yet: the caller can retry without repeating an execution. If the request
+		// was cancelled (the executor is shutting down), it is answered too: with the client gone
+		// it has no effect, and without a response net/http would send an empty 200.
 		w.Header().Set("Retry-After", "1")
 		message := "ejecutor ocupado"
 		if r.Context().Err() != nil {
@@ -116,8 +116,8 @@ func (s *Server) run(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusServiceUnavailable, message)
 		return
 	}
-	// Con el contexto ya cancelado y un lugar libre, el select elige al azar. Si tomó el lugar,
-	// igual no se ejecuta nada: no corrió, así que 503 como en la espera (el defer lo libera).
+	// With the context already cancelled and a free slot, select picks at random. If it took the
+	// slot, nothing runs anyway: it did not run, so 503 as in the wait (the defer releases it).
 	if r.Context().Err() != nil {
 		w.Header().Set("Retry-After", "1")
 		writeError(w, http.StatusServiceUnavailable, "el ejecutor se está apagando")
@@ -126,8 +126,8 @@ func (s *Server) run(w http.ResponseWriter, r *http.Request) {
 
 	result, err := s.Exec.Execute(r.Context(), req.Language, []byte(req.Program))
 	if err != nil {
-		// 500 y no 503: el programa pudo haber llegado a correr, así que no se reintenta solo.
-		// Vale también si el pedido se canceló (cliente que se fue o apagado del ejecutor).
+		// 500 and not 503: the program may have run, so it is not retried on its own. This also
+		// holds if the request was cancelled (client left or executor shutdown).
 		if r.Context().Err() != nil {
 			log.Printf("ejecución cancelada (cliente que se fue o apagado): %v", err)
 		} else {

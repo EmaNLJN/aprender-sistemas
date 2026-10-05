@@ -1,4 +1,4 @@
-// Package output acota lo que un programa del alumno puede imprimir.
+// Package output bounds what a student's program can print.
 package output
 
 import (
@@ -7,8 +7,8 @@ import (
 	"unicode/utf8"
 )
 
-// Limited guarda hasta Max bytes y descarta el resto sin bloquear al escritor: el programa
-// puede imprimir sin fin y el contenedor no debe quedar trabado esperando que leamos.
+// Limited keeps up to Max bytes and discards the rest without blocking the writer: the program
+// may print forever and the container must not stall waiting for us to read.
 type Limited struct {
 	Max       int
 	mu        sync.Mutex
@@ -16,8 +16,8 @@ type Limited struct {
 	truncated bool
 }
 
-// Write guarda lo que entra hasta el tope y descarta el resto. Siempre informa que aceptó
-// todo, sin error, para que el programa nunca se trabe ni falle por escribir de más.
+// Write always reports that it accepted everything, without error, so the program never stalls
+// or fails for writing too much.
 func (l *Limited) Write(p []byte) (int, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -34,11 +34,11 @@ func (l *Limited) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-// String devuelve lo guardado como UTF-8 válido. Si el tope cortó un carácter por la mitad,
-// lo quita entero; los bytes inválidos que imprimió el programa se reemplazan por U+FFFD.
-// Con salida UTF-8 válida el resultado nunca supera Max bytes; con bytes inválidos puede
-// crecer hasta el doble: cada racha de bytes inválidos pasa a un U+FFFD de 3 bytes, y el
-// peor caso alterna un byte inválido con uno válido.
+// String returns what was kept as valid UTF-8. If the cap cut a character in half, it drops it
+// whole; invalid bytes the program printed are replaced by U+FFFD. With valid UTF-8 output the
+// result never exceeds Max bytes; with invalid bytes it can grow up to double: each run of
+// invalid bytes becomes a 3-byte U+FFFD, and the worst case alternates an invalid byte with a
+// valid one.
 func (l *Limited) String() string {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -49,17 +49,16 @@ func (l *Limited) String() string {
 	return strings.ToValidUTF8(string(kept), "\uFFFD")
 }
 
-// Truncated informa si se descartó algún byte por el tope.
 func (l *Limited) Truncated() bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	return l.truncated
 }
 
-// withoutCutRune quita del final los bytes de un carácter incompleto. Sólo se usa si hubo
-// truncado: ahí el final del buffer es el punto de corte y no algo que imprimió el programa.
+// withoutCutRune drops the trailing bytes of an incomplete character. It is only used after
+// truncation: then the buffer end is the cut point, not something the program printed.
 func withoutCutRune(b []byte) []byte {
-	// Un carácter UTF-8 ocupa hasta utf8.UTFMax bytes: alcanza con mirar los últimos.
+	// A UTF-8 character takes up to utf8.UTFMax bytes: looking at the last ones is enough.
 	for i := len(b) - 1; i >= 0 && i >= len(b)-utf8.UTFMax; i-- {
 		if !utf8.RuneStart(b[i]) {
 			continue

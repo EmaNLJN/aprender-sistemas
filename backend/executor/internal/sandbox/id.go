@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 )
 
-// RandomID nombra los recursos de un envío. 8 bytes aleatorios bastan para no chocar.
+// RandomID names the resources of a submission. 8 random bytes are enough to avoid collisions.
 func RandomID() string {
 	var b [8]byte
 	_, _ = rand.Read(b[:])

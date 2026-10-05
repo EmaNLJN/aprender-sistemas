@@ -1,5 +1,5 @@
-// Programa de precalentamiento: importa la stdlib que usan los ejercicios del taller (campo
-// `imports` de los catálogos Go) para dejarla compilada en GOCACHE dentro de la imagen.
+// Warm-up program: it imports the stdlib used by the workshop exercises (the `imports` field of
+// the Go catalogs) to leave it compiled in GOCACHE inside the image.
 package main
 
 import (
