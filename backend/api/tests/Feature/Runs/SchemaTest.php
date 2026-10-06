@@ -1,7 +1,11 @@
 <?php
 
+use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\AssertionFailedError;
+use Tests\Support\RunInvariants;
+use Tests\Support\RunWorld;
 
 // ADR 0006 §5.3 and §5.4 against information_schema; the expectations come from data-model.md section 6, not from the migrations.
 const RUN_TABLES = [
@@ -198,3 +202,136 @@ it('F: the CHECK constraints of each table, none of them over a DATETIME column'
         }
     }
 });
+
+function plantAttempt(User $user, string $exerciseId = 'rust-01', array $overrides = []): int
+{
+    return DB::table('attempts')->insertGetId([
+        'user_id' => $user->id, 'exercise_id' => $exerciseId, 'epoch' => 1, 'legacy' => 0, 'outcome' => 'passed',
+        'grading_hash' => str_repeat('a', 64), 'code_sha256' => str_repeat('b', 64), 'output_truncated' => 0,
+        'attempted_at' => '2026-10-05 12:00:00.000', 'finished_at' => '2026-10-05 12:00:01.000', 'created_at' => '2026-10-05 12:00:01.000',
+        ...$overrides,
+    ]);
+}
+
+function plantProgress(User $user, string $exerciseId = 'rust-01', array $overrides = []): void
+{
+    DB::table('exercise_progress')->insert([
+        'user_id' => $user->id, 'exercise_id' => $exerciseId, 'created_at' => '2026-10-05 12:00:01.000', 'updated_at' => '2026-10-05 12:00:01.000',
+        ...$overrides,
+    ]);
+}
+
+function plantHead(User $user, array $overrides = []): void
+{
+    DB::table('progress_heads')->insert(['user_id' => $user->id, 'created_at' => '2026-10-05 12:00:00.000', 'updated_at' => '2026-10-05 12:00:00.000', ...$overrides]);
+}
+
+it('G: deleting a user with the six tables populated leaves no rows and does not fail (FR-043)', function () {
+    RunWorld::exercise();
+    $user = RunWorld::user();
+    $other = RunWorld::user();
+    plantHead($user);
+    plantHead($other);
+    $attemptId = plantAttempt($user);
+    plantAttempt($other);
+    DB::table('attempt_tests')->insert(['attempt_id' => $attemptId, 'test_key' => 't1', 'exercise_id' => 'rust-01', 'position' => 1, 'outcome' => 'pass']);
+    DB::table('attempt_payloads')->insert(['attempt_id' => $attemptId, 'code' => 'fn main() {}', 'stdout' => '', 'stderr' => '', 'created_at' => '2026-10-05 12:00:01.000']);
+    plantProgress($user, 'rust-01', ['proof_attempt_id' => $attemptId]);
+    RunWorld::run($user, ['status' => 'passed', 'attempt_id' => $attemptId, 'finished_at' => '2026-10-05 12:00:01.000', 'expires_at' => null]);
+
+    DB::delete('delete from users where id = ?', [$user->id]);
+
+    foreach (['progress_heads', 'exercise_progress', 'attempts', 'attempt_tests', 'attempt_payloads', 'runs'] as $table) {
+        expect(DB::table($table)->count())->toBe($table === 'attempts' || $table === 'progress_heads' ? 1 : 0, $table);
+    }
+});
+
+it('H: crossedPointers finds a pointer to an attempt of another account or of another exercise, and nothing in clean data', function () {
+    RunWorld::exercise('rust-01');
+    RunWorld::exercise('rust-02');
+    $owner = RunWorld::user();
+    $stranger = RunWorld::user();
+    $own = plantAttempt($owner, 'rust-01');
+    plantProgress($owner, 'rust-01', ['proof_attempt_id' => $own, 'last_attempt_id' => $own]);
+
+    expect(RunInvariants::crossedPointers())->toHaveCount(0);
+
+    $foreign = plantAttempt($stranger, 'rust-01');
+    DB::update('update exercise_progress set proof_attempt_id = ? where user_id = ?', [$foreign, $owner->id]);
+    expect(RunInvariants::crossedPointers())->toHaveCount(1);
+
+    DB::update('update exercise_progress set proof_attempt_id = ?, last_attempt_id = ? where user_id = ?', [$own, plantAttempt($owner, 'rust-02'), $owner->id]);
+    expect(RunInvariants::crossedPointers())->toHaveCount(1);
+});
+
+it('RunInvariants passes on a clean world', function () {
+    RunWorld::exercise();
+    $user = RunWorld::user();
+    plantHead($user);
+    RunWorld::run($user);
+
+    RunInvariants::assertClean();
+    expect(RunInvariants::violations())->toBe([]);
+});
+
+it('RunInvariants names the rule that a planted violation breaks', function (Closure $plant, string $rule) {
+    RunWorld::exercise();
+    $user = RunWorld::user();
+    plantHead($user, ['epoch' => 1, 'revision' => 5]);
+    $plant($user);
+
+    expect(array_keys(RunInvariants::violations()))->toBe([$rule]);
+    expect(fn () => RunInvariants::assertClean())->toThrow(AssertionFailedError::class, $rule);
+})->with([
+    'an active run that already finished' => [
+        fn (User $user) => RunWorld::run($user, ['finished_at' => '2026-10-05 12:00:01.000']),
+        RunInvariants::ACTIVE_RUN_TIMES,
+    ],
+    'a finished run that still expires' => [
+        fn (User $user) => RunWorld::run($user, ['status' => 'canceled', 'finished_at' => '2026-10-05 12:00:01.000', 'expires_at' => '2026-10-05 12:10:00.000', 'attempt_id' => plantAttempt($user, 'rust-01', ['outcome' => 'canceled'])]),
+        RunInvariants::ACTIVE_RUN_TIMES,
+    ],
+    'a running run without started_at' => [
+        fn (User $user) => RunWorld::run($user, ['status' => 'running']),
+        RunInvariants::RUNNING_STARTED,
+    ],
+    'a terminal run that kept its program' => [
+        fn (User $user) => RunWorld::run($user, ['status' => 'passed', 'finished_at' => '2026-10-05 12:00:01.000', 'expires_at' => null, 'program' => 'fn main() {}', 'attempt_id' => plantAttempt($user)]),
+        RunInvariants::TERMINAL_RUN_CLOSED,
+    ],
+    'a terminal run without an attempt' => [
+        fn (User $user) => RunWorld::run($user, ['status' => 'timeout', 'finished_at' => '2026-10-05 12:00:01.000', 'expires_at' => null]),
+        RunInvariants::TERMINAL_RUN_CLOSED,
+    ],
+    'an active run with an attempt' => [
+        fn (User $user) => RunWorld::run($user, ['attempt_id' => plantAttempt($user)]),
+        RunInvariants::ACTIVE_RUN_HAS_NO_ATTEMPT,
+    ],
+    'an attempt_count that does not match the counted attempts of the epoch' => [
+        function (User $user) {
+            plantAttempt($user);
+            plantAttempt($user, 'rust-01', ['outcome' => 'infra_error']);
+            plantAttempt($user, 'rust-01', ['epoch' => 0]);
+            plantProgress($user, 'rust-01', ['attempt_count' => 2, 'revision' => 5]);
+        },
+        RunInvariants::ATTEMPT_COUNT,
+    ],
+    'a progress row newer than the head of its account' => [
+        fn (User $user) => plantProgress($user, 'rust-01', ['revision' => 6]),
+        RunInvariants::PROGRESS_REVISION,
+    ],
+    'a progress row with attempts and revision 0' => [
+        function (User $user) {
+            plantAttempt($user);
+            plantProgress($user, 'rust-01', ['attempt_count' => 1, 'revision' => 0]);
+        },
+        RunInvariants::PROGRESS_REVISION,
+    ],
+    'a pointer that crosses accounts' => [
+        function (User $user) {
+            $stranger = RunWorld::user();
+            plantProgress($user, 'rust-01', ['proof_attempt_id' => plantAttempt($stranger), 'attempt_count' => 0, 'revision' => 1]);
+        },
+        RunInvariants::CROSSED_POINTERS,
+    ],
+]);
