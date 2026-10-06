@@ -175,7 +175,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 **Puntos de integración con otros frentes** (los resuelve el coordinador):
 
 - **B2** ya entregó el evento `App\Auth\Events\AccountRestricted` con `AccountRestriction` (`Disabled`, `Demoted` y `Deleting`) y su listener, `CancelRunsOfRestrictedAccount`, que implementa `ShouldHandleEventsAfterCommit` y lee `users.status` ya confirmado. C3b lo dispara y no lo crea. El cableado (`Event::listen(AccountRestricted::class, CancelRunsOfRestrictedAccount::class)` en `AppServiceProvider`) es la tarea T018 de B2: T001 comprueba que esté, y T022 lo prueba de punta a punta. B2 también deja `ActiveRuns::cancelAllOf`, que la purga llama.
-- **D1a** (planificado, rama `spec/d1-progreso`) declara sus diez tablas para `UserData` en su `data-model.md`, sección 7, y C3b ya las toma en `UserTables`. Cuando D1a se implemente: suma su sección `progress` en `UserExport` (con `ProgressSnapshotReader::areas(userId, null)` dentro de una transacción corta de lectura), retira `ExerciseProgressSection`, agrega sus tablas a `PopulatedAccount` y migra en el bloque `2026_10_06_100001` a `100099`. **D1b** declara `progress_imports` y `campaign_seals` y suma `imports`. D1a afirma que `UserIdForeignKeyTest` sigue en verde, pero `workshop_observations` y `workshop_step_marks` no declaran una clave directa hacia `users`: R11 de la investigación lo resuelve en C3b con la lista de excepciones, y D1a lo confirma.
+- **D1a** (planificado, rama `spec/d1-progreso`) declara sus diez tablas para `UserData` en su `data-model.md`, sección 7, y C3b ya las toma en `UserTables`. Cuando D1a se implemente: suma su sección `progress` en `UserExport` (con `ProgressSnapshotReader::areas(userId, null)` dentro de una transacción corta de lectura), retira `ExerciseProgressSection`, sube `format` a `taller-export-2` (la clave `exerciseProgress` desaparece), agrega sus tablas a `PopulatedAccount` y migra en el bloque `2026_10_06_100001` a `100099`. **D1b** declara `progress_imports` y `campaign_seals` y suma `imports`. D1a afirma que `UserIdForeignKeyTest` sigue en verde, pero `workshop_observations` y `workshop_step_marks` no declaran una clave directa hacia `users`: R11 de la investigación lo resuelve en C3b con la lista de excepciones, y D1a lo confirma.
 - **C3c** (spec 011, sin plan) completa los tres sitios del 503 y los dos puntos de aviso (contracts/http.md, «Para los ítems que se apoyan en C3b»).
 - **C4** (rama `spec/c4-exposicion`) usa `account_deletions` y `taller:reapply-deletions` para el respaldo y su restauración: el formato de la copia es el de [contracts/console.md](./contracts/console.md). Su borrador atribuye `worker-mail` y el usuario `mail` a C3b: son de C3c.
 - **`docker/compose.yaml`, `docker/mysql/db-grants.sql` y `init-env.sh`** no cambian: C3b no suma servicios, secretos ni privilegios.
@@ -712,7 +712,7 @@ final class RowShape
 #[Tries(8)]
 #[Timeout(300)]
 #[Backoff(60, 300, 900, 1800, 3600)]
-#[UniqueFor(900)]
+#[UniqueFor(18000)]
 final class PurgeUserData implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
@@ -731,7 +731,7 @@ final class PurgeUserData implements ShouldBeUnique, ShouldQueue
    - **Cortada a mitad:** un listener de `DB::listen` lanza una excepción tras la primera sentencia `delete from attempts`; el primer `handle` falla con la cuenta todavía en `deleting` y las filas a medias; el segundo termina y deja **el mismo resultado** que una purga sin corte (SC-008).
    - **La cancelación:** con una ejecución `queued` de la cuenta, `ActiveRuns::cancelAllOf` corre **antes** de borrar `runs` (se ve en el orden de las sentencias); si la cancelación falla (el truco de B2: `FOREIGN_KEY_CHECKS=0` y borrar el ejercicio), sale `purge.cancel_failed` con la clase de la excepción y la purga **sigue** y termina.
    - **El orden de los bloqueos:** `select … from progress_heads … for update` aparece **antes** de `delete from users`, y no hay ningún `update users` entre los lotes.
-   - **`PurgeUserDataQueueTest`:** `PurgeUserData::dispatch(5)` dos veces empuja **un** trabajo (`Queue::fake()`; la unicidad usa el almacén `array`); por reflexión, los atributos son `Tries(8)`, `Timeout(300)`, `UniqueFor(900)` y `Backoff(60, 300, 900, 1800, 3600)`; la clase **no** implementa `ShouldBeEncrypted`; y con `queue.default` en `database`, la fila de `jobs.payload` contiene el id y **no** contiene el email de la cuenta.
+   - **`PurgeUserDataQueueTest`:** `PurgeUserData::dispatch(5)` dos veces empuja **un** trabajo (`Queue::fake()`; la unicidad usa el almacén `array`); por reflexión, los atributos son `Tries(8)`, `Timeout(300)`, `UniqueFor(18000)` y `Backoff(60, 300, 900, 1800, 3600)`; la clase **no** implementa `ShouldBeEncrypted`; y con `queue.default` en `database`, la fila de `jobs.payload` contiene el id y **no** contiene el email de la cuenta.
 2. Implementá `handle` con los cuatro pasos de research.md, R7: la guarda de estado, la cancelación de mejor esfuerzo, `UserPurge::inBatches` y la transacción final con `AccountLock::within` (que toma la cabecera, vuelve a leer la cuenta `FOR UPDATE` con `status = 'deleting'`, inserta la fila del libro con `insertOrIgnore` y borra la cuenta). Si `AccountLock` lanza `AccountGone`, termina bien. Sin comentarios: los nombres de los pasos son la explicación.
 3. `npm run api:analyse`: 0 errores.
 
@@ -769,7 +769,7 @@ final class AccountDeletion
 
 **Pasos:**
 
-1. `ResumePurgesTest`, que falla porque el comando no existe. Con el reloj fijado y `Queue::fake()`: S1 en `deleting` con `updated_at` de hace 15 minutos y 1 segundo, S2 en `deleting` desde hace 14 minutos y 59 segundos, S3 `active` y S4 `disabled`. `taller:resume-purges` empuja `PurgeUserData` **sólo** para S1, sale con 0 y dice «1 purga retomada»; sale una línea `purge.resumed` con el id de S1 y ningún email; S2, S3 y S4 no se tocan. Si ya hay un trabajo de S1 en curso (la unicidad tomada), no se empuja otro.
+1. `ResumePurgesTest`, que falla porque el comando no existe. Con el reloj fijado y `Queue::fake()`: S1 en `deleting` con `updated_at` de hace 15 minutos y 1 segundo, S2 en `deleting` desde hace 14 minutos y 59 segundos, S3 `active` y S4 `disabled`. `taller:resume-purges` empuja `PurgeUserData` **sólo** para S1, sale con 0 y dice «1 purga retomada»; sale una línea `purge.resumed` con el id de S1 y ningún email; S2, S3 y S4 no se tocan. Si ya hay un trabajo de S1 en la cola, corriendo o esperando su siguiente intento (la unicidad tomada), no se empuja otro.
 2. Implementá el comando: las cuentas con `status = 'deleting'` y `updated_at` anterior a `ahora − taller.purge.stuck_minutes`, y `PurgeUserData::dispatch` por cada una.
 3. `npm run api:analyse`: 0 errores.
 
@@ -961,6 +961,7 @@ Esta planificación no ejecutó nada. Lo que hay que medir o comprobar al implem
 | `DELETE … ORDER BY … LIMIT` por `DB::delete` y su plan con los índices de B2 | Las sentencias capturadas en T006; `EXPLAIN` sobre `runs` y `attempts` |
 | `AccountLock::within` con `AccountGone` cuando la fila de `users` ya no existe | T016, con la segunda llamada de `handle` |
 | Que `StartSession` no vuelva a guardar la fila de `sessions` que `AccountSessions::endAll` borró al terminar el pedido de `DELETE /api/me` | T017: el siguiente pedido del `Browser` da 401 y `sessions` no tiene filas de la cuenta |
+| Que el candado de unicidad de 5 horas (`UniqueFor(18000)`, que cubre los ocho intentos con su espera) se libere al terminar o al agotar los intentos, y que un trabajo perdido sin liberarlo (por ejemplo, una tabla `jobs` vaciada a mano) deje la purga sin barrido hasta que el candado venza | T016 con el almacén `array` y T023 contra el stack |
 | Que el listener de B2 esté cableado en la base | T001 y T022 |
 | Que `retry_after` de 330 s alcance para el `Timeout` de 300 s de la purga, y que la imagen tenga `pcntl` (B2 lo compila) para que ese `Timeout` se aplique | T001 (la imagen) y T016 |
 | `schedule:work` con `queue:work` y `withoutOverlapping(10)`, y que `--max-time=50` no deje trabajos sin procesar | T023 contra el stack (SC-014) |

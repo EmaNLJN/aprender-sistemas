@@ -103,7 +103,7 @@ El estado vive en `users.status`; el rol, en `users.role`. Sólo cambian estas t
 
 ## 5. El trabajo de purga
 
-`PurgeUserData` guarda sólo el id de la cuenta: ni el email ni el nombre (el aviso de cuenta borrada es de C3c, y entonces el trabajo suma esos datos, cifrados). Su carga útil, en `jobs.payload`, no tiene datos personales. La cola es `default`, que el `scheduler` procesa cada minuto. El candado de unicidad (`ShouldBeUnique`) usa el almacén de caché, que en producción es la tabla `cache_locks`.
+`PurgeUserData` guarda sólo el id de la cuenta: ni el email ni el nombre (el aviso de cuenta borrada es de C3c, y entonces el trabajo suma esos datos, cifrados). Su carga útil, en `jobs.payload`, no tiene datos personales. La cola es `default`, que el `scheduler` procesa cada minuto. El candado de unicidad (`ShouldBeUnique`, de 5 horas) usa el almacén de caché, que en producción es la tabla `cache_locks`.
 
 ## Qué prueba el esquema (paso 3.1 del plan)
 

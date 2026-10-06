@@ -189,6 +189,7 @@ El documento, con las claves en este orden:
 - **`account`:** sin el hash ni el token de «recordarme». **No** incluye sesiones, invitaciones ni tokens, ni `runs` ni `progress_heads` (motivos en [data-model.md](../data-model.md), sección 2).
 - **`exerciseProgress`:** las filas de `exercise_progress` de la cuenta, con todas sus columnas menos `user_id`. Cuando D1a entregue su lector de la foto de progreso, esta clave pasa a ser **`progress`** (la foto v2, que incluye esas filas), y D1b suma **`imports`** con los crudos importados.
 - **`attempts`:** cada intento con todas sus columnas menos `user_id`, sus pruebas (`tests`, sin `attemptId`) y su payload si se conserva (`payload`, sin `attemptId`; `null` si no se conserva).
+- **La versión.** `format` cambia cuando el documento quita o renombra una clave: D1a, al reemplazar `exerciseProgress` por `progress`, sube `format` a `taller-export-2` en `UserExport` y en este contrato. Sumar una clave (D1b agrega `imports`) no lo cambia.
 - **Los nombres** de columna salen en camelCase. Las columnas `DATETIME` salen en ISO 8601 UTC con milisegundos y `Z`; los demás valores, como están en la base (un indicador es `0` o `1`).
 
 ## `DELETE /api/me`
