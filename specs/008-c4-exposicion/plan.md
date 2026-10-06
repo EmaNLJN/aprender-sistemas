@@ -95,6 +95,7 @@ docker/
 │   ├── headers.conf                 (nuevo: las seis cabeceras)
 │   ├── taller.d/{main,http,server}.conf        (nuevo: las variantes locales)
 │   └── public/                      (nuevo: plantillas, validate.sh y entrypoint.sh)
+├── public.sh                        (nuevo: el punto de entrada del modo público)
 ├── mysql/
 │   ├── db-grants.sql                (cambia: usuarios por rol, en dos fases)
 │   ├── apply-grants.sh              (nuevo)
@@ -105,7 +106,7 @@ frontend/
 ├── vite.config.ts                   (cambia: sin singlefile, con `html.cspNonce`)
 └── src/shared/{lib/csp-nonce.ts,ui/code-editor/mount-code-editor.ts}   (cambian)
 backend/api/
-├── scripts/{public,init-env,deploy}.sh   (public.sh nuevo; los otros cambian)
+├── scripts/{init-env,deploy}.sh     (cambian)
 ├── scripts/{public-check,acme-check,backup-check,restore-check,compose-check}.sh   (nuevos)
 ├── docker/migrate.sh                (cambia: el aviso de un usuario que falta)
 └── .env.example                     (cambia: las variables de referencia)
@@ -161,7 +162,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 | F · Front y build | `frontend/vite.config.ts`, `frontend/src/shared/lib/csp-nonce.ts`, `frontend/src/shared/lib/csp-nonce.spec.ts`, `frontend/src/shared/ui/code-editor/mount-code-editor.ts`, `qa/build-check.ts`, `qa/lib/built-page.ts`, `qa/csp-guard-check.ts` | de N (V2): la configuración con la CSP | el build en varios archivos, el nonce en el editor y la guardia de regresión |
 | D · MySQL y roles | `docker/mysql/` (todo), `qa/api-grants-check.ts`, `qa/apply-grants-check.ts`, `qa/fixtures/mysql-roles.json`, `backend/api/docker/migrate.sh`, `backend/api/tests/Unit/MigrateScriptTest.php` | — | el SQL de roles, el script que lo aplica, el inicio de un volumen nuevo y la prueba de la matriz |
 | B · Respaldos | `docker/backup/` (todo), `docker/compose.backup-test.yaml`, `backend/api/scripts/{backup-check,restore-check}.sh` | de D: las cuentas y la matriz | la imagen y el script de respaldo, la prueba de punta a punta y la restauración |
-| K · Compose y operación | `docker/compose.yaml`, `docker/compose.public.yaml`, `backend/api/scripts/{public,init-env,deploy,compose-check}.sh`, `backend/api/.env.example`, `qa/public-script-check.ts` | de N, D y B: los nombres de archivos, servicios y variables de los contratos | la base de Compose con los roles, el archivo público y el script `public.sh` |
+| K · Compose y operación | `docker/compose.yaml`, `docker/compose.public.yaml`, `docker/public.sh`, `backend/api/scripts/{init-env,deploy,compose-check}.sh`, `backend/api/.env.example`, `qa/public-script-check.ts` | de N, D y B: los nombres de archivos, servicios y variables de los contratos | la base de Compose con los roles, el archivo público y el script `public.sh` |
 | Q · Verificación | `backend/api/scripts/public-check.sh`, `docker/compose.public-test.yaml`, `qa/e2e/specs/csp-walk.spec.ts`, `qa/e2e/playwright.config.ts`, `.github/workflows/ci.yml` | todo lo anterior | los checks contra el stack público, el recorrido en el navegador y el job de CI |
 
 **Puntos de sincronización** (el coordinador integra y avisa):
@@ -856,7 +857,7 @@ legacy=$(docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWOR
 
 ### Tarea 6.2 · El archivo público y `public.sh` (T019)
 
-- **Crea:** `docker/compose.public.yaml`, `backend/api/scripts/public.sh` y `qa/public-script-check.ts`.
+- **Crea:** `docker/compose.public.yaml`, `docker/public.sh` y `qa/public-script-check.ts`.
 - **Amplía:** `backend/api/scripts/compose-check.sh` con la parte pública.
 - **Primero entrega** el servicio `backup` del archivo, para que B (T016) lo use.
 
@@ -1032,7 +1033,7 @@ volumes:
 **Pasos:**
 
 1. Los pasajes que hoy llaman «autónomo» al HTML (`AGENTS.md` líneas 7 y 66; `README.md` cerca de las 145, 185, 229 y 274; `docs/architecture.md` línea 73; `qa/AGENTS.md` línea 50) dicen que `dist/index.html` ya no es autónomo, que se sirve con Nginx junto a `dist/assets/` y que no funciona con `file://`.
-2. `AGENTS.md`: la sección «Comandos» suma `sh backend/api/scripts/public.sh` y el job `public`; «Proyecto» nombra la exposición; «Verificación» suma `npm run api:grants:check`, `public:check`, `public:acme-check` y `public:backup-check`.
+2. `AGENTS.md`: la sección «Comandos» suma `sh docker/public.sh` y el job `public`; «Proyecto» nombra la exposición; «Verificación» suma `npm run api:grants:check`, `public:check`, `public:acme-check` y `public:backup-check`.
 3. `docs/architecture.md`: el mapa de `docker/` (`compose.public.yaml`, `nginx/` con sus tres puntos de inclusión y `headers.conf`, `mysql/`, `backup/`), el contrato nuevo de la salida, los usuarios de MySQL por rol y la regla de que una tabla nueva entra a la matriz.
 4. `qa/AGENTS.md`: las filas nuevas de la tabla «Elegir comprobaciones» (cabeceras, política de contenido, plantillas públicas, roles, `public.sh`, los cuatro checks con Docker y el recorrido).
 5. `backend/api/AGENTS.md`: los roles de MySQL y `grants`/`db-grants`, `public.sh`, las variables `TALLER_*` y que `x-laravel-env` ya no fija usuario, y que el `.env` de quien ya tenía uno necesita `sh backend/api/scripts/init-env.sh` otra vez.

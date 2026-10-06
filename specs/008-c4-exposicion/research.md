@@ -49,7 +49,7 @@ Las referencias «R1» a «R24» son secciones de este archivo. Los requisitos d
 
 ## R1. Cómo se activa el modo público
 
-**Decisión.** Un archivo de Compose que se suma al de hoy, `docker/compose.public.yaml`, y un script, `backend/api/scripts/public.sh`, que es la única forma documentada de usarlo. El script fija `-p taller-publico`, `-f compose.yaml -f docker/compose.public.yaml` y `--env-file .env`, y se niega a seguir, con un mensaje en español que dice qué falta, si falta `TALLER_DOMAIN`, `ACME_CONTACT`, `ACME_ACCEPT_TOS=yes`, `BACKUP_AGE_RECIPIENTS` o las credenciales del destino. El archivo repite la comprobación con `${VAR:?…}`, de modo que `docker compose config` también falla cerrado.
+**Decisión.** Un archivo de Compose que se suma al de hoy, `docker/compose.public.yaml`, y un script, `docker/public.sh`, que es la única forma documentada de usarlo. El script fija `-p taller-publico`, `-f compose.yaml -f docker/compose.public.yaml` y `--env-file .env`, y se niega a seguir, con un mensaje en español que dice qué falta, si falta `TALLER_DOMAIN`, `ACME_CONTACT`, `ACME_ACCEPT_TOS=yes`, `BACKUP_AGE_RECIPIENTS` o las credenciales del destino. El archivo repite la comprobación con `${VAR:?…}`, de modo que `docker compose config` también falla cerrado.
 
 **Por qué.**
 - Un perfil no puede excluir al servicio de hoy: `taller` sin perfil seguiría publicando `127.0.0.1:8080` junto a los puertos nuevos, y Compose no tiene perfiles exclusivos.

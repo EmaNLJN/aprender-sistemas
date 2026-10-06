@@ -28,8 +28,8 @@ npm run api:test && npm run api:test:down
 ## 2. La configuración pública, sin levantar nada (FR-001 a FR-003, SC-011)
 
 ```sh
-sh backend/api/scripts/public.sh config > /dev/null; echo $?                       # 64 sin las variables
-TALLER_DOMAIN=taller.test ACME_CONTACT=ops@taller.test ACME_ACCEPT_TOS=yes … sh backend/api/scripts/public.sh config
+sh docker/public.sh config > /dev/null; echo $?                       # 64 sin las variables
+TALLER_DOMAIN=taller.test ACME_CONTACT=ops@taller.test ACME_ACCEPT_TOS=yes … sh docker/public.sh config
 docker compose -p taller-publico -f compose.yaml -f docker/compose.public.yaml config --format json | jq '.services | map_values(.ports // [])'
 ```
 
@@ -83,7 +83,7 @@ npm run public:acme-check
 npm run public:backup-check                          # contra un S3 local
 sh backend/api/scripts/restore-check.sh --identity <clave.age> --remote-env <lectura.env>   # parte (a), en la máquina del usuario
 sh backend/api/scripts/restore-check.sh --pitr       # parte (b), en el host
-sh backend/api/scripts/public.sh status
+sh docker/public.sh status
 ```
 
 **Esperado:** el volcado sale cifrado y sólo `age` con la clave privada lo abre; con el destino caído el cifrado queda en el spool y el fallo se ve en `status`; un despliegue mientras corre un volcado espera y migra después, y un volcado que le toca durante un despliegue se posterga, y los dos terminan sin fallos; la restauración (a) termina con 0 diferencias frente al manifiesto, reaplica el libro y mide el tiempo (una hora o menos con el volumen de hoy); el simulacro (b) deja `sessions` con al menos 20 filas más que el volcado. Con la credencial del host, `probe-destination` da `ok` sólo en escribir y sobrescribir (SC-009).
@@ -105,7 +105,7 @@ Con el stack local (el escenario de C3a: la página del atacante en `http://loca
 ## 11. G2: abrir (usuario y coordinador)
 
 1. DNS con el registro A (y ninguno AAAA); el monitor externo creado.
-2. Con `ACME_DIRECTORY_URL` de staging: `sh backend/api/scripts/public.sh up`, y el router reenvía el 80 y el 443 (sólo el 443 con TLS-ALPN-01).
+2. Con `ACME_DIRECTORY_URL` de staging: `sh docker/public.sh up`, y el router reenvía el 80 y el 443 (sólo el 443 con TLS-ALPN-01).
 3. El certificado de staging se emite; `public.sh status` lo muestra; `public-check.sh` corre contra el dominio real.
 4. Desde datos móviles: abrir `https://<dominio>`, aceptar una invitación (creada con `taller:invite`), ingresar y recorrer las vistas (SC-001), y confirmar que el registro de Nginx muestra la IP pública del teléfono (V3b).
 5. Un escaneo de puertos desde otra red: sólo el 443 y, con HTTP-01, el 80 (SC-011).
