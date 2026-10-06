@@ -918,7 +918,7 @@ Cada función lee `window.Taller*` al llamarse, con los mismos `?.` de hoy. El `
     - cualquier `false` da «No se pudo borrar todo el progreso guardado. Recargá la página y volvé a intentarlo.»;
     - `undefined` no cuenta como fallo;
     - con `{ password: 'x' }` el resultado es el mismo.
-  - **Áreas asíncronas:** con `applyImport` y `reset` devolviendo promesas, los mismos avisos y el mismo orden, también con un laboratorio que resuelve `false` y un `reset` que resuelve `false` (SC-010).
+  - **Áreas asíncronas:** con `applyImport` y `reset` devolviendo promesas, los mismos avisos y el mismo orden, también con un laboratorio que resuelve `false` y un `reset` que resuelve `false` (SC-010). Cada `reset` y cada `applyImport` empieza recién cuando el anterior resolvió: las áreas registran su inicio y su fin, y el registro es `route:start`, `route:end`, `lab:start`, `lab:end` y así (con `Promise.all` los inicios irían juntos).
   - **Las dos exportaciones congeladas** (`qa/fixtures/progress-master-2a278ad-export.json` y `progress-d0e1b49-export.json`), con secciones falsas que planifican `{ state: raw, lossy: false }`: el aviso es «Copia importada y combinada con tu avance actual.», sin omisiones, y el recorrido aplicado contiene los pasos completados de la exportación (FR-006).
   - **Los ayudantes:**
     - `assertImportSize(10 * 1024 * 1024)` no lanza, y con un byte más lanza el texto de hoy;
@@ -957,7 +957,7 @@ Cada función lee `window.Taller*` al llamarse, con los mismos `?.` de hoy. El `
   2. `node qa/app-shell-check.ts` (57), `node qa/boot-check.ts` (14: el orden de los reinicios y las dos importaciones congeladas) y `npm test`.
   3. La comparación de §0.3 (quickstart-f2b.md §3.4): 24 pares iguales.
   4. `npm run build`, el paso 3 de §0.2 y `E2E_PORT=4186 npm run test:e2e` (106).
-  5. **Mutaciones descartadas:** escribir el `reset` de un motor sin `async` y `await` (`() => window.TallerCampaignEngine?.reset()?.removed`) hace fallar el cuarto gemelo; cambiar el orden de los `sessionResets` hace fallar `boot-check`.
+  5. **Mutaciones descartadas:** escribir el `reset` de un motor sin `async` y `await` (`() => window.TallerCampaignEngine?.reset()?.removed`) hace fallar el cuarto gemelo; correr los `sessionResets` antes de los `reset` de las áreas hace fallar `boot-check` («borrar todo» exige `TallerSystems.resetSimulations` después de los motores).
   6. Un commit: `feat(front): importar y «Borrar todo» esperan a progress-backup, que devuelve promesas (Q4)`.
 - **Compuerta:** los pasos 2 a 5; 35 avisos.
 - **Vuelta atrás:** revertí el commit: el bloque vuelve a `app.js` y los manejadores vuelven a ser síncronos.
