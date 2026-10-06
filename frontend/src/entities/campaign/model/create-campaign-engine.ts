@@ -1,3 +1,4 @@
+import { createStore } from 'zustand/vanilla';
 import { cloneJson } from '../../../shared/lib/clone-json';
 import { isLosslessNormalization } from '../../../shared/lib/is-lossless-normalization';
 import {
@@ -55,6 +56,7 @@ export function createCampaignEngine(): CampaignEngine {
   let storageAvailable = true;
   let store: VersionedStore<CampaignStateV1> | null = null;
   let lastReportedXP = 0;
+  const changes = createStore<{ revision: number }>(() => ({ revision: 0 }));
 
   function assertReady(): CampaignCatalog {
     if (!catalog) throw new Error('Inicializá la campaña antes de usarla.');
@@ -169,6 +171,7 @@ export function createCampaignEngine(): CampaignEngine {
   }
 
   return {
+    changes,
     init,
     refreshFromLab,
     syncLab,
@@ -195,3 +198,5 @@ export function createCampaignEngine(): CampaignEngine {
     reset,
   };
 }
+
+export const campaignEngine: CampaignEngine = createCampaignEngine();

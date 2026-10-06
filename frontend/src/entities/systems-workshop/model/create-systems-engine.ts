@@ -1,3 +1,4 @@
+import { createStore } from 'zustand/vanilla';
 import { cloneJson } from '../../../shared/lib/clone-json';
 import { isLosslessNormalization } from '../../../shared/lib/is-lossless-normalization';
 import {
@@ -71,6 +72,7 @@ export function createSystemsEngine(): SystemsEngine {
   let catalog: SystemsCatalog = { workshops: new Map(), exercises: new Map() };
   let storageAvailable = true;
   let store: VersionedStore<SystemsStateV1> | null = null;
+  const changes = createStore<{ revision: number }>(() => ({ revision: 0 }));
 
   function requireStore(): VersionedStore<SystemsStateV1> {
     if (!store) throw new Error('Inicializá Sistemas antes de usarlo.');
@@ -218,6 +220,7 @@ export function createSystemsEngine(): SystemsEngine {
   }
 
   return {
+    changes,
     init,
     get,
     observe,
@@ -234,3 +237,5 @@ export function createSystemsEngine(): SystemsEngine {
     reset,
   };
 }
+
+export const systemsEngine: SystemsEngine = createSystemsEngine();
