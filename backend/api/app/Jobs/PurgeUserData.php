@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Accounts\PurgeLog;
 use App\Accounts\UserPurge;
 use App\Auth\AccountStatus;
 use App\Progress\AccountGone;
@@ -16,7 +17,6 @@ use Illuminate\Queue\Attributes\Timeout;
 use Illuminate\Queue\Attributes\Tries;
 use Illuminate\Queue\Attributes\UniqueFor;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Throwable;
 
 #[Tries(8)]
@@ -52,17 +52,17 @@ final class PurgeUserData implements ShouldBeUnique, ShouldQueue
 
     public function failed(Throwable $error): void
     {
-        Log::error('purge.failed', ['user_id' => $this->userId, 'exception' => $error::class]);
+        PurgeLog::failed($this->userId, $error);
     }
 
     private function isDeleting(): bool
     {
         $status = DB::table('users')->where('id', $this->userId)->value('status');
-        if ($status === null) {
+        if (! is_string($status)) {
             return false;
         }
         if ($status !== AccountStatus::Deleting->value) {
-            Log::warning('purge.skipped', ['user_id' => $this->userId, 'status' => $status]);
+            PurgeLog::skipped($this->userId, $status);
 
             return false;
         }
@@ -75,7 +75,7 @@ final class PurgeUserData implements ShouldBeUnique, ShouldQueue
         try {
             $runs->cancelAllOf($this->userId);
         } catch (Throwable $error) {
-            Log::error('purge.cancel_failed', ['user_id' => $this->userId, 'exception' => $error::class]);
+            PurgeLog::cancelFailed($this->userId, $error);
         }
     }
 
@@ -92,6 +92,6 @@ final class PurgeUserData implements ShouldBeUnique, ShouldQueue
             'deleted_at' => Instant::format(Instant::now()),
         ]);
         DB::delete('delete from `users` where `id` = ?', [$this->userId]);
-        DB::afterCommit(fn () => Log::info('purge.done', ['user_id' => $this->userId, 'rows' => $batchRows + 1]));
+        DB::afterCommit(fn () => PurgeLog::done($this->userId, $batchRows + 1));
     }
 }
