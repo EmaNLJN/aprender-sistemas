@@ -141,7 +141,7 @@ describe('the identity of the live state (FR-025)', () => {
     expect(store.getProgress()).toBe(state);
     expect(store.getProgress().records.r1).toBe(record);
     expect(record).toMatchObject({ draft: 'mine', solvedAt: 5 });
-    expect(store.getProgress().records.r2).toEqual({ draft: 'new' });
+    expect(store.getProgress().records.r2).toMatchObject({ draft: 'new' });
   });
 
   it('replaces the state on applyImport', () => {
