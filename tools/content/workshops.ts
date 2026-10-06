@@ -39,7 +39,7 @@ const expectStepKey: Check = (value, place) => {
   return key;
 };
 
-// FR-029, FR-030 (ADR 0006 D14): id and v1Index feed the meta; they are not published until D1.
+// FR-029, FR-030 (ADR 0006 D14): id and v1Index feed the meta; id is also published (FR-046).
 const STEP_SPEC: Record<string, Check> = {
   id: expectStepKey,
   v1Index: integer(0),
@@ -74,7 +74,7 @@ const WORKSHOP_SPEC: Record<string, Check> = {
 function publishedStep(step: JsonRecord): JsonRecord {
   const published: JsonRecord = {};
   for (const [key, value] of Object.entries(step)) {
-    if (key !== 'id' && key !== 'v1Index') published[key] = value;
+    if (key !== 'v1Index') published[key] = value;
   }
   return published;
 }

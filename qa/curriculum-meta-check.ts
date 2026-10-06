@@ -109,6 +109,14 @@ for (const workshop of workshops) {
   const keys = meta.workshopSteps[workshop.id];
   assert.equal(keys.length, workshop.steps.length, `${workshop.id}: one key per stage`);
   assert.equal(new Set(keys.map((key) => key.id)).size, keys.length, `${workshop.id}: unique keys`);
+  (workshop.steps as Record<string, unknown>[]).forEach((step, position) => {
+    assert.deepEqual(
+      Object.keys(step),
+      ['id', 'title', 'task', 'why', 'done'],
+      `${workshop.id}[${position}]: published keys`,
+    );
+    assert.equal(step.id, keys[position].id, `${workshop.id}[${position}]: id matches the meta`);
+  });
 }
 
 // FR-029: new stages (v1Index null) may be added; the v1 ones never change or disappear.
