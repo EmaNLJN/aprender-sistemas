@@ -3,6 +3,7 @@
 use App\Progress\Merge\OperationWriter;
 use App\Progress\Operations\Checked;
 use App\Progress\Operations\OperationDecoder;
+use App\Progress\Operations\RejectionReason;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -311,7 +312,7 @@ it('writes a draft that restores the starter as a tombstone with its clock', fun
 
 it('does not write a rejected operation', function () {
     [$userId] = writerAccount();
-    $rejected = Checked::rejected('00000000-0000-4000-8000-000000000001', str_repeat('0', 64), App\Progress\Operations\RejectionReason::Invalid);
+    $rejected = Checked::rejected('00000000-0000-4000-8000-000000000001', str_repeat('0', 64), RejectionReason::Invalid);
 
     expect(fn () => writeOperation($userId, $rejected))->toThrow(LogicException::class);
 });
