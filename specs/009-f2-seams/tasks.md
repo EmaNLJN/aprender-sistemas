@@ -30,13 +30,13 @@ Las ondas, los dueños de archivos, las interfaces y los puntos de sincronizaci�
 - [ ] T012 [US2] G · `frontend/app.js` lee y escribe el recorrido por `routeStore` (FR-026; plan 3.5)
 - [ ] T013 [US2] L · `frontend/lab.js` lee y escribe el laboratorio por `labStore` (FR-026; plan 3.6)
 - [ ] T014 [US2] S · Guard `qa/seams-guard-check.ts` (R1 a R5), `frontend/src/app/singletons-import.spec.ts` y la regla de dos pestañas en `qa/versioned-storage-check.ts`; K lo registra en `qa/run-checks.ts` (FR-012, FR-015, FR-018, FR-029, FR-030, FR-031, FR-032; SC-004; plan 3.7)
-- [ ] T015 [US2] K · Comparación única, compuerta, documentación y PR de la unidad 1 (FR-001, FR-002, FR-005 a FR-009, FR-011; SC-003, SC-008; plan 3.8)
+- [ ] T015 [US2] K · Comparación única, compuerta, documentación y PR de la unidad 1; no se integra sin la respuesta del usuario a Q3 (FR-001, FR-002, FR-005 a FR-009, FR-011; SC-003, SC-008; plan 3.8)
 
 ## Phase 4: User Story 3 - El arranque es una función que se llama en orden (Priority: P1) — Unidad 3 (onda 4: Q y A a la vez; onda 5: K)
 
 *Parte de S3 (los PR de las unidades 4 y 1 en `master`). T016 tiene que fallar antes de T017, y T017 es un solo commit.*
 
-- [ ] T016 [US3] Q · Arneses (`runModule`, `loadAppShell`, `bundleApp` sin la llamada final, `app-adapters`) y pruebas del arranque en rojo en `qa/boot-check.ts`, `qa/app-shell-check.ts` y `qa/load-order-check.ts`; A suma la firma de `startApp` en `frontend/app.js` (FR-013, FR-035 a FR-040; plan 4.1)
+- [ ] T016 [US3] Q · En dos commits: los arneses en verde (`runModule`, `loadAppShell`, `bundleApp` sin la llamada final y la lectura de imports con nombre de `load-order-check`) y las pruebas del arranque en rojo (`app-adapters`, `qa/boot-check.ts`, `qa/app-shell-check.ts` y `qa/load-order-check.ts`); A suma la firma de `startApp` en `frontend/app.js` (FR-013, FR-035 a FR-040; plan 4.1)
 - [ ] T017 [US3] A · El corte, con K, en un solo commit: `startApp()` en `frontend/app.js`, `TallerLab.init` en `frontend/lab.js`, `frontend/src/app/main.tsx` con el import con nombre y la llamada, y `loadLab` y el `buildHarness` de `app-shell-check` (FR-017, FR-035 a FR-038; SC-005; plan 4.2)
 - [ ] T018 [US3] K · Comparación del orden de efectos, compuerta, documentación y PR de la unidad 3 (FR-001, FR-002, FR-007 a FR-009, FR-038; SC-005, SC-012; plan 4.3)
 

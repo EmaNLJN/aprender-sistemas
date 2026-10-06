@@ -219,6 +219,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 
 - **F1 tiene que estar integrada** antes de T001 (su PR en `master`): F2a corre con su red y sus dos specs de Vitest, y toca `qa/AGENTS.md`, que F1 también cambia. Si no, se parte de `feat/f1-red-de-seguridad` y T001 lo anota.
 - **La limpieza al inglés** (`chore/en-front` y `chore/en-qa-tools`, ya con commits y sin PR) cambia comentarios, nombres de pruebas y mensajes de los mismos archivos: `entities/campaign` y `entities/systems-workshop` (fábricas y tipos), `qa/lib/sources.ts`, `qa/systems-check.ts`, `qa/project-kit-check.ts`, `qa/runtime-check.ts`, `qa/versioned-storage-check.ts` y `qa/run-checks.ts`, entre otros. Conviene integrarla antes de T001, para que la línea base se tome sobre la base final; si no, los dueños rebasan y el coordinador resuelve los conflictos de texto.
+- **Q3 antes de integrar la unidad 1:** ver la precondición de la tarea 3.8. Se puede preguntar ya: no depende de ninguna implementación.
 - **`package.json`, `.github/workflows/ci.yml` y `eslint.config.ts`:** F2a no los cambia (el guard es un check de `qa/`, y los checks entran por `qa/run-checks.ts`). Los frentes del backend (C3a, C6) tocan el CI sin cruzarse.
 - **A2** parte de la base con las cuatro unidades. Lo que A2 toma y las formas que F2a le deja están en «Lo que A2, D1 y F3 a F9 toman de F2a».
 - **D1:** su FR-061 pide el cliente sobre los cuatro almacenes con suscripción; la tabla de §3.0 es lo que recibe.
@@ -302,6 +303,17 @@ FR-011 pide una comparación entre el commit base y el de la unidad, por cada l�
 | 3 | la secuencia ordenada de lecturas y escrituras de almacenamiento durante el arranque, con las tres fixtures y con el almacenamiento vacío | 4 secuencias iguales; las lecturas en el orden de arriba |
 
 Cómo se arma cada una está en [quickstart.md](./quickstart.md), §3. La de la unidad 2 corrió al planificar (research.md, R4).
+
+### 0.4 · Qué E2E de F1 cubre cada unidad
+
+La red de F1 son 106 pruebas en 8 specs, y cada unidad las corre completas y sin editarlas. No todas miran lo mismo, y donde la cobertura es fina lo dice la última columna:
+
+| Unidad | Specs de F1 que la ejercen | Lo que la red no ve |
+| --- | --- | --- |
+| 2 · catálogo y `buildProgram` | `url-contract` (abrir un ejercicio por id, un id desconocido, el idioma del enlace), `bridges` (las misiones salen del catálogo), `views` (`#laboratorio` se dibuja con él) y `cycle` (ejecutar corre `buildProgram`) | El texto del programa: el compilador simulado responde con resultados escritos a mano y no compara el pedido. Por eso existe la comparación única de los 822 programas |
+| 4 · registro de modelos | `url-contract` (`?lenguaje=&taller=&parte=`), `views` (`#sistemas`), `startup-storage` y `reload` (el modelo de «cache» responde a un clic y se pierde al recargar), `cycle` y `bridges` (el taller de Sistemas) | Un nombre de modelo repetido: sólo lo ve la spec del registro |
+| 1 · almacenes y motores | `startup-storage` (arranque con el progreso de master sin escribir, con el almacenamiento bloqueado y una acción de cada almacén que sobrevive a la recarga), `cycle` (ejecutar guarda en el laboratorio y sincroniza campaña o Sistemas), `bridges` (permiso y lista de misiones por los motores y el almacén), `url-contract` (el idioma del enlace gana al guardado) | La fusión entre pestañas, importar, «Borrar todo», los respaldos y las notas, los favoritos y los hitos de las páginas de `app.js`: los cubren `app-shell-check`, `boot-check` y las specs de cada almacén. Ningún E2E se suscribe |
+| 3 · arranque explícito | las ocho vistas por hash y las seis formas de URL (`views`, `url-contract`), `startup-storage` (con y sin almacenamiento), `reload` (un arranque nuevo en cada recarga), `cycle` y `bridges` | El orden exacto de los `init` y la segunda llamada: sólo se ven por sus efectos y los fija `boot-check`. La guarda de errores de la red sí hace fallar un arranque que lance una excepción o un `console.error` |
 
 ## 1. Unidad 2 · El catálogo y el arnés de pruebas (dueño C, onda 1)
 
@@ -677,6 +689,8 @@ export const labStore: LabStore;
 
 La compuerta de §0, la comparación única de la unidad 1, el PR (`refactor(front): one store per progress key and one engine per kind, with subscription`) y la documentación (§5). El PR sólo se abre con la unidad 2 en `master` (S2). Cubre FR-001, FR-002, FR-005, FR-006 y FR-009, y SC-003 y SC-004.
 
+**Precondición de integración: la respuesta del usuario a Q3.** Con Q3, opción A, el código contradice la regla de Zustand de `AGENTS.md`, y el principio I de la constitución manda corregir el plan o cambiar la regla «en su propio cambio». Por eso el PR de la unidad 1 no se integra hasta que se cumpla una de dos cosas: el usuario confirma Q3, opción A, y la excepción se enmienda en `AGENTS.md` en un cambio propio (que redacta K), o el usuario elige B o C y se cambia la unidad 1 como dice «Supuestos provisionales». No frena T001 a T014 ni las unidades 2 y 4, pero sí la unidad 1, y A2 espera a la unidad 1: la respuesta de Q3 está en el camino crítico de A2.
+
 **Reversión de la unidad 1:** devuelve los cierres de `app.js` y `lab.js` y las instancias creadas en los adaptadores, y los motores vuelven a no avisar y a no esperar a `init`. Se revierte antes la unidad 3 si ya está integrada.
 
 ## 4. Unidad 3 · El arranque explícito (dueños Q y A, onda 4)
@@ -749,9 +763,11 @@ export function loadLab(context: vm.Context): void;                // evaluates 
 
 ### Tarea 4.1 · Los arneses y las pruebas del arranque, en rojo (T016, dueño Q; A suma la firma)
 
-- **Cambia:** `qa/lib/sources.ts` (`runModule` y la opción de `bundleApp`), `qa/lib/legacy-sources.ts` (`loadAppShell` devuelve las exportaciones), `qa/lib/app-adapters.ts` (`TallerLab` suma `init`), `qa/boot-check.ts`, `qa/app-shell-check.ts` y `qa/load-order-check.ts`. **A** suma en `frontend/app.js`, junto a la IIFE (que todavía arranca sola), `export function startApp() { throw new Error('not implemented'); }`, para que las pruebas fallen por comportamiento.
+- **Cambia, en dos commits:**
+  - **Verde** (se puede adelantar a la onda 1 o 2): `qa/lib/sources.ts` (`runModule` y la opción de `bundleApp`), `qa/lib/legacy-sources.ts` (`loadAppShell` devuelve las exportaciones, que `app-shell-check` todavía ignora) y `qa/load-order-check.ts` (lee imports con y sin nombre; con el `main.tsx` de hoy da lo mismo). Nada de esto cambia el resultado de un escenario.
+  - **Rojo:** `qa/lib/app-adapters.ts` (`TallerLab` suma `init`), los escenarios nuevos de `qa/boot-check.ts`, de `qa/app-shell-check.ts` y de `qa/load-order-check.ts` (la llamada después del último import) y, de **A**, la firma `export function startApp() { throw new Error('not implemented'); }` en `frontend/app.js`, junto a la IIFE (que todavía arranca sola), para que las pruebas fallen por comportamiento.
 - **Qué no cambia todavía** (cambia en T017, junto con el corte, porque depende del comportamiento nuevo): el `buildHarness` de `app-shell-check` (todavía no llama `startApp()`) y `loadLab` (todavía sólo evalúa).
-- **Qué cambia en los checks que ya existen** (sólo cómo cargan; FR-013): `load-order-check` lee los imports con y sin nombre (`^\s*import\s+(?:[^'"]*?\sfrom\s+)?['"]…['"]`) y conserva las 16 restricciones y las dos reglas de los extremos; `boot-check` conserva sus 10 escenarios con `bundleApp` (el bundle con su llamada).
+- **Qué cambia en los checks que ya existen** (sólo cómo cargan; FR-013): `load-order-check` lee los imports con y sin nombre (`^\s*import\s+(?:[^'"]*?\sfrom\s+)?['"]…['"]`) y conserva las 16 restricciones y las dos reglas de los extremos (commit verde); `boot-check` conserva sus 10 escenarios con `bundleApp` (el bundle con su llamada).
 - **Escenarios nuevos** (nombres y código en inglés), que fallan con el código de hoy:
   - **boot-check, «each legacy source evaluated alone»:** las seis (`app.js`, `lab.js`, `campaign.js`, `systems.js`, `lab-explorers.js` y `quest-explorers.js`), en un contexto sin catálogos ni adaptadores y con `blockStorage`, no lanzan y `storageAccesses` es 0. Hoy `app.js` lanza («Cannot read properties of undefined (reading 'tracks')», porque lee `window.GUIDE_DATA` al evaluarse) y `lab.js` toca el almacenamiento una vez; las otras cuatro pasan.
   - **boot-check, «main.tsx without its call»:** el bundle se evalúa con `blockStorage`; no lanza, `storageAccesses` es 0, no se registra ningún oyente ni intervalo y `#main` queda vacío. Hoy falla porque `main.tsx` todavía no tiene la llamada que quitar y la app arranca sola al evaluarse: 4 accesos al almacenamiento (laboratorio, recorrido, campaña y Sistemas) y `#main` dibujado (medido sobre la base).
@@ -838,7 +854,8 @@ Lo que A2 tiene que hacer con esto, que no es de F2a: `legacy-views.ts` lista `a
 | FR-011 | T004, T006, T015, T018 | las cuatro comparaciones únicas de §0 |
 | FR-012 | T002, T006, T008 a T011, T014 | specs de Vitest en el proyecto `node`, sin jsdom |
 | FR-013 | T004, T016, T017 | siete checks, sólo cómo cargan; la correspondencia está en research.md (R8) |
-| FR-014, FR-015 | T003, T006, T008 a T011, T014 | capas y slices; R3 y R4 vigilan los límites y R5, el contenido |
+| FR-014 | T003, T006, T009 a T011, T014 | capas y slices; R3 y R4 vigilan los límites |
+| FR-015 | T014 | R5: nada por debajo de `app` importa contenido estático |
 | FR-016 | T001 y la compuerta de §0 | 35 avisos de complejidad antes y después |
 | FR-017 | T003, T017 | `TallerLab.buildProgram` se retira y `TallerLab.init` se suma; ningún global nuevo |
 | FR-018 | §3.0, T014 | tabla de dueños y regla R4 |
@@ -873,7 +890,7 @@ Ninguna. Los dueños instalan con `npm ci --offline` (usa la caché de npm); el 
 ## Riesgos y lo que quedó sin verificar
 
 1. **F1 no está integrada.** La línea base y los E2E se midieron sobre una copia de `feat/f1-red-de-seguridad`, que no cambia producción; T001 los vuelve a medir sobre la base real. Con la limpieza al inglés sin integrar, los dueños rebasan y se resuelven conflictos de texto.
-2. **Las respuestas de Q2, Q3 y la partición son provisionales.** Si el usuario elige otra, el cambio queda dentro de la unidad 1 (tabla de «Supuestos provisionales»), salvo el desvío de la spec sobre FR-040, que es del coordinador.
+2. **Las respuestas de Q2, Q3 y la partición son provisionales.** Si el usuario elige otra, el cambio queda dentro de la unidad 1 (tabla de «Supuestos provisionales»), salvo el desvío de la spec sobre FR-040, que es del coordinador. La de Q3 es además una precondición de integración de la unidad 1 (plan 3.8), y A2 espera a la unidad 1.
 3. **El diseño no está implementado.** Corrieron los prototipos de la señal, el catálogo, `buildProgram`, el registro y el almacén del recorrido, y los cambios mínimos de Sistemas y de `startApp` contra la red de F1. No corrieron el almacén del laboratorio ni la suscripción de los motores (sólo sus firmas compilan), el guard ni los arneses completos de la unidad 3. Las firmas de este plan pueden pedir ajustes al implementar; cada ajuste se anota en el commit de su tarea.
 4. **El reemplazo de `state` en `app.js`** es mecánico pero grande (80 apariciones). Lo protegen los 51 escenarios de `app-shell-check`, `boot-check` y los E2E; no se puede garantizar que cubran toda rama de renderizado: por eso el diff se revisa con `--word-diff`.
 5. **El bundle de `systems.js` en los checks crece** con los modelos que importa el slice. En una copia, `lab-bridge-check` dio 0,61 s contra 0,63 s en la base y el HTML creció 46 caracteres; T006 lo vuelve a medir.
@@ -887,5 +904,5 @@ Ninguna. Los dueños instalan con `npm ci --offline` (usa la caché de npm); el 
 
 | Desvío | Por qué hace falta | Alternativa más simple que se descartó y por qué |
 | --- | --- | --- |
-| Suscripción propia (`shared/lib/change-signal.ts`) en lugar de Zustand, contra la regla de `AGENTS.md` (principio I) | La pide la hoja de ruta («almacenes con suscripción») y D1c se monta sobre ella; con unas 30 líneas y sin dependencia sirve a `useSyncExternalStore` también para el laboratorio, que muta en el lugar. Zustand pediría una dependencia nueva, un segundo contenedor sobre el mismo texto guardado y estado inmutable, que choca con la fusión en el lugar del ADR 0003. | Zustand ahora (Q3, B): cumple la regla, pero cuesta una dependencia con permiso y peso medido, y la hoja de ruta ubica ese permiso en F10. Sin suscripción (Q3, C): F3 y D1c dependerían de una API que F2 no fijó. Provisional: lo decide el usuario. |
+| Suscripción propia (`shared/lib/change-signal.ts`) en lugar de Zustand, contra la regla de `AGENTS.md` (principio I) | La pide la hoja de ruta («almacenes con suscripción») y D1c se monta sobre ella; con unas 30 líneas y sin dependencia sirve a `useSyncExternalStore` también para el laboratorio, que muta en el lugar. Zustand pediría una dependencia nueva, un segundo contenedor sobre el mismo texto guardado y estado inmutable, que choca con la fusión en el lugar del ADR 0003. | Zustand ahora (Q3, B): cumple la regla, pero cuesta una dependencia con permiso y peso medido, y la hoja de ruta ubica ese permiso en F10. Sin suscripción (Q3, C): F3 y D1c dependerían de una API que F2 no fijó. Provisional: lo decide el usuario. Un conflicto con la constitución es crítico para el análisis: la unidad 1 no se integra sin la respuesta (plan 3.8). |
 | Suscripción de los motores (principio V: nada por anticipado) | D1c la necesita sobre los cuatro (FR-061 de su spec) y la pide el coordinador; cuesta una `createChangeSignal()` y unas líneas por motor. | Dejarla para D1c: D1c tendría que tocar los dos motores y sus specs, justo lo que F2 evita. Si Q3 es C, se quita. |
