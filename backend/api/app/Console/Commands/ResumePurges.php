@@ -4,8 +4,8 @@ namespace App\Console\Commands;
 
 use App\Auth\AccountStatus;
 use App\Jobs\PurgeUserData;
+use App\Models\User;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 final class ResumePurges extends Command
@@ -17,18 +17,18 @@ final class ResumePurges extends Command
     public function handle(): int
     {
         $stuckSince = now()->subMinutes(config()->integer('taller.purge.stuck_minutes'));
-        $userIds = DB::table('users')
+        $stuck = User::query()
             ->where('status', AccountStatus::Deleting->value)
             ->where('updated_at', '<', $stuckSince)
             ->orderBy('id')
-            ->pluck('id');
+            ->get();
 
-        foreach ($userIds as $userId) {
-            PurgeUserData::dispatch((int) $userId);
-            Log::info('purge.resumed', ['user_id' => (int) $userId]);
+        foreach ($stuck as $account) {
+            PurgeUserData::dispatch($account->id);
+            Log::info('purge.resumed', ['user_id' => $account->id]);
         }
 
-        $count = $userIds->count();
+        $count = $stuck->count();
         $this->info($count === 1 ? '1 purga retomada' : "{$count} purgas retomadas");
 
         return self::SUCCESS;
