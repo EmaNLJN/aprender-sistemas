@@ -20,7 +20,6 @@ use App\Http\Requests\Admin\ResendInvitationRequest;
 use App\Models\Invitation;
 use App\Models\User;
 use App\Support\Iso8601;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -44,10 +43,7 @@ final class InvitationController
             ->map(fn (Invitation $invitation) => PublishedInvitation::from($invitation, $inviters->get($invitation->invited_by))->toPublished())
             ->all();
 
-        /** @var LengthAwarePaginator<array-key, mixed> $genericPage */
-        $genericPage = $page;
-
-        return response()->json(['data' => $published, 'meta' => PageMeta::of($genericPage)]);
+        return response()->json(['data' => $published, 'meta' => PageMeta::of($page)]);
     }
 
     public function store(InviteRequest $request): JsonResponse

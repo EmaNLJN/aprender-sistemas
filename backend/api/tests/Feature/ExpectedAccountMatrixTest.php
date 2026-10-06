@@ -52,6 +52,8 @@ it('covers all the routes that modify, so a new one cannot escape the matrix', f
         '/api/admin/invitations',
         '/api/admin/invitations/{invitation}',
         '/api/admin/invitations/{invitation}/resend',
+        '/api/admin/users/{user}',
+        '/api/admin/users/{user}/password-reset',
         '/api/auth/confirm-password',
         '/api/auth/logout',
         '/api/me',

@@ -92,7 +92,7 @@ it('answers 401 unauthenticated in JSON to every protected GET route, without a 
         ->values();
 
     foreach ($protectedReads as $route) {
-        $response = $this->get('/'.str_replace('{id}', 'rust-01', $route->uri()));
+        $response = $this->get('/'.str_replace(['{id}', '{user}', '{invitation}'], ['rust-01', '1', '1'], $route->uri()));
 
         $response->assertStatus(401)->assertExactJson(['message' => 'Iniciá sesión para continuar.', 'code' => 'unauthenticated']);
         expect($response->headers->get('Content-Type'))->toContain('application/json');
