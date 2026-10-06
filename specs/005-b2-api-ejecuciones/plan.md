@@ -1865,6 +1865,7 @@ services:
       EXECUTOR_MAX_CONCURRENT: '${EXECUTOR_MAX_CONCURRENT:-4}'
       EXECUTOR_RUST_IMAGE: taller-sandbox-rust:local
       EXECUTOR_GO_IMAGE: taller-sandbox-go:local
+      GOMAXPROCS: '2'
       HOME: /tmp
     networks: [sandbox]
     volumes:
@@ -1879,8 +1880,8 @@ services:
     cap_drop:
       - ALL
     dns: ['127.0.0.1']
-    mem_limit: 128m
-    pids_limit: 64
+    mem_limit: 256m
+    pids_limit: 128
     stop_grace_period: 45s
     healthcheck:
       test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:8080/healthz']
@@ -1941,6 +1942,8 @@ location ^~ /api/runs {
 4. `npm test`, `npm run lint` y `npm run format:check`: verdes.
 
 **Compuerta:** los dos checks estáticos en verde dentro de `npm test`, el smoke con las comprobaciones nuevas en verde contra un stack limpio, y anotado lo que R15 dejó **sin verificar** y que esta tarea comprueba por primera vez: que el ejecutor corra con `read_only: true` (si la CLI de Docker pide un `HOME` escribible, ya está en `/tmp`), que la ubicación hermana se comporte como la de `/api/` y que el GID del socket sea el que ve el contenedor (en Docker Desktop para macOS puede no serlo).
+
+   **Medido en la compuerta (2026-10-06).** Con `pids_limit: 64` y `mem_limit: 128m`, el aula de SC-012 dejó ejecuciones en `infra_error`: el ejecutor no podía crear procesos (`fork/exec /usr/bin/docker: resource temporarily unavailable`). Cada `docker` que lanza es un binario Go con un hilo por CPU del host, y con 16 CPUs y 4 ejecuciones a la vez el pico fue de 80 PIDs. Con `GOMAXPROCS: '2'`, que heredan los procesos `docker`, el pico bajó a 43 con 4 pedidos simultáneos y a 47 con 8, ya sin depender del host. La memoria tuvo un pico de 81 MiB. Por eso el ejecutor lleva `GOMAXPROCS: '2'`, `pids_limit: 128` y `mem_limit: 256m`, y `qa/compose-runs-check.ts` exige los dos primeros.
 
 ### Tarea 8.3 · El check de punta a punta con el ejecutor real (T020)
 
