@@ -60,11 +60,11 @@ it('builds the rows ADR 0006 §5.1 describes', function () {
     ]);
 });
 
-it('does not publish the step key or the v1 index, and stores them separately', function () {
+it('publishes the step key first and stores the v1 index separately', function () {
     $first = collect($this->rows['workshop_steps'])->firstWhere('workshop_id', 'algebra');
 
     expect($first)->toMatchArray(['step_key' => 'e1', 'v1_position' => 0, 'position' => 0])
-        ->and(json_decode($first['key_order']))->toBe(['title', 'task', 'why', 'done']);
+        ->and(json_decode($first['key_order']))->toBe(['id', 'title', 'task', 'why', 'done']);
 });
 
 it('leaves NULL what is not in the document: the level of a lab exercise and the further sources', function () {

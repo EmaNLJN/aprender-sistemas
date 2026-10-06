@@ -64,6 +64,19 @@ final class ContentFixture
         return $this;
     }
 
+    public function withoutStepIds(): self
+    {
+        foreach ($this->document->workshops as $workshops) {
+            foreach ($workshops as $workshop) {
+                foreach ($workshop->steps as $step) {
+                    unset($step->id);
+                }
+            }
+        }
+
+        return $this;
+    }
+
     public function unreferencedLabExercise(string $language = 'rust'): string
     {
         $referenced = collect($this->document->campaign->{$language})
