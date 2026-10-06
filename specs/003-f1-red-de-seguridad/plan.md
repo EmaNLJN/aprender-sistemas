@@ -9,14 +9,14 @@
 > **Código verificado.** Se planificó sin tocar el repositorio ni bajar nada:
 >
 > - **Cómo:** en una copia aparte de `spec/front-react` (sobre `ec4d829`), fuera del repositorio. La copia usó los paquetes que el coordinador instaló en el worktree de F1, por un enlace a su `node_modules`, y el Chrome Headless Shell que ya estaba en la caché de Playwright.
-> - **Qué corrió de verdad:** la red completa (105 pruebas en 8 specs), en verde y cinco veces seguidas con `--retries=0` (525 de 525); las dos specs de Vitest (3 pruebas); `tsc`, `eslint` y `prettier` sobre los archivos nuevos y sobre el repositorio; `npm test` con los scripts nuevos; 29 roturas deliberadas del código de producción, cada una detectada por la spec que dice el plan (ver [quickstart.md](./quickstart.md)); y el mensaje de «falta `dist/index.html`».
+> - **Qué corrió de verdad:** la red completa (106 pruebas en 8 specs), en verde y cinco veces seguidas con `--retries=0` (530 de 530); las dos specs de Vitest (3 pruebas); `tsc`, `eslint` y `prettier` sobre los archivos nuevos y sobre el repositorio; `npm test` con los scripts nuevos; 31 roturas deliberadas del código de producción, cada una detectada por la spec que dice el plan (ver [quickstart.md](./quickstart.md)); y el mensaje de «falta `dist/index.html`».
 > - **Qué no corrió:** el job de la CI (sólo se comprobó que el YAML se lee), la descarga y el tiempo de instalación del navegador, la imagen web de Docker, macOS y los otros navegadores. Los tiempos que cita el plan son los de la máquina local.
 
 ## Summary
 
 F1 deja, antes de portar la primera vista, una red que describe lo que el front hace hoy. No cambia ningún archivo de producción. El enfoque:
 
-- **Una red de punta a punta contra el build servido.** Playwright Test corre en el Chrome Headless Shell contra el `dist/` que sirve `vite preview`, sin Nginx ni API. Son 105 pruebas: las ocho vistas por hash, las seis formas de URL con query, los 11 enlaces que cambian la query (los 11 recargan el documento), el arranque con el progreso real de master y con el almacenamiento bloqueado, los puentes del laboratorio con campaña y Sistemas, el ciclo con el compilador simulado y el aspecto que F2 mueve entre hojas.
+- **Una red de punta a punta contra el build servido.** Playwright Test corre en el Chrome Headless Shell contra el `dist/` que sirve `vite preview`, sin Nginx ni API. Son 106 pruebas: las ocho vistas por hash, las seis formas de URL con query, los 11 enlaces que cambian la query (los 11 recargan el documento), el arranque con el progreso real de master y con el almacenamiento bloqueado, los puentes del laboratorio con campaña y Sistemas, el ciclo con el compilador simulado y el aspecto que F2 mueve entre hojas y el que dejaría de verse al borrar una.
 - **Dos guardas en todas las pruebas.** Una excepción de la página, un `console.error` o un pedido fuera del servidor de pruebas hacen fallar el test, salvo lo que esté en una lista blanca o que el propio test espere con su motivo. Las guardas tienen su propia prueba, que falla si dejan de actuar.
 - **Los valores esperados salen de afuera del código que se prueba:** las fixtures congeladas de `qa/fixtures/`, el README y el mapa para las URL, el formato del marcador del arnés (ADR 0003) y las hojas de estilo para el CSS.
 - **Dos specs de Vitest** caracterizan los dos riesgos altos del mapa. Están en verde y marcadas como defecto conocido; F2 las cambia a propósito.
@@ -30,13 +30,13 @@ F1 deja, antes de portar la primera vista, una red que describe lo que el front 
 
 **Storage**: no aplica. La red siembra y lee el `localStorage` del navegador que prueba, y lee las fixtures congeladas de `qa/fixtures/` sin escribirlas.
 
-**Testing**: `npm run test:e2e` (105 pruebas en 8 specs, contra un build existente), `npm run test:unit` (2 specs, 3 pruebas) y los 30 checks de `qa/`, que `npm test` sigue corriendo junto con Vitest.
+**Testing**: `npm run test:e2e` (106 pruebas en 8 specs, contra un build existente), `npm run test:unit` (2 specs, 3 pruebas) y los 30 checks de `qa/`, que `npm test` sigue corriendo junto con Vitest.
 
 **Target Platform**: Linux, local y en `ubuntu-24.04` de la CI. Se escribió portable a macOS (`ControlOrMeta`, sin comandos de shell específicos y con valores de CSS que no dependen de las fuentes); no se corrió ahí.
 
 **Project Type**: aplicación web (el front, con vistas legacy y React). Es infraestructura de pruebas.
 
-**Performance Goals**: ninguna. SC-007 pide medir sin fijar un tope. En la máquina local la suite tardó unos 11 s con 8 workers y unos 32 s con uno (102 pruebas, antes de sumar las últimas tres).
+**Performance Goals**: ninguna. SC-007 pide medir sin fijar un tope. En la máquina local la suite tardó unos 12 s con 8 workers y unos 35 s con uno (106 pruebas).
 
 **Constraints**:
 
@@ -45,7 +45,7 @@ F1 deja, antes de portar la primera vista, una red que describe lo que el front 
 - cinco corridas seguidas sin reintentos (SC-007);
 - `npm test` sigue sin navegador, porque la imagen web lo corre y no lo tiene.
 
-**Scale/Scope**: 105 pruebas de punta a punta en 8 specs y 2 specs de Vitest. Se crean 29 archivos (26 en `qa/e2e/` y 3 de Vitest) y cambian 8 de configuración y documentación.
+**Scale/Scope**: 106 pruebas de punta a punta en 8 specs y 2 specs de Vitest. Se crean 29 archivos (26 en `qa/e2e/` y 3 de Vitest) y cambian 9 de configuración y documentación.
 
 ## Constitution Check
 
@@ -54,7 +54,7 @@ F1 deja, antes de portar la primera vista, una red que describe lo que el front 
 | Principio | Cumple | Cómo |
 | --- | --- | --- |
 | I. AGENTS.md es la fuente | Sí | El plan sigue `AGENTS.md` y `qa/AGENTS.md`. T013 reemplaza el aviso «no existen» por los comandos reales y no copia reglas a otro lado. |
-| II. TDD y pruebas útiles | Sí, con una adaptación | Una prueba que describe lo que hay nace en verde: su prueba de sensibilidad es una rotura deliberada del código de producción (29 verificadas al planificar). Las guardas sí empiezan por una prueba que falla («Expected to fail, but passed»). Los valores esperados salen del contrato, de las fixtures congeladas, del formato del marcador y de las hojas, nunca del código que se prueba. |
+| II. TDD y pruebas útiles | Sí, con una adaptación | Una prueba que describe lo que hay nace en verde: su prueba de sensibilidad es una rotura deliberada del código de producción (31 verificadas al planificar). Las guardas sí empiezan por una prueba que falla («Expected to fail, but passed»). Los valores esperados salen del contrato, de las fixtures congeladas, del formato del marcador y de las hojas, nunca del código que se prueba. |
 | III. Código entendible | Sí | Page Objects chicos con intención de alumno. Las tablas (los enlaces, el CSS) son datos y no ramas. `css-contract.spec.ts` es el archivo más largo (unas 380 líneas) y tiene una sola responsabilidad. `npm run lint` no da avisos de complejidad en los archivos nuevos. |
 | IV. Contenido en Git, IDs estables, nada se borra | Sí | Los IDs y los títulos salen de `qa/fixtures/curriculum-ids.json`, y las fixtures de progreso se leen sin escribirlas. No cambia el contenido. |
 | V. Capas y contratos explícitos | Sí | La red es una caja negra: no importa código de producción (tsconfig aparte) y entra por la URL, el DOM accesible, `localStorage` y la red. Las dos specs de Vitest importan sólo APIs de capas inferiores o de su propio slice. No hay frameworks ni dependencias fuera del ADR 0008, que ya aceptó el usuario. |
@@ -97,6 +97,7 @@ frontend/
 package.json  package-lock.json  tsconfig.node.json  tsconfig.qa.json    (cambian)
 .github/workflows/ci.yml                                                 (cambia)
 AGENTS.md  qa/AGENTS.md  docs/agent-skills.md                            (cambian: dejan de decir «no existen»)
+docs/adr/0008-pruebas-del-front.md                                       (cambia: suma su «Enmienda»)
 test-results/  playwright-report/                                        (salidas, ignoradas)
 ```
 
@@ -109,7 +110,7 @@ La skill `tdd` pide acordar con el usuario los seams antes de escribir una prueb
 - **El navegador, por fuera:** la URL (qué lee y qué escribe), el DOM accesible (roles, etiquetas y texto), `localStorage` (qué escribe y cuándo) y la red (qué pide y a qué host). La red no mira dentro de ningún módulo.
 - **`openVersionedStore` con `mergeRouteProgress`:** lo que pasa cuando dos instancias comparten un almacenamiento.
 - **`createCampaignEngine` y `createSystemsEngine`:** lo que devuelven sus métodos públicos antes de `init`.
-- **Las hojas de estilo, por su valor computado:** las nueve reglas que cruzan hojas.
+- **Las hojas de estilo, por su valor computado:** las diez reglas que cruzan hojas.
 
 ## Review Focus
 
@@ -122,12 +123,12 @@ Lo que el revisor mira primero, porque es lo que más cuesta equivocar o lo que 
 - **Siembra del progreso.** `storage.seed` escribe una vez por pestaña (con una marca en `sessionStorage`) antes de que corra el primer script de la página. `watchWrites` se instala después, para no contar la siembra. Con el almacenamiento bloqueado, el acceso mismo lanza.
 - **Aislamiento.** Cada prueba usa un contexto nuevo, así que nada del progreso pasa de una a otra. Las pruebas que cambian de idioma no comparten navegador.
 - **Configuración.** `vite preview` escucha en `127.0.0.1`, el puerto sale de `E2E_PORT` y no se reutiliza un servidor ajeno. Hay un solo worker en la CI. El informe y los resultados van a la raíz, ignorados.
-- **Defectos conocidos.** Cinco pruebas llevan `KNOWN DEFECT` y su referencia: tres de Vitest (los dos riesgos) y dos de la red. Una de las nueve reglas de CSS es código muerto: su prueba sólo ve un cambio de valor de la copia que gana.
+- **Defectos conocidos.** Cinco pruebas llevan `KNOWN DEFECT` y su referencia: tres de Vitest (los dos riesgos) y dos de la red. Una de las diez reglas de CSS es código muerto (R8): su prueba sólo ve un cambio de valor de la copia que gana. La décima (R10, `.quest-direct-lock`) no está en el mapa: la suma el plan.
 - **La CI.** El orden de los pasos, el `id: e2e`, la condición del paso que sube el informe y los SHA fijados.
 
 ## Dónde el plan se aparta del ADR 0008
 
-El ADR 0008 es decisión del usuario y se acepta como está. Al probarlo contra el build aparecieron nueve detalles que el ADR no fija o que no se sostienen tal cual; cada uno tiene su evidencia y su efecto, y los enmienda esta implementación (T002, T003, T004 y T012).
+El ADR 0008 es decisión del usuario y se acepta como está. Al probarlo contra el build aparecieron nueve detalles que el ADR no fija o que no se sostienen tal cual; cada uno tiene su evidencia y su efecto, y los enmienda esta implementación (T002, T003, T004 y T012). T013 los anota en el ADR con una sección «Enmienda», como el ADR 0005 con el plan B1: no cambia ninguna decisión, sólo precisa nueve detalles.
 
 | Qué | El ADR dice | El plan hace | Evidencia |
 | --- | --- | --- | --- |
@@ -160,7 +161,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 
 | Dueño | Archivos que posee | Consume | Entrega |
 | --- | --- | --- | --- |
-| K · Coordinador | `package.json`, `package-lock.json`, `tsconfig.qa.json`, `qa/e2e/playwright.config.ts`, `qa/e2e/tsconfig.json`, `.github/workflows/ci.yml`, `AGENTS.md`, `qa/AGENTS.md`, `docs/agent-skills.md`; integra todo | todo | el esqueleto, los scripts, la CI, la documentación y la evidencia de cierre |
+| K · Coordinador | `package.json`, `package-lock.json`, `tsconfig.qa.json`, `qa/e2e/playwright.config.ts`, `qa/e2e/tsconfig.json`, `.github/workflows/ci.yml`, `AGENTS.md`, `qa/AGENTS.md`, `docs/agent-skills.md`, `docs/adr/0008-pruebas-del-front.md`; integra todo | todo | el esqueleto, los scripts, la CI, la documentación y la evidencia de cierre |
 | B · Red base | `qa/e2e/lib/*`, `qa/e2e/fixtures/*`, `qa/e2e/pages/*` y `qa/e2e/specs/guards.spec.ts` | el esqueleto de K | las fixtures y los Page Objects de [data-model.md](./data-model.md), §1 y §2 (S1) |
 | V · Vitest | `frontend/vitest.config.ts`, `tsconfig.node.json` y las dos specs de `frontend/src/` | — | las dos specs de riesgo, en verde |
 | U · Enlaces | `views.spec.ts`, `url-contract.spec.ts` y `reload.spec.ts` | de B: `shell`, `lab`, `campaign`, `systems`, `atlas`, `urls`, `curriculum`, `observeReload` y `storage` | US1 (vistas, URL y recargas) |
@@ -190,6 +191,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 - **Los Page Objects viven en `qa/e2e/pages/`.**
 - **Cuidado con los 404.** Un camino que no existe en `dist/` no da 404 con `vite preview`: responde `index.html` con 200 y `text/html`, a diferencia de Nginx (`try_files … =404`). Una prueba de «el contenido no responde» tiene que simularlo con `page.route`, no esperar un 404.
 - **Errores de consola.** La guarda sólo mira `pageerror` y `console.error`; una advertencia (`console.warn`) o un aviso en pantalla no la activan. Si la compuerta de A2 emite un `console.error`, va a la lista blanca de `lib/console-allowlist.ts` (con su motivo) o a un `expectIssue` de la prueba.
+- **El CSS que F2 mueve y la hoja que borra F6.** `css-contract.spec.ts` mide diez reglas y sus valores no pueden cambiar cuando F2 mueve nueve de ellas entre hojas (T011). La décima, `.quest-direct-lock` (R10), no está en el mapa y F2 la deja en `campaign.css`: F6 tiene que conservarla (por ejemplo, moviéndola a `lab.css`) hasta que F7 retire el bloque de bloqueo del laboratorio, y la prueba R10 falla si la regla desaparece.
 - **El viewport.** El único proyecto es «Desktop Chrome». Cada prueba que necesita otro ancho lo pide con `page.setViewportSize` (así lo hace `css-contract.spec.ts`) o con `test.use({ viewport })`. No hay un proyecto móvil.
 
 ## Reglas para todos los agentes
@@ -2278,15 +2280,17 @@ test.describe('an action in each store survives a reload', () => {
 
 ### Tarea 4.7 · El contrato de CSS (T011, S)
 
-- **Crea:** `qa/e2e/specs/css-contract.spec.ts` (21 pruebas).
+- **Crea:** `qa/e2e/specs/css-contract.spec.ts` (22 pruebas).
 - **Cubre:** FR-012, SC-008 y US6.
-- **Escenarios:** una prueba por cada una de las nueve reglas que el mapa (§7) lista como cruzadas entre hojas, con los valores de [data-model.md](./data-model.md), §7, en los anchos donde cambia una media query (981, 850, 650 y 590 px); más el movimiento reducido encendido y apagado, y la animación del indicador de ejecución (`compiler.hold` deja el pedido sin responder para que el indicador siga a la vista).
+- **Escenarios:** pruebas para cada una de las nueve reglas que el mapa (§7) lista como cruzadas entre hojas y para una décima que el mapa omite (R10), con los valores de [data-model.md](./data-model.md), §7, en los anchos donde cambia una media query (981, 850, 650 y 590 px); más el movimiento reducido encendido y apagado, y la animación del indicador de ejecución (`compiler.hold` deja el pedido sin responder para que el indicador siga a la vista).
+- **La décima regla (R10).** `.quest-direct-lock` está en `campaign.css` y la dibuja el laboratorio: `lockedExerciseHTML` reemplaza el host cuando la misión no está abierta. El mapa no la lista, pero F6 borra `campaign.css` antes de que F7 retire ese bloque, y sin esta prueba la regla desaparecería sin aviso. Se mide con `?campana=rust-world-1&ejercicio=rust-103#laboratorio` y el progreso vacío (el mundo está abierto y la misión no), a un solo ancho: sus reglas no tienen media query y los valores no cambiaron en 1 280, 981, 850, 650 y 590 px. Un recorrido de las clases que dibuja cada vista contra las hojas, hecho al planificar, no encontró otra regla que la hoja de una vista defina para otra ([research.md](./research.md), R9, con lo que se dejó afuera y por qué).
 - **Regla muerta.** La del último enlace de la navegación (R8) repite el valor inicial: su prueba sólo falla si la copia que gana (la de `campaign.css`) cambia de valor. Borrar cualquiera de las dos copias, o cambiar sólo la de `lab.css`, no se detecta, y es lo esperado: no cambia nada que el alumno vea.
 
 | Regla | Archivo y cambio | Falla |
 | --- | --- | --- |
 | R1 `.lab-nav-count` | `lab.css`: `background: var(--accent);` por `var(--ink)` en `.lab-nav-count` | 1: «the counter of the menu entry» |
 | R2 `.navigation` | `lab.css`, en `@media (max-width: 850px)`: `.navigation { gap: 3px; }` por `4px` | 3: R2 a 850, 650 y 590 px |
+| R2 `.navigation .nav-symbol` | `lab.css`, en `@media (max-width: 590px)`: `.navigation .nav-symbol { font-size: 14px; }` por `15px` | 1: R2 a 590 px |
 | R3 `.sidebar` y `.sidebar-bottom` | `lab.css`, en `@media (min-width: 981px)`: `.sidebar-bottom { padding-top: 30px; }` por `31px` | 1: R3 a 981 px |
 | R4 `touch-action` | `lab.css`: `touch-action: manipulation;` por `auto` | 1: R4 |
 | R5 `.sr-only` | `lab.css`: `.sr-only { width: 1px; }` por `2px` | 1: R5 |
@@ -2294,10 +2298,13 @@ test.describe('an action in each store survives a reload', () => {
 | R7 `.quest-lab-context` | `campaign.css`: `gap: 13px;` por `14px` en `.quest-lab-context` | 1: R7 a 981 px (a 650 px otra regla fija el `gap`) |
 | R8 `.navigation a:last-child` | `campaign.css`, en `@media (max-width: 650px)`: `grid-column: auto;` por `grid-column: 1 / -1;` | 2: R8 a 650 y 590 px |
 | R9 `.lab-empty` | `lab.css`: `.lab-empty { padding: 40px; }` por `41px` | 1: R9 |
+| R10 `.quest-direct-lock` | `campaign.css`: `.quest-direct-lock h1 { font-size: 40px; … }` por `41px` | 1: «the lock of a mission that is not open yet» |
 | Movimiento reducido | `styles.css`, en `@media (prefers-reduced-motion: reduce)`: quitá `transition: none !important;` | 1: «transitions and smooth scrolling are off» |
 | Indicador de ejecución | `lab.css`, en `@media (prefers-reduced-motion: reduce)`: `.lab-spinner { animation: none; }` por `animation: lab-spin 0.8s linear infinite;` | 1: «the spinner animation is none» |
 
-**Compuerta y vuelta atrás:** como en 4.1. Commit: `test(front): contrato de CSS de las nueve reglas que cruzan hojas`.
+La misma prueba de R10 también falla con el color de `.quest-direct-lock h1 em` (`var(--accent)` por `var(--muted)`), con el tamaño de `p` y `li` (de 13 a 14 px), con el margen de `ul` (`25px 0` por `26px 0`) y con el borrado del bloque entero: las cinco variantes se verificaron.
+
+**Compuerta y vuelta atrás:** como en 4.1. Commit: `test(front): contrato de CSS de las diez reglas que cruzan hojas`.
 
 ```ts
 import { expect, test } from '../fixtures';
@@ -2305,9 +2312,10 @@ import { RUST_02 } from '../lib/compiler-results';
 import { computedStyle } from '../lib/computed-style';
 import { urls } from '../lib/urls';
 
-// The nine rules that legacy-map.md §7 lists as crossing sheets. The values are what the CSS says
-// today (the file and rule are named on each test); F2 moves the rules and the values must not change.
-// The widths are the ones where a media query starts or stops matching.
+// The nine rules that legacy-map.md §7 lists as crossing sheets, and a tenth (R10) that the map leaves
+// out. The values are what the CSS says today (the file and rule are named on each test); F2 moves
+// the rules and the values must not change. The widths are the ones where a media query starts or
+// stops matching.
 const HEIGHT = 900;
 
 test.describe('R1 · .lab-nav-count (lab.css)', () => {
@@ -2347,30 +2355,35 @@ test.describe('R2 · .navigation (lab.css, at 850 px and at 590 px)', () => {
     navigation: Record<string, string>;
     link: Record<string, string>;
     count: string;
+    symbol: string;
   }[] = [
     {
       width: 981,
       navigation: { display: 'flex', 'flex-direction': 'column', gap: '8px' },
       link: { 'font-size': '13px', padding: '11px 10px', gap: '12px', 'min-height': 'auto' },
       count: 'block',
+      symbol: '20px',
     },
     {
       width: 850,
       navigation: { display: 'flex', 'flex-direction': 'row', gap: '3px' },
       link: { 'font-size': '10px', padding: '8px', gap: '6px', 'min-height': 'auto' },
       count: 'none',
+      symbol: '16px',
     },
     {
       width: 650,
       navigation: { display: 'flex', 'flex-direction': 'row', gap: '3px' },
       link: { 'font-size': '10px', padding: '8px', gap: '6px', 'min-height': 'auto' },
       count: 'none',
+      symbol: '16px',
     },
     {
       width: 590,
       navigation: { display: 'grid', 'flex-direction': 'row', gap: '3px' },
       link: { 'font-size': '10px', padding: '8px 5px', gap: '5px', 'min-height': '40px' },
       count: 'none',
+      symbol: '14px',
     },
   ];
   for (const row of rows) {
@@ -2386,6 +2399,9 @@ test.describe('R2 · .navigation (lab.css, at 850 px and at 590 px)', () => {
       );
       expect(await computedStyle(page.locator('.navigation .nav-count'), ['display'])).toEqual({
         display: row.count,
+      });
+      expect(await computedStyle(page.locator('.navigation .nav-symbol'), ['font-size'])).toEqual({
+        'font-size': row.symbol,
       });
       if (row.width === 590) {
         const columns = await computedStyle(page.locator('.navigation'), ['grid-template-columns']);
@@ -2607,6 +2623,45 @@ test.describe('R9 · .lab-empty (lab.css, used by Systems)', () => {
   });
 });
 
+test.describe('R10 · .quest-direct-lock (campaign.css, drawn inside the lab)', () => {
+  // legacy-map.md §7 leaves this rule out: campaign.css styles it and the lab draws it. Deleting
+  // campaign.css (F6) before the lab drops the lock bridge (F7) would unstyle it without any notice.
+  test('the lock of a mission that is not open yet', async ({ shell, lab, page }) => {
+    await shell.goto(urls.campaignMission('rust-world-1', 'rust-103'));
+    await expect(lab.campaignLockHeading()).toBeVisible();
+
+    expect(
+      await computedStyle(page.locator('.quest-direct-lock h1'), [
+        'font-size',
+        'letter-spacing',
+        'line-height',
+      ]),
+    ).toEqual({ 'font-size': '40px', 'letter-spacing': '-1.4px', 'line-height': '44px' });
+    expect(
+      await computedStyle(page.locator('.quest-direct-lock h1 em'), [
+        'font-family',
+        'font-weight',
+        'color',
+      ]),
+    ).toEqual({
+      'font-family': 'Georgia, "Times New Roman", serif',
+      'font-weight': '400',
+      color: 'rgb(172, 72, 41)',
+    });
+    for (const text of ['p', 'li']) {
+      expect(
+        await computedStyle(page.locator(`.quest-direct-lock ${text}`), [
+          'font-size',
+          'line-height',
+        ]),
+      ).toEqual({ 'font-size': '13px', 'line-height': '24.7px' });
+    }
+    expect(await computedStyle(page.locator('.quest-direct-lock ul'), ['margin'])).toEqual({
+      margin: '25px 0px',
+    });
+  });
+});
+
 test.describe('reduced motion (styles.css)', () => {
   test.describe('when the student asks for it', () => {
     test.use({ reducedMotion: 'reduce' });
@@ -2733,7 +2788,7 @@ El orden importa: `npm run build` ya corrió antes (la red necesita `dist/`), y 
 
 ### Tarea 5.2 · La documentación al día (T013)
 
-- **Cambia:** `AGENTS.md`, `qa/AGENTS.md` y `docs/agent-skills.md`.
+- **Cambia:** `AGENTS.md`, `qa/AGENTS.md`, `docs/agent-skills.md` y `docs/adr/0008-pruebas-del-front.md`.
 
 **Pasos:**
 
@@ -2743,12 +2798,13 @@ El orden importa: `npm run build` ya corrió antes (la red necesita `dist/`), y 
    - sumá a la regla de los localizadores la excepción de `css-contract.spec.ts`, donde el selector de CSS es lo que se prueba;
    - en «Red de seguridad para refactors», cambiá «marcados como `DEFECTO CONOCIDO`» por «`KNOWN DEFECT` en el nombre de la prueba», que es el marcador en inglés que usan las pruebas nuevas.
 3. `docs/agent-skills.md`, el «Alcance»: reemplazá «Hasta que F1 se integre, las specs nuevas no tienen dónde correr.» por lo que quedó instalado y cómo se corre.
-4. Comprobá rutas, comandos y enlaces locales de los tres archivos, y `git diff --check`.
-5. Un commit: `docs(front): los comandos de las pruebas del front ya existen`.
+4. `docs/adr/0008-pruebas-del-front.md`: el estado pasa a «aceptada por el usuario el 2026-10-05, sin enmiendas; precisada con lo que midió la implementación de F1 (ver «Enmienda»)» y se agrega, al final, la sección «Enmienda (2026-10-05, plan de F1)». Lleva una viñeta por cada fila de la tabla «Dónde el plan se aparta del ADR 0008» de este plan: lo que decía el ADR, lo que hace la implementación y su motivo (la columna «Evidencia»). No cambia ninguna decisión: es el mismo formato que la «Enmienda» del ADR 0005.
+5. Comprobá rutas, comandos y enlaces locales de los cuatro archivos, y `git diff --check`.
+6. Un commit: `docs(front): los comandos de las pruebas del front ya existen y el ADR 0008 anota lo que midió F1`.
 
-**Compuerta:** los comandos que citan los tres archivos corren tal cual; `npm run format:check` no toca Markdown (`.prettierignore` lo excluye).
+**Compuerta:** los comandos que citan los archivos corren tal cual; la «Enmienda» tiene nueve viñetas, una por fila de la tabla; `npm run format:check` no toca Markdown (`.prettierignore` lo excluye).
 
-**Vuelta atrás:** revertí el commit; los comandos vuelven a figurar como futuros.
+**Vuelta atrás:** revertí el commit; los comandos vuelven a figurar como futuros y el ADR, como estaba.
 
 ### Tarea 5.3 · Las roturas deliberadas sobre el árbol integrado (T014)
 
@@ -2756,19 +2812,19 @@ El orden importa: `npm run build` ya corrió antes (la red necesita `dist/`), y 
 
 **Pasos:**
 
-1. Corré, sobre el árbol con todo integrado, las roturas de las tareas anteriores con el asistente descartable de [quickstart.md](./quickstart.md): las tres de SC-006 (T008, T006 y T010, la primera de cada una), las nueve reglas de SC-008 (T011), las dos de las guardas (T003) y las dos de Vitest (T004).
+1. Corré, sobre el árbol con todo integrado, las roturas de las tareas anteriores con el asistente descartable de [quickstart.md](./quickstart.md): las tres de SC-006 (T008, T006 y T010, la primera de cada una), las diez reglas de SC-008 (T011), las dos de las guardas (T003) y las dos de Vitest (T004).
 2. Cada rotura tiene que fallar en la spec que dice su tarea. Una que no falle (salvo la regla muerta R8, ya explicada) es un hueco de la red: informalo, no lo ajustes.
-3. El resultado (rotura y pruebas que fallan) va en la descripción del PR. Es la evidencia de SC-006 (3 de 3) y de SC-008 (9 de 9, con R8 detectada sólo por un cambio de valor).
+3. El resultado (rotura y pruebas que fallan) va en la descripción del PR. Es la evidencia de SC-006 (3 de 3) y de SC-008 (10 de 10, con R8 detectada sólo por un cambio de valor).
 
-**Compuerta:** 3 de 3 y 9 de 9, más las cuatro de las guardas y de Vitest.
+**Compuerta:** 3 de 3 y 10 de 10, más las cuatro de las guardas y de Vitest.
 
-**Verificado al planificar:** las 29 roturas se detectaron en la spec esperada; las dos variantes de R8 que no se detectan (borrar la regla y cambiar sólo la copia de `lab.css`) son las previstas.
+**Verificado al planificar:** las 31 roturas se detectaron en la spec esperada, y también las cuatro variantes de más de R10 (el color, el tamaño de `p` y `li`, el margen de `ul` y el borrado del bloque); las dos variantes de R8 que no se detectan (borrar la regla y cambiar sólo la copia de `lab.css`) son las previstas.
 
 ### Tarea 5.4 · Cinco corridas seguidas y medición (T015)
 
 **Pasos:**
 
-1. `npm run build && npm run test:e2e -- --repeat-each=5 --retries=0` pasa: 525 de 525 (105 pruebas, cinco veces, sin reintentos). Es SC-007.
+1. `npm run build && npm run test:e2e -- --repeat-each=5 --retries=0` pasa: 530 de 530 (106 pruebas, cinco veces, sin reintentos). Es SC-007.
 2. Medí y anotá, en «Estado y evidencia» de la hoja de ruta del front: el tiempo de la suite en local, el de `CI=1 npm run test:e2e` (un worker) y, con el primer PR, el tiempo del paso `test:e2e:install`, el del paso `test:e2e` y el del job `front` entero.
 3. Si el paso de instalación del navegador pasa de la mitad del tiempo del job, aplicá el diseño de caché de [research.md](./research.md) (R13) en un commit aparte. Si no, la caché queda afuera, como dice el ADR.
 
@@ -2811,7 +2867,7 @@ El orden importa: `npm run build` ya corrió antes (la red necesita `dist/`), y 
 | FR-009 | T003, T009 | los dobles de `compiler` y la guarda de `strictNetwork` |
 | FR-010 | T003 | Page Objects del shell, el laboratorio, campaña, Sistemas y el Atlas |
 | FR-011 | T003 | `pageIssues`, la lista blanca y `expectIssue`; `guards.spec.ts` los prueba |
-| FR-012 | T011 | las nueve reglas, el movimiento reducido y el indicador de ejecución |
+| FR-012 | T011 | las diez reglas (nueve del mapa y `.quest-direct-lock`), el movimiento reducido y el indicador de ejecución |
 | FR-013 | — | es un límite de alcance: cada port abre con los E2E de su vista |
 | FR-014 | T004, T005, T008, T011 | cinco pruebas `KNOWN DEFECT`, y la regla muerta de CSS anotada en su spec |
 | FR-015 | T003, T006, T007 | valores de afuera; `page.clock` en el temporizador |
@@ -2822,7 +2878,7 @@ El orden importa: `npm run build` ya corrió antes (la red necesita `dist/`), y 
 | FR-020 | T012 | `npm test` corre Vitest; la red queda afuera |
 | FR-021 | T012 | el paso de la CI, con el informe si falla |
 | FR-022 | T016 | el comando de producción intacta |
-| FR-023 | T013 | los comandos reales en `AGENTS.md` y `qa/AGENTS.md` |
+| FR-023 | T013 | los comandos reales en `AGENTS.md` y `qa/AGENTS.md`; además, la «Enmienda» del ADR 0008 |
 | FR-024 | T001 | las descargas autorizadas |
 | SC-001 | T005, T006 | 8 vistas y 6 formas de URL: 14 de 14 |
 | SC-002 | T007 | 11 de 11 enlaces con el resultado determinado |
@@ -2831,7 +2887,7 @@ El orden importa: `npm run build` ya corrió antes (la red necesita `dist/`), y 
 | SC-005 | T004, T016 | dos specs en verde y cero archivos de producción |
 | SC-006 | T014 | tres roturas, una por contrato: 3 de 3 |
 | SC-007 | T015 | cinco corridas sin reintentos; tiempos medidos |
-| SC-008 | T011, T014 | nueve reglas: 9 de 9 (R8 sólo por cambio de valor) |
+| SC-008 | T011, T014 | diez reglas: 10 de 10 (R8 sólo por cambio de valor) |
 | SC-009 | T016 | build, test, lint, format, test:e2e y diff-check, en local y en la CI |
 
 Historias: US1 en T005 a T008, US2 en T010, US3 en T003 y T009, US4 en T004, US5 en T001, T002 y T012 a T016, y US6 en T011.
@@ -2854,7 +2910,7 @@ Los dueños B, V, U, C, P y S no descargan nada: instalan con `npm ci --offline`
 3. **La imagen web.** La etapa de build corre `npm test`, que ahora incluye Vitest, dentro de `node:24-alpine`. No se corrió (no se usó Docker al planificar); T016 lo comprueba.
 4. **Una prueba `test.fail()` puede pasar por otra razón.** Las pruebas de `guards.spec.ts` son tan cortas que no hay otra razón posible, y apagar cada guarda las hace fallar (verificado).
 5. **Acople al texto en español.** Los localizadores usan nombres accesibles en español: si un port cambia un texto, la red falla, y eso es lo que se busca. Un cambio deliberado de copy se corrige en el Page Object.
-6. **El aspecto sólo se mide donde se enumera.** Una regla que mueva F2 y no esté entre las nueve, o un cambio que conserve los valores medidos pero altere el diseño, no se ve. La regla muerta (R8) sólo se detecta por un cambio de valor de la copia que gana.
+6. **El aspecto sólo se mide donde se enumera.** Una regla que mueva F2, o que una hoja borrada deje sin estilo, y no esté entre las diez, o un cambio que conserve los valores medidos pero altere el diseño, no se ve. La regla muerta (R8) sólo se detecta por un cambio de valor de la copia que gana.
 7. **El ingreso.** Las pruebas arrancan sin sesión. Cuando A3 y C3a pidan ingresar, `shell.goto` y `storage.seed` son los únicos lugares que cambian (spec, riesgo 9).
 8. **Lo que la red no ve.** Los flujos de la Biblioteca, el Proyecto, el Método y el Recorrido, y los diálogos nativos, quedan para los ports que los tocan (Q1).
 9. **Cinco pruebas `KNOWN DEFECT` van a cambiar.** Tres de Vitest y dos de la red. Quien las corrige las cambia en su commit TDD.
