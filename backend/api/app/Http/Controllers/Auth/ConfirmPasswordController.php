@@ -4,15 +4,12 @@ namespace App\Http\Controllers\Auth;
 
 use App\Auth\PasswordProof;
 use App\Auth\ProofOutcome;
-use App\Auth\ProofResult;
-use App\Http\ApiCode;
-use App\Http\ApiError;
+use App\Http\CurrentAccount;
 use App\Http\Middleware\RequirePassword;
+use App\Http\ProofFailure;
 use App\Http\Requests\ConfirmPasswordRequest;
-use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use LogicException;
 
 final class ConfirmPasswordController
 {
@@ -20,9 +17,9 @@ final class ConfirmPasswordController
 
     public function store(ConfirmPasswordRequest $request): JsonResponse
     {
-        $proof = $this->proof->verify($this->account($request), $request->password(), $request);
+        $proof = $this->proof->verify(CurrentAccount::of($request), $request->password(), $request);
         if ($proof->outcome !== ProofOutcome::Verified) {
-            return $this->failureOf($proof);
+            return ProofFailure::response($proof);
         }
 
         RequirePassword::markConfirmed($request);
@@ -34,23 +31,5 @@ final class ConfirmPasswordController
     public function status(Request $request): JsonResponse
     {
         return response()->json(['confirmed' => RequirePassword::isConfirmed($request)]);
-    }
-
-    private function failureOf(ProofResult $proof): JsonResponse
-    {
-        return match ($proof->outcome) {
-            ProofOutcome::Throttled, ProofOutcome::Locked => ApiError::of(
-                ApiCode::TooManyRequests,
-                headers: ['Retry-After' => (string) $proof->retryAfter],
-            ),
-            default => ApiError::of(ApiCode::AuthFailed),
-        };
-    }
-
-    private function account(Request $request): User
-    {
-        $user = $request->user();
-
-        return $user instanceof User ? $user : throw new LogicException('The account group guarantees a signed in account.');
     }
 }
