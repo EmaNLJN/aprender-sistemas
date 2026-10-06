@@ -6,8 +6,13 @@ use App\Auth\PasswordResetLinks;
 use App\Auth\PlainPassword;
 use App\Models\User;
 use Illuminate\Support\Carbon;
+use Carbon\CarbonInterval;
+use Illuminate\Hashing\HashManager;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Sleep;
 use Tests\Feature\Session\ProbeRoutes;
 use Tests\Support\Browser;
 
@@ -87,6 +92,7 @@ it('does not serve the token a second time', function () {
     $this->browser->post('/api/auth/reset-password', ($this->resetBody)(['password' => 'q9Zt4wB7nM2xK5r', 'password_confirmation' => 'q9Zt4wB7nM2xK5r']))
         ->assertStatus(422)
         ->assertJsonValidationErrors('token');
+    expect(app(AccountPasswords::class)->verify($this->user->fresh(), PlainPassword::of('x7Kp2mQ9vL4tZ8w')))->toBeTrue();
 });
 
 it('answers the identical 422 for every reason the token cannot be used', function () {
@@ -176,4 +182,51 @@ it('rejects a body that is not shaped like a request with a validation error', f
         ->assertStatus(422)
         ->assertJson(['code' => 'validation_failed'])
         ->assertJsonValidationErrors(['token', 'email', 'password']);
+});
+
+dataset('reset paths that fail', [
+    'an email without an account' => [['email' => 'nobody@x.com']],
+    'an invalid token of an existing account' => [['token' => 'not-the-token']],
+]);
+
+it('takes the same floor of about 200 ms whether or not the account exists', function (array $overrides) {
+    Sleep::fake();
+
+    $this->browser->post('/api/auth/reset-password', ($this->resetBody)($overrides))->assertStatus(422);
+
+    Sleep::assertSleptTimes(1);
+    Sleep::assertSlept(fn (CarbonInterval $slept) => $slept->totalMilliseconds >= 150 && $slept->totalMilliseconds <= 200, 1);
+})->with('reset paths that fail');
+
+it('spends one bcrypt check when the account does not exist or is not active', function (string $email) {
+    User::factory()->disabled()->create(['email' => 'off@x.com']);
+    $recorder = new class(app()) extends HashManager
+    {
+        public int $checks = 0;
+
+        public function check($value, $hashedValue, array $options = [])
+        {
+            $this->checks++;
+
+            return parent::check($value, $hashedValue, $options);
+        }
+    };
+    Hash::swap($recorder);
+
+    $this->browser->post('/api/auth/reset-password', ($this->resetBody)(['email' => $email]))->assertStatus(422);
+
+    expect($recorder->checks)->toBe(1);
+})->with(['nobody@x.com', 'off@x.com']);
+
+it('changes nothing and fails closed while another request holds the lock of the email', function () {
+    Sleep::fake(syncWithCarbon: true);
+    $lock = Cache::lock('reset:'.hash('sha256', 'ana@x.com'), 30);
+    $lock->get();
+    $before = $this->user->fresh()->password;
+
+    $this->browser->post('/api/auth/reset-password', ($this->resetBody)())->assertStatus(500);
+    $lock->release();
+
+    expect($this->user->fresh()->password)->toBe($before);
+    $this->browser->post('/api/auth/reset-password', ($this->resetBody)())->assertOk();
 });
