@@ -1758,7 +1758,7 @@ Route::middleware(['account', 'verified'])->group(function (): void {
      - ninguna respuesta lleva el programa armado, y un pedido rechazado no deja ejecución, trabajo ni cuota gastada.
    - **`RunShowTest`** (`GET`): el dueño de una ejecución en cola ve su posición (1 más las `queued` de `id` menor); una terminada trae fase, código, tiempos, `truncated`, salida completa y los veredictos en el orden de las pruebas, y `customTest`; una ajena, una inexistente, una podada, un texto que no es un UUID y un UUID en mayúsculas dan 404 `not_found`; la lectura hace como mucho cuatro sentencias sobre `runs` y `attempt*` (es una lectura por clave: el cliente la repite cada 0,3 a 2 s).
    - **`RunCancelEndpointTest`**: en cola, 200 y `canceled` al instante; corriendo, 202 con `cancel_requested_at` fijado; terminada, 200 sin cambios; ajena o inexistente, 404; el cuerpo se ignora.
-   - **`RunAccessMatrixTest`** (SC-008, una tabla de rutas por actor): sin sesión, 401 en las tres rutas; la ejecución de otra cuenta, 404 al consultar y al cancelar, también con una sesión de admin (ningún rol ve el código ajeno); con `X-Taller-User` distinto o ausente, 409 `account_mismatch` en cada ruta que muta; sin el token CSRF (`enforceCsrf()`), 419; con el email sin verificar, 403 `email_unverified`; con la cuenta deshabilitada, 403 `account_disabled`. Son comportamientos de C3a y esta prueba los recorre por HTTP, no por el nombre de los middleware.
+   - **`RunAccessMatrixTest`** (SC-008, una tabla de rutas por actor): sin sesión, 401 en las tres rutas; la ejecución de otra cuenta, 404 al consultar y al cancelar, también con una sesión de admin (ningún rol ve el código ajeno); con `X-Taller-User` distinto o ausente, 409 `account_mismatch` en cada ruta que muta; sin el token CSRF (`enforceCsrf()`), 419; con el email sin verificar, 403 `email_unverified`; con la cuenta deshabilitada, 403 `account_disabled`. Son comportamientos de C3a y esta prueba los recorre por HTTP, no por el nombre de los middleware. Y `GET /api/attempts` y `GET /api/attempts/1` dan 404 con una sesión válida: esas rutas no existen (FR-034).
    - **`RunThrottleTest`**: treinta `POST` en un minuto (los rechazados cuentan) y el 31.º da 429 `too_many_requests` con `Retry-After`; otra cuenta tiene su propia cuenta; los `GET` no tienen límite (cien pasan); el valor sale de `runs.throttle_per_minute`.
    - **`TrimmingTest`**: un `code` con espacios, tabuladores y CRLF al principio y al final llega y se guarda **sin recortar**; un `customTest` `""` no se vuelve `null` por el middleware pero se normaliza a `NULL` en el pedido, y uno con espacios alrededor se guarda recortado; fuera de `/api/runs`, una ruta de C3a con un texto (el nombre de `PUT /api/me`) sigue recortándose.
    Corrélas: fallan porque las clases y las rutas no existen (las dos excepciones de recorte las puso T007).
@@ -1987,3 +1987,132 @@ location ^~ /api/runs {
 5. Sólo con esa evidencia, el coordinador pasa B2 a «Entregado» en `specs/backend-multiusuario/roadmap.md`, con la nota de qué se verificó y qué no (la planificación lo deja en «Planificado»).
 
 **Compuerta:** cada comando de SC-013 corrido y anotado; los límites (sin runsc, sin Go local, sin el ayudante de C3a, el escenario 7 sin un worker real) escritos en el PR.
+
+## Lo que B2 toma de C3a
+
+C3a (spec 004) se está implementando y B2 parte de su punto S2. Lo que B2 usa de ahí, y dónde está:
+
+| Qué | Dónde en C3a | Cómo lo usa B2 |
+| --- | --- | --- |
+| La sesión y `Auth::id()`; 401 `unauthenticated` | FR-005, FR-009; T010 | `RunController` saca la cuenta de `$request->user()`, nunca del cuerpo |
+| `users.status` (`active`, `disabled`, `deleting`) y el 403 `account_disabled` | FR-001, FR-007; T005, T010 | la admisión y el reclamo leen `users.status` con `FOR SHARE`; el worker trata como no activa a toda cuenta que no sea `active` |
+| Los grupos `account` y `verified` | T010; FR-031 | `routes/api/runs.php` los usa |
+| La cuenta esperada (`X-Taller-User`, 409 `account_mismatch`) y el CSRF (419) | FR-036, FR-005 | los recorre `RunAccessMatrixTest` |
+| `ApiCode`, `ApiError::of` y `lang/es/api.php` | T009 | los errores de B2; los tres códigos nuevos son líneas de integración de T007 |
+| `WriteTransaction` (READ COMMITTED, hasta 3 intentos) | T006 | `AccountLock::within` |
+| `Browser` y `Browser::useDatabaseDrivers()` | T010 | las pruebas de HTTP de A |
+| La fábrica `UserFactory` y sus estados | T006 | `RunWorld::user` |
+| El `scheduler` (`schedule:work`; no procesa ninguna cola) | T012, T014 | corre `runs:sweep` y `runs:prune` |
+| Las zonas de `limit_req` con 429, el DNS cerrado y el patrón `add_missing` de `init-env.sh` | T012 | T019 repite el bloque de `/api/` en su ubicación y suma `dns` y dos variables |
+| `qa/lib/api-account.ts` | T024 | el check de punta a punta (T020) |
+| El bloque de migraciones `2026_10_05_200001` a `200099` | FR-051 | B2 usa `300001` a `300099` |
+| La prueba de claves foráneas hacia `users` (FR-004) y la de `MigrationsTest` (deshace todo lo posterior a las tres de C1) | T004 | las tablas de B2 las cumplen sin cambiarlas: FK en cascada y `down()` en orden inverso |
+| `RouteAccessTest` y `ExpectedAccountMatrixTest` | T023 | la red de seguridad de las rutas de B2 |
+
+Lo que B2 le pide a C3a y sólo C3a puede resolver: que el `limit_req` por IP absorba el polling de un aula detrás de un NAT (unos 30 clientes cada 0,3 a 2 s: cabe en `rate=50r/s burst=400` si el cliente espacia la consulta, y SC-012 lo mide); que su pregunta 3 (si el admin estudia con su cuenta) puede sumar un 403 `forbidden` al rol `admin` en `/api/runs`; y que el `verified` propio sea reutilizable, como ya lo es.
+
+## Lo que B2 le deja a C3b, D1 y C4
+
+- **C3b** (borrador, spec 010): `ActiveRuns::cancelAllOf` (la purga puede llamarla), el listener que lo engancha al evento que C3b dispara, la declaración de las seis tablas para `UserData` y el orden de borrado ([data-model.md](./data-model.md), sección 8). Propuesta de evento si C3b no fija el suyo: `App\Auth\Events\AccountRestricted(int $userId, AccountRestriction $reason)`, con `Disabled`, `Demoted` y `Deleting`. Si el evento o `UserData` ya están integrados cuando se implementa B2, el coordinador los usa en T012 y T018; si no, el que llega último suma lo suyo.
+- **D1:** las dos tablas completas, `AccountLock`, `AccountGone` y `ProgressHead` (el código único de la cabecera), la definición única de «cuenta como intento» (`counted`), el cierre que sube la revisión y la estampa en cada fila que cambia, la época copiada a la ejecución, y `qa/fixtures/shared/` para su fixture de fusión. D1 repite con el reset real el escenario de la época que B2 prueba a mano, y su bloque de migraciones va después de `300099`.
+- **C4:** `worker-runs` lee `RUNS_DB_USERNAME` y `RUNS_DB_PASSWORD` (los de la aplicación si faltan): puede darle su usuario de MySQL sin tocar código. B2 no configura el binlog ni la IP del cliente (sus límites son por cuenta). El ejecutor es el único componente con el socket de Docker y `compose-runs-check` lo vigila.
+- **A3 y A4:** el contrato HTTP de [contracts/runs-api.md](./contracts/runs-api.md), el recurso `GET /api/harness` y el fixture compartido. A4 espacia la consulta de una ejecución (de 0,3 a 2 s) y A3 decide si pide la plantilla al arrancar o sólo al abrir el laboratorio.
+- **B3 y C5:** la composición y la lectura de la evidencia puras (FR-038), y los datos de `runs` y `attempts` con `server_solved_at` separado de lo importado.
+
+## Cobertura de requisitos
+
+Cada requisito de la [spec](./spec.md) y la tarea que lo construye o lo prueba. La compuerta final (T022) comprueba el conjunto.
+
+| Requisito | Tarea |
+| --- | --- |
+| FR-001, FR-002, FR-003 | T017 (el HTTP y su validación); T016 (el ejercicio desconocido) |
+| FR-004 | T008 (el armado), T016 (la lectura consistente) |
+| FR-005, FR-006, FR-007, FR-008, FR-010 | T016 |
+| FR-009 | T002 (la configuración), T019 (el paso por Compose) |
+| FR-011, FR-024, FR-025 | T017 |
+| FR-012 | T007 (la conexión `runs`), T011 (el trabajo en esa cola), T019 (el worker) |
+| FR-013 | T007 (`retry_after` y PCNTL), T011 (un intento y su plazo), T013, T014, T018 (`TimeoutChainTest`), T019 (`compose-runs-check`) |
+| FR-014 | T014 (nada abierto mientras espera), T019 (un worker por slot) |
+| FR-015 | T003, T010, T011 |
+| FR-016, FR-017 | T011 (el reencolado), T013, T014 |
+| FR-018 | T011 (`failed` cierra `job_failed`), T012 (el vencimiento), T015 (el barrido) |
+| FR-019 | T011 (el reclamo), T016 (el 403) |
+| FR-020 | T002, T010 |
+| FR-021, FR-022, FR-023 | T008 |
+| FR-026 | T012, T017 |
+| FR-027, FR-030, FR-032 | T010 |
+| FR-028, FR-029, FR-033, FR-043 | T001 (las tablas y `counted`), T002 (`countsAsAttempt`), T010 (el intento) |
+| FR-031 | T016 (copia la época), T010 (la comprueba al cerrar) |
+| FR-034 | T017 (`/api/attempts` da 404) |
+| FR-035 | T006, T007, T009 |
+| FR-036 | T006, T008 |
+| FR-037 | T005 |
+| FR-038 | T008 |
+| FR-039 | T004 |
+| FR-040 | T009 |
+| FR-041 | T017 |
+| FR-042 | T002 (`RunLog`), T014, T016 |
+| FR-044 | T015 |
+| FR-045, FR-046 | T019 |
+| FR-047 | todas: cada tarea abre con sus pruebas; T022 comprueba el conjunto |
+| FR-048 | T020 |
+| FR-049 | T002 (los tipos), T007 (sin paquetes), T022 (nivel 9) |
+| FR-050 | T012 |
+| SC-001 | T008 (la tabla de clasificación), T020 (el ejecutor real) |
+| SC-002 | T008 |
+| SC-003 | T016, T020 |
+| SC-004 | T016 |
+| SC-005 | T014 (la parte de la base), T022 (escenario 7) |
+| SC-006 | T010 |
+| SC-007 | T010, T012 |
+| SC-008 | T014, T016, T017, T020 |
+| SC-009 | T006, T008, T009 |
+| SC-010 | T004, T005, T009 |
+| SC-011 | T001 |
+| SC-012 | T020 |
+| SC-013 | T022 |
+
+## Descargas y permisos
+
+B2 no agrega paquetes de Composer ni de npm (FR-049). Lo que sí baja o construye, con su origen y su tamaño, se pide **una por una** antes de implementar (T007 y T019). Los tamaños son **metadatos** de los registros, medidos al planificar sin descargar nada. Como B1 ya corrió en esta máquina, probablemente varias imágenes estén en el daemon: el primer paso es `docker image inspect <imagen>` y pedir permiso sólo por las que falten.
+
+| Qué | Origen | Tamaño | Para qué | Cuándo |
+| --- | --- | --- | --- | --- |
+| `rust:1.99-slim`, la base de `taller-sandbox-rust:local` | Docker Hub, `library/rust` | 330.019.886 bytes comprimidos, `linux/amd64` (**estimación**: la etiqueta se reconstruyó el 2026-10-04 y hoy apunta a `0952c7a4…`, mientras `backend/executor/images/rust/Dockerfile` fija `01dd4f9c…`) | el sandbox de Rust | T019 |
+| `golang:1.27-alpine`, la base de `taller-sandbox-go:local` y la etapa de compilación del ejecutor | Docker Hub, `library/golang` | 75.175.309 bytes (medido; el digest fijado, `8a5910f3…`, es el del registro hoy) | el sandbox de Go y compilar el ejecutor | T019 |
+| `alpine:3.24`, la etapa `runtime` del ejecutor | Docker Hub, `library/alpine` | 3.849.738 bytes (medido; el digest fijado, `294b683c…`, es el del registro hoy) | la imagen del ejecutor | T019 |
+| `docker-cli` 29.8.2-r0 por `apk` sobre `alpine:3.24` (la etapa `runtime` que ningún script de B1 construye) | repositorio de Alpine 3.24, `community`, `x86_64` | 10,3 MiB de descarga (32,0 MiB instalado), más `ca-certificates` (sin medir, del orden de cientos de KiB) | la CLI con la que el ejecutor habla con el socket de Docker | T019 |
+| El conjunto de compilación de PHP para PCNTL (`docker-php-ext-install pcntl` en la imagen de la API, sobre `php:8.5-fpm-alpine`, 38.730.567 bytes y ya en el daemon) | paquetes de Alpine 3.24 (`main`, `x86_64`) | **estimación** de 90 a 100 MiB, una vez: medidos `gcc` 57,7 MiB, `g++` 17,6 MiB, `binutils` 3,1 MiB y `autoconf` 586 KiB; falta sumar `make`, `musl-dev` y el resto del conjunto, sin medir | compilar la extensión; el instalador de extensiones baja el conjunto y lo borra al terminar, así que la capa nueva lo baja aunque la de `pdo_mysql` esté en la caché | T007 |
+
+Además, **sin descarga**: el código PHP de PCNTL sale de las fuentes que la imagen de PHP ya trae; las imágenes del sandbox se construyen con `GOPROXY=off` y sin ningún paso de red; y las pruebas usan `mysql:9.7`, `node:24-alpine` y `composer:2.10` que `api:test` ya construye. **Permisos del sistema** (no son descargas): el stack del coordinador monta el socket de Docker en `executor`, que equivale a root en el host; y gVisor (`runsc`) tiene que estar registrado en Docker, como ya se hizo para B1, o se acepta `EXECUTOR_RUNTIME=runc` sólo en desarrollo.
+
+## Riesgos y lo que quedó sin verificar
+
+**Verificado al planificar** (con sus límites; [research.md](./research.md), «Cómo se verificó al planificar»): el TypeScript del generador, de los checks y del fixture se ejecutó (Node 24.21.0); la plantilla de Rust corrió contra `rustc` 1.97.1 (137 de 137 soluciones aprueban y ningún código inicial); el fixture coincide con un renderizador independiente; los 49 `gradingHash` que cambian se midieron; la fórmula del corte por UUIDv7 clasificó bien 200.000 identificadores; y se leyeron en la documentación y el código fuente de Laravel 13 y de MySQL los puntos de los que depende el plan (atributos de trabajos, `Illuminate\Foundation\Queue\Queueable`, `ShouldHandleEventsAfterCommit` en oyentes sincrónicos, el comportamiento de `throttle:` sin un limitador registrado, y que `SET SESSION TRANSACTION` se permite dentro de una transacción pero no afecta a la que ya corre).
+
+**Sin ejecutar**: todo el PHP, el SQL, el YAML de Compose y la configuración de Nginx del plan son **referencia**: el host no tiene PHP, Go ni MySQL, y no se usó Docker. Las firmas, los contratos y las pruebas obligan; el cuerpo lo ajusta quien implemente hasta que pasen las pruebas y PHPStan en el nivel 9.
+
+**Riesgos y decisiones abiertas:**
+
+- **La plantilla de Go no se compiló** (el host no tiene Go): la cubren T020 y la auditoría de B3.
+- **Lo que decide el usuario** (spec, «Acciones del usuario»): aprobar o enmendar el ADR 0006 (gatilla la implementación, no la planificación); el permiso de cada descarga de arriba; quién es el dueño de `GET /api/attempts*` (Q4 lo deja afuera y sin dueño); y si quiere adelantar el ajuste de PHP-FPM y del buffer pool (R20: B2 lo difiere hasta una medición).
+- **Evento y registro de C3b**: C3b es un borrador sin clarify. El nombre y la carga del evento, la forma de `UserData` y su orden de entrega con B2 pueden cambiar; el listener sólo usa el id de la cuenta y la declaración de las tablas es una tabla. La llamada directa de la purga de C3b a `ActiveRuns::cancelAllOf` (su FR-045) vuelve a poner una dependencia de código que el evento evitaba, y es redundante cuando el listener ya corrió con `Deleting`: es una decisión de C3b.
+- **`infra_error` mueve `last_*`** porque el ADR 0006 excluye de ese puntero sólo a los cancelados (R10): es la lectura literal, y mostrarlo o no es de D1.
+- **La poda de payloads** es la consulta más cara del módulo (R11); su costo con 5.000 cuentas lo mide C5.
+- **`expected_tests` es un `VARCHAR(1024)`** (ADR 0006): cabe un máximo de unas quince claves de 64 caracteres. El generador exige tres pruebas por ejercicio, así que hoy sobra; si esa regla cambia, la columna tiene que crecer antes.
+- **El aula detrás de un NAT**: el polling de 30 clientes cabe en el `limit_req` de C3a si A4 lo espacia; lo mide SC-012.
+- **Lo que R15 dejó sin verificar** y T019 comprueba: el ejecutor con `read_only: true`, la ubicación hermana de Nginx y el GID del socket en Docker Desktop para macOS.
+- **El cableado de producción** (`RunProcessor`, el enlace de `$sandboxRuntime`, el limitador y el listener) lo pone T018 y lo comprueba `WiringTest`: hasta entonces, cada dueño lo hace en sus pruebas.
+
+## Complexity Tracking
+
+La constitución no se viola (ver arriba). Lo que sí agrega estructura, y por qué:
+
+| Estructura | Por qué hace falta | Alternativa más simple que se descartó |
+| --- | --- | --- |
+| La interfaz `RunProcessor` y su enlace | `ExecuteRun` lo despachan X (al reencolar) y A (al admitir) antes de que J escriba el cuerpo: sin un puerto, tres dueños esperarían a uno | que `ExecuteRun` nombre a `RunExecution`: no compila para X y A hasta la onda 2 |
+| `RunLog` como única puerta del log | FR-042 es una regla que se rompe con una línea; una sola clase, con firmas que no aceptan texto, y una prueba de arquitectura, la hacen imposible de romper sin que falle | revisar cada `Log::` a mano |
+| `AccountGone` | una cuenta que C3b suprime entre la lectura y el candado no debe dejar errores ni ruido en `failed_jobs`; D1 se beneficia | tratar la clave foránea como un error común |
+| La suite `Concurrency` y `Parallel` | una prueba de Pest corre en un solo proceso: sin procesos hijos no hay concurrencia real que probar (R13) | simular con dos conexiones PDO en un proceso: la segunda bloquea a todo el proceso |
+| Dos checks estáticos (`nginx-api-blocks-check`, `compose-runs-check`) | el bloque duplicado de Nginx y el aislamiento del ejecutor son configuración sin prueba de PHP: se rompen en silencio | confiar en la revisión |
+| Ocho dueños de archivos disjuntos | el trabajo cabe en cuatro ondas con puntos de sincronización atados a C3a (ver «Reparto en paralelo») | un solo dueño en serie: 22 tareas una tras otra |
