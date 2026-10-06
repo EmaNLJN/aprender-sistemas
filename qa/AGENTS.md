@@ -9,6 +9,10 @@ nuevas del front (Vitest y Playwright, ADR 0008) viven aparte: ver «Pruebas del
   (JS o TS, con imports) y la ejecuta en un contexto VM con globals falsos
   (`runSource`), o la importa como módulo (`importModule`). Cargá siempre las fuentes
   por ahí: así los checks no dependen del formato ni de la ubicación del archivo.
+  `runModule` evalúa una fuente como módulo en el contexto VM y devuelve sus exportaciones, y
+  `bundleApp(path, { withoutStartCall: true })` empaqueta `main.tsx` sin su `startApp();` para probar
+  que evaluar no arranca. `qa/lib/legacy-sources.ts` da `loadAppShell` (las exportaciones de `app.js`,
+  sin arrancar) y `loadLab` (evalúa `lab.js` y llama `TallerLab.init()`).
 - Los checks importan archivos de `qa/` con extensión `.ts` explícita y sólo usan
   sintaxis TypeScript borrable; `tsconfig.qa.json` los tipa en `npm run typecheck`.
 - `qa/run-checks.ts` es la lista única de la suite que ejecuta `npm test`.
@@ -130,7 +134,7 @@ checks de dominio de arriba siguen como están; no se migran en bloque.
   cambiá su escenario en el mismo commit TDD: primero la prueba nueva que falla,
   después la corrección.
 - `qa/lib/app-adapters.ts` lista los métodos de cada `window.Taller*` que consume
-  `frontend/app.js`: los fakes de `app-shell-check` salen de esa lista y `boot-check`, que
+  `frontend/app.js` (desde F2, `TallerLab` incluye `init`): los fakes de `app-shell-check` salen de esa lista y `boot-check`, que
   empaqueta `frontend/src/app/main.tsx` sobre el DOM falso de `qa/lib/fake-dom.ts`, exige que los
   adaptadores reales los publiquen y que todas las vistas y «Borrar todo» funcionen.
 - `load-order-check` declara qué fuente legacy debe evaluarse antes que otra y por

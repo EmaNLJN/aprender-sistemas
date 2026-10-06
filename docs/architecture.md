@@ -60,6 +60,10 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
   comparten contratos mediante `window.Taller*`; respetá sus dependencias hasta
   reemplazarlas por imports explícitos dentro de cada funcionalidad.
   `qa/load-order-check.ts` declara esas dependencias.
+- Evaluar una fuente legacy no arranca nada (F2, unidad 3): `app.js` exporta `startApp()`, que
+  `main.tsx` importa con nombre y llama una sola vez, después del último import. `startApp()` llama
+  `TallerLab.init()` antes de abrir el recorrido, y una segunda llamada lanza. `load-order-check` exige
+  esa llamada después del último import.
 - Las fuentes legacy de `frontend/` son módulos ES: importan helpers de `frontend/src/shared/`
   (escape HTML, normalización de búsqueda, clon JSON, niveles) en lugar de copiarlos.
   Antes de escribir un helper, buscá si ya existe ahí.
