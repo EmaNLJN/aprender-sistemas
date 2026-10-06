@@ -130,6 +130,14 @@ describe('the head and the revision', function () {
             ->and(DB::table('sync_operations')->count())->toBe(1);
     });
 
+    it('raises the revision when any operation of the batch changed something, even if the last one did not', function () {
+        $this->processor->unchangedIds = [SYNC_ID_2];
+
+        $outcome = $this->service->sync($this->user->id, syncRequest([syncReflection(SYNC_ID_1), syncReflection(SYNC_ID_2)]));
+
+        expect($outcome->revision)->toBe(1);
+    });
+
     it('leaves the revision for the next change: the revision after the first batch is the base of the second', function () {
         $this->service->sync($this->user->id, syncRequest([syncReflection(SYNC_ID_1)]));
 
