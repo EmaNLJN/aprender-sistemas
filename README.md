@@ -12,7 +12,7 @@ Necesitás Docker con Docker Compose. La primera vez, desde esta carpeta, creá 
 sh backend/api/scripts/init-env.sh
 ```
 
-El script agrega `APP_KEY`, `MYSQL_PASSWORD` y `MYSQL_ROOT_PASSWORD` aleatorios sin tocar lo que el archivo ya tenga. `.env` queda fuera de Git y de las imágenes. Después:
+El script agrega `APP_KEY`, `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD` y `LOG_HMAC_KEY` aleatorios sin tocar lo que el archivo ya tenga. `.env` queda fuera de Git y de las imágenes. Después:
 
 ```sh
 docker compose up --build -d --wait
@@ -158,6 +158,16 @@ El revisor combina diagnósticos del compilador, pruebas y explicaciones prepara
 La ampliación 76–100 agrega reglas numéricas (FizzBuzz, Euclides, primos y bits), texto y Unicode, RLE, pilas, delimitadores, búsqueda e intervalos. Rust continúa con parsers, frames, un buffer acotado, caché LRU/TTL, journal, versionado y rollback lógico. Go suma ventanas, matrices, tokenización, RPN, LRU/TTL, replay idempotente y lecturas parciales/cancelables con `io.Reader`. Cada consigna delimita qué comportamiento comprueba.
 
 Las 12 misiones de proyecto amplían Cargo, módulos, dependencias, CLI, archivos, async runtimes, testing/fuzzing, perfiles, FFI/unsafe y persistencia/transacciones. Incluyen criterios de comprobación y documentación oficial. Son trabajo externo con revisión manual: el sandbox del navegador no reemplaza esas herramientas ni todos los escenarios de producción.
+
+## Cuentas
+
+Las cuentas son por invitación: no hay registro abierto. Con el stack levantado, desde esta carpeta:
+
+- **Alta:** `docker compose exec php php artisan taller:invite ana@example.com` imprime el link de aceptación; para el primer administrador, agregá `--role=admin`. Repetirlo renueva la invitación.
+- **Recuperación:** `docker compose exec php php artisan taller:password-reset-link ana@example.com` imprime el link para elegir una contraseña nueva.
+- **Volumen existente:** los privilegios de MySQL de `docker/mysql/db-grants.sql` se aplican solos al crear el volumen; en uno que ya tenías, corré `docker compose --profile ops run --rm db-grants` una vez. Sin ese permiso, el chequeo de transacciones abiertas de las migraciones falla.
+
+Los contratos están en `specs/004-c3-identidad-acceso/contracts/`.
 
 ## Guardado y cambio de PC
 
