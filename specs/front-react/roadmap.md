@@ -241,7 +241,7 @@ Se cierran en el paso clarify de la spec de cada ítem.
   - **Las roturas sobre el árbol integrado:** 18 de 18 fallan en la spec esperada: 3 de SC-006, las 10 reglas de SC-008 (13 roturas; R8 por un cambio de valor) y las 2 de Vitest. Las 2 roturas de las guardas no corrieron: el control de permisos del agente las negó, y quedan para el usuario.
   - **Cinco corridas seguidas** (`--repeat-each=5 --retries=0`): 530 de 530, en 64 s en local. Con un solo worker (`CI=1`): 106 en 42 s.
   - **Producción intacta:** ningún archivo de `frontend/*.js`, de las hojas, de `frontend/src/` (salvo las dos specs), de `content/`, `docker/` ni `backend/` cambió, y `build/curriculum.json` sigue en `ef8f5715…`. `docker compose build taller` construye la imagen web en 32 s, con los 30 checks y Vitest adentro.
-  - **Pendiente:** el tiempo del job `front` y de la instalación del navegador en la CI se mide con el PR. Si la instalación pasa de la mitad del job, se aplica la caché de R13.
+  - **En la CI (#23, primera corrida):** el job `front` tarda 2 min 5 s. La instalación del navegador con sus dependencias (`--with-deps`) lleva 21 s, un 17 % del job, y la red 52 s. La instalación no llega a la mitad del job, así que la caché de R13 queda afuera, como dice el ADR.
 - **Orden de especificación:** F1 está planificada. F2 se especifica después, porque su protección depende de lo que F1 decidió; los demás ítems, de a uno, cuando les toca.
 
 ## Enmiendas pendientes
