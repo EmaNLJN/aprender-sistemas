@@ -241,9 +241,18 @@ it('G: deleting a user with the six tables populated leaves no rows and does not
 
     DB::delete('delete from users where id = ?', [$user->id]);
 
-    foreach (['progress_heads', 'exercise_progress', 'attempts', 'attempt_tests', 'attempt_payloads', 'runs'] as $table) {
-        expect(DB::table($table)->count())->toBe($table === 'attempts' || $table === 'progress_heads' ? 1 : 0, $table);
-    }
+    $leftBehind = [
+        'progress_heads' => DB::table('progress_heads')->where('user_id', $user->id)->count(),
+        'exercise_progress' => DB::table('exercise_progress')->where('user_id', $user->id)->count(),
+        'attempts' => DB::table('attempts')->where('user_id', $user->id)->count(),
+        'attempt_tests' => DB::table('attempt_tests')->where('attempt_id', $attemptId)->count(),
+        'attempt_payloads' => DB::table('attempt_payloads')->where('attempt_id', $attemptId)->count(),
+        'runs' => DB::table('runs')->where('user_id', $user->id)->count(),
+    ];
+
+    expect($leftBehind)->toBe(['progress_heads' => 0, 'exercise_progress' => 0, 'attempts' => 0, 'attempt_tests' => 0, 'attempt_payloads' => 0, 'runs' => 0])
+        ->and(DB::table('progress_heads')->where('user_id', $other->id)->count())->toBe(1)
+        ->and(DB::table('attempts')->where('user_id', $other->id)->count())->toBe(1);
 });
 
 it('H: crossedPointers finds a pointer to an attempt of another account or of another exercise, and nothing in clean data', function () {
@@ -327,10 +336,17 @@ it('RunInvariants names the rule that a planted violation breaks', function (Clo
         },
         RunInvariants::PROGRESS_REVISION,
     ],
+    'a proof_at that is not the attempted_at of its attempt' => [
+        function (User $user) {
+            $attemptId = plantAttempt($user);
+            plantProgress($user, 'rust-01', ['proof_attempt_id' => $attemptId, 'proof_at' => '2026-10-05 13:00:00.000', 'attempt_count' => 1, 'revision' => 1]);
+        },
+        RunInvariants::POINTER_DATES,
+    ],
     'a pointer that crosses accounts' => [
         function (User $user) {
             $stranger = RunWorld::user();
-            plantProgress($user, 'rust-01', ['proof_attempt_id' => plantAttempt($stranger), 'attempt_count' => 0, 'revision' => 1]);
+            plantProgress($user, 'rust-01', ['proof_attempt_id' => plantAttempt($stranger), 'proof_at' => '2026-10-05 12:00:00.000', 'attempt_count' => 0, 'revision' => 1]);
         },
         RunInvariants::CROSSED_POINTERS,
     ],
