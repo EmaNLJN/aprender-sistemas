@@ -13,10 +13,10 @@ use App\Http\ApiError;
 use App\Http\PasswordRejection;
 use App\Http\Requests\ResetPasswordRequest;
 use App\Models\User;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Passwords\PasswordBroker;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Timebox;
 use LogicException;
 
