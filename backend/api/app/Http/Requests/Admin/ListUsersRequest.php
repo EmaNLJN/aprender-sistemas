@@ -25,6 +25,19 @@ final class ListUsersRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return [
+            'page.*' => __('admin.users.page'),
+            'perPage.*' => __('admin.users.per_page'),
+            'q.*' => __('admin.users.q'),
+            'role.*' => __('admin.users.role'),
+            'status.*' => __('admin.users.status'),
+            'sort.*' => __('admin.users.sort'),
+        ];
+    }
+
     public function filters(): UserFilters
     {
         return new UserFilters(

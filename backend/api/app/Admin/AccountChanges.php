@@ -11,6 +11,7 @@ use App\Database\WriteTransaction;
 use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 final class AccountChanges
@@ -27,8 +28,15 @@ final class AccountChanges
     {
         $this->refuseSelfRestriction($actor, $targetId, $role, $status);
 
-        [$target, $restrictions] = WriteTransaction::run(fn () => $this->applyChange($targetId, $role, $status));
+        [$target, $restrictions, $before] = WriteTransaction::run(fn () => $this->applyChange($targetId, $role, $status));
 
+        if ($before !== null) {
+            Log::info('admin.account_changed', [
+                'target_id' => $targetId,
+                'from' => $before,
+                'to' => ['role' => $target->role->value, 'status' => $target->status->value],
+            ]);
+        }
         foreach ($restrictions as $restriction) {
             event(new AccountRestricted($targetId, $restriction));
         }
@@ -59,7 +67,7 @@ final class AccountChanges
         }
     }
 
-    /** @return array{User, list<AccountRestriction>} */
+    /** @return array{User, list<AccountRestriction>, array{role: string, status: string}|null} */
     private function applyChange(int $targetId, ?Role $role, ?AccountStatus $status): array
     {
         $locked = $this->guard->lock($targetId);
@@ -71,9 +79,10 @@ final class AccountChanges
         $newRole = $role ?? $target->role;
         $newStatus = $status ?? $target->status;
         if ($newRole === $target->role && $newStatus === $target->status) {
-            return [$target, []];
+            return [$target, [], null];
         }
 
+        $before = ['role' => $target->role->value, 'status' => $target->status->value];
         $wasActiveAdmin = $target->role === Role::Admin && $target->status === AccountStatus::Active;
         $staysActiveAdmin = $newRole === Role::Admin && $newStatus === AccountStatus::Active;
         if ($wasActiveAdmin && ! $staysActiveAdmin && $locked->otherActiveAdmins === 0) {
@@ -97,7 +106,7 @@ final class AccountChanges
             $this->dropInvitationsCreatedBy($target);
         }
 
-        return [$target, $this->restrictionsOf($becomesDisabled, $leavesAdmin)];
+        return [$target, $this->restrictionsOf($becomesDisabled, $leavesAdmin), $before];
     }
 
     /** @return array{User, list<AccountRestriction>} */
