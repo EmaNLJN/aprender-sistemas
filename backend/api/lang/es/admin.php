@@ -9,6 +9,10 @@ return [
         'role' => 'No podés quitarte el rol de admin.',
     ],
     'being_deleted' => 'La cuenta se está borrando: ya no se puede cambiar.',
+    'password_reset' => [
+        'admin' => 'La recuperación de un admin sale sólo por la consola del taller.',
+        'not_active' => 'Sólo se puede recuperar el acceso de una cuenta activa.',
+    ],
     'users' => [
         'page' => 'La página tiene que ser un número desde 1.',
         'per_page' => 'La cantidad por página tiene que ser un número de 1 a 100.',
