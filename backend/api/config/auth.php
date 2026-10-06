@@ -115,4 +115,6 @@ return [
 
     'password_timeout' => (int) env('AUTH_PASSWORD_TIMEOUT', 900),
 
+    'timebox_duration' => 0,
+
 ];

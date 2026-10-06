@@ -13,7 +13,6 @@ use App\Http\ApiError;
 use App\Http\PasswordRejection;
 use App\Http\Requests\ResetPasswordRequest;
 use App\Models\User;
-use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Password;
@@ -56,7 +55,7 @@ final class ResetPasswordController
     {
         $status = Cache::lock('reset:'.hash('sha256', $email), self::LOCK_SECONDS)->block(
             self::LOCK_WAIT_SECONDS,
-            fn () => WriteTransaction::run(fn () => $this->broker()->reset(
+            fn () => WriteTransaction::run(fn () => Password::broker()->reset(
                 ['email' => $email, 'status' => 'active', 'token' => $token, 'password' => $password->value],
                 fn (User $user) => $this->replacePassword($user, $password, $email),
             )),
@@ -69,16 +68,6 @@ final class ResetPasswordController
         }
 
         return $status;
-    }
-
-    /** Laravel's broker has its own 200 ms floor, which would end before the dummy check and leave two floors. */
-    private function broker(): PasswordBroker
-    {
-        $broker = Password::broker();
-        assert($broker instanceof PasswordBroker);
-        $broker->getTimebox()->returnEarly();
-
-        return $broker;
     }
 
     private function replacePassword(User $user, PlainPassword $password, string $email): void
