@@ -63,7 +63,7 @@ y, sin `--dry-run`, deja **un registro más** en `content_imports` (con el `docu
 1. `node qa/merge-fixture-check.ts` termina con `merge-fixture-check: 277 casos de fusión (277 corridos en TypeScript), 43 del servidor y 25 tipos de campo PASS.`
 2. `npm run api:test -- --filter=MergeFixtureTest` corre los 275 casos de fusión contra el escritor con MySQL real (los dos `only: ts` quedan afuera) y los 43 del servidor a través de `SyncService`: cada uno da el estado y el `changed` escritos a mano, y la revisión de la fila y la de la cabecera suben sólo cuando `changed` es verdadero.
 3. `sha256sum -c qa/fixtures/shared/merge-cases.sha256`, desde `qa/fixtures/shared/`, dice `OK`. Editar un caso sin tocar la huella hace fallar los dos lectores con «es un fixture congelado».
-4. **Mutaciones.** Se aplica cada fila de [merge-rules.md](./contracts/merge-rules.md), sección 9, sobre el lado que dice, se corre el check o Pest y se restaura: tiene que fallar con la cantidad de casos que dice la tabla (M1 a M8 en TypeScript con 36, 31, 31, 8, 2, 18, 2 y 2; M1 a M10 en PHP). El resultado va en el mensaje del commit de T006 y de T010. Un caso mal escrito a mano, uno que falta o un tipo de campo de más hacen fallar el check de TypeScript sin tocar ninguna regla.
+4. **Mutaciones.** Se aplica cada fila de [merge-rules.md](./contracts/merge-rules.md), sección 9, sobre el lado que dice, se corre el check o Pest y se restaura: tiene que fallar con la cantidad de casos que dice la tabla (M1 a M8 en TypeScript con 36, 31, 31, 8, 2, 18, 2 y 2; M1 a M6 y M8 a M10 en PHP con 36, 31, 31, 8, 2, 103, 2, 172 y 6). El resultado va en el mensaje del commit de T006 y de T010. Un caso mal escrito a mano, uno que falta o un tipo de campo de más hacen fallar el check de TypeScript sin tocar ninguna regla.
 
 ## 3. El esquema (FR-051, FR-053, FR-059, SC-009)
 
@@ -90,7 +90,7 @@ Tiene que dar 7, 8, 9, 13, 8, 10, 9, 7, 8 y 12 columnas (91), 18 claves foránea
 
 ## 5. Reintentar es seguro (US2.7, SC-003)
 
-**Automático** (`SyncEndpointTest`) y en el check de punta a punta: el mismo lote tres veces da `applied` una vez y `duplicate` las otras dos, y la revisión sube una vez; el mismo `id` con otro contenido da `uuid_reused` y no pisa; el mismo lote enviado a la vez desde dos pestañas (`Promise.all`) aplica una vez y sube la revisión una vez; después de la poda (14 días), reenviar la operación vieja la aplica de nuevo y no pisa un valor más nuevo.
+**Automático** (`SyncEndpointTest`, de T016) y en el check de punta a punta: el mismo lote tres veces da `applied` una vez y `duplicate` las otras dos, y la revisión sube una vez; el mismo `id` con otro contenido da `uuid_reused` y no pisa; el mismo lote enviado a la vez desde dos pestañas (`Promise.all`) aplica una vez y sube la revisión una vez; después de la poda (14 días), reenviar la operación vieja la aplica de nuevo y no pisa un valor más nuevo.
 
 ## 6. Un dispositivo con el reloj adelantado (US2.3, FR-002)
 
