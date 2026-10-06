@@ -1,6 +1,8 @@
 x-mysql-password: &mysql-password '${MYSQL_PASSWORD:?falta MYSQL_PASSWORD en .env (sh backend/api/scripts/init-env.sh)}'
 
-x-laravel-env: &laravel-env
+x-executor-token: &executor-token '${EXECUTOR_TOKEN:?falta EXECUTOR_TOKEN en .env (sh backend/api/scripts/init-env.sh)}'
+
+x-laravel-base-env: &laravel-base-env
   APP_NAME: Taller
   APP_ENV: production
   APP_DEBUG: 'false'
@@ -17,11 +19,31 @@ x-laravel-env: &laravel-env
   LOG_STDERR_FORMATTER: 'Monolog\Formatter\JsonFormatter'
   LOG_HMAC_KEY: '${LOG_HMAC_KEY:?falta LOG_HMAC_KEY en .env (sh backend/api/scripts/init-env.sh)}'
 
+x-laravel-env: &laravel-env
+  <<: *laravel-base-env
+  RUNS_QUOTA_ACTIVE: '${RUNS_QUOTA_ACTIVE:-1}'
+  RUNS_QUOTA_PER_MINUTE: '${RUNS_QUOTA_PER_MINUTE:-10}'
+  RUNS_QUOTA_PER_DAY: '${RUNS_QUOTA_PER_DAY:-300}'
+  RUNS_QUOTA_SANDBOX_MINUTES: '${RUNS_QUOTA_SANDBOX_MINUTES:-30}'
+  RUNS_QUEUE_MAX_WAITING: '${RUNS_QUEUE_MAX_WAITING:-32}'
+  RUNS_THROTTLE_PER_MINUTE: '${RUNS_THROTTLE_PER_MINUTE:-30}'
+  RUNS_EXPIRY_QUEUED_SECONDS: '${RUNS_EXPIRY_QUEUED_SECONDS:-600}'
+  RUNS_EXPIRY_RUNNING_SECONDS: '${RUNS_EXPIRY_RUNNING_SECONDS:-140}'
+  RUNS_QUEUE_RETRY_AFTER: '${RUNS_QUEUE_RETRY_AFTER:-140}'
+
 x-laravel-test-env: &laravel-test-env
-  <<: *laravel-env
+  <<: *laravel-base-env
   APP_KEY: 'base64:dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtISE='
   DB_PASSWORD: no-es-un-secreto
   LOG_HMAC_KEY: no-es-un-secreto
+  RUNS_QUOTA_ACTIVE: '1'
+  RUNS_QUOTA_PER_DAY: '300'
+  RUNS_QUOTA_SANDBOX_MINUTES: '30'
+  RUNS_QUEUE_MAX_WAITING: '32'
+  RUNS_THROTTLE_PER_MINUTE: '30'
+  RUNS_EXPIRY_QUEUED_SECONDS: '600'
+  RUNS_EXPIRY_RUNNING_SECONDS: '140'
+  RUNS_QUEUE_RETRY_AFTER: '140'
 
 x-laravel-runtime: &laravel-runtime
   build:
@@ -125,6 +147,88 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
+  executor:
+    build:
+      context: ./backend/executor
+      target: runtime
+    environment:
+      EXECUTOR_TOKEN: *executor-token
+      EXECUTOR_RUNTIME: '${EXECUTOR_RUNTIME:-runsc}'
+      EXECUTOR_MAX_CONCURRENT: '${EXECUTOR_MAX_CONCURRENT:-4}'
+      EXECUTOR_RUST_IMAGE: taller-sandbox-rust:local
+      EXECUTOR_GO_IMAGE: taller-sandbox-go:local
+      HOME: /tmp
+    networks: [sandbox]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    group_add:
+      - '${EXECUTOR_DOCKER_GID:?falta EXECUTOR_DOCKER_GID en .env (sh backend/api/scripts/init-env.sh)}'
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    dns: ['127.0.0.1']
+    mem_limit: 128m
+    pids_limit: 64
+    stop_grace_period: 45s
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:8080/healthz']
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+      start_interval: 1s
+    restart: unless-stopped
+
+  worker-runs:
+    <<: *laravel-runtime
+    environment:
+      <<: *laravel-env
+      EXECUTOR_TOKEN: *executor-token
+      EXECUTOR_RUNTIME: '${EXECUTOR_RUNTIME:-runsc}'
+      DB_USERNAME: '${RUNS_DB_USERNAME:-taller}'
+      DB_PASSWORD: '${RUNS_DB_PASSWORD:-${MYSQL_PASSWORD}}'
+    command:
+      [
+        'php',
+        'artisan',
+        'queue:work',
+        'runs',
+        '--queue=runs',
+        '--sleep=1',
+        '--tries=1',
+        '--timeout=120',
+        '--max-jobs=500',
+        '--max-time=3600',
+      ]
+    networks: [app, sandbox]
+    depends_on:
+      mysql:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      executor:
+        condition: service_healthy
+    deploy:
+      replicas: '${EXECUTOR_MAX_CONCURRENT:-4}'
+    stop_grace_period: 150s
+    restart: unless-stopped
+
+  sandbox-rust:
+    profiles: [sandbox-images]
+    build:
+      context: ./backend/executor/images/rust
+    image: taller-sandbox-rust:local
+
+  sandbox-go:
+    profiles: [sandbox-images]
+    build:
+      context: ./backend/executor/images/go
+    image: taller-sandbox-go:local
+
   # The only file with MySQL users and privileges is docker/mysql/db-grants.sql. A volume that already exists
   # takes it with `docker compose --profile ops run --rm db-grants`; a new one takes it from the init directory.
   db-grants:
@@ -206,6 +310,8 @@ networks:
   app:
     internal: true
   testing:
+    internal: true
+  sandbox:
     internal: true
 
 volumes:

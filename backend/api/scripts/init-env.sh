@@ -30,3 +30,11 @@ add_missing APP_KEY "base64:$(openssl rand -base64 32)"
 add_missing MYSQL_PASSWORD "$(openssl rand -hex 24)"
 add_missing MYSQL_ROOT_PASSWORD "$(openssl rand -hex 24)"
 add_missing LOG_HMAC_KEY "$(openssl rand -base64 32)"
+add_missing EXECUTOR_TOKEN "$(openssl rand -hex 32)"
+
+docker_socket="${DOCKER_SOCKET:-/var/run/docker.sock}"
+if [ ! -e "$docker_socket" ]; then
+  echo "No existe el socket de Docker en $docker_socket: EXECUTOR_DOCKER_GID no se puede calcular. Levantá Docker o indicá otra ruta con DOCKER_SOCKET." >&2
+  exit 1
+fi
+add_missing EXECUTOR_DOCKER_GID "$(ls -lnL "$docker_socket" | awk '{print $4}')"

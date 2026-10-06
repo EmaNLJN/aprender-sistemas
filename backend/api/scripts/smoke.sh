@@ -54,9 +54,11 @@ check "$(headers "$base/api/session" | grep -ci '^cache-control:.*no-store')" 1 
 can_resolve() {
   if docker compose exec -T "$1" getent hosts "$2" >/dev/null 2>&1; then echo si; else echo no; fi
 }
-for service in php scheduler mysql taller; do
+for service in php scheduler mysql taller executor worker-runs; do
   case "$service" in
     mysql|taller) internal=php ;;
+    executor) internal=worker-runs ;;
+    worker-runs) internal=executor ;;
     *) internal=mysql ;;
   esac
   check "$(can_resolve "$service" example.com) $(can_resolve "$service" "$internal")" 'no si' \
@@ -68,6 +70,23 @@ migrate_resolves() {
 }
 check "$(migrate_resolves example.com) $(migrate_resolves mysql)" 'no si' \
   "migrate no resuelve nombres de Internet y sí el de mysql"
+
+check "$(head -c 204800 /dev/zero | curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' --data-binary @- "$base/api/runs")" 413 \
+  "un cuerpo de 200 KiB a POST /api/runs recibe 413 de Nginx antes de llegar a PHP"
+check "$(docker compose ps --status running --services | grep -cx executor)" 1 \
+  "el servicio executor corre"
+check "$(docker compose ps --status running --quiet worker-runs | grep -c .)" 4 \
+  "cuatro réplicas de worker-runs corren"
+executor_answers() {
+  docker compose exec -T "$1" php -r \
+    "echo @file_get_contents('http://executor:8080/healthz') === false ? 'no' : 'si';" 2>/dev/null
+}
+check "$(executor_answers php) $(executor_answers worker-runs)" 'no si' \
+  "el ejecutor no responde desde php y sí desde worker-runs"
+check "$(docker compose exec -T php printenv EXECUTOR_TOKEN 2>/dev/null | grep -c .)" 0 \
+  "EXECUTOR_TOKEN está vacío en php"
+check "$(docker compose port executor 8080 2>/dev/null | grep -c .)" 0 \
+  "el ejecutor no publica puertos en el host"
 
 check "$(docker compose ps --status running --services | grep -cx scheduler)" 1 \
   "el servicio scheduler corre"
