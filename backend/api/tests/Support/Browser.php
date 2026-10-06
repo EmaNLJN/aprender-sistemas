@@ -25,6 +25,9 @@ final class Browser
 
     private bool $acceptsJson = true;
 
+    /** @var array<string, string> */
+    private array $extraServerVars = [];
+
     private function __construct(private readonly TestCase $test) {}
 
     public static function for(TestCase $test): self
@@ -71,6 +74,13 @@ final class Browser
     public function withoutAccountHeader(): self
     {
         $this->withoutAccountHeader = true;
+
+        return $this;
+    }
+
+    public function withHeader(string $name, string $value): self
+    {
+        $this->extraServerVars['HTTP_'.strtoupper(str_replace('-', '_', $name))] = $value;
 
         return $this;
     }
@@ -165,6 +175,7 @@ final class Browser
             $server['HTTP_X_TALLER_USER'] = $accountHeader;
         }
 
+        $server += $this->extraServerVars;
         $this->startFreshProcess();
         $response = $this->test->call($method, $uri, [], $this->cookies, [], $server, $data === [] ? null : json_encode($data, JSON_THROW_ON_ERROR));
         $this->storeCookiesOf($response);

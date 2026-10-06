@@ -39,3 +39,22 @@ it('answers 419 before 403, 401 and 409', function () {
 
     $this->browser->withAccountHeader('999999')->post('/api/probe/account')->assertStatus(419);
 });
+
+it('decides on Sec-Fetch-Site before the token: only same-origin skips it', function (string $site, int $status) {
+    $this->browser->get('/api/probe/public');
+    $this->browser->forget('XSRF-TOKEN')->withHeader('Sec-Fetch-Site', $site);
+
+    $this->browser->post('/api/probe/public')->assertStatus($status);
+})->with([
+    'cross-site' => ['cross-site', 419],
+    'same-site, a subdomain is not the same origin' => ['same-site', 419],
+    'none, a navigation typed by the user' => ['none', 419],
+    'same-origin' => ['same-origin', 200],
+]);
+
+it('does not skip the token for a matching Origin or Referer, which Laravel never reads', function (string $header) {
+    $this->browser->get('/api/probe/public');
+    $this->browser->forget('XSRF-TOKEN')->withHeader($header, 'http://localhost');
+
+    $this->browser->post('/api/probe/public')->assertStatus(419);
+})->with(['Origin', 'Referer']);
