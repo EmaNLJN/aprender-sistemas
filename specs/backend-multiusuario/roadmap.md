@@ -28,10 +28,10 @@
 | D1 | Progreso y sincronización | Guardar el progreso en tablas, con sincronización local-first, importación combinable del progreso v1 y fusión por campo | C2, C3, B2 | Pendiente | — |
 | C5 | Estadísticas del admin | Dar al admin métricas de uso sin exponer nunca el código ni los textos del alumno | D1, B2 | Pendiente | — |
 | E1 | Sesión Esenciales | Sumar Esenciales como catálogo nuevo, primero de la cadena | A1, D1 | Pendiente | — |
-| A2 | Compuerta de arranque | Que el front espere el contenido antes de evaluar las vistas legacy y que el HTML deje de embeberlo | A1, F1 y F2 | Planificado | [006-a2-compuerta-arranque](../006-a2-compuerta-arranque/spec.md) |
-| A3 | El front lee el contenido de la API | Que el front lea las 17 porciones con el protocolo de arranque, guarde la última copia y avise si el backend no responde | A2, C2, C3 | Pendiente | — |
+| A2 | Compuerta de arranque | Que el front espere el contenido antes de evaluar las vistas legacy y que el HTML deje de embeberlo | A1, [F1 y F2 (unidades 1 a 4)](../front-react/roadmap.md) | Planificado | [006-a2-compuerta-arranque](../006-a2-compuerta-arranque/spec.md) |
+| A3 | El front lee el contenido de la API | Que el front lea las 17 porciones con el protocolo de arranque, guarde la última copia y avise si el backend no responde | A2, C2, C3, [F11](../front-react/roadmap.md#pantallas-de-acceso-a3-y-c3) | Pendiente | — |
 | C4 | Exposición | Exponer el taller en Internet con certificado propio, cabeceras estrictas y mínimo privilegio | A3, C3 | Pendiente | — |
-| A4 | Laboratorio con el sandbox propio | Que el laboratorio use `/api/runs` en lugar de los Playgrounds públicos | B2, A3 | Pendiente | — |
+| A4 | Laboratorio con el sandbox propio | Que el laboratorio use `/api/runs` en lugar de los Playgrounds públicos | B2, A3, [F7](../front-react/roadmap.md) | Pendiente | — |
 | B3 | Auditoría local del currículo | Probar en el ejecutor local que todas las soluciones aprueban y todos los códigos iniciales fallan | B2 | Pendiente | — |
 | C6 | Registros tipados del contenido | Que los registros del contenido viajen por la API como objetos tipados e inmutables, sin cambiar un byte publicado ni una fila, y que el análisis estático suba de nivel | C2 | Planificado | [002-c6-registros-tipados](../002-c6-registros-tipados/spec.md), que extiende a la 001 |
 
@@ -44,7 +44,7 @@ Cada línea nombra lo que entra y lo que queda fuera. Los detalles están en el 
   - Fuera: sesión y `GET /api/session` (C3), el chequeo de transacciones largas con `db-grants` (C3), `test_key` inmutable y plantilla del harness (B2), vista del front (A2 y A3) y Esenciales (E1).
 - **C3:**
   - Entra: `users` con rol y estado, invitaciones, recuperación por email, sesión de Laravel sin el paquete Sanctum, Fortify sin vistas, límites por cuenta y por red, cuenta esperada en todo pedido que muta, rutas `/api/auth`, `/api/me` y `/api/admin` (usuarios e invitaciones), `worker-mail` aislado, `db-grants`, `scheduler` y `lang/es`. Cierra el reenvío DNS de los contenedores sin egreso (estacionado de C1). Por las decisiones del clarify de C2 (2026-10-04 y 2026-10-05), C3 también entrega: `GET /api/session` (usuario o null, `contentVersion` y catálogos a partir del último import, y un `appBuild` opaco si el front lo necesita); el contenido de C2 detrás de la sesión, con «sin sesión, 401» en su aceptación y sin que el middleware de sesión agregue `Vary: Cookie` ni toque `Cache-Control` en el contenido; el chequeo de transacciones largas antes de migrar (D35), dentro de `db-grants`, con su prueba de privilegios con un usuario restringido (criterio J del DBA); y la limpieza programada de la caché de cuerpos vencida, en el `scheduler`.
-  - Fuera: 2FA, login social, passkeys, registro abierto activo (queda detrás de `REGISTRATION_OPEN=false`) y TLS (C4). Si queda grande, se parte en C3a (autenticación) y C3b (invitaciones y admin).
+  - Fuera: 2FA, login social, passkeys, registro abierto activo (queda detrás de `REGISTRATION_OPEN=false`), TLS (C4) y las pantallas de cuenta (F11) y de administración (F12) de la [hoja de ruta del front](../front-react/roadmap.md#pantallas-de-acceso-a3-y-c3). Si queda grande, se parte en C3a (autenticación) y C3b (invitaciones y admin).
 - **B2:**
   - Entra: `progress_heads` y `exercise_progress` completas, `attempts`, `attempt_tests`, `attempt_payloads` y `runs`; `/api/runs` con cola propia, cuotas por usuario y tope global; `executor` y `worker-runs`; la plantilla del harness como recurso. Precondición: `test_key` único e inmutable (el generador deja de exigir `t{índice+1}`).
   - Fuera: sincronización del progreso (D1) y la vista del laboratorio (A4).
@@ -65,7 +65,7 @@ Cada línea nombra lo que entra y lo que queda fuera. Los detalles están en el 
 - **C4:**
   - Entra: TLS propio con renovación, HSTS, cookies `__Host-` y `Secure`, CSP sin `'unsafe-inline'`, retiro de `vite-plugin-singlefile`, IP real del cliente para los límites, usuarios de MySQL con mínimo privilegio y respaldos fuera del host.
 - **A4:**
-  - Entra: el laboratorio sobre `/api/runs`, la vista previa con la misma plantilla y el retiro del cliente de Playgrounds. Además, guarda el id del intento del servidor en el `result` v1 y deja de sumar `attempts` por las ejecuciones del servidor.
+  - Entra: el laboratorio sobre `/api/runs`, la vista previa con la misma plantilla y el retiro del cliente de Playgrounds, como un cambio del adaptador de transporte de `features/run-exercise` que deja F7 (A4 espera a F7: decidido el 2026-10-05). Además, guarda el id del intento del servidor en el `result` v1 y deja de sumar `attempts` por las ejecuciones del servidor.
 - **B3:**
   - Entra: la auditoría fuera de hora o con su propia instancia del ejecutor, sin escribir `runs` ni `attempts`.
 - **C6:**
@@ -75,11 +75,16 @@ Cada línea nombra lo que entra y lo que queda fuera. Los detalles están en el 
 ## Orden y paralelismo
 
 - **Tronco del ADR 0006 §10:** C2 → C3 → B2 → D1 → C5 → E1. C3 va después de C2 porque protege las rutas de contenido que C2 publica.
-- **El resto:** A2 sólo depende de A1 y toca el front, así que puede correr en paralelo con C2 y C3. A3 espera a C2 y C3, C4 a A3 y C3, A4 a B2 y A3, y B3 a B2.
+- **El resto:**
+  - **A2** depende de A1 y de F1 y F2 del [épico del front](../front-react/roadmap.md): la red de pruebas y los seams que vuelven explícito el arranque. Corre después de ellos, en paralelo con C3 y C6.
+  - **A3** espera a A2, C2, C3 y F11, las pantallas de cuenta (login, invitación, recuperar y cambiar la contraseña, exportar y borrar la cuenta y el aviso de privacidad). La ubicación de esas pantallas es una propuesta pendiente del usuario. Con ese alcance F11 espera también a C3b, y si A3 espera a todo F11 o sólo al acceso se decide en el clarify de F11 (hoja de ruta del front, «Decisiones abiertas»).
+  - **C4** espera a A3 y C3.
+  - **A4** espera a B2, A3 y F7, el port del laboratorio (decidido el 2026-10-05: F7 va antes).
+  - **B3** espera a B2.
 - **C6** (decidido en su clarify, Q5): depende sólo de C2, corre en paralelo con C3, en la ola 2, y se entrega antes de B2, que cambia las pruebas de ejercicio y el generador y por eso depende de C6. Con C3 comparte `phpstan.neon`, `config/` y la documentación, que integra el agente principal; los puntos de integración están en su plan. Desde que C6 sube el análisis al nivel 9, el código de C3 tiene que pasarlo.
 - **Olas** (un paso puede arrancar cuando terminó el anterior; los de una misma ola corren en paralelo sólo con archivos disjuntos):
-  1. C2 y A2.
-  2. C3 y C6.
+  1. C2.
+  2. C3 y C6. A2 entra en cuanto el front entregue F1 y F2.
   3. B2 y A3.
   4. D1, C4, A4 y B3.
   5. C5 y E1.
