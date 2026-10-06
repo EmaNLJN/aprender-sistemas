@@ -819,7 +819,7 @@ Esta planificación ejecutó el TypeScript y no ejecutó nada del PHP, del SQL n
 | Que el orden del grupo `account` y `throttle:sync` dé el orden de evaluación de [http.md](./contracts/http.md), sección 2 | `SyncRouteTest` de T012 |
 | El tope de 200 operaciones: cuánto dura un lote lleno con el candado tomado | SC-010 (T018) |
 | Que el `.dockerignore` de la raíz no excluya el fixture y que la línea de B2 del Dockerfile copie `qa/fixtures/shared/` también con archivos nuevos | T001, `ls` dentro de la imagen de pruebas |
-| La línea de base de B2: se leyó de su plan y no del código, que todavía no existe | T001 |
+| La línea de base de B2: se leyó de su plan y no del código, que todavía no existe. Los números del quickstart, escenario 1, se midieron sobre `master` sin B2; que B2 no mueve el documento, las porciones, `Content-Version` ni el volcado se infiere de su R1 (`curriculum.json` byte por byte igual), no se midió | T001 y T007: el script de [reference-merge.md](./reference-merge.md), sección 8, contra la base con B2 |
 | La ubicación hermana de Nginx se comporte como la de `/api/` | `nginx -t`, el check estático y el smoke de T017 |
 | La ventana de despliegue de R16: un `php` anterior ante filas con otro `key_order` | `deploy-check.sh` de T020; el riesgo es de segundos |
 | La aceptación en navegador real: es del cliente (D1c) | No es de D1a |
