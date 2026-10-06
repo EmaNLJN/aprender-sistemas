@@ -6,8 +6,12 @@ import { repoRoot } from './lib/sources.ts';
 
 const { test, done } = scenarios('nginx-api-blocks');
 
-const BODY_LIMIT = 'client_max_body_size 192k;';
 const config = readFileSync(path.join(repoRoot, 'docker/nginx/nginx.conf'), 'utf8');
+
+const cappedLocations = [
+  { name: 'runs', opening: 'location ^~ /api/runs {', size: '192k' },
+  { name: 'sync', opening: 'location = /api/sync {', size: '2m' },
+];
 
 function directivesOf(opening: string): string[] {
   const start = config.indexOf(opening);
@@ -23,17 +27,20 @@ function directivesOf(opening: string): string[] {
 }
 
 const apiDirectives = directivesOf('location ^~ /api/ {');
-const runsDirectives = directivesOf('location ^~ /api/runs {');
 
-test('the runs location caps the body at 192k and the general API location does not', () => {
-  assert.equal(runsDirectives.filter((line) => line === BODY_LIMIT).length, 1);
-  assert.equal(apiDirectives.includes(BODY_LIMIT), false);
-});
+for (const { name, opening, size } of cappedLocations) {
+  const bodyLimit = `client_max_body_size ${size};`;
 
-test('the runs location repeats the API directives in the same order', () => {
-  const withoutLimit = runsDirectives.filter((line) => line !== BODY_LIMIT);
-  assert.ok(apiDirectives.length > 0);
-  assert.deepEqual(withoutLimit, apiDirectives);
-});
+  test(`the ${name} location caps the body at ${size} and the general API location does not`, () => {
+    assert.equal(directivesOf(opening).filter((line) => line === bodyLimit).length, 1);
+    assert.equal(apiDirectives.includes(bodyLimit), false);
+  });
+
+  test(`the ${name} location repeats the API directives in the same order`, () => {
+    const withoutLimit = directivesOf(opening).filter((line) => line !== bodyLimit);
+    assert.ok(apiDirectives.length > 0);
+    assert.deepEqual(withoutLimit, apiDirectives);
+  });
+}
 
 done();
