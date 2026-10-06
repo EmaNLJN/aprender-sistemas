@@ -39,6 +39,7 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | Construcción y dependencias | `frontend/vite.config.ts`, `frontend/tsconfig.app.json`, `package.json`, `package-lock.json`; generador del currículo en `tools/content/` (`npm run curriculum`, validación, `build/curriculum.json` y oráculos de equivalencia) |
 | Servicio web, API y preview: Nginx, PHP-FPM, MySQL y migraciones | `frontend/Dockerfile`, `compose.yaml` (raíz, incluye `docker/compose.yaml`), `docker/compose.preview.yaml`, `docker/nginx/nginx.conf` |
 | API Laravel del ADR 0004: rutas, configuración, migraciones, pruebas Pest e imagen PHP-FPM | `backend/api/` (reglas en `backend/api/AGENTS.md`) |
+| Identidad y acceso (ADR 0006, C3a) | `backend/api/app/Auth/` (contraseñas, invitaciones, bloqueo y sesiones), `backend/api/app/Http/` (`ApiCode`, `ApiError`, middleware y controladores), `backend/api/routes/api/` (un archivo por característica) y los contratos de `specs/004-c3-identidad-acceso/contracts/` |
 | Comprobaciones e investigación educativa | `qa/*-check.ts`, `qa/lib/`, `qa/fixtures/`, `qa/run-checks.ts`, `qa/research-*.md` |
 | Documentación del desarrollo | `AGENTS.md`, `docs/` |
 | Planificación con Spec Kit, del backend y del front | `specs/` (una hoja de ruta por épico y una carpeta por feature), `.specify/` (constitución, plantillas, scripts y extensión `bug`) |

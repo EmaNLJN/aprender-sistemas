@@ -85,7 +85,7 @@ el host como preview, usá `docker compose -f docker/compose.preview.yaml up --b
 y abrí `http://localhost:8765`; detenelo con
 `docker compose -f docker/compose.preview.yaml down`. El progreso de ambos puertos es independiente.
 
-Docker necesita un `.env` en la raíz con `APP_KEY`, `MYSQL_PASSWORD` y `MYSQL_ROOT_PASSWORD`:
+Docker necesita un `.env` en la raíz con `APP_KEY`, `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD` y `LOG_HMAC_KEY`:
 `sh backend/api/scripts/init-env.sh` agrega los que falten. Ese archivo queda fuera de Git y del
 contexto de Docker. Las pruebas de la API (`npm run api:test` y las demás de `backend/api/AGENTS.md`)
 usan Docker y no forman parte de `npm test`.
