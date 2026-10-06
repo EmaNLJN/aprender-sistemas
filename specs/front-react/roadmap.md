@@ -39,7 +39,8 @@
 | ID | Ítem | Intención | Depende de | Estado | Spec |
 | --- | --- | --- | --- | --- | --- |
 | F1 | Red de seguridad | Fijar en un navegador real lo que hace hoy el front (enlaces, recargas, arranque con progreso real, puentes entre vistas) y probar los dos riesgos altos del mapa, sin cambiar código de producción | ADR 0008 (aceptado) | Planificado | [003-f1-red-de-seguridad](../003-f1-red-de-seguridad/spec.md) |
-| F2 | Seams sin cambio visible | Dejar los almacenes, los motores, el catálogo, el arranque, los puentes y el respaldo como módulos importables, para portar cada vista sin tocar a las demás | F1 | Pendiente | — |
+| F2a | Seams, primera parte | Los almacenes y los motores con suscripción (Zustand), el catálogo y `buildProgram`, el arranque explícito y el registro de modelos de Sistemas: las unidades 1 a 4, que espera A2 | F1 | Planificado | [009-f2-seams](../009-f2-seams/spec.md), con el [plan](../009-f2-seams/plan.md) y las [tareas](../009-f2-seams/tasks.md) de F2a |
+| F2b | Seams, segunda parte | Los puentes entre vistas y la gramática de URL, `features/progress-backup`, los modelos de los exploradores y las reglas de CSS que cruzan hojas: las unidades 5 a 8 | F2a | En especificación | spec 009, sin plan |
 | F3 | Biblioteca | Portar la página de Biblioteca (búsqueda, filtros, favoritos y categorías) | F2 | Pendiente | — |
 | F4 | Proyecto | Portar la página de Proyecto y sus hitos, con los 10 IDs de hitos fijados | F2 | Pendiente | — |
 | F5 | Sistemas | Portar el catálogo y el taller de Sistemas | F2 | Pendiente | — |
@@ -111,7 +112,7 @@ Cada línea nombra lo que entra, lo que borra, lo que conserva y lo que queda fu
 - **F10:**
   - Entra: un spike previo del router y de nuqs (ver «Decisiones abiertas»); una sola raíz con el shell (sidebar, navegación, `skip-link`, idioma, `#toast` y diálogos), con el Atlas montado debajo; `syncLinkedLanguage` en el router; los conteos del nav derivados del catálogo; los E2E del arranque en lugar de `boot-check` y `load-order-check`.
   - Borra: `frontend/app.js`, todo `window.Taller*` de vistas, los `register-*` que los publicaban y las reglas de `styles.css` que ya nadie use; `styles.css` conserva los tokens y las clases base.
-  - Fuera: Zustand y nuqs, salvo que el spike los justifique con un caso real.
+  - Fuera: nuqs, salvo que el spike lo justifique con un caso real. Zustand ya entra con F2a (unidad 1; decisión del usuario del 2026-10-06).
 - **F11:**
   - Entra: las pantallas de cuenta (la decisión de dónde viven está en «Pantallas de acceso»), que arrancan antes de evaluar el shell legacy: el login, la invitación, recuperar y cambiar la contraseña, exportar y borrar la cuenta y el aviso de privacidad. Borran de la URL, con `history.replaceState` y antes de que `app.js` mire el hash, los fragmentos con token (`#invitacion=<token>` y el de recuperación de contraseña). De D1 (superficies 1 y 2 de «Superficies que pide D1»): la opción «computadora compartida» del ingreso y el resumen con la pregunta «¿Este progreso es tuyo?» al importar el v1. Los E2E.
   - Fuera: las pantallas de administración (F12); la API, que es de C3a y C3b (C3a va sin Fortify por decisión del usuario del 2026-10-05: las pantallas siguen el contrato de su spec y no las rutas por omisión de Fortify).
@@ -198,7 +199,7 @@ La spec de D1 (borrador en otra rama, sin clarify) fija el estado y el contrato 
 | F1 (implementación) | Autorizado el 2026-10-05: `vitest` 5.0.3 y `@playwright/test` 1.63.0 desde el registro de npm (19 paquetes con sus dependencias, unos 22,4 MB desempaquetados y 5,0 MB comprimidos, estimación) y, con `npx playwright install --only-shell chromium`, el Chrome Headless Shell 153.0.8010.12 (119,8 MB) y ffmpeg (2,4 MB) del CDN de Playwright. Las descargas las hace el coordinador en la primera tarea del plan. Si faltan librerías del sistema, `install-deps` pide `sudo` y baja paquetes de apt (sin medir): en la CI lo hace el paso `--with-deps`. |
 | Primera spec de componente (F3) | Permiso para `jsdom` 30.1.2 y Testing Library (`@testing-library/react`, `dom`, `user-event` y `jest-dom`): 56 paquetes, unos 26,3 MB y 5,0 MB comprimidos (estimación). |
 | Primera factory | Permiso para `fishery` 2.4.0: 2 paquetes, unos 0,19 MB. |
-| F10 | Permiso para lo que el spike elija entre router, nuqs y Zustand, con su peso medido antes. |
+| F10 | Permiso para lo que el spike elija entre router y nuqs, con su peso medido antes. Zustand ya lo instala F2a. |
 | F11 | Confirmar la ubicación de las pantallas de cuenta (una raíz previa al shell) y decidir cómo se parte F11 (ver «Decisiones abiertas»). |
 
 ## Criterios de aceptación globales
@@ -220,7 +221,7 @@ Se cierran en el paso clarify de la spec de cada ítem.
 | Ítem | Preguntas |
 | --- | --- |
 | F1 | Cerradas en su clarify (2026-10-05): las cinco de su spec, todas con la opción recomendada |
-| F2 | El tipo de explorador (`lab-explorers.js:kind` es hoy una expresión regular): ¿un campo de `content/`, que cambia los bytes publicados y los validadores de C2 y se coordina con el backend, o un mapa explícito por ID en el front? Y qué unidades y en qué orden, para que A2 empiece cuanto antes |
+| F2 | Cerradas en su clarify (2026-10-06): la partición en F2a (unidades 1 a 4) y F2b (5 a 8); Q1, el tipo de explorador, con un mapa explícito por ID en el front y una fixture congelada, sin tocar `content/`; Q2, la inversión de las pruebas de riesgo de F1; Q3, la suscripción con Zustand (el store guarda sólo la revisión: lectura confirmada por el usuario); y Q4, `progress-backup` con promesas y confirmación en «Borrar todo». Todas con la opción recomendada salvo Q3 |
 | F3 | Si los filtros siguen en memoria, como hoy (se recomienda que sí) |
 | F4 | Dónde vive el fixture de los 10 IDs de hitos y quién lo fija: hoy sólo los fija el escenario «g) hitos» de `app-shell-check`, que se retira con la página |
 | F5 | Dónde vive la sesión de simulaciones para que «Borrar todo» la alcance |
@@ -242,7 +243,8 @@ Se cierran en el paso clarify de la spec de cada ítem.
 - **2026-10-05, la recarga se confirmó.** Al planificar F1 se midió el build actual en una copia aparte, sin tocar el repositorio ni descargar nada: los 11 enlaces que cambian la query recargan el documento, y los de sólo hash no. Con la recarga se pierden el temporizador, la sesión del Atlas y las simulaciones de Sistemas. El diseño del router de F10 no cambia.
 - **2026-10-05, la spec de D1.** Su borrador pide cinco superficies de vista y propone partir D1; las ubicaciones propuestas están en «Superficies que pide D1», sin aceptar.
 - **2026-10-05, F1 planificada.** Plan, investigación, modelo de datos, validación y 16 tareas en cuatro fases, con siete dueños de archivos disjuntos (K, B, V, U, C, P y S) y cuatro ondas. El código de referencia corrió al planificar, en una copia aparte y sin instalar ni bajar nada: la red completa (106 pruebas en 8 specs) pasa cinco veces seguidas sin reintentos (530 de 530), las dos specs de Vitest (3 pruebas) pasan, y las 31 roturas deliberadas del código de producción las detectó la spec prevista. El análisis cruzado no dejó hallazgos críticos ni altos: los 24 requisitos (FR-013 es un límite de alcance, sin tarea) y los 9 criterios tienen tarea, y se corrigieron dos medianos y dos bajos. Sin verificar: el job de la CI y su tiempo, la imagen web de Docker, macOS y los otros navegadores. Sin implementar.
-- **Orden de especificación:** F1 está planificada. F2 se especifica después, porque su protección depende de lo que F1 decidió; los demás ítems, de a uno, cuando les toca.
+- **2026-10-06, F2 especificada y F2a planificada.** La spec de F2 (`specs/009-f2-seams/`) define ocho unidades y los seis contratos que espera A2 (F2-I1 a F2-I6). El clarify partió F2 en F2a y F2b y eligió Zustand para la suscripción. El plan de F2a tiene 19 tareas, con una compuerta por unidad (la red de F1, cinco oráculos idénticos y un tope de tamaño de `dist/index.html`) y una comparación única de la lógica que mueve cada unidad. El análisis cubrió 42 de 42 requisitos.
+- **Orden de especificación:** F1 y F2a están planificadas, y F2b se planifica después de F2a; los demás ítems, de a uno, cuando les toca.
 
 ## Enmiendas pendientes
 
