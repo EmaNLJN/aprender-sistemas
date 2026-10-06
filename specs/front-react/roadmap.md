@@ -41,13 +41,13 @@
 | F1 | Red de seguridad | Fijar en un navegador real lo que hace hoy el front (enlaces, recargas, arranque con progreso real, puentes entre vistas) y probar los dos riesgos altos del mapa, sin cambiar código de producción | ADR 0008 (aceptado) | Planificado | [003-f1-red-de-seguridad](../003-f1-red-de-seguridad/spec.md) |
 | F2a | Seams, primera parte | Los almacenes y los motores con suscripción (Zustand), el catálogo y `buildProgram`, el arranque explícito y el registro de modelos de Sistemas: las unidades 1 a 4, que espera A2 | F1 | Planificado | [009-f2-seams](../009-f2-seams/spec.md), con el [plan](../009-f2-seams/plan.md) y las [tareas](../009-f2-seams/tasks.md) de F2a |
 | F2b | Seams, segunda parte | Los puentes entre vistas y la gramática de URL, `features/progress-backup`, los modelos de los exploradores y las reglas de CSS que cruzan hojas: las unidades 5 a 8 | F2a | En especificación | spec 009, sin plan |
-| F3 | Biblioteca | Portar la página de Biblioteca (búsqueda, filtros, favoritos y categorías) | F2 | Pendiente | — |
-| F4 | Proyecto | Portar la página de Proyecto y sus hitos, con los 10 IDs de hitos fijados | F2 | Pendiente | — |
-| F5 | Sistemas | Portar el catálogo y el taller de Sistemas | F2 | Pendiente | — |
-| F6 | Campaña | Portar la campaña: héroe, mundos, misiones, vitrina y reglas | F2 | Pendiente | — |
-| F7 | Laboratorio con exploradores | Portar el laboratorio con sus exploradores, el editor y la ejecución, con el transporte como interfaz | F2, F5, F6; lo espera A4 | Pendiente | — |
-| F8 | Método | Portar Método: exportar, importar, borrar y respaldos | F2, F5, F7 | Pendiente | — |
-| F9 | Recorrido | Portar Recorrido: pasos, temporizador, notas y lección | F2 | Pendiente | — |
+| F3 | Biblioteca | Portar la página de Biblioteca (búsqueda, filtros, favoritos y categorías) | F2a | Pendiente | — |
+| F4 | Proyecto | Portar la página de Proyecto y sus hitos, con los 10 IDs de hitos fijados | F2a | Pendiente | — |
+| F5 | Sistemas | Portar el catálogo y el taller de Sistemas | F2b | Pendiente | — |
+| F6 | Campaña | Portar la campaña: héroe, mundos, misiones, vitrina y reglas | F2b | Pendiente | — |
+| F7 | Laboratorio con exploradores | Portar el laboratorio con sus exploradores, el editor y la ejecución, con el transporte como interfaz | F2b, F5, F6; lo espera A4 | Pendiente | — |
+| F8 | Método | Portar Método: exportar, importar, borrar y respaldos | F2b, F5, F7 | Pendiente | — |
+| F9 | Recorrido | Portar Recorrido: pasos, temporizador, notas y lección | F2a | Pendiente | — |
 | F10 | Shell y router | Una sola raíz de React con el shell y el router, y retirar `app.js` | F3 a F9, A2 | Pendiente | — |
 | F11 | Acceso y cuenta | Las pantallas de cuenta, como una raíz previa al shell: login, invitación, recuperar y cambiar la contraseña, exportar y borrar la cuenta, el aviso de privacidad y, de D1, la opción «computadora compartida» y la pregunta «¿Este progreso es tuyo?» | A2, C3a; C3b para exportar y borrar la cuenta; D1c para lo de D1 | Pendiente | — |
 | F12 | Administración | Las pantallas de administración de usuarios e invitaciones | C3b, F11 | Pendiente | — |
