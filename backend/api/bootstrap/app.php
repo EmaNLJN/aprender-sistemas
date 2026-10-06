@@ -6,6 +6,7 @@ use App\Http\Middleware\DropInvalidSession;
 use App\Http\Middleware\EnsureEmailIsVerified;
 use App\Http\Middleware\EnsureExpectedAccount;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\RequirePassword;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -28,8 +29,10 @@ return Application::configure(basePath: dirname(__DIR__))
             __DIR__.'/../routes/api/access.php',
             __DIR__.'/../routes/api/harness.php',
             __DIR__.'/../routes/api/runs.php',
-            __DIR__.'/../routes/api/sync.php',
-            __DIR__.'/../routes/api/progress.php',
+            __DIR__.'/../routes/api/admin-users.php',
+            __DIR__.'/../routes/api/admin-invitations.php',
+            __DIR__.'/../routes/api/export.php',
+            __DIR__.'/../routes/api/deletion.php',
         ],
         commands: __DIR__.'/../routes/console.php',
         health: '/api/up',
@@ -50,11 +53,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'password.confirm' => RequirePassword::class,
             'account.active' => EnsureUserIsActive::class,
             'account.expected' => EnsureExpectedAccount::class,
+            'account.admin' => EnsureUserIsAdmin::class,
         ]);
         $middleware->prependToPriorityList(before: AuthenticatesRequests::class, prepend: EnsureUserIsActive::class);
         $middleware->group('account', ['account.active', 'auth:web', 'account.expected']);
-        $middleware->trimStrings(except: [fn (Request $request) => $request->is('api/runs', 'api/runs/*', 'api/sync')]);
-        $middleware->convertEmptyStringsToNull(except: [fn (Request $request) => $request->is('api/runs', 'api/runs/*', 'api/sync')]);
+        $middleware->group('admin', ['account.active', 'auth:web', 'account.expected', 'verified', 'account.admin', 'throttle:admin']);
+        $middleware->trimStrings(except: [fn (Request $request) => $request->is('api/runs', 'api/runs/*')]);
+        $middleware->convertEmptyStringsToNull(except: [fn (Request $request) => $request->is('api/runs', 'api/runs/*')]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Nginx passes only /api/, but REQUEST_URI arrives raw (/x/../api/zzz): a prefix rule would let it
