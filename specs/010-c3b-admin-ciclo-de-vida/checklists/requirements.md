@@ -15,7 +15,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -33,7 +33,7 @@
 
 ## Notes
 
-- Quedan tres marcadores `[NEEDS CLARIFICATION]`: FR-006 (Q1, qué proveedor manda el correo), FR-019 (Q3, si el registro abierto se restringe a dominios) y FR-023 (Q2, si el cambio de email es sólo por consola). Q4 (si se parte C3b) y Q5 (si un admin recupera su contraseña por correo) no tienen un requisito que marcar: la primera es la forma de las specs que vienen y está en «Partición», y la segunda lleva su opción recomendada como «(propuesta)» en FR-013. Las cinco preguntas están en «Preguntas abiertas», cada una con sus opciones, lo que cuesta cada una y la recomendada con su motivo; el clarify las cierra antes del plan.
+- El clarify del 2026-10-06 cerró las cinco preguntas y ya no queda ningún marcador `[NEEDS CLARIFICATION]`: Q1 (Brevo por SMTP, FR-006), Q2 (el cambio de email sólo por consola, FR-023), Q3 (restricción por dominios, FR-019), Q4 (la partición) y Q5 (un admin recupera su contraseña por consola, FR-013). Están registradas en `## Clarifications`.
 - Lo que depende de la casa, del proveedor o del dominio del usuario no es una pregunta: está en «Acciones del usuario», aparte (la vía de la transferencia internacional, el dominio con DNS editable, el proveedor con su remitente y su credencial, SPF, DKIM y DMARC, los permisos de descarga, un `APP_URL` público, el aviso de privacidad y un envío real a tres buzones).
 - Excepciones deliberadas en «implementation details»: el ADR 0006 y la hoja de ruta ya decidieron la técnica (cola `mail`, `worker-mail` aislado, `password.confirm`, `UserData`, `account_deletions`, `db-grants`, `scheduler`), y el entregable de C3b es un contrato HTTP más comandos y un servicio, así que los requisitos nombran rutas, códigos de error, tablas, comandos y usuarios de MySQL. No nombran clases ni archivos nuevos; cómo se arman es del plan. Los proveedores y los paquetes aparecen sólo en las opciones de Q1 y en «Descargas previstas».
 - «Non-technical stakeholders»: el lector es el dueño del taller, que tomó las decisiones del ADR, abre la cuenta del proveedor y guarda las credenciales. Los términos técnicos son los suyos.

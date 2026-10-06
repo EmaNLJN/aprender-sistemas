@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-05
 
-**Status**: Borrador con preguntas abiertas (Q1 a Q5); falta el clarify
+**Status**: Clarificada el 2026-10-06 (Q1 a Q5, con la partición de C3b); falta el plan
 
 **Input**: Ítem **C3b** de la hoja de ruta [`specs/backend-multiusuario/roadmap.md`](../backend-multiusuario/roadmap.md), «Correo, invitaciones y administración»: lo que C3 deja para después de C3a ([spec 004](../004-c3-identidad-acceso/spec.md)). Fuente técnica: ADR 0006 (propuesta) §4.1, §4.3 a §4.5, §4.8 y §4.10, §5.2 (`account_deletions`), §5.5 (`mail_jobs`), §7, §8, D06, D18 a D21, D33, D34 y D37, y sus preguntas 3, 9 y 20 de §13 ([ADR 0006](../../docs/adr/0006-modelo-de-datos-y-api-multiusuario.md)). Parte de lo que C3a dejó listo (ver «Relación con C3a, B2, D1, C4 y el front»). Lo que dicen los borradores de C3a (su plan), B2, D1, C4 y del épico del front, que no pasaron por el clarify, entra como supuesto. Donde esta spec se aparta del ADR, lo dice en Assumptions.
 
@@ -40,7 +40,7 @@
 - Rebotes, quejas y webhooks del proveedor: `sent_at` dice «entregado al proveedor», no «llegó al buzón».
 - Reintentar a mano un correo fallido: el admin reemite la invitación (o la pasa a link) y la persona vuelve a pedir su recuperación.
 - Un worker propio para la cola `default`: entra con el disparador de §9 del ADR.
-- El cambio de email por autoservicio (salvo que Q2 lo pida) y que un admin cambie el email o el nombre de otra cuenta.
+- El cambio de email por autoservicio (Clarifications, Q2) y que un admin cambie el email o el nombre de otra cuenta.
 - El borrado automático de cuentas inactivas (§13.13) y un plazo de gracia para la supresión.
 - Exportaciones de admin y exportar en formato v1 (D33 y D1).
 - Una tabla de auditoría: las acciones de admin van en los registros (R5).
@@ -58,15 +58,15 @@ C3a se partió el 2026-10-05 por tamaño y dejó esta mitad como la grande. Los 
 | Tablas que crea | 7 | 2: `mail_jobs` y `account_deletions` |
 | Servicios nuevos de Compose | 2 | 1: `worker-mail`, más Mailpit en el perfil `dev` |
 | Comandos y trabajos | 5 comandos y 4 tareas programadas | 2 comandos (`taller:change-email` y `taller:reapply-deletions`), el trabajo `PurgeUserData` y 5 tareas programadas |
-| Paquetes de Composer nuevos | ninguno | ninguno por SMTP; entre 1 y 4 con un driver de API, según Packagist y sin resolver (Q1) |
+| Paquetes de Composer nuevos | ninguno | ninguno: Brevo por SMTP (Clarifications, Q1) |
 | Requisitos funcionales | 52 | 55 |
 | Historias de usuario | 7 | 8 |
-| Preguntas abiertas | 5 | 5 |
+| Preguntas abiertas | 5 | 5, respondidas el 2026-10-06 |
 | Lo que esperan | A3, B2 y D1 | C4, F12 y las pantallas de cuenta de F11 |
 
 **Lo que se midió, por mitad.** Los requisitos están agrupados y rotulados por la mitad a la que pertenecerían si se corta. Mitad del correo: 33 requisitos (los cinco grupos rotulados «correo», más FR-051, FR-052 y el FR-055 compartido). Mitad de administración y ciclo de vida: 23 requisitos (FR-031 a FR-050, FR-053 y FR-054, más el FR-055 compartido). Sin el ciclo de vida: 46; el ciclo de vida solo: 10 (FR-042 a FR-049, FR-054 y el FR-055 compartido).
 
-**Propuesta: partir el correo como C3c (opción B de Q4), sin aplicarla.** Tres requisitos más que C3a no alcanzan para cortar; lo justifican tres razones:
+**Decidida (Q4, opción B): partir el correo como C3c.** Tres requisitos más que C3a no alcanzan para cortar; lo justifican tres razones:
 
 1. **Una decisión externa fuera del camino crítico.** El correo real espera la decisión del proveedor (Q1), un dominio con DNS que se pueda editar y un `APP_URL` público. Son acciones del usuario, y la del dominio es la de C4. La administración y el ciclo de vida no esperan nada de afuera y se prueban enteros con Pest y Compose.
 2. **Lo que C4 necesita para abrir.** La hoja de ruta dice que no se expone el taller sin poder administrar y suprimir cuentas: eso es la mitad sin correo. El correo mejora la operación (recuperar alumnos, avisar), pero con el modo sólo link el taller se puede operar.
@@ -82,7 +82,7 @@ C3a se partió el 2026-10-05 por tamaño y dejó esta mitad como la grande. Los 
 
 ## Lo que pidió el usuario
 
-Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumptions) o una pregunta abierta (Preguntas abiertas). Las filas que citan el ADR 0006 valen como base mientras ese ADR siga en estado «propuesta».
+Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumptions) o una decisión del clarify (Clarifications). Las filas que citan el ADR 0006 valen como base mientras ese ADR siga en estado «propuesta».
 
 | Pedido | Fuente |
 | --- | --- |
@@ -100,69 +100,15 @@ Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumption
 | TDD, código y pruebas en inglés, Pest contra MySQL 9.7 real | Constitución, principios II y VI |
 | Las pantallas de cuenta son de F11 y las de administración, de F12 | Coordinador, 2026-10-05 (ver Assumptions: la rama del front que se pudo leer todavía no lo dice) |
 
-## Preguntas abiertas
+## Clarifications
 
-Son para el clarify y se plantearon el 2026-10-05. Cada una trae sus opciones con lo que cuesta cada una, la recomendada y su motivo. Al responderlas, el clarify las registra en `## Clarifications`, bajo `### Session`, y reemplaza esta sección. Hasta entonces, los requisitos que señalan una de ellas (con su marcador o con «(propuesta)») usan la opción recomendada como borrador. Lo que depende de tu casa, de tu proveedor o de tu dominio no es una pregunta: está en «Acciones del usuario».
+### Session 2026-10-06
 
-**Q1. ¿Qué proveedor manda el correo, y a qué costo?** *(FR-006; ADR 0006 §13.3 y §4.8)* Decide qué cuenta hay que abrir, qué paquetes se descargan, qué datos personales salen del país y qué trabajo de DNS le toca a quien opera. Lo que la acota, medido el 2026-10-05 sin descargar nada. Lo marcado «a confirmar» sale de buscadores o de sitios de terceros, o de una lectura resumida de la página del proveedor, y hay que verificarlo en la fuente antes de contratar.
-
-- **Paquetes.** `symfony/mailer` v8.1.7 ya está en `composer.lock` con el transporte SMTP incluido, así que un proveedor por SMTP no suma ninguno. Los drivers de API de Laravel 13 suman, contando las dependencias directas que `composer.lock` todavía no tiene (la resolución real la hace Composer, con permiso, y puede sumar más):
-  - Resend: `resend/resend-php` 1.16.0 (1 paquete; sus tres dependencias ya están instaladas; 124 408 bytes sin pruebas ni documentación).
-  - Mailgun, Postmark o Brevo: el paquete `symfony/<proveedor>-mailer`, `symfony/http-client` y `symfony/http-client-contracts` (3 paquetes; unos 0,5 MB).
-  - Amazon SES: `aws/aws-sdk-php` 3.399.1, `mtdowling/jmespath.php`, `aws/aws-crt-php` y `symfony/filesystem` (4 paquetes; el árbol de Git del SDK ronda los 283 MB).
-  - Son cotas superiores leídas del árbol de Git de cada paquete (suma de archivos sin pruebas ni documentación), no el tamaño instalado. La spec de C3a decía «uno o dos»: cuenta los paquetes que se piden con `composer require`, sin sus dependencias directas.
-- **Dominio y DNS.** Los cuatro servicios de API o SMTP transaccional (Brevo, Resend, SES y Mailgun) piden publicar registros DKIM y SPF en el dominio de envío (a confirmar en cada uno), y el DMARC lo publica quien opera. La acción 2 de C4 admite un subdominio gratuito de DNS dinámico, y esos servicios suelen no dejar publicar registros propios (a confirmar): **Q1 depende del dominio que se elija para C4.** Sin DKIM ni SPF el correo cae en spam o se rechaza.
-- **Volumen.** El ADR admite lotes de 100 invitaciones y 300 correos por admin y por día. Un aula de 40 son 40 correos. Planes gratuitos: Brevo, 300 por día para toda la cuenta (tercero, a confirmar); Resend, 100 por día y 3 000 por mes (su página de precios); Mailgun, 100 por día (tercero, a confirmar); Postmark, 100 por mes, que no alcanza (tercero, a confirmar); SES, USD 0,10 por 1 000 correos y créditos para cuentas nuevas, sin plan gratuito permanente (su página de precios). Un lote de 100 invitaciones agota el plan gratuito de Resend o de Mailgun en un día, y el tope de 300 por admin del ADR iguala el límite diario completo de Brevo.
-- **Datos y transferencia internacional.** El correo lleva el email y el nombre de cada persona, que son datos personales. El art. 12 de la Ley 25.326 prohíbe transferirlos a países sin nivel adecuado de protección. La página de transferencias internacionales de la AAIP (consultada el 2026-10-05) lista como adecuados a la Unión Europea y el EEE, el Reino Unido, Suiza, Guernsey, Jersey, la Isla de Man, las Islas Feroe, Canadá (sector privado), Andorra, Nueva Zelanda, Uruguay e Israel (datos automatizados). No figuran Estados Unidos ni Brasil. Para los demás hay cláusulas contractuales modelo (Disposición 60-E/2016 y Resolución AAIP 198/2023). Si el proveedor es encargado del tratamiento, el aviso de privacidad tiene que nombrarlo (§13.14). Esto no es asesoramiento legal: lo confirma quien responde por la base.
-- **Lo que ve el proveedor.** Cada mensaje lleva su link con el token, así que el proveedor y su registro (30 días en el plan gratuito de Resend, su página de precios) ven todos los links. Por eso los tokens son de un solo uso y vencen en 60 minutos (recuperación), 48 horas (invitación de admin) o 7 días (invitación de alumno).
-
-| Opción | Descripción | Cuesta |
-| --- | --- | --- |
-| A | Brevo por SMTP: empresa de París, con servidores en la UE (Francia, Alemania y Bélgica; tercero, a confirmar en su página de seguridad). | Gratis hasta 300 por día para toda la cuenta (a confirmar). Sin paquetes. Una cuenta y un dominio con DKIM y SPF. El procesamiento en la UE está en la lista de la AAIP, así que no harían falta cláusulas (a confirmar), pero Brevo queda como encargado y el aviso de privacidad lo nombra. El límite diario es de toda la cuenta: con varios admins, el proveedor frena antes que el tope de 300 por admin. |
-| B | Resend, región de Irlanda, por SMTP o por API. Regiones disponibles: N. Virginia, Irlanda, São Paulo y Tokio (su documentación). | Gratis hasta 100 por día y 3 000 por mes, con 30 días de retención de registros (su página de precios). Por SMTP, sin paquetes; por API, 1 paquete sin dependencias nuevas. Dominio con DKIM y SPF. Con Irlanda el procesamiento queda en la UE; con N. Virginia o São Paulo, no. Los 100 por día no alcanzan para un lote de 100 invitaciones más las recuperaciones. |
-| C | Amazon SES por SMTP, en una región de la UE (a confirmar en la consola de AWS). | USD 0,10 por 1 000 correos y créditos para cuentas nuevas (su página de precios). Una cuenta de AWS con tarjeta y una solicitud para salir del sandbox (a confirmar). Por SMTP, sin paquetes; por API, 4 paquetes y el árbol más grande. Dominio con DKIM y SPF. Con una región de la UE, la lista de la AAIP lo cubre; São Paulo (Brasil) no. |
-| D | El buzón que ya tenés, por SMTP: Google Workspace, o un Gmail personal. | Sin proveedor nuevo ni paquetes ni DNS propio: el remitente es ese buzón. Workspace permite 2 000 mensajes por día y 100 destinatarios por mensaje por SMTP (la documentación de Google); un Gmail personal, 500 por día (tercero, a confirmar). Se envía con una contraseña de aplicación o con OAuth. Cada correo queda en «Enviados» de ese buzón con su link vivo. Los datos pasan por Google, que no deja elegir la región: la vía de transferencia hay que confirmarla. |
-| E | Un relay propio (Postfix, imagen `boky/postfix` 5.1.0-alpine, MIT) entre `worker-mail` y la salida, con entrega directa a los servidores de cada destinatario. | Una imagen nueva (66 477 551 bytes para amd64) y un contenedor más, sin tercero. Desde una IP de hogar la entrega directa suele fallar: muchos proveedores de Internet filtran el puerto 25 saliente, la IP residencial suele estar en listas de bloqueo y no hay DNS inverso (inferido, no medido). Con un relay de A, B o C delante no cambia el proveedor, y sólo saca la salida a Internet del contenedor que tiene `APP_KEY`. |
-| F | Sin correo real: el modo sólo link de C3a, para siempre. | $0, sin worker, cola, proveedor ni transferencia. Quien olvida su contraseña depende de quien tiene la consola, y las invitaciones las reparte el admin como links. `forgot-password`, la verificación y los avisos quedan apagados, y C3b se reduce a la administración y al ciclo de vida. |
-
-**Recomendada: A.** Junta SMTP sin paquetes nuevos, un plan gratuito que cubre el volumen esperado (300 por día) y el procesamiento dentro de la lista de países adecuados de la AAIP. B (Irlanda) procesa en la misma región, pero su plan gratuito no soporta un lote de 100 invitaciones. C cuesta centavos, pero pide una cuenta de AWS y salir del sandbox. D evita el DNS, pero deja los links en un buzón personal y pasa los datos por Google. **Costo:** una cuenta, un dominio con DNS que puedas editar (no un subdominio gratuito de DNS dinámico, a confirmar), nombrar a Brevo como encargado en el aviso de privacidad y aceptar que un tercero ve cada link. Si no querés un tercero, F ya funciona (C3a) y deja el correo para cuando haga falta.
-
-**Q2. ¿Cómo se cambia el email de una cuenta?** *(FR-023 y FR-024; ADR 0006 §13.9)* Decide si C3b trae un camino HTTP para cambiar un dato con el que se recupera la cuenta.
-
-| Opción | Descripción | Cuesta |
-| --- | --- | --- |
-| A | Sólo por consola, con `taller:change-email`, que avisa a las dos direcciones (propuesta del ADR). | Un comando y dos requisitos. Quien opera lo hace cada vez, y la persona no corrige sola un error de tipeo. |
-| B | Autoservicio: la persona pide el cambio con `password.confirm`, se confirma en el email nuevo y se avisa al anterior. | Dos endpoints, dos correos más, un token con vencimiento (una tabla o un valor firmado) y unos seis requisitos más. Abre una vía de toma de cuenta: con la sesión y la contraseña robadas se cambia el email y se recupera por correo. |
-
-**Recomendada: A.** D19 cerró a propósito los cambios de email por HTTP (una sesión robada no debe poder tomar la cuenta), y el pedido es raro. **Costo:** quien opera lo hace cada vez y tiene que verificar por otro canal quién pide el cambio; la persona no corrige sola un error de tipeo. B sólo se justifica si el volumen de cambios hace inviable que los haga una persona.
-
-**Q3. Cuando se abra el registro, ¿se restringe a ciertos dominios de email?** *(FR-019; ADR 0006 §13.20)* Decide si el registro abierto lleva una defensa que no depende del volumen. Está apagado, así que nada de esto rige hasta que alguien lo prenda.
-
-| Opción | Descripción | Cuesta |
-| --- | --- | --- |
-| A | Sin restricción: cualquier email que pueda verificarse. | Ningún requisito más. Abrir el registro a cualquiera expone el ejecutor de B2 y el correo a abuso, que sólo frenan los topes por red y global del ADR. |
-| B | Una lista de dominios permitidos en la configuración (por ejemplo, el de una escuela). Con la lista vacía no se restringe. | Un valor de configuración, una regla en el registro y un mensaje que nombra los dominios aceptados. Un operador que prende el registro con la lista vacía lo abre a cualquiera. |
-
-**Recomendada: B.** El ejemplo del ADR (el dominio de una escuela) es el uso real, y la verificación por correo prueba que la persona controla el buzón. **Costo:** un requisito, una prueba y una decisión de quien prenda el registro (qué dominios). Si el registro nunca se abre, A no cuesta nada.
-
-**Q4. ¿Se parte C3b?** *(Partición)* Decide la forma de las especificaciones que vienen. C3b tiene 55 requisitos contra los 52 de C3a (tabla de «Partición»). Los números no alcanzan por sí solos; las razones están en esa sección.
-
-| Opción | Descripción | Cuesta |
-| --- | --- | --- |
-| A | No partir: una spec, un plan. | Un solo ciclo de Spec Kit. Una sola spec con una decisión externa adentro (el proveedor y el dominio). El ciclo de vida necesita las tablas de B2 y D1: o espera a esos ítems, o entra con el registro de `UserData` (FR-042) y ellos suman las suyas. |
-| B | Partir el correo como C3c: C3b queda con la administración y el ciclo de vida (23 requisitos) y C3c con el correo (33). | Un ID nuevo y otro ciclo de Spec Kit. C4 depende de las dos. La administración sale con ganchos que responden 503 `mail_unavailable` hasta que llegue C3c. Lo que gana: lo que no espera nada de afuera llega antes, y el correo espera a su proveedor sin frenarlo. |
-| C | Partir el ciclo de vida como C3c: C3b queda con el correo y la administración (46 requisitos) y C3c con el ciclo de vida (10), que espera a B2 y D1. | Un ID nuevo y otro ciclo. C4 depende de las dos. `DELETE /api/admin/users/{user}` pasa a C3c, y la guardia del último admin cubre sólo `PATCH` hasta entonces. La mitad grande conserva la decisión externa. |
-
-**Recomendada: B.** Separa lo que espera una decisión del usuario y un dominio de lo que no espera nada, y deja un foco de revisión por spec. **Costo:** un ID nuevo (`C3c`), otro ciclo de Spec Kit y que la hoja de ruta renombre C3b (administración y ciclo de vida) al aplicarlo. Si preferís no partir, A funciona: el plan entonces ordena el correo al final.
-
-**Q5. ¿Un admin puede recuperar su contraseña por correo?** *(FR-013, propuesta; ADR 0006 §4.3 y §4.10)* El ADR dice que el link de recuperación de un admin sale sólo por consola, pero no dice si eso alcanza también a su propio pedido de `forgot-password`. La spec de C3a lo da por cierto: la consola es «el único camino de recuperación de un admin».
-
-| Opción | Descripción | Cuesta |
-| --- | --- | --- |
-| A | No: `forgot-password` responde 202 igual, pero a una cuenta admin no le envía nada. Su recuperación es por consola. | Un admin que olvida su contraseña necesita a quien tiene la consola (con un solo admin, es la misma persona). |
-| B | Sí: un admin recupera por correo como un alumno. | El buzón del admin pasa a ser una llave de todo el taller, sin segundo factor (R3, ADR 0006 §4.10), y se pierde una de las mitigaciones del ADR. |
-
-**Recomendada: A.** Mantiene lo que dice C3a, no agrega superficie a la cuenta que más puede, y la consola está siempre. **Costo:** con varios admins (por ejemplo, docentes), quien olvida la contraseña le pide el link a quien opera.
+- Q: **Q1**, ¿qué proveedor manda el correo, y a qué costo? → A: Brevo por SMTP (opción A): una empresa de París con servidores en la UE y sin paquetes nuevos de Composer, porque `symfony/mailer` ya está en `composer.lock`. El procesamiento en la UE entra en la lista de países adecuados de la AAIP, y Brevo queda como encargado del tratamiento y se nombra en el aviso de privacidad. Lo que sigue «a confirmar» (el plan gratuito de 300 por día para toda la cuenta y las regiones de sus servidores) se verifica en su fuente antes de contratar. Decidió el usuario. (FR-006)
+- Q: **Q2**, ¿cómo se cambia el email de una cuenta? → A: Sólo por consola, con `taller:change-email`, que avisa a las dos direcciones (opción A). Ningún camino HTTP: una sesión robada no debe poder tomar la cuenta (D19). Decidió el usuario. (FR-023, FR-024)
+- Q: **Q3**, cuando se abra el registro, ¿se restringe a ciertos dominios de email? → A: Sí (opción B): una lista de dominios en la configuración, y con la lista vacía no se restringe. Sólo rige cuando alguien prenda `REGISTRATION_OPEN`. Decidió el usuario. (FR-019)
+- Q: **Q4**, ¿se parte C3b? → A: Sí (opción B): C3b queda con la administración y el ciclo de vida (23 requisitos) y el correo pasa a C3c, una spec nueva (011, 33 requisitos). Mientras no llegue C3c, la administración sale con ganchos que responden 503 `mail_unavailable`. Decidió el usuario. (Partición)
+- Q: **Q5**, ¿un admin puede recuperar su contraseña por correo? → A: No (opción A): `forgot-password` responde 202 igual, pero a una cuenta admin no le envía nada; su recuperación es por consola. Decidió el usuario. (FR-013)
 
 ## Acciones del usuario
 
@@ -170,17 +116,16 @@ Los agentes no hacen estas acciones. Las descargas piden permiso con nombre, ori
 
 | Cuándo | Acción |
 | --- | --- |
-| Antes del plan | **Confirmá con quien responde por la base la vía de transferencia internacional** del proveedor que elijas en Q1 (Ley 25.326, art. 12): país adecuado, cláusulas modelo o la que corresponda. |
+| Antes del plan | **Confirmá con quien responde por la base la vía de transferencia internacional** de Brevo, el proveedor de Q1 (Ley 25.326, art. 12): país adecuado, cláusulas modelo o la que corresponda. |
 | Antes del plan | **Elegí el dominio con el que sale el correo y comprobá que podés editar su DNS** (registros TXT y CNAME en subnombres). Es el mismo dominio que C4 pide elegir (su acción 2), y un subdominio gratuito de DNS dinámico puede no dejar publicar esos registros (a confirmar con quien lo ofrece). |
 | Antes de implementar | **Proveedor, remitente y credencial (Q1):** creá la cuenta, autenticá el dominio (SPF y DKIM con los valores que da el proveedor; DMARC propio, empezando en monitoreo), elegí la dirección remitente (por ejemplo, una de no responder) y generá una credencial sólo de envío (clave SMTP o de API). Va en `.env`; los agentes no la ven. |
 | Antes de implementar | **Permiso para `axllent/mailpit`** (tabla de descargas), sólo para el perfil `dev`. Sin permiso, la prueba de punta a punta de FR-052 es una verificación manual declarada. |
-| Si Q1 elige un driver de API | **Permiso para los paquetes de Composer** de la tabla de descargas: `composer require` consulta Packagist, y los tamaños de la tabla son una cota. |
 | Antes de activar el correo real | **Un `APP_URL` público.** Hasta C4 vale `http://localhost:8080` y los links de los correos no abrirían fuera del equipo. Configurá el mailer del proveedor (`MAIL_MAILER` y sus credenciales) sólo cuando `APP_URL` sea el real: hasta entonces el taller queda en modo sólo link (FR-008). |
 | Antes del despliegue público | **El texto del aviso de privacidad** nombra al proveedor del correo como encargado y, si corresponde, la transferencia internacional. También sigue abierto quién responde por la base y si hay que inscribirla ante la AAIP (§13.14). |
 | Al desplegar | `sh backend/api/scripts/init-env.sh` (agrega la contraseña del usuario de MySQL del correo) y, con un volumen de MySQL existente, el comando único de `db-grants` (`docker compose --profile ops run --rm db-grants`), que crea ese usuario. Poné el mailer y las credenciales del proveedor en `.env`; `MAIL_REQUIRED` ya vale `true` por omisión. |
 | Al verificar | **Un envío real de cada mensaje a tres buzones de distinto tipo** (uno de Google, uno de Microsoft y el de la escuela) y mirá en cuáles cae en spam. Mailpit no prueba la entregabilidad. |
 | Al operar | Guardá la copia más reciente del libro de supresiones junto a cada respaldo y corré `taller:reapply-deletions` al restaurar (el procedimiento lo orquesta C4). |
-| Siempre | Cada descarga (imágenes, paquetes de Composer) pide permiso con nombre, origen y tamaño antes de bajarse. |
+| Siempre | Cada descarga (imágenes, paquetes de Composer) pide permiso con nombre, origen y tamaño antes de bajarse. Con Brevo por SMTP no hay paquetes de Composer que pedir. |
 
 ## Descargas previstas
 
@@ -189,10 +134,6 @@ Nada se descargó. Los tamaños salen de la API de metadatos de Docker Hub, de P
 | Qué | Origen | Tamaño | Para qué | Licencia |
 | --- | --- | --- | --- | --- |
 | `axllent/mailpit` v1.31.4 (índice `sha256:b68349e3a014b90c5610bfb26b2ae36f3892d7b8cf25ee140c6c71c98d2fcf48`; amd64 `sha256:c8e498023104710cd71a7bb1856a51f2183ff0dc1ea07675067a38ecda08428f`) | Docker Hub | 16 836 010 bytes (16,1 MiB) | FR-011 y FR-052; sólo el perfil `dev` | MIT |
-| `resend/resend-php` 1.16.0 | Packagist y GitHub | 124 408 bytes sin pruebas ni documentación; 0 dependencias nuevas | Q1, opción B por API | MIT |
-| `symfony/mailgun-mailer`, `symfony/postmark-mailer` o `symfony/brevo-mailer` (v8.1.6, v8.1.6 y v8.1.0), más `symfony/http-client` v8.1.8 y `symfony/http-client-contracts` v3.7.3 | Packagist y GitHub | Entre 488 930 y 495 885 bytes los tres juntos, según el proveedor (el puente de 17 a 24 KiB, el cliente 441 KiB y los contratos 19 KiB), sin pruebas | Q1 con Mailgun, Postmark o Brevo por API | MIT |
-| `aws/aws-sdk-php` 3.399.1, más `mtdowling/jmespath.php`, `aws/aws-crt-php` y `symfony/filesystem` | Packagist y GitHub | Unos 283 MB el árbol del SDK (cota, no el instalado) | Q1, opción C por API (por SMTP no se descarga) | Apache-2.0 el SDK |
-| `boky/postfix` 5.1.0-alpine | Docker Hub | 66 477 551 bytes (63,4 MiB) para amd64 | Q1, opción E (no recomendada) | MIT |
 
 Sin descarga nueva: `mysql:9.7` (que ya fija `docker/compose.yaml` y usa `db-grants`), la imagen de `php` (que también usa `worker-mail`) y, por SMTP, ningún paquete de Composer: `symfony/mailer` v8.1.7 ya está en `composer.lock`.
 
@@ -232,7 +173,7 @@ Un alumno olvidó su contraseña, la pide desde la pantalla de ingreso y recibe 
 **Acceptance Scenarios**:
 
 1. **Dado** el email de un alumno con cuenta activa, **cuando** pide la recuperación, **entonces** recibe 202 con el mensaje uniforme y, en menos de 3 minutos, un correo con un link válido por 60 minutos.
-2. **Dados** un email sin cuenta, el de una cuenta `disabled` o `deleting` y el de un admin (propuesta, Q5), **cuando** piden la recuperación, **entonces** la respuesta es idéntica a la del escenario 1 y no sale ningún correo.
+2. **Dados** un email sin cuenta, el de una cuenta `disabled` o `deleting` y el de un admin (Q5), **cuando** piden la recuperación, **entonces** la respuesta es idéntica a la del escenario 1 y no sale ningún correo.
 3. **Dado** cualquier email, **cuando** llega el pedido, **entonces** el pedido no consulta la cuenta de ese email: hace el mismo trabajo exista o no.
 4. **Dado** el modo sólo link, **cuando** se pide la recuperación de cualquier email, **entonces** responde 503 `mail_unavailable`, sin depender de la cuenta.
 5. **Dado** el sexto pedido de un minuto desde la misma red, **cuando** llega, **entonces** recibe 429 con `Retry-After`; el cuarto pedido de una hora para el mismo email responde 202 igual, pero no encola nada.
@@ -313,7 +254,7 @@ Tras restaurar un respaldo, quien opera reaplica el libro de supresiones para qu
 
 Quien opera cambia por consola el email de una cuenta, y las dos direcciones se enteran.
 
-**Why this priority**: es lo que C3b deja soportado para un caso raro. Con Q2 en A, no hay otro camino.
+**Why this priority**: es lo que C3b deja soportado para un caso raro. Con Q2 decidida (sólo por consola), no hay otro camino.
 
 **Independent Test**: correr el comando con cuentas y emails de cada caso y mirar la base, las sesiones y los correos.
 
@@ -363,7 +304,7 @@ Un interruptor deja que cualquiera con un email permitido cree su cuenta y la ve
 1. **Dado** `REGISTRATION_OPEN=false`, **cuando** se piden `POST /api/auth/register` y las dos rutas de verificación, **entonces** responden 404 `not_found` y `features.registration` es `false`.
 2. **Dado** el interruptor encendido, **cuando** una persona se registra, **entonces** recibe 201 con la sesión abierta, la cuenta nace `student`, `active` y sin verificar, y el contenido responde 403 `email_unverified`.
 3. **Dado** el correo de verificación, **cuando** el front confirma los datos del fragmento `#verificar=` con un POST con sesión, **entonces** responde 204 y el contenido pasa a 200; no existe ningún GET firmado en la API.
-4. **Dados** un email que ya tiene cuenta o (propuesta, Q3) un dominio fuera de la lista, **cuando** se registran, **entonces** reciben 422 `validation_failed` con el motivo, y el titular de la cuenta existente recibe un aviso por correo.
+4. **Dados** un email que ya tiene cuenta o (Q3) un dominio fuera de la lista, **cuando** se registran, **entonces** reciben 422 `validation_failed` con el motivo, y el titular de la cuenta existente recibe un aviso por correo.
 5. **Dado** el sexto registro de una hora desde la misma red, o el que pasa el tope global por hora, **cuando** llega, **entonces** recibe 429; el cuarto correo de verificación de una hora para una cuenta no sale.
 6. **Dada** una invitación pendiente para un email, **cuando** alguien se registra con ese email, **entonces** la invitación sigue intacta; si llegó por correo, aceptarla reemplaza la cuenta sin verificar, y si llegó por link, recibe 409 `email_taken`.
 7. **Dada** una cuenta de registro nunca verificada, **cuando** pasan 7 días, **entonces** se suprime por el camino de la supresión.
@@ -404,7 +345,7 @@ Un interruptor deja que cualquiera con un email permitido cree su cuenta y la ve
 - **FR-003**: Toda notificación DEBE ir a una cola propia, `mail`, en la tabla `mail_jobs` (una migración con un solo `CREATE TABLE`, D35), que sólo lee `worker-mail`. DEBE encolarse después del COMMIT de la transacción que la origina, y NO DEBE enviarse dentro de un pedido ni de una transacción: el pedido responde sin esperar al proveedor. *(D21, §8)*
 - **FR-004**: Cada correo encolado DEBE llevar todo lo que necesita para enviarse (destinatario, nombre, link, vencimiento y tipo) como valores simples, cifrados dentro del trabajo, y NO DEBE volver a leer `users` ni otra tabla de cuentas al enviarse. `mail_jobs` NO DEBE guardar en claro un email, un nombre ni un link, y los trabajos de la cola `default` que llevan un email (`forgot-password` y `PurgeUserData`) van cifrados igual (FR-012 y FR-045). *(D21, §4.3)*
 - **FR-005**: `worker-mail` DEBE conectarse a MySQL con un usuario propio que sólo pueda leer y escribir `mail_jobs` y `failed_jobs` y actualizar `sent_at` y `send_failed_at` de `invitations`. C3b DEBE crearlo, sin esperar a C4, con su contraseña en `.env` y fuera de Git. Una prueba con ese usuario real contra MySQL 9.7 (como el criterio J de C3a, su FR-042) comprueba lo que puede y lo que no: no lee `users`, `sessions` ni `password_reset_tokens`, no escribe otra tabla ni otra columna de `invitations`, no hace DDL ni `GRANT`, y aun así envía. Sus valores esperados salen de esta lista y no de las sentencias que la aplican. *(D21, §12)*
-- **FR-006**: Las credenciales del proveedor (usuario y contraseña SMTP o clave de API) DEBEN existir sólo en el entorno de `worker-mail`, nunca en el ancla común de Compose, y venir de `.env` sin entrar en Git, en la imagen ni en el contexto de Docker. `worker-mail` DEBE tener `APP_KEY` porque descifra sus trabajos (riesgo residual, §12) y usar un store de caché en memoria. El proveedor y el remitente salen de la configuración. [NEEDS CLARIFICATION: Q1, qué proveedor manda el correo. La recomendada: Brevo por SMTP, sin paquetes nuevos.] *(D21, constitución VII)*
+- **FR-006**: Las credenciales del proveedor (usuario y contraseña SMTP o clave de API) DEBEN existir sólo en el entorno de `worker-mail`, nunca en el ancla común de Compose, y venir de `.env` sin entrar en Git, en la imagen ni en el contexto de Docker. `worker-mail` DEBE tener `APP_KEY` porque descifra sus trabajos (riesgo residual, §12) y usar un store de caché en memoria. El proveedor y el remitente salen de la configuración. El proveedor es Brevo por SMTP (Clarifications, Q1): no suma paquetes de Composer. *(D21, constitución VII)*
 - **FR-007**: Un correo que el proveedor rechaza o no responde DEBE reintentarse con espera creciente (propuesta: 1, 5, 15 y 60 minutos) hasta que venza su utilidad: la vida del link, o 24 horas si el correo no lleva uno (propuesta). Después NO DEBE enviarse: un link vencido no se manda. Al agotar los reintentos, el trabajo queda en `failed_jobs` (7 días) y la falla en los registros con su causa, sin el contenido; si era una invitación, `send_failed_at` se completa. Cuando el proveedor acepta el mensaje, `sent_at` se completa. `sent_at` significa «entregado al proveedor», no «llegó al buzón»: el taller no atiende rebotes. *(D21, D30, §4.8)*
 - **FR-008**: `MAIL_REQUIRED` DEBE valer `true` por omisión (en `docker/compose.yaml`), de modo que el taller sólo manda correo cuando alguien configura un mailer real a propósito. Con `MAIL_REQUIRED=true` y un mailer `log` o `array` (es decir, sin un mailer real), el taller DEBE estar en modo sólo link: `GET /api/session` informa `features.passwordReset=false`; `POST /api/auth/forgot-password`, `delivery=email` en las invitaciones de admin y la recuperación de un tercero responden 503 `mail_unavailable` (con `Retry-After`, y en español) sin depender de la cuenta y sin crear nada; y ningún token termina en un registro. Las invitaciones por link y `taller:password-reset-link` siguen como en C3a. Con un mailer real, `true` no cambia nada: el correo sale. El desarrollo local que quiera probar los flujos con el mailer `log` lo apaga con `MAIL_REQUIRED=false`, y entonces `features.passwordReset` vale `true`. `features.passwordReset` también es lo que el admin consulta para ofrecer «enviar por correo» o sólo «copiar link». *(D21, S7, §4.8)*
 - **FR-009**: El remitente y su nombre DEBEN salir de la configuración y pertenecer al dominio autenticado con SPF y DKIM (acción del usuario). Los correos DEBEN ser de texto plano, en español, sin imágenes remotas, sin rastreo de aperturas ni de clics (que reescribiría los links y entregaría el token a un tercero más) y sin contraseñas. Todo link DEBE armarse desde `APP_URL` y nunca desde `Host`, con el token en el fragmento (`#invitacion=`, `#restablecer=` o `#verificar=`) y no en la ruta ni en la query. Si `APP_URL` apunta a `localhost`, `worker-mail` DEBE advertirlo al arrancar. *(D18, D21; C3a FR-021)*
@@ -414,7 +355,7 @@ Un interruptor deja que cualquiera con un email permitido cree su cuenta y la ve
 **Recuperación y verificación por correo** *(mitad del correo)*
 
 - **FR-012**: `POST /api/auth/forgot-password {email}` DEBE validar sólo la forma del email, encolar un trabajo cifrado en la cola `default` y responder siempre 202 con el mismo cuerpo, exista o no la cuenta y sea cual sea su estado: el pedido NO DEBE consultar la cuenta del email pedido, para que ni el tiempo ni el trabajo la revelen. La única excepción es 503 `mail_unavailable` en modo sólo link, que no depende de la cuenta. *(§4.3, §7)*
-- **FR-013**: El trabajo DEBE pedir el token al broker de contraseñas de Laravel (60 minutos de vida, uno cada 60 segundos), armar el link con el token y el email en el fragmento y encolar el correo con valores simples. NO DEBE enviar nada si la cuenta no existe, no está `active` o es de un admin (propuesta, Q5). *(§4.3; C3a FR-025)*
+- **FR-013**: El trabajo DEBE pedir el token al broker de contraseñas de Laravel (60 minutos de vida, uno cada 60 segundos), armar el link con el token y el email en el fragmento y encolar el correo con valores simples. NO DEBE enviar nada si la cuenta no existe, no está `active` o es de un admin (Clarifications, Q5). *(§4.3; C3a FR-025)*
 - **FR-014**: `forgot-password` DEBE limitarse a 5 por minuto y 20 por hora por red, con 429 y `Retry-After` al pasarse, y a 3 por hora por email, en silencio: el 202 es el mismo y no se encola nada. *(§4.6)*
 - **FR-015**: Después de fijar o cambiar una contraseña (`reset-password` y `PUT /api/me/password` de C3a), el taller DEBE avisar al titular por correo. C3a deja un único punto por el que pasa toda contraseña, y ahí se engancha el aviso. Sin correo disponible, no envía nada y no falla. *(§4.3, D21)*
 - **FR-016**: Con el registro abierto, `POST /api/auth/email/verification-notification` (sesión; 202; 3 correos por hora y cuenta) y `POST /api/auth/email/verify` (sesión; 204) DEBEN existir. El link del correo lleva sus datos firmados en el fragmento (`#verificar=`) y el front los confirma con un POST con sesión: NO DEBE existir ningún GET firmado en la API, porque Nginx registra la línea de cada pedido. Un enlace vencido, alterado o de otra cuenta responde 422 `validation_failed`. *(§4.4, §7)*
@@ -423,14 +364,14 @@ Un interruptor deja que cualquiera con un email permitido cree su cuenta y la ve
 
 - **FR-017**: `REGISTRATION_OPEN` (falso por omisión) DEBE gobernar el registro y su verificación. Apagado, `POST /api/auth/register` y las dos rutas de verificación DEBEN existir y responder 404 `not_found` (así siguen funcionando si las rutas se cachean) y `features.registration` vale `false`; encendido, vale `true`, salvo en modo sólo link (propuesta): sin correo no hay cómo verificar, así que el registro responde 503 `mail_unavailable` y `features.registration` vale `false`. Apagado, el taller se comporta como con C3a. *(§4.4, R2)*
 - **FR-018**: `POST /api/auth/register {name, email, password, password_confirmation, privacyVersion}` DEBE crear una cuenta `student`, `active`, con el aviso de privacidad aceptado y el email sin verificar, iniciar la sesión (ID nuevo) y responder 201 con `{data: usuario}`. Aplica la canonicalización del email, la política de contraseñas y el nombre de C3a. Con el email sin verificar, el contenido responde 403 `email_unverified`. Un email que ya tiene cuenta recibe 422 `validation_failed` y su titular, un aviso por correo: el ADR acepta que el registro abierto revele qué emails existen y lo mitiga con los límites y con ese aviso (§12). La forma exacta de la respuesta es propuesta. *(§4.4, §7, §12)*
-- **FR-019**: *(propuesta, Q3)* `REGISTRATION_ALLOWED_DOMAINS` (vacía: sin restricción) DEBE limitar el registro a esos dominios de email; otro dominio recibe 422 `validation_failed` con el motivo en español. [NEEDS CLARIFICATION: Q3, si el registro abierto se restringe a dominios. La recomendada: una lista en la configuración.] *(§13.20)*
+- **FR-019**: `REGISTRATION_ALLOWED_DOMAINS` (vacía: sin restricción) DEBE limitar el registro a esos dominios de email; otro dominio recibe 422 `validation_failed` con el motivo en español (Clarifications, Q3). *(§13.20)*
 - **FR-020**: El registro DEBE limitarse a 5 por hora por red (/48 en IPv6) y a un tope global por hora (propuesta: 100). *(§4.4, §4.6)*
 - **FR-021**: El registro NO DEBE tocar las invitaciones pendientes: un desconocido no puede anular la de otro. Aceptar una invitación enviada por correo a un email que tiene una cuenta sin verificar DEBE reemplazar esa cuenta (la entrega prueba que el email es de quien acepta); si llegó por link, 409 `email_taken`, como en C3a. *(§4.1 paso 3, §4.4)*
 - **FR-022**: Las cuentas creadas por el registro y nunca verificadas DEBEN suprimirse a los 7 días, por lotes y por el camino de supresión de FR-045, con una tarea del `scheduler`. *(§4.4)*
 
 **Cambio de email** *(mitad del correo)*
 
-- **FR-023**: `taller:change-email <actual> <nuevo>` DEBE cambiar el email de una cuenta (canonicalizado y comparado como en C3a), cerrar todas sus sesiones y rotar su token de «recordarme» (propuesta: el email es el dato con el que se recupera la cuenta, así que el cambio se trata como un cambio de contraseña), borrar su token de recuperación y avisar por correo a las dos direcciones. DEBE fallar, sin cambiar nada, si el email actual no tiene cuenta, si el nuevo ya tiene una cuenta o una invitación, o si no es un email válido. Conserva la verificación del email: quien opera responde por la dirección nueva. [NEEDS CLARIFICATION: Q2, si el cambio de email es sólo por consola. La recomendada: sólo por consola.] *(§7, D19, §13.9)*
+- **FR-023**: `taller:change-email <actual> <nuevo>` DEBE cambiar el email de una cuenta (canonicalizado y comparado como en C3a), cerrar todas sus sesiones y rotar su token de «recordarme» (propuesta: el email es el dato con el que se recupera la cuenta, así que el cambio se trata como un cambio de contraseña), borrar su token de recuperación y avisar por correo a las dos direcciones. DEBE fallar, sin cambiar nada, si el email actual no tiene cuenta, si el nuevo ya tiene una cuenta o una invitación, o si no es un email válido. Conserva la verificación del email: quien opera responde por la dirección nueva. Es el único camino (Clarifications, Q2). *(§7, D19, §13.9)*
 - **FR-024**: El email de una cuenta NO DEBE poder cambiarse por HTTP: ni el titular (`PATCH /api/me` lo ignora, C3a) ni un admin (`PATCH /api/admin/users/{user}` no lo acepta). *(D19, §5.2)*
 
 **Operación del correo** *(mitad del correo)*
@@ -515,7 +456,7 @@ Un interruptor deja que cualquiera con un email permitido cree su cuenta y la ve
 
 ## Assumptions
 
-- **Fuente.** La fuente técnica es el ADR 0006, en estado «propuesta» y a la espera de su aprobación (acción del usuario de la hoja de ruta). Si lo enmienda, esta spec se ajusta. Las preguntas 3, 9 y 20 de §13 se cierran en el clarify de esta spec (Q1 a Q3).
+- **Fuente.** La fuente técnica es el ADR 0006, en estado «propuesta» y a la espera de su aprobación (acción del usuario de la hoja de ruta). Si lo enmienda, esta spec se ajusta. Las preguntas 3, 9 y 20 de §13 se cerraron en el clarify del 2026-10-06 (Q1 a Q3).
 - **Punto de partida.** C3b se implementa sobre C3a ya entregada: C1, C2, C6 y C3a. Esta spec supone el plan de C3a (`specs/004-c3-identidad-acceso/plan.md`, rama `spec/c3-identidad`, commits `57da802` a `c76ef90`), que no está en esta rama: lo que toma de ahí va como supuesto, y se ajusta si cambia.
 - **Orden respecto de B2 y D1.** B2 supone que C3b llega después (su FR-043 y FR-050), y D1 acepta cualquiera de los dos órdenes. Esta spec resuelve el orden con el registro de `UserData` (FR-042) y con un evento que C3b dispara y B2 consume (FR-035): llegue C3b antes o después, el que llega último suma sus tablas o se engancha, y una prueba lo exige. La hoja de ruta hoy sólo ata C3b a C3 (C3a).
 - **Un solo servidor,** con la carga de referencia del ADR (S2: hasta unas 5.000 cuentas y unas 1.000 activas en el pico) y el supuesto de trabajo de un aula de 40.
@@ -523,14 +464,13 @@ Un interruptor deja que cualquiera con un email permitido cree su cuenta y la ve
 - **Modo sólo link por omisión.** `MAIL_REQUIRED` vale `true` por omisión y el mailer por omisión es `log` (FR-008), así que mientras nadie configure un proveedor a propósito, el taller sigue en el modo sólo link de C3a. `features.passwordReset` vale `true` cuando el correo puede salir (el mailer no es `log` ni `array`, o `MAIL_REQUIRED` es falso) y `features.registration` sigue a `REGISTRATION_OPEN`. Ambos salen de `config('taller.features')`, que C3a deja listo.
 - **`features.passwordReset` también es la bandera de «hay correo».** Es lo que dice el ADR (§4.8: el admin sólo ve «copiar link» cuando vale `false`). No se agrega una bandera nueva.
 - **Un solo proceso de `worker-mail`.** Alcanza para el volumen esperado (cientos de correos por día); el camino de escala está en el ADR (§9).
-- **El proveedor lo decide Q1.** Hasta entonces, los requisitos sirven con cualquiera por SMTP o por API, y la recomendada (Brevo por SMTP) es el borrador.
+- **El proveedor es Brevo por SMTP (Clarifications, Q1).** Los requisitos sólo dependen de él en FR-006.
 - **Las skills no mandan sobre el ADR.** Las skills de Laravel proponen paquetes, notificaciones que releen el modelo y coberturas que el proyecto no adopta. Donde difieren, mandan el ADR y las decisiones del usuario.
 - **Propuestas que no vienen del ADR:**
   - Los reintentos del correo a 1, 5, 15 y 60 minutos, con tope en la vida del link o en 24 horas (FR-007).
   - Que un correo no se envíe vencido su link (FR-007).
   - El tope global de registros por hora en 100 (FR-020).
   - Que cambiar el email cierre las sesiones y rote el token de «recordarme», y que conserve la verificación (FR-023).
-  - Que `forgot-password` no envíe nada a un admin (Q5).
   - Que un admin que se deshabilita o se degrada a sí mismo reciba 422 `validation_failed`, y que `PATCH /api/admin/users/{user}` acepte sólo `role` y `status` (FR-033 y FR-034).
   - El correo de aviso a quien alguien intentó registrar con su email (FR-010 y FR-018) y la forma de la respuesta del registro con un email existente.
   - Que el barrido de `deleting` corra cada 5 minutos sobre las cuentas de más de 15 (FR-046: el ADR dice los dos plazos).
@@ -541,12 +481,12 @@ Un interruptor deja que cualquiera con un email permitido cree su cuenta y la ve
 
 ## Alternativas consideradas
 
-Sólo las que cambian lo que se construye. Q1 a Q5 tienen sus propias tablas arriba.
+Sólo las que cambian lo que se construye. Q1 a Q5 están en Clarifications.
 
 | Tema | Alternativas | Decisión y motivo |
 | --- | --- | --- |
-| Cómo se parte C3b | No partir; partir el correo como C3c; partir el ciclo de vida como C3c; partir en tres | Q4, sin decidir. La propuesta separa el correo: cortar sólo el ciclo de vida deja una mitad de 46 requisitos con la decisión externa adentro, y partir en tres (administración, correo y ciclo de vida) suma dos IDs y tres ciclos de Spec Kit y deja una spec de administración de pocos requisitos |
-| Quién habla con el proveedor | `worker-mail` aislado; `php` con salida a Internet; un relay propio delante del worker | `worker-mail` aislado (D21). Que `php` salga a Internet reabre lo que C1 cerró. El relay propio es la opción E de Q1 |
+| Cómo se parte C3b | No partir; partir el correo como C3c; partir el ciclo de vida como C3c; partir en tres | Q4, decidida (opción B): se separa el correo: cortar sólo el ciclo de vida deja una mitad de 46 requisitos con la decisión externa adentro, y partir en tres (administración, correo y ciclo de vida) suma dos IDs y tres ciclos de Spec Kit y deja una spec de administración de pocos requisitos |
+| Quién habla con el proveedor | `worker-mail` aislado; `php` con salida a Internet; un relay propio delante del worker | `worker-mail` aislado (D21). Que `php` salga a Internet reabre lo que C1 cerró. El relay propio fue la opción E de Q1, que no se eligió |
 | SMTP o API del proveedor | SMTP; el driver de API del proveedor | SMTP cuando el proveedor lo ofrece: no suma paquetes ni un SDK al worker. La API sólo si el plan gratuito o la región lo exigen |
 | Dónde se arma la recuperación | En el pedido; en un trabajo de la cola `default` | En un trabajo (§4.3): el pedido no consulta la cuenta, así que el tiempo no la revela. Cuesta hasta un minuto más hasta que el `scheduler` lo procesa |
 | Formato del correo | HTML con plantilla; texto plano | Texto plano: un link por mensaje, sin imágenes ni rastreo, y nada que mantener |
@@ -575,7 +515,7 @@ Sólo las que cambian lo que se construye. Q1 a Q5 tienen sus propias tablas arr
 13. **Datos personales y transferencia (Ley 25.326).** El proveedor procesa emails y nombres. *Mitigación:* Q1, el aviso de privacidad que nombra al proveedor y la confirmación de quien responde por la base.
 14. **Registro abierto: abuso y enumeración.** *Mitigación:* apagado por omisión, topes por red y globales, restricción por dominio (Q3), `verified` en el contenido y el aviso al titular.
 15. **Las dependencias son borradores.** El ADR 0006, el plan de C3a, B2, D1, C4 y el épico del front no pasaron por el clarify. *Mitigación:* lo que se toma de ellos está marcado como supuesto.
-16. **C3b es la mitad grande.** *Mitigación:* la propuesta de corte de «Partición» y Q4.
+16. **C3b es la mitad grande.** *Mitigación:* el corte de «Partición» (Q4, opción B).
 
 ## Relación con C3a, B2, D1, C4 y el front
 
