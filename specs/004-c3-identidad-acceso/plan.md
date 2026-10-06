@@ -175,7 +175,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 
 | Cuándo | Archivo | Línea |
 | --- | --- | --- |
-| S2 | `backend/api/app/Providers/AppServiceProvider.php`, en `boot()` | `Limiters::register();` y `Auth::guard('web')->setRememberDuration(config()->integer('taller.remember_days') * 1440);` |
+| S2 | `backend/api/app/Providers/AppServiceProvider.php`, en `boot()`, y `backend/api/config/auth.php` | `Limiters::register();` en `boot()`, y `'remember' => 30 * 24 * 60` en `guards.web`, que Laravel lee al crear el guard. Resolver el guard en `boot()` exige `APP_KEY` y rompe `package:discover` al construir la imagen |
 | S3 | `backend/api/routes/api.php` | El contenido pasa a `Route::middleware(['account', 'verified'])->group(...)` (T022) |
 
 **Puntos de integración con otros frentes** (los resuelve el coordinador):
@@ -404,7 +404,7 @@ final class AccountPasswords   // la única clase de app/ que usa Hash y logoutO
     public function verify(User $user, PlainPassword $password): bool;
     public function verifyOrDummy(?User $user, PlainPassword $password): bool;     // mismo costo con o sin cuenta
     public function dummyHash(): string;                                           // se arma una vez por proceso, con el costo configurado
-    public function logoutOtherDevices(PlainPassword $current): void;              // Auth::logoutOtherDevices con la forma NFC
+    public function signOutOtherDevices(PlainPassword $current): void;             // Auth::logoutOtherDevices con la forma NFC; el nombre no repite el patrón que prohíbe ArchitectureTest
 }
 
 enum PasswordViolation: string
@@ -516,7 +516,6 @@ final class ApiExceptions { public static function render(Throwable $error, Requ
 | `taller.password_blocklist` | `env('PASSWORD_BLOCKLIST_PATH', resource_path('passwords/blocked-15plus.txt'))` |
 | `taller.invitations` | `['student_days' => 7, 'admin_hours' => 48, 'prune_days' => 30]` |
 | `taller.session_max_hours` | `(int) env('SESSION_MAX_HOURS', 8)` |
-| `taller.remember_days` | `30` |
 | `taller.device_cookie` | `['name' => env('DEVICE_COOKIE_NAME', 'taller-device'), 'secure' => env('DEVICE_COOKIE_SECURE'), 'same_site' => 'lax', 'days' => 180]` |
 | `taller.features` | `['password_reset' => false, 'registration' => false]` |
 | `taller.long_transaction_seconds` | `(int) env('LONG_TRANSACTION_SECONDS', 30)` |
@@ -678,7 +677,7 @@ final class Limiters { public static function register(): void; }   // 'invitati
 2. Implementá. Los limitadores de ingreso y de prueba de contraseña usan `RateLimiter` sobre el store `database` con las claves de [data-model.md](./data-model.md). El estado del bloqueo se guarda como un arreglo simple, con el TTL de la tabla de la sección «Estado en la caché».
 3. `npm run api:analyse`: 0 errores.
 
-**Compuerta:** las pruebas en verde y la suite entera en verde. Las líneas `Limiters::register();` y `setRememberDuration` las integra el coordinador en S2.
+**Compuerta:** las pruebas en verde y la suite entera en verde. La línea `Limiters::register();` y el `remember` de `guards.web` los integra el coordinador en S2.
 
 ## 5. Operación (dueño O, ondas 1 y 2)
 
@@ -982,7 +981,7 @@ El ingreso no usa `Auth::attempt`: su rehash automático hashearía la cadena si
 2. Implementá `LoginPipeline` con un método por paso, y los controladores.
 3. `npm run api:analyse`: 0 errores.
 
-**Compuerta:** las pruebas en verde. El valor de `Max-Age` de la cookie de recuerdo confirma que el coordinador puso `setRememberDuration` (S2).
+**Compuerta:** las pruebas en verde. El valor de `Max-Age` de la cookie de recuerdo confirma el `remember` de `guards.web` que puso el coordinador en S2.
 
 ### Tarea 7.2 · `GET /api/session` (T020)
 
