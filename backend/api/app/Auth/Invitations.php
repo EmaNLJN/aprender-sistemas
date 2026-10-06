@@ -9,7 +9,6 @@ use Carbon\CarbonInterface;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Log;
-use LogicException;
 
 final class Invitations
 {
@@ -56,7 +55,7 @@ final class Invitations
                 $user = $this->createAccount($invitation, $name, $hash, $privacyVersion);
                 $invitation->delete();
 
-                return [$user, $this->invitedBy($invitation)];
+                return [$user, $invitation->invited_by];
             });
         } catch (UniqueConstraintViolationException) {
             throw new EmailTaken;
@@ -80,7 +79,7 @@ final class Invitations
 
     private function assertCurrent(Invitation $invitation): Invitation
     {
-        if ($this->expiresAt($invitation)->isBefore(Date::now())) {
+        if ($invitation->expires_at->isBefore(Date::now())) {
             throw new InvitationExpired;
         }
 
@@ -92,9 +91,9 @@ final class Invitations
         $user = new User;
         $user->forceFill([
             'name' => $name,
-            'email' => $this->emailOf($invitation),
+            'email' => $invitation->email,
             'password' => $hash,
-            'role' => $this->roleOf($invitation),
+            'role' => $invitation->role,
             'status' => AccountStatus::Active,
             'email_verified_at' => Date::now(),
             'privacy_version' => $privacyVersion,
@@ -102,34 +101,6 @@ final class Invitations
         ])->save();
 
         return $user;
-    }
-
-    private function invitedBy(Invitation $invitation): ?int
-    {
-        $invitedBy = $invitation->getAttribute('invited_by');
-
-        return is_int($invitedBy) ? $invitedBy : null;
-    }
-
-    public function expiresAt(Invitation $invitation): CarbonInterface
-    {
-        $expiresAt = $invitation->getAttribute('expires_at');
-
-        return $expiresAt instanceof CarbonInterface ? $expiresAt : throw new LogicException('An invitation needs an expiry.');
-    }
-
-    public function emailOf(Invitation $invitation): string
-    {
-        $email = $invitation->getAttribute('email');
-
-        return is_string($email) ? $email : throw new LogicException('An invitation needs an email.');
-    }
-
-    public function roleOf(Invitation $invitation): Role
-    {
-        $role = $invitation->getAttribute('role');
-
-        return $role instanceof Role ? $role : throw new LogicException('An invitation needs a role.');
     }
 
     private function expiryOf(Role $role): CarbonInterface

@@ -6,7 +6,16 @@ use App\Auth\Role;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Prunable;
+use Illuminate\Support\Carbon;
 
+/**
+ * Larastan reads columns from Schema calls only, and these come from raw DDL.
+ *
+ * @property string $email
+ * @property Role $role
+ * @property int|null $invited_by
+ * @property Carbon $expires_at
+ */
 final class Invitation extends Model
 {
     use Prunable;
