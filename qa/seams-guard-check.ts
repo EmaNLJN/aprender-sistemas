@@ -116,7 +116,7 @@ test('R3: an adapter that imports a factory is reported, but a re-export is not'
 
 test('R3: a multi-line import of a factory next to other names is reported', () => {
   const violations = findViolations({
-    'frontend/lab.js': `
+    'frontend/src/pages/lab/ui/lab-page.tsx': `
       import {
         blankLabState,
         createLabStore as makeStore,
@@ -163,13 +163,21 @@ test('R4: any value import of a slice index outside its legacy owner is reported
   assert.match(violations[0], /entities\/exercise/);
 });
 
-test('R4: a value import of an index from a boot module or a page is reported', () => {
+test('R4: a value or bare import of an index from a boot module is reported', () => {
   const violations = findViolations({
     'frontend/src/app/boot/start.ts': `import { summarizeWorlds } from '../../entities/campaign';`,
-    'frontend/src/pages/route/ui/route-page.tsx': `import { routeStore } from '../../../entities/guide';`,
-    'frontend/src/pages/workshop/model/pick.ts': `import '../../../entities/systems-workshop';`,
+    'frontend/src/app/boot/warm.ts': `import '../../entities/systems-workshop';`,
   });
-  assert.deepEqual(rulesOf(violations), ['R4', 'R4', 'R4']);
+  assert.deepEqual(rulesOf(violations), ['R4', 'R4']);
+});
+
+test('R4: a React page may import a singleton', () => {
+  assert.deepEqual(
+    findViolations({
+      'frontend/src/pages/route/ui/route-page.tsx': `import { routeStore } from '../../../entities/guide';`,
+    }),
+    [],
+  );
 });
 
 test('R4: an inline type import mixed with a value import is reported, a type-only one is not', () => {
