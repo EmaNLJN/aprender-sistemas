@@ -226,7 +226,15 @@ it('a new step cannot take the v1 index of a step that left the document', funct
         $stored['workshop_steps'][$leaving] = ['status' => 'deprecated', 'retired_at' => '2026-10-05 01:00:00.000', 'position' => null] + $stored['workshop_steps'][$leaving];
     }
     // The document no longer has e3 and a new e5 asks for its index.
-    [$rows, $source] = diffDesired(editMeta: function (array $meta) {
+    [$rows, $source] = diffDesired(edit: function (ContentFixture $fixture) {
+        foreach ($fixture->document->workshops as $workshops) {
+            foreach ($workshops as $workshop) {
+                if ($workshop->id === 'cache') {
+                    $workshop->steps[2]->id = 'e5';
+                }
+            }
+        }
+    }, editMeta: function (array $meta) {
         $meta['workshopSteps']['cache'][2]['id'] = 'e5';
 
         return $meta;
