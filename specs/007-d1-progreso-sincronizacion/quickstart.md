@@ -23,7 +23,7 @@ node <script de reference-merge.md, sección 8> "$BEFORE" "$PWD"
 
 El script termina con `OK: 100 etapas; document 4555e850 (antes ef8f5715); 4 porciones cambian`. Comprueba, en este orden: que sólo cambian las cuatro porciones de talleres y el `documentHash`; que los 274 ejercicios conservan sus tres huellas, `workshopSteps` queda igual y cada etapa tiene las claves `id,title,task,why,done` con el `id` del meta; que quitar los `id` de las etapas del documento nuevo da **los mismos bytes** que el documento de antes, y los mismos que cada porción de antes; y que el volcado de `tools/content/dump-globals.ts`, sin los `id` de las etapas de los cuatro grupos `SYSTEMS_*`, da los mismos bytes que el de antes.
 
-Valores medidos al planificar, sobre `master` (2426bae), para el contenido de ese día (si `content/` cambió, valen la relación y el script, no los números):
+Valores medidos al planificar, sobre `master` (2426bae) **sin B2**, para el contenido de ese día. B2 no toca `curriculum.json` ni el volcado (suma `build/harness.json`, la 18.ª porción y cambia 49 `gradingHash` del meta), así que el documento, las cuatro porciones, `Content-Version` y el volcado de la tabla valen con B2; la síntesis de los ejercicios no. Si `content/` cambió, valen la relación y el script, no los números:
 
 | Qué | Antes | Después |
 | --- | --- | --- |
@@ -34,8 +34,8 @@ Valores medidos al planificar, sobre `master` (2426bae), para el contenido de es
 | `workshops.infra` | `8c8efbdb6b01dec6924a1014ccf9f4e4d509d070ce650d291991a59fe93d048c` | `39c92d2f0c223bec724b519c1aada12747f07e4963020c2d3a1aa43de83a7dd9` |
 | `workshops.play` | `66cca9a3147b38ffdb7bf2e6858863655f3b9a64f31988c96d445cf7bfa4cff3` | `7a4a6a50e266f90dda8aa60b417b38439aaf570b4fd2371055d5de8b547f7877` |
 | `workshops.pc` | `18c478daff52ce7b2ce50e06bf3d682cb5c98ccf4b82b43e68380e57d62dc69b` | `f417182be5aa4ccadc7f87995f2ebb5a4e2748d8223c0d3c4cb4d820487cc686` |
-| Las otras 13 porciones | las del meta de antes | **idénticas** (`lab.*`, `quests.*`, `cores.*`, `campaign.*`, `atlas.*` y `guide`) |
-| Los 274 ejercicios (síntesis de `contentHash`, `gradingHash` y `starterHash`, ordenados por id) | `8ba0ff1647d45cdb973dbeaf3353f89987e1c80425cdecd53ad739370c1e7eea` | **idéntica** |
+| Las demás porciones: 13 sobre `master`, 14 con la plantilla del harness de B2 | las del meta de antes | **idénticas** (`lab.*`, `quests.*`, `cores.*`, `campaign.*`, `atlas.*`, `guide` y, con B2, `harness`) |
+| Los 274 ejercicios (síntesis de `contentHash`, `gradingHash` y `starterHash`, ordenados por id) | `8ba0ff1647d45cdb973dbeaf3353f89987e1c80425cdecd53ad739370c1e7eea` sobre `master` sin B2 (con B2 cambian 49 `gradingHash` de Go y la síntesis es otra) | **la de antes, sea cual sea la base** |
 | Cada porción de talleres, en bytes compactos | 25.728, 26.030, 23.013 y 5.614 | +320, +320, +320 y +40 (32, 32, 32 y 4 etapas por 10 bytes) |
 | Volcado de `dump-globals` (sha256) | `cd1f9e6240e291ecdcfbd9bb6c5d652d196663790c1a78bef06600d777b85745`, 1.153.582 bytes | `859771e276be9dc757c25388fd617df7d8667ffab176992e82d79cf6e1dd6fa1`, 1.154.582 (+1.000: cien `"id":"eN",`) |
 | `qa/fixtures/workshop-steps-v1.json` | sin cambios | `git diff --stat` vacío |
@@ -54,7 +54,7 @@ Reactivados: ninguno
 Filas activas: <las mismas de antes>
 ```
 
-y, sin `--dry-run`, deja **un registro más** en `content_imports` (con el `document_hash` y las cuatro huellas de porción nuevas). Es lo que rompe a propósito el criterio de C6 «desplegar no escribe filas»: por única vez. Un segundo `content:import` no escribe nada (`El contenido ya está importado`). Después, `npm run api:content:check` pasa con las 17 porciones idénticas al generador a través de Nginx, y `GET /api/workshops?domain=lowlevel` trae el `id` de cada etapa.
+Si B2 todavía no se importó, el informe suma además sus filas de `harness_templates`. Sin `--dry-run`, el comando deja **un registro más** en `content_imports` (con el `document_hash` y las cuatro huellas de porción nuevas). Es lo que rompe a propósito el criterio de C6 «desplegar no escribe filas»: por única vez. Un segundo `content:import` no escribe nada (`El contenido ya está importado`). Después, `npm run api:content:check` pasa con las 18 porciones (17, sobre `master` sin B2) idénticas al generador a través de Nginx, y `GET /api/workshops?domain=lowlevel` trae el `id` de cada etapa.
 
 ## 2. El fixture compartido (US7.1, FR-080 a FR-084, SC-002)
 
@@ -63,7 +63,7 @@ y, sin `--dry-run`, deja **un registro más** en `content_imports` (con el `docu
 1. `node qa/merge-fixture-check.ts` termina con `merge-fixture-check: 277 casos de fusión (277 corridos en TypeScript), 43 del servidor y 25 tipos de campo PASS.`
 2. `npm run api:test -- --filter=MergeFixtureTest` corre los 275 casos de fusión contra el escritor con MySQL real (los dos `only: ts` quedan afuera) y los 43 del servidor a través de `SyncService`: cada uno da el estado y el `changed` escritos a mano, y la revisión de la fila y la de la cabecera suben sólo cuando `changed` es verdadero.
 3. `sha256sum -c qa/fixtures/shared/merge-cases.sha256`, desde `qa/fixtures/shared/`, dice `OK`. Editar un caso sin tocar la huella hace fallar los dos lectores con «es un fixture congelado».
-4. **Mutaciones.** Se aplica cada fila de [merge-rules.md](./contracts/merge-rules.md), sección 9, sobre el lado que dice, se corre el check o Pest y se restaura: tiene que fallar con la cantidad de casos que dice la tabla (M1 a M8 en TypeScript con 36, 31, 31, 8, 2, 18, 2 y 2; M1 a M6 y M8 a M10 en PHP con 36, 31, 31, 8, 2, 103, 2, 172 y 6). El resultado va en el mensaje del commit de T006 y de T010. Un caso mal escrito a mano, uno que falta o un tipo de campo de más hacen fallar el check de TypeScript sin tocar ninguna regla.
+4. **Mutaciones.** Se aplica cada fila de [merge-rules.md](./contracts/merge-rules.md), sección 9, sobre el lado que dice, se corre el check o Pest y se restaura: tiene que fallar con la cantidad de casos que dice la tabla (M1 a M8 en TypeScript con 36, 31, 31, 8, 2, 18, 2 y 2; M1 a M6 y M8 a M10 en PHP con 36, 31, 31, 8, 2, 103, 2, 145 y 6). El resultado va en el mensaje del commit de T006 y de T010. Un caso mal escrito a mano, uno que falta o un tipo de campo de más hacen fallar el check de TypeScript sin tocar ninguna regla.
 
 ## 3. El esquema (FR-051, FR-053, FR-059, SC-009)
 

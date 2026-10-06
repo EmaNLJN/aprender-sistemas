@@ -340,11 +340,11 @@ Es la prueba de US7.1: cambiar una regla en un solo lenguaje rompe el fixture. C
 | M6 | Una escritura idéntica que gana cuenta como cambio | `changed: true` | estampar la revisión siempre (sin la guarda `IF(<cambia>, …)`) | TypeScript: 18 (`identical`); PHP: 103 (todos los casos sin cambio) |
 | M7 | `flag-or` toma la entrante | `state: incoming` | `assisted = n.assisted` | 2 (`true-then-false`, sólo TypeScript) |
 | M8 | `observed` conserva la primera fecha | `existing.at` | quitar el `LEAST` | 2 |
-| M9 | Estampar la revisión después de los valores y del reloj (D09: las guardas primero y el reloj al final) | — | mover `revision` y `updated_at` al final de las asignaciones | PHP: 172 (todos los casos con cambio: la guarda ya ve lo nuevo y no estampa) |
-| M10 | Comparar el texto con la colación de la conexión | — | quitar `BINARY` de la guarda de texto | PHP: 6 (`text/case-only` y `text/accent-only` de los tres tipos con esa colación) |
+| M9 | Estampar la revisión después de los valores y del reloj (D09: las guardas primero y el reloj al final) | — | mover `revision` y `updated_at` al final de las asignaciones | PHP: 145 (los casos con cambio sobre una fila que ya existe: la guarda ya ve lo nuevo y no estampa; los 27 que insertan, 25 `absent` y las dos `other-objective-added.*`, no los afecta el orden, porque el `INSERT` estampa desde su lista de valores) |
+| M10 | Comparar el texto con la colación de la conexión | — | quitar el `CAST(… AS BINARY)` de la guarda de texto | PHP: 6 (`text/case-only` y `text/accent-only` de los tres tipos con esa colación) |
 | M11 | Recortar o convertir `''` en `NULL` en la entrada | — | volver a activar `TrimStrings` o `ConvertEmptyStringsToNull` sobre `/api/sync` | 8 (`text/to-empty-string` y `text/whitespace-kept` de los cuatro tipos de texto), en la prueba de HTTP |
 
-M3 en PHP sólo se ejerce a través del escritor, que acepta un reloj nulo. M11 no la ejerce la prueba del fixture del escritor sino la de HTTP; está acá porque es la mutación que más fácil se cuela. Las cifras de PHP suponen los 275 casos que corren allá: 172 con cambio y 103 sin cambio.
+M3 en PHP sólo se ejerce a través del escritor, que acepta un reloj nulo. M11 no la ejerce la prueba del fixture del escritor sino la de HTTP; está acá porque es la mutación que más fácil se cuela. Las cifras de PHP suponen los 275 casos que corren allá: 172 con cambio (145 sobre una fila que ya existe y 27 que la insertan) y 103 sin cambio.
 
 ## 10. Los hitos del recorrido
 
