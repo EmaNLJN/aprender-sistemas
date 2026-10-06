@@ -19,6 +19,12 @@ return [
 
     'features' => ['password_reset' => false, 'registration' => false],
 
+    'ledger_days' => 35,
+
+    'purge' => ['batch_size' => 500, 'stuck_minutes' => 15],
+
+    'export' => ['chunk' => 100],
+
     'long_transaction_seconds' => (int) env('LONG_TRANSACTION_SECONDS', 30),
 
     'log_hmac_key' => env('LOG_HMAC_KEY'),
