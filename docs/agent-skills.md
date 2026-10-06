@@ -280,9 +280,10 @@ Markdown, sin scripts ni instrucciones de red.
 | --- | --- | --- | --- |
 | [php-pro](../.agents/skills/php-pro/SKILL.md) | [Jeffallan/claude-skills](https://skills.sh/jeffallan/claude-skills/php-pro) | 14,8 mil instalaciones; ★11,7 mil; MIT; v1.1.0 | DTOs `readonly`, value objects, enums y tipos de PHP moderno para los registros tipados del contenido (Data Mapper) y para C3. |
 
-- **Límites:** la skill exige PHPStan nivel 9, `declare(strict_types=1)` y un 80 % de cobertura. El
-  proyecto no tiene PHPStan ni una meta de cobertura, y adoptarlos pide dependencias y una
-  decisión propias. Manda `AGENTS.md`: de la skill se usan los patrones, no esas exigencias.
+- **Límites:** la skill exige PHPStan nivel 9, `declare(strict_types=1)` y un 80 % de cobertura.
+  El proyecto tiene PHPStan en el nivel 9 desde C6, por decisión propia y no por la skill;
+  `strict_types` y la meta de cobertura siguen fuera. Manda `AGENTS.md`: de la skill se usan los
+  patrones, no esas exigencias.
 - **Instalación:** `npx skills add jeffallan/claude-skills --skill php-pro -a codex -y`, con su
   enlace en `.claude/skills/` y su hash en `skills-lock.json`. El total actual es de treinta y
   cuatro skills locales.
