@@ -72,7 +72,7 @@ request_id=$(printf '%s\n' "$request_headers" | sed -n 's/^[Xx]-[Rr]equest-[Ii]d
 check "$(printf '%s' "$request_id" | grep -Ec '^[0-9a-f]{32}$')" 1 "la respuesta trae un X-Request-Id de 32 hexadecimales"
 nginx_line=$(docker compose logs --no-log-prefix taller 2>&1 | grep -F "$request_id" | grep -F '/api/exercises')
 check "$(printf '%s' "$nginx_line" | grep -c .)" 1 "Nginx registra el pedido con su request_id"
-check "$(printf '%s' "$nginx_line" | grep -c 'secreto=XYZ')" 0 "el registro de Nginx no lleva la query string"
+check "$(docker compose logs --no-log-prefix taller 2>&1 | grep -c 'secreto=XYZ')" 0 "el registro de Nginx no lleva la query string"
 
 burst_dir=$(mktemp -d)
 trap 'rm -rf "$burst_dir"' EXIT
