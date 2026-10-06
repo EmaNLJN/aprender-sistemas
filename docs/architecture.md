@@ -13,6 +13,7 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | Helpers y constantes compartidos, sin reglas de negocio | `frontend/src/shared/lib/`, `frontend/src/shared/config/` |
 | Evidencia de aprobación, interpretación de ejecuciones y fusión de registros | `frontend/src/entities/exercise/` |
 | Lectura versionada, respaldo y avisos de carga del progreso | `frontend/src/shared/lib/versioned-storage.ts` (ADR 0003) |
+| Almacenes del progreso y motores, con suscripción (F2, unidad 1) | Un almacén por clave y un motor por tipo, cada uno un singleton: `routeStore` en `frontend/src/entities/guide/`, `labStore` en `frontend/src/entities/exercise/`, y `campaignEngine` y `systemsEngine` en sus slices. Cada uno expone `changes`, un store de `zustand/vanilla` que lleva sólo la revisión y sube una vez por operación, después de escribir; el progreso sigue en su almacén. En React se lee con un selector chico (`useStore(routeStore.changes, (state) => state.revision)`), nunca con el store entero. Entre las fuentes legacy y `app/`, cada singleton tiene un solo dueño (`app.js`, `lab.js` y los dos `register-*-engine.ts`); lo hace cumplir `qa/seams-guard-check.ts` |
 | Navegación, recorrido y progreso general | `frontend/app.js`, `frontend/styles.css` |
 | Contenido del recorrido y biblioteca | `content/guide/`; tipos y progreso en `frontend/src/entities/guide/` |
 | Catálogos de contenido (publicados en `window.*`) | `content/` → `tools/content/` → `build/curriculum.json`; adaptador `frontend/src/app/legacy/register-catalogs.ts` |
