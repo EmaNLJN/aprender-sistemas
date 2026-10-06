@@ -31,6 +31,7 @@ FROM php:8.5-fpm-alpine@sha256:fa01fb1645cd0fc566a5f146b099adace33b906571f972f71
 RUN apk add --no-cache fcgi \
     && docker-php-ext-install pdo_mysql \
     && cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+RUN docker-php-ext-install pcntl
 COPY docker/opcache.ini /usr/local/etc/php/conf.d/zz-opcache.ini
 COPY docker/fpm-pool.conf /usr/local/etc/php-fpm.d/zz-taller.conf
 COPY docker/php.ini /usr/local/etc/php/conf.d/zz-taller.ini
