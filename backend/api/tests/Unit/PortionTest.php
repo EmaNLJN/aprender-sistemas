@@ -4,17 +4,17 @@ use App\Content\InvalidPortionRequest;
 use App\Content\Portion;
 use Illuminate\Support\Arr;
 
-it('has 17 portions, in the order the generator publishes them', function () {
+it('has 18 portions, in the order the generator publishes them', function () {
     expect(Arr::pluck(Portion::cases(), 'value'))->toBe([
         'lab.rust', 'lab.go', 'quests.rust', 'quests.go',
         'cores.lowlevel', 'cores.infra', 'cores.play', 'cores.pc',
         'campaign.rust', 'campaign.go',
         'workshops.lowlevel', 'workshops.infra', 'workshops.play', 'workshops.pc',
-        'atlas.rust', 'atlas.go', 'guide',
+        'atlas.rust', 'atlas.go', 'guide', 'harness',
     ]);
 });
 
-// The expected values come from the spec's table of the 17 portions (Key Entities), not from the enum.
+// The expected values come from the spec's table of the 18 portions (Key Entities), not from the enum.
 it('gives each portion its group, what slices it and whether it holds exercises', function (Portion $portion, string $group, ?string $slice, bool $isExercises) {
     expect($portion->group())->toBe($group)
         ->and($portion->slice())->toBe($slice)
@@ -27,6 +27,7 @@ it('gives each portion its group, what slices it and whether it holds exercises'
     'infrastructure workshops' => [Portion::WorkshopsInfra, 'workshops', 'infra', false],
     'Rust atlas' => [Portion::AtlasRust, 'atlas', 'rust', false],
     'the guide is not sliced' => [Portion::Guide, 'guide', null, false],
+    'the harness is not sliced' => [Portion::Harness, 'harness', null, false],
 ]);
 
 it('slices each group by language, by domain or by nothing', function (string $group, ?string $parameter) {
@@ -39,6 +40,7 @@ it('slices each group by language, by domain or by nothing', function (string $g
     'cores' => ['cores', 'domain'],
     'workshops' => ['workshops', 'domain'],
     'guide' => ['guide', null],
+    'harness' => ['harness', null],
 ]);
 
 it('resolves each resource by its parameter', function (string $resource, array $query, Portion $expected) {
@@ -52,6 +54,8 @@ it('resolves each resource by its parameter', function (string $resource, array 
     'atlas' => ['atlas', ['language' => 'rust'], Portion::AtlasRust],
     'guide' => ['guide', [], Portion::Guide],
     'the guide ignores extra parameters' => ['guide', ['language' => 'rust'], Portion::Guide],
+    'the harness' => ['harness', [], Portion::Harness],
+    'the harness ignores extra parameters' => ['harness', ['language' => 'rust', 'domain' => 'pc'], Portion::Harness],
 ]);
 
 it('responds with one message per parameter when the request matches no portion', function (string $resource, array $query, array $parameters) {

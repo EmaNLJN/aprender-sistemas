@@ -40,6 +40,7 @@ final class ContentReader
             'workshops' => $this->workshopRows($portion),
             'campaign' => $this->worldRows($portion),
             'atlas' => ['atlas_concepts' => $this->get($this->active('atlas_concepts')->where('language', $portion->slice()))],
+            'harness' => ['harness_templates' => $this->get(DB::table('harness_templates')->orderBy('language'))],
             'guide' => collect(self::GUIDE_TABLES)->mapWithKeys(fn (string $table) => [$table => $this->get($this->active($table))])->all(),
             default => throw new LogicException("Grupo de porción desconocido: {$portion->group()}"),
         };

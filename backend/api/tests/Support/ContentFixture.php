@@ -22,7 +22,7 @@ final class ContentFixture
     private static array $directories = [];
 
     /** @param array<string, mixed> $meta */
-    private function __construct(public stdClass $document, public array $meta) {}
+    private function __construct(public stdClass $document, public stdClass $harness, public array $meta) {}
 
     public static function fromImage(): self
     {
@@ -30,6 +30,7 @@ final class ContentFixture
 
         return new self(
             json_decode(file_get_contents("{$path}/curriculum.json"), false, 512, JSON_THROW_ON_ERROR),
+            json_decode(file_get_contents("{$path}/harness.json"), false, 512, JSON_THROW_ON_ERROR),
             json_decode(file_get_contents("{$path}/curriculum.meta.json"), true, 512, JSON_THROW_ON_ERROR),
         );
     }
@@ -89,6 +90,7 @@ final class ContentFixture
         $document = $this->documentText($indent);
         $meta = $this->recomputedMeta($document);
         file_put_contents("{$directory}/curriculum.json", $document);
+        file_put_contents("{$directory}/harness.json", PublishedJson::encode($this->harness));
         file_put_contents("{$directory}/curriculum.meta.json", json_encode($editMeta === null ? $meta : $editMeta($meta), JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
         return $directory;
@@ -115,10 +117,7 @@ final class ContentFixture
             foreach ($list as $exercise) {
                 $meta['exercises'][$exercise->id] = [
                     'contentHash' => hash('sha256', PublishedJson::encode($exercise)),
-                    'gradingHash' => hash('sha256', self::canonical([
-                        'tests' => Arr::map($exercise->tests, fn (stdClass $test) => ['id' => $test->id, 'expression' => $test->expression]),
-                        'prediction' => ['options' => $exercise->prediction->options, 'answer' => $exercise->prediction->answer],
-                    ])),
+                    'gradingHash' => hash('sha256', self::canonical(self::grading($exercise))),
                     'starterHash' => hash('sha256', self::canonical($exercise->starter)),
                 ];
             }
@@ -135,8 +134,27 @@ final class ContentFixture
         return $indent === null ? $text."\n" : self::indented(json_decode($text), $indent)."\n";
     }
 
+    /** @return array<string, mixed> what grades an exercise; the Go imports join it only when there are some */
+    private static function grading(stdClass $exercise): array
+    {
+        $grading = [
+            'tests' => Arr::map($exercise->tests, fn (stdClass $test) => ['id' => $test->id, 'expression' => $test->expression]),
+            'prediction' => ['options' => $exercise->prediction->options, 'answer' => $exercise->prediction->answer],
+        ];
+        $imports = $exercise->language === 'go' ? array_values(array_unique($exercise->imports)) : [];
+        sort($imports, SORT_STRING);
+        if ($imports !== []) {
+            $grading['imports'] = $imports;
+        }
+
+        return $grading;
+    }
+
     private function part(Portion $portion): mixed
     {
+        if ($portion === Portion::Harness) {
+            return $this->harness;
+        }
         $group = $this->document->{$portion->group()};
 
         return $portion->slice() === null ? $group : $group->{$portion->slice()};

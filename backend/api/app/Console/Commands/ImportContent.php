@@ -64,7 +64,7 @@ final class ImportContent extends Command
         }
 
         if ($plan->isEmpty()) {
-            $this->info("El contenido ya está importado (sha256 {$hash}): se verificaron y precalentaron las 17 porciones, sin escribir nada.");
+            $this->info("El contenido ya está importado (sha256 {$hash}): se verificaron y precalentaron las 18 porciones, sin escribir nada.");
 
             return self::SUCCESS;
         }

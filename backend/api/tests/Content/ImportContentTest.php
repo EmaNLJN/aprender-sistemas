@@ -46,7 +46,7 @@ function importImageContent(): void
     importContent();
 }
 
-it('imports the image content: the 21 tables, its record and one grading version per exercise', function () {
+it('imports the image content: the 22 tables, its record and one grading version per exercise', function () {
     $this->artisan('content:import')->expectsOutputToContain('Importado el contenido sha256')->assertExitCode(0);
 
     $meta = imageMeta();
@@ -55,7 +55,7 @@ it('imports the image content: the 21 tables, its record and one grading version
         'exercise_grading_versions' => 274, 'exercise_tests' => 822, 'exercise_hints' => 822, 'workshop_objectives' => 75,
         'workshop_steps' => 100, 'workshop_related_exercises' => 118, 'worlds' => 8, 'world_exercises' => 48,
         'atlas_concepts' => 32, 'guide_resources' => 15, 'guide_sources' => 9, 'guide_tracks' => 2, 'guide_modules' => 8,
-        'guide_steps' => 24, 'guide_step_resources' => 56,
+        'guide_steps' => 24, 'guide_step_resources' => 56, 'harness_templates' => 2,
     ]);
     $import = DB::table('content_imports')->sole();
     expect($import->document_hash)->toBe($meta['documentHash'])
@@ -64,6 +64,8 @@ it('imports the image content: the 21 tables, its record and one grading version
         ->and(json_decode($import->counts, true))->toMatchArray(['exercises' => 274, 'exercise_tests' => 822, 'workshops' => 25, 'atlas_concepts' => 32])
         ->and(json_decode($import->changes, true)['new'])->toHaveCount(count($meta['exercises']))
         ->and(DB::table('exercises')->where('status', 'active')->count())->toBe(count($meta['exercises']))
+        ->and(DB::table('harness_templates')->orderBy('language')->pluck('template', 'language')->all())
+        ->toBe(['go' => json_decode(file_get_contents(ContentFixture::imagePath().'/harness.json'))->go, 'rust' => json_decode(file_get_contents(ContentFixture::imagePath().'/harness.json'))->rust])
         // FR-032: lab, quests and cores have no position in the chain until Essentials arrives.
         ->and(DB::table('catalogs')->pluck('chain_position', 'code')->all())->toBe(['cores' => null, 'lab' => null, 'quests' => null])
         ->and(importLockIsFree())->toBeTrue();
@@ -74,16 +76,17 @@ it('with the same content it writes nothing: migrate runs it on every up', funct
     $checksums = ContentDatabase::checksums();
 
     $writes = ContentDatabase::contentWritesDuring(function () {
-        $this->artisan('content:import')->expectsOutputToContain('ya está importado')->assertExitCode(0);
+        $this->artisan('content:import')->expectsOutputToContain('ya está importado (sha256 '.imageMeta()['documentHash'].'): se verificaron y precalentaron las 18 porciones')->assertExitCode(0);
     });
 
     expect($writes)->toBe([])->and(ContentDatabase::checksums())->toBe($checksums);
 });
 
-it('warms the body cache with the 17 portions', function () {
+it('warms the body cache with the 18 portions', function () {
     importImageContent();
     $hashes = json_decode(DB::table('content_imports')->value('portion_hashes'), true);
 
+    expect($hashes)->toHaveCount(18);
     foreach (Portion::cases() as $portion) {
         $missing = ! app(BodyCache::class)->has($portion, $hashes[$portion->value]) ? $portion->value : null;
         expect($missing)->toBeNull();
@@ -119,6 +122,24 @@ it('retires what leaves the document without deleting anything, and reactivates 
     $back = DB::table('exercises')->where('id', $gone)->first();
     expect($back->status)->toBe('active')->and($back->retired_at)->toBeNull()->and($back->position)->not->toBeNull()
         ->and(DB::table('exercise_tests')->where('exercise_id', $gone)->pluck('status')->unique()->all())->toBe(['active']);
+});
+
+it('a change only in the harness template writes one row and one record, and only the harness portion changes', function () {
+    importImageContent();
+    $before = json_decode(DB::table('content_imports')->value('portion_hashes'), true);
+    $documentHash = DB::table('content_imports')->value('document_hash');
+    $fixture = ContentFixture::fromImage();
+    $fixture->harness->rust .= "// edited\n";
+
+    useContentAt($fixture->write());
+    $writes = ContentDatabase::contentWritesDuring(fn () => importContent());
+
+    $after = json_decode(DB::table('content_imports')->orderByDesc('id')->value('portion_hashes'), true);
+    expect(collect($writes)->filter(fn (string $sql) => str_contains($sql, '`harness_templates`'))->all())->toHaveCount(1)
+        ->and(DB::table('content_imports')->count())->toBe(2)
+        ->and(array_keys(array_diff_assoc($after, $before)))->toBe(['harness'])
+        ->and(DB::table('content_imports')->orderByDesc('id')->value('document_hash'))->toBe($documentHash)
+        ->and(DB::table('harness_templates')->where('language', 'rust')->value('template'))->toEndWith("// edited\n");
 });
 
 it('--dry-run reports new, grading, text and retired, without writing', function () {
@@ -366,8 +387,7 @@ it('a test_key retired on its own is not reused, and the import leaves no trace'
     useContentAt(ContentFixture::imagePath());
     Artisan::call('content:import');
 
-    // The generator still demands t{index+1}, so "use a new one" cannot be done until B2 drops that rule.
-    expect(Artisan::output())->toContain('el test_key se retiró y no se reutiliza: esa prueba no puede volver hasta que B2 quite la regla t{i+1} del generador')
+    expect(Artisan::output())->toContain('el test_key se retiró y no se reutiliza: dale otra clave a la prueba nueva')
         ->and(ContentDatabase::checksums())->toBe($checksums);
 });
 
@@ -395,6 +415,10 @@ it('the rules between rows are checked with queries, and each one breaks by hand
     'two exercises with the same position' => [
         "update exercises set position = 0 where catalog = 'lab' and language = 'rust' and position = 1",
         'hay filas activas de exercises con la misma posición',
+    ],
+    'a language without a harness template' => [
+        "delete from harness_templates where language = 'go'",
+        'hay lenguajes sin plantilla del harness',
     ],
     'a catalog chain that does not start at 1' => [
         "update catalogs set chain_position = 2 where code = 'lab'",
