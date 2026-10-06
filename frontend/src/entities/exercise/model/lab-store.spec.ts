@@ -1,12 +1,19 @@
 import { describe, expect, it, vi } from 'vitest';
 import curriculum from '../../../../../build/curriculum.json';
 import fixture from '../../../../../qa/fixtures/progress-master-2a278ad-storage.json';
-import { backupKeysFor, type StorageLike } from '../../../shared/lib/versioned-storage';
+import type { StorageLike } from '../../../shared/lib/versioned-storage';
 import { createExerciseCatalog } from './exercise-catalog';
-import { createLabStore, labStore, type LabCatalogLookup } from './lab-store';
+import { createLabStore, labStore, type LabCatalogLookup, type LabStore } from './lab-store';
 import type { Exercise } from './types';
 
 const KEY = 'taller-laboratorio-v1';
+const BACKUP_KEYS = [
+  'taller-laboratorio-v1:respaldo',
+  'taller-laboratorio-v1:respaldo-2',
+  'taller-laboratorio-v1:respaldo-3',
+  'taller-laboratorio-v1:respaldo-4',
+  'taller-laboratorio-v1:respaldo-5',
+];
 
 function memoryStorage(initial: Record<string, string> = {}): StorageLike & {
   items: Map<string, string>;
@@ -115,7 +122,7 @@ describe('opening with the master fixture', () => {
     expect(setItem).not.toHaveBeenCalled();
     expect(store.loadWarning()).toBe('');
     expect(store.backups()).toEqual([]);
-    expect(backupKeysFor(KEY).some((slot) => storage.getItem(slot) !== null)).toBe(false);
+    expect(BACKUP_KEYS.some((slot) => storage.getItem(slot) !== null)).toBe(false);
     expect(store.storageAvailable()).toBe(true);
   });
 
@@ -230,18 +237,44 @@ describe('the revision of the changes', () => {
     expect(store.changes.getState().revision).toBe(0);
   });
 
-  it('shows the listener what was already written', () => {
-    const { store, storage } = openWith();
-    let seen: string | null = null;
-    store.changes.subscribe(() => {
-      seen = storage.getItem(KEY);
-    });
-    store.getProgress().records.r1 = { draft: 'written' };
+  const writingOperations: [string, (store: LabStore) => void, [string, string][]][] = [
+    [
+      'save',
+      (store) => {
+        store.getProgress().records.r1 = { draft: 'written' };
+        store.save();
+      },
+      [['r1', 'written']],
+    ],
+    [
+      'applyImport',
+      (store) =>
+        void store.applyImport(store.planImport({ version: 1, records: { r2: { draft: 'z' } } })),
+      [
+        ['r1', 'before'],
+        ['r2', 'z'],
+      ],
+    ],
+    ['reset', (store) => void store.reset(), []],
+  ];
 
-    store.save();
+  it.each(writingOperations)(
+    'shows the listener what %s already wrote',
+    (_name, operation, expectedDrafts) => {
+      const { store, storage } = openWith({ [KEY]: savedText({ r1: { draft: 'before' } }) });
+      let seen: string | null = null;
+      store.changes.subscribe(() => {
+        seen = storage.getItem(KEY);
+      });
 
-    expect(JSON.parse(seen!).records.r1.draft).toBe('written');
-  });
+      operation(store);
+
+      const records = Object.entries(
+        JSON.parse(seen!).records as Record<string, { draft: string }>,
+      );
+      expect(records.map(([id, record]) => [id, record.draft])).toEqual(expectedDrafts);
+    },
+  );
 
   it('leaves the write done when a listener throws', () => {
     const { store, storage } = openWith();
@@ -311,7 +344,7 @@ describe('importing and resetting', () => {
   it('resets by removing the saved keys and the notice', () => {
     const { store, storage } = openWith({
       [KEY]: '{not json',
-      [backupKeysFor(KEY)[0]]: 'old copy',
+      ['taller-laboratorio-v1:respaldo']: 'old copy',
     });
     expect(store.loadWarning()).not.toBe('');
 
@@ -331,8 +364,10 @@ describe('importing and resetting', () => {
     const { store, storage } = openWith({ [KEY]: savedText({ ghost: { draft: 'x' } }) });
 
     expect(store.loadWarning()).toBe(
-      `Se descartó 1 registro del laboratorio que esta versión no reconoce; se conservó una copia en ${backupKeysFor(KEY)[0]}.`,
+      `Se descartó 1 registro del laboratorio que esta versión no reconoce; se conservó una copia en taller-laboratorio-v1:respaldo.`,
     );
-    expect(storage.getItem(backupKeysFor(KEY)[0])).toBe(savedText({ ghost: { draft: 'x' } }));
+    expect(storage.getItem('taller-laboratorio-v1:respaldo')).toBe(
+      savedText({ ghost: { draft: 'x' } }),
+    );
   });
 });
