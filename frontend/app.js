@@ -1,14 +1,17 @@
-import { mergeRouteProgress } from './src/entities/guide';
+import {
+  ROUTE_FORMAT_ERROR,
+  mergeRouteProgress,
+  parseRouteProgress,
+  routeStore,
+} from './src/entities/guide';
 import { downloadBlob } from './src/shared/lib/download-file';
 import { escapeHtml } from './src/shared/lib/escape-html';
 import { isLosslessNormalization } from './src/shared/lib/is-lossless-normalization';
 import { isPlainObject } from './src/shared/lib/is-plain-object';
 import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
-import { describeLoadResult, openVersionedStore } from './src/shared/lib/versioned-storage';
 (() => {
   'use strict';
   const data = window.GUIDE_DATA;
-  const KEY = 'taller-learning-v1';
   const views = [
     'recorrido',
     'campana',
@@ -24,8 +27,6 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
   const allSteps = Object.values(data.tracks).flatMap((track) =>
     track.modules.flatMap((module) => module.steps),
   );
-  const stepIds = new Set(allSteps.map((step) => step.id));
-  const resourceIds = new Set(data.resources.map((resource) => resource.id));
   const milestones = [
     {
       id: 'memory',
@@ -63,90 +64,15 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
       hint: 'TCP transporta un flujo de bytes: cada lectura no equivale a un comando completo. Acumulá bytes hasta el delimitador. Después podés investigar varios clientes y acceso compartido a los datos.',
     },
   ];
-  const milestoneIds = new Set(
-    ['rust', 'go'].flatMap((language) => milestones.map((item) => language + '-' + item.id)),
-  );
-  const defaults = () => ({
-    version: 1,
-    language: 'rust',
-    completed: [],
-    milestones: [],
-    favorites: [],
-    quizAnswers: {},
-    notes: { rust: { learned: '', next: '' }, go: { learned: '', next: '' } },
-    minutes: 25,
-  });
-  const FORMAT_ERROR = 'Formato de progreso no compatible.';
-  const isObjectLike = (value) => Boolean(value) && typeof value === 'object';
-  // Normaliza el recorrido y cuenta cada dato que no conserva (IDs desconocidos, valores de
-  // otro tipo o fuera de rango). Lanza si la forma o la versión no se reconocen.
-  function parseProgress(raw) {
-    if (!isObjectLike(raw) || raw.version !== 1) throw new Error(FORMAT_ERROR);
-    const result = defaults();
-    let dropped = 0;
-    const languageIsValid = raw.language === 'rust' || raw.language === 'go';
-    if (raw.language !== undefined && !languageIsValid) dropped++;
-    result.language = raw.language === 'go' ? 'go' : 'rust';
-    const filtered = (items, valid) => {
-      if (items === undefined) return [];
-      if (!Array.isArray(items)) {
-        dropped++;
-        return [];
-      }
-      const kept = items.filter((id) => typeof id === 'string' && valid.has(id));
-      dropped += items.length - kept.length;
-      return [...new Set(kept)];
-    };
-    result.completed = filtered(raw.completed, stepIds);
-    result.milestones = filtered(raw.milestones, milestoneIds);
-    result.favorites = filtered(raw.favorites, resourceIds);
-    if ([15, 25, 45].includes(raw.minutes)) result.minutes = raw.minutes;
-    else if (raw.minutes !== undefined) dropped++;
-    for (const language of ['rust', 'go'])
-      for (const field of ['learned', 'next']) {
-        const value = raw.notes?.[language]?.[field];
-        if (typeof value === 'string') result.notes[language][field] = value.slice(0, 20000);
-        else if (value !== undefined) dropped++;
-      }
-    const answers = isObjectLike(raw.quizAnswers) ? raw.quizAnswers : {};
-    if (raw.quizAnswers !== undefined && answers !== raw.quizAnswers) dropped++;
-    for (const step of allSteps) {
-      const answer = answers[step.id];
-      if (Number.isInteger(answer) && answer >= 0 && answer < step.quiz.options.length)
-        result.quizAnswers[step.id] = answer;
-    }
-    dropped += Object.keys(answers).length - Object.keys(result.quizAnswers).length;
-    return { state: result, dropped };
-  }
-  function loadNoticeFor(loaded) {
-    if (loaded.status === 'unavailable')
-      return 'No se pudo leer o guardar el avance. Podés exportarlo al terminar.';
-    return describeLoadResult(loaded, 'del recorrido');
-  }
-  // Si otra pestaña guardó mientras tanto, notas, respuestas y conjuntos siguen la regla de
-  // importación (mergeRouteProgress), pero el idioma y los minutos de esta pestaña ganan.
-  function mergeStoredRoute(stored, local) {
-    return {
-      ...mergeRouteProgress(stored, local),
-      language: local.language,
-      minutes: local.minutes,
-    };
-  }
-  const store = openVersionedStore(KEY, {
-    blank: defaults,
-    parse: parseProgress,
-    merge: mergeStoredRoute,
-  });
   // Nunca escribe al cargar: la primera escritura es una acción del alumno.
-  const loaded = store.load();
-  let state = loaded.state;
-  let storageAvailable = loaded.writable;
+  routeStore.open(data);
+  const routeState = () => routeStore.getProgress();
   const filters = { query: '', language: 'all', category: 'all', cost: 'all', favorites: false };
   const campaignInit = window.TallerCampaign?.init();
   const systemsInit = window.TallerSystems?.init();
   // Los avisos de todos los almacenes se muestran juntos; ninguno pisa a otro.
   const loadNotices = [
-    loadNoticeFor(loaded),
+    routeStore.loadWarning(),
     campaignInit?.loadWarning,
     systemsInit?.loadWarning,
     window.TallerLab?.loadWarning?.(),
@@ -154,7 +80,7 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
   function syncLinkedLanguage() {
     const params = new URLSearchParams(location.search);
     if (location.hash === '#sistemas' && ['rust', 'go'].includes(params.get('lenguaje')))
-      state.language = params.get('lenguaje');
+      routeState().language = params.get('lenguaje');
     if (location.hash === '#campana')
       for (const lang of ['rust', 'go'])
         if (
@@ -162,27 +88,25 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
             (world) => world.id === params.get('mundo'),
           )
         )
-          state.language = lang;
+          routeState().language = lang;
     const linked = window.TallerLab?.getExercises().find(
       (item) => item.id === params.get('ejercicio'),
     );
-    if (location.hash === '#laboratorio' && linked) state.language = linked.language;
+    if (location.hash === '#laboratorio' && linked) routeState().language = linked.language;
   }
   syncLinkedLanguage();
   let currentView = views.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'recorrido';
   let currentStepId = null;
   let lessonOpener = null;
   let toastTimeout;
-  const timer = { running: false, remaining: state.minutes * 60, deadline: 0 };
+  const timer = { running: false, remaining: routeState().minutes * 60, deadline: 0 };
   function save() {
-    const result = store.write(state);
-    state = result.state;
-    storageAvailable = result.saved;
+    const saved = routeStore.save();
     updateSaveLabel();
-    return result.saved;
+    return saved;
   }
   function updateSaveLabel() {
-    $('#save-label').textContent = storageAvailable
+    $('#save-label').textContent = routeStore.storageAvailable()
       ? 'Guardado en este navegador'
       : 'Exportá para conservar tu avance';
   }
@@ -206,14 +130,18 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
     if (index === -1) collection.push(id);
     else collection.splice(index, 1);
   }
-  const stepsFor = () => data.tracks[state.language].modules.flatMap((module) => module.steps);
+  const stepsFor = () =>
+    data.tracks[routeState().language].modules.flatMap((module) => module.steps);
   const completedCount = () =>
-    stepsFor().filter((step) => state.completed.includes(step.id)).length;
-  const languageName = () => (state.language === 'rust' ? 'Rust' : 'Go');
+    stepsFor().filter((step) => routeState().completed.includes(step.id)).length;
+  const languageName = () => (routeState().language === 'rust' ? 'Rust' : 'Go');
   function syncShell() {
-    document.body.dataset.language = state.language;
+    document.body.dataset.language = routeState().language;
     $$('[data-language]').forEach((button) =>
-      button.setAttribute('aria-pressed', String(button.dataset.language === state.language)),
+      button.setAttribute(
+        'aria-pressed',
+        String(button.dataset.language === routeState().language),
+      ),
     );
     $$('[data-view]').forEach((link) => {
       if (link.dataset.view === currentView) link.setAttribute('aria-current', 'page');
@@ -247,35 +175,38 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
       metodo: renderMethod,
     };
     $('#main').innerHTML = renderers[currentView]();
-    if (currentView === 'campana') window.TallerCampaign.mount($('#main'), state.language, toast);
-    if (currentView === 'sistemas') window.TallerSystems.mount($('#main'), state.language, toast);
-    if (currentView === 'atlas') window.TallerAtlas.mount($('#main'), state.language);
-    if (currentView === 'laboratorio') window.TallerLab.mount($('#main'), state.language, toast);
+    if (currentView === 'campana')
+      window.TallerCampaign.mount($('#main'), routeState().language, toast);
+    if (currentView === 'sistemas')
+      window.TallerSystems.mount($('#main'), routeState().language, toast);
+    if (currentView === 'atlas') window.TallerAtlas.mount($('#main'), routeState().language);
+    if (currentView === 'laboratorio')
+      window.TallerLab.mount($('#main'), routeState().language, toast);
     if (currentView === 'biblioteca') renderResourceResults();
     updateTimer();
   }
   function routeCode() {
-    return state.language === 'rust'
+    return routeState().language === 'rust'
       ? '<span class="token">fn</span> main() {\n  <span class="token">let</span> curiosidad = <span class="token">true</span>;\n  <span class="comment">// Un problema a la vez.</span>\n  aprender(curiosidad);\n}'
       : '<span class="token">func</span> main() {\n  curiosidad := <span class="token">true</span>\n  <span class="comment">// Un problema a la vez.</span>\n  aprender(curiosidad)\n}';
   }
   function renderRoute() {
-    const track = data.tracks[state.language];
+    const track = data.tracks[routeState().language];
     const steps = stepsFor();
-    const next = steps.find((step) => !state.completed.includes(step.id));
+    const next = steps.find((step) => !routeState().completed.includes(step.id));
     const completed = completedCount();
     let openModule = track.modules.findIndex((module) =>
-      module.steps.some((step) => !state.completed.includes(step.id)),
+      module.steps.some((step) => !routeState().completed.includes(step.id)),
     );
     if (openModule === -1) openModule = track.modules.length - 1;
-    return `<section class="hero" aria-label="Bienvenida"><div><div class="eyebrow"><span class="eyebrow-line"></span> TU TALLER DE ${languageName().toUpperCase()}</div><h1>Entendé lo que<br>pasa <em>por dentro.</em></h1><p class="hero-description">Ya sabés programar. Ahora construí una comprensión más profunda, con desafíos pequeños y cosas que funcionan.</p><div class="hero-meta"><span class="pill accent">${state.language === 'rust' ? 'Rust · recomendado para vos' : 'Go · construir y experimentar'}</span><span>4 etapas</span><span aria-hidden="true">·</span><span>${steps.length} sesiones a tu ritmo</span></div></div><div class="code-art" aria-label="Ilustración de código, no es un ejercicio ejecutable"><div class="code-window"><div class="window-top"><div class="window-dots"><i></i><i></i><i></i></div><span>${state.language === 'rust' ? 'main.rs' : 'main.go'}</span></div><pre>${routeCode()}</pre></div><p class="art-caption">MENOS MIRAR. MÁS PROBAR. ↗</p></div></section>
+    return `<section class="hero" aria-label="Bienvenida"><div><div class="eyebrow"><span class="eyebrow-line"></span> TU TALLER DE ${languageName().toUpperCase()}</div><h1>Entendé lo que<br>pasa <em>por dentro.</em></h1><p class="hero-description">Ya sabés programar. Ahora construí una comprensión más profunda, con desafíos pequeños y cosas que funcionan.</p><div class="hero-meta"><span class="pill accent">${routeState().language === 'rust' ? 'Rust · recomendado para vos' : 'Go · construir y experimentar'}</span><span>4 etapas</span><span aria-hidden="true">·</span><span>${steps.length} sesiones a tu ritmo</span></div></div><div class="code-art" aria-label="Ilustración de código, no es un ejercicio ejecutable"><div class="code-window"><div class="window-top"><div class="window-dots"><i></i><i></i><i></i></div><span>${routeState().language === 'rust' ? 'main.rs' : 'main.go'}</span></div><pre>${routeCode()}</pre></div><p class="art-caption">MENOS MIRAR. MÁS PROBAR. ↗</p></div></section>
     ${!next ? '<div class="completion-banner">Completaste tu recorrido inicial. Elegí un proyecto, repetí un desafío con otra condición o volvé a un tema que quieras afianzar.</div>' : ''}
     <section class="focus-card" aria-label="Sesión de hoy"><div class="focus-content"><span class="small-label">${next ? `TU PRÓXIMO PASO · ${String(steps.indexOf(next) + 1).padStart(2, '0')} / ${steps.length}` : 'TU SIGUIENTE EXPERIMENTO'}</span><h2>${escapeHtml(next?.title || 'Llevá tu idea un paso más allá')}</h2><p>${escapeHtml(next?.objective || 'Tu almacén clave-valor puede aprender a guardar archivos, medir operaciones y recibir comandos por una conexión de red.')}</p>${next ? `<button class="button" data-action="lesson" data-id="${escapeHtml(next.id)}">Empezar esta sesión <span aria-hidden="true">↗</span></button>` : '<a class="button" href="#proyecto">Continuar mi proyecto <span aria-hidden="true">↗</span></a>'}</div>${timerMarkup()}</section>
-    <section aria-labelledby="route-title"><div class="section-heading"><div><h2 id="route-title">Un camino, paso a paso.</h2></div><span class="small-label">${completed} DE ${steps.length} COMPLETADOS</span></div><p class="route-intro">${escapeHtml(track.description)} Cada sesión es orientativa: podés dividirla y volver. Marcá un paso cuando puedas demostrar su resultado.</p><div class="modules">${track.modules.map((module, index) => `<details class="module" ${index === openModule ? 'open' : ''}><summary><span class="module-number">${String(index + 1).padStart(2, '0')}</span><span class="module-title"><strong>${escapeHtml(module.title)}</strong><span>${escapeHtml(module.subtitle)}</span></span><span class="module-count">${module.steps.filter((step) => state.completed.includes(step.id)).length}/${module.steps.length}</span><span class="module-chevron" aria-hidden="true">+</span></summary><div class="module-steps">${module.steps.map((step) => `<div class="step-row"><input class="step-check" type="checkbox" data-step-check="${escapeHtml(step.id)}" aria-label="Marcar como completado: ${escapeHtml(step.title)}" ${state.completed.includes(step.id) ? 'checked' : ''}><button class="step-title" data-action="lesson" data-id="${escapeHtml(step.id)}">${escapeHtml(step.title)}<span>Una sesión orientativa · ${step.minutes} min</span></button><button class="step-open" data-action="lesson" data-id="${escapeHtml(step.id)}" aria-label="Abrir ${escapeHtml(step.title)}">↗</button></div>`).join('')}</div></details>`).join('')}</div></section>
-    <div class="recommendation-strip"><span class="strip-icon" aria-hidden="true">i</span><p><strong>Un recurso principal. Un proyecto propio.</strong><br>${state.language === 'rust' ? 'Usá 100 Exercises como hilo conductor y el libro de Brown para destrabar conceptos. Rustlings es otra forma de practicar; no hace falta terminar todos los cursos.' : 'Empezá con el Tour y seguí con Learn Go with Tests. Usá Exercism para practicar un concepto o Gophercises para cambiar de desafío.'} <a href="#biblioteca">Explorá la biblioteca</a>.</p></div>`;
+    <section aria-labelledby="route-title"><div class="section-heading"><div><h2 id="route-title">Un camino, paso a paso.</h2></div><span class="small-label">${completed} DE ${steps.length} COMPLETADOS</span></div><p class="route-intro">${escapeHtml(track.description)} Cada sesión es orientativa: podés dividirla y volver. Marcá un paso cuando puedas demostrar su resultado.</p><div class="modules">${track.modules.map((module, index) => `<details class="module" ${index === openModule ? 'open' : ''}><summary><span class="module-number">${String(index + 1).padStart(2, '0')}</span><span class="module-title"><strong>${escapeHtml(module.title)}</strong><span>${escapeHtml(module.subtitle)}</span></span><span class="module-count">${module.steps.filter((step) => routeState().completed.includes(step.id)).length}/${module.steps.length}</span><span class="module-chevron" aria-hidden="true">+</span></summary><div class="module-steps">${module.steps.map((step) => `<div class="step-row"><input class="step-check" type="checkbox" data-step-check="${escapeHtml(step.id)}" aria-label="Marcar como completado: ${escapeHtml(step.title)}" ${routeState().completed.includes(step.id) ? 'checked' : ''}><button class="step-title" data-action="lesson" data-id="${escapeHtml(step.id)}">${escapeHtml(step.title)}<span>Una sesión orientativa · ${step.minutes} min</span></button><button class="step-open" data-action="lesson" data-id="${escapeHtml(step.id)}" aria-label="Abrir ${escapeHtml(step.title)}">↗</button></div>`).join('')}</div></details>`).join('')}</div></section>
+    <div class="recommendation-strip"><span class="strip-icon" aria-hidden="true">i</span><p><strong>Un recurso principal. Un proyecto propio.</strong><br>${routeState().language === 'rust' ? 'Usá 100 Exercises como hilo conductor y el libro de Brown para destrabar conceptos. Rustlings es otra forma de practicar; no hace falta terminar todos los cursos.' : 'Empezá con el Tour y seguí con Learn Go with Tests. Usá Exercism para practicar un concepto o Gophercises para cambiar de desafío.'} <a href="#biblioteca">Explorá la biblioteca</a>.</p></div>`;
   }
   function timerMarkup() {
-    return `<div class="focus-timer"><span class="small-label">UN RATO PARA VOS</span><div class="timer-options" role="group" aria-label="Duración de la sesión">${[15, 25, 45].map((minutes) => `<button data-action="duration" data-minutes="${minutes}" aria-pressed="${state.minutes === minutes}">${minutes} min</button>`).join('')}</div><div class="timer-digits" role="timer" aria-label="Tiempo restante">25:00</div><div class="timer-controls"><button class="text-button timer-toggle" data-action="timer">Iniciar foco</button><button class="text-button timer-reset" data-action="timer-reset" aria-label="Reiniciar temporizador">↺</button></div><p class="timer-note">El tiempo acompaña. La comprensión marca el ritmo.</p></div>`;
+    return `<div class="focus-timer"><span class="small-label">UN RATO PARA VOS</span><div class="timer-options" role="group" aria-label="Duración de la sesión">${[15, 25, 45].map((minutes) => `<button data-action="duration" data-minutes="${minutes}" aria-pressed="${routeState().minutes === minutes}">${minutes} min</button>`).join('')}</div><div class="timer-digits" role="timer" aria-label="Tiempo restante">25:00</div><div class="timer-controls"><button class="text-button timer-toggle" data-action="timer">Iniciar foco</button><button class="text-button timer-reset" data-action="timer-reset" aria-label="Reiniciar temporizador">↺</button></div><p class="timer-note">El tiempo acompaña. La comprensión marca el ritmo.</p></div>`;
   }
   function updateTimer() {
     if (timer.running) {
@@ -291,7 +222,7 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
     const button = $('.timer-toggle');
     const buttonText = timer.running
       ? 'Pausar'
-      : timer.remaining === state.minutes * 60 || timer.remaining === 0
+      : timer.remaining === routeState().minutes * 60 || timer.remaining === 0
         ? 'Iniciar foco'
         : 'Continuar';
     if (button && button.textContent !== buttonText) button.textContent = buttonText;
@@ -334,7 +265,7 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
           resource.languages.includes('both')) &&
         (filters.category === 'all' || resource.category === filters.category) &&
         (filters.cost === 'all' || resource.cost === filters.cost) &&
-        (!filters.favorites || state.favorites.includes(resource.id)),
+        (!filters.favorites || routeState().favorites.includes(resource.id)),
     );
     $('#resource-results-label').textContent =
       `${resources.length} de ${data.resources.length} recursos · abrí cada uno a tu ritmo`;
@@ -342,24 +273,24 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
       ? resources
           .map(
             (resource) =>
-              `<article class="resource-card"><div class="resource-top"><div class="resource-tags"><span class="pill ${resource.featured ? 'accent' : ''}">${resource.languages.includes('both') ? 'Go + Rust' : resource.languages.map((language) => (language === 'rust' ? 'Rust' : 'Go')).join(' + ')}</span><span class="pill">${resource.cost === 'gratis' ? 'Gratis' : 'Gratis + pago'}</span>${resource.featured ? '<span class="pill accent">Elegido para vos</span>' : ''}</div><button class="favorite-button" data-action="favorite" data-id="${escapeHtml(resource.id)}" aria-label="${state.favorites.includes(resource.id) ? 'Quitar de' : 'Guardar en'} favoritos: ${escapeHtml(resource.title)}" aria-pressed="${state.favorites.includes(resource.id)}">${state.favorites.includes(resource.id) ? '★' : '☆'}</button></div><h2>${escapeHtml(resource.title)}</h2><div class="resource-format">${escapeHtml(resource.format)}</div><p>${escapeHtml(resource.description)}</p><p class="resource-fit"><strong>Para vos:</strong> ${escapeHtml(resource.why)}</p><details><summary>Antes de empezar</summary><p>${escapeHtml(resource.caveat)}</p></details><a class="resource-link" href="${escapeHtml(resource.url)}" target="_blank" rel="noopener noreferrer">Explorar recurso <span aria-hidden="true">↗</span><span class="sr-only"></span></a></article>`,
+              `<article class="resource-card"><div class="resource-top"><div class="resource-tags"><span class="pill ${resource.featured ? 'accent' : ''}">${resource.languages.includes('both') ? 'Go + Rust' : resource.languages.map((language) => (language === 'rust' ? 'Rust' : 'Go')).join(' + ')}</span><span class="pill">${resource.cost === 'gratis' ? 'Gratis' : 'Gratis + pago'}</span>${resource.featured ? '<span class="pill accent">Elegido para vos</span>' : ''}</div><button class="favorite-button" data-action="favorite" data-id="${escapeHtml(resource.id)}" aria-label="${routeState().favorites.includes(resource.id) ? 'Quitar de' : 'Guardar en'} favoritos: ${escapeHtml(resource.title)}" aria-pressed="${routeState().favorites.includes(resource.id)}">${routeState().favorites.includes(resource.id) ? '★' : '☆'}</button></div><h2>${escapeHtml(resource.title)}</h2><div class="resource-format">${escapeHtml(resource.format)}</div><p>${escapeHtml(resource.description)}</p><p class="resource-fit"><strong>Para vos:</strong> ${escapeHtml(resource.why)}</p><details><summary>Antes de empezar</summary><p>${escapeHtml(resource.caveat)}</p></details><a class="resource-link" href="${escapeHtml(resource.url)}" target="_blank" rel="noopener noreferrer">Explorar recurso <span aria-hidden="true">↗</span><span class="sr-only"></span></a></article>`,
           )
           .join('')
       : '<div class="empty-state"><h2>Ningún recurso con esos filtros.</h2><p>Probá otro término o volvé a ver la biblioteca completa.</p><button class="button secondary" data-action="clear-filters">Limpiar filtros</button></div>';
   }
   function renderProject() {
     const done = milestones.filter((item) =>
-      state.milestones.includes(state.language + '-' + item.id),
+      routeState().milestones.includes(routeState().language + '-' + item.id),
     ).length;
-    return `<div class="page-heading"><div class="eyebrow"><span class="eyebrow-line"></span> UNA IDEA QUE CRECE CON VOS</div><h1>De una función<br>a <em>tu propio sistema.</em></h1><p>Un pequeño almacén clave-valor en ${languageName()}. Cada capacidad te da una razón para aprender el siguiente concepto. El proyecto tiene su propio avance: los ejercicios del recorrido lo preparan.</p></div><div class="project-hero"><div><span class="small-label">PROYECTO PERSONAL · ${done} / ${milestones.length} HITOS</span><h2>Tu primer taller de datos.</h2><p>Empezá en memoria. Sumá comandos, archivos, mediciones y, cuando estés listo, una conexión por red.</p></div><pre class="terminal"><span class="prompt">&gt;</span> SET curiosidad encendida\nOK\n<span class="prompt">&gt;</span> GET curiosidad\nencendida\n<span class="prompt">&gt;</span> _</pre></div><div class="milestones">${milestones.map((item, index) => `<article class="milestone"><div class="milestone-head"><input class="step-check" type="checkbox" data-milestone="${state.language}-${item.id}" aria-label="Completar hito: ${escapeHtml(item.title)}" ${state.milestones.includes(state.language + '-' + item.id) ? 'checked' : ''}><h2>${String(index + 1).padStart(2, '0')}. ${escapeHtml(item.title)}</h2></div><p>${escapeHtml(item.task)}</p><p><strong>Está listo cuando:</strong> ${escapeHtml(item.done)}</p><details><summary>Necesito una pista</summary><p>${escapeHtml(item.hint)}</p></details></article>`).join('')}</div><div class="recommendation-strip"><span class="strip-icon" aria-hidden="true">↗</span><p><strong>¿Preferís un reto con tests externos?</strong><br>CodeCrafters propone construir una shell o un servidor HTTP. Protohackers prueba tus servidores de protocolos. <a href="#biblioteca" data-project-library>Encontralos en la biblioteca</a>.</p></div>`;
+    return `<div class="page-heading"><div class="eyebrow"><span class="eyebrow-line"></span> UNA IDEA QUE CRECE CON VOS</div><h1>De una función<br>a <em>tu propio sistema.</em></h1><p>Un pequeño almacén clave-valor en ${languageName()}. Cada capacidad te da una razón para aprender el siguiente concepto. El proyecto tiene su propio avance: los ejercicios del recorrido lo preparan.</p></div><div class="project-hero"><div><span class="small-label">PROYECTO PERSONAL · ${done} / ${milestones.length} HITOS</span><h2>Tu primer taller de datos.</h2><p>Empezá en memoria. Sumá comandos, archivos, mediciones y, cuando estés listo, una conexión por red.</p></div><pre class="terminal"><span class="prompt">&gt;</span> SET curiosidad encendida\nOK\n<span class="prompt">&gt;</span> GET curiosidad\nencendida\n<span class="prompt">&gt;</span> _</pre></div><div class="milestones">${milestones.map((item, index) => `<article class="milestone"><div class="milestone-head"><input class="step-check" type="checkbox" data-milestone="${routeState().language}-${item.id}" aria-label="Completar hito: ${escapeHtml(item.title)}" ${routeState().milestones.includes(routeState().language + '-' + item.id) ? 'checked' : ''}><h2>${String(index + 1).padStart(2, '0')}. ${escapeHtml(item.title)}</h2></div><p>${escapeHtml(item.task)}</p><p><strong>Está listo cuando:</strong> ${escapeHtml(item.done)}</p><details><summary>Necesito una pista</summary><p>${escapeHtml(item.hint)}</p></details></article>`).join('')}</div><div class="recommendation-strip"><span class="strip-icon" aria-hidden="true">↗</span><p><strong>¿Preferís un reto con tests externos?</strong><br>CodeCrafters propone construir una shell o un servidor HTTP. Protohackers prueba tus servidores de protocolos. <a href="#biblioteca" data-project-library>Encontralos en la biblioteca</a>.</p></div>`;
   }
   function tutorPrompt() {
-    return `Estoy aprendiendo ${languageName()} y ya sé programar. Me interesan los sistemas y el rendimiento. Tengo ${state.minutes} minutos. Trabajemos un concepto con un ejercicio pequeño relacionado con archivos, memoria o redes.\n\nPrimero pedime predecir qué va a pasar y justificarlo. Esperá mi intento. Después dame una pista por vez, sin escribir ni modificar mi solución.\n\nCuando aparezca una duda de API, consultá Context7 o documentación oficial y enlazá la fuente. Si no tenés acceso, decímelo. Al terminar, pedime resolver una variante y explicar qué aprendí.\n\nMi próximo paso: ${state.notes[state.language].next || 'elegir un desafío pequeño del recorrido.'}`;
+    return `Estoy aprendiendo ${languageName()} y ya sé programar. Me interesan los sistemas y el rendimiento. Tengo ${routeState().minutes} minutos. Trabajemos un concepto con un ejercicio pequeño relacionado con archivos, memoria o redes.\n\nPrimero pedime predecir qué va a pasar y justificarlo. Esperá mi intento. Después dame una pista por vez, sin escribir ni modificar mi solución.\n\nCuando aparezca una duda de API, consultá Context7 o documentación oficial y enlazá la fuente. Si no tenés acceso, decímelo. Al terminar, pedime resolver una variante y explicar qué aprendí.\n\nMi próximo paso: ${routeState().notes[routeState().language].next || 'elegir un desafío pequeño del recorrido.'}`;
   }
   // Ranuras de respaldo de todos los almacenes, cada una con el área a la que pertenece.
   function collectBackups() {
     const sources = [
-      ['recorrido', store.backups()],
+      ['recorrido', routeStore.backups()],
       ['laboratorio', window.TallerLab?.backups?.() ?? []],
       ['campaña', window.TallerCampaignEngine?.backups?.() ?? []],
       ['Sistemas', window.TallerSystemsEngine?.backups?.() ?? []],
@@ -388,7 +319,7 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
     toast('Respaldo descargado.');
   }
   function renderMethod() {
-    return `<div class="page-heading"><div class="eyebrow"><span class="eyebrow-line"></span> HACER ESPACIO PARA APRENDER</div><h1>Menos inercia.<br><em>Más curiosidad.</em></h1><p>No necesitás una tarde libre. Necesitás un problema pequeño y un lugar al que volver. Esta es una propuesta flexible, no una obligación diaria.</p></div><div class="method-grid"><section class="method-panel"><h2>Una sesión de 25 minutos.</h2><ol class="routine"><li><span class="routine-time">03′</span><span><strong>Recordá sin mirar.</strong><br>Reconstruí una idea de la sesión anterior.</span></li><li><span class="routine-time">17′</span><span><strong>Escribí, ejecutá, probá.</strong><br>Un ejercicio o una modificación pequeña. Si te trabás, buscá una pista concreta.</span></li><li><span class="routine-time">05′</span><span><strong>Dejá un hilo para volver.</strong><br>Anotá qué entendiste y el siguiente paso exacto.</span></li></ol><p style="margin:22px 0 0">¿Día complicado? Cinco minutos para un test o una pregunta también cuentan. Si elegís otra duración, adaptá los bloques sin apuro.</p></section><section class="method-panel"><h2>Aprender con intención.</h2><ul><li>Elegí un curso principal y un proyecto.</li><li>Después de resolver, cambiá una condición.</li><li>De vez en cuando, volvé a escribir algo desde cero.</li><li>Usá la IA para preguntas y pistas. Probá desactivar la generación de bloques completos durante los ejercicios.</li><li>Medí avance por lo que podés explicar y demostrar.</li></ul></section></div><section class="method-panel notes-panel"><h2>Tu bitácora de ${languageName()}.</h2><div class="notes-grid"><label><span class="field-label">Lo que entendí / lo que todavía me cuesta</span><textarea id="note-learned" data-note="learned" maxlength="20000" placeholder="Hoy entendí por qué…">${escapeHtml(state.notes[state.language].learned)}</textarea></label><label><span class="field-label">La próxima vez voy a…</span><textarea id="note-next" data-note="next" maxlength="20000" placeholder="Dejá una acción concreta: escribir un test para…">${escapeHtml(state.notes[state.language].next)}</textarea></label></div><p id="note-state" class="note-state">${storageAvailable ? 'Tus notas se guardan automáticamente en este navegador.' : 'El guardado no está disponible. Exportá tu avance al terminar.'}</p></section><section class="method-panel notes-panel"><h2>Un tutor que te haga pensar.</h2><p>Copiá este pedido en tu asistente. Context7 aporta documentación; el asistente acompaña con preguntas. El acceso a Context7 depende de las herramientas de ese asistente.</p><blockquote class="tutor-prompt" id="tutor-prompt">${escapeHtml(tutorPrompt())}</blockquote><button class="button secondary" data-action="copy-prompt">Copiar pedido para mi tutor <span aria-hidden="true">↗</span></button></section><section class="method-panel notes-panel"><h2>Las fuentes, a mano.</h2><p>La selección combina sitios originales y experiencias de comunidad. Los hilos son opiniones, no un consenso. Las duraciones del recorrido son propuestas de esta guía.</p><ul class="source-list">${data.sources.map((source) => `<li><a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.title)} ↗</a><p>${escapeHtml(source.note)}</p></li>`).join('')}</ul></section>${backupsPanel()}<section class="method-panel notes-panel"><h2>Tu progreso te pertenece.</h2><p>Pasos, favoritos, respuestas y notas se guardan en este navegador. Incluyen también XP, sellos e insignias de campaña, más los talleres, notas y etapas de Sistemas. No se sincronizan entre dispositivos. Si cambiás de navegador, movés el archivo o borrás sus datos, exportá antes una copia.</p><div class="data-actions"><button class="button secondary" data-action="export">Exportar progreso</button><button class="button secondary" data-action="import">Importar una copia</button><button class="text-button" data-action="reset">Borrar mi progreso</button></div><p class="data-explainer">Importar combina los pasos y favoritos. Para notas y respuestas del mismo tema, conserva los valores de la copia importada. El temporizador no forma parte del respaldo.</p></section>`;
+    return `<div class="page-heading"><div class="eyebrow"><span class="eyebrow-line"></span> HACER ESPACIO PARA APRENDER</div><h1>Menos inercia.<br><em>Más curiosidad.</em></h1><p>No necesitás una tarde libre. Necesitás un problema pequeño y un lugar al que volver. Esta es una propuesta flexible, no una obligación diaria.</p></div><div class="method-grid"><section class="method-panel"><h2>Una sesión de 25 minutos.</h2><ol class="routine"><li><span class="routine-time">03′</span><span><strong>Recordá sin mirar.</strong><br>Reconstruí una idea de la sesión anterior.</span></li><li><span class="routine-time">17′</span><span><strong>Escribí, ejecutá, probá.</strong><br>Un ejercicio o una modificación pequeña. Si te trabás, buscá una pista concreta.</span></li><li><span class="routine-time">05′</span><span><strong>Dejá un hilo para volver.</strong><br>Anotá qué entendiste y el siguiente paso exacto.</span></li></ol><p style="margin:22px 0 0">¿Día complicado? Cinco minutos para un test o una pregunta también cuentan. Si elegís otra duración, adaptá los bloques sin apuro.</p></section><section class="method-panel"><h2>Aprender con intención.</h2><ul><li>Elegí un curso principal y un proyecto.</li><li>Después de resolver, cambiá una condición.</li><li>De vez en cuando, volvé a escribir algo desde cero.</li><li>Usá la IA para preguntas y pistas. Probá desactivar la generación de bloques completos durante los ejercicios.</li><li>Medí avance por lo que podés explicar y demostrar.</li></ul></section></div><section class="method-panel notes-panel"><h2>Tu bitácora de ${languageName()}.</h2><div class="notes-grid"><label><span class="field-label">Lo que entendí / lo que todavía me cuesta</span><textarea id="note-learned" data-note="learned" maxlength="20000" placeholder="Hoy entendí por qué…">${escapeHtml(routeState().notes[routeState().language].learned)}</textarea></label><label><span class="field-label">La próxima vez voy a…</span><textarea id="note-next" data-note="next" maxlength="20000" placeholder="Dejá una acción concreta: escribir un test para…">${escapeHtml(routeState().notes[routeState().language].next)}</textarea></label></div><p id="note-state" class="note-state">${routeStore.storageAvailable() ? 'Tus notas se guardan automáticamente en este navegador.' : 'El guardado no está disponible. Exportá tu avance al terminar.'}</p></section><section class="method-panel notes-panel"><h2>Un tutor que te haga pensar.</h2><p>Copiá este pedido en tu asistente. Context7 aporta documentación; el asistente acompaña con preguntas. El acceso a Context7 depende de las herramientas de ese asistente.</p><blockquote class="tutor-prompt" id="tutor-prompt">${escapeHtml(tutorPrompt())}</blockquote><button class="button secondary" data-action="copy-prompt">Copiar pedido para mi tutor <span aria-hidden="true">↗</span></button></section><section class="method-panel notes-panel"><h2>Las fuentes, a mano.</h2><p>La selección combina sitios originales y experiencias de comunidad. Los hilos son opiniones, no un consenso. Las duraciones del recorrido son propuestas de esta guía.</p><ul class="source-list">${data.sources.map((source) => `<li><a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.title)} ↗</a><p>${escapeHtml(source.note)}</p></li>`).join('')}</ul></section>${backupsPanel()}<section class="method-panel notes-panel"><h2>Tu progreso te pertenece.</h2><p>Pasos, favoritos, respuestas y notas se guardan en este navegador. Incluyen también XP, sellos e insignias de campaña, más los talleres, notas y etapas de Sistemas. No se sincronizan entre dispositivos. Si cambiás de navegador, movés el archivo o borrás sus datos, exportá antes una copia.</p><div class="data-actions"><button class="button secondary" data-action="export">Exportar progreso</button><button class="button secondary" data-action="import">Importar una copia</button><button class="text-button" data-action="reset">Borrar mi progreso</button></div><p class="data-explainer">Importar combina los pasos y favoritos. Para notas y respuestas del mismo tema, conserva los valores de la copia importada. El temporizador no forma parte del respaldo.</p></section>`;
   }
   function openLesson(id, opener) {
     const step = allSteps.find((item) => item.id === id);
@@ -405,12 +336,12 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
         )
         .join(
           '',
-        )}</div><div class="quiz"><h3>Antes de seguir: ${escapeHtml(step.quiz.question)}</h3><div class="quiz-options">${step.quiz.options.map((option, index) => `<button class="quiz-option" data-dialog-action="answer" data-answer="${index}" aria-pressed="${state.quizAnswers[id] === index}"><span class="option-letter">${String.fromCharCode(65 + index)}</span><span>${escapeHtml(option)}</span></button>`).join('')}</div><p class="quiz-feedback" id="quiz-feedback" role="status" aria-live="polite" hidden></p></div><div class="dialog-actions"><button class="button secondary" data-dialog-action="close">Seguir después</button><button class="button" data-dialog-action="complete">${state.completed.includes(id) ? 'Volver a practicar' : 'Marcar como hecho'} <span aria-hidden="true">✓</span></button></div>`;
+        )}</div><div class="quiz"><h3>Antes de seguir: ${escapeHtml(step.quiz.question)}</h3><div class="quiz-options">${step.quiz.options.map((option, index) => `<button class="quiz-option" data-dialog-action="answer" data-answer="${index}" aria-pressed="${routeState().quizAnswers[id] === index}"><span class="option-letter">${String.fromCharCode(65 + index)}</span><span>${escapeHtml(option)}</span></button>`).join('')}</div><p class="quiz-feedback" id="quiz-feedback" role="status" aria-live="polite" hidden></p></div><div class="dialog-actions"><button class="button secondary" data-dialog-action="close">Seguir después</button><button class="button" data-dialog-action="complete">${routeState().completed.includes(id) ? 'Volver a practicar' : 'Marcar como hecho'} <span aria-hidden="true">✓</span></button></div>`;
     showQuizFeedback(step);
     $('#lesson-dialog').showModal();
   }
   function showQuizFeedback(step) {
-    const answer = state.quizAnswers[step.id];
+    const answer = routeState().quizAnswers[step.id];
     const feedback = $('#quiz-feedback');
     if (answer === undefined) {
       feedback.hidden = true;
@@ -429,19 +360,19 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
     if (action === 'close') $('#lesson-dialog').close();
     if (action === 'answer') {
       const step = allSteps.find((item) => item.id === currentStepId);
-      state.quizAnswers[currentStepId] = Number(button.dataset.answer);
+      routeState().quizAnswers[currentStepId] = Number(button.dataset.answer);
       save();
       $$('.quiz-option').forEach((option) =>
         option.setAttribute(
           'aria-pressed',
-          String(Number(option.dataset.answer) === state.quizAnswers[currentStepId]),
+          String(Number(option.dataset.answer) === routeState().quizAnswers[currentStepId]),
         ),
       );
       showQuizFeedback(step);
     }
     if (action === 'complete') {
-      const wasComplete = state.completed.includes(currentStepId);
-      toggleItem(state.completed, currentStepId);
+      const wasComplete = routeState().completed.includes(currentStepId);
+      toggleItem(routeState().completed, currentStepId);
       save();
       $('#lesson-dialog').close();
       render();
@@ -461,7 +392,7 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
       [
         JSON.stringify(
           {
-            ...state,
+            ...routeState(),
             lab: window.TallerLab?.exportState(),
             campaign: window.TallerCampaignEngine?.exportState(),
             systems: window.TallerSystemsEngine?.exportState(),
@@ -512,12 +443,15 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
     const action = button.dataset.action;
     if (action === 'lesson') openLesson(button.dataset.id, button);
     if (action === 'duration') {
-      state.minutes = Number(button.dataset.minutes);
+      routeState().minutes = Number(button.dataset.minutes);
       timer.running = false;
-      timer.remaining = state.minutes * 60;
+      timer.remaining = routeState().minutes * 60;
       save();
       $$('[data-action="duration"]').forEach((item) =>
-        item.setAttribute('aria-pressed', String(Number(item.dataset.minutes) === state.minutes)),
+        item.setAttribute(
+          'aria-pressed',
+          String(Number(item.dataset.minutes) === routeState().minutes),
+        ),
       );
       updateTimer();
     }
@@ -526,7 +460,7 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
         updateTimer();
         timer.running = false;
       } else {
-        if (timer.remaining <= 0) timer.remaining = state.minutes * 60;
+        if (timer.remaining <= 0) timer.remaining = routeState().minutes * 60;
         timer.deadline = Date.now() + timer.remaining * 1000;
         timer.running = true;
       }
@@ -534,11 +468,11 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
     }
     if (action === 'timer-reset') {
       timer.running = false;
-      timer.remaining = state.minutes * 60;
+      timer.remaining = routeState().minutes * 60;
       updateTimer();
     }
     if (action === 'favorite') {
-      toggleItem(state.favorites, button.dataset.id);
+      toggleItem(routeState().favorites, button.dataset.id);
       save();
       renderResourceResults();
       $(`[data-action="favorite"][data-id="${button.dataset.id}"]`)?.focus({ preventScroll: true });
@@ -570,13 +504,13 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
   $('#main').addEventListener('change', (event) => {
     const target = event.target;
     if (target.dataset.stepCheck) {
-      toggleItem(state.completed, target.dataset.stepCheck);
+      toggleItem(routeState().completed, target.dataset.stepCheck);
       save();
       render();
       restoreStepFocus(target.dataset.stepCheck, true);
     }
     if (target.dataset.milestone) {
-      toggleItem(state.milestones, target.dataset.milestone);
+      toggleItem(routeState().milestones, target.dataset.milestone);
       save();
       render();
       $(`[data-milestone="${target.dataset.milestone}"]`)?.focus({ preventScroll: true });
@@ -601,9 +535,9 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
       renderResourceResults();
     }
     if (target.dataset.note) {
-      state.notes[state.language][target.dataset.note] = target.value;
+      routeState().notes[routeState().language][target.dataset.note] = target.value;
       save();
-      $('#note-state').textContent = storageAvailable
+      $('#note-state').textContent = routeStore.storageAvailable()
         ? 'Guardado. Tu próxima sesión ya tiene un punto de partida.'
         : 'No se pudo guardar. Exportá tu avance al terminar.';
       $('#tutor-prompt').textContent = tutorPrompt();
@@ -611,10 +545,10 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
   });
   $$('[data-language]').forEach((button) =>
     button.addEventListener('click', () => {
-      if (state.language === button.dataset.language) return;
-      state.language = button.dataset.language;
+      if (routeState().language === button.dataset.language) return;
+      routeState().language = button.dataset.language;
       const url = new URL(location.href);
-      if (currentView === 'sistemas') url.searchParams.set('lenguaje', state.language);
+      if (currentView === 'sistemas') url.searchParams.set('lenguaje', routeState().language);
       else url.search = '';
       history.replaceState(null, '', url);
       save();
@@ -642,17 +576,16 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
   $('#export-progress').addEventListener('click', exportProgress);
   $('#cancel-reset').addEventListener('click', () => $('#confirm-dialog').close());
   $('#confirm-reset').addEventListener('click', () => {
-    state = defaults();
     // Un adaptador ausente devuelve undefined y no cuenta como fallo; sólo `false` lo es.
     const removals = [
-      store.remove(),
+      routeStore.reset(),
       window.TallerLab?.reset(),
       window.TallerCampaignEngine?.reset()?.removed,
       window.TallerSystemsEngine?.reset()?.removed,
     ];
     window.TallerSystems?.resetSimulations();
     timer.running = false;
-    timer.remaining = state.minutes * 60;
+    timer.remaining = routeState().minutes * 60;
     save();
     $('#confirm-dialog').close();
     render();
@@ -672,16 +605,16 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
   ];
   // Orden en que el aviso nombra las áreas con datos omitidos.
   const NOTICE_AREAS = ['recorrido', 'laboratorio', 'campaña', 'Sistemas'];
-  // Calcula el recorrido resultante sin tocar `state`. Lanza si el JSON no es un objeto
+  // Calcula el recorrido resultante sin tocar el estado del recorrido. Lanza si el JSON no es un objeto
   // reconocible. `lossy` avisa que se descartaron o cambiaron datos de la copia.
   function planRouteImport(rawImport) {
-    if (!isPlainObject(rawImport)) throw new Error(FORMAT_ERROR);
-    const parsed = parseProgress(rawImport);
+    if (!isPlainObject(rawImport)) throw new Error(ROUTE_FORMAT_ERROR);
+    const parsed = parseRouteProgress(rawImport, data);
     const rawRoute = Object.fromEntries(
       Object.entries(rawImport).filter(([key]) => !NON_ROUTE_KEYS.includes(key)),
     );
     return {
-      state: mergeRouteProgress(state, parsed.state),
+      state: mergeRouteProgress(routeState(), parsed.state),
       lossy: parsed.dropped > 0 || !isLosslessNormalization(rawRoute, parsed.state),
     };
   }
@@ -732,8 +665,8 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
       for (const { area, adapter, plan } of sectionPlans) {
         if (adapter.applyImport(plan) === false) unsaved.add(area);
       }
-      state = routePlan.state;
-      if (!save()) unsaved.add('recorrido');
+      if (!routeStore.applyImport(routePlan)) unsaved.add('recorrido');
+      updateSaveLabel();
       syncDerivedSeals();
       render();
       toast(importNotice(routePlan, sectionPlans, unsaved));
