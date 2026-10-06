@@ -1,13 +1,7 @@
 <?php
 
-use App\Content\Codec\AtlasCodec;
-use App\Content\Codec\ExerciseCodec;
-use App\Content\Codec\GuideCodec;
-use App\Content\Codec\WorkshopCodec;
-use App\Content\Codec\WorldCodec;
 use App\Content\ContentDiff;
 use App\Content\ContentPlan;
-use App\Content\ContentRows;
 use App\Content\ContentSource;
 use App\Content\ContentTables;
 use App\Content\InvalidContent;
@@ -15,6 +9,7 @@ use App\Content\LatestImport;
 use App\Content\RowSet;
 use Illuminate\Support\Arr;
 use Tests\Support\ContentFixture;
+use Tests\Support\ContentPipeline;
 
 afterEach(fn () => ContentFixture::cleanup());
 
@@ -26,7 +21,7 @@ function diffDesired(?Closure $edit = null, ?Closure $editMeta = null): array
         $edit($fixture);
     }
     $source = ContentSource::fromDirectory($fixture->write(editMeta: $editMeta));
-    $rows = new ContentRows(new ExerciseCodec, new WorkshopCodec, new WorldCodec, new AtlasCodec, new GuideCodec);
+    $rows = ContentPipeline::rows();
 
     return [$rows->fromSource($source), $source];
 }
@@ -69,7 +64,7 @@ function gradingVersionsOf(RowSet $rows): array
 
 function latestImportFor(ContentSource $source, ?string $commit = null): LatestImport
 {
-    return new LatestImport(1, $source->documentHash(), $commit, $source->meta['portions']);
+    return new LatestImport(1, $source->documentHash(), $commit, $source->meta->portionHashes);
 }
 
 /** @return array<string, int> how many rows the plan writes, for each table that has any */
@@ -85,7 +80,7 @@ it('with the same document there is nothing to write or record', function () {
 
     expect($plan->isEmpty())->toBeTrue()
         ->and($plan->report->new)->toBe([])
-        ->and($plan->report->counts['exercises'])->toBe(count($source->meta['exercises']));
+        ->and($plan->report->counts['exercises'])->toBe(count(ContentFixture::fromImage()->meta['exercises']));
 });
 
 it('with an empty database everything is new and each exercise starts its grading version', function () {
@@ -94,8 +89,8 @@ it('with an empty database everything is new and each exercise starts its gradin
     $plan = (new ContentDiff)->between($rows, [], [], null, $source->meta);
 
     expect($plan->recordImport)->toBeTrue()
-        ->and($plan->report->new)->toHaveCount(count($source->meta['exercises']))
-        ->and($plan->gradingVersions)->toHaveCount(count($source->meta['exercises']))
+        ->and($plan->report->new)->toHaveCount(count(ContentFixture::fromImage()->meta['exercises']))
+        ->and($plan->gradingVersions)->toHaveCount(count(ContentFixture::fromImage()->meta['exercises']))
         ->and(writtenCounts($plan))->toBe(Arr::map($rows->toArray(), fn (array $tableRows) => count($tableRows)));
 });
 
@@ -249,10 +244,10 @@ it('records an import when the document or a portion changes, even if no table d
     $stored = storedRowsAfterImport($rows);
     $diff = fn (?LatestImport $latest) => (new ContentDiff)->between($rows, $stored, gradingVersionsOf($rows), $latest, $source->meta);
 
-    $otherDocument = new LatestImport(1, str_repeat('a', 64), null, $source->meta['portions']);
+    $otherDocument = new LatestImport(1, str_repeat('a', 64), null, $source->meta->portionHashes);
     expect($diff($otherDocument)->recordImport)->toBeTrue()->and($diff($otherDocument)->changesTables())->toBeFalse();
 
-    $otherPortion = new LatestImport(1, $source->documentHash(), null, ['guide' => str_repeat('b', 64)] + $source->meta['portions']);
+    $otherPortion = new LatestImport(1, $source->documentHash(), null, ['guide' => str_repeat('b', 64)] + $source->meta->portionHashes);
     expect($diff($otherPortion)->recordImport)->toBeTrue();
 
     // Another source commit with the same content is not a change.

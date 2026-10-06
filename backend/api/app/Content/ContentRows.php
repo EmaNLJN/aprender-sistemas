@@ -2,12 +2,13 @@
 
 namespace App\Content;
 
-use App\Content\Codec\AtlasCodec;
-use App\Content\Codec\ExerciseCodec;
-use App\Content\Codec\FieldMap;
-use App\Content\Codec\GuideCodec;
-use App\Content\Codec\WorkshopCodec;
-use App\Content\Codec\WorldCodec;
+use App\Content\Record\AtlasConcept;
+use App\Content\Record\Exercise;
+use App\Content\Record\Guide;
+use App\Content\Record\KeyOrder;
+use App\Content\Record\Language;
+use App\Content\Record\Workshop;
+use App\Content\Record\World;
 use Illuminate\Support\Arr;
 use stdClass;
 
@@ -19,14 +20,6 @@ use stdClass;
 final class ContentRows
 {
     private const FILE = 'curriculum.json';
-
-    public function __construct(
-        private ExerciseCodec $exercises,
-        private WorkshopCodec $workshops,
-        private WorldCodec $worlds,
-        private AtlasCodec $atlas,
-        private GuideCodec $guide,
-    ) {}
 
     public function fromSource(ContentSource $source): RowSet
     {
@@ -46,17 +39,13 @@ final class ContentRows
     private function languagesAndCatalogs(ContentSource $source, RowSet $rows): void
     {
         foreach ($source->languages() as $position => $code) {
-            $rows->add('languages', ['code' => $code, 'position' => $position + 1]);
+            $rows->add('languages', (new Language($code, $position + 1))->toRow());
         }
         $chain = [];
-        foreach ($source->meta['catalogs'] as $catalog) {
-            $rows->add('catalogs', [
-                'code' => $catalog['code'],
-                'slice_by' => $catalog['sliceBy'],
-                'chain_position' => $catalog['chainPosition'],
-            ]);
-            if ($catalog['chainPosition'] !== null) {
-                $chain[] = $catalog['chainPosition'];
+        foreach ($source->meta->catalogs as $catalog) {
+            $rows->add('catalogs', $catalog->toRow());
+            if ($catalog->chainPosition !== null) {
+                $chain[] = $catalog->chainPosition;
             }
         }
         sort($chain);
@@ -86,7 +75,7 @@ final class ContentRows
                 $index[$id] = ['catalog' => $catalog, 'language' => $language, 'domain' => $domain];
             }
         }
-        $this->requireInDocument('exercises', $source->meta['exercises'], $index);
+        $this->requireInDocument('exercises', $source->meta->exerciseHashes, $index);
 
         return $index;
     }
@@ -129,13 +118,13 @@ final class ContentRows
             foreach ($list as $position => $exercise) {
                 $at = "{$path}[{$position}]";
                 $id = $exercise->id;
-                $hashes = $source->meta['exercises'][$id]
+                $hashes = $source->meta->exerciseHashes[$id]
                     ?? throw InvalidContent::at('curriculum.meta.json', "exercises.{$id}", 'falta: regenerá los dos archivos juntos');
                 if (property_exists($exercise, 'workshopId') && ($owners[$id] ?? null) !== $exercise->workshopId) {
                     throw InvalidContent::at(self::FILE, "{$at}.workshopId", 'no es el taller que lista a '.$id.' en code');
                 }
                 $domain = $catalog === 'cores' ? $slice : null;
-                $fragment = $this->exercises->toRows($exercise, $catalog, $domain, $position, $hashes, $owners[$id] ?? null, $at);
+                $fragment = Exercise::fromDocument($exercise, $catalog, $domain, $position, $hashes, $owners[$id] ?? null, $at)->rowsByTable();
                 foreach ($fragment['topics'] as $topic) {
                     $key = "{$topic['language']}|{$topic['topic_key']}";
                     if (! isset($topics[$key])) {
@@ -159,21 +148,55 @@ final class ContentRows
                 $path = "workshops.{$domain}[{$position}]";
                 $id = $workshop->id;
                 $this->languageMap($workshop->bridge ?? null, $source, "{$path}.bridge");
-                $related = $this->languageMap($workshop->related ?? null, $source, "{$path}.related");
-                foreach ($source->languages() as $language) {
-                    foreach (is_array($related->{$language}) ? $related->{$language} : [] as $at => $exerciseId) {
-                        $known = is_string($exerciseId) ? ($index[$exerciseId] ?? null) : null;
-                        if ($known === null || $known['language'] !== $language) {
-                            throw InvalidContent::at(self::FILE, "{$path}.related.{$language}[{$at}]", 'se esperaba un ejercicio de '.$language);
-                        }
-                    }
-                }
-                $stepKeys = $source->meta['workshopSteps'][$id]
+                $related = $this->relatedExercises($workshop->related ?? null, $index, $source, "{$path}.related");
+                $code = $this->codeByLanguage($workshop->code ?? null, $source, "{$path}.code");
+                $stepKeys = $source->meta->workshopSteps[$id]
                     ?? throw InvalidContent::at('curriculum.meta.json', "workshopSteps.{$id}", 'falta: regenerá los dos archivos juntos');
-                $rows->addAll($this->workshops->toRows($workshop, $domain, $position, $stepKeys, $source->languages(), $path));
+                $rows->addAll(Workshop::fromDocument($workshop, $domain, $position, $stepKeys, $source->languages(), $code, $related, $path)->rowsByTable());
             }
         }
-        $this->requireInDocument('workshopSteps', $source->meta['workshopSteps'], $rows->keyed('workshops'));
+        $this->requireInDocument('workshopSteps', $source->meta->workshopSteps, $rows->keyed('workshops'));
+    }
+
+    /**
+     * @param  array<string, array{catalog: string, language: string, domain: ?string}>  $index
+     * @return array<string, list<string>> exercise IDs by language
+     */
+    private function relatedExercises(mixed $related, array $index, ContentSource $source, string $path): array
+    {
+        $byLanguage = $this->languageMap($related, $source, $path);
+        $exerciseIds = [];
+        foreach ($source->languages() as $language) {
+            $list = $byLanguage->{$language};
+            if (! is_array($list) || ! Arr::isList($list) || $list === []) {
+                throw InvalidContent::at(self::FILE, "{$path}.{$language}", 'se esperaba una lista de ejercicios');
+            }
+            $exerciseIds[$language] = [];
+            foreach ($list as $at => $exerciseId) {
+                $known = is_string($exerciseId) ? ($index[$exerciseId] ?? null) : null;
+                if (! is_string($exerciseId) || $known === null || $known['language'] !== $language) {
+                    throw InvalidContent::at(self::FILE, "{$path}.{$language}[{$at}]", 'se esperaba un ejercicio de '.$language);
+                }
+                $exerciseIds[$language][] = $exerciseId;
+            }
+        }
+
+        return $exerciseIds;
+    }
+
+    /** @return array<string, string> core ID by language */
+    private function codeByLanguage(mixed $code, ContentSource $source, string $path): array
+    {
+        $byLanguage = $this->languageMap($code, $source, $path);
+        $cores = [];
+        foreach ($source->languages() as $language) {
+            $core = $byLanguage->{$language};
+            if (is_string($core)) {
+                $cores[$language] = $core;
+            }
+        }
+
+        return $cores;
     }
 
     /** @param array<string, array{catalog: string, language: string, domain: ?string}> $index */
@@ -190,7 +213,7 @@ final class ContentRows
                         }
                     }
                 }
-                $rows->addAll($this->worlds->toRows($world, $language, $position, $path));
+                $rows->addAll(World::fromDocument($world, $language, $position, $path)->rowsByTable());
             }
         }
     }
@@ -206,14 +229,14 @@ final class ContentRows
                 if ($known === null || $known['catalog'] !== 'lab' || $known['language'] !== $language) {
                     throw InvalidContent::at(self::FILE, "{$path}.labId", "se esperaba un ejercicio de lab en {$language}");
                 }
-                $rows->addAll($this->atlas->toRows($concept, $language, $position, $path));
+                $rows->add('atlas_concepts', AtlasConcept::fromDocument($concept, $language, $position, $path)->toRow());
             }
         }
     }
 
     private function addGuide(ContentSource $source, RowSet $rows): void
     {
-        $guide = $this->guide->toRows($source->decoded->guide, $source->languages(), 'guide');
+        $guide = Guide::fromDocument($source->decoded->guide, $source->languages(), 'guide')->rowsByTable();
         $resources = Arr::pluck($guide['guide_resources'], 'id');
         foreach ($guide['guide_step_resources'] as $link) {
             if (! in_array($link['resource_id'], $resources, true)) {
@@ -269,7 +292,7 @@ final class ContentRows
 
     private function languageMap(mixed $value, ContentSource $source, string $path): stdClass
     {
-        if (! $value instanceof stdClass || FieldMap::keysOf($value) !== $source->languages()) {
+        if (! $value instanceof stdClass || KeyOrder::of($value)->keys !== $source->languages()) {
             throw InvalidContent::at(self::FILE, $path, 'un valor por lenguaje, en el orden de languages: '.implode(', ', $source->languages()));
         }
 

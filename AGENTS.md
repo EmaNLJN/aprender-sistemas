@@ -20,8 +20,9 @@ Atlas es la primera vista migrada; el resto conserva adaptadores legacy temporal
 - Para activar, instalar o actualizar skills, leé `docs/agent-skills.md`.
 - Para usar o reinstalar React Doctor y Desloppify, leé `tools/quality/AGENTS.md`.
 - Para continuar el refactor en curso, leé `docs/refactor-roadmap.md`.
-- Para planificar o especificar trabajo del backend (hoja de ruta, specs, planes, tareas o
-  bugs), leé `.specify/memory/constitution.md` y `specs/backend-multiusuario/roadmap.md`.
+- Para planificar o especificar trabajo del backend o del port del front (hoja de ruta, specs,
+  planes, tareas o bugs), leé `.specify/memory/constitution.md` y la hoja de ruta del épico:
+  `specs/backend-multiusuario/roadmap.md` o `specs/front-react/roadmap.md`.
 
 El repositorio se reparte en `frontend/` (la web), `backend/` (`api/` y `executor/`) y `docker/`
 (Compose y Nginx), según el ADR 0007; `content/`, `tools/`, `qa/`, `build/` y `dist/` quedan en
@@ -30,7 +31,7 @@ la raíz. `frontend/` conserva sólo las vistas legacy que faltan migrar a React
 El resto vive en `frontend/src/` por capas FSD (`app`, `pages`, `features`, `entities`,
 `shared`); el mapa está en `docs/architecture.md`. `qa/` reúne verificaciones e investigación; `docs/` contiene reglas
 específicas de desarrollo; `.agents/skills/` contiene las skills del proyecto.
-`specs/` guarda la hoja de ruta y las specs de Spec Kit, y `.specify/`, su constitución,
+`specs/` guarda las hojas de ruta y las specs de Spec Kit, y `.specify/`, su constitución,
 plantillas y scripts; `docs/plans/` quedó como historia de B1, A1 y C1.
 `backend/api/` es la API Laravel del ADR 0004 (PHP-FPM y MySQL en Docker); sus reglas y comandos
 están en `backend/api/AGENTS.md`.
@@ -59,6 +60,13 @@ Para la verificación habitual, `npm run build` regenera todos los assets y
 `npm run format:check` comprueba formato sin editar. `npm run format` aplica
 Prettier a todo el código propio; `.prettierignore` excluye skills importadas,
 salidas generadas, Markdown y el shell `frontend/src/index.html`.
+
+Las pruebas del front siguen el [ADR 0008](docs/adr/0008-pruebas-del-front.md): Vitest prueba la
+lógica y los componentes (`npm run test:unit`, que `npm test` también corre) y Playwright, la red de
+punta a punta contra el `dist/index.html` construido (`npm run test:e2e` después de `npm run build`,
+con el navegador que baja `npm run test:e2e:install`; no forma parte de `npm test`, porque la imagen
+web no tiene navegador). Esos tres comandos los trae F1 (`specs/003-f1-red-de-seguridad/`): hasta que
+se integre, no existen.
 
 Vite empaqueta React, las fuentes legacy, los estilos y `build/curriculum.json` en
 `dist/index.html`. Ese JSON sale de `content/` con `npm run curriculum`, que corre antes de
