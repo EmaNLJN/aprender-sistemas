@@ -64,7 +64,8 @@ cambies y evitá reformatear las skills importadas o las salidas generadas.
 | Generador en `tools/content/` | El `node qa/content-*-check.ts` del módulo tocado (usan fixtures temporales y no leen `content/`), `node qa/curriculum-meta-check.ts` si toca el meta (`build/curriculum.meta.json`) y el oráculo de la fila anterior |
 | Ejercicios o contratos de revisión | `node qa/content-check.ts`, `node qa/runner-check.ts` |
 | Recorrido, biblioteca o respaldo global | `node qa/guide-content-check.ts`, `node qa/app-shell-check.ts` |
-| Lectura, respaldo o avisos de carga del progreso | `node qa/versioned-storage-check.ts` y el check del almacén afectado |
+| Lectura, respaldo o avisos de carga del progreso | `node qa/versioned-storage-check.ts` (incluida la regla de dos pestañas: el elemento que una quitó vuelve al guardar la otra, ADR 0003, decisión 9) y el check del almacén afectado |
+| Almacenes, motores o quién importa sus singletons | `node qa/seams-guard-check.ts`: cada clave del progreso en un solo archivo, `openVersionedStore` sólo en los cuatro dueños, ninguna fábrica importada y, entre las fuentes legacy y `app/`, ningún valor de los cuatro índices fuera de su dueño. Las specs de cada almacén y motor (`npm run test:unit`) prueban la suscripción |
 | Evidencia de aprobación o interpretación de ejecuciones | `node qa/exercise-evidence-check.ts` |
 | Atlas | `node qa/atlas-check.ts` |
 | Mundos, desbloqueos, XP o progreso de campaña | `node qa/campaign-check.ts`, `node qa/campaign-content-check.ts` |
