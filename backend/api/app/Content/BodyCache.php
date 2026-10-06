@@ -33,7 +33,7 @@ final class BodyCache
         if (hash('sha256', $body) !== $hash) {
             throw new LogicException("El cuerpo de {$portion->value} no tiene el hash {$hash}: no se guarda.");
         }
-        $this->store()->put($this->key($portion, $hash), $body, now()->addDays((int) config('content.cache_days')));
+        $this->store()->put($this->key($portion, $hash), $body, now()->addDays(config()->integer('content.cache_days')));
     }
 
     public function forget(Portion $portion, string $hash): void
@@ -53,6 +53,6 @@ final class BodyCache
 
     private function store(): Repository
     {
-        return Cache::store(config('content.cache_store'));
+        return Cache::store(config()->string('content.cache_store'));
     }
 }

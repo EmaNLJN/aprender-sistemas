@@ -2,8 +2,6 @@
 
 namespace App\Content;
 
-use App\Content\Codec\ExerciseCodec;
-
 /**
  * From the tables to the bytes the API publishes, with the caller's connection and transaction:
  * the import (inside its transaction, after writing) and the delivery (when the body is missing
@@ -15,7 +13,6 @@ final class PortionRenderer
     public function __construct(
         private ContentReader $reader,
         private PortionAssembler $assembler,
-        private ExerciseCodec $exercises,
     ) {}
 
     public function render(Portion $portion): string
@@ -30,7 +27,7 @@ final class PortionRenderer
 
         return $rows === null
             ? null
-            : PublishedJson::encode($this->exercises->toRecord($rows['exercise'], $rows['tests'], $rows['hints'], $rows['topic']));
+            : PublishedJson::encode($this->assembler->exercise($rows['exercise'], $rows['tests'], $rows['hints'], $rows['topic'])->toPublished());
     }
 
     /** @return array<string, string> the 17 portions, by name */

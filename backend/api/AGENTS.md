@@ -7,9 +7,10 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
 - **Comandos:**
   - `npm run api:test`: Pest contra `mysql-test`. Para filtrar,
     `npm run api:test -- --filter=Nombre`.
-  - `npm run api:test:down`: apaga la base de pruebas.
+  - `npm run api:test:down`: apaga la base de pruebas y borra la red `testing` del proyecto,
+    sin tocar el stack principal.
   - `npm run api:format:check`: Pint.
-  - `npm run api:analyse`: PHPStan con Larastan, nivel 6 (`phpstan.neon`), sobre `app`, `config`,
+  - `npm run api:analyse`: PHPStan con Larastan, nivel 9 desde C6 (`phpstan.neon`), sin baseline ni `ignoreErrors`, sobre `app`, `config`,
     `database`, `routes` y `bootstrap/app.php`.
   - `npm run api:smoke`: con `docker compose up --build -d --wait` corriendo.
   - Ninguno forma parte de `npm test`.
@@ -37,6 +38,7 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
   - `content:import` corre en el servicio `migrate` (`docker/migrate.sh`, el único backoff), toma el candado `GET_LOCK` y se auto-chequea en cada corrida.
   - Para desplegar, desde la raíz, `sh backend/api/scripts/deploy.sh`: corre `migrate` con la imagen nueva antes de reemplazar `php`, así un fallo deja sirviendo al anterior (FR-034). `docker compose up --build` no lo garantiza, y `sh backend/api/scripts/deploy-check.sh` lo prueba contra el stack.
   - Las tablas se escriben a mano en un único `CREATE TABLE` por migración, con el DDL de `specs/001-c2-contenido-mysql/data-model.md`.
+  - Cada registro del contenido es una clase `readonly` de `app/Content/Record/` (C6), con `fromDocument`, `fromRow`, `toRow()` y `toPublished()`. En los bordes siguen los arreglos: el query builder recibe filas y `PublishedJson` recibe lo que da `toPublished()`, nunca un registro.
 - **Pruebas:**
   - `RefreshDatabase` es el default (`tests/Pest.php`). `DatabaseTruncation` queda para el
     código que hace `TRUNCATE` o abre sus propias transacciones.

@@ -2,7 +2,7 @@
 
 namespace App\Content;
 
-use App\Content\Codec\FieldMap;
+use App\Content\Record\KeyOrder;
 use stdClass;
 
 /** The first path where two decoded JSON values differ, to explain a ContentMismatch. */
@@ -11,8 +11,8 @@ final class JsonDiff
     public static function first(mixed $expected, mixed $actual, string $path): ?string
     {
         if ($expected instanceof stdClass && $actual instanceof stdClass) {
-            $want = FieldMap::keysOf($expected);
-            $have = FieldMap::keysOf($actual);
+            $want = KeyOrder::of($expected)->keys;
+            $have = KeyOrder::of($actual)->keys;
             if ($want !== $have) {
                 return "{$path}: claves distintas o en otro orden: se esperaba [".implode(', ', $want).'] y las tablas dan ['.implode(', ', $have).']';
             }
