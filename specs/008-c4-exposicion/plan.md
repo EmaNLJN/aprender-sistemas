@@ -347,7 +347,8 @@ services:
 3. En el contenedor de MySQL: `SHOW VARIABLES LIKE 'log_bin'` y `SHOW BINARY LOG STATUS`. En la imagen `mysql:9.7`: `command -v flock curl zstd gzip openssl bash microdnf`.
 4. Restaurá el volcado en un MySQL descartable (`docker run --rm --tmpfs /var/lib/mysql:rw,size=2g -e MYSQL_ALLOW_EMPTY_PASSWORD=yes mysql:9.7`) y medí el tiempo (`time`).
 5. Un volumen mayor: en otro MySQL descartable, un esquema `synthetic` con una tabla de texto largo que se llena duplicando filas (`INSERT INTO t SELECT … FROM t`) hasta unos 1 GiB y 5 GiB. Medí el tamaño crudo y comprimido, el tiempo de volcado y el de restauración, y extrapolá al techo de 20 GB del ADR 0006 §9.
-6. Borrá las cuentas y los esquemas de prueba.
+6. El bloqueo de `--source-data`. Según la documentación de `mysqldump`, el `FLUSH TABLES WITH READ LOCK` que toma al empezar espera a que terminen las sentencias en curso y, mientras espera, frena las escrituras nuevas. Corré el volcado mientras otra sesión sostiene una sentencia larga (`SELECT SLEEP(30)`) y una tercera escribe cada segundo en una tabla de prueba: medí cuánto se frenan esas escrituras, y anotalo en [research.md](./research.md) R14 con su disparador (una consulta larga a la hora del volcado).
+7. Borrá las cuentas y los esquemas de prueba.
 
 **Compuerta:** V4 anotada: los privilegios mínimos, el tamaño, el tiempo y la extrapolación. Decide la lista de `taller_backup` de [data-model.md](./data-model.md) y si `flock` está en la imagen.
 
@@ -477,13 +478,13 @@ http {
 **Pasos:**
 
 1. Escribí `qa/nginx-public-check.ts`, que falla porque las plantillas no existen. Es puro (Node, sin Docker ni `envsubst`: reemplaza `${NOMBRE}` él mismo):
-   - todo `${X}` de las plantillas está en la lista de variables de `entrypoint.sh` y en la tabla de [contracts/console.md](./contracts/console.md);
+   - todo `${X}` de las plantillas está en la lista de variables de `entrypoint.sh` (el check no lee `specs/`: `.dockerignore` la excluye y `npm test` corre dentro del `docker build` de la web);
    - con valores de ejemplo, el render no deja ningún `${` sin reemplazar y contiene `server_name taller.test;`, `listen 8443 ssl;`, `http2 on;`, `ssl_protocols TLSv1.2 TLSv1.3;`, las seis suites de la guía de Mozilla (escritas a mano en el check), `ssl_session_tickets off;` y `ssl_prefer_server_ciphers off;`;
    - el servidor por omisión del 8443 tiene `ssl_reject_handshake on;` y `return 421;`, y el del 8080, `return 444;`;
    - el 301 usa `https://taller.test$request_uri` y ninguna plantilla usa `$host` para armarlo;
    - `acme_certificate letsencrypt key=ecdsa:256;` y `$acme_certificate` sólo en la variante ACME, y `ssl_certificate /run/taller-tls/tls.crt;` sólo en la estática;
    - existe el servidor `127.0.0.1:8081` con `/healthz`;
-   - `validate.sh` (se carga con `sh -c '. validate.sh; validate_env'`): acepta el juego de variables de ejemplo y rechaza, con el código 64 y un mensaje en español, un dominio con `;` o con mayúsculas, un contacto sin `@`, `ACME_ACCEPT_TOS=no`, un directorio que no es `https://`, `ACME_CHALLENGE=dns-01`, `HSTS_MAX_AGE=abc`, `TLS_SOURCE=otro` y `TLS_SOURCE=static` sin los archivos del certificado.
+   - `validate.sh` (se carga con `sh -c '. validate.sh; validate_env'`; lee el directorio del certificado de `TALLER_TLS_DIR`, por omisión `/run/taller-tls`, para que el check lo apunte a uno temporal): acepta el juego de variables de ejemplo y rechaza, con el código 64 y un mensaje en español, un dominio con `;` o con mayúsculas, un contacto sin `@`, `ACME_ACCEPT_TOS=no`, un directorio que no es `https://`, `ACME_CHALLENGE=dns-01`, `HSTS_MAX_AGE=abc`, `TLS_SOURCE=otro` y `TLS_SOURCE=static` sin los archivos del certificado.
 2. Implementá, con esta referencia (sin ejecutar):
 
 ```sh
@@ -599,7 +600,7 @@ server { listen 127.0.0.1:8081; access_log off; location = /healthz { default_ty
 
 **Pasos:**
 
-1. Escribí `qa/apply-grants-check.ts` (Node puro, con un `mysql` falso en el `PATH` que vuelca sus argumentos y su entrada estándar a archivos), que falla porque el script no existe. Con el juego de contraseñas de ejemplo comprueba, con `--phase users --host mysql`:
+1. Escribí `qa/apply-grants-check.ts` (Node puro, con un `mysql` falso en el `PATH` que vuelca sus argumentos y su entrada estándar a archivos, y `DB_GRANTS_SQL=docker/mysql/db-grants.sql`), que falla porque el script no existe. Con el juego de contraseñas de ejemplo comprueba, con `--phase users --host mysql`:
    - las dos primeras líneas de lo que recibe `mysql` son `SET SESSION sql_log_bin = 0;` y `SET SESSION lock_wait_timeout = 5;`;
    - no queda ningún `@@` sin sustituir, y las contraseñas están en la entrada y **no** en los argumentos;
    - sólo aparece la sección pedida: `users` contiene `CREATE USER IF NOT EXISTS 'taller_app'@'%'` y `ALTER USER 'taller_app'@'%'` y ningún `GRANT … ON \`taller\`.\`exercises\``; `tables`, al revés, y la sentencia de retiro de `taller`; `all`, las dos;
@@ -863,7 +864,7 @@ legacy=$(docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWOR
 
 **Pasos:**
 
-1. Escribí `qa/public-script-check.ts` (Node puro, con un `docker` falso que registra sus argumentos y su entorno, y un `.env` temporal), que falla porque `public.sh` no existe. Comprueba:
+1. Escribí `qa/public-script-check.ts` (Node puro, con un `docker`, un `openssl` y un `curl` falsos en el `PATH` que registran sus argumentos y su entorno, y archivos temporales), que falla porque `public.sh` no existe. Corre en el `docker build` de la web, donde no están ni el `.env` ni `backend/api/`, y en el host de quien desarrolla, donde el `.env` es el real: por eso `public.sh` lee el archivo de `TALLER_ENV_FILE` (por omisión `.env`) y `deploy` corre el de `TALLER_DEPLOY_SCRIPT` (por omisión `backend/api/scripts/deploy.sh`), y el check apunta las dos a archivos temporales y comprueba que el doble de `deploy.sh` se llamó. Todo lo demás que toca `public.sh` está en `docker/` o es un comando que el check reemplaza. Comprueba:
    - sin cada una de las variables obligatorias, `ACME_ACCEPT_TOS=no`, `BACKUP_AGE_RECIPIENTS=nada` y un comando desconocido, sale con 64 y el mensaje nombra qué falta;
    - con todas, `config` corre `docker compose config` con `COMPOSE_PROJECT_NAME=taller-publico` aunque la terminal exporte otro, `COMPOSE_FILE=compose.yaml:docker/compose.public.yaml`, `TALLER_APP_URL=https://<dominio>`, `TALLER_SESSION_COOKIE=__Host-taller-session`, `TALLER_SESSION_SECURE=true`, `TALLER_DEVICE_COOKIE=__Host-taller-device` y `TALLER_DEVICE_SECURE=true`;
    - `down` nunca pasa `-v`;
@@ -1198,4 +1199,5 @@ Sin violaciones de la constitución que justificar. Hay desvíos del ADR 0006, n
 
 - **`grants` además de `db-grants`.** Dos servicios con el mismo script porque FR-002 pide que `smoke.sh` de C3a pase sin editarlo, y ese check exige que `db-grants` no se levante sin el perfil `ops`. Si el usuario prefiere uno solo, `db-grants` pierde su perfil y se edita esa comprobación.
 - **`backup` con su propio bucle y en el archivo público**, y no en el perfil `ops` como dice D34: un respaldo que depende de un `cron` del host es el que falla en silencio, y el modo local no lo necesita.
+- **El traspaso de los usuarios de MySQL es en un solo sentido.** Después del último `db-grants` de un despliegue, `taller` ya no existe: una rama anterior a C4 no sirve ese volumen. En un flujo con varios worktrees, un volumen desplegado con C4 se queda con C4. Y todo `.env` anterior necesita `sh backend/api/scripts/init-env.sh` otra vez, o cada `docker compose` falla en las contraseñas de rol con su mensaje. T024 lo dice en el README y en la guía.
 - **La enmienda del ADR 0004 §1:** el cliente ACME es el módulo de Nginx, el desafío por omisión es HTTP-01, los respaldos van a un almacenamiento de objetos con una credencial que sólo agrega, y la CSP lleva un nonce y `style-src-attr 'unsafe-inline'`. Se registra en el ADR de T024.

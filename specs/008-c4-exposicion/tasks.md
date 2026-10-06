@@ -42,7 +42,7 @@ Las ondas, los dueños de archivos, las interfaces y los puntos de sincronizaci�
 ## Phase 5: User Story 1 y 7 - Compose y operación (Priority: P1 y P2) — dueño K (onda 2)
 
 - [ ] T018 [P] [US7] La base de Compose con los roles y `grants`, `init-env.sh`, `deploy.sh` y `backend/api/scripts/compose-check.sh` (FR-002, FR-024, FR-030, FR-032, FR-038, FR-040; SC-012; plan 6.1)
-- [ ] T019 [P] [US1] `docker/compose.public.yaml` y `docker/public.sh` con su check (FR-001 a FR-003, FR-011, FR-014, FR-024, FR-029, FR-039 a FR-041; plan 6.2)
+- [ ] T019 [P] [US1] `docker/compose.public.yaml` y `docker/public.sh` con su check y sus costuras de prueba, `TALLER_ENV_FILE` y `TALLER_DEPLOY_SCRIPT` (FR-001 a FR-003, FR-011, FR-014, FR-024, FR-029, FR-039 a FR-041; plan 6.2)
 
 ## Phase 6: User Story 1, 3 y 4 - Verificación de punta a punta (dueño Q; onda 3)
 

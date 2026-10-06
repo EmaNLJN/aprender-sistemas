@@ -4,7 +4,7 @@
 
 ## `public.sh`
 
-`sh docker/public.sh <comando>`, desde la raíz. Es la única forma documentada de operar el modo público. Exporta `COMPOSE_PROJECT_NAME=taller-publico`, `COMPOSE_FILE=compose.yaml:docker/compose.public.yaml` y las variables `TALLER_*` de [data-model.md](../data-model.md), y lee `.env` (el último valor de cada clave). Antes de cualquier comando que levante algo, falla con el código 64 y un mensaje que dice qué falta si no están `TALLER_DOMAIN`, `ACME_CONTACT`, `ACME_ACCEPT_TOS=yes`, `BACKUP_AGE_RECIPIENTS` (cada uno con la forma `age1…`) o las cinco obligatorias del destino.
+`sh docker/public.sh <comando>`, desde la raíz. Es la única forma documentada de operar el modo público. Exporta `COMPOSE_PROJECT_NAME=taller-publico`, `COMPOSE_FILE=compose.yaml:docker/compose.public.yaml` y las variables `TALLER_*` de [data-model.md](../data-model.md), y lee el archivo de `TALLER_ENV_FILE` (por omisión, `.env`; el último valor de cada clave, sin las comillas que rodeen el valor). `deploy` corre el script de `TALLER_DEPLOY_SCRIPT` (por omisión, `backend/api/scripts/deploy.sh`). Las dos variables existen para que `qa/public-script-check.ts` pruebe el script en `npm test`, donde ni `.env` ni `backend/api/` están en el contexto de la imagen web, sin tocar el `.env` real. Antes de cualquier comando que levante algo, falla con el código 64 y un mensaje que dice qué falta si no están `TALLER_DOMAIN`, `ACME_CONTACT`, `ACME_ACCEPT_TOS=yes`, `BACKUP_AGE_RECIPIENTS` (cada uno con la forma `age1…`) o las cinco obligatorias del destino.
 
 | Comando | Qué hace |
 | --- | --- |

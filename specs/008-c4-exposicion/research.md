@@ -271,6 +271,8 @@ Del manual de 9.7 (`mysqldump` y `SHOW BINARY LOG STATUS`): `--source-data` env�
 
 **Decisión.** `taller_backup`: globales `RELOAD` y `REPLICATION CLIENT`; sobre `taller.*`, `SELECT` y `SHOW VIEW`. El volcado usa `--single-transaction --source-data=2 --no-tablespaces --skip-triggers --hex-blob`, sin `--routines` ni `--events`. `TRIGGER` y `EVENT` son privilegios de escritura (crear triggers y eventos), así que no se le dan a un usuario que no puede escribir. El esquema no tiene triggers, rutinas ni eventos, y la prueba de la matriz lo exige (lee `information_schema` como root): quien los cree edita el respaldo a propósito. V4 parte de este conjunto, saca privilegios de a uno y anota el mínimo que funciona.
 
+**Un riesgo que V4 mide.** Con `--source-data`, el `FLUSH TABLES WITH READ LOCK` con que empieza el volcado espera a que terminen las sentencias en curso y, mientras espera, frena las escrituras nuevas (documentación de `mysqldump`). Una consulta larga a la hora del volcado se las frena a todos. A las 3 de la mañana y con el `MAX_EXECUTION_TIME` de las estadísticas (D35) el riesgo es chico, y V4 lo mide: cuánto se frenan las escrituras con una sentencia de 30 segundos en curso.
+
 ## R15. El respaldo
 
 **Imagen.** Basada en `mysql:9.7` (la misma que ya fija Compose; Oracle Linux 9, con `bash`, `gzip`, `openssl`, `xz`, `zstd` y `findutils`, y `mysqldump` del mismo cliente que el servidor: el `mysql-client` de Alpine es el de MariaDB y no entiende `--source-data` de 9.x). El Dockerfile de docker-library usa `curl` al construir la imagen y no lo quita, y trae `microdnf`: el primer paso de la tarea lo comprueba y, si `curl` falta, lo agrega con `microdnf` (descarga opcional, R23).
