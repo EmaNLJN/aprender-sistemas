@@ -23,7 +23,7 @@ node <script de reference-merge.md, sección 8> "$BEFORE" "$PWD"
 
 El script termina con `OK: 100 etapas; document 4555e850 (antes ef8f5715); 4 porciones cambian`. Comprueba, en este orden: que sólo cambian las cuatro porciones de talleres y el `documentHash`; que los 274 ejercicios conservan sus tres huellas, `workshopSteps` queda igual y cada etapa tiene las claves `id,title,task,why,done` con el `id` del meta; que quitar los `id` de las etapas del documento nuevo da **los mismos bytes** que el documento de antes, y los mismos que cada porción de antes; y que el volcado de `tools/content/dump-globals.ts`, sin los `id` de las etapas de los cuatro grupos `SYSTEMS_*`, da los mismos bytes que el de antes.
 
-Valores medidos al planificar, sobre `master` (2426bae) **sin B2**, para el contenido de ese día. B2 no toca `curriculum.json` ni el volcado (suma `build/harness.json`, la 18.ª porción y cambia 49 `gradingHash` del meta), así que el documento, las cuatro porciones, `Content-Version` y el volcado de la tabla valen con B2; la síntesis de los ejercicios no. Si `content/` cambió, valen la relación y el script, no los números:
+Valores medidos al planificar, sobre `master` (2426bae) **sin B2**, para el contenido de ese día. B2 no toca `curriculum.json` ni el volcado (suma `build/harness.json`, la 18.ª porción y cambia 49 `gradingHash` del meta), así que el documento, las cuatro porciones, `Content-Version` y el volcado de la tabla valen con B2 (se infiere de R1 de B2, donde `curriculum.json` sale byte por byte igual; no se midió con B2 aplicado); la síntesis de los ejercicios no. Si `content/` cambió, valen la relación y el script, no los números:
 
 | Qué | Antes | Después |
 | --- | --- | --- |
