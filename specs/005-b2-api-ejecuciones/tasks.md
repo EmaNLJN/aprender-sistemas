@@ -31,10 +31,10 @@ Las ondas, los dueños de archivos, las interfaces y los puntos de sincronizaci�
 *Parten de S1. J y A tienen archivos disjuntos. Al llegar S2 están integradas T013 a T017.*
 
 - [ ] T013 [P] [US1] El cliente del ejecutor: `ReplyKind`, `ExecutorReply` y `ExecutorClient` en `backend/api/app/Runs/Execution/`, con qué prueba que no corrió (errno 6 y 7, y el 503) (FR-013, FR-016, FR-017; plan 6.1)
-- [ ] T014 [US1] La ejecución de un trabajo: `RunExecution`, que implementa `RunProcessor`, con sus pruebas contra `Http::fake` y el log sin código (FR-013 a FR-017, FR-042; SC-005, SC-008; plan 6.2)
+- [ ] T014 [US1] La ejecución de un trabajo: `RunExecution`, que implementa `RunProcessor`, con sus pruebas contra `Http::fake` y el log sin código (FR-013, FR-014, FR-016, FR-017, FR-042; SC-005, SC-008; plan 6.2)
 - [ ] T015 [US7] El barrido y la poda: `Uuid7Cutoff`, `RunPruner` y los comandos `runs:sweep` y `runs:prune` (FR-018, FR-044; plan 6.3)
-- [ ] T016 [P] [US3] La admisión y las cuotas: `backend/api/app/Runs/Admission/` con `QuotaPolicy`, `RunAdmission` y `ExerciseReader`, con idempotencia y cuotas bajo concurrencia real (FR-002, FR-004 a FR-010, FR-019, FR-031; SC-003, SC-004; plan 7.1)
-- [ ] T017 [US1] El HTTP: `RunController`, `SubmitRunRequest`, `RunReader`, `RunPresenter`, `RunLimiters` y `backend/api/routes/api/runs.php` (FR-001 a FR-003, FR-011, FR-024 a FR-026, FR-034, FR-041; SC-008; plan 7.2)
+- [ ] T016 [P] [US3] La admisión y las cuotas: `backend/api/app/Runs/Admission/` con `QuotaPolicy`, `RunAdmission` y `ExerciseReader`, con idempotencia y cuotas bajo concurrencia real (FR-002, FR-004, FR-005, FR-006, FR-007, FR-008, FR-010, FR-019, FR-031; SC-003, SC-004; plan 7.1)
+- [ ] T017 [US1] El HTTP: `RunController`, `SubmitRunRequest`, `RunReader`, `RunPresenter`, `RunLimiters` y `backend/api/routes/api/runs.php` (FR-001, FR-002, FR-003, FR-011, FR-024, FR-025, FR-026, FR-034, FR-041; SC-008; plan 7.2)
 
 ## Phase 4: Polish — Integración, operación, punta a punta, documentación y compuerta (onda 3: coordinador y O)
 
