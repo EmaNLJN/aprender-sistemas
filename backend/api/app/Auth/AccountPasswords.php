@@ -44,7 +44,7 @@ final class AccountPasswords
         return self::$dummyHashesByRounds[$rounds] ??= $this->hash(PlainPassword::of(bin2hex(random_bytes(16))));
     }
 
-    public function logoutOtherDevices(PlainPassword $current): void
+    public function signOutOtherDevices(PlainPassword $current): void
     {
         Auth::logoutOtherDevices($current->value);
     }

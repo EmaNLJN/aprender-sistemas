@@ -16,7 +16,7 @@ it('closes the other sessions with the composed form of a password set decompose
     $user->save();
     $this->actingAs($user);
 
-    $passwords->logoutOtherDevices(PlainPassword::of("p\u{00E1}-p\u{00E1}-p\u{00E1}-p\u{00E1}"));
+    $passwords->signOutOtherDevices(PlainPassword::of("p\u{00E1}-p\u{00E1}-p\u{00E1}-p\u{00E1}"));
 
     expect($passwords->verify($user->fresh() ?? $user, PlainPassword::of("p\u{00E1}-p\u{00E1}-p\u{00E1}-p\u{00E1}")))->toBeTrue();
 });
