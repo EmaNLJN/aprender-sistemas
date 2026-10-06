@@ -259,7 +259,7 @@ En los tipos con reloj, dos importaciones se combinan con la regla de D1a: un re
   - el grupo de repaso incompleto (R41);
   - el 423 del reset;
   - el check del fixture con sus propios parsers (R38).
-- **A4.** El resultado v1 suma `attemptId`, el id del intento del servidor, como entero positivo. D1b ya lo acepta y lo usa para no duplicar el intento (R30). A4 tiene que conservarlo en `sanitizeResult` con ese nombre. Un `attemptId` que no es de la cuenta y del ejercicio se ignora y se informa en `omitted` (`unknown_attempt`).
+- **A4.** El resultado v1 suma `attemptId`, el id del intento del servidor, como entero positivo. D1b ya lo acepta y lo usa para no duplicar el intento (R30). A4 tiene que conservarlo en `sanitizeResult` con ese nombre. Un `attemptId` que no es de la cuenta y del ejercicio se ignora, y el resultado sigue las otras dos reglas: no es un dato del progreso, así que no se pierde nada ni hay qué informar.
 
 ## R43. Los registros
 
