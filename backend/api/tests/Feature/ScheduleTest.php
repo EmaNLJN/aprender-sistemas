@@ -16,14 +16,16 @@ function scheduledTasks(): array
     return $tasks;
 }
 
-it('schedules exactly the four tasks of the contract, none overlapping and none processing a queue', function () {
+it('schedules exactly the six tasks of the contracts, none overlapping and none processing a queue', function () {
     $tasks = scheduledTasks();
 
-    expect($tasks)->toHaveCount(4)
+    expect($tasks)->toHaveCount(6)
         ->and($tasks['taller:prune-sessions'][0])->toBe('*/15 * * * *')
         ->and($tasks['auth:clear-resets'][0])->toBe('*/15 * * * *')
         ->and($tasks['taller:prune-cache'][0])->toBe('*/15 * * * *')
-        ->and($tasks['model:prune --model=App\Models\Invitation'][0])->toBe('0 0 * * *');
+        ->and($tasks['model:prune --model=App\Models\Invitation'][0])->toBe('0 0 * * *')
+        ->and($tasks['runs:sweep'][0])->toBe('* * * * *')
+        ->and($tasks['runs:prune'][0])->toBe('0 * * * *');
     foreach ($tasks as $command => [, $withoutOverlapping]) {
         expect($withoutOverlapping)->toBeTrue()->and($command)->not->toContain('queue:work');
     }

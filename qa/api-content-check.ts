@@ -63,6 +63,7 @@ function urlOf(base: string, portion: string): string {
   if (group === 'campaign') return query('worlds', `language=${slice}`);
   if (group === 'workshops') return query('workshops', `domain=${slice}`);
   if (group === 'atlas') return query('atlas', `language=${slice}`);
+  if (group === 'harness') return `${base}/api/harness`;
   return `${base}/api/guide`;
 }
 

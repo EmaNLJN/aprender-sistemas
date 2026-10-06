@@ -9,7 +9,6 @@ use App\Runs\Record\RunRow;
 use App\Runs\RunStatus;
 use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Tests\Support\RunWorld;
 
@@ -61,7 +60,6 @@ it('does not throw when the cancellation fails: it logs the class of the excepti
 });
 
 it('waits for the commit that restricted the account before cancelling', function () {
-    Event::listen(AccountRestricted::class, CancelRunsOfRestrictedAccount::class);
     $user = RunWorld::user(['status' => 'disabled']);
     $run = RunWorld::run($user);
 

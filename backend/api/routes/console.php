@@ -13,3 +13,5 @@ Schedule::command('taller:prune-sessions')->everyFifteenMinutes()->withoutOverla
 Schedule::command('auth:clear-resets')->everyFifteenMinutes()->withoutOverlapping();
 Schedule::command('taller:prune-cache')->everyFifteenMinutes()->withoutOverlapping();
 Schedule::command('model:prune', ['--model' => Invitation::class])->daily()->withoutOverlapping();
+Schedule::command('runs:sweep')->everyMinute()->withoutOverlapping();
+Schedule::command('runs:prune')->hourly()->withoutOverlapping();
