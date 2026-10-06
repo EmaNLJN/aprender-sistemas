@@ -1,6 +1,8 @@
 <?php
 
 use App\Auth\Limiters;
+use App\Models\User;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Tests\Feature\Limits\DatabaseDrivers;
 
@@ -10,6 +12,8 @@ beforeEach(function () {
     Route::prefix('api')->group(function () {
         Route::post('/probe/invitation', fn () => 'ok')->middleware('throttle:invitations');
         Route::post('/probe/reset', fn () => 'ok')->middleware('throttle:reset-password');
+        Route::post('/probe/export', fn () => 'ok')->middleware('throttle:export');
+        Route::post('/probe/admin', fn () => 'ok')->middleware('throttle:admin');
     });
     $this->from = fn (string $ip) => $this->withServerVariables(['REMOTE_ADDR' => $ip]);
 });
@@ -65,4 +69,60 @@ it('lets the limits go after a minute', function () {
     $this->travel(61)->seconds();
 
     ($this->from)('10.0.0.1')->postJson('/api/probe/invitation')->assertOk();
+});
+
+it('registers the admin and export limiters', function () {
+    expect(RateLimiter::limiter('admin'))->not->toBeNull()
+        ->and(RateLimiter::limiter('export'))->not->toBeNull();
+});
+
+it('allows three exports a day per account and answers the fourth with 429', function () {
+    $account = User::factory()->create();
+    foreach (range(1, 3) as $ignored) {
+        $this->actingAs($account)->postJson('/api/probe/export')->assertOk();
+    }
+
+    $this->actingAs($account)->postJson('/api/probe/export')
+        ->assertStatus(429)
+        ->assertHeader('Retry-After')
+        ->assertJsonPath('code', 'too_many_requests');
+});
+
+it('counts the export limit per account, not per network', function () {
+    $ana = User::factory()->create();
+    $beto = User::factory()->create();
+    foreach (range(1, 3) as $ignored) {
+        ($this->from)('10.0.0.1')->actingAs($ana)->postJson('/api/probe/export')->assertOk();
+    }
+
+    ($this->from)('10.0.0.1')->actingAs($beto)->postJson('/api/probe/export')->assertOk();
+});
+
+it('lets the export limit go after a day', function () {
+    $account = User::factory()->create();
+    foreach (range(1, 4) as $ignored) {
+        $this->actingAs($account)->postJson('/api/probe/export');
+    }
+
+    $this->travel(25)->hours();
+
+    $this->actingAs($account)->postJson('/api/probe/export')->assertOk();
+});
+
+it('keys the limit by network when there is no account', function () {
+    foreach (range(1, 3) as $ignored) {
+        ($this->from)('10.0.0.1')->postJson('/api/probe/export')->assertOk();
+    }
+
+    ($this->from)('10.0.0.1')->postJson('/api/probe/export')->assertStatus(429);
+    ($this->from)('10.0.0.2')->postJson('/api/probe/export')->assertOk();
+});
+
+it('allows 120 admin requests a minute per account', function () {
+    $account = User::factory()->admin()->create();
+    foreach (range(1, 120) as $ignored) {
+        $this->actingAs($account)->postJson('/api/probe/admin')->assertOk();
+    }
+
+    $this->actingAs($account)->postJson('/api/probe/admin')->assertStatus(429);
 });
