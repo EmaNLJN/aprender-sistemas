@@ -41,19 +41,28 @@ export function sha256Hex(text: string): string {
   return createHash('sha256').update(text, 'utf8').digest('hex');
 }
 
+// The Go harness imports these packages, so they decide what compiles (B2 FR-037): sorted and
+// without repeats, so reordering them is not a grading change. Rust has none.
+function gradingImports(exercise: JsonRecord): string[] {
+  if (exercise.language !== 'go') return [];
+  return [...new Set(exercise.imports as string[])].sort();
+}
+
 // contentHash covers the published bytes (FR-031); gradingHash and starterHash use canonical JSON,
-// so reordering keys is not a grading change (ADR 0004 §2, "Hashes").
+// so reordering keys is not a grading change (ADR 0004 §2, "Hashes"). The imports join the
+// grading hash only when there are some: the other exercises keep the hash they had.
 export function exerciseHashes(exercise: JsonRecord): ExerciseHashes {
   const tests = exercise.tests as JsonRecord[];
   const prediction = exercise.prediction as JsonRecord;
+  const grading: Record<string, unknown> = {
+    tests: tests.map((test) => ({ id: test.id, expression: test.expression })),
+    prediction: { options: prediction.options, answer: prediction.answer },
+  };
+  const imports = gradingImports(exercise);
+  if (imports.length > 0) grading.imports = imports;
   return {
     contentHash: sha256Hex(JSON.stringify(exercise)),
-    gradingHash: sha256Hex(
-      canonicalJson({
-        tests: tests.map((test) => ({ id: test.id, expression: test.expression })),
-        prediction: { options: prediction.options, answer: prediction.answer },
-      }),
-    ),
+    gradingHash: sha256Hex(canonicalJson(grading)),
     starterHash: sha256Hex(canonicalJson(exercise.starter)),
   };
 }
