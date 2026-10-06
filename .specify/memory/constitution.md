@@ -1,3 +1,25 @@
+<!--
+Sync Impact Report
+- Versión: 1.3.1 → 1.4.0 (MINOR: el gobierno reserva MINOR para una sección o un principio nuevos)
+  → 1.4.1 (PATCH: el principio II nombra las pruebas del front).
+- Ratificación: el usuario ratificó la 1.4.0 el 2026-10-05, con la sección «Épicos y hojas de ruta».
+  La 1.4.1 sólo aplica lo que manda el ADR 0008, que el usuario aceptó el mismo día (su sección
+  «Consecuencias» pide este PATCH): el usuario la revisa con este cambio.
+- Principios modificados: sólo el II, en la 1.4.1: suma que en el front Vitest prueba la lógica y
+  los componentes y Playwright, la red de punta a punta. Del I al VIII, el resto queda como estaba.
+- Secciones agregadas: «Épicos y hojas de ruta» (1.4.0).
+- Secciones modificadas: «Flujo de trabajo y verificación», viñeta «Planificación con Spec Kit»
+  (1.4.0: ahora cubre los dos épicos y remite a la sección nueva); la tabla de «Épicos y hojas de
+  ruta» (1.4.1: ya no marca el ADR 0008 como propuesta y cuenta F1…F13).
+- Secciones eliminadas: ninguna.
+- Archivos que cambian en el mismo commit (1.4.1): AGENTS.md (los comandos de las pruebas del front,
+  que llegan con F1), qa/AGENTS.md, docs/agent-skills.md y docs/adr/0008-pruebas-del-front.md.
+- Plantillas: ninguna requiere cambios; las de spec, plan, tasks y checklist son genéricas.
+- Pendiente en otros cambios: F1 reemplaza el aviso «hasta que se integre, no existen» de AGENTS.md y
+  de qa/AGENTS.md por los comandos reales.
+- Este informe es material de revisión: puede quitarse al integrar la enmienda.
+-->
+
 # Constitución del Taller Rust y Go
 
 `AGENTS.md` es la fuente de las reglas del proyecto. Esta constitución las resume para que las
@@ -18,7 +40,9 @@ Todo cambio de comportamiento empieza con una prueba que falla por la razón esp
 la implementación mínima y se revisa antes de refactorizar en verde (`qa/AGENTS.md`, skill
 `tdd`). El valor esperado sale del contrato, de la consigna o de un ejemplo resuelto aparte,
 nunca del algoritmo que se prueba, y se prueba comportamiento observable. En el backend, Pest
-corre contra MySQL 9.7 real, sin SQLite (`backend/api/AGENTS.md`).
+corre contra MySQL 9.7 real, sin SQLite (`backend/api/AGENTS.md`). En el front, Vitest prueba la
+lógica y los componentes, y Playwright, la red de punta a punta contra el build servido, sin tocar
+servicios públicos (ADR 0008, `qa/AGENTS.md`).
 
 ### III. Código entendible
 
@@ -87,11 +111,11 @@ artefacto entregado no se edita, se continúa con otro. Cada feature vive en
 - **Subagentes:** el agente principal analiza, decide, revisa e integra. Los subagentes
   implementan slices con archivos disjuntos, y el principal integra `frontend/src/app/main.tsx`,
   `package.json`, las configuraciones y la documentación.
-- **Planificación con Spec Kit:** cada subplan del backend recorre specify, clarify, plan, tasks
-  y analyze antes de implementarse. La spec dice qué y por qué; el plan, cómo. La hoja de ruta
-  del épico vive en `specs/backend-multiusuario/roadmap.md` y las specs, en `specs/`. La plantilla
-  de `tasks.md` del proyecto (`.specify/templates/overrides/tasks-template.md`) aplica el
-  principio VIII.
+- **Planificación con Spec Kit:** cada subplan del backend y cada ítem del épico del front
+  recorren specify, clarify, plan, tasks y analyze antes de implementarse. La spec dice qué y por
+  qué; el plan, cómo. Las hojas de ruta de los épicos están en «Épicos y hojas de ruta» y las
+  specs, en `specs/`. La plantilla de `tasks.md` del proyecto
+  (`.specify/templates/overrides/tasks-template.md`) aplica el principio VIII.
 - **Disciplina de contenido (superpowers):** los archivos son los de Spec Kit, nunca
   `docs/superpowers/`. La spec sigue los criterios de `brainstorming`: intención y criterio de
   éxito escritos para que el usuario los corrija, lo que pidió separado de los supuestos, YAGNI
@@ -101,6 +125,30 @@ artefacto entregado no se edita, se continúa con otro. Cada feature vive en
   mucho, su evidencia; el detalle va en el plan.
 - **Origen de estas reglas:** el recorrido con Spec Kit, la disciplina de contenido y el
   principio VIII viven en esta constitución; `AGENTS.md` apunta acá en lugar de repetirlos.
+
+## Épicos y hojas de ruta
+
+Cada épico de planificación tiene su hoja de ruta, con IDs estables, y cada uno de sus ítems
+recorre el flujo de Spec Kit de «Flujo de trabajo y verificación».
+
+| Épico | Hoja de ruta | Fuente técnica |
+| --- | --- | --- |
+| Backend multiusuario | `specs/backend-multiusuario/roadmap.md` (B1…E1, C5 y C6) | ADR 0004, 0005 y 0006 |
+| Port del front legacy a React | `specs/front-react/roadmap.md` (F1…F13) | ADR 0001, 0003, 0007 y 0008, `docs/architecture.md` y el mapa del front legacy |
+
+- **Una hoja de ruta por épico, con las mismas convenciones:** los IDs no se renumeran ni se
+  reutilizan, cada ítem tiene una spec en `specs/NNN-<id>-<nombre>/`, los estados van de
+  `Pendiente` a `Entregado` y una entrega exige la implementación integrada y la evidencia de QA.
+  Cada hoja de ruta las escribe en su sección «Convenciones».
+- **Un ítem, un dueño:** un ítem que toca los dos épicos (A2, A3 y A4 del backend tocan el
+  arranque y el laboratorio del front) se especifica una sola vez, en la hoja de ruta que lo
+  posee. La otra lo referencia y cablea la dependencia, sin copiar su alcance.
+- **El front no se rediseña:** un ítem de port se especifica como port, contra el comportamiento
+  actual, y cita las pruebas que lo protegen. Conserva los IDs y el progreso guardado
+  (`AGENTS.md`, ADR 0003) y, por criterio de la hoja de ruta del front, el aspecto, el
+  comportamiento y las URLs.
+- **ADR en estado «propuesta»:** cada spec que lo usa como base lo dice, como hace el ADR 0006
+  con el backend. Una regla llega a esta constitución cuando ya está en `AGENTS.md`.
 
 ## Gobierno
 
@@ -113,4 +161,4 @@ artefacto entregado no se edita, se continúa con otro. Cada feature vive en
 
 [persistencia]: https://github.com/github/spec-kit/blob/main/docs/concepts/spec-persistence.md
 
-**Version**: 1.3.1 | **Ratified**: 2026-10-04 (aprobada por el usuario) | **Last Amended**: 2026-10-05 (rutas de los AGENTS.md locales tras el ADR 0007)
+**Version**: 1.4.1 | **Ratified**: 2026-10-04 (aprobada por el usuario; la 1.4.0, ratificada por el usuario el 2026-10-05) | **Last Amended**: 2026-10-05 (principio II, por el ADR 0008)
