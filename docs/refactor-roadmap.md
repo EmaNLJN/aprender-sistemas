@@ -162,7 +162,7 @@ posición de la entrada.
 | P7 | Correcciones de integridad con TDD y almacén versionado común. | Sonnet + revisión Opus | Pruebas nuevas que fallan antes y pasan después. |
 | P8 | Port a TS: runner, motores, efectos y kits; luego datos con IDs explícitos; luego `defineModel` y partición de los dominios de Sistemas. | Sonnet | Oráculo, auditoría de runtime y suite. |
 | P9 | Integridad antes de sincronizar, a partir de una revisión adversarial del ADR 0003: respaldos en ranuras, detección de pérdida, sin escrituras al cargar ni al renderizar, fusión entre pestañas, importación en dos fases, regla única de aprobación y respaldos descargables en Método. | Sonnet + revisión Opus | Pruebas que fallan antes; fixtures congeladas con progreso real de master. |
-| Después | Backend Laravel + MySQL según el ADR 0004 (contenido y progreso en tablas, sincronización): [hoja de ruta del backend](../specs/backend-multiusuario/roadmap.md). Vistas a React (biblioteca, proyecto, Sistemas, campaña, laboratorio, método, recorrido y shell): [hoja de ruta del front](../specs/front-react/roadmap.md), de F1 a F11. Sesión «Esenciales»: E1 del backend. | — | Un ADR por decisión; criterios de aceptación de cada hoja de ruta. |
+| Después | Backend Laravel + MySQL según el ADR 0004 (contenido y progreso en tablas, sincronización): [hoja de ruta del backend](../specs/backend-multiusuario/roadmap.md). Vistas a React (biblioteca, proyecto, Sistemas, campaña, laboratorio, método, recorrido y shell): [hoja de ruta del front](../specs/front-react/roadmap.md), de F1 a F13. Sesión «Esenciales»: E1 del backend. | — | Un ADR por decisión; criterios de aceptación de cada hoja de ruta. |
 
 ## Riesgos
 

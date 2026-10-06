@@ -2,7 +2,8 @@
 
 Estas reglas complementan el `AGENTS.md` raíz. Ejecutá los comandos desde la raíz
 del repositorio. Los checks son TypeScript (`qa/*-check.ts`) que Node 24 ejecuta
-directamente; usan `node:assert`, contextos VM y `qa/lib/`, sin framework de pruebas.
+directamente; usan `node:assert`, contextos VM y `qa/lib/`, sin framework de pruebas. Las pruebas
+nuevas del front (Vitest y Playwright, ADR 0008) viven aparte: ver «Pruebas del front».
 
 - `qa/lib/sources.ts` empaqueta en memoria con esbuild cualquier fuente del navegador
   (JS o TS, con imports) y la ejecuta en un contexto VM con globals falsos
@@ -75,6 +76,8 @@ cambies y evitá reformatear las skills importadas o las salidas generadas.
 | Generación de proyectos o ZIP | `node qa/project-kit-check.ts` |
 | Ejecutor Go (`backend/executor/`) | `npm run test:executor`; con Docker real, `npm run test:executor:integration` (no forman parte de `npm test`) |
 | API Laravel (`backend/api/`) | `npm run api:test`, `npm run api:format:check` y `npm run api:analyse`; con el stack levantado, `npm run api:smoke` y `npm run api:content:check` (las 17 porciones a través de Nginx; no forman parte de `npm test`) |
+| Lógica, almacenes y componentes del front nuevo o movido | `npm run test:unit` (Vitest; también corre dentro de `npm test`) |
+| Enlaces, recargas, arranque con progreso, puentes entre vistas y aspecto del front | `npm run build && npm run test:e2e` (Playwright contra `dist/index.html`; no forma parte de `npm test`) |
 | Sólo documentación | Verificar rutas, comandos y enlaces locales; `git diff --check` |
 
 Para una reorganización de archivos o un cambio transversal, regenerá la página
@@ -84,6 +87,28 @@ y ejecutá la suite local completa que también usa `frontend/Dockerfile`:
 npm run build
 npm test
 ```
+
+## Pruebas del front (ADR 0008)
+
+Las trae F1 (`specs/003-f1-red-de-seguridad/`): hasta que se integre, `qa/e2e/` y estos comandos no
+existen. Los checks de dominio de arriba siguen como están; no se migran en bloque.
+
+- **Vitest** corre las specs junto al módulo (`frontend/src/**/*.spec.ts`), en `node`. La pila de DOM
+  (`jsdom` y Testing Library) llega con la primera spec de componente. Sin `globals`: cada spec
+  importa `describe`, `it` y `expect` de `vitest`.
+- **Playwright** corre en `qa/e2e/` contra el `dist/index.html` que sirve `vite preview`, sin Nginx y
+  sin API, en el Chrome Headless Shell. `npm run test:e2e` no construye: antes, `npm run build`.
+- **Page Objects por fixtures,** con localizadores por nombre accesible (rol, etiqueta y texto). Una
+  clase o un id sólo entra dentro de un Page Object, para un elemento sin nombre accesible. Las
+  aserciones van en la spec, no en el Page Object.
+- **Ninguna prueba toca un servicio público.** Los Playgrounds se simulan con `page.route`, y un pedido
+  fuera del servidor de pruebas sin respuesta simulada hace fallar el test. Una excepción de la
+  página o un `console.error` también lo hacen fallar, salvo lo que figure en la lista blanca de
+  `qa/e2e/lib/console-allowlist.ts` o en un `expectIssue` de la prueba, siempre con su motivo.
+- **Los valores esperados salen del contrato:** el README, el mapa del front y las fixtures
+  congeladas de `qa/fixtures/`, nunca el código que se prueba. El reloj se controla con `page.clock`.
+- **Una prueba que fija un defecto conocido lleva `KNOWN DEFECT` en el nombre** y cita su referencia
+  (el mapa o un hallazgo de F1). Quien lo corrige cambia esa prueba en su commit TDD.
 
 ## Red de seguridad para refactors
 
