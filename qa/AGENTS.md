@@ -11,7 +11,11 @@ nuevas del front (Vitest y Playwright, ADR 0008) viven aparte: ver «Pruebas del
   por ahí: así los checks no dependen del formato ni de la ubicación del archivo.
 - Los checks importan archivos de `qa/` con extensión `.ts` explícita y sólo usan
   sintaxis TypeScript borrable; `tsconfig.qa.json` los tipa en `npm run typecheck`.
-- `qa/run-checks.ts` es la lista única de la suite que ejecuta `npm test`.
+- `qa/run-checks.ts` es la lista única de la suite que ejecuta `npm test`. Separa los checks web de
+  los de operación (`compose-runs-check` e `init-env-check`), que leen `backend/` o necesitan la CLI de
+  `openssl`. `npm test` corre los dos grupos; la imagen web (`frontend/Dockerfile`) construye sin
+  `backend/` en su contexto, así que corre sólo los web, con `QA_CHECKS=web`. Un check nuevo que lea
+  algo fuera del contexto de esa imagen va al grupo de operación.
 - `qa/lib/legacy-sources.ts` concentra las rutas y el orden de carga de las fuentes
   del navegador; al mover o portar un archivo, cambiá su ruta ahí y no en cada check.
 - Los catálogos se publican desde `build/curriculum.json`, que `tools/content/` genera a partir
@@ -75,7 +79,9 @@ cambies y evitá reformatear las skills importadas o las salidas generadas.
 | Modelo lowlevel, infra, play o pc | El correspondiente `node qa/systems-<dominio>-check.ts` |
 | Generación de proyectos o ZIP | `node qa/project-kit-check.ts` |
 | Ejecutor Go (`backend/executor/`) | `npm run test:executor`; con Docker real, `npm run test:executor:integration` (no forman parte de `npm test`) |
-| API Laravel (`backend/api/`) | `npm run api:test`, `npm run api:format:check` y `npm run api:analyse`; con el stack levantado, `npm run api:smoke` y `npm run api:content:check` (las 17 porciones a través de Nginx; no forman parte de `npm test`) |
+| API Laravel (`backend/api/`) | `npm run api:test`, `npm run api:format:check` y `npm run api:analyse`; con el stack levantado, `npm run api:smoke`, `npm run api:content:check` (las 18 porciones a través de Nginx) y `npm run api:runs:check` (ejecuciones reales en el sandbox, cuotas, cola y log); no forman parte de `npm test` |
+| Plantilla del harness (`content/harness/`) | `node qa/content-harness-check.ts` (sus casos en `qa/fixtures/shared/harness-cases.json`, que también corre Pest) |
+| Compose, Nginx o `init-env.sh` de las ejecuciones | `node qa/compose-runs-check.ts`, `node qa/nginx-api-blocks-check.ts` (la ubicación de `/api/runs` repite las directivas de `/api/`) y `node qa/init-env-check.ts`; los tres corren en `npm test` |
 | Lógica, almacenes y componentes del front nuevo o movido | `npm run test:unit` (Vitest; también corre dentro de `npm test`) |
 | Enlaces, recargas, arranque con progreso, puentes entre vistas y aspecto del front | `npm run build && npm run test:e2e` (Playwright contra `dist/index.html`; no forma parte de `npm test`) |
 | Sólo documentación | Verificar rutas, comandos y enlaces locales; `git diff --check` |
