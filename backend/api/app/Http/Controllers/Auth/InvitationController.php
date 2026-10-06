@@ -6,24 +6,23 @@ use App\Auth\EmailTaken;
 use App\Auth\InvitationExpired;
 use App\Auth\InvitationNotFound;
 use App\Auth\Invitations;
-use App\Auth\PasswordPolicy;
 use App\Auth\PlainPassword;
 use App\Auth\PublishedUser;
 use App\Http\ApiCode;
 use App\Http\ApiError;
+use App\Http\PasswordRejection;
 use App\Http\Requests\AcceptInvitationRequest;
 use App\Http\Requests\InvitationTokenRequest;
 use App\Models\User;
 use App\Support\Iso8601;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
 
 final class InvitationController
 {
     private const AUTHENTICATED_AT_KEY = 'taller.authenticated_at';
 
-    public function __construct(private Invitations $invitations, private PasswordPolicy $policy) {}
+    public function __construct(private Invitations $invitations, private PasswordRejection $rejection) {}
 
     public function lookup(InvitationTokenRequest $request): JsonResponse
     {
@@ -62,24 +61,9 @@ final class InvitationController
         $password = PlainPassword::of($request->string('password')->toString());
 
         $invitation = $this->invitations->lookup($token);
-        $this->assertAcceptable($password, $name, $this->invitations->emailOf($invitation));
+        $this->rejection->assertAcceptable($password, $name, $this->invitations->emailOf($invitation));
 
         return $this->invitations->accept($token, $name, $password, $request->string('privacyVersion')->toString());
-    }
-
-    private function assertAcceptable(PlainPassword $password, string $name, string $email): void
-    {
-        $violations = $this->policy->violations($password, $name, $email);
-        if ($violations === []) {
-            return;
-        }
-
-        $messages = [];
-        foreach ($violations as $violation) {
-            $messages[] = $violation->message();
-        }
-
-        throw ValidationException::withMessages(['password' => $messages]);
     }
 
     private function signIn(User $user): void

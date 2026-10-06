@@ -6,20 +6,30 @@ use App\Auth\AccountLockout;
 use App\Auth\AccountPasswords;
 use App\Auth\AccountSessions;
 use App\Auth\Email;
-use App\Auth\PasswordPolicy;
 use App\Auth\PlainPassword;
+use App\Database\WriteTransaction;
 use App\Http\ApiCode;
 use App\Http\ApiError;
+use App\Http\PasswordRejection;
 use App\Http\Requests\ResetPasswordRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Auth\Passwords\PasswordBroker;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Timebox;
+use LogicException;
 
 final class ResetPasswordController
 {
+    private const FLOOR_MICROSECONDS = 200_000;
+
+    private const LOCK_SECONDS = 5;
+
+    private const LOCK_WAIT_SECONDS = 2;
+
     public function __construct(
-        private PasswordPolicy $policy,
+        private PasswordRejection $rejection,
         private AccountPasswords $passwords,
         private AccountSessions $sessions,
         private AccountLockout $lockout,
@@ -29,12 +39,10 @@ final class ResetPasswordController
     {
         $email = Email::canonical($request->string('email')->toString());
         $password = PlainPassword::of($request->string('password')->toString());
-        $this->assertAcceptable($password, User::where('email', $email)->first()?->name, $email);
+        $this->rejection->assertAcceptable($password, User::where('email', $email)->first()?->name, $email);
 
-        $status = Password::broker()->reset(
-            ['email' => $email, 'status' => 'active', 'token' => $request->string('token')->toString(), 'password' => $password->value],
-            fn (User $user) => $this->replacePassword($user, $password),
-        );
+        $token = $request->string('token')->toString();
+        $status = (new Timebox)->call(fn () => $this->reset($email, $token, $password), self::FLOOR_MICROSECONDS);
 
         if ($status === Password::PASSWORD_RESET) {
             return response()->json((object) []);
@@ -43,19 +51,34 @@ final class ResetPasswordController
         return ApiError::of(ApiCode::ValidationFailed, ['errors' => ['token' => [__('passwords.token')]]]);
     }
 
-    private function assertAcceptable(PlainPassword $password, ?string $name, string $email): void
+    /** The lock makes a second request with the same token find it already deleted. */
+    private function reset(string $email, string $token, PlainPassword $password): string
     {
-        $violations = $this->policy->violations($password, $name, $email);
-        if ($violations === []) {
-            return;
+        $status = Cache::lock('reset:'.hash('sha256', $email), self::LOCK_SECONDS)->block(
+            self::LOCK_WAIT_SECONDS,
+            fn () => WriteTransaction::run(fn () => $this->broker()->reset(
+                ['email' => $email, 'status' => 'active', 'token' => $token, 'password' => $password->value],
+                fn (User $user) => $this->replacePassword($user, $password),
+            )),
+        );
+        if (! is_string($status)) {
+            throw new LogicException('The password broker answers with a status string.');
+        }
+        if ($status === Password::INVALID_USER) {
+            $this->passwords->verifyOrDummy(null, PlainPassword::of($token));
         }
 
-        $messages = [];
-        foreach ($violations as $violation) {
-            $messages[] = $violation->message();
-        }
+        return $status;
+    }
 
-        throw ValidationException::withMessages(['password' => $messages]);
+    /** Laravel's broker has its own 200 ms floor, which would end before the dummy check and leave two floors. */
+    private function broker(): PasswordBroker
+    {
+        $broker = Password::broker();
+        assert($broker instanceof PasswordBroker);
+        $broker->getTimebox()->returnEarly();
+
+        return $broker;
     }
 
     private function replacePassword(User $user, PlainPassword $password): void
