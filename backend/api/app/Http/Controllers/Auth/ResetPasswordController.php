@@ -39,7 +39,7 @@ final class ResetPasswordController
     {
         $email = Email::canonical($request->string('email')->toString());
         $password = PlainPassword::of($request->string('password')->toString());
-        $this->rejection->assertAcceptable($password, User::where('email', $email)->first()?->name, $email);
+        $this->rejection->assertAcceptable($password, null, $email);
 
         $token = $request->string('token')->toString();
         $status = (new Timebox)->call(fn () => $this->reset($email, $token, $password), self::FLOOR_MICROSECONDS);
@@ -58,7 +58,7 @@ final class ResetPasswordController
             self::LOCK_WAIT_SECONDS,
             fn () => WriteTransaction::run(fn () => $this->broker()->reset(
                 ['email' => $email, 'status' => 'active', 'token' => $token, 'password' => $password->value],
-                fn (User $user) => $this->replacePassword($user, $password),
+                fn (User $user) => $this->replacePassword($user, $password, $email),
             )),
         );
         if (! is_string($status)) {
@@ -81,8 +81,9 @@ final class ResetPasswordController
         return $broker;
     }
 
-    private function replacePassword(User $user, PlainPassword $password): void
+    private function replacePassword(User $user, PlainPassword $password, string $email): void
     {
+        $this->rejection->assertAcceptable($password, $user->name, $email);
         $this->passwords->set($user, $password);
         $user->save();
         $this->sessions->endAll($user);
