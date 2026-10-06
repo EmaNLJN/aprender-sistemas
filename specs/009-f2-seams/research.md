@@ -177,3 +177,18 @@ Para F2a ningún escenario se retira ni cambia su valor esperado: los siete chec
 - **Arreglar el defecto del `<body>` con `aria-pressed`** o el bloqueo de campaña que va primero: F1 los fija como `KNOWN DEFECT`.
 - **Un módulo de arranque en `app/boot/`:** `startApp` vive en `app.js` hasta que F10 lo retire.
 - **Barrels, carpetas vacías y capas por anticipado.**
+
+## Línea base de la implementación
+
+Tomada el 2026-10-06 por el coordinador (T001) sobre `f2a/base` (`d3b701e`): `feat/f1-red-de-seguridad` (F1, todavía en revisión en el PR #23) más esta spec y su plan, como prevé el plan si F1 no está en `master`. La limpieza al inglés ya está en `master` (PR #14, squash), así que no hay ramas pendientes que integrar antes.
+
+| Medida | Valor | Coincide con la planificación |
+| --- | --- | --- |
+| `npm ci --offline`, `build`, `npm test` (30 checks y Vitest 3), `lint` (0 errores, 35 avisos de complejidad), `format:check` | en verde | sí |
+| E2E de F1 (`E2E_PORT=4173`) | 106 de 106 | sí |
+| `build/curriculum.json` y `documentHash` | `ef8f5715…` | sí |
+| `dump-globals` | `cd1f9e62…` | sí |
+| `dump-dist-globals` (stdout) | `daf2bc71…` | sí |
+| `frontend/src/index.html` | `6c3b7e6a…` | sí |
+| `dist/index.html` | 2 186 460 caracteres, 2 202 074 bytes; estilo `850ef821…`; marcado `562c5364…`; 0 `import(` y 0 `import.meta` | sí |
+| Escenarios `PASS` por check | boot 10, app-shell 51, lab-state 37, lab-bridge 21, systems 46, project-kit 11, campaign 34, versioned-storage 33 | — |
