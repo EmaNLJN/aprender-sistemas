@@ -3,9 +3,13 @@
 use App\Auth\DeviceCookie;
 use App\Auth\DeviceToken;
 use App\Models\User;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Sleep;
 use Tests\Feature\Limits\DatabaseDrivers;
 
 beforeEach(function () {
@@ -31,7 +35,10 @@ beforeEach(function () {
         ->setUserResolver(fn () => $user);
 });
 
-afterEach(fn () => Carbon\Carbon::setTestNow());
+afterEach(function () {
+    Carbon::setTestNow();
+    Sleep::fake(false);
+});
 
 function issuedDevice(object $test, User $user): array
 {
@@ -154,4 +161,34 @@ it('stops exempting a device after ten consecutive failures and clear reverts it
     $this->device->clear($token);
     expect($this->device->read($request, $this->account))->toEqual($token)
         ->and($this->device->retryAfter($token))->toBeNull();
+});
+
+it('counts device failures one by one from one and forgets them 24 hours after the last', function () {
+    $token = new DeviceToken($this->account->id, str_repeat('34', 16));
+    $failsKey = 'login:device-fails:'.$token->deviceId;
+
+    $this->device->recordFailure($token);
+    expect(Cache::get($failsKey))->toBe(1);
+
+    $this->travel(23)->hours();
+    $this->device->recordFailure($token);
+    expect(Cache::get($failsKey))->toBe(2);
+
+    $this->travel(23)->hours();
+    expect(Cache::get($failsKey))->toBe(2);
+
+    $this->travel(2)->hours();
+    expect(Cache::get($failsKey))->toBeNull();
+});
+
+it('fails instead of writing a stale device counter while another request holds the lock', function () {
+    Sleep::fake(syncWithCarbon: true);
+    $token = new DeviceToken($this->account->id, str_repeat('56', 16));
+    $lock = Cache::lock('login:device-lock:'.$token->deviceId, 5);
+    $lock->get();
+
+    expect(fn () => $this->device->recordFailure($token))->toThrow(LockTimeoutException::class);
+    $lock->release();
+
+    expect(Cache::get('login:device-fails:'.$token->deviceId))->toBeNull();
 });

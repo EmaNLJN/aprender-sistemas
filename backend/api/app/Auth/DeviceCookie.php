@@ -20,6 +20,10 @@ final class DeviceCookie
 
     private const EXEMPTION_LOST_AT_FAILS = 10;
 
+    private const LOCK_SECONDS = 5;
+
+    private const LOCK_WAIT_SECONDS = 2;
+
     private const FAILS_FORGOTTEN_AFTER_SECONDS = 86400;
 
     public function __construct(private Repository $config)
@@ -79,7 +83,9 @@ final class DeviceCookie
     public function recordFailure(DeviceToken $device): void
     {
         RateLimiter::hit($this->attemptsKey($device), self::WINDOW_SECONDS);
-        Cache::put($this->failsKey($device), $this->consecutiveFailures($device) + 1, self::FAILS_FORGOTTEN_AFTER_SECONDS);
+        Cache::lock('login:device-lock:'.$device->deviceId, self::LOCK_SECONDS)->block(self::LOCK_WAIT_SECONDS, function () use ($device) {
+            Cache::put($this->failsKey($device), $this->consecutiveFailures($device) + 1, self::FAILS_FORGOTTEN_AFTER_SECONDS);
+        });
     }
 
     public function clear(DeviceToken $device): void
