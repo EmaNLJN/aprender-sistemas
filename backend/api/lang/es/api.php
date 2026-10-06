@@ -21,8 +21,8 @@ return [
     'client_run_id_reused' => 'Ese identificador de ejecución ya se usó con otro código, otro ejercicio u otra prueba propia.',
     'quota_exceeded' => 'Llegaste a un límite de ejecuciones: esperá antes de volver a probar.',
     'queue_full' => 'El taller está ocupado ahora mismo: reintentá en unos segundos.',
-    'epoch_mismatch' => 'Tu progreso se borró desde otro dispositivo. Se cargará el estado nuevo.',
-    'client_outdated' => 'Esta pestaña quedó vieja. Recargá la página para seguir sincronizando.',
+    'last_admin' => 'Tiene que quedar al menos un admin activo.',
+    'mail_unavailable' => 'El taller no puede mandar correos por ahora.',
     'quota' => [
         'active' => 'Ya tenés una ejecución en curso: esperá a que termine.',
         'per_minute' => 'Hiciste demasiadas ejecuciones en el último minuto: esperá un momento.',
