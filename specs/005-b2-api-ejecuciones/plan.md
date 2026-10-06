@@ -90,7 +90,7 @@ specs/005-b2-api-ejecuciones/
 ```text
 backend/api/
 ├── app/
-│   ├── Progress/            (nuevo) ProgressHead, AccountLock                      ← compartido con D1
+│   ├── Progress/            (nuevo) ProgressHead, AccountLock, AccountGone         ← compartido con D1
 │   ├── Runs/                (nuevo) RunStatus, RunReason, RunLanguage, ExecutorPhase, TestOutcome, CancelOutcome, RunLog,
 │   │   │                    RunReader, RunView, RunPresenter, RunLimiters
 │   │   ├── Record/          Instant, RunRow, RunProgress, AttemptFacts
@@ -99,8 +99,8 @@ backend/api/
 │   │   ├── Evidence/        ExecutorResult, ExpectedEvidence, TestVerdict, Verdict, Evidence, EvidenceReader,
 │   │   │                    ResultClassifier
 │   │   ├── Admission/       ExerciseReader, SubmittedRun, QuotaKind, QuotaUsage, QuotaPolicy, RejectionKind,
-│   │   │                    Rejection, RunRejected, AdmissionFailed, AdmissionResult, RunAdmission
-│   │   └── Execution/       ProgressMerge, ProgressWriter, RunCloser, RunCloseFailed, ClaimOutcome, Claim, RunClaimer,
+│   │   │                    Rejection, RunRejected, AdmissionResult, RunAdmission
+│   │   └── Execution/       RunStore, ProgressMerge, ProgressWriter, RunCloser, RunWriteFailed, ClaimOutcome, Claim, RunClaimer,
 │   │                        RequeueOutcome, RunRequeuer, RunProcessor, RunCanceller, ActiveRuns, RunExpiry,
 │   │                        CancelRunsOfRestrictedAccount, ReplyKind, ExecutorReply, ExecutorClient, RunExecution,
 │   │                        Uuid7Cutoff, RunPruner, PruneReport
@@ -172,13 +172,13 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 
 | Dueño | Archivos que posee | Consume | Entrega |
 | --- | --- | --- | --- |
-| B · Base | `backend/api/database/migrations/2026_10_05_3000NN_*.php` (siete), `backend/api/app/Runs/{RunStatus,RunReason,RunLanguage,ExecutorPhase,TestOutcome,CancelOutcome,RunLog}.php`, `backend/api/app/Runs/Record/{Instant,RunRow,RunProgress,AttemptFacts}.php`, `backend/api/app/Runs/Evidence/{ExecutorResult,ExpectedEvidence,TestVerdict,Verdict}.php`, `backend/api/app/Progress/{ProgressHead,AccountLock}.php`, `backend/api/config/runs.php`, `backend/api/phpunit.xml`, `backend/api/tests/Pest.php`, `backend/api/tests/Support/{RunWorld,RunInvariants,Parallel}.php`, `backend/api/tests/Feature/Runs/{SchemaTest,AccountLockTest,RunWorldTest}.php`, `backend/api/tests/Unit/Runs/{RunStatusTest,InstantTest,RunRowTest,RunProgressTest,ExecutorResultTest,VerdictTest,RunLogTest,LogArchTest}.php`, `backend/api/tests/Content/RunsMigrationsTest.php`, `backend/api/tests/Concurrency/AccountLockConcurrencyTest.php` | de C3a (S2): `WriteTransaction`, `users.status`, la fábrica de usuarios, `ApiCode` | las tablas, los tipos, la configuración, el registro de log, `AccountLock`, el ayudante de procesos paralelos y el mundo mínimo de pruebas |
+| B · Base | `backend/api/database/migrations/2026_10_05_3000NN_*.php` (siete), `backend/api/app/Runs/{RunStatus,RunReason,RunLanguage,ExecutorPhase,TestOutcome,CancelOutcome,RunLog}.php`, `backend/api/app/Runs/Record/{Instant,RunRow,RunProgress,AttemptFacts}.php`, `backend/api/app/Runs/Evidence/{ExecutorResult,ExpectedEvidence,TestVerdict,Verdict}.php`, `backend/api/app/Progress/{ProgressHead,AccountLock,AccountGone}.php`, `backend/api/config/runs.php`, `backend/api/phpunit.xml`, `backend/api/tests/Pest.php`, `backend/api/tests/Support/{RunWorld,RunInvariants,Parallel}.php`, `backend/api/tests/Feature/Runs/{SchemaTest,AccountLockTest,RunWorldTest}.php`, `backend/api/tests/Unit/Runs/{RunStatusTest,InstantTest,RunRowTest,RunProgressTest,ExecutorResultTest,VerdictTest,RunLogTest,LogArchTest}.php`, `backend/api/tests/Content/RunsMigrationsTest.php`, `backend/api/tests/Concurrency/AccountLockConcurrencyTest.php` | de C3a (S2): `WriteTransaction`, `users.status`, la fábrica de usuarios, `ApiCode` | las tablas, los tipos, la configuración, el registro de log, `AccountLock`, el ayudante de procesos paralelos y el mundo mínimo de pruebas |
 | G · Generador | `tools/content/{exercises,meta,load-curriculum,build-curriculum,harness}.ts`, `content/harness/{rust,go}.tpl`, `qa/{content-check,content-exercises-check,content-tools-check,curriculum-meta-check,content-harness-check,run-checks}.ts`, `qa/fixtures/shared/harness-cases.json` | — | las claves de prueba libres, el `grading_hash` con los `imports`, `build/harness.json`, la 18.ª porción en el meta y el fixture compartido |
 | E · Programa y evidencia | `backend/api/app/Runs/Program/{ExpectedTest,ExerciseSnapshot,Whitespace,ProgramInput,ProgramRenderer,ComposedProgram,ProgramComposer}.php`, `backend/api/app/Runs/Evidence/{Evidence,EvidenceReader,ResultClassifier}.php`, `backend/api/tests/Unit/Runs/Program/`, `backend/api/tests/Unit/Runs/Evidence/`, `backend/api/tests/Unit/Runs/PurityTest.php` | de B: los enums y los tipos de evidencia; de G: el fixture y las plantillas | el armado del programa y la lectura de la evidencia, puros |
 | C · Contenido | `backend/api/app/Content/{Portion,ContentTables,ContentMeta,ContentSource,ContentRows,ContentReader,PortionAssembler,PortionRenderer,ContentInvariants,ContentImporter,ContentDiff}.php`, `backend/api/app/Content/Record/HarnessTemplate.php`, `backend/api/app/Console/Commands/ImportContent.php`, `backend/api/app/Http/Controllers/ContentController.php`, `backend/api/routes/api/harness.php`, `backend/api/tests/Support/{ContentDatabase,ContentFixture}.php`, `backend/api/tests/Unit/Record/HarnessTemplateTest.php`, `backend/api/tests/Content/HarnessEndpointTest.php`, y las pruebas existentes que dicen «17» o «21» o fijan el mensaje de `test_key` (lista en T009) | de G: el meta con la 18.ª porción y `harness.json`; de B: `harness_templates` | la plantilla importada y publicada, el mensaje nuevo del importador |
-| X · Cierre y camino del trabajo | `backend/api/app/Runs/Execution/{ProgressMerge,ProgressWriter,RunCloser,RunCloseFailed,ClaimOutcome,Claim,RunClaimer,RequeueOutcome,RunRequeuer,RunProcessor,RunCanceller,ActiveRuns,RunExpiry,CancelRunsOfRestrictedAccount}.php`, `backend/api/app/Jobs/ExecuteRun.php`, `backend/api/app/Auth/Events/{AccountRestricted,AccountRestriction}.php` (sólo si C3b no los entregó), `backend/api/tests/Unit/Runs/Execution/ProgressMergeTest.php`, `backend/api/tests/Feature/Runs/Execution/{RunCloserTest,CloseFailureTest,RunClaimerTest,RunRequeuerTest,ExecuteRunTest,RunCancellerTest,ActiveRunsTest,RunExpiryTest,CancelRunsOfRestrictedAccountTest}.php`, `backend/api/tests/Concurrency/{CloseConcurrencyTest,ClaimConcurrencyTest,CancelConcurrencyTest}.php` | de B: el esquema, los tipos, `AccountLock` y `RunLog` | el cierre, el reclamo, el reencolado, la cancelación, el vencimiento, el trabajo con su puerto (`RunProcessor`) y el listener |
+| X · Cierre y camino del trabajo | `backend/api/app/Runs/Execution/{RunStore,ProgressMerge,ProgressWriter,RunCloser,RunWriteFailed,ClaimOutcome,Claim,RunClaimer,RequeueOutcome,RunRequeuer,RunProcessor,RunCanceller,ActiveRuns,RunExpiry,CancelRunsOfRestrictedAccount}.php`, `backend/api/app/Jobs/ExecuteRun.php`, `backend/api/app/Auth/Events/{AccountRestricted,AccountRestriction}.php` (sólo si C3b no los entregó), `backend/api/tests/Unit/Runs/Execution/ProgressMergeTest.php`, `backend/api/tests/Feature/Runs/Execution/{RunStoreTest,RunCloserTest,CloseFailureTest,RunClaimerTest,RunRequeuerTest,ExecuteRunTest,RunCancellerTest,ActiveRunsTest,RunExpiryTest,CancelRunsOfRestrictedAccountTest}.php`, `backend/api/tests/Concurrency/{CloseConcurrencyTest,ClaimConcurrencyTest,CancelConcurrencyTest}.php` | de B: el esquema, los tipos, `AccountLock` y `RunLog` | el cierre, el reclamo, el reencolado, la cancelación, el vencimiento, el trabajo con su puerto (`RunProcessor`) y el listener |
 | J · Ejecución | `backend/api/app/Runs/Execution/{ReplyKind,ExecutorReply,ExecutorClient,RunExecution,Uuid7Cutoff,RunPruner,PruneReport}.php`, `backend/api/app/Console/Commands/{SweepRuns,PruneRuns}.php`, `backend/api/tests/Unit/Runs/Execution/{Uuid7CutoffTest,ExecutorReplyTest}.php`, `backend/api/tests/Feature/Runs/Execution/{ExecutorClientTest,RunExecutionTest,RunExecutionLogTest,RunPrunerTest,SweepRunsCommandTest,PruneRunsCommandTest}.php` | de B, E y X, ya integrados | el cliente del ejecutor, el orquestador del trabajo (`RunExecution`, que implementa `RunProcessor`), el barrido y la poda |
-| A · Admisión y HTTP | `backend/api/app/Runs/Admission/{ExerciseReader,SubmittedRun,QuotaKind,QuotaUsage,QuotaPolicy,RejectionKind,Rejection,RunRejected,AdmissionFailed,AdmissionResult,RunAdmission}.php`, `backend/api/app/Runs/{RunReader,RunView,RunPresenter,RunLimiters}.php`, `backend/api/app/Http/Controllers/RunController.php`, `backend/api/app/Http/Requests/SubmitRunRequest.php`, `backend/api/routes/api/runs.php`, `backend/api/tests/Unit/Runs/Admission/`, `backend/api/tests/Unit/Runs/RunPresenterTest.php`, `backend/api/tests/Feature/Runs/{ExerciseReaderTest,RunAdmissionTest,AdmissionLogTest,RunEndpointTest,RunShowTest,RunCancelEndpointTest,RunAccessMatrixTest,RunThrottleTest,TrimmingTest}.php`, `backend/api/tests/Concurrency/AdmissionConcurrencyTest.php` | de B, E y X, ya integrados; de C3a: los grupos y `Browser` | la admisión, las cuotas y las tres rutas |
+| A · Admisión y HTTP | `backend/api/app/Runs/Admission/{ExerciseReader,SubmittedRun,QuotaKind,QuotaUsage,QuotaPolicy,RejectionKind,Rejection,RunRejected,AdmissionResult,RunAdmission}.php`, `backend/api/app/Runs/{RunReader,RunView,RunPresenter,RunLimiters}.php`, `backend/api/app/Http/Controllers/RunController.php`, `backend/api/app/Http/Requests/SubmitRunRequest.php`, `backend/api/routes/api/runs.php`, `backend/api/tests/Unit/Runs/Admission/`, `backend/api/tests/Unit/Runs/RunPresenterTest.php`, `backend/api/tests/Feature/Runs/{ExerciseReaderTest,RunAdmissionTest,AdmissionLogTest,RunEndpointTest,RunShowTest,RunCancelEndpointTest,RunAccessMatrixTest,RunThrottleTest,TrimmingTest}.php`, `backend/api/tests/Concurrency/AdmissionConcurrencyTest.php` | de B, E y X, ya integrados; de C3a: los grupos y `Browser` | la admisión, las cuotas y las tres rutas |
 | O · Operación | `qa/api-runs-check.ts` | de C3a: `qa/lib/api-account.ts` (T024 de C3a); del coordinador: T019 | el check de punta a punta con el ejecutor real |
 | Coordinador | `backend/api/Dockerfile`, `backend/api/config/queue.php`, `backend/api/bootstrap/app.php`, `backend/api/app/Http/ApiCode.php`, `backend/api/lang/es/api.php`, `backend/api/tests/Unit/{ApiCodeTest.php,Runs/RunsQueueConfigTest.php,Runs/RunsConfigTest.php}`, `backend/api/app/Providers/AppServiceProvider.php`, `backend/api/routes/console.php`, `backend/api/tests/Feature/{ScheduleTest.php,Runs/WiringTest.php}`, `backend/api/tests/Content/ContentEndpointTest.php`, la línea del grupo de `backend/api/routes/api/harness.php`, `qa/api-content-check.ts`, `docker/compose.yaml`, `docker/nginx/nginx.conf`, `backend/api/scripts/{init-env,deploy,smoke}.sh`, `backend/api/.env.example`, `qa/nginx-api-blocks-check.ts`, `package.json`, `README.md`, `backend/api/AGENTS.md`, `docs/architecture.md`, `qa/AGENTS.md`, `AGENTS.md`, `specs/backend-multiusuario/roadmap.md` | todo | la base de la imagen, las líneas de integración, la operación, la documentación y la evidencia de cierre |
 
@@ -236,6 +236,8 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
   - Si una prueba de C2 o de C3a falla, el error está en el código nuevo: su valor esperado no se toca.
   - Un esperado sale de un contrato, de la consigna o de un ejemplo resuelto aparte; nunca del código que probás.
 - **Archivos que no son tuyos no se tocan,** y las líneas de integración las pone el coordinador. Si tu tarea necesita algo de otro dueño, pedíselo al coordinador.
+- **Cableado de producción.** Lo que registra piezas de B2 en el contenedor, en los eventos y en el limitador (`AppServiceProvider`) lo pone el coordinador en T018, cuando las ondas 1 y 2 terminaron. Hasta entonces tus pruebas hacen su propio cableado en un `beforeEach`: `RunLimiters::register()`, `app()->when(ResultClassifier::class)->needs('$sandboxRuntime')->give('runsc')`, `app()->bind(RunProcessor::class, RunExecution::class)`, o una llamada directa al listener. Sólo `WiringTest` (T018) comprueba las líneas de producción. Sin esto, una ruta con `throttle:runs-submit` falla antes de llegar al controlador.
+- **Log.** Todo registro pasa por `RunLog`: ni `Log` ni `logger()` en `App\Runs` ni en el trabajo (una prueba de arquitectura lo exige).
 - **Comandos.** En cada terminal: `export COMPOSE_PROJECT_NAME=taller-b2-<dueño>`, y un `.env` con `sh backend/api/scripts/init-env.sh`. Después:
   - `npm run api:test -- --filter=<Prueba>` y `npm run api:test -- --testsuite=<Unit|Feature|Content|Concurrency>`;
   - `npm run api:analyse` (nivel 9, sin baseline: tu código tiene que dar 0 errores);
@@ -332,7 +334,8 @@ final class RunLog
     public static function cancelRequested(RunRow $run): void;                                  // run.cancel_requested
     public static function executorFailed(RunRow $run, string $cause, ?int $httpStatus): void;  // run.executor_failed: error si es 400, 401 o 413
     public static function jobFailed(string $runId, ?Throwable $error): void;                   // run.job_failed: sólo la clase de la excepción
-    public static function closeFailed(string $runId, string $sqlState, ?int $driverCode): void; // run.close_failed
+    public static function writeFailed(string $runId, string $sqlState, ?int $driverCode): void; // run.write_failed
+    public static function cancelFailed(int $userId, Throwable $error): void;                   // run.cancel_failed: sólo la clase de la excepción
     public static function swept(int $closed): void;                                            // run.swept
     public static function pruned(int $runs, int $payloads): void;                              // run.pruned
 }
@@ -381,7 +384,7 @@ return [
    - **`ExecutorResultTest`**: `fromPayload` con el JSON de ejemplo de [contracts/executor.md](./contracts/executor.md) arma el resultado; devuelve `null` si falta un campo, si sobra uno, si `phase` no es `compile` ni `run`, si `exitCode` o un tiempo no es entero, si un tiempo es negativo o pasa de 4.294.967.295 (el máximo de `INT UNSIGNED`), si `exitCode` sale del rango de `SMALLINT` (de -32.768 a 32.767), si `stdout` no es texto, si un booleano llega como `0` o `"false"`, o si `phase` es `compile` con `exitCode` 0 y sin `timedOut` ni `oomKilled` (una respuesta que el ejecutor no produce: [contracts/executor.md](./contracts/executor.md)).
    - **`VerdictTest`**: `infraError` y `canceled` no traen fase, código, salidas ni veredictos; `asCanceled` de un resultado `failed` con `exitCode` 0 y `stdout` conserva `exitCode` y `stdout`, y deja estado `canceled`, motivo `null`, sin veredictos y `custom` `null`.
    - **`RunLogTest`** y **`LogArchTest`** (FR-042): cada método de `RunLog` escribe el mensaje y las claves que dice su firma y nada más, y con un `RunRow` y un `Verdict` cuyos `code`, `customTest`, `program`, `stdout` y `stderr` llevan la cadena `TALLER_CENTINELA`, el registro serializado no la contiene (se captura con un `Monolog\Handler\TestHandler`); `jobFailed` con una excepción cuyo mensaje lleva la cadena registra sólo el nombre de su clase. La prueba de arquitectura exige que `App\Runs` y `App\Jobs` no usen la fachada `Log` ni el ayudante `logger()` salvo `RunLog`.
-   - **`RunWorldTest`**: `RunWorld::exercise()` deja un ejercicio activo con sus tres pruebas, su versión de corrección y la plantilla de su lenguaje, que cumplen las restricciones de C2 (la inserción no falla); `RunWorld::run()` deja una ejecución cuyo `RunRow` coincide con lo pedido y que pasa `RunInvariants`.
+   - **`RunWorldTest`**: `RunWorld::exercise()` deja un ejercicio activo con sus tres pruebas, su versión de corrección y la plantilla de su lenguaje, que cumplen las restricciones de C2 (la inserción no falla); `RunWorld::run()` deja una ejecución cuyo `RunRow` coincide con lo pedido y que pasa `RunInvariants`; `RunWorld::orphanRun()` deja una fila de `runs` sin su fila en `users`.
 2. **Implementá.** Las filas entran por `RunRow::fromRow` y compañía con `App\Content\Record\RowFields` (que ya estrecha `mixed`); las fechas, por `Instant::parse`. `Instant::now()` es `now()->toImmutable()->utc()`, así que `travelTo` y `Carbon::setTestNow` lo congelan. Referencia de `Instant`:
 
 ```php
@@ -441,14 +444,14 @@ public static function fromPayload(mixed $payload): ?self
 }
 ```
 
-   `RunWorld` (`tests/Support/RunWorld.php`) inserta con SQL directo, dentro de la transacción de la prueba, los mínimos que cumplen las restricciones de C2: `languages` (`rust` posición 1, `go` posición 2), `catalogs` (`lab`, `slice_by` `language`), `topics` (uno por lenguaje), un `content_imports` (hashes de 64 hexadecimales y `{}` en las tres columnas JSON), `exercises` con las 33 columnas de C2 (los JSON en `[]` o `{}`, `key_order` con la lista de claves, hashes de 64 hexadecimales y `position` 1), `exercise_tests` (clave, expresión y `position` 1 a n, `key_order` `["id","label","expression","why","failure"]`), `exercise_grading_versions` con el `grading_hash` del ejercicio y `harness_templates` con una plantilla mínima de cada lenguaje que cumple la gramática de [contracts/harness-template.md](./contracts/harness-template.md). Firmas: `RunWorld::exercise(string $id = 'rust-01', string $language = 'rust', array $tests = [...], array $imports = []): void`, `RunWorld::user(array $state = []): User` (por la fábrica de C3a) y `RunWorld::run(User $user, array $overrides = []): RunRow`.
+   `RunWorld` (`tests/Support/RunWorld.php`) inserta con SQL directo, dentro de la transacción de la prueba, los mínimos que cumplen las restricciones de C2: `languages` (`rust` posición 1, `go` posición 2), `catalogs` (`lab`, `slice_by` `language`), `topics` (uno por lenguaje), un `content_imports` (hashes de 64 hexadecimales y `{}` en las tres columnas JSON), `exercises` con las 33 columnas de C2 (los JSON en `[]` o `{}`, `key_order` con la lista de claves, hashes de 64 hexadecimales y `position` 1), `exercise_tests` (clave, expresión y `position` 1 a n, `key_order` `["id","label","expression","why","failure"]`), `exercise_grading_versions` con el `grading_hash` del ejercicio y `harness_templates` con una plantilla mínima de cada lenguaje que cumple la gramática de [contracts/harness-template.md](./contracts/harness-template.md). Firmas: `RunWorld::exercise(string $id = 'rust-01', string $language = 'rust', array $tests = [...], array $imports = []): void`, `RunWorld::user(array $state = []): User` (por la fábrica de C3a), `RunWorld::run(User $user, array $overrides = []): RunRow` y `RunWorld::orphanRun(User $user, array $overrides = []): RunRow`, que deja una ejecución cuya cuenta ya no existe (borra el `users` con `SET FOREIGN_KEY_CHECKS=0` y los vuelve a activar), para probar la carrera con la supresión de C3b.
 3. `npm run api:analyse` y `npm run api:format:check`: 0 errores.
 
 **Compuerta:** las pruebas en verde, y que los nombres y las firmas sean los de [data-model.md](./data-model.md), sección 5: de eso depende todo el reparto.
 
 ### Tarea 0.3 · `AccountLock`, el candado de la cuenta (T003)
 
-- **Crea:** `backend/api/app/Progress/AccountLock.php`, `backend/api/tests/Feature/Runs/AccountLockTest.php`, `backend/api/tests/Concurrency/AccountLockConcurrencyTest.php` y `backend/api/tests/Support/Parallel.php`.
+- **Crea:** `backend/api/app/Progress/{AccountLock,AccountGone}.php`, `backend/api/tests/Feature/Runs/AccountLockTest.php`, `backend/api/tests/Concurrency/AccountLockConcurrencyTest.php` y `backend/api/tests/Support/Parallel.php`.
 - **Entrega:**
 
 ```php
@@ -458,10 +461,16 @@ final class AccountLock
      * @template T
      * @param  Closure(ProgressHead): T  $work
      * @return T
+     * @throws AccountGone si la cuenta ya no existe (la clave foránea de la cabecera lo rechaza)
      */
     public function within(int $userId, Closure $work): mixed;
 
     public function advance(ProgressHead $head, CarbonImmutable $at): ProgressHead;
+}
+
+final class AccountGone extends RuntimeException
+{
+    public function __construct(public readonly int $userId);   // sin SQL ni valores en el mensaje
 }
 
 final class Parallel
@@ -479,6 +488,7 @@ final class Parallel
 1. **Primero las pruebas.** `AccountLockTest` (suite `Feature`):
    - la primera vez crea la cabecera con `epoch` 1, `revision` 0 y `reset_at` y `last_activity_at` `NULL`, y la segunda no la cambia;
    - `within` devuelve lo que devuelve el trabajo, y una excepción del trabajo se propaga;
+   - con un `user_id` que no existe en `users` (una cuenta que C3b suprimió entre que se leyó la ejecución y se tomó el candado), `within` lanza `AccountGone`, no deja una cabecera ni una transacción abierta, y el mensaje no trae SQL;
    - **dentro de una transacción ya abierta** (la que `RefreshDatabase` abre alrededor de cada prueba) `within` corre el trabajo sin el error 1568 de MySQL (el que da un `SET TRANSACTION` sin `SESSION`);
    - `advance` sube la revisión en uno, fija `last_activity_at` y `updated_at` con el instante dado y devuelve la cabecera como queda en la base.
    `AccountLockConcurrencyTest` (suite `Concurrency`, con `Parallel::run`; no tiene una transacción de afuera, así que el aislamiento que se lee es el real):
@@ -531,10 +541,14 @@ final class AccountLock
     private function take(int $userId): ProgressHead
     {
         $now = Instant::format(Instant::now());
-        DB::insert(
-            'insert into `progress_heads` (`user_id`, `epoch`, `revision`, `created_at`, `updated_at`) values (?, 1, 0, ?, ?) as `n` on duplicate key update `user_id` = `n`.`user_id`',
-            [$userId, $now, $now],
-        );
+        try {
+            DB::insert(
+                'insert into `progress_heads` (`user_id`, `epoch`, `revision`, `created_at`, `updated_at`) values (?, 1, 0, ?, ?) as `n` on duplicate key update `user_id` = `n`.`user_id`',
+                [$userId, $now, $now],
+            );
+        } catch (QueryException $error) {
+            throw ($error->errorInfo[1] ?? null) === 1452 ? new AccountGone($userId) : $error;
+        }
         $row = DB::selectOne('select * from `progress_heads` where `user_id` = ? for update', [$userId]);
 
         return ProgressHead::fromRow((array) $row);
@@ -861,3 +875,436 @@ final class EvidenceReader
 3. `npm run api:test -- --testsuite=Unit --filter=Runs`, `npm run api:analyse` y `npm run api:format:check`: verdes.
 
 **Compuerta:** las pruebas en verde con el fixture y las plantillas reales, 0 errores de PHPStan en el nivel 9, y `PurityTest` en verde.
+
+## 4. El contenido: la plantilla como 18.ª porción (dueño C, onda 1)
+
+**Cubre:** FR-035 (la parte del importador y de la API) y FR-040; SC-009 (las 18 porciones y el 304 de la plantilla) y SC-010 (el mensaje y la regla del importador).
+
+**Entrega:** al llegar S1, `content:import` guarda las dos plantillas en `harness_templates` y se auto-verifica con las 18 porciones, la API publica `GET /api/harness` con el contrato de las porciones y el importador dice qué hacer con una clave retirada. La suite de contenido de la API, que desde T005 estaba en rojo a propósito, vuelve a verde.
+
+### Tarea 4.1 · `harness` como 18.ª porción y el mensaje del importador (T009)
+
+- **Crea:** `backend/api/app/Content/Record/HarnessTemplate.php`, `backend/api/routes/api/harness.php`, `backend/api/tests/Unit/Record/HarnessTemplateTest.php` y `backend/api/tests/Content/HarnessEndpointTest.php`.
+- **Modifica (`app/`):** `Content/{Portion,ContentTables,ContentMeta,ContentSource,ContentRows,ContentReader,PortionAssembler,PortionRenderer,ContentInvariants,ContentImporter,ContentDiff}.php`, `Console/Commands/ImportContent.php` y `Http/Controllers/ContentController.php`.
+- **Modifica (`tests/`):** `Support/{ContentDatabase,ContentFixture}.php`, `Unit/{PortionTest,ContentSourceTest,ContentRoundTripTest,ContentFixtureTest,ContentDiffTest}.php`, `Unit/Record/ContentMetaTest.php`, `Feature/ContentSchemaTest.php` y `Content/{ContentDatabaseTest,ContentContractTest,ImportContentTest}.php`.
+- **Entrega** (los cambios, lugar por lugar; el importador está hecho para que casi todo sea una lista):
+
+| Archivo | Cambio |
+| --- | --- |
+| `Portion` | `case Harness = 'harness';` después de `Guide`, así el orden de `Portion::cases()` es el del meta (la 18.ª, al final). En `resolve()`, `'harness'` entra entre los recursos sin corte (`'workshops', 'atlas', 'guide', 'harness' => $resource`) y el atajo `return self::Guide;` pasa a `return self::from($group);`: con el atajo, el recurso nuevo resolvería a la guía. El docblock deja de decir «17» |
+| `ContentTables` | `'harness_templates' => ['language']` justo después de `languages` en `KEYS` (su clave foránea apunta a ella) y `'harness_templates'` en `WITHOUT_LIFECYCLE`: sin estado ni fechas, como `languages`. `ContentStore`, `ContentDiff`, `ContentWriter` y `RowSet` recorren esas listas y la tratan sin cambios |
+| `ContentMeta` | El mensaje dice «se esperaban las 18 porciones, en el orden de la API»; la comprobación (`array_keys` igual a `Portion::cases()`) ya exige el orden |
+| `ContentSource` | `fromDirectory` lee `harness.json` junto a los otros dos archivos y comprueba que su sha256 es el de `meta.portions.harness` (si no: «harness.json no corresponde a curriculum.meta.json (son de builds distintos): regeneralos juntos con npm run curriculum o reconstruí la imagen.»). Lo expone en `$harness` (un `stdClass`), y `part(Portion::Harness)` lo devuelve: el grupo `harness` no existe en `curriculum.json` |
+| `Record/HarnessTemplate` | `final readonly class HarnessTemplate(string $language, string $template)` con `fromDocument(stdClass $harness, string $language)` (error: `harness.json: <lenguaje>: se esperaba el texto de la plantilla`), `fromRow(array $row)` y `toRow()`, como `Record/Language` |
+| `ContentRows` | `addHarness`: una fila por lenguaje de `languages`, comprobando que las claves de `harness.json` sean esas y en ese orden (`harness.json: (raíz): un texto por lenguaje, en el orden de languages: rust, go`) |
+| `ContentReader` y `PortionAssembler` | El grupo `harness` lee `harness_templates` (sin filtro de estado: no lo tiene) y arma el objeto `{"rust": …, "go": …}` en el orden de `languages` con `PublishedJson::encode`; si falta la plantilla de un lenguaje, `InvalidContent` |
+| `ContentInvariants` | La regla «hay lenguajes sin plantilla del harness»: `select 1 from languages l left join harness_templates h on h.language = l.code where h.language is null limit 1` |
+| `ContentImporter`, `PortionRenderer`, `ImportContent` | Los docblocks y el mensaje que decían «17 porciones» dicen «las porciones» y «18». Nada más: los bucles ya recorren `Portion::cases()` |
+| `ContentDiff` | En `assertMayReturn`, el docblock pierde la frase «Until B2 the generator still names the tests…» y el mensaje pasa a `el test_key se retiró y no se reutiliza: dale otra clave a la prueba nueva` (ahora la clave nueva puede ser cualquiera: FR-039) |
+| `ContentController` y `routes/api/harness.php` | `harness(Request $request)` llama a `$this->portion($request, 'harness')`, y la ruta `Route::get('/harness', [ContentController::class, 'harness']);` es pública como las otras 17 hasta que el coordinador la meta en el grupo `account` y `verified` (línea de integración de T018) |
+
+**Pasos:**
+
+1. **Primero las pruebas**, que fallan por la razón de cada una:
+   - **`PortionTest`**: hay 18 porciones y la última es `harness`; `Portion::resolve('harness', [])` da `Harness` (y no `Guide`), también con parámetros de más; `Harness->group()` es `harness`, `slice()` es `null` e `isExercises()` es falso. Los valores esperados salen de la spec, no del enum.
+   - **`Record/HarnessTemplateTest`**: `fromDocument` arma el registro; rechaza una clave que falta, un valor que no es texto y un texto vacío, con el mensaje de arriba; `toRow` y `fromRow` son inversas; una fila sin la columna `template` lanza `LogicException`.
+   - **`ContentSourceTest`** y **`Record/ContentMetaTest`**: `portionHashes` tiene 18; un directorio sin `harness.json` falla con `harness.json: no existe en <ruta>`; un `harness.json` de otro build, con el mensaje de arriba; `part(Portion::Harness)` devuelve el objeto con las claves en el orden de `languages`; el mensaje de las porciones dice 18.
+   - **`ContentFixtureTest`** y **`Support/ContentFixture`**: `fromImage()` lee también `harness.json` (`$harness`), `write()` lo escribe con `PublishedJson::encode`, `recomputedMeta()` suma `portions.harness` (el sha256 de esos bytes) y calcula el `gradingHash` de un ejercicio de Go **con sus `imports`, ordenados y sin repetidos, sólo si los tiene** (la composición de T005). El oráculo no es el código: la copia sin cambios tiene que reproducir el meta que escribió el generador, con los 49 hashes nuevos.
+   - **`ContentRoundTripTest`** y **`ContentContractTest`**: con `Portion::cases()` incluyen la 18.ª. Armada desde las filas, sus bytes tienen el sha256 que fijó el generador (el texto lleva saltos de línea, barras invertidas, comillas y `{{`: es la prueba de que `PublishedJson` y `JSON.stringify` coinciden también ahí). Los títulos dicen 18.
+   - **`ContentSchemaTest`** y **`ContentDatabaseTest`**: `CONTENT_TABLES` suma `'harness_templates' => 2` y los títulos dicen 22 tablas; `ContentDatabase::TABLES` suma `harness_templates` al final (es la de la última migración) y `ContentDatabase::url(Portion::Harness)` da `/api/harness`.
+   - **`ImportContentTest`**:
+     - el import de la imagen deja 22 tablas, con las dos filas de `harness_templates`, y precalienta 18 cuerpos;
+     - un segundo import no escribe nada (los `CHECKSUM TABLE` iguales, también el de `harness_templates`);
+     - **un cambio sólo de la plantilla** (`ContentFixture` con otro texto en `$harness->rust`): el import escribe una fila de `harness_templates` y un registro en `content_imports`, cambia sólo `portions.harness`, y las otras 17 porciones y el `documentHash` conservan su huella;
+     - la regla nueva de `ContentInvariants` se rompe a mano (`delete from harness_templates where language = 'go'`) y el import no confirma;
+     - la salida de «ya importado» dice «las 18 porciones»;
+     - **FR-040**: reutilizar la clave de una prueba retirada falla con `… el test_key se retiró y no se reutiliza: dale otra clave a la prueba nueva`, sin dejar rastro. Se borra el comentario que había encima de esa aserción, y `ContentDiffTest` fija el mismo texto.
+   - **`HarnessEndpointTest`** (`tests/Content/`, sin sesión hasta que T018 meta la ruta en su grupo): `GET /api/harness` responde 200 con el cuerpo **igual byte por byte** a `resources/content/harness.json`, sin envoltura `data`, `Content-Type: application/json`, `ETag` de 32 hexadecimales (los primeros 32 de `portions.harness` en el meta), `Content-Version` igual al de las otras porciones y `Cache-Control: private, no-cache`; con `If-None-Match` igual al `ETag`, 304 sin cuerpo; los parámetros de la consulta se ignoran. Con un import que sólo cambia la plantilla, el `ETag` cambia y `Content-Version` no. `ContentEndpointTest`, que no se edita acá, sigue verde para las otras 17.
+   Corrélas: fallan porque `Portion::Harness`, `harness_templates` en `ContentTables` y la lectura de `harness.json` no existen.
+2. **Implementá** los cambios de la tabla de arriba. `ContentSource` es el único lugar que lee `harness.json`; el resto del importador trata a `harness_templates` como a cualquier tabla de contenido sin ciclo de vida.
+3. `npm run api:test` (las cuatro suites), `npm run api:analyse` y `npm run api:format:check`: verdes.
+
+**Compuerta:** la suite entera en verde, con las 18 porciones y los 49 hashes nuevos; las 17 porciones anteriores con el mismo sha256. `npm run api:content:check` necesita el stack y queda para T018 y T019.
+
+## 5. El cierre y el camino del trabajo (dueño X, onda 1)
+
+**Cubre:** FR-015 (reclamar y cerrar), FR-016 a FR-019, FR-026 (la cancelación), FR-027 a FR-033 (el intento y el progreso), FR-042 (el log del cierre) y FR-050; SC-005 (la parte de la base), SC-006 y SC-007.
+
+**Entrega:** al llegar S1, todo lo que escribe una ejecución después de admitida (reclamar, reencolar, cerrar, cancelar y vencer), el trabajo `ExecuteRun` con el puerto `RunProcessor` que implementa J, y el listener del evento de C3b. X parte de S0 y sólo usa lo de B.
+
+**Reglas comunes de X:**
+
+- **Una transacción corta por operación**, por `AccountLock::within`, con el orden de D08: la cabecera (la toma `within`), `users FOR SHARE` (sólo al reclamar), la ejecución `FOR UPDATE` y después `attempts`, `attempt_tests`, `attempt_payloads` y `exercise_progress`. Nada externo adentro.
+- **Una cuenta suprimida no es un error.** Si la fila de `runs` ya no existe (la cascada de C3b la borró), la operación no tiene nada que hacer. Si la cuenta desaparece entre la lectura y el candado, `within` lanza `AccountGone`, y también es «nada que hacer»: sin excepción y sin log de error.
+- **Una `QueryException` sale como `RunWriteFailed`**, sin SQL, sin valores y sin `previous`, y deja un `RunLog::writeFailed`: los bindings del cierre llevan el código del alumno, y una excepción de Laravel trae las sentencias con sus valores. La conversión va **afuera** de `within`: adentro rompería el reintento por interbloqueo de `WriteTransaction`.
+- **El log va después del COMMIT** y sólo por `RunLog`.
+
+### Tarea 5.1 · El progreso y el cierre (T010)
+
+- **Crea:** `backend/api/app/Runs/Execution/{RunStore,ProgressMerge,ProgressWriter,RunCloser,RunWriteFailed}.php`, `backend/api/tests/Unit/Runs/Execution/ProgressMergeTest.php`, `backend/api/tests/Feature/Runs/Execution/{RunStoreTest,RunCloserTest,CloseFailureTest}.php` y `backend/api/tests/Concurrency/CloseConcurrencyTest.php`.
+- **Entrega:**
+
+```php
+namespace App\Runs\Execution;
+
+final class RunStore                       // lecturas por clave para los escritores
+{
+    public function ownerOf(string $runId): ?int;          // sin candado: null si la ejecución ya no existe
+    public function locked(string $runId): ?RunRow;        // SELECT … FOR UPDATE, sólo dentro de una transacción
+}
+
+final class ProgressMerge                  // pura
+{
+    public function afterAttempt(?RunProgress $current, AttemptFacts $attempt, int $revision): ?RunProgress;   // null si la fila no cambia
+}
+
+final class ProgressWriter
+{
+    public function lock(int $userId, string $exerciseId): ?RunProgress;            // SELECT … FOR UPDATE
+    public function write(RunProgress $progress, CarbonImmutable $at): void;        // INSERT … AS n ON DUPLICATE KEY UPDATE, sólo las columnas de B2
+}
+
+final class RunWriteFailed extends RuntimeException
+{
+    public static function from(QueryException $error): self;    // «La base rechazó la escritura (SQLSTATE x, error y).»
+}
+
+final class RunCloser
+{
+    public function __construct(private AccountLock $lock, private RunStore $store, private ProgressMerge $merge, private ProgressWriter $progress);
+
+    /** Cierra la ejecución con el veredicto. false si ya no está activa, si ya no existe o si su cuenta ya no existe. */
+    public function close(string $runId, Verdict $verdict): bool;
+
+    /** El mismo cierre dentro de la transacción de quien ya tiene la cabecera y la ejecución bloqueada. Devuelve el veredicto que guardó. */
+    public function closeWithin(ProgressHead $head, RunRow $run, Verdict $verdict): Verdict;
+}
+```
+
+**Pasos:**
+
+1. **Primero las pruebas.**
+   - **`ProgressMergeTest`** (pura, sin base): una tabla de casos con valores escritos a mano. Primer intento fallido de un ejercicio: fila nueva con `last_*` del intento, `attempt_count` 1, sin resolución y con la revisión pedida. Primera aprobación: `solved_at`, `server_solved_at` y `proof_*` con la fecha del intento, `last_*` también, conteo 1. Segunda aprobación más tarde: `solved_at` y `server_solved_at` no cambian (gana la más temprana), `proof_*` y `last_*` pasan al nuevo, conteo 2. Una aprobación con fecha **anterior** a la que ya estaba (un cierre fuera de orden): `solved_at` baja, `proof_*` y `last_*` quedan. **Empate de fecha**: gana el id mayor. Una fila con `solved_at` de D1 anterior al intento y sin `server_solved_at`: la aprobación fija `server_solved_at` y deja `solved_at`. `infra_error` más nuevo que el último: mueve `last_*` y no cambia el conteo; uno más viejo: devuelve `null`. `canceled`: `null`. Dos intentos iguales seguidos no repiten el conteo si el segundo no cuenta.
+   - **`RunStoreTest`**: `ownerOf` de una ejecución y de una inexistente (`null`); `locked` devuelve el `RunRow` con sus tipos.
+   - **`RunCloserTest`** (suite `Feature`), contra los efectos de [data-model.md](./data-model.md), sección 3, una prueba por fila:
+     - `passed`: la ejecución queda terminal (estado, motivo, fase, código, `truncated`, tiempos, **salida completa**, `attempt_id`, `finished_at`; `program` y `expires_at` en `NULL`); hay **un** intento con `counted` 1, `grading_hash` el de la ejecución, `code_sha256` el sha256 del código, `attempted_at` igual a `created_at` de la ejecución y `finished_at` el instante del cierre; tres filas en `attempt_tests` con su `position` 1 a 3; un payload con el código, la prueba propia y las salidas; la fila de `exercise_progress` creada, la revisión de la cabecera en 1 más y la **misma revisión** en la fila;
+     - `failed` con evidencia (cuenta, veredictos, `last_*`), `compile_error`, `runtime_error` y `timeout` (cuentan, sin veredictos), `infra_error` (no cuenta, payload vacío, `last_*` se mueve y la revisión sube) y `canceled` (no cuenta y ni el progreso ni la revisión cambian);
+     - **los recortes del payload**: una salida de 20.000 caracteres deja 12.000 en el payload y la completa en `runs`; una de `ñ` ×13.000 queda en 12.000 caracteres (se cortan caracteres, no bytes) y `stderr` en 18.000;
+     - **el cierre repetido** devuelve `false` y deja un solo intento (SC-006);
+     - **un pedido de cancelación** (`cancel_requested_at`) vuelve `canceled` un veredicto `passed`, sin intento que cuente y sin cambiar el progreso, pero conservando la fase, el código y la salida que informó el sandbox;
+     - **la época cambiada** (se sube a mano en `progress_heads`): el intento queda con la época de la ejecución, y el progreso y la revisión no se tocan (SC-007);
+     - un ejercicio retirado mientras corría: el cierre funciona y el intento apunta a un ejercicio retirado;
+     - una cuenta suprimida entre la lectura y el candado (`RunWorld::orphanRun`): `close` devuelve `false` sin excepción; y con la ejecución ya borrada, también;
+     - el log: un `run.closed` por cierre, y ninguno si no cerró nada.
+     `RunInvariants::assertClean()` al final de cada una.
+   - **`CloseFailureTest`**: un veredicto con `stdout` de `"\xFF"` hace que MySQL rechace el `INSERT` del payload (error 1366): `close` lanza `RunWriteFailed`, cuyo mensaje no contiene el código de la ejecución ni el valor, sin `previous`; la ejecución sigue activa, sin intento y sin cabecera movida; y `RunLog::writeFailed` dejó sólo el SQLSTATE y el código.
+   - **`CloseConcurrencyTest`** (suite `Concurrency`, `Parallel::run`): veinte procesos cierran **la misma** ejecución con `passed`: uno devuelve `true`, hay un intento, `attempt_count` 1, la revisión de la cabecera subió una vez y las invariantes están limpias.
+   Corrélas: fallan porque las clases no existen.
+2. **Implementá.** Referencia de `ProgressMerge` (el único lugar de las reglas de la fusión):
+
+```php
+final class ProgressMerge
+{
+    public function afterAttempt(?RunProgress $current, AttemptFacts $attempt, int $revision): ?RunProgress
+    {
+        if ($attempt->outcome === RunStatus::Canceled) {
+            return null;
+        }
+        $base = $current ?? new RunProgress($attempt->userId, $attempt->exerciseId, null, null, null, null, null, null, 0, 0);
+        $passed = $attempt->outcome === RunStatus::Passed;
+        $newerThanLast = $this->isNewer($attempt, $base->lastAttemptAt, $base->lastAttemptId);
+        $newerThanProof = $passed && $this->isNewer($attempt, $base->proofAt, $base->proofAttemptId);
+        $merged = new RunProgress(
+            $base->userId,
+            $base->exerciseId,
+            $passed ? $this->earliest($base->solvedAt, $attempt->attemptedAt) : $base->solvedAt,
+            $passed ? $this->earliest($base->serverSolvedAt, $attempt->attemptedAt) : $base->serverSolvedAt,
+            $newerThanProof ? $attempt->id : $base->proofAttemptId,
+            $newerThanProof ? $attempt->attemptedAt : $base->proofAt,
+            $newerThanLast ? $attempt->id : $base->lastAttemptId,
+            $newerThanLast ? $attempt->attemptedAt : $base->lastAttemptAt,
+            $base->attemptCount + ($attempt->counted ? 1 : 0),
+            $revision,
+        );
+
+        return $current !== null && $this->sameFacts($current, $merged) ? null : $merged;
+    }
+
+    private function isNewer(AttemptFacts $attempt, ?CarbonImmutable $at, ?int $id): bool
+    {
+        if ($at === null || $id === null) {
+            return true;
+        }
+
+        return $attempt->attemptedAt->greaterThan($at) || ($attempt->attemptedAt->equalTo($at) && $attempt->id > $id);
+    }
+
+    private function earliest(?CarbonImmutable $known, CarbonImmutable $candidate): CarbonImmutable
+    {
+        return $known === null || $candidate->lessThan($known) ? $candidate : $known;
+    }
+}
+```
+
+   `sameFacts` compara cada campo menos `revision` (los instantes con `equalTo`, que acepta `null` en los dos lados por un ayudante). El orden del cierre es **el que importa**: referencia de `RunCloser`:
+
+```php
+public function close(string $runId, Verdict $verdict): bool
+{
+    $userId = $this->store->ownerOf($runId);
+    if ($userId === null) {
+        return false;
+    }
+    try {
+        $closed = $this->lock->within($userId, function (ProgressHead $head) use ($runId, $verdict): ?array {
+            $run = $this->store->locked($runId);
+
+            return $run === null || ! $run->status->isActive() ? null : [$run, $this->closeWithin($head, $run, $verdict)];
+        });
+    } catch (AccountGone) {
+        return false;
+    } catch (QueryException $error) {
+        RunLog::writeFailed($runId, (string) $error->getCode(), $this->driverCode($error));
+        throw RunWriteFailed::from($error);
+    }
+    if ($closed === null) {
+        return false;
+    }
+    RunLog::closed($closed[0], $closed[1]);
+
+    return true;
+}
+
+public function closeWithin(ProgressHead $head, RunRow $run, Verdict $verdict): Verdict
+{
+    $at = Instant::now();
+    $applied = $run->cancelRequestedAt === null ? $verdict : $verdict->asCanceled();
+    $attemptId = $this->insertAttempt($run, $applied, $at);
+    $this->insertVerdicts($attemptId, $run, $applied);
+    $this->insertPayload($attemptId, $run, $applied, $at);
+    $this->finishRun($run, $applied, $attemptId, $at);
+    $this->advanceProgress($head, $run, $applied, $attemptId, $at);
+
+    return $applied;
+}
+
+private function advanceProgress(ProgressHead $head, RunRow $run, Verdict $verdict, int $attemptId, CarbonImmutable $at): void
+{
+    if ($run->epoch !== $head->epoch || $verdict->status === RunStatus::Canceled) {
+        return;
+    }
+    $facts = new AttemptFacts($attemptId, $run->userId, $run->exerciseId, $verdict->status, $verdict->status->countsAsAttempt(), $run->createdAt);
+    $merged = $this->merge->afterAttempt($this->progress->lock($run->userId, $run->exerciseId), $facts, $head->revision + 1);
+    if ($merged === null) {
+        return;
+    }
+    $this->lock->advance($head, $at);
+    $this->progress->write($merged, $at);
+}
+```
+
+   - `insertAttempt` usa `DB::table('attempts')->insertGetId([...])` con las columnas de [data-model.md](./data-model.md), 1.3 (no `legacy` ni `counted`: el primero tiene su valor por omisión y la segunda es generada); `attempted_at` es `created_at` de la ejecución, `started_at` el de la ejecución, `finished_at` y `created_at` el instante del cierre.
+   - `insertVerdicts` inserta una fila por veredicto de prueba, con `exercise_id` copiado del intento (lo pide la FK compuesta) y `position` desde 1; no hace nada si `tests` está vacío. `insertPayload` guarda `mb_substr($stdout ?? '', 0, 12000)` y `mb_substr($stderr ?? '', 0, 18000)`.
+   - `finishRun`: un `UPDATE runs SET status, reason, executor_phase, exit_code, truncated, compile_ms, run_ms, stdout, stderr, attempt_id, finished_at, program = NULL, expires_at = NULL WHERE id = ? AND status IN ('queued','running')`; si no afecta una fila, `LogicException` (con la cabecera tomada no puede pasar).
+   - `ProgressWriter::write`: `INSERT INTO exercise_progress (user_id, exercise_id, solved_at, server_solved_at, proof_attempt_id, proof_at, last_attempt_id, last_attempt_at, attempt_count, revision, created_at, updated_at) VALUES (…) AS n ON DUPLICATE KEY UPDATE solved_at = n.solved_at, server_solved_at = n.server_solved_at, proof_attempt_id = n.proof_attempt_id, proof_at = n.proof_at, last_attempt_id = n.last_attempt_id, last_attempt_at = n.last_attempt_at, attempt_count = n.attempt_count, revision = n.revision, updated_at = n.updated_at`: las columnas de D1 no aparecen en ninguna de las dos listas.
+3. `npm run api:test`, `npm run api:analyse` y `npm run api:format:check`: verdes.
+
+**Compuerta:** las pruebas de 1 en verde (la de concurrencia incluida), sin colas ni HTTP en ninguna, y 0 errores de PHPStan en el nivel 9.
+
+### Tarea 5.2 · El reclamo, el reencolado y el trabajo (T011)
+
+- **Crea:** `backend/api/app/Runs/Execution/{ClaimOutcome,Claim,RunClaimer,RequeueOutcome,RunRequeuer,RunProcessor}.php`, `backend/api/app/Jobs/ExecuteRun.php`, `backend/api/tests/Feature/Runs/Execution/{RunClaimerTest,RunRequeuerTest,ExecuteRunTest}.php` y `backend/api/tests/Concurrency/ClaimConcurrencyTest.php`.
+- **Entrega:**
+
+```php
+enum ClaimOutcome { case Ready; case Discard; case Closed; }
+
+final readonly class Claim
+{
+    public static function ready(RunRow $run): self;                      // `running`, con su programa
+    public static function discard(): self;                               // no existe, ya no está en cola o su cuenta ya no existe
+    public static function closed(RunRow $run, Verdict $verdict): self;   // el reclamo la cerró: vencida, o la cuenta no está activa
+    public ClaimOutcome $outcome; public ?RunRow $run; public ?Verdict $verdict;
+}
+
+final class RunClaimer
+{
+    public function __construct(private AccountLock $lock, private RunStore $store, private RunCloser $closer);
+    public function claim(string $runId): Claim;
+}
+
+enum RequeueOutcome { case Requeued; case Closed; case Gone; }
+
+final class RunRequeuer
+{
+    public const MIN_DELAY = 1;
+    public const MAX_DELAY = 30;
+    public function __construct(private AccountLock $lock, private RunStore $store, private RunCloser $closer);
+    public function requeue(RunRow $run, int $delaySeconds): RequeueOutcome;
+}
+
+interface RunProcessor { public function process(string $runId): void; }   // el cuerpo del trabajo; lo implementa J (`RunExecution`)
+
+#[Tries(1)]
+#[Timeout(ExecuteRun::TIMEOUT)]
+#[FailOnTimeout]
+final class ExecuteRun implements ShouldQueue
+{
+    use Queueable;
+
+    public const TIMEOUT = 120;
+
+    public function __construct(public readonly string $runId);          // onConnection('runs') y onQueue('runs')
+    public function handle(RunProcessor $processor): void;
+    public function failed(?Throwable $exception): void;
+}
+```
+
+El puerto existe para que A (que despacha el trabajo al admitir) y X (que lo despacha al reencolar) no esperen a J, que escribe el cuerpo en la onda 2.
+
+**Pasos:**
+
+1. **Primero las pruebas.**
+   - **`RunClaimerTest`**:
+     - una ejecución en cola pasa a `running` con `started_at` el instante del reclamo y `expires_at` ese instante más 140 s (`runs.expiry.running_seconds`); `claim` devuelve `Ready` con el `RunRow` ya `running` y su programa;
+     - una que ya no está en cola (corriendo o terminada) o que no existe devuelve `Discard` y no escribe nada;
+     - **vencida** (`expires_at` pasado: 600 s desde la aceptación): se cierra `infra_error` con motivo `expired` y deja su intento; `Closed`;
+     - **cuenta que no está `active`** (`disabled` y `deleting`): se cierra `canceled` con motivo `account_disabled`, sin que cuente, y no se ejecuta; `Closed`. Vale también cuando la cuenta se deshabilita **después** de admitirla (FR-019);
+     - el reloj es el de PHP (`Carbon::setTestNow`);
+     - una cuenta suprimida entre la lectura y el candado (`RunWorld::orphanRun`): `Discard`, sin excepción;
+     - un `run.claimed` en el log, y un `run.closed` en los casos que cierran.
+   - **`ClaimConcurrencyTest`** (`Concurrency`): veinte procesos reclaman **la misma** ejecución: uno recibe `Ready` y los otros diecinueve `Discard`; `started_at` se escribió una vez.
+   - **`RunRequeuerTest`**:
+     - una `running` con menos de 600 s desde su aceptación pasa a `queued` con `started_at` en `NULL` y `expires_at` igual a su aceptación más 600 s, y deja **un trabajo nuevo** en `jobs` (cola `runs`, con `available_at` igual a «ahora más la espera»), todo en la misma transacción; `Requeued`;
+     - la espera se acota a 1–30 s (0 da 1 y 500 da 30);
+     - **si no se puede encolar** (`config(['queue.connections.runs.table' => 'no_existe'])`), la ejecución sigue `running`: el cambio de estado y el trabajo se confirman juntos o no se confirma nada;
+     - con más de 600 s desde la aceptación se cierra `infra_error` con motivo `executor_busy`; `Closed`;
+     - con `cancel_requested_at` se cierra `canceled`; `Closed`;
+     - si el barrido ya la cerró, `Gone`.
+   - **`ExecuteRunTest`**: el trabajo lleva `Tries` 1, `Timeout` 120 y `FailOnTimeout` (por reflexión sobre los atributos), conexión y cola `runs`; `ExecuteRun::dispatch($id)` deja una fila en `jobs` de la cola `runs` y, dentro de una transacción que se deshace, ninguna; `handle` delega en el `RunProcessor` que esté enlazado; `failed` cierra `infra_error` con `job_failed` una ejecución activa, no hace nada con una terminada, y registra sólo el nombre de la clase de la excepción.
+   Corrélas: fallan porque las clases no existen.
+2. **Implementá.** Lo que cuesta equivocar es el **orden de los candados** del reclamo; referencia de `RunClaimer`:
+
+```php
+public function claim(string $runId): Claim
+{
+    $userId = $this->store->ownerOf($runId);
+    if ($userId === null) {
+        return Claim::discard();
+    }
+    try {
+        $claim = $this->lock->within($userId, fn (ProgressHead $head): Claim => $this->claimUnder($head, $userId, $runId));
+    } catch (AccountGone) {
+        return Claim::discard();
+    } catch (QueryException $error) {
+        RunLog::writeFailed($runId, (string) $error->getCode(), $this->driverCode($error));
+        throw RunWriteFailed::from($error);
+    }
+    match ($claim->outcome) {
+        ClaimOutcome::Ready => RunLog::claimed($claim->run),
+        ClaimOutcome::Closed => RunLog::closed($claim->run, $claim->verdict),
+        ClaimOutcome::Discard => null,
+    };
+
+    return $claim;
+}
+
+private function claimUnder(ProgressHead $head, int $userId, string $runId): Claim
+{
+    $status = DB::scalar('select `status` from `users` where `id` = ? for share', [$userId]);
+    $run = $this->store->locked($runId);
+    if ($run === null || $run->status !== RunStatus::Queued) {
+        return Claim::discard();
+    }
+    $now = Instant::now();
+    if ($run->expiresAt !== null && $run->expiresAt->lessThanOrEqualTo($now)) {
+        return Claim::closed($run, $this->closer->closeWithin($head, $run, Verdict::infraError(RunReason::Expired)));
+    }
+    if ($status !== 'active') {
+        return Claim::closed($run, $this->closer->closeWithin($head, $run, Verdict::canceled(RunReason::AccountDisabled)));
+    }
+    DB::update(
+        'update `runs` set `status` = ?, `started_at` = ?, `expires_at` = ? where `id` = ? and `status` = ?',
+        ['running', Instant::format($now), Instant::format($now->addSeconds(config()->integer('runs.expiry.running_seconds'))), $runId, 'queued'],
+    );
+
+    return Claim::ready($this->store->locked($runId) ?? throw new LogicException("La ejecución {$runId} desapareció bajo su candado."));
+}
+```
+
+   `RunRequeuer::requeue` sigue el mismo orden (cabecera, ejecución), calcula `$delay = max(MIN_DELAY, min(MAX_DELAY, $delaySeconds))`, y en una sola transacción hace el `UPDATE` de estado y `ExecuteRun::dispatch($run->id)->delay($delay)`: la conexión `runs` tiene `after_commit` en `false` y nadie llama a `afterCommit()`, así que el trabajo entra a `jobs` dentro de esa transacción. `ExecuteRun::failed` llama a `RunLog::jobFailed`, después a `RunCloser::close($this->runId, Verdict::infraError(RunReason::JobFailed))` y, si ese cierre lanza `RunWriteFailed`, termina sin relanzar: el barrido la cierra por vencida.
+3. `npm run api:test`, `npm run api:analyse` y `npm run api:format:check`: verdes.
+
+**Compuerta:** las pruebas de 1 en verde (la de concurrencia incluida), 0 errores de PHPStan en el nivel 9, y que el trabajo se despache sin que exista `RunExecution`: nada de X nombra a J.
+
+### Tarea 5.3 · La cancelación, el vencimiento y el listener (T012)
+
+- **Crea:** `backend/api/app/Runs/Execution/{RunCanceller,ActiveRuns,RunExpiry,CancelRunsOfRestrictedAccount}.php`, `backend/api/app/Auth/Events/{AccountRestricted,AccountRestriction}.php` (sólo si C3b todavía no los entregó), `backend/api/tests/Feature/Runs/Execution/{RunCancellerTest,ActiveRunsTest,RunExpiryTest,CancelRunsOfRestrictedAccountTest}.php` y `backend/api/tests/Concurrency/CancelConcurrencyTest.php`.
+- **Entrega:**
+
+```php
+final class RunCanceller
+{
+    public function __construct(private AccountLock $lock, private RunStore $store, private RunCloser $closer);
+
+    /** La ejecución es de la cuenta o no existe (`NotFound`). En cola: se cierra `canceled` al instante. Corriendo: se pide la cancelación. Terminada: no cambia nada. */
+    public function cancel(int $userId, string $runId, ?RunReason $reason = null): CancelOutcome;
+}
+
+final class ActiveRuns
+{
+    public function __construct(private RunCanceller $canceller);
+
+    /** FR-050: cancela las ejecuciones activas de una cuenta, una transacción por ejecución. Devuelve cuántas canceló o pidió cancelar. */
+    public function cancelAllOf(int $userId): int;
+}
+
+final class RunExpiry
+{
+    public function __construct(private AccountLock $lock, private RunStore $store, private RunCloser $closer);
+
+    public function expire(string $runId): bool;     // cierra una ejecución activa cuyo vencimiento pasó
+    public function sweep(int $limit): int;          // las activas vencidas, hasta $limit, una transacción cada una; devuelve cuántas cerró
+}
+
+final class CancelRunsOfRestrictedAccount implements ShouldHandleEventsAfterCommit
+{
+    public function __construct(private ActiveRuns $runs);
+    public function handle(AccountRestricted $event): void;
+}
+
+// Propuesta para C3b, que es el dueño del evento: se crea sólo si todavía no existe.
+final readonly class AccountRestricted { public function __construct(public int $userId, public AccountRestriction $reason) {} }
+enum AccountRestriction: string { case Disabled = 'disabled'; case Demoted = 'demoted'; case Deleting = 'deleting'; }
+```
+
+**Pasos:**
+
+1. **Primero las pruebas.**
+   - **`RunCancellerTest`** (contra [contracts/runs-api.md](./contracts/runs-api.md)): en cola, se cierra `canceled` al instante, deja un intento que no cuenta, no cambia el progreso ni la revisión y libera la cuota (`Canceled`); corriendo, fija `cancel_requested_at` una sola vez (`Requested`; pedirlo de nuevo no cambia la hora) y el cierre posterior, aunque informe `passed`, sale `canceled`; terminada: `Unchanged` y nada cambia; ajena o inexistente: `NotFound`, sin tomar la cabecera; con un motivo (`account_disabled`), el cierre de una en cola lo guarda.
+   - **`ActiveRunsTest`**: una cuenta con una ejecución en cola y otra corriendo (se fuerza el estado, la cuota normal no lo deja): la primera queda `canceled` con motivo `account_disabled` y la segunda con la cancelación pedida; devuelve 2; otra cuenta no se toca; sin ejecuciones activas devuelve 0.
+   - **`RunExpiryTest`**: una en cola con más de 600 s y una corriendo con más de 140 s se cierran `infra_error` con motivo `expired`, con su intento; una que todavía no venció, o que se reencoló o reclamó entre la lectura y el candado (su `expires_at` cambió), no se toca; con `cancel_requested_at` el cierre sale `canceled`; una terminada no se toca; `sweep(100)` respeta el límite; el reloj es el de PHP.
+   - **`CancelRunsOfRestrictedAccountTest`**: se llama a `handle` con el evento (se dispara a mano). Con la cuenta `disabled` o `deleting` cancela sus ejecuciones activas; con la cuenta `active` (un admin degradado, `Demoted`) **no hace nada**; con la cuenta ya borrada tampoco; **no lanza**: si la cancelación falla (la cuenta se suprime en medio), deja `RunLog::cancelFailed` con la clase de la excepción y vuelve; **corre después del COMMIT**: con el evento disparado dentro de un `DB::transaction` abierto (la prueba abre la suya), no se cancela nada hasta que esa transacción confirma, y el listener implementa `ShouldHandleEventsAfterCommit` (D08: nadie espera la cabecera con `users` bloqueada).
+   - **`CancelConcurrencyTest`** (`Concurrency`): una cancelación y un reclamo de la misma ejecución en cola, a la vez y repetidos en diez ejecuciones distintas: cada una termina `canceled` con un intento (la cancelación ganó) o `running` con la cancelación pedida y ningún intento (el reclamo ganó); nunca las dos cosas ni un intento duplicado, y `RunInvariants` limpio.
+   Corrélas: fallan porque las clases no existen.
+2. **Implementá.** `RunCanceller::cancel` hace primero una lectura sin candado de la ejecución **de esa cuenta** (`WHERE id = ? AND user_id = ?`): si no existe, `NotFound` sin tomar la cabecera. Después, `within`, la ejecución `FOR UPDATE` y: `queued` → `closeWithin` con `Verdict::canceled($reason)`; `running` → `UPDATE runs SET cancel_requested_at = ? WHERE id = ? AND cancel_requested_at IS NULL`; terminal → `Unchanged`. `RunExpiry::sweep` lee `select id from runs where status in ('queued','running') and expires_at < ? order by expires_at limit ?` y llama a `expire` por cada id; `expire` relee bajo el candado y sólo cierra si sigue activa y `expires_at` pasó. El listener lee `users.status` ya confirmado y llama a `ActiveRuns::cancelAllOf` sólo si es `disabled` o `deleting`:
+
+```php
+public function handle(AccountRestricted $event): void
+{
+    $status = DB::scalar('select `status` from `users` where `id` = ?', [$event->userId]);
+    if (! in_array($status, ['disabled', 'deleting'], true)) {
+        return;
+    }
+    try {
+        $this->runs->cancelAllOf($event->userId);
+    } catch (Throwable $error) {
+        RunLog::cancelFailed($event->userId, $error);
+    }
+}
+```
+
+   Si C3b ya fijó otro nombre o otra carga para el evento, el listener y su prueba se ajustan a ellos; el listener sólo usa el id de la cuenta.
+3. `npm run api:test`, `npm run api:analyse` y `npm run api:format:check`: verdes.
+
+**Compuerta:** las pruebas de 1 en verde (la de concurrencia incluida) y 0 errores de PHPStan en el nivel 9. El registro del listener (`Event::listen`) no es de X: lo pone el coordinador en T018.
