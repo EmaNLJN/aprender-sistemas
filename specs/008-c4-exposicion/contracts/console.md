@@ -39,14 +39,15 @@ El script de C3a conserva su forma; suma los pasos de los usuarios de MySQL. Es 
 
 ```sh
 docker compose build
-docker compose --profile ops run --rm db-grants          # usuarios, y las tablas que ya existían
+docker compose up -d --wait mysql
+# si falta `taller_migrate` (un volumen anterior a C4): docker compose --profile ops run --rm db-grants
 docker compose run --rm migrate
-docker compose run --rm --no-deps grants                 # las tablas que creó esta migración
+docker compose run --rm --no-deps grants                 # los permisos de lo que migró
 docker compose up -d --wait --no-deps mysql php taller scheduler   # más lo que sumen B2 y C3c
-docker compose --profile ops run --rm db-grants          # retira a `taller` si ya no tiene sesiones
+# si `taller` todavía existe: docker compose --profile ops run --rm db-grants   (lo borra si ya no tiene sesiones)
 ```
 
-En un volumen nuevo, el primer `db-grants` ya encuentra los usuarios (los creó el inicio de MySQL) y el último no encuentra a `taller`.
+Los dos pasos de `db-grants` son condicionales: un despliegue normal no toca ninguna tabla de `taller` antes de migrar, y el escenario 3 de `deploy-check.sh` sigue viendo que es `migrate` el que se rinde ante el bloqueo. En un volumen nuevo, `taller_migrate` ya existe (lo creó el inicio de MySQL) y `taller` no.
 
 ## `grants` y `db-grants`
 
@@ -64,11 +65,11 @@ En un volumen nuevo, el primer `db-grants` ya encuentra los usuarios (los creó 
 ### `docker/mysql/apply-grants.sh [--phase users|tables|all] [--host <nombre>]`
 
 - Lee `docker/mysql/db-grants.sql`, que tiene dos secciones marcadas con las líneas `-- @phase users` y `-- @phase tables`, y marcadores de la forma `@@APP_DB_PASSWORD@@`, `@@RUNS_DB_PASSWORD@@`, `@@MAIL_DB_PASSWORD@@`, `@@MIGRATE_DB_PASSWORD@@` y `@@BACKUP_DB_PASSWORD@@`.
-- Valida que cada contraseña cumpla `[A-Za-z0-9._~-]{24,128}` (las que genera `init-env.sh` cumplen), sustituye los marcadores de la fase pedida, antepone `SET SESSION sql_log_bin = 0;` y entrega el SQL a `mysql -uroot` por la entrada estándar. Sin `--host`, usa el socket de la imagen (el inicio de un volumen nuevo).
+- Valida que cada contraseña cumpla `[A-Za-z0-9._~-]{24,128}` (las que genera `init-env.sh` cumplen), sustituye los marcadores de la fase pedida, antepone `SET SESSION sql_log_bin = 0;` y `SET SESSION lock_wait_timeout = 5;`, y entrega el SQL a `mysql -uroot` por la entrada estándar. Sin `--host`, usa el socket de la imagen (el inicio de un volumen nuevo).
 - Sale con el estado de `mysql`; ante el primer error de SQL se detiene.
 - `docker/mysql/10-db-grants.sh` (el que monta `mysql` en `/docker-entrypoint-initdb.d/`) corre `apply-grants.sh --phase users`.
 - **La fase `users`:** `CREATE USER IF NOT EXISTS` y `ALTER USER … IDENTIFIED BY` de las cinco cuentas; los privilegios de base de `taller_migrate`; los globales y de base de `taller_backup`; el `SELECT` sobre `performance_schema.events_transactions_current` de `taller_migrate`.
-- **La fase `tables`:** los permisos por tabla y por columna de la matriz para `taller_app`, `taller_runs` y `taller_mail`, y el retiro de `taller`: una sentencia preparada revoca todos los privilegios del usuario sólo si existe y ninguna sesión suya sigue conectada.
+- **La fase `tables`:** los permisos por tabla y por columna de la matriz para `taller_app`, `taller_runs` y `taller_mail`, y el retiro de `taller`: una sentencia preparada hace `DROP USER` sólo si existe y ninguna sesión suya sigue conectada.
 - **Idempotente.** Se puede correr cuantas veces haga falta; sólo suma privilegios. Lo que se quite de la matriz se revoca con una línea explícita en el mismo cambio.
 - **C3b y C3c** suman su usuario `taller_mail` y sus permisos a este mismo archivo con este mismo mecanismo.
 
@@ -77,7 +78,7 @@ En un volumen nuevo, el primer `db-grants` ya encuentra los usuarios (los creó 
 `docker/nginx/public/entrypoint.sh`, copiado a `/usr/local/bin/taller-public-entrypoint`. Hace, en orden:
 
 1. Valida las variables de entorno (la tabla siguiente) y sale con un mensaje en español si alguna es inválida.
-2. Renderiza las plantillas de `/usr/local/share/taller/nginx-public/` con `envsubst '${TALLER_DOMAIN} ${ACME_CONTACT} ${ACME_DIRECTORY_URL} ${ACME_CHALLENGE} ${ACME_PROFILE_LINE} ${HSTS_MAX_AGE}'` a `/etc/nginx/taller.d/` (un tmpfs montado ahí por el archivo público): `main.conf`, `http.conf` y `server.conf`, con la fuente del certificado que diga `TLS_SOURCE`.
+2. Renderiza las plantillas de `/usr/local/share/taller/nginx-public/` con `envsubst '${TALLER_DOMAIN} ${ACME_CONTACT} ${ACME_DIRECTORY_URL} ${ACME_CHALLENGE} ${ACME_PROFILE_LINE} ${ACME_TRUSTED_CA_LINE} ${HSTS_MAX_AGE}'` a `/etc/nginx/taller.d/` (un tmpfs montado ahí por el archivo público): `main.conf`, `http.conf` y `server.conf`, con la fuente del certificado que diga `TLS_SOURCE`. Con `--check` se detiene después de `nginx -t`.
 3. Corre `nginx -t`.
 4. `exec nginx -g 'daemon off;'`.
 
@@ -88,6 +89,7 @@ En un volumen nuevo, el primer `db-grants` ya encuentra los usuarios (los creó 
 | `ACME_DIRECTORY_URL` | `^https://[^[:space:];{}]+$` |
 | `ACME_CHALLENGE` | `http-01` o `tls-alpn-01` |
 | `ACME_PROFILE` | vacía o `^[a-z0-9-]+$` |
+| `ACME_TRUSTED_CA` | vacía o una ruta absoluta sin espacios ni `;` |
 | `HSTS_MAX_AGE` | sólo dígitos |
 | `TLS_SOURCE` | `acme` o `static`; con `static`, existen `/run/taller-tls/tls.crt` y `tls.key` |
 
@@ -130,6 +132,10 @@ Con la credencial del host, y sin tocar nada existente, escribe `probe/<al azar>
 | --- | --- | --- | --- |
 | `node qa/nginx-headers-check.ts` | Toda ubicación de `docker/nginx/` con una `add_header` incluye `headers.conf`, y el archivo lleva las seis cabeceras con los valores de FR-013 | no | sí |
 | `node qa/csp-guard-check.ts` | `dist/index.html` y el código propio de las vistas sin lo que la política bloquea (FR-017, FR-019) | no | sí |
+| `node qa/nginx-public-check.ts` | Las plantillas públicas de Nginx renderizadas con valores de ejemplo y `validate.sh` (R3, R6) | no | sí |
+| `node qa/apply-grants-check.ts` | `apply-grants.sh` con un `mysql` falso: fases, sustitución, validación y el SQL que recibe | no | sí |
+| `node qa/public-script-check.ts` | `public.sh` con un `docker` falso: validación, proyecto, `deploy`, `down` y `status` | no | sí |
+| `sh backend/api/scripts/compose-check.sh` | La configuración efectiva de Compose en los dos modos (puertos, roles, `grants`, logging, proyecto); la corre `public:check` | sí | no |
 | `node qa/build-check.ts` | El contrato del build en varios archivos (FR-020) | no | sí |
 | `npm run api:grants:check` | La matriz de MySQL con los usuarios reales (FR-033) | sí | no |
 | `npm run public:check` | Puertos, cabeceras por clase, redirección, nombre único, cookies, cierre por CSRF, IP real, límites y TLS contra el stack público con un certificado de prueba (FR-043) | sí | no |

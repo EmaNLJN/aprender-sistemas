@@ -30,6 +30,7 @@
 | `HSTS_MAX_AGE` | no | `300` | `taller` | Sólo los escalones de la sección 5 |
 | `PUBLIC_HTTP_BIND` | no | `0.0.0.0` | Compose | Con TLS-ALPN-01, `127.0.0.1`: el 80 queda cerrado a la red |
 | `TLS_SOURCE` | no | `acme` | `taller` | `static` sólo en las pruebas: el certificado se monta en `/run/taller-tls/{tls.crt,tls.key}` |
+| `ACME_TRUSTED_CA` | no | vacía | `taller` | Ruta de una CA para hablar con el servidor ACME: sólo las pruebas con Pebble |
 | `BACKUP_AGE_RECIPIENTS` | sí | | `backup` | Una o más claves públicas `age1…`, separadas por comas; se recomienda una de reserva |
 | `BACKUP_S3_ENDPOINT` | sí | | `backup` | URL del almacenamiento compatible con S3 |
 | `BACKUP_S3_REGION` | sí | | `backup` | |
@@ -147,7 +148,7 @@ Reglas para lo que sumen D1, C3b, C3c y C5:
 
 ### El usuario `taller` de hoy
 
-Existe sólo en los volúmenes anteriores a C4. La última pasada de `db-grants` de un despliegue le revoca todos los privilegios cuando ninguna sesión suya sigue conectada (R13), y la prueba comprueba que `SHOW GRANTS` de `taller` es `USAGE`.
+Existe sólo en los volúmenes anteriores a C4. La última pasada de `db-grants` de un despliegue lo borra, con todos sus privilegios, cuando ninguna sesión suya sigue conectada (R13), y la prueba comprueba que ya no existe.
 
 ## 4. El conjunto de respaldo
 

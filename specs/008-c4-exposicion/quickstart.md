@@ -67,7 +67,7 @@ npx playwright test --config qa/e2e/playwright.config.ts --project csp-walk
 npm run api:grants:check
 ```
 
-**Esperado:** para cada rol, las sondas que la matriz concede pasan y las demás fallan con el error 1142, 1143 o 1044; un DDL, un `GRANT`, `FILE` y `mysql.*` fallan para todos; `SHOW GRANTS` coincide con `qa/fixtures/mysql-roles.json`; ningún servicio está conectado como root o como `taller`; el esquema no tiene triggers, rutinas ni eventos; todas las tablas están en la matriz. Después, con un volumen que tiene al usuario `taller`: `sh backend/api/scripts/deploy.sh` deja a los servicios con sus usuarios sin dejar de servir (`curl` a `/api/up` en bucle durante el despliegue: 0 fallos), y `SHOW GRANTS FOR 'taller'@'%'` queda en `USAGE`. Con un volumen nuevo, `docker compose up --build -d --wait` arranca sin pasos manuales.
+**Esperado:** para cada rol, las sondas que la matriz concede pasan y las demás fallan con el error 1142, 1143 o 1044; un DDL, un `GRANT`, `FILE` y `mysql.*` fallan para todos; `SHOW GRANTS` coincide con `qa/fixtures/mysql-roles.json`; ningún servicio está conectado como root o como `taller`; el esquema no tiene triggers, rutinas ni eventos; todas las tablas están en la matriz. Después, con un volumen que tiene al usuario `taller`: `sh backend/api/scripts/deploy.sh` deja a los servicios con sus usuarios sin dejar de servir (`curl` a `/api/up` en bucle durante el despliegue: 0 fallos), y el usuario `taller` ya no existe. Con un volumen nuevo, `docker compose up --build -d --wait` arranca sin pasos manuales.
 
 ## 7. La emisión y la renovación con Pebble (FR-006 a FR-010, SC-002)
 
