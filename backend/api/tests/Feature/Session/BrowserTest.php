@@ -17,6 +17,15 @@ it('replays the cookies of each response and copies XSRF-TOKEN into X-XSRF-TOKEN
     $browser->post('/api/probe/public')->assertOk();
 });
 
+it('keeps the cookies by the test clock, even when it is set in the past', function () {
+    Carbon\Carbon::setTestNow('2020-01-01 12:00:00');
+    $browser = Browser::for($this)->useDatabaseDrivers();
+
+    $browser->get('/api/probe/public');
+
+    expect($browser->cookie('taller-session'))->not->toBeNull();
+});
+
 it('forgets a cookie on demand', function () {
     $browser = Browser::for($this)->useDatabaseDrivers();
     $browser->get('/api/probe/public');

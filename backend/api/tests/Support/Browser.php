@@ -196,7 +196,7 @@ final class Browser
     private function storeCookiesOf(TestResponse $response): void
     {
         foreach ($response->headers->getCookies() as $cookie) {
-            $expired = $cookie->getExpiresTime() !== 0 && $cookie->getExpiresTime() < time();
+            $expired = $cookie->getExpiresTime() !== 0 && $cookie->getExpiresTime() < now()->getTimestamp();
             if ($expired || $cookie->getValue() === null) {
                 unset($this->cookies[$cookie->getName()]);
             } else {
