@@ -15,7 +15,7 @@ use Throwable;
 
 final class FakeOperationProcessor implements OperationProcessor
 {
-    /** @var list<array{id: string, effectiveAt: ?CarbonImmutable, revision: int, now: CarbonImmutable}> */
+    /** @var list<array{userId: int, id: string, effectiveAt: ?CarbonImmutable, revision: int, now: CarbonImmutable}> */
     public array $applied = [];
 
     /** @var list<list<string>> */
@@ -58,12 +58,12 @@ final class FakeOperationProcessor implements OperationProcessor
         return array_map(fn (Decoded $one) => $this->checkOne($one), $decoded);
     }
 
-    public function apply(Checked $operation, ?CarbonImmutable $effectiveAt, int $revision, CarbonImmutable $now): Applied
+    public function apply(int $userId, Checked $operation, ?CarbonImmutable $effectiveAt, int $revision, CarbonImmutable $now): Applied
     {
         if ($this->failures !== []) {
             throw array_shift($this->failures);
         }
-        $this->applied[] = ['id' => $operation->id, 'effectiveAt' => $effectiveAt, 'revision' => $revision, 'now' => $now];
+        $this->applied[] = ['userId' => $userId, 'id' => $operation->id, 'effectiveAt' => $effectiveAt, 'revision' => $revision, 'now' => $now];
 
         return new Applied(! in_array($operation->id, $this->unchangedIds, true));
     }

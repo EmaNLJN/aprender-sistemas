@@ -463,9 +463,9 @@ interface OperationProcessor                     // el puerto entre M e Y
      *  @return list<Checked> */
     public function check(array $decoded, string $currentContentVersion): array;
 
-    /** Escribe una operación comprobada con las reglas de sus campos, dentro de la transacción de la cuenta.
+    /** Escribe una operación comprobada de la cuenta con las reglas de sus campos, dentro de la transacción de la cuenta.
      *  $effectiveAt es el reloj corregido (null en una importación sin reloj); $revision, la que dejará la transacción. */
-    public function apply(Checked $operation, ?CarbonImmutable $effectiveAt, int $revision, CarbonImmutable $now): Applied;
+    public function apply(int $userId, Checked $operation, ?CarbonImmutable $effectiveAt, int $revision, CarbonImmutable $now): Applied;
 }
 ```
 

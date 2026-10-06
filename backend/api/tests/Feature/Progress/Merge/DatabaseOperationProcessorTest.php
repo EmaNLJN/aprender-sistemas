@@ -22,7 +22,7 @@ it('decodes, checks against the content and applies a batch for an account', fun
     ProgressWorld::seed(MergeFixture::world());
     $user = ProgressWorld::user();
     ProgressWorld::head($user, revision: 4);
-    $processor = app(DatabaseOperationProcessor::class)->forAccount($user->id);
+    $processor = app(DatabaseOperationProcessor::class);
     $now = CarbonImmutable::parse('2026-10-06T12:00:00.000Z');
 
     $checked = $processor->check($processor->decode([
@@ -30,8 +30,8 @@ it('decodes, checks against the content and applies a batch for an account', fun
         processorRaw(['type' => 'exercise.reflection', 'exerciseId' => 'fx-no-existe', 'text' => 'Idea'], '00000000-0000-4000-8000-000000000002'),
         processorRaw(['type' => 'exercise.reflection', 'exerciseId' => 'fx-rust-01', 'text' => 'Idea', 'solvedAt' => 'x'], '00000000-0000-4000-8000-000000000003'),
     ]), MergeFixture::world()['contentVersion']);
-    $applied = $processor->apply($checked[0], CarbonImmutable::parse('2026-10-05T12:00:00.000Z'), 4, $now);
-    $repeated = $processor->apply($checked[0], CarbonImmutable::parse('2026-10-05T12:00:00.000Z'), 4, $now);
+    $applied = $processor->apply($user->id, $checked[0], CarbonImmutable::parse('2026-10-05T12:00:00.000Z'), 4, $now);
+    $repeated = $processor->apply($user->id, $checked[0], CarbonImmutable::parse('2026-10-05T12:00:00.000Z'), 4, $now);
 
     expect(array_map(fn ($item) => $item->reason, $checked))->toBe([null, RejectionReason::UnknownReference, RejectionReason::Invalid])
         ->and($applied->changed)->toBeTrue()
@@ -39,12 +39,4 @@ it('decodes, checks against the content and applies a batch for an account', fun
         ->and(DB::table('exercise_progress')->where('user_id', $user->id)->value('reflection'))->toBe('Idea')
         ->and((int) DB::table('exercise_progress')->where('user_id', $user->id)->value('revision'))->toBe(4);
     ProgressInvariants::assertClean($user->id);
-});
-
-it('refuses to apply an operation without the account that it writes for', function () {
-    ProgressWorld::seed(MergeFixture::world());
-    $processor = app(DatabaseOperationProcessor::class);
-    $checked = $processor->check($processor->decode([processorRaw(['type' => 'exercise.reflection', 'exerciseId' => 'fx-rust-01', 'text' => 'Idea'])]), MergeFixture::world()['contentVersion']);
-
-    expect(fn () => $processor->apply($checked[0], null, 1, CarbonImmutable::now()))->toThrow(LogicException::class);
 });

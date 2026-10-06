@@ -24,8 +24,8 @@ interface OperationProcessor
     public function check(array $decoded, string $currentContentVersion): array;
 
     /**
-     * Writes a checked operation with the rules of its fields, inside the transaction of the account.
+     * Writes a checked operation of the account with the rules of its fields, inside the transaction of the account.
      * $effectiveAt is the corrected clock (null in an import without a clock); $revision is the one the transaction will leave.
      */
-    public function apply(Checked $operation, ?CarbonImmutable $effectiveAt, int $revision, CarbonImmutable $now): Applied;
+    public function apply(int $userId, Checked $operation, ?CarbonImmutable $effectiveAt, int $revision, CarbonImmutable $now): Applied;
 }

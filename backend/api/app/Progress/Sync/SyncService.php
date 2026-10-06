@@ -54,7 +54,7 @@ final class SyncService
             throw new EpochMismatch($head->epoch, $head->revision);
         }
         $known = $this->registry->lookup($head->userId, array_map(fn (Checked $operation) => $operation->id, $checked));
-        $processed = $this->process($checked, $known, $request, $received, $head->revision + 1);
+        $processed = $this->process($head->userId, $checked, $known, $request, $received, $head->revision + 1);
         $this->registry->record($head->userId, $processed->records, ClockCorrection::offsetMs($request->sentAt, $received), $received);
         if ($processed->changed) {
             $head = $this->lock->advance($head, $received);
@@ -69,7 +69,7 @@ final class SyncService
      * @param  list<Checked>  $checked
      * @param  array<string, RegisteredOperation>  $known
      */
-    private function process(array $checked, array $known, SyncRequest $request, CarbonImmutable $received, int $revision): ProcessedBatch
+    private function process(int $userId, array $checked, array $known, SyncRequest $request, CarbonImmutable $received, int $revision): ProcessedBatch
     {
         $results = [];
         $records = [];
@@ -81,7 +81,7 @@ final class SyncService
 
                 continue;
             }
-            $settlement = $this->settle($operation, $request, $received, $revision);
+            $settlement = $this->settle($userId, $operation, $request, $received, $revision);
             $results[] = $settlement->result;
             $records[] = $settlement->record;
             $known[$operation->id] = $settlement->record;
@@ -98,7 +98,7 @@ final class SyncService
             : new OperationResult($operation->id, ResultStatus::UuidReused);
     }
 
-    private function settle(Checked $checked, SyncRequest $request, CarbonImmutable $received, int $revision): Settlement
+    private function settle(int $userId, Checked $checked, SyncRequest $request, CarbonImmutable $received, int $revision): Settlement
     {
         if ($checked->operation === null) {
             return Settlement::rejected($checked, $checked->reason ?? throw new LogicException('Una operación rechazada trae su motivo.'));
@@ -108,6 +108,6 @@ final class SyncService
             return Settlement::rejected($checked, RejectionReason::OutOfRange);
         }
 
-        return Settlement::applied($checked, $this->processor->apply($checked, $effectiveAt, $revision, $received)->changed);
+        return Settlement::applied($checked, $this->processor->apply($userId, $checked, $effectiveAt, $revision, $received)->changed);
     }
 }

@@ -250,11 +250,12 @@ describe('the clock', function () {
         expect(syncStatuses($outcome))->toBe([['applied', null]]);
     });
 
-    it('hands the processor the corrected clock, the revision and the time of the server', function () {
+    it('hands the processor the account, the corrected clock, the revision and the time of the server', function () {
         $this->service->sync($this->user->id, syncRequest([syncReflection(SYNC_ID_1, 'Hola', '2026-10-05T13:09:55.000Z')], ['sentAt' => '2026-10-05T13:10:00.000Z']));
 
         $call = $this->processor->applied[0];
-        expect(Instant::iso($call['effectiveAt']))->toBe('2026-10-05T12:09:55.000Z')
+        expect($call['userId'])->toBe($this->user->id)
+            ->and(Instant::iso($call['effectiveAt']))->toBe('2026-10-05T12:09:55.000Z')
             ->and($call['revision'])->toBe(1)
             ->and(Instant::iso($call['now']))->toBe(SYNC_NOW);
     });
