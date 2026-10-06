@@ -2,6 +2,7 @@
 
 namespace Tests\Support;
 
+use App\Content\Record\Exercise;
 use App\Models\User;
 use App\Runs\Record\Instant;
 use App\Runs\Record\RunRow;
@@ -85,7 +86,7 @@ final class RunWorld
             'visual' => 'flow', 'title' => "Ejercicio {$id}", 'intro' => 'Introducción', 'why' => 'Porque sí', 'objective' => 'Objetivo',
             'transfer' => 'Transferencia', 'starter' => 'fn main() {}', 'solution' => 'fn main() {}',
             'imports_json' => json_encode($imports, JSON_THROW_ON_ERROR), 'sources_json' => '[]', 'instructions_json' => '[]',
-            'review_json' => '{}', 'prediction_json' => '{}', 'key_order' => '["id","catalog","language"]',
+            'review_json' => '{}', 'prediction_json' => '{}', 'key_order' => json_encode(Exercise::KEYS, JSON_THROW_ON_ERROR),
             'content_hash' => $hash, 'grading_hash' => $hash, 'starter_hash' => $hash, 'status' => 'active', 'retired_at' => null,
             'created_at' => $at, 'updated_at' => $at,
         ]);
@@ -112,8 +113,13 @@ final class RunWorld
     public static function run(User $user, array $overrides = []): RunRow
     {
         $exerciseId = is_string($overrides['exercise_id'] ?? null) ? $overrides['exercise_id'] : 'rust-01';
-        $language = is_string($overrides['language'] ?? null) ? $overrides['language'] : 'rust';
-        if (! DB::table('exercises')->where('id', $exerciseId)->exists()) {
+        $existingLanguage = DB::table('exercises')->where('id', $exerciseId)->value('language');
+        $language = match (true) {
+            is_string($overrides['language'] ?? null) => $overrides['language'],
+            is_string($existingLanguage) => $existingLanguage,
+            default => 'rust',
+        };
+        if ($existingLanguage === null) {
             self::exercise($exerciseId, $language);
         }
 
@@ -156,6 +162,7 @@ final class RunWorld
         return match (true) {
             $value instanceof CarbonImmutable => Instant::format($value),
             $value instanceof BackedEnum => $value->value,
+            is_array($value) => json_encode($value, JSON_THROW_ON_ERROR),
             default => $value,
         };
     }

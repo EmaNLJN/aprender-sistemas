@@ -1,7 +1,11 @@
 <?php
 
+use App\Content\Record\Exercise;
+use App\Content\Record\ExerciseTest;
+use App\Content\Record\Topic;
 use App\Models\User;
 use App\Runs\Record\Instant;
+use App\Runs\RunLanguage;
 use App\Runs\RunStatus;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\RunInvariants;
@@ -34,6 +38,23 @@ it('lets the tests, the language and the imports be chosen', function () {
         ->and(json_decode($exercise->imports_json, true))->toBe(['strings', 'errors'])
         ->and($keys)->toBe(['123', 'alpha_2'])
         ->and($template->template)->toContain('{{#imports}}')->toContain('{{name}}');
+});
+
+it('leaves an exercise row that the content record reader accepts', function () {
+    RunWorld::exercise();
+
+    $row = get_object_vars(DB::selectOne("select * from exercises where id = 'rust-01'"));
+    $tests = [];
+    foreach (DB::select("select * from exercise_tests where exercise_id = 'rust-01' order by position") as $testRow) {
+        $tests[] = ExerciseTest::fromRow(get_object_vars($testRow));
+    }
+    $topic = Topic::fromRow(get_object_vars(DB::selectOne("select * from topics where language = 'rust' and topic_key = 'basics'")));
+
+    $exercise = Exercise::fromRow($row, $tests, [], $topic);
+
+    expect($exercise->id)->toBe('rust-01')
+        ->and($exercise->language)->toBe('rust')
+        ->and(array_map(fn (ExerciseTest $test) => $test->testKey, $exercise->tests))->toBe(['t1', 't2', 't3']);
 });
 
 it('can build several exercises of both languages', function () {
@@ -83,6 +104,23 @@ it('leaves a running run when asked, with the timestamps the invariants require'
     expect($run->status)->toBe(RunStatus::Running)
         ->and($run->startedAt)->not->toBeNull();
     RunInvariants::assertClean();
+});
+
+it('takes the language of a run from its exercise when it already exists', function () {
+    RunWorld::exercise('go-01', 'go');
+
+    $run = RunWorld::run(RunWorld::user(), ['exercise_id' => 'go-01']);
+
+    expect($run->language)->toBe(RunLanguage::Go)
+        ->and(DB::table('exercises')->count())->toBe(1);
+});
+
+it('stores a list override as JSON', function () {
+    RunWorld::exercise();
+
+    $run = RunWorld::run(RunWorld::user(), ['expected_tests' => ['t1', '123']]);
+
+    expect($run->expectedTests)->toBe(['t1', '123']);
 });
 
 it('creates the exercise of a run when it does not exist yet', function () {

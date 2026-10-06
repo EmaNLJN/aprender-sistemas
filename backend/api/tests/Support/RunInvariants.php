@@ -20,6 +20,8 @@ final class RunInvariants
 
     public const PROGRESS_REVISION = 'a progress row has a revision, and none is newer than the head of its account';
 
+    public const POINTER_DATES = 'proof_at and last_attempt_at are the attempted_at of the attempt they point to';
+
     public const CROSSED_POINTERS = 'the pointers of exercise_progress point to attempts of the same account and exercise';
 
     /** @return array<string, list<string>> the rule that is broken and the rows that break it */
@@ -39,6 +41,13 @@ final class RunInvariants
             self::PROGRESS_REVISION => self::progressRows(
                 'select p.user_id, p.exercise_id from exercise_progress p join progress_heads h on h.user_id = p.user_id
                  where p.revision > h.revision or (p.attempt_count > 0 and p.revision = 0)',
+            ),
+            self::POINTER_DATES => self::progressRows(
+                'select p.user_id, p.exercise_id from exercise_progress p
+                 left join attempts proof on proof.id = p.proof_attempt_id
+                 left join attempts latest on latest.id = p.last_attempt_id
+                 where (proof.id is not null and not (p.proof_at <=> proof.attempted_at))
+                    or (latest.id is not null and not (p.last_attempt_at <=> latest.attempted_at))',
             ),
             self::CROSSED_POINTERS => array_map(
                 fn (stdClass $row) => "{$row->user_id}/{$row->exercise_id}",
