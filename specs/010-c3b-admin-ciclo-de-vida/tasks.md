@@ -23,7 +23,7 @@ Las ondas, los dueños de archivos, las interfaces y los puntos de sincronizaci�
 *T007 parte de S0. T008 cierra S1 por el lado de A. T009 a T011 no esperan a S1.*
 
 - [ ] T007 [P] [US2] `LastAdminGuard` y `AccountChanges::change` en `backend/api/app/Admin/`, con los efectos de FR-035, el evento después del COMMIT y la carrera de 20 corridas en `backend/api/tests/Concurrency/LastAdminRaceTest.php` (FR-034, FR-035, FR-053; SC-005; plan 2.1)
-- [ ] T008 [US3] `AccountChanges::beginDeletion` y la matriz del último admin (FR-034, FR-044, FR-053; SC-005; plan 2.2)
+- [ ] T008 [US3] `AccountChanges::beginDeletion` y la matriz del último admin (FR-034, FR-035, FR-044, FR-053; SC-005; plan 2.2)
 - [ ] T009 [US2] `GET /api/admin/users` y `/{user}`: `UserDirectory`, `PublishedAdminUser`, `UserController`, `ListUsersRequest` y `routes/api/admin-users.php` (FR-031, FR-032; SC-006; plan 2.3)
 - [ ] T010 [US2] `PATCH /api/admin/users/{user}`: `UpdateUserRequest` y `UserController::update` (FR-033 a FR-035, FR-040; plan 2.4)
 - [ ] T011 [US2] `POST /api/admin/users/{user}/password-reset`, que responde 503 hasta C3c (FR-036, FR-040, FR-056; SC-013; plan 2.5)
@@ -33,7 +33,7 @@ Las ondas, los dueños de archivos, las interfaces y los puntos de sincronizaci�
 *T012 parte de S0 y corre a la vez que S, A y X.*
 
 - [ ] T012 [P] [US1] `AdminInvitations` (crear, renovar, reenviar y revocar, con la carrera del UNIQUE) en `backend/api/app/Admin/` (FR-038, FR-039; plan 3.1)
-- [ ] T013 [US1] Los cuatro endpoints de `/api/admin/invitations`: `InvitationController`, sus `FormRequest` y `routes/api/admin-invitations.php`, con el 503 de la entrega por correo (FR-037 a FR-040, FR-056; SC-013; plan 3.2)
+- [ ] T013 [US1] Los cuatro endpoints de `/api/admin/invitations`: `InvitationController`, sus `FormRequest` y `routes/api/admin-invitations.php`, con el 503 de la entrega por correo (FR-031, FR-037 a FR-040, FR-056; SC-013; plan 3.2)
 
 ## Phase 5: User Story 3 - Exportación (dueño X, ondas 1 y 2)
 
@@ -55,7 +55,7 @@ Las ondas, los dueños de archivos, las interfaces y los puntos de sincronizaci�
 
 *Parte de S2.*
 
-- [ ] T020 [US5] El `scheduler`: las cuatro tareas nuevas en `backend/api/routes/console.php` y `ScheduleTest` (FR-050; SC-014; plan 6.1)
+- [ ] T020 [US5] El `scheduler`: las cuatro tareas nuevas en `backend/api/routes/console.php` y `ScheduleTest` (FR-046, FR-047, FR-050; SC-014; plan 6.1)
 - [ ] T021 [US2] Recorridos y matrices: `RouteAccessTest`, `ExpectedAccountMatrixTest`, `AdminAccessMatrixTest`, `PasswordConfirmMatrixTest`, `NoStudentTextsTest` y `MassAssignmentTest` en `backend/api/tests/Feature/` (FR-031, FR-033, FR-041, FR-053, FR-056; SC-006; plan 6.2)
 - [ ] T022 [US2] El evento llega a B2: `backend/api/tests/Feature/Accounts/AccountRestrictedWiringTest.php` (FR-035; plan 6.3)
 - [ ] T023 [US5] Los checks contra el stack: `backend/api/scripts/check-admin-lifecycle.sh`, `check-account.sh` y `smoke.sh` (FR-050, FR-056; SC-013, SC-014; plan 6.4)

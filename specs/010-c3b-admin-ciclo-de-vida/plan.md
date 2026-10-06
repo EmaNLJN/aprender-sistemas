@@ -150,7 +150,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 
 | Dueño | Archivos que posee | Consume | Entrega |
 | --- | --- | --- | --- |
-| Coordinador | `backend/api/app/Http/ApiCode.php`, `backend/api/lang/es/api.php`, `backend/api/tests/Unit/ApiCodeTest.php`, `backend/api/app/Http/MailUnavailable.php`, `backend/api/app/Http/Middleware/EnsureUserIsAdmin.php`, `backend/api/app/Admin/PageMeta.php`, `backend/api/app/Auth/Limiters.php`, `backend/api/config/{queue,taller}.php`, `backend/api/bootstrap/app.php`, `backend/api/routes/console.php`, `backend/api/routes/api/{admin-users,admin-invitations,export,deletion}.php` (los crea vacíos y después pasan a sus dueños), `backend/api/tests/Unit/{MailUnavailableTest,Admin/PageMetaTest}.php`, `backend/api/tests/Feature/{ConfigTest,ScheduleTest,RouteAccessTest,ExpectedAccountMatrixTest,MassAssignmentTest}.php`, `backend/api/tests/Feature/Limits/LimitersTest.php`, `backend/api/tests/Feature/Admin/{AdminGroupTest,AdminAccessMatrixTest,PasswordConfirmMatrixTest,NoStudentTextsTest}.php`, `backend/api/tests/Feature/Accounts/AccountRestrictedWiringTest.php`, `backend/api/scripts/{check-admin-lifecycle,check-account,smoke}.sh`, `backend/api/AGENTS.md`, `AGENTS.md`, `README.md`, `docs/architecture.md`, `specs/backend-multiusuario/roadmap.md` | todo | la línea de base, las piezas comunes, el `scheduler`, las matrices, el evento hacia B2, los checks contra el stack, la documentación y la evidencia de cierre |
+| Coordinador | `backend/api/app/Http/ApiCode.php`, `backend/api/lang/es/api.php`, `backend/api/tests/Unit/ApiCodeTest.php`, `backend/api/app/Http/MailUnavailable.php`, `backend/api/app/Http/Middleware/EnsureUserIsAdmin.php`, `backend/api/app/Admin/PageMeta.php`, `backend/api/app/Auth/Limiters.php`, `backend/api/config/{queue,taller}.php`, `backend/api/bootstrap/app.php`, `backend/api/routes/console.php`, `backend/api/tests/Unit/{MailUnavailableTest,Admin/PageMetaTest}.php`, `backend/api/tests/Feature/{ConfigTest,ScheduleTest,RouteAccessTest,ExpectedAccountMatrixTest,MassAssignmentTest}.php`, `backend/api/tests/Feature/Limits/LimitersTest.php`, `backend/api/tests/Feature/Admin/{AdminGroupTest,AdminAccessMatrixTest,PasswordConfirmMatrixTest,NoStudentTextsTest}.php`, `backend/api/tests/Feature/Accounts/AccountRestrictedWiringTest.php`, `backend/api/scripts/{check-admin-lifecycle,check-account,smoke}.sh`, `backend/api/AGENTS.md`, `AGENTS.md`, `README.md`, `docs/architecture.md`, `specs/backend-multiusuario/roadmap.md` | todo | la línea de base, las piezas comunes (con los cuatro archivos de `routes/api/` creados vacíos, que enseguida pasan a su dueño), el `scheduler`, las matrices, el evento hacia B2, los checks contra el stack, la documentación y la evidencia de cierre |
 | S · Esquema y registro | `backend/api/database/migrations/2026_10_05_400001_create_account_deletions_table.php`, `backend/api/app/Models/DeletedAccount.php`, `backend/api/app/Accounts/{UserTable,UserTables,UserData,UserPurge,Ownership}.php`, `backend/api/tests/Feature/{AccountDeletionsSchemaTest,UserIdForeignKeyTest,UserDataCoverageTest,DeletedAccountTest}.php`, `backend/api/tests/Feature/Accounts/{UserPurgeTest,PopulatedAccountTest}.php`, `backend/api/tests/Content/{MigrationsTest,UserDataCoverageProbeTest}.php`, `backend/api/tests/Unit/Accounts/UserTablesTest.php`, `backend/api/tests/Support/{PopulatedAccount,UserDataCoverage}.php` | T001 y T002 | la tabla, `DeletedAccount`, el registro `UserData` con `tables()`, `UserPurge::inBatches` y `PopulatedAccount::create` |
 | A · Administración de cuentas | `backend/api/app/Admin/{LastAdminGuard,LockedTarget,AccountChanges,LastAdmin,RestrictsItself,AccountBeingDeleted,UserDirectory,UserFilters,PublishedAdminUser}.php`, `backend/api/app/Http/Controllers/Admin/UserController.php`, `backend/api/app/Http/Requests/Admin/{ListUsersRequest,UpdateUserRequest}.php`, `backend/api/routes/api/admin-users.php`, `backend/api/lang/es/admin.php`, `backend/api/tests/Feature/Admin/{LastAdminGuardTest,AccountChangesTest,AccountBeginDeletionTest,LastAdminMatrixTest,UsersListTest,UserShowTest,UserUpdateTest,PasswordResetHookTest}.php`, `backend/api/tests/Unit/Admin/PublishedAdminUserTest.php`, `backend/api/tests/Concurrency/LastAdminRaceTest.php` | T001 y T002 | `AccountChanges::change` y `::beginDeletion` (las usa L), `LastAdmin` y los endpoints de usuarios |
 | I · Invitaciones de admin | `backend/api/app/Admin/{AdminInvitations,InviteOutcome,InviteResult,PublishedInvitation}.php`, `backend/api/app/Http/Controllers/Admin/InvitationController.php`, `backend/api/app/Http/Requests/Admin/{InviteRequest,ListInvitationsRequest,ResendInvitationRequest}.php`, `backend/api/routes/api/admin-invitations.php`, `backend/api/lang/es/invitations.php`, `backend/api/tests/Feature/Admin/{AdminInvitationsTest,InvitationsEndpointTest,InvitationsListTest}.php`, `backend/api/tests/Concurrency/InviteRaceTest.php` | T001 y T002 | `AdminInvitations` y los cuatro endpoints de invitaciones |
@@ -222,7 +222,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 **Pasos:**
 
 1. Traé `master` a la rama de trabajo (`git merge master`). Si `master` todavía no trae el PR #24 y el PR #22, integrá `feat/c3a-identidad` y después `feat/b2-ejecuciones`, en ese orden, y avisá.
-2. Comprobá que existen, con las firmas que lee este plan: `app/Auth/{AccountSessions,Invitations,PasswordResetLinks,Email,InvitationToken,IssuedInvitation,Role,AccountStatus}.php`, `app/Http/{ApiCode,ApiError,ApiExceptions,CurrentAccount}.php`, `app/Http/Middleware/RequirePassword.php` (con `isConfirmed` y `markConfirmed`), `app/Auth/Events/{AccountRestricted,AccountRestriction}.php`, `app/Progress/{AccountLock,AccountGone,ProgressHead}.php`, `app/Runs/Execution/{ActiveRuns,CancelRunsOfRestrictedAccount}.php` (con `cancelAllOf(int): int`), `app/Database/WriteTransaction.php`, `app/Support/Iso8601.php`, `app/Runs/Record/Instant.php`, `tests/Support/{Browser,Parallel,RunWorld,RunInvariants}.php`, `tests/Feature/UserIdForeignKeyTest.php`, la suite `Concurrency` en `phpunit.xml` y `tests/Pest.php`, y las migraciones `2026_10_05_3000NN` de B2. Si falta algo, pará y avisá: el plan no tiene camino sin B2.
+2. Comprobá que existen, con las firmas que lee este plan: `app/Auth/{AccountSessions,Invitations,PasswordResetLinks,Email,InvitationToken,IssuedInvitation,Role,AccountStatus}.php`, `app/Http/{ApiCode,ApiError,ApiExceptions,CurrentAccount}.php`, `app/Http/Middleware/RequirePassword.php` (con `isConfirmed` y `markConfirmed`), `app/Auth/Events/{AccountRestricted,AccountRestriction}.php`, `app/Progress/{AccountLock,AccountGone,ProgressHead}.php`, `app/Runs/Execution/{ActiveRuns,CancelRunsOfRestrictedAccount}.php` (con `cancelAllOf(int): int`), `app/Database/WriteTransaction.php`, `app/Support/Iso8601.php`, `app/Runs/Record/Instant.php`, `tests/Support/{Browser,Parallel,RunWorld,RunInvariants}.php`, `tests/Feature/UserIdForeignKeyTest.php`, la suite `Concurrency` en `phpunit.xml` y `tests/Pest.php`, las migraciones `2026_10_05_3000NN` de B2 y que el `Dockerfile` de la API compile `pcntl` (B2), sin el cual el `Timeout` de un trabajo no se aplica. Si falta algo, pará y avisá: el plan no tiene camino sin B2.
 3. Mirá si `app('events')->hasListeners(AccountRestricted::class)` es verdadero: el cableado del listener es la T018 de B2. Si no lo es, anotalo para T022.
 4. Corré `npm run api:format:check`, `npm run api:analyse` y `npm run api:test`. El análisis tiene que dar 0 errores en el nivel 9, sin baseline. Anotá el número de pruebas y de aserciones, y cuántos casos tiene `ApiCode` (20 con B2; `ApiCodeTest` los cuenta).
 5. Reservá el bloque de migraciones `2026_10_05_400001` a `400099` y avisá a quien planifica D1a (que reservó `2026_10_06_100001` a `100099`) y a C3c.
@@ -261,15 +261,16 @@ final readonly class PageMeta
 
 ```php
 // Limiters::register()
-RateLimiter::for('admin', fn (Request $request) => Limit::perMinute(120)->by('user:'.$request->user()?->getAuthIdentifier()));
-RateLimiter::for('export', fn (Request $request) => Limit::perDay(3)->by('user:'.$request->user()?->getAuthIdentifier()));
+RateLimiter::for('admin', fn (Request $request) => Limit::perMinute(120)->by(self::accountKey($request)));
+RateLimiter::for('export', fn (Request $request) => Limit::perDay(3)->by(self::accountKey($request)));
+// accountKey: 'user:'.$user->id si hay una cuenta (User), y 'network:'.NetworkKey::of($request->ip()) si no: sin un cast de mixed
 
 // bootstrap/app.php: el alias, el grupo y los archivos de rutas
 $middleware->alias(['account.admin' => EnsureUserIsAdmin::class /* , los de C3a */]);
 $middleware->group('admin', ['account.active', 'auth:web', 'account.expected', 'verified', 'account.admin', 'throttle:admin']);
 // withRouting(api: [... los de C3a y B2, y routes/api/admin-users.php, admin-invitations.php, export.php y deletion.php])
 
-// config/queue.php: connections.database.after_commit = true (la conexión `runs` de B2 sigue en false)
+// config/queue.php: connections.database.after_commit = true y retry_after = 330 (más que el Timeout de 300 s de PurgeUserData; la conexión `runs` de B2 sigue en false y en 140)
 // config/taller.php: 'ledger_days' => 35, 'purge' => ['batch_size' => 500, 'stuck_minutes' => 15], 'export' => ['chunk' => 100]
 ```
 
@@ -281,7 +282,7 @@ $middleware->group('admin', ['account.active', 'auth:web', 'account.expected', '
    - **`PageMetaTest`**: 140 elementos, 25 por página, página 2 dan `{page: 2, perPage: 25, total: 140, lastPage: 6}`; una lista vacía da `{page: 1, perPage: 25, total: 0, lastPage: 1}`.
    - **`AdminGroupTest`**: la prueba registra una ruta de sonda `Route::middleware('admin')->get('api/_probe/admin', …)` (y una `post`). Sin sesión, 401; un estudiante verificado, 403 `forbidden`; un estudiante con el email sin verificar, 403 `email_unverified` (antes que `forbidden`); un admin, 200; un admin que modifica sin `X-Taller-User`, 409 `account_mismatch`; una cuenta `disabled` con la sesión viva, 403 `account_disabled`; y el pedido 121 de un minuto del mismo admin, 429 con `Retry-After`.
    - **`LimitersTest`**: `RateLimiter::limiter('admin')` y `('export')` existen; con `export`, el cuarto pedido del mismo día queda sin intentos.
-   - **`ConfigTest`**: `queue.connections.database.after_commit` es verdadero y el de `runs` sigue en falso; `taller.ledger_days` vale 35, `taller.purge.batch_size` 500, `taller.purge.stuck_minutes` 15 y `taller.export.chunk` 100.
+   - **`ConfigTest`**: `queue.connections.database.after_commit` es verdadero y `retry_after` vale 330 (mayor que el `Timeout` del trabajo de purga), y en `runs` siguen en falso y 140; `taller.ledger_days` vale 35, `taller.purge.batch_size` 500, `taller.purge.stuck_minutes` 15 y `taller.export.chunk` 100.
 2. Implementá las piezas y los cuatro archivos de rutas vacíos. `EnsureUserIsAdmin` responde con `ApiError::of(ApiCode::Forbidden)`.
 3. `npm run api:analyse`: 0 errores en el nivel 9.
 
@@ -354,7 +355,7 @@ final class UserData
     public function tables(): array;
     /** @return list<UserTable> las que se purgan por lotes, en el orden de D06: runs, exercise_progress, attempts, sync_operations */
     public function batchTables(): array;
-    /** @return list<string> las claves de sección que el registro declara */
+    /** @return list<string> el vocabulario de las secciones del contrato de exportación: account, exerciseProgress, attempts, progress e imports */
     public function exportKeys(): array;
 }
 ```
@@ -394,7 +395,7 @@ final class PopulatedAccount   // en tests/Support
 
 1. Las pruebas, que fallan porque las clases no existen:
    - **`PopulatedAccountTest`**: para cada fila declarada que exista con `Ownership::UserId` o `Child`, la cuenta tiene al menos una fila (directa o por su padre); `sessions`, `progress_heads`, `runs`, `exercise_progress`, `attempts`, `attempt_tests` y `attempt_payloads` figuran con una fila; y falla si el registro declara una tabla existente que `create()` no pobló (así, un ítem que crea una tabla y no la agrega acá rompe la prueba).
-   - **`UserPurgeTest`**: con `taller.purge.batch_size` fijado en 2 y una cuenta con 5 `runs`, 3 filas de `exercise_progress` y 5 `attempts` (con sus pruebas y su payload), más otra cuenta poblada, `inBatches` devuelve 13, borra sólo las filas de la primera cuenta y deja las de la segunda; las sentencias salen en el orden `runs`, `exercise_progress`, `attempts`, cada una con `ORDER BY` y `LIMIT 2` (se leen con `DB::listen`); las hijas de `attempts` desaparecen por la cascada; una segunda corrida devuelve 0; con una tabla declarada que no existe (un `UserData` armado en la prueba con `zz_missing`) no falla.
+   - **`UserPurgeTest`**: con `taller.purge.batch_size` fijado en 2 y una cuenta con 5 `runs`, 3 filas de `exercise_progress` y 5 `attempts` (con sus pruebas y su payload), más otra cuenta poblada, `inBatches` devuelve 13 (con las tablas de B2: 5 + 3 + 5; D1a lo ajusta al sumar `sync_operations`), borra sólo las filas de la primera cuenta y deja las de la segunda; las sentencias salen en el orden `runs`, `exercise_progress`, `attempts`, cada una con `ORDER BY` y `LIMIT 2` (se leen con `DB::listen`); las hijas de `attempts` desaparecen por la cascada; una segunda corrida devuelve 0; con una tabla declarada que no existe (un `UserData` armado en la prueba con `zz_missing`) no falla.
    - **`DELETE FROM users` poblado** (FR-054), en el mismo archivo: con `PopulatedAccount::create()` y sin purgar antes, `DELETE FROM users WHERE id = ?` no da error de clave foránea y, después, ninguna tabla declarada que exista guarda una fila con ese `user_id` (ni, por su padre, una hija): la red de seguridad de C3a anda con las tablas de B2.
 2. Implementá `UserPurge`: `DB::delete('delete from `{tabla}` where `user_id` = ? order by {clave} limit {n}', …)` repetido hasta que una sentencia afecta menos de `n` filas, con `n = taller.purge.batch_size`. `PopulatedAccount` usa `RunWorld::exercise`, `RunWorld::user` y `RunWorld::run` de B2 para el contenido y `runs`, y `AccountLock::within` para `progress_heads`; las demás filas las inserta con las columnas obligatorias del DDL de B2 (`data-model.md` de B2, sección 1).
 3. `npm run api:analyse`: 0 errores.
@@ -425,7 +426,7 @@ final class LastAdminGuard
 
 final class AccountChanges
 {
-    public function __construct(private LastAdminGuard $guard);
+    public function __construct(private LastAdminGuard $guard, private AccountSessions $sessions);
     /** @throws RestrictsItself @throws ModelNotFoundException @throws AccountBeingDeleted @throws LastAdmin */
     public function change(User $actor, int $targetId, ?Role $role, ?AccountStatus $status): User;
     /** T008 */
@@ -718,7 +719,7 @@ final class PurgeUserData implements ShouldBeUnique, ShouldQueue
 
     public function __construct(public readonly int $userId) {}
     public function uniqueId(): string;                       // (string) $userId
-    public function handle(UserPurge $purge, ActiveRuns $runs): void;
+    public function handle(UserPurge $purge, ActiveRuns $runs, AccountLock $lock): void;
     public function failed(Throwable $error): void;           // registra purge.failed con el id y la clase de la excepción
 }
 ```
@@ -921,8 +922,8 @@ Cada requisito con las tareas que lo implementan o lo prueban. `tasks.md` cita l
 | FR-043 | T014, T015 |
 | FR-044 | T008, T017 |
 | FR-045 | T006, T016 |
-| FR-046 | T018 |
-| FR-047 | T003, T004 |
+| FR-046 | T018, T020 |
+| FR-047 | T003, T004, T020 |
 | FR-048 | T019 |
 | FR-049 | T017 |
 | FR-050 | T002, T020, T023 |
@@ -961,6 +962,7 @@ Esta planificación no ejecutó nada. Lo que hay que medir o comprobar al implem
 | `AccountLock::within` con `AccountGone` cuando la fila de `users` ya no existe | T016, con la segunda llamada de `handle` |
 | Que `StartSession` no vuelva a guardar la fila de `sessions` que `AccountSessions::endAll` borró al terminar el pedido de `DELETE /api/me` | T017: el siguiente pedido del `Browser` da 401 y `sessions` no tiene filas de la cuenta |
 | Que el listener de B2 esté cableado en la base | T001 y T022 |
+| Que `retry_after` de 330 s alcance para el `Timeout` de 300 s de la purga, y que la imagen tenga `pcntl` (B2 lo compila) para que ese `Timeout` se aplique | T001 (la imagen) y T016 |
 | `schedule:work` con `queue:work` y `withoutOverlapping(10)`, y que `--max-time=50` no deje trabajos sin procesar | T023 contra el stack (SC-014) |
 | El formato TSV de `mysql --batch --raw --skip-column-names` con `DATETIME(3)` | Quickstart, escenario 6, con el cliente de `mysql:9.7` |
 | La lectura del libro por la entrada estándar | Quickstart, escenario 6: Pest no la cubre |

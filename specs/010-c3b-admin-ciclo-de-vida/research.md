@@ -144,6 +144,8 @@ Las referencias «R1» a «R14» de este archivo son sus propias secciones. Los 
 - Atributos y no propiedades: el proyecto ya usa los atributos de Laravel 13 (`#[Fillable]` y `#[Hidden]` en `User`), y la documentación de 13.x los muestra como la forma actual.
 - Sin email en el trabajo: cada dato personal que sale de `users` es una superficie más, y el aviso es de C3c.
 
+**El tiempo de espera.** El `Timeout` de 300 s tiene que ser menor que `retry_after` de la conexión `database`, que vale 90 s por omisión: si no, el trabajo volvería a estar disponible mientras corre. T002 sube `retry_after` a 330 s (la conexión `runs` de B2 conserva sus 140 s). Una purga normal dura segundos; si una cuenta enorme tarda más, el `Timeout` corta el intento y el siguiente sigue donde quedó el anterior, porque cada lote es una sentencia que se repite sin daño.
+
 **Descartado.** `ShouldBeUniqueUntilProcessing`: un reintento programado quedaría sin candado. Cancelar las ejecuciones **de forma estricta** (reintentar hasta lograrlo): una falla persistente del ejecutor bloquearía la supresión de una persona que pidió su baja (Ley 25.326, art. 16). Un `deleting_since` en `users`: una columna más sin consumidor propio.
 
 ## R8. El libro y su restauración

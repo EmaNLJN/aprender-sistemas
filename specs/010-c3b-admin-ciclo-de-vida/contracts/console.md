@@ -65,7 +65,7 @@ Las registra `routes/console.php` y las corre el servicio `scheduler` (`php arti
 
 ## El trabajo `PurgeUserData`
 
-Corre en la cola `default`, único por cuenta. Cada intento: cancela las ejecuciones activas de la cuenta (B2), borra por lotes `runs`, `exercise_progress`, `attempts` y `sync_operations`, y en una transacción final toma `progress_heads`, borra la fila de `users` (la cascada se lleva el resto) e inserta la fila del libro. Reintenta con espera creciente: 1, 5, 15, 30 y 60 minutos, hasta 8 intentos. Si los agota, queda en `failed_jobs` y la cuenta sigue en `deleting`: el barrido la vuelve a pedir a los 15 minutos.
+Corre en la cola `default`, único por cuenta. Cada intento: cancela las ejecuciones activas de la cuenta (B2), borra por lotes `runs`, `exercise_progress`, `attempts` y `sync_operations`, y en una transacción final toma `progress_heads`, borra la fila de `users` (la cascada se lleva el resto) e inserta la fila del libro. Reintenta con espera creciente: 1, 5, 15, 30 y 60 minutos, hasta 8 intentos, con un tiempo máximo de 300 segundos por intento (la conexión `database` de la cola tiene `retry_after` de 330). Si los agota, queda en `failed_jobs` y la cuenta sigue en `deleting`: el barrido la vuelve a pedir a los 15 minutos.
 
 ## Registros
 
