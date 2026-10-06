@@ -1,0 +1,365 @@
+{
+  "nonce": "0123456789abcdef0123456789abcdef",
+  "cases": [
+    {
+      "name": "rust: two tests",
+      "language": "rust",
+      "code": "fn doble(n: i32) -> i32 {\n    n * 2\n}",
+      "tests": [
+        {
+          "id": "t1",
+          "expression": "doble(2) == 4"
+        },
+        {
+          "id": "t2",
+          "expression": "doble(0) == 0"
+        }
+      ],
+      "program": [
+        "fn doble(n: i32) -> i32 {",
+        "    n * 2",
+        "}",
+        "",
+        "fn main() {",
+        "    std::panic::set_hook(Box::new(|_| {}));",
+        "    let passed = std::panic::catch_unwind(|| { doble(2) == 4 }).unwrap_or(false);",
+        "    println!(\"__TALLER_TEST__0123456789abcdef0123456789abcdef:t1:{}\", if passed { \"PASS\" } else { \"FAIL\" });",
+        "    let passed = std::panic::catch_unwind(|| { doble(0) == 0 }).unwrap_or(false);",
+        "    println!(\"__TALLER_TEST__0123456789abcdef0123456789abcdef:t2:{}\", if passed { \"PASS\" } else { \"FAIL\" });",
+        "    println!(\"__TALLER_END__0123456789abcdef0123456789abcdef:2\");",
+        "}"
+      ]
+    },
+    {
+      "name": "rust: a custom test is trimmed of spaces, tabs and line breaks, comes last and counts in the sentinel",
+      "language": "rust",
+      "code": "fn doble(n: i32) -> i32 { n * 2 }",
+      "tests": [
+        {
+          "id": "t1",
+          "expression": "doble(2) == 4"
+        }
+      ],
+      "customTest": "\t  doble(5) == 10\r\n",
+      "program": [
+        "fn doble(n: i32) -> i32 { n * 2 }",
+        "",
+        "fn main() {",
+        "    std::panic::set_hook(Box::new(|_| {}));",
+        "    let passed = std::panic::catch_unwind(|| { doble(2) == 4 }).unwrap_or(false);",
+        "    println!(\"__TALLER_TEST__0123456789abcdef0123456789abcdef:t1:{}\", if passed { \"PASS\" } else { \"FAIL\" });",
+        "    let passed = std::panic::catch_unwind(|| { doble(5) == 10 }).unwrap_or(false);",
+        "    println!(\"__TALLER_TEST__0123456789abcdef0123456789abcdef:custom:{}\", if passed { \"PASS\" } else { \"FAIL\" });",
+        "    println!(\"__TALLER_END__0123456789abcdef0123456789abcdef:2\");",
+        "}"
+      ]
+    },
+    {
+      "name": "rust: a custom test of only whitespace is ignored",
+      "language": "rust",
+      "code": "fn uno() -> i32 { 1 }",
+      "tests": [
+        {
+          "id": "t1",
+          "expression": "uno() == 1"
+        }
+      ],
+      "customTest": " \n\t ",
+      "program": [
+        "fn uno() -> i32 { 1 }",
+        "",
+        "fn main() {",
+        "    std::panic::set_hook(Box::new(|_| {}));",
+        "    let passed = std::panic::catch_unwind(|| { uno() == 1 }).unwrap_or(false);",
+        "    println!(\"__TALLER_TEST__0123456789abcdef0123456789abcdef:t1:{}\", if passed { \"PASS\" } else { \"FAIL\" });",
+        "    println!(\"__TALLER_END__0123456789abcdef0123456789abcdef:1\");",
+        "}"
+      ]
+    },
+    {
+      "name": "rust: only ASCII whitespace is trimmed from the custom test",
+      "language": "rust",
+      "code": "fn uno() -> i32 { 1 }",
+      "tests": [
+        {
+          "id": "t1",
+          "expression": "uno() == 1"
+        }
+      ],
+      "customTest": " uno() == 1 ",
+      "program": [
+        "fn uno() -> i32 { 1 }",
+        "",
+        "fn main() {",
+        "    std::panic::set_hook(Box::new(|_| {}));",
+        "    let passed = std::panic::catch_unwind(|| { uno() == 1 }).unwrap_or(false);",
+        "    println!(\"__TALLER_TEST__0123456789abcdef0123456789abcdef:t1:{}\", if passed { \"PASS\" } else { \"FAIL\" });",
+        "    let passed = std::panic::catch_unwind(|| {  uno() == 1  }).unwrap_or(false);",
+        "    println!(\"__TALLER_TEST__0123456789abcdef0123456789abcdef:custom:{}\", if passed { \"PASS\" } else { \"FAIL\" });",
+        "    println!(\"__TALLER_END__0123456789abcdef0123456789abcdef:2\");",
+        "}"
+      ]
+    },
+    {
+      "name": "rust: placeholders inside the student's values are not expanded",
+      "language": "rust",
+      "code": "fn marca() -> String {\n    format!(\"{{id}} {{code}} {{nonce}}\")\n}",
+      "tests": [
+        {
+          "id": "t1",
+          "expression": "marca() == \"{id} {code} {nonce}\""
+        }
+      ],
+      "program": [
+        "fn marca() -> String {",
+        "    format!(\"{{id}} {{code}} {{nonce}}\")",
+        "}",
+        "",
+        "fn main() {",
+        "    std::panic::set_hook(Box::new(|_| {}));",
+        "    let passed = std::panic::catch_unwind(|| { marca() == \"{id} {code} {nonce}\" }).unwrap_or(false);",
+        "    println!(\"__TALLER_TEST__0123456789abcdef0123456789abcdef:t1:{}\", if passed { \"PASS\" } else { \"FAIL\" });",
+        "    println!(\"__TALLER_END__0123456789abcdef0123456789abcdef:1\");",
+        "}"
+      ]
+    },
+    {
+      "name": "rust: code that ends with a newline and an expression of two lines",
+      "language": "rust",
+      "code": "fn verdad() -> bool { true }\n",
+      "tests": [
+        {
+          "id": "t1",
+          "expression": "let x = verdad();\n    x"
+        }
+      ],
+      "program": [
+        "fn verdad() -> bool { true }",
+        "",
+        "",
+        "fn main() {",
+        "    std::panic::set_hook(Box::new(|_| {}));",
+        "    let passed = std::panic::catch_unwind(|| { let x = verdad();",
+        "    x }).unwrap_or(false);",
+        "    println!(\"__TALLER_TEST__0123456789abcdef0123456789abcdef:t1:{}\", if passed { \"PASS\" } else { \"FAIL\" });",
+        "    println!(\"__TALLER_END__0123456789abcdef0123456789abcdef:1\");",
+        "}"
+      ]
+    },
+    {
+      "name": "rust: test keys that are not t1 to t3 go through as they are",
+      "language": "rust",
+      "code": "fn dos() -> i32 { 2 }",
+      "tests": [
+        {
+          "id": "base",
+          "expression": "dos() == 2"
+        },
+        {
+          "id": "t7",
+          "expression": "dos() > 1"
+        },
+        {
+          "id": "con_guion_2",
+          "expression": "dos() < 3"
+        }
+      ],
+      "program": [
+        "fn dos() -> i32 { 2 }",
+        "",
+        "fn main() {",
+        "    std::panic::set_hook(Box::new(|_| {}));",
+        "    let passed = std::panic::catch_unwind(|| { dos() == 2 }).unwrap_or(false);",
+        "    println!(\"__TALLER_TEST__0123456789abcdef0123456789abcdef:base:{}\", if passed { \"PASS\" } else { \"FAIL\" });",
+        "    let passed = std::panic::catch_unwind(|| { dos() > 1 }).unwrap_or(false);",
+        "    println!(\"__TALLER_TEST__0123456789abcdef0123456789abcdef:t7:{}\", if passed { \"PASS\" } else { \"FAIL\" });",
+        "    let passed = std::panic::catch_unwind(|| { dos() < 3 }).unwrap_or(false);",
+        "    println!(\"__TALLER_TEST__0123456789abcdef0123456789abcdef:con_guion_2:{}\", if passed { \"PASS\" } else { \"FAIL\" });",
+        "    println!(\"__TALLER_END__0123456789abcdef0123456789abcdef:3\");",
+        "}"
+      ]
+    },
+    {
+      "name": "go: without imports only fmt is imported",
+      "language": "go",
+      "code": "func Doble(n int) int {\n    return n * 2\n}",
+      "tests": [
+        {
+          "id": "t1",
+          "expression": "Doble(2) == 4"
+        }
+      ],
+      "program": [
+        "package main",
+        "",
+        "import (",
+        "    \"fmt\"",
+        ")",
+        "",
+        "func Doble(n int) int {",
+        "    return n * 2",
+        "}",
+        "",
+        "func __tallerCheck(id string, test func() bool) {",
+        "    passed := false",
+        "    func() {",
+        "        defer func() { _ = recover() }()",
+        "        passed = test()",
+        "    }()",
+        "    if passed {",
+        "        fmt.Println(\"__TALLER_TEST__0123456789abcdef0123456789abcdef:\" + id + \":PASS\")",
+        "    } else {",
+        "        fmt.Println(\"__TALLER_TEST__0123456789abcdef0123456789abcdef:\" + id + \":FAIL\")",
+        "    }",
+        "}",
+        "",
+        "func main() {",
+        "    __tallerCheck(\"t1\", func() bool { return Doble(2) == 4 })",
+        "    fmt.Println(\"__TALLER_END__0123456789abcdef0123456789abcdef:1\")",
+        "}"
+      ]
+    },
+    {
+      "name": "go: the imports of the exercise follow fmt, in order",
+      "language": "go",
+      "code": "func Ordenar(xs []string) []string {\n    sort.Strings(xs)\n    return xs\n}",
+      "tests": [
+        {
+          "id": "t1",
+          "expression": "strings.Join(Ordenar([]string{\"b\", \"a\"}), \"\") == \"ab\""
+        }
+      ],
+      "imports": ["sort", "strings"],
+      "program": [
+        "package main",
+        "",
+        "import (",
+        "    \"fmt\"",
+        "    \"sort\"",
+        "    \"strings\"",
+        ")",
+        "",
+        "func Ordenar(xs []string) []string {",
+        "    sort.Strings(xs)",
+        "    return xs",
+        "}",
+        "",
+        "func __tallerCheck(id string, test func() bool) {",
+        "    passed := false",
+        "    func() {",
+        "        defer func() { _ = recover() }()",
+        "        passed = test()",
+        "    }()",
+        "    if passed {",
+        "        fmt.Println(\"__TALLER_TEST__0123456789abcdef0123456789abcdef:\" + id + \":PASS\")",
+        "    } else {",
+        "        fmt.Println(\"__TALLER_TEST__0123456789abcdef0123456789abcdef:\" + id + \":FAIL\")",
+        "    }",
+        "}",
+        "",
+        "func main() {",
+        "    __tallerCheck(\"t1\", func() bool { return strings.Join(Ordenar([]string{\"b\", \"a\"}), \"\") == \"ab\" })",
+        "    fmt.Println(\"__TALLER_END__0123456789abcdef0123456789abcdef:1\")",
+        "}"
+      ]
+    },
+    {
+      "name": "go: fmt and repeated imports are dropped and the first appearance decides the order",
+      "language": "go",
+      "code": "func Uno() int { return 1 }",
+      "tests": [
+        {
+          "id": "t1",
+          "expression": "Uno() == 1"
+        }
+      ],
+      "imports": ["strings", "fmt", "strings", "sort", "sort"],
+      "program": [
+        "package main",
+        "",
+        "import (",
+        "    \"fmt\"",
+        "    \"strings\"",
+        "    \"sort\"",
+        ")",
+        "",
+        "func Uno() int { return 1 }",
+        "",
+        "func __tallerCheck(id string, test func() bool) {",
+        "    passed := false",
+        "    func() {",
+        "        defer func() { _ = recover() }()",
+        "        passed = test()",
+        "    }()",
+        "    if passed {",
+        "        fmt.Println(\"__TALLER_TEST__0123456789abcdef0123456789abcdef:\" + id + \":PASS\")",
+        "    } else {",
+        "        fmt.Println(\"__TALLER_TEST__0123456789abcdef0123456789abcdef:\" + id + \":FAIL\")",
+        "    }",
+        "}",
+        "",
+        "func main() {",
+        "    __tallerCheck(\"t1\", func() bool { return Uno() == 1 })",
+        "    fmt.Println(\"__TALLER_END__0123456789abcdef0123456789abcdef:1\")",
+        "}"
+      ]
+    },
+    {
+      "name": "go: three tests, a custom test and an import",
+      "language": "go",
+      "code": "func Duplicar(n int) (int, error) {\n    if n < 0 {\n        return 0, errors.New(\"negativo\")\n    }\n    return n * 2, nil\n}",
+      "tests": [
+        {
+          "id": "t1",
+          "expression": "first(Duplicar(2)) == 4"
+        },
+        {
+          "id": "t2",
+          "expression": "first(Duplicar(0)) == 0"
+        },
+        {
+          "id": "t3",
+          "expression": "second(Duplicar(-1)) != nil"
+        }
+      ],
+      "customTest": "first(Duplicar(3)) == 6",
+      "imports": ["errors"],
+      "program": [
+        "package main",
+        "",
+        "import (",
+        "    \"fmt\"",
+        "    \"errors\"",
+        ")",
+        "",
+        "func Duplicar(n int) (int, error) {",
+        "    if n < 0 {",
+        "        return 0, errors.New(\"negativo\")",
+        "    }",
+        "    return n * 2, nil",
+        "}",
+        "",
+        "func __tallerCheck(id string, test func() bool) {",
+        "    passed := false",
+        "    func() {",
+        "        defer func() { _ = recover() }()",
+        "        passed = test()",
+        "    }()",
+        "    if passed {",
+        "        fmt.Println(\"__TALLER_TEST__0123456789abcdef0123456789abcdef:\" + id + \":PASS\")",
+        "    } else {",
+        "        fmt.Println(\"__TALLER_TEST__0123456789abcdef0123456789abcdef:\" + id + \":FAIL\")",
+        "    }",
+        "}",
+        "",
+        "func main() {",
+        "    __tallerCheck(\"t1\", func() bool { return first(Duplicar(2)) == 4 })",
+        "    __tallerCheck(\"t2\", func() bool { return first(Duplicar(0)) == 0 })",
+        "    __tallerCheck(\"t3\", func() bool { return second(Duplicar(-1)) != nil })",
+        "    __tallerCheck(\"custom\", func() bool { return first(Duplicar(3)) == 6 })",
+        "    fmt.Println(\"__TALLER_END__0123456789abcdef0123456789abcdef:4\")",
+        "}"
+      ]
+    }
+  ]
+}

@@ -59,14 +59,27 @@ const parts: [string, unknown][] = [
   ['guide', curriculum.guide],
 ];
 assert.equal(parts.length, 17);
+// The 18th portion, the harness, is not in curriculum.json: build/harness.json holds the exact
+// bytes the API serves, and its hash is the last one of the meta (B2 FR-035).
+const harness = readFileSync(join(build, 'harness.json'));
 assert.deepEqual(
   Object.keys(meta.portions),
-  parts.map(([name]) => name),
-  'the 17 portions, in order',
+  [...parts.map(([name]) => name), 'harness'],
+  'the 17 portions and then the harness, in order',
 );
 for (const [name, part] of parts) {
   assert.equal(meta.portions[name], sha256(JSON.stringify(part)), `portions.${name}`);
 }
+assert.equal(
+  meta.portions.harness,
+  sha256(harness),
+  'portions.harness is the sha256 of harness.json',
+);
+assert.deepEqual(
+  Object.keys(JSON.parse(harness.toString('utf8')) as object),
+  languages,
+  'the harness has one template per language',
+);
 
 const exercises = [
   ...languages.flatMap((l) => curriculum.lab[l]),
@@ -145,5 +158,5 @@ assert.equal(grade('go', []), WITHOUT_IMPORTS, 'a Go exercise without imports ke
 assert.equal(grade('rust', ['strings']), WITHOUT_IMPORTS, 'Rust has no imports in its harness');
 
 console.log(
-  `curriculum-meta-check: ${parts.length} portions, ${exercises.length} exercises and ${Object.values(meta.workshopSteps).flat().length} stages with their fingerprint and key PASS.`,
+  `curriculum-meta-check: ${parts.length} portions plus the harness, ${exercises.length} exercises and ${Object.values(meta.workshopSteps).flat().length} stages with their fingerprint and key PASS.`,
 );

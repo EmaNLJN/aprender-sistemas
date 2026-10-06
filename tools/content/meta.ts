@@ -3,6 +3,7 @@
 import { createHash } from 'node:crypto';
 import { CATALOGS, LANGUAGES, SYSTEMS_DOMAINS } from './catalogs.ts';
 import { ContentError } from './content-error.ts';
+import { harnessBody, type HarnessTemplates } from './harness.ts';
 import type { Curriculum } from './load-curriculum.ts';
 import type { JsonRecord } from './shape.ts';
 import type { WorkshopStepKeys } from './workshops.ts';
@@ -67,7 +68,8 @@ export function exerciseHashes(exercise: JsonRecord): ExerciseHashes {
   };
 }
 
-// The 17 portions of ADR 0006 D11, in the order of PHP's Portion enum.
+// The 17 portions of ADR 0006 D11 that come from curriculum.json, in the order of PHP's Portion
+// enum; the 18th, the harness, comes from content/harness/.
 export function portionsOf(curriculum: Curriculum): Record<string, unknown> {
   const portions: Record<string, unknown> = {};
   for (const language of LANGUAGES) portions[`lab.${language}`] = curriculum.lab[language];
@@ -100,6 +102,7 @@ export function curriculumMeta(
   document: string,
   sourceCommit: string | null,
   workshopSteps: WorkshopStepKeys,
+  harness: HarnessTemplates,
 ): CurriculumMeta {
   const exercises: Record<string, ExerciseHashes> = {};
   const catalogs = [
@@ -109,12 +112,13 @@ export function curriculumMeta(
   ];
   for (const exercise of catalogs.flat())
     exercises[exercise.id as string] = exerciseHashes(exercise);
-  const portions = Object.fromEntries(
+  const portions: Record<string, string> = Object.fromEntries(
     Object.entries(portionsOf(curriculum)).map(([name, part]) => [
       name,
       sha256Hex(JSON.stringify(part)),
     ]),
   );
+  portions.harness = sha256Hex(harnessBody(harness));
   return {
     documentHash: sha256Hex(document),
     sourceCommit,
