@@ -214,16 +214,61 @@ describe('campaign engine revision', () => {
     expect(revisionOf(engine)).toBe(1);
   });
 
-  it('lets a listener see what was already written', () => {
+  interface WritingCase {
+    name: string;
+    prepare?: (engine: CampaignEngine) => void;
+    run: (engine: CampaignEngine) => void;
+    observe: (stored: string | null) => unknown;
+    expected: unknown;
+  }
+
+  const writingCases: WritingCase[] = [
+    {
+      name: 'syncLab',
+      run: (engine) => void engine.syncLab(labWithPassing(['rust-1'])),
+      observe: (stored) => JSON.parse(stored!).seals['rust-1'].code,
+      expected: true,
+    },
+    {
+      name: 'answerCheckpoint',
+      prepare: makeCheckpointReady,
+      run: (engine) => void engine.answerCheckpoint('rust-world-1', 1),
+      observe: (stored) => JSON.parse(stored!).checkpoints['rust-world-1'].lastAnswer,
+      expected: 1,
+    },
+    {
+      name: 'applyImport',
+      run: (engine) =>
+        void engine.applyImport(
+          engine.planImport({
+            version: 1,
+            seals: { 'rust-2': { code: true, prediction: false, assisted: false } },
+            checkpoints: {},
+          }),
+        ),
+      observe: (stored) => JSON.parse(stored!).seals['rust-2'].code,
+      expected: true,
+    },
+    {
+      name: 'reset',
+      prepare: (engine) => void engine.syncLab(labWithPassing(['rust-1'])),
+      run: (engine) => void engine.reset(),
+      observe: (stored) => stored,
+      expected: null,
+    },
+  ];
+
+  it.each(writingCases)('lets a listener see what $name already wrote', (writingCase) => {
     const { engine, storage } = openEngine();
-    let seenInStorage: string | null = null;
+    writingCase.prepare?.(engine);
+    let seenInStorage: string | null = 'listener never called';
     engine.changes.subscribe(() => {
       seenInStorage = storage.read(STORAGE_KEY);
     });
 
-    engine.syncLab(labWithPassing(['rust-1']));
+    writingCase.run(engine);
 
-    expect(JSON.parse(seenInStorage!).seals['rust-1'].code).toBe(true);
+    expect(writingCase.observe(seenInStorage)).toEqual(writingCase.expected);
   });
 
   it('propagates a throwing listener after the write already happened', () => {
@@ -272,6 +317,11 @@ describe('campaign engine revision', () => {
     } as unknown as CampaignConfig);
 
     expect(result.loadWarning).toBe('');
+    expect(engine.exportState().seals['rust-22']).toEqual({
+      code: true,
+      prediction: true,
+      assisted: true,
+    });
     expect(storage.writes).toBe(0);
     expect(listener).not.toHaveBeenCalled();
   });
