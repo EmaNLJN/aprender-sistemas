@@ -19,23 +19,4 @@ final class AcceptInvitationRequest extends FormRequest
             'privacyVersion' => ['required', 'string', Rule::in([(new PrivacyNotice)->current()])],
         ];
     }
-
-    /** @return array<string, string> */
-    public function messages(): array
-    {
-        return [
-            'name.regex' => 'El nombre no puede tener caracteres de control.',
-            'password_confirmation.same' => 'La confirmación de la contraseña no coincide.',
-            'privacyVersion.in' => 'Esa no es la versión vigente del aviso de privacidad.',
-        ];
-    }
-
-    /** @return array<string, string> */
-    public function attributes(): array
-    {
-        return [
-            'password_confirmation' => 'confirmación de la contraseña',
-            'privacyVersion' => 'versión del aviso de privacidad',
-        ];
-    }
 }
