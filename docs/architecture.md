@@ -16,7 +16,7 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | Navegación, recorrido y progreso general | `frontend/app.js`, `frontend/styles.css` |
 | Contenido del recorrido y biblioteca | `content/guide/`; tipos y progreso en `frontend/src/entities/guide/` |
 | Catálogos de contenido (publicados en `window.*`) | `content/` → `tools/content/` → `build/curriculum.json`; adaptador `frontend/src/app/legacy/register-catalogs.ts` |
-| Contenido en MySQL (ADR 0006, C2) | `tools/content/` también escribe `build/curriculum.meta.json` (huellas y claves de etapa) → etapa `curriculum` de `backend/api/Dockerfile` → `content:import` y `backend/api/app/Content/` → 17 recursos de sólo lectura (`GET /api/exercises`, `worlds`, `workshops`, `atlas` y `guide`); los bytes de cada porción los fija el generador, nunca `JsonResource` |
+| Contenido en MySQL (ADR 0006, C2) | `tools/content/` también escribe `build/curriculum.meta.json` (huellas y claves de etapa) → etapa `curriculum` de `backend/api/Dockerfile` → `content:import` y `backend/api/app/Content/`, con un registro tipado por fila en `app/Content/Record/` (C6) → 17 recursos de sólo lectura (`GET /api/exercises`, `worlds`, `workshops`, `atlas` y `guide`); los bytes de cada porción los fija el generador, nunca `JsonResource` |
 | Ejercicios del recorrido y tipo `Exercise` | sección `lab` de `content/{rust,go}/manifest.yaml` y `content/{rust,go}/exercises/<id>/`; `frontend/src/entities/exercise/model/types.ts` |
 | Laboratorio, revisión y modelos educativos | `frontend/lab.js`, `frontend/lab-explorers.js`, `frontend/lab.css` |
 | Transporte a los Playgrounds oficiales | `frontend/src/shared/api/playground/`, adaptador `frontend/src/app/legacy/register-runner.ts` |
@@ -41,7 +41,7 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | API Laravel del ADR 0004: rutas, configuración, migraciones, pruebas Pest e imagen PHP-FPM | `backend/api/` (reglas en `backend/api/AGENTS.md`) |
 | Comprobaciones e investigación educativa | `qa/*-check.ts`, `qa/lib/`, `qa/fixtures/`, `qa/run-checks.ts`, `qa/research-*.md` |
 | Documentación del desarrollo | `AGENTS.md`, `docs/` |
-| Planificación del backend con Spec Kit | `specs/` (hoja de ruta y una carpeta por feature), `.specify/` (constitución, plantillas, scripts y extensión `bug`) |
+| Planificación con Spec Kit, del backend y del front | `specs/` (una hoja de ruta por épico y una carpeta por feature), `.specify/` (constitución, plantillas, scripts y extensión `bug`) |
 
 ## Cómo mantener el orden
 

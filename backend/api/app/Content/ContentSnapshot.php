@@ -13,6 +13,12 @@ use Illuminate\Support\Facades\DB;
  */
 final class ContentSnapshot
 {
+    /**
+     * @template T
+     *
+     * @param  Closure(): T  $callback
+     * @return T
+     */
     public static function read(Closure $callback): mixed
     {
         // Inside an open transaction (tests under RefreshDatabase) the read happens in that one.

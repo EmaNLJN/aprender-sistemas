@@ -108,8 +108,10 @@ sin scripts ni instrucciones de red.
   - `mattpocock/skills@domain-modeling`, porque trata glosarios y ADR, no esquemas.
 - **Descargas:** `playwright-best-practices` sugiere `npx playwright install --with-deps`, que
   descarga navegadores. La regla de pedir permiso antes de cada descarga sigue valiendo.
-- **Alcance:** hasta que un ADR adopte Vitest y Playwright, las specs nuevas no tienen dónde
-  correr. Estas skills preparan esa decisión; no la toman.
+- **Alcance:** el [ADR 0008](adr/0008-pruebas-del-front.md), aceptado el 2026-10-05, adopta Vitest,
+  Testing Library, fishery y Playwright. F1 instala Vitest y Playwright; la pila de DOM llega con la
+  primera spec de componente y fishery con la primera factory. Hasta que F1 se integre, las specs
+  nuevas no tienen dónde correr.
 
 Se instalaron con `npx skills add <repo> --skill <nombre> -a codex -y`, con su enlace en
 `.claude/skills/`. `.gitattributes` exime a `.agents/skills/` de `git diff --check`, para que las
@@ -117,7 +119,7 @@ skills conserven el formato de su fuente.
 
 ## Spec Kit (2026-10-04)
 
-El CLI `specify` 1.0.13, instalado aparte, sostiene la planificación del backend; las reglas del
+El CLI `specify` 1.0.13, instalado aparte, sostiene la planificación del backend y del front; las reglas del
 flujo están en `.specify/memory/constitution.md`. Con sus trece skills, el total actual es de
 treinta y tres skills locales.
 
@@ -278,9 +280,10 @@ Markdown, sin scripts ni instrucciones de red.
 | --- | --- | --- | --- |
 | [php-pro](../.agents/skills/php-pro/SKILL.md) | [Jeffallan/claude-skills](https://skills.sh/jeffallan/claude-skills/php-pro) | 14,8 mil instalaciones; ★11,7 mil; MIT; v1.1.0 | DTOs `readonly`, value objects, enums y tipos de PHP moderno para los registros tipados del contenido (Data Mapper) y para C3. |
 
-- **Límites:** la skill exige PHPStan nivel 9, `declare(strict_types=1)` y un 80 % de cobertura. El
-  proyecto no tiene PHPStan ni una meta de cobertura, y adoptarlos pide dependencias y una
-  decisión propias. Manda `AGENTS.md`: de la skill se usan los patrones, no esas exigencias.
+- **Límites:** la skill exige PHPStan nivel 9, `declare(strict_types=1)` y un 80 % de cobertura.
+  El proyecto tiene PHPStan en el nivel 9 desde C6, por decisión propia y no por la skill;
+  `strict_types` y la meta de cobertura siguen fuera. Manda `AGENTS.md`: de la skill se usan los
+  patrones, no esas exigencias.
 - **Instalación:** `npx skills add jeffallan/claude-skills --skill php-pro -a codex -y`, con su
   enlace en `.claude/skills/` y su hash en `skills-lock.json`. El total actual es de treinta y
   cuatro skills locales.

@@ -18,13 +18,13 @@ final class ImportLock
 
     public function acquire(): bool
     {
-        return (int) DB::scalar('select get_lock('.self::NAME.', 0)') === 1;
+        return in_array(DB::scalar('select get_lock('.self::NAME.', 0)'), [1, '1'], true);
     }
 
     /** Whether the lock still belongs to this connection. */
     public function stillHeld(): bool
     {
-        return (int) DB::scalar('select is_used_lock('.self::NAME.') = connection_id()') === 1;
+        return in_array(DB::scalar('select is_used_lock('.self::NAME.') = connection_id()'), [1, '1'], true);
     }
 
     public function release(): void
