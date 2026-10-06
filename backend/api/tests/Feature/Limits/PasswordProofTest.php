@@ -150,3 +150,23 @@ it('clears the device failures on success', function () {
 
     expect($this->device->read($request, $this->account))->toEqual($token);
 });
+
+it('keeps the account failures when the holder proves the password from a known device', function () {
+    foreach (range(1, 10) as $ignored) {
+        $this->lockout->recordFailure('ana@x.com');
+    }
+    [, $request] = ($this->knownDevice)();
+
+    expect(($this->guess)('correct horse battery', $request)->outcome)->toBe(ProofOutcome::Verified)
+        ->and($this->lockout->state('ana@x.com')->fails)->toBe(10);
+});
+
+it('clears the account failures when the proof comes from an unknown device', function () {
+    foreach (range(1, 10) as $ignored) {
+        $this->lockout->recordFailure('ana@x.com');
+    }
+    $this->travel(61)->seconds();
+
+    expect(($this->guess)('correct horse battery')->outcome)->toBe(ProofOutcome::Verified)
+        ->and($this->lockout->state('ana@x.com')->fails)->toBe(0);
+});
