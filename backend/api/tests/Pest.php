@@ -14,6 +14,11 @@ pest()->extend(TestCase::class)
     ->use(DatabaseTruncation::class)
     ->in('Content');
 
+// Concurrency tests commit from several processes, so they truncate instead of rolling back.
+pest()->extend(TestCase::class)
+    ->use(DatabaseTruncation::class)
+    ->in('Concurrency');
+
 function useSampleBlockedPasswords(): void
 {
     config(['taller.password_blocklist' => base_path('tests/Support/fixtures/blocked-sample.txt')]);
