@@ -2,8 +2,10 @@
 
 namespace App\Content;
 
+use App\Content\Record\RowFields;
 use Closure;
 use Illuminate\Support\Arr;
+use LogicException;
 
 /**
  * The difference between the document (RowSet) and the tables, computed in PHP with strict
@@ -16,9 +18,8 @@ final class ContentDiff
     /**
      * @param  array<string, array<string, array<string, mixed>>>  $stored  rows by table and key (ContentStore::rows)
      * @param  array<string, bool>  $knownVersions  ContentStore::gradingVersions
-     * @param  array<string, mixed>  $meta  curriculum.meta.json
      */
-    public function between(RowSet $desired, array $stored, array $knownVersions, ?LatestImport $latest, array $meta): ContentPlan
+    public function between(RowSet $desired, array $stored, array $knownVersions, ?LatestImport $latest, ContentMeta $meta): ContentPlan
     {
         $this->assertDistinctV1Indexes($desired, $stored['workshop_steps'] ?? []);
         $writes = $this->rowsByTable(fn (string $table) => $this->rowsToWrite($table, $desired->keyed($table), $stored[$table] ?? [], $stored));
@@ -38,8 +39,10 @@ final class ContentDiff
     /**
      * What `$rowsOf` returns for each table, in dependency order, leaving out the tables where it returns nothing.
      *
-     * @param  Closure(string): list<array<string, mixed>>  $rowsOf
-     * @return array<string, list<array<string, mixed>>>
+     * @template TRow of array<string, mixed>
+     *
+     * @param  Closure(string): list<TRow>  $rowsOf
+     * @return array<string, list<TRow>>
      */
     private function rowsByTable(Closure $rowsOf): array
     {
@@ -103,8 +106,11 @@ final class ContentDiff
     {
         $versions = [];
         foreach ($desired->rows('exercises') as $exercise) {
-            if (! isset($knownVersions["{$exercise['id']}\x1f{$exercise['grading_hash']}"])) {
-                $versions[] = ['exercise_id' => $exercise['id'], 'grading_hash' => $exercise['grading_hash']];
+            $fields = new RowFields($exercise, 'exercises');
+            $id = $fields->string('id');
+            $gradingHash = $fields->string('grading_hash');
+            if (! isset($knownVersions["{$id}\x1f{$gradingHash}"])) {
+                $versions[] = ['exercise_id' => $id, 'grading_hash' => $gradingHash];
             }
         }
 
@@ -114,19 +120,14 @@ final class ContentDiff
     /**
      * An import leaves a record if the tables, the document or the hash of any portion change. A
      * different source commit with the same content does not count.
-     *
-     * @param  array<string, mixed>  $meta
      */
-    private function mustRecord(bool $changesTables, ?LatestImport $latest, array $meta): bool
+    private function mustRecord(bool $changesTables, ?LatestImport $latest, ContentMeta $meta): bool
     {
-        if ($changesTables || $latest === null || $latest->documentHash !== $meta['documentHash']) {
+        if ($changesTables || $latest === null || $latest->documentHash !== $meta->documentHash) {
             return true;
         }
 
-        /** @var array<string, string> $portions */
-        $portions = $meta['portions'];
-
-        return collect($latest->portionHashes)->sortKeys()->all() !== collect($portions)->sortKeys()->all();
+        return collect($latest->portionHashes)->sortKeys()->all() !== collect($meta->portionHashes)->sortKeys()->all();
     }
 
     /**
@@ -144,7 +145,7 @@ final class ContentDiff
         if ($table !== 'exercise_tests') {
             return;
         }
-        $exercise = $stored['exercises'][$row['exercise_id']] ?? null;
+        $exercise = $stored['exercises'][(new RowFields($row, 'exercise_tests'))->string('exercise_id')] ?? null;
         $retiredTogether = $exercise !== null && $exercise['status'] !== 'active' && $exercise['retired_at'] === $current['retired_at'];
         if (! $retiredTogether) {
             throw InvalidContent::at('curriculum.json', "exercise_tests.{$row['exercise_id']}.{$row['test_key']}", 'el test_key se retiró y no se reutiliza: esa prueba no puede volver hasta que B2 quite la regla t{i+1} del generador');
@@ -165,7 +166,7 @@ final class ContentDiff
         $keptByLeavers = collect($storedSteps)
             ->diffKeys($steps)
             ->filter(fn (array $leaver) => $leaver['v1_position'] !== null)
-            ->mapWithKeys(fn (array $leaver) => [$this->v1Slot($leaver) => $leaver['step_key']])
+            ->mapWithKeys(fn (array $leaver) => [$this->v1Slot($leaver) => (new RowFields($leaver, 'workshop_steps'))->string('step_key')])
             ->all();
         $owners = [];
         foreach ($steps as $step) {
@@ -187,7 +188,9 @@ final class ContentDiff
     /** @param array<string, mixed> $step */
     private function v1Slot(array $step): string
     {
-        return "{$step['workshop_id']}\x1f{$step['v1_position']}";
+        $fields = new RowFields($step, 'workshop_steps');
+
+        return $fields->string('workshop_id')."\x1f".$fields->int('v1_position');
     }
 
     /**
@@ -226,7 +229,13 @@ final class ContentDiff
     /** MySQL gives back integers or strings depending on the driver; the comparison is on text. */
     private function normalized(mixed $value): ?string
     {
-        return $value === null ? null : (string) $value;
+        if ($value === null) {
+            return null;
+        }
+        if (is_int($value) || is_string($value)) {
+            return (string) $value;
+        }
+        throw new LogicException('Una columna de contenido trae '.get_debug_type($value).': se esperaba un texto, un entero o NULL.');
     }
 
     /**

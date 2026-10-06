@@ -42,7 +42,7 @@ final class ImportContent extends Command
 
     private function runImport(ContentImporter $importer, ImportLock $lock): int
     {
-        $source = ContentSource::fromDirectory(config('content.path'));
+        $source = ContentSource::fromDirectory(config()->string('content.path'));
         if ($source->sourceCommit() === null) {
             $this->warn('El contenido no trae commit de origen (CONTENT_SOURCE_COMMIT): content_imports lo registra como nulo.');
         }

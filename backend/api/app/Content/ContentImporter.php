@@ -81,7 +81,7 @@ final class ContentImporter
         $bodies = [];
         foreach (Portion::cases() as $portion) {
             $body = $this->renderer->render($portion);
-            if (hash('sha256', $body) !== $source->meta['portions'][$portion->value]) {
+            if (hash('sha256', $body) !== $source->meta->portionHash($portion)) {
                 throw ContentMismatch::of($portion, $this->difference($source, $portion, $body));
             }
             $bodies[$portion->value] = $body;
@@ -105,7 +105,7 @@ final class ContentImporter
     private function warm(array $bodies, ContentSource $source, ?LatestImport $before): void
     {
         foreach (Portion::cases() as $portion) {
-            $hash = $source->meta['portions'][$portion->value];
+            $hash = $source->meta->portionHash($portion);
             $this->cache->put($portion, $hash, $bodies[$portion->value]);
             $replaced = $before?->portionHashes[$portion->value];
             if ($replaced !== null && $replaced !== $hash) {

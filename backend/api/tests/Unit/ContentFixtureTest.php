@@ -34,7 +34,8 @@ it('recomputes the hashes of what is edited and only of that', function () {
     $original = $fixture->meta;
     $fixture->exercise('rust-01')->title = 'Another title';
 
-    $meta = ContentSource::fromDirectory($fixture->write())->meta;
+    $directory = $fixture->write();
+    $meta = json_decode(file_get_contents("{$directory}/curriculum.meta.json"), true, 512, JSON_THROW_ON_ERROR);
 
     expect($meta['exercises']['rust-01']['contentHash'])->not->toBe($original['exercises']['rust-01']['contentHash'])
         ->and($meta['exercises']['rust-01']['gradingHash'])->toBe($original['exercises']['rust-01']['gradingHash'])
@@ -57,7 +58,7 @@ it('removes an exercise from the document and the meta, and the pair stays valid
 
     $source = ContentSource::fromDirectory($fixture->withoutExercise($id)->write());
 
-    expect($source->meta['exercises'])->toHaveCount($exercises - 1)->not->toHaveKey($id)
+    expect($source->meta->exerciseHashes)->toHaveCount($exercises - 1)->not->toHaveKey($id)
         ->and(Arr::pluck($source->part(Portion::LabRust), 'id'))->toHaveCount($labRust - 1)->not->toContain($id);
 });
 
