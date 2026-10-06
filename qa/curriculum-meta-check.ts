@@ -5,6 +5,8 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import type { JsonRecord } from '../tools/content/shape.ts';
+import { exerciseHashes } from '../tools/content/meta.ts';
 
 interface Hashes {
   contentHash: string;
@@ -111,6 +113,36 @@ for (const [workshop, keys] of Object.entries(frozen)) {
   }
 }
 assert.equal(Object.values(frozen).flat().length, 100, 'the v1 contract fixes the 100 stages');
+
+// B2 FR-037: the imports of a Go exercise join its grading hash, sorted and without repeats, and
+// only when there are some. The expected values are the sha256 of the canonical text below, taken
+// with sha256sum and not with this code:
+//   {"imports":["errors","strings"],"prediction":{"answer":1,"options":["1","2"]},"tests":[{"expression":"Suma(1, 1) == 2","id":"t1"}]}
+//   {"prediction":{"answer":1,"options":["1","2"]},"tests":[{"expression":"Suma(1, 1) == 2","id":"t1"}]}
+const WITH_IMPORTS = 'da25b107559e0b0b2b8faa1fe5c0e64066facbe55ce837a612d662f1baad6171';
+const WITHOUT_IMPORTS = '84911bb7bb1cc8bdfe4b1e7c61e307524ac28aab73b1e6f613e3ecea2de35ecd';
+function grade(language: string, imports: string[]): string {
+  const exercise = {
+    language,
+    imports,
+    tests: [{ id: 't1', label: 'Suma', expression: 'Suma(1, 1) == 2', why: 'x', failure: 'y' }],
+    prediction: { options: ['1', '2'], answer: 1 },
+    starter: 'func Suma(a, b int) int { return 0 }',
+  };
+  return exerciseHashes(exercise as JsonRecord).gradingHash;
+}
+assert.equal(
+  grade('go', ['strings', 'errors', 'strings']),
+  WITH_IMPORTS,
+  'sorted and without repeats',
+);
+assert.equal(
+  grade('go', ['errors', 'strings']),
+  WITH_IMPORTS,
+  'reordering is not a grading change',
+);
+assert.equal(grade('go', []), WITHOUT_IMPORTS, 'a Go exercise without imports keeps its hash');
+assert.equal(grade('rust', ['strings']), WITHOUT_IMPORTS, 'Rust has no imports in its harness');
 
 console.log(
   `curriculum-meta-check: ${parts.length} portions, ${exercises.length} exercises and ${Object.values(meta.workshopSteps).flat().length} stages with their fingerprint and key PASS.`,
