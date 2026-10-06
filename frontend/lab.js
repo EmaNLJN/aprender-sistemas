@@ -9,18 +9,20 @@ import { escapeHtml } from './src/shared/lib/escape-html';
 import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
 (() => {
   'use strict';
-  exerciseCatalog.init({
-    rustLab: window.RUST_LAB || [],
-    rustQuests: window.RUST_QUESTS || [],
-    goLab: window.GO_LAB || [],
-    goQuests: window.GO_QUESTS || [],
-    systemsLowlevel: window.SYSTEMS_LOWLEVEL_LABS || [],
-    systemsInfra: window.SYSTEMS_INFRA_LABS || [],
-    systemsPlay: window.SYSTEMS_PLAY_LABS || [],
-    systemsPc: window.SYSTEMS_PC_LABS || [],
-  });
-  // Nunca escribe al cargar: la primera escritura es una acción del alumno.
-  labStore.open(exerciseCatalog);
+  function init() {
+    exerciseCatalog.init({
+      rustLab: window.RUST_LAB || [],
+      rustQuests: window.RUST_QUESTS || [],
+      goLab: window.GO_LAB || [],
+      goQuests: window.GO_QUESTS || [],
+      systemsLowlevel: window.SYSTEMS_LOWLEVEL_LABS || [],
+      systemsInfra: window.SYSTEMS_INFRA_LABS || [],
+      systemsPlay: window.SYSTEMS_PLAY_LABS || [],
+      systemsPc: window.SYSTEMS_PC_LABS || [],
+    });
+    // Nunca escribe al cargar: la primera escritura es una acción del alumno.
+    labStore.open(exerciseCatalog);
+  }
   const $ = (selector) => host?.querySelector(selector);
   const $$ = (selector) => (host ? [...host.querySelectorAll(selector)] : []);
   let host = null,
@@ -1063,6 +1065,7 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
     if (mode === 'exercise') window.TallerExplorers?.change(event.target, current(), host);
   }
   window.TallerLab = {
+    init,
     mount,
     unmount,
     loadWarning: () => labStore.loadWarning(),

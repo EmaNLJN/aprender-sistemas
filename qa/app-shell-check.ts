@@ -341,7 +341,7 @@ function createHarness(options: HarnessOptions = {}): Harness {
 
 function buildHarness(options: HarnessOptions = {}): Harness {
   const harness = createHarness(options);
-  loadAppShell(harness.context);
+  loadAppShell(harness.context).startApp();
   return harness;
 }
 

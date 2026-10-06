@@ -69,6 +69,7 @@ export function loadCampaignWorlds(context: vm.Context): void {
 
 export function loadLab(context: vm.Context): void {
   runSource(context, LAB_SOURCE);
+  (context.window as { TallerLab: { init(): void } }).TallerLab.init();
 }
 
 export function loadCampaignEngine(context: vm.Context): void {

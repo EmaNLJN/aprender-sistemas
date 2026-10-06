@@ -194,7 +194,11 @@ function createBootHarness(options: HarnessOptions = {}): BootHarness {
     clearInterval: () => undefined,
     addEventListener: (type: string, listener: Listener) =>
       listeners.set(type, [...(listeners.get(type) ?? []), listener]),
-    removeEventListener: () => undefined,
+    removeEventListener: (type: string, listener: Listener) =>
+      listeners.set(
+        type,
+        (listeners.get(type) ?? []).filter((item) => item !== listener),
+      ),
     scrollTo: () => undefined,
     // react-dom hace instanceof contra estos constructores del navegador.
     HTMLIFrameElement: class {},
