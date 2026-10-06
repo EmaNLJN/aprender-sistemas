@@ -1,1 +1,12 @@
-export const MILESTONE_IDS: readonly string[] = [];
+export const MILESTONE_IDS: readonly string[] = [
+  'rust-memory',
+  'rust-commands',
+  'rust-files',
+  'rust-measure',
+  'rust-network',
+  'go-memory',
+  'go-commands',
+  'go-files',
+  'go-measure',
+  'go-network',
+];
