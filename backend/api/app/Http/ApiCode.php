@@ -21,6 +21,9 @@ enum ApiCode: string
     case TooManyRequests = 'too_many_requests';
     case BadRequest = 'bad_request';
     case ServerError = 'server_error';
+    case ClientRunIdReused = 'client_run_id_reused';
+    case QuotaExceeded = 'quota_exceeded';
+    case QueueFull = 'queue_full';
 
     public function status(): int
     {
@@ -32,11 +35,12 @@ enum ApiCode: string
             self::EmailTaken, self::AccountMismatch => 409,
             self::InvitationExpired => 410,
             self::CsrfTokenMismatch => 419,
-            self::ValidationFailed, self::AuthFailed => 422,
+            self::ValidationFailed, self::AuthFailed, self::ClientRunIdReused => 422,
             self::PasswordConfirmationRequired => 423,
-            self::TooManyRequests => 429,
+            self::TooManyRequests, self::QuotaExceeded => 429,
             self::BadRequest => 400,
             self::ServerError => 500,
+            self::QueueFull => 503,
         };
     }
 

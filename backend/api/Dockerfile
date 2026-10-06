@@ -39,7 +39,7 @@ WORKDIR /var/www/html
 
 FROM base AS runtime
 COPY --from=vendor /app /var/www/html
-COPY --from=curriculum /app/build/curriculum.json /app/build/curriculum.meta.json resources/content/
+COPY --from=curriculum /app/build/curriculum.json /app/build/curriculum.meta.json /app/build/harness.json resources/content/
 # /var/www/html is www-data 1777 in the base image: PHP could rename public/ or vendor/.
 RUN chown root:root /var/www/html && chmod 755 /var/www/html \
     && chown -R www-data:www-data storage bootstrap/cache
@@ -47,6 +47,7 @@ USER www-data
 
 FROM base AS dev
 COPY --from=dev-vendor /app /var/www/html
-COPY --from=curriculum /app/build/curriculum.json /app/build/curriculum.meta.json resources/content/
+COPY --from=curriculum /app/build/curriculum.json /app/build/curriculum.meta.json /app/build/harness.json resources/content/
+COPY --from=repo qa/fixtures/shared tests/Fixtures/shared
 # Without a .env, phpdotenv warns and Pest records it on every run. Empty: Compose provides the environment.
 RUN touch .env
