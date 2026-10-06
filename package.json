@@ -27,7 +27,7 @@
     "test:executor": "sh backend/executor/scripts/test.sh",
     "test:executor:integration": "sh backend/executor/scripts/integration.sh",
     "api:test": "docker compose --profile test run --rm --build test",
-    "api:test:down": "docker compose --profile test rm --stop --force mysql-test",
+    "api:test:down": "sh backend/api/scripts/test-down.sh",
     "api:format:check": "docker compose --profile test run --rm --build --no-deps --entrypoint php test vendor/bin/pint --test",
     "api:analyse": "docker compose --profile test run --rm --build --no-deps --entrypoint php test vendor/bin/phpstan analyse --memory-limit=1G --no-progress",
     "api:smoke": "sh backend/api/scripts/smoke.sh",
