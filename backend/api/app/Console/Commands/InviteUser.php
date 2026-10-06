@@ -38,7 +38,7 @@ final class InviteUser extends Command
             return self::FAILURE;
         }
 
-        $this->info(($issued->renewed ? 'Invitación renovada' : 'Invitación creada')." para {$email} como {$role->value}; vence el {$invitations->expiresAt($issued->invitation)->utc()->format('Y-m-d H:i:s')} UTC.");
+        $this->info(($issued->renewed ? 'Invitación renovada' : 'Invitación creada')." para {$email} como {$role->value}; vence el {$issued->invitation->expires_at->utc()->format('Y-m-d H:i:s')} UTC.");
         $this->line($issued->link());
 
         return self::SUCCESS;

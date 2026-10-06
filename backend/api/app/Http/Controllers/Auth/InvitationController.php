@@ -33,9 +33,9 @@ final class InvitationController
         }
 
         return response()->json([
-            'email' => $this->invitations->emailOf($invitation),
-            'role' => $this->invitations->roleOf($invitation)->value,
-            'expiresAt' => Iso8601::utc($this->invitations->expiresAt($invitation)),
+            'email' => $invitation->email,
+            'role' => $invitation->role->value,
+            'expiresAt' => Iso8601::utc($invitation->expires_at),
         ]);
     }
 
@@ -61,7 +61,7 @@ final class InvitationController
         $password = PlainPassword::of($request->string('password')->toString());
 
         $invitation = $this->invitations->lookup($token);
-        $this->rejection->assertAcceptable($password, $name, $this->invitations->emailOf($invitation));
+        $this->rejection->assertAcceptable($password, $name, $invitation->email);
 
         return $this->invitations->accept($token, $name, $password, $request->string('privacyVersion')->toString());
     }
