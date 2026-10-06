@@ -30,7 +30,7 @@ No hay: las cuatro unidades parten de S0 y tocan archivos disjuntos. La única e
 - [ ] T024 [P] [US4] U · Specs en rojo de la gramática y de los puentes: `frontend/src/shared/config/url-grammar.spec.ts`, `frontend/src/entities/campaign/model/mission-bridge.spec.ts`, `frontend/src/entities/campaign/bridge.spec.ts`, `frontend/src/entities/systems-workshop/model/workshop-bridge.spec.ts` y `frontend/src/entities/systems-workshop/bridge.spec.ts` (FR-012, FR-018, FR-044, FR-047; plan 2.2)
 - [ ] T025 [US4] U · `url-grammar.ts`, `mission-bridge.ts`, `workshop-bridge.ts` y las dos entradas `bridge.ts`, con las specs de T024 en verde (FR-014, FR-043, FR-045; plan 2.3)
 - [ ] T026 [US4] U · `frontend/campaign.js`, `frontend/systems.js`, `frontend/lab.js`, `frontend/src/pages/atlas/ui/ConceptDetail.tsx` y la parte de la URL de `frontend/app.js` usan la gramática y los puentes; las dos comparaciones sin diferencias (FR-011, FR-043, FR-044, FR-046, FR-047; SC-008; plan 2.4; quickstart-f2b §3.2)
-- [ ] T027 [US4] K · Compuerta, correspondencia de `lab-bridge-check`, documentación y PR de la unidad 5; su integración es S1 (FR-001, FR-002, FR-013, FR-017; SC-009; plan 2.5 y 2.7)
+- [ ] T027 [US4] K · Compuerta, correspondencia de `lab-bridge-check`, documentación y PR de la unidad 5; su integración es S1 (FR-001, FR-002, FR-013, FR-017; SC-009; plan 2.5 y 2.6)
 
 ## Phase 5: User Story 6 - Un explorador es un modelo puro y su selección es explícita (Priority: P2) — Unidad 7 (onda 1: X; onda 2: K)
 

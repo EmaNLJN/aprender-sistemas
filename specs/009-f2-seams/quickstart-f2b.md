@@ -186,14 +186,17 @@ try {
 
 ### 3.2 Unidad 5: las URL y los puentes
 
-**(a) Las URL.** Compara la gramática de la unidad con los fragmentos de hoy, copiados textualmente de `c5d497d`. Si la base de implementación cambió alguno de esos fragmentos, se vuelven a copiar desde ella. Esperado: `compared` 2 569 y `different` 0.
+**(a) Las URL.** Compara la gramática de la unidad (con `workshopReturnTarget` para el regreso a un taller) con los fragmentos de hoy, copiados textualmente de `c5d497d`. Si la base de implementación cambió alguno de esos fragmentos, se vuelven a copiar desde ella. Esperado: `compared` 2 569 y `different` 0.
 
 ```js
 // node compare-urls.mjs <raíz de la unidad>
 import { createRequire } from 'node:module';
 const root = process.argv[2];
 const esbuild = createRequire(`${root}/package.json`)('esbuild');
-const built = esbuild.buildSync({ entryPoints: [root + '/frontend/src/shared/config/url-grammar.ts'], bundle: true, write: false, format: 'esm', platform: 'node' });
+const built = esbuild.buildSync({
+  stdin: { contents: "export * from './shared/config/url-grammar'; export { workshopReturnTarget } from './entities/systems-workshop/bridge';", resolveDir: `${root}/frontend/src`, loader: 'ts' },
+  bundle: true, write: false, format: 'esm', platform: 'node',
+});
 const g = await import('data:text/javascript;base64,' + Buffer.from(built.outputFiles[0].text).toString('base64'));
 // Today's code, copied from c5d497d (campaign.js, systems.js, lab.js, app.js, ConceptDetail.tsx).
 const old = {
@@ -219,7 +222,7 @@ const check = (label, a, b) => { compared++; if (a !== b) { different++; if (dif
 for (const id of ids) {
   check('worldHref', old.worldURL(id), g.worldHref(id));
   check('exerciseHref', old.labLink(id), g.exerciseHref(id, 'learn'));
-  for (const lang of ['rust', 'go', 'otro', undefined]) check('workshopReturnHref', old.systemsReturnURL(id, lang), g.workshopReturnHref(id, lang ?? 'rust'));
+  for (const lang of ['rust', 'go', 'otro', undefined]) check('workshopReturnHref', old.systemsReturnURL(id, lang), g.workshopReturnHref(g.workshopReturnTarget(id, lang ?? 'rust')));
   for (const other of ids) {
     check('campaignMissionHref', old.missionURL({ id }, other), g.campaignMissionHref(id, other));
     check('workshopExerciseHref', old.codeURL({ id }, other), g.workshopExerciseHref(id, other));

@@ -102,7 +102,7 @@ Las dos familias codifican distinto. Unificarlas cambiaría caracteres, y FR-044
 | --- | --- |
 | `worldHref('mundo raro/1')` | `?mundo=mundo%20raro%2F1#campana` |
 | `withWorldQuery(new URL('http://t/#campana'), 'mundo raro/1').href` | `http://t/?mundo=mundo+raro%2F1#campana` |
-| `workshopReturnHref("!'()*~", 'go')` | `?taller=!'()*~&parte=build&lenguaje=go#sistemas` (`encodeURIComponent` deja `!'()*~`) |
+| `workshopReturnHref({ workshopId: "!'()*~", part: 'build', language: 'go' })` | `?taller=!'()*~&parte=build&lenguaje=go#sistemas` (`encodeURIComponent` deja `!'()*~`) |
 | `withWorkshopQuery(new URL('http://t/?basura=1#sistemas'), 'go', "!'()*~", 'ship').href` | `http://t/?lenguaje=go&taller=%21%27%28%29*%7E&parte=ship#sistemas` (el formulario deja sólo `*`) |
 | `withLabQuery(new URL('http://t/?#laboratorio'), 'map', 'x', 'learn').href` | `http://t/#laboratorio`: la query vacía se va |
 | `withLabQuery(new URL('http://t/?campana=rust-world-1&ejercicio=rust-02&paso=learn#laboratorio'), 'exercise', 'rust-06', 'code').href` | `http://t/?campana=rust-world-1&ejercicio=rust-06&paso=code#laboratorio`: `set` reemplaza en el lugar |
@@ -121,8 +121,11 @@ Las dos familias codifican distinto. Unificarlas cambiaría caracteres, y FR-044
   - `campaignLinkAccess(worlds, linkedWorldId, exerciseId, permission)` devuelve si el enlace deja entrar, los motivos y el mundo al que se vuelve (`null` si el mundo del enlace no existe, y entonces el regreso es `#campana`).
 
   Las dos reciben lo que hoy lee el adaptador (`engine.getWorlds(lang)` y `engine.canAttempt(id, lang)`), no leen `location` ni el motor, y no importan otra entidad.
-- **Sistemas,** en `entities/systems-workshop/model/workshop-bridge.ts`: `workshopMissionIds(workshop, language)`, que es la lista de hoy (las herramientas previas y el núcleo, sin repetir), y `workshopExerciseRole(workshop, exerciseId, language)`, que es `core`, `tool` o `null`.
-- **El regreso** a un mundo o a un taller es una URL que sólo necesita ids, así que vive en la gramática (`worldHref` y `workshopReturnHref`). La entidad da el id: `access.worldId` y el taller del enlace.
+- **Sistemas,** en `entities/systems-workshop/model/workshop-bridge.ts`:
+  - `workshopMissionIds(workshop, language)`, que es la lista de hoy (las herramientas previas y el núcleo, sin repetir);
+  - `workshopExerciseRole(workshop, exerciseId, language)`, que es `core`, `tool` o `null`;
+  - `workshopReturnTarget(workshopId, language)`, el regreso al taller: su parte `build`, con `go` o, para cualquier otro valor, `rust`.
+- **El regreso es un dato de la entidad que la gramática serializa** (FR-045). El de campaña es el `worldId` del contexto o del permiso, y `worldHref` lo escribe. El de Sistemas es `workshopReturnTarget`, y `workshopReturnHref` lo escribe. Así la gramática no decide a qué parte se vuelve ni normaliza el lenguaje: sólo arma la forma `?taller&parte&lenguaje`. La primera versión de este plan dejaba esas dos decisiones en la gramática, y el análisis de consistencia lo marcó.
 - **Lo que no es dato del puente se queda en el adaptador:** el rótulo del tipo de misión (`missionType`, un selector que es de F6), los textos de los rótulos y el HTML.
 
 **Se conserva el orden de los efectos.** En el contexto de campaña, el `refresh()` va antes de `getWorlds`, y sólo si hay mundo en el enlace. El bloqueo no llama `refresh()`, como hoy. En el contexto de Sistemas se comprueba la pertenencia antes del `refresh()` y del `engine.get()`. Por eso el rol es una función aparte, que el adaptador llama antes de esos dos. La composición del laboratorio (Sistemas antes que campaña, la lista navegable, `finishNavigation` y el bloqueo de campaña primero, que F1 marca como `KNOWN DEFECT`) no cambia: `lab.js` sólo pasa a leer la URL con la gramática.
@@ -251,7 +254,7 @@ Ningún escenario se retira en F2b. Las specs nuevas pasan a ser las dueñas del
 | `app-shell-check` | 53 | 6 | el escenario «h) borrar todo: elimina el respaldo…» espera el clic (`await` en lugar de `void`; el callback pasa a `async`); suma la opción `asyncAdapters` y 4 escenarios gemelos. Los valores esperados no cambian |
 | `seams-guard-check` | 18 | 5 | suma los escenarios de R6. No es uno de los nueve que adapta F2 (FR-013): crece con la regla nueva |
 
-Las tablas de escenario por escenario están en el plan: §2.7 para `lab-bridge-check`, §3.6 para `quest-explorers-check` y §4.6 para `app-shell-check`.
+Las tablas de escenario por escenario están en el plan: §2.6 para `lab-bridge-check`, §3.6 para `quest-explorers-check` y §4.6 para `app-shell-check`.
 
 ## R9. El tope de tamaño
 
@@ -268,3 +271,38 @@ Las tablas de escenario por escenario están en el plan: §2.7 para `lab-bridge-
 - Pasar las 12 misiones de proyecto a `content/` o tocar los exploradores visuales de `lab.js`.
 - Un oyente del evento `storage`, un debounce de la escritura por tecla y cualquier dependencia nueva.
 - Volver permanente cualquiera de las comparaciones únicas. Las permanentes son las specs.
+
+## Análisis de consistencia (speckit-analyze)
+
+Corrió a mano el 2026-10-06 sobre `spec.md` (FR-001 a FR-018 y FR-043 a FR-060), `plan-f2b.md`, este archivo, `quickstart-f2b.md` y `tasks-f2b.md`, porque los scripts de Spec Kit apuntan a los archivos de F2a (R1). Es de sólo lectura, salvo las correcciones que se listan abajo, que se aplicaron después en sus propios commits.
+
+**Chequeos mecánicos:**
+
+- Los 36 requisitos de F2b y los 10 criterios que le tocan (SC-001 a SC-003 y SC-007 a SC-013) tienen al menos una tarea; ninguna tarea cita un requisito de F2a.
+- Hay 19 tareas, de T020 a T038, secuenciales.
+- Cada referencia «plan N.M» y «quickstart-f2b §N» tiene su sección, y cada «§N.M» del plan también.
+- No hay enlaces relativos rotos ni marcadores pendientes. `<base>`, en el nombre de la fixture, es el hash del commit base: lo fija T020.
+- Las cifras (2 569, 55 880, 2 214, 4 319, 106, 53, 57, 35 avisos y +8 000) coinciden entre los cuatro documentos.
+- **Constitución:** sin conflictos.
+
+**Hallazgos corregidos:**
+
+| ID | Severidad | Hallazgo | Corrección |
+| --- | --- | --- | --- |
+| C1 | MEDIA | FR-045 pide que `entities/systems-workshop` exporte «el regreso al taller» como dato, y el plan lo dejaba entero en la gramática, que además decidía la parte `build` y normalizaba el lenguaje | `workshopReturnTarget` en la entidad y `workshopReturnHref(location)` en la gramática (R4). Se volvió a verificar en el prototipo: tipos, ESLint, `lab-bridge-check` 21, `npm test` (31 checks y 190 pruebas), 35 avisos, 2 569 URL y 55 880 respuestas iguales |
+| C2 | MEDIA | Dos mutaciones de quickstart §4 no las detectaba ninguna prueba: el `refresh()` adelantado en el contexto de Sistemas (no cambia el HTML) y el orden entre los dos pasos de sesión (el temporizador no se registra) | La primera sale de la tabla y queda en el Review Focus. La segunda pasa a ser «correr los pasos de sesión antes de los `reset` de las áreas», que sí detectan la spec de la feature y `boot-check` |
+| C3 | MEDIA | La mutación `Promise.all` en `resetAll` no la detectaba la spec tal como estaba escrita: con `Promise.all` las llamadas igual salen en orden | La spec de T033 registra el inicio y el fin de cada área asíncrona y exige que cada una empiece cuando la anterior resolvió |
+| C4 | BAJA | El Review Focus decía que la comparación de los puentes recorría un parámetro presente y vacío, y el script no lo hacía | Las dos comparaciones suman `?sistema=` y `?campana=` vacíos y los ocho lectores contra `URLSearchParams`; se volvieron a correr: 2 569 y 55 880, sin diferencias |
+| C5 | BAJA | El plan saltaba de §2.5 a §2.7 | Pasa a §2.6, también en este archivo y en las tareas |
+| C6 | BAJA | El cableado de `app.js` dejaba el área de Sistemas como un comentario («the same with…») | Se escribe entera |
+| C7 | BAJA | Faltaba decir por qué la feature puede importar el índice de `entities/guide` sin duplicar `routeStore` en los checks | Una nota en §4.0 del plan (FR-018) |
+
+**Hallazgos que se aceptan, con su motivo:**
+
+| ID | Severidad | Hallazgo | Por qué queda así |
+| --- | --- | --- | --- |
+| A1 | BAJA | La unidad 8 no abre con una prueba en rojo (FR-001) | La spec define su prueba como la protección de F1, en verde antes y después, más la comparación única; mover CSS no es un cambio de comportamiento |
+| A2 | BAJA | FR-048 cuenta `exportProgress` y `downloadBackup` entre lo que se mueve, y la descarga sigue en `app.js` | La feature arma el archivo y su nombre, y la descarga es DOM: FR-051 le prohíbe leer `window` |
+| A3 | BAJA | El «contexto de una misión» de Sistemas, como dato, es el rol | El título viene del contenido y el sello, del motor, y los dos se leen después de comprobar el rol, para conservar el orden de los efectos (R4) |
+| A4 | BAJA | `seams-guard-check` no está entre los nueve checks de FR-013 y cambia | Crece con R6, que es una regla nueva (FR-014 y FR-018), no una adaptación de cómo carga el código |
+| A5 | BAJA | La spec dice 51 escenarios en `app-shell-check` y que seis ejercicios «entran por visual» | Lo medido son 53 escenarios, y los seis entran por `visual`, pero dos también entran por el título. El plan usa lo medido, y las enmiendas las informa T038 |

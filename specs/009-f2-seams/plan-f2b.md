@@ -282,7 +282,7 @@ La corre K antes de abrir el PR de cada unidad (T022, T027, T032 y T037). Cada d
 5. **Sin estilos en línea nuevos:** `git diff <base> -- 'frontend/*.js' 'frontend/src' | grep -E '^\+.*(style=|setAttribute\(.style.|\.cssText)'` no imprime nada.
 6. **Complejidad:** `npm run lint` da 0 errores y 35 avisos; cada función de más de 10 que la unidad mueve o parte se informa antes y después (§3.0 para la 7).
 7. **La comparación única de la unidad** (§0.3), con sus cantidades en la descripción del PR.
-8. **La correspondencia de los checks** que la unidad adapta (§2.7, §3.6 y §4.6), copiada en la descripción del PR (FR-013, SC-009).
+8. **La correspondencia de los checks** que la unidad adapta (§2.6, §3.6 y §4.6), copiada en la descripción del PR (FR-013, SC-009).
 9. **Documentación** de la unidad, en el mismo cambio (§5).
 10. **PR** con título y descripción en inglés: el contexto, qué faltaba y por qué, qué cambia, cómo se verificó (los comandos y las medidas de arriba), la correspondencia y qué queda pendiente.
 
@@ -396,7 +396,8 @@ export function exerciseHref(exerciseId: string, phase: ExercisePhase): string;
 export function campaignMissionHref(worldId: string, exerciseId: string): string;
 export function workshopExerciseHref(workshopId: string, exerciseId: string): string;
 export function worldHref(worldId: string): string;
-export function workshopReturnHref(workshopId: string, language: string): string; // any language but 'go' writes rust
+export interface WorkshopLocation { workshopId: string; part: WorkshopPart; language: LinkLanguage }
+export function workshopReturnHref(location: WorkshopLocation): string; // ?taller=&parte=&lenguaje=#sistemas, in that order
 
 // Rewrites of the current URL: a copy of it, URLSearchParams (form encoding), unknown parameters kept.
 export function withLabQuery(current: URL, mode: 'map' | 'exercise', exerciseId: string, phase: ExercisePhase): URL;
@@ -431,18 +432,20 @@ export function campaignLinkAccess(
 export { campaignLinkAccess, campaignMissionContext } from './model/mission-bridge';
 export type { BridgeMission, BridgeWorld, CampaignLinkAccess, CampaignMissionContext } from './model/mission-bridge';
 
-// frontend/src/entities/systems-workshop/model/workshop-bridge.ts (no imports)
+// frontend/src/entities/systems-workshop/model/workshop-bridge.ts (only `import type { WorkshopLocation }` from shared/config/url-grammar)
 export interface BridgeWorkshop { code: Readonly<Record<string, string>>; related?: Readonly<Record<string, readonly string[]>> }
 export type WorkshopExerciseRole = 'core' | 'tool';
 export function workshopMissionIds(workshop: BridgeWorkshop | undefined, language: string): string[]; // [...new Set([...(related?.[language] || []), code[language]])], or []
 export function workshopExerciseRole(workshop: BridgeWorkshop | undefined, exerciseId: string, language: string): WorkshopExerciseRole | null;
+// The way back to a workshop: its build part, in the link's language ('go', or 'rust' for anything else)
+export function workshopReturnTarget(workshopId: string, language: string): WorkshopLocation;
 
 // frontend/src/entities/systems-workshop/bridge.ts
-export { workshopExerciseRole, workshopMissionIds } from './model/workshop-bridge';
+export { workshopExerciseRole, workshopMissionIds, workshopReturnTarget } from './model/workshop-bridge';
 export type { BridgeWorkshop, WorkshopExerciseRole } from './model/workshop-bridge';
 ```
 
-`DerivedWorld` y `AttemptPermission` del motor cumplen estas formas sin adaptarlas. Los índices de los dos slices no cambian: las entradas `bridge.ts` son la única puerta de estas funciones (research-f2b.md, R2).
+`DerivedWorld` y `AttemptPermission` del motor cumplen estas formas sin adaptarlas. Los índices de los dos slices no cambian: las entradas `bridge.ts` son la única puerta de estas funciones (research-f2b.md, R2). El regreso es un dato de la entidad que la gramática serializa: el de campaña es el `worldId` del contexto o del permiso (`worldHref`), y el de Sistemas, `workshopReturnTarget` (`workshopReturnHref`), que decide la parte `build` y normaliza el lenguaje.
 
 **Cada lugar que hoy arma o lee una URL, y qué pasa a usar** (U lo cablea en T026):
 
@@ -462,11 +465,11 @@ export type { BridgeWorkshop, WorkshopExerciseRole } from './model/workshop-brid
 | `campaign.js:exerciseContextHTML` | `readLinkQuery(…).missionWorld`; si no hay, `''`; `refresh()`; `campaignMissionContext(engine.getWorlds(lang), worldId, id)`; si es `null`, `''`; el mismo marcado con `worldHref(context.worldId)`, `context.worldTitle`, `context.points`, el `missionType(itemFor(id))` de hoy y los dos sellos |
 | `campaign.js:lockedExerciseHTML` | `readLinkQuery(…).missionWorld`; si no hay, `''`; `campaignLinkAccess(engine.getWorlds(lang), worldId, id, engine.canAttempt(id, lang))`, en ese orden de llamadas; si `allowed`, `''`; el mismo marcado con `access.reasons` y `access.worldId ? worldHref(access.worldId) : '#campana'` |
 | `systems.js:mount`: `get('taller')` y la validación de `parte` | `readLinkQuery(…).workshop` y `workshopPartOr(link.part, 'explore')` |
-| `systems.js:returnURL(id, lang = language)` | conserva su firma y devuelve `workshopReturnHref(id, lang)` |
+| `systems.js:returnURL(id, lang = language)` | conserva su firma y devuelve `workshopReturnHref(workshopReturnTarget(id, lang))` |
 | `systems.js:missionIDs(id, lang)` | `workshopMissionIds(workshops().find((item) => item.id === id), lang)` |
 | `systems.js:codeURL` | se borra; `workshopExerciseHref(workshop.id, id)` en sus dos usos |
 | `systems.js:locationForSelection` | `history.replaceState(null, '', withWorkshopQuery(new URL(location.href), language, selected, phase))` |
-| `systems.js:exerciseContextHTML` | `readLinkQuery(…).missionWorkshop`; el taller de `workshops()`; `workshopExerciseRole(w, id, lang)`; si es `null`, `''`; recién entonces `refresh()` y `engine.get(parent, lang)`; el mismo marcado con `workshopReturnHref(parent, lang)`, `w.title` y el rótulo según `role` |
+| `systems.js:exerciseContextHTML` | `readLinkQuery(…).missionWorkshop`; el taller de `workshops()`; `workshopExerciseRole(w, id, lang)`; si es `null`, `''`; recién entonces `refresh()` y `engine.get(parent, lang)`; el mismo marcado con `workshopReturnHref(workshopReturnTarget(parent, lang))`, `w.title` y el rótulo según `role` |
 | `pages/atlas/ui/ConceptDetail.tsx`: `labLink` | `exerciseHref(entry.labId, 'learn')` |
 
 Las anclas que sólo llevan hash (`href="#campana"` del banner, `#proyecto`, `#biblioteca` y el `'#campana'` del bloqueo) se quedan como están (research-f2b.md, R3).
@@ -500,7 +503,7 @@ Las anclas que sólo llevan hash (`href="#campana"` del banner, `#proyecto`, `#b
     - `campaignMissionHref('rust-world-1', 'rust-02')` es `?campana=rust-world-1&ejercicio=rust-02&paso=learn#laboratorio`;
     - `workshopExerciseHref('cache', 'rust-113')` es `?sistema=cache&ejercicio=rust-113&paso=code#laboratorio`;
     - `worldHref('rust-world-1')` es `?mundo=rust-world-1#campana`;
-    - `workshopReturnHref('cache', 'go')` es `?taller=cache&parte=build&lenguaje=go#sistemas`, y con `'otro'` o `'rust'` escribe `lenguaje=rust`;
+    - `workshopReturnHref({ workshopId: 'cache', part: 'build', language: 'go' })` es `?taller=cache&parte=build&lenguaje=go#sistemas`;
     - `FREE_LAB_HREF` es `?#laboratorio`.
   - **Las reescrituras,** con `new URL(…)` sobre `http://taller.test/`:
     - `withWorkshopQuery` desde `?basura=1#sistemas`, con `go`, `cache` y `ship`, da `?lenguaje=go&taller=cache&parte=ship#sistemas`, y con `null` en el taller, `?lenguaje=go#sistemas`;
@@ -510,7 +513,7 @@ Las anclas que sólo llevan hash (`href="#campana"` del banner, `#proyecto`, `#b
     - ninguna de las cuatro modifica el `URL` que recibe.
   - **La codificación de cada familia:**
     - `worldHref('mundo raro/1')` es `?mundo=mundo%20raro%2F1#campana`, y `withWorldQuery(…, 'mundo raro/1')` escribe `?mundo=mundo+raro%2F1`;
-    - `workshopReturnHref("!'()*~", 'go')` es `?taller=!'()*~&parte=build&lenguaje=go#sistemas`, y `withWorkshopQuery(…, 'go', "!'()*~", 'ship')` escribe `taller=%21%27%28%29*%7E`.
+    - `workshopReturnHref({ workshopId: "!'()*~", part: 'build', language: 'go' })` es `?taller=!'()*~&parte=build&lenguaje=go#sistemas`, y `withWorkshopQuery(…, 'go', "!'()*~", 'ship')` escribe `taller=%21%27%28%29*%7E`.
   - **Los lectores:**
     - `readLinkQuery('?campana=rust-world-1&ejercicio=rust-02&paso=learn')` da esos tres valores y `null` en los otros cinco;
     - `readLinkQuery('?sistema=')` da `missionWorkshop: ''`, presente y vacío;
@@ -527,11 +530,12 @@ Las anclas que sólo llevan hash (`href="#campana"` del banner, `#proyecto`, `#b
     - `allowed: true` en el mismo mundo da `allowed: true`;
     - `allowed: true` con `worldId: 'rust-world-2'` da `allowed: false` con los motivos del permiso;
     - `rust-01` da los motivos `['El enlace no corresponde a una misión de este mundo.']`, y un mundo inexistente da lo mismo con `worldId: null`.
-  - **Los puentes de Sistemas,** con talleres armados a mano:
+  - **Los puentes de Sistemas,** con talleres armados a mano y el regreso:
     - `{ code: { rust: 'rust-113' }, related: { rust: ['rust-31', 'rust-35'] } }` da `['rust-31', 'rust-35', 'rust-113']`;
     - un `related` que repite el núcleo no lo repite: `['a', 'x']` con `code: 'x'` da `['a', 'x']`;
     - `undefined` da `[]`, y un lenguaje sin `related` da sólo el núcleo;
-    - el rol es `core` para el núcleo, `tool` para `rust-31`, y `null` para `rust-01`, para el núcleo de Go pedido en Rust y para un taller `undefined`.
+    - el rol es `core` para el núcleo, `tool` para `rust-31`, y `null` para `rust-01`, para el núcleo de Go pedido en Rust y para un taller `undefined`;
+    - `workshopReturnTarget('cache', 'go')` es `{ workshopId: 'cache', part: 'build', language: 'go' }`, y con `'otro'` o `'rust'` el lenguaje es `rust`.
   - **El aislamiento de cada entrada** (`bridge.spec.ts`): con `vi.resetModules()` y `vi.doMock` sobre los cinco módulos con singleton (`entities/guide/model/route-store`, `entities/exercise/model/lab-store`, `entities/exercise/model/exercise-catalog`, `entities/campaign/model/create-campaign-engine` y `entities/systems-workshop/model/create-systems-engine`), cada mock con una fábrica que lanza, importar la entrada resuelve. Como control, importar el índice del mismo slice rechaza con «error when mocking», que es como Vitest envuelve el error de la fábrica.
 - **Pasos:** las firmas y las specs; `npm run test:unit -- shared/config entities/campaign entities/systems-workshop`, que falla con `not implemented`. Las dos specs de aislamiento pasan desde el principio, porque las entradas reexportan firmas sin estado: son las que vigilan T025. Un commit: `test(front): specs de la gramática de URL y de los datos de los puentes (rojas)`.
 - **Vuelta atrás:** revertí el commit.
@@ -564,11 +568,11 @@ Las anclas que sólo llevan hash (`href="#campana"` del banner, `#proyecto`, `#b
 
 ### Tarea 2.5 · Compuerta y PR de la unidad 5 (T027, K)
 
-La compuerta de §0.2 con las dos comparaciones, la correspondencia de §2.7, la documentación (§5) y el PR `refactor(front): add the URL grammar and pass the view bridges as data`, con T023 (S) y T024 a T026 (U). Cubre FR-001, FR-002, FR-007 a FR-009, FR-011, FR-013, FR-014, FR-017, FR-018 y FR-043 a FR-047; SC-001, SC-002, SC-008, SC-009, SC-011 y SC-012. Su integración en `master` es S1.
+La compuerta de §0.2 con las dos comparaciones, la correspondencia de §2.6, la documentación (§5) y el PR `refactor(front): add the URL grammar and pass the view bridges as data`, con T023 (S) y T024 a T026 (U). Cubre FR-001, FR-002, FR-007 a FR-009, FR-011, FR-013, FR-014, FR-017, FR-018 y FR-043 a FR-047; SC-001, SC-002, SC-008, SC-009, SC-011 y SC-012. Su integración en `master` es S1.
 
 **Reversión de la unidad 5:** se revierten T026, T025, T024 y T023, en ese orden. Se revierte antes la unidad 6 si ya está integrada, porque las dos tocan el bloque de imports de `app.js`.
 
-### 2.7 La correspondencia de `lab-bridge-check` (21)
+### 2.6 La correspondencia de `lab-bridge-check` (21)
 
 Ningún escenario se retira: el check sigue cargando `campaign.js` y `systems.js` reales y no cambia una línea. La columna dice qué spec nueva fija el contrato de dominio de cada uno.
 
@@ -588,7 +592,7 @@ Ningún escenario se retira: el check sigue cargando `campaign.js` y `systems.js
 | 12 | sistemas: `missionIDs` termina en el núcleo (50 núcleos) | `workshop-bridge.spec` (el núcleo al final) |
 | 13 | sistemas: primero las herramientas previas y después el núcleo | `workshop-bridge.spec` (orden y sin repetir) |
 | 14 | sistemas: `missionIDs` vacío sin taller o con uno desconocido | `workshop-bridge.spec` (`undefined`) |
-| 15 | sistemas: `returnURL` conserva `?taller=&parte=build&lenguaje=#sistemas` | `url-grammar.spec`: `workshopReturnHref` |
+| 15 | sistemas: `returnURL` conserva `?taller=&parte=build&lenguaje=#sistemas` | `workshop-bridge.spec`: `workshopReturnTarget`; `url-grammar.spec`: `workshopReturnHref` |
 | 16 | sistemas: el núcleo muestra el título del taller y el regreso | `workshop-bridge.spec` (`core`) |
 | 17 | sistemas: una herramienta previa se rotula como tal | `workshop-bridge.spec` (`tool`) |
 | 18 | sistemas: ni núcleo ni previo devuelve `''` | `workshop-bridge.spec` (`null`) |
@@ -855,7 +859,14 @@ const progressBackup = createProgressBackup({
       backups: () => window.TallerCampaignEngine?.backups?.() ?? [],
       syncDerivedSeals: () => window.TallerCampaign?.sync(),
     },
-    systems: { /* the same with TallerSystemsEngine, and syncDerivedSeals: () => window.TallerSystems?.sync() */ },
+    systems: {
+      exportState: () => window.TallerSystemsEngine?.exportState(),
+      planImport: (raw) => window.TallerSystemsEngine.planImport(raw),
+      applyImport: (plan) => window.TallerSystemsEngine.applyImport(plan),
+      reset: async () => (await window.TallerSystemsEngine?.reset())?.removed,
+      backups: () => window.TallerSystemsEngine?.backups?.() ?? [],
+      syncDerivedSeals: () => window.TallerSystems?.sync(),
+    },
   },
   sessionResets: [
     () => window.TallerSystems?.resetSimulations(),
@@ -867,7 +878,7 @@ const progressBackup = createProgressBackup({
 });
 ```
 
-Cada función lee `window.Taller*` al llamarse, con los mismos `?.` de hoy. El `planImport` de una sección no lleva `?.`, como hoy: con el adaptador ausente lanza el mismo `TypeError`, y el aviso lo muestra.
+Cada función lee `window.Taller*` al llamarse, con los mismos `?.` de hoy. La feature importa valores del índice de `entities/guide` (`parseRouteProgress`, `mergeRouteProgress` y `ROUTE_FORMAT_ERROR`): evaluarlo crea `routeStore`, y como la única fuente legacy que importa la feature es `app.js`, dueño de ese índice, ningún check lo duplica (FR-018). R4 no ve un import de la feature desde otra fuente legacy: si F2b o un port lo necesitara, va a la revisión. El `planImport` de una sección no lleva `?.`, como hoy: con el adaptador ausente lanza el mismo `TypeError`, y el aviso lo muestra.
 
 | Hoy en `app.js` | Pasa a |
 | --- | --- |
@@ -1013,7 +1024,7 @@ La integra K en el PR de la unidad; el dueño avisa el texto que hace falta. Nin
 
 | Ítem | Qué toma | De dónde |
 | --- | --- | --- |
-| F5 Sistemas | `readLinkQuery`, `workshopPartOr`, `withWorkshopQuery`, `workshopExerciseHref` y `workshopReturnHref`; `workshopMissionIds` y `workshopExerciseRole`; `.lab-empty` en `styles.css` | `shared/config/url-grammar`, `entities/systems-workshop/bridge` y la unidad 8 |
+| F5 Sistemas | `readLinkQuery`, `workshopPartOr`, `withWorkshopQuery`, `workshopExerciseHref` y `workshopReturnHref`; `workshopMissionIds`, `workshopExerciseRole` y `workshopReturnTarget`; `.lab-empty` en `styles.css` | `shared/config/url-grammar`, `entities/systems-workshop/bridge` y la unidad 8 |
 | F6 Campaña | `readLinkQuery`, `worldHref`, `campaignMissionHref`, `withWorldQuery` y `FREE_LAB_HREF`; `campaignMissionContext` y `campaignLinkAccess`; el banner y el bloque de contexto en `lab.css`, y el menú en `styles.css` | la gramática, `entities/campaign/bridge` y la unidad 8. **F6 tiene que mover `.quest-direct-lock`** a `lab.css` antes de borrar `campaign.css` (lo protege R10 de `css-contract`) |
 | F7 Laboratorio | `readLinkQuery`, `exercisePhaseOr` y `withLabQuery`; los dos puentes, para componer en `pages/lab/model`; el mapa y los modelos de los exploradores | la gramática, las dos entradas `bridge` y `entities/exercise/explorers`. F7 retira `quest-explorers-check` cuando borra `quest-explorers.js`, con la correspondencia de §3.6 |
 | F8 Método | `ProgressBackup` (exportar, listar y leer respaldos, planificar, aplicar y borrar todo), `assertImportSize` e `importFailureNotice` | `features/progress-backup`. La página usa la misma instancia que arma el shell; los pasos de sesión ya están registrados |
@@ -1033,7 +1044,7 @@ La integra K en el PR de la unidad; el dueño avisa el texto que hace falta. Nin
 | FR-010 | §0.2, T038 | ninguna dependencia: `package.json` y el lockfile sin diff |
 | FR-011 | T021, T026, T031, T036 | las cuatro comparaciones de §0.3 |
 | FR-012 | T024, T029, T033 | specs de Vitest en el proyecto `node`, sin jsdom |
-| FR-013 | T026, T031, T035, §2.7, §3.6, §4.6 | tres checks, sólo cómo esperan; la correspondencia escenario por escenario |
+| FR-013 | T026, T031, T035, §2.6, §3.6, §4.6 | tres checks, sólo cómo esperan; la correspondencia escenario por escenario |
 | FR-014 | T023 a T025, T029, T030, T033, T034 | capas y slices; las entradas sin estado y R6 |
 | FR-015 | T033, T034 | la guía le llega a la feature por parámetro; R5 del guard sigue vigilando el JSON |
 | FR-016 | §0.2, §3.0 | 35 avisos antes y después; la redistribución de la unidad 7 |
@@ -1041,7 +1052,7 @@ La integra K en el PR de la unidad; el dueño avisa el texto que hace falta. Nin
 | FR-018 | T023, T024, T029 | las entradas sin estado, su spec de aislamiento y R6 |
 | FR-043, FR-044 | T024 a T026 | la gramática y las dos familias; 2 569 URL iguales |
 | FR-045, FR-046 | T024 a T026 | los datos de los puentes y el mismo marcado; 55 880 respuestas iguales |
-| FR-047 | T024, T026, §2.7 | specs con ids del fixture; `lab-bridge-check` 21 de 21 |
+| FR-047 | T024, T026, §2.6 | specs con ids del fixture; `lab-bridge-check` 21 de 21 |
 | FR-048 a FR-053 | T033 a T036, §4.6 | la feature, sus dos fases, sus reglas, sus áreas, la interfaz asíncrona y sus specs |
 | FR-054 a FR-057 | T028 a T031, §3.6 | los modelos, el mapa con la fixture, las misiones conservadas y las specs |
 | FR-058 a FR-060 | T021, T022 | las 26 reglas, la cascada y la protección de F1 con el barrido |
@@ -1049,7 +1060,7 @@ La integra K en el PR de la unidad; el dueño avisa el texto que hace falta. Nin
 | SC-003 | T033, T036, T037 | arrancar con las fixtures no escribe; las dos exportaciones, sin omisiones |
 | SC-007 | T021, T022 | las nueve filas (26 reglas), `css-contract` y las comparaciones |
 | SC-008 | T026, T031 | las 6 formas de URL y las 274 clasificaciones (los 274 programas y la lectura de las fixtures son de F2a) |
-| SC-009 | §2.7, §3.6, §4.6 | tres de los nueve checks; los otros seis son de F2a |
+| SC-009 | §2.6, §3.6, §4.6 | tres de los nueve checks; los otros seis son de F2a |
 | SC-010 | T033, T035, T036 | los dobles asíncronos en la spec y en `app-shell-check` |
 | SC-013 | §0.1 | F2b parte de F2a integrada |
 | SC-004, SC-005 y SC-006 | — | son de F2a |
