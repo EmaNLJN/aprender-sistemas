@@ -14,7 +14,7 @@ npm run build
 npm run test:e2e
 ```
 
-**Esperado:** `105 passed`. Es US5, escenario 1, y SC-001, SC-003 y SC-004: ninguna prueba toca `play.rust-lang.org` ni `play.golang.org`; si una lo intentara, la guarda de red la haría fallar.
+**Esperado:** `106 passed`. Es US5, escenario 1, y SC-001, SC-003 y SC-004: ninguna prueba toca `play.rust-lang.org` ni `play.golang.org`; si una lo intentara, la guarda de red la haría fallar.
 
 ## 2. Sin build, la red avisa
 
@@ -49,7 +49,7 @@ npm test
 npm run test:e2e -- --repeat-each=5 --retries=0
 ```
 
-**Esperado:** `525 passed` (105 pruebas, cinco veces). Anotá el tiempo; con `CI=1 npm run test:e2e` corre con un worker, como en la CI.
+**Esperado:** `530 passed` (106 pruebas, cinco veces). Anotá el tiempo; con `CI=1 npm run test:e2e` corre con un worker, como en la CI.
 
 ## 6. Tres roturas deliberadas, una por contrato (SC-006)
 
@@ -89,11 +89,11 @@ El comando de cada rotura reconstruye y corre la spec: `npx vite build --config 
 
 **Esperado:** 3 de 3 detectadas. Es US5, escenario 4.
 
-## 7. Las nueve reglas de CSS (SC-008)
+## 7. Las diez reglas de CSS (SC-008)
 
 Las roturas son las del cuadro de la tarea 4.7 de [plan.md](./plan.md): un valor de una declaración, en su hoja, y la prueba de su grupo falla. Con el mismo asistente y `css-contract` como spec.
 
-**Esperado:** 9 de 9 detectadas por un cambio de valor. La regla del último enlace de la navegación (R8) sólo se detecta si cambia el valor de la copia de `campaign.css`; borrar cualquiera de las dos, o cambiar sólo la de `lab.css`, no se detecta, y es lo previsto (código muerto).
+**Esperado:** 10 de 10 detectadas por un cambio de valor (la décima, `.quest-direct-lock`, también por el borrado del bloque entero). La regla del último enlace de la navegación (R8) sólo se detecta si cambia el valor de la copia de `campaign.css`; borrar cualquiera de las dos, o cambiar sólo la de `lab.css`, no se detecta, y es lo previsto (código muerto).
 
 ## 8. Las guardas, y las specs de Vitest
 

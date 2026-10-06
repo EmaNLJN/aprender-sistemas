@@ -7,19 +7,20 @@ Las decisiones de diseño del plan, con su motivo, sus alternativas y lo que se 
 Se planificó sin tocar el repositorio ni bajar nada.
 
 1. **La copia.** `git archive` de `spec/front-react` (sobre `ec4d829`, que ya tiene `master` mergeado) en un directorio aparte, fuera del repositorio. El `node_modules` es un enlace al del worktree de F1, donde el coordinador ya había instalado `vitest` 5.0.3 y `@playwright/test` 1.63.0; el Chrome Headless Shell 153.0.8010.12 ya estaba en `~/.cache/ms-playwright`. `npm run curriculum` y `vite build` dejaron un `dist/index.html` de 2 202 074 bytes, el mismo tamaño que la evidencia de A1.
-2. **Las sondas.** Pruebas de Playwright de un solo uso, contra `vite preview`, para saber qué hace el build: la consola y la red de las ocho vistas, qué enlaces recargan, el cambio de idioma y el historial, los valores computados de las nueve reglas en cuatro anchos, la respuesta de un Playground simulado, el arranque con la fixture de master y con el almacenamiento bloqueado, y el temporizador con `page.clock`.
-3. **El código del plan.** Los 29 archivos nuevos del plan salen de esa copia, sin retocar: 105 pruebas de punta a punta en 8 specs y 3 pruebas de Vitest en 2 specs.
+2. **Las sondas.** Pruebas de Playwright de un solo uso, contra `vite preview`, para saber qué hace el build: la consola y la red de las ocho vistas, qué enlaces recargan, el cambio de idioma y el historial, los valores computados de las reglas de CSS en cuatro anchos (la décima regla, en cinco), la respuesta de un Playground simulado, el arranque con la fixture de master y con el almacenamiento bloqueado, y el temporizador con `page.clock`.
+3. **El código del plan.** Los 29 archivos nuevos del plan salen de esa copia, sin retocar: 106 pruebas de punta a punta en 8 specs y 3 pruebas de Vitest en 2 specs.
 4. **Lo que corrió:**
-   - la red, en verde, y cinco veces seguidas con `--retries=0`: 525 de 525;
+   - la red, en verde, y cinco veces seguidas con `--retries=0`: 530 de 530;
    - Vitest: `npx vitest run --config frontend/vitest.config.ts`, 2 archivos y 3 pruebas;
    - `tsc` de `frontend/tsconfig.app.json`, `tsconfig.node.json`, `tsconfig.qa.json` y `qa/e2e/tsconfig.json`; `npm run lint` (0 errores y ningún aviso de los archivos nuevos) y `npm run format:check`;
    - `npm test` con los scripts nuevos: los 30 checks y Vitest;
-   - las 29 roturas del código de producción (más 2 variantes de la regla muerta), cada una detectada por la spec que dice el plan;
+   - las 31 roturas del código de producción (más 2 variantes de la regla muerta y 4 de la décima regla), cada una detectada por la spec que dice el plan;
    - la config sin `dist/`: «Falta dist/index.html: corré npm run build antes de npm run test:e2e.»;
    - `playwright install --dry-run --only-shell chromium`, que sólo imprime lo que bajaría;
    - el YAML del job `front`, que se lee sin error, y los SHA de `actions/upload-artifact` v7.0.1 y de `actions/cache` v6.1.0, consultados con `gh api`.
 5. **Lo que no corrió:** el job real de la CI, la descarga del navegador y su tiempo, la imagen web de Docker, macOS, Firefox y WebKit.
-6. **Efectos en el worktree del coordinador.** Las corridas de Vite y de Vitest dejaron cachés ignoradas en su `node_modules` (`.vite` y `.vite-temp`). No tocaron ningún archivo versionado. Se borraron al terminar.
+6. **Una segunda vuelta, con la spec de F2.** La spec de F2 advirtió que `.quest-direct-lock` no estaba protegida. Se sumó la décima regla, `.quest-direct-lock` (la R10 de CSS, que no es esta sección R10), y `.navigation .nav-symbol` a la R2 de CSS, en la misma copia y se repitió lo que depende de la spec: la red completa (106 pruebas), las cinco corridas, la corrida con `CI=1` y un worker, `tsc`, `eslint` y `prettier`, y las roturas de la décima regla y de `.nav-symbol`. Vitest y `npm test` no se repitieron: la spec nueva es de la red y no entra en ellos.
+7. **Efectos en el worktree del coordinador.** Las corridas de Vite y de Vitest dejaron cachés ignoradas en su `node_modules` (`.vite` y `.vite-temp`). No tocaron ningún archivo versionado. Se borraron al terminar.
 
 ## R1. Verificar el plan contra el build, en una copia aparte
 
@@ -57,7 +58,7 @@ Se planificó sin tocar el repositorio ni bajar nada.
 - `locale: 'es-AR'` y `timezoneId: 'America/Argentina/Buenos_Aires'`, para que fechas y textos no dependan de la máquina (el laboratorio escribe fechas con `toLocaleDateString('es-AR')`).
 - Un solo proyecto, `chromium` con «Desktop Chrome». En headless usa el Chrome Headless Shell.
 
-**Motivo de `workers: 1`.** La guía de CI de Playwright recomienda un worker en la CI «para priorizar la estabilidad y la reproducibilidad» (`playwright.dev/docs/ci`, consultada el 2026-10-05). La suite tardó unos 32 s con uno (102 pruebas) y unos 11 s con 8 workers en local.
+**Motivo de `workers: 1`.** La guía de CI de Playwright recomienda un worker en la CI «para priorizar la estabilidad y la reproducibilidad» (`playwright.dev/docs/ci`, consultada el 2026-10-05). La suite tardó unos 35 s con uno (106 pruebas) y unos 12 s con 8 workers en local.
 
 **Alternativas.** Dos workers en la CI: no se midió y el costo de la estabilidad es chico. Sharding: no hace falta con esta duración.
 
@@ -107,15 +108,27 @@ Se planificó sin tocar el repositorio ni bajar nada.
 
 ## R9. El contrato de CSS
 
-**Decisión.** Una prueba por cada grupo de reglas, con el estilo computado de las propiedades que fijan la regla, en los anchos donde una media query empieza o termina de valer (981, 850, 650 y 590 px), más el movimiento reducido y la animación del indicador de ejecución. Los valores están escritos en la spec y salen de las hojas.
+**Decisión.** Una prueba por cada grupo de reglas, con el estilo computado de las propiedades que fijan la regla, en los anchos donde una media query empieza o termina de valer (981, 850, 650 y 590 px), más el movimiento reducido y la animación del indicador de ejecución. Son diez grupos: los nueve que lista el mapa (§7) y `.quest-direct-lock`, que el mapa omite. Los valores salen de las hojas y están en [data-model.md](./data-model.md), §7.
 
 **Evidencia.** Los valores se midieron en el build y coinciden con lo que dicen las hojas. Se eligieron propiedades que no dependen del ancho ni de las fuentes: sólo se cuenta cuántas columnas tiene la navegación a 590 px, no su tamaño en píxeles. Cada grupo se rompió a propósito en su hoja y la prueba falló (`quickstart.md`).
 
 **La regla muerta.** `.navigation a:last-child { grid-column: auto }` aparece en `campaign.css` (a 650 px) y en `lab.css` (a 590 px), y ninguna otra regla le da una columna a los enlaces de la navegación: repite el valor inicial. Cambiar el valor de la copia de `campaign.css`, que carga después y gana, hace fallar la prueba. Cambiar sólo la de `lab.css`, o borrar cualquiera de las dos, no se detecta, y es lo esperado: no cambia nada que el alumno vea. F2 puede borrarlas.
 
-**Motivo.** Q2 eligió el estilo computado: es portable entre Linux y macOS y barato, a diferencia de las capturas, que dependen del sistema operativo y de las fuentes.
+**Cómo se eligieron las diez.** El mapa lista nueve. La spec de F2 advirtió que `.quest-direct-lock` no estaba entre ellas, y se revisó el resto con un script de un solo uso, fuera del repositorio: las clases que escribe cada vista (`app.js`, `lab.js`, `lab-explorers.js`, `campaign.js`, `systems.js`, `quest-explorers.js`, `src/index.html` y los componentes del Atlas, incluidas las que sólo aparecen dentro de una interpolación) contra los selectores de cada hoja. Una clase cruza hojas si una hoja la define y la escribe una vista que no es su dueña.
 
-**Alternativas.** Capturas de pantalla (Q2, opción B) y revisión manual (opción C).
+- El script encontró ocho de las nueve del mapa: `.lab-nav-count`, `.navigation`, `.sidebar` y `.sidebar-bottom`, `.sr-only`, `.quest-banner`, `.quest-lab-context` (que también escribe Sistemas), `.navigation a:last-child` y `.lab-empty`. La novena, el `touch-action` global, es un selector de elementos y el script no lo ve. Fuera del `touch-action`, ninguna hoja de vista tiene un selector de elemento suelto.
+- Encontró además una declaración que el mapa no nombra: `.navigation .nav-symbol` (`font-size` de 14 px a 590 px), que está en el mismo bloque que la navegación. Se sumó a R2.
+- `.quest-direct-lock` no sale del script: la escribe `campaign.js`, dueño de su hoja, aunque la dibuje dentro del laboratorio. Salió de leer los puentes (mapa, §3.2) y es la décima (R10 de CSS). Los otros dos puentes que devuelven HTML, `exerciseContextHTML` de campaña y de Sistemas, sólo escriben `.quest-lab-context`.
+
+**Lo que quedó afuera.**
+
+- Los modificadores de clases base dentro de un contenedor propio (`.quest-world-head .eyebrow`, `.sys-card .button`, `.lab-toolbar .search-wrap`, `.checkpoint-options .correct`, `.sys-cell.active`): la regla sólo vale dentro de ese contenedor, que es de su vista.
+- `.cm-enhanced` (`lab.css`), que dibuja el editor compartido (`shared/ui/code-editor`): sólo lo monta el laboratorio (`lab.js`). La hoja y la vista se portan juntas, así que la cubre la E2E de F7 (Q1).
+- Lo que el script no ve: las clases armadas sin un literal entre comillas, los selectores de atributo y de `id`, y los estilos en línea.
+
+**Motivo.** Q2 eligió el estilo computado: es portable entre Linux y macOS y barato, a diferencia de las capturas, que dependen del sistema operativo y de las fuentes. La décima regla sigue el mismo criterio: protege a F6, que borra `campaign.css` antes de que F7 retire el bloque de bloqueo del laboratorio.
+
+**Alternativas.** Capturas de pantalla (Q2, opción B) y revisión manual (opción C). Para la décima regla, esperar a que F6 la proteja en su propia E2E: llega tarde, porque F6 es quien borra la hoja y su E2E mide la vista de campaña, no el laboratorio.
 
 ## R10. Vitest: una sola config, un proyecto y sin setup
 
@@ -190,11 +203,11 @@ Se planificó sin tocar el repositorio ni bajar nada.
 
 | Qué | Valor | Dónde |
 | --- | --- | --- |
-| Pruebas de punta a punta | 105 en 8 specs (`guards` 4, `views` 12, `url-contract` 30, `reload` 17, `bridges` 9, `cycle` 8, `startup-storage` 4 y `css-contract` 21) | copia local |
+| Pruebas de punta a punta | 106 en 8 specs (`guards` 4, `views` 12, `url-contract` 30, `reload` 17, `bridges` 9, `cycle` 8, `startup-storage` 4 y `css-contract` 22) | copia local |
 | Specs de Vitest | 2 archivos y 3 pruebas, en unos 0,16 s | copia local |
-| La suite, 8 workers | unos 11 s (105 pruebas); cinco corridas seguidas con `--retries=0`, 525 de 525, en unos 55 s | copia local |
-| La suite, `CI=1` y un worker | unos 32 s (102 pruebas) | copia local |
-| Roturas del código de producción detectadas | 29, más 2 variantes de la regla muerta de R8 que no se detectan | copia local |
+| La suite, 8 workers | unos 12 s (106 pruebas); cinco corridas seguidas con `--retries=0`, 530 de 530, en unos 57 s | copia local |
+| La suite, `CI=1` y un worker | unos 35 s (106 pruebas) | copia local |
+| Roturas del código de producción detectadas | 31, más 4 variantes de la décima regla; y 2 variantes de la regla muerta de R8 que no se detectan | copia local |
 | Tamaño de `dist/index.html` | 2 202 074 bytes, igual que la evidencia de A1 | copia local |
 | Los paquetes, el navegador y las dependencias | 19 paquetes y 22,4 MB; 122,2 MB de navegador (las medidas del ADR 0008) | ADR 0008 |
 | El tiempo de la CI y de la instalación del navegador | sin medir: lo mide T015 con el primer PR | — |
