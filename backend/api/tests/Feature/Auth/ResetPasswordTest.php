@@ -151,6 +151,28 @@ it('applies the policy to the name and the email of the request', function (stri
     'the email' => 'zz-ana@x.com-x7Kp2mQ9vL',
 ]);
 
+it('does not reveal that an account exists through the name rule', function () {
+    $withName = 'zz-ana pérez-x7Kp2mQ9';
+    $body = ['password' => $withName, 'password_confirmation' => $withName, 'token' => str_repeat('a', 40)];
+
+    $existingAccount = $this->browser->post('/api/auth/reset-password', ($this->resetBody)($body));
+    $unknownAccount = $this->browser->post('/api/auth/reset-password', ($this->resetBody)($body + ['email' => 'nobody@x.com']));
+
+    $existingAccount->assertStatus(422)->assertJsonValidationErrors('token')->assertJsonMissingValidationErrors('password');
+    expect($existingAccount->getContent())->toBe($unknownAccount->getContent());
+});
+
+it('keeps the token usable after the name rule rejects the password of a valid token', function () {
+    $withName = 'zz-ana pérez-x7Kp2mQ9';
+
+    $this->browser->post('/api/auth/reset-password', ($this->resetBody)(['password' => $withName, 'password_confirmation' => $withName]))
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('password');
+    expect(app(AccountPasswords::class)->verify($this->user->fresh(), PlainPassword::of('the-old-password-123')))->toBeTrue();
+
+    $this->browser->post('/api/auth/reset-password', ($this->resetBody)())->assertOk();
+});
+
 it('limits ten requests a minute per network', function () {
     foreach (range(1, 10) as $number) {
         $this->browser->post('/api/auth/reset-password', ($this->resetBody)(['email' => "user{$number}@x.com", 'token' => 'x']))->assertStatus(422);
