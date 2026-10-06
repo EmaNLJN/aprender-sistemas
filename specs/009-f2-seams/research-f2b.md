@@ -9,7 +9,7 @@ Se planificó sin tocar el código de producción del repositorio y sin descarga
 1. **La base, sin cambios:** `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, la red de F1 completa, los hashes de los oráculos y el conteo de escenarios de cada check («Línea base de planificación»).
 2. **Prototipos de las cuatro unidades,** con el diseño de este plan:
    - **Unidad 8:** las 26 reglas movidas, el build, la red de F1, el multiconjunto de declaraciones del CSS del dist y un barrido de estilo computado, con su control negativo (R7).
-   - **Unidad 5:** la gramática de URL, los datos de los puentes y su cableado en `app.js`, `lab.js`, `campaign.js`, `systems.js` y `ConceptDetail.tsx`. Se compararon contra el código de hoy: 2 488 URL y 52 554 respuestas de los adaptadores (R3 y R4).
+   - **Unidad 5:** la gramática de URL, los datos de los puentes y su cableado en `app.js`, `lab.js`, `campaign.js`, `systems.js` y `ConceptDetail.tsx`. Se compararon contra el código de hoy: 2 569 URL y 55 880 respuestas de los adaptadores (R3 y R4).
    - **Unidad 7:** el mapa explícito, los dos modelos y el cableado de los dos exploradores, con 2 214 comparaciones de HTML (R6).
    - **Unidad 6:** la feature con promesas y su cableado en `app.js`, con `app-shell-check` y `boot-check` y cuatro gemelos asíncronos (R5).
    - **Las entradas sin estado:** empaquetadas con las opciones de `bundleSource` y probadas con `vi.doMock`, también con una mutación (R2).
@@ -96,7 +96,7 @@ El índice sigue siendo la única puerta del singleton y no reexporta lo de esas
 
 Las dos familias codifican distinto. Unificarlas cambiaría caracteres, y FR-044 lo prohíbe. Los enlaces que sólo llevan hash (`#campana`, `#proyecto`, `#biblioteca` y el resto de las anclas `href="#vista"` de las plantillas) siguen como marcado: no llevan query, no se arman en código y la red de F1 los fija (`views`). La única excepción es `?#laboratorio` (`FREE_LAB_HREF`), porque es una de las seis formas con query.
 
-**Evidencia.** Un script descartable comparó el prototipo con los fragmentos de hoy, copiados textualmente de `c5d497d`. Probó 15 ids (normales, `'mundo raro/1'`, `'a b'`, `"!'()*~"`, `'ñandú'`, `'%41'`, `'&x=1'`, `'#frag'`, `'+'` y vacío), 9 URL actuales con parámetros ajenos, 9 queries de fase y de parte y 13 hashes. Resultado: **2 488 comparaciones y 0 diferencias.** Ejemplos que fijan las specs, resueltos con las reglas de cada codificación:
+**Evidencia.** Un script descartable comparó el prototipo con los fragmentos de hoy, copiados textualmente de `c5d497d`. Probó 15 ids (normales, `'mundo raro/1'`, `'a b'`, `"!'()*~"`, `'ñandú'`, `'%41'`, `'&x=1'`, `'#frag'`, `'+'` y vacío), 9 URL actuales con parámetros ajenos, 12 queries (de fase, de parte y con `?sistema=` y `?campana=` presentes y vacíos) y 13 hashes, y también los ocho lectores contra `URLSearchParams`. Resultado: **2 569 comparaciones y 0 diferencias.** Ejemplos que fijan las specs, resueltos con las reglas de cada codificación:
 
 | Llamada | Resultado |
 | --- | --- |
@@ -127,7 +127,7 @@ Las dos familias codifican distinto. Unificarlas cambiaría caracteres, y FR-044
 
 **Se conserva el orden de los efectos.** En el contexto de campaña, el `refresh()` va antes de `getWorlds`, y sólo si hay mundo en el enlace. El bloqueo no llama `refresh()`, como hoy. En el contexto de Sistemas se comprueba la pertenencia antes del `refresh()` y del `engine.get()`. Por eso el rol es una función aparte, que el adaptador llama antes de esos dos. La composición del laboratorio (Sistemas antes que campaña, la lista navegable, `finishNavigation` y el bloqueo de campaña primero, que F1 marca como `KNOWN DEFECT`) no cambia: `lab.js` sólo pasa a leer la URL con la gramática.
 
-**Evidencia.** Un script descartable cargó, en dos raíces (la base y el prototipo), `campaign.js` y `systems.js` con sus motores reales y un `TallerLab` falso, como `lab-bridge-check`. Recorrió dos estados del laboratorio (vacío y el de `progress-master-2a278ad-storage.json`), los 8 mundos, un mundo inexistente y la query vacía, los 25 talleres, uno inexistente y la query vacía, los 274 ejercicios más uno inexistente y los dos lenguajes. Comparó `exerciseContextHTML`, `lockedExerciseHTML`, `missionIDs` y `returnURL`, también con ids hostiles: **52 554 comparaciones y 0 diferencias** (3,3 s). `lab-bridge-check` (21) pasa sin cambiar una línea.
+**Evidencia.** Un script descartable cargó, en dos raíces (la base y el prototipo), `campaign.js` y `systems.js` con sus motores reales y un `TallerLab` falso, como `lab-bridge-check`. Recorrió dos estados del laboratorio (vacío y el de `progress-master-2a278ad-storage.json`), los 8 mundos, un mundo inexistente, `?campana=` vacío y la query sin parámetros, los 25 talleres, uno inexistente, `?sistema=` vacío y la query sin parámetros, los 274 ejercicios más uno inexistente y los dos lenguajes. Comparó `exerciseContextHTML`, `lockedExerciseHTML`, `missionIDs` y `returnURL`, también con ids hostiles: **55 880 comparaciones y 0 diferencias** (3,3 s). `lab-bridge-check` (21) pasa sin cambiar una línea.
 
 **Alternativas.** Que la entidad devuelva el HTML: lo prohíbe FR-045. Que el adaptador siga leyendo `location` dentro de las funciones nuevas: lo prohíbe la misma regla.
 
