@@ -16,12 +16,6 @@ final class ChangePasswordRequest extends FormRequest
         ];
     }
 
-    /** @return array<string, string> */
-    public function attributes(): array
-    {
-        return ['current_password' => 'contraseña actual'];
-    }
-
     public function currentPassword(): PlainPassword
     {
         return PlainPassword::of($this->string('current_password')->toString());

@@ -12,12 +12,6 @@ final class UpdateNameRequest extends FormRequest
         return ['name' => ['required', 'string', 'max:80', 'not_regex:/\p{Cc}/u']];
     }
 
-    /** @return array<string, string> */
-    public function messages(): array
-    {
-        return ['name.not_regex' => 'El nombre no puede tener caracteres de control.'];
-    }
-
     public function newName(): string
     {
         return $this->string('name')->toString();
