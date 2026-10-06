@@ -7,7 +7,10 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 final readonly class PageMeta
 {
     /**
-     * @param  LengthAwarePaginator<array-key, mixed>  $page
+     * @template TKey of array-key
+     * @template TValue
+     *
+     * @param  LengthAwarePaginator<TKey, TValue>  $page
      * @return array{page: int, perPage: int, total: int, lastPage: int}
      */
     public static function of(LengthAwarePaginator $page): array
