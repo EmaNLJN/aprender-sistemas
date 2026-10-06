@@ -4,10 +4,12 @@ use App\Runs\Admission\RunAdmission;
 use App\Runs\Admission\RunRejected;
 use App\Runs\Admission\SubmittedRun;
 use App\Runs\Execution\RunWriteFailed;
+use App\Runs\RunLimiters;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Monolog\Handler\TestHandler;
 use Monolog\LogRecord;
+use Tests\Support\Browser;
 use Tests\Support\RunWorld;
 
 beforeEach(function () {
@@ -66,3 +68,32 @@ it('leaves the code out of every record when a rejection or a write failure happ
 
     expect(loggedText($this->handler))->not->toContain($this->sentinel);
 });
+
+it('logs a rejection over HTTP with the error code, the account and the exercise, and never the code', function (string $setup, string $expectedCode) {
+    $user = RunWorld::user();
+    if ($setup === 'quota') {
+        RunWorld::run($user, ['status' => 'running', 'started_at' => now()]);
+    }
+    if ($setup === 'full queue') {
+        config(['runs.queue.max_waiting' => 1]);
+        RunWorld::run(RunWorld::user());
+    }
+    RunLimiters::register();
+    $browser = Browser::for($this)->useDatabaseDrivers()->signIn($user);
+
+    $browser->post('/api/runs', [
+        'clientRunId' => '0199f4a2-8e03-7c5a-b3d1-9a77c0de4f21',
+        'exerciseId' => $setup === 'unknown exercise' ? 'rust-99' : 'rust-01',
+        'code' => "fn main() {} // {$this->sentinel}",
+        'customTest' => "x == 1 // {$this->sentinel}",
+    ]);
+
+    $rejected = array_values(array_filter($this->handler->getRecords(), fn (LogRecord $record) => $record->message === 'run.rejected'));
+    expect($rejected)->toHaveCount(1)
+        ->and($rejected[0]->context)->toBe(['user_id' => $user->id, 'exercise_id' => $setup === 'unknown exercise' ? 'rust-99' : 'rust-01', 'code' => $expectedCode])
+        ->and(loggedText($this->handler))->not->toContain($this->sentinel);
+})->with([
+    'quota' => ['quota', 'quota_exceeded'],
+    'unknown exercise' => ['unknown exercise', 'validation_failed'],
+    'full queue' => ['full queue', 'queue_full'],
+]);
