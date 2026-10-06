@@ -204,7 +204,7 @@ En los tipos con reloj, dos importaciones se combinan con la regla de D1a: un re
 
   Todo está en [import-fixture.md](./contracts/import-fixture.md).
 - **La proyección v1 vive en `tests/Support`** (FR-039), junto con `isLosslessNormalization` portado a PHP (`LosslessNormalization`). Compara los números por valor, porque JSON no distingue `1` de `1.0`.
-- **Depende de F2 (unidad 1).** El check importa `parseRouteProgress` y `parseSavedLab`, que hoy existen en la rama `f2a/u1-almacenes` (fbaaa40). Si F2 no está integrada cuando la tarea tiene que cerrar, el respaldo ejecuta los de `app.js` y `lab.js` en los contextos `vm` de `qa/lib/legacy-sources.ts`, y D1c pasa después el check a los de F2. Es lo único de D1b que toca el épico del front, y no está en su camino crítico: Pest lo necesita recién en la onda 3.
+- **Depende de F2 (unidad 1).** El check importa `parseRouteProgress` y `parseSavedLab`, que hoy existen en la rama `f2a/u1-almacenes` (fbaaa40). Si F2 no está integrada cuando la tarea tiene que cerrar, el respaldo ejecuta los de `app.js` y `lab.js` en contextos `vm`: el laboratorio con los cargadores de `qa/lib/legacy-sources.ts`, y el recorrido con el arnés de `qa/app-shell-check.ts`, que pasa a `qa/lib/app-shell-harness.ts`. D1c pasa después el check a los de F2. Es lo único de D1b que toca el épico del front, y no está en su camino crítico: Pest lo necesita recién en la onda 3.
 - **Descartado.**
   - Escribir el normalizado a mano: es largo y no lo produce ningún parser, que es justo lo que FR-039 quiere comparar.
   - Generarlo con la exportación de la app arrancada: puede traer sellos derivados (R24).
@@ -224,6 +224,7 @@ En los tipos con reloj, dos importaciones se combinan con la regla de D1a: un re
   - los esperados de esas pruebas, ajustados a propósito.
 
   Si no está, la declaración queda en [data-model-d1b.md](./data-model-d1b.md), sección 8, y C3b la toma al integrarse, como hizo con D1a. Sumar una sección no cambia el `format` de la exportación (contrato de C3b).
+- **Una precondición.** Con C3b en la base, `UserExportCoverageTest` exige también la sección `progress` para las diez tablas de D1a (y para `campaign_seals`). Registrarla es de D1a cuando se integra con C3b: retira `ExerciseProgressSection` y pasa el `format` a `taller-export-2`. Si la base trae C3b sin esa sección, la suite ya está en rojo antes de D1b, y T003 espera a que el coordinador lo resuelva.
 - **Por qué por lotes.** Cada fila puede traer un crudo de 10 MiB, y la cascada de la transacción final no debería borrar cientos de MB de una vez.
 
 ## R40. Los sellos en la foto
