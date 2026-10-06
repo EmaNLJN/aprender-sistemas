@@ -38,6 +38,8 @@ interface Harness {
   languageButtons: FakeElement[];
   viewLinks: FakeElement[];
   storedState(): Record<string, unknown>;
+  intervalCount(): number;
+  listenerCount(): number;
 }
 
 type ModuleKey = 'lab' | 'campaign' | 'systems';
@@ -193,7 +195,7 @@ function initialStorage(options: HarnessOptions): Map<string, string> {
   return storage;
 }
 
-function buildHarness(options: HarnessOptions = {}): Harness {
+function createHarness(options: HarnessOptions = {}): Harness {
   const elements: Record<string, FakeElement> = {};
   for (const id of ids) elements[id] = new FakeElement('div', id);
   elements['skip-link'] = new FakeElement('a');
@@ -217,6 +219,7 @@ function buildHarness(options: HarnessOptions = {}): Harness {
   const callArgs: Record<string, unknown> = {};
   const errors: string[] = [];
   const storage = initialStorage(options);
+  const counters = { intervals: 0, windowListeners: 0 };
 
   const query = (selector: string): FakeElement | null => {
     if (selector.startsWith('#')) return elements[selector.slice(1)] ?? null;
@@ -295,9 +298,9 @@ function buildHarness(options: HarnessOptions = {}): Harness {
     navigator: {},
     setTimeout: (callback: () => void, delay: number) => timers.push({ callback, delay }),
     clearTimeout: () => undefined,
-    setInterval: () => 0,
+    setInterval: () => counters.intervals++,
     clearInterval: () => undefined,
-    addEventListener: () => undefined,
+    addEventListener: () => counters.windowListeners++,
     scrollTo: () => undefined,
     ...fakeAdapters(record, options),
   } as Record<string, unknown>;
@@ -311,7 +314,6 @@ function buildHarness(options: HarnessOptions = {}): Harness {
   context.window = context;
   vm.createContext(context);
   loadGuideContent(context);
-  loadAppShell(context);
   return {
     context,
     elements,
@@ -327,7 +329,20 @@ function buildHarness(options: HarnessOptions = {}): Harness {
     viewLinks,
     toast: () => elements['toast']?.textContent ?? '',
     storedState: () => JSON.parse(storage.get(STORAGE_KEY) ?? 'null') as Record<string, unknown>,
+    intervalCount: () => counters.intervals,
+    listenerCount: () =>
+      [...Object.values(elements), ...languageButtons, ...viewLinks].reduce(
+        (sum, element) =>
+          sum + [...element.listeners.values()].reduce((count, item) => count + item.length, 0),
+        counters.windowListeners,
+      ),
   };
+}
+
+function buildHarness(options: HarnessOptions = {}): Harness {
+  const harness = createHarness(options);
+  loadAppShell(harness.context);
+  return harness;
 }
 
 function importFile(harness: Harness, text: string): Promise<void> {
@@ -1075,6 +1090,33 @@ await test('shell: al cargar se inicializan campaña y Sistemas y se sincroniza 
   assert.equal(harness.elements['sidebar-language']?.textContent, 'RUST');
   assert.equal(harness.elements['sidebar-completed']?.textContent, '0 de 12');
   assert.equal(harness.context.document.body.dataset.language, 'rust');
+});
+
+await test('startApp calls the adapters in order and then renders', () => {
+  const harness = createHarness({ hash: '#laboratorio' });
+  loadAppShell(harness.context).startApp();
+  const startup = ['Lab.init', 'Campaign.init', 'Systems.init', 'Lab.loadWarning', 'Lab.mount'];
+  assert.deepEqual(
+    harness.calls.filter((name) => startup.includes(name)),
+    startup,
+  );
+});
+
+await test('a second startApp call fails and adds no timer or listener', () => {
+  const harness = createHarness();
+  const { startApp } = loadAppShell(harness.context);
+  startApp();
+  const timersBefore = harness.timers.length;
+  const intervalsBefore = harness.intervalCount();
+  const listenersBefore = harness.listenerCount();
+  assert.throws(
+    () => startApp(),
+    (error: unknown) =>
+      (error as Error).message === 'startApp ya se llamó: el arranque corre una sola vez.',
+  );
+  assert.equal(harness.timers.length, timersBefore);
+  assert.equal(harness.intervalCount(), intervalsBefore);
+  assert.equal(harness.listenerCount(), listenersBefore);
 });
 
 process.stdout.write(`\n${passed} passed, ${failed} failed\n`);

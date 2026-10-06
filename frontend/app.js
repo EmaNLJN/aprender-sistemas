@@ -9,6 +9,9 @@ import { escapeHtml } from './src/shared/lib/escape-html';
 import { isLosslessNormalization } from './src/shared/lib/is-lossless-normalization';
 import { isPlainObject } from './src/shared/lib/is-plain-object';
 import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
+export function startApp() {
+  throw new Error('not implemented');
+}
 (() => {
   'use strict';
   const data = window.GUIDE_DATA;

@@ -16,7 +16,8 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { missingAdapterMethods } from './lib/app-adapters.ts';
 import { FakeElement, FakeText } from './lib/fake-dom.ts';
-import { bundleApp } from './lib/sources.ts';
+import { loadAppShell, type AppShellModule } from './lib/legacy-sources.ts';
+import { bundleApp, runSource } from './lib/sources.ts';
 
 const ENTRY = 'frontend/src/app/main.tsx';
 const VIEWS = [
@@ -57,8 +58,16 @@ interface BootHarness {
   errors: string[];
   // Excepción que escapó de la evaluación de main.tsx; los adaptadores ya están publicados.
   bootError?: string;
+  storageCalls: string[];
+  storageAccesses: number;
+  intervals: number;
+  listenerCount(): number;
   navigate(view: string): void;
   flush(): Promise<void>;
+}
+
+interface HarnessOptions {
+  blockStorage?: boolean;
 }
 
 // Los errores creados dentro del contexto vm no son `instanceof Error` del host.
@@ -67,7 +76,7 @@ function describeError(value: unknown): string {
   return typeof stack === 'string' ? stack : String(value);
 }
 
-function createBootHarness(): BootHarness {
+function createBootHarness(options: HarnessOptions = {}): BootHarness {
   const elements: Record<string, FakeElement> = {};
   for (const id of ELEMENT_IDS) elements[id] = new FakeElement('div', id);
   elements['import-file'] = new FakeElement('input', 'import-file');
@@ -84,6 +93,9 @@ function createBootHarness(): BootHarness {
   });
   const errors: string[] = [];
   const storage = new Map<string, string>();
+  const storageCalls: string[] = [];
+  const trackedElements: FakeElement[] = [];
+  const counters = { storageAccesses: 0, intervals: 0 };
   const listeners = new Map<string, Listener[]>();
   const timers: (() => void)[] = [];
   const location = {
@@ -96,6 +108,7 @@ function createBootHarness(): BootHarness {
   const create = (tag: string): FakeElement => {
     const element = new FakeElement(tag);
     element.ownerDocument = document;
+    trackedElements.push(element);
     return element;
   };
   // El DOM falso no parsea HTML: un id que aparece en el marcado de #main se registra
@@ -134,6 +147,7 @@ function createBootHarness(): BootHarness {
   document.body = create('body');
   document.documentElement = create('html');
   for (const element of Object.values(elements)) element.ownerDocument = document;
+  trackedElements.push(...Object.values(elements), ...languageButtons, ...viewLinks);
   const context = {
     console: {
       error: (...args: unknown[]) => errors.push(args.map(describeError).join(' ')),
@@ -153,17 +167,30 @@ function createBootHarness(): BootHarness {
     location,
     navigator: { userAgent: 'node', platform: 'Linux', vendor: '', language: 'es' },
     history: { replaceState: () => undefined },
-    localStorage: {
-      getItem: (key: string) => storage.get(key) ?? null,
-      setItem: (key: string, value: string) => void storage.set(key, String(value)),
-      removeItem: (key: string) => void storage.delete(key),
+    get localStorage() {
+      counters.storageAccesses++;
+      if (options.blockStorage) throw new Error('storage is blocked');
+      return {
+        getItem: (key: string) => {
+          storageCalls.push(`getItem ${key}`);
+          return storage.get(key) ?? null;
+        },
+        setItem: (key: string, value: string) => {
+          storageCalls.push(`setItem ${key}`);
+          storage.set(key, String(value));
+        },
+        removeItem: (key: string) => {
+          storageCalls.push(`removeItem ${key}`);
+          storage.delete(key);
+        },
+      };
     },
     // Los temporizadores se encolan y `flush` los ejecuta: React planifica su render así.
     setTimeout: (callback: () => void) => timers.push(callback),
     clearTimeout: () => undefined,
     requestAnimationFrame: (callback: () => void) => timers.push(callback),
     cancelAnimationFrame: () => undefined,
-    setInterval: () => 0,
+    setInterval: () => ++counters.intervals,
     clearInterval: () => undefined,
     addEventListener: (type: string, listener: Listener) =>
       listeners.set(type, [...(listeners.get(type) ?? []), listener]),
@@ -184,6 +211,21 @@ function createBootHarness(): BootHarness {
     elements,
     storage,
     errors,
+    storageCalls,
+    get storageAccesses() {
+      return counters.storageAccesses;
+    },
+    get intervals() {
+      return counters.intervals;
+    },
+    listenerCount() {
+      const windowListeners = [...listeners.values()].reduce((sum, item) => sum + item.length, 0);
+      return trackedElements.reduce(
+        (sum, element) =>
+          sum + [...element.listeners.values()].reduce((count, item) => count + item.length, 0),
+        windowListeners,
+      );
+    },
     navigate(view) {
       location.hash = `#${view}`;
       for (const listener of listeners.get('hashchange') ?? []) listener();
@@ -427,6 +469,115 @@ for (const file of FROZEN_EXPORTS) {
     );
   });
 }
+
+const LEGACY_SOURCES = [
+  'frontend/app.js',
+  'frontend/lab.js',
+  'frontend/campaign.js',
+  'frontend/systems.js',
+  'frontend/lab-explorers.js',
+  'frontend/quest-explorers.js',
+];
+
+await test('each legacy source evaluated alone neither throws nor touches the storage', () => {
+  const problems: string[] = [];
+  for (const source of LEGACY_SOURCES) {
+    const harness = createBootHarness({ blockStorage: true });
+    try {
+      runSource(harness.context, source);
+    } catch (error) {
+      problems.push(`${source} threw: ${(error as Error).message}`);
+      continue;
+    }
+    if (harness.storageAccesses !== 0) {
+      problems.push(`${source} read the storage ${harness.storageAccesses} time(s)`);
+    }
+  }
+  assert.deepEqual(problems, []);
+});
+
+interface UnstartedApp {
+  harness: BootHarness;
+  startApp: AppShellModule['startApp'];
+}
+
+function evaluateWithoutStartCall(options: HarnessOptions = {}): UnstartedApp {
+  const harness = createBootHarness(options);
+  vm.runInContext(bundleApp(ENTRY, { withoutStartCall: true }), harness.context, {
+    filename: ENTRY,
+  });
+  return { harness, startApp: loadAppShell(harness.context).startApp };
+}
+
+await test('main.tsx without its call evaluates quietly and leaves #main empty', () => {
+  const { harness } = evaluateWithoutStartCall({ blockStorage: true });
+  assert.equal(harness.storageAccesses, 0);
+  assert.equal(harness.listenerCount(), 0);
+  assert.equal(harness.intervals, 0);
+  assert.equal(harness.elements['main']?.innerHTML, '');
+});
+
+const STORAGE_KEYS_IN_ORDER = [
+  'taller-laboratorio-v1',
+  'taller-learning-v1',
+  'taller-campaign-v1',
+  'taller-systems-v1',
+];
+const INITIALIZERS = [
+  ['TallerLab', 'init'],
+  ['TallerCampaign', 'init'],
+  ['TallerSystems', 'init'],
+] as const;
+
+function recordInitializations(harness: BootHarness): string[] {
+  const initializations: string[] = [];
+  for (const [adapter, method] of INITIALIZERS) {
+    const target = harness.context[adapter] as Record<string, (...args: unknown[]) => unknown>;
+    const original = target[method];
+    if (!original) continue;
+    target[method] = (...args) => {
+      const mainWasEmpty = harness.elements['main']?.innerHTML === '';
+      initializations.push(`${adapter}.${method}${mainWasEmpty ? '' : ' after drawing'}`);
+      return original(...args);
+    };
+  }
+  return initializations;
+}
+
+await test('startApp initializes in order and draws the first view', () => {
+  const { harness, startApp } = evaluateWithoutStartCall();
+  const initializations = recordInitializations(harness);
+  startApp();
+  assert.deepEqual(initializations, [
+    'TallerLab.init',
+    'TallerCampaign.init',
+    'TallerSystems.init',
+  ]);
+  const firstReads = [
+    ...new Set(
+      harness.storageCalls
+        .filter((call) => call.startsWith('getItem '))
+        .map((call) => call.slice('getItem '.length))
+        .filter((key) => STORAGE_KEYS_IN_ORDER.includes(key)),
+    ),
+  ];
+  assert.deepEqual(firstReads, STORAGE_KEYS_IN_ORDER);
+  assert.notEqual(harness.elements['main']?.innerHTML, '');
+});
+
+await test('a second startApp call fails', () => {
+  const { harness, startApp } = evaluateWithoutStartCall();
+  startApp();
+  const listenersBefore = harness.listenerCount();
+  const intervalsBefore = harness.intervals;
+  assert.throws(
+    () => startApp(),
+    (error: unknown) =>
+      (error as Error).message === 'startApp ya se llamó: el arranque corre una sola vez.',
+  );
+  assert.equal(harness.listenerCount(), listenersBefore);
+  assert.equal(harness.intervals, intervalsBefore);
+});
 
 process.stdout.write(`\n${passed} passed, ${failed} failed\n`);
 if (failed) process.exit(1);
