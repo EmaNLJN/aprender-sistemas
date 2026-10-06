@@ -1,4 +1,4 @@
-export { createSystemsEngine } from './model/create-systems-engine';
+export { createSystemsEngine, systemsEngine } from './model/create-systems-engine';
 export type {
   AnswerResult,
   NoteResult,
