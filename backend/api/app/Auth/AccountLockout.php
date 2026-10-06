@@ -3,6 +3,7 @@
 namespace App\Auth;
 
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use LogicException;
 
 final class AccountLockout
@@ -61,6 +62,10 @@ final class AccountLockout
         };
 
         Cache::put($this->cacheKey($emailKey), ['fails' => $fails, 'lockedUntil' => $lockedUntil], $keptFor);
+
+        if ($lockedUntil > 0) {
+            Log::warning('login.lockout', ['email' => 'email:'.EmailFingerprint::of($emailKey), 'fails' => $fails]);
+        }
 
         return new LockoutState($fails, $lockedUntil);
     }
