@@ -18,7 +18,7 @@ export type ExerciseLookup = ReadonlyMap<string, Exercise>;
 
 type RawObject = Record<string, unknown>;
 
-const LANGUAGES: ExerciseLanguage[] = ['rust', 'go'];
+export const LANGUAGES: ExerciseLanguage[] = ['rust', 'go'];
 
 export function blankLabState(): LabStateV1 {
   return { version: 1, records: {}, selected: { rust: null, go: null } };

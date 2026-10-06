@@ -19,6 +19,7 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
     systemsPlay: window.SYSTEMS_PLAY_LABS || [],
     systemsPc: window.SYSTEMS_PC_LABS || [],
   });
+  // Nunca escribe al cargar: la primera escritura es una acción del alumno.
   labStore.open(exerciseCatalog);
   const $ = (selector) => host?.querySelector(selector);
   const $$ = (selector) => (host ? [...host.querySelectorAll(selector)] : []);
@@ -1071,12 +1072,13 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
     applyImport: (plan) => labStore.applyImport(plan),
     backups: () => labStore.backups(),
     reset() {
+      const removed = labStore.reset();
       selectedId = null;
       mode = 'map';
       phase = 'learn';
       activeController?.abort();
       activeRun = null;
-      return labStore.reset();
+      return removed;
     },
   };
 })();
