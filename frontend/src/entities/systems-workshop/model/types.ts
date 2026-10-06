@@ -1,3 +1,4 @@
+import type { StoreApi } from 'zustand/vanilla';
 import type { BackupEntry } from '../../../shared/lib/versioned-storage';
 
 export type SystemsLanguage = 'rust' | 'go';
@@ -99,6 +100,7 @@ export interface NoteResult {
 }
 
 export interface SystemsEngine {
+  readonly changes: StoreApi<{ revision: number }>;
   init(config: SystemsConfig): SystemsInitResult;
   get(id: string, language: string): WorkshopView;
   observe(id: string, language: string, goals: unknown): ObserveResult;

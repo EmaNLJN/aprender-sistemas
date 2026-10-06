@@ -1,20 +1,40 @@
 import { describe, expect, it } from 'vitest';
-import { createCampaignEngine } from '../entities/campaign';
-import { createSystemsEngine } from '../entities/systems-workshop';
+import { campaignEngine, createCampaignEngine, type CampaignEngine } from '../entities/campaign';
+import {
+  createSystemsEngine,
+  systemsEngine,
+  type SystemsEngine,
+} from '../entities/systems-workshop';
 
-describe('engines used before init (legacy-map §2.3 and §12)', () => {
-  it('KNOWN DEFECT: the campaign engine throws', () => {
-    const engine = createCampaignEngine();
-    const message = 'Inicializá la campaña antes de usarla.';
+const CAMPAIGN_MESSAGE = 'Inicializá la campaña antes de usarla.';
+const SYSTEMS_MESSAGE = 'Inicializá Sistemas antes de usarlo.';
 
-    expect(() => engine.getWorlds('rust')).toThrow(message);
-    expect(() => engine.refreshFromLab(null)).toThrow(message);
-    expect(() => engine.canAttempt('rust-02', 'rust')).toThrow(message);
+const campaignEngines: [string, () => CampaignEngine][] = [
+  ['factory', createCampaignEngine],
+  ['singleton', () => campaignEngine],
+];
+
+const systemsEngines: [string, () => SystemsEngine][] = [
+  ['factory', createSystemsEngine],
+  ['singleton', () => systemsEngine],
+];
+
+describe.each(campaignEngines)('campaign engine used before init (%s)', (_, engineFor) => {
+  it('throws instead of answering', () => {
+    const engine = engineFor();
+
+    expect(() => engine.getWorlds('rust')).toThrow(CAMPAIGN_MESSAGE);
+    expect(() => engine.refreshFromLab(null)).toThrow(CAMPAIGN_MESSAGE);
+    expect(() => engine.canAttempt('rust-02', 'rust')).toThrow(CAMPAIGN_MESSAGE);
   });
+});
 
-  it('KNOWN DEFECT: the Systems engine answers with an empty list and no error', () => {
-    const engine = createSystemsEngine();
+describe.each(systemsEngines)('Systems engine used before init (%s)', (_, engineFor) => {
+  it('throws instead of answering', () => {
+    const engine = engineFor();
 
-    expect(engine.list('rust')).toEqual([]);
+    expect(() => engine.list('rust')).toThrow(SYSTEMS_MESSAGE);
+    expect(() => engine.refreshFromLab(null)).toThrow(SYSTEMS_MESSAGE);
+    expect(() => engine.exportState()).toThrow(SYSTEMS_MESSAGE);
   });
 });

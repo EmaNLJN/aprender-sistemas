@@ -1,4 +1,4 @@
-export { createCampaignEngine } from './model/create-campaign-engine';
+export { campaignEngine, createCampaignEngine } from './model/create-campaign-engine';
 export type {
   AttemptPermission,
   CampaignCheckpoint,
