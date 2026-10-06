@@ -68,6 +68,10 @@ export function createCampaignEngine(): CampaignEngine {
     return store;
   }
 
+  function notify(): void {
+    changes.setState((current) => ({ revision: current.revision + 1 }));
+  }
+
   // The store may merge with what another tab saved and returns the final state:
   // no reference to the previous state is kept after persisting.
   function persist(): void {
@@ -120,6 +124,7 @@ export function createCampaignEngine(): CampaignEngine {
     const total = totalXP(ready, state);
     const xpGained = total - lastReportedXP;
     lastReportedXP = total;
+    if (changed) notify();
     return { changed, xpGained, totalXP: total, storageAvailable };
   }
 
@@ -136,6 +141,7 @@ export function createCampaignEngine(): CampaignEngine {
     const passed = status.checkpointPassed || correct;
     state.checkpoints[worldId] = { passed, lastAnswer: index };
     persist();
+    notify();
     return {
       accepted: true,
       correct,
@@ -159,6 +165,7 @@ export function createCampaignEngine(): CampaignEngine {
     state = cloneJson(plan.state);
     const changed = requireStore().hasUnsavedChanges(state);
     if (changed) persist();
+    notify();
     return { changed, storageAvailable };
   }
 
@@ -167,6 +174,7 @@ export function createCampaignEngine(): CampaignEngine {
     state = blankCampaignState();
     lastReportedXP = 0;
     const removed = requireStore().remove();
+    notify();
     return { storageAvailable, removed };
   }
 
