@@ -2,12 +2,15 @@
 
 use App\Content\BodyCache;
 use App\Content\Portion;
+use App\Models\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Tests\Support\ContentDatabase;
 use Tests\Support\ContentFixture;
+
+beforeEach(fn () => $this->actingAs(User::factory()->create()));
 
 afterEach(fn () => ContentFixture::cleanup());
 
