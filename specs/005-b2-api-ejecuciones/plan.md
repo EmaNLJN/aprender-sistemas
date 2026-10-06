@@ -1047,7 +1047,7 @@ final class ProgressMerge
 }
 ```
 
-   `sameFacts` compara cada campo menos `revision` (los instantes con `equalTo`, que acepta `null` en los dos lados por un ayudante). El orden del cierre es **el que importa**: referencia de `RunCloser`:
+   `sameFacts` compara cada campo menos `revision` (los instantes con `equalTo`, que acepta `null` en los dos lados por un ayudante). `driverCode` lee `$error->errorInfo[1]`. El orden del cierre es **el que importa**: referencia de `RunCloser`:
 
 ```php
 public function close(string $runId, Verdict $verdict): bool
@@ -1233,7 +1233,7 @@ private function claimUnder(ProgressHead $head, int $userId, string $runId): Cla
 }
 ```
 
-   `RunRequeuer::requeue` sigue el mismo orden (cabecera, ejecución), calcula `$delay = max(MIN_DELAY, min(MAX_DELAY, $delaySeconds))`, y en una sola transacción hace el `UPDATE` de estado y `ExecuteRun::dispatch($run->id)->delay($delay)`: la conexión `runs` tiene `after_commit` en `false` y nadie llama a `afterCommit()`, así que el trabajo entra a `jobs` dentro de esa transacción. `ExecuteRun::failed` llama a `RunLog::jobFailed`, después a `RunCloser::close($this->runId, Verdict::infraError(RunReason::JobFailed))` y, si ese cierre lanza `RunWriteFailed`, termina sin relanzar: el barrido la cierra por vencida.
+   `RunRequeuer::requeue` sigue el mismo orden (cabecera, ejecución), calcula `$delay = max(MIN_DELAY, min(MAX_DELAY, $delaySeconds))`, y en una sola transacción hace el `UPDATE` de estado y `ExecuteRun::dispatch($run->id)->delay($delay)`: la conexión `runs` tiene `after_commit` en `false` y nadie llama a `afterCommit()`, así que el trabajo entra a `jobs` dentro de esa transacción. `ExecuteRun::dispatch(...)` va como sentencia aislada, también en la admisión: el `PendingDispatch` encola al destruirse, así que no se guarda en una variable. `ExecuteRun::failed` llama a `RunLog::jobFailed`, después a `RunCloser::close($this->runId, Verdict::infraError(RunReason::JobFailed))` y, si ese cierre lanza `RunWriteFailed`, termina sin relanzar: el barrido la cierra por vencida.
 3. `npm run api:test`, `npm run api:analyse` y `npm run api:format:check`: verdes.
 
 **Compuerta:** las pruebas de 1 en verde (la de concurrencia incluida), 0 errores de PHPStan en el nivel 9, y que el trabajo se despache sin que exista `RunExecution`: nada de X nombra a J.
