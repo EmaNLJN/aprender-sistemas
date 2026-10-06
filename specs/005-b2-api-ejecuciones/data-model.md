@@ -459,4 +459,19 @@ Nada externo dentro de una transacción: ni el ejecutor ni una espera. Las cance
 | `attempts`, `attempt_tests` | mientras exista la cuenta | la supresión de la cuenta (C3b) |
 | `progress_heads`, `exercise_progress` | mientras exista la cuenta | la supresión de la cuenta (C3b) |
 
-Para C3b (`UserData` y `PurgeUserData`), el orden de borrado por lotes de D06 con las tablas de B2: primero se cancelan las ejecuciones activas (`ActiveRuns::cancelAllOf`), después `runs`, `exercise_progress` y `attempts` (cuyas hijas, `attempt_tests` y `attempt_payloads`, caen en cascada), y la transacción final toma la cabecera antes del `DELETE FROM users`, cuya cascada se lleva el resto. La prueba de B2 (un `DELETE FROM users` con las seis tablas pobladas no falla y no deja filas) asegura que ninguna FK lo impide.
+### Lo que B2 declara para `UserData` de C3b
+
+C3b lleva un registro único de lo que el taller guarda de una cuenta (`UserData`, su FR-042): cada dueño declara sus tablas y una prueba de cobertura contra `information_schema` exige que toda tabla con `user_id`, o hija de una, figure en la exportación y en la supresión o en una lista de excepciones con su motivo. B2 no crea `UserData`; esta es su declaración, con las seis tablas de usuario:
+
+| Tabla | Es de la cuenta por | Exportación | Supresión |
+| --- | --- | --- | --- |
+| `runs` | `user_id` | No, con motivo: es operativa (dura 14 días) y su código y su salida viven en el payload del intento mientras se conserve. Si C3b prefiere exportarla, son las filas con `code`, `custom_test`, `stdout` y `stderr` | Lote 1, después de cancelar las ejecuciones activas |
+| `exercise_progress` | `user_id` | Sí, por la foto de progreso v2 de D1 | Lote 2 |
+| `attempts` | `user_id` | Sí, con sus veredictos y el payload que se conserve | Lote 3 |
+| `attempt_tests` | hija de `attempts` | Sí, con su intento | Cascada del lote 3 |
+| `attempt_payloads` | hija de `attempts` | Sí, el que se conserve | Cascada del lote 3 |
+| `progress_heads` | `user_id` | No, con motivo: es el candado de la cuenta; la época y la revisión salen en la foto de progreso de D1 | La transacción final la toma `FOR UPDATE` antes del `DELETE FROM users`, y la cascada la borra |
+
+`harness_templates` es contenido, sin `user_id`: no entra. Si `UserData` ya existe cuando se implementa B2, el coordinador suma estas seis filas en el archivo de C3b; si no, C3b las toma de acá cuando llegue, y su prueba de cobertura es la que lo exige.
+
+El orden de borrado por lotes de D06 con las tablas de B2: primero se cancelan las ejecuciones activas (`ActiveRuns::cancelAllOf`, que la purga de C3b llama y que B2 también engancha al evento de C3b), después `runs`, `exercise_progress` y `attempts` (cuyas hijas, `attempt_tests` y `attempt_payloads`, caen en cascada), y la transacción final toma la cabecera antes del `DELETE FROM users`, cuya cascada se lleva el resto. La prueba de B2 (un `DELETE FROM users` con las seis tablas pobladas no falla y no deja filas) asegura que ninguna FK lo impide.

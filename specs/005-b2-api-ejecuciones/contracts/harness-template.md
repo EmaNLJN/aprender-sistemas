@@ -161,4 +161,4 @@ Los casos de `infra_error` y `canceled` no salen de esta tabla: salen de lo que 
 
 ## Lo que se verificó al planificar
 
-Con `rustc` 1.97.1 en el host y la plantilla de Rust de arriba, las 137 soluciones de referencia de Rust dan `passed` y los 137 códigos iniciales dan 125 `failed`, 11 `compile_error` y un aborto (el inicial de `rust-71` termina con SIGABRT, `runtime_error` con motivo `signal`): 0 códigos iniciales aprueban. La clasificación fue la de la tabla, escrita en JavaScript. La plantilla de Go no se compiló (el host no tiene Go): la cubre el check de punta a punta con el ejecutor real (T018) y, después, la auditoría de B3.
+Con `rustc` 1.97.1 en el host y la plantilla de Rust de arriba, las 137 soluciones de referencia de Rust dan `passed` y los 137 códigos iniciales dan 125 `failed`, 11 `compile_error` y un aborto (el inicial de `rust-71` termina con SIGABRT, `runtime_error` con motivo `signal`): 0 códigos iniciales aprueban. La clasificación fue la de la tabla, escrita en JavaScript. La plantilla de Go no se compiló (el host no tiene Go): la cubre el check de punta a punta con el ejecutor real (T020) y, después, la auditoría de B3.

@@ -90,4 +90,4 @@ El orden que se comprueba: 90 < 100 < 120 < 140, y 140 ≥ el vencimiento de `ru
 
 ## El doble de las pruebas
 
-Las pruebas de Pest no levantan el ejecutor: lo reemplazan con `Http::fake` a nivel del cliente HTTP, con las respuestas de este contrato (un 200 por cada fila de la clasificación, el 503, el 500, el cuerpo inválido, la conexión rechazada con errno 7, el reset y el plazo vencido). Un doble no prueba el sandbox: eso lo hacen el check de punta a punta con el ejecutor real (T018) y la integración de B1 con runc y runsc.
+Las pruebas de Pest no levantan el ejecutor: lo reemplazan con `Http::fake` a nivel del cliente HTTP, con las respuestas de este contrato (un 200 por cada fila de la clasificación, el 503, el 500, el cuerpo inválido, la conexión rechazada con errno 7, el reset y el plazo vencido). Un doble no prueba el sandbox: eso lo hacen el check de punta a punta con el ejecutor real (T020) y la integración de B1 con runc y runsc.

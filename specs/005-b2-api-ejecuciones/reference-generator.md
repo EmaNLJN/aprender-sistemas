@@ -4,7 +4,7 @@
 
 Es el código de las tareas T004, T005 y T006, que **se ejecutó al planificar** sobre una copia de trabajo del repositorio fuera del árbol (`git archive` de esta rama, con el `node_modules` de la raíz enlazado), con Node 24.21.0. Con estos cambios aplicados pasan `content-tools-check`, `content-exercises-check`, `content-records-check`, `curriculum-meta-check`, `content-check`, `curriculum-ids-check` y el check nuevo `content-harness-check`, además de Prettier, ESLint y `tsc` (`tsconfig.node.json` y `tsconfig.qa.json`), y el generador deja `curriculum.json` igual, las 17 porciones iguales, el oráculo `dump-globals` en `cd1f9e62…`, 18 porciones en el meta y exactamente 49 `gradingHash` distintos (ver [research.md](./research.md), «Cómo se verificó al planificar»). Las plantillas (`content/harness/rust.tpl` y `go.tpl`) están en [contracts/harness-template.md](./contracts/harness-template.md).
 
-Quien implemente aplica estos cambios con TDD (cada tarea abre con sus pruebas, que fallan antes) y vuelve a correr los mismos checks: el código ya está formateado con Prettier. Las referencias a `README.md` y a `qa/AGENTS.md` los integra el coordinador (T019).
+Quien implemente aplica estos cambios con TDD (cada tarea abre con sus pruebas, que fallan antes) y vuelve a correr los mismos checks: el código ya está formateado con Prettier. Las referencias a `README.md` y a `qa/AGENTS.md` los integra el coordinador (T021).
 
 ## 1. Cambios a archivos que ya existen
 
@@ -374,7 +374,7 @@ Quien implemente aplica estos cambios con TDD (cada tarea abre con sus pruebas, 
    'content-guide-check.ts',
 ```
 
-`qa/run-checks.ts` suma `content-harness-check.ts` a la lista de `npm test`. El texto que dice «hasta B2» en `README.md` (la línea de «Una prueba quitada de un ejercicio no puede volver…») lo cambia T019.
+`qa/run-checks.ts` suma `content-harness-check.ts` a la lista de `npm test`. El texto que dice «hasta B2» en `README.md` (la línea de «Una prueba quitada de un ejercicio no puede volver…») lo cambia T021.
 
 ## 2. `tools/content/harness.ts` (nuevo)
 
