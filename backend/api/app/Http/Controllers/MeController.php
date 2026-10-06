@@ -10,11 +10,12 @@ use App\Auth\PasswordViolation;
 use App\Auth\PlainPassword;
 use App\Auth\PrivacyNotice;
 use App\Auth\ProofOutcome;
-use App\Auth\ProofResult;
 use App\Auth\PublishedUser;
 use App\Database\WriteTransaction;
 use App\Http\ApiCode;
 use App\Http\ApiError;
+use App\Http\CurrentAccount;
+use App\Http\ProofFailure;
 use App\Http\Requests\ChangePasswordRequest;
 use App\Http\Requests\LogoutOthersRequest;
 use App\Http\Requests\PrivacyRequest;
@@ -23,7 +24,6 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use LogicException;
 
 final class MeController
 {
@@ -37,7 +37,7 @@ final class MeController
 
     public function update(UpdateNameRequest $request): JsonResponse
     {
-        $user = $this->account($request);
+        $user = CurrentAccount::of($request);
         $user->name = $request->newName();
         $user->save();
 
@@ -46,10 +46,10 @@ final class MeController
 
     public function changePassword(ChangePasswordRequest $request): JsonResponse
     {
-        $user = $this->account($request);
+        $user = CurrentAccount::of($request);
         $proof = $this->proof->verify($user, $request->currentPassword(), $request);
         if ($proof->outcome !== ProofOutcome::Verified) {
-            return $this->failureOf($proof);
+            return ProofFailure::response($proof);
         }
 
         $newPassword = $request->newPassword();
@@ -65,18 +65,18 @@ final class MeController
 
     public function acceptPrivacy(PrivacyRequest $request): Response
     {
-        $this->privacyNotice->accept($this->account($request));
+        $this->privacyNotice->accept(CurrentAccount::of($request));
 
         return response()->noContent();
     }
 
     public function logoutOthers(LogoutOthersRequest $request): JsonResponse|Response
     {
-        $user = $this->account($request);
+        $user = CurrentAccount::of($request);
         $password = $request->password();
         $proof = $this->proof->verify($user, $password, $request);
         if ($proof->outcome !== ProofOutcome::Verified) {
-            return $this->failureOf($proof);
+            return ProofFailure::response($proof);
         }
 
         $this->sessions->endOthers($user, $request, $password);
@@ -102,26 +102,8 @@ final class MeController
         return ApiError::of(ApiCode::ValidationFailed, ['errors' => ['password' => $messages]]);
     }
 
-    private function failureOf(ProofResult $proof): JsonResponse
-    {
-        return match ($proof->outcome) {
-            ProofOutcome::Throttled, ProofOutcome::Locked => ApiError::of(
-                ApiCode::TooManyRequests,
-                headers: ['Retry-After' => (string) $proof->retryAfter],
-            ),
-            default => ApiError::of(ApiCode::AuthFailed),
-        };
-    }
-
     private function published(User $user): JsonResponse
     {
         return response()->json(['data' => PublishedUser::from($user)->toPublished()]);
-    }
-
-    private function account(Request $request): User
-    {
-        $user = $request->user();
-
-        return $user instanceof User ? $user : throw new LogicException('The account group guarantees a signed in account.');
     }
 }
