@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-05
 
-**Status**: Borrador, con cuatro preguntas abiertas para el clarify y una partición propuesta
+**Status**: Clarificada (sesión del 2026-10-06), partida en F2a (unidades 1 a 4: con plan, tareas y análisis) y F2b (unidades 5 a 8: todavía sin plan)
 
 **Input**: Ítem **F2** de la hoja de ruta [`specs/front-react/roadmap.md`](../front-react/roadmap.md), «Seams sin cambio visible»: dejar los almacenes, los motores, el catálogo, el arranque, los puentes y el respaldo como módulos importables, para portar cada vista sin tocar a las demás. Pedido del coordinador del 2026-10-05 (ver «Lo que pidió el usuario»). Depende de F1 ([spec](../003-f1-red-de-seguridad/spec.md)). Usa como base el [ADR 0008](../../docs/adr/0008-pruebas-del-front.md), que el usuario dio por aprobado (en esta rama el archivo todavía dice «propuesta»), el [ADR 0003](../../docs/adr/0003-integridad-del-progreso.md) (aceptado), el [mapa del front legacy](../front-react/legacy-map.md) y la [constitución](../../.specify/memory/constitution.md) 1.4.0. Las specs de A2, D1 y C4 y el plan de A2 son borradores en otras ramas: lo que se toma de ahí es un supuesto y se cita con su rama y su ruta, sin enlace.
 
@@ -14,7 +14,7 @@
 
 **Cómo sabremos que salió bien.**
 
-1. Con el build de cada unidad servido, la red de F1 pasa completa y sin editarse, salvo las dos specs de Vitest de riesgo, que cada unidad invierte en su commit TDD.
+1. Con el build de cada unidad servido, la red de F1 pasa completa y sin editarse, salvo las dos specs de Vitest de riesgo, que la unidad 1 invierte en su commit TDD.
 2. `build/curriculum.json`, el volcado de `dump-globals` y los catálogos que publica el dist (`dump-dist-globals`, o el check del bundle de A2 después de su corte) tienen los mismos bytes que antes de la unidad.
 3. Las tres fixtures congeladas de progreso arrancan sin escribir, sin respaldar y sin avisar, y sus exportaciones se importan sin omisiones.
 4. Cada clave de progreso se abre en un solo lugar, y ningún módulo legacy ni singleton toca el almacenamiento ni lee los catálogos de `window` al evaluarse: lo hace `startApp()`.
@@ -28,6 +28,7 @@
 - Los cambios mínimos en `frontend/app.js`, `lab.js`, `campaign.js`, `systems.js`, `lab-explorers.js`, `quest-explorers.js`, `frontend/src/app/main.tsx` y los adaptadores de `frontend/src/app/legacy/` para que usen esos módulos.
 - La adaptación de los checks de `qa/` que cargan esos archivos (cómo los cargan, no qué esperan) y `qa/load-order-check.ts` leyendo el arranque explícito.
 - Las specs de Vitest (proyecto `node`) de los módulos nuevos, y la documentación que cambia con ellos (`docs/architecture.md` y `qa/AGENTS.md`).
+- La dependencia de Zustand, sólo `zustand/vanilla`, con su versión exacta y su aviso de licencia, para la suscripción de cada almacén y de cada motor (Q3). Es la única dependencia nueva de F2.
 
 **Queda fuera:**
 
@@ -36,16 +37,16 @@
 - La compuerta de contenido, el acceso tipado y la carga asíncrona (A2).
 - Lo que decide cada port: los textos de los hitos y `renderProject` (F4); el saneo del SVG y la sesión de simulaciones (F5); los selectores del laboratorio, `diagnose`, `liveHint` y los tres exploradores que `lab.js` lleva dentro (F7); la etiqueta de un `solvedAt` importado sin evidencia (F7); los conteos fijos del menú (E1 o el port).
 - El HTML de las vistas, que sigue en los adaptadores hasta F7; el cambio de transporte a `/api/runs` (A4); un debounce de la escritura por tecla.
-- jsdom, Testing Library y fishery (llegan con F3) y, salvo que Q3 lo elija, Zustand.
+- jsdom, Testing Library y fishery (llegan con F3).
 - Un E2E de comportamiento por vista: cada port trae los suyos (Q1 de la spec de F1).
 
-**Sin hacer a propósito (YAGNI):** un contenedor de dependencias; barrels; un store genérico más allá de la suscripción de Q3; memoización; retirar un global antes de que su último lector se porte; pasar las 12 misiones de proyecto a `content/`; reescribir la complejidad de las funciones que se mueven (se mueven, no se reescriben); capturas de pantalla.
+**Sin hacer a propósito (YAGNI):** un contenedor de dependencias; barrels; un store genérico más allá de la revisión que lleva Zustand (Q3); memoización; retirar un global antes de que su último lector se porte; pasar las 12 misiones de proyecto a `content/`; reescribir la complejidad de las funciones que se mueven (se mueven, no se reescriben); capturas de pantalla.
 
 **Actores:** quien porta una vista (el usuario y los agentes que implementan); quien revisa los PR; el agente principal, que integra `main.tsx`, `package.json`, las configuraciones y la documentación; A2 y D1c, que consumen estas unidades; y el alumno, que no debe notar nada.
 
 ## Lo que pidió el usuario
 
-Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumptions) o una pregunta abierta. Las fuentes «Coordinador» son el encargo de esta spec.
+Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumptions) o una decisión del clarify (Clarifications). Las fuentes «Coordinador» son el encargo de esta spec.
 
 | Pedido | Fuente |
 | --- | --- |
@@ -61,6 +62,28 @@ Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumption
 | No sumar ningún sitio de estilo en línea: C4 cuenta seis (cuatro `style=` y dos `cssText`) | Coordinador, 2026-10-05 (spec de C4, borrador, rama `spec/c4-exposicion`) |
 | Un cambio de comportamiento va en su propio commit, con TDD; el código y las pruebas en inglés, la documentación en español | `AGENTS.md`; constitución, principios II y VI |
 | Spec en español y sin código, con como mucho cinco preguntas para el clarify y la partición propuesta sin aplicarla | Coordinador, 2026-10-05 |
+| Partir F2 en F2a (unidades 1 a 4) y F2b (unidades 5 a 8) | Usuario, clarify del 2026-10-06 |
+| Los exploradores se deciden con un mapa explícito por id en el front, con su fixture congelada | Usuario, clarify del 2026-10-06 (Q1) |
+| Un guard automático de apertura, una prueba por el singleton y el motor de Sistemas que lanza sin `init` | Usuario, clarify del 2026-10-06 (Q2) |
+| Zustand (`zustand/vanilla`) para la suscripción de cada almacén y de cada motor, con la dependencia instalada en la unidad 1; librerías conocidas antes que código propio | Usuario, clarify del 2026-10-06 (Q3); `AGENTS.md` |
+| Importar y «Borrar todo» devuelven una promesa, y «Borrar todo» acepta una confirmación | Usuario, clarify del 2026-10-06 (Q4) |
+
+## Clarifications
+
+### Session 2026-10-06
+
+Las respuestas son del usuario. Las opciones que no se eligieron están en «Alternativas consideradas».
+
+- Q: **Partición**, ¿se parte F2? → A: Sí. F2a son las unidades 1 a 4 (FR-001 a FR-042) y F2b, las unidades 5 a 8 (FR-001 a FR-018 y FR-043 a FR-060). Esta spec sigue cubriendo F2 entero; F2b tendrá su plan cuando se planifique. Decidió el usuario. (FR-019)
+- Q: **Q1**, ¿cómo se decide qué explorador tiene cada ejercicio? → A: Con un mapa explícito por id en el front, en `entities/exercise`, con las 61 entradas de canal, genérico y puntero y los 12 ids de robot y paquete, y una fixture congelada con la clasificación de hoy, sacada de las expresiones regulares en el commit base (opción A). `content/` no cambia. Un mapa por tema no alcanzaría: seis de los 61 ejercicios (`go-61` a `go-65` y `go-112`) entran por `visual: concurrency` y no por el texto de su tema. Decidió el usuario. (FR-055)
+- Q: **Q2**, ¿cómo se invierten las dos pruebas de riesgo de F1? → A: Con un guard automático de apertura, una prueba por el singleton y el motor de Sistemas que lanza sin `init` (opción A). El guard impide abrir las cuatro claves fuera de los singletons. La prueba 1 (dos instancias crudas del almacén del recorrido, donde el favorito quitado reaparece) se reemplaza por la de dos consumidores del mismo singleton; la regla de dos pestañas del ADR 0003 (decisión 9) sigue siendo cierta para quien use la biblioteca y queda documentada en `versioned-storage-check`. El motor de Sistemas, sin `init`, lanza como el de campaña. Las dos inversiones son de la unidad 1. Decidió el usuario. (FR-022, FR-029, FR-030, FR-040)
+- Q: **Q3**, ¿con qué se construye la suscripción de los almacenes? → A: Con Zustand, no con una suscripción propia: el usuario prefiere librerías conocidas antes que código propio, y `AGENTS.md` ya pide Zustand para el estado de cliente compartido. Cada almacén y cada motor expone un store de `zustand/vanilla` (`createStore`) con `subscribe` y `getState`, más la revisión que necesita D1. Se respetan las reglas de `AGENTS.md`: selectores chicos, ningún componente suscripto al store completo y ningún valor derivado guardado; esa guía no necesita una excepción. La dependencia se instala con el primer uso, en la unidad 1, con la descarga ya autorizada. Medida antes de instalar (`npm view zustand version dist.unpackedSize`, 2026-10-06): versión 5.0.15 y 95 173 bytes desempaquetados, que son todas las formas del paquete; al script del dist sólo entra lo que se importa, `zustand/vanilla`: 354 caracteres minificados, y unos 480 con los cuatro stores creados. Decidió el usuario. (FR-010, FR-023)
+- Q: **Q4**, ¿la interfaz de `features/progress-backup` nace asíncrona? → A: Sí. Importar (aplicar) y «Borrar todo» devuelven una promesa desde F2, y «Borrar todo» acepta una confirmación que localmente se ignora; exportar y listar respaldos siguen locales y síncronos (opción A). Así D1c cambia la implementación (el POST de importación, el reinicio con contraseña) sin tocar a quien llama. Decidió el usuario. (FR-052)
+
+**Lecturas y correcciones.** Lo que sigue no son decisiones nuevas: es la lectura que esta spec hace de una respuesta y un error de la spec que el plan encontró. Las dos están aplicadas en el texto de abajo.
+
+- **Q3, qué lleva el store.** El store de Zustand lleva la revisión y no el progreso. El estado de cada almacén sigue en su almacén versionado, que lo muta en el lugar entre dos fusiones (ADR 0003, decisión 9; FR-025), y Zustand pide actualizar el estado de forma inmutable: un selector sobre el progreso no avisaría de lo que cambia en el lugar, y copiarlo al store dejaría dos fuentes de verdad (FR-026). La revisión es lo único que un componente selecciona. Es la lectura de «con `subscribe` y `getState`, más la revisión»; si el usuario esperaba el progreso dentro del store, es una decisión nueva, porque cambia FR-025 y FR-026. (FR-023)
+- **FR-040, la unidad 3, el escenario 4 de la historia 3 y SC-006.** Decían que la prueba de riesgo 2 de F1 (el motor de Sistemas sin `init`) se invierte en la unidad 3, mientras FR-022 exige en la unidad 1 que un motor usado antes de abrirse falle igual en los cuatro. Con Q2, opción A, el motor de Sistemas cambia en `entities/systems-workshop`, que es de la unidad 1: las dos pruebas de riesgo se invierten en la unidad 1, y la unidad 3 sólo prueba que `startApp()` inicializa los dos motores antes de la primera vista. (FR-022, FR-040, SC-006)
 
 ## Las ocho unidades
 
@@ -80,10 +103,11 @@ Los ids son los de la hoja de ruta y no cambian. Esta sección fija, de cada uni
   - `entities/guide`: el almacén del recorrido, su lectura (`parseProgress`), el estado por omisión, la fusión entre pestañas y la lista de los 10 ids de hitos. Ya exporta `mergeRouteProgress` y los tipos.
   - `entities/exercise`: el almacén del laboratorio, con su lectura, su fusión en el lugar y el plan y la aplicación de su importación.
   - `entities/campaign` y `entities/systems-workshop`: una instancia de cada motor, además de la fábrica que ya exportan (las specs siguen usando la fábrica).
-  - Los cuatro: abrir (una vez, con el contenido que necesitan para leer lo guardado), estado actual, suscripción con baja, y lo que ya tienen (`exportState`, `planImport`, `applyImport`, `backups` y `reset`).
+  - Los cuatro: abrir (una vez, con el contenido que necesitan para leer lo guardado), estado actual, un store de Zustand (`zustand/vanilla`) con la suscripción y la revisión de sus cambios (Q3), y lo que ya tienen (`exportState`, `planImport`, `applyImport`, `backups` y `reset`). El motor de Sistemas, sin `init`, lanza como el de campaña (Q2).
   - `register-campaign-engine.ts` y `register-systems-engine.ts` publican esas mismas instancias; `app.js` y `lab.js` usan sus singletons.
-- **Su prueba:** specs de Vitest (node) junto a cada módulo, primero en rojo. Con `qa/fixtures/progress-master-2a278ad-storage.json` en un almacenamiento en memoria, abrir cada uno da `loaded`, sin escribir, sin respaldar y sin aviso. La suscripción avisa tras escribir, importar y borrar, y no al cargar. Usar sin abrir falla, y abrir dos veces uno de los dos almacenes también; el `init` de un motor sigue pudiendo repetirse, como hoy. El laboratorio conserva la identidad de sus registros. Importar el módulo con un `localStorage` que lanza ante cualquier acceso no lo toca. Acá se invierte la prueba de riesgo 1 de F1 (Q2).
-- **Reversión:** devuelve los cierres de `app.js` y `lab.js` y las instancias creadas en `window`. Se revierten antes las unidades 3, 5 y 6 si ya están integradas.
+  - La dependencia de Zustand, con su versión exacta y su aviso de licencia (FR-010).
+- **Su prueba:** specs de Vitest (node) junto a cada módulo, primero en rojo. Con `qa/fixtures/progress-master-2a278ad-storage.json` en un almacenamiento en memoria, abrir cada uno da `loaded`, sin escribir, sin respaldar y sin aviso. La revisión de su store sube en uno tras escribir, importar y borrar, con el oyente ya viendo lo escrito, y no al cargar. Usar sin abrir falla, y abrir dos veces uno de los dos almacenes también; el `init` de un motor sigue pudiendo repetirse, como hoy. El laboratorio conserva la identidad de sus registros. Importar el módulo con un `localStorage` que lanza ante cualquier acceso no lo toca. Acá se invierten las dos pruebas de riesgo de F1 (Q2): la 1 se reemplaza por la de dos consumidores del mismo singleton, y la 2 pasa a afirmar que los dos motores lanzan sin `init`.
+- **Reversión:** devuelve los cierres de `app.js` y `lab.js` y las instancias creadas en `window`, y quita la dependencia de Zustand con su aviso de licencia. Se revierten antes las unidades 3, 5 y 6 si ya están integradas.
 - **Orden:** después de la 2; antes de la 3, la 5 y la 6.
 
 ### Unidad 2 · El catálogo y el arnés de pruebas
@@ -98,7 +122,7 @@ Los ids son los de la hoja de ruta y no cambian. Esta sección fija, de cada uni
 
 - **Qué deja:** lo que hoy ocurre al evaluar `app.js` (abrir el almacén del recorrido, inicializar campaña y Sistemas, juntar los avisos de carga, fijar el idioma que manda la URL, registrar los oyentes y el `setInterval` del temporizador, dibujar la primera vista y mostrar los avisos) y lo que `lab.js` hace al evaluarse (armar el catálogo y abrir su almacén) pasa a funciones que se llaman en orden.
 - **Capa, slice y exports:** `frontend/app.js` exporta `startApp()`, sin argumentos, y `frontend/src/app/main.tsx` la llama una vez, después de todos los imports. `window.TallerLab` suma un `init`, como ya tienen `TallerCampaign` y `TallerSystems`. No se crea una carpeta nueva: `startApp` no vive en `app/boot/`, así que no pisa los nombres de A2 (A2, F2-I1).
-- **Su prueba:** en `boot-check` y en `app-shell-check`, en rojo primero. Evaluar cada fuente legacy sola, en un contexto sin catálogos ni adaptadores, y el bundle de `main.tsx` sin su llamada final, con un almacenamiento que lanza ante cualquier acceso, no falla ni lo toca. `startApp()` inicializa en orden y dibuja la primera vista. Una segunda llamada falla. `load-order-check` lee los imports con y sin nombre y la llamada, y conserva las 16 restricciones y las dos reglas de los extremos. Acá se invierte la prueba de riesgo 2 de F1 (Q2).
+- **Su prueba:** en `boot-check` y en `app-shell-check`, en rojo primero. Evaluar cada fuente legacy sola, en un contexto sin catálogos ni adaptadores, y el bundle de `main.tsx` sin su llamada final, con un almacenamiento que lanza ante cualquier acceso, no falla ni lo toca. `startApp()` inicializa en orden y dibuja la primera vista. Una segunda llamada falla. `load-order-check` lee los imports con y sin nombre y la llamada, y conserva las 16 restricciones y las dos reglas de los extremos. Tras `startApp()`, los dos motores están inicializados antes de la primera vista; la prueba de riesgo 2 de F1 ya se invirtió en la unidad 1 (FR-022 y Q2).
 - **Reversión:** vuelve la función que se arranca sola. Con A2 integrada, se revierte antes el corte de A2.
 - **Orden:** después de la 1, la 2 y la 4.
 
@@ -183,9 +207,9 @@ Un `window.Taller*` sigue existiendo mientras una vista legacy lo lee, publica s
 | El CSS, en orden | Sí | La unidad 8 mueve nueve reglas entre hojas. El conjunto de reglas y de declaraciones es el mismo; el estilo computado lo fija F1. |
 | El tamaño | Se informa | Antes y después de cada unidad, bajo el tope vigente de `qa/build-check`: 2 500 000 caracteres antes del corte de A2, que lo baja a un valor medido (tras A1 el HTML pesa 2 202 074 bytes). F2 no suma dependencias: el plan fija el aumento aceptable tras medir la base. |
 
-## Partición de F2: propuesta
+## Partición de F2
 
-Esta spec cubre F2 entero. La hoja de ruta ya dice que A2 espera las unidades 1 a 4, y el coordinador pidió entregarlas primero y por separado. Esta sección propone convertir ese orden de entrega en un corte de la spec, como hicieron C3 y D1, y no lo aplica: cada requisito está agrupado por la parte a la que iría, así que cortarla es mover rangos y no reescribirlos. El conteo es de esta spec: una obligación comprobable por requisito.
+Esta spec cubre F2 entero. La hoja de ruta ya dice que A2 espera las unidades 1 a 4, y el coordinador pidió entregarlas primero y por separado. El usuario aceptó el 2026-10-06 convertir ese orden de entrega en un corte, como hicieron C3 y D1 (Clarifications): F2a son las unidades 1 a 4 y F2b, las unidades 5 a 8. La spec no se parte en dos archivos todavía: cada requisito está agrupado por la parte a la que va, así que cortarla es mover rangos y no reescribirlos. F2a ya tiene su plan, y F2b tendrá el suyo, con sus 36 requisitos. El conteo es de esta spec: una obligación comprobable por requisito.
 
 | Medida | F2 entero | F2a: unidades 1 a 4 | F2b: unidades 5 a 8 |
 | --- | --- | --- | --- |
@@ -199,7 +223,7 @@ Esta spec cubre F2 entero. La hoja de ruta ya dice que A2 espera las unidades 1 
 
 Referencia: C3a tuvo 52 requisitos, la mayor spec del épico hasta ahora; D1 midió 88 y propuso partirse; C2 tuvo 48 y B2, 49.
 
-**Recomendación: partir en dos, con este corte.**
+**Por qué se partió en dos, con este corte.**
 
 1. **Caminos críticos distintos.** A2 espera las unidades 1 a 4; detrás de A2 espera A3 y, detrás de A3, A4, C4 y D1c. F3, F4 y F9 sólo necesitan el almacén del recorrido (unidad 1). Sólo F5 a F8 necesitan las unidades 5 a 8. En una sola spec, A2 esperaría el plan, las tareas y el análisis de 60 requisitos, y F3 y F4 esperarían el CSS y los exploradores que no usan.
 2. **Un foco de revisión por parte.** F2a: que el progreso no se pierda ni se duplique y que el orden de evaluación se conserve. F2b: que ningún enlace, ningún aviso y ninguna regla de estilo cambien.
@@ -208,55 +232,7 @@ Referencia: C3a tuvo 52 requisitos, la mayor spec del épico hasta ahora; D1 mid
 
 **Lo que cuesta partir:** dos ciclos de Spec Kit (plan, tareas y análisis por parte); las 18 reglas de toda unidad se repiten en cada parte; `app.js`, `lab.js`, `main.tsx` y `qa/lib/legacy-sources.ts` los tocan las dos partes y A2, y se integran de a uno; F2b compite con F3 y F4 por `app.js`, y F5 no puede empezar antes que F2b; D1c espera a las dos partes (unidades 1 y 6), lo que no está en el camino crítico porque va en la ola 4. En la hoja de ruta, que integra el coordinador: sumar F2a y F2b, como ya hizo con F7a y F7b; A2, F3, F4 y F9 dependen de F2a, y F5 a F8, de F2a y F2b.
 
-**Alternativas:** *no partir*, con 60 requisitos en un plan: A2 espera «las unidades 1 a 4» como ya dice la hoja de ruta, pero F3 esperaría F2 entero, salvo que su dependencia también se escriba por unidad. *Partir en tres* (unidades 1 y 2, 3 y 4, 5 a 8): suma un ciclo y la unidad 3 no se puede probar sin la 1, la 2 y la 4.
-
-## Preguntas abiertas para el clarify
-
-Son cuatro, cada una con sus opciones y una recomendada. Se cierran en `/speckit-clarify` y la respuesta pasa a una sección Clarifications. Cada pregunta deja un marcador de aclaración en el requisito que afecta (FR-055, FR-030, FR-023 y FR-052), y esos cuatro son los únicos; el límite de tres de la plantilla se amplió a cinco por pedido del coordinador, y queda uno de margen. La partición no es una pregunta: está en su sección, con su recomendación, y el usuario la acepta o la cambia al responder. Hasta entonces, los requisitos que señalan una pregunta usan la opción recomendada como borrador.
-
-### Q1. Cómo se decide qué explorador tiene cada ejercicio
-
-**Contexto:** `lab-explorers.js:kind` elige entre canal, genérico y puntero con tres expresiones regulares sobre el tema, el título y `visual` de cada ejercicio, y `quest-explorers.js:descriptor` elige robot o paquete con una expresión regular sobre el id (`rust|go-101` a `106`). F2 saca esa decisión de la vista para que el modelo sea una función pura (unidad 7), y la hoja de ruta dejó abierto si el dato vive en `content/` o en el front. Medido sobre el `build/curriculum.json` de la copia principal (generado el 2026-10-04, que se vuelve a medir al implementar), las expresiones de `kind` dan explorador a 61 de los 274 ejercicios: 21 de canal, 20 genéricos y 20 de puntero. Son 12 temas completos de 5 ejercicios más `go-112`, el único de su tema (`go-resilience-quests`, de 3) que entra. Seis de los 61 (`go-61` a `go-65` y `go-112`) entran por `visual: concurrency` y no por el texto del tema: un mapa por tema no reproduce la clasificación, hace falta una entrada por id. La regla de `descriptor` alcanza a 12 ejercicios. (FR-055)
-
-| Opción | Respuesta | Implicancias |
-| --- | --- | --- |
-| **A (recomendada)** | Un mapa explícito por id en el front, en `entities/exercise`, con las 61 entradas de `kind` y los 12 ids de robot y paquete, y una fixture congelada con la clasificación de hoy (sacada de las expresiones regulares en el commit base). `content/` no cambia. | Cumple el criterio de bytes de F2: `curriculum.json` y `dump-globals` no cambian. Un ejercicio nuevo (E1) no tiene explorador hasta que alguien lo agregue al mapa, en lugar de heredar uno por una palabra de su título. Costo: el mapa duplica un dato que pertenece al contenido; pasarlo a `content/` queda para un ítem aparte. |
-| B | Un campo de explorador en `content/` y en `curriculum.json`, en un commit aparte y con el oráculo. | El dato queda en la fuente de verdad y lo publica la API. Costo: cambia los bytes publicados, `dump-globals`, las huellas de las porciones y la versión del contenido de C2, y los validadores de C2 y C6; se coordina con el backend. Rompe el criterio de bytes de F2, así que sería un ítem propio, como ya lo deja la hoja de ruta. |
-| C | Conservar las expresiones regulares como una función pura (`kind` y `descriptor` tal cual). | El cambio más chico, y la clasificación de hoy queda idéntica por construcción. Costo: sigue acoplada al texto en español de los títulos y a `visual` (un cambio de título cambia el explorador sin que falle nada), y F7 la hereda. |
-| Otra | Decir cuál. | |
-
-### Q2. Cómo se invierten las dos pruebas de riesgo de F1
-
-**Contexto:** F1 las deja en verde caracterizando el defecto (su Q5, opción A) y F2 las invierte en el commit TDD de su unidad, pero «invertir» no es obvio. La prueba 1 abre dos instancias crudas de `openVersionedStore` sobre el mismo almacenamiento y ve reaparecer el favorito: es la regla de dos pestañas del ADR 0003 (decisión 9), que sigue siendo cierta para quien llame a esa biblioteca. Lo que F2 puede cambiar es que el código de producción no pueda abrir la segunda instancia en el mismo documento. La prueba 2 dice que el motor de campaña sin `init` lanza y el de Sistemas devuelve `[]` sin error: hay que elegir a cuál de los dos se alinea el otro. (FR-030, FR-029 y FR-040)
-
-| Opción | Respuesta | Implicancias |
-| --- | --- | --- |
-| **A (recomendada)** | Un guard automático (una regla de lint por ruta o un check de `qa/`) impide abrir las cuatro claves fuera de los singletons, y la prueba 1 se reemplaza por la del singleton: dos consumidores comparten el estado y lo quitado no reaparece. La regla de dos pestañas queda documentada en `versioned-storage-check`. El motor de Sistemas, sin `init`, lanza como el de campaña, y una prueba del arranque fija que `init` va antes de la primera vista. | Costo: una regla de lint (la configuración la integra el agente principal) y un cambio de comportamiento en `entities/systems-workshop` que sólo se nota si algo lo usa antes de `init`, cosa que hoy nada hace. Es coherente con «no ocultes fallos con defaults que simulen éxito» de `docs/architecture.md`. |
-| B | La biblioteca rechaza la segunda apertura de la misma clave en un documento (`openVersionedStore` lanza) y la prueba 1 pasa a afirmar ese rechazo. El motor, como en A. | Es un guard de ejecución, que un import no esquiva. Costo: toca `shared/lib/versioned-storage.ts` (ADR 0003), y `versioned-storage-check` y `lab-state-check` tendrían que simular «otra pestaña» sin abrir una segunda instancia: hace falta una forma de distinguir pestañas en los checks. |
-| C | Sin guard: el singleton y su prueba de comportamiento, nada más. El motor de Sistemas conserva `[]` y se suma sólo la prueba del orden del arranque. | Lo mínimo. Costo: nada impide que un port abra una segunda instancia, así que el riesgo alto del mapa queda abierto, y el defecto silencioso de Sistemas sigue. |
-| Otra | Decir cuál. | |
-
-### Q3. Con qué se construye la suscripción de los almacenes
-
-**Contexto:** la hoja de ruta pide almacenes «con suscripción» y D1c (borrador) se monta sobre la de los cuatro. `AGENTS.md` pide Zustand para el estado de cliente complejo o compartido entre funcionalidades, y sólo con el primer caso real: éste podría ser ese caso. Cada almacén ya persiste, fusiona entre pestañas y respalda (ADR 0003). Lo que falta es leer el estado y enterarse de los cambios, que es lo que `useSyncExternalStore` de React 19 consume sin dependencias. (FR-023)
-
-| Opción | Respuesta | Implicancias |
-| --- | --- | --- |
-| **A (recomendada)** | Una suscripción propia y mínima (estado actual, y alta y baja de oyentes) sobre el almacén versionado que ya persiste y fusiona. Si hace falta, Zustand entra en F10 con su spike. | Sin dependencia nueva ni peso. El estado conserva su semántica: la fusión en el lugar del laboratorio y el reemplazo del recorrido. Costo: unas decenas de líneas y sus specs, y una desviación de la regla de `AGENTS.md` que esta spec declara; si F10 adopta Zustand, los singletons se envuelven sin cambiar su API. |
-| B | Zustand ahora: un store por clave, con acciones y selectores, que delega la persistencia en el almacén versionado. | Cumple la regla al pie de la letra y da selectores. Costo: una dependencia nueva (permiso del usuario y peso medido antes contra el tope de `build-check`), un segundo contenedor sobre el mismo texto guardado (dos fuentes de verdad que sincronizar), y el estado inmutable de Zustand choca con la mutación en el lugar del laboratorio (ADR 0003, decisión 9). La hoja de ruta ubica el permiso de Zustand en F10, no en F2. |
-| C | Sin suscripción en F2: los singletons sólo exponen el estado, y la suma el primer port que la necesite (F3). | Lo mínimo (YAGNI estricto). Costo: F3 y D1c dependen de una API que F2 no fijó, y la hoja de ruta dice «con suscripción». |
-| Otra | Decir cuál. | |
-
-### Q4. Si la interfaz de `features/progress-backup` nace asíncrona
-
-**Contexto:** hoy importar y «Borrar todo» son síncronos y locales. Con D1 (borrador), importar pasa a ser `POST /api/progress/import`, con una pregunta de confirmación, y «Borrar todo» pasa a pedir la contraseña. El coordinador pidió que F2 deje la interfaz de modo que D1c la reemplace sin reescribir las vistas. Hacerla asíncrona anticipa un consumidor cuya spec todavía es un borrador, y la constitución pide no sumar nada por anticipado. (FR-052)
-
-| Opción | Respuesta | Implicancias |
-| --- | --- | --- |
-| **A (recomendada)** | Importar (aplicar) y «Borrar todo» devuelven una promesa desde F2, y «Borrar todo» acepta una confirmación que localmente se ignora. Exportar y listar respaldos son síncronos y locales. | D1c cambia la implementación (el POST de importación, el reinicio con contraseña) sin tocar a quien llama. Costo: dos funciones asíncronas hoy sin necesidad, un estado «pendiente» en el shell que nunca se ve en local, y una interfaz que anticipa un consumidor en borrador (si D1 cambia, se ajusta). |
-| B | Todo síncrono ahora; D1c cambia la interfaz cuando llegue. | Nada anticipado. Costo: F8 (Método) ya habrá portado la página contra la interfaz síncrona, así que D1c reescribe esos manejadores: justo lo que el coordinador pidió evitar. |
-| C | La feature expone sólo las piezas puras (el plan, el formato y los avisos) y cada llamador aplica y borra. | La interfaz más chica. Costo: la orquestación (las dos fases, el orden de las áreas, «sólo `false` cuenta») vuelve a repartirse entre los llamadores, y la regla que fijó el ADR 0003 queda sin dueño. |
-| Otra | Decir cuál. | |
+**Alternativas que no se eligieron:** *no partir*, con 60 requisitos en un plan: A2 espera «las unidades 1 a 4» como ya dice la hoja de ruta, pero F3 esperaría F2 entero, salvo que su dependencia también se escriba por unidad. *Partir en tres* (unidades 1 y 2, 3 y 4, 5 a 8): suma un ciclo y la unidad 3 no se puede probar sin la 1, la 2 y la 4.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -270,7 +246,7 @@ Un alumno con progreso guardado abre el taller después de cada unidad y encuent
 
 **Acceptance Scenarios**:
 
-1. **Dado** el build de una unidad servido, **cuando** corre la red de F1, **entonces** pasa completa y sin editarse (salvo las dos specs de riesgo, en la unidad que las invierte).
+1. **Dado** el build de una unidad servido, **cuando** corre la red de F1, **entonces** pasa completa y sin editarse (salvo las dos specs de riesgo, en la unidad 1, que las invierte).
 2. **Dadas** la línea base y el build de la unidad, **cuando** se corren `dump-globals` y el oráculo del dist (`dump-dist-globals`, o el check del bundle de A2 si ya se integró) y se compara `build/curriculum.json`, **entonces** los bytes son los mismos.
 3. **Dadas** las tres fixtures de progreso, **cuando** arranca el taller, **entonces** no escribe, no respalda ni avisa; y las dos exportaciones se importan sin omisiones.
 4. **Dado** el `dist/index.html` de la unidad, **cuando** se inspecciona, **entonces** tiene la forma vigente (antes del corte de A2, un solo documento con un script y un estilo en línea) y queda bajo el tope vigente de `qa/build-check`, con su tamaño informado.
@@ -290,10 +266,11 @@ Quien porta una vista necesita el estado del recorrido, el del laboratorio, el d
 **Acceptance Scenarios**:
 
 1. **Dado** el almacén del recorrido, **cuando** dos consumidores lo usan, uno quita un favorito y el otro guarda otro cambio, **entonces** el favorito no reaparece.
-2. **Dado** un documento donde una clave ya tiene su singleton, **cuando** un módulo de producción intenta abrirla por su cuenta, **entonces** el guard falla (con la forma que fije Q2).
+2. **Dado** un documento donde una clave ya tiene su singleton, **cuando** un módulo de producción intenta abrirla por su cuenta, **entonces** el guard falla (Clarifications, Q2).
 3. **Dado** el almacén del laboratorio, **cuando** un manejador guarda una referencia a un registro y se escribe, **entonces** el registro sigue siendo el mismo objeto.
 4. **Dado** el catálogo inicializado con los ocho grupos, **cuando** se lee, **entonces** `exercises` tiene los 274 ids únicos en el orden de hoy, `byId` encuentra cada uno y `buildProgram` da el programa de hoy para los 274.
-5. **Dado** cualquiera de ellos sin abrir, **cuando** se usa, **entonces** falla con un mensaje claro en español.
+5. **Dado** cualquiera de ellos sin abrir, **cuando** se usa, **entonces** falla con un mensaje claro en español; también el motor de Sistemas, que hoy devuelve una lista vacía.
+6. **Dado** un almacén o un motor con un oyente suscripto a su store de Zustand, **cuando** se escribe, se importa o se borra, **entonces** la revisión sube en uno y el oyente ya ve lo escrito; al abrirlo, no avisa.
 
 *Cubre: FR-020 a FR-034; SC-004, SC-006 y SC-008.*
 
@@ -312,10 +289,10 @@ Quien mantiene el front, y A2 en particular, puede evaluar los módulos sin que 
 1. **Dada** cada fuente legacy y el bundle de `main.tsx` sin su llamada final, **cuando** se evalúan con un almacenamiento que lanza ante cualquier acceso (las fuentes, solas y en un contexto sin catálogos ni adaptadores), **entonces** no fallan y no lo tocan.
 2. **Dada** la llamada a `startApp()`, **cuando** corre, **entonces** inicializa el laboratorio y el catálogo, abre el recorrido, inicializa campaña y Sistemas, arma los avisos y dibuja la primera vista, en ese orden.
 3. **Dada** `startApp()` ya llamada, **cuando** se llama otra vez, **entonces** falla y no duplica oyentes, intervalo ni almacenes.
-4. **Dado** un motor sin `init`, **cuando** se usa, **entonces** el de campaña y el de Sistemas fallan igual.
+4. **Dada** la llamada a `startApp()`, **cuando** dibuja la primera vista, **entonces** campaña y Sistemas ya están inicializados; que sin `init` fallan igual lo prueba la unidad 1, donde se invierte la prueba de riesgo 2 de F1 (FR-022).
 5. **Dado** `load-order-check`, **cuando** lee el `main.tsx` nuevo, **entonces** conserva las 16 restricciones y las dos reglas de los extremos.
 
-*Cubre: FR-035 a FR-040; SC-005 y SC-006.*
+*Cubre: FR-035 a FR-040; SC-005.*
 
 ---
 
@@ -403,7 +380,7 @@ Quien porta campaña o Sistemas puede borrar su hoja de estilo sin cambiar el me
 - **«Borrar todo» con una clave que no se pudo borrar:** el aviso de hoy («No se pudo borrar todo el progreso guardado. Recargá la página y volvé a intentarlo.»).
 - **Importar un archivo con una sección inválida o con un almacén que no escribe:** nada se aplica, o el aviso nombra las áreas sin guardar, como hoy.
 - **Un `solvedAt` importado sin evidencia:** se conserva el comportamiento actual; lo decide F7.
-- **Un ejercicio nuevo (E1) sin entrada en el mapa de exploradores:** no tiene explorador, con la opción A de Q1.
+- **Un ejercicio nuevo (E1) sin entrada en el mapa de exploradores:** no tiene explorador, porque el dato es un mapa explícito por id (Clarifications, Q1).
 - **Un hash o una query desconocidos, como `#invitacion=<token>`:** el contrato de URL no cambia; es de F11.
 
 ## Requirements *(mandatory)*
@@ -413,7 +390,7 @@ Quien porta campaña o Sistemas puede borrar su hoja de estilo sin cambiar el me
 **Reglas de toda unidad** *(las repite cada parte si se parte F2)*
 
 - **FR-001**: Cada unidad DEBE entregarse como una unidad de trabajo revertible: su spec primero, en rojo y por la razón esperada; después la implementación mínima; y en el mismo cambio su documentación (`docs/architecture.md` y, si cambia el arnés, `qa/AGENTS.md`) y su verificación. El valor esperado de cada spec sale del contrato, de las fixtures congeladas o de un ejemplo resuelto aparte, nunca del módulo que se prueba. Revertirla, junto con las unidades que dependen de ella y en orden inverso, devuelve el estado anterior con la red de F1 en verde. El plan decide cuántos PR hay: uno por unidad, salvo que dos dependan tanto una de otra que ninguna pase sola. *(Hoja de ruta, F2; constitución, principio II)*
-- **FR-002**: La red de F1 DEBE pasar antes de empezar cada unidad y después de terminarla, contra el build de esa unidad y sin editar ninguno de sus escenarios. Si una unidad obliga a editar uno, es un cambio de comportamiento: va en su propio commit, con TDD y con la aprobación del usuario. Las únicas excepciones previstas son las dos specs de Vitest de riesgo de F1 (FR-030 y FR-040). *(Hoja de ruta, criterio de F2)*
+- **FR-002**: La red de F1 DEBE pasar antes de empezar cada unidad y después de terminarla, contra el build de esa unidad y sin editar ninguno de sus escenarios. Si una unidad obliga a editar uno, es un cambio de comportamiento: va en su propio commit, con TDD y con la aprobación del usuario. Las únicas excepciones previstas son las dos specs de Vitest de riesgo de F1, que la unidad 1 invierte (FR-030 y FR-040). *(Hoja de ruta, criterio de F2)*
 - **FR-003**: Después de cada unidad, `build/curriculum.json`, el volcado de `npm run curriculum && node tools/content/dump-globals.ts .` y los catálogos que publica el dist DEBEN tener los mismos bytes que antes. El tercero lo vuelca `node tools/content/dump-dist-globals.ts dist/index.html` antes del corte de A2; después del corte lo comprueba el check del bundle construido de A2, que lo reemplaza. *(Hoja de ruta, criterio de F2; `qa/AGENTS.md`; A2, F2-I5)*
 - **FR-004**: La línea base de FR-003 DEBE tomarse sobre el commit base de la rama de implementación, antes del primer cambio de código, y registrarse con el hash de cada salida, para que no salga del código que se prueba. Los cinco adaptadores de catálogos (`register-catalogs.ts` y los cuatro `register-systems-*.ts`) y `pages/atlas/model/atlas-catalog.ts` DEBEN conservar su ruta, porque el oráculo los carga por ruta fija también sobre la raíz de un commit anterior.
 - **FR-005**: El progreso guardado DEBE quedar intacto (ADR 0003): las cuatro claves, el campo `version: 1`, las ranuras de respaldo (`<clave>:respaldo` y `:respaldo-2` a `:respaldo-5`) y la forma de la exportación (el recorrido en la raíz, más `lab`, `campaign`, `systems` y `exportedAt`) no cambian. Con las tres fixtures congeladas de `qa/fixtures/progress-*.json`, el arranque no escribe, no respalda ni avisa, antes y después de cada unidad.
@@ -421,7 +398,7 @@ Quien porta campaña o Sistemas puede borrar su hoja de estilo sin cambiar el me
 - **FR-007**: El alumno NO DEBE ver nada distinto: los textos, las clases, los atributos y los ids del DOM de las vistas y de `frontend/src/index.html` no cambian, y los avisos y los toasts conservan su texto, su orden y su condición.
 - **FR-008**: F2 NO DEBE sumar ningún estilo en línea (`style=`, `setAttribute('style', …)` ni asignación a `style.cssText`) ni mover o quitar los seis sitios que C4 cuenta. *(C4, borrador)*
 - **FR-009**: `dist/index.html` DEBE conservar la forma vigente y quedar bajo el tope vigente de `qa/build-check`. Antes del corte de A2, la forma es un solo documento con un `<script type="module">` y un `<style>` en línea, sin `import()` dinámicos ni `import.meta`, y el tope es de menos de 2 500 000 caracteres. Después del corte, es la de A2: el script se parsea como módulo, el contenido viaja aparte y el tope es el valor medido que A2 fija. F2 no cambia ninguna de las dos formas, y el tamaño se informa antes y después de cada unidad.
-- **FR-010**: F2 NO DEBE agregar ninguna dependencia a `package.json`, salvo la que elija el usuario en Q3, con su permiso y con su peso medido antes.
+- **FR-010**: F2 NO DEBE agregar ninguna dependencia a `package.json` salvo Zustand, que entra en la unidad 1 por Q3: en versión exacta como el resto de `dependencies`, con el lockfile sincronizado, con su aviso de licencia en `frontend/THIRD-PARTY-NOTICES.txt` y con su peso medido contra el tope de `build-check`. *(Clarifications, Q3; `AGENTS.md`)*
 - **FR-011**: Para toda lógica pura que se mueve de un archivo legacy a un módulo, el PR de la unidad DEBE informar una comparación única entre el commit base y el de la unidad, con sus cantidades (por ejemplo, el programa de prueba de cada uno de los 274 ejercicios, la lectura de las tres fixtures, las URL de las seis formas y la clasificación de explorador de los 274). No queda como check permanente: las specs permanentes son las de cada unidad. *(Precedente: P8 de `docs/refactor-roadmap.md`)*
 - **FR-012**: Las specs nuevas DEBEN ser de Vitest, en el proyecto `node` de `npm test` (`*.spec.ts` junto al módulo, con nombres y código en inglés), sobre la configuración que deja F1. F2 NO DEBE agregar jsdom ni Testing Library, que llegan con F3. *(ADR 0008)*
 - **FR-013**: Cada check de `qa/` que F2 modifique (`load-order-check`, `boot-check`, `app-shell-check`, `lab-bridge-check`, `lab-state-check`, `quest-explorers-check`, `systems-check`, `project-kit-check` y `runtime-check`) DEBE cambiar sólo cómo carga el código, no sus valores esperados. `load-order-check` y los arneses leen la forma vigente del arranque: `main.tsx` antes del corte de A2 y `frontend/src/app/boot/legacy-views.ts` después (A2, R10 y F2-I4). El PR de cada unidad DEBE listar la correspondencia de cada escenario de esos checks (cubierto por una spec o por un E2E, o descartado con su motivo escrito), y ningún check se retira por adelantado. `campaign-check`, `campaign-content-check` y los `systems-<dominio>-check` también ejercen los motores y DEBEN pasar sin cambios, incluido el `init` repetido de un motor (FR-022). *(ADR 0008, §5)*
@@ -435,15 +412,15 @@ Quien porta campaña o Sistemas puede borrar su hoja de estilo sin cambiar el me
 - **FR-019**: Las unidades 1 a 4 DEBEN entregarse primero y en cambios separados de los de las unidades 5 a 8: ninguna de la 5 a la 8 va en el mismo PR ni demora su integración. *(Coordinador, 2026-10-05; A2)*
 - **FR-020**: Cada clave de progreso DEBE tener un único almacén por documento, importable como singleton: el recorrido en `entities/guide` y el laboratorio en `entities/exercise`; y cada tipo de motor, uno solo: campaña en `entities/campaign` y Sistemas en `entities/systems-workshop`. Las fábricas siguen exportadas para las specs. `window.TallerCampaignEngine` y `window.TallerSystemsEngine` publican esas mismas instancias.
 - **FR-021**: Importar un almacén, un motor o el catálogo NO DEBE abrir una clave, leer `localStorage` ni leer contenido. Cada uno se abre en el arranque explícito (una sola vez en producción), con el contenido que necesita para leer lo guardado, que recibe por parámetro. La instancia, vacía y sin efectos, se crea cuando la cadena legacy importa su módulo (un adaptador `register-*`, `app.js` o `lab.js`) o al llamar al arranque, y ningún módulo que A2 deja en el grafo estático la crea ni la abre. *(A2, F2-I3)*
-- **FR-022**: Usar un almacén, un motor o el catálogo antes de abrirlo DEBE fallar con un mensaje claro en español, igual en los cuatro. Abrir por segunda vez uno de los dos almacenes o el catálogo también falla. El `init` de un motor, en cambio, sigue pudiendo llamarse de nuevo, como hoy: valida la configuración antes de reemplazar la que funciona, y `campaign-check` y `systems-check` lo ejercen con esos valores esperados.
-- **FR-023**: Los cuatro DEBEN exponer su estado actual y una suscripción con baja, que avisa después de cada escritura, importación, borrado y fusión con lo que guardó otra pestaña, y no al cargar. **[NEEDS CLARIFICATION: Q3, con qué se construye la suscripción: propia, Zustand o ninguna]**
+- **FR-022**: Usar un almacén, un motor o el catálogo antes de abrirlo DEBE fallar con un mensaje claro en español, igual en los cuatro: el motor de Sistemas, que hoy devuelve una lista vacía, lanza como el de campaña (Clarifications, Q2). Abrir por segunda vez uno de los dos almacenes o el catálogo también falla. El `init` de un motor, en cambio, sigue pudiendo llamarse de nuevo, como hoy: valida la configuración antes de reemplazar la que funciona, y `campaign-check` y `systems-check` lo ejercen con esos valores esperados.
+- **FR-023**: Cada almacén y cada motor DEBE exponer su suscripción como un store de Zustand (`zustand/vanilla`, creado con `createStore`) que tenga `subscribe` y `getState` y cuyo estado lleve una revisión: un entero que sube en uno después de cada escritura, importación y borrado, y también cuando una escritura se fusiona con lo que guardó otra pestaña, y que no sube al cargar. El store NO DEBE guardar el progreso ni valores derivados de él, y un componente DEBE consumirlo con un selector chico y nunca con el store completo. *(Clarifications, Q3; `AGENTS.md`)*
 - **FR-024**: La suscripción NO DEBE cambiar la semántica del ADR 0003: la carga no escribe; se persiste sólo por acciones del alumno; se fusiona sólo si otra pestaña cambió la clave; se respalda antes de perder datos; y `writable` se conserva.
 - **FR-025**: El almacén del laboratorio DEBE conservar la identidad del estado y la de sus registros a través de cada escritura (fusión en el lugar, ADR 0003, decisión 9), porque los manejadores guardan una referencia a un registro antes de guardar y siguen escribiéndolo después.
 - **FR-026**: Un solo dueño del estado: `app.js` y `lab.js` DEBEN leer y escribir el estado del recorrido y del laboratorio por sus singletons y NO DEBEN conservar una copia propia que pueda divergir. La escritura sigue siendo en cada tecla del editor, de las notas y de la reflexión, sin debounce.
 - **FR-027**: El recorrido DEBE pasar a `entities/guide` con su lectura (`parseProgress`), su estado por omisión y su fusión entre pestañas, y los 10 ids de hitos persistidos (`rust-memory` a `go-network`) DEBEN vivir en ese slice, fijados por una spec con valores escritos a mano. Los textos de los hitos y `renderProject` quedan en `app.js` hasta F4, que hereda esa spec.
 - **FR-028**: La lectura, el estado por omisión, la fusión, el plan y la aplicación de la importación del laboratorio (hoy `blank`, `sanitize*`, `parseSaved`, `absorbStored`, `planImport` y `applyImport` de `lab.js`) DEBEN pasar a `entities/exercise` y leer los ids válidos del catálogo de la unidad 2, no de un `byId` propio.
-- **FR-029**: Un guard automático DEBE impedir que un módulo de producción distinto de los cuatro singletons abra una de las claves de progreso; su mecanismo depende de Q2.
-- **FR-030**: La prueba de riesgo 1 de F1 (dos instancias del almacén del recorrido: el favorito quitado reaparece) DEBE invertirse en el commit TDD de la unidad 1, con la forma que fije Q2. **[NEEDS CLARIFICATION: Q2, cómo se invierten las dos pruebas de riesgo y cómo se impide la segunda instancia]**
+- **FR-029**: Un guard automático DEBE impedir que un módulo de producción distinto de los cuatro singletons abra una de las claves de progreso; el plan elige el mecanismo, una regla de lint por ruta o un check de `qa/`. *(Clarifications, Q2)*
+- **FR-030**: La prueba de riesgo 1 de F1 (dos instancias del almacén del recorrido: el favorito quitado reaparece) DEBE reemplazarse, en el commit TDD de la unidad 1, por la prueba del singleton: dos consumidores comparten el estado y lo quitado no reaparece. La regla de dos pestañas de la biblioteca (ADR 0003, decisión 9) queda documentada en `versioned-storage-check`. *(Clarifications, Q2)*
 - **FR-031**: Cada almacén y cada motor DEBE tener su spec, en rojo antes de la implementación: con `qa/fixtures/progress-master-2a278ad-storage.json`, abrirlo da `loaded` sin escribir, sin respaldar y sin aviso; la suscripción avisa y no al cargar; usar sin abrir falla, y abrir dos veces uno de los dos almacenes también; el laboratorio conserva la identidad; e importar el módulo con un `localStorage` que lanza ante cualquier acceso no lo toca.
 - **FR-032**: El catálogo de los 274 ejercicios (`exercises` y `byId`) DEBE ser un módulo de `entities/exercise` que el arranque inicializa con las listas de ejercicios en el orden de hoy (`RUST_LAB`, `RUST_QUESTS`, `GO_LAB`, `GO_QUESTS` y los cuatro `SYSTEMS_*_LABS`), con una fábrica pura para las specs y los checks. NO DEBE importar `build/curriculum.json` ni otro contenido en estático, ni leer `window`: lo inicializa el adaptador del laboratorio con lo que publican los adaptadores de catálogos. *(A2, F2-I2)*
 - **FR-033**: `buildProgram` DEBE vivir en `entities/exercise`, junto a `interpretRun`, y devolver para cada uno de los 274 ejercicios el mismo programa que hoy, con y sin caso propio. `TallerLab.buildProgram` se retira de la API global y `runtime-check` lo importa del módulo.
@@ -453,7 +430,7 @@ Quien porta campaña o Sistemas puede borrar su hoja de estilo sin cambiar el me
 - **FR-037**: Una segunda llamada a `startApp` DEBE fallar con un mensaje claro y NO DEBE duplicar oyentes, el intervalo del temporizador ni los almacenes.
 - **FR-038**: `qa/load-order-check.ts` DEBE leer el `main.tsx` nuevo (los imports con y sin nombre y la llamada a `startApp`) y conservar las 16 restricciones de orden de hoy y las reglas «`app.js` último» y «`styles.css` primera hoja», sin relajar ninguna; suma que `startApp` se llama después del último import. Cada cambio de la lista y de la tabla se hace sobre la forma vigente de `main.tsx`. *(A2, F2-I4)*
 - **FR-039**: Los checks que arrancan la app (`boot-check` y `app-shell-check`) DEBEN llamar `startApp()` y conservar sus escenarios con los mismos valores esperados. `boot-check` suma que evaluar cada fuente legacy sola, en un contexto sin catálogos ni adaptadores, y el bundle de `main.tsx` sin su llamada final, con un almacenamiento que lanza ante cualquier acceso, no falla ni lo toca, y que `startApp()` inicializa en orden y dibuja la primera vista.
-- **FR-040**: La prueba de riesgo 2 de F1 (el motor de campaña sin `init` lanza y el de Sistemas devuelve `[]` sin error) DEBE invertirse en el commit TDD de la unidad 3: tras `startApp()` los dos motores están inicializados antes de la primera vista, y sin `init` fallan igual los dos. La forma exacta la fija Q2.
+- **FR-040**: La prueba de riesgo 2 de F1 (el motor de campaña sin `init` lanza y el de Sistemas devuelve `[]` sin error) DEBE invertirse en el commit TDD de la unidad 1, con FR-022: sin `init`, los dos motores lanzan. La unidad 3 DEBE probar que, tras `startApp()`, los dos motores están inicializados antes de la primera vista. *(Clarifications, Q2)*
 - **FR-041**: El registro de modelos de Sistemas DEBE vivir en `entities/systems-simulation`: junta los cuatro grupos de modelos que el slice ya exporta, lanza el error de hoy ante un nombre repetido («Modelo de Sistemas repetido: …») y se lo entrega al motor al inicializarse. `window.SYSTEMS_*` conservan su forma y el orden de claves de `models`.
 - **FR-042**: El registro DEBE tener su spec, en rojo antes de la implementación: tiene exactamente los modelos que referencian los 25 talleres, y dos grupos con un nombre repetido lanzan el error de hoy.
 
@@ -468,10 +445,10 @@ Quien porta campaña o Sistemas puede borrar su hoja de estilo sin cambiar el me
 - **FR-049**: La importación DEBE conservar sus dos fases (primero se planifican todas las secciones sin aplicar nada, y una sección inválida aborta antes; después se aplican las secciones y, por último, el recorrido), el orden de hoy de las secciones (campaña, laboratorio y Sistemas) y el de las áreas en el aviso (recorrido, laboratorio, campaña y Sistemas).
 - **FR-050**: La importación y «Borrar todo» DEBEN conservar las reglas de hoy: sólo `false` cuenta como «no se guardó»; la sincronización de los sellos derivados es independiente por área y un fallo sólo se registra; el límite de 10 MB; y los textos de los avisos, con el mismo orden y la misma condición.
 - **FR-051**: La feature DEBE recibir las cuatro áreas por parámetro, cada una con los métodos que hoy invoca `app.js`, y NO DEBE importar vistas ni leer `window`; `app.js` la arma con las áreas que lee de sus adaptadores. Lo que no es almacenamiento (la sesión de simulaciones de Sistemas y el temporizador del recorrido) se reinicia en pasos que registra quien lo posee.
-- **FR-052**: La interfaz DEBE poder reemplazarla D1c sin tocar a quien la llama: importar (aplicar) y «Borrar todo» devuelven una promesa, «Borrar todo» acepta una confirmación que hoy se ignora, y exportar y listar respaldos siguen locales y síncronos. **[NEEDS CLARIFICATION: Q4, si la interfaz nace asíncrona]**
+- **FR-052**: La interfaz DEBE poder reemplazarla D1c sin tocar a quien la llama: importar (aplicar) y «Borrar todo» devuelven una promesa, «Borrar todo» acepta una confirmación que hoy se ignora, y exportar y listar respaldos siguen locales y síncronos. *(Clarifications, Q4)*
 - **FR-053**: La feature DEBE tener sus specs, en rojo antes de la implementación, con áreas falsas, que reemplazan los escenarios de dominio de `app-shell-check` (la correspondencia se lista, FR-013); la forma de la exportación y la importación de las dos exportaciones congeladas sin omisiones; y, con un doble asíncrono de las áreas, el flujo de `app.js` termina igual sin cambiar a quien llama.
 - **FR-054**: Los modelos de los exploradores DEBEN ser funciones puras sin DOM, en `entities/exercise`: qué explorador corresponde a un ejercicio, el canal productor y consumidor, la tabla de restricciones genéricas, el puntero, el robot y el paquete (con `crc32` y la huella rotativa). `lab-explorers.js` y `quest-explorers.js` conservan el HTML, el foco y la región viva, y llaman a los modelos.
-- **FR-055**: Qué ejercicios tienen explorador, y de qué tipo, DEBE decidirlo un dato explícito y no una expresión regular sobre el texto, y DEBE dar la clasificación de hoy: 61 ejercicios con explorador de canal, genérico o puntero y los 12 de robot y paquete (`rust|go-101` a `106`). **[NEEDS CLARIFICATION: Q1, de dónde sale ese dato: un mapa en el front, un campo de `content/` o las expresiones de hoy]**
+- **FR-055**: Qué ejercicios tienen explorador, y de qué tipo, DEBE decidirlo un dato explícito y no una expresión regular sobre el texto, y DEBE dar la clasificación de hoy: 61 ejercicios con explorador de canal, genérico o puntero y los 12 de robot y paquete (`rust|go-101` a `106`). El dato es un mapa explícito por id en el front, en `entities/exercise`, con una entrada por cada ejercicio que tiene explorador y sin tocar `content/`. *(Clarifications, Q1)*
 - **FR-056**: Las 12 misiones de proyecto de `lab-explorers.js` (`missions`) DEBEN conservarse con el mismo texto, como datos de la vista: pasarlas a `content/` es de otro ítem.
 - **FR-057**: Los modelos DEBEN tener sus specs, en rojo antes de la implementación, que reemplazan los escenarios de dominio de `quest-explorers-check` (47) y fijan el canal, el genérico y el puntero con valores escritos a mano (la correspondencia se lista, FR-013); y una fixture con la clasificación de los 274 ejercicios, sacada de las expresiones regulares en el commit base, contra la que se compara la nueva.
 - **FR-058**: Las nueve reglas de CSS que cruzan hojas (la tabla de la unidad 8) DEBEN pasar a la hoja de su dueño, cada una entera y sin cambiar sus declaraciones.
@@ -480,7 +457,8 @@ Quien porta campaña o Sistemas puede borrar su hoja de estilo sin cambiar el me
 
 ### Key Entities *(include if feature involves data)*
 
-- **Almacén singleton:** el único lector y escritor de una clave de progreso en un documento. Se abre una vez en el arranque, expone su estado actual y una suscripción.
+- **Almacén singleton:** el único lector y escritor de una clave de progreso en un documento. Se abre una vez en el arranque, expone su estado actual y un store de Zustand con la revisión de sus cambios.
+- **Revisión:** el contador local y en memoria de los cambios de un almacén o de un motor, que sube en uno por operación y vuelve a 0 al recargar. No es la revisión de la cuenta que lleva el servidor en D1 ni el campo `version: 1` del formato guardado.
 - **Motor singleton:** el de campaña o el de Sistemas, una instancia por documento, con la misma regla.
 - **Catálogo:** los 274 ejercicios en el orden de hoy, con `exercises` y `byId`.
 - **Arranque explícito (`startApp`):** la función que hace, en orden, lo que hoy hace evaluar `app.js`.
@@ -502,7 +480,7 @@ Quien porta campaña o Sistemas puede borrar su hoja de estilo sin cambiar el me
 - **SC-003**: Las 3 fixtures de progreso arrancan con 0 escrituras, 0 claves `:respaldo` y 0 avisos, y las 2 exportaciones se importan con 0 omisiones.
 - **SC-004**: Cada una de las 4 claves de progreso se abre en 1 lugar: 0 aperturas en módulos de producción distintos de sus singletons.
 - **SC-005**: Al evaluar cada fuente legacy y el bundle de `main.tsx` sin su llamada final (o, después del corte de A2, la cadena de `legacy-views.ts`) hay 0 accesos al almacenamiento y 0 lecturas de catálogos: todo ocurre en `startApp()`.
-- **SC-006**: Las 2 specs de riesgo de F1 quedan invertidas, cada una en el commit TDD de su unidad, y cada una falla antes de la implementación por la razón esperada: 2 de 2.
+- **SC-006**: Las 2 specs de riesgo de F1 quedan invertidas en el commit TDD de la unidad 1, y cada una falla antes de la implementación por la razón esperada: 2 de 2.
 - **SC-007**: Las 9 reglas de CSS están en la hoja de su dueño, la protección de F1 pasa 9 de 9 sin editarse y el CSS del dist no pierde ni duplica reglas: 0 diferencias.
 - **SC-008**: La comparación única de cada unidad da 0 diferencias en lo que mueve: los 274 programas de prueba, la lectura del recorrido y del laboratorio con las 3 fixtures, las 274 clasificaciones de explorador y las 6 formas de URL.
 - **SC-009**: Para cada uno de los 9 checks que F2 adapta, el 100 % de sus escenarios figura en la tabla de correspondencia, cubierto o descartado con su motivo.
@@ -518,11 +496,11 @@ Quien porta campaña o Sistemas puede borrar su hoja de estilo sin cambiar el me
 3. **`load-order-check` pierde `app.js`.** Sólo lee los `import '…'` desnudos: pasar `app.js` a un import con nombre lo saca de la lista y falla «`app.js` último». Además, el paquete IIFE del arnés no alcanza un export con nombre (`app-shell-check`). *Mitigación:* FR-038 y FR-039.
 4. **El orden del arranque cambia sin que nadie lo vea.** Hoy el laboratorio carga al evaluar `lab.js`, antes que `app.js`; con `startApp` el orden es explícito, y una inversión rompe campaña (lanza) y Sistemas (queda vacío). *Mitigación:* FR-036, FR-040 y la prueba de orden de `boot-check`.
 5. **La cascada de CSS.** `lab.css` pisa a `styles.css` por orden de carga (el menú móvil pasa de 2 a 3 columnas): una regla movida a otra posición cambia el aspecto sin que falle una prueba funcional. *Mitigación:* FR-059, la protección de F1 y la comparación del conjunto de reglas.
-6. **La suscripción y la mutación en el lugar.** El laboratorio muta su estado en el lugar y el recorrido lo reemplaza al fusionar con otra pestaña: una suscripción que sólo compare identidades no avisaría del primero, y una que clone el estado en cada cambio rompería las referencias del segundo. *Mitigación:* FR-025; el plan fija qué entrega a un consumidor de React y la spec lo prueba con los dos.
+6. **La suscripción y la mutación en el lugar.** El laboratorio muta su estado en el lugar y el recorrido lo reemplaza al fusionar con otra pestaña: una suscripción que sólo compare identidades no avisaría del primero, y una que clone el estado en cada cambio rompería las referencias del segundo. *Mitigación:* FR-025; el store de Zustand lleva sólo la revisión (Q3), que sube en cada operación aunque el estado cambie en el lugar, y la spec lo prueba con los dos.
 7. **Los 10 ids de hitos.** El almacén del recorrido los necesita para leer lo guardado, y la hoja de ruta los asigna a F4. *Mitigación:* FR-027 los mueve y los fija ahora; se informa a F4.
 8. **Texto exacto.** Los avisos, los toasts, las URL (con su orden de parámetros) y el programa de prueba de cada ejercicio son texto que ningún E2E compara entero. *Mitigación:* FR-044, FR-050 y la comparación única (FR-011).
-9. **El tipo de explorador como campo de `content/`** (Q1, opción B) rompería el criterio de bytes de F2 y los validadores de C2 y C6. *Mitigación:* sería un ítem aparte; la opción recomendada no toca `content/`.
-10. **El tamaño de F2.** Son 60 requisitos en ocho unidades, contra 52 de C3a. *Mitigación:* la partición propuesta.
+9. **El tipo de explorador como campo de `content/`** (Q1, opción B) rompería el criterio de bytes de F2 y los validadores de C2 y C6. *Mitigación:* sería un ítem aparte; la opción elegida (Q1, opción A) no toca `content/`.
+10. **El tamaño de F2.** Son 60 requisitos en ocho unidades, contra 52 de C3a. *Mitigación:* la partición en F2a y F2b (Clarifications).
 11. **Choques de integración.** `app.js`, `lab.js`, `main.tsx` y `qa/lib/legacy-sources.ts` los tocan las unidades 1, 2, 3, 5, 6 y 7, A2 y cada port. *Mitigación:* los integra el agente principal de a uno, en el orden de «Las ocho unidades».
 12. **F1 y las specs hermanas no están entregadas.** F2 describe `master` y lo que F1 promete; A2, D1 y C4 son borradores. *Mitigación:* el plan contrasta con la base antes de implementar, y lo tomado de los borradores es un supuesto.
 13. **Nada se ejecutó al especificar.** Sin npm, Docker ni navegador: las cuentas (61 exploradores, nueve reglas de CSS, 16 restricciones de orden) salen de leer el código y de un currículo generado el 2026-10-04. *Mitigación:* el plan las vuelve a medir sobre la base.
@@ -543,7 +521,7 @@ Quien porta campaña o Sistemas puede borrar su hoja de estilo sin cambiar el me
   | F2-I6: nada por debajo de `app` importa `getContent()` | FR-015 |
 
   Si el spike de A2 falla, una de sus alternativas es importar todo en estático y llamar al arranque explícito después de la compuerta: F2 la deja viva porque ningún módulo legacy lee contenido ni abre almacenamiento al evaluarse (FR-035) y el catálogo recibe sus datos por parámetro (FR-032). `load-order-check` y `qa/lib/legacy-sources.ts` los edita primero F2 y después A2 (T005 y T007).
-- **D1** (spec en `spec/d1-progreso`, borrador). D1c espera las unidades 1 y 6. El FR-061 de D1 pide el cliente sobre los almacenes con suscripción de los cuatro (FR-023 de esta spec); los FR-072 a FR-074 de D1 mueven importar y «Borrar todo» al servidor (FR-052 de esta spec). Si D1 cambia, esta spec recorta la suscripción de los motores o la forma de la interfaz.
+- **D1** (spec en `spec/d1-progreso`, borrador). D1c espera las unidades 1 y 6. El FR-061 de D1 pide el cliente sobre los almacenes con suscripción de los cuatro (FR-023 de esta spec); los FR-072 a FR-074 de D1 mueven importar y «Borrar todo» al servidor (FR-052 de esta spec). Si D1 cambia, esta spec ajusta la forma de la interfaz de respaldo; la suscripción de los cuatro la confirmó el usuario en Q3. La «revisión» de esta spec es un contador local de cambios, sin relación con la revisión de la cuenta que D1 lleva en el servidor.
 - **C4** (spec en `spec/c4-exposicion`, borrador). F2 no suma ningún sitio de estilo en línea ni mueve los seis que C4 cuenta (FR-008).
 - **F3 a F10.** Cada port recibe lo que necesita así:
 
@@ -558,28 +536,33 @@ Quien porta campaña o Sistemas puede borrar su hoja de estilo sin cambiar el me
 
   Las specs de F3 a F9 tienen que decir lo mismo que FR-015: la página recibe su porción del contenido por props desde su adaptador de `frontend/src/app/legacy/`, como el Atlas.
 - **E1.** Los conteos fijos del menú salen del catálogo (F6 y F10) o se actualizan a mano con E1; F2 no los toca.
-- **Hoja de ruta (enmiendas que integra el coordinador).** F2 pasa de «Pendiente» a «En especificación», con el enlace a esta spec; F2a y F2b, si el usuario acepta la partición; la decisión abierta de F4 sobre el fixture de los 10 ids queda cerrada por FR-027; y, si Q3 elige Zustand, una fila nueva en «Acciones del usuario».
+- **Hoja de ruta (enmiendas que integra el coordinador).** F2 pasa de «Pendiente» a «En especificación», con el enlace a esta spec; F2a y F2b, porque el usuario aceptó la partición; la decisión abierta de F4 sobre el fixture de los 10 ids queda cerrada por FR-027; y Zustand: el usuario dio el permiso el 2026-10-06 para la unidad 1 de F2a, así que la hoja de ruta lo saca de la lista de F10 («Fuera: Zustand y nuqs» y el permiso a elegir entre router, nuqs y Zustand) y lo anota entre las acciones cumplidas.
 
 ## Assumptions
 
 - F1 está entregada antes de implementar F2. Esta spec describe `master` y lo que F1 promete: la red E2E, las dos specs de riesgo en verde, la configuración de Vitest en `node` y la protección de estilo computado. Las rutas de las dos specs de riesgo las fija el plan de F1.
 - El ADR 0008 se aprueba antes de implementar; esta spec lo usa como base y lo dice. El ADR 0003 está aceptado.
 - Los contratos de A2 salen de su plan (borrador, rama `spec/a2-compuerta`); la suscripción de los cuatro y la interfaz de respaldo salen de la spec de D1 (borrador, rama `spec/d1-progreso`); los seis sitios de estilo, de la spec de C4 (borrador, rama `spec/c4-exposicion`). Si alguno cambia, esta spec se ajusta.
-- La suscripción de los motores (FR-023) no figura en la hoja de ruta, que sólo la nombra para los dos almacenes: la suma esta spec porque D1c la necesita y el costo es chico.
+- La suscripción de los motores (FR-023) no figura en la hoja de ruta, que sólo la nombra para los dos almacenes: la suma esta spec porque D1c la necesita, y el usuario la confirmó al pedir un store de Zustand por almacén y por motor (Q3).
 - `startApp` vive en `frontend/app.js` hasta que F10 retire el archivo, y el modelo de exploradores en `entities/exercise` porque `pages/lab` nace con F7 y la regla es no crear capas por anticipado. Son nombres y ubicaciones provisionales que el plan confirma.
 - Las cuentas de Q1 (61 y 12) salen de leer `build/curriculum.json` de la copia principal con `node`, en modo de sólo lectura. El resto de las cuentas (16 restricciones de orden, 9 reglas de CSS, 21, 37, 47 y 51 escenarios de los checks) salen de leer el código y el mapa; nada se ejecutó.
 - Esta spec se escribió sin `npm`, sin Docker, sin navegador y sin descargas. Los tamaños de `dist/index.html` son los de A1 en la hoja de ruta del backend; no se reconstruyó.
-- Con las opciones recomendadas de Q1 a Q4 como borrador: mapa por id en el front, guard automático y Sistemas que lanza, suscripción propia mínima e interfaz de respaldo asíncrona.
+- Q1 a Q4 y la partición están decididos (Clarifications): mapa por id en el front, guard automático y Sistemas que lanza, Zustand para la suscripción e interfaz de respaldo asíncrona. Lo que esta spec lee de Q3 (que el store lleva la revisión y no el progreso) es una lectura que el usuario puede corregir.
+- Zustand: versión 5.0.15 (la última del registro el 2026-10-06), MIT, sin dependencias de ejecución; sus peers (`react`, `@types/react`, `immer` y `use-sync-external-store`) son opcionales y el repositorio ya trae React 19. Medido sin instalarla.
 - Los mensajes de error de los módulos, que lee quien opera el taller, van en español rioplatense, como los de los motores de hoy. El código y las pruebas, en inglés.
 - La referencia de 52 requisitos es la de C3a, la mayor spec del épico según la tabla de D1.
 - Dependencias de la hoja de ruta: F1. A2 depende de las unidades 1 a 4; F3 a F10 y D1c dependen de F2 según la tabla de «Relación con otros ítems».
 
 ## Alternativas consideradas
 
-Sólo las que cambian lo que se construye. Las de Q1 a Q4 y la partición llevan las suyas arriba.
+Sólo las que cambian lo que se construye. Las de la partición están en su sección. Las de Q1 a Q4 son las opciones que el usuario no eligió en el clarify del 2026-10-06; la que eligió figura en la tercera columna.
 
 | Tema | Alternativas | Decisión y motivo |
 | --- | --- | --- |
+| Cómo se decide qué explorador tiene cada ejercicio (Q1) | Un campo de explorador en `content/` y en `curriculum.json`, en un commit aparte y con el oráculo (B); conservar las expresiones regulares como una función pura, `kind` y `descriptor` tal cual (C) | Un mapa explícito por id en el front, con su fixture congelada (A). B deja el dato en la fuente de verdad, pero cambia los bytes publicados, `dump-globals`, las huellas de las porciones, la versión del contenido de C2 y los validadores de C2 y C6, y rompe el criterio de bytes de F2: sería un ítem propio. C es el cambio más chico y deja idéntica la clasificación de hoy, pero sigue acoplada al texto en español de los títulos y a `visual`: un cambio de título cambiaría el explorador sin que falle nada, y F7 la hereda. Costo de A: el mapa duplica un dato que pertenece al contenido; pasarlo a `content/` queda para un ítem aparte |
+| Cómo se invierten las dos pruebas de riesgo de F1 (Q2) | La biblioteca rechaza la segunda apertura de la misma clave, con `openVersionedStore` lanzando, y la prueba 1 pasa a afirmar ese rechazo (B); sin guard, con sólo el singleton y su prueba, y el motor de Sistemas conservando `[]` (C) | Un guard automático, la prueba del singleton y el motor de Sistemas que lanza (A). B es un guard de ejecución que un import no esquiva, pero toca `shared/lib/versioned-storage.ts` (ADR 0003) y obliga a `versioned-storage-check` y a `lab-state-check` a simular «otra pestaña» sin una segunda instancia. C deja abierto el riesgo alto del mapa (nada impide que un port abra una segunda instancia) y el defecto silencioso de Sistemas. Costo de A: un guard y un cambio de comportamiento en `entities/systems-workshop` que sólo se nota si algo usa el motor antes de `init`, cosa que hoy nada hace; es coherente con «no ocultes fallos con defaults que simulen éxito» de `docs/architecture.md` |
+| Con qué se construye la suscripción (Q3) | Una suscripción propia y mínima sobre el almacén versionado, con alta y baja de oyentes, y Zustand en F10 si hacía falta (la recomendada); sin suscripción en F2, que la sume el primer port (C) | Zustand, `zustand/vanilla`, un store por almacén y por motor con la revisión (elegida por el usuario). La suscripción propia no sumaba dependencia, pero eran unas decenas de líneas con sus specs y una desviación de la regla de `AGENTS.md`. Sin suscripción, F3 y D1c dependerían de una API que F2 no fijó, y la hoja de ruta dice «con suscripción». Los costos de Zustand eran una dependencia nueva (con permiso y peso medido), un segundo contenedor sobre el mismo texto guardado y un estado inmutable que choca con la mutación en el lugar del laboratorio (ADR 0003, decisión 9): se resuelven con que el store lleve sólo la revisión y el progreso siga en su almacén |
+| Si la interfaz de `features/progress-backup` nace asíncrona (Q4) | Todo síncrono ahora, y D1c cambia la interfaz cuando llegue (B); la feature expone sólo las piezas puras, el plan, el formato y los avisos, y cada llamador aplica y borra (C) | Una promesa desde F2 en importar (aplicar) y «Borrar todo» (A). B no anticipa nada, pero F8 (Método) ya habrá portado la página contra la interfaz síncrona, así que D1c reescribiría esos manejadores. C es la interfaz más chica, pero reparte la orquestación (las dos fases, el orden de las áreas, «sólo `false` cuenta») entre los llamadores y deja la regla del ADR 0003 sin dueño. Costo de A: dos funciones asíncronas hoy sin necesidad, un estado «pendiente» en el shell que nunca se ve en local, y una interfaz que anticipa un consumidor en borrador |
 | Cuántos globals se retiran en F2 | Retirar todo lo que una vista lee y que lea los módulos; conservar lo que una vista legacy lee, delegando | Conservarlo: los checks empaquetan cada archivo legacy por separado, así que un singleton importado por dos archivos existiría dos veces en un contexto; y la hoja de ruta ya fija qué ítem retira cada método |
 | Dónde vive el arranque | Una función exportada por `app.js`; un módulo nuevo en `src/app/boot/` que orqueste | `app.js`: hoy es dueño de lo que arranca; un módulo nuevo sumaría una capa que A2 ya construye (`runBoot`) y que F10 reemplaza |
 | En qué orden se hacen las unidades | Por número; por dependencia | Por dependencia (la 2 antes que la 1, la 4 antes que la 3), con los números como ids estables |

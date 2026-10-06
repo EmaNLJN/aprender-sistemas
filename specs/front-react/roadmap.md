@@ -115,6 +115,12 @@ Cada línea nombra lo que entra, lo que borra, lo que conserva y lo que queda fu
 - **F11:**
   - Entra: las pantallas de cuenta (la decisión de dónde viven está en «Pantallas de acceso»), que arrancan antes de evaluar el shell legacy: el login, la invitación, recuperar y cambiar la contraseña, exportar y borrar la cuenta y el aviso de privacidad. Borran de la URL, con `history.replaceState` y antes de que `app.js` mire el hash, los fragmentos con token (`#invitacion=<token>` y el de recuperación de contraseña). De D1 (superficies 1 y 2 de «Superficies que pide D1»): la opción «computadora compartida» del ingreso y el resumen con la pregunta «¿Este progreso es tuyo?» al importar el v1. Los E2E.
   - Fuera: las pantallas de administración (F12); la API, que es de C3a y C3b (C3a va sin Fortify por decisión del usuario del 2026-10-05: las pantallas siguen el contrato de su spec y no las rutas por omisión de Fortify).
+  - Formularios: con una librería establecida, no con estado de formulario propio (pedido del usuario, 2026-10-06). La recomendada es React Hook Form:
+    - trabaja con inputs no controlados;
+    - `setError` vuelca en cada campo los `errors.<campo>` del 422 de la API, y deja en `root.serverError` los 401, 409, 419 y 429 (`{message, code}`);
+    - los errores salen accesibles, con `aria-invalid` y `role="alert"`.
+
+    TanStack Form es la alternativa. El servidor es la autoridad de la política de contraseñas (la lista bloqueada, el nombre y el email): el cliente sólo valida lo obligatorio y el largo de 15 a 64, sin un esquema propio. La spec de F11 confirma la librería y mide su peso en `dist/index.html`. Se instala con el primer formulario y con permiso.
   - Dependencias: el login, la invitación y la contraseña esperan a C3a; exportar y borrar la cuenta, a C3b; lo de D1, al cliente v2 (D1c). Con todo eso adentro, F11 es el ítem que más cosas espera: su clarify decide si se parte (ver «Decisiones abiertas»).
 - **F12:**
   - Entra: las pantallas de administración de usuarios e invitaciones que consuman `/api/admin` de C3b (el detalle sale de la spec de C3b); los E2E.

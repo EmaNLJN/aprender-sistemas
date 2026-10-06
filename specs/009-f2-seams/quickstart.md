@@ -1,6 +1,6 @@
 # Quickstart: F2a · Validación
 
-Cómo se comprueba que una unidad no cambió nada de lo que ve ni guarda el alumno, con los comandos y los valores esperados. Los valores de la base están en la tabla «Línea base» de [research.md](./research.md); el procedimiento de cada compuerta, en «Línea base y compuerta de cada unidad» del [plan](./plan.md). Todo corre desde la raíz del worktree, con Node 24 y sin descargar nada.
+Cómo se comprueba que una unidad no cambió nada de lo que ve ni guarda el alumno, con los comandos y los valores esperados. Los valores de la base están en la tabla «Línea base» de [research.md](./research.md); el procedimiento de cada compuerta, en «Línea base y compuerta de cada unidad» del [plan](./plan.md). Todo corre desde la raíz del worktree, con Node 24 y sin descargar nada; la única descarga de F2a, la de Zustand, es la de T008.
 
 ## 0. Una función para el hash
 
@@ -136,9 +136,11 @@ Cada una se hace en una copia de trabajo y se deshace con `git checkout -- <arch
 | --- | --- | --- |
 | T002 | `buildProgram` que agrega un espacio al final del programa de Rust | `build-program.spec.ts` |
 | T006 | quitar el `throw` de `mergeModelGroups` | «un nombre repetido lanza» |
+| T008 | agregar `zustand` sin `--save-exact` (`^5.0.15` en `package.json`) | el diff de la compuerta: la versión no es exacta |
 | T009 | quitar la fusión en `route-store.ts` (dejar la escritura sin `merge`) | la spec de fusión y, por el estado compartido, ninguna de las otras |
 | T010 | quitar `requireStore()` de `list` en `create-systems-engine.ts` | `engine-init-order.spec.ts` |
 | T011 | que `absorbStored` devuelva un estado nuevo en lugar de mutar `local` | la spec de identidad del laboratorio |
+| T009 a T011 | avisar antes de escribir (mover `notify` antes de `write`), o avisar dos veces en `applyImport` | «el oyente ya ve lo escrito» y «la revisión sube en uno por operación» de la spec de cada pieza |
 | T014 | abrir una clave en un archivo de `pages/`; importar una fábrica; importar `routeStore` desde `campaign.js`; importar el JSON desde `entities/` | R1 y R2; R3; R4; R5 |
 | T017 | invertir el orden de `TallerLab.init` y `routeStore.open`; sacar la guarda; quitar `startApp();` de `main.tsx` | «startApp initializes in order»; «a second startApp call fails»; `load-order-check` y `boot-check` |
 
@@ -151,3 +153,4 @@ Con las cuatro unidades en `master`, para cada fila de F2-I1 a F2-I6 del plan:
 - **F2-I3:** `npx vitest run --config frontend/vitest.config.ts frontend/src/app/singletons-import.spec.ts`.
 - **F2-I4:** `git diff --stat <base> -- frontend/src/app/legacy` lista sólo los dos `register-*-engine.ts`.
 - **F2-I5:** los cinco hashes de §2 contra los de T001, acumulados.
+- **FR-010, la única dependencia nueva:** `git diff <base> -- package.json package-lock.json frontend/THIRD-PARTY-NOTICES.txt` muestra `zustand` 5.0.15 exacta en `dependencies`, un solo paquete nuevo en el lockfile y un aviso de licencia; `grep -rn "from 'zustand" frontend/src` sólo da `zustand/vanilla`.
