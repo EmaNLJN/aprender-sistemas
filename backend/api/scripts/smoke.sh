@@ -42,6 +42,15 @@ check "$(curl -s -o /dev/null -w '%{http_code}' "$base/")" 200 "Nginx sigue sirv
 check "$(docker compose exec -T taller nginx -t 2>&1 | grep -c 'test is successful')" 1 \
   "nginx -t valida la configuración"
 
+check "$(curl -s -o /dev/null -w '%{http_code} %{content_type}' "$base/api/guide")" \
+  '401 application/json' "una porción sin sesión responde 401 en JSON"
+check "$(curl -s "$base/api/guide" | grep -c '"code":"unauthenticated"')" 1 \
+  "el 401 sin sesión trae code unauthenticated"
+check "$(curl -s -o /dev/null -w '%{http_code}' "$base/api/session") $(curl -s "$base/api/session" | grep -c '"user":null')" \
+  '200 1' "GET /api/session sin cuenta responde 200 con user null"
+check "$(headers "$base/api/session" | grep -ci '^cache-control:.*no-store')" 1 \
+  "GET /api/session responde Cache-Control no-store"
+
 can_resolve() {
   if docker compose exec -T "$1" getent hosts "$2" >/dev/null 2>&1; then echo si; else echo no; fi
 }
