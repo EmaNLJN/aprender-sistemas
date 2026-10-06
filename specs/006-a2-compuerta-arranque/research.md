@@ -223,3 +223,144 @@ Una página portada no importa `getContent`: recibe su porción por props desde 
 Se quedan: la compuerta, la validación por porción, los estados de espera y de error, el almacén y `getContent()`, el evento, la secuencia de etapas y los oráculos. La hoja de ruta tendría que anotar este retiro en el alcance de A3: la spec lo da por anotado y no está (A2 sólo toca su propia fila y una línea de estado).
 
 **Lo que cambia C4.** Retira `vite-plugin-singlefile` y el `dist/` pasa a varios archivos, con la CSP sin `'unsafe-inline'`. Lo que A2 deja aislado para eso: `qa/lib/built-page.ts`, `assertSinglefileDocument` de `qa/build-check.ts` y el plugin de `frontend/vite.config.ts`. La compuerta no suma scripts ni estilos en línea (el marcado del error no lleva manejadores ni `style=`, y el botón usa `addEventListener`), así que no hay nada que reemplazar en ella.
+
+## Resultados del spike
+
+**Fecha**: 2026-10-06 | **Decisión: sigue, con el plan corregido antes de T002.** P1 pasa: T002 en adelante usan `import()` encadenados con `vite-plugin-singlefile`. T009 evalúa el script con `vm.SourceTextModule`, sin el desvío del IIFE (P2). Lo que difiere de lo que el plan supone de F1 y F2 cambia tres tareas (T007, T008 y T011) y está al final, en «Lo que el plan corrige antes de T002».
+
+**Cómo se midió.**
+- **Base:** `c5d497d` (`f2a/u3-arranque`, con F1, las unidades 1 a 4 de F2a y `master` en `2426bae`), Node 24.21.0. En el lockfile y en `node_modules`: Vite 8.3.2 (Rolldown 1.2.12), `vite-plugin-singlefile` 2.3.3, esbuild 0.28.2, `@vitejs/plugin-react` 6.0.1, Vitest 5.0.3 y Playwright 1.63.0, con el Chrome Headless Shell 1243 que ya estaba instalado. Sin descargas, sin paquetes nuevos y sin Docker.
+- **Prototipo:** la rama descartable `a2/spike`, commit `3baadc2`, que no se integra. Tiene el código de referencia del plan tal cual (transporte, almacén, contenido tipado, compuerta, vista, `runBoot`, `legacy-views.ts` y el plugin de `vite.config.ts`), salvo `startApp()` después del último `import()`. Los seis importadores del JSON leen `getContent()`, y cada módulo de la cadena deja una marca como primera sentencia después de sus imports (`(window.__marks ??= []).push(ruta)`). El arnés de `boot-check` pasó a `qa/lib/spike-boot-harness.ts`, con `fetch`, `AbortController`, `Event`, `CustomEvent`, `dispatchEvent`, un stub de `MutationObserver` y una secuencia de marcas, publicaciones (los `window.*` de contenido y los `Taller*`), llamadas al almacenamiento y eventos. `npm run build` corre entero, con el chequeo de tipos.
+- **Documento:** `documentHash` `ef8f5715…`, versión `ef8f57154734653554d40a43934c97f3`, 1.357.065 bytes.
+
+### Lo que A2 supone de F1 y F2, contra la base
+
+| Supuesto del plan | En la base | ¿Cambia un contrato de A2? |
+| --- | --- | --- |
+| F1: `npm test` corre Vitest; existen `test:unit` y `test:e2e`; Playwright contra `vite preview`, que sirve `dist/` entero; Page Objects en `qa/e2e/pages/`; sólo Chromium | Igual. `npm test` es `node qa/run-checks.ts && vitest run --config frontend/vitest.config.ts`; las specs están en `qa/e2e/specs/`; un proyecto, Desktop Chrome. `vite preview` sirvió `dist/content/` del prototipo sin configurar nada | Sí, en un punto: «El arranque asíncrono y los E2E de F1», abajo |
+| F1: un `console.error` hace fallar el test, salvo la lista blanca | Igual: el fixture automático `pageIssues`, con `CONSOLE_ALLOWLIST` vacía y `expectIssue(patrón, motivo)`. Además, `strictNetwork` aborta todo pedido a otro origen y hace fallar el test | No |
+| F1: configuración de escritorio | Igual | No |
+| F2.1: almacenes y motores singleton; los `register-*`, adaptadores finos | Igual, con Zustand 5.0.15. Ni en el vm ni en Chromium el grafo estático del prototipo toca el almacenamiento | No |
+| F2.2: el catálogo no importa el JSON y se arma dentro de la cadena | `exerciseCatalog`, en `frontend/src/entities/exercise/model/exercise-catalog.ts` y exportado por `entities/exercise`, no importa el JSON ni lee `window`. Lo inicializa `TallerLab.init()` (el `init()` de `lab.js`), al que llama `startApp()`, y no `lab.js` al evaluarse, como dice «Estado al 2026-10-06» | No: T008 no le cambia la fuente |
+| F2.3: el arranque de `app.js` es una función que se llama en orden | `export function startApp()` en `frontend/app.js`, sin argumentos. `main.tsx` la llama una vez, después del último import, y `TallerLab.init` existe | Sí: dónde se llama, y dos piezas de F2a que dependen de eso (abajo) |
+| F2.4: el registro de modelos de Sistemas está en `entities/systems-simulation` | En `model/model-registry.ts`; los `register-systems-*` siguen publicando `SYSTEMS_*` | No |
+| FR-005: seis importadores estáticos del JSON | Los mismos seis. F2a sumó cuatro specs de Vitest que importan el JSON (`exercise-catalog`, `lab-store`, `create-campaign-engine.subscription` y `create-systems-engine.subscription`), que no entran al bundle | No |
+
+**La cadena** es la del plan: los 18 módulos de `legacy-views.ts`, en el orden de los imports de `main.tsx` en la base.
+
+**Quién lee contenido al evaluarse** (P1, paso 5, y R1). Se buscó con `grep` y se confirmó ejecutando, porque `grep` no distingue la evaluación de una llamada posterior. Cada uno de los 18 módulos se evaluó solo y después en cadena, sobre la base, en un contexto con los 15 globals de contenido como propiedades que registran lecturas y escrituras y con el almacenamiento bloqueado (`qa/spike-eval-audit.ts`):
+- ningún módulo lee un global de contenido al evaluarse, y ninguno toca el almacenamiento;
+- `register-catalogs.ts` y los cuatro `register-systems-*.ts` escriben sus globals desde el import del JSON, y `register-atlas.tsx` lo lee a través de `pages/atlas` y `atlas-catalog.ts`;
+- las seis vistas leen el contenido recién cuando se las llama: `lab.js` en `init()` (las ocho listas), `campaign.js` en `init()` (`RUST_CAMPAIGN` y `GO_CAMPAIGN`), `systems.js` en `init()` (`SYSTEMS_*`) y `app.js` en `startApp()` (`GUIDE_DATA`, y las campañas en `syncLinkedLanguage()`). `lab-explorers.js` y `quest-explorers.js` no lo leen nunca.
+
+Lo que R1 decía al planificar («hoy son `app.js`, `lab.js`, `campaign.js` y `systems.js`») dejó de valer con la unidad 3 de F2a. Para la alternativa (b), que no hace falta, los que leen al evaluarse serían los adaptadores.
+
+### Recuentos de la base
+
+Reemplazan a los de la spec en las comprobaciones de T013:
+- `qa/run-checks.ts`: **31 checks**, los 30 del 2026-10-05 más `seams-guard-check`.
+- Vitest: **12 specs, con 186 pruebas**.
+- `load-order-check`: **16 restricciones** sobre 24 imports, más tres reglas: «`app.js` último», «`styles.css` primera» y, desde F2a, «`startApp()` exactamente una vez, después del último import».
+- `boot-check`: **14 casos**, los 10 del plan y 4 de la unidad 3 de F2a («each legacy source evaluated alone…», «main.tsx without its call…», «startApp initializes in order…» y «a second startApp call fails»).
+- `npm test` pasa en la base.
+
+### P1 · Un documento y el orden de evaluación: pasa
+
+- **Un documento.** Con `npm run build` sobre el prototipo, `dist/index.html` queda con un `<script type="module" crossorigin>` y un `<style>`, sin `src=`, `rel="stylesheet"` ni `modulepreload`, y sin más enlaces que las anclas. `dist/` trae además dos cosas:
+  - `content/curriculum.ef8f57154734653554d40a43934c97f3.json`, con los bytes de `build/curriculum.json` y el sha256 del `documentHash`;
+  - los dos avisos de licencia, iguales a los de `frontend/`, que emite el plugin del plan.
+
+  `vite-plugin-singlefile` deja los tres activos emitidos como archivos («asset not inlined»). El documento no pide nada más que el contenido.
+- **Cómo difiere Rolldown.** Con `codeSplitting: false`, cada `import()` queda como `__vitePreload(() => Promise.resolve().then(() => (init_x(), x_exports)), void 0, import.meta.url)`: el módulo va en línea, dentro de una función de inicio que corre recién cuando se la llama. En el script no queda ningún `import(` real.
+- **El orden, en el vm** (`qa/spike-dist-vm.ts`, que evalúa el script del dist con `vm.SourceTextModule` y un `fetch` simulado):
+  - la secuencia empieza por el evento `taller:content-published`;
+  - siguen las 18 marcas, en el orden exacto de la base, cada una con sus publicaciones;
+  - las lecturas de almacenamiento empiezan después de la marca de `app.js` (las cuatro claves, en el orden de `boot-check`), y no hay escrituras.
+
+  Hay un solo pedido, a `/content/curriculum.<versión>.json`. `#main` muestra el recorrido y la consola queda vacía. El script arma un volcado con los globals, los modelos y el Atlas publicados, con las reglas de `dump-globals`, y da `cd1f9e62…`: el mismo hash que `node tools/content/dump-globals.ts .` sobre la base con este documento. La línea base la registra T002.
+- **El orden, en Chromium** (`qa/e2e/specs/spike-p1.spec.ts`, con el runner y los fixtures de F1 y `E2E_PORT=4190`): la misma secuencia para `/` y para `/?#laboratorio`, con un espía de `Storage.prototype` y de los globals instalado en `addInitScript`. Hay un pedido de contenido por carga, sin errores de consola ni pedidos bloqueados.
+- **La medición detecta una evaluación anticipada.** En una mutación descartada, con `import './legacy/register-runner'` en estático en `main.tsx`, la marca y la publicación de ese módulo aparecen antes del evento.
+- **La red de F1 sobre el prototipo:** 103 de 106 en la primera corrida, y 106 de 106 con el cambio de la sección siguiente (109 de 109 con las tres specs del spike). Sobre la base, 106 de 106.
+- **El resto de `npm test` sobre el prototipo**, como referencia para T005 y T007. Las 12 specs de Vitest pasan. Fallan 17 de los 31 checks:
+  - 14 con «El contenido todavía no se publicó», porque evalúan los adaptadores sin la compuerta: `curriculum-ids`, `guide-content`, `content`, `lab-state`, `app-shell`, `lab-bridge`, `campaign`, `campaign-content`, `systems`, los cuatro `systems-<dominio>` y `project-kit`;
+  - `build-check` (P2);
+  - `load-order-check` (T007);
+  - `boot-check`, por dos casos de F2a (P4).
+
+### El arranque asíncrono y los E2E de F1
+
+Tres pruebas de F1 fallaron sobre el prototipo y pasan sobre la base: `css-contract` («R1 · .lab-nav-count › the counter of the current entry») y dos de `url-contract` («the language switch writes the query», desde `#biblioteca` y desde `#proyecto`). Con `--repeat-each 5` fallaron 5 de 45, en vistas distintas cada vez: es una carrera.
+
+`ShellPage.goto(url)` espera el evento `load`, y la prueba actúa enseguida: pulsa el idioma o lee un estilo. En la base, la app ya arrancó en `load`, porque arranca al evaluarse el módulo. Con la compuerta arranca cuando llega el contenido, y hasta entonces el menú y los botones de idioma no hacen nada, como dice la spec. Con un `goto` que espera la primera vista o el error en `#main`, y no el estado de carga (`page.locator('#main > :not([data-content-gate="loading"])').first().waitFor()`), las tres pasan 45 de 45 y la red completa también. La exclusión importa: con el contenido demorado 1,2 s por `page.route` (`qa/e2e/specs/spike-goto-slow.spec.ts`), esperar cualquier hijo de `#main` (`#main > *`) resuelve sobre el estado de carga y la prueba falla 3 de 3, y el localizador de arriba pasa 3 de 3. Ese cambio va en un archivo de F1 y tiene que entrar con el corte.
+
+### P2 · El cambio mínimo de `build-check` y del check del bundle
+
+- **`node --check`** sobre el script copiado a un `.mjs` parsea (sale 0).
+- **`build-check`.** El de la base, sobre el prototipo, falla sólo en `new vm.Script(...)`: «SyntaxError: Cannot use 'import.meta' outside a module». El `import.meta.url` está en cada llamada al ayudante de precarga, una por `import()`. Si esa línea pasa a `node --check` sobre un `.mjs` temporal, el resto de `build-check` pasa sobre el prototipo: un script, un estilo, un doctype, nada externo, las licencias y el tope de hoy. El script de la base también parsea como módulo, así que el cambio vale antes y después del corte.
+- **`dump-dist-globals`** sobre el prototipo se detiene con «Cannot use 'import.meta' outside a module» y no publica nada (sale 1). T009 lo retira, como estaba planeado.
+- **`vm.SourceTextModule`** evalúa la salida real. Usa el relanzamiento de R9 (`--experimental-vm-modules --disable-warning=ExperimentalWarning`), `initializeImportMeta` con `meta.url` y un `link()` sin imports, y `importModuleDynamically` no se llama nunca. No hace falta el desvío del IIFE.
+- **Lo que necesita el contexto**, para T007 y T009. Se comprobó sacando cada pieza:
+  - `MutationObserver` (alcanza un stub) o un `relList.supports('modulepreload')` en el `<link>` falso. El polyfill de precarga de Vite corre al principio del script, después del runtime de Rolldown, como vio la sonda, y sin eso el módulo lanza `ReferenceError`. La base ya lo traía, pero nada evaluaba el dist con el DOM falso.
+  - `AbortController` y `CustomEvent`: sin ellos, `ReferenceError`.
+  - `fetch`: sin él la compuerta no lanza, sino que falla con `network`, así que un arnés al que le falte muestra el error de contenido en lugar de un error del arnés.
+  - `Event` y `dispatchEvent` en `window`: el ayudante de precarga despacha `vite:preloadError` cuando un módulo de la cadena lanza. El camino feliz no los usa.
+- **`load-order-check`.** Sobre los archivos del prototipo, las dos expresiones de R10 leen `contentGate` y `legacyViews`, en ese orden, las 6 hojas de estilo y las 18 entradas. Las 16 restricciones y las dos reglas de los extremos se cumplen sin cambiar la tabla (`qa/spike-load-order-stages.ts`). La regla de `startApp()` tiene que pasar a `legacy-views.ts`.
+
+### P3 · Tamaños y tope
+
+| | `html.length` | Bytes | `gzip -1` | `gzip -6` | `gzip -9` |
+| --- | --- | --- | --- | --- | --- |
+| `dist/index.html`, base | 2.190.106 | 2.205.733 | 764.247 | 657.992 | 656.638 |
+| `dist/index.html`, prototipo | 1.138.292 | 1.140.808 | 425.030 | 372.528 | 371.802 |
+| El mismo, sin las 18 marcas del spike | 1.136.706 | 1.139.222 | | | |
+| `content/curriculum.<versión>.json` | | 1.357.065 | 375.519 | 308.588 | 305.878 |
+
+- **El tope de `build-check`:** `piso(1.136.706 × 1,10)` da 1.250.376 y, redondeado hacia abajo a la decena de miles, **1.250.000**. Con las marcas da lo mismo (1.252.121, que queda en 1.250.000). Hoy es 2.500.000. El prototipo ya lleva la compuerta; T010 vuelve a medir sobre el build de T008 y aplica la misma fórmula.
+- **El oráculo de ausencia.** La regla de `curriculumMarkers()` (R11) da, sobre este documento, 16 marcadores en las siete familias: dos textos en `lab`, `quests`, `cores`, `campaign` y `workshops`, y dos textos más el `id` en `atlas` y en `guide`. Los 16 están en el archivo de contenido y en el HTML de la base, que es el control positivo, y ninguno en el del prototipo (`qa/spike-markers.ts`).
+- El HTML del prototipo contiene la versión, en la URL y como versión esperada.
+- `grep -o '<script' dist/index.html | wc -l`, el comando del quickstart (§3), da 2 en la base y en el prototipo, porque React DOM lleva `<script><\/script>` en una cadena. El conteo que vale es el de la expresión de `build-check`, que da 1.
+
+### P4 · El arnés de los checks con un `fetch` simulado
+
+- **Los casos.** `boot-check` corrió sobre `bundleApp` del prototipo (esbuild en IIFE, con `__CONTENT_VERSION__` sumado al `define`), con el arnés extendido y, como `fetch`, el servidor simulado de T007, cuyo `json()` se resuelve con microtareas. Los 10 casos del plan pasan sin cambiar sus valores esperados, y también «each legacy source evaluated alone…», de F2a. Los otros tres casos de F2a dependen de dónde se llama `startApp()`; ver «Lo que el plan corrige antes de T002».
+- **El camino feliz se asienta antes de la primera ronda de `flush()`**, con la respuesta mínima y también con un `Response` de Node (1,36 MB, Node 24.21): el pedido, la publicación, los 18 módulos y `startApp()` corren con microtareas, y la carga no se escribe nunca en `#main`. Los dos temporizadores de la compuerta (400 ms y 20 s) corren en las rondas 1 y 2 y no hacen nada, y `flush()` termina en la ronda 3.
+- **Con un `fetch` que no responde**, `flush()` corre los temporizadores en el orden en que se encolaron, uno por ronda y sin mirar la demora:
+  - ronda 1: el umbral de 400 ms, que muestra la carga;
+  - ronda 2: el tope de 20 s, que aborta, y la compuerta muestra `timeout`;
+  - ronda 3: termina.
+
+  Ningún módulo de la cadena se evalúa, el almacenamiento no recibe ninguna llamada y no hay errores. Un `fetch` que rechaza da `network`, y un 404, `version`. Con el script del dist en el vm pasa lo mismo (`qa/spike-p4-timers.ts` y `qa/spike-dist-vm.ts`).
+
+### Tiempo hasta la primera vista, antes (R13)
+
+Chrome Headless Shell 1243 (Playwright 1.63.0) contra `vite preview` en `127.0.0.1:4190`, con el observador de `#main h1` del quickstart (§9). Cada medición carga la página en un contexto nuevo (sin caché) y vuelve a navegar a la misma URL en el mismo contexto (con caché). Se hicieron cinco series de 20, tres de ellas intercaladas con el prototipo, en una máquina con otros procesos:
+
+| Build | Sin caché: mediana (p10–p90; mínimo–máximo) | Con caché: ídem | Transferido sin caché | Transferido con caché |
+| --- | --- | --- | --- | --- |
+| Base | 166 ms (147–204; 134–279) | 70 ms (59–82; 53–111) | HTML: 658.292 B | HTML: 300 B (304) |
+| Prototipo, sólo como referencia | 185 ms (155–327; 142–448) | 76 ms (64–133; 59–169) | HTML: 372.828 B; contenido: 308.888 B | 300 B cada uno (304) |
+
+`vite preview` comprime y revalida: en la segunda carga, el HTML y el contenido vuelven con un 304. Las medianas por serie van de 152 a 178 ms en la base, y de 157 a 196 ms en el prototipo, salvo una serie con ruido de 293 ms. Mientras se medía corrían las pruebas de otro agente, así que estas cifras sirven de orden de magnitud. Para comparar, T013 conviene que mida el «después» intercalado con un build de `c5d497d`, con `spike-first-view.spec.ts` de `a2/spike`.
+
+### Lo que el plan corrige antes de T002
+
+Por la regla de «Lo que A2 supone de F1 y F2», se corrige en un commit propio:
+1. **`startApp()` se llama en `legacy-views.ts`**, después del último `import()` (`const { startApp } = await import('../../../app.js'); startApp();`). El código de referencia de T008 no la llama.
+2. **T007 cubre 14 casos de `boot-check`, no 10.**
+   - La regla de `startApp()` de `load-order-check` pasa a `legacy-views.ts`.
+   - Los tres casos de F2a que usan `bundleApp(ENTRY, { withoutStartCall: true })` dejan de quitar la llamada, porque esa opción aplica una expresión sólo a la entrada, por el `stdin` de esbuild. «main.tsx without its call…» pasa en vacío, y los otros dos fallan con un `TypeError`, porque `window.TallerLab` todavía no existe.
+   - Con la llamada fuera de `legacy-views.ts` y un `flush()` antes de `startApp()`, los tres pasan con sus mismos valores esperados (`qa/spike-startapp-cases.ts`).
+   - Cómo llega `withoutStartCall` a `legacy-views.ts` lo decide T007: la API síncrona de esbuild no tiene plugins.
+3. **`ShellPage.goto` espera la primera vista o el error, no el estado de carga, y el cambio entra con el corte (T008), no con T011.** Sin él, la red de F1 se vuelve intermitente desde T008. Además, `goto` recibe la URL: el ejemplo de T011 la omite.
+4. **El arnés de T007 y T009** suma `MutationObserver` (o `relList.supports`), `Event` y `dispatchEvent`, además de lo que ya lista R12.
+5. **El quickstart** cuenta los `<script>` con la expresión de `build-check`, no con `grep`.
+6. **«Estado al 2026-10-06»:** el catálogo lo inicializa `TallerLab.init()`, dentro de `startApp()`. No cambia ninguna tarea.
+
+### Cómo se reproduce
+
+En `a2/spike` (`3baadc2`), después de `npm run build`:
+- P1 y P2 en el vm: `node qa/spike-dist-vm.ts [serve|hang|reject|status404]`.
+- P1 en Chromium: `E2E_PORT=4190 npx playwright test --config qa/e2e/playwright.config.ts specs/spike-p1.spec.ts`. La primera vista, con `specs/spike-first-view.spec.ts` y `SPIKE_RUNS=20`; la espera de `goto`, con `specs/spike-goto-slow.spec.ts`.
+- P4: `node qa/boot-check.ts`, `node qa/spike-p4-timers.ts` y `node qa/spike-startapp-cases.ts`; el último, con la llamada quitada de `legacy-views.ts`.
+- P2 y P3: `node qa/spike-build-check-module.ts` (`build-check` con `node --check`), `node qa/spike-load-order-stages.ts` (R10) y `node qa/spike-markers.ts . <html>…` (los marcadores).
+- La auditoría de quién lee contenido al evaluarse: `node qa/spike-eval-audit.ts` con el `frontend/` de la base (`git checkout c5d497d -- frontend` antes y `git checkout HEAD -- frontend` después).
