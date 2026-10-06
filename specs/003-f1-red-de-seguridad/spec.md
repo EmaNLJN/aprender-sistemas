@@ -18,7 +18,7 @@
 2. Un navegador con el progreso real de master arranca sin escribir, sin respaldar y sin avisar. Con el almacenamiento bloqueado, el taller arranca y muestra el aviso que muestra hoy.
 3. Aprobar un ejercicio con el compilador simulado cambia lo que muestran campaña y Sistemas, y ninguna prueba toca los Playgrounds públicos.
 4. Si se rompe a propósito un contrato (un adaptador sin `exerciseContextHTML`, una forma de URL que deja de leerse, un arranque que escribe en `localStorage`), la red falla: 3 de 3.
-5. Las dos pruebas de Vitest pasan con el código de producción sin cambios, y F1 no toca ningún archivo de producción.
+5. Las dos specs de Vitest pasan con el código de producción sin cambios, y F1 no toca ningún archivo de producción.
 
 **Entra:** la adopción del ADR 0008 (Vitest en `node`, Playwright, los scripts de npm, el paso del job `front` y la documentación que cita los comandos); la red E2E con las ocho vistas por hash, las seis formas de URL con query, la recarga de los enlaces que cambian la query, el arranque con el progreso real de master y con el almacenamiento bloqueado, los puentes del laboratorio con campaña y Sistemas, y el ciclo entre vistas; los Page Objects de lo que esos escenarios tocan; los Playgrounds simulados; las dos pruebas de Vitest; y la protección del aspecto que F2 necesita, con estilo computado.
 
@@ -72,6 +72,7 @@ Las cinco respuestas son del usuario y eligieron la opción recomendada. Las opc
 - **FR-009:** el formato del marcador, `__TALLER_TEST__<id>:<PASS|FAIL>`, está en el ADR 0003 (punto 7) y en `qa/exercise-evidence-check.ts`. El ADR 0005, §5, describe el formato futuro del servidor, con nonce, que es de A4.
 - **SC-008:** la regla del último enlace de la navegación (`.navigation a:last-child { grid-column: auto }`) es código muerto: repite el valor inicial y ninguna regla le da otra columna. Borrarla no cambia nada visible, así que sólo un cambio de su valor puede hacer fallar la prueba.
 - **FR-012, SC-008 y US6, escenario 1:** el mapa (§7) omite una regla que cruza hojas, `.quest-direct-lock`. `campaign.css` la define y el laboratorio la dibuja (`lockedExerciseHTML` reemplaza el host cuando una misión no está abierta), así que F6 puede borrar `campaign.css` antes de que F7 retire ese bloque sin que nada lo note. La protección suma una décima regla, medida en el laboratorio con una misión que no está abierta. Q2 no cambia: la respuesta fija el criterio (estilo computado sobre las reglas que cruzan hojas) y el plan lo aplica también a ésta. El plan completa además el grupo de la navegación con `.navigation .nav-symbol` (`font-size` de 14 px a 590 px, en `lab.css`): está en el mismo bloque que las demás y no se medía.
+- **US4, FR-016 a FR-018 y SC-005:** «las dos pruebas de Vitest» son dos specs con tres pruebas: la del motor se parte en campaña (lanza) y Sistemas (devuelve `[]`), dos comportamientos que el commit TDD de F2 invierte por separado.
 - **FR-023:** la documentación del ADR 0008 se registró al aceptarlo; F1 reemplaza el aviso «hasta que se integre, no existen» de `AGENTS.md` y de `qa/AGENTS.md` por los comandos reales.
 - **FR-004:** la suposición de la hoja de ruta se confirmó al planificar: los 11 enlaces que cambian la query recargan el documento. F1 la deja fijada como prueba.
 - **Hallazgos nuevos que la red fija como defecto conocido:** el bloqueo de campaña que gana sobre el contexto de Sistemas (arriba) y `aria-pressed` en `<body>`, porque `app.js` marca todo `[data-language]` y el `body` lo tiene. (FR-014)
@@ -115,7 +116,7 @@ Un alumno que ya tiene progreso en su navegador abre el taller y no pasa nada: e
 2. **Dado** un navegador vacío, **cuando** el alumno hace una acción en el recorrido (un paso), en el laboratorio (código) y en Sistemas (una observación y una nota) y recarga la página, **entonces** las tres siguen ahí. Y **dado** el laboratorio sembrado con las misiones del mundo 1 resueltas del fixture congelado, que es lo que abre el checkpoint, **cuando** el alumno responde el checkpoint de campaña y recarga, **entonces** la respuesta sigue ahí.
 3. **Dado** un navegador donde acceder a `localStorage` lanza una excepción, **cuando** arranca el taller, **entonces** arranca igual, sin una excepción de la página, y muestra lo que muestra hoy: el aviso «No se pudo leer o guardar el avance. Podés exportarlo al terminar.» (`loadNoticeFor` de `app.js`, que sale en el toast de arranque) y el pie «Exportá para conservar tu avance» (`updateSaveLabel`).
 
-*Cubre: FR-007, FR-008 y FR-014; SC-003.*
+*Cubre: FR-007 y FR-008; SC-003.*
 
 ---
 
@@ -202,7 +203,7 @@ Quien mueve reglas de CSS entre hojas, o borra una hoja al portar una vista, sab
 - **Reloj:** el temporizador de 500 ms y los vencimientos de repaso dependen de la hora. Las pruebas que los usan controlan el reloj.
 - **Un hash desconocido,** como `#invitacion=<token>`: hoy cae en `#recorrido` y el token queda en la URL. La red no lo cubre: es contrato futuro de F11.
 - **Defectos que la red encuentre,** además de los del mapa: se caracterizan como están y se marcan, con su referencia. F1 no los corrige.
-- **El editor y los diálogos nativos** (CodeMirror y `<dialog>`) se ejercen en el navegador real, pero sus flujos completos se caracterizan en el port que los toca (F7, F8 y F9).
+- **El editor y los diálogos nativos** (CodeMirror y `<dialog>`): el editor se ejerce en el navegador real, con el borrador del laboratorio; los diálogos no se abren en ningún escenario. Sus flujos completos los caracteriza el port que los toca (F7, F8 y F9).
 
 ## Requirements *(mandatory)*
 
@@ -258,7 +259,7 @@ Quien mueve reglas de CSS entre hojas, o borra una hoja al portar una vista, sab
 - **SC-002**: Para cada uno de los 11 enlaces que cambian la query, la red distingue si el documento se recargó: 0 enlaces con el resultado sin determinar.
 - **SC-003**: El arranque con las fixtures de master deja el texto de las cuatro claves de `localStorage` idéntico, sin claves `:respaldo` y sin avisos: 0 diferencias.
 - **SC-004**: La red no hace ningún pedido real a `play.rust-lang.org` ni a `play.golang.org`: 0 pedidos.
-- **SC-005**: Las dos pruebas de Vitest pasan con el código de producción sin cambios, y el diff de F1 no toca ningún archivo de producción: 0 archivos.
+- **SC-005**: Las dos specs de Vitest (tres pruebas) pasan con el código de producción sin cambios, y el diff de F1 no toca ningún archivo de producción: 0 archivos.
 - **SC-006**: Con tres roturas deliberadas, una por contrato (un adaptador sin `exerciseContextHTML`, una forma de URL que deja de leerse y un arranque que escribe en `localStorage`), hechas en una rama descartable, la red falla: 3 de 3 detectadas.
 - **SC-007**: La red completa pasa 5 corridas seguidas con 0 reintentos. El tiempo de la suite y el del paso de instalación del navegador se miden y se registran en la hoja de ruta; no hay tope hasta medirlos.
 - **SC-008**: Las 10 reglas de CSS que cruzan hojas (las 9 que el mapa (§7) lista y `.quest-direct-lock`, que omite) tienen una prueba que falla si cambia su valor: 10 de 10. La del último enlace de la navegación es código muerto, así que su prueba no falla si se borra la regla.
@@ -272,7 +273,7 @@ Quien mueve reglas de CSS entre hojas, o borra una hoja al portar una vista, sab
 4. **`vite preview` no es Nginx.** La red no ejerce la CSP ni `/api/`. *Mitigación:* un humo contra el stack espera a A3 y a C4, que cambian ese contrato (ADR 0008).
 5. **Costo de la CI.** Cada corrida baja 122,2 MB de navegador y, con `--with-deps`, paquetes de sistema. El tiempo no se midió. *Mitigación:* SC-007 lo registra; sin caché del navegador, por lo que dice la documentación oficial (ADR 0008).
 6. **Un solo navegador.** El Chrome Headless Shell cubre Blink y no Firefox ni Safari.
-7. **El tamaño de F1.** Con Q1 en A, F1 queda acotada a la infraestructura y los contratos transversales: unas 106 pruebas de punta a punta y dos de Vitest.
+7. **El tamaño de F1.** Con Q1 en A, F1 queda acotada a la infraestructura y los contratos transversales: unas 106 pruebas de punta a punta y dos specs de Vitest.
 8. **Lo que la red no ve.** Los flujos completos del editor, de los diálogos y de Método quedan para los ports que los tocan, con la regla «E2E primero» de la hoja de ruta.
 9. **El ingreso (evolución prevista, no es trabajo de F1).** Los E2E arrancan hoy sin sesión. Cuando C3a y A3 dejen el contenido detrás de la sesión, los que parten del progreso de master tendrán que pasar por el ingreso (la pantalla de F11 o una fixture de sesión). La red arma cada arranque en un solo lugar para que ese cambio no toque cada escenario.
 

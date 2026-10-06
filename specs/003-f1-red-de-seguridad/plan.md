@@ -45,7 +45,7 @@ F1 deja, antes de portar la primera vista, una red que describe lo que el front 
 - cinco corridas seguidas sin reintentos (SC-007);
 - `npm test` sigue sin navegador, porque la imagen web lo corre y no lo tiene.
 
-**Scale/Scope**: 106 pruebas de punta a punta en 8 specs y 2 specs de Vitest. Se crean 29 archivos (26 en `qa/e2e/` y 3 de Vitest) y cambian 8 de configuración y documentación.
+**Scale/Scope**: 106 pruebas de punta a punta en 8 specs y 2 specs de Vitest. Se crean 29 archivos (26 en `qa/e2e/` y 3 de Vitest) y cambian 9 de configuración y documentación.
 
 ## Constitution Check
 
@@ -97,6 +97,7 @@ frontend/
 package.json  package-lock.json  tsconfig.node.json  tsconfig.qa.json    (cambian)
 .github/workflows/ci.yml                                                 (cambia)
 AGENTS.md  qa/AGENTS.md  docs/agent-skills.md                            (cambian: dejan de decir «no existen»)
+docs/adr/0008-pruebas-del-front.md                                       (cambia: suma su «Enmienda»)
 test-results/  playwright-report/                                        (salidas, ignoradas)
 ```
 
@@ -127,7 +128,7 @@ Lo que el revisor mira primero, porque es lo que más cuesta equivocar o lo que 
 
 ## Dónde el plan se aparta del ADR 0008
 
-El ADR 0008 es decisión del usuario y se acepta como está. Al probarlo contra el build aparecieron nueve detalles que el ADR no fija o que no se sostienen tal cual; cada uno tiene su evidencia y su efecto, y los enmienda esta implementación (T002, T003, T004 y T012).
+El ADR 0008 es decisión del usuario y se acepta como está. Al probarlo contra el build aparecieron nueve detalles que el ADR no fija o que no se sostienen tal cual; cada uno tiene su evidencia y su efecto, y los enmienda esta implementación (T002, T003, T004 y T012). T013 los anota en el ADR con una sección «Enmienda», como el ADR 0005 con el plan B1: no cambia ninguna decisión, sólo precisa nueve detalles.
 
 | Qué | El ADR dice | El plan hace | Evidencia |
 | --- | --- | --- | --- |
@@ -160,7 +161,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 
 | Dueño | Archivos que posee | Consume | Entrega |
 | --- | --- | --- | --- |
-| K · Coordinador | `package.json`, `package-lock.json`, `tsconfig.qa.json`, `qa/e2e/playwright.config.ts`, `qa/e2e/tsconfig.json`, `.github/workflows/ci.yml`, `AGENTS.md`, `qa/AGENTS.md`, `docs/agent-skills.md`; integra todo | todo | el esqueleto, los scripts, la CI, la documentación y la evidencia de cierre |
+| K · Coordinador | `package.json`, `package-lock.json`, `tsconfig.qa.json`, `qa/e2e/playwright.config.ts`, `qa/e2e/tsconfig.json`, `.github/workflows/ci.yml`, `AGENTS.md`, `qa/AGENTS.md`, `docs/agent-skills.md`, `docs/adr/0008-pruebas-del-front.md`; integra todo | todo | el esqueleto, los scripts, la CI, la documentación y la evidencia de cierre |
 | B · Red base | `qa/e2e/lib/*`, `qa/e2e/fixtures/*`, `qa/e2e/pages/*` y `qa/e2e/specs/guards.spec.ts` | el esqueleto de K | las fixtures y los Page Objects de [data-model.md](./data-model.md), §1 y §2 (S1) |
 | V · Vitest | `frontend/vitest.config.ts`, `tsconfig.node.json` y las dos specs de `frontend/src/` | — | las dos specs de riesgo, en verde |
 | U · Enlaces | `views.spec.ts`, `url-contract.spec.ts` y `reload.spec.ts` | de B: `shell`, `lab`, `campaign`, `systems`, `atlas`, `urls`, `curriculum`, `observeReload` y `storage` | US1 (vistas, URL y recargas) |
@@ -2787,7 +2788,7 @@ El orden importa: `npm run build` ya corrió antes (la red necesita `dist/`), y 
 
 ### Tarea 5.2 · La documentación al día (T013)
 
-- **Cambia:** `AGENTS.md`, `qa/AGENTS.md` y `docs/agent-skills.md`.
+- **Cambia:** `AGENTS.md`, `qa/AGENTS.md`, `docs/agent-skills.md` y `docs/adr/0008-pruebas-del-front.md`.
 
 **Pasos:**
 
@@ -2797,12 +2798,13 @@ El orden importa: `npm run build` ya corrió antes (la red necesita `dist/`), y 
    - sumá a la regla de los localizadores la excepción de `css-contract.spec.ts`, donde el selector de CSS es lo que se prueba;
    - en «Red de seguridad para refactors», cambiá «marcados como `DEFECTO CONOCIDO`» por «`KNOWN DEFECT` en el nombre de la prueba», que es el marcador en inglés que usan las pruebas nuevas.
 3. `docs/agent-skills.md`, el «Alcance»: reemplazá «Hasta que F1 se integre, las specs nuevas no tienen dónde correr.» por lo que quedó instalado y cómo se corre.
-4. Comprobá rutas, comandos y enlaces locales de los tres archivos, y `git diff --check`.
-5. Un commit: `docs(front): los comandos de las pruebas del front ya existen`.
+4. `docs/adr/0008-pruebas-del-front.md`: el estado pasa a «aceptada por el usuario el 2026-10-05, sin enmiendas; precisada con lo que midió la implementación de F1 (ver «Enmienda»)» y se agrega, al final, la sección «Enmienda (2026-10-05, plan de F1)». Lleva una viñeta por cada fila de la tabla «Dónde el plan se aparta del ADR 0008» de este plan: lo que decía el ADR, lo que hace la implementación y su motivo (la columna «Evidencia»). No cambia ninguna decisión: es el mismo formato que la «Enmienda» del ADR 0005.
+5. Comprobá rutas, comandos y enlaces locales de los cuatro archivos, y `git diff --check`.
+6. Un commit: `docs(front): los comandos de las pruebas del front ya existen y el ADR 0008 anota lo que midió F1`.
 
-**Compuerta:** los comandos que citan los tres archivos corren tal cual; `npm run format:check` no toca Markdown (`.prettierignore` lo excluye).
+**Compuerta:** los comandos que citan los archivos corren tal cual; la «Enmienda» tiene nueve viñetas, una por fila de la tabla; `npm run format:check` no toca Markdown (`.prettierignore` lo excluye).
 
-**Vuelta atrás:** revertí el commit; los comandos vuelven a figurar como futuros.
+**Vuelta atrás:** revertí el commit; los comandos vuelven a figurar como futuros y el ADR, como estaba.
 
 ### Tarea 5.3 · Las roturas deliberadas sobre el árbol integrado (T014)
 
@@ -2876,7 +2878,7 @@ El orden importa: `npm run build` ya corrió antes (la red necesita `dist/`), y 
 | FR-020 | T012 | `npm test` corre Vitest; la red queda afuera |
 | FR-021 | T012 | el paso de la CI, con el informe si falla |
 | FR-022 | T016 | el comando de producción intacta |
-| FR-023 | T013 | los comandos reales en `AGENTS.md` y `qa/AGENTS.md` |
+| FR-023 | T013 | los comandos reales en `AGENTS.md` y `qa/AGENTS.md`; además, la «Enmienda» del ADR 0008 |
 | FR-024 | T001 | las descargas autorizadas |
 | SC-001 | T005, T006 | 8 vistas y 6 formas de URL: 14 de 14 |
 | SC-002 | T007 | 11 de 11 enlaces con el resultado determinado |
