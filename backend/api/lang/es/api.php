@@ -18,4 +18,13 @@ return [
     'too_many_requests' => 'Demasiados intentos. Esperá un momento antes de volver a probar.',
     'bad_request' => 'No se pudo entender el pedido.',
     'server_error' => 'Algo salió mal de nuestro lado. Probá de nuevo en un rato.',
+    'client_run_id_reused' => 'Ese identificador de ejecución ya se usó con otro código, otro ejercicio u otra prueba propia.',
+    'quota_exceeded' => 'Llegaste a un límite de ejecuciones: esperá antes de volver a probar.',
+    'queue_full' => 'El taller está ocupado ahora mismo: reintentá en unos segundos.',
+    'quota' => [
+        'active' => 'Ya tenés una ejecución en curso: esperá a que termine.',
+        'per_minute' => 'Hiciste demasiadas ejecuciones en el último minuto: esperá un momento.',
+        'per_day' => 'Llegaste al máximo de ejecuciones de las últimas 24 horas.',
+        'sandbox_time' => 'Llegaste al máximo de tiempo de ejecución de las últimas 24 horas.',
+    ],
 ];
