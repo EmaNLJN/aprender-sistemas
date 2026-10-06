@@ -68,6 +68,10 @@ function importedNames(clause: string): string[] {
     .map((entry) => entry.split(/\s+as\s+/)[0]);
 }
 
+function isLegacyOrAppFile(file: string): boolean {
+  return /^frontend\/[^/]+\.js$/.test(file) || file.startsWith('frontend/src/app/');
+}
+
 function isLowerLayerFile(file: string): boolean {
   return /^frontend\/src\/(entities|features|shared)\//.test(file);
 }
@@ -95,7 +99,10 @@ function factoryViolations(file: string, imports: ImportStatement[]): string[] {
     .map((name) => `R3 ${file}: imports the factory ${name}; import the singleton instead`);
 }
 
+// Pages and features consume the singletons from F3 on; the legacy sources and app/ (adapters and boot)
+// evaluate each slice index in their own bundle or static graph, so only the owner may import values there.
 function indexViolations(file: string, imports: ImportStatement[]): string[] {
+  if (!isLegacyOrAppFile(file)) return [];
   return imports
     .filter((statement) => statement.isValueImport)
     .flatMap((statement) => {
