@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\ProgressWorld;
+use Tests\Support\RunInvariants;
 
 // ADR 0006 §5.3 against information_schema; the expectations come from data-model.md section 2, not from the migrations.
 const PROGRESS_TABLES = [
@@ -197,4 +199,62 @@ it('F: exactly six CHECK constraints, none of them over a DATETIME column', func
             expect($check->clause)->not->toContain("`{$column}`");
         }
     }
+});
+
+function plantAccountProgress(int $userId): void
+{
+    $at = ['revision' => 1, 'created_at' => '2026-10-06 12:00:00.000', 'updated_at' => '2026-10-06 12:00:00.000'];
+    DB::table('sync_operations')->insert(['user_id' => $userId, 'operation_id' => random_bytes(16), 'payload_sha256' => random_bytes(32), 'status' => 'applied', 'clock_offset_ms' => 0, 'received_at' => '2026-10-06 12:00:00.000']);
+    DB::table('exercise_progress')->insert(['user_id' => $userId, 'exercise_id' => 'fx-rust-01', ...$at]);
+    DB::table('drafts')->insert(['user_id' => $userId, 'exercise_id' => 'fx-rust-01', 'code' => 'fn main() {}', ...$at]);
+    DB::table('campaign_checkpoints')->insert(['user_id' => $userId, 'world_id' => 'fx-world-1', ...$at]);
+    DB::table('workshop_progress')->insert(['user_id' => $userId, 'workshop_id' => 'fx-workshop-1', 'language' => 'rust', ...$at]);
+    DB::table('workshop_observations')->insert(['user_id' => $userId, 'workshop_id' => 'fx-workshop-1', 'language' => 'rust', 'objective_key' => 'fx-obj-1', 'revision' => 1, 'created_at' => $at['created_at']]);
+    DB::table('workshop_step_marks')->insert(['user_id' => $userId, 'workshop_id' => 'fx-workshop-1', 'language' => 'rust', 'step_key' => 'e1', 'marked' => 1, ...$at]);
+    DB::table('route_marks')->insert(['user_id' => $userId, 'kind' => 'step', 'item_key' => 'fx-step-1', 'marked' => 1, ...$at]);
+    DB::table('route_quiz_answers')->insert(['user_id' => $userId, 'step_id' => 'fx-step-1', 'answer' => 1, ...$at]);
+    DB::table('route_notes')->insert(['user_id' => $userId, 'language' => 'rust', 'field' => 'learned', 'body' => 'Aprendí', ...$at]);
+    DB::table('preferences')->insert(['user_id' => $userId, 'lab_selected_rust' => 'fx-rust-01', 'lab_selected_go' => 'fx-go-01', ...$at]);
+}
+
+function progressWorldForSchema(): void
+{
+    ProgressWorld::seed([
+        'contentVersion' => '0123456789abcdef0123456789abcdef',
+        'exercises' => [
+            ['id' => 'fx-rust-01', 'language' => 'rust', 'hints' => 3, 'predictionOptions' => 3],
+            ['id' => 'fx-go-01', 'language' => 'go', 'hints' => 3, 'predictionOptions' => 3],
+        ],
+        'worlds' => [['id' => 'fx-world-1', 'checkpointOptions' => 3]],
+        'workshops' => [['id' => 'fx-workshop-1', 'predictionOptions' => 3, 'objectives' => ['fx-obj-1'], 'steps' => ['e1']]],
+        'guide' => ['steps' => [['id' => 'fx-step-1', 'quizOptions' => 3]], 'resources' => []],
+    ]);
+}
+
+it('G: deleting a user with the ten tables and the two of B2 populated leaves no rows and does not fail (FR-053, SC-009)', function () {
+    progressWorldForSchema();
+    $user = ProgressWorld::user();
+    $other = ProgressWorld::user();
+    foreach ([$user, $other] as $account) {
+        ProgressWorld::head($account, revision: 1);
+        plantAccountProgress($account->id);
+    }
+    $tables = [...array_keys(PROGRESS_TABLES), 'exercise_progress', 'progress_heads'];
+
+    DB::delete('delete from users where id = ?', [$user->id]);
+
+    $leftBehind = collect($tables)->mapWithKeys(fn (string $table) => [$table => DB::table($table)->where('user_id', $user->id)->count()])->all();
+    $kept = collect($tables)->mapWithKeys(fn (string $table) => [$table => DB::table($table)->where('user_id', $other->id)->count()])->all();
+
+    expect($leftBehind)->toBe(array_fill_keys($tables, 0))
+        ->and($kept)->toBe(array_fill_keys($tables, 1));
+});
+
+it('H: the pointers of exercise_progress still do not cross with the new tables populated', function () {
+    progressWorldForSchema();
+    $user = ProgressWorld::user();
+    ProgressWorld::head($user, revision: 1);
+    plantAccountProgress($user->id);
+
+    expect(RunInvariants::crossedPointers())->toHaveCount(0);
 });
