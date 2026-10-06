@@ -12,7 +12,7 @@ const IDENTITY_MIGRATED_TABLES = ['users', 'invitations', 'password_reset_tokens
 function createStatements(): array
 {
     $statements = [];
-    foreach ([...ContentDatabase::TABLES, ...IDENTITY_MIGRATED_TABLES] as $table) {
+    foreach ([...ContentDatabase::TABLES, ...IDENTITY_MIGRATED_TABLES, 'account_deletions'] as $table) {
         $statement = DB::selectOne("show create table `{$table}`")->{'Create Table'};
         // AUTO_INCREMENT is not schema: a rolled-back import leaves content_imports empty but advanced, and DatabaseTruncation skips empty tables.
         $statements[$table] = preg_replace('/ AUTO_INCREMENT=\d+/', '', $statement);
@@ -28,7 +28,8 @@ it('migrate, rollback and migrate leave the same schema (H)', function () {
     try {
         expect(Artisan::call('migrate:rollback', ['--step' => $migrationsAfterC1, '--force' => true]))->toBe(0);
         expect(Schema::hasTable('exercises'))->toBeFalse()
-            ->and(Schema::hasTable('invitations'))->toBeFalse();
+            ->and(Schema::hasTable('invitations'))->toBeFalse()
+            ->and(Schema::hasTable('account_deletions'))->toBeFalse();
     } finally {
         expect(Artisan::call('migrate', ['--force' => true]))->toBe(0);
     }
