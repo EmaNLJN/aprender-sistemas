@@ -68,8 +68,9 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
   - Las pruebas que dependen de una sesión usan `Tests\Support\Browser` (cookies, CSRF y cuenta
     esperada); con `Browser::useDatabaseDrivers()` la sesión y la caché van a la base, como en
     producción.
-  - La suite corre con `memory_limit` de 512 MB (`phpunit.xml`): una prueba que lo supera tiene una
-    fuga; no subas el límite.
+  - La suite corre con `memory_limit` de 512 MB (`phpunit.xml`): con 979 pruebas el pico fue de 127 MB,
+    por acumulación entre pruebas. Si se queda sin memoria, medí el pico (`memory_get_peak_usage`)
+    por suite antes de subir el límite, para distinguir una fuga del crecimiento de la suite.
   - Tres suites: `tests/Unit` (PHP puro, sin aplicación), `tests/Feature` (`RefreshDatabase`) y `tests/Content`
     (`DatabaseTruncation`: el import, HTTP y el DDL confirman sus propias transacciones).
 - **Contenedores:** `php` y `migrate` corren como `www-data` y con disco de sólo lectura. Lo
