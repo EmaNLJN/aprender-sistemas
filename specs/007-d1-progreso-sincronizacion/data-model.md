@@ -334,6 +334,40 @@ Firmas exactas, con los tipos que pide el nivel 9 de PHPStan. Cada una la entreg
 ```php
 namespace App\Progress;
 
+/** El 503 de «todavía no hay contenido importado», el mismo de C2; lo lanzan el lector y el servicio. Dueño S. */
+final class ContentNotImported extends HttpResponseException {}
+
+final readonly class ProgressAreas               // dueño S: lo que comparten L, Y y C3b; las filas ya vienen con la forma JSON de http.md, sección 5
+{
+    /**
+     * @param list<array<string, mixed>> $exercises
+     * @param list<array<string, mixed>> $drafts
+     * @param list<array<string, mixed>> $campaignSeals      [] hasta D1b
+     * @param list<array<string, mixed>> $campaignCheckpoints
+     * @param list<array<string, mixed>> $workshopProgress
+     * @param list<array<string, mixed>> $workshopObjectives
+     * @param list<array<string, mixed>> $workshopSteps
+     * @param list<array<string, mixed>> $routeMarks
+     * @param list<array<string, mixed>> $routeQuiz
+     * @param list<array<string, mixed>> $routeNotes
+     * @param ?array<string, mixed> $preferences
+     */
+    public function __construct(
+        public array $exercises = [], public array $drafts = [], public array $campaignSeals = [], public array $campaignCheckpoints = [],
+        public array $workshopProgress = [], public array $workshopObjectives = [], public array $workshopSteps = [],
+        public array $routeMarks = [], public array $routeQuiz = [], public array $routeNotes = [], public ?array $preferences = null,
+    ) {}
+
+    /** @return array<string, mixed> `full` y las áreas con las claves de http.md, sección 5 (`campaign`, `workshops` y `route` agrupados) */
+    public function toArray(bool $full): array;
+}
+
+interface ChangesReader                          // dueño S: el puerto entre L e Y
+{
+    /** No abre una transacción: corre dentro de la de quien llama. null es la foto completa; un número, lo que cambió desde esa revisión. */
+    public function areas(int $userId, ?int $sinceRevision): ProgressAreas;
+}
+
 final class ProgressTables                      // dueño S
 {
     /** Las tablas de estado de una cuenta, con las padres antes que las hijas (D1b suma `campaign_seals`). */
@@ -419,14 +453,6 @@ enum ProofState: string { case Current = 'current'; case Changed = 'changed'; ca
 
 final class ProgressEtag { public static function of(int $userId, int $epoch, int $revision, string $contentVersion): string; }   // W/"u7.e1.r42.c…"
 
-final readonly class ProgressAreas { /** @return array<string, mixed> las áreas de http.md, sección 5; con `full` */ public function toArray(bool $full): array; }
-
-interface ChangesReader                          // el puerto entre L e Y
-{
-    /** No abre una transacción: corre dentro de la de quien llama. null es la foto completa; un número, lo que cambió desde esa revisión. */
-    public function areas(int $userId, ?int $sinceRevision): ProgressAreas;
-}
-
 final readonly class Snapshot { public function __construct(public int $userId, public int $epoch, public int $revision, public ?CarbonImmutable $resetAt, public string $contentVersion, public ProgressAreas $areas) {} }
 final readonly class NotModified { public function __construct(public string $etag) {} }
 
@@ -463,7 +489,6 @@ final readonly class SyncOutcome
 
 final class EpochMismatch extends RuntimeException { public function __construct(public readonly int $epoch, public readonly int $revision) {} }
 final class ClientOutdated extends RuntimeException {}
-final class ContentNotImported extends RuntimeException {}
 final class SyncWriteFailed extends RuntimeException { public static function from(QueryException $error): self; }   // sin SQL, sin valores y sin `previous`
 
 final class ClockCorrection
@@ -475,7 +500,7 @@ final class ClockCorrection
 final class SyncService
 {
     public function __construct(AccountLock $lock, OperationProcessor $processor, ChangesReader $changes, OperationRegistry $registry, ContentImports $content);
-    /** @throws ClientOutdated @throws ContentNotImported @throws EpochMismatch @throws SyncWriteFailed */
+    /** @throws ClientOutdated @throws ContentNotImported (de App\Progress) @throws EpochMismatch @throws SyncWriteFailed */
     public function sync(int $userId, SyncRequest $request): SyncOutcome;
 }
 ```
