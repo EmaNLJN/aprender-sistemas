@@ -90,8 +90,10 @@ npm test
 
 ## Pruebas del front (ADR 0008)
 
-Las trae F1 (`specs/003-f1-red-de-seguridad/`): hasta que se integre, `qa/e2e/` y estos comandos no
-existen. Los checks de dominio de arriba siguen como están; no se migran en bloque.
+Se corren así: `npm run build && npm run test:e2e` para toda la red, y una sola spec con
+`npm run test:e2e -- specs/<archivo>`. Con `E2E_PORT=<puerto>` dos worktrees corren la red a la vez
+sin chocar en el puerto, y `npm run test:e2e:install` baja el navegador una vez por máquina. Los
+checks de dominio de arriba siguen como están; no se migran en bloque.
 
 - **Vitest** corre las specs junto al módulo (`frontend/src/**/*.spec.ts`), en `node`. La pila de DOM
   (`jsdom` y Testing Library) llega con la primera spec de componente. Sin `globals`: cada spec
@@ -100,7 +102,8 @@ existen. Los checks de dominio de arriba siguen como están; no se migran en blo
   sin API, en el Chrome Headless Shell. `npm run test:e2e` no construye: antes, `npm run build`.
 - **Page Objects por fixtures,** con localizadores por nombre accesible (rol, etiqueta y texto). Una
   clase o un id sólo entra dentro de un Page Object, para un elemento sin nombre accesible. Las
-  aserciones van en la spec, no en el Page Object.
+  aserciones van en la spec, no en el Page Object. La excepción es `css-contract.spec.ts`, donde el
+  selector de CSS es justamente lo que se prueba.
 - **Ninguna prueba toca un servicio público.** Los Playgrounds se simulan con `page.route`, y un pedido
   fuera del servidor de pruebas sin respuesta simulada hace fallar el test. Una excepción de la
   página o un `console.error` también lo hacen fallar, salvo lo que figure en la lista blanca de
@@ -122,7 +125,7 @@ existen. Los checks de dominio de arriba siguen como están; no se migran en blo
   formato v1: arrancar con ellas no escribe, no respalda ni avisa, y sus secciones se
   importan sin pérdida. Están congeladas: nunca las regeneres ni las edites.
 - `app-shell-check` y `lab-bridge-check` caracterizan el comportamiento actual,
-  incluidos defectos conocidos marcados como `DEFECTO CONOCIDO`. Al corregir uno,
+  incluidos defectos conocidos con `KNOWN DEFECT` en el nombre de la prueba. Al corregir uno,
   cambiá su escenario en el mismo commit TDD: primero la prueba nueva que falla,
   después la corrección.
 - `qa/lib/app-adapters.ts` lista los métodos de cada `window.Taller*` que consume

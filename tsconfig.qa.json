@@ -9,5 +9,6 @@
     "erasableSyntaxOnly": true,
     "types": ["node"]
   },
-  "include": ["qa/**/*.ts", "tools/content/**/*.ts"]
+  "include": ["qa/**/*.ts", "tools/content/**/*.ts"],
+  "exclude": ["qa/e2e"]
 }

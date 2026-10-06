@@ -109,9 +109,10 @@ sin scripts ni instrucciones de red.
 - **Descargas:** `playwright-best-practices` sugiere `npx playwright install --with-deps`, que
   descarga navegadores. La regla de pedir permiso antes de cada descarga sigue valiendo.
 - **Alcance:** el [ADR 0008](adr/0008-pruebas-del-front.md), aceptado el 2026-10-05, adopta Vitest,
-  Testing Library, fishery y Playwright. F1 instala Vitest y Playwright; la pila de DOM llega con la
-  primera spec de componente y fishery con la primera factory. Hasta que F1 se integre, las specs
-  nuevas no tienen dónde correr.
+  Testing Library, fishery y Playwright. F1 instaló Vitest y Playwright; la pila de DOM llega con la
+  primera spec de componente y fishery con la primera factory. Las specs de Vitest van junto al
+  módulo y corren con `npm run test:unit`; las de Playwright viven en `qa/e2e/` y corren con
+  `npm run build && npm run test:e2e` (ver «Pruebas del front» en `qa/AGENTS.md`).
 
 Se instalaron con `npx skills add <repo> --skill <nombre> -a codex -y`, con su enlace en
 `.claude/skills/`. `.gitattributes` exime a `.agents/skills/` de `git diff --check`, para que las
