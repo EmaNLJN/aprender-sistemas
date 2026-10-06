@@ -85,7 +85,7 @@ check "$(executor_answers php) $(executor_answers worker-runs)" 'no si' \
   "el ejecutor no responde desde php y sí desde worker-runs"
 check "$(docker compose exec -T php printenv EXECUTOR_TOKEN 2>/dev/null | grep -c .)" 0 \
   "EXECUTOR_TOKEN está vacío en php"
-check "$(docker compose port executor 8080 2>/dev/null | grep -c .)" 0 \
+check "$(docker compose port executor 8080 2>/dev/null | grep -cvE '^(:0)?$')" 0 \
   "el ejecutor no publica puertos en el host"
 
 check "$(docker compose ps --status running --services | grep -cx scheduler)" 1 \
