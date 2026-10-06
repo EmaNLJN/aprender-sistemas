@@ -19,7 +19,7 @@ beforeEach(function () {
 
 afterEach(fn () => Carbon::setTestNow());
 
-function invitationRow(string $email): stdClass
+function storedAdminInvitation(string $email): stdClass
 {
     return DB::table('invitations')->where('email', $email)->first();
 }
@@ -27,7 +27,7 @@ function invitationRow(string $email): stdClass
 it('creates a student invitation with a 43 character token that expires in seven days', function () {
     $result = $this->invitations->invite('beto@x.com', Role::Student, $this->admin->id);
 
-    $row = invitationRow('beto@x.com');
+    $row = storedAdminInvitation('beto@x.com');
     $token = $result->issued->token;
     expect($result->outcome)->toBe(InviteOutcome::Created)
         ->and($result->email)->toBe('beto@x.com')
@@ -44,31 +44,31 @@ it('creates a student invitation with a 43 character token that expires in seven
 it('creates an admin invitation that expires in forty-eight hours', function () {
     $this->invitations->invite('root@x.com', Role::Admin, $this->admin->id);
 
-    $row = invitationRow('root@x.com');
+    $row = storedAdminInvitation('root@x.com');
     expect($row->role)->toBe('admin')
         ->and($row->expires_at)->toBe('2026-10-07 12:00:00.000');
 });
 
 it('answers invitation_pending and leaves a current invitation untouched', function () {
     $this->invitations->invite('beto@x.com', Role::Student, $this->admin->id);
-    $before = invitationRow('beto@x.com');
+    $before = storedAdminInvitation('beto@x.com');
 
     $result = $this->invitations->invite('beto@x.com', Role::Admin, $this->admin->id);
 
     expect($result->outcome)->toBe(InviteOutcome::Pending)
         ->and($result->issued)->toBeNull()
-        ->and(invitationRow('beto@x.com'))->toEqual($before)
+        ->and(storedAdminInvitation('beto@x.com'))->toEqual($before)
         ->and(DB::table('invitations')->count())->toBe(1);
 });
 
 it('renews an expired invitation with the requested role, a new token and a new expiry', function () {
     $first = $this->invitations->invite('beto@x.com', Role::Student, $this->admin->id);
-    $oldHash = invitationRow('beto@x.com')->token_hash;
+    $oldHash = storedAdminInvitation('beto@x.com')->token_hash;
     $this->travel(8)->days();
 
     $result = $this->invitations->invite('beto@x.com', Role::Admin, $this->admin->id);
 
-    $row = invitationRow('beto@x.com');
+    $row = storedAdminInvitation('beto@x.com');
     expect($result->outcome)->toBe(InviteOutcome::Renewed)
         ->and($result->issued->token)->not->toBe($first->issued->token)
         ->and($row->token_hash)->toBe(hash('sha256', $result->issued->token))
@@ -104,7 +104,7 @@ it('resends by rotating the token and the expiry according to the role', functio
 
     $issued = $this->invitations->resend($invitation);
 
-    $row = invitationRow('root@x.com');
+    $row = storedAdminInvitation('root@x.com');
     expect($issued->token)->not->toBe($created->issued->token)
         ->and($row->token_hash)->toBe(hash('sha256', $issued->token))
         ->and($row->expires_at)->toBe('2026-10-08 12:00:00.000')
@@ -133,7 +133,7 @@ it('resends an expired invitation and clears the delivery marks of an email one'
 
     $issued = $this->invitations->resend(Invitation::where('email', 'beto@x.com')->firstOrFail());
 
-    $row = invitationRow('beto@x.com');
+    $row = storedAdminInvitation('beto@x.com');
     expect($row->expires_at)->toBe('2026-10-20 12:00:00.000')
         ->and($row->delivery)->toBe('link')
         ->and($row->sent_at)->toBeNull()
@@ -152,7 +152,7 @@ it('revokes an invitation so that its token stops working', function () {
 
 it('finds an invitation by id and fails for one that does not exist', function () {
     $this->invitations->invite('beto@x.com', Role::Student, $this->admin->id);
-    $id = invitationRow('beto@x.com')->id;
+    $id = storedAdminInvitation('beto@x.com')->id;
 
     expect($this->invitations->find($id)->email)->toBe('beto@x.com')
         ->and(fn () => $this->invitations->find($id + 1))->toThrow(ModelNotFoundException::class);
