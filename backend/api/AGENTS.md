@@ -7,7 +7,8 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
 - **Comandos:**
   - `npm run api:test`: Pest contra `mysql-test`. Para filtrar,
     `npm run api:test -- --filter=Nombre`.
-  - `npm run api:test:down`: apaga la base de pruebas.
+  - `npm run api:test:down`: apaga la base de pruebas y borra la red `testing` del proyecto,
+    sin tocar el stack principal.
   - `npm run api:format:check`: Pint.
   - `npm run api:analyse`: PHPStan con Larastan, nivel 9 desde C6 (`phpstan.neon`), sin baseline ni `ignoreErrors`, sobre `app`, `config`,
     `database`, `routes` y `bootstrap/app.php`.
