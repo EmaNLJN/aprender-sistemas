@@ -354,10 +354,15 @@ final class AccountLock             // compartida con D1
      * @param  Closure(ProgressHead): T  $work
      * @return T
      */
-    public function within(int $userId, Closure $work): mixed;
+    public function within(int $userId, Closure $work): mixed;   // lanza AccountGone si la cuenta ya no existe
 
     /** Sube la revisión en uno y fija la última actividad; devuelve la cabecera como queda. Una vez por transacción. */
     public function advance(ProgressHead $head, CarbonImmutable $at): ProgressHead;
+}
+
+final class AccountGone extends RuntimeException   // la cuenta ya no existe (C3b la suprimió): quien llama descarta en silencio
+{
+    public function __construct(public readonly int $userId) {}
 }
 
 namespace App\Runs\Evidence;

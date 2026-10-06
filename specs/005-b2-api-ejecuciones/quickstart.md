@@ -98,16 +98,16 @@ npm run api:runs:check
 
 Crea dos cuentas de prueba (una por lenguaje, así 6 casos de cada una quedan bajo las 10 por minuto), corre y retira. Los 12 casos de SC-001:
 
-| Caso | Rust | Go | Esperado |
+| Caso | Rust (`rust-01`) | Go (`go-01`) | Esperado |
 | --- | --- | --- | --- |
-| Solución de referencia | `rust-01` | `go-01` | `passed`, 3 pruebas en `pass` |
-| Código inicial | `rust-01` | `go-01` | `failed`, con las pruebas que fallan nombradas |
-| Error de compilación | un `)` de más | un `)` de más | `compile_error` |
-| Pánico | `std::process::exit(101)` | un `init` que entra en pánico | `runtime_error` |
-| Bucle infinito | `loop {}` | `for {}` | `timeout` |
-| Salida desbordada | imprime más de 64 KiB y termina | ídem | `failed` con motivo `output_limit` |
+| Solución de referencia | su `solution` | su `solution` | `passed`, 3 pruebas en `pass` |
+| Código inicial | su `starter` | su `starter` | `failed`, con las pruebas que fallan nombradas |
+| Error de compilación | la `solution` con un `)` de más al final | ídem | `compile_error` |
+| Salida con código distinto de 0 | la `solution` y la prueba propia `{ std::process::exit(101) }`, que corre después de las tres | la `solution` y `func init() { panic("boom") }` agregado al código | `runtime_error` |
+| Bucle infinito | la `solution` y la prueba propia `{ loop {} }` | la `solution` y la prueba propia `func() bool { for {} }()` | `timeout` |
+| Salida desbordada | la `solution` y la prueba propia `{ for _ in 0..200 { println!("{}", "x".repeat(1024)); } true }` | la `solution` y la prueba propia `func() bool { for i := 0; i < 200; i++ { fmt.Println(fmt.Sprintf("%01024d", 0)) }; return true }()` | `failed` con motivo `output_limit` (el centinela queda más allá de los 64 KiB que conserva el ejecutor) |
 
-Además, de SC-003 (la 2.ª simultánea y la 11.ª de un minuto dan 429 `quota_exceeded` con `Retry-After`) y, como **medición** (SC-012, sin objetivo todavía), un aula simulada de 30 cuentas que ejecutan a la vez: imprime la mediana y el p95 del tiempo hasta el estado final, la espera del último y la cantidad de 503. El ADR 0005 espera una mediana de 1,5 a 3 s en reposo y el ADR 0006 estima unos 20 s para el último de un aula de 30: eso es lo que se contrasta.
+Además, de SC-003 (la 2.ª simultánea y la 11.ª de un minuto dan 429 `quota_exceeded` con `Retry-After`, y en una ráfaga de 40 cuentas la que supera las 32 en espera da 503 `queue_full` con `Retry-After`) y, como **medición** (SC-012, sin objetivo todavía), un aula simulada de 30 cuentas que ejecutan a la vez: imprime la mediana y el p95 del tiempo hasta el estado final, la espera del último y la cantidad de 503. El ADR 0005 espera una mediana de 1,5 a 3 s en reposo y el ADR 0006 estima unos 20 s para el último de un aula de 30: eso es lo que se contrasta.
 
 ## 7. Un worker que muere (SC-005)
 

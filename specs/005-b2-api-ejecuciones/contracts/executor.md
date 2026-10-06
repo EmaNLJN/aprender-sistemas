@@ -57,7 +57,7 @@ Sólo hay dos pruebas positivas de «no corrió»: un 503 o un errno de conexió
 
 ## Los plazos y su orden
 
-Ninguno de los plazos de más arriba en la cadena puede vencer antes que uno de más abajo, o se daría por perdido un trabajo que sigue corriendo (FR-013). Una prueba de configuración (`RunsConfigTest`) comprueba el orden con los valores de `config/runs.php` y `config/queue.php`.
+Ninguno de los plazos de más arriba en la cadena puede vencer antes que uno de más abajo, o se daría por perdido un trabajo que sigue corriendo (FR-013). Dos pruebas lo comprueban: `TimeoutChainTest` (Pest) con los valores de `config/runs.php`, `config/queue.php` y `ExecuteRun::TIMEOUT`, y `qa/compose-runs-check.ts` (parte de `npm test`) con lo que vive fuera de PHP, el `WriteTimeout` del ejecutor y los `stop_grace_period` de Compose.
 
 | Plazo | Valor | Dónde vive |
 | --- | --- | --- |
