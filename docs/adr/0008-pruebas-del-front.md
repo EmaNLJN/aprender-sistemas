@@ -1,6 +1,7 @@
 # ADR 0008 · Pruebas del front: Vitest, Testing Library, fishery y Playwright
 
-- **Estado:** aceptada por el usuario el 2026-10-05, sin enmiendas.
+- **Estado:** aceptada por el usuario el 2026-10-05, sin enmiendas; precisada con lo que midió la
+  implementación de F1 (ver «Enmienda»).
 - **Contexto de la decisión:** el usuario eligió el camino «red y seams primero» para portar el front legacy a React y no corrigió sus supuestos: antes de portar van E2E con Playwright y Page Objects contra la versión actual, y las piezas nuevas llevan Vitest, Testing Library y factories con fishery.
 - **Relacionado:** completa el [ADR 0002](0002-qa-y-configuracion-en-typescript.md) (los checks de `qa/` siguen igual), respeta el [ADR 0003](0003-integridad-del-progreso.md) (el progreso guardado es contrato) y el [ADR 0007](0007-organizacion-del-repositorio.md) (`qa/` es transversal e incluye los checks de punta a punta). Es la base del ítem F1 de `specs/front-react/roadmap.md`.
 
@@ -187,3 +188,40 @@ F1 instala `vitest` y `@playwright/test`: 19 paquetes, 22,44 MB desempaquetados 
 - **Zustand:** entra con su primer caso real, como pide `AGENTS.md`.
 - **Metas de cobertura:** la skill `react-testing` propone umbrales de 70 a 90 %. El proyecto no los adopta, igual que con `php-pro`: manda `AGENTS.md`.
 - **Pruebas de accesibilidad con axe, regresión visual, Firefox y WebKit, sharding y un E2E contra el stack de Docker:** se evalúan cuando haya un caso real.
+
+## Enmienda (2026-10-05, plan de F1)
+
+La implementación de F1 (`specs/003-f1-red-de-seguridad/`) no cambia ninguna decisión: precisa nueve
+detalles que el ADR no fijaba o que no se sostenían tal cual al probarlos contra el build.
+
+- **Host del servidor.** El ADR decía que `webServer` levanta `npm run preview -- --port 4173
+  --strictPort`; la implementación suma `--host 127.0.0.1`. Sin él, `vite preview` escucha sólo en
+  `[::1]:4173` (`ss -ltn`) y `curl http://127.0.0.1:4173` no conecta: Playwright sondea `127.0.0.1` y
+  termina con «Timed out waiting 60000ms from config.webServer».
+- **Puerto y servidor ajeno.** El ADR fijaba el puerto 4173; la implementación usa `E2E_PORT` (4173
+  por omisión) y `reuseExistingServer: false`. Dos worktrees en paralelo chocarían en el puerto, y
+  reutilizar un servidor ajeno probaría el `dist/` de otro worktree.
+- **Workers.** El ADR no los mencionaba; la implementación fija `workers: 1` en la CI y deja los de
+  Playwright por omisión en local. La guía de CI de Playwright recomienda uno en la CI, por
+  estabilidad (consultada el 2026-10-05). Con uno, la suite tardó unos 32 s.
+- **Import de la config de Vitest.** El ADR decía `mergeConfig` con la config de Vite; la
+  implementación importa `viteConfig from './vite.config.ts'`, con extensión, y agrega
+  `allowImportingTsExtensions` en `tsconfig.node.json`. Sin la extensión, Vite avisa que su cargador
+  nativo dejará de aceptarla; con la extensión y sin el flag, `tsc` da TS5097.
+- **Caché de Vitest.** El ADR no lo mencionaba; la implementación fija `cacheDir: ../node_modules/.vite`.
+  La raíz de Vite es `frontend/src`: por omisión el caché caía en `frontend/src/node_modules/.vite`,
+  que Git ignora pero `.dockerignore` no.
+- **Proyectos y setup de Vitest.** El ADR proponía dos proyectos (`node` y `jsdom`) y un setup dentro
+  de `frontend/src/`; la implementación tiene un solo proyecto `node`, sin setup. `jsdom` y Testing
+  Library llegan con la primera spec de componente (ADR, «Instalación por primer uso»): F3 pasa la
+  config a `projects`.
+- **Imports de `qa/e2e`.** El ADR indicaba que los checks de `qa/` usan `.ts` explícito; `qa/e2e`
+  usa imports sin extensión, con su propio `tsconfig.json` (`Bundler`), y `tsconfig.qa.json` excluye
+  `qa/e2e`. Bajo `tsconfig.qa.json` los archivos dan TS2835 y TS1294 (propiedades de parámetro); el
+  ADR ya preveía un `tsconfig.json` propio.
+- **Paso que sube el informe.** El ADR decía `if: failure()`; la implementación usa `id: e2e` y
+  `if: failure() && steps.e2e.outcome == 'failure'`. Con `failure()` solo, el paso también corre
+  cuando falla `npm test` o `lint`, no encuentra informe y avisa en vano.
+- **Pruebas de las guardas.** El ADR no las mencionaba; la implementación agrega `guards.spec.ts`, con
+  `test.fail()`. Al apagar cada guarda, sus pruebas informan «Expected to fail, but passed»
+  (verificado).
