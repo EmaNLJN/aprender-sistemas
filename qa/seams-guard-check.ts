@@ -143,7 +143,7 @@ test('R4: a legacy view that imports a singleton of another owner is reported', 
   });
   assert.deepEqual(rulesOf(violations), ['R4']);
   assert.match(violations[0], /frontend\/campaign\.js/);
-  assert.match(violations[0], /routeStore/);
+  assert.match(violations[0], /entities\/guide/);
 });
 
 test('R4: an adapter under app/legacy that imports a singleton of another owner is reported', () => {
@@ -153,10 +153,58 @@ test('R4: an adapter under app/legacy that imports a singleton of another owner 
   assert.deepEqual(rulesOf(violations), ['R4']);
 });
 
+test('R4: any value import of a slice index outside its legacy owner is reported', () => {
+  const violations = findViolations({
+    ...LEGACY_OWNERS,
+    'frontend/systems.js': `import { interpretRun } from './src/entities/exercise';`,
+  });
+  assert.deepEqual(rulesOf(violations), ['R4']);
+  assert.match(violations[0], /frontend\/systems\.js/);
+  assert.match(violations[0], /entities\/exercise/);
+});
+
+test('R4: a value or bare import of an index from a boot module is reported', () => {
+  const violations = findViolations({
+    'frontend/src/app/boot/start.ts': `import { summarizeWorlds } from '../../entities/campaign';`,
+    'frontend/src/app/boot/warm.ts': `import '../../entities/systems-workshop';`,
+  });
+  assert.deepEqual(rulesOf(violations), ['R4', 'R4']);
+});
+
 test('R4: a React page may import a singleton', () => {
   assert.deepEqual(
     findViolations({
       'frontend/src/pages/route/ui/route-page.tsx': `import { routeStore } from '../../../entities/guide';`,
+    }),
+    [],
+  );
+});
+
+test('R4: an inline type import mixed with a value import is reported, a type-only one is not', () => {
+  assert.deepEqual(
+    rulesOf(
+      findViolations({
+        'frontend/src/app/boot/start.ts': `import { type Exercise, interpretRun } from '../../entities/exercise';`,
+      }),
+    ),
+    ['R4'],
+  );
+  assert.deepEqual(
+    findViolations({
+      'frontend/src/app/legacy/register-atlas.ts': `
+        import type { Exercise } from '../../entities/exercise';
+        import { type GuideData } from '../../entities/guide';`,
+    }),
+    [],
+  );
+});
+
+test('R4: a spec and an @x entry are not reported', () => {
+  assert.deepEqual(
+    findViolations({
+      'frontend/src/entities/guide/model/route-store.spec.ts': `import { routeStore } from '..';`,
+      'frontend/src/entities/exercise/@x/systems-workshop.ts': `export { hasPassingEvidence } from '../model/evidence';`,
+      'frontend/src/app/engine-init-order.spec.ts': `import { campaignEngine } from '../entities/campaign';`,
     }),
     [],
   );

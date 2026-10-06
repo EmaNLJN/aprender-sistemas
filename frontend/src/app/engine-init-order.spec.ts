@@ -19,22 +19,44 @@ const systemsEngines: [string, () => SystemsEngine][] = [
   ['singleton', () => systemsEngine],
 ];
 
-describe.each(campaignEngines)('campaign engine used before init (%s)', (_, engineFor) => {
-  it('throws instead of answering', () => {
-    const engine = engineFor();
+const campaignOperations: [string, (engine: CampaignEngine) => unknown][] = [
+  ['getWorlds', (engine) => engine.getWorlds('rust')],
+  ['canAttempt', (engine) => engine.canAttempt('rust-02', 'rust')],
+  ['answerCheckpoint', (engine) => engine.answerCheckpoint('rust-world-1', 0)],
+  ['getSummary', (engine) => engine.getSummary('rust')],
+  ['refreshFromLab', (engine) => engine.refreshFromLab(null)],
+  ['syncLab', (engine) => engine.syncLab(null)],
+  ['exportState', (engine) => engine.exportState()],
+  ['planImport', (engine) => engine.planImport(null)],
+  ['applyImport', (engine) => engine.applyImport({ state: {} as never, lossy: false })],
+  ['backups', (engine) => engine.backups()],
+  ['reset', (engine) => engine.reset()],
+];
 
-    expect(() => engine.getWorlds('rust')).toThrow(CAMPAIGN_MESSAGE);
-    expect(() => engine.refreshFromLab(null)).toThrow(CAMPAIGN_MESSAGE);
-    expect(() => engine.canAttempt('rust-02', 'rust')).toThrow(CAMPAIGN_MESSAGE);
+const systemsOperations: [string, (engine: SystemsEngine) => unknown][] = [
+  ['get', (engine) => engine.get('alpha', 'rust')],
+  ['observe', (engine) => engine.observe('alpha', 'rust', ['a'])],
+  ['answer', (engine) => engine.answer('alpha', 'rust', 0)],
+  ['list', (engine) => engine.list('rust')],
+  ['refreshFromLab', (engine) => engine.refreshFromLab(null)],
+  ['syncLab', (engine) => engine.syncLab(null)],
+  ['setStep', (engine) => engine.setStep('alpha', 'rust', 0, true)],
+  ['setNote', (engine) => engine.setNote('alpha', 'rust', 'note')],
+  ['exportState', (engine) => engine.exportState()],
+  ['planImport', (engine) => engine.planImport(null)],
+  ['applyImport', (engine) => engine.applyImport({ state: {} as never, lossy: false })],
+  ['backups', (engine) => engine.backups()],
+  ['reset', (engine) => engine.reset()],
+];
+
+describe.each(campaignEngines)('campaign engine used before init (%s)', (_, engineFor) => {
+  it.each(campaignOperations)('refuses %s', (_name, operation) => {
+    expect(() => operation(engineFor())).toThrow(CAMPAIGN_MESSAGE);
   });
 });
 
 describe.each(systemsEngines)('Systems engine used before init (%s)', (_, engineFor) => {
-  it('throws instead of answering', () => {
-    const engine = engineFor();
-
-    expect(() => engine.list('rust')).toThrow(SYSTEMS_MESSAGE);
-    expect(() => engine.refreshFromLab(null)).toThrow(SYSTEMS_MESSAGE);
-    expect(() => engine.exportState()).toThrow(SYSTEMS_MESSAGE);
+  it.each(systemsOperations)('refuses %s', (_name, operation) => {
+    expect(() => operation(engineFor())).toThrow(SYSTEMS_MESSAGE);
   });
 });

@@ -11,15 +11,15 @@ import {
 import {
   absorbStored,
   blankLabState,
+  LANGUAGES,
   parseSavedLab,
   sanitizeImport,
   type LabStateV1,
 } from './lab-state';
 import { mergeRecord } from './merge-record';
-import type { Exercise, ExerciseLanguage } from './types';
+import type { Exercise } from './types';
 
 const KEY = 'taller-laboratorio-v1';
-const LANGUAGES: ExerciseLanguage[] = ['rust', 'go'];
 
 export interface LabCatalogLookup {
   byId: ReadonlyMap<string, Exercise>;

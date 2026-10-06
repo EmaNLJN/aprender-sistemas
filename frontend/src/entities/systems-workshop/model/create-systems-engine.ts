@@ -74,9 +74,13 @@ export function createSystemsEngine(): SystemsEngine {
   let store: VersionedStore<SystemsStateV1> | null = null;
   const changes = createStore<{ revision: number }>(() => ({ revision: 0 }));
 
-  function assertReady(): VersionedStore<SystemsStateV1> {
+  function requireStore(): VersionedStore<SystemsStateV1> {
     if (!store) throw new Error('Inicializá Sistemas antes de usarlo.');
     return store;
+  }
+
+  function assertReady(): void {
+    requireStore();
   }
 
   function notify(): void {
@@ -87,7 +91,7 @@ export function createSystemsEngine(): SystemsEngine {
   // records obtained before persisting go stale; each method requests them again
   // with `record()`.
   function persist(): void {
-    const result = assertReady().write(state);
+    const result = requireStore().write(state);
     state = result.state;
     storageAvailable = result.saved;
   }
@@ -173,7 +177,7 @@ export function createSystemsEngine(): SystemsEngine {
 
   function syncLab(lab?: unknown): SystemsSyncResult {
     refreshFromLab(lab);
-    const changed = assertReady().hasUnsavedChanges(state);
+    const changed = requireStore().hasUnsavedChanges(state);
     if (changed) {
       persist();
       notify();
@@ -204,8 +208,9 @@ export function createSystemsEngine(): SystemsEngine {
   }
 
   function applyImport(plan: SystemsImportPlan): SystemsSyncResult {
+    assertReady();
     state = cloneJson(plan.state);
-    const changed = assertReady().hasUnsavedChanges(state);
+    const changed = requireStore().hasUnsavedChanges(state);
     if (changed) persist();
     notify();
     return { changed, storageAvailable };
@@ -230,8 +235,9 @@ export function createSystemsEngine(): SystemsEngine {
   }
 
   function reset(): SystemsResetResult {
+    assertReady();
     state = blankSystemsState();
-    const removed = assertReady().remove();
+    const removed = requireStore().remove();
     notify();
     return { removed };
   }
@@ -246,7 +252,7 @@ export function createSystemsEngine(): SystemsEngine {
     syncLab,
     planImport,
     applyImport,
-    backups: () => assertReady().backups(),
+    backups: () => requireStore().backups(),
     list(language) {
       assertReady();
       return [...catalog.workshops.keys()].map((id) => get(id, language));

@@ -14,13 +14,15 @@ const FACTORIES: readonly string[] = [
   'createSystemsEngine',
 ];
 
-const SINGLETON_OWNERS: Readonly<Record<string, readonly string[]>> = {
-  routeStore: ['frontend/app.js'],
-  labStore: ['frontend/lab.js'],
-  exerciseCatalog: ['frontend/lab.js'],
-  campaignEngine: ['frontend/src/app/legacy/register-campaign-engine.ts'],
-  systemsEngine: ['frontend/src/app/legacy/register-systems-engine.ts'],
+const INDEX_OWNERS: Readonly<Record<string, string>> = {
+  guide: 'frontend/app.js',
+  exercise: 'frontend/lab.js',
+  campaign: 'frontend/src/app/legacy/register-campaign-engine.ts',
+  'systems-workshop': 'frontend/src/app/legacy/register-systems-engine.ts',
 };
+
+const SLICE_INDEX_SPECIFIER =
+  /(?:^|\/)entities\/(guide|exercise|campaign|systems-workshop)(?:\/index(?:\.ts)?)?$/;
 
 const IMPORT_PATTERN =
   /^\s*import\s+(type\s+)?([^'";]*?)\s*from\s*['"]([^'"]+)['"]|^\s*import\s*['"]([^'"]+)['"]/gm;
@@ -28,6 +30,7 @@ const IMPORT_PATTERN =
 interface ImportStatement {
   names: string[];
   specifier: string;
+  isValueImport: boolean;
 }
 
 function parseImports(text: string): ImportStatement[] {
@@ -35,9 +38,24 @@ function parseImports(text: string): ImportStatement[] {
   for (const match of text.matchAll(IMPORT_PATTERN)) {
     const [, typeOnly, clause, fromSpecifier, bareSpecifier] = match;
     const names = typeOnly ? [] : importedNames(clause ?? '');
-    statements.push({ names, specifier: fromSpecifier ?? bareSpecifier ?? '' });
+    statements.push({
+      names,
+      specifier: fromSpecifier ?? bareSpecifier ?? '',
+      isValueImport: !typeOnly && hasRuntimeBinding(clause),
+    });
   }
   return statements;
+}
+
+function hasRuntimeBinding(clause: string | undefined): boolean {
+  if (clause === undefined) return true;
+  const braces = clause.match(/\{([^}]*)\}/);
+  const outsideBraces = clause
+    .replace(/\{[^}]*\}/, '')
+    .replace(/,/g, '')
+    .trim();
+  if (outsideBraces !== '') return true;
+  return braces !== null && importedNames(clause).length > 0;
 }
 
 function importedNames(clause: string): string[] {
@@ -50,8 +68,8 @@ function importedNames(clause: string): string[] {
     .map((entry) => entry.split(/\s+as\s+/)[0]);
 }
 
-function isLegacyFile(file: string): boolean {
-  return /^frontend\/[^/]+\.js$/.test(file) || file.startsWith('frontend/src/app/legacy/');
+function isLegacyOrAppFile(file: string): boolean {
+  return /^frontend\/[^/]+\.js$/.test(file) || file.startsWith('frontend/src/app/');
 }
 
 function isLowerLayerFile(file: string): boolean {
@@ -81,15 +99,19 @@ function factoryViolations(file: string, imports: ImportStatement[]): string[] {
     .map((name) => `R3 ${file}: imports the factory ${name}; import the singleton instead`);
 }
 
-function singletonViolations(file: string, imports: ImportStatement[]): string[] {
-  if (!isLegacyFile(file)) return [];
+// Pages and features consume the singletons from F3 on; the legacy sources and app/ (adapters and boot)
+// evaluate each slice index in their own bundle or static graph, so only the owner may import values there.
+function indexViolations(file: string, imports: ImportStatement[]): string[] {
+  if (!isLegacyOrAppFile(file)) return [];
   return imports
-    .flatMap((statement) => statement.names)
-    .filter((name) => name in SINGLETON_OWNERS && !SINGLETON_OWNERS[name].includes(file))
-    .map(
-      (name) =>
-        `R4 ${file}: imports the singleton ${name}, which only ${SINGLETON_OWNERS[name].join(' and ')} may import`,
-    );
+    .filter((statement) => statement.isValueImport)
+    .flatMap((statement) => {
+      const slice = statement.specifier.match(SLICE_INDEX_SPECIFIER)?.[1];
+      if (slice === undefined || INDEX_OWNERS[slice] === file) return [];
+      return [
+        `R4 ${file}: imports a value from entities/${slice}, whose index only ${INDEX_OWNERS[slice]} may import`,
+      ];
+    });
 }
 
 function curriculumViolations(file: string, imports: ImportStatement[]): string[] {
@@ -108,7 +130,7 @@ export function findViolations(sources: Readonly<Record<string, string>>): strin
         ...keyViolations(file, text),
         ...openerViolations(file, imports),
         ...factoryViolations(file, imports),
-        ...singletonViolations(file, imports),
+        ...indexViolations(file, imports),
         ...curriculumViolations(file, imports),
       ];
     });
