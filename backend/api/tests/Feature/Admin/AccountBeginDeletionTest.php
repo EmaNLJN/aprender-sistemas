@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
-function pendingInvitation(string $email, ?User $invitedBy = null): void
+function adminPendingInvitation(string $email, ?User $invitedBy = null): void
 {
     DB::table('invitations')->insert([
         'email' => $email,
@@ -24,7 +24,7 @@ function pendingInvitation(string $email, ?User $invitedBy = null): void
     ]);
 }
 
-function liveSession(User $user, string $id): void
+function adminLiveSession(User $user, string $id): void
 {
     DB::table('sessions')->insert(['id' => $id, 'user_id' => $user->id, 'payload' => '', 'last_activity' => now()->getTimestamp()]);
 }
@@ -35,11 +35,11 @@ beforeEach(function () {
 
 it('moves a student to deleting and takes away their sessions, tokens and pending invitation', function () {
     $student = User::factory()->create(['email' => 'ana@x.com']);
-    liveSession($student, 'first');
-    liveSession($student, 'second');
+    adminLiveSession($student, 'first');
+    adminLiveSession($student, 'second');
     DB::table('password_reset_tokens')->insert(['email' => 'ana@x.com', 'token' => 'hashed', 'created_at' => now()]);
-    pendingInvitation('ana@x.com');
-    pendingInvitation('other@x.com');
+    adminPendingInvitation('ana@x.com');
+    adminPendingInvitation('other@x.com');
     $tokenBefore = $student->remember_token;
 
     $deleted = app(AccountChanges::class)->beginDeletion($student->id);
@@ -58,8 +58,8 @@ it('moves a student to deleting and takes away their sessions, tokens and pendin
 it('drops the invitations that an admin created', function () {
     $admin = User::factory()->admin()->create();
     User::factory()->admin()->create();
-    pendingInvitation('one@x.com', $admin);
-    pendingInvitation('two@x.com', $admin);
+    adminPendingInvitation('one@x.com', $admin);
+    adminPendingInvitation('two@x.com', $admin);
 
     app(AccountChanges::class)->beginDeletion($admin->id);
 
@@ -83,7 +83,7 @@ it('is idempotent: an account already deleting comes back with no writes and no 
 
 it('refuses with LastAdmin for the only active admin and changes nothing', function () {
     $admin = User::factory()->admin()->create();
-    liveSession($admin, 'kept');
+    adminLiveSession($admin, 'kept');
 
     expect(fn () => app(AccountChanges::class)->beginDeletion($admin->id))->toThrow(LastAdmin::class);
 

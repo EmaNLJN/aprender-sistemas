@@ -6,7 +6,7 @@ use App\Auth\AccountStatus;
 use App\Models\User;
 use Tests\Support\Parallel;
 
-function disablesTheOther(int $actorId, int $targetId): Closure
+function adminDisablesTheOther(int $actorId, int $targetId): Closure
 {
     return function () use ($actorId, $targetId): string {
         try {
@@ -27,8 +27,8 @@ it('lets exactly one of two admins disable the other, twenty times out of twenty
         User::query()->whereKey([$first->id, $second->id])->update(['status' => AccountStatus::Active]);
 
         $outcomes = collect(Parallel::run([
-            disablesTheOther($first->id, $second->id),
-            disablesTheOther($second->id, $first->id),
+            adminDisablesTheOther($first->id, $second->id),
+            adminDisablesTheOther($second->id, $first->id),
         ]))->sort()->values()->all();
 
         expect($outcomes)->toBe(['disabled', 'last_admin'], "round $round")

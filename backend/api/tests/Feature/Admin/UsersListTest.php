@@ -4,7 +4,7 @@ use App\Models\User;
 use Illuminate\Testing\TestResponse;
 use Tests\Support\Browser;
 
-function directoryOfSeven(): User
+function adminDirectoryOfSeven(): User
 {
     $accounts = [
         ['Ana Pérez', 'ana@x.com', 'student', 'active'],
@@ -22,19 +22,19 @@ function directoryOfSeven(): User
     return User::where('email', 'carla@x.com')->firstOrFail();
 }
 
-function namesIn(TestResponse $response): array
+function adminNamesIn(TestResponse $response): array
 {
     return collect($response->json('data'))->pluck('name')->all();
 }
 
 beforeEach(function () {
-    $this->browser = Browser::for($this)->useDatabaseDrivers()->signIn(directoryOfSeven());
+    $this->browser = Browser::for($this)->useDatabaseDrivers()->signIn(adminDirectoryOfSeven());
 });
 
 it('returns the second page of three with its meta', function () {
     $response = $this->browser->get('/api/admin/users?perPage=3&page=2')->assertOk();
 
-    expect(namesIn($response))->toBe(['Diego Ana', 'Eva Lúa', 'Fede Mora'])
+    expect(adminNamesIn($response))->toBe(['Diego Ana', 'Eva Lúa', 'Fede Mora'])
         ->and($response->json('meta'))->toBe(['page' => 2, 'perPage' => 3, 'total' => 7, 'lastPage' => 3]);
 });
 
@@ -54,7 +54,7 @@ it('rejects a perPage out of 1 to 100', function (string $query) {
 })->with(['perPage=101', 'perPage=0']);
 
 it('searches the name and the email as a substring', function (string $q, array $names) {
-    expect(namesIn($this->browser->get('/api/admin/users?q='.urlencode($q))->assertOk()))->toBe($names);
+    expect(adminNamesIn($this->browser->get('/api/admin/users?q='.urlencode($q))->assertOk()))->toBe($names);
 })->with([
     'name' => ['ana', ['Ana Pérez', 'Diego Ana']],
     'accent and case in the name' => ['PÉREZ', ['Ana Pérez']],
@@ -65,15 +65,15 @@ it('searches the name and the email as a substring', function (string $q, array 
 ]);
 
 it('filters by role and status together', function () {
-    expect(namesIn($this->browser->get('/api/admin/users?role=admin&status=active')->assertOk()))->toBe(['Carla Gómez']);
+    expect(adminNamesIn($this->browser->get('/api/admin/users?role=admin&status=active')->assertOk()))->toBe(['Carla Gómez']);
 });
 
 it('filters by the deleting status', function () {
-    expect(namesIn($this->browser->get('/api/admin/users?status=deleting')->assertOk()))->toBe(['Eva Lúa']);
+    expect(adminNamesIn($this->browser->get('/api/admin/users?status=deleting')->assertOk()))->toBe(['Eva Lúa']);
 });
 
 it('sorts by name ascending, descending and by email', function (string $sort, array $names) {
-    expect(namesIn($this->browser->get('/api/admin/users?sort='.$sort)->assertOk()))->toBe($names);
+    expect(adminNamesIn($this->browser->get('/api/admin/users?sort='.$sort)->assertOk()))->toBe($names);
 })->with([
     'name' => ['name', ['Ana Pérez', 'Beto Ruiz', 'Carla Gómez', 'Diego Ana', 'Eva Lúa', 'Fede Mora', 'Gala Sosa']],
     '-name' => ['-name', ['Gala Sosa', 'Fede Mora', 'Eva Lúa', 'Diego Ana', 'Carla Gómez', 'Beto Ruiz', 'Ana Pérez']],
@@ -83,7 +83,7 @@ it('sorts by name ascending, descending and by email', function (string $sort, a
 it('sorts by email, not by name', function () {
     User::query()->where('email', 'ana@x.com')->update(['email' => 'zzz@x.com']);
 
-    expect(namesIn($this->browser->get('/api/admin/users?sort=email')->assertOk()))->toBe(['Beto Ruiz', 'Carla Gómez', 'Diego Ana', 'Eva Lúa', 'Fede Mora', 'Gala Sosa', 'Ana Pérez']);
+    expect(adminNamesIn($this->browser->get('/api/admin/users?sort=email')->assertOk()))->toBe(['Beto Ruiz', 'Carla Gómez', 'Diego Ana', 'Eva Lúa', 'Fede Mora', 'Gala Sosa', 'Ana Pérez']);
 });
 
 it('rejects an invalid sort with errors.sort', function () {

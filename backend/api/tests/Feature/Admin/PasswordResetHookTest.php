@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Testing\TestResponse;
 use Tests\Support\Browser;
 
-function requestResetOf(Browser $browser, int $id): TestResponse
+function adminRequestReset(Browser $browser, int $id): TestResponse
 {
     return $browser->post("/api/admin/users/$id/password-reset");
 }
@@ -23,30 +23,30 @@ beforeEach(function () {
 });
 
 it('answers 423 without the reconfirmed password, even for an id that does not exist', function () {
-    requestResetOf($this->browser, User::factory()->create()->id)->assertStatus(423);
-    requestResetOf($this->browser, 999999)->assertStatus(423);
+    adminRequestReset($this->browser, User::factory()->create()->id)->assertStatus(423);
+    adminRequestReset($this->browser, 999999)->assertStatus(423);
 });
 
 it('answers 404 for an id that does not exist once the password is confirmed', function () {
-    requestResetOf(($this->confirmed)(), 999999)->assertStatus(404)->assertJsonPath('code', 'not_found');
+    adminRequestReset(($this->confirmed)(), 999999)->assertStatus(404)->assertJsonPath('code', 'not_found');
 });
 
 it('answers 422 with errors.user for an admin target', function () {
     $target = User::factory()->admin()->create();
 
-    requestResetOf(($this->confirmed)(), $target->id)->assertStatus(422)->assertJsonValidationErrorFor('user', 'errors');
+    adminRequestReset(($this->confirmed)(), $target->id)->assertStatus(422)->assertJsonValidationErrorFor('user', 'errors');
 });
 
 it('answers 422, and not 503, for a disabled account or one being deleted', function (string $state) {
     $target = User::factory()->$state()->create();
 
-    requestResetOf(($this->confirmed)(), $target->id)->assertStatus(422)->assertJsonPath('code', 'validation_failed');
+    adminRequestReset(($this->confirmed)(), $target->id)->assertStatus(422)->assertJsonPath('code', 'validation_failed');
 })->with(['disabled', 'deleting']);
 
 it('answers 503 mail_unavailable with Retry-After to an active student', function () {
     $student = User::factory()->create();
 
-    requestResetOf(($this->confirmed)(), $student->id)
+    adminRequestReset(($this->confirmed)(), $student->id)
         ->assertStatus(503)
         ->assertHeader('Retry-After', '3600')
         ->assertJsonPath('code', 'mail_unavailable');
@@ -57,7 +57,7 @@ it('issues no token and queues nothing when it answers 503', function () {
     $student = User::factory()->create();
     $tokensBefore = DB::table('password_reset_tokens')->count();
 
-    requestResetOf(($this->confirmed)(), $student->id)->assertStatus(503);
+    adminRequestReset(($this->confirmed)(), $student->id)->assertStatus(503);
 
     expect(DB::table('password_reset_tokens')->count())->toBe($tokensBefore);
     Queue::assertNothingPushed();
@@ -67,7 +67,7 @@ it('logs the refusal with the target and a reason, and no email', function () {
     Log::spy();
     $student = User::factory()->create();
 
-    requestResetOf(($this->confirmed)(), $student->id)->assertStatus(503);
+    adminRequestReset(($this->confirmed)(), $student->id)->assertStatus(503);
 
     Log::shouldHaveReceived('info')->withArgs(fn (string $message, array $context = []) => $message === 'admin.password_reset_refused'
         && $context['target_id'] === $student->id

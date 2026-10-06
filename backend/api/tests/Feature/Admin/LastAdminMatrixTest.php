@@ -8,12 +8,12 @@ use App\Auth\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\Event;
 
-function activeAdmins(): int
+function adminActiveCount(): int
 {
     return User::query()->where('role', 'admin')->where('status', 'active')->count();
 }
 
-function removalAttempt(string $way, User $actor, User $target): void
+function adminRemovalAttempt(string $way, User $actor, User $target): void
 {
     $changes = app(AccountChanges::class);
     match ($way) {
@@ -33,12 +33,12 @@ it('never leaves the workshop without an active admin', function (string $way, b
     $target = $targetIsSelf ? $actor : $others->first() ?? User::factory()->admin()->disabled()->create();
 
     if ($refusal === null) {
-        removalAttempt($way, $actor, $target);
+        adminRemovalAttempt($way, $actor, $target);
     } else {
-        expect(fn () => removalAttempt($way, $actor, $target))->toThrow($refusal);
+        expect(fn () => adminRemovalAttempt($way, $actor, $target))->toThrow($refusal);
     }
 
-    expect(activeAdmins())->toBe($activeAdminsAtEnd)->toBeGreaterThanOrEqual(1);
+    expect(adminActiveCount())->toBe($activeAdminsAtEnd)->toBeGreaterThanOrEqual(1);
 })->with([
     'disable another with two admins' => ['disable', false, 2, null, 1],
     'demote another with two admins' => ['demote', false, 2, null, 1],
@@ -55,7 +55,7 @@ it('refuses each way to remove the only active admin when someone else asks', fu
     $onlyActiveAdmin = User::factory()->admin()->create();
     $disabledAdmin = User::factory()->admin()->disabled()->create();
 
-    expect(fn () => removalAttempt($way, $disabledAdmin, $onlyActiveAdmin))->toThrow(LastAdmin::class);
+    expect(fn () => adminRemovalAttempt($way, $disabledAdmin, $onlyActiveAdmin))->toThrow(LastAdmin::class);
 
-    expect(activeAdmins())->toBe(1);
+    expect(adminActiveCount())->toBe(1);
 })->with(['disable', 'demote', 'delete']);

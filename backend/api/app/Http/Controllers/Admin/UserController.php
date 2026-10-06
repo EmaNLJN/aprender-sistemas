@@ -19,6 +19,7 @@ use App\Http\Requests\Admin\ListUsersRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Log;
 
 final class UserController
@@ -31,7 +32,7 @@ final class UserController
 
         return response()->json([
             'data' => $page->getCollection()->map(fn (User $user) => PublishedAdminUser::from($user)->toPublished())->all(),
-            'meta' => PageMeta::of($page),
+            'meta' => $this->metaOf($page),
         ]);
     }
 
@@ -70,6 +71,18 @@ final class UserController
         Log::info('admin.password_reset_refused', ['target_id' => $user, 'reason' => 'mail_unavailable']);
 
         throw new MailUnavailable;
+    }
+
+    /**
+     * @param  LengthAwarePaginator<int, User>  $page
+     * @return array{page: int, perPage: int, total: int, lastPage: int}
+     */
+    private function metaOf(LengthAwarePaginator $page): array
+    {
+        /** @var array<array-key, mixed> $items */
+        $items = [];
+
+        return PageMeta::of(new LengthAwarePaginator($items, $page->total(), $page->perPage(), $page->currentPage()));
     }
 
     private function invalid(string $field, string $message): JsonResponse
