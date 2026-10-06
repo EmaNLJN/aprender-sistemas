@@ -1,9 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import masterStorage from '../../../../../qa/fixtures/progress-master-2a278ad-storage.json';
 import type { StorageLike } from '../../../shared/lib/versioned-storage';
 import { buildGuide } from './guide-fixture';
 import type { RouteProgressV1 } from './route-progress';
-import { createRouteStore } from './route-store';
+import { createRouteStore, type RouteStore } from './route-store';
 
 const KEY = 'taller-learning-v1';
 const guide = buildGuide();
@@ -176,6 +176,44 @@ describe('the revision of the route store', () => {
     expect(calls).toEqual([{ revision: 1, previous: 0, stored: ['go-tour'] }]);
   });
 
+  const writingOperations: [string, (store: RouteStore) => void, string[] | null][] = [
+    [
+      'save',
+      (store) => {
+        store.getProgress().favorites.push('go-tour');
+        store.save();
+      },
+      ['go-tour'],
+    ],
+    [
+      'applyImport',
+      (store) =>
+        void store.applyImport({
+          state: JSON.parse(savedRoute({ favorites: ['rust-100'] })),
+          lossy: false,
+        }),
+      ['rust-100'],
+    ],
+    ['reset', (store) => void store.reset(), null],
+  ];
+
+  it.each(writingOperations)(
+    'shows the listener what %s already wrote',
+    (_name, operation, expectedFavorites) => {
+      const storage = memoryStorage({ [KEY]: savedRoute({ favorites: ['before'] }) });
+      const store = openStore(storage);
+      let seen: RouteProgressV1 | null = null;
+      store.changes.subscribe(() => {
+        const text = storage.items.get(KEY);
+        seen = text === undefined ? null : JSON.parse(text);
+      });
+
+      operation(store);
+
+      expect(seen === null ? null : (seen as RouteProgressV1).favorites).toEqual(expectedFavorites);
+    },
+  );
+
   it('keeps the write when a listener throws', () => {
     const storage = memoryStorage();
     const store = openStore(storage);
@@ -205,14 +243,21 @@ describe('the revision of the route store', () => {
   });
 });
 
-describe('two consumers of one route store', () => {
-  it('share the state, so a removed favorite does not come back', () => {
+describe('two consumers of the route store singleton', () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it('share the state, so a removed favorite does not come back', async () => {
+    const fromIndex = (await import('..')).routeStore;
+    const fromModule = (await import('./route-store')).routeStore;
+    expect(fromIndex).toBe(fromModule);
     const storage = memoryStorage({
       [KEY]: savedRoute({ favorites: ['rust-100', 'go-tour'] }),
     });
-    const store = openStore(storage);
-    const page = store;
-    const shell = store;
+    fromIndex.open(guide, { storage });
+    const page = fromIndex;
+    const shell = fromModule;
 
     page.getProgress().favorites = ['go-tour'];
     page.getProgress().completed.push('rust-ownership');
