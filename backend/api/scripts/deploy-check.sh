@@ -2,6 +2,8 @@
 # FR-046: while a lock blocks migrate, php is not recreated and keeps serving the same ETag.
 set -u
 
+. backend/api/scripts/check-account.sh
+
 old_commit=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 new_commit=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 fail=0
@@ -27,6 +29,7 @@ sql() {
 }
 
 cleanup() {
+  check_account_close
   if [ -n "$holder_id" ]; then
     sql "kill $holder_id" >/dev/null 2>&1
   fi
@@ -37,13 +40,14 @@ trap cleanup EXIT
 trap 'abort "interrumpido"' INT TERM HUP
 
 guide() {
-  curl -s -D - -o /dev/null "http://$addr/api/guide" | tr -d '\r' \
+  curl -s -b "$CHECK_ACCOUNT_JAR" -D - -o /dev/null "http://$addr/api/guide" | tr -d '\r' \
     | sed -n -e 's/^[Ee][Tt]ag: /etag /p' -e 's/^[Cc]ontent-[Vv]ersion: /version /p'
 }
 
 echo "== 1. Despliegue sano con el commit $old_commit"
 CONTENT_SOURCE_COMMIT=$old_commit sh backend/api/scripts/deploy.sh || abort "el despliegue inicial falló"
 addr=$(docker compose port taller 8080 2>/dev/null) || abort "el servicio taller no está levantado"
+check_account_open "http://$addr" || abort "no se pudo abrir la cuenta de prueba"
 php_before=$(docker compose ps -q php)
 [ -n "$php_before" ] || abort "no hay contenedor php"
 started_before=$(docker inspect -f '{{.State.StartedAt}}' "$php_before")
