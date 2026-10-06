@@ -10,8 +10,6 @@ return [
 
     'session_max_hours' => (int) env('SESSION_MAX_HOURS', 8),
 
-    'remember_days' => 30,
-
     'device_cookie' => [
         'name' => env('DEVICE_COOKIE_NAME', 'taller-device'),
         'secure' => filter_var(env('DEVICE_COOKIE_SECURE', false), FILTER_VALIDATE_BOOLEAN),

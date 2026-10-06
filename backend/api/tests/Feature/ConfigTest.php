@@ -26,7 +26,7 @@ it('exposes the taller keys with typed accessors', function () {
         ->and(config()->string('taller.password_blocklist'))->toBe(resource_path('passwords/blocked-15plus.txt'))
         ->and(config()->array('taller.invitations'))->toBe(['student_days' => 7, 'admin_hours' => 48, 'prune_days' => 30])
         ->and(config()->integer('taller.session_max_hours'))->toBe(8)
-        ->and(config()->integer('taller.remember_days'))->toBe(30)
+        ->and(config()->integer('auth.guards.web.remember'))->toBe(43200)
         ->and(config()->integer('taller.long_transaction_seconds'))->toBe(30)
         ->and(config()->array('taller.features'))->toBe(['password_reset' => false, 'registration' => false]);
 });

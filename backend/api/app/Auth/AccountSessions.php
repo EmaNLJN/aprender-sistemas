@@ -20,14 +20,14 @@ final class AccountSessions
     }
 
     /**
-     * `$user` is the account of this request. The remember token rotates first so that `logoutOtherDevices`,
+     * `$user` is the account of this request. The remember token rotates first so that `signOutOtherDevices`,
      * which reissues this device's remember cookie when it had one, writes the new token. The session's
      * password hash is forgotten so DropInvalidSession stores the new one after the request.
      */
     public function endOthers(User $user, Request $request, PlainPassword $current): void
     {
         $this->rotateRememberToken($user);
-        $this->passwords->logoutOtherDevices($current);
+        $this->passwords->signOutOtherDevices($current);
         DB::table('sessions')
             ->where('user_id', $user->id)
             ->where('id', '!=', $request->session()->getId())
