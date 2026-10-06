@@ -15,7 +15,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -33,7 +33,7 @@
 
 ## Notes
 
-- Quedan tres marcadores `[NEEDS CLARIFICATION]`: FR-027 (Q1, importación por navegador o una sola por cuenta), FR-042 (Q2, alcance de «Borrar todo») y FR-068 (Q3, qué se hace al salir y en una computadora compartida). Son las tres partes de la pregunta 17 del ADR 0006 §13, la única de D1 en la hoja de ruta. La cuarta pregunta, Q4 (lo resuelto antes de A4), sale de esta spec y lleva su opción recomendada como «(propuesta)» en FR-079. Las cuatro están en «Preguntas abiertas», cada una con sus opciones, su costo, la recomendada y su motivo; el clarify las cierra antes del plan. La partición de D1 no es una pregunta: está en su sección, con su recomendación, y se acepta o se cambia al responder.
+- Clarify del 2026-10-06: no quedan marcadores `[NEEDS CLARIFICATION]`. El usuario respondió Q1 a Q4 con la opción recomendada y aceptó la partición en tres (D1a, D1b y D1c). Las respuestas quedaron en «Clarifications», con las opciones que no se eligieron: FR-027, FR-042 y FR-068 perdieron su marcador, y FR-079 y el escenario 7 de la historia 4 dejaron de ser propuestas. Q1 a Q3 son las tres partes de la pregunta 17 del ADR 0006 §13, la única de D1 en la hoja de ruta, y quedan cerradas. Siguen como propuestas las demás marcas «(propuesta)» de la spec, la tabla «Ajustes al ADR 0006 que propone esta spec» y lo que el plan de D1a decide por su cuenta. El `/speckit-analyze` de D1a corrió antes de este clarify (ver más abajo) y ninguna respuesta lo cambia: D1a no depende de Q1 a Q4.
 - Excepciones deliberadas en «implementation details»: el ADR 0006 y la hoja de ruta ya decidieron la técnica (cola con UUID, `/api/sync`, época y revisión, espacios por cuenta, sesión de Laravel), y el entregable de D1 es un contrato HTTP y el comportamiento de un cliente, así que los requisitos nombran rutas, cabeceras, códigos de error, estados de operación y columnas de las tablas que ya existen en el ADR. FR-051 y FR-052 nombran el `CREATE TABLE` y los CHECK porque son decisiones del ADR (D07 y D35) que el plan no reabre. No nombran clases ni archivos nuevos; el diseño del cliente y de las operaciones queda para el plan, y los tipos de columna, para el ADR.
 - «Non-technical stakeholders»: el lector es el dueño del taller, que tomó las decisiones del ADR y conoce el proyecto. Los términos técnicos son los suyos.
 - «Technology-agnostic»: los criterios usan códigos HTTP, `isLosslessNormalization`, el sha256 de los bytes publicados y los comandos de verificación del proyecto, porque D1 no tiene otro resultado observable: su valor es qué guarda el servidor, qué responde la API y qué conserva el navegador. SC-010 es una medición sin objetivo todavía.

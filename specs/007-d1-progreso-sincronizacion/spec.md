@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-05
 
-**Status**: Borrador con preguntas abiertas (Q1 a Q4); falta el clarify
+**Status**: Clarificada el 2026-10-06: el usuario respondió Q1 a Q4 con la opción recomendada y aceptó la partición en tres (D1a, D1b y D1c). D1a está planificada ([plan.md](./plan.md) y [tasks.md](./tasks.md), con su análisis hecho); D1b y D1c todavía no tienen plan. Sin implementar
 
 **Input**: Ítem **D1** de la hoja de ruta [`specs/backend-multiusuario/roadmap.md`](../backend-multiusuario/roadmap.md), «Progreso y sincronización». Fuente técnica: el [ADR 0006](../../docs/adr/0006-modelo-de-datos-y-api-multiusuario.md) (**propuesta**: el usuario todavía no lo aprobó), en sus decisiones D08, D09, D14, D22 a D25, D28, D29, D36 y D39, §5.3, §7, §8, §10, §12 y la pregunta 17 de §13 (con las transversales 13 y 14); el [ADR 0004](../../docs/adr/0004-backend-laravel-mysql-contenido-y-progreso.md) §3 y §4 (aceptada), que el 0006 enmienda en la sincronización; y el [ADR 0003](../../docs/adr/0003-integridad-del-progreso.md), cuyas reglas de integridad del progreso local siguen valiendo. Donde el 0006 difiere, manda, pero sólo como propuesta: lo que depende de él lleva la marca «(propuesta)» y cambia si el usuario lo enmienda. Las specs hermanas (B2, C3a y el épico del front) son borradores sin clarify: lo que esta spec toma de ahí está en «Relación con otras specs» y en Assumptions.
 
@@ -19,10 +19,10 @@
 | Navegador (un espacio por cuenta) | La copia local del progreso con el reloj de cada campo y sus lápidas; la cola de operaciones pendientes, cada una con su UUID; lo último que supo del servidor (época, revisión, versión del contenido y validador); las cuatro claves v1, sin tocar hasta una importación confirmada y después en un archivo por cuenta | La corrección de predicciones, checkpoints y quiz; las fechas de repaso; la XP y los sellos derivados; cuándo enviar |
 | Servidor (MySQL) | Las 14 tablas de progreso (12 de D1 y 2 de B2), con la cabecera de la cuenta, y los intentos de B2 | Lo que sale de las ejecuciones (resuelto, prueba aprobada, último intento y conteo); la corrección del reloj de cada lote; el resultado de cada fusión; la época y la revisión |
 
-Dos lecturas de esta spec que conviene confirmar:
+Dos lecturas de esta spec: la primera conviene confirmarla, y la segunda la decidió el usuario (Q4):
 
 1. **«Exportarlo sin pérdida».** El criterio de aceptación de la hoja de ruta dice que el progreso de master entra a las tablas y vuelve a salir. «Vuelve a salir» es una proyección de las tablas hacia el formato v1 que vive en las pruebas (ADR 0006, D24), no una ruta: D1 no agrega ningún endpoint que devuelva el formato v1. La exportación del titular es `POST /api/me/export` (C3b), y el archivo v1 de «Método» sigue saliendo del navegador (F8).
-2. **«Resuelto» antes de A4.** Lo que el alumno resuelve mientras el laboratorio usa los Playgrounds no viaja por la sincronización, porque sólo el cierre de una ejecución del servidor escribe «resuelto» (ADR 0006 §5.3 y D39). Es la pregunta Q4.
+2. **«Resuelto» antes de A4.** Lo que el alumno resuelve mientras el laboratorio usa los Playgrounds no viaja por la sincronización, porque sólo el cierre de una ejecución del servidor escribe «resuelto» (ADR 0006 §5.3 y D39). El usuario lo decidió en Q4: el cliente de D1 espera a A4.
 
 **Cómo sabremos que salió bien.**
 
@@ -54,9 +54,9 @@ Dos lecturas de esta spec que conviene confirmar:
 
 **Actores:** el alumno (en un dispositivo, en varios o en una computadora de aula); quien opera el taller; el cliente del front, que consume la sincronización; y los ítems C5, E1, A3, A4, F2, F8 y F11, que apoyan o consumen lo que D1 deja.
 
-## Partición de D1: propuesta
+## Partición de D1
 
-**Esta spec cubre D1 entero, y eso la aparta de lo que hizo C3.** C3 escribió sólo su primera mitad, porque la hoja de ruta ya preveía el corte. Acá el pedido exige dejar claros, en una sola spec, el modelo local primero, los espacios por cuenta, la importación, el reset, el id de etapa y el fixture, y eso atraviesa el servidor y el cliente: una spec que cubriera sólo el servidor no lo cumpliría. Por eso la spec marca a qué parte iría cada requisito, y cortarla en varias es mover rangos, no reescribirlos. La hoja de ruta de D1 no tiene partes todavía: sumarlas, si el usuario acepta el corte, es del coordinador.
+**Esta spec cubre D1 entero, y eso la aparta de lo que hizo C3.** C3 escribió sólo su primera mitad, porque la hoja de ruta ya preveía el corte. Acá el pedido exige dejar claros, en una sola spec, el modelo local primero, los espacios por cuenta, la importación, el reset, el id de etapa y el fixture, y eso atraviesa el servidor y el cliente: una spec que cubriera sólo el servidor no lo cumpliría. Por eso la spec marca a qué parte va cada requisito: partirla es mover rangos, no reescribirlos. El usuario aceptó el corte en tres el 2026-10-06 (ver «Clarifications»): sigue siendo una sola spec, con un plan y sus tareas por parte, y el de D1a está hecho. La hoja de ruta de D1 no tiene partes todavía: sumarlas es del coordinador.
 
 Los números salen del ADR 0006 y del repositorio, medidos el 2026-10-05. Son un indicador de tamaño, no una medida de esfuerzo.
 
@@ -68,25 +68,25 @@ Los números salen del ADR 0006 y del repositorio, medidos el 2026-10-05. Son un
 | Viñetas de las decisiones (las dos primeras de D14, y D22 a D25, D36 y D39; anidadas incluidas) | 38 | 17 | 12 | 9 |
 | Requisitos de esta spec | 88 | 42 (FR-001 a FR-023, FR-046 a FR-059, FR-080 a FR-084) | 22 (FR-024 a FR-045) | 22 (FR-060 a FR-079, FR-085 y FR-086) |
 | Lenguaje y pruebas | PHP, SQL y el generador en TypeScript, y TypeScript del cliente | PHP y SQL (Pest) y el check del generador | PHP y SQL (Pest, con las tres fixtures) | TypeScript (checks de `qa/` y navegador real) |
-| Depende de | C2, C3a, B2 y C6 | C2, C3a, B2 y C6 | D1a y C3a (`password.confirm`) | D1a, D1b, F2 (unidades 1 y 6), F11, A3 y, según Q4, A4 |
+| Depende de | C2, C3a, B2 y C6 | C2, C3a, B2 y C6 | D1a y C3a (`password.confirm`) | D1a, D1b, F2 (unidades 1 y 6), F11, A3 y A4 (Q4) |
 | Lo esperan | C5, E1 y el front | C5 y E1 (lectura de esta spec) | F8 (la página «Método») | el front |
 
 Referencia: C2 tuvo 48 requisitos (42 viñetas en D10 a D15, y 21 tablas con 153 columnas), B2 49 y C3a 52. FR-087 y FR-088 (el check de punta a punta y el cierre) los repite cada parte. Los criterios de éxito van así: SC-002, SC-003, SC-006 y SC-007 a D1a; SC-001 y SC-005 a D1b; SC-004 a D1c; y SC-008 a SC-011 se reparten.
 
-**Recomendación: partir en tres, con este corte.**
+**Decisión: partir en tres, con este corte.** El usuario aceptó la recomendación el 2026-10-06. Los motivos:
 
-1. **Caminos críticos distintos.** Según esta spec, C5 y E1 sólo necesitan D1a (las tablas, las reglas y el id de etapa): es una lectura para confirmar, porque la hoja de ruta les pone a D1 entera como dependencia y no dice por qué. La importación y el reset los espera la página «Método» del front. El cliente espera además a F2, F11 y, según Q4, A4. En una sola spec, el servidor esperaría a tres ítems del front que no usa.
+1. **Caminos críticos distintos.** Según esta spec, C5 y E1 sólo necesitan D1a (las tablas, las reglas y el id de etapa): es una lectura para confirmar, porque la hoja de ruta les pone a D1 entera como dependencia y no dice por qué. La importación y el reset los espera la página «Método» del front. El cliente espera además a F2, F11 y A4 (Q4). En una sola spec, el servidor esperaría a tres ítems del front que no usa.
 2. **Un foco de revisión por parte.** D1a, que la fusión no pierda datos (el fixture). D1b, que importar y borrar no pierdan ni mezclen cuentas (el criterio de aceptación de la hoja de ruta, con las tres fixtures). D1c, que no se pierda lo del alumno en su navegador ni se mezclen las cuentas en una computadora compartida.
 3. **Dueños y pruebas.** D1a y D1b son del backend y corren con Pest; D1c es del frontend, con checks de TypeScript y navegador real.
 4. **Tamaño, con una salvedad.** Por las decisiones del ADR, D1 es del tamaño de C2 (38 viñetas contra 42). Lo que lo agranda es que cruza dos pilas, PHP y TypeScript, y que esta spec lo baja a 88 requisitos, contra 48, 49 y 52 en C2, B2 y C3a: ese conteo es de esta spec, no una medida independiente. Con el corte, cada parte queda entre 22 y 42 requisitos. Por sí solo, el tamaño no justificaría partir.
 
 **Lo que cuesta partir:** tres ciclos de Spec Kit; el contrato HTTP y el fixture los congela D1a y los citan D1b y D1c, sin repetirlos; la prueba de punta a punta entre cliente y servidor sólo existe cuando se entrega D1c; y las tres comparten archivos (`backend/api/routes/api.php`, `backend/api/lang/es`, la configuración de Nginx y `backend/api/AGENTS.md`), que integra el coordinador.
 
-**Alternativas:** *dos partes* (el servidor entero y el cliente): D1a quedaría en 64 requisitos, más que cualquier otra spec del épico (52 la mayor); y *no partir*: 88 requisitos en un plan, con el servidor esperando al front. Si el usuario prefiere dos partes, D1a y D1b se juntan sin tocar la redacción.
+**Alternativas descartadas por el usuario:** *dos partes* (el servidor entero y el cliente): D1a quedaría en 64 requisitos, más que cualquier otra spec del épico (52 la mayor); y *no partir*: 88 requisitos en un plan, con el servidor esperando al front.
 
 ## Lo que pidió el usuario
 
-Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumptions) o una pregunta abierta (Preguntas abiertas).
+Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumptions) o lo decidió el clarify (Clarifications).
 
 | Pedido | Fuente |
 | --- | --- |
@@ -100,54 +100,30 @@ Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumption
 | La API la consume sólo este front, del mismo origen y sin versionado público; Pest corre contra MySQL real | ADR 0006 R6; constitución, principio II |
 | D1 no incluye las estadísticas (C5) ni las vistas del front | Hoja de ruta, alcance de D1; pedido de esta tarea |
 | Esta spec deja claro: el modelo local primero y la fusión por campo, los espacios por cuenta, la importación combinable, el reset, el id de etapa y el fixture compartido | Pedido de esta tarea |
+| D1 se parte en tres: D1a (sincronización del servidor), D1b (importación y reset) y D1c (cliente v2), con el corte de esta spec | Usuario, 2026-10-06 (partición, opción recomendada) |
+| La importación del v1 es por navegador: varias por cuenta, combinables y con confirmación | Usuario, 2026-10-06 (Q1, opción A) |
+| «Borrar todo» borra sólo el estado: los intentos, sus payloads y las importaciones quedan hasta su retención, y la supresión real es borrar la cuenta (C3b) | Usuario, 2026-10-06 (Q2, opción A) |
+| En una computadora compartida, al salir se envía la cola y se limpia el espacio; el ingreso ofrece «computadora compartida»; los espacios vencen a los 30 días | Usuario, 2026-10-06 (Q3, opción A) |
+| El cliente de D1 (D1c) entra en servicio después de A4; D1a y D1b, no | Usuario, 2026-10-06 (Q4, opción A) |
 
 **Base del ADR 0006 (propuesta).** D22 a D25, D36 y D39, y las enmiendas al ADR 0004 que el 0006 registra (`/api/sync` con delta, `POST /api/progress/reset` y la importación combinable), todavía no las aprobó el usuario. La spec las usa como base y cada una está marcada «(propuesta)» donde pesa. Si el ADR se enmienda, esta spec cambia.
 
-## Preguntas abiertas
+## Clarifications
 
-Son para el clarify y se plantearon el 2026-10-05. Q1 a Q3 son las tres partes de la pregunta 17 del ADR 0006 §13, la única de D1 en la hoja de ruta; Q4 sale de esta spec. Cada una trae sus opciones con su costo, la recomendada y su motivo. Al responderlas, el clarify las registra en `## Clarifications`, bajo `### Session`, y reemplaza esta sección. Hasta entonces, los requisitos que señalan una de estas preguntas (con su marcador o con «(propuesta)») usan la opción recomendada como borrador. La partición no es una pregunta: está en su sección, con su recomendación, y el usuario la acepta o la cambia al responder.
+### Session 2026-10-06
 
-**Q1. ¿La importación del v1 es por navegador, combinable y con confirmación, o una sola por cuenta?** *(FR-027 y FR-029; ADR 0006 §13.17 y S9)* R9 pide «importación v1 la primera vez». El ADR lo lee como la primera vez en cada navegador: una cuenta puede traer el v1 de casa y el de la escuela, o un JSON exportado de otra computadora, y todas se combinan con las reglas legadas. Como las claves v1 son globales del navegador, en una computadora compartida el v1 de A podría terminar en la cuenta de B. Por eso la importación nunca es automática y pide confirmación cuando la cuenta ya importó, hizo «Borrar todo» o cuando otra cuenta importó el mismo crudo.
+El usuario respondió las cuatro preguntas con la opción recomendada y aceptó la partición en tres. Q1 a Q3 son las tres partes de la pregunta 17 del ADR 0006 §13, la única de D1 en la hoja de ruta; Q4 salió de esta spec. Las opciones que no se eligieron, con su costo, están en cada respuesta.
 
-| Opción | Descripción | Costo |
-| --- | --- | --- |
-| A | Por navegador: varias por cuenta, combinables, con confirmación (propuesta del ADR, S9). | `progress_imports` con una fila por importación y un índice por la huella del crudo; la idempotencia dentro de la época (FR-028) y la confirmación (FR-029); un informe por importación. |
-| B | Una sola por cuenta. | Una tabla más simple (clave por cuenta) y sin la confirmación por «ya importó». El v1 de un segundo navegador se pierde o hay que llevarlo a mano, y restaurar con el archivo exportado antes de «Borrar todo» exigiría una excepción. |
-| C | Automática en el primer ingreso de cada navegador (la lectura literal de R9). | Sin resumen ni pregunta, pero en una computadora compartida el v1 de A entra solo a la cuenta de B. Es el riesgo que la crítica del ADR marcó como crítico. |
+- Q: Después de medir el tamaño de D1 (88 requisitos), ¿se parte? → A: Sí, en tres, con el corte de esta spec: D1a (la sincronización del servidor: `POST /api/sync` y `GET /api/progress`, diez de las doce tablas, el fixture de fusión y el id de etapa), D1b (la importación y el reset: `POST /api/progress/import` y `POST /api/progress/reset`, con `progress_imports` y `campaign_seals`) y D1c (el cliente v2). Sigue siendo una sola spec, con un plan y tareas por parte. Descartadas: dos partes, el servidor entero y el cliente, que dejaba a D1a en 64 requisitos, más que cualquier otra spec del épico; y no partir, con 88 requisitos en un plan y el servidor esperando al front. Decidió el usuario. (Partición de D1)
+- Q: **Q1**, ¿la importación del v1 es por navegador, combinable y con confirmación, o una sola por cuenta? → A: Opción A: por navegador, con varias importaciones por cuenta, combinables con las reglas legadas y con confirmación. Una cuenta puede traer el v1 de casa, el de la escuela o un archivo exportado de otra computadora. Nunca es automática: pide confirmación cuando la cuenta ya importó, hizo «Borrar todo» o cuando otra cuenta importó el mismo crudo. `progress_imports` guarda una fila por importación, con un índice por la huella del crudo, y cada una deja su informe. Descartadas: una sola por cuenta (B), que pierde el v1 de un segundo navegador y exigiría una excepción para restaurar con el archivo exportado antes de «Borrar todo»; y automática en el primer ingreso de cada navegador (C), que en una computadora compartida pasa el v1 de A a la cuenta de B, el riesgo que la crítica del ADR marcó como crítico. Decidió el usuario. (FR-027, FR-029)
+- Q: **Q2**, ¿qué borra «Borrar todo»? → A: Opción A: sólo el estado de las seis áreas. Los intentos, sus payloads y las importaciones quedan hasta su retención (el crudo de cada importación, 90 días), y la supresión real es borrar la cuenta (C3b): la pantalla tiene que decirlo, y el aviso de privacidad (pregunta 14 del ADR 0006) tiene que nombrar que el código y el crudo del alumno sobreviven al reset hasta entonces. Queda abierto entre B2 y D1, no con el usuario: si la poda de payloads reconoce la última prueba aprobada y el último intento por los punteros de `exercise_progress`, que el reset borra, después de un reset esos payloads pasan a podarse a los 90 días, y los dos ítems tienen que acordar cuál de las dos cosas se quiere (ver «Relación con otras specs», B2). Descartadas: borrar también los intentos, los payloads y las importaciones (B), que rompe «permanente e inmutable» de los intentos (D26), le quita historia a las estadísticas del admin y obliga a decidir qué pasa con una ejecución que cierra después, aunque es la opción más fuerte para quien pide borrar sus datos (Ley 25.326, art. 16); y un gesto aparte para borrar también el historial de ejecuciones (C), que suma una ruta y una pantalla fuera de D1. Decidió el usuario. (FR-041, FR-042)
+- Q: **Q3**, en una computadora compartida, ¿qué se hace con el espacio de la cuenta al salir? → A: Opción A: al salir se envía la cola y, si salió, se limpia el espacio; si no pudo enviarse, se le pregunta al alumno si lo conserva o lo descarta, y se le dice que lo no enviado vence a los 30 días. El ingreso ofrece «computadora compartida», que no guarda nada de progreso en el navegador. Al arrancar se borran los espacios ya sincronizados de otras cuentas, y los demás vencen a los 30 días. Riesgo residual: quien no sale de su sesión deja sus borradores en el navegador hasta que otro arranque la aplicación o venza el espacio (ADR 0006 §12). Descartadas: tratar siempre el navegador como compartido (B), sin trabajo sin conexión entre visitas ni caché, y con la pérdida de lo no enviado si se cierra la pestaña antes de sincronizar; y no limpiar nunca al salir (C), que deja el texto del alumno (borradores, reflexiones, notas) legible en el navegador hasta 30 días. Decidió el usuario. (FR-068 a FR-071)
+- Q: **Q4**, ¿qué pasa con lo que el alumno resuelve antes de que A4 mueva las ejecuciones al servidor? → A: Opción A: el cliente de D1 (D1c) entra en servicio después de A4; el servidor de D1 (D1a y D1b), no. Desde el primer día de sincronización, lo resuelto sale del servidor, como manda la frontera de autoridad del ADR 0006 (§5.3, D39). Costo: el cliente depende también de A4 (que depende de B2 y A3) y, hasta entonces, el progreso de los alumnos sigue sólo local. Descartadas: sacar el cliente antes que A4 y dejar lo resuelto sólo local hasta entonces (B), una promesa a medias: el progreso «se sincroniza» menos lo más importante; y enmendar la frontera de D39 para que `/api/sync` acepte la resolución y el último resultado que declara el cliente mientras dure el período (C), un camino de escritura más que contradice el ADR y se tira cuando llega A4. Decidió el usuario. (FR-009, FR-079)
+- Siguen como propuestas, porque esta ronda no las trató: las demás marcas «(propuesta)» de esta spec, la tabla «Ajustes al ADR 0006 que propone esta spec» y lo que el plan de D1a decide por su cuenta (research.md: la fusión en TypeScript, R1; el sobre de `/api/sync`, con `format: 2` y hasta 200 operaciones por lote, R5; `NULL` como «desconocida» en las fechas que sólo crecen, R6; el piso de reloj del 2020-01-01, R7; entre otras). Siguen así hasta que el usuario las vea o apruebe el ADR 0006.
 
-**Recomendada: A.** Evita el caso crítico (nada es automático ni se le ofrece a otra cuenta) sin perder el v1 de un segundo navegador, y la idempotencia dentro de la época deja restaurar con el archivo exportado. **Costo:** una tabla con varias filas por cuenta, una confirmación más y un informe por importación. Si el usuario quiere una sola por cuenta, alcanza con volver a una clave por cuenta en `progress_imports`.
+### Las transversales que tocan a D1
 
-**Q2. ¿Qué borra «Borrar todo»?** *(FR-041 y FR-042; ADR 0006 §13.17)* Hoy «Borrar todo» elimina las cuatro claves del navegador. En el servidor hay más que estado: los intentos (cada ejecución deja uno, con el veredicto de cada prueba), sus payloads (código, prueba propia y salidas, con retención propia) y el crudo de cada importación (90 días). El ADR propone que borre sólo el estado y que lo demás quede como historia de épocas anteriores.
-
-| Opción | Descripción | Costo |
-| --- | --- | --- |
-| A | Sólo el estado de las seis áreas; los intentos, sus payloads y las importaciones quedan (propuesta del ADR). | Quien borra todo no borra su código del servidor: queda hasta que la poda lo permita. B2 conserva el payload de la última prueba aprobada y del último intento «mientras exista la cuenta» (FR-044 de B2). Si la poda los reconoce por los punteros de `exercise_progress`, que el reset borra, después de un reset esos payloads pasan a podarse a los 90 días; B2 y D1 tienen que acordar cuál de las dos cosas se quiere. La supresión real es borrar la cuenta (C3b), y la pantalla tiene que decirlo. |
-| B | El estado, los intentos, sus payloads y las importaciones de la cuenta. | Rompe «permanente e inmutable» de los intentos (D26), las estadísticas del admin pierden historia, hay que borrar las ejecuciones activas y decidir qué pasa con una que cierra después. Es la opción más fuerte para quien pide borrar sus datos (Ley 25.326, art. 16). |
-| C | Como A, y un gesto aparte («Borrar también mi historial de ejecuciones») que hace lo de B. | Una ruta y una pantalla más, fuera de D1. El alumno que sólo quiere empezar de nuevo no pierde su historia. |
-
-**Recomendada: A.** Es lo que el ADR dimensionó, conserva la historia que usan los intentos y las estadísticas, y la supresión de datos personales tiene su camino propio en la cuenta. **Costo:** el código y el crudo del alumno sobreviven a «Borrar todo» hasta su retención, lo que el aviso de privacidad (pregunta 14) tiene que nombrar. Si el usuario quiere que «Borrar todo» sea también una supresión del historial, es la C como ítem aparte.
-
-**Q3. En una computadora compartida, ¿qué se hace con el espacio de la cuenta al salir?** *(FR-068 a FR-071; ADR 0006 §13.17 y D25)* El navegador guarda la copia local y la cola de cada cuenta en un espacio propio. En un aula, el siguiente alumno usa el mismo navegador, y `localStorage` no está cifrado.
-
-| Opción | Descripción | Costo |
-| --- | --- | --- |
-| A | Al salir se envía la cola y, si salió, se limpia el espacio; si no pudo enviarse, se le pregunta al alumno. El ingreso ofrece «computadora compartida», que no guarda nada. Al arrancar se borran los espacios sincronizados de otras cuentas y los demás vencen a los 30 días (propuesta del ADR). | La lógica de salida (enviar, limpiar, preguntar), el modo en memoria con sus avisos y una opción en la pantalla de ingreso (F11). Riesgo residual: quien no sale de su sesión deja sus borradores en el navegador hasta que otro arranque la aplicación o venza el espacio (ADR 0006 §12). |
-| B | Siempre como compartida: nada se guarda en el navegador entre visitas y no hay opción en el ingreso. | Sin trabajo sin conexión entre visitas ni caché; cada ingreso baja la foto completa, y en casa también se pierde lo no enviado si se cierra la pestaña antes de sincronizar. |
-| C | Nunca se limpia al salir: los espacios sólo vencen a los 30 días. | El texto del alumno (borradores, reflexiones, notas) queda legible en el navegador de la computadora compartida hasta 30 días. |
-
-**Recomendada: A.** Es la única que da local primero en casa y limpieza en el aula, y deja a la persona decidir cuándo la computadora es compartida. **Costo:** más lógica en el cliente y una opción en el ingreso que ninguna pantalla tiene todavía.
-
-**Q4. ¿Qué pasa con lo que el alumno resuelve antes de que A4 mueva las ejecuciones al servidor?** *(FR-009 y FR-079; ADR 0004 §3; ADR 0006 §5.3 y D39)* El ADR 0004 §3 lista «resuelto» entre los campos de `exercise_progress` que sólo crecen, y su sincronización lleva todo cambio del cliente. El ADR 0006 cambió el reparto: sólo el cierre de una ejecución del servidor (B2) escribe la fecha de resolución, la última prueba aprobada, el último intento y el conteo, y `/api/sync` escribe el resto (§5.3, «Escritores», y D39). Mientras el laboratorio use los Playgrounds (hasta A4), el alumno resuelve ejercicios en el navegador, sin ejecución del servidor: nadie escribe esa resolución en las tablas, y sólo llegaría al servidor por una importación manual. La hoja de ruta pone D1 y A4 en la misma ola, sin orden entre ellos.
-
-| Opción | Descripción | Costo |
-| --- | --- | --- |
-| A | El cliente de D1 (D1c, si se parte) entra en servicio después de A4; el servidor de D1 (D1a y D1b), no. Desde el primer día de sincronización, lo resuelto sale del servidor. | El cliente depende también de A4 (que depende de B2 y A3) y, hasta entonces, el progreso de los alumnos sigue sólo local. |
-| B | El cliente sale antes que A4 y lo resuelto en el navegador queda sólo local hasta A4. | Un período con una promesa a medias: el progreso «se sincroniza» menos lo más importante. En un segundo dispositivo esos ejercicios aparecen sin resolver, y si se limpia el navegador se pierde lo resuelto. |
-| C | Enmendar la frontera de D39 mientras dure el período: `/api/sync` acepta la resolución y el último resultado que declara el cliente, marcados como no ejecutados en el servidor (igual que lo importado), y A4 deja de enviarlos. | Un camino de escritura más, con sus reglas y sus casos en el fixture, que contradice la frontera de autoridad del ADR y se tira cuando llegue A4. |
-
-**Recomendada: A.** Respeta la frontera de autoridad del ADR, no agrega un camino que después se tira y no cuesta más que ordenar dos ítems de la misma ola: el ADR ya supone que A4 puede llegar antes que D1 (D24 y §12, «Importación tardía después de A4»). **Costo:** el cliente de D1 espera a A4, y el usuario tiene que aceptar que los alumnos sigan con el progreso sólo local hasta entonces.
-
-**Las transversales que tocan a D1.** No se cierran por ítem, sino para todo el épico; D1 usa los valores del ADR como supuestos y la pregunta que los cierra.
+No se cierran por ítem, sino para todo el épico; D1 usa los valores del ADR como supuestos y la pregunta que los cierra.
 
 | Pregunta | Lo que D1 supone | Dónde |
 | --- | --- | --- |
@@ -239,7 +215,7 @@ El alumno estudia aunque no tenga red. Todo queda en su navegador y sale solo cu
 4. **Dado** un 419, **cuando** el cliente pide `GET /api/session` y la cuenta es la misma, **entonces** reintenta una vez; si cambió, no reintenta.
 5. **Dado** un 429, **cuando** llega con `Retry-After`, **entonces** el cliente espera ese tiempo.
 6. **Dada** una pestaña vieja después de un despliegue, **cuando** recibe 409 `client_outdated`, **entonces** conserva la cola y pide recargar.
-7. **Dado** el laboratorio todavía sobre los Playgrounds (antes de A4), **cuando** el alumno resuelve un ejercicio, **entonces** su resolución queda en el espacio local y sigue ahí después de recargar, y el cliente no la envía, porque la sincronización no la escribe (propuesta, Q4).
+7. **Dado** el laboratorio todavía sobre los Playgrounds (antes de A4), **cuando** el alumno resuelve un ejercicio, **entonces** su resolución queda en el espacio local y sigue ahí después de recargar, y el cliente no la envía, porque la sincronización no la escribe (Q4).
 
 *Cubre: FR-009, FR-060 a FR-064, FR-076 a FR-079 y FR-085; SC-003 y SC-008.*
 
@@ -377,7 +353,7 @@ Cada campo del progreso sigue una de estas familias. La tabla no repite los tipo
 - **FR-024**: `POST /api/progress/import` DEBE recibir `{importId, epoch, source, raw, normalized, confirm}` y exigir sesión activa, email verificado, CSRF y la cuenta esperada. `source` es `storage` (las cuatro claves del navegador) o `export` (un archivo de «Exportar mi progreso»); `normalized` es la salida de los parsers v1 congelados, que ya corren en el navegador; `raw` es el texto v1 tal cual, que el servidor guarda sin interpretarlo, hasta 10 MiB. *(D24)*
 - **FR-025**: DEBE rechazar con 422 `validation_failed`, sin escribir nada, un `normalized` con campos desconocidos o con tipos, rangos, ids o tamaños inválidos. La normalización NO se reescribe en el servidor. *(D24)*
 - **FR-026**: DEBE aplicar `normalized` con la semántica legada: lo importado sin reloj es anterior a todo, los punteros (última prueba, último intento) sólo se escriben si no tienen valor, y los logros se combinan con las reglas de «sólo crece». Una importación NUNCA pisa un dato de la versión 2 ni un reloj real. *(D24, §5.3)*
-- **FR-027**: *[NEEDS CLARIFICATION: Q1, una importación por navegador o una sola por cuenta]* Una cuenta DEBE poder importar varias copias v1 (la de casa, la de la escuela, un archivo de otra computadora). Cada una se combina con las reglas legadas y queda registrada con su informe. Hasta que responda Q1 vale la propuesta del ADR (S9): varias, con confirmación.
+- **FR-027**: *(Q1)* Una cuenta DEBE poder importar varias copias v1 (la de casa, la de la escuela, un archivo de otra computadora). Cada una se combina con las reglas legadas y queda registrada con su informe. *(S9)*
 - **FR-028**: La misma `importId`, o el mismo crudo (por su sha256) de la misma cuenta **en la época vigente**, DEBE devolver 200 con el informe guardado y no cambiar nada. Un crudo importado antes de un «Borrar todo» NO cuenta como repetido: se aplica de nuevo, con la confirmación de FR-029. *(D24, con la época como ajuste de esta spec: ver «Relación con otras specs»)*
 - **FR-029**: *(Q1)* DEBE responder 409 `import_needs_confirmation`, sin decir cuál de los tres motivos, si la cuenta ya importó otro crudo, si alguna vez hizo «Borrar todo» o si otra cuenta importó el mismo crudo. El cliente pregunta y reenvía con `confirm`. *(D24)*
 - **FR-030**: *(propuesta: el ADR no fija el orden)* DEBE resolver un pedido en este orden: tamaño (413, que responde Nginx antes de que el pedido llegue a la aplicación); sesión, CSRF y cuenta esperada (401, 419, 409 `account_mismatch`); época (409 `epoch_mismatch` con `{epoch, revision}`); forma (422); repetido en la época (200 con el informe guardado); confirmación necesaria y sin `confirm` (409 `import_needs_confirmation`); y si no, se aplica y responde 201.
@@ -395,7 +371,7 @@ Cada campo del progreso sigue una de estas familias. La tabla no repite los tipo
 
 - **FR-040**: `POST /api/progress/reset` DEBE exigir sesión activa, CSRF, la cuenta esperada, la época vigente y la contraseña confirmada (423 `password_confirmation_required`), con un límite de 3 por día y cuenta. *(§7, D19, §4.6)*
 - **FR-041**: DEBE, en una transacción y bajo el candado de la cuenta, subir la época, fijar `resetAt`, borrar todas las filas de estado de la cuenta (las seis áreas, las preferencias incluidas) y subir la revisión, y responder 200 `{epoch, revision}`. Después cancela las ejecuciones activas, cada una en su propio cierre. *(D08, D26)*
-- **FR-042**: *[NEEDS CLARIFICATION: Q2, alcance de «Borrar todo»]* DEBE dejar intactos los intentos, sus payloads y las importaciones registradas: son historia de épocas anteriores. Hasta que responda Q2 vale la propuesta del ADR.
+- **FR-042**: *(Q2)* DEBE dejar intactos los intentos, sus payloads y las importaciones registradas, hasta su retención: son historia de épocas anteriores. La supresión real de los datos del alumno es borrar la cuenta (C3b).
 - **FR-043**: Desde el reset, toda sincronización o importación con la época anterior DEBE recibir 409 `epoch_mismatch` con `{epoch, revision}` y no escribir nada, y la foto de la época nueva está vacía. De dos «Borrar todo» seguidos desde dos dispositivos, el segundo recibe `epoch_mismatch`.
 - **FR-044**: Una ejecución admitida antes del reset que cierra después DEBE dejar su intento como historia sin tocar el estado. D1 repite con el reset real el escenario que B2 prueba subiendo la época a mano. *(D26)*
 - **FR-045**: El reset NO DEBE tocar la cuenta, la sesión ni nada que no sea progreso, y DEBE dejar a la cuenta con la confirmación obligatoria al importar (por `resetAt`). *(D24)*
@@ -430,7 +406,7 @@ Cada campo del progreso sigue una de estas familias. La tabla no repite los tipo
 - **FR-065**: Todo pedido que modifica DEBE llevar `X-Taller-User` con la cuenta del espacio. Ante 419 o 401, antes de reintentar, DEBE comparar `GET /api/session` con la cuenta que tiene en memoria: si cambió, descarta el estado en memoria, carga el espacio de la cuenta nueva y NO reintenta. Ante 409 `account_mismatch`, carga el espacio de la cuenta actual. *(D36)*
 - **FR-066**: DEBE descartar, sin aplicarla, toda foto o delta que diga ser de otra cuenta que la de su espacio: una pestaña que quedó con la cuenta anterior lee con la sesión de la nueva. *(propuesta, ver FR-020)*
 - **FR-067**: La copia local, la cola y lo último que supo del servidor DEBEN vivir en un espacio propio de cada cuenta (`taller-v2:<id de la cuenta>:…`), y el cliente NUNCA lee ni escribe el espacio de otra cuenta. *(D25)*
-- **FR-068**: *[NEEDS CLARIFICATION: Q3, qué se hace al salir y en una computadora compartida]* Al salir, el cliente DEBE enviar la cola antes de cerrar la sesión. Si la envió, limpia el espacio de la cuenta; si no pudo, le pregunta al alumno si lo conserva o lo descarta, y le dice que lo no enviado vence a los 30 días. *(D25)*
+- **FR-068**: *(Q3)* Al salir, el cliente DEBE enviar la cola antes de cerrar la sesión. Si la envió, limpia el espacio de la cuenta; si no pudo, le pregunta al alumno si lo conserva o lo descarta, y le dice que lo no enviado vence a los 30 días. *(D25)*
 - **FR-069**: *(Q3)* Al arrancar, DEBE borrar los espacios de otras cuentas que ya estén sincronizados y vencer a los 30 días los que no. *(D25)*
 - **FR-070**: *(Q3)* El ingreso DEBE ofrecer una opción «computadora compartida» que no guarda nada de progreso en el navegador: la cola vive en memoria y el alumno sabe que, si cierra la pestaña antes de sincronizar, pierde lo no enviado. Si el navegador no deja escribir su almacenamiento, el cliente funciona igual en ese modo y lo avisa. *(D25; ADR 0003)*
 - **FR-071**: Cada camino que descarta datos locales DEBE decir antes qué se pierde, o dejar antes una copia descargable: la cola de una época anterior (copia y aviso, FR-075), lo no enviado que vence a los 30 días (aviso al salir, FR-068), lo que el alumno elige descartar al salir (confirmación) y el modo compartido (aviso al ingresar). *(ADR 0003, decisión 3)*
@@ -441,7 +417,7 @@ Cada campo del progreso sigue una de estas familias. La tabla no repite los tipo
 - **FR-076**: Ante 401 DEBE conservar la cola en el espacio y pedir el ingreso (si entra la misma cuenta sigue, si entra otra carga la suya); ante 429 DEBE esperar `Retry-After`; ante 409 `client_outdated` DEBE conservar la cola y pedir recargar. *(§4.2, §8)*
 - **FR-077**: DEBE exponer su estado (al día, pendiente, sin conexión, requiere ingreso, atrasado) y las acciones que el front necesita (importar, borrar todo, salir, elegir el modo compartido). No dibuja pantallas.
 - **FR-078**: DEBE avisar si el desfase de su reloj con el servidor supera 2 minutos. *(D23)*
-- **FR-079**: *(propuesta, Q4)* Hasta que A4 mueva las ejecuciones al servidor, lo que el alumno resuelve en el navegador queda en su espacio local y no viaja por la sincronización, y el cliente de D1 no entra en servicio antes que A4.
+- **FR-079**: *(Q4)* Hasta que A4 mueva las ejecuciones al servidor, lo que el alumno resuelve en el navegador queda en su espacio local y no viaja por la sincronización, y el cliente de D1 (D1c) no entra en servicio antes que A4. D1a y D1b no esperan a A4.
 
 **Fixture compartido de fusión** *(servidor y cliente)*
 
@@ -498,7 +474,7 @@ Los tipos de columna, los índices y las restricciones están en el ADR 0006 (§
 
 1. **Perder el progreso del alumno en su propio navegador.** D1c reemplaza la capa que el ADR 0003 protegió con respaldos y fixtures congeladas. *Mitigación:* las claves v1 no se tocan hasta una importación confirmada (FR-072), cada camino que descarta datos deja copia o aviso (FR-071), el cliente se monta sobre los almacenes de F2 y no abre otros (FR-061), y las fixtures de master siguen arrancando sin escribir.
 2. **El texto de un dispositivo se pierde en una fusión.** Con «gana la última escritura», dos dispositivos que editan la misma reflexión o el mismo borrador pierden el texto del que escribió antes: no se fusiona texto ni se conserva la versión perdida. Hoy, entre pestañas, el local gana de forma parecida (ADR 0003). *Mitigación:* el campo es la unidad de fusión, así que campos distintos conviven; la respuesta de la sincronización le dice al cliente qué perdió; y si molesta, guardar el texto perdido en el respaldo local no toca al servidor.
-3. **Lo resuelto antes de A4 no se sincroniza** (Q4). *Mitigación:* con la recomendada, el cliente espera a A4.
+3. **Lo resuelto antes de A4 no se sincroniza** (Q4). *Mitigación:* el cliente (D1c) espera a A4.
 4. **Relojes desfasados.** La corrección por lote y el tope con la hora del servidor acotan el daño, pero un dispositivo con el reloj muy atrasado pierde las fusiones. *Mitigación:* el aviso a los 2 minutos (FR-078).
 5. **Computadora compartida, riesgo residual.** Quien no sale de su sesión deja sus borradores en el navegador (`localStorage` no está cifrado) hasta que otro arranque la aplicación o venza el espacio (ADR 0006 §12). *Mitigación:* Q3 y el modo compartido.
 6. **Carga de la sincronización sobre MySQL.** Con 1.000 cuentas activas, un lote cada 10 segundos son 100 pedidos por segundo contra PHP-FPM con 12 a 16 hijos (estimación del ADR), y cada pedido con sesión escribe la fila de `sessions` y toma el candado de la cuenta (ADR §12). *Mitigación:* el cliente junta los cambios y no consulta sin cambios más de una vez por minuto (FR-062 y FR-063), el límite de 60 por minuto, la medición SC-010 antes de fijar las esperas y el camino de escala del ADR §9, con sus disparadores.
@@ -570,7 +546,7 @@ C3a no necesita cambios para D1. Lo único que D1 le pide es que `GET /api/sessi
 - **F2 (unidades 1 y 6).** El cliente de D1c se monta sobre los almacenes singleton con suscripción (unidad 1). La unidad 6, `features/progress-backup`, hoy resuelve de forma local exportar, importar en dos fases y «Borrar todo»: con D1, importar es `POST /api/progress/import` y «Borrar todo» es el reset con contraseña. F2 tiene que dejar esa feature con una interfaz que D1c pueda reemplazar sin reescribir las vistas.
 - **F8 (Método).** La página usa esas funciones: exportar sigue saliendo del navegador (D1 no agrega una ruta que devuelva el formato v1, FR-039), y importar y borrar pasan por D1. **F8 depende de D1b.**
 - **F11 (Acceso).** Es la pantalla de ingreso, donde iría la opción «computadora compartida», y su decisión abierta incluye si cubre las otras pantallas de cuenta, entre ellas confirmar la contraseña, que el reset necesita.
-- **A3 y A4.** A3 trae el protocolo de arranque con `GET /api/session`, que D1c reutiliza para comparar la cuenta. A4 es la pregunta Q4.
+- **A3 y A4.** A3 trae el protocolo de arranque con `GET /api/session`, que D1c reutiliza para comparar la cuenta. D1c entra en servicio después de A4 (Q4).
 - **F1.** Sus E2E «arranque con el progreso real de master» tendrán que pasar por el ingreso cuando el contenido esté detrás de la sesión.
 
 **Superficies que D1 necesita y que ningún ítem del front tiene.** D1 fija su estado y su contrato (FR-077); las vistas las asigna el coordinador (F11, F8 o un ítem nuevo):
@@ -592,7 +568,7 @@ D1 **extiende** a [C2](../001-c2-contenido-mysql/spec.md), cuyos FR-029 y FR-030
 | La importación es idempotente «por `importId` y por `raw_sha256` del mismo usuario» (D24), sin época | Idempotente dentro de la época vigente (FR-028) | Sin la época, exportar, «Borrar todo» e importar el mismo archivo sería un 200 que no restaura nada, y el README manda exportar una copia como respaldo |
 | `GET /api/progress` no lista la cuenta (§7) | La foto trae `userId` y el cliente descarta la de otra cuenta (FR-020 y FR-066) | D36 sólo protege lo que modifica: una pestaña vieja lee con la sesión nueva y escribiría la foto de B en el espacio de A |
 | El delta se define por revisión (D23, D25), sin decir quién la estampa ni qué pasa con los borrados | Cada escritor estampa la revisión en cada fila que cambia, y sólo «Borrar todo» borra (FR-010 y FR-011) | Una fila sin la revisión nueva, o borrada, no aparece en un delta |
-| ADR 0004 §3 lista «resuelto» entre los campos que sólo crecen, y su sincronización lleva todo cambio del cliente; ADR 0006 §5.3 y D39 dicen que sólo lo escribe el cierre de B2 | Vale el ADR 0006 (FR-009), y las consecuencias antes de A4 son la Q4 | Las dos decisiones se contradicen mientras el laboratorio use los Playgrounds |
+| ADR 0004 §3 lista «resuelto» entre los campos que sólo crecen, y su sincronización lleva todo cambio del cliente; ADR 0006 §5.3 y D39 dicen que sólo lo escribe el cierre de B2 | Vale el ADR 0006 (FR-009), y lo de antes de A4 lo decidió el usuario en Q4 | Las dos decisiones se contradicen mientras el laboratorio use los Playgrounds |
 | Los CHECK que tocan fechas están «sujetos a D07» (§5.3) | En el escritor y en su prueba (FR-052) | C2 midió que con un CHECK sobre DATETIME ampliar un ENUM no es INSTANT en 9.7 |
 | `knownRevision` mayor que la del servidor no está contemplado | Foto completa (FR-017) | Una restauración del respaldo deja al servidor atrás del cliente |
 | El tope de operaciones por lote no está fijado (§7 sólo fija 2 MiB de cuerpo) | Lo fija el plan (FR-018) | Una cola de cientos de borradores no entra en un lote de 2 MiB |
@@ -604,7 +580,6 @@ Los agentes no las hacen. Ninguna se ejecuta ahora; las de implementación llega
 | Cuándo | Acción |
 | --- | --- |
 | Ahora | Aprobar o enmendar el ADR 0006. D1 usa D08, D09, D14, D22 a D25, D28, D29, D36, D39, §5.3, §7 y §8 como base. |
-| Ahora | Responder Q1 a Q4 y aceptar o cambiar la partición de D1. |
 | Ahora | Confirmar o ajustar lo que D1 supone de las transversales: 14 días para `sync_operations` y 90 para el crudo importado (pregunta 13), y que el aviso de privacidad (pregunta 14) nombre los textos libres y los crudos. |
 | Antes de D1c | Decidir si se adopta Playwright (F1, ADR 0008 propuesto en la rama `spec/front-react`) o se acepta la verificación manual declarada para el cambio de cuenta y la computadora compartida. |
 | D1, implementación | Ninguna descarga prevista: ni paquetes de Composer ni de npm. Si el plan descubre que necesita uno, lo pide antes de bajarlo. |
@@ -629,7 +604,7 @@ Los agentes no las hacen. Ninguna se ejecuta ahora; las de implementación llega
 
 ## Alternativas consideradas
 
-Sólo las que cambian lo que se construye. Q1 a Q4 y la partición llevan las suyas arriba.
+Sólo las que cambian lo que se construye. Q1 a Q4 y la partición llevan las suyas en «Clarifications».
 
 | Tema | Alternativas | Decisión y motivo |
 | --- | --- | --- |
