@@ -21,21 +21,40 @@ export interface ExerciseCatalogHolder extends ExerciseCatalog {
 }
 
 export function createExerciseCatalog(groups: ExerciseGroups): ExerciseCatalog {
-  throw new Error('not implemented');
+  const exercises = [
+    ...groups.rustLab,
+    ...groups.rustQuests,
+    ...groups.goLab,
+    ...groups.goQuests,
+    ...groups.systemsLowlevel,
+    ...groups.systemsInfra,
+    ...groups.systemsPlay,
+    ...groups.systemsPc,
+  ];
+  const byId = new Map(exercises.map((exercise) => [exercise.id, exercise]));
+  return { exercises, byId };
 }
 
 export function createExerciseCatalogHolder(): ExerciseCatalogHolder {
-  throw new Error('not implemented');
+  let catalog: ExerciseCatalog | null = null;
+
+  function initialized(): ExerciseCatalog {
+    if (!catalog) throw new Error('Inicializá el catálogo de ejercicios antes de usarlo.');
+    return catalog;
+  }
+
+  return {
+    get exercises() {
+      return initialized().exercises;
+    },
+    get byId() {
+      return initialized().byId;
+    },
+    init(groups) {
+      if (catalog) throw new Error('El catálogo de ejercicios ya está inicializado.');
+      catalog = createExerciseCatalog(groups);
+    },
+  };
 }
 
-export const exerciseCatalog: ExerciseCatalogHolder = {
-  get exercises(): readonly Exercise[] {
-    throw new Error('not implemented');
-  },
-  get byId(): ReadonlyMap<string, Exercise> {
-    throw new Error('not implemented');
-  },
-  init() {
-    throw new Error('not implemented');
-  },
-};
+export const exerciseCatalog = createExerciseCatalogHolder();
