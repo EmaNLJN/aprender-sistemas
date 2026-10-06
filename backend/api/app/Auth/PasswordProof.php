@@ -76,10 +76,13 @@ final class PasswordProof
     private function clearCounters(User $user, string $emailKey, ?DeviceToken $device): void
     {
         $this->limiter->clear($this->attemptsKey($user));
-        $this->lockout->clear($emailKey);
-        if ($device !== null) {
-            $this->deviceCookie->clear($device);
+        if ($device === null) {
+            $this->lockout->clear($emailKey);
+
+            return;
         }
+
+        $this->deviceCookie->clear($device);
     }
 
     private function attemptsKey(User $user): string
