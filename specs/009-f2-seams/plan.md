@@ -6,9 +6,9 @@
 
 > **Para quien lo implementa.** El trabajo se reparte entre dueños con archivos disjuntos (sección «Reparto en paralelo»). Leé completas las «Reglas para todos los agentes», «Línea base y compuerta de cada unidad», «Contratos comunes de la unidad 1» y la sección de tu dueño. `tasks.md` tiene una línea por tarea (T001…) y remite acá.
 >
-> **Provisional.** El clarify de F2 está pendiente con el usuario. Este plan toma como respuestas provisionales la partición en F2a y F2b, Q2 (opción A) y Q3 (opción A), y las lista en «Supuestos provisionales (clarify pendiente)» con la sección que cambia si el usuario elige otra. Q1 y Q4 sólo afectan a F2b y no se resuelven acá. No las trates como decididas.
+> **Decisiones del usuario.** El clarify de F2 se respondió el 2026-10-06 y está en `## Clarifications` de la spec. Este plan aplica la partición en F2a y F2b, Q2 (guard automático, prueba por el singleton y Sistemas que lanza sin `init`) y Q3 (Zustand para la suscripción); Q1 y Q4 sólo afectan a F2b y no se planifican acá. «Decisiones del usuario (clarify del 2026-10-06)» dice dónde se aplica cada una. La unidad 1 se rehízo con Zustand; las unidades 2 y 4 no cambian: el catálogo y el registro de modelos no son almacenes ni motores.
 >
-> **Código verificado.** Se planificó sin tocar el código de producción del repositorio y sin descargar nada. Lo que corrió de verdad:
+> **Código verificado.** Se planificó sin tocar el código de producción del repositorio y sin instalar nada. Lo que corrió de verdad:
 >
 > - **En este worktree** (`master` más los documentos de `spec/front-react`, `0df5b07`): `npm ci --offline --no-audit --no-fund` (193 paquetes, 5 s), `npm run build` (13 s), `npm test` (30 checks, 13 s), `npm run lint` (0 errores y 35 avisos de complejidad), `npm run format:check`, los hashes y tamaños de [research.md](./research.md) («Línea base») y el conteo de escenarios de cada check.
 > - **En una copia de `feat/f1-red-de-seguridad` (`8932fa6`), fuera del repositorio,** con el `node_modules` del worktree de F1 y el navegador de la caché de Playwright:
@@ -16,17 +16,22 @@
 >   - con el motor de Sistemas lanzando antes de `init`: los 30 checks y los 106 E2E en verde, y falla sólo la prueba `KNOWN DEFECT` de Sistemas de Vitest (1 de 3), que la unidad 1 invierte;
 >   - con `app.js` exportando `startApp()` y `main.tsx` llamándolo: el build con los mismos hashes de `dump-globals` y de `dump-dist-globals`, y el mismo `<style>` y el mismo marcado; `boot-check` 10 de 10 y los 106 E2E en verde; en rojo, `load-order-check` y 47 de los 51 escenarios de `app-shell-check`, que es lo que predice la unidad 3;
 >   - con `runModule` (esbuild con `globalName`), `app-shell-check` vuelve a 51 de 51; el bundle de `main.tsx` sin su llamada se evalúa sin errores y deja `#main` vacío;
->   - prototipos que compilan y pasan: la señal de cambios, el catálogo con su contenedor, `buildProgram` movido (822 programas iguales a los de `lab.js` sobre los 274 ejercicios), `mergeModelGroups` (25 modelos y su orden) y el almacén del recorrido con la fixture de master (17 pruebas de Vitest en 6 archivos); `npm run typecheck` en verde y `eslint` sin avisos nuevos.
-> - **Qué no corrió:** el almacén del laboratorio (sólo sus firmas compilan), la suscripción de los motores, el guard, los arneses completos de la unidad 3, la imagen web de Docker, la CI y macOS. Vitest no está en el lockfile de esta rama: las pruebas de Vitest corrieron sólo en la copia de F1.
+>   - prototipos que compilan y pasan: el catálogo con su contenedor, `buildProgram` movido (822 programas iguales a los de `lab.js` sobre los 274 ejercicios), `mergeModelGroups` (25 modelos y su orden) y el almacén del recorrido con la fixture de master, hecho con la señal propia que Q3 descartó (17 pruebas de Vitest en 6 archivos, con las de esa señal); `npm run typecheck` en verde y `eslint` sin avisos nuevos.
+> - **Zustand 5.0.15, sin instalarlo en el repositorio.** El usuario autorizó la descarga, pero la instala T008. Se leyó la documentación oficial ([`createStore`](https://zustand.docs.pmnd.rs/reference/apis/create-store), [`useStore`](https://zustand.docs.pmnd.rs/reference/hooks/use-store) y [estado inmutable](https://zustand.docs.pmnd.rs/learn/guides/immutable-state-and-merging); Context7 no estaba disponible) y el código publicado, `esm/vanilla.mjs`, que se bajó de unpkg al directorio temporal. Sobre ese archivo corrieron scripts descartables, fuera del repositorio:
+>   - la semántica del store (oyentes, `Object.is`, baja repetida y un oyente que lanza);
+>   - su empaquetado con las opciones de `bundleSource` y de `importModule` de `qa/lib/sources.ts`, sobre una copia mínima del paquete;
+>   - el tipado estricto de un singleton y de un consumidor de React, con la versión de TypeScript del repositorio;
+>   - su peso minificado: 354 caracteres con el esbuild del repositorio.
+> - **Qué no corrió:** Zustand dentro del repositorio (la instalación, Vite, Vitest y los arneses completos de `qa/`), el almacén del laboratorio (sólo sus firmas compilan, y con la señal propia), la suscripción de los motores, el guard, los arneses completos de la unidad 3, la imagen web de Docker, la CI y macOS. Vitest no está en el lockfile de esta rama: las pruebas de Vitest corrieron sólo en la copia de F1.
 
 ## Summary
 
 F2a deja, antes de portar la primera vista y antes de que A2 difiera la cadena, los almacenes, los motores, el catálogo, el arranque y el registro de modelos de Sistemas como módulos con nombre y contrato. No cambia nada de lo que el alumno ve ni de lo que guarda. El enfoque:
 
 - **Cuatro unidades, cuatro PR, en este orden: 2, 4, 1 y 3** (FR-001 y FR-019). La 2 y la 4 salen primero y a la vez, porque tocan archivos disjuntos; la 1 espera a la 2 sólo en lo que toca `lab.js`; la 3 espera a las tres. A2 empieza cuando las cuatro están integradas.
-- **La red de F1 es el juez de cada unidad.** Los 106 E2E pasan antes y después de cada una, sin editarse. Las dos specs de Vitest de riesgo de F1 se invierten en la unidad 1 (ver «Desvío de la spec que introduce el plan»).
+- **La red de F1 es el juez de cada unidad.** Los 106 E2E pasan antes y después de cada una, sin editarse. Las dos specs de Vitest de riesgo de F1 se invierten en la unidad 1 (Clarifications, Q2).
 - **Hasta la unidad 3, todo se abre cuando se abre hoy.** Las unidades 2 y 1 mueven el catálogo y los almacenes a módulos, pero `lab.js` y `app.js` siguen llamándolos al evaluarse; recién la 3 mueve esas llamadas a `TallerLab.init` y `startApp()`. Así cada reversión devuelve un estado que funcionaba.
-- **Una suscripción propia de unas 30 líneas y sin dependencias.** Cada almacén y cada motor expone `subscribe` y `getRevision`: un entero que sube con cada aviso y que sirve de instantánea para `useSyncExternalStore`, también para el laboratorio, que muta su estado en el lugar.
+- **La suscripción es de Zustand, y su único estado es una revisión.** Cada almacén y cada motor expone `changes`, un store de `zustand/vanilla` cuya revisión sube en uno por operación. El progreso no se copia al store: el laboratorio lo muta en el lugar, y la revisión es lo único que un componente puede seleccionar con seguridad. La dependencia (`zustand` 5.0.15, exacta, con su aviso de licencia) la instala K en T008, el primer commit de la unidad 1.
 - **Un guard automático como check de `qa/`,** que impide abrir una clave de progreso, crear un segundo motor o importar un singleton desde un archivo legacy que no es su dueño, y que cuida que `entities`, `features` y `shared` no importen el currículo.
 - **«Mismos bytes» se prueba con cinco hashes y un tope de tamaño** (sección «Línea base y compuerta de cada unidad»): `build/curriculum.json`, `dump-globals`, `dump-dist-globals`, `<style>` y marcado del dist, más `frontend/src/index.html`. Cada unidad suma además una comparación única contra el commit base.
 
@@ -34,7 +39,7 @@ F2a deja, antes de portar la primera vista y antes de que A2 difiera la cadena, 
 
 **Language/Version**: TypeScript como ES modules en `frontend/src/` y `qa/`, y JavaScript legacy en `frontend/*.js` (sin tipos: `checkJs` está en `false`). Node 24.21.0, Vite 8.3.2, esbuild 0.28.2, Vitest 5.0.3 y `@playwright/test` 1.63.0 (los instala F1).
 
-**Primary Dependencies**: ninguna nueva (FR-010). Con Q3, opción A, la suscripción es propia; la opción B pediría Zustand con permiso del usuario y peso medido.
+**Primary Dependencies**: una nueva (FR-010): `zustand` 5.0.15, en versión exacta como el resto, y sólo `zustand/vanilla` (Q3). Sin dependencias de ejecución; pesa 95 173 bytes desempaquetada y suma unos 350 caracteres minificados al script del dist (research.md, R13). El usuario autorizó la descarga el 2026-10-06.
 
 **Storage**: las cuatro claves de `localStorage` y sus ranuras de respaldo, sin cambios de formato (ADR 0003). F2a no escribe ni lee nada que hoy no se lea.
 
@@ -49,46 +54,40 @@ F2a deja, antes de portar la primera vista y antes de que A2 difiera la cadena, 
 **Constraints**:
 
 - los tres oráculos, `<style>` y marcado con los mismos bytes después de cada unidad;
-- el HTML crece como máximo 12 000 caracteres en toda F2a (tope de `qa/build-check`: 2 500 000; base: 2 186 460; lo nuevo se estima en unos 5 500, ver research.md, R10);
-- ningún `style=` nuevo (FR-008), ninguna dependencia y ningún global nuevo (FR-010 y FR-017);
+- el HTML crece como máximo 12 000 caracteres en toda F2a (tope de `qa/build-check`: 2 500 000; base: 2 186 460; lo nuevo se estima en unos 5 700, ver research.md, R10);
+- ningún `style=` nuevo (FR-008), ninguna dependencia fuera de `zustand` y ningún global nuevo (FR-010 y FR-017);
 - los 106 E2E de F1 y los 30 checks en verde antes y después de cada unidad;
 - los cinco adaptadores de catálogos y `pages/atlas/model/atlas-catalog.ts` conservan su ruta (FR-004).
 
-**Scale/Scope**: unos 9 módulos y unas 12 specs nuevas, 2 archivos de QA nuevos (el guard y su biblioteca); cambian unos 16 archivos de producción, 11 de QA y 2 documentos. Las seis vistas legacy tienen 29 avisos de complejidad (de 35 en total) y F2a no suma ninguno.
+**Scale/Scope**: unos 8 módulos y unas 11 specs nuevas, 2 archivos de QA nuevos (el guard y su biblioteca); cambian unos 16 archivos de producción, 11 de QA, 3 de dependencias y avisos (`package.json`, `package-lock.json` y `frontend/THIRD-PARTY-NOTICES.txt`) y 2 documentos. Las seis vistas legacy tienen 29 avisos de complejidad (de 35 en total) y F2a no suma ninguno.
 
 ## Constitution Check
 
-*Compuerta: cada principio de [`.specify/memory/constitution.md`](../../.specify/memory/constitution.md) (v1.4.1). Resultado antes y después del diseño: pasa, con dos desvíos declarados y provisionales (Complexity Tracking).*
+*Compuerta: cada principio de [`.specify/memory/constitution.md`](../../.specify/memory/constitution.md) (v1.4.1). Resultado antes y después del diseño: pasa, sin desvíos de la constitución; Complexity Tracking registra una decisión de diseño.*
 
 | Principio | Cumple | Cómo |
 | --- | --- | --- |
-| I. AGENTS.md es la fuente | Con un desvío | El plan sigue `AGENTS.md`: TypeScript y ES modules, Feature-Sliced Design, Vitest para la lógica, sin dependencias y sin globals nuevos. El desvío es Q3, opción A: `AGENTS.md` pide Zustand para el estado de cliente compartido y este plan construye una suscripción propia. La spec lo declara y lo decide el usuario; si lo confirma, la regla se enmienda en `AGENTS.md`, en su propio cambio. |
+| I. AGENTS.md es la fuente | Sí | El plan sigue `AGENTS.md`: TypeScript y ES modules, Feature-Sliced Design, Vitest para la lógica, sin globals nuevos y Zustand para el estado de cliente compartido, con selectores chicos, sin componentes suscriptos al store completo ni valores derivados guardados, e instalado con su primer caso real, que es esta unidad 1 (Q3). La regla no necesita una excepción: `AGENTS.md` no cambia. |
 | II. TDD y pruebas útiles | Sí | Cada tarea abre con una spec que falla por comportamiento: los módulos nuevos nacen como firmas que lanzan «not implemented», así que la falla nunca es un import roto. Los valores esperados salen de las fixtures congeladas (`qa/fixtures/`), de la spec o de un ejemplo escrito a mano. El guard se prueba con una violación deliberada. |
 | III. Código entendible | Sí | Lo que se mueve no se reescribe: `startApp` es el cuerpo de la IIFE de hoy y las funciones de lectura se copian con sus tipos. Las dos que pasan de 10 de complejidad (`parseProgress`, 22, y `sanitizeRecord`, 14) conservan su valor al moverse; el total de avisos queda en 35. |
 | IV. Contenido en Git, IDs estables | Sí | `content/` y el generador no cambian. Los 10 IDs de hitos persistidos quedan fijados por una spec con valores escritos a mano (FR-027). |
-| V. Capas y contratos explícitos | Con un desvío | Cada módulo vive en la capa y el slice de la spec; el guard vigila los límites. La suscripción de los motores no tiene hoy un consumidor en el repositorio: la pide el coordinador para D1c (FR-061 de su spec) y es chica, pero es una pieza por anticipado hasta que D1c llegue. Si el usuario elige Q3, opción C, se quita. |
+| V. Capas y contratos explícitos | Sí | Cada módulo vive en la capa y el slice de la spec; el guard vigila los límites. La suscripción nace con su primer caso real: la hoja de ruta la pide para los almacenes, y el usuario la extendió a los motores en Q3 («cada almacén y cada motor») para el cliente de D1c (FR-061 de su spec). Cada store de Zustand es de una sola pieza y lleva sólo la revisión: no hay un store genérico ni un adaptador preventivo. |
 | VI. Español, accesibilidad y portabilidad | Sí | Los mensajes de error, en español rioplatense con voseo; el código y las pruebas, en inglés. No cambia ningún texto, atributo ni foco que vea el alumno. Los hashes se calculan con `node`, portable entre Linux y macOS. |
-| VII. Secretos y salidas generadas fuera de Git | Sí | No hay salidas nuevas: las comparaciones únicas corren en un worktree o en el directorio temporal, y no se commitean. |
+| VII. Secretos y salidas generadas fuera de Git | Sí | No hay salidas nuevas: las comparaciones únicas corren en un worktree o en el directorio temporal, y no se commitean. La dependencia entra con `package.json` y `package-lock.json` sincronizados y con su aviso de licencia (T008). |
 | VIII. Flow-forward | Sí | `tasks.md` tiene una línea por tarea y, como mucho, su commit. Al entregar la feature, el directorio queda inmutable. |
 
-## Supuestos provisionales (clarify pendiente)
+## Decisiones del usuario (clarify del 2026-10-06)
 
-Una línea por respuesta. Ninguna está registrada en `## Clarifications` de la spec: eso es del usuario. El plan está armado para que cambiar Q2 o Q3 toque sólo la unidad 1 (sección 3, tareas T008 a T015).
+Están registradas en `## Clarifications` de la [spec](./spec.md). Una línea por decisión, con la sección de este plan que la aplica. Cambiar una toca sólo la unidad 1 (sección 3, tareas T008 a T015), salvo la partición.
 
-| Respuesta provisional | Qué asume este plan | Si el usuario elige otra, cambia |
+| Decisión | Cómo la aplica este plan | Dónde |
 | --- | --- | --- |
-| **Partición: se parte** | F2a son las unidades 1 a 4 (FR-001 a FR-042) y F2b las 5 a 8 (FR-001 a FR-018 y FR-043 a FR-060), con su propio plan. | Si no se parte, este plan queda como su primera mitad sin cambios y se le suma F2b detrás: cambian sólo el título, el «Summary» y el reparto de PR. |
-| **Q2, A:** guard automático, prueba por el singleton y Sistemas que lanza sin `init` | El guard es un check de `qa/` (T014), la prueba 1 de F1 se reemplaza por la del singleton (T009) y el motor de Sistemas falla como el de campaña (T010). | **B:** la sección 3.7 y T014 (el guard pasa a `shared/lib/versioned-storage.ts`, que lanza en la segunda apertura; `versioned-storage-check` y `lab-state-check` simulan «otra pestaña» sin una segunda instancia). **C:** se omiten el guard de aperturas (T014 conserva sólo las reglas R4 y R5) y el cambio de Sistemas de T010. Todo dentro de la unidad 1. |
-| **Q3, A:** suscripción propia y mínima, sin dependencia | `subscribe` y `getRevision` sobre `shared/lib/change-signal.ts` (T008), con el desvío de `AGENTS.md` declarado. | **B:** T008 se reemplaza por la dependencia de Zustand (con permiso y peso medido contra el tope de `build-check`) y los pasos de suscripción de T009 a T011. **C:** se quitan T008 y esos pasos. Todo dentro de la unidad 1. |
-| **Q1 y Q4** | Sin resolver. | Sólo afectan a F2b (FR-055 y FR-052). |
+| **Partición: se parte** | F2a son las unidades 1 a 4 (FR-001 a FR-042) y esta carpeta es su plan. F2b, las unidades 5 a 8 (FR-001 a FR-018 y FR-043 a FR-060), tendrá su plan y su carpeta cuando se planifique. | Título, «Summary» y reparto de PR |
+| **Q2, A:** guard automático, prueba por el singleton y Sistemas que lanza sin `init` | El guard es un check de `qa/` (T014); la prueba 1 de F1 se reemplaza por la del singleton (T009); el motor de Sistemas falla como el de campaña y la prueba 2 de F1 se invierte (T010). Las dos inversiones son de la unidad 1, como ya dice la spec (FR-040); la unidad 3 sólo prueba que `startApp()` inicializa los dos motores antes de la primera vista (T016). | §3.2, §3.3 y §3.7; §4 |
+| **Q3: Zustand** | Cada almacén y cada motor expone `changes`, un store de `zustand/vanilla` que lleva la revisión. La dependencia la instala K en T008, con su aviso de licencia. Lectura que la spec declara y el usuario puede corregir: el store lleva la revisión y no el progreso. | §3.0 y §3.1 |
+| **Q1, A, y Q4, A** | Sólo afectan a F2b (FR-055 y FR-052): un mapa explícito por id para los exploradores y una interfaz de respaldo asíncrona. No se planifican acá. | — |
 
-### Desvío de la spec que introduce el plan
-
-La spec invierte la prueba de riesgo 2 de F1 en la unidad 3 (FR-040, su sección «Su prueba», el escenario 4 de la historia 3 y SC-006), y a la vez exige en la unidad 1 que un motor usado antes de abrirse falle «igual en los cuatro» (FR-022). Con Q2, opción A, el motor de Sistemas cambia de comportamiento en `entities/systems-workshop`, que es de la unidad 1: dejarlo en la 3 haría que cambiar Q2 tocara dos unidades, y la 1 integrada sin invertir esa prueba dejaría `npm test` en rojo. Por eso este plan lo asigna a la unidad 1 (T010):
-
-- **Unidad 1:** el motor de Sistemas lanza sin `init` como el de campaña y `engine-init-order.spec.ts` deja de marcar `KNOWN DEFECT` (los dos motores lanzan).
-- **Unidad 3:** conserva lo que es verdad con cualquier respuesta de Q2: tras `startApp()`, los dos motores están inicializados antes de la primera vista (T016).
-- **La spec no se edita:** la corrección de FR-040, de la unidad 3, del escenario 4 de la historia 3 y de SC-006 es del coordinador, cuando el usuario responda Q2.
+La precondición de integración que tenía la unidad 1, no integrarla sin la respuesta del usuario a Q3, está cumplida.
 
 ## Project Structure
 
@@ -109,7 +108,9 @@ No hay `data-model.md` ni `contracts/`: F2a no expone ninguna interfaz externa. 
 ### Source Code (repository root)
 
 ```text
+package.json, package-lock.json                (U1 K, T008)  suman zustand 5.0.15, exacta
 frontend/
+├── THIRD-PARTY-NOTICES.txt                    (U1 K, T008)  el aviso de licencia de Zustand
 ├── app.js                                     (U1 G, U3 A)  el almacén del recorrido; startApp
 ├── lab.js                                     (U2 C, U1 L, U3 A)  catálogo, buildProgram, almacén; init
 ├── systems.js                                 (U4 M)  init usa mergeModelGroups
@@ -119,18 +120,17 @@ frontend/
     │   ├── engine-init-order.spec.ts          (U1 E)  de F1: se reescribe, los dos motores lanzan
     │   ├── singletons-import.spec.ts          (U1 S)  nuevo: importar no toca el almacenamiento
     │   └── legacy/register-{campaign,systems}-engine.ts   (U1 E)  publican el singleton
-    ├── entities/
-    │   ├── exercise/
-    │   │   ├── index.ts                       (U2 C, U1 L)
-    │   │   └── model/  exercise-catalog.ts, build-program.ts (U2);  lab-state.ts, lab-store.ts (U1)
-    │   ├── guide/
-    │   │   ├── index.ts
-    │   │   └── model/  milestone-ids.ts, parse-route-progress.ts, route-store.ts (U1);
-    │   │               route-store-instances.spec.ts de F1: se reemplaza por route-store.spec.ts
-    │   ├── campaign/model/        create-campaign-engine.ts, types.ts (U1)
-    │   ├── systems-workshop/model/ create-systems-engine.ts, types.ts (U1)
-    │   └── systems-simulation/  index.ts, model/model-registry.ts (U4)
-    └── shared/lib/change-signal.ts            (U1 S)
+    └── entities/
+        ├── exercise/
+        │   ├── index.ts                       (U2 C, U1 L)
+        │   └── model/  exercise-catalog.ts, build-program.ts (U2);  lab-state.ts, lab-store.ts (U1)
+        ├── guide/
+        │   ├── index.ts
+        │   └── model/  milestone-ids.ts, parse-route-progress.ts, route-store.ts (U1);
+        │               route-store-instances.spec.ts de F1: se reemplaza por route-store.spec.ts
+        ├── campaign/model/        create-campaign-engine.ts, types.ts (U1)
+        ├── systems-workshop/model/ create-systems-engine.ts, types.ts (U1)
+        └── systems-simulation/  index.ts, model/model-registry.ts (U4)
 qa/
 ├── lib/  sources.ts, legacy-sources.ts, app-adapters.ts (U3);  seams-guard.ts (U1, nuevo)
 ├── boot-check.ts, app-shell-check.ts, load-order-check.ts   (U3)
@@ -139,7 +139,7 @@ qa/
 docs/architecture.md   qa/AGENTS.md                           (cada unidad, K)
 ```
 
-**Structure Decision:** cada módulo vive en la capa y el slice que fija la spec (sección «Las ocho unidades»), con su spec al lado. La única carpeta nueva con código compartido es `shared/lib/change-signal.ts`, un archivo, sin barrel: `shared` no tiene un barrel global. No se crea ninguna capa ni carpeta vacía.
+**Structure Decision:** cada módulo vive en la capa y el slice que fija la spec (sección «Las ocho unidades»), con su spec al lado. No hay código compartido nuevo: cada fábrica crea su store de Zustand y no se suma ningún archivo a `shared`. No se crea ninguna capa ni carpeta vacía.
 
 ## Review Focus
 
@@ -149,7 +149,8 @@ Lo que el revisor mira primero, porque es lo que más cuesta equivocar o lo que 
 - **El orden de los efectos al arrancar.** Las lecturas de almacenamiento son, hoy y después de la unidad 3, `taller-laboratorio-v1`, `taller-learning-v1`, `taller-campaign-v1` y `taller-systems-v1`, en ese orden, y ninguna escritura con la fixture de master (medido sobre la base). La comparación única de la unidad 3 las registra.
 - **Nada al evaluar.** Tras la unidad 3, las seis fuentes legacy evaluadas solas (sin catálogos ni adaptadores) y el bundle de `main.tsx` sin su llamada no fallan, no tocan el almacenamiento, no registran oyentes ni intervalo y no dibujan.
 - **`app.js`.** Es la IIFE de hoy convertida en `startApp`, más una guarda de segunda llamada. En la unidad 1, el reemplazo de `state` por `routeState()` es mecánico y grande (80 apariciones en 59 líneas): revisalo con `git diff --word-diff`, no con los ojos.
-- **Semántica de los almacenes.** El laboratorio conserva la identidad de su estado y de sus registros en cada escritura; el recorrido reemplaza su estado al fusionar con otra pestaña; ninguno escucha el evento `storage`; la tabla de avisos de §3.0 es exactamente la que prueban las specs.
+- **Semántica de los almacenes.** El laboratorio conserva la identidad de su estado y de sus registros en cada escritura; el recorrido reemplaza su estado al fusionar con otra pestaña; ninguno escucha el evento `storage`; la tabla de avisos de §3.0 es exactamente la que prueban las specs, y la revisión sube una sola vez por operación, después de escribir.
+- **Zustand.** Sólo `zustand/vanilla` (ni `zustand` ni `useStore` en F2a); un store por pieza, creado dentro de su fábrica, con el estado `{ revision }` y nada más; `setState` lo llama sólo su dueño, desde `notify`. La versión es exacta en `package.json`, el lockfile suma un solo paquete y el aviso MIT está en `frontend/THIRD-PARTY-NOTICES.txt`.
 - **Sistemas lanza sin `init`.** Se probó en una copia: los 30 checks y los 106 E2E lo toleran. Si algo lo usara antes, el arranque de la unidad 3 lo mostraría.
 - **El guard.** Sus cinco reglas (R1 a R5) y las violaciones deliberadas que lo prueban.
 - **Los arneses.** `runModule`, `loadLab` (que evalúa e inicializa) y `bundleApp` sin la llamada final: A2 los edita después, así que sus nombres y su forma quedan fijados en §4.0.
@@ -167,7 +168,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 | Onda | Quién | Qué |
 | --- | --- | --- |
 | 0 | K | T001: la línea base, sobre la base de implementación con F1 integrada |
-| 1 | C, M, S, G, E y L, a la vez | **C:** T002 a T004 (unidad 2). **M:** T006 (unidad 4). **S:** T008 (la señal). **G:** T009 (módulos del recorrido). **E:** T010 (motores). **L:** T011 (módulos y specs del almacén del laboratorio, sin tocar `lab.js` ni `index.ts`). **Q** puede adelantar el primer commit de T016 (los arneses, en verde: sólo archivos de `qa/` que nadie más toca) |
+| 1 | C, M y K a la vez; G, E y L desde que T008 está integrada | **C:** T002 a T004 (unidad 2). **M:** T006 (unidad 4). **K:** T008 (la dependencia de Zustand), el primer commit de la rama de la unidad 1. **G:** T009 (módulos del recorrido). **E:** T010 (motores). **L:** T011 (módulos y specs del almacén del laboratorio, sin tocar `lab.js` ni `index.ts`). G, E y L pueden escribir antes sus specs en rojo, contra las firmas de §3.0. **Q** puede adelantar el primer commit de T016 (los arneses, en verde: sólo archivos de `qa/` que nadie más toca) |
 | 2 | K, G, L y S | **K:** T005 y T007, las compuertas y los PR de las unidades 2 y 4, apenas C y M entregan. **G:** T012. **L:** T013, desde que la unidad 2 está en `master`. **S:** T014, desde que T012 y T013 están |
 | 3 | K | T015: la compuerta y el PR de la unidad 1 |
 | 4 | Q y A, a la vez | **Q:** el segundo commit de T016 (las pruebas rojas; A suma antes la firma de `startApp` en `app.js`). **A:** el diff de T017. K integra T017 con `main.tsx` |
@@ -177,13 +178,13 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 
 | Dueño | Unidad | Archivos que posee | Consume | Entrega |
 | --- | --- | --- | --- | --- |
-| K · Coordinador | todas | `frontend/src/app/main.tsx`, `qa/run-checks.ts`, `docs/architecture.md`, `qa/AGENTS.md`, `package.json` y las configuraciones (sin cambios), `specs/**`; abre los PR y corre las compuertas | todo | la línea base, las compuertas, la integración y el cierre |
+| K · Coordinador | todas | `frontend/src/app/main.tsx`, `qa/run-checks.ts`, `docs/architecture.md`, `qa/AGENTS.md`, `package.json` y `package-lock.json` (sólo T008: suman `zustand`), `frontend/THIRD-PARTY-NOTICES.txt` (sólo T008) y las configuraciones (sin cambios), `specs/**`; abre los PR y corre las compuertas | todo | la línea base, la dependencia de Zustand, las compuertas, la integración y el cierre |
 | C · Catálogo | 2 | en `frontend/src/entities/exercise/`: `index.ts`, `model/exercise-catalog*` y `model/build-program*`; `frontend/lab.js` (catálogo y `buildProgram`); `qa/runtime-check.ts`, `qa/systems-check.ts` y `qa/project-kit-check.ts` | — | el catálogo, `buildProgram` y los checks que los importan |
 | M · Modelos | 4 | `frontend/src/entities/systems-simulation/index.ts`, `…/model/model-registry*` y `frontend/systems.js` | — | `mergeModelGroups` y `systems.js:init` |
-| S · Señal y guard | 1 | `frontend/src/shared/lib/change-signal*`, `frontend/src/app/singletons-import.spec.ts`, `qa/seams-guard-check.ts`, `qa/lib/seams-guard.ts` y `qa/versioned-storage-check.ts` | — | la señal (§3.1) y el guard (§3.7) |
-| G · Recorrido | 1 | `frontend/src/entities/guide/**` (incluido el spec de F1 `route-store-instances.spec.ts`, que se reemplaza) y `frontend/app.js` (el almacén) | de S: `createChangeSignal` | `routeStore` |
-| E · Motores | 1 | `frontend/src/entities/campaign/**`, `frontend/src/entities/systems-workshop/**`, `frontend/src/app/legacy/register-{campaign,systems}-engine.ts` y `frontend/src/app/engine-init-order.spec.ts` | de S: `createChangeSignal` | `campaignEngine` y `systemsEngine` |
-| L · Laboratorio | 1 | `frontend/src/entities/exercise/model/lab-state*` y `lab-store*` y, desde T013, `frontend/lab.js` (el almacén) y `frontend/src/entities/exercise/index.ts` | de S: la señal; de C: `exerciseCatalog` | `labStore` |
+| S · Guard | 1 | `frontend/src/app/singletons-import.spec.ts`, `qa/seams-guard-check.ts`, `qa/lib/seams-guard.ts` y `qa/versioned-storage-check.ts` | los singletons de G, E y L | el guard (§3.7) |
+| G · Recorrido | 1 | `frontend/src/entities/guide/**` (incluido el spec de F1 `route-store-instances.spec.ts`, que se reemplaza) y `frontend/app.js` (el almacén) | de K: `zustand` instalado (T008) | `routeStore` |
+| E · Motores | 1 | `frontend/src/entities/campaign/**`, `frontend/src/entities/systems-workshop/**`, `frontend/src/app/legacy/register-{campaign,systems}-engine.ts` y `frontend/src/app/engine-init-order.spec.ts` | de K: `zustand` instalado (T008) | `campaignEngine` y `systemsEngine` |
+| L · Laboratorio | 1 | `frontend/src/entities/exercise/model/lab-state*` y `lab-store*` y, desde T013, `frontend/lab.js` (el almacén) y `frontend/src/entities/exercise/index.ts` | de K: `zustand` instalado (T008); de C: `exerciseCatalog` | `labStore` |
 | Q · Arneses | 3 | `qa/lib/sources.ts`, `qa/lib/legacy-sources.ts`, `qa/lib/app-adapters.ts`, `qa/boot-check.ts`, `qa/app-shell-check.ts` y `qa/load-order-check.ts` | — | los arneses, las pruebas rojas de la unidad 3 y los dos cambios de QA del corte (T017) |
 | A · Arranque | 3 | `frontend/app.js` (el arranque) y `frontend/lab.js` (`init`) | de G y L: los singletons; de Q: las pruebas | `startApp` y `TallerLab.init` |
 
@@ -200,7 +201,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 **Puntos de sincronización** (el coordinador integra y avisa):
 
 - **S0:** T001 hecha. Todos parten de ahí.
-- **S1:** T008 (la señal) integrada en la rama de la unidad 1. G, E y L integran desde ahí; pueden escribir sus specs antes, contra las firmas de §3.0.
+- **S1:** T008 (la dependencia de Zustand) integrada en la rama de la unidad 1: es su primer commit. G, E y L parten de ahí, para tener `zustand` en su `node_modules` (`npm ci --offline`); pueden escribir sus specs antes, contra las firmas de §3.0.
 - **S2:** el PR de la unidad 2 integrado en `master`. L cablea `lab.js` (T013) y rebasa sobre eso.
 - **S3:** los PR de las unidades 4 y 1 integrados. Q y A parten de ahí.
 - **S4:** el PR de la unidad 3 integrado. K cierra.
@@ -211,6 +212,8 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 
 | Cuándo | Archivo | Línea |
 | --- | --- | --- |
+| T008 | `package.json` y `package-lock.json` | `npm install --save-exact zustand@5.0.15`: una línea en `dependencies` y un paquete en el lockfile |
+| T008 | `frontend/THIRD-PARTY-NOTICES.txt` | el aviso de licencia MIT de Zustand, con el texto de `node_modules/zustand/LICENSE` |
 | T014 | `qa/run-checks.ts` | `'seams-guard-check.ts',` después de `'load-order-check.ts',` |
 | T017 | `frontend/src/app/main.tsx` | `import { startApp } from '../../app.js';` en lugar de `import '../../app.js';`, y `startApp();` después, a continuación de una línea en blanco |
 | cada compuerta | `docs/architecture.md` y `qa/AGENTS.md` | lo que dice «Documentación que cambia con cada unidad» |
@@ -219,10 +222,10 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 
 - **F1 tiene que estar integrada** antes de T001 (su PR en `master`): F2a corre con su red y sus dos specs de Vitest, y toca `qa/AGENTS.md`, que F1 también cambia. Si no, se parte de `feat/f1-red-de-seguridad` y T001 lo anota.
 - **La limpieza al inglés** (`chore/en-front` y `chore/en-qa-tools`, ya con commits y sin PR) cambia comentarios, nombres de pruebas y mensajes de los mismos archivos: `entities/campaign` y `entities/systems-workshop` (fábricas y tipos), `qa/lib/sources.ts`, `qa/systems-check.ts`, `qa/project-kit-check.ts`, `qa/runtime-check.ts`, `qa/versioned-storage-check.ts` y `qa/run-checks.ts`, entre otros. Conviene integrarla antes de T001, para que la línea base se tome sobre la base final; si no, los dueños rebasan y el coordinador resuelve los conflictos de texto.
-- **Q3 antes de integrar la unidad 1:** ver la precondición de la tarea 3.8. Se puede preguntar ya: no depende de ninguna implementación.
-- **`package.json`, `.github/workflows/ci.yml` y `eslint.config.ts`:** F2a no los cambia (el guard es un check de `qa/`, y los checks entran por `qa/run-checks.ts`). Los frentes del backend (C3a, C6) tocan el CI sin cruzarse.
+- **Zustand en `master`:** la dependencia viaja en el PR de la unidad 1 (T008, su primer commit). Las unidades 2 y 4 no la usan y se integran antes, sin ella.
+- **`package.json`, el lockfile, `.github/workflows/ci.yml` y `eslint.config.ts`:** F2a sólo cambia `package.json` y el lockfile, y sólo en T008, para sumar `zustand`; el CI y `eslint.config.ts` no (el guard es un check de `qa/`, y los checks entran por `qa/run-checks.ts`). Los frentes del backend (C3a, C6) tocan el CI sin cruzarse.
 - **A2** parte de la base con las cuatro unidades. Lo que A2 toma y las formas que F2a le deja están en «Lo que A2, D1 y F3 a F9 toman de F2a».
-- **D1:** su FR-061 pide el cliente sobre los cuatro almacenes con suscripción; la tabla de §3.0 es lo que recibe.
+- **D1:** su FR-061 pide el cliente sobre los cuatro almacenes con suscripción; «Lo que A2, D1 y F3 a F9 toman de F2a» es lo que recibe.
 
 ## Reglas para todos los agentes
 
@@ -243,6 +246,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
   - `interface` para formas de objetos y exports nombrados; `export default` sólo en componentes, hooks y contextos con una abstracción principal.
   - Una función de más de 10 de complejidad se revisa y se justifica. En `qa/`, sólo sintaxis TypeScript borrable (`tsconfig.qa.json`): sin `enum` ni propiedades de parámetro.
   - Ningún `style=`, `setAttribute('style', …)` ni `style.cssText` nuevos (FR-008).
+- **Zustand.** Importá sólo `zustand/vanilla`. Cada fábrica crea su store con `createStore` y el estado `{ revision: number }`, y lo sube con `setState` desde un `notify` propio, una vez por operación y después de escribir. No guardes el progreso ni valores derivados en el store, no llames `setState` desde afuera y, en un componente, nunca `useStore(store)` sin selector.
 - **Commits.** Chicos, en español, con prefijo Angular (`test(front): …` para la spec en rojo, `refactor(front): …` para el movimiento, `feat(front): …` para lo nuevo) y el trailer `Co-Authored-By` de tu modelo, sin `git push`. La spec en rojo y su implementación van en commits separados; el commit de una spec en rojo no pasa `npm test` y el PR entero sí. La evidencia de una tarea es su commit.
 - **Al terminar,** informá las tareas cerradas, los comandos que corriste con su resultado real, lo que no pudiste verificar y cualquier desvío del plan.
 
@@ -435,39 +439,56 @@ export function mergeModelGroups(groups: readonly object[]): Record<string, unkn
 
 La compuerta de §0, el PR (`refactor(front): merge the Systems models in a tested registry`) y la documentación (§5). Cubre FR-001, FR-002 y FR-009.
 
-## 3. Unidad 1 · Un almacén por clave y un motor por tipo, con suscripción (dueños S, G, E y L, ondas 1 y 2)
+## 3. Unidad 1 · Un almacén por clave y un motor por tipo, con suscripción (dueños K, G, E, L y S, ondas 1 y 2)
 
-**Cubre:** FR-018 y FR-020 a FR-031; FR-032 en lo que vigila el guard; US2, SC-004 y SC-006.
+**Cubre:** FR-010, FR-018 y FR-020 a FR-031; FR-032 en lo que vigila el guard; US2, SC-004 y SC-006.
 
-**Entrega:** `routeStore`, `labStore`, `campaignEngine` y `systemsEngine` como singletons que se importan, no abren nada al evaluarse, fallan si se usan sin abrir y avisan de sus cambios; el guard que impide abrir una clave por otro camino; las dos specs de riesgo de F1 invertidas.
+**Entrega:** `routeStore`, `labStore`, `campaignEngine` y `systemsEngine` como singletons que se importan, no abren nada al evaluarse, fallan si se usan sin abrir y exponen un store de Zustand con la revisión de sus cambios; la dependencia de Zustand (`zustand` 5.0.15, exacta, con su aviso de licencia); el guard que impide abrir una clave por otro camino; las dos specs de riesgo de F1 invertidas.
 
 ### 3.0 Contratos comunes de la unidad 1
 
-**La señal.** `shared/lib/change-signal.ts` (T008):
+**La suscripción, con Zustand.** Cada singleton expone `changes`, el store de `zustand/vanilla` de esa pieza. Se crea dentro de la fábrica (`createRouteStore`, `createLabStore`, `createCampaignEngine` y `createSystemsEngine`) y no a nivel de módulo: así cada spec que usa una fábrica tiene el suyo, en revisión 0. Su estado es `{ revision: number }` y nada más. La forma, que compiló en un directorio temporal con una copia mínima del paquete y no dentro del repositorio:
 
 ```ts
-export interface ChangeSignal {
-  subscribe(listener: () => void): () => void; // returns the unsubscribe function; calling it twice does nothing
-  revision(): number; // 0 when created; goes up by one on every notify()
-  notify(): void; // a listener that throws is reported with console.error and does not stop the rest
-}
-export function createChangeSignal(): ChangeSignal;
+import { createStore, type StoreApi } from 'zustand/vanilla';
+
+// In each factory, next to its other closure variables:
+const changes = createStore<{ revision: number }>(() => ({ revision: 0 }));
+const notify = (): void => changes.setState((state) => ({ revision: state.revision + 1 }));
+
+// Each public interface (RouteStore, LabStore, CampaignEngine and SystemsEngine) gains:
+readonly changes: StoreApi<{ revision: number }>;
 ```
 
-**Qué entrega a un consumidor de React.** La instantánea de `useSyncExternalStore` es `getRevision()`, un entero; el estado se lee con `getState()` (almacenes) o con `exportState()` y los selectores de cada motor, siempre dentro del render. No sirve comparar la identidad del estado: el laboratorio muta en el lugar en cada escritura y la reemplaza sólo al importar y al borrar; el recorrido la reemplaza al fusionar con otra pestaña. Los dos casos los prueba la spec de cada almacén. El estado vivo es de sólo lectura para quien no sea su dueño legacy (`app.js` o `lab.js`) hasta que su port lo reemplace.
+`notify` es lo único que llama a `setState`, y siempre sube la revisión en uno: el actualizador devuelve un objeto nuevo, y Zustand sólo avisa si el estado cambió de identidad (`Object.is`). Las «acciones explícitas» que pide `AGENTS.md` son los métodos de cada singleton (`save`, `applyImport`, `reset` y los de cada motor), que persisten y recién después suben la revisión; el store no tiene acciones propias y ningún consumidor llama a `changes.setState`. Las specs no importan Zustand: usan `changes.subscribe` y `changes.getState()`.
+
+**Qué guarda el store y qué no.** Guarda la revisión y nada más: no copia el progreso ni guarda valores derivados de él. El progreso sigue en su almacén versionado y se lee con `getProgress()` (el recorrido y el laboratorio) o con `exportState()` (los motores, que clonan). El laboratorio muta su estado y sus registros en el lugar en cada escritura (ADR 0003, decisión 9; FR-025), y `app.js` muta el del recorrido entre dos fusiones y lo reemplaza al fusionar con otra pestaña, al importar y al borrar. Zustand pide actualizar el estado de forma inmutable ([guía oficial](https://zustand.docs.pmnd.rs/learn/guides/immutable-state-and-merging)): un selector sobre el progreso no avisaría de lo que cambia en el lugar, y copiarlo al store dejaría dos fuentes de verdad (FR-026). La revisión es la única selección segura hasta que un port vuelva inmutable el estado que porta. Es la lectura de Q3 que declara la spec, y el usuario la puede corregir.
+
+Por la misma razón, el estado vivo del recorrido y del laboratorio ya no se llama `getState`: en Zustand `getState` lee el store, y dos `getState` en un mismo singleton se confundirían. El estado vivo es `getProgress()` y la revisión, `changes.getState().revision`. Nadie usaba todavía el nombre anterior fuera de este plan.
+
+**Qué entrega a un consumidor.** Un componente de React lee la revisión con `useStore` de `zustand`, con un selector chico, y vuelve a leer el progreso cuando cambia. Nunca `useStore(store)` sin selector: suscribe al store completo y `AGENTS.md` lo prohíbe; el compilador no lo impide (se verificó que compila), así que se cuida en la revisión y en la spec de cada port. El código que no es de React, el cliente de D1c y las vistas legacy, usa la API de vanilla. F2a sólo importa `zustand/vanilla`: `useStore` lo estrena el primer port, F3, que además trae jsdom.
 
 ```ts
-const revision = useSyncExternalStore(routeStore.subscribe, routeStore.getRevision);
-const route = routeStore.getState(); // read again whenever `revision` changes
+import { useStore } from 'zustand';
+const revision = useStore(routeStore.changes, (state) => state.revision);
+const route = routeStore.getProgress(); // read it again whenever `revision` changes
+
+// Outside React:
+const stop = routeStore.changes.subscribe((state, previous) => {
+  /* the listener receives the new and the previous state; `stop()` unsubscribes */
+});
+routeStore.changes.getState().revision;
 ```
 
-**Qué avisa y qué no.** La suscripción no escucha el evento `storage`: la fusión con lo que guardó otra pestaña ocurre dentro de `write`, cuando la clave cambió desde la última lectura (ADR 0003), y por eso queda cubierta por el aviso de la escritura.
+**Qué avisa y qué no.** La suscripción no escucha el evento `storage`: la fusión con lo que guardó otra pestaña ocurre dentro de `write`, cuando la clave cambió desde la última lectura (ADR 0003), y por eso queda cubierta por el aviso de la escritura. La revisión sube **una sola vez por operación pública**, después de que la operación escribió, reasignó el estado y actualizó `storageAvailable`: un oyente ya ve lo escrito. `persist()` de los motores no avisa, y `applyImport` y `reset` del laboratorio pasan por `save()` y no suman un segundo aviso.
 
-| Pieza | Avisa después de | No avisa |
+| Pieza | Sube la revisión (una vez por operación) | No la sube |
 | --- | --- | --- |
-| `routeStore` y `labStore` | `save()`, aunque no pueda guardar (el estado en memoria cambió y `storageAvailable()` puede haber cambiado), `applyImport` y `reset` | `open`, `getState`, las lecturas |
+| `routeStore` y `labStore` | `save()`, aunque no pueda guardar (el estado en memoria cambió y `storageAvailable()` puede haber cambiado); `applyImport` y, en el laboratorio, `reset`, que pasan por `save()`; `reset` del recorrido, que no guarda | `open`, `getProgress`, las lecturas |
 | `campaignEngine` | `answerCheckpoint` aceptada, `syncLab` cuando persiste, `applyImport` (siempre) y `reset` | `init`, `refreshFromLab` (deriva sellos en memoria sin guardar), `getWorlds`, `getSummary`, `canAttempt` |
 | `systemsEngine` | `observe` cuando agrega, `answer`, `setStep` y `setNote`, `syncLab` cuando persiste, `applyImport` (siempre) y `reset` | `init`, `refreshFromLab`, `get`, `list` |
+
+**Un oyente que lanza.** Es el comportamiento de Zustand: `setState` recorre los oyentes con `forEach`, así que la excepción llega a quien llamó a la operación y los oyentes siguientes no se llaman (se verificó con `esm/vanilla.mjs` 5.0.15, research.md, R3). La escritura ya ocurrió, porque se avisa después, y eso es lo que prueban las specs. F2a no suma aislamiento propio: no tiene oyentes que lancen, el que registra `useStore` es de React, y el cliente de D1c tiene que capturar los suyos.
 
 **Abrir y usar sin abrir** (FR-021 y FR-022; los textos son los de hoy donde existen):
 
@@ -489,7 +510,7 @@ const route = routeStore.getState(); // read again whenever `revision` changes
 | campaña y Sistemas | `app.js` los inicializa al evaluarse | igual | igual, con los singletons | `startApp()` |
 | avisos, idioma, oyentes, intervalo y primer render | `app.js` al evaluarse | igual | igual | `startApp()` |
 
-**Un singleton con estado, un dueño legacy** (FR-018). Los checks empaquetan cada archivo legacy por separado: un singleton que dos archivos importaran existiría dos veces en un contexto, y esa segunda instancia es la que esta unidad elimina. Hoy el único módulo que importa `entities/exercise` en tiempo de ejecución es `lab.js` (los adaptadores de catálogos lo importan con `import type`, que se borra), y los motores alcanzan `hasPassingEvidence` por `@x`, que no importa el índice: por eso ningún bundle de check duplica un singleton.
+**Un singleton con estado, un dueño legacy** (FR-018). Los checks empaquetan cada archivo legacy por separado: un singleton que dos archivos importaran existiría dos veces en un contexto, y esa segunda instancia es la que esta unidad elimina. Hoy el único módulo que importa `entities/exercise` en tiempo de ejecución es `lab.js` (los adaptadores de catálogos lo importan con `import type`, que se borra), y los motores alcanzan `hasPassingEvidence` por `@x`, que no importa el índice: por eso ningún bundle de check duplica un singleton. El código de Zustand sí se repite en cada bundle, y no importa: no tiene estado, el estado es de cada store.
 
 | Singleton | Slice | Lo importa (dueño) | Cómo lo alcanzan los demás |
 | --- | --- | --- | --- |
@@ -498,20 +519,38 @@ const route = routeStore.getState(); // read again whenever `revision` changes
 | `campaignEngine` | `entities/campaign` | `register-campaign-engine.ts` | `window.TallerCampaignEngine` (`campaign.js`, `lab.js` y `app.js`) |
 | `systemsEngine` | `entities/systems-workshop` | `register-systems-engine.ts` | `window.TallerSystemsEngine` (`systems.js` y `app.js`) |
 
-El singleton se crea en el mismo archivo que su fábrica (`export const routeStore: RouteStore = createRouteStore();`): el módulo, vacío y sin efectos, se evalúa cuando su dueño importa el índice del slice. Las fábricas siguen exportadas para las specs.
+El singleton se crea en el mismo archivo que su fábrica (`export const routeStore: RouteStore = createRouteStore();`): el módulo, vacío y sin efectos, se evalúa cuando su dueño importa el índice del slice. Crear el store de Zustand de cada uno no abre ninguna clave ni lee `window`. Las fábricas siguen exportadas para las specs.
 
-### Tarea 3.1 · La señal de cambios (T008, dueño S)
+### Tarea 3.1 · La dependencia de Zustand (T008, K)
 
-- **Crea:** `frontend/src/shared/lib/change-signal.ts` y `change-signal.spec.ts`.
-- **Qué prueba la spec:** los oyentes se llaman en orden de alta; la baja y una segunda baja; `revision()` arranca en 0 y sube con cada `notify()`, también sin oyentes; un oyente que lanza se informa con `console.error` y el resto se llama.
-- **Pasos:** la firma lanzando `not implemented`, la spec en rojo, la implementación (unas 30 líneas) y `npm run test:unit -- change-signal`. Dos commits: `test(front): spec de la señal de cambios (roja)` y `feat(front): señal de cambios mínima para los almacenes`.
-- **Vuelta atrás:** revertí los commits; nadie la usa todavía.
-- **Verificado al planificar:** la implementación y su spec pasan en Vitest y compilan.
+- **Quién y cuándo:** K, primero en la rama de la unidad 1 (sincronización S1): G, E y L parten de este commit. Es una tarea del coordinador porque `package.json`, el lockfile y los avisos de licencia los integra K (`AGENTS.md`, «Trabajo con subagentes»). El usuario autorizó la descarga el 2026-10-06. No lleva código ni spec: nada importa Zustand todavía.
+- **Cambia:** `package.json`, `package-lock.json` y `frontend/THIRD-PARTY-NOTICES.txt`.
+- **Lo medido antes de instalar** (2026-10-06, con el registro de npm y el archivo publicado; detalle en research.md, R13):
+
+  | Qué | Valor |
+  | --- | --- |
+  | Versión | 5.0.15 (la última del registro, `latest`) |
+  | Peso del paquete | 95 173 bytes desempaquetados (`npm view zustand version dist.unpackedSize`), en 52 archivos: todas las formas del paquete (cjs, esm, umd, systemjs, tipos y middleware) |
+  | Lo que entra al script del dist | sólo `zustand/vanilla`: 1 001 caracteres publicados y 354 minificados con el esbuild del repositorio; 425 con un store y su `setState`, y 476 con cuatro |
+  | Licencia | MIT, «Copyright (c) 2019 Paul Henschel» |
+  | Dependencias de ejecución | ninguna; los peers (`react` ≥ 18, `@types/react`, `immer` y `use-sync-external-store`) son opcionales y el repositorio ya trae React 19.2.8 |
+  | Forma del dist (FR-009) | `esm/vanilla.mjs` no usa `import.meta`, `import()` ni `process.env` |
+  | Integridad | `sha512-MpSEjRiBkA9crSYeOUH32rJC7SVqAbm0Fqcqge/bUi2PPoLcBWKOsG+C8mevmpr8TwXHBVkChbbJiyvkE+i/3A==` (`npm view zustand@5.0.15 dist.integrity`) |
+
+- **Pasos:**
+  1. `npm install --save-exact zustand@5.0.15`. El `--save-exact` hace falta: el repositorio fija todas sus versiones sin `^` y no tiene un `.npmrc` que lo haga. `package.json` suma una línea en `dependencies`, en orden alfabético, y `package-lock.json` suma un solo paquete, `node_modules/zustand`, con el `integrity` del registro.
+  2. Copiar el texto de `node_modules/zustand/LICENSE` a `frontend/THIRD-PARTY-NOTICES.txt`, con el formato de React, fflate y canvas-confetti: ese archivo se copia al servido (`frontend/Dockerfile`) y el código publicado de Zustand no lleva un comentario de licencia.
+  3. `npm ci --offline --no-audit --no-fund` en otro worktree (comprueba que el lockfile coincide y que la caché de npm sirve el paquete a los dueños) y, después, `npm run build`, `npm test`, `npm run lint` y `npm run format:check`: todo en verde.
+  4. Comprobar que `zustand/vanilla` se resuelve y se empaqueta donde se va a usar, antes de que un módulo lo importe: Vite y Vitest (una spec descartable que importe `createStore` y lo use) y los arneses de `qa/` (`bundleSource` e `importModule` de `qa/lib/sources.ts`, con un módulo descartable de `entities/`). Al planificar se hizo en un directorio temporal, con una copia mínima del paquete y esbuild con esas opciones; acá se repite con el paquete instalado, y la prueba descartable no se commitea.
+  5. Un commit: `build(front): suma zustand 5.0.15 para la suscripción de los almacenes`.
+- **Compuerta:** los pasos 3 y 4, y `git diff <base> -- package.json package-lock.json frontend/THIRD-PARTY-NOTICES.txt` con exactamente una dependencia, un paquete en el lockfile y un aviso. Como nada importa Zustand todavía, se espera que `dist/index.html` quede idéntico al de la base (el mismo sha256 y las mismas 2 186 460 caracteres) y que los cinco hashes no cambien.
+- **Vuelta atrás:** revertí el commit después de los de G, E y L, que importan Zustand: es parte de la reversión de la unidad 1.
+- **Verificado al planificar:** la versión, el peso, la licencia y la integridad salen del registro. En scripts descartables, fuera del repositorio y sobre el `esm/vanilla.mjs` que se bajó de unpkg al directorio temporal (no se instaló nada): la semántica del store, el empaquetado con las opciones de `qa/lib/sources.ts` (en un contexto de `vm` y desde una URL `data:`), el tipado estricto con la versión de TypeScript del repositorio y el peso. No corrió: la instalación, Vite, Vitest ni el lockfile.
 
 ### Tarea 3.2 · El almacén del recorrido (T009, dueño G; los módulos)
 
 - **Crea** en `frontend/src/entities/guide/model/`: `milestone-ids.ts`, `parse-route-progress.ts` y `route-store.ts`, con sus specs `milestone-ids.spec.ts`, `parse-route-progress.spec.ts` y `route-store.spec.ts`. **Cambia:** `frontend/src/entities/guide/index.ts`. **Borra:** `route-store-instances.spec.ts` (de F1), que `route-store.spec.ts` reemplaza.
-- **Interfaz** (verificada: compila y pasa en Vitest):
+- **Interfaz** (lo de `milestone-ids.ts` y `parse-route-progress.ts` compiló y pasó en el prototipo; `RouteStore` es nueva y su `changes` es de Zustand):
 
 ```ts
 // model/milestone-ids.ts: the ten ids persisted in `milestones` (the texts stay in app.js until F4).
@@ -523,18 +562,18 @@ export function blankRouteProgress(): RouteProgressV1;
 export function parseRouteProgress(raw: unknown, guide: GuideData): ParsedState<RouteProgressV1>;
 
 // model/route-store.ts
+import type { StoreApi } from 'zustand/vanilla';
 export interface RouteImportPlan { state: RouteProgressV1; lossy: boolean }
 export interface RouteStore {
   open(guide: GuideData, options?: { storage?: StorageLike }): void;
-  getState(): RouteProgressV1;                 // live: read it again, never keep a copy
-  save(): boolean;                              // writes, replaces the state after a merge and notifies
-  applyImport(plan: RouteImportPlan): boolean;  // state = plan.state, saves and notifies
-  reset(): boolean;                             // blank state, removes the keys and notifies; it does not save
+  getProgress(): RouteProgressV1;              // live: read it again, never keep a copy
+  save(): boolean;                              // writes, replaces the state after a merge and raises the revision
+  applyImport(plan: RouteImportPlan): boolean;  // state = plan.state, then save(): one revision
+  reset(): boolean;                             // blank state, removes the keys and raises the revision; it does not save
   backups(): BackupEntry[];
   loadWarning(): string;                        // the load notice of the route, empty after reset
   storageAvailable(): boolean;                  // the result of the last load or write
-  subscribe(listener: () => void): () => void;
-  getRevision(): number;
+  readonly changes: StoreApi<{ revision: number }>;
 }
 export function createRouteStore(): RouteStore;
 export const routeStore: RouteStore;
@@ -544,16 +583,17 @@ export const routeStore: RouteStore;
 - **Qué prueban las specs** (los esperados salen de `qa/fixtures/progress-master-2a278ad-storage.json` y de ejemplos escritos a mano):
   - **Los 10 ids:** `rust-memory`, `rust-commands`, `rust-files`, `rust-measure`, `rust-network`, `go-memory`, `go-commands`, `go-files`, `go-measure` y `go-network`, escritos a mano (FR-027).
   - **La lectura** (`parse-route-progress`): los casos que cubre hoy `app-shell-check` para `parseProgress` (ids desconocidos descartados y contados, versión distinta lanza `ROUTE_FORMAT_ERROR`, minutos fuera de 15, 25 y 45, notas truncadas a 20 000, respuestas fuera de rango).
-  - **El almacén:** usar sin abrir lanza y abrir dos veces lanza; abrir la fixture de master da `loadWarning() === ''`, `storageAvailable() === true`, ninguna escritura, ninguna clave `:respaldo` y el estado que dice la fixture (`completed` con `rust-first-session` y `rust-ownership`, `favorites` con `rust-100`); la revisión arranca en 0 y no sube al abrir; sube y avisa tras `save`, `applyImport` y `reset`.
+  - **El almacén:** usar sin abrir lanza y abrir dos veces lanza; abrir la fixture de master da `loadWarning() === ''`, `storageAvailable() === true`, ninguna escritura, ninguna clave `:respaldo` y el estado que dice la fixture (`completed` con `rust-first-session` y `rust-ownership`, `favorites` con `rust-100`).
+  - **La revisión:** `changes.getState()` es `{ revision: 0 }` al crear y al abrir, sin ningún aviso. Tras `save`, `applyImport` y `reset` sube en uno por operación, y el oyente suscripto recibe el estado nuevo y el anterior. El oyente, al llamarse, ya ve lo escrito (lee el almacenamiento en memoria). Con un oyente que lanza, el almacenamiento ya tiene la escritura. Después de la baja no se llama más. Dos fábricas no comparten revisión.
   - **La prueba 1 de F1, invertida:** dos consumidores de `routeStore` comparten el estado; uno quita el favorito `rust-100` y completa un paso, el otro guarda una nota, y el favorito quitado no reaparece (esperado a mano: `favorites == ['go-tour']`).
-  - **La fusión:** si otra pestaña cambió la clave entre dos escrituras, `save()` fusiona (gana el idioma y los minutos locales), `getState()` devuelve otro objeto y se avisa una vez.
+  - **La fusión:** si otra pestaña cambió la clave entre dos escrituras, `save()` fusiona (gana el idioma y los minutos locales), `getProgress()` devuelve otro objeto y la revisión sube una vez.
 - **Pasos:**
   1. Los tres módulos con firmas que lanzan `not implemented`, las specs y el reemplazo de `route-store-instances.spec.ts`: fallan por comportamiento.
-  2. Implementar moviendo el código de `app.js` (`parseProgress`, `defaults`, `loadNoticeFor`, `mergeStoredRoute` y la apertura de `openVersionedStore`); correr las specs.
+  2. Implementar moviendo el código de `app.js` (`parseProgress`, `defaults`, `loadNoticeFor`, `mergeStoredRoute` y la apertura de `openVersionedStore`); correr las specs. `save`, `applyImport` y `reset` llaman `notify()` como dice §3.0, después de escribir.
   3. Dos commits: `test(front): specs del almacén del recorrido; invierte la prueba de riesgo 1 de F1 (rojas)` y `refactor(front): el almacén del recorrido es un singleton en entities/guide`.
 - **Compuerta:** las specs en verde, `npm run typecheck` y `npm run lint` (el aviso de complejidad de `parseRouteProgress`, 22, es el mismo que tenía `parseProgress`).
 - **Vuelta atrás:** revertí los commits; `app.js` todavía conserva su cierre hasta T012.
-- **Verificado al planificar:** el módulo y una spec equivalente pasan en Vitest (17 pruebas en 6 archivos junto con las de otras tareas); el aviso de complejidad queda en 22.
+- **Verificado al planificar:** el módulo, con la señal propia que Q3 descartó, y una spec equivalente pasaron en Vitest (17 pruebas en 6 archivos junto con las de otras tareas), y el aviso de complejidad queda en 22. La versión con Zustand no corrió dentro del repositorio.
 
 ### Tarea 3.3 · Los motores (T010, dueño E)
 
@@ -562,33 +602,40 @@ export const routeStore: RouteStore;
 
 ```ts
 // types.ts of each engine: CampaignEngine and SystemsEngine gain
-subscribe(listener: () => void): () => void;
-getRevision(): number;
+import type { StoreApi } from 'zustand/vanilla';
+readonly changes: StoreApi<{ revision: number }>;
 
 // create-campaign-engine.ts and create-systems-engine.ts: at the end of each file
 export const campaignEngine: CampaignEngine = createCampaignEngine();
 export const systemsEngine: SystemsEngine = createSystemsEngine();
 ```
 
-  Cada fábrica crea su `createChangeSignal()` y llama `notify()` donde dice la tabla de §3.0: al final de `persist()` (que usan `answerCheckpoint`, `syncLab`, `observe`, `answer`, `setStep` y `setNote`), al final de `applyImport` aunque no persista, y en `reset`. `init` no avisa. Los `index.ts` exportan `campaignEngine` y `systemsEngine` junto a las fábricas.
-- **El motor de Sistemas lanza sin `init`.** Un `assertReady()` al principio de cada método salvo `init`, `subscribe` y `getRevision`, con el mensaje de hoy de `requireStore` («Inicializá Sistemas antes de usarlo.»). `list`, `refreshFromLab`, `planImport`, `exportState` y `get` (por `requireWorkshop`) son los que hoy no fallaban. Probado en una copia: los 30 checks y los 106 E2E lo toleran.
-- **Los adaptadores** publican el singleton: `window.TallerCampaignEngine = campaignEngine;` y `window.TallerSystemsEngine = systemsEngine;`. Ya no importan las fábricas.
+  Cada fábrica crea su store y su `notify` como dice §3.0, y los `index.ts` exportan `campaignEngine` y `systemsEngine` junto a las fábricas. `persist()` no avisa: cada operación pública llama `notify()` una sola vez, después de persistir, como en la tabla (así `applyImport` no suma dos avisos). `init` no avisa.
+
+  | Motor | Llama `notify()` |
+  | --- | --- |
+  | Campaña | en `answerCheckpoint` (la respuesta aceptada, tras `persist()`); en `syncLab` sólo si persiste; en `applyImport` siempre, una vez al final (si persiste, después de `persist()`); en `reset` |
+  | Sistemas | en `observe` sólo si agrega (tras `persist()`); en `answer`, `setStep` y `setNote` (tras `persist()`); en `syncLab` sólo si persiste; en `applyImport` siempre; en `reset` |
+
+- **El motor de Sistemas lanza sin `init`.** Un `assertReady()` al principio de cada método salvo `init` y `changes`, con el mensaje de hoy de `requireStore` («Inicializá Sistemas antes de usarlo.»). `list`, `refreshFromLab`, `planImport`, `exportState` y `get` (por `requireWorkshop`) son los que hoy no fallaban. Probado en una copia: los 30 checks y los 106 E2E lo toleran.
+- **Los adaptadores** publican el singleton: `window.TallerCampaignEngine = campaignEngine;` y `window.TallerSystemsEngine = systemsEngine;`. Ya no importan las fábricas. Los globals no suman nada: los métodos que las vistas legacy leen son los de hoy.
 - **Qué prueban las specs:**
   - **`engine-init-order.spec.ts` reescrito** (la prueba de riesgo 2 de F1): ni la campaña ni Sistemas dejan usarse antes de `init`; los dos lanzan su mensaje en `getWorlds`, `refreshFromLab` y `canAttempt` (campaña) y en `list`, `refreshFromLab` y `exportState` (Sistemas), sin la marca `KNOWN DEFECT`. Se prueban las fábricas y los singletons.
-  - **Suscripción** (una spec por motor, con un `StorageLike` en memoria puesto como `localStorage` con `vi.stubGlobal`): avisa en cada fila de la tabla y no en las de «No avisa»; la revisión sube de a uno; la baja corta; un `init` repetido sigue funcionando y no avisa.
+  - **La revisión** (una spec por motor, con un `StorageLike` en memoria puesto como `localStorage` con `vi.stubGlobal`): la revisión sube en uno en cada fila de la tabla de §3.0 y no en las de «No la sube»; incluida `applyImport` con un plan sin cambios, que no persiste y igual avisa; el oyente, al llamarse, ya ve lo escrito; con un oyente que lanza, el almacenamiento ya tiene la escritura; la baja corta; dos fábricas no comparten revisión; un `init` repetido sigue funcionando y no avisa.
   - **Apertura quieta:** `init` con la fixture de master (la clave de cada motor) y el catálogo real de `build/curriculum.json` no escribe, no respalda y no avisa.
 - **Pasos:**
-  1. Reescribir `engine-init-order.spec.ts` y escribir las dos specs de suscripción: la de Sistemas falla porque hoy `list` devuelve `[]` y porque los motores no tienen `subscribe`; las demás fallan por la suscripción ausente.
-  2. Implementar y publicar los singletons.
+  1. Reescribir `engine-init-order.spec.ts` y escribir las dos specs de la revisión. Para que fallen porque la revisión no sube y no porque falte `changes`, cada fábrica gana primero su store, sin ninguna llamada a `notify`. La de Sistemas falla además porque hoy `list` devuelve `[]`.
+  2. Implementar los avisos y los `assertReady` de Sistemas, y publicar los singletons.
   3. `npm test` completo: los 30 checks sin cambios de valor (en especial `campaign-check`, 34, y `systems-check`, 46, con su `init` repetido) y Vitest en verde.
-  4. Dos commits: `test(front): specs de los motores; invierte la prueba de riesgo 2 de F1 (rojas)` y `refactor(front): campaña y Sistemas son singletons con suscripción`.
+  4. Dos commits: `test(front): specs de los motores; invierte la prueba de riesgo 2 de F1 (rojas)` y `refactor(front): campaña y Sistemas son singletons con un store de Zustand`.
 - **Compuerta:** el paso 3 y los 106 E2E (`bridges`, `cycle` y `startup-storage` ejercen a los dos motores).
-- **Vuelta atrás:** revertí los commits: los adaptadores vuelven a crear las instancias y los motores pierden su suscripción y su espera de `init`.
+- **Vuelta atrás:** revertí los commits: los adaptadores vuelven a crear las instancias y los motores pierden su store y su espera de `init`.
+- **Verificado al planificar:** el cambio de Sistemas (que lance sin `init`) se probó en una copia contra los 30 checks y los 106 E2E. Los avisos con Zustand no corrieron dentro del repositorio.
 
 ### Tarea 3.4 · Los módulos del almacén del laboratorio (T011, dueño L)
 
 - **Crea** en `frontend/src/entities/exercise/model/`: `lab-state.ts` y `lab-store.ts`, con `lab-state.spec.ts` y `lab-store.spec.ts`. No toca `lab.js` ni `index.ts` hasta T013.
-- **Interfaz** (las firmas compilan):
+- **Interfaz** (las firmas de `lab-state.ts` compilaron en el prototipo; `LabStore` es nueva y su `changes` es de Zustand):
 
 ```ts
 // model/lab-state.ts: blank, sanitizeResult, sanitizeRecord, assertBackupShape, sanitizeSelected,
@@ -602,21 +649,21 @@ export interface LabStateV1 {
 export function blankLabState(): LabStateV1;
 
 // model/lab-store.ts
+import type { StoreApi } from 'zustand/vanilla';
 export interface LabCatalogLookup { byId: ReadonlyMap<string, Exercise> }
 export interface LabImportPlan { state: LabStateV1; lossy: boolean }
 export interface LabStore {
   open(catalog: LabCatalogLookup, options?: { storage?: StorageLike }): void;
-  getState(): LabStateV1;                     // live, mutated in place by lab.js
-  save(): boolean;                            // writes (merge in place), updates storageAvailable and notifies
+  getProgress(): LabStateV1;                  // live, mutated in place by lab.js
+  save(): boolean;                            // writes (merge in place), updates storageAvailable and raises the revision
   exportState(): LabStateV1;                  // cloneJson(state)
   planImport(raw: unknown): LabImportPlan;
-  applyImport(plan: LabImportPlan): boolean;  // state = clone of the plan, saves and notifies
+  applyImport(plan: LabImportPlan): boolean;  // state = clone of the plan, then save(): one revision
   backups(): BackupEntry[];
-  reset(): boolean;                           // blank state, removes the keys, saves blank, notifies, clears the notice
+  reset(): boolean;                           // blank state, removes the keys, then save(): one revision; clears the notice
   loadWarning(): string;
   storageAvailable(): boolean;
-  subscribe(listener: () => void): () => void;
-  getRevision(): number;
+  readonly changes: StoreApi<{ revision: number }>;
 }
 export function createLabStore(): LabStore;
 export const labStore: LabStore;
@@ -624,13 +671,13 @@ export const labStore: LabStore;
 
 - **Qué prueban las specs** (esperados de la fixture de master, de `qa/fixtures/curriculum-ids.json` y escritos a mano):
   - **La lectura:** los casos que hoy cubre `lab-state-check` para el saneo y la importación (registros de ids desconocidos descartados y contados, límites de texto y de números, `selected` inválido ignorado sin contarse), con un `byId` mínimo.
-  - **El almacén:** usar sin abrir lanza y abrir dos veces lanza; abrir la fixture de master (la clave del laboratorio, con el catálogo real) no escribe, no respalda y no avisa; la revisión no sube al abrir.
-  - **La identidad (FR-025):** un registro guardado antes de `save()` sigue siendo el mismo objeto después de una escritura que fusiona lo que guardó otra pestaña (`toBe`), y el estado también; en cambio `applyImport` y `reset` reemplazan el estado y avisan.
-  - **La suscripción con mutación en el lugar:** tras mutar un registro y llamar `save()`, la revisión sube y el oyente se llama aunque `getState()` devuelva el mismo objeto.
+  - **El almacén:** usar sin abrir lanza y abrir dos veces lanza; abrir la fixture de master (la clave del laboratorio, con el catálogo real) no escribe, no respalda y no avisa; `changes.getState()` es `{ revision: 0 }` al abrir.
+  - **La identidad (FR-025):** un registro guardado antes de `save()` sigue siendo el mismo objeto después de una escritura que fusiona lo que guardó otra pestaña (`toBe`), y el estado también; en cambio `applyImport` y `reset` reemplazan el estado.
+  - **La revisión con mutación en el lugar:** tras mutar un registro y llamar `save()`, la revisión sube en uno y el oyente se llama aunque `getProgress()` devuelva el mismo objeto. `applyImport` y `reset` suben una sola vez, aunque pasen por `save()`. El oyente ya ve lo escrito, y con un oyente que lanza el almacenamiento ya tiene la escritura. Dos fábricas no comparten revisión.
 - **Pasos:** firmas que lanzan `not implemented`, specs en rojo, implementación moviendo el código de `lab.js` (`planImport` y `applyImport` usan el estado del almacén), specs en verde. Dos commits: `test(front): specs del almacén del laboratorio (rojas)` y `refactor(front): el almacén del laboratorio es un singleton en entities/exercise`.
 - **Compuerta:** specs en verde, `npm run typecheck` y `npm run lint` (el aviso de `sanitizeRecord`, 14, se conserva).
 - **Vuelta atrás:** revertí los commits; `lab.js` conserva su cierre hasta T013.
-- **Verificado al planificar:** las firmas compilan; el resto no corrió.
+- **Verificado al planificar:** las firmas de `lab-state.ts` compilan; el resto no corrió.
 
 ### Tarea 3.5 · `app.js` usa `routeStore` (T012, dueño G)
 
@@ -639,7 +686,7 @@ export const labStore: LabStore;
   - se quitan `KEY`, `milestoneIds`, `defaults`, `FORMAT_ERROR`, `isObjectLike`, `parseProgress`, `loadNoticeFor`, `mergeStoredRoute`, `store`, `loaded`, `state` y `storageAvailable`; los hitos (`milestones`, con sus textos) se quedan;
   - se importan `routeStore`, `parseRouteProgress` y `ROUTE_FORMAT_ERROR`;
   - en el mismo lugar de hoy, al evaluarse, `routeStore.open(data)`;
-  - `const routeState = () => routeStore.getState();` y cada `state.` pasa a `routeState().`: ninguna copia local que pueda divergir (FR-026), porque otro consumidor puede hacer que el almacén reemplace su estado al fusionar con otra pestaña. Las asignaciones `state = …` pasan al almacén: `confirm-reset` usa `routeStore.reset()` y después `save()`, y la importación usa `routeStore.applyImport(routePlan)`;
+  - `const routeState = () => routeStore.getProgress();` y cada `state.` pasa a `routeState().`: ninguna copia local que pueda divergir (FR-026), porque otro consumidor puede hacer que el almacén reemplace su estado al fusionar con otra pestaña. Las asignaciones `state = …` pasan al almacén: `confirm-reset` usa `routeStore.reset()` y después `save()`, y la importación usa `routeStore.applyImport(routePlan)`;
   - `save()` queda como un envoltorio: `routeStore.save()` y `updateSaveLabel()`; `storageAvailable` pasa a `routeStore.storageAvailable()`; el primer aviso de `loadNotices` sale de `routeStore.loadWarning()`;
   - `planRouteImport` llama `parseRouteProgress(rawImport, data)` y compara con `routeState()`; `collectBackups` usa `routeStore.backups()`.
 - **Cuándo abre:** al evaluarse `app.js`, como hoy; la unidad 3 lo mueve.
@@ -653,7 +700,7 @@ export const labStore: LabStore;
 - **Qué cambia en `lab.js`:**
   - se quitan `KEY`, `blank`, `state`, `saveAvailable`, `loadWarning`, `store`, `loaded`, el saneo y la lectura (`sanitizeResult`, `sanitizeRecord`, `assertBackupShape`, `sanitizeSelected`, `isRecordObject`, `sanitize`, `parseSaved`, `loadWarningFor`, `absorbStored`) y los cuerpos de `planImport` y `applyImport`;
   - al evaluarse, `labStore.open(exerciseCatalog)`, a continuación del `exerciseCatalog.init` de T003;
-  - `recordFor`, `isSolved`, `isDue`, `achievementStats`, `mount` y `openExercise` leen `labStore.getState()`; `save()` queda como `labStore.save()`; `saveAvailable` pasa a `labStore.storageAvailable()` y `loadWarning` a `labStore.loadWarning()`;
+  - `recordFor`, `isSolved`, `isDue`, `achievementStats`, `mount` y `openExercise` leen `labStore.getProgress()`; `save()` queda como `labStore.save()`; `saveAvailable` pasa a `labStore.storageAvailable()` y `loadWarning` a `labStore.loadWarning()`;
   - `window.TallerLab` delega: `exportState`, `planImport`, `applyImport`, `backups`, `loadWarning` y `reset` (que además reinicia lo de la vista: selección, modo, fase y la ejecución activa).
 - **Cuándo abre:** al evaluarse `lab.js`, como hoy.
 - **Pasos:** `node qa/lab-state-check.ts` (37), `node qa/boot-check.ts`, `node qa/systems-check.ts` y `npm test`; los 106 E2E. Un commit: `refactor(front): lab.js lee y escribe el laboratorio por labStore`.
@@ -675,7 +722,7 @@ export const labStore: LabStore;
 | R5 | `entities/**`, `features/**` y `shared/**` no importan `build/curriculum.json` (FR-032, FR-015 y F2-I2 y F2-I6 de A2) | nadie |
 
 - **Qué prueba el check:** primero, escenarios con fuentes virtuales escritas a mano: una página que abre una clave, una que importa `openVersionedStore`, una que importa una fábrica, una vista legacy que importa un singleton ajeno, un módulo de `shared` que importa el JSON y, por contraste, los cuatro dueños, un spec y un archivo limpio, que no dan violaciones; después, la lectura del árbol real (que da cuatro claves en un lugar cada una).
-- **La spec de importación** (`singletons-import.spec.ts`, FR-031): con un `localStorage` que lanza ante cualquier acceso y cuenta cada uno, importar los cuatro singletons y el catálogo (con `vi.resetModules()` y una importación dinámica de cada slice) no lo toca y no lee `window`.
+- **La spec de importación** (`singletons-import.spec.ts`, FR-031): con un `localStorage` que lanza ante cualquier acceso y cuenta cada uno, importar los cuatro singletons y el catálogo (con `vi.resetModules()` y una importación dinámica de cada slice) no lo toca y no lee `window`. Cada singleton crea su store de Zustand al evaluarse, vacío y sin efectos: la spec lo cubre sin una línea más.
 - **El escenario de `versioned-storage-check`:** dos instancias crudas sobre el mismo almacenamiento se comportan como dos pestañas: el elemento que una quitó vuelve al guardar la otra (ADR 0003, decisión 9). Es la regla de dos pestañas que la prueba 1 de F1 caracterizaba, documentada donde corresponde a la biblioteca.
 - **Pasos:**
   1. `findViolations` lanzando `not implemented` y los escenarios virtuales: fallan. La spec de importación se escribe contra los singletons que dejaron T009 a T011.
@@ -687,15 +734,17 @@ export const labStore: LabStore;
 
 ### Tarea 3.8 · Compuerta y PR de la unidad 1 (T015, K)
 
-La compuerta de §0, la comparación única de la unidad 1, el PR (`refactor(front): one store per progress key and one engine per kind, with subscription`) y la documentación (§5). El PR sólo se abre con la unidad 2 en `master` (S2). Cubre FR-001, FR-002, FR-005, FR-006 y FR-009, y SC-003 y SC-004.
+La compuerta de §0, la comparación única de la unidad 1, el PR (`refactor(front): one store per progress key and one engine per kind, with a Zustand subscription`) y la documentación (§5). El PR sólo se abre con la unidad 2 en `master` (S2). Cubre FR-001, FR-002, FR-005, FR-006, FR-009 y FR-010, y SC-003 y SC-004.
 
-**Precondición de integración: la respuesta del usuario a Q3.** Con Q3, opción A, el código contradice la regla de Zustand de `AGENTS.md`, y el principio I de la constitución manda corregir el plan o cambiar la regla «en su propio cambio». Por eso el PR de la unidad 1 no se integra hasta que se cumpla una de dos cosas: el usuario confirma Q3, opción A, y la excepción se enmienda en `AGENTS.md` en un cambio propio (que redacta K), o el usuario elige B o C y se cambia la unidad 1 como dice «Supuestos provisionales». No frena T001 a T014 ni las unidades 2 y 4, pero sí la unidad 1, y A2 espera a la unidad 1: la respuesta de Q3 está en el camino crítico de A2.
+- **La dependencia:** `git diff <base> -- package.json package-lock.json frontend/THIRD-PARTY-NOTICES.txt` sigue mostrando una dependencia, un paquete y un aviso. La descripción del PR cuenta la versión (5.0.15, exacta), su peso (95 173 bytes desempaquetados; 354 caracteres minificados en el script) y su licencia (MIT, con su aviso).
+- **El tamaño:** el HTML ya incluye `zustand/vanilla`. Se informa `html.length` antes y después y se confirma que sigue bajo `2 198 460` (base: `2 186 460`) y que el script no gana `import(` ni `import.meta`.
+- **Q3 está respondida:** el usuario eligió Zustand el 2026-10-06, así que el PR ya no espera una respuesta y `AGENTS.md` no cambia: su regla se cumple.
 
-**Reversión de la unidad 1:** devuelve los cierres de `app.js` y `lab.js` y las instancias creadas en los adaptadores, y los motores vuelven a no avisar y a no esperar a `init`. Se revierte antes la unidad 3 si ya está integrada.
+**Reversión de la unidad 1:** devuelve los cierres de `app.js` y `lab.js` y las instancias creadas en los adaptadores, los motores vuelven a no esperar a `init` y se quitan la dependencia de Zustand y su aviso de licencia. Se revierte antes la unidad 3 si ya está integrada.
 
 ## 4. Unidad 3 · El arranque explícito (dueños Q y A, onda 4)
 
-**Cubre:** FR-035 a FR-040 (FR-040 como dice «Desvío de la spec»); US3, SC-005 y SC-006.
+**Cubre:** FR-035 a FR-040 (de FR-040, que `startApp()` inicializa los dos motores antes de la primera vista: la inversión de la prueba de riesgo 2 es de la unidad 1); US3 y SC-005.
 
 **Entrega:** `app.js` exporta `startApp()`, que `main.tsx` llama una vez después de todos los imports; `window.TallerLab` suma `init`; evaluar cualquier fuente legacy no arranca nada; los arneses y `load-order-check` leen la forma nueva.
 
@@ -809,13 +858,13 @@ La integra K en el PR de la unidad; el dueño avisa el texto que hace falta. Nad
 | --- | --- | --- |
 | 2 | el catálogo y `buildProgram` en `entities/exercise` (fila del laboratorio del mapa de archivos) | `runtime-check` importa `buildProgram`; `systems-check` y `project-kit-check` usan la fábrica pura |
 | 4 | el registro de modelos en la fila de las simulaciones de Sistemas | — |
-| 1 | un almacén por clave y un motor por tipo, con su suscripción; la regla «un singleton con estado, un dueño legacy»; el desvío de Zustand declarado (la suscripción es propia hasta F10) | el guard (`seams-guard-check`) en la tabla de «Elegir comprobaciones» y la regla de dos pestañas de `versioned-storage-check` |
+| 1 | un almacén por clave y un motor por tipo, cada uno con su store de Zustand (`changes`, que lleva sólo la revisión) y cómo se consume (`useStore` con un selector chico); la regla «un singleton con estado, un dueño legacy» | el guard (`seams-guard-check`) en la tabla de «Elegir comprobaciones» y la regla de dos pestañas de `versioned-storage-check` |
 | 3 | el párrafo de `main.tsx` y de `load-order-check`: evaluar no arranca y `startApp()` va después del último import | `runModule`, `loadLab` (evalúa e inicializa), `bundleApp` sin la llamada y `TallerLab.init` en `app-adapters` |
 
 ### Tarea 5.1 · El cierre y la entrega a A2 (T019, K)
 
 - **Pasos:**
-  1. Con las cuatro unidades en `master`: `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `E2E_PORT=4173 npm run test:e2e`, `git diff --check`, y los hashes de §0 contra los de T001 (acumulados) y la medida final del HTML. Ninguna dependencia nueva: `git diff <base> -- package.json package-lock.json` no imprime nada (FR-010).
+  1. Con las cuatro unidades en `master`: `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `E2E_PORT=4173 npm run test:e2e`, `git diff --check`, y los hashes de §0 contra los de T001 (acumulados) y la medida final del HTML. Una sola dependencia nueva: `git diff <base> -- package.json package-lock.json` muestra `zustand` 5.0.15, exacta, y un solo paquete en el lockfile (FR-010).
   2. La tabla de F2-I1 a F2-I6 de «Lo que A2, D1 y F3 a F9 toman de F2a», con la evidencia de cada fila, en el mensaje del commit.
   3. Informar al coordinador lo que le toca: F2a a «Entregado» con los PR y la evidencia, y los hallazgos de «Riesgos» que afectan a la hoja de ruta. La hoja de ruta la edita el coordinador, no F2a.
   4. Con permiso, `docker compose build taller` sobre `master`.
@@ -830,16 +879,24 @@ La integra K en el PR de la unidad; el dueño avisa el texto que hace falta. Nad
 | --- | --- |
 | F2-I1: evaluar no arranca; una función exportada que no pisa `app/boot/` | `startApp()` en `frontend/app.js` (no está en `app/boot/`); `boot-check` evalúa las seis fuentes y el bundle de `main.tsx` sin su llamada sin tocar el almacenamiento |
 | F2-I2: el catálogo no importa el JSON y se arma después de la compuerta | `exerciseCatalog` no importa JSON ni lee `window`; lo inicializa `TallerLab.init()` con los globals que publican los adaptadores; la regla R5 del guard lo vigila |
-| F2-I3: el grafo estático no abre almacenes ni crea motores | los singletons se crean vacíos al importarlos sus dueños (`app.js`, `lab.js` y los `register-*-engine`) y se abren en `startApp()`; `singletons-import.spec.ts` prueba que importarlos no toca el almacenamiento |
+| F2-I3: el grafo estático no abre almacenes ni crea motores | los singletons se crean vacíos al importarlos sus dueños (`app.js`, `lab.js` y los `register-*-engine`), cada uno con su store de Zustand vacío y sin efectos, y se abren en `startApp()`; `singletons-import.spec.ts` prueba que importarlos no toca el almacenamiento |
 | F2-I4: los `register-*` siguen siendo módulos con efectos, y los cambios van sobre la forma vigente | los `register-*` no cambian salvo los de los motores, que publican el singleton; la forma de `main.tsx` y de los arneses es la de §4.0 |
 | F2-I5: `dump-globals` da los mismos bytes | los cinco hashes de §0 después de cada unidad |
 | F2-I6: nada por debajo de `app` importa `getContent()` | la regla R5 (`entities`, `features` y `shared` no importan contenido estático); se extiende a `getContent()` cuando A2 lo cree |
 
 Lo que A2 tiene que hacer con esto, que no es de F2a: `legacy-views.ts` lista `app.js` como `() => import('../../../app.js')`, pero tiene que quedarse con el espacio de nombres de ese último módulo para llamar `startApp()` después del último `import()`; `load-order-check` lee entonces esa llamada en `legacy-views.ts` en lugar de `main.tsx`; `bundleApp` sin la llamada final pasa a sacar la llamada de donde A2 la ponga; `createBootHarness` se mueve a `qa/lib/boot-harness.ts` con `storageCalls`, `storageAccesses`, `listenerCount` e `intervals`; y `withContent` convive con `runModule` porque los dos usan opciones de esbuild independientes. El `html.length` base es 2 186 460 y el tope de F2a, 2 198 460: A2 fija el suyo.
 
-**D1** (FR-061 de su spec, borrador). El cliente de D1c se monta sobre `routeStore`, `labStore`, `campaignEngine` y `systemsEngine` con `subscribe` y `getRevision` y no abre otra instancia (el guard lo impide). Para calcular qué cambió, compara `exportState()` (que clona) con su última foto: la revisión sólo dice que algo cambió. `refreshFromLab` no avisa: los sellos derivados llegan con el aviso del `syncLab` que los persiste. Importar y «Borrar todo» siguen locales hasta la unidad 6 (F2b).
+**Qué cambia Zustand para A2.** Ninguna de las seis filas, y el catálogo (F2-I2) no es un store. `zustand/vanilla` no lee `window` ni el almacenamiento al evaluarse y no usa `import.meta`, `import()` ni `process.env`: el dist conserva su forma (FR-009), y el script se evaluó en un contexto de `vm` vacío sin fallar. El script crece unos 350 caracteres minificados, que el tope de F2a ya cuenta; A2 fija su propio tope con ellos adentro. Los dueños legacy de los singletons arrastran el código de Zustand al bundle de cada check, y no duplica nada (FR-018): la librería no tiene estado, el estado es de cada store.
 
-**F3, F4 y F9** (la unidad 1). Usan `routeStore` con `useSyncExternalStore(routeStore.subscribe, routeStore.getRevision)` y leen `routeStore.getState()` en el render. F4 hereda la spec de los 10 IDs de hitos.
+**D1** (FR-061 de su spec, borrador). El cliente de D1c se monta sobre `routeStore`, `labStore`, `campaignEngine` y `systemsEngine` y no abre otra instancia (el guard lo impide). De cada uno toma `changes`, el store de Zustand con la revisión: `changes.subscribe(oyente)` avisa de cada cambio con `(estado, estadoAnterior)` y `changes.getState().revision` es el contador. La revisión sólo dice que algo cambió; para calcular qué, compara `exportState()` (que clona) con su última foto, o `getProgress()` en el recorrido y el laboratorio. Lo que tiene que saber:
+
+- La revisión es un contador local y en memoria de los cambios de ese almacén, y vuelve a 0 al recargar. No es la revisión de la cuenta que D1 lleva en el servidor (`progress_heads.revision`) ni el campo `version: 1` del formato guardado: el cliente tiene que llamarlas distinto.
+- El oyente corre después de escribir, dentro de la operación que lo avisa. Si lanza, la excepción llega a quien llamó (por ejemplo, al manejador de una tecla) y los demás oyentes no se llaman: el cliente captura los suyos.
+- Un oyente no puede llamar a la operación que lo dispara: `save()` desde un oyente del mismo almacén vuelve a avisar sin fin.
+- `refreshFromLab` no avisa: los sellos derivados llegan con el aviso del `syncLab` que los persiste.
+- Importar y «Borrar todo» siguen locales hasta la unidad 6 (F2b).
+
+**F3, F4 y F9** (la unidad 1). Usan `routeStore`: la revisión con `useStore(routeStore.changes, (state) => state.revision)` (de `zustand`, con un selector chico y nunca con el store completo) y el progreso con `routeStore.getProgress()` en el render. F3 es la primera en importar `useStore`, y que no se suscriba al store completo no lo impide el compilador: su spec hereda la regla. F4 hereda la spec de los 10 IDs de hitos.
 
 ## Cobertura de requisitos
 
@@ -850,9 +907,9 @@ Lo que A2 tiene que hacer con esto, que no es de F2a: `legacy-views.ts` lista `a
 | FR-003, FR-004 | T001 y la compuerta de §0 | tres oráculos, `<style>` y marcado; la línea base se toma sobre la base, antes de cambiar código; las rutas de los adaptadores se comprueban |
 | FR-005, FR-006 | T009 a T011, T015, T018 | las tres fixtures y las dos exportaciones: `boot-check`, `startup-storage` y las specs de cada almacén |
 | FR-007, FR-008, FR-009 | la compuerta de §0 | los E2E, el grep de estilos en línea y el tope y la forma del dist |
-| FR-010 | — | no hay dependencias; Q3, opción B, la cambiaría |
+| FR-010 | T008, T015, T019 | una sola dependencia, `zustand` 5.0.15 exacta, con el lockfile sincronizado, su aviso de licencia y su peso medido (Q3); el `git diff` de `package.json` y del lockfile en T015 y en T019 |
 | FR-011 | T004, T006, T015, T018 | las cuatro comparaciones únicas de §0 |
-| FR-012 | T002, T006, T008 a T011, T014 | specs de Vitest en el proyecto `node`, sin jsdom |
+| FR-012 | T002, T006, T009 a T011, T014 | specs de Vitest en el proyecto `node`, sin jsdom |
 | FR-013 | T004, T016, T017 | siete checks, sólo cómo cargan; la correspondencia está en research.md (R8) |
 | FR-014 | T003, T006, T009 a T011, T014 | capas y slices; R3 y R4 vigilan los límites |
 | FR-015 | T014 | R5: nada por debajo de `app` importa contenido estático |
@@ -861,16 +918,16 @@ Lo que A2 tiene que hacer con esto, que no es de F2a: `legacy-views.ts` lista `a
 | FR-018 | §3.0, T014 | tabla de dueños y regla R4 |
 | FR-019 | el orden de los PR | la 2, la 4, la 1 y la 3, aparte de F2b |
 | FR-020 a FR-022 | T009 a T011, T012, T013, T017 | singletons, apertura y uso sin abrir; la apertura se mueve en T017 |
-| FR-023, FR-024 | T008 a T011 | la señal, la tabla de avisos y que la semántica del ADR 0003 no cambia |
+| FR-023, FR-024 | T008 a T011 | la dependencia (T008), el store de cada pieza con su revisión y la tabla de avisos (T009 a T011), y que la semántica del ADR 0003 no cambia |
 | FR-025 | T011 | la identidad del estado y de sus registros |
 | FR-026 | T012, T013 | ninguna copia local del estado |
 | FR-027 | T009 | los 10 ids, escritos a mano |
 | FR-028 | T011 | la lectura y la importación del laboratorio leen el catálogo |
 | FR-029, FR-030 | T014, T009 | el guard y la prueba 1 de F1 invertida |
-| FR-031 | T009 a T011, T014 | la fixture de master abre sin escribir; la suscripción; la identidad; importar el módulo no toca el almacenamiento (`singletons-import.spec.ts`) |
+| FR-031 | T009 a T011, T014 | la fixture de master abre sin escribir; la revisión; la identidad; importar el módulo no toca el almacenamiento (`singletons-import.spec.ts`) |
 | FR-032 a FR-034 | T002 a T004, T014 | catálogo, `buildProgram` y la regla R5 |
 | FR-035 a FR-039 | T016, T017 | `startApp`, su orden, la segunda llamada y los arneses |
-| FR-040 | T010, T016 | la inversión de la prueba 2 en la unidad 1 y la prueba de orden en la 3 (ver «Desvío de la spec») |
+| FR-040 | T010, T016 | la inversión de la prueba 2 en la unidad 1 (con FR-022) y la prueba de orden de `startApp()` en la 3 |
 | FR-041, FR-042 | T006 | el registro y su spec |
 | SC-001, SC-002, SC-011, SC-012 | la compuerta de §0 | por unidad |
 | SC-003, SC-004 | T009 a T011, T014, T015 | tres fixtures sin escribir; cuatro claves en un solo lugar |
@@ -885,24 +942,29 @@ Historias: US1 en T001 y las compuertas; US2 en T002 a T005 y T008 a T015; US3 e
 
 ## Descargas y permisos
 
-Ninguna. Los dueños instalan con `npm ci --offline` (usa la caché de npm); el navegador de los E2E ya está en la caché de Playwright de la máquina. Si un comando intenta descargar algo, se pide permiso. Con Q3, opción B, haría falta el permiso del usuario para Zustand, con su peso medido contra el tope de `build-check`. Docker lo corre sólo K, con permiso, y sólo para construir la imagen web (las imágenes ya están en la máquina).
+Una: **Zustand 5.0.15** (T008). El usuario autorizó la descarga el 2026-10-06 y su peso se midió antes, con `npm view zustand version dist.unpackedSize`: 95 173 bytes desempaquetados y unos 350 caracteres minificados en el script del dist, contra el tope de `build-check` y el de F2a. K la instala con `npm install --save-exact` y deja el paquete en la caché de npm, de donde los dueños la toman con `npm ci --offline`. El navegador de los E2E ya está en la caché de Playwright de la máquina. Si cualquier otro comando intenta descargar algo, se pide permiso. Docker lo corre sólo K, con permiso, y sólo para construir la imagen web (las imágenes ya están en la máquina).
 
 ## Riesgos y lo que quedó sin verificar
 
 1. **F1 no está integrada.** La línea base y los E2E se midieron sobre una copia de `feat/f1-red-de-seguridad`, que no cambia producción; T001 los vuelve a medir sobre la base real. Con la limpieza al inglés sin integrar, los dueños rebasan y se resuelven conflictos de texto.
-2. **Las respuestas de Q2, Q3 y la partición son provisionales.** Si el usuario elige otra, el cambio queda dentro de la unidad 1 (tabla de «Supuestos provisionales»), salvo el desvío de la spec sobre FR-040, que es del coordinador. La de Q3 es además una precondición de integración de la unidad 1 (plan 3.8), y A2 espera a la unidad 1.
-3. **El diseño no está implementado.** Corrieron los prototipos de la señal, el catálogo, `buildProgram`, el registro y el almacén del recorrido, y los cambios mínimos de Sistemas y de `startApp` contra la red de F1. No corrieron el almacén del laboratorio ni la suscripción de los motores (sólo sus firmas compilan), el guard ni los arneses completos de la unidad 3. Las firmas de este plan pueden pedir ajustes al implementar; cada ajuste se anota en el commit de su tarea.
+2. **Una lectura de Q3 que el usuario puede corregir.** El store de Zustand lleva la revisión y no el progreso (§3.0). Si el usuario esperaba el progreso dentro del store, es una decisión nueva: toca FR-025 y FR-026 de la spec, la mutación en el lugar del laboratorio y la fusión del recorrido, y cambia la unidad 1 entera. Las demás decisiones (partición, Q2) ya están aplicadas, y Q1 y Q4 no son de F2a.
+3. **El diseño no está implementado.** Corrieron los prototipos del catálogo, `buildProgram`, el registro y el almacén del recorrido (este con la señal propia que Q3 descartó), y los cambios mínimos de Sistemas y de `startApp` contra la red de F1. Zustand corrió sólo en scripts descartables sobre `esm/vanilla.mjs` (semántica, empaquetado, tipos y peso): no corrieron con él la instalación, Vite ni Vitest, el almacén del laboratorio, los avisos de los motores (sólo sus firmas compilan), el guard ni los arneses completos de la unidad 3. Las firmas de este plan pueden pedir ajustes al implementar; cada ajuste se anota en el commit de su tarea. T008 verifica lo de Zustand que acá no se pudo.
 4. **El reemplazo de `state` en `app.js`** es mecánico pero grande (80 apariciones). Lo protegen los 51 escenarios de `app-shell-check`, `boot-check` y los E2E; no se puede garantizar que cubran toda rama de renderizado: por eso el diff se revisa con `--word-diff`.
 5. **El bundle de `systems.js` en los checks crece** con los modelos que importa el slice. En una copia, `lab-bridge-check` dio 0,61 s contra 0,63 s en la base y el HTML creció 46 caracteres; T006 lo vuelve a medir.
-6. **El tope de tamaño (+12 000 caracteres) es una estimación.** Medido en una copia: `startApp` suma 100 caracteres y el registro, 46; el resto del código nuevo (señal, catálogo, almacenes y suscripción de los motores) se estima en unos 5 500 minificados. Cada PR informa su medida y explica si se acerca al tope.
+6. **El tope de tamaño (+12 000 caracteres) es una estimación.** Medido en una copia: `startApp` suma 100 caracteres y el registro, 46; `zustand/vanilla` suma 354 minificados; el resto del código nuevo (catálogo, almacenes y avisos de los motores) se estima en unos 5 300, unos 5 700 en total. Cada PR informa su medida y explica si se acerca al tope.
 7. **La imagen web y la CI no corrieron.** La imagen la construye K con permiso (T001, T005, T007, T015, T018); la CI corre al abrir cada PR.
 8. **Vitest.** No está instalado en el lockfile de esta rama: las pruebas de Vitest del plan corrieron sólo en la copia de F1. Cualquier afirmación sobre una spec que no se nombra como ejecutada es de diseño.
 9. **Los borradores de A2, D1 y C4** pueden cambiar: el plan toma de ellos lo que dice «Lo que A2, D1 y F3 a F9 toman de F2a» y se ajusta.
 10. **`<body>` con `aria-pressed`** (defecto que F1 fija): `startApp` lo conserva porque `syncShell` sigue llamando a `$$('[data-language]')`. Quien lo arregle lo hace en su port, en su commit con TDD.
+11. **Un oyente que lanza.** Con Zustand, la excepción de un oyente llega a quien llamó a la operación (por ejemplo, al manejador de una tecla) y los demás oyentes no se llaman. F2a no tiene oyentes propios y no suma aislamiento; el cliente de D1c captura los suyos. Si hiciera falta aislarlos, se agrega entonces, dentro de la fábrica de cada pieza.
+12. **`useStore(store)` sin selector compila.** Que un componente no se suscriba al store completo (`AGENTS.md`) no lo impide el compilador. F2a no tiene consumidores de React: la spec de F3 hereda la regla y, con su primer componente, conviene una regla de lint o una revisión explícita.
+13. **La instalación puede mostrar más de lo previsto.** Si el lockfile suma más de un paquete o el dist cambia sin que nadie importe Zustand, T008 se detiene y se informa; el aviso de licencia y el peso están en su compuerta.
 
 ## Complexity Tracking
 
-| Desvío | Por qué hace falta | Alternativa más simple que se descartó y por qué |
+Ninguna de las dos decisiones contradice la constitución ni `AGENTS.md`; se registran porque un revisor las preguntaría.
+
+| Decisión | Por qué hace falta | Alternativa más simple que se descartó y por qué |
 | --- | --- | --- |
-| Suscripción propia (`shared/lib/change-signal.ts`) en lugar de Zustand, contra la regla de `AGENTS.md` (principio I) | La pide la hoja de ruta («almacenes con suscripción») y D1c se monta sobre ella; con unas 30 líneas y sin dependencia sirve a `useSyncExternalStore` también para el laboratorio, que muta en el lugar. Zustand pediría una dependencia nueva, un segundo contenedor sobre el mismo texto guardado y estado inmutable, que choca con la fusión en el lugar del ADR 0003. | Zustand ahora (Q3, B): cumple la regla, pero cuesta una dependencia con permiso y peso medido, y la hoja de ruta ubica ese permiso en F10. Sin suscripción (Q3, C): F3 y D1c dependerían de una API que F2 no fijó. Provisional: lo decide el usuario. Un conflicto con la constitución es crítico para el análisis: la unidad 1 no se integra sin la respuesta (plan 3.8). |
-| Suscripción de los motores (principio V: nada por anticipado) | D1c la necesita sobre los cuatro (FR-061 de su spec) y la pide el coordinador; cuesta una `createChangeSignal()` y unas líneas por motor. | Dejarla para D1c: D1c tendría que tocar los dos motores y sus specs, justo lo que F2 evita. Si Q3 es C, se quita. |
+| Zustand lleva la revisión y no el progreso (uso parcial de la librería) | El laboratorio muta su estado y sus registros en el lugar (ADR 0003, decisión 9; FR-025) y el recorrido, entre dos fusiones, mientras Zustand pide actualizar el estado de forma inmutable. Con el progreso fuera del store hay una sola fuente de verdad y un selector seguro, la revisión. | El progreso dentro del store, que es el uso idiomático: obliga a copiarlo o a reescribir la fusión en el lugar, cambia FR-025 y FR-026 y deja dos fuentes de verdad mientras `app.js` y `lab.js` mutan el suyo. Un envoltorio compartido de la revisión en `shared/lib`: son dos líneas de la librería y cada fábrica se lee mejor con la API conocida, sin una abstracción propia (research.md, R3). |
+| Suscripción de los motores (principio V: nada por anticipado) | La pidió el usuario en Q3 («cada almacén y cada motor») para el cliente de D1c (FR-061 de su spec); cuesta un store y unas líneas por motor. | Dejarla para D1c: D1c tendría que tocar los dos motores y sus specs, justo lo que F2 evita. |
