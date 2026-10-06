@@ -2,7 +2,6 @@
 
 namespace App\Progress\Operations;
 
-use App\Progress\Operations\OperationHash as PayloadDigest;
 use Carbon\CarbonImmutable;
 use LogicException;
 
@@ -31,7 +30,7 @@ final class OperationDecoder
         if (! is_string($id) || ! is_string($type) || ! is_string($at)) {
             throw new LogicException('Una operación cruda llega con id, type y at de texto.');
         }
-        $hash = PayloadDigest::of($raw);
+        $hash = OperationHash::of($raw);
         $operationType = OperationType::tryFrom($type);
         if ($operationType === null) {
             return Decoded::rejected($id, $hash, RejectionReason::Invalid);
