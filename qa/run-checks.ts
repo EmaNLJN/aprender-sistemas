@@ -4,6 +4,7 @@ import path from 'node:path';
 const checks = [
   'build-check.ts',
   'load-order-check.ts',
+  'seams-guard-check.ts',
   'content-tools-check.ts',
   'content-exercises-check.ts',
   'content-records-check.ts',
