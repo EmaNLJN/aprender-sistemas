@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import { findViolations } from './lib/seams-guard.ts';
+import { repoRoot } from './lib/sources.ts';
 
 const STORE_FILES: Record<string, string> = {
   'frontend/src/entities/guide/model/route-store.ts': `
@@ -167,6 +170,46 @@ test('R5: entities, features and shared that import the curriculum JSON are repo
     'frontend/src/shared/lib/read-curriculum.ts': importJson,
   });
   assert.deepEqual(rulesOf(violations), ['R5', 'R5', 'R5']);
+});
+
+function productionSources(): Record<string, string> {
+  const sources: Record<string, string> = {};
+  const frontend = path.join(repoRoot, 'frontend');
+  for (const entry of fs.readdirSync(frontend)) {
+    if (entry.endsWith('.js')) sources[`frontend/${entry}`] = readFrontend(entry);
+  }
+  for (const entry of fs.readdirSync(path.join(frontend, 'src'), { recursive: true })) {
+    const relative = String(entry).split(path.sep).join('/');
+    if (/\.tsx?$/.test(relative) && !/\.spec\.tsx?$/.test(relative)) {
+      sources[`frontend/src/${relative}`] = readFrontend(`src/${relative}`);
+    }
+  }
+  return sources;
+}
+
+function readFrontend(relative: string): string {
+  return fs.readFileSync(path.join(repoRoot, 'frontend', relative), 'utf8');
+}
+
+const REAL_KEY_OWNERS: Record<string, string> = {
+  'taller-learning-v1': 'frontend/src/entities/guide/model/route-store.ts',
+  'taller-laboratorio-v1': 'frontend/src/entities/exercise/model/lab-store.ts',
+  'taller-campaign-v1': 'frontend/src/entities/campaign/model/create-campaign-engine.ts',
+  'taller-systems-v1': 'frontend/src/entities/systems-workshop/model/create-systems-engine.ts',
+};
+
+test('the real tree opens each key in exactly one file', () => {
+  const sources = productionSources();
+  for (const [key, owner] of Object.entries(REAL_KEY_OWNERS)) {
+    const files = Object.keys(sources).filter((file) => sources[file].includes(key));
+    assert.deepEqual(files, [owner]);
+  }
+});
+
+test('the real tree has no violations', () => {
+  const sources = productionSources();
+  assert.ok(Object.keys(sources).length > 100);
+  assert.deepEqual(findViolations(sources), []);
 });
 
 console.log(passed + ' seams-guard scenarios PASS.');
