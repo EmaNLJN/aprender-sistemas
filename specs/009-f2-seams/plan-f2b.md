@@ -63,7 +63,7 @@ F2b deja como módulos importables lo que las vistas legacy se pasan por HTML y 
   - el marcado del dist idéntico en las cuatro unidades;
   - el `<style>`, idéntico en las unidades 5, 6 y 7;
   - el script, idéntico en la unidad 8.
-- **El tamaño:** el HTML crece como máximo 8 000 caracteres en toda F2b (se midieron 4 174) y queda bajo el tope vigente de `qa/build-check`.
+- **El tamaño:** el HTML crece como máximo 8 000 caracteres en toda F2b (se midieron 4 266) y queda bajo el tope vigente de `qa/build-check`.
 - **Lo que no se suma:** ningún `style=`, `setAttribute('style', …)` ni `style.cssText` nuevo (FR-008), ninguna dependencia y ningún global (FR-010 y FR-017).
 - **Las rutas y el código intocables:** los cinco adaptadores de catálogos, `atlas-catalog.ts`, `main.tsx` y `frontend/src/app/boot/**` no cambian (FR-004 y A2).
 - **La red:** los 106 E2E y los 31 checks en verde antes y después de cada unidad.
@@ -206,7 +206,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 **Puntos de integración con otros frentes** (los resuelve el coordinador):
 
 - **F2a tiene que estar en `master`** antes de T020: sus PR #27, #32 y #33 seguían abiertos el 2026-10-06. Si no, se parte de `f2a/u3-arranque` y T020 lo anota.
-- **A2:** F2b no toca `main.tsx`, `frontend/src/app/boot/**`, los adaptadores de catálogos ni `atlas-catalog.ts`. Si el corte de A2 llega antes de una unidad de F2b, su compuerta cambia el oráculo del dist y el tope (§0.2). La unidad 5 edita `ConceptDetail.tsx`, que A2 no toca según su plan; si eso cambia, se resuelve un conflicto de una línea.
+- **A2:** F2b no toca `main.tsx`, `frontend/src/app/boot/**`, los adaptadores de catálogos ni `atlas-catalog.ts`. Si el corte de A2 llega antes de una unidad de F2b, su compuerta cambia el oráculo del dist y el tope (§0.2). Lo que midió el spike de A2 (`92d2730`, sin integrar): después del corte el HTML pesa 1 136 706 caracteres y el tope propuesto es 1 250 000; `dump-dist-globals` deja de publicar los catálogos (lo reemplaza el check del bundle de A2); y la red de F1 necesita que `ShellPage.goto` espere la primera vista, un cambio que trae A2 con su corte, así que la red «sin editar» de F2b es la que deja A2. La unidad 5 edita `ConceptDetail.tsx`, que A2 no toca según su plan; si eso cambia, se resuelve un conflicto de una línea.
 - **F3, F4 y F9** sacan ramas de los delegados de `app.js`, y F2b edita otras regiones del mismo archivo. Se integran de a uno: el que llega después rebasa.
 - **D1c** reimplementa `ProgressBackup` (§4.0). La spec de D1 está en borrador.
 - **C4:** F2b no suma ni mueve ningún sitio de estilo en línea (FR-008). En el prototipo, ninguna línea con `style=` cambió.
@@ -483,11 +483,12 @@ Las anclas que sólo llevan hash (`href="#campana"` del banner, `#proyecto`, `#b
   - `frontend/campaign.js` que importa `./src/entities/campaign/model/mission-bridge` da R6, y sólo R6;
   - `frontend/src/app/legacy/register-x.ts` que importa `../../entities/exercise/model/lab-store` da R6;
   - `frontend/lab-explorers.js` que importa `./src/entities/exercise/@x/campaign` da R6;
-  - por contraste, sin violaciones: `frontend/campaign.js` que importa `./src/entities/campaign/bridge`, `frontend/quest-explorers.js` que importa `./src/entities/exercise/explorers`, y una página (`frontend/src/pages/x/model/y.ts`) que importa `../../../entities/campaign/model/mission-bridge`, porque R6 no mira páginas;
+  - por contraste, sin violaciones: `frontend/campaign.js` que importa `./src/entities/campaign/bridge`, `frontend/quest-explorers.js` que importa `./src/entities/exercise/explorers`, y la propia entrada `frontend/src/entities/campaign/bridge.ts`, que importa `./model/mission-bridge` (R6 no mira los archivos de un slice: su alcance son las fuentes legacy y `app/`);
   - el escenario del árbol real sigue sin violaciones.
 - **Pasos:** los escenarios virtuales fallan contra el guard de hoy, que no tiene R6; se implementa la regla; `node qa/seams-guard-check.ts` pasa. Dos commits: `test(qa): R6, imports profundos de un slice desde las fuentes legacy (rojo)` y `test(qa): el guard admite fuera de un slice sólo su índice o una entrada sin estado`.
 - **Compuerta:** `seams-guard-check` en verde (18 escenarios más los nuevos), `npm run typecheck` y `npm run lint` (sólo sintaxis TypeScript borrable, `tsconfig.qa.json`).
 - **Vuelta atrás:** revertí los dos commits.
+- **Compatible con A2:** su plan importa en `app/` sólo tipos, y desde los índices (`'../../entities/campaign'` y los otros tres), y sus worktrees no tienen imports profundos. Si un port necesitara un tipo de `model/**` desde `app/`, lo pide al índice del slice.
 - **Verificado al planificar:** que R4 no ve un import profundo (`SLICE_INDEX_SPECIFIER` sólo acepta el índice) y que el árbol del prototipo de la unidad 5 da 0 violaciones con R4. R6 no corrió.
 
 ### Tarea 2.2 · Las specs de la gramática y de los puentes, en rojo (T024, U)
@@ -564,7 +565,7 @@ Las anclas que sólo llevan hash (`href="#campana"` del banner, `#proyecto`, `#b
   5. Un commit: `refactor(front): las vistas legacy y el Atlas arman y leen las URL con la gramática`.
 - **Compuerta:** los pasos 2 a 4; `npm run lint` con 35 avisos (`syncLinkedLanguage` sigue en 11); el diff no toca una línea con `style=`.
 - **Vuelta atrás:** revertí el commit: las cinco fuentes vuelven a armar sus URL y su contexto.
-- **Verificado al planificar:** todo lo de arriba, sobre un prototipo con las unidades 5, 6 y 7 juntas: `lab-bridge-check` 21, `boot-check` 14, `app-shell-check` 57 (con los gemelos de la 6), `seams-guard-check` 18, `npm test` en verde, 106 E2E, las dos comparaciones sin diferencias y los tres oráculos del currículo con los mismos bytes. La unidad 5 suma 678 caracteres al HTML.
+- **Verificado al planificar:** todo lo de arriba, sobre un prototipo con las unidades 5, 6 y 7 juntas: `lab-bridge-check` 21, `boot-check` 14, `app-shell-check` 57 (con los gemelos de la 6), `seams-guard-check` 18, `npm test` en verde, 106 E2E, las dos comparaciones sin diferencias y los tres oráculos del currículo con los mismos bytes. La unidad 5 suma 770 caracteres al HTML. Después del último cambio de diseño (`workshopReturnTarget`, que trajo el análisis) se volvieron a correr el build, los oráculos, `npm test`, las dos comparaciones y los 106 E2E.
 
 ### Tarea 2.5 · Compuerta y PR de la unidad 5 (T027, K)
 

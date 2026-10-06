@@ -258,9 +258,9 @@ Las tablas de escenario por escenario están en el plan: §2.6 para `lab-bridge-
 
 ## R9. El tope de tamaño
 
-**Decisión.** En toda F2b, el HTML crece como máximo **8 000 caracteres** sobre la línea base de T020, y cada PR informa su medida. Antes del corte de A2 sigue además bajo el tope de `build-check` (2 500 000). Si el corte de A2 llega en el medio, K vuelve a medir la base sobre `master` con A2, cuenta lo que ya sumaron las unidades integradas y el tope absoluto pasa a ser el de A2.
+**Decisión.** En toda F2b, el HTML crece como máximo **8 000 caracteres** sobre la línea base de T020, y cada PR informa su medida. Antes del corte de A2 sigue además bajo el tope de `build-check` (2 500 000). Si el corte de A2 llega en el medio, K vuelve a medir la base sobre `master` con A2, cuenta lo que ya sumaron las unidades integradas y el tope absoluto pasa a ser el de A2. Su spike (`92d2730`, en `feat/a2-compuerta`, todavía sin integrar) midió el HTML después del corte en 1 136 706 caracteres y propone un tope de 1 250 000.
 
-**Evidencia.** Medido en los prototipos: la unidad 8 suma 104 caracteres, la 5 suma 678, la 6 suma 1 369 y la 7 suma 2 023. El total es 4 174, algo más de la mitad del tope.
+**Evidencia.** Medido en los prototipos: la unidad 8 suma 104 caracteres, la 5 suma 770 (con `workshopReturnTarget`), la 6 suma 1 369 y la 7 suma 2 023. El total es 4 266, algo más de la mitad del tope.
 
 ## R10. Lo que no se hace (YAGNI)
 
@@ -289,7 +289,7 @@ Corrió a mano el 2026-10-06 sobre `spec.md` (FR-001 a FR-018 y FR-043 a FR-060)
 
 | ID | Severidad | Hallazgo | Corrección |
 | --- | --- | --- | --- |
-| C1 | MEDIA | FR-045 pide que `entities/systems-workshop` exporte «el regreso al taller» como dato, y el plan lo dejaba entero en la gramática, que además decidía la parte `build` y normalizaba el lenguaje | `workshopReturnTarget` en la entidad y `workshopReturnHref(location)` en la gramática (R4). Se volvió a verificar en el prototipo: tipos, ESLint, `lab-bridge-check` 21, `npm test` (31 checks y 190 pruebas), 35 avisos, 2 569 URL y 55 880 respuestas iguales |
+| C1 | MEDIA | FR-045 pide que `entities/systems-workshop` exporte «el regreso al taller» como dato, y el plan lo dejaba entero en la gramática, que además decidía la parte `build` y normalizaba el lenguaje | `workshopReturnTarget` en la entidad y `workshopReturnHref(location)` en la gramática (R4). Se volvió a verificar en el prototipo: tipos, ESLint, `lab-bridge-check` 21, `npm test` (31 checks y 190 pruebas), 35 avisos, 2 569 URL y 55 880 respuestas iguales, el build con los tres oráculos, el `<style>` y el marcado iguales, y 106 E2E. El HTML suma 92 caracteres más |
 | C2 | MEDIA | Dos mutaciones de quickstart §4 no las detectaba ninguna prueba: el `refresh()` adelantado en el contexto de Sistemas (no cambia el HTML) y el orden entre los dos pasos de sesión (el temporizador no se registra) | La primera sale de la tabla y queda en el Review Focus. La segunda pasa a ser «correr los pasos de sesión antes de los `reset` de las áreas», que sí detectan la spec de la feature y `boot-check` |
 | C3 | MEDIA | La mutación `Promise.all` en `resetAll` no la detectaba la spec tal como estaba escrita: con `Promise.all` las llamadas igual salen en orden | La spec de T033 registra el inicio y el fin de cada área asíncrona y exige que cada una empiece cuando la anterior resolvió |
 | C4 | BAJA | El Review Focus decía que la comparación de los puentes recorría un parámetro presente y vacío, y el script no lo hacía | Las dos comparaciones suman `?sistema=` y `?campana=` vacíos y los ocho lectores contra `URLSearchParams`; se volvieron a correr: 2 569 y 55 880, sin diferencias |
