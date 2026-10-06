@@ -4,6 +4,7 @@ import { expectOnlyEntries } from './catalog-files.ts';
 import { LANGUAGES, type Language, type SystemsDomain } from './catalogs.ts';
 import { expectDistinctIds, interleaveCores, loadLanguage } from './exercises.ts';
 import { loadGuide } from './guide.ts';
+import { loadHarness, type HarnessTemplates } from './harness.ts';
 import type { JsonRecord } from './shape.ts';
 import { loadWorkshops, type WorkshopStepKeys } from './workshops.ts';
 
@@ -20,14 +21,15 @@ export interface Curriculum {
 export interface CurriculumSource {
   curriculum: Curriculum;
   workshopSteps: WorkshopStepKeys;
+  harness: HarnessTemplates;
 }
 
 export function loadCurriculumSource(root: string): CurriculumSource {
   expectOnlyEntries(
     root,
     'content',
-    ['atlas', 'campaign', 'guide', 'workshops', ...LANGUAGES],
-    'sólo se admiten atlas/, campaign/, guide/, workshops/, rust/ y go/',
+    ['atlas', 'campaign', 'guide', 'harness', 'workshops', ...LANGUAGES],
+    'sólo se admiten atlas/, campaign/, guide/, harness/, workshops/, rust/ y go/',
   );
   const rust = loadLanguage(root, 'rust');
   const go = loadLanguage(root, 'go');
@@ -42,7 +44,7 @@ export function loadCurriculumSource(root: string): CurriculumSource {
     guide: loadGuide(root),
     atlas: loadAtlas(root),
   };
-  return { curriculum, workshopSteps: stepKeys };
+  return { curriculum, workshopSteps: stepKeys, harness: loadHarness(root) };
 }
 
 export function loadCurriculum(root: string): Curriculum {
