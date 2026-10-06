@@ -40,6 +40,8 @@ it('C: the primary key is user_id and deleted_at has its own index', function ()
         $indexes[$row->name][] = [$row->col, (int) $row->non_unique];
     }
 
+    ksort($indexes);
+
     expect($indexes)->toBe([
         'PRIMARY' => [['user_id', 0]],
         'account_deletions_deleted_at_index' => [['deleted_at', 1]],
