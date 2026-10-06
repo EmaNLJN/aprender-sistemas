@@ -2,11 +2,11 @@
 
 **Branch**: `007-d1-progreso-sincronizacion` (nombre de la feature; el proyecto no crea una rama por feature) | **Date**: 2026-10-06 | **Spec**: [spec.md](./spec.md)
 
-**Input**: Feature specification from `specs/007-d1-progreso-sincronizacion/spec.md`, en su **primera parte provisional, D1a** (ver «Supuestos provisionales»). Decisiones: [research.md](./research.md). Tablas y tipos: [data-model.md](./data-model.md). Contratos: [HTTP](./contracts/http.md) y [fusión y fixture](./contracts/merge-rules.md). Código verificado: [reference-merge.md](./reference-merge.md). Validación: [quickstart.md](./quickstart.md).
+**Input**: Feature specification from `specs/007-d1-progreso-sincronizacion/spec.md`, en su primera parte, **D1a** (ver «Decisiones del usuario»). Decisiones: [research.md](./research.md). Tablas y tipos: [data-model.md](./data-model.md). Contratos: [HTTP](./contracts/http.md) y [fusión y fixture](./contracts/merge-rules.md). Código verificado: [reference-merge.md](./reference-merge.md). Validación: [quickstart.md](./quickstart.md).
 
 > **Para quien lo implementa.** El trabajo se reparte entre dueños con archivos disjuntos (sección «Reparto en paralelo»). Leé completa la sección de tu dueño, «Reglas para todos los agentes» y los documentos de arriba que toquen tu tarea. `tasks.md` tiene una línea por tarea (T001…) y remite acá.
 >
-> **Estado.** Planificado, **sin implementar**. La implementación espera la aprobación del ADR 0006 (sigue en propuesta) y el clarify de D1, que el usuario todavía no respondió.
+> **Estado.** Planificado, **sin implementar**. El usuario respondió el clarify de D1 el 2026-10-06 (ver «Decisiones del usuario»). La implementación espera la aprobación del ADR 0006, que sigue en propuesta.
 >
 > **Línea base del código.** `master` más C6 (PR #17: los registros tipados y PHPStan en el nivel 9), **C3a entregada** (rama `feat/c3a-identidad`: la sesión, los grupos `account` y `verified`, `WriteTransaction`, `Browser`, los errores con código, los límites, `scheduler` y `lang/es`) y **B2 integrada como mínimo hasta su punto S1** (spec 005, rama `spec/b2-ejecuciones`: `progress_heads` y `exercise_progress` completas, `AccountLock`, `ProgressHead`, `Instant`, el cierre de ejecuciones, `RunWorld`, `Parallel` y la línea del Dockerfile que copia `qa/fixtures/shared/`). La línea de B2 se leyó de su plan y no del código, que todavía no existe: T001 la confirma. Las rutas de abajo son las de esa base.
 >
@@ -23,20 +23,24 @@ D1a es la mitad servidor de D1: el servidor guarda la copia durable del progreso
 - **El contenido publica el id de cada etapa** con un cambio que se comprueba byte a byte: cuatro porciones y `Content-Version` cambian, y nada más.
 - **Cada dueño trabaja en sus archivos.** Lo que se comparte con C3a y B2 son líneas de integración del coordinador. Las rutas de D1a viven en dos archivos propios de `routes/api/`.
 
-## Supuestos provisionales (clarify pendiente)
+## Decisiones del usuario
 
-El clarify de D1 sigue pendiente con el usuario. Este plan lo anticipa con lo que propone la spec y **no escribe nada en `## Clarifications`**, que es del usuario.
+El usuario respondió el clarify de D1 el 2026-10-06: aceptó la partición en tres y la opción recomendada en cada una de las cuatro preguntas. Las respuestas están en [spec.md](./spec.md), «Clarifications», sesión del 2026-10-06; acá se anota cómo llegan a D1a.
 
-**1. La partición es provisional.** Se planifica **D1a** como la propone la spec: FR-001 a FR-023, FR-046 a FR-059 y FR-080 a FR-084; las rutas `POST /api/sync` y `GET /api/progress`; sus diez tablas (`sync_operations`, `drafts`, `campaign_checkpoints`, `workshop_progress`, `workshop_observations`, `workshop_step_marks`, `route_marks`, `route_quiz_answers`, `route_notes` y `preferences`); y FR-087 y FR-088, que repite cada parte. Si el usuario **no parte D1**, este plan queda como la primera parte del plan de D1 entero, y las partes b y c se agregan a continuación: ninguna decisión de acá depende del corte. Si lo parte distinto, se mueven requisitos entre planes, no se reescriben.
+**1. La partición está confirmada.** D1 se parte en tres, con el corte de la spec: D1a (sincronización del servidor), D1b (importación y reset) y D1c (cliente v2). Este plan es el de **D1a**: FR-001 a FR-023, FR-046 a FR-059 y FR-080 a FR-084; las rutas `POST /api/sync` y `GET /api/progress`; sus diez tablas (`sync_operations`, `drafts`, `campaign_checkpoints`, `workshop_progress`, `workshop_observations`, `workshop_step_marks`, `route_marks`, `route_quiz_answers`, `route_notes` y `preferences`); y FR-087 y FR-088, que repite cada parte. D1b y D1c tendrán su propio plan.
 
-**2. D1a no depende de ninguna de las cuatro preguntas.**
+**2. D1a no depende de ninguna de las cuatro preguntas.** Las cuatro quedaron decididas con la opción A:
 
-| Pregunta | Por qué no toca a D1a |
-| --- | --- |
-| Q1, importación por navegador | Es de la ruta de importación (D1b). D1a deja el escritor listo para un reloj nulo |
-| Q2, alcance de «Borrar todo» | Es del reset (D1b). D1a sólo declara qué tablas son de estado |
-| Q3, qué se hace al salir | Es del cliente (D1c) |
-| Q4, lo resuelto antes de A4 | El servidor rechaza con `invalid` toda operación que quiera escribir «resuelto» (FR-009), con cualquiera de las tres respuestas |
+| Pregunta | Respuesta del usuario | Qué cambia para D1a |
+| --- | --- | --- |
+| Q1, importación por navegador | A: por navegador, varias por cuenta, combinables y con confirmación | Nada: es de la ruta de importación (D1b). D1a deja el escritor listo para un reloj nulo |
+| Q2, alcance de «Borrar todo» | A: sólo el estado; los intentos, sus payloads y las importaciones quedan hasta su retención | Nada: es del reset (D1b). D1a sólo declara qué tablas son de estado |
+| Q3, qué se hace al salir | A: se envía la cola y se limpia el espacio; el ingreso ofrece «computadora compartida»; los espacios vencen a los 30 días | Nada: es del cliente (D1c) |
+| Q4, lo resuelto antes de A4 | A: el cliente (D1c) entra en servicio después de A4; D1a y D1b, no | Nada: el servidor rechaza con `invalid` toda operación que quiera escribir «resuelto» (FR-009), que es lo que la A confirma. D1a no espera a A4 |
+
+## Propuestas del plan
+
+Lo que sigue es del plan y no se le preguntó al usuario: decisiones sobre lo que la spec o el ADR dejan abierto, y lo que D1a supone de otros ítems. Cada una se cambia en un lugar y ninguna mueve la partición.
 
 **3. Requisitos de D1a que cruzan la frontera.** La tabla de partición de la spec asigna rangos, y algunos requisitos del rango de D1a tocan lo de D1b o de C3b. Se parten así, y ninguno se entrega a medias en silencio:
 
@@ -744,7 +748,7 @@ location = /api/sync {
 
 ## Cobertura de requisitos
 
-Cada requisito con las tareas que lo implementan o lo prueban. `tasks.md` cita los mismos requisitos en cada línea. Los de D1b y D1c no están acá, salvo donde la tabla de «Supuestos provisionales» parte uno.
+Cada requisito con las tareas que lo implementan o lo prueban. `tasks.md` cita los mismos requisitos en cada línea. Los de D1b y D1c no están acá, salvo donde la tabla de «Propuestas del plan» parte uno.
 
 | Requisito | Tareas |
 | --- | --- |
@@ -826,7 +830,7 @@ Esta planificación ejecutó el TypeScript y no ejecutó nada del PHP, del SQL n
 
 ## Complexity Tracking
 
-Sin violaciones de la constitución que justificar. Hay desvíos de la spec y del ADR 0006 que el usuario todavía no conoce y que este plan pide confirmar, y están en «Supuestos provisionales»:
+Sin violaciones de la constitución que justificar. Hay desvíos de la spec y del ADR 0006 que el usuario todavía no conoce y que este plan pide confirmar, y están en «Propuestas del plan»:
 
 - **La fusión en TypeScript en D1a** (R1): la tabla de partición de la spec dice «PHP y SQL (Pest)».
 - **Las decisiones de forma** del contrato (R5 a R10): `format` 2, 200 operaciones, `duplicate` con `reason`, `stale_content` en el quiz, la forma de la foto y sus estados.
