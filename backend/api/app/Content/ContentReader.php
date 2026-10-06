@@ -2,6 +2,7 @@
 
 namespace App\Content;
 
+use App\Content\Record\Language;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,12 @@ final class ContentReader
     /** @return list<string> the languages, in the order of `languages.position` */
     public function languages(): array
     {
-        return DB::table('languages')->orderBy('position')->orderBy('code')->pluck('code')->all();
+        $languages = [];
+        foreach ($this->get(DB::table('languages')->orderBy('position')->orderBy('code')) as $row) {
+            $languages[] = Language::fromRow($row)->code;
+        }
+
+        return $languages;
     }
 
     /** @return array<string, list<array<string, mixed>>> */
@@ -40,10 +46,10 @@ final class ContentReader
     }
 
     /**
-     * An active exercise with its tests, its hints and the label of its topic; null if it does not
-     * exist or is retired.
+     * An active exercise with its tests, its hints and its topic row (null if there is none); null if
+     * the exercise does not exist or is retired.
      *
-     * @return ?array{exercise: array<string, mixed>, tests: list<array<string, mixed>>, hints: list<array<string, mixed>>, topic: string}
+     * @return ?array{exercise: array<string, mixed>, tests: list<array<string, mixed>>, hints: list<array<string, mixed>>, topic: ?array<string, mixed>}
      */
     public function exercise(string $id): ?array
     {
@@ -51,13 +57,13 @@ final class ContentReader
         if ($exercise === null) {
             return null;
         }
-        $topic = $this->active('topics')->where('language', $exercise['language'])->where('topic_key', $exercise['topic_key'])->value('label');
+        $topic = $this->get($this->active('topics')->where('language', $exercise['language'])->where('topic_key', $exercise['topic_key']))[0] ?? null;
 
         return [
             'exercise' => $exercise,
             'tests' => $this->get($this->active('exercise_tests')->where('exercise_id', $id)),
             'hints' => $this->get($this->active('exercise_hints')->where('exercise_id', $id)),
-            'topic' => (string) $topic,
+            'topic' => $topic,
         ];
     }
 
@@ -124,6 +130,11 @@ final class ContentReader
     /** @return list<array<string, mixed>> */
     private function get(Builder $query): array
     {
-        return $query->get()->map(fn (object $row) => (array) $row)->all();
+        $rows = [];
+        foreach ($query->get() as $row) {
+            $rows[] = get_object_vars($row);
+        }
+
+        return $rows;
     }
 }
