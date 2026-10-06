@@ -208,16 +208,84 @@ describe('Systems engine revision', () => {
     expect(revisionOf(engine)).toBe(1);
   });
 
-  it('lets a listener see what was already written', () => {
+  interface WritingCase {
+    name: string;
+    run: (engine: SystemsEngine) => void;
+    observe: (stored: string | null) => unknown;
+    expected: unknown;
+  }
+
+  const writingCases: WritingCase[] = [
+    {
+      name: 'observe',
+      run: (engine) => void engine.observe('alpha', 'rust', ['a']),
+      observe: (stored) => JSON.parse(stored!).records['rust:alpha'].observed,
+      expected: ['a'],
+    },
+    {
+      name: 'answer',
+      run: (engine) => void engine.answer('alpha', 'rust', 1),
+      observe: (stored) => JSON.parse(stored!).records['rust:alpha'].answer,
+      expected: 1,
+    },
+    {
+      name: 'syncLab',
+      run: (engine) => void engine.syncLab(passingLab('rust-113')),
+      observe: (stored) => JSON.parse(stored!).records['rust:alpha'].code,
+      expected: true,
+    },
+    {
+      name: 'applyImport',
+      run: (engine) =>
+        void engine.applyImport(
+          engine.planImport({
+            version: 1,
+            records: {
+              'rust:beta': {
+                observed: [],
+                code: false,
+                predicted: false,
+                answer: null,
+                steps: [],
+                note: 'imported',
+              },
+            },
+          }),
+        ),
+      observe: (stored) => JSON.parse(stored!).records['rust:beta'].note,
+      expected: 'imported',
+    },
+    {
+      name: 'setStep',
+      run: (engine) => void engine.setStep('alpha', 'rust', 2, true),
+      observe: (stored) => JSON.parse(stored!).records['rust:alpha'].steps,
+      expected: [2],
+    },
+    {
+      name: 'setNote',
+      run: (engine) => void engine.setNote('alpha', 'rust', 'written first'),
+      observe: (stored) => JSON.parse(stored!).records['rust:alpha'].note,
+      expected: 'written first',
+    },
+    {
+      name: 'reset',
+      run: (engine) => void engine.reset(),
+      observe: (stored) => stored,
+      expected: null,
+    },
+  ];
+
+  it.each(writingCases)('lets a listener see what $name already wrote', (writingCase) => {
     const { engine, storage } = openEngine();
-    let seenInStorage: string | null = null;
+    engine.setNote('alpha', 'rust', 'before');
+    let seenInStorage: string | null = 'listener never called';
     engine.changes.subscribe(() => {
       seenInStorage = storage.read(STORAGE_KEY);
     });
 
-    engine.setNote('alpha', 'rust', 'written first');
+    writingCase.run(engine);
 
-    expect(JSON.parse(seenInStorage!).records['rust:alpha'].note).toBe('written first');
+    expect(writingCase.observe(seenInStorage)).toEqual(writingCase.expected);
   });
 
   it('propagates a throwing listener after the write already happened', () => {
@@ -265,6 +333,9 @@ describe('Systems engine revision', () => {
     const result = engine.init({ workshops, models, exercises } as unknown as SystemsConfig);
 
     expect(result.loadWarning).toBe('');
+    expect(engine.get('pc', 'rust').progress.note).toBe(
+      'Nota del taller pc: medir antes de optimizar.',
+    );
     expect(storage.writes).toBe(0);
     expect(listener).not.toHaveBeenCalled();
   });
