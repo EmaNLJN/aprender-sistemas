@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import fixture from '../../../../../qa/fixtures/curriculum-ids.json';
 import { infraModels } from '../models/infra';
 import { lowlevelModels } from '../models/lowlevel';
 import { pcModel } from '../models/pc';
@@ -55,12 +55,6 @@ describe('mergeModelGroups', () => {
   });
 
   it('merges the four real groups into the 25 models the workshops reference', () => {
-    const fixture = JSON.parse(
-      readFileSync(
-        new URL('../../../../../qa/fixtures/curriculum-ids.json', import.meta.url),
-        'utf8',
-      ),
-    ) as { workshops: Record<string, { model: string }> };
     const referenced = new Set(Object.values(fixture.workshops).map((workshop) => workshop.model));
 
     const merged = mergeModelGroups([{ pc: pcModel }, lowlevelModels, infraModels, playModels]);
