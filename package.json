@@ -31,7 +31,8 @@
     "api:format:check": "docker compose --profile test run --rm --build --no-deps --entrypoint php test vendor/bin/pint --test",
     "api:analyse": "docker compose --profile test run --rm --build --no-deps --entrypoint php test vendor/bin/phpstan analyse --memory-limit=1G --no-progress",
     "api:smoke": "sh backend/api/scripts/smoke.sh",
-    "api:content:check": "node qa/api-content-check.ts"
+    "api:content:check": "node qa/api-content-check.ts",
+    "api:runs:check": "node qa/api-runs-check.ts"
   },
   "dependencies": {
     "@codemirror/autocomplete": "6.20.3",

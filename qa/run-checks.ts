@@ -33,6 +33,9 @@ const checks = [
   'shared-lib-check.ts',
   'route-progress-check.ts',
   'versioned-storage-check.ts',
+  'nginx-api-blocks-check.ts',
+  'compose-runs-check.ts',
+  'init-env-check.ts',
 ];
 
 for (const check of checks) {
