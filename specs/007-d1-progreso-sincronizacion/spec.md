@@ -106,7 +106,7 @@ Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumption
 | En una computadora compartida, al salir se envía la cola y se limpia el espacio; el ingreso ofrece «computadora compartida»; los espacios vencen a los 30 días | Usuario, 2026-10-06 (Q3, opción A) |
 | El cliente de D1 (D1c) entra en servicio después de A4; D1a y D1b, no | Usuario, 2026-10-06 (Q4, opción A) |
 
-**Base del ADR 0006 (propuesta).** D22 a D25, D36 y D39, y las enmiendas al ADR 0004 que el 0006 registra (`/api/sync` con delta, `POST /api/progress/reset` y la importación combinable), todavía no las aprobó el usuario. La spec las usa como base y cada una está marcada «(propuesta)» donde pesa. Si el ADR se enmienda, esta spec cambia.
+**Base del ADR 0006 (propuesta).** D22 a D25, D36 y D39, y las enmiendas al ADR 0004 que el 0006 registra (`/api/sync` con delta, `POST /api/progress/reset` y la importación combinable), todavía no las aprobó el usuario. La spec las usa como base y cada una está marcada «(propuesta)» donde pesa. Q1 y Q2 (2026-10-06) decidieron la importación combinable por navegador y el alcance de «Borrar todo»; el ADR en sí sigue en propuesta. Si el ADR se enmienda, esta spec cambia.
 
 ## Clarifications
 
