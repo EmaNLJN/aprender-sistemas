@@ -53,7 +53,7 @@ El criterio es una sola pregunta: ¿pudo haber corrido el código del alumno? Si
 | 400, 413 o 401 | No, pero es un error nuestro (pedido mal armado o token equivocado) | `infra_error`, motivo `executor_error`, y un error en el log: es un defecto de configuración, no del alumno |
 | Cualquier otro | Se asume que sí | `infra_error`, motivo `executor_error` |
 
-Sólo hay dos pruebas positivas de «no corrió»: un 503 o un errno de conexión 6 o 7. Un `ConnectionException` de Laravel no alcanza: también lo lanzan un plazo vencido y una respuesta vacía, que **sí** pueden haber corrido, así que el worker mira el errno del error de Guzzle que trae adentro (`ConnectException::getHandlerContext()['errno']`). Sin esa prueba, el caso se trata como «pudo haber corrido». Al apagarse, el ejecutor responde 503 a los pedidos que esperaban lugar y 500 a los que ejecutaban.
+Sólo hay dos pruebas positivas de «no corrió»: un 503 o un errno de conexión 6 o 7. Un `ConnectionException` de Laravel no alcanza: también lo lanzan un plazo vencido y una respuesta vacía, que **sí** pueden haber corrido, así que el worker mira el errno de cURL del error de Guzzle que trae adentro: Guzzle 8 ya no tiene `getHandlerContext()`, y el errno sólo queda en el mensaje del `ConnectException` (`cURL error <n>: …`). Sin esa prueba, el caso se trata como «pudo haber corrido». Al apagarse, el ejecutor responde 503 a los pedidos que esperaban lugar y 500 a los que ejecutaban.
 
 ## Los plazos y su orden
 

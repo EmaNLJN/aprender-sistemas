@@ -1357,7 +1357,7 @@ final class ExecutorClient
      - 200 con un cuerpo que no es un resultado (falta un campo, sobra uno, un tipo equivocado, `phase` `compile` con código 0, un entero fuera de rango, texto que no es JSON): `Failed` con causa `invalid_body`;
      - el pedido: `POST` a `${EXECUTOR_URL}/v1/run`, `Authorization: Bearer <token>`, `Content-Type: application/json` y un cuerpo con **exactamente** `language` y `program`; el programa llega byte por byte (con `{{`, saltos de línea y no ASCII).
    Corrélas: fallan porque las clases no existen.
-2. **Implementá.** Lo que cuesta equivocar es **qué prueba que no corrió**: sólo el 503 y los `errno` 6 y 7 del error de Guzzle que trae adentro el `ConnectionException`; referencia:
+2. **Implementá.** Lo que cuesta equivocar es **qué prueba que no corrió**: sólo el 503 y los `errno` 6 y 7 del error de Guzzle que trae adentro el `ConnectionException`. Guzzle 8 ya no tiene `getHandlerContext()`, así que el errno de cURL se lee del mensaje (`cURL error <n>: …`), como hace `ExecutorClient` (corrección de la implementación, T013); referencia:
 
 ```php
 public function send(RunLanguage $language, string $program): ExecutorReply
@@ -1381,7 +1381,9 @@ private function neverReached(ConnectionException $error): bool
 {
     $previous = $error->getPrevious();
 
-    return $previous instanceof ConnectException && in_array($previous->getHandlerContext()['errno'] ?? null, [6, 7], true);
+    return $previous instanceof ConnectException
+        && preg_match('/^cURL error (\d+):/', $previous->getMessage(), $matches) === 1
+        && in_array((int) $matches[1], [6, 7], true);
 }
 
 private function fromResponse(Response $response): ExecutorReply
