@@ -10,7 +10,7 @@ D1a crea **diez** tablas de usuario (91 columnas, 18 claves foráneas con el `EN
 
 - **Tiempo:** `DATETIME(3)` en UTC. PHP manda cada hora como binding `Y-m-d H:i:s.v`, tomada del reloj del servidor (`Instant::format`, de B2); nunca `NOW()` de MySQL.
 - **Claves y colaciones:** los ids de contenido, los hashes y los conjuntos cerrados, en `ascii_bin`; la prosa (`reflection`, `note`, `body`), con la colación de la conexión (`utf8mb4_es_0900_ai_ci`); el código y la prueba propia, en `utf8mb4_0900_bin`.
-- **Comparar texto en SQL** con la colación de la conexión iguala `Casa` y `casa` y `cafe` y `café`: para decidir si un valor cambió, el escritor compara con `BINARY` (D03: «los cambios se detectan en PHP, nunca comparando textos en SQL»; acá, cuando se compara, es en binario).
+- **Comparar texto en SQL** con la colación de la conexión iguala `Casa` y `casa` y `cafe` y `café`: para decidir si un valor cambió, el escritor compara con `CAST(… AS BINARY)` (el operador `BINARY` está deprecado en MySQL 9.7: el manual avisa que se va a quitar; D03: «los cambios se detectan en PHP, nunca comparando textos en SQL»; acá, cuando se compara, es en binario).
 - **Conjuntos:** `ENUM` para los cerrados (lenguaje, tipo de marca, campo de nota); los valores nuevos van siempre al final (D05).
 - **Sin `CHECK` que toque una columna `DATETIME`** en ninguna de las diez tablas (FR-052, más estricto que D07, que sólo lo pide en las tablas que crecen): C2 midió en 9.7.2 que ampliar un `ENUM` con un `CHECK` sobre `DATETIME` en la tabla da el error 1845. Esas reglas de fila están en la sección 3. Los `CHECK` que no tocan fechas sí van en la tabla, con el nombre `<tabla>_<regla>_check`.
 - **Restricción referencial:** `ON DELETE CASCADE` desde `users` (o desde la fila padre del taller), `RESTRICT` hacia el contenido, que nunca se borra, y `ON UPDATE RESTRICT` siempre. Una operación sobre contenido retirado se aplica: la fila de contenido sigue existiendo.
@@ -301,7 +301,7 @@ Las demás reglas (los `CHECK` que no tocan fechas) están en el DDL y las lee `
 
 | Regla | `ganan` (la entrante gana) | `cambia` (la guarda de la revisión) |
 | --- | --- | --- |
-| `lww`, `lww-group`, `tombstone` | `t.c IS NULL OR (n.c IS NOT NULL AND n.c >= t.c)` | `ganan AND NOT (BINARY t.v <=> BINARY n.v AND t.c <=> n.c)`, con `BINARY` en las columnas de texto y la comparación nula-segura (`<=>`) en todas |
+| `lww`, `lww-group`, `tombstone` | `t.c IS NULL OR (n.c IS NOT NULL AND n.c >= t.c)` | `ganan AND NOT (CAST(t.v AS BINARY) <=> CAST(n.v AS BINARY) AND t.c <=> n.c)`, con `CAST(… AS BINARY)` en las columnas de texto y la comparación nula-segura (`<=>`) en todas |
 | `flag-or` | siempre | `t.v = 0` (la entrante es 1) |
 | `max` | `t.v IS NULL OR n.v > t.v` | lo mismo |
 | `dated-flag` | la entrante es 1 | `t.v = 0 OR (t.at IS NULL AND n.at IS NOT NULL) OR (n.at IS NOT NULL AND n.at < t.at)` |
@@ -382,8 +382,24 @@ namespace App\Progress\Operations;               // dueño M
 
 enum Rule: string { case Lww = 'lww'; case LwwGroup = 'lww-group'; case Tombstone = 'tombstone'; case FlagOr = 'flag-or'; case Max = 'max'; case DatedFlag = 'dated-flag'; case Observed = 'observed'; }
 
-enum OperationType: string   // los dieciséis `type` de http.md, sección 3.2: ExercisePrediction = 'exercise.prediction', …
+enum OperationType: string   // los dieciséis `type` de http.md, sección 3.2
 {
+    case ExercisePrediction = 'exercise.prediction';
+    case ExerciseAssist = 'exercise.assist';
+    case ExerciseHints = 'exercise.hints';
+    case ExerciseReflection = 'exercise.reflection';
+    case ExerciseCustomTest = 'exercise.customTest';
+    case ExerciseReview = 'exercise.review';
+    case ExerciseDraft = 'exercise.draft';
+    case CheckpointAnswer = 'checkpoint.answer';
+    case WorkshopPrediction = 'workshop.prediction';
+    case WorkshopNote = 'workshop.note';
+    case WorkshopObjective = 'workshop.objective';
+    case WorkshopStep = 'workshop.step';
+    case RouteMark = 'route.mark';
+    case RouteQuiz = 'route.quiz';
+    case RouteNote = 'route.note';
+    case PreferenceSet = 'preference.set';
 }
 
 enum RejectionReason: string { case UnknownReference = 'unknown_reference'; case Invalid = 'invalid'; case OutOfRange = 'out_of_range'; }
@@ -394,7 +410,14 @@ final class FieldKinds                           // el registro que la prueba co
     public static function all(): array;
 }
 
-final class RouteMilestones { /** @var list<string> */ public const KEYS = ['rust-memory', /* … los diez de route-milestones.json */]; }
+final class RouteMilestones
+{
+    /** @var list<string> */
+    public const KEYS = [
+        'rust-memory', 'rust-commands', 'rust-files', 'rust-measure', 'rust-network',
+        'go-memory', 'go-commands', 'go-files', 'go-measure', 'go-network',
+    ];
+}
 
 final class OperationHash { public static function of(array $raw): string; }   // sha256 hexadecimal de la forma canónica sin `id`
 
