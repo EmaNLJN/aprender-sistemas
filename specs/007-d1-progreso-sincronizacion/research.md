@@ -2,7 +2,7 @@
 
 **Fecha**: 2026-10-06 | **Spec**: [spec.md](./spec.md) | **Plan**: [plan.md](./plan.md)
 
-Cada decisión dice qué se eligió, por qué, qué se descartó y cómo se verificó. Las que cambian algo del ADR 0006 o completan algo que la spec deja abierto llevan la marca **(propuesta del plan)** y se resumen en «Supuestos provisionales» de [plan.md](./plan.md). Lo que corrió al planificar está en R22.
+Cada decisión dice qué se eligió, por qué, qué se descartó y cómo se verificó. Las que cambian algo del ADR 0006 o completan algo que la spec deja abierto llevan la marca **(propuesta del plan)** y se resumen en «Propuestas del plan» de [plan.md](./plan.md). Lo que corrió al planificar está en R22.
 
 ## R1. La fusión en TypeScript entra en D1a **(propuesta del plan)**
 
