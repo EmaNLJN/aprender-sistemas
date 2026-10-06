@@ -56,6 +56,19 @@ it('leaves the browser signed in as the new account', function () {
     $this->browser->get('/api/probe/account')->assertOk()->assertExactJson(['id' => $user->id]);
 });
 
+it('shows the new account, with the privacy notice accepted, in GET /api/session', function () {
+    $this->browser->post('/api/auth/invitations/accept', ($this->acceptBody)())->assertCreated();
+    $user = User::where('email', 'anaperez@x.com')->firstOrFail();
+
+    $this->browser->get('/api/session')->assertOk()->assertJsonPath('user', [
+        'id' => $user->id,
+        'name' => 'Ana Pérez',
+        'email' => 'anaperez@x.com',
+        'role' => 'student',
+        'privacyAccepted' => true,
+    ]);
+});
+
 it('starts the clock of the session at the acceptance', function () {
     $this->browser->post('/api/auth/invitations/accept', ($this->acceptBody)())->assertCreated();
 
