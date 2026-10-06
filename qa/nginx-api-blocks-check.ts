@@ -19,7 +19,7 @@ function directivesOf(opening: string): string[] {
     .slice(bodyStart, bodyEnd)
     .split('\n')
     .map((line) => line.trim())
-    .filter((line) => line !== '');
+    .filter((line) => line !== '' && !line.startsWith('#'));
 }
 
 const apiDirectives = directivesOf('location ^~ /api/ {');
