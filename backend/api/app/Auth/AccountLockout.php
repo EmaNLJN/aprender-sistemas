@@ -3,6 +3,7 @@
 namespace App\Auth;
 
 use Illuminate\Support\Facades\Cache;
+use LogicException;
 
 final class AccountLockout
 {
@@ -11,6 +12,10 @@ final class AccountLockout
     private const FIRST_LOCK_SECONDS = 60;
 
     private const MAX_LOCK_SECONDS = 900;
+
+    private const LOCK_SECONDS = 5;
+
+    private const LOCK_WAIT_SECONDS = 2;
 
     private const FORGET_AFTER_SECONDS = 86400;
 
@@ -29,6 +34,22 @@ final class AccountLockout
 
     public function recordFailure(string $emailKey): LockoutState
     {
+        $lock = Cache::lock('login:account-lock:'.hash('sha256', $emailKey), self::LOCK_SECONDS);
+        $state = null;
+        $lock->block(self::LOCK_WAIT_SECONDS, function () use ($emailKey, &$state) {
+            $state = $this->writeNextFailure($emailKey);
+        });
+
+        return $state ?? throw new LogicException('The lockout state was not written.');
+    }
+
+    public function clear(string $emailKey): void
+    {
+        Cache::forget($this->cacheKey($emailKey));
+    }
+
+    private function writeNextFailure(string $emailKey): LockoutState
+    {
         $fails = $this->state($emailKey)->fails + 1;
         $now = now()->getTimestamp();
         $permanent = $fails >= LockoutState::PERMANENT_AT;
@@ -42,11 +63,6 @@ final class AccountLockout
         Cache::put($this->cacheKey($emailKey), ['fails' => $fails, 'lockedUntil' => $lockedUntil], $keptFor);
 
         return new LockoutState($fails, $lockedUntil);
-    }
-
-    public function clear(string $emailKey): void
-    {
-        Cache::forget($this->cacheKey($emailKey));
     }
 
     private function lockSeconds(int $fails): int

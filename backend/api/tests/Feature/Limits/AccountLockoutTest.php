@@ -2,7 +2,10 @@
 
 use App\Auth\AccountLockout;
 use App\Auth\Email;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Sleep;
 use Tests\Feature\Limits\DatabaseDrivers;
 
 beforeEach(function () {
@@ -17,7 +20,10 @@ beforeEach(function () {
     };
 });
 
-afterEach(fn () => Carbon\Carbon::setTestNow());
+afterEach(function () {
+    Carbon::setTestNow();
+    Sleep::fake(false);
+});
 
 it('locks progressively from the tenth consecutive failure', function (int $fails, int $seconds) {
     $state = ($this->failTimes)('ana@x.com', $fails);
@@ -113,4 +119,25 @@ it('stores the state under the sha256 of the email as a plain array', function (
 
     expect(Cache::get('login:account:'.hash('sha256', 'ana@x.com')))
         ->toBe(['fails' => 1, 'lockedUntil' => 0]);
+});
+
+it('counts two consecutive failures as two', function () {
+    $this->lockout->recordFailure('ana@x.com');
+
+    expect($this->lockout->recordFailure('ana@x.com')->fails)->toBe(2);
+});
+
+it('fails instead of writing a stale counter while another request holds the lock', function () {
+    Sleep::fake(syncWithCarbon: true);
+    $lock = Cache::lock('login:account-lock:'.hash('sha256', 'ana@x.com'), 5);
+    $lock->get();
+
+    try {
+        $this->lockout->recordFailure('ana@x.com');
+    } catch (LockTimeoutException) {
+    }
+    $lock->release();
+
+    expect($this->lockout->state('ana@x.com')->fails)->toBe(0)
+        ->and($this->lockout->recordFailure('ana@x.com')->fails)->toBe(1);
 });
