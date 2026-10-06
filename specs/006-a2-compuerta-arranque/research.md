@@ -4,6 +4,8 @@
 
 El clarify del 2026-10-05 cerró las cinco preguntas de la spec. Este archivo registra las decisiones de diseño que la spec delegó en el plan, con su motivo y sus alternativas, y cómo se verificó cada cosa al planificar. Lo que mide el spike (T001) se agrega al final, en «Resultados del spike», cuando corra.
 
+El 2026-10-06 el usuario aceptó R3, R4 y R11 con la opción que traían (spec, «Clarifications», Q6 a Q8). R1 sigue abierta a propósito en su regla de decisión: qué hacer si P1 falla se decide si pasa.
+
 ## Cómo se verificó al planificar
 
 La sesión de planificación no corrió `npm run build`, Docker, Playwright ni descargas, y no tocó el repositorio fuera de `specs/`. Lo que sí hizo:
@@ -43,7 +45,7 @@ La sesión de planificación no corrió `npm run build`, Docker, Playwright ni d
 
 ## R3. La versión viaja en el nombre del archivo
 
-**Decision**: el build copia `build/curriculum.json` a `dist/content/curriculum.<versión>.json`, donde la versión son los primeros 32 hexadecimales de `documentHash`. Los bytes no cambian: el sha256 de la copia es el `documentHash` completo, y el archivo que genera `tools/content` conserva su nombre en `build/`. La página pide `/content/curriculum.<versión>.json`, con la versión como constante del build (`__CONTENT_VERSION__`).
+**Decision** *(decidida por el usuario el 2026-10-06, Q6)*: el build copia `build/curriculum.json` a `dist/content/curriculum.<versión>.json`, donde la versión son los primeros 32 hexadecimales de `documentHash`. Los bytes no cambian: el sha256 de la copia es el `documentHash` completo, y el archivo que genera `tools/content` conserva su nombre en `build/`. La página pide `/content/curriculum.<versión>.json`, con la versión como constante del build (`__CONTENT_VERSION__`).
 
 | Opción | ¿Puede la compuerta observar la versión de los bytes que recibió? |
 | --- | --- |
@@ -58,13 +60,13 @@ La sesión de planificación no corrió `npm run build`, Docker, Playwright ni d
 **Consecuencias:**
 - En la fuente estática, 404 y «otra versión» son el mismo hecho, y la compuerta lo muestra con el mensaje que sugiere recargar (FR-011). El modo «versión distinta» de SC-004 se prueba además en la compuerta, con una fuente de prueba que devuelve otra versión: es lo que va a hacer la API de A3 con `Content-Version`.
 - `vite preview`, que usa los E2E de F1, responde con `index.html` ante un archivo que no existe (cae a la página). Un nombre equivocado da ahí `body`, no `version`. Sólo Nginx da 404: lo verifica T013 con Docker.
-- La spec, en Q1, llama al artefacto «`curriculum.json`». Sus bytes son los del generador; sólo cambia el nombre de la copia servida, y FR-011 dejaba al plan elegir cómo viaja la versión.
+- La spec, en Q1, llama al artefacto «`curriculum.json`». Sus bytes son los del generador; sólo cambia el nombre de la copia servida, y FR-011 dejaba al plan elegir cómo viaja la versión. El usuario aceptó la elección el 2026-10-06 (Q6, que precisa a Q1).
 
 **Alternatives considered**: ver la tabla; además, un archivo por porción (17 pedidos para una fuente que A3 retira) y un manifiesto aparte con la versión (un pedido más y el mismo problema de coherencia).
 
 ## R4. `dist/` es la raíz web completa y llega entero a Nginx y a la vista previa
 
-**Decision**:
+**Decision** *(decidida por el usuario el 2026-10-06, Q7)*:
 - **El plugin** de `frontend/vite.config.ts` (unas 45 líneas, sin dependencias nuevas) arma lo que hoy hace a mano el `Dockerfile` y suma el contenido:
   - define `__CONTENT_VERSION__` leyendo `build/curriculum.meta.json`;
   - en `generateBundle` emite con `this.emitFile` el contenido en `content/curriculum.<versión>.json` (la clave `fileName` se usa sin cambios y `source` acepta bytes) y los dos avisos de licencia, `EDITOR-LICENSES.txt` y `THIRD-PARTY-NOTICES.txt`, que hoy copia el `Dockerfile` desde `frontend/`;
@@ -167,7 +169,7 @@ Una página portada no importa `getContent`: recibe su porción por props desde 
 
 ## R11. `build-check`
 
-**Decision**:
+**Decision** *(los marcadores, decididos por el usuario el 2026-10-06, Q8)*:
 - **Estructura:** sigue exigiendo un `<script>`, un `<style>`, un solo documento y ningún enlace ni script externo, y las licencias retenidas.
 - **Módulo:** parsea el script con `node --check` (R9).
 - **Tope:** `html.length < tope`, con `tope = piso(medido × 1,10)` redondeado hacia abajo a la decena de miles, que no pasa del 10 % de la spec (FR-015 y SC-003). `medido` es el `html.length` que mide T001 sobre el prototipo (P3); T010 escribe el valor y la medida que lo respalda en el mensaje de su commit. Hoy es 2.500.000 y el HTML pesa 2.202.074 bytes (cierre de A1); sin los 1,07 MB que estimó el ADR 0004 sería del orden de 1,1 MB.

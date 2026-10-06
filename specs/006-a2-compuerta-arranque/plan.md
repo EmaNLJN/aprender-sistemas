@@ -25,7 +25,7 @@ A2 saca el currículo de `dist/index.html` y hace que el arranque lo pida antes 
 
 **Language/Version**: TypeScript como ES modules en `frontend/src/` y `qa/`; Node 24.21; Vite 8.3.2 (Rolldown 1.2.12) con `vite-plugin-singlefile` 2.3.3, esbuild 0.28.2 y `target: 'es2020'`.
 
-**Primary Dependencies**: ninguna nueva (FR-022). Usa lo que instala F1 (ADR 0008, PR #16): Vitest y Playwright.
+**Primary Dependencies**: ninguna nueva (FR-022). Usa lo que instala F1 (ADR 0008, PR #16): Vitest y Playwright. F2a suma Zustand para la suscripción de los almacenes (decisión del usuario del 2026-10-06): A2 no lo importa, y FR-022 y SC-006 se miden contra la base de implementación, que ya lo trae.
 
 **Storage**: ninguno. La compuerta no abre, lee ni escribe `localStorage` (FR-008). El artefacto es un estático: `dist/content/curriculum.<versión>.json`.
 
@@ -112,14 +112,26 @@ README.md  AGENTS.md  docs/architecture.md  docs/refactor-roadmap.md  qa/AGENTS.
 
 **Structure Decision:** lo nuevo vive en tres carpetas por responsabilidad: el transporte en `shared/api/content/` (como `shared/api/playground/`), el contenido tipado en `app/content/` y el arranque en `app/boot/`. Sin barrels más que la API del segmento.
 
+## Decisiones del usuario del 2026-10-06
+
+El usuario aceptó las tres decisiones de diseño que este plan dejaba abiertas, con la opción que el plan traía. Las respuestas están en la spec ([spec.md](./spec.md), «Clarifications», sesión del 2026-10-06) y no cambian ninguna tarea ni ningún código de referencia.
+
+| Decisión | Spec | [research.md](./research.md) | Tareas |
+| --- | --- | --- | --- |
+| El archivo servido es `dist/content/curriculum.<versión>.json`, con los bytes del generador, y la versión viaja en el nombre | Q6; FR-004, FR-011 | R3 | T004, T005, T006 |
+| El build emite los dos avisos de licencia, y `frontend/Dockerfile` copia `dist/` entero con una sola línea | Q7; FR-016 | R4 | T006, T012, T013 |
+| Los marcadores del oráculo de ausencia son los de `curriculumMarkers()`: dos textos largos de una entrada y, si no es una palabra común del código, su ID | Q8; FR-015, SC-003 | R11 | T005, T010 |
+
+**Sigue abierta, a propósito:** qué hacer si P1 falla en T001. Se decide si pasa: con P1 en verde no hay nada que decidir, y con P1 en rojo el plan se detiene y el coordinador le lleva al usuario las alternativas de research.md (R1) con su costo (tarea 1.1).
+
 ## Lo que A2 supone de F1 y F2
 
-F1 y F2 no están entregadas y F2 todavía no tiene spec. Esta tabla es lo que A2 consume de ellas: lo escribe el plan y lo contrasta T001 con la base.
+F1 y F2 no están entregadas (ver «Estado al 2026-10-06», abajo). Esta tabla es lo que A2 consume de ellas: lo escribe el plan y lo contrasta T001 con la base.
 
 | De | Supuesto | Si es distinto |
 | --- | --- | --- |
 | F1 | `npm test` corre las specs de Vitest (`frontend/src/**/*.spec.ts`, proyecto `node`) además de los checks; existe `npm run test:unit`; el Playwright corre contra `vite preview`, que sirve `dist/` entero, con Page Objects en `qa/e2e/pages/` y sólo Chromium | T003, T004 y T011 siguen la estructura que F1 dejó, y T001 la anota. Si Vitest no llegó, A2 no empieza. Si el servidor de F1 sirve sólo el HTML, T011 pide que sirva `dist/content/` |
-| F1 | Qué hace con un `console.error` (Q3 de su spec, todavía sin clarify) | Si hace fallar el test, cada escenario de falla de T011 declara su entrada en la lista blanca: Chromium escribe «Failed to load resource» ante un 404, un 500 o un pedido abortado (no verificado) |
+| F1 | Qué hace con un `console.error` (Q3 de su spec, decidida el 2026-10-05: lo hace fallar el test, salvo una lista blanca) | Como lo hace fallar, cada escenario de falla de T011 declara su entrada en la lista blanca: Chromium escribe «Failed to load resource» ante un 404, un 500 o un pedido abortado (no verificado) |
 | F1 | Su configuración es de escritorio (Desktop Chrome) | T011 pide el viewport móvil con `test.use` |
 | F2.1 | Los almacenes y los motores son singletons importables y los `register-*` quedan como adaptadores finos | No cambia la cadena |
 | F2.2 | El catálogo `exercises`/`byId` es un módulo de `entities/exercise` que se evalúa dentro de la cadena diferida y lee los globals que publican los adaptadores, o recibe las porciones desde `app` | Si importa `build/curriculum.json` en estático, T008 lo reemplaza (FR-005); T001 anota el archivo |
@@ -128,6 +140,13 @@ F1 y F2 no están entregadas y F2 todavía no tiene spec. Esta tabla es lo que A
 | Épico | Los ports editan `legacy-views.ts` y las restricciones de `load-order-check`, no `main.tsx` | — |
 
 **Regla.** T001 contrasta cada fila con la base. Si una difiere en algo que cambia un contrato de A2 (la lista de la cadena, el nombre del arranque explícito, la fuente del catálogo o la estructura de F1), se corrige este plan antes de T002, en un commit propio. Si F1 o las unidades 1 a 4 de F2 no están integradas, A2 no empieza.
+
+**Estado al 2026-10-06.** Lo que cambió desde que se escribió este plan. Son hechos: ninguna tarea cambia, y T001 sigue contrastando la tabla con la base de implementación.
+
+- **F1 está implementada** en el PR #23 (abierto, apilado sobre el PR #16). En su rama se comprobó lo que la tabla supone: `npm test` corre `vitest run --config frontend/vitest.config.ts` además de los checks, y existen `npm run test:unit` y `npm run test:e2e`; Playwright corre un solo proyecto, Chromium con la configuración de escritorio, contra `npm run preview`; los Page Objects están en `qa/e2e/pages/` y los specs, en `qa/e2e/specs/`. Un `console.error` o una excepción de la página hace fallar el test salvo lo que declare `CONSOLE_ALLOWLIST` (hoy vacía) o `expectIssue(patrón, motivo)` en el propio test, y la guarda también falla si un error esperado no ocurre. El viewport móvil sigue siendo de T011 (`test.use`).
+- **F2 tiene spec y plan de F2a** en el PR #25 (borrador, apilado sobre el PR #16). El plan de F2a se está rehaciendo en `spec/f2-seams`, y ahí se fijan los nombres que A2 toma de F2a (F2-I1 a F2-I6, más abajo). T001 los contrasta con la base cuando la tenga.
+- **El usuario eligió Zustand** para la suscripción de los almacenes de F2, en lugar de una señal propia. La dependencia la suma la unidad 1 de F2a. A2 no se suscribe a ningún almacén: su código de referencia no cambia.
+- **De F2a, las unidades 2 (catálogo) y 4 (registro de modelos) están implementadas**, en las ramas `f2a/u2-c-catalogo` y `f2a/u4-m-modelos`. En la de la unidad 2, `exerciseCatalog` (`entities/exercise`) no importa `build/curriculum.json` (sólo lo hace su spec) y lo inicializa `lab.js`, al evaluarse, con los globals `window.*` que publican los adaptadores: es la primera forma de F2-I2, y cae dentro de la cadena diferida. Los seis importadores de FR-005 siguen siendo los mismos. Faltan la 1 (almacenes y motores, con Zustand) y la 3 (arranque explícito), que son las que fijan F2-I3 y F2-I1. A2 sigue sin empezar: T001 corre sobre la base con las cuatro.
 
 ### Interfaces y contratos que A2 fija para F2 y el épico
 
@@ -1402,11 +1421,11 @@ La edita T012. Hoy llaman «autónomo» al HTML o describen cómo se carga el co
 ## Riesgos y lo que quedó sin verificar
 
 - **P1 no está medido.** La técnica es una hipótesis hasta T001: la sonda previa corrió sobre tres módulos triviales en Node. Si falla, el plan se detiene.
-- **F1 y F2 no existen todavía.** Lo que A2 supone de ellas es el cuadro de arriba. El riesgo mayor es el catálogo de F2.2 y el arranque de F2.3, que cambian la cadena.
+- **F1 y F2 no están entregadas.** F1 está implementada (PR #23) y, de F2a, las unidades 2 y 4; faltan la 1 y la 3 (ver «Estado al 2026-10-06»). Lo que A2 supone de ellas es el cuadro de arriba. El riesgo mayor es el arranque de F2.3, que cambia la cadena y todavía no está hecho; el catálogo de F2.2 ya lo está y cumple F2-I2 en la rama de su unidad, y T001 lo contrasta con la base.
 - **El plugin de Vite no se ejecutó.** Su API está confirmada en la documentación (`emitFile` con `fileName` y `source` de bytes, `config`, `configureServer`), pero no hay un build detrás. T006 lo prueba, y `vite-plugin-singlefile` podría tratar distinto un activo emitido.
 - **`SourceTextModule` sobre la salida de Vite.** Funciona con un módulo de prueba en Node 24.21 (verificado) y es una API experimental. T001 lo prueba sobre la salida real, y R9 deja el desvío.
 - **Docker, la vista previa y Nginx sin correr:** el `COPY` de `dist/`, el montaje entero y el 404 ante un nombre ajeno se prueban en T013. `vite preview` responde con `index.html` ante un archivo que no existe, así que ahí un nombre equivocado da `body` y no `version`.
-- **Los E2E dependen de dos decisiones de F1** (los errores de consola y el viewport) que su clarify todavía no cerró.
+- **Los E2E dependen de dos decisiones de F1** (los errores de consola y el viewport). La de la consola está decidida e implementada: un `console.error` hace fallar el test salvo la lista blanca. El viewport sigue siendo de escritorio, y T011 pide el móvil con `test.use`.
 - **Los marcadores del oráculo de ausencia** pueden coincidir con texto del código (IDs). La regla los descarta, y la mutación de T010 muestra que el oráculo detecta el contenido de verdad.
 - **Los avisos de licencia salen del build.** Cambia cómo se entregan (antes, el `Dockerfile` los copiaba de `frontend/`), no sus nombres ni sus URL. `build-check` (T006) y Docker (T013) lo comprueban; sin eso, la vista previa los perdería.
 - **C4 cambia el dist.** Con varios archivos, lo que cambia son las aserciones de singlefile de `build-check` y `evaluateBuiltPage` (los `import` entre archivos en el vm). Está aislado en `qa/lib/built-page.ts` y en `assertSinglefileDocument` (ver «Contrato de salida hacia A3 y C4»). No se probó con chunks.
