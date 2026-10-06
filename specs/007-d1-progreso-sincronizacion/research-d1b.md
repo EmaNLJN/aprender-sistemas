@@ -148,6 +148,7 @@ En los tipos con reloj, dos importaciones se combinan con la regla de D1a: un re
 
   Se calcula con la foto de la cuenta, leída bajo el candado antes de escribir con `ChangesReader::areas(userId, null)`, el lector de D1a, comparando campo por campo. La importación igual escribe lo que se combina (los logros) y deja el intento legado como historia.
 - **Se guarda y se devuelve igual.** El informe va como JSON en `progress_imports.report`, junto con la época y la revisión, y un reintento devuelve el guardado (FR-034).
+- **La revisión sube a lo sumo una vez.** FR-034 dice que la importación «sube la revisión una vez», y FR-010, que una transacción que no cambia nada no la sube. Manda FR-010: una importación que no cambia ninguna fila de estado responde 201, con todo en 0, y deja la revisión donde estaba. Sin eso, una copia ya importada movería el validador de `GET /api/progress` sin ningún cambio.
 
 ## R34. «Borrar todo»
 

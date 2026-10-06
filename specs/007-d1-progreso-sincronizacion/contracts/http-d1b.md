@@ -18,7 +18,7 @@ Valen las de D1a ([http.md](./http.md), sección 1):
 Además:
 
 - `/api/progress/import` está excluida de `TrimStrings` y de `ConvertEmptyStringsToNull`: el crudo y los textos llegan byte por byte (R36).
-- Cada respuesta de las dos rutas lleva `Cache-Control: no-store`.
+- Cada respuesta de las dos rutas, también las de error, lleva `Cache-Control: private, no-store`: las dos van detrás de `PrivateNoStore`, como `/api/runs` de B2.
 - **Las rutas** del informe y de los errores 422 siguen las claves del v1: `lab.records.rust-02.reviewAt`, `systems.records.rust:pc.steps[3]` o `route.completed[0]`. Los índices de un arreglo van entre corchetes, y `raw` nombra el crudo. Un error 422 de `normalized` lleva el prefijo `normalized.`; una entrada del informe no lo lleva.
 
 ## 2. Cómo se evalúa un pedido

@@ -88,7 +88,7 @@ El mismo pedido con `confirm: true` responde 201.
 **Automático** (`LegacyDecoderTest` e `ImportEndpointTest`). Un v1 que trae `solvedAt: 253402300800000`, una reflexión con U+FFFD y la posición de etapa 9 de un taller que no la tiene:
 
 - responde 201 y aplica el resto;
-- el informe trae `omitted: [{path: "lab.records.<id>.solvedAt", reason: "date_out_of_range"}, {path: "systems.records.<taller>.steps[<i>]", reason: "unknown_step_position"}]` y `replaced: [{path: "lab.records.<id>.reflection", reason: "replacement_character"}]`.
+- el informe trae `omitted: [{path: "lab.records.<id>.solvedAt", reason: "date_out_of_range"}, {path: "systems.records.<lenguaje>:<taller>.steps[<i>]", reason: "unknown_step_position"}]` y `replaced: [{path: "lab.records.<id>.reflection", reason: "replacement_character"}]`.
 
 Un campo desconocido, en cambio, responde **422** con su ruta en `errors`, y no escribe nada.
 

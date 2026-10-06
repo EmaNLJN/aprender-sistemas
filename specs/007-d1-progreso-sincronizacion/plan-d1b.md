@@ -67,6 +67,7 @@ Esto es del plan y no se le preguntó al usuario: decisiones sobre lo que la spe
 - las reglas de las columnas que sólo escribe la importación (R28);
 - las notas vacías por omisión, que no se escriben (R29);
 - la fecha del payload legado, la de la importación (R30);
+- una importación que no cambia ninguna fila de estado no sube la revisión: FR-010 manda sobre el «sube la revisión una vez» de FR-034, que se lee como «a lo sumo una vez» (R33);
 - una `importId` reusada responde 422 sin un código nuevo (R31);
 - el orden de evaluación, que refina FR-030 (R32);
 - la forma del informe y sus motivos (R33);
@@ -251,7 +252,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 | Dueño | Archivos que posee | Consume | Entrega |
 | --- | --- | --- | --- |
 | Coordinador | `backend/api/app/Http/{ApiCode,ProgressLimiters}.php`, `backend/api/lang/es/api.php`, `backend/api/tests/Unit/ApiCodeTest.php`, `backend/api/tests/Feature/Progress/ImportResetLimitersTest.php`, `backend/api/app/Runs/Execution/ActiveRuns.php`, `backend/api/tests/Feature/Runs/Execution/ActiveRunsTest.php`, `backend/api/bootstrap/app.php`, `backend/api/app/Providers/AppServiceProvider.php`, `backend/api/routes/console.php`, `backend/api/tests/Feature/ScheduleTest.php`, `backend/api/tests/Feature/Progress/ImportResetWiringTest.php`, `backend/api/docker/php.ini`, `backend/api/tests/Feature/PhpLimitsTest.php`, las pruebas de T018 (`backend/api/tests/Content/ImportLosslessTest.php`, `backend/api/tests/Feature/Progress/Import/{ImportEndpointTest,ImportAccessMatrixTest,ImportThrottleTest,ImportLogsWithoutTextTest}.php`, `backend/api/tests/Feature/Progress/Reset/{ResetEndpointTest,RunAfterResetTest}.php` y `backend/api/tests/Concurrency/ImportResetConcurrencyTest.php`), `docker/nginx/nginx.conf`, `qa/nginx-api-blocks-check.ts`, `qa/lib/api-account.ts`, `backend/api/scripts/smoke.sh`, `package.json`, `README.md`, `backend/api/AGENTS.md`, `AGENTS.md`, `docs/architecture.md`, `qa/AGENTS.md` y, al entregar, `specs/backend-multiusuario/roadmap.md` | todo | la línea de base, el cableado, las pruebas de punta a punta, Nginx y PHP, la documentación y la evidencia de cierre |
-| S · Esquema y base | `backend/api/database/migrations/2026_10_06_100011_create_progress_imports_table.php` y `…100012_create_campaign_seals_table.php`, `backend/api/tests/Feature/Progress/ImportSchemaTest.php`, `backend/api/tests/Content/ImportMigrationsTest.php`, `backend/api/config/progress.php`, `backend/api/tests/Unit/Progress/{ProgressConfigTest,ProgressTablesTest}.php`, `backend/api/app/Progress/{ProgressTables,AccountLock}.php`, `backend/api/tests/Feature/Runs/AccountLockTest.php`, `backend/api/tests/Support/ProgressInvariants.php`, `backend/api/tests/Feature/Progress/ProgressWorldTest.php`, `backend/api/app/Progress/Snapshot/{ProgressSnapshotReader,CampaignWire,ExerciseWire}.php` y `backend/api/tests/Feature/Progress/Snapshot/{CampaignSealsSnapshotTest,LegacyReviewSnapshotTest}.php` (T016). Si C3b está en la base: `backend/api/app/Accounts/UserTables.php`, `backend/api/app/Accounts/Export/{ImportsSection,UserExport}.php`, `backend/api/tests/Support/PopulatedAccount.php` y las pruebas de C3b que fijan sus listas (T003) | de B2: `AccountLock`, `RunWorld`, `RunInvariants`; de D1a: `ProgressWorld`, la foto; de C3a: `UserIdForeignKeyTest` | las dos tablas, la configuración, `STATE` con `campaign_seals`, `AccountLock::peek` y `::reset`, las invariantes y, en la onda 2, la foto con sellos y con el grupo de repaso legado |
+| S · Esquema y base | `backend/api/database/migrations/2026_10_06_100011_create_progress_imports_table.php` y `…100012_create_campaign_seals_table.php`, `backend/api/tests/Feature/Progress/ImportSchemaTest.php`, `backend/api/tests/Content/ImportMigrationsTest.php`, `backend/api/config/progress.php`, `backend/api/tests/Unit/Progress/{ProgressConfigTest,ProgressTablesTest}.php`, `backend/api/app/Progress/{ProgressTables,AccountLock}.php`, `backend/api/tests/Feature/Runs/AccountLockTest.php`, `backend/api/tests/Support/ProgressInvariants.php`, `backend/api/tests/Feature/Progress/ProgressWorldTest.php`, `backend/api/app/Progress/Snapshot/{ProgressSnapshotReader,CampaignWire,ExerciseWire}.php` y `backend/api/tests/Feature/Progress/Snapshot/{CampaignSealsSnapshotTest,LegacyReviewSnapshotTest}.php` (T016). Si C3b está en la base (T003): `backend/api/app/Accounts/UserTables.php`, `backend/api/app/Accounts/Export/{ImportsSection,UserExport}.php`, `backend/api/tests/Support/PopulatedAccount.php`, `backend/api/tests/Unit/Accounts/UserTablesTest.php` y `backend/api/tests/Feature/Accounts/{UserPurgeTest,PopulatedAccountTest,ImportsSectionTest}.php` | de B2: `AccountLock`, `RunWorld`, `RunInvariants`; de D1a: `ProgressWorld`, la foto; de C3a: `UserIdForeignKeyTest` | las dos tablas, la configuración, `STATE` con `campaign_seals`, `AccountLock::peek` y `::reset`, las invariantes y, en la onda 2, la foto con sellos y con el grupo de repaso legado |
 | D · Decodificación | `backend/api/app/Progress/Import/Legacy/*.php` (nueve tipos), `backend/api/app/Progress/Import/{LegacyDecoder,ImportContent,LegacyWriter,WrittenRows}.php`, `backend/api/lang/es/import.php`, `backend/api/tests/Unit/Progress/Import/{LegacyDecoderTest,WrittenRowsTest}.php` y `backend/api/tests/Feature/Progress/Import/ImportContentTest.php` | de D1a: `RouteMilestones`; de B2: `Instant` | `LegacyDecoder`, `ImportContent`, los tipos de `Import/Legacy/` y el puerto `LegacyWriter` con `WrittenRows` |
 | F · Fixture de importación | `qa/fixtures/shared/{import-cases.json,import-cases.sha256}`, `qa/lib/import-cases.ts`, `qa/import-cases-check.ts` y `qa/run-checks.ts` | los parsers v1 (R24); de F2: `parseRouteProgress` y `parseSavedLab` | el fixture congelado, su lector y su check |
 | W · Escritura legada | `backend/api/app/Progress/Import/{ImportSql,AttemptPointer,LegacyAttempts,RecordedAttempt,DatabaseLegacyWriter}.php`, `backend/api/tests/Unit/Progress/Import/ImportSqlTest.php` y `backend/api/tests/Feature/Progress/Import/{LegacyAttemptsTest,LegacyWriterTest}.php` | de D: los tipos y el puerto; de D1a: `UpsertSql`, `FieldWrite`, `FieldKinds` y `SqlStatement`; de S: las tablas | `DatabaseLegacyWriter` |
@@ -268,7 +269,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 - **S3:** T017 y T019 integrados y el stack levantado. O arranca T020.
 - **Cierre:** T021 y T022.
 
-**Líneas de integración** (las pone el coordinador; ningún dueño toca esos archivos). Las de D1a en los mismos archivos van primero:
+**Líneas de integración.** Las pone el coordinador, y ningún dueño toca esos archivos, salvo la fila de T003: la hace S en el commit de las migraciones, porque sin ella la suite queda en rojo. Las líneas de D1a en los mismos archivos van primero:
 
 | Cuándo | Archivo | Línea o cambio |
 | --- | --- | --- |
@@ -279,7 +280,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 | T017 | `backend/api/app/Providers/AppServiceProvider.php`, en `register()` | `$this->app->bind(LegacyWriter::class, DatabaseLegacyWriter::class);` |
 | T017 | `backend/api/routes/console.php` y `tests/Feature/ScheduleTest.php` | `Schedule::command('progress:prune-import-payloads')->hourly()->withoutOverlapping();`, y la tarea en la lista exacta de la prueba |
 | T017 | `qa/lib/api-account.ts` | `CheckAccount` devuelve también `password`, para confirmar la contraseña antes del reset |
-| T003 | `UserTables`, `PopulatedAccount`, `UserExport` y las pruebas de C3b | Sólo si C3b está en la base, y en el mismo commit que las migraciones (R39). Lo hace S, porque sin eso la suite queda en rojo |
+| T003 (S) | `UserTables`, `PopulatedAccount`, `UserExport` y las pruebas de C3b | Sólo si C3b está en la base, y en el mismo commit que las migraciones (R39) |
 | T019 | `docker/nginx/nginx.conf`, `qa/nginx-api-blocks-check.ts` y `backend/api/scripts/smoke.sh` | `location = /api/progress/import` con `client_max_body_size 24m;` y las directivas de `location ^~ /api/` repetidas; el check la recorre, y el smoke suma el 413 y el 401 del reset |
 | T019 | `backend/api/docker/php.ini` | `post_max_size = 24M` |
 | T020 | `package.json` | `"api:import:check": "node qa/api-import-check.ts"` |
@@ -517,7 +518,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
    - Recordá que `ProgressWorld` siembra `v1_position` desde 1 ([data-model-d1b.md](./data-model-d1b.md), sección 1).
    - Un normalizado que nombra 274 ejercicios hace a lo sumo una consulta por clase (`DB::getQueryLog`).
    - `decode($normalized, factsFor($normalized))` decodifica de punta a punta un normalizado del mundo de prueba.
-2. **Implementá**: una consulta con `whereIn` por clase, y los JSON de contenido (`prediction_json`, `checkpoint_json`, `quiz_json`) leídos con los registros de C6 o con `json_decode` a objetos.
+2. **Implementá** como `ContentLookup` de D1a: una consulta con `whereIn` por clase; las opciones, contando `options` de `prediction_json`, `checkpoint_json` o `quiz_json` decodificados; las pistas activas, con un `COUNT(*)` agrupado; y las etapas, con su `v1_position`.
 3. `npm run api:test`, `npm run api:analyse` y `npm run api:format:check`.
 
 **Compuerta:** las pruebas en verde.
@@ -691,7 +692,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
      - `normalized` que no es un objeto;
      - `confirm: "sí"`.
    - **Los demás errores:** `client_outdated`; 503 `content_not_imported`; 409 `epoch_mismatch` con `{epoch, revision}`; 422 de `normalized`, con su ruta; 409 `import_needs_confirmation`, con el cuerpo exacto `{message, code}`.
-   - **Las respuestas.** El 201 con el cuerpo de la sección 3.4, el 200 de un reintento con el mismo cuerpo, y `Cache-Control: no-store` en las dos.
+   - **Las respuestas.** El 201 con el cuerpo de la sección 3.4, el 200 de un reintento con el mismo cuerpo, y `Cache-Control: private, no-store` en las dos y en los errores.
    - **El límite.** La 4.ª importación de la hora da 429 con `Retry-After` (`Browser::useDatabaseDrivers()`), y la 3.ª no, aunque las anteriores hayan sido un 409 y un 200.
    - **Un `user_id` en el cuerpo** se ignora.
 2. **Implementá.**
@@ -747,7 +748,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 1. **Primero las pruebas** (con `Browser`):
    - **El acceso.** Sin sesión, 401. Sin `X-Taller-User`, 409. Sin la contraseña confirmada, 423 `password_confirmation_required`, y cuatro 423 seguidos no gastan el límite: después de confirmar, el reset da 200.
    - **Los errores.** 422 sin `epoch` o con `epoch: 0`; 409 `client_outdated`; 409 `epoch_mismatch` con `{epoch, revision}`.
-   - **La respuesta.** 200 con exactamente `{epoch, revision}` y `Cache-Control: no-store`.
+   - **La respuesta.** 200 con exactamente `{epoch, revision}` y `Cache-Control: private, no-store`.
    - **Quién puede.** Una cuenta con el email sin verificar puede borrar, porque no hay `verified`. Un admin borra lo suyo.
    - **El límite.** El 4.º reset del día da 429 con `Retry-After` (`Browser::useDatabaseDrivers()`).
 2. **Implementá**:
@@ -865,7 +866,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 1. **Primero las pruebas**, que fallan:
    - **`ImportResetWiringTest`.**
      - `app(LegacyWriter::class)` es un `DatabaseLegacyWriter`.
-     - Las dos rutas están registradas con sus middleware, en ese orden: `account`, `verified` y `throttle:import`; `account`, `password.confirm` y `throttle:reset`.
+     - Las dos rutas están registradas detrás de `PrivateNoStore`, con sus middleware en este orden: `account`, `verified` y `throttle:import` la importación; `account`, `password.confirm` y `throttle:reset` el reset.
      - **`/api/progress/import` no recorta ni convierte `''`**: una ruta de prueba bajo `api/progress/import` recibe `'  espacios  '` y `''` tal cual, y una ruta hermana sí los transforma (como la `WiringTest` de D1a).
    - **`ScheduleTest`** suma `progress:prune-import-payloads` (cada hora, sin solaparse) a su lista exacta.
 2. **Poné las líneas** de la tabla de integración de T017. `RouteAccessTest` y `ExpectedAccountMatrixTest` (C3a) tienen que dar verde con las dos rutas.
