@@ -16,6 +16,7 @@ interface Service {
   cap_drop?: string[];
   dns?: string[];
   stop_grace_period?: string;
+  pids_limit?: number;
   environment?: Record<string, string>;
   command?: string[];
   deploy?: { replicas?: string };
@@ -61,6 +62,11 @@ test('the executor sits only in the sandbox network, publishes nothing and is lo
   assert.deepEqual(executor.cap_drop, ['ALL']);
   assert.deepEqual(executor.dns, ['127.0.0.1']);
   assert.equal(executor.stop_grace_period, '45s');
+});
+
+test('the executor bounds the Go threads of the docker CLI it spawns, so its pids limit holds on any host', () => {
+  assert.equal(executor.environment?.GOMAXPROCS, '2');
+  assert.ok((executor.pids_limit ?? 0) >= 128, `pids_limit is ${String(executor.pids_limit)}`);
 });
 
 test('the worker joins app and sandbox, scales with the executor slots and matches the job timeout', () => {

@@ -59,7 +59,8 @@ const CLASSROOM_POLL_MS = 1000;
 const FINAL_STATE_TIMEOUT_MS = 90_000;
 const POOL_SIZE = 40;
 const CLASSROOM_SIZE = 30;
-const POOL_BUDGET_MS = 90_000;
+const POOL_BUDGET_MS = 360_000;
+const INVITATION_WINDOW_MS = 61_000;
 const PER_MINUTE_LIMIT = 10;
 const IDLE_RUNS = 5;
 const TERMINAL_STATUSES = new Set([
@@ -424,11 +425,22 @@ async function checkQuotas(base: string, session: Session, exercise: Exercise): 
   );
 }
 
+function isInvitationThrottled(error: unknown): boolean {
+  return error instanceof Error && error.message === 'accepting the invitation replied 429';
+}
+
+// C3a throttles invitation acceptance to 10 a minute per network, so the pool waits out each window.
 async function openPool(base: string, opened: Session[]): Promise<void> {
+  const target = opened.length + POOL_SIZE;
   const startedAt = Date.now();
-  while (opened.length < POOL_SIZE) {
+  while (opened.length < target) {
     if (Date.now() - startedAt > POOL_BUDGET_MS) return;
-    opened.push(await openSession(base));
+    try {
+      opened.push(await openSession(base));
+    } catch (error) {
+      if (!isInvitationThrottled(error)) throw error;
+      await sleep(INVITATION_WINDOW_MS);
+    }
   }
 }
 
