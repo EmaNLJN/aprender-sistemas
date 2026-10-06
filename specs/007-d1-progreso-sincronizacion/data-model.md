@@ -474,7 +474,7 @@ namespace App\Progress\Snapshot;                 // dueño L
 
 enum ProofState: string { case Current = 'current'; case Changed = 'changed'; case Legacy = 'legacy'; }
 
-final class ProgressEtag { public static function of(int $userId, int $epoch, int $revision, string $contentVersion): string; }   // W/"u7.e1.r42.c…"
+final class ProgressEtag { public static function of(int $userId, int $epoch, int $revision, string $contentVersion): string; }   // W/"u7.e1.r42.c<32 hex>"
 
 final readonly class Snapshot { public function __construct(public int $userId, public int $epoch, public int $revision, public ?CarbonImmutable $resetAt, public string $contentVersion, public ProgressAreas $areas) {} }
 final readonly class NotModified { public function __construct(public string $etag) {} }
