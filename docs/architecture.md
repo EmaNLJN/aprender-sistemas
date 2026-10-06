@@ -28,7 +28,7 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | Mundos de campaña | `content/campaign/` |
 | Reglas, validación y progreso de campaña | `frontend/src/entities/campaign/`, adaptador `frontend/src/app/legacy/register-campaign-engine.ts` |
 | Interfaz y exploradores de campaña | `frontend/campaign.js`, `frontend/campaign.css`, `frontend/quest-explorers.js`, `frontend/quest-explorers.css` |
-| Contrato de simulaciones de Sistemas | `frontend/src/entities/systems-simulation/` (`defineModel`, tipos de vista y escena) |
+| Contrato de simulaciones de Sistemas | `frontend/src/entities/systems-simulation/` (`defineModel`, tipos de vista y escena, y `mergeModelGroups`, el registro que une los modelos de los cuatro dominios para `systems.js`; F2, unidad 4) |
 | Modelos de Sistemas | `frontend/src/entities/systems-simulation/models/{lowlevel,infra,play,pc}/` (un archivo por modelo, con `defineModel`) |
 | Fichas de los talleres | `content/workshops/` |
 | Núcleos Rust/Go de Sistemas | sección `systems` de `content/{rust,go}/manifest.yaml` y una carpeta por núcleo en `content/{rust,go}/exercises/` |
