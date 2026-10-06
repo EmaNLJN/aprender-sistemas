@@ -5,6 +5,7 @@ namespace App\Content;
 use App\Content\Record\AtlasConcept;
 use App\Content\Record\Exercise;
 use App\Content\Record\Guide;
+use App\Content\Record\HarnessTemplate;
 use App\Content\Record\KeyOrder;
 use App\Content\Record\Language;
 use App\Content\Record\Workshop;
@@ -25,6 +26,7 @@ final class ContentRows
     {
         $rows = new RowSet;
         $this->languagesAndCatalogs($source, $rows);
+        $this->addHarness($source, $rows);
         $index = $this->indexExercises($source);
         $owners = $this->workshopOwners($source, $index);
         $this->addExercises($source, $owners, $rows);
@@ -51,6 +53,16 @@ final class ContentRows
         sort($chain);
         if ($chain !== [] && $chain !== range(1, count($chain))) {
             throw InvalidContent::at('curriculum.meta.json', 'catalogs', 'la cadena de catálogos tiene que ser única y contigua, desde 1');
+        }
+    }
+
+    private function addHarness(ContentSource $source, RowSet $rows): void
+    {
+        if (KeyOrder::of($source->harness)->keys !== $source->languages()) {
+            throw InvalidContent::at('harness.json', '(raíz)', 'un texto por lenguaje, en el orden de languages: '.implode(', ', $source->languages()));
+        }
+        foreach ($source->languages() as $language) {
+            $rows->add('harness_templates', HarnessTemplate::fromDocument($source->harness, $language)->toRow());
         }
     }
 

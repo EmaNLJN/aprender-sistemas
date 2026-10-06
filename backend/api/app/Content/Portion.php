@@ -6,8 +6,9 @@ use Illuminate\Support\Arr;
 use InvalidArgumentException;
 
 /**
- * The 17 content portions the API serves (ADR 0006 D11). The value is the path inside
- * curriculum.json and the key of `portions` in curriculum.meta.json, which the generator fixes.
+ * The content portions the API serves (ADR 0006 D11): the 17 of curriculum.json and, last, the harness
+ * template. The value is the path inside curriculum.json (`harness` lives in harness.json) and the key of
+ * `portions` in curriculum.meta.json, which the generator fixes.
  */
 enum Portion: string
 {
@@ -28,6 +29,7 @@ enum Portion: string
     case AtlasRust = 'atlas.rust';
     case AtlasGo = 'atlas.go';
     case Guide = 'guide';
+    case Harness = 'harness';
 
     public const LANGUAGES = ['rust', 'go'];
 
@@ -61,7 +63,7 @@ enum Portion: string
 
     /**
      * The portion a resource asks for with its parameters, or InvalidPortionRequest with one
-     * message per parameter. $resource is exercises, worlds, workshops, atlas or guide.
+     * message per parameter. $resource is exercises, worlds, workshops, atlas, guide or harness.
      *
      * @param  array<string, mixed>  $query
      */
@@ -70,12 +72,12 @@ enum Portion: string
         $group = match ($resource) {
             'exercises' => self::catalogOf($query),
             'worlds' => 'campaign',
-            'workshops', 'atlas', 'guide' => $resource,
+            'workshops', 'atlas', 'guide', 'harness' => $resource,
             default => throw new InvalidArgumentException("Recurso de contenido desconocido: {$resource}"),
         };
         $sliceBy = self::sliceBy($group);
         if ($sliceBy === null) {
-            return self::Guide;
+            return self::from($group);
         }
 
         $allowed = ['language' => self::LANGUAGES, 'domain' => self::DOMAINS];

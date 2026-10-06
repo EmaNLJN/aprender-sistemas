@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * `content:import` (ADR 0006 D12): the document and its meta to the content tables. It computes the
  * difference outside the transaction and, in a single one, writes only what changed, checks the
- * rules between rows and checks itself: it assembles the 17 portions from the tables with the same
+ * rules between rows and checks itself: it assembles the portions from the tables with the same
  * code the API uses and demands the hash the generator fixed. That runs on every import, also when
  * there is nothing to write. After committing it warms the body cache. The first thing it does
  * inside the transaction is to check that its connection still holds the import lock.
@@ -72,7 +72,7 @@ final class ContentImporter
     }
 
     /**
-     * The 17 portions assembled from the tables, each with the hash the meta says.
+     * The portions assembled from the tables, each with the hash the meta says.
      *
      * @return array<string, string> bodies by portion
      */
@@ -97,7 +97,7 @@ final class ContentImporter
     }
 
     /**
-     * Stores the 17 bodies (renewing their life even if unchanged) and deletes those of the hashes
+     * Stores the bodies (renewing their life even if unchanged) and deletes those of the hashes
      * this import replaces.
      *
      * @param  array<string, string>  $bodies

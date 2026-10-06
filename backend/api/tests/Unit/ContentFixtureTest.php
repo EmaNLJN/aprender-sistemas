@@ -46,6 +46,21 @@ it('recomputes the hashes of what is edited and only of that', function () {
         ->and($meta['documentHash'])->not->toBe($original['documentHash']);
 });
 
+it('recomputes the harness hash when the template changes and leaves the other portions alone', function () {
+    $fixture = ContentFixture::fromImage();
+    $original = $fixture->meta;
+    $fixture->harness->rust .= "// edited\n";
+
+    $directory = $fixture->write();
+    $meta = json_decode(file_get_contents("{$directory}/curriculum.meta.json"), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($meta['portions']['harness'])->toBe(hash('sha256', file_get_contents("{$directory}/harness.json")))
+        ->and($meta['portions']['harness'])->not->toBe($original['portions']['harness'])
+        ->and(array_diff_assoc($meta['portions'], $original['portions']))->toBe(['harness' => $meta['portions']['harness']])
+        ->and($meta['documentHash'])->toBe($original['documentHash'])
+        ->and($meta['exercises'])->toBe($original['exercises']);
+});
+
 it('reports when the requested exercise is not in the content', function () {
     ContentFixture::fromImage()->exercise('no-such-exercise');
 })->throws(LogicException::class, 'no-such-exercise is not in the content');

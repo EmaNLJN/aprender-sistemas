@@ -21,7 +21,7 @@ it('reads the portion hashes of the meta file', function () {
     expect($meta->documentHash)->toBe($file['documentHash'])
         ->and($meta->portionHash(Portion::LabRust))->toBe($file['portions']['lab.rust'])
         ->and($meta->portionHashes)->toBe($file['portions'])
-        ->and($meta->portionHashes)->toHaveCount(17);
+        ->and($meta->portionHashes)->toHaveCount(18);
 });
 
 it('reads the 274 exercise hashes of the meta file', function () {
@@ -119,11 +119,11 @@ it('rejects a meta that does not describe the content', function (Closure $break
 
             return $meta;
         },
-        'curriculum.meta.json: portions: se esperaban las 17 porciones, en el orden de la API',
+        'curriculum.meta.json: portions: se esperaban las 18 porciones, en el orden de la API',
     ],
     'portions in another order' => [
         fn (array $meta) => ['portions' => array_reverse($meta['portions'], true)] + $meta,
-        'curriculum.meta.json: portions: se esperaban las 17 porciones, en el orden de la API',
+        'curriculum.meta.json: portions: se esperaban las 18 porciones, en el orden de la API',
     ],
     'invalid portion hash' => [
         function (array $meta) {

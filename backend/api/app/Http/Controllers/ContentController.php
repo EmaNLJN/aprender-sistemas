@@ -43,6 +43,11 @@ final class ContentController
         return $this->portion($request, 'guide');
     }
 
+    public function harness(Request $request): Response
+    {
+        return $this->portion($request, 'harness');
+    }
+
     private function portion(Request $request, string $resource): Response
     {
         try {

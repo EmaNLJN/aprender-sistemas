@@ -13,6 +13,7 @@ use App\Content\Record\GuideSource;
 use App\Content\Record\GuideStep;
 use App\Content\Record\GuideStepResource;
 use App\Content\Record\GuideTrack;
+use App\Content\Record\HarnessTemplate;
 use App\Content\Record\RowFields;
 use App\Content\Record\Topic;
 use App\Content\Record\Workshop;
@@ -45,6 +46,7 @@ final class PortionAssembler
             'campaign' => $this->worldList($portion, $rows),
             'atlas' => $this->atlasList($portion, $rows),
             'guide' => $this->guide($rows, $languages)->toPublished(),
+            'harness' => $this->harness($rows, $languages),
             default => throw new LogicException("Grupo de porción desconocido: {$portion->group()}"),
         });
     }
@@ -211,6 +213,27 @@ final class PortionAssembler
         }
 
         return $published;
+    }
+
+    /**
+     * @param  array<string, list<array<string, mixed>>>  $rows
+     * @param  list<string>  $languages
+     */
+    private function harness(array $rows, array $languages): stdClass
+    {
+        $templates = [];
+        foreach ($rows['harness_templates'] as $row) {
+            $template = HarnessTemplate::fromRow($row);
+            $templates[$template->language] = $template->template;
+        }
+
+        $harness = new stdClass;
+        foreach ($languages as $language) {
+            $harness->{$language} = $templates[$language]
+                ?? throw new InvalidContent("harness_templates: no hay una plantilla del harness para {$language}");
+        }
+
+        return $harness;
     }
 
     /**

@@ -30,7 +30,7 @@ final class PortionRenderer
             : PublishedJson::encode($this->assembler->exercise($rows['exercise'], $rows['tests'], $rows['hints'], $rows['topic'])->toPublished());
     }
 
-    /** @return array<string, string> the 17 portions, by name */
+    /** @return array<string, string> the portions, by name */
     public function renderAll(): array
     {
         $bodies = [];

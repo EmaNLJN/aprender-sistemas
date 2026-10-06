@@ -3,11 +3,11 @@
 use Illuminate\Support\Facades\DB;
 use Tests\Support\ContentDatabase;
 
-it('counts returns the 21 tables, empty, in migration order', function () {
+it('counts returns the 22 tables, empty, in migration order', function () {
     $counts = ContentDatabase::counts();
 
     expect(array_keys($counts))->toBe(ContentDatabase::TABLES)
-        ->and(count($counts))->toBe(21)
+        ->and(count($counts))->toBe(22)
         ->and(array_sum($counts))->toBe(0);
 });
 
