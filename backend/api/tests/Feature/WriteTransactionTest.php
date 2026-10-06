@@ -16,7 +16,16 @@ function runningTransactionLevel(): string
 {
     DB::table('cache')->count();
 
-    return DB::selectOne('select trx_isolation_level as level from information_schema.innodb_trx where trx_mysql_thread_id = connection_id()')->level;
+    // information_schema.innodb_trx is a cache that MySQL refreshes at most every 100 ms.
+    for ($attempt = 0; $attempt < 10; $attempt++) {
+        $row = DB::selectOne('select trx_isolation_level as level from information_schema.innodb_trx where trx_mysql_thread_id = connection_id()');
+        if ($row !== null) {
+            return $row->level;
+        }
+        usleep(120000);
+    }
+
+    throw new RuntimeException('The transaction does not appear in innodb_trx.');
 }
 
 function deadlock(): QueryException
