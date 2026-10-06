@@ -605,8 +605,8 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
   ];
   // Orden en que el aviso nombra las áreas con datos omitidos.
   const NOTICE_AREAS = ['recorrido', 'laboratorio', 'campaña', 'Sistemas'];
-  // Calcula el recorrido resultante sin tocar el estado del recorrido. Lanza si el JSON no es un objeto
-  // reconocible. `lossy` avisa que se descartaron o cambiaron datos de la copia.
+  // Calcula el recorrido resultante sin tocar el estado del recorrido. Lanza si el JSON no es
+  // un objeto reconocible. `lossy` avisa que se descartaron o cambiaron datos de la copia.
   function planRouteImport(rawImport) {
     if (!isPlainObject(rawImport)) throw new Error(ROUTE_FORMAT_ERROR);
     const parsed = parseRouteProgress(rawImport, data);
@@ -660,7 +660,7 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
       const routePlan = planRouteImport(rawImport);
       const sectionPlans = planSectionImports(rawImport);
       // Fase 2: se aplica cada plan y, por último, el recorrido.
-      // Sólo `false` cuenta como «no se guardó»; el recorrido usa el resultado de save().
+      // Sólo `false` cuenta como «no se guardó» en las secciones.
       const unsaved = new Set();
       for (const { area, adapter, plan } of sectionPlans) {
         if (adapter.applyImport(plan) === false) unsaved.add(area);
