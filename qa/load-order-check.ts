@@ -84,7 +84,7 @@ function normalizeImport(specifier: string, entryDirectory: string): string {
 }
 
 function readImports(source: string, entryDirectory: string): string[] {
-  return [...source.matchAll(/^\s*import\s+['"]([^'"]+)['"]\s*;?\s*$/gm)].map((match) =>
+  return [...source.matchAll(/^\s*import\s+(?:[^'"]*?\sfrom\s+)?['"]([^'"]+)['"]/gm)].map((match) =>
     normalizeImport(match[1] ?? '', entryDirectory),
   );
 }
