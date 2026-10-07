@@ -1,0 +1,1442 @@
+{
+  "format": 1,
+  "contract": "specs/007-d1-progreso-sincronizacion/contracts/import-fixture.md",
+  "parsers": {
+    "route": "parseProgress (frontend/app.js)",
+    "lab": "parseSaved (frontend/lab.js)",
+    "campaign": "parseSavedCampaignState (frontend/src/entities/campaign/model/progress.ts)",
+    "systems": "parseSavedSystemsState (frontend/src/entities/systems-workshop/model/progress.ts)"
+  },
+  "cases": [
+    {
+      "id": "master-2a278ad-storage",
+      "source": "storage",
+      "fixture": "qa/fixtures/progress-master-2a278ad-storage.json",
+      "raw": "{\"taller-learning-v1\":\"{\\\"version\\\":1,\\\"language\\\":\\\"go\\\",\\\"completed\\\":[\\\"rust-first-session\\\",\\\"rust-ownership\\\"],\\\"milestones\\\":[\\\"rust-memory\\\"],\\\"favorites\\\":[\\\"rust-100\\\"],\\\"quizAnswers\\\":{\\\"rust-first-session\\\":1},\\\"notes\\\":{\\\"rust\\\":{\\\"learned\\\":\\\"Entendí ownership con un ejemplo propio.\\\",\\\"next\\\":\\\"\\\"},\\\"go\\\":{\\\"learned\\\":\\\"\\\",\\\"next\\\":\\\"\\\"}},\\\"minutes\\\":25}\",\"taller-laboratorio-v1\":\"{\\\"version\\\":1,\\\"records\\\":{\\\"rust-02\\\":{\\\"prediction\\\":0,\\\"predictionCorrect\\\":true,\\\"draft\\\":\\\"fn cargar(inicial: i32) -> i32 {\\\\n    let mut nivel = inicial;\\\\n    nivel += 1;\\\\n    nivel += 1;\\\\n    nivel\\\\n}\\\",\\\"attempts\\\":1,\\\"result\\\":{\\\"code\\\":\\\"fn cargar(inicial: i32) -> i32 {\\\\n    let mut nivel = inicial;\\\\n    nivel += 1;\\\\n    nivel += 1;\\\\n    nivel\\\\n}\\\",\\\"success\\\":true,\\\"stdout\\\":\\\"__TALLER_TEST__t1:PASS\\\\n__TALLER_TEST__t2:PASS\\\\n__TALLER_TEST__t3:PASS\\\\n\\\",\\\"stderr\\\":\\\"\\\",\\\"transportError\\\":false,\\\"tests\\\":[{\\\"id\\\":\\\"t1\\\",\\\"passed\\\":true},{\\\"id\\\":\\\"t2\\\",\\\"passed\\\":true},{\\\"id\\\":\\\"t3\\\",\\\"passed\\\":true}],\\\"time\\\":1791073357221,\\\"customTest\\\":\\\"\\\",\\\"customPassed\\\":false},\\\"solvedAt\\\":1791073357221,\\\"reviewAt\\\":1791332557245,\\\"reflection\\\":\\\"Mi explicación: el valor se mueve y el dueño original deja de ser válido.\\\",\\\"confidence\\\":\\\"practice\\\",\\\"reviewedAt\\\":1791073357245},\\\"rust-06\\\":{\\\"prediction\\\":1,\\\"predictionCorrect\\\":true,\\\"hints\\\":1,\\\"draft\\\":\\\"fn ruta(latencia_ms: u32) -> &'static str {\\\\n    if latencia_ms < 20 { \\\\\\\"cache\\\\\\\" } else { \\\\\\\"disco\\\\\\\" }\\\\n}\\\",\\\"attempts\\\":1,\\\"result\\\":{\\\"code\\\":\\\"fn ruta(latencia_ms: u32) -> &'static str {\\\\n    if latencia_ms < 20 { \\\\\\\"cache\\\\\\\" } else { \\\\\\\"disco\\\\\\\" }\\\\n}\\\",\\\"success\\\":true,\\\"stdout\\\":\\\"__TALLER_TEST__t1:PASS\\\\n__TALLER_TEST__t2:PASS\\\\n__TALLER_TEST__t3:PASS\\\\n\\\",\\\"stderr\\\":\\\"\\\",\\\"transportError\\\":false,\\\"tests\\\":[{\\\"id\\\":\\\"t1\\\",\\\"passed\\\":true},{\\\"id\\\":\\\"t2\\\",\\\"passed\\\":true},{\\\"id\\\":\\\"t3\\\",\\\"passed\\\":true}],\\\"time\\\":1791073357251,\\\"customTest\\\":\\\"\\\",\\\"customPassed\\\":false},\\\"solvedAt\\\":1791073357251,\\\"reviewAt\\\":1791159757251},\\\"rust-22\\\":{\\\"prediction\\\":1,\\\"predictionCorrect\\\":true,\\\"solutionSeen\\\":true,\\\"assisted\\\":true,\\\"draft\\\":\\\"struct Rectangulo { ancho: u32, alto: u32 }\\\\nimpl Rectangulo {\\\\n    fn area(&self) -> u32 { self.ancho * self.alto }\\\\n    fn es_cuadrado(&self) -> bool { self.ancho == self.alto }\\\\n}\\\",\\\"attempts\\\":1,\\\"result\\\":{\\\"code\\\":\\\"struct Rectangulo { ancho: u32, alto: u32 }\\\\nimpl Rectangulo {\\\\n    fn area(&self) -> u32 { self.ancho * self.alto }\\\\n    fn es_cuadrado(&self) -> bool { self.ancho == self.alto }\\\\n}\\\",\\\"success\\\":true,\\\"stdout\\\":\\\"__TALLER_TEST__t1:PASS\\\\n__TALLER_TEST__t2:PASS\\\\n__TALLER_TEST__t3:PASS\\\\n\\\",\\\"stderr\\\":\\\"\\\",\\\"transportError\\\":false,\\\"tests\\\":[{\\\"id\\\":\\\"t1\\\",\\\"passed\\\":true},{\\\"id\\\":\\\"t2\\\",\\\"passed\\\":true},{\\\"id\\\":\\\"t3\\\",\\\"passed\\\":true}],\\\"time\\\":1791073357261,\\\"customTest\\\":\\\"\\\",\\\"customPassed\\\":false},\\\"solvedAt\\\":1791073357261,\\\"reviewAt\\\":1791159757261},\\\"rust-101\\\":{\\\"prediction\\\":1,\\\"predictionCorrect\\\":true,\\\"draft\\\":\\\"fn paso(x: i32, y: i32, direccion: char) -> (i32, i32) {\\\\n    match direccion {\\\\n        'N' => (x, y + 1),\\\\n        'S' => (x, y - 1),\\\\n        'E' => (x + 1, y),\\\\n        'O' => (x - 1, y),\\\\n        _ => (x, y),\\\\n    }\\\\n}\\\",\\\"customTest\\\":\\\"true\\\",\\\"attempts\\\":1,\\\"result\\\":{\\\"code\\\":\\\"fn paso(x: i32, y: i32, direccion: char) -> (i32, i32) {\\\\n    match direccion {\\\\n        'N' => (x, y + 1),\\\\n        'S' => (x, y - 1),\\\\n        'E' => (x + 1, y),\\\\n        'O' => (x - 1, y),\\\\n        _ => (x, y),\\\\n    }\\\\n}\\\",\\\"success\\\":true,\\\"stdout\\\":\\\"__TALLER_TEST__t1:PASS\\\\n__TALLER_TEST__t2:PASS\\\\n__TALLER_TEST__t3:PASS\\\\n__TALLER_TEST__custom:PASS\\\\n\\\",\\\"stderr\\\":\\\"\\\",\\\"transportError\\\":false,\\\"tests\\\":[{\\\"id\\\":\\\"t1\\\",\\\"passed\\\":true},{\\\"id\\\":\\\"t2\\\",\\\"passed\\\":true},{\\\"id\\\":\\\"t3\\\",\\\"passed\\\":true}],\\\"time\\\":1791073357267,\\\"customTest\\\":\\\"true\\\",\\\"customPassed\\\":true},\\\"solvedAt\\\":1791073357267,\\\"reviewAt\\\":1791159757267},\\\"rust-102\\\":{\\\"prediction\\\":1,\\\"predictionCorrect\\\":true,\\\"draft\\\":\\\"fn agregar(inventario: &mut [u8; 3], compartimiento: usize, cantidad: u8) -> bool {\\\\n    let Some(actual) = inventario.get_mut(compartimiento) else { return false; };\\\\n    let Some(nuevo) = actual.checked_add(cantidad) else { return false; };\\\\n    *actual = nuevo;\\\\n    true\\\\n}\\\",\\\"attempts\\\":1,\\\"result\\\":{\\\"code\\\":\\\"fn agregar(inventario: &mut [u8; 3], compartimiento: usize, cantidad: u8) -> bool {\\\\n    let Some(actual) = inventario.get_mut(compartimiento) else { return false; };\\\\n    let Some(nuevo) = actual.checked_add(cantidad) else { return false; };\\\\n    *actual = nuevo;\\\\n    true\\\\n}\\\",\\\"success\\\":true,\\\"stdout\\\":\\\"__TALLER_TEST__t1:PASS\\\\n__TALLER_TEST__t2:PASS\\\\n__TALLER_TEST__t3:PASS\\\\n\\\",\\\"stderr\\\":\\\"\\\",\\\"transportError\\\":false,\\\"tests\\\":[{\\\"id\\\":\\\"t1\\\",\\\"passed\\\":true},{\\\"id\\\":\\\"t2\\\",\\\"passed\\\":true},{\\\"id\\\":\\\"t3\\\",\\\"passed\\\":true}],\\\"time\\\":1791073357271,\\\"customTest\\\":\\\"\\\",\\\"customPassed\\\":false},\\\"solvedAt\\\":1791073357271,\\\"reviewAt\\\":1791159757271},\\\"rust-103\\\":{\\\"prediction\\\":1,\\\"predictionCorrect\\\":true,\\\"draft\\\":\\\"fn cruzar_hangar(ordenes: &str, mut bateria: u32) -> (i32, i32, u32) {\\\\n    let (mut x, mut y) = (0, 0);\\\\n    for orden in ordenes.chars() {\\\\n        let (nx, ny) = match orden {\\\\n            'N' => (x, y + 1), 'S' => (x, y - 1),\\\\n            'E' => (x + 1, y), 'O' => (x - 1, y),\\\\n            _ => continue,\\\\n        };\\\\n        if bateria > 0 && (0..=2).contains(&nx) && (0..=2).contains(&ny) {\\\\n            x = nx; y = ny; bateria -= 1;\\\\n        }\\\\n    }\\\\n    (x, y, bateria)\\\\n}\\\",\\\"attempts\\\":1,\\\"result\\\":{\\\"code\\\":\\\"fn cruzar_hangar(ordenes: &str, mut bateria: u32) -> (i32, i32, u32) {\\\\n    let (mut x, mut y) = (0, 0);\\\\n    for orden in ordenes.chars() {\\\\n        let (nx, ny) = match orden {\\\\n            'N' => (x, y + 1), 'S' => (x, y - 1),\\\\n            'E' => (x + 1, y), 'O' => (x - 1, y),\\\\n            _ => continue,\\\\n        };\\\\n        if bateria > 0 && (0..=2).contains(&nx) && (0..=2).contains(&ny) {\\\\n            x = nx; y = ny; bateria -= 1;\\\\n        }\\\\n    }\\\\n    (x, y, bateria)\\\\n}\\\",\\\"success\\\":true,\\\"stdout\\\":\\\"__TALLER_TEST__t1:PASS\\\\n__TALLER_TEST__t2:PASS\\\\n__TALLER_TEST__t3:PASS\\\\n\\\",\\\"stderr\\\":\\\"\\\",\\\"transportError\\\":false,\\\"tests\\\":[{\\\"id\\\":\\\"t1\\\",\\\"passed\\\":true},{\\\"id\\\":\\\"t2\\\",\\\"passed\\\":true},{\\\"id\\\":\\\"t3\\\",\\\"passed\\\":true}],\\\"time\\\":1791073357275,\\\"customTest\\\":\\\"\\\",\\\"customPassed\\\":false},\\\"solvedAt\\\":1791073357275,\\\"reviewAt\\\":1791159757275},\\\"rust-07\\\":{\\\"prediction\\\":0,\\\"draft\\\":\\\"fn estado(codigo: u16) -> &'static str {\\\\n    match codigo {\\\\n        200 => \\\\\\\"ok\\\\\\\",\\\\n        404 => \\\\\\\"ausente\\\\\\\",\\\\n        500 => \\\\\\\"error\\\\\\\",\\\\n        _ => \\\\\\\"desconocido\\\\\\\",\\\\n    }\\\\n}\\\",\\\"attempts\\\":1,\\\"result\\\":{\\\"code\\\":\\\"fn estado(codigo: u16) -> &'static str {\\\\n    match codigo {\\\\n        200 => \\\\\\\"ok\\\\\\\",\\\\n        404 => \\\\\\\"ausente\\\\\\\",\\\\n        500 => \\\\\\\"error\\\\\\\",\\\\n        _ => \\\\\\\"desconocido\\\\\\\",\\\\n    }\\\\n}\\\",\\\"success\\\":true,\\\"stdout\\\":\\\"__TALLER_TEST__t1:FAIL\\\\n__TALLER_TEST__t2:FAIL\\\\n__TALLER_TEST__t3:FAIL\\\\n\\\",\\\"stderr\\\":\\\"\\\",\\\"transportError\\\":false,\\\"tests\\\":[{\\\"id\\\":\\\"t1\\\",\\\"passed\\\":false},{\\\"id\\\":\\\"t2\\\",\\\"passed\\\":false},{\\\"id\\\":\\\"t3\\\",\\\"passed\\\":false}],\\\"time\\\":1791073357277,\\\"customTest\\\":\\\"\\\",\\\"customPassed\\\":false}},\\\"rust-08\\\":{\\\"draft\\\":\\\"fn suma_hasta(n: u32) -> u32 {\\\\n    let mut total = 0;\\\\n    for x in 1..=n { total += x; }\\\\n    total\\\\n}\\\",\\\"attempts\\\":1,\\\"result\\\":{\\\"code\\\":\\\"fn suma_hasta(n: u32) -> u32 {\\\\n    let mut total = 0;\\\\n    for x in 1..=n { total += x; }\\\\n    total\\\\n}\\\",\\\"customTest\\\":\\\"\\\",\\\"customPassed\\\":false,\\\"success\\\":false,\\\"stdout\\\":\\\"\\\",\\\"stderr\\\":\\\"Failed to fetch\\\",\\\"transportError\\\":true,\\\"tests\\\":[],\\\"time\\\":1791073357279}},\\\"rust-09\\\":{\\\"prediction\\\":2,\\\"predictionCorrect\\\":true,\\\"draft\\\":\\\"fn roto() {}\\\",\\\"attempts\\\":2,\\\"result\\\":{\\\"code\\\":\\\"fn roto() {}\\\",\\\"success\\\":true,\\\"stdout\\\":\\\"__TALLER_TEST__t1:FAIL\\\\n__TALLER_TEST__t2:FAIL\\\\n__TALLER_TEST__t3:FAIL\\\\n\\\",\\\"stderr\\\":\\\"\\\",\\\"transportError\\\":false,\\\"tests\\\":[{\\\"id\\\":\\\"t1\\\",\\\"passed\\\":false},{\\\"id\\\":\\\"t2\\\",\\\"passed\\\":false},{\\\"id\\\":\\\"t3\\\",\\\"passed\\\":false}],\\\"time\\\":1791073357282,\\\"customTest\\\":\\\"\\\",\\\"customPassed\\\":false},\\\"solvedAt\\\":1791073357282,\\\"reviewAt\\\":1791159757282},\\\"rust-137\\\":{\\\"prediction\\\":2,\\\"predictionCorrect\\\":true,\\\"draft\\\":\\\"fn ejecutar_pc(accesos: &[(u8, Option<u8>)]) -> ([u8; 12], u8, usize, Vec<&'static str>) {\\\\n    let mut ram = [10,11,12,13,20,21,22,23,0,0,0,0];\\\\n    let mut tabla = [Some((1usize, false)), Some((0usize, true)), None];\\\\n    let mut tlb: [Option<(usize, bool)>; 3] = [None; 3];\\\\n    let (mut acc, mut retiradas) = (0, 0);\\\\n    let mut traza = Vec::new();\\\\n    'programa: for &(va, valor) in accesos {\\\\n        if va >= 12 { traza.push(\\\\\\\"range\\\\\\\"); break; }\\\\n        let pagina = va as usize / 4;\\\\n        loop {\\\\n            let (marco, escritura) = if let Some(entrada) = tlb[pagina] {\\\\n                traza.push(\\\\\\\"hit\\\\\\\"); entrada\\\\n            } else {\\\\n                traza.push(\\\\\\\"miss\\\\\\\");\\\\n                if let Some(entrada) = tabla[pagina] {\\\\n                    traza.push(\\\\\\\"walk\\\\\\\"); tlb[pagina] = Some(entrada); entrada\\\\n                } else {\\\\n                    traza.push(\\\\\\\"fault\\\\\\\");\\\\n                    ram[8..12].fill(0);\\\\n                    tabla[pagina] = Some((2, true)); tlb[pagina] = None;\\\\n                    traza.push(\\\\\\\"map\\\\\\\"); traza.push(\\\\\\\"retry\\\\\\\"); continue;\\\\n                }\\\\n            };\\\\n            if valor.is_some() && !escritura {\\\\n                traza.push(\\\\\\\"protection\\\\\\\"); break 'programa;\\\\n            }\\\\n            let fisica = marco * 4 + va as usize % 4;\\\\n            if let Some(nuevo) = valor { ram[fisica] = nuevo; traza.push(\\\\\\\"store\\\\\\\"); }\\\\n            else { acc = ram[fisica]; traza.push(\\\\\\\"load\\\\\\\"); }\\\\n            retiradas += 1; break;\\\\n        }\\\\n    }\\\\n    (ram, acc, retiradas, traza)\\\\n}\\\",\\\"attempts\\\":1,\\\"result\\\":{\\\"code\\\":\\\"fn ejecutar_pc(accesos: &[(u8, Option<u8>)]) -> ([u8; 12], u8, usize, Vec<&'static str>) {\\\\n    let mut ram = [10,11,12,13,20,21,22,23,0,0,0,0];\\\\n    let mut tabla = [Some((1usize, false)), Some((0usize, true)), None];\\\\n    let mut tlb: [Option<(usize, bool)>; 3] = [None; 3];\\\\n    let (mut acc, mut retiradas) = (0, 0);\\\\n    let mut traza = Vec::new();\\\\n    'programa: for &(va, valor) in accesos {\\\\n        if va >= 12 { traza.push(\\\\\\\"range\\\\\\\"); break; }\\\\n        let pagina = va as usize / 4;\\\\n        loop {\\\\n            let (marco, escritura) = if let Some(entrada) = tlb[pagina] {\\\\n                traza.push(\\\\\\\"hit\\\\\\\"); entrada\\\\n            } else {\\\\n                traza.push(\\\\\\\"miss\\\\\\\");\\\\n                if let Some(entrada) = tabla[pagina] {\\\\n                    traza.push(\\\\\\\"walk\\\\\\\"); tlb[pagina] = Some(entrada); entrada\\\\n                } else {\\\\n                    traza.push(\\\\\\\"fault\\\\\\\");\\\\n                    ram[8..12].fill(0);\\\\n                    tabla[pagina] = Some((2, true)); tlb[pagina] = None;\\\\n                    traza.push(\\\\\\\"map\\\\\\\"); traza.push(\\\\\\\"retry\\\\\\\"); continue;\\\\n                }\\\\n            };\\\\n            if valor.is_some() && !escritura {\\\\n                traza.push(\\\\\\\"protection\\\\\\\"); break 'programa;\\\\n            }\\\\n            let fisica = marco * 4 + va as usize % 4;\\\\n            if let Some(nuevo) = valor { ram[fisica] = nuevo; traza.push(\\\\\\\"store\\\\\\\"); }\\\\n            else { acc = ram[fisica]; traza.push(\\\\\\\"load\\\\\\\"); }\\\\n            retiradas += 1; break;\\\\n        }\\\\n    }\\\\n    (ram, acc, retiradas, traza)\\\\n}\\\",\\\"success\\\":true,\\\"stdout\\\":\\\"__TALLER_TEST__t1:PASS\\\\n__TALLER_TEST__t2:PASS\\\\n__TALLER_TEST__t3:PASS\\\\n\\\",\\\"stderr\\\":\\\"\\\",\\\"transportError\\\":false,\\\"tests\\\":[{\\\"id\\\":\\\"t1\\\",\\\"passed\\\":true},{\\\"id\\\":\\\"t2\\\",\\\"passed\\\":true},{\\\"id\\\":\\\"t3\\\",\\\"passed\\\":true}],\\\"time\\\":1791073357285,\\\"customTest\\\":\\\"\\\",\\\"customPassed\\\":false},\\\"solvedAt\\\":1791073357285,\\\"reviewAt\\\":1791159757285},\\\"go-01\\\":{\\\"prediction\\\":0,\\\"predictionCorrect\\\":true,\\\"draft\\\":\\\"func Bytes(kib int) int {\\\\n    return kib * 1024\\\\n}\\\",\\\"attempts\\\":1,\\\"result\\\":{\\\"code\\\":\\\"func Bytes(kib int) int {\\\\n    return kib * 1024\\\\n}\\\",\\\"success\\\":true,\\\"stdout\\\":\\\"__TALLER_TEST__t1:PASS\\\\n__TALLER_TEST__t2:PASS\\\\n__TALLER_TEST__t3:PASS\\\\n\\\",\\\"stderr\\\":\\\"\\\",\\\"transportError\\\":false,\\\"tests\\\":[{\\\"id\\\":\\\"t1\\\",\\\"passed\\\":true},{\\\"id\\\":\\\"t2\\\",\\\"passed\\\":true},{\\\"id\\\":\\\"t3\\\",\\\"passed\\\":true}],\\\"time\\\":1791073357290,\\\"customTest\\\":\\\"\\\",\\\"customPassed\\\":false},\\\"solvedAt\\\":1791073357290,\\\"reviewAt\\\":1791159757290}},\\\"selected\\\":{\\\"rust\\\":\\\"rust-137\\\",\\\"go\\\":\\\"go-01\\\"}}\",\"taller-campaign-v1\":\"{\\\"version\\\":1,\\\"seals\\\":{\\\"rust-02\\\":{\\\"code\\\":true,\\\"prediction\\\":true,\\\"assisted\\\":false},\\\"rust-06\\\":{\\\"code\\\":true,\\\"prediction\\\":true,\\\"assisted\\\":false},\\\"rust-22\\\":{\\\"code\\\":true,\\\"prediction\\\":true,\\\"assisted\\\":true},\\\"rust-101\\\":{\\\"code\\\":true,\\\"prediction\\\":true,\\\"assisted\\\":false},\\\"rust-102\\\":{\\\"code\\\":true,\\\"prediction\\\":true,\\\"assisted\\\":false},\\\"rust-103\\\":{\\\"code\\\":true,\\\"prediction\\\":true,\\\"assisted\\\":false},\\\"rust-09\\\":{\\\"code\\\":true,\\\"prediction\\\":true,\\\"assisted\\\":false},\\\"rust-137\\\":{\\\"code\\\":true,\\\"prediction\\\":true,\\\"assisted\\\":false},\\\"go-01\\\":{\\\"code\\\":true,\\\"prediction\\\":true,\\\"assisted\\\":false}},\\\"checkpoints\\\":{\\\"rust-world-1\\\":{\\\"passed\\\":true,\\\"lastAnswer\\\":1}}}\",\"taller-systems-v1\":\"{\\\"version\\\":1,\\\"records\\\":{\\\"rust:pc\\\":{\\\"observed\\\":[\\\"translate\\\",\\\"protect-retry\\\",\\\"interrupt\\\"],\\\"code\\\":true,\\\"predicted\\\":true,\\\"answer\\\":1,\\\"steps\\\":[0],\\\"note\\\":\\\"Nota del taller pc: medir antes de optimizar.\\\"}}}\"}",
+      "normalized": {
+        "route": {
+          "version": 1,
+          "language": "go",
+          "completed": ["rust-first-session", "rust-ownership"],
+          "milestones": ["rust-memory"],
+          "favorites": ["rust-100"],
+          "quizAnswers": { "rust-first-session": 1 },
+          "notes": {
+            "rust": { "learned": "Entendí ownership con un ejemplo propio.", "next": "" },
+            "go": { "learned": "", "next": "" }
+          },
+          "minutes": 25
+        },
+        "lab": {
+          "version": 1,
+          "records": {
+            "rust-02": {
+              "draft": "fn cargar(inicial: i32) -> i32 {\n    let mut nivel = inicial;\n    nivel += 1;\n    nivel += 1;\n    nivel\n}",
+              "reflection": "Mi explicación: el valor se mueve y el dueño original deja de ser válido.",
+              "attempts": 1,
+              "solvedAt": 1791073357221,
+              "reviewAt": 1791332557245,
+              "reviewedAt": 1791073357245,
+              "prediction": 0,
+              "predictionCorrect": true,
+              "assisted": false,
+              "solutionSeen": false,
+              "confidence": "practice",
+              "result": {
+                "code": "fn cargar(inicial: i32) -> i32 {\n    let mut nivel = inicial;\n    nivel += 1;\n    nivel += 1;\n    nivel\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:PASS\n__TALLER_TEST__t3:PASS\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": true },
+                  { "id": "t2", "passed": true },
+                  { "id": "t3", "passed": true }
+                ],
+                "time": 1791073357221,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "rust-06": {
+              "draft": "fn ruta(latencia_ms: u32) -> &'static str {\n    if latencia_ms < 20 { \"cache\" } else { \"disco\" }\n}",
+              "attempts": 1,
+              "hints": 1,
+              "solvedAt": 1791073357251,
+              "reviewAt": 1791159757251,
+              "prediction": 1,
+              "predictionCorrect": true,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "fn ruta(latencia_ms: u32) -> &'static str {\n    if latencia_ms < 20 { \"cache\" } else { \"disco\" }\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:PASS\n__TALLER_TEST__t3:PASS\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": true },
+                  { "id": "t2", "passed": true },
+                  { "id": "t3", "passed": true }
+                ],
+                "time": 1791073357251,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "rust-22": {
+              "draft": "struct Rectangulo { ancho: u32, alto: u32 }\nimpl Rectangulo {\n    fn area(&self) -> u32 { self.ancho * self.alto }\n    fn es_cuadrado(&self) -> bool { self.ancho == self.alto }\n}",
+              "attempts": 1,
+              "solvedAt": 1791073357261,
+              "reviewAt": 1791159757261,
+              "prediction": 1,
+              "predictionCorrect": true,
+              "assisted": true,
+              "solutionSeen": true,
+              "result": {
+                "code": "struct Rectangulo { ancho: u32, alto: u32 }\nimpl Rectangulo {\n    fn area(&self) -> u32 { self.ancho * self.alto }\n    fn es_cuadrado(&self) -> bool { self.ancho == self.alto }\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:PASS\n__TALLER_TEST__t3:PASS\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": true },
+                  { "id": "t2", "passed": true },
+                  { "id": "t3", "passed": true }
+                ],
+                "time": 1791073357261,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "rust-101": {
+              "draft": "fn paso(x: i32, y: i32, direccion: char) -> (i32, i32) {\n    match direccion {\n        'N' => (x, y + 1),\n        'S' => (x, y - 1),\n        'E' => (x + 1, y),\n        'O' => (x - 1, y),\n        _ => (x, y),\n    }\n}",
+              "customTest": "true",
+              "attempts": 1,
+              "solvedAt": 1791073357267,
+              "reviewAt": 1791159757267,
+              "prediction": 1,
+              "predictionCorrect": true,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "fn paso(x: i32, y: i32, direccion: char) -> (i32, i32) {\n    match direccion {\n        'N' => (x, y + 1),\n        'S' => (x, y - 1),\n        'E' => (x + 1, y),\n        'O' => (x - 1, y),\n        _ => (x, y),\n    }\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:PASS\n__TALLER_TEST__t3:PASS\n__TALLER_TEST__custom:PASS\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": true },
+                  { "id": "t2", "passed": true },
+                  { "id": "t3", "passed": true }
+                ],
+                "time": 1791073357267,
+                "customTest": "true",
+                "customPassed": true
+              }
+            },
+            "rust-102": {
+              "draft": "fn agregar(inventario: &mut [u8; 3], compartimiento: usize, cantidad: u8) -> bool {\n    let Some(actual) = inventario.get_mut(compartimiento) else { return false; };\n    let Some(nuevo) = actual.checked_add(cantidad) else { return false; };\n    *actual = nuevo;\n    true\n}",
+              "attempts": 1,
+              "solvedAt": 1791073357271,
+              "reviewAt": 1791159757271,
+              "prediction": 1,
+              "predictionCorrect": true,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "fn agregar(inventario: &mut [u8; 3], compartimiento: usize, cantidad: u8) -> bool {\n    let Some(actual) = inventario.get_mut(compartimiento) else { return false; };\n    let Some(nuevo) = actual.checked_add(cantidad) else { return false; };\n    *actual = nuevo;\n    true\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:PASS\n__TALLER_TEST__t3:PASS\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": true },
+                  { "id": "t2", "passed": true },
+                  { "id": "t3", "passed": true }
+                ],
+                "time": 1791073357271,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "rust-103": {
+              "draft": "fn cruzar_hangar(ordenes: &str, mut bateria: u32) -> (i32, i32, u32) {\n    let (mut x, mut y) = (0, 0);\n    for orden in ordenes.chars() {\n        let (nx, ny) = match orden {\n            'N' => (x, y + 1), 'S' => (x, y - 1),\n            'E' => (x + 1, y), 'O' => (x - 1, y),\n            _ => continue,\n        };\n        if bateria > 0 && (0..=2).contains(&nx) && (0..=2).contains(&ny) {\n            x = nx; y = ny; bateria -= 1;\n        }\n    }\n    (x, y, bateria)\n}",
+              "attempts": 1,
+              "solvedAt": 1791073357275,
+              "reviewAt": 1791159757275,
+              "prediction": 1,
+              "predictionCorrect": true,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "fn cruzar_hangar(ordenes: &str, mut bateria: u32) -> (i32, i32, u32) {\n    let (mut x, mut y) = (0, 0);\n    for orden in ordenes.chars() {\n        let (nx, ny) = match orden {\n            'N' => (x, y + 1), 'S' => (x, y - 1),\n            'E' => (x + 1, y), 'O' => (x - 1, y),\n            _ => continue,\n        };\n        if bateria > 0 && (0..=2).contains(&nx) && (0..=2).contains(&ny) {\n            x = nx; y = ny; bateria -= 1;\n        }\n    }\n    (x, y, bateria)\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:PASS\n__TALLER_TEST__t3:PASS\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": true },
+                  { "id": "t2", "passed": true },
+                  { "id": "t3", "passed": true }
+                ],
+                "time": 1791073357275,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "rust-07": {
+              "draft": "fn estado(codigo: u16) -> &'static str {\n    match codigo {\n        200 => \"ok\",\n        404 => \"ausente\",\n        500 => \"error\",\n        _ => \"desconocido\",\n    }\n}",
+              "attempts": 1,
+              "prediction": 0,
+              "predictionCorrect": false,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "fn estado(codigo: u16) -> &'static str {\n    match codigo {\n        200 => \"ok\",\n        404 => \"ausente\",\n        500 => \"error\",\n        _ => \"desconocido\",\n    }\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:FAIL\n__TALLER_TEST__t2:FAIL\n__TALLER_TEST__t3:FAIL\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": false },
+                  { "id": "t2", "passed": false },
+                  { "id": "t3", "passed": false }
+                ],
+                "time": 1791073357277,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "rust-08": {
+              "draft": "fn suma_hasta(n: u32) -> u32 {\n    let mut total = 0;\n    for x in 1..=n { total += x; }\n    total\n}",
+              "attempts": 1,
+              "predictionCorrect": false,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "fn suma_hasta(n: u32) -> u32 {\n    let mut total = 0;\n    for x in 1..=n { total += x; }\n    total\n}",
+                "success": false,
+                "stdout": "",
+                "stderr": "Failed to fetch",
+                "transportError": true,
+                "tests": [
+                  { "id": "t1", "passed": false },
+                  { "id": "t2", "passed": false },
+                  { "id": "t3", "passed": false }
+                ],
+                "time": 1791073357279,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "rust-09": {
+              "draft": "fn roto() {}",
+              "attempts": 2,
+              "solvedAt": 1791073357282,
+              "reviewAt": 1791159757282,
+              "prediction": 2,
+              "predictionCorrect": true,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "fn roto() {}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:FAIL\n__TALLER_TEST__t2:FAIL\n__TALLER_TEST__t3:FAIL\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": false },
+                  { "id": "t2", "passed": false },
+                  { "id": "t3", "passed": false }
+                ],
+                "time": 1791073357282,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "rust-137": {
+              "draft": "fn ejecutar_pc(accesos: &[(u8, Option<u8>)]) -> ([u8; 12], u8, usize, Vec<&'static str>) {\n    let mut ram = [10,11,12,13,20,21,22,23,0,0,0,0];\n    let mut tabla = [Some((1usize, false)), Some((0usize, true)), None];\n    let mut tlb: [Option<(usize, bool)>; 3] = [None; 3];\n    let (mut acc, mut retiradas) = (0, 0);\n    let mut traza = Vec::new();\n    'programa: for &(va, valor) in accesos {\n        if va >= 12 { traza.push(\"range\"); break; }\n        let pagina = va as usize / 4;\n        loop {\n            let (marco, escritura) = if let Some(entrada) = tlb[pagina] {\n                traza.push(\"hit\"); entrada\n            } else {\n                traza.push(\"miss\");\n                if let Some(entrada) = tabla[pagina] {\n                    traza.push(\"walk\"); tlb[pagina] = Some(entrada); entrada\n                } else {\n                    traza.push(\"fault\");\n                    ram[8..12].fill(0);\n                    tabla[pagina] = Some((2, true)); tlb[pagina] = None;\n                    traza.push(\"map\"); traza.push(\"retry\"); continue;\n                }\n            };\n            if valor.is_some() && !escritura {\n                traza.push(\"protection\"); break 'programa;\n            }\n            let fisica = marco * 4 + va as usize % 4;\n            if let Some(nuevo) = valor { ram[fisica] = nuevo; traza.push(\"store\"); }\n            else { acc = ram[fisica]; traza.push(\"load\"); }\n            retiradas += 1; break;\n        }\n    }\n    (ram, acc, retiradas, traza)\n}",
+              "attempts": 1,
+              "solvedAt": 1791073357285,
+              "reviewAt": 1791159757285,
+              "prediction": 2,
+              "predictionCorrect": true,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "fn ejecutar_pc(accesos: &[(u8, Option<u8>)]) -> ([u8; 12], u8, usize, Vec<&'static str>) {\n    let mut ram = [10,11,12,13,20,21,22,23,0,0,0,0];\n    let mut tabla = [Some((1usize, false)), Some((0usize, true)), None];\n    let mut tlb: [Option<(usize, bool)>; 3] = [None; 3];\n    let (mut acc, mut retiradas) = (0, 0);\n    let mut traza = Vec::new();\n    'programa: for &(va, valor) in accesos {\n        if va >= 12 { traza.push(\"range\"); break; }\n        let pagina = va as usize / 4;\n        loop {\n            let (marco, escritura) = if let Some(entrada) = tlb[pagina] {\n                traza.push(\"hit\"); entrada\n            } else {\n                traza.push(\"miss\");\n                if let Some(entrada) = tabla[pagina] {\n                    traza.push(\"walk\"); tlb[pagina] = Some(entrada); entrada\n                } else {\n                    traza.push(\"fault\");\n                    ram[8..12].fill(0);\n                    tabla[pagina] = Some((2, true)); tlb[pagina] = None;\n                    traza.push(\"map\"); traza.push(\"retry\"); continue;\n                }\n            };\n            if valor.is_some() && !escritura {\n                traza.push(\"protection\"); break 'programa;\n            }\n            let fisica = marco * 4 + va as usize % 4;\n            if let Some(nuevo) = valor { ram[fisica] = nuevo; traza.push(\"store\"); }\n            else { acc = ram[fisica]; traza.push(\"load\"); }\n            retiradas += 1; break;\n        }\n    }\n    (ram, acc, retiradas, traza)\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:PASS\n__TALLER_TEST__t3:PASS\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": true },
+                  { "id": "t2", "passed": true },
+                  { "id": "t3", "passed": true }
+                ],
+                "time": 1791073357285,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "go-01": {
+              "draft": "func Bytes(kib int) int {\n    return kib * 1024\n}",
+              "attempts": 1,
+              "solvedAt": 1791073357290,
+              "reviewAt": 1791159757290,
+              "prediction": 0,
+              "predictionCorrect": true,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "func Bytes(kib int) int {\n    return kib * 1024\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:PASS\n__TALLER_TEST__t3:PASS\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": true },
+                  { "id": "t2", "passed": true },
+                  { "id": "t3", "passed": true }
+                ],
+                "time": 1791073357290,
+                "customTest": "",
+                "customPassed": false
+              }
+            }
+          },
+          "selected": { "rust": "rust-137", "go": "go-01" }
+        },
+        "campaign": {
+          "version": 1,
+          "seals": {
+            "rust-02": { "code": true, "prediction": true, "assisted": false },
+            "rust-06": { "code": true, "prediction": true, "assisted": false },
+            "rust-22": { "code": true, "prediction": true, "assisted": true },
+            "rust-101": { "code": true, "prediction": true, "assisted": false },
+            "rust-102": { "code": true, "prediction": true, "assisted": false },
+            "rust-103": { "code": true, "prediction": true, "assisted": false },
+            "rust-09": { "code": true, "prediction": true, "assisted": false },
+            "rust-137": { "code": true, "prediction": true, "assisted": false },
+            "go-01": { "code": true, "prediction": true, "assisted": false }
+          },
+          "checkpoints": { "rust-world-1": { "passed": true, "lastAnswer": 1 } }
+        },
+        "systems": {
+          "version": 1,
+          "records": {
+            "rust:pc": {
+              "observed": ["translate", "protect-retry", "interrupt"],
+              "code": true,
+              "predicted": true,
+              "answer": 1,
+              "steps": [0],
+              "note": "Nota del taller pc: medir antes de optimizar."
+            }
+          }
+        }
+      },
+      "expect": {
+        "written": {
+          "exercises": 11,
+          "drafts": 11,
+          "attempts": 11,
+          "campaignSeals": 9,
+          "campaignCheckpoints": 1,
+          "workshops": 1,
+          "workshopObjectives": 3,
+          "workshopSteps": 1,
+          "routeMarks": 4,
+          "routeQuiz": 1,
+          "routeNotes": 1,
+          "preferences": 1
+        }
+      }
+    },
+    {
+      "id": "master-2a278ad-export",
+      "source": "export",
+      "fixture": "qa/fixtures/progress-master-2a278ad-export.json",
+      "raw": "{\n  \"version\": 1,\n  \"language\": \"go\",\n  \"completed\": [\"rust-first-session\", \"rust-ownership\"],\n  \"milestones\": [\"rust-memory\"],\n  \"favorites\": [\"rust-100\"],\n  \"quizAnswers\": {\n    \"rust-first-session\": 1\n  },\n  \"notes\": {\n    \"rust\": {\n      \"learned\": \"Entendí ownership con un ejemplo propio.\",\n      \"next\": \"\"\n    },\n    \"go\": {\n      \"learned\": \"\",\n      \"next\": \"\"\n    }\n  },\n  \"minutes\": 25,\n  \"lab\": {\n    \"version\": 1,\n    \"records\": {\n      \"rust-02\": {\n        \"prediction\": 0,\n        \"predictionCorrect\": true,\n        \"draft\": \"fn cargar(inicial: i32) -> i32 {\\n    let mut nivel = inicial;\\n    nivel += 1;\\n    nivel += 1;\\n    nivel\\n}\",\n        \"attempts\": 1,\n        \"result\": {\n          \"code\": \"fn cargar(inicial: i32) -> i32 {\\n    let mut nivel = inicial;\\n    nivel += 1;\\n    nivel += 1;\\n    nivel\\n}\",\n          \"success\": true,\n          \"stdout\": \"__TALLER_TEST__t1:PASS\\n__TALLER_TEST__t2:PASS\\n__TALLER_TEST__t3:PASS\\n\",\n          \"stderr\": \"\",\n          \"transportError\": false,\n          \"tests\": [\n            {\n              \"id\": \"t1\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t2\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t3\",\n              \"passed\": true\n            }\n          ],\n          \"time\": 1791073357221,\n          \"customTest\": \"\",\n          \"customPassed\": false\n        },\n        \"solvedAt\": 1791073357221,\n        \"reviewAt\": 1791332557245,\n        \"reflection\": \"Mi explicación: el valor se mueve y el dueño original deja de ser válido.\",\n        \"confidence\": \"practice\",\n        \"reviewedAt\": 1791073357245\n      },\n      \"rust-06\": {\n        \"prediction\": 1,\n        \"predictionCorrect\": true,\n        \"hints\": 1,\n        \"draft\": \"fn ruta(latencia_ms: u32) -> &'static str {\\n    if latencia_ms < 20 { \\\"cache\\\" } else { \\\"disco\\\" }\\n}\",\n        \"attempts\": 1,\n        \"result\": {\n          \"code\": \"fn ruta(latencia_ms: u32) -> &'static str {\\n    if latencia_ms < 20 { \\\"cache\\\" } else { \\\"disco\\\" }\\n}\",\n          \"success\": true,\n          \"stdout\": \"__TALLER_TEST__t1:PASS\\n__TALLER_TEST__t2:PASS\\n__TALLER_TEST__t3:PASS\\n\",\n          \"stderr\": \"\",\n          \"transportError\": false,\n          \"tests\": [\n            {\n              \"id\": \"t1\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t2\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t3\",\n              \"passed\": true\n            }\n          ],\n          \"time\": 1791073357251,\n          \"customTest\": \"\",\n          \"customPassed\": false\n        },\n        \"solvedAt\": 1791073357251,\n        \"reviewAt\": 1791159757251\n      },\n      \"rust-22\": {\n        \"prediction\": 1,\n        \"predictionCorrect\": true,\n        \"solutionSeen\": true,\n        \"assisted\": true,\n        \"draft\": \"struct Rectangulo { ancho: u32, alto: u32 }\\nimpl Rectangulo {\\n    fn area(&self) -> u32 { self.ancho * self.alto }\\n    fn es_cuadrado(&self) -> bool { self.ancho == self.alto }\\n}\",\n        \"attempts\": 1,\n        \"result\": {\n          \"code\": \"struct Rectangulo { ancho: u32, alto: u32 }\\nimpl Rectangulo {\\n    fn area(&self) -> u32 { self.ancho * self.alto }\\n    fn es_cuadrado(&self) -> bool { self.ancho == self.alto }\\n}\",\n          \"success\": true,\n          \"stdout\": \"__TALLER_TEST__t1:PASS\\n__TALLER_TEST__t2:PASS\\n__TALLER_TEST__t3:PASS\\n\",\n          \"stderr\": \"\",\n          \"transportError\": false,\n          \"tests\": [\n            {\n              \"id\": \"t1\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t2\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t3\",\n              \"passed\": true\n            }\n          ],\n          \"time\": 1791073357261,\n          \"customTest\": \"\",\n          \"customPassed\": false\n        },\n        \"solvedAt\": 1791073357261,\n        \"reviewAt\": 1791159757261\n      },\n      \"rust-101\": {\n        \"prediction\": 1,\n        \"predictionCorrect\": true,\n        \"draft\": \"fn paso(x: i32, y: i32, direccion: char) -> (i32, i32) {\\n    match direccion {\\n        'N' => (x, y + 1),\\n        'S' => (x, y - 1),\\n        'E' => (x + 1, y),\\n        'O' => (x - 1, y),\\n        _ => (x, y),\\n    }\\n}\",\n        \"customTest\": \"true\",\n        \"attempts\": 1,\n        \"result\": {\n          \"code\": \"fn paso(x: i32, y: i32, direccion: char) -> (i32, i32) {\\n    match direccion {\\n        'N' => (x, y + 1),\\n        'S' => (x, y - 1),\\n        'E' => (x + 1, y),\\n        'O' => (x - 1, y),\\n        _ => (x, y),\\n    }\\n}\",\n          \"success\": true,\n          \"stdout\": \"__TALLER_TEST__t1:PASS\\n__TALLER_TEST__t2:PASS\\n__TALLER_TEST__t3:PASS\\n__TALLER_TEST__custom:PASS\\n\",\n          \"stderr\": \"\",\n          \"transportError\": false,\n          \"tests\": [\n            {\n              \"id\": \"t1\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t2\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t3\",\n              \"passed\": true\n            }\n          ],\n          \"time\": 1791073357267,\n          \"customTest\": \"true\",\n          \"customPassed\": true\n        },\n        \"solvedAt\": 1791073357267,\n        \"reviewAt\": 1791159757267\n      },\n      \"rust-102\": {\n        \"prediction\": 1,\n        \"predictionCorrect\": true,\n        \"draft\": \"fn agregar(inventario: &mut [u8; 3], compartimiento: usize, cantidad: u8) -> bool {\\n    let Some(actual) = inventario.get_mut(compartimiento) else { return false; };\\n    let Some(nuevo) = actual.checked_add(cantidad) else { return false; };\\n    *actual = nuevo;\\n    true\\n}\",\n        \"attempts\": 1,\n        \"result\": {\n          \"code\": \"fn agregar(inventario: &mut [u8; 3], compartimiento: usize, cantidad: u8) -> bool {\\n    let Some(actual) = inventario.get_mut(compartimiento) else { return false; };\\n    let Some(nuevo) = actual.checked_add(cantidad) else { return false; };\\n    *actual = nuevo;\\n    true\\n}\",\n          \"success\": true,\n          \"stdout\": \"__TALLER_TEST__t1:PASS\\n__TALLER_TEST__t2:PASS\\n__TALLER_TEST__t3:PASS\\n\",\n          \"stderr\": \"\",\n          \"transportError\": false,\n          \"tests\": [\n            {\n              \"id\": \"t1\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t2\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t3\",\n              \"passed\": true\n            }\n          ],\n          \"time\": 1791073357271,\n          \"customTest\": \"\",\n          \"customPassed\": false\n        },\n        \"solvedAt\": 1791073357271,\n        \"reviewAt\": 1791159757271\n      },\n      \"rust-103\": {\n        \"prediction\": 1,\n        \"predictionCorrect\": true,\n        \"draft\": \"fn cruzar_hangar(ordenes: &str, mut bateria: u32) -> (i32, i32, u32) {\\n    let (mut x, mut y) = (0, 0);\\n    for orden in ordenes.chars() {\\n        let (nx, ny) = match orden {\\n            'N' => (x, y + 1), 'S' => (x, y - 1),\\n            'E' => (x + 1, y), 'O' => (x - 1, y),\\n            _ => continue,\\n        };\\n        if bateria > 0 && (0..=2).contains(&nx) && (0..=2).contains(&ny) {\\n            x = nx; y = ny; bateria -= 1;\\n        }\\n    }\\n    (x, y, bateria)\\n}\",\n        \"attempts\": 1,\n        \"result\": {\n          \"code\": \"fn cruzar_hangar(ordenes: &str, mut bateria: u32) -> (i32, i32, u32) {\\n    let (mut x, mut y) = (0, 0);\\n    for orden in ordenes.chars() {\\n        let (nx, ny) = match orden {\\n            'N' => (x, y + 1), 'S' => (x, y - 1),\\n            'E' => (x + 1, y), 'O' => (x - 1, y),\\n            _ => continue,\\n        };\\n        if bateria > 0 && (0..=2).contains(&nx) && (0..=2).contains(&ny) {\\n            x = nx; y = ny; bateria -= 1;\\n        }\\n    }\\n    (x, y, bateria)\\n}\",\n          \"success\": true,\n          \"stdout\": \"__TALLER_TEST__t1:PASS\\n__TALLER_TEST__t2:PASS\\n__TALLER_TEST__t3:PASS\\n\",\n          \"stderr\": \"\",\n          \"transportError\": false,\n          \"tests\": [\n            {\n              \"id\": \"t1\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t2\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t3\",\n              \"passed\": true\n            }\n          ],\n          \"time\": 1791073357275,\n          \"customTest\": \"\",\n          \"customPassed\": false\n        },\n        \"solvedAt\": 1791073357275,\n        \"reviewAt\": 1791159757275\n      },\n      \"rust-07\": {\n        \"prediction\": 0,\n        \"draft\": \"fn estado(codigo: u16) -> &'static str {\\n    match codigo {\\n        200 => \\\"ok\\\",\\n        404 => \\\"ausente\\\",\\n        500 => \\\"error\\\",\\n        _ => \\\"desconocido\\\",\\n    }\\n}\",\n        \"attempts\": 1,\n        \"result\": {\n          \"code\": \"fn estado(codigo: u16) -> &'static str {\\n    match codigo {\\n        200 => \\\"ok\\\",\\n        404 => \\\"ausente\\\",\\n        500 => \\\"error\\\",\\n        _ => \\\"desconocido\\\",\\n    }\\n}\",\n          \"success\": true,\n          \"stdout\": \"__TALLER_TEST__t1:FAIL\\n__TALLER_TEST__t2:FAIL\\n__TALLER_TEST__t3:FAIL\\n\",\n          \"stderr\": \"\",\n          \"transportError\": false,\n          \"tests\": [\n            {\n              \"id\": \"t1\",\n              \"passed\": false\n            },\n            {\n              \"id\": \"t2\",\n              \"passed\": false\n            },\n            {\n              \"id\": \"t3\",\n              \"passed\": false\n            }\n          ],\n          \"time\": 1791073357277,\n          \"customTest\": \"\",\n          \"customPassed\": false\n        }\n      },\n      \"rust-08\": {\n        \"draft\": \"fn suma_hasta(n: u32) -> u32 {\\n    let mut total = 0;\\n    for x in 1..=n { total += x; }\\n    total\\n}\",\n        \"attempts\": 1,\n        \"result\": {\n          \"code\": \"fn suma_hasta(n: u32) -> u32 {\\n    let mut total = 0;\\n    for x in 1..=n { total += x; }\\n    total\\n}\",\n          \"customTest\": \"\",\n          \"customPassed\": false,\n          \"success\": false,\n          \"stdout\": \"\",\n          \"stderr\": \"Failed to fetch\",\n          \"transportError\": true,\n          \"tests\": [],\n          \"time\": 1791073357279\n        }\n      },\n      \"rust-09\": {\n        \"prediction\": 2,\n        \"predictionCorrect\": true,\n        \"draft\": \"fn roto() {}\",\n        \"attempts\": 2,\n        \"result\": {\n          \"code\": \"fn roto() {}\",\n          \"success\": true,\n          \"stdout\": \"__TALLER_TEST__t1:FAIL\\n__TALLER_TEST__t2:FAIL\\n__TALLER_TEST__t3:FAIL\\n\",\n          \"stderr\": \"\",\n          \"transportError\": false,\n          \"tests\": [\n            {\n              \"id\": \"t1\",\n              \"passed\": false\n            },\n            {\n              \"id\": \"t2\",\n              \"passed\": false\n            },\n            {\n              \"id\": \"t3\",\n              \"passed\": false\n            }\n          ],\n          \"time\": 1791073357282,\n          \"customTest\": \"\",\n          \"customPassed\": false\n        },\n        \"solvedAt\": 1791073357282,\n        \"reviewAt\": 1791159757282\n      },\n      \"rust-137\": {\n        \"prediction\": 2,\n        \"predictionCorrect\": true,\n        \"draft\": \"fn ejecutar_pc(accesos: &[(u8, Option<u8>)]) -> ([u8; 12], u8, usize, Vec<&'static str>) {\\n    let mut ram = [10,11,12,13,20,21,22,23,0,0,0,0];\\n    let mut tabla = [Some((1usize, false)), Some((0usize, true)), None];\\n    let mut tlb: [Option<(usize, bool)>; 3] = [None; 3];\\n    let (mut acc, mut retiradas) = (0, 0);\\n    let mut traza = Vec::new();\\n    'programa: for &(va, valor) in accesos {\\n        if va >= 12 { traza.push(\\\"range\\\"); break; }\\n        let pagina = va as usize / 4;\\n        loop {\\n            let (marco, escritura) = if let Some(entrada) = tlb[pagina] {\\n                traza.push(\\\"hit\\\"); entrada\\n            } else {\\n                traza.push(\\\"miss\\\");\\n                if let Some(entrada) = tabla[pagina] {\\n                    traza.push(\\\"walk\\\"); tlb[pagina] = Some(entrada); entrada\\n                } else {\\n                    traza.push(\\\"fault\\\");\\n                    ram[8..12].fill(0);\\n                    tabla[pagina] = Some((2, true)); tlb[pagina] = None;\\n                    traza.push(\\\"map\\\"); traza.push(\\\"retry\\\"); continue;\\n                }\\n            };\\n            if valor.is_some() && !escritura {\\n                traza.push(\\\"protection\\\"); break 'programa;\\n            }\\n            let fisica = marco * 4 + va as usize % 4;\\n            if let Some(nuevo) = valor { ram[fisica] = nuevo; traza.push(\\\"store\\\"); }\\n            else { acc = ram[fisica]; traza.push(\\\"load\\\"); }\\n            retiradas += 1; break;\\n        }\\n    }\\n    (ram, acc, retiradas, traza)\\n}\",\n        \"attempts\": 1,\n        \"result\": {\n          \"code\": \"fn ejecutar_pc(accesos: &[(u8, Option<u8>)]) -> ([u8; 12], u8, usize, Vec<&'static str>) {\\n    let mut ram = [10,11,12,13,20,21,22,23,0,0,0,0];\\n    let mut tabla = [Some((1usize, false)), Some((0usize, true)), None];\\n    let mut tlb: [Option<(usize, bool)>; 3] = [None; 3];\\n    let (mut acc, mut retiradas) = (0, 0);\\n    let mut traza = Vec::new();\\n    'programa: for &(va, valor) in accesos {\\n        if va >= 12 { traza.push(\\\"range\\\"); break; }\\n        let pagina = va as usize / 4;\\n        loop {\\n            let (marco, escritura) = if let Some(entrada) = tlb[pagina] {\\n                traza.push(\\\"hit\\\"); entrada\\n            } else {\\n                traza.push(\\\"miss\\\");\\n                if let Some(entrada) = tabla[pagina] {\\n                    traza.push(\\\"walk\\\"); tlb[pagina] = Some(entrada); entrada\\n                } else {\\n                    traza.push(\\\"fault\\\");\\n                    ram[8..12].fill(0);\\n                    tabla[pagina] = Some((2, true)); tlb[pagina] = None;\\n                    traza.push(\\\"map\\\"); traza.push(\\\"retry\\\"); continue;\\n                }\\n            };\\n            if valor.is_some() && !escritura {\\n                traza.push(\\\"protection\\\"); break 'programa;\\n            }\\n            let fisica = marco * 4 + va as usize % 4;\\n            if let Some(nuevo) = valor { ram[fisica] = nuevo; traza.push(\\\"store\\\"); }\\n            else { acc = ram[fisica]; traza.push(\\\"load\\\"); }\\n            retiradas += 1; break;\\n        }\\n    }\\n    (ram, acc, retiradas, traza)\\n}\",\n          \"success\": true,\n          \"stdout\": \"__TALLER_TEST__t1:PASS\\n__TALLER_TEST__t2:PASS\\n__TALLER_TEST__t3:PASS\\n\",\n          \"stderr\": \"\",\n          \"transportError\": false,\n          \"tests\": [\n            {\n              \"id\": \"t1\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t2\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t3\",\n              \"passed\": true\n            }\n          ],\n          \"time\": 1791073357285,\n          \"customTest\": \"\",\n          \"customPassed\": false\n        },\n        \"solvedAt\": 1791073357285,\n        \"reviewAt\": 1791159757285\n      },\n      \"go-01\": {\n        \"prediction\": 0,\n        \"predictionCorrect\": true,\n        \"draft\": \"func Bytes(kib int) int {\\n    return kib * 1024\\n}\",\n        \"attempts\": 1,\n        \"result\": {\n          \"code\": \"func Bytes(kib int) int {\\n    return kib * 1024\\n}\",\n          \"success\": true,\n          \"stdout\": \"__TALLER_TEST__t1:PASS\\n__TALLER_TEST__t2:PASS\\n__TALLER_TEST__t3:PASS\\n\",\n          \"stderr\": \"\",\n          \"transportError\": false,\n          \"tests\": [\n            {\n              \"id\": \"t1\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t2\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t3\",\n              \"passed\": true\n            }\n          ],\n          \"time\": 1791073357290,\n          \"customTest\": \"\",\n          \"customPassed\": false\n        },\n        \"solvedAt\": 1791073357290,\n        \"reviewAt\": 1791159757290\n      }\n    },\n    \"selected\": {\n      \"rust\": \"rust-137\",\n      \"go\": \"go-01\"\n    }\n  },\n  \"campaign\": {\n    \"version\": 1,\n    \"seals\": {\n      \"rust-02\": {\n        \"code\": true,\n        \"prediction\": true,\n        \"assisted\": false\n      },\n      \"rust-06\": {\n        \"code\": true,\n        \"prediction\": true,\n        \"assisted\": false\n      },\n      \"rust-22\": {\n        \"code\": true,\n        \"prediction\": true,\n        \"assisted\": true\n      },\n      \"rust-101\": {\n        \"code\": true,\n        \"prediction\": true,\n        \"assisted\": false\n      },\n      \"rust-102\": {\n        \"code\": true,\n        \"prediction\": true,\n        \"assisted\": false\n      },\n      \"rust-103\": {\n        \"code\": true,\n        \"prediction\": true,\n        \"assisted\": false\n      },\n      \"rust-09\": {\n        \"code\": true,\n        \"prediction\": true,\n        \"assisted\": false\n      },\n      \"rust-137\": {\n        \"code\": true,\n        \"prediction\": true,\n        \"assisted\": false\n      },\n      \"go-01\": {\n        \"code\": true,\n        \"prediction\": true,\n        \"assisted\": false\n      }\n    },\n    \"checkpoints\": {\n      \"rust-world-1\": {\n        \"passed\": true,\n        \"lastAnswer\": 1\n      }\n    }\n  },\n  \"systems\": {\n    \"version\": 1,\n    \"records\": {\n      \"rust:pc\": {\n        \"observed\": [\"translate\", \"protect-retry\", \"interrupt\"],\n        \"code\": true,\n        \"predicted\": true,\n        \"answer\": 1,\n        \"steps\": [0],\n        \"note\": \"Nota del taller pc: medir antes de optimizar.\"\n      }\n    }\n  },\n  \"exportedAt\": \"2026-10-04T00:22:37.291Z\"\n}\n",
+      "normalized": {
+        "route": {
+          "version": 1,
+          "language": "go",
+          "completed": ["rust-first-session", "rust-ownership"],
+          "milestones": ["rust-memory"],
+          "favorites": ["rust-100"],
+          "quizAnswers": { "rust-first-session": 1 },
+          "notes": {
+            "rust": { "learned": "Entendí ownership con un ejemplo propio.", "next": "" },
+            "go": { "learned": "", "next": "" }
+          },
+          "minutes": 25
+        },
+        "lab": {
+          "version": 1,
+          "records": {
+            "rust-02": {
+              "draft": "fn cargar(inicial: i32) -> i32 {\n    let mut nivel = inicial;\n    nivel += 1;\n    nivel += 1;\n    nivel\n}",
+              "reflection": "Mi explicación: el valor se mueve y el dueño original deja de ser válido.",
+              "attempts": 1,
+              "solvedAt": 1791073357221,
+              "reviewAt": 1791332557245,
+              "reviewedAt": 1791073357245,
+              "prediction": 0,
+              "predictionCorrect": true,
+              "assisted": false,
+              "solutionSeen": false,
+              "confidence": "practice",
+              "result": {
+                "code": "fn cargar(inicial: i32) -> i32 {\n    let mut nivel = inicial;\n    nivel += 1;\n    nivel += 1;\n    nivel\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:PASS\n__TALLER_TEST__t3:PASS\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": true },
+                  { "id": "t2", "passed": true },
+                  { "id": "t3", "passed": true }
+                ],
+                "time": 1791073357221,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "rust-06": {
+              "draft": "fn ruta(latencia_ms: u32) -> &'static str {\n    if latencia_ms < 20 { \"cache\" } else { \"disco\" }\n}",
+              "attempts": 1,
+              "hints": 1,
+              "solvedAt": 1791073357251,
+              "reviewAt": 1791159757251,
+              "prediction": 1,
+              "predictionCorrect": true,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "fn ruta(latencia_ms: u32) -> &'static str {\n    if latencia_ms < 20 { \"cache\" } else { \"disco\" }\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:PASS\n__TALLER_TEST__t3:PASS\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": true },
+                  { "id": "t2", "passed": true },
+                  { "id": "t3", "passed": true }
+                ],
+                "time": 1791073357251,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "rust-22": {
+              "draft": "struct Rectangulo { ancho: u32, alto: u32 }\nimpl Rectangulo {\n    fn area(&self) -> u32 { self.ancho * self.alto }\n    fn es_cuadrado(&self) -> bool { self.ancho == self.alto }\n}",
+              "attempts": 1,
+              "solvedAt": 1791073357261,
+              "reviewAt": 1791159757261,
+              "prediction": 1,
+              "predictionCorrect": true,
+              "assisted": true,
+              "solutionSeen": true,
+              "result": {
+                "code": "struct Rectangulo { ancho: u32, alto: u32 }\nimpl Rectangulo {\n    fn area(&self) -> u32 { self.ancho * self.alto }\n    fn es_cuadrado(&self) -> bool { self.ancho == self.alto }\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:PASS\n__TALLER_TEST__t3:PASS\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": true },
+                  { "id": "t2", "passed": true },
+                  { "id": "t3", "passed": true }
+                ],
+                "time": 1791073357261,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "rust-101": {
+              "draft": "fn paso(x: i32, y: i32, direccion: char) -> (i32, i32) {\n    match direccion {\n        'N' => (x, y + 1),\n        'S' => (x, y - 1),\n        'E' => (x + 1, y),\n        'O' => (x - 1, y),\n        _ => (x, y),\n    }\n}",
+              "customTest": "true",
+              "attempts": 1,
+              "solvedAt": 1791073357267,
+              "reviewAt": 1791159757267,
+              "prediction": 1,
+              "predictionCorrect": true,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "fn paso(x: i32, y: i32, direccion: char) -> (i32, i32) {\n    match direccion {\n        'N' => (x, y + 1),\n        'S' => (x, y - 1),\n        'E' => (x + 1, y),\n        'O' => (x - 1, y),\n        _ => (x, y),\n    }\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:PASS\n__TALLER_TEST__t3:PASS\n__TALLER_TEST__custom:PASS\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": true },
+                  { "id": "t2", "passed": true },
+                  { "id": "t3", "passed": true }
+                ],
+                "time": 1791073357267,
+                "customTest": "true",
+                "customPassed": true
+              }
+            },
+            "rust-102": {
+              "draft": "fn agregar(inventario: &mut [u8; 3], compartimiento: usize, cantidad: u8) -> bool {\n    let Some(actual) = inventario.get_mut(compartimiento) else { return false; };\n    let Some(nuevo) = actual.checked_add(cantidad) else { return false; };\n    *actual = nuevo;\n    true\n}",
+              "attempts": 1,
+              "solvedAt": 1791073357271,
+              "reviewAt": 1791159757271,
+              "prediction": 1,
+              "predictionCorrect": true,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "fn agregar(inventario: &mut [u8; 3], compartimiento: usize, cantidad: u8) -> bool {\n    let Some(actual) = inventario.get_mut(compartimiento) else { return false; };\n    let Some(nuevo) = actual.checked_add(cantidad) else { return false; };\n    *actual = nuevo;\n    true\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:PASS\n__TALLER_TEST__t3:PASS\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": true },
+                  { "id": "t2", "passed": true },
+                  { "id": "t3", "passed": true }
+                ],
+                "time": 1791073357271,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "rust-103": {
+              "draft": "fn cruzar_hangar(ordenes: &str, mut bateria: u32) -> (i32, i32, u32) {\n    let (mut x, mut y) = (0, 0);\n    for orden in ordenes.chars() {\n        let (nx, ny) = match orden {\n            'N' => (x, y + 1), 'S' => (x, y - 1),\n            'E' => (x + 1, y), 'O' => (x - 1, y),\n            _ => continue,\n        };\n        if bateria > 0 && (0..=2).contains(&nx) && (0..=2).contains(&ny) {\n            x = nx; y = ny; bateria -= 1;\n        }\n    }\n    (x, y, bateria)\n}",
+              "attempts": 1,
+              "solvedAt": 1791073357275,
+              "reviewAt": 1791159757275,
+              "prediction": 1,
+              "predictionCorrect": true,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "fn cruzar_hangar(ordenes: &str, mut bateria: u32) -> (i32, i32, u32) {\n    let (mut x, mut y) = (0, 0);\n    for orden in ordenes.chars() {\n        let (nx, ny) = match orden {\n            'N' => (x, y + 1), 'S' => (x, y - 1),\n            'E' => (x + 1, y), 'O' => (x - 1, y),\n            _ => continue,\n        };\n        if bateria > 0 && (0..=2).contains(&nx) && (0..=2).contains(&ny) {\n            x = nx; y = ny; bateria -= 1;\n        }\n    }\n    (x, y, bateria)\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:PASS\n__TALLER_TEST__t3:PASS\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": true },
+                  { "id": "t2", "passed": true },
+                  { "id": "t3", "passed": true }
+                ],
+                "time": 1791073357275,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "rust-07": {
+              "draft": "fn estado(codigo: u16) -> &'static str {\n    match codigo {\n        200 => \"ok\",\n        404 => \"ausente\",\n        500 => \"error\",\n        _ => \"desconocido\",\n    }\n}",
+              "attempts": 1,
+              "prediction": 0,
+              "predictionCorrect": false,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "fn estado(codigo: u16) -> &'static str {\n    match codigo {\n        200 => \"ok\",\n        404 => \"ausente\",\n        500 => \"error\",\n        _ => \"desconocido\",\n    }\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:FAIL\n__TALLER_TEST__t2:FAIL\n__TALLER_TEST__t3:FAIL\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": false },
+                  { "id": "t2", "passed": false },
+                  { "id": "t3", "passed": false }
+                ],
+                "time": 1791073357277,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "rust-08": {
+              "draft": "fn suma_hasta(n: u32) -> u32 {\n    let mut total = 0;\n    for x in 1..=n { total += x; }\n    total\n}",
+              "attempts": 1,
+              "predictionCorrect": false,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "fn suma_hasta(n: u32) -> u32 {\n    let mut total = 0;\n    for x in 1..=n { total += x; }\n    total\n}",
+                "success": false,
+                "stdout": "",
+                "stderr": "Failed to fetch",
+                "transportError": true,
+                "tests": [
+                  { "id": "t1", "passed": false },
+                  { "id": "t2", "passed": false },
+                  { "id": "t3", "passed": false }
+                ],
+                "time": 1791073357279,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "rust-09": {
+              "draft": "fn roto() {}",
+              "attempts": 2,
+              "solvedAt": 1791073357282,
+              "reviewAt": 1791159757282,
+              "prediction": 2,
+              "predictionCorrect": true,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "fn roto() {}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:FAIL\n__TALLER_TEST__t2:FAIL\n__TALLER_TEST__t3:FAIL\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": false },
+                  { "id": "t2", "passed": false },
+                  { "id": "t3", "passed": false }
+                ],
+                "time": 1791073357282,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "rust-137": {
+              "draft": "fn ejecutar_pc(accesos: &[(u8, Option<u8>)]) -> ([u8; 12], u8, usize, Vec<&'static str>) {\n    let mut ram = [10,11,12,13,20,21,22,23,0,0,0,0];\n    let mut tabla = [Some((1usize, false)), Some((0usize, true)), None];\n    let mut tlb: [Option<(usize, bool)>; 3] = [None; 3];\n    let (mut acc, mut retiradas) = (0, 0);\n    let mut traza = Vec::new();\n    'programa: for &(va, valor) in accesos {\n        if va >= 12 { traza.push(\"range\"); break; }\n        let pagina = va as usize / 4;\n        loop {\n            let (marco, escritura) = if let Some(entrada) = tlb[pagina] {\n                traza.push(\"hit\"); entrada\n            } else {\n                traza.push(\"miss\");\n                if let Some(entrada) = tabla[pagina] {\n                    traza.push(\"walk\"); tlb[pagina] = Some(entrada); entrada\n                } else {\n                    traza.push(\"fault\");\n                    ram[8..12].fill(0);\n                    tabla[pagina] = Some((2, true)); tlb[pagina] = None;\n                    traza.push(\"map\"); traza.push(\"retry\"); continue;\n                }\n            };\n            if valor.is_some() && !escritura {\n                traza.push(\"protection\"); break 'programa;\n            }\n            let fisica = marco * 4 + va as usize % 4;\n            if let Some(nuevo) = valor { ram[fisica] = nuevo; traza.push(\"store\"); }\n            else { acc = ram[fisica]; traza.push(\"load\"); }\n            retiradas += 1; break;\n        }\n    }\n    (ram, acc, retiradas, traza)\n}",
+              "attempts": 1,
+              "solvedAt": 1791073357285,
+              "reviewAt": 1791159757285,
+              "prediction": 2,
+              "predictionCorrect": true,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "fn ejecutar_pc(accesos: &[(u8, Option<u8>)]) -> ([u8; 12], u8, usize, Vec<&'static str>) {\n    let mut ram = [10,11,12,13,20,21,22,23,0,0,0,0];\n    let mut tabla = [Some((1usize, false)), Some((0usize, true)), None];\n    let mut tlb: [Option<(usize, bool)>; 3] = [None; 3];\n    let (mut acc, mut retiradas) = (0, 0);\n    let mut traza = Vec::new();\n    'programa: for &(va, valor) in accesos {\n        if va >= 12 { traza.push(\"range\"); break; }\n        let pagina = va as usize / 4;\n        loop {\n            let (marco, escritura) = if let Some(entrada) = tlb[pagina] {\n                traza.push(\"hit\"); entrada\n            } else {\n                traza.push(\"miss\");\n                if let Some(entrada) = tabla[pagina] {\n                    traza.push(\"walk\"); tlb[pagina] = Some(entrada); entrada\n                } else {\n                    traza.push(\"fault\");\n                    ram[8..12].fill(0);\n                    tabla[pagina] = Some((2, true)); tlb[pagina] = None;\n                    traza.push(\"map\"); traza.push(\"retry\"); continue;\n                }\n            };\n            if valor.is_some() && !escritura {\n                traza.push(\"protection\"); break 'programa;\n            }\n            let fisica = marco * 4 + va as usize % 4;\n            if let Some(nuevo) = valor { ram[fisica] = nuevo; traza.push(\"store\"); }\n            else { acc = ram[fisica]; traza.push(\"load\"); }\n            retiradas += 1; break;\n        }\n    }\n    (ram, acc, retiradas, traza)\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:PASS\n__TALLER_TEST__t3:PASS\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": true },
+                  { "id": "t2", "passed": true },
+                  { "id": "t3", "passed": true }
+                ],
+                "time": 1791073357285,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "go-01": {
+              "draft": "func Bytes(kib int) int {\n    return kib * 1024\n}",
+              "attempts": 1,
+              "solvedAt": 1791073357290,
+              "reviewAt": 1791159757290,
+              "prediction": 0,
+              "predictionCorrect": true,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "func Bytes(kib int) int {\n    return kib * 1024\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:PASS\n__TALLER_TEST__t3:PASS\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": true },
+                  { "id": "t2", "passed": true },
+                  { "id": "t3", "passed": true }
+                ],
+                "time": 1791073357290,
+                "customTest": "",
+                "customPassed": false
+              }
+            }
+          },
+          "selected": { "rust": "rust-137", "go": "go-01" }
+        },
+        "campaign": {
+          "version": 1,
+          "seals": {
+            "rust-02": { "code": true, "prediction": true, "assisted": false },
+            "rust-06": { "code": true, "prediction": true, "assisted": false },
+            "rust-22": { "code": true, "prediction": true, "assisted": true },
+            "rust-101": { "code": true, "prediction": true, "assisted": false },
+            "rust-102": { "code": true, "prediction": true, "assisted": false },
+            "rust-103": { "code": true, "prediction": true, "assisted": false },
+            "rust-09": { "code": true, "prediction": true, "assisted": false },
+            "rust-137": { "code": true, "prediction": true, "assisted": false },
+            "go-01": { "code": true, "prediction": true, "assisted": false }
+          },
+          "checkpoints": { "rust-world-1": { "passed": true, "lastAnswer": 1 } }
+        },
+        "systems": {
+          "version": 1,
+          "records": {
+            "rust:pc": {
+              "observed": ["translate", "protect-retry", "interrupt"],
+              "code": true,
+              "predicted": true,
+              "answer": 1,
+              "steps": [0],
+              "note": "Nota del taller pc: medir antes de optimizar."
+            }
+          }
+        }
+      },
+      "expect": {
+        "written": {
+          "exercises": 11,
+          "drafts": 11,
+          "attempts": 11,
+          "campaignSeals": 9,
+          "campaignCheckpoints": 1,
+          "workshops": 1,
+          "workshopObjectives": 3,
+          "workshopSteps": 1,
+          "routeMarks": 4,
+          "routeQuiz": 1,
+          "routeNotes": 1,
+          "preferences": 1
+        }
+      }
+    },
+    {
+      "id": "d0e1b49-export",
+      "source": "export",
+      "fixture": "qa/fixtures/progress-d0e1b49-export.json",
+      "raw": "{\n  \"version\": 1,\n  \"language\": \"rust\",\n  \"completed\": [\"rust-first-session\", \"rust-ownership\"],\n  \"milestones\": [\"rust-memory\"],\n  \"favorites\": [\"rust-100\"],\n  \"quizAnswers\": {\n    \"rust-first-session\": 1\n  },\n  \"notes\": {\n    \"rust\": {\n      \"learned\": \"Entendí ownership con un ejemplo propio.\",\n      \"next\": \"\"\n    },\n    \"go\": {\n      \"learned\": \"\",\n      \"next\": \"\"\n    }\n  },\n  \"minutes\": 25,\n  \"lab\": {\n    \"version\": 1,\n    \"records\": {\n      \"rust-02\": {\n        \"draft\": \"fn cargar(inicial: i32) -> i32 {\\n    let mut nivel = inicial;\\n    nivel += 1;\\n    nivel += 1;\\n    nivel\\n}\",\n        \"reflection\": \"Mi explicación: el valor se mueve y el dueño original deja de ser válido.\",\n        \"attempts\": 1,\n        \"solvedAt\": 1791073357221,\n        \"reviewAt\": 1791332557245,\n        \"reviewedAt\": 1791073357245,\n        \"prediction\": 0,\n        \"predictionCorrect\": true,\n        \"assisted\": false,\n        \"solutionSeen\": false,\n        \"confidence\": \"practice\",\n        \"result\": {\n          \"code\": \"fn cargar(inicial: i32) -> i32 {\\n    let mut nivel = inicial;\\n    nivel += 1;\\n    nivel += 1;\\n    nivel\\n}\",\n          \"success\": true,\n          \"stdout\": \"__TALLER_TEST__t1:PASS\\n__TALLER_TEST__t2:PASS\\n__TALLER_TEST__t3:PASS\\n\",\n          \"stderr\": \"\",\n          \"transportError\": false,\n          \"tests\": [\n            {\n              \"id\": \"t1\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t2\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t3\",\n              \"passed\": true\n            }\n          ],\n          \"time\": 1791073357221,\n          \"customTest\": \"\",\n          \"customPassed\": false\n        }\n      },\n      \"rust-06\": {\n        \"draft\": \"fn ruta(latencia_ms: u32) -> &'static str {\\n    if latencia_ms < 20 { \\\"cache\\\" } else { \\\"disco\\\" }\\n}\",\n        \"attempts\": 1,\n        \"hints\": 1,\n        \"solvedAt\": 1791073357251,\n        \"reviewAt\": 1791159757251,\n        \"prediction\": 1,\n        \"predictionCorrect\": true,\n        \"assisted\": false,\n        \"solutionSeen\": false,\n        \"result\": {\n          \"code\": \"fn ruta(latencia_ms: u32) -> &'static str {\\n    if latencia_ms < 20 { \\\"cache\\\" } else { \\\"disco\\\" }\\n}\",\n          \"success\": true,\n          \"stdout\": \"__TALLER_TEST__t1:PASS\\n__TALLER_TEST__t2:PASS\\n__TALLER_TEST__t3:PASS\\n\",\n          \"stderr\": \"\",\n          \"transportError\": false,\n          \"tests\": [\n            {\n              \"id\": \"t1\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t2\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t3\",\n              \"passed\": true\n            }\n          ],\n          \"time\": 1791073357251,\n          \"customTest\": \"\",\n          \"customPassed\": false\n        }\n      },\n      \"rust-22\": {\n        \"draft\": \"struct Rectangulo { ancho: u32, alto: u32 }\\nimpl Rectangulo {\\n    fn area(&self) -> u32 { self.ancho * self.alto }\\n    fn es_cuadrado(&self) -> bool { self.ancho == self.alto }\\n}\",\n        \"attempts\": 1,\n        \"solvedAt\": 1791073357261,\n        \"reviewAt\": 1791159757261,\n        \"prediction\": 1,\n        \"predictionCorrect\": true,\n        \"assisted\": true,\n        \"solutionSeen\": true,\n        \"result\": {\n          \"code\": \"struct Rectangulo { ancho: u32, alto: u32 }\\nimpl Rectangulo {\\n    fn area(&self) -> u32 { self.ancho * self.alto }\\n    fn es_cuadrado(&self) -> bool { self.ancho == self.alto }\\n}\",\n          \"success\": true,\n          \"stdout\": \"__TALLER_TEST__t1:PASS\\n__TALLER_TEST__t2:PASS\\n__TALLER_TEST__t3:PASS\\n\",\n          \"stderr\": \"\",\n          \"transportError\": false,\n          \"tests\": [\n            {\n              \"id\": \"t1\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t2\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t3\",\n              \"passed\": true\n            }\n          ],\n          \"time\": 1791073357261,\n          \"customTest\": \"\",\n          \"customPassed\": false\n        }\n      },\n      \"rust-101\": {\n        \"draft\": \"fn paso(x: i32, y: i32, direccion: char) -> (i32, i32) {\\n    match direccion {\\n        'N' => (x, y + 1),\\n        'S' => (x, y - 1),\\n        'E' => (x + 1, y),\\n        'O' => (x - 1, y),\\n        _ => (x, y),\\n    }\\n}\",\n        \"customTest\": \"true\",\n        \"attempts\": 1,\n        \"solvedAt\": 1791073357267,\n        \"reviewAt\": 1791159757267,\n        \"prediction\": 1,\n        \"predictionCorrect\": true,\n        \"assisted\": false,\n        \"solutionSeen\": false,\n        \"result\": {\n          \"code\": \"fn paso(x: i32, y: i32, direccion: char) -> (i32, i32) {\\n    match direccion {\\n        'N' => (x, y + 1),\\n        'S' => (x, y - 1),\\n        'E' => (x + 1, y),\\n        'O' => (x - 1, y),\\n        _ => (x, y),\\n    }\\n}\",\n          \"success\": true,\n          \"stdout\": \"__TALLER_TEST__t1:PASS\\n__TALLER_TEST__t2:PASS\\n__TALLER_TEST__t3:PASS\\n__TALLER_TEST__custom:PASS\\n\",\n          \"stderr\": \"\",\n          \"transportError\": false,\n          \"tests\": [\n            {\n              \"id\": \"t1\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t2\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t3\",\n              \"passed\": true\n            }\n          ],\n          \"time\": 1791073357267,\n          \"customTest\": \"true\",\n          \"customPassed\": true\n        }\n      },\n      \"rust-102\": {\n        \"draft\": \"fn agregar(inventario: &mut [u8; 3], compartimiento: usize, cantidad: u8) -> bool {\\n    let Some(actual) = inventario.get_mut(compartimiento) else { return false; };\\n    let Some(nuevo) = actual.checked_add(cantidad) else { return false; };\\n    *actual = nuevo;\\n    true\\n}\",\n        \"attempts\": 1,\n        \"solvedAt\": 1791073357271,\n        \"reviewAt\": 1791159757271,\n        \"prediction\": 1,\n        \"predictionCorrect\": true,\n        \"assisted\": false,\n        \"solutionSeen\": false,\n        \"result\": {\n          \"code\": \"fn agregar(inventario: &mut [u8; 3], compartimiento: usize, cantidad: u8) -> bool {\\n    let Some(actual) = inventario.get_mut(compartimiento) else { return false; };\\n    let Some(nuevo) = actual.checked_add(cantidad) else { return false; };\\n    *actual = nuevo;\\n    true\\n}\",\n          \"success\": true,\n          \"stdout\": \"__TALLER_TEST__t1:PASS\\n__TALLER_TEST__t2:PASS\\n__TALLER_TEST__t3:PASS\\n\",\n          \"stderr\": \"\",\n          \"transportError\": false,\n          \"tests\": [\n            {\n              \"id\": \"t1\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t2\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t3\",\n              \"passed\": true\n            }\n          ],\n          \"time\": 1791073357271,\n          \"customTest\": \"\",\n          \"customPassed\": false\n        }\n      },\n      \"rust-103\": {\n        \"draft\": \"fn cruzar_hangar(ordenes: &str, mut bateria: u32) -> (i32, i32, u32) {\\n    let (mut x, mut y) = (0, 0);\\n    for orden in ordenes.chars() {\\n        let (nx, ny) = match orden {\\n            'N' => (x, y + 1), 'S' => (x, y - 1),\\n            'E' => (x + 1, y), 'O' => (x - 1, y),\\n            _ => continue,\\n        };\\n        if bateria > 0 && (0..=2).contains(&nx) && (0..=2).contains(&ny) {\\n            x = nx; y = ny; bateria -= 1;\\n        }\\n    }\\n    (x, y, bateria)\\n}\",\n        \"attempts\": 1,\n        \"solvedAt\": 1791073357275,\n        \"reviewAt\": 1791159757275,\n        \"prediction\": 1,\n        \"predictionCorrect\": true,\n        \"assisted\": false,\n        \"solutionSeen\": false,\n        \"result\": {\n          \"code\": \"fn cruzar_hangar(ordenes: &str, mut bateria: u32) -> (i32, i32, u32) {\\n    let (mut x, mut y) = (0, 0);\\n    for orden in ordenes.chars() {\\n        let (nx, ny) = match orden {\\n            'N' => (x, y + 1), 'S' => (x, y - 1),\\n            'E' => (x + 1, y), 'O' => (x - 1, y),\\n            _ => continue,\\n        };\\n        if bateria > 0 && (0..=2).contains(&nx) && (0..=2).contains(&ny) {\\n            x = nx; y = ny; bateria -= 1;\\n        }\\n    }\\n    (x, y, bateria)\\n}\",\n          \"success\": true,\n          \"stdout\": \"__TALLER_TEST__t1:PASS\\n__TALLER_TEST__t2:PASS\\n__TALLER_TEST__t3:PASS\\n\",\n          \"stderr\": \"\",\n          \"transportError\": false,\n          \"tests\": [\n            {\n              \"id\": \"t1\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t2\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t3\",\n              \"passed\": true\n            }\n          ],\n          \"time\": 1791073357275,\n          \"customTest\": \"\",\n          \"customPassed\": false\n        }\n      },\n      \"rust-07\": {\n        \"draft\": \"fn estado(codigo: u16) -> &'static str {\\n    match codigo {\\n        200 => \\\"ok\\\",\\n        404 => \\\"ausente\\\",\\n        500 => \\\"error\\\",\\n        _ => \\\"desconocido\\\",\\n    }\\n}\",\n        \"attempts\": 1,\n        \"prediction\": 0,\n        \"predictionCorrect\": false,\n        \"assisted\": false,\n        \"solutionSeen\": false,\n        \"result\": {\n          \"code\": \"fn estado(codigo: u16) -> &'static str {\\n    match codigo {\\n        200 => \\\"ok\\\",\\n        404 => \\\"ausente\\\",\\n        500 => \\\"error\\\",\\n        _ => \\\"desconocido\\\",\\n    }\\n}\",\n          \"success\": true,\n          \"stdout\": \"__TALLER_TEST__t1:FAIL\\n__TALLER_TEST__t2:FAIL\\n__TALLER_TEST__t3:FAIL\\n\",\n          \"stderr\": \"\",\n          \"transportError\": false,\n          \"tests\": [\n            {\n              \"id\": \"t1\",\n              \"passed\": false\n            },\n            {\n              \"id\": \"t2\",\n              \"passed\": false\n            },\n            {\n              \"id\": \"t3\",\n              \"passed\": false\n            }\n          ],\n          \"time\": 1791073357277,\n          \"customTest\": \"\",\n          \"customPassed\": false\n        }\n      },\n      \"rust-08\": {\n        \"draft\": \"fn suma_hasta(n: u32) -> u32 {\\n    let mut total = 0;\\n    for x in 1..=n { total += x; }\\n    total\\n}\",\n        \"attempts\": 1,\n        \"predictionCorrect\": false,\n        \"assisted\": false,\n        \"solutionSeen\": false,\n        \"result\": {\n          \"code\": \"fn suma_hasta(n: u32) -> u32 {\\n    let mut total = 0;\\n    for x in 1..=n { total += x; }\\n    total\\n}\",\n          \"success\": false,\n          \"stdout\": \"\",\n          \"stderr\": \"Failed to fetch\",\n          \"transportError\": true,\n          \"tests\": [\n            {\n              \"id\": \"t1\",\n              \"passed\": false\n            },\n            {\n              \"id\": \"t2\",\n              \"passed\": false\n            },\n            {\n              \"id\": \"t3\",\n              \"passed\": false\n            }\n          ],\n          \"time\": 1791073357279,\n          \"customTest\": \"\",\n          \"customPassed\": false\n        }\n      },\n      \"rust-09\": {\n        \"draft\": \"fn roto() {}\",\n        \"attempts\": 2,\n        \"solvedAt\": 1791073357282,\n        \"reviewAt\": 1791159757282,\n        \"prediction\": 2,\n        \"predictionCorrect\": true,\n        \"assisted\": false,\n        \"solutionSeen\": false,\n        \"result\": {\n          \"code\": \"fn roto() {}\",\n          \"success\": true,\n          \"stdout\": \"__TALLER_TEST__t1:FAIL\\n__TALLER_TEST__t2:FAIL\\n__TALLER_TEST__t3:FAIL\\n\",\n          \"stderr\": \"\",\n          \"transportError\": false,\n          \"tests\": [\n            {\n              \"id\": \"t1\",\n              \"passed\": false\n            },\n            {\n              \"id\": \"t2\",\n              \"passed\": false\n            },\n            {\n              \"id\": \"t3\",\n              \"passed\": false\n            }\n          ],\n          \"time\": 1791073357282,\n          \"customTest\": \"\",\n          \"customPassed\": false\n        }\n      },\n      \"rust-137\": {\n        \"draft\": \"fn ejecutar_pc(accesos: &[(u8, Option<u8>)]) -> ([u8; 12], u8, usize, Vec<&'static str>) {\\n    let mut ram = [10,11,12,13,20,21,22,23,0,0,0,0];\\n    let mut tabla = [Some((1usize, false)), Some((0usize, true)), None];\\n    let mut tlb: [Option<(usize, bool)>; 3] = [None; 3];\\n    let (mut acc, mut retiradas) = (0, 0);\\n    let mut traza = Vec::new();\\n    'programa: for &(va, valor) in accesos {\\n        if va >= 12 { traza.push(\\\"range\\\"); break; }\\n        let pagina = va as usize / 4;\\n        loop {\\n            let (marco, escritura) = if let Some(entrada) = tlb[pagina] {\\n                traza.push(\\\"hit\\\"); entrada\\n            } else {\\n                traza.push(\\\"miss\\\");\\n                if let Some(entrada) = tabla[pagina] {\\n                    traza.push(\\\"walk\\\"); tlb[pagina] = Some(entrada); entrada\\n                } else {\\n                    traza.push(\\\"fault\\\");\\n                    ram[8..12].fill(0);\\n                    tabla[pagina] = Some((2, true)); tlb[pagina] = None;\\n                    traza.push(\\\"map\\\"); traza.push(\\\"retry\\\"); continue;\\n                }\\n            };\\n            if valor.is_some() && !escritura {\\n                traza.push(\\\"protection\\\"); break 'programa;\\n            }\\n            let fisica = marco * 4 + va as usize % 4;\\n            if let Some(nuevo) = valor { ram[fisica] = nuevo; traza.push(\\\"store\\\"); }\\n            else { acc = ram[fisica]; traza.push(\\\"load\\\"); }\\n            retiradas += 1; break;\\n        }\\n    }\\n    (ram, acc, retiradas, traza)\\n}\",\n        \"attempts\": 1,\n        \"solvedAt\": 1791073357285,\n        \"reviewAt\": 1791159757285,\n        \"prediction\": 2,\n        \"predictionCorrect\": true,\n        \"assisted\": false,\n        \"solutionSeen\": false,\n        \"result\": {\n          \"code\": \"fn ejecutar_pc(accesos: &[(u8, Option<u8>)]) -> ([u8; 12], u8, usize, Vec<&'static str>) {\\n    let mut ram = [10,11,12,13,20,21,22,23,0,0,0,0];\\n    let mut tabla = [Some((1usize, false)), Some((0usize, true)), None];\\n    let mut tlb: [Option<(usize, bool)>; 3] = [None; 3];\\n    let (mut acc, mut retiradas) = (0, 0);\\n    let mut traza = Vec::new();\\n    'programa: for &(va, valor) in accesos {\\n        if va >= 12 { traza.push(\\\"range\\\"); break; }\\n        let pagina = va as usize / 4;\\n        loop {\\n            let (marco, escritura) = if let Some(entrada) = tlb[pagina] {\\n                traza.push(\\\"hit\\\"); entrada\\n            } else {\\n                traza.push(\\\"miss\\\");\\n                if let Some(entrada) = tabla[pagina] {\\n                    traza.push(\\\"walk\\\"); tlb[pagina] = Some(entrada); entrada\\n                } else {\\n                    traza.push(\\\"fault\\\");\\n                    ram[8..12].fill(0);\\n                    tabla[pagina] = Some((2, true)); tlb[pagina] = None;\\n                    traza.push(\\\"map\\\"); traza.push(\\\"retry\\\"); continue;\\n                }\\n            };\\n            if valor.is_some() && !escritura {\\n                traza.push(\\\"protection\\\"); break 'programa;\\n            }\\n            let fisica = marco * 4 + va as usize % 4;\\n            if let Some(nuevo) = valor { ram[fisica] = nuevo; traza.push(\\\"store\\\"); }\\n            else { acc = ram[fisica]; traza.push(\\\"load\\\"); }\\n            retiradas += 1; break;\\n        }\\n    }\\n    (ram, acc, retiradas, traza)\\n}\",\n          \"success\": true,\n          \"stdout\": \"__TALLER_TEST__t1:PASS\\n__TALLER_TEST__t2:PASS\\n__TALLER_TEST__t3:PASS\\n\",\n          \"stderr\": \"\",\n          \"transportError\": false,\n          \"tests\": [\n            {\n              \"id\": \"t1\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t2\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t3\",\n              \"passed\": true\n            }\n          ],\n          \"time\": 1791073357285,\n          \"customTest\": \"\",\n          \"customPassed\": false\n        }\n      },\n      \"go-01\": {\n        \"draft\": \"func Bytes(kib int) int {\\n    return kib * 1024\\n}\",\n        \"attempts\": 1,\n        \"solvedAt\": 1791073357290,\n        \"reviewAt\": 1791159757290,\n        \"prediction\": 0,\n        \"predictionCorrect\": true,\n        \"assisted\": false,\n        \"solutionSeen\": false,\n        \"result\": {\n          \"code\": \"func Bytes(kib int) int {\\n    return kib * 1024\\n}\",\n          \"success\": true,\n          \"stdout\": \"__TALLER_TEST__t1:PASS\\n__TALLER_TEST__t2:PASS\\n__TALLER_TEST__t3:PASS\\n\",\n          \"stderr\": \"\",\n          \"transportError\": false,\n          \"tests\": [\n            {\n              \"id\": \"t1\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t2\",\n              \"passed\": true\n            },\n            {\n              \"id\": \"t3\",\n              \"passed\": true\n            }\n          ],\n          \"time\": 1791073357290,\n          \"customTest\": \"\",\n          \"customPassed\": false\n        }\n      }\n    },\n    \"selected\": {\n      \"rust\": \"rust-137\",\n      \"go\": \"go-01\"\n    }\n  },\n  \"campaign\": {\n    \"version\": 1,\n    \"seals\": {\n      \"rust-02\": {\n        \"code\": true,\n        \"prediction\": true,\n        \"assisted\": false\n      },\n      \"rust-06\": {\n        \"code\": true,\n        \"prediction\": true,\n        \"assisted\": false\n      },\n      \"rust-22\": {\n        \"code\": true,\n        \"prediction\": true,\n        \"assisted\": true\n      },\n      \"rust-101\": {\n        \"code\": true,\n        \"prediction\": true,\n        \"assisted\": false\n      },\n      \"rust-102\": {\n        \"code\": true,\n        \"prediction\": true,\n        \"assisted\": false\n      },\n      \"rust-103\": {\n        \"code\": true,\n        \"prediction\": true,\n        \"assisted\": false\n      },\n      \"rust-09\": {\n        \"code\": true,\n        \"prediction\": true,\n        \"assisted\": false\n      },\n      \"rust-137\": {\n        \"code\": true,\n        \"prediction\": true,\n        \"assisted\": false\n      },\n      \"go-01\": {\n        \"code\": true,\n        \"prediction\": true,\n        \"assisted\": false\n      }\n    },\n    \"checkpoints\": {\n      \"rust-world-1\": {\n        \"passed\": true,\n        \"lastAnswer\": 1\n      }\n    }\n  },\n  \"systems\": {\n    \"version\": 1,\n    \"records\": {\n      \"rust:pc\": {\n        \"observed\": [\"translate\", \"protect-retry\", \"interrupt\"],\n        \"code\": true,\n        \"predicted\": true,\n        \"answer\": 1,\n        \"steps\": [0],\n        \"note\": \"Nota del taller pc: medir antes de optimizar.\"\n      },\n      \"rust:cache\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"rust:heap\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"rust:mmu\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"rust:tlb\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"rust:vm\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"rust:stack\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"rust:scheduler\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"rust:interrupts\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"rust:wal\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"rust:lsm\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"rust:quorum\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"rust:clocks\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"rust:network\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"rust:backpressure\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"rust:balancing\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"rust:sharding\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"rust:transforms\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"rust:raster\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"rust:raycast\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"rust:pathfinding\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"rust:physics\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"rust:life\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"rust:algebra\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"rust:minimax\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:pc\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:cache\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:heap\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:mmu\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:tlb\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:vm\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:stack\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:scheduler\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:interrupts\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:wal\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:lsm\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:quorum\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:clocks\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:network\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:backpressure\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:balancing\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:sharding\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:transforms\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:raster\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:raycast\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:pathfinding\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:physics\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:life\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:algebra\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      },\n      \"go:minimax\": {\n        \"observed\": [],\n        \"code\": false,\n        \"predicted\": false,\n        \"answer\": null,\n        \"steps\": [],\n        \"note\": \"\"\n      }\n    }\n  },\n  \"exportedAt\": \"2026-10-04T00:23:30.568Z\"\n}\n",
+      "normalized": {
+        "route": {
+          "version": 1,
+          "language": "rust",
+          "completed": ["rust-first-session", "rust-ownership"],
+          "milestones": ["rust-memory"],
+          "favorites": ["rust-100"],
+          "quizAnswers": { "rust-first-session": 1 },
+          "notes": {
+            "rust": { "learned": "Entendí ownership con un ejemplo propio.", "next": "" },
+            "go": { "learned": "", "next": "" }
+          },
+          "minutes": 25
+        },
+        "lab": {
+          "version": 1,
+          "records": {
+            "rust-02": {
+              "draft": "fn cargar(inicial: i32) -> i32 {\n    let mut nivel = inicial;\n    nivel += 1;\n    nivel += 1;\n    nivel\n}",
+              "reflection": "Mi explicación: el valor se mueve y el dueño original deja de ser válido.",
+              "attempts": 1,
+              "solvedAt": 1791073357221,
+              "reviewAt": 1791332557245,
+              "reviewedAt": 1791073357245,
+              "prediction": 0,
+              "predictionCorrect": true,
+              "assisted": false,
+              "solutionSeen": false,
+              "confidence": "practice",
+              "result": {
+                "code": "fn cargar(inicial: i32) -> i32 {\n    let mut nivel = inicial;\n    nivel += 1;\n    nivel += 1;\n    nivel\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:PASS\n__TALLER_TEST__t3:PASS\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": true },
+                  { "id": "t2", "passed": true },
+                  { "id": "t3", "passed": true }
+                ],
+                "time": 1791073357221,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "rust-06": {
+              "draft": "fn ruta(latencia_ms: u32) -> &'static str {\n    if latencia_ms < 20 { \"cache\" } else { \"disco\" }\n}",
+              "attempts": 1,
+              "hints": 1,
+              "solvedAt": 1791073357251,
+              "reviewAt": 1791159757251,
+              "prediction": 1,
+              "predictionCorrect": true,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "fn ruta(latencia_ms: u32) -> &'static str {\n    if latencia_ms < 20 { \"cache\" } else { \"disco\" }\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:PASS\n__TALLER_TEST__t3:PASS\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": true },
+                  { "id": "t2", "passed": true },
+                  { "id": "t3", "passed": true }
+                ],
+                "time": 1791073357251,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "rust-22": {
+              "draft": "struct Rectangulo { ancho: u32, alto: u32 }\nimpl Rectangulo {\n    fn area(&self) -> u32 { self.ancho * self.alto }\n    fn es_cuadrado(&self) -> bool { self.ancho == self.alto }\n}",
+              "attempts": 1,
+              "solvedAt": 1791073357261,
+              "reviewAt": 1791159757261,
+              "prediction": 1,
+              "predictionCorrect": true,
+              "assisted": true,
+              "solutionSeen": true,
+              "result": {
+                "code": "struct Rectangulo { ancho: u32, alto: u32 }\nimpl Rectangulo {\n    fn area(&self) -> u32 { self.ancho * self.alto }\n    fn es_cuadrado(&self) -> bool { self.ancho == self.alto }\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:PASS\n__TALLER_TEST__t3:PASS\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": true },
+                  { "id": "t2", "passed": true },
+                  { "id": "t3", "passed": true }
+                ],
+                "time": 1791073357261,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "rust-101": {
+              "draft": "fn paso(x: i32, y: i32, direccion: char) -> (i32, i32) {\n    match direccion {\n        'N' => (x, y + 1),\n        'S' => (x, y - 1),\n        'E' => (x + 1, y),\n        'O' => (x - 1, y),\n        _ => (x, y),\n    }\n}",
+              "customTest": "true",
+              "attempts": 1,
+              "solvedAt": 1791073357267,
+              "reviewAt": 1791159757267,
+              "prediction": 1,
+              "predictionCorrect": true,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "fn paso(x: i32, y: i32, direccion: char) -> (i32, i32) {\n    match direccion {\n        'N' => (x, y + 1),\n        'S' => (x, y - 1),\n        'E' => (x + 1, y),\n        'O' => (x - 1, y),\n        _ => (x, y),\n    }\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:PASS\n__TALLER_TEST__t3:PASS\n__TALLER_TEST__custom:PASS\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": true },
+                  { "id": "t2", "passed": true },
+                  { "id": "t3", "passed": true }
+                ],
+                "time": 1791073357267,
+                "customTest": "true",
+                "customPassed": true
+              }
+            },
+            "rust-102": {
+              "draft": "fn agregar(inventario: &mut [u8; 3], compartimiento: usize, cantidad: u8) -> bool {\n    let Some(actual) = inventario.get_mut(compartimiento) else { return false; };\n    let Some(nuevo) = actual.checked_add(cantidad) else { return false; };\n    *actual = nuevo;\n    true\n}",
+              "attempts": 1,
+              "solvedAt": 1791073357271,
+              "reviewAt": 1791159757271,
+              "prediction": 1,
+              "predictionCorrect": true,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "fn agregar(inventario: &mut [u8; 3], compartimiento: usize, cantidad: u8) -> bool {\n    let Some(actual) = inventario.get_mut(compartimiento) else { return false; };\n    let Some(nuevo) = actual.checked_add(cantidad) else { return false; };\n    *actual = nuevo;\n    true\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:PASS\n__TALLER_TEST__t3:PASS\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": true },
+                  { "id": "t2", "passed": true },
+                  { "id": "t3", "passed": true }
+                ],
+                "time": 1791073357271,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "rust-103": {
+              "draft": "fn cruzar_hangar(ordenes: &str, mut bateria: u32) -> (i32, i32, u32) {\n    let (mut x, mut y) = (0, 0);\n    for orden in ordenes.chars() {\n        let (nx, ny) = match orden {\n            'N' => (x, y + 1), 'S' => (x, y - 1),\n            'E' => (x + 1, y), 'O' => (x - 1, y),\n            _ => continue,\n        };\n        if bateria > 0 && (0..=2).contains(&nx) && (0..=2).contains(&ny) {\n            x = nx; y = ny; bateria -= 1;\n        }\n    }\n    (x, y, bateria)\n}",
+              "attempts": 1,
+              "solvedAt": 1791073357275,
+              "reviewAt": 1791159757275,
+              "prediction": 1,
+              "predictionCorrect": true,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "fn cruzar_hangar(ordenes: &str, mut bateria: u32) -> (i32, i32, u32) {\n    let (mut x, mut y) = (0, 0);\n    for orden in ordenes.chars() {\n        let (nx, ny) = match orden {\n            'N' => (x, y + 1), 'S' => (x, y - 1),\n            'E' => (x + 1, y), 'O' => (x - 1, y),\n            _ => continue,\n        };\n        if bateria > 0 && (0..=2).contains(&nx) && (0..=2).contains(&ny) {\n            x = nx; y = ny; bateria -= 1;\n        }\n    }\n    (x, y, bateria)\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:PASS\n__TALLER_TEST__t3:PASS\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": true },
+                  { "id": "t2", "passed": true },
+                  { "id": "t3", "passed": true }
+                ],
+                "time": 1791073357275,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "rust-07": {
+              "draft": "fn estado(codigo: u16) -> &'static str {\n    match codigo {\n        200 => \"ok\",\n        404 => \"ausente\",\n        500 => \"error\",\n        _ => \"desconocido\",\n    }\n}",
+              "attempts": 1,
+              "prediction": 0,
+              "predictionCorrect": false,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "fn estado(codigo: u16) -> &'static str {\n    match codigo {\n        200 => \"ok\",\n        404 => \"ausente\",\n        500 => \"error\",\n        _ => \"desconocido\",\n    }\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:FAIL\n__TALLER_TEST__t2:FAIL\n__TALLER_TEST__t3:FAIL\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": false },
+                  { "id": "t2", "passed": false },
+                  { "id": "t3", "passed": false }
+                ],
+                "time": 1791073357277,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "rust-08": {
+              "draft": "fn suma_hasta(n: u32) -> u32 {\n    let mut total = 0;\n    for x in 1..=n { total += x; }\n    total\n}",
+              "attempts": 1,
+              "predictionCorrect": false,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "fn suma_hasta(n: u32) -> u32 {\n    let mut total = 0;\n    for x in 1..=n { total += x; }\n    total\n}",
+                "success": false,
+                "stdout": "",
+                "stderr": "Failed to fetch",
+                "transportError": true,
+                "tests": [
+                  { "id": "t1", "passed": false },
+                  { "id": "t2", "passed": false },
+                  { "id": "t3", "passed": false }
+                ],
+                "time": 1791073357279,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "rust-09": {
+              "draft": "fn roto() {}",
+              "attempts": 2,
+              "solvedAt": 1791073357282,
+              "reviewAt": 1791159757282,
+              "prediction": 2,
+              "predictionCorrect": true,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "fn roto() {}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:FAIL\n__TALLER_TEST__t2:FAIL\n__TALLER_TEST__t3:FAIL\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": false },
+                  { "id": "t2", "passed": false },
+                  { "id": "t3", "passed": false }
+                ],
+                "time": 1791073357282,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "rust-137": {
+              "draft": "fn ejecutar_pc(accesos: &[(u8, Option<u8>)]) -> ([u8; 12], u8, usize, Vec<&'static str>) {\n    let mut ram = [10,11,12,13,20,21,22,23,0,0,0,0];\n    let mut tabla = [Some((1usize, false)), Some((0usize, true)), None];\n    let mut tlb: [Option<(usize, bool)>; 3] = [None; 3];\n    let (mut acc, mut retiradas) = (0, 0);\n    let mut traza = Vec::new();\n    'programa: for &(va, valor) in accesos {\n        if va >= 12 { traza.push(\"range\"); break; }\n        let pagina = va as usize / 4;\n        loop {\n            let (marco, escritura) = if let Some(entrada) = tlb[pagina] {\n                traza.push(\"hit\"); entrada\n            } else {\n                traza.push(\"miss\");\n                if let Some(entrada) = tabla[pagina] {\n                    traza.push(\"walk\"); tlb[pagina] = Some(entrada); entrada\n                } else {\n                    traza.push(\"fault\");\n                    ram[8..12].fill(0);\n                    tabla[pagina] = Some((2, true)); tlb[pagina] = None;\n                    traza.push(\"map\"); traza.push(\"retry\"); continue;\n                }\n            };\n            if valor.is_some() && !escritura {\n                traza.push(\"protection\"); break 'programa;\n            }\n            let fisica = marco * 4 + va as usize % 4;\n            if let Some(nuevo) = valor { ram[fisica] = nuevo; traza.push(\"store\"); }\n            else { acc = ram[fisica]; traza.push(\"load\"); }\n            retiradas += 1; break;\n        }\n    }\n    (ram, acc, retiradas, traza)\n}",
+              "attempts": 1,
+              "solvedAt": 1791073357285,
+              "reviewAt": 1791159757285,
+              "prediction": 2,
+              "predictionCorrect": true,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "fn ejecutar_pc(accesos: &[(u8, Option<u8>)]) -> ([u8; 12], u8, usize, Vec<&'static str>) {\n    let mut ram = [10,11,12,13,20,21,22,23,0,0,0,0];\n    let mut tabla = [Some((1usize, false)), Some((0usize, true)), None];\n    let mut tlb: [Option<(usize, bool)>; 3] = [None; 3];\n    let (mut acc, mut retiradas) = (0, 0);\n    let mut traza = Vec::new();\n    'programa: for &(va, valor) in accesos {\n        if va >= 12 { traza.push(\"range\"); break; }\n        let pagina = va as usize / 4;\n        loop {\n            let (marco, escritura) = if let Some(entrada) = tlb[pagina] {\n                traza.push(\"hit\"); entrada\n            } else {\n                traza.push(\"miss\");\n                if let Some(entrada) = tabla[pagina] {\n                    traza.push(\"walk\"); tlb[pagina] = Some(entrada); entrada\n                } else {\n                    traza.push(\"fault\");\n                    ram[8..12].fill(0);\n                    tabla[pagina] = Some((2, true)); tlb[pagina] = None;\n                    traza.push(\"map\"); traza.push(\"retry\"); continue;\n                }\n            };\n            if valor.is_some() && !escritura {\n                traza.push(\"protection\"); break 'programa;\n            }\n            let fisica = marco * 4 + va as usize % 4;\n            if let Some(nuevo) = valor { ram[fisica] = nuevo; traza.push(\"store\"); }\n            else { acc = ram[fisica]; traza.push(\"load\"); }\n            retiradas += 1; break;\n        }\n    }\n    (ram, acc, retiradas, traza)\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:PASS\n__TALLER_TEST__t3:PASS\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": true },
+                  { "id": "t2", "passed": true },
+                  { "id": "t3", "passed": true }
+                ],
+                "time": 1791073357285,
+                "customTest": "",
+                "customPassed": false
+              }
+            },
+            "go-01": {
+              "draft": "func Bytes(kib int) int {\n    return kib * 1024\n}",
+              "attempts": 1,
+              "solvedAt": 1791073357290,
+              "reviewAt": 1791159757290,
+              "prediction": 0,
+              "predictionCorrect": true,
+              "assisted": false,
+              "solutionSeen": false,
+              "result": {
+                "code": "func Bytes(kib int) int {\n    return kib * 1024\n}",
+                "success": true,
+                "stdout": "__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:PASS\n__TALLER_TEST__t3:PASS\n",
+                "stderr": "",
+                "transportError": false,
+                "tests": [
+                  { "id": "t1", "passed": true },
+                  { "id": "t2", "passed": true },
+                  { "id": "t3", "passed": true }
+                ],
+                "time": 1791073357290,
+                "customTest": "",
+                "customPassed": false
+              }
+            }
+          },
+          "selected": { "rust": "rust-137", "go": "go-01" }
+        },
+        "campaign": {
+          "version": 1,
+          "seals": {
+            "rust-02": { "code": true, "prediction": true, "assisted": false },
+            "rust-06": { "code": true, "prediction": true, "assisted": false },
+            "rust-22": { "code": true, "prediction": true, "assisted": true },
+            "rust-101": { "code": true, "prediction": true, "assisted": false },
+            "rust-102": { "code": true, "prediction": true, "assisted": false },
+            "rust-103": { "code": true, "prediction": true, "assisted": false },
+            "rust-09": { "code": true, "prediction": true, "assisted": false },
+            "rust-137": { "code": true, "prediction": true, "assisted": false },
+            "go-01": { "code": true, "prediction": true, "assisted": false }
+          },
+          "checkpoints": { "rust-world-1": { "passed": true, "lastAnswer": 1 } }
+        },
+        "systems": {
+          "version": 1,
+          "records": {
+            "rust:pc": {
+              "observed": ["translate", "protect-retry", "interrupt"],
+              "code": true,
+              "predicted": true,
+              "answer": 1,
+              "steps": [0],
+              "note": "Nota del taller pc: medir antes de optimizar."
+            },
+            "rust:cache": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "rust:heap": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "rust:mmu": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "rust:tlb": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "rust:vm": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "rust:stack": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "rust:scheduler": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "rust:interrupts": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "rust:wal": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "rust:lsm": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "rust:quorum": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "rust:clocks": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "rust:network": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "rust:backpressure": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "rust:balancing": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "rust:sharding": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "rust:transforms": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "rust:raster": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "rust:raycast": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "rust:pathfinding": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "rust:physics": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "rust:life": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "rust:algebra": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "rust:minimax": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:pc": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:cache": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:heap": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:mmu": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:tlb": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:vm": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:stack": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:scheduler": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:interrupts": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:wal": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:lsm": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:quorum": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:clocks": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:network": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:backpressure": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:balancing": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:sharding": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:transforms": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:raster": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:raycast": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:pathfinding": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:physics": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:life": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:algebra": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            },
+            "go:minimax": {
+              "observed": [],
+              "code": false,
+              "predicted": false,
+              "answer": null,
+              "steps": [],
+              "note": ""
+            }
+          }
+        }
+      },
+      "expect": {
+        "written": {
+          "exercises": 11,
+          "drafts": 11,
+          "attempts": 11,
+          "campaignSeals": 9,
+          "campaignCheckpoints": 1,
+          "workshops": 50,
+          "workshopObjectives": 3,
+          "workshopSteps": 1,
+          "routeMarks": 4,
+          "routeQuiz": 1,
+          "routeNotes": 1,
+          "preferences": 1
+        }
+      }
+    }
+  ]
+}
