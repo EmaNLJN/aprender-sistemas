@@ -110,7 +110,7 @@ it('exits 2 naming the malformed line and processes nothing', function () {
     [$exit, $output] = reapplyLedger($this->ledgerPath, $contents);
 
     expect($exit)->toBe(2)
-        ->and($output)->toContain('2')
+        ->and($output)->toContain('Hay líneas mal formadas: 2. No se procesó nada.')
         ->and(DB::table('users')->where('id', 12)->value('status'))->toBe('active')
         ->and(DB::table('account_deletions')->count())->toBe(0);
 });
@@ -200,4 +200,13 @@ it('does not count an account as deleted when the purge ends without removing it
         ->and($output)->not->toContain('Cuenta 12: borrada')
         ->and(DB::table('users')->where('id', 12)->count())->toBe(1);
     Log::shouldNotHaveReceived('info', ['ledger.reapplied', ['user_id' => 12]]);
+});
+
+it('treats an account whose creation instant differs only by one millisecond as a reused id', function () {
+    PopulatedAccount::create(['id' => 12, 'created_at' => '2026-10-05 12:00:00.124']);
+
+    [, $output] = reapplyLedger($this->ledgerPath, "12\t2026-10-05 12:00:00.123\t2026-10-06 08:30:00.000\n");
+
+    expect($output)->toContain('1 id reutilizado salteado')
+        ->and(DB::table('users')->where('id', 12)->value('status'))->toBe('active');
 });

@@ -86,26 +86,25 @@ it('does not touch an account that is not deleting and logs purge.skipped', func
         ->and(DB::table('account_deletions')->count())->toBe(0);
 });
 
-it('finishes with the same result after being cut in the middle of the batches', function () {
+it('finishes with the same result after being cut in the middle of a batched table', function () {
+    config(['taller.purge.batch_size' => 1]);
     $user = purgeJobDeletingAccount();
+    $firstAttempt = (array) DB::table('attempts')->where('user_id', $user->id)->first();
+    unset($firstAttempt['id'], $firstAttempt['counted']);
+    DB::table('attempts')->insert([...$firstAttempt, 'epoch' => 2]);
+    $attemptsBefore = DB::table('attempts')->where('user_id', $user->id)->count();
     $cut = true;
-    $deletedFromAttempts = false;
-    DB::listen(function ($query) use (&$cut, &$deletedFromAttempts) {
-        if (! $cut) {
-            return;
-        }
-        if ($deletedFromAttempts) {
+    DB::listen(function ($query) use (&$cut) {
+        if ($cut && str_starts_with($query->sql, 'delete from `attempts`')) {
             $cut = false;
-            throw new RuntimeException('cut after the first delete from attempts');
+            throw new RuntimeException('cut after the first batch of attempts');
         }
-        $deletedFromAttempts = str_starts_with($query->sql, 'delete from `attempts`');
     });
 
     expect(fn () => purgeJobRun($user->id))->toThrow(RuntimeException::class);
 
     expect(DB::table('users')->where('id', $user->id)->value('status'))->toBe('deleting')
-        ->and(DB::table('attempts')->where('user_id', $user->id)->count())->toBe(0)
-        ->and(DB::table('invitations')->where('invited_by', $user->id)->count())->toBe(0);
+        ->and(DB::table('attempts')->where('user_id', $user->id)->count())->toBe($attemptsBefore - 1);
 
     purgeJobRun($user->id);
 

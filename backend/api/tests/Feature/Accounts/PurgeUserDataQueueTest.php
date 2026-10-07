@@ -50,7 +50,9 @@ it('stores only the account id in the payload of the database queue', function (
 
     PurgeUserData::dispatch($user->id);
 
-    $payload = (string) DB::table('jobs')->latest('id')->value('payload');
-    expect($payload)->toContain((string) $user->id)
-        ->and($payload)->not->toContain('secreta@example.test');
+    $payload = json_decode((string) DB::table('jobs')->latest('id')->value('payload'), true, flags: JSON_THROW_ON_ERROR);
+    $command = unserialize($payload['data']['command']);
+    expect($command)->toBeInstanceOf(PurgeUserData::class)
+        ->and($command->userId)->toBe($user->id)
+        ->and(json_encode($payload, JSON_THROW_ON_ERROR))->not->toContain('secreta@example.test');
 });
