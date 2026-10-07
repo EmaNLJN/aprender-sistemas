@@ -81,14 +81,19 @@ final class PurgeUserData implements ShouldBeUnique, ShouldQueue
 
     private function deleteAccountAndRecord(int $batchRows): void
     {
-        $createdAt = DB::table('users')->where('id', $this->userId)->where('status', AccountStatus::Deleting->value)->lockForUpdate()->value('created_at');
-        if (! is_string($createdAt)) {
+        $account = DB::table('users')->where('id', $this->userId)->lockForUpdate()->first(['status', 'created_at']);
+        if ($account === null) {
+            return;
+        }
+        if ($account->status !== AccountStatus::Deleting->value) {
+            PurgeLog::skipped($this->userId, (string) $account->status);
+
             return;
         }
 
         DB::table('account_deletions')->insertOrIgnore([
             'user_id' => $this->userId,
-            'user_created_at' => $createdAt,
+            'user_created_at' => $account->created_at,
             'deleted_at' => Instant::format(Instant::now()),
         ]);
         DB::delete('delete from `users` where `id` = ?', [$this->userId]);

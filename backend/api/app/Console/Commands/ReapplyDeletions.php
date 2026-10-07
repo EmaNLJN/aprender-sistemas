@@ -118,6 +118,12 @@ final class ReapplyDeletions extends Command
             return;
         }
 
+        if (DB::table('users')->where('id', $userId)->exists()) {
+            $this->line("Cuenta {$userId}: la purga terminó sin borrarla.");
+
+            return;
+        }
+
         $this->deleted++;
         Log::info('ledger.reapplied', ['user_id' => $userId]);
         $this->line("Cuenta {$userId}: borrada.");

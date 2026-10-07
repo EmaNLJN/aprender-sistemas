@@ -186,3 +186,21 @@ it('finishes without error when the account disappears before the final transact
 
     expect(DB::table('users')->where('id', $user->id)->count())->toBe(0);
 });
+
+it('logs purge.skipped with the status it read when the account leaves deleting before the final transaction', function () {
+    $user = purgeJobDeletingAccount();
+    $changed = false;
+    DB::listen(function ($query) use ($user, &$changed) {
+        if (! $changed && str_starts_with($query->sql, 'delete from `attempts`')) {
+            $changed = true;
+            DB::table('users')->where('id', $user->id)->update(['status' => 'active']);
+        }
+    });
+    Log::spy();
+
+    purgeJobRun($user->id);
+
+    Log::shouldHaveReceived('warning')->with('purge.skipped', ['user_id' => $user->id, 'status' => 'active'])->once();
+    expect(DB::table('users')->where('id', $user->id)->count())->toBe(1)
+        ->and(DB::table('account_deletions')->where('user_id', $user->id)->count())->toBe(0);
+});

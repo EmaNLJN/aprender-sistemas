@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Tests\Support\PopulatedAccount;
 use Tests\Support\UserDataCoverage;
 
@@ -180,4 +181,23 @@ it('does not lower the id counter when the ledger is empty', function () {
 
     expect($exit)->toBe(0)
         ->and(reapplyNextUserId())->toBe(500);
+});
+
+it('does not count an account as deleted when the purge ends without removing it', function () {
+    PopulatedAccount::create(['id' => 12, 'created_at' => '2026-10-05 12:00:00.000']);
+    $changed = false;
+    DB::listen(function ($query) use (&$changed) {
+        if (! $changed && str_starts_with($query->sql, 'delete from `attempts`')) {
+            $changed = true;
+            DB::table('users')->where('id', 12)->update(['status' => 'active']);
+        }
+    });
+    Log::spy();
+
+    [, $output] = reapplyLedger($this->ledgerPath, "12\t2026-10-05 12:00:00.000\t2026-10-06 08:30:00.000\n");
+
+    expect($output)->toContain('0 cuentas borradas')
+        ->and($output)->not->toContain('Cuenta 12: borrada')
+        ->and(DB::table('users')->where('id', 12)->count())->toBe(1);
+    Log::shouldNotHaveReceived('info', ['ledger.reapplied', ['user_id' => 12]]);
 });
