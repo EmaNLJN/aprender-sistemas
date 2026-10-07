@@ -3,6 +3,11 @@ import curriculum from '../../../../../build/curriculum.json';
 import meta from '../../../../../build/curriculum.meta.json';
 import { PORTION_NAMES, findPortionProblem, type PortionName } from './portions';
 
+function inBuiltDocument(name: string): boolean {
+  const [group = ''] = name.split('.');
+  return group in curriculum;
+}
+
 function realPortion(name: PortionName): unknown {
   const [group = '', slice] = name.split('.');
   const value = (curriculum as Record<string, unknown>)[group];
@@ -11,7 +16,7 @@ function realPortion(name: PortionName): unknown {
 
 describe('PORTION_NAMES', () => {
   it('lists the portions of the built document in the same order', () => {
-    expect([...PORTION_NAMES]).toEqual(Object.keys(meta.portions));
+    expect([...PORTION_NAMES]).toEqual(Object.keys(meta.portions).filter(inBuiltDocument));
   });
 });
 

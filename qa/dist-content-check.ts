@@ -87,8 +87,12 @@ test('the published content has the 17 portions of the generator', () => {
   for (const [name, portion] of Object.entries(portionsOf(published))) {
     actual[name] = sha256Hex(JSON.stringify(portion));
   }
+  // B2 FR-035: the harness templates are the 18th portion of the meta and travel outside curriculum.json.
+  const curriculumPortions = Object.fromEntries(
+    Object.entries(meta.portions).filter(([name]) => name !== 'harness'),
+  );
   assert.equal(Object.keys(actual).length, 17);
-  assert.deepEqual(actual, meta.portions);
+  assert.deepEqual(actual, curriculumPortions);
 });
 
 test('the globals of the bundle equal the dump-globals oracle', () => {

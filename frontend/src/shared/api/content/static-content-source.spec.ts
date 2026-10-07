@@ -8,6 +8,11 @@ import { createStaticContentSource } from './static-content-source';
 const URL = '/content/curriculum.abc.json';
 const VERSION = 'abc';
 
+function inBuiltDocument(name: string): boolean {
+  const [group = ''] = name.split('.');
+  return group in curriculum;
+}
+
 function sourceUnderTest() {
   return createStaticContentSource({ url: URL, version: VERSION });
 }
@@ -34,7 +39,9 @@ describe('createStaticContentSource', () => {
     const document = curriculum as unknown as Record<string, Record<string, unknown>>;
     vi.stubGlobal('fetch', async () => Response.json(document));
     const portions = await readAll();
-    expect(portions.map((portion) => portion.name)).toEqual(Object.keys(meta.portions));
+    expect(portions.map((portion) => portion.name)).toEqual(
+      Object.keys(meta.portions).filter(inBuiltDocument),
+    );
     expect(portions.every((portion) => portion.version === VERSION)).toBe(true);
     const labRust = portions.find((portion) => portion.name === 'lab.rust');
     expect(Array.isArray(labRust?.data)).toBe(true);
