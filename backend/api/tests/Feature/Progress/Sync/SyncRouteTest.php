@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\ProgressLimiters;
 use App\Models\User;
 use App\Progress\ChangesReader;
 use App\Progress\Operations\OperationProcessor;
@@ -10,7 +9,6 @@ use App\Runs\Record\Instant;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
 use Tests\Support\Browser;
 use Tests\Support\ProgressWorld;
@@ -21,8 +19,6 @@ const ROUTE_VERSION = '0123456789abcdef0123456789abcdef';
 
 beforeEach(function () {
     $this->travelTo(Instant::parse('2026-10-06 12:00:00.123'));
-    ProgressLimiters::register();
-    Route::prefix('api')->middleware('api')->group(base_path('routes/api/sync.php'));
     $this->processor = new FakeOperationProcessor;
     $this->reader = new FakeChangesReader;
     app()->instance(OperationProcessor::class, $this->processor);

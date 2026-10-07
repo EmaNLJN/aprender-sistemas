@@ -4,14 +4,12 @@ use App\Models\User;
 use App\Progress\AccountLock;
 use App\Runs\Record\Instant;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Route;
 use Tests\Feature\Progress\Snapshot\SnapshotWorld;
 use Tests\Support\Browser;
 use Tests\Support\ProgressWorld;
 
 beforeEach(function () {
     $this->travelTo(Instant::parse('2026-10-06 12:00:00.123'));
-    Route::prefix('api')->middleware('api')->group(base_path('routes/api/progress.php'));
     $this->user = ProgressWorld::user();
     $this->browser = Browser::for($this)->useDatabaseDrivers()->signIn($this->user);
 });

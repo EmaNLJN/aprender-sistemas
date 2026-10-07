@@ -15,3 +15,4 @@ Schedule::command('taller:prune-cache')->everyFifteenMinutes()->withoutOverlappi
 Schedule::command('model:prune', ['--model' => Invitation::class])->daily()->withoutOverlapping();
 Schedule::command('runs:sweep')->everyMinute()->withoutOverlapping();
 Schedule::command('runs:prune')->hourly()->withoutOverlapping();
+Schedule::command('progress:prune-sync-operations')->hourly()->withoutOverlapping();
