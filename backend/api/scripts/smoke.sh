@@ -46,6 +46,10 @@ check "$(curl -s -o /dev/null -w '%{http_code} %{content_type}' "$base/api/guide
   '401 application/json' "una porción sin sesión responde 401 en JSON"
 check "$(curl -s "$base/api/guide" | grep -c '"code":"unauthenticated"')" 1 \
   "el 401 sin sesión trae code unauthenticated"
+check "$(curl -s -o /dev/null -w '%{http_code} %{content_type}' "$base/api/admin/users")" \
+  '401 application/json' "la administración sin sesión responde 401 en JSON"
+check "$(curl -s "$base/api/admin/users" | grep -c '"code":"unauthenticated"')" 1 \
+  "el 401 de /api/admin/users trae code unauthenticated"
 check "$(curl -s -o /dev/null -w '%{http_code}' "$base/api/session") $(curl -s "$base/api/session" | grep -c '"user":null')" \
   '200 1' "GET /api/session sin cuenta responde 200 con user null"
 check "$(headers "$base/api/session" | grep -ci '^cache-control:.*no-store')" 1 \

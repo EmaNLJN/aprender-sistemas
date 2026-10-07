@@ -1,11 +1,12 @@
 #!/bin/sh
 # Test account for the checks that read content behind the session (FR-046). Source it, then call
-# `check_account_open <base-url>` and, from an EXIT trap, `check_account_close`.
+# `check_account_open <base-url> [admin|student]` and, from an EXIT trap, `check_account_close`.
 # Opens the account through the real path: taller:invite, GET /api/session for the CSRF cookie and
 # POST /api/auth/invitations/accept. It leaves the cookie jar at $CHECK_ACCOUNT_JAR.
 
 CHECK_ACCOUNT_EMAIL=""
 CHECK_ACCOUNT_JAR=""
+CHECK_ACCOUNT_PASSWORD=""
 
 check_account_sql() {
   docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" taller -N -B -e "$1" 2>/dev/null' sh "$1"
@@ -13,11 +14,13 @@ check_account_sql() {
 
 check_account_open() {
   base=$1
+  role=${2:-student}
   CHECK_ACCOUNT_EMAIL="check-$(openssl rand -hex 6)@taller.invalid"
   CHECK_ACCOUNT_JAR=$(mktemp)
-  password=$(openssl rand -hex 16)
+  CHECK_ACCOUNT_PASSWORD=$(openssl rand -hex 16)
+  password=$CHECK_ACCOUNT_PASSWORD
 
-  link=$(docker compose exec -T php php artisan taller:invite "$CHECK_ACCOUNT_EMAIL" | sed -n 's/.*#invitacion=//p')
+  link=$(docker compose exec -T php php artisan taller:invite "$CHECK_ACCOUNT_EMAIL" --role="$role" | sed -n 's/.*#invitacion=//p')
   [ -n "$link" ] || { echo "ABORTO: taller:invite no devolvió un enlace"; return 1; }
   privacy_version=$(docker compose exec -T -e HOME=/tmp php php artisan tinker --execute="echo config('taller.privacy_version');" | tr -d '\r\n')
   [ -n "$privacy_version" ] || { echo "ABORTO: no se pudo leer privacy_version"; return 1; }
@@ -39,4 +42,5 @@ check_account_close() {
   fi
   [ -n "$CHECK_ACCOUNT_JAR" ] && rm -f "$CHECK_ACCOUNT_JAR"
   CHECK_ACCOUNT_JAR=""
+  CHECK_ACCOUNT_PASSWORD=""
 }
