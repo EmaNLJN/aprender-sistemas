@@ -2,7 +2,7 @@
 
 use App\Progress\Import\WrittenRows;
 
-function countsWith(array $overrides): array
+function writtenRowsCountsWith(array $overrides): array
 {
     return [...array_fill_keys(WrittenRows::AREAS, 0), ...$overrides];
 }
@@ -15,13 +15,13 @@ it('lists the twelve areas of the import report in wire order', function () {
 });
 
 it('does not count as a change when only legacy attempts were inserted', function () {
-    expect((new WrittenRows(countsWith(['attempts' => 3])))->changed())->toBeFalse();
+    expect((new WrittenRows(writtenRowsCountsWith(['attempts' => 3])))->changed())->toBeFalse();
 });
 
 it('does not count as a change when nothing was written', function () {
-    expect((new WrittenRows(countsWith([])))->changed())->toBeFalse();
+    expect((new WrittenRows(writtenRowsCountsWith([])))->changed())->toBeFalse();
 });
 
 it('counts as a change when any state area other than attempts has rows', function (string $area) {
-    expect((new WrittenRows(countsWith([$area => 1])))->changed())->toBeTrue();
+    expect((new WrittenRows(writtenRowsCountsWith([$area => 1])))->changed())->toBeTrue();
 })->with(['exercises', 'drafts', 'campaignSeals', 'campaignCheckpoints', 'workshops', 'workshopObjectives', 'workshopSteps', 'routeMarks', 'routeQuiz', 'routeNotes', 'preferences']);

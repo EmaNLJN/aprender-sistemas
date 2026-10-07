@@ -11,10 +11,10 @@ use Tests\TestCase;
 
 uses(TestCase::class);
 
-const DECODER_SENTINEL = 'SENTINEL-9f3a71';
-const DECODER_UNSET = '__unset__';
+const LEGACY_DECODER_SENTINEL = 'SENTINEL-9f3a71';
+const LEGACY_DECODER_UNSET = '__unset__';
 
-function decoderFacts(): ContentFacts
+function legacyDecoderFacts(): ContentFacts
 {
     return new ContentFacts(
         exercises: [
@@ -34,7 +34,7 @@ function decoderFacts(): ContentFacts
 }
 
 /** @return array<string, mixed> */
-function decoderResult(array $overrides = []): array
+function legacyDecoderResult(array $overrides = []): array
 {
     return [
         'code' => 'fn main() {}', 'success' => true, 'transportError' => false, 'stdout' => 'ok', 'stderr' => '',
@@ -45,13 +45,13 @@ function decoderResult(array $overrides = []): array
 }
 
 /** @return array<string, mixed> */
-function decoderRecord(array $overrides = []): array
+function legacyDecoderRecord(array $overrides = []): array
 {
     return ['predictionCorrect' => false, 'assisted' => false, 'solutionSeen' => false, ...$overrides];
 }
 
 /** @return array<string, mixed> */
-function validNormalized(): array
+function legacyDecoderValid(): array
 {
     return [
         'route' => [
@@ -63,12 +63,12 @@ function validNormalized(): array
         'lab' => [
             'version' => 1,
             'records' => [
-                'fx-rust-01' => decoderRecord([
+                'fx-rust-01' => legacyDecoderRecord([
                     'predictionCorrect' => true, 'solutionSeen' => true, 'prediction' => 2, 'hints' => 3, 'draft' => 'fn main() {}',
                     'reflection' => '', 'customTest' => 'assert!(true)', 'attempts' => 4, 'solvedAt' => 1760000000123,
-                    'reviewAt' => 1760000100000, 'reviewedAt' => 1760000200456, 'confidence' => 'practice', 'result' => decoderResult(),
+                    'reviewAt' => 1760000100000, 'reviewedAt' => 1760000200456, 'confidence' => 'practice', 'result' => legacyDecoderResult(),
                 ]),
-                'fx-go-01' => decoderRecord(),
+                'fx-go-01' => legacyDecoderRecord(),
             ],
             'selected' => ['rust' => 'fx-rust-01', 'go' => null],
         ],
@@ -87,11 +87,11 @@ function validNormalized(): array
 }
 
 /** @param array<string, mixed> $changes */
-function patched(array $changes): array
+function legacyDecoderPatched(array $changes): array
 {
-    $normalized = validNormalized();
+    $normalized = legacyDecoderValid();
     foreach ($changes as $path => $value) {
-        if ($value === DECODER_UNSET) {
+        if ($value === LEGACY_DECODER_UNSET) {
             Arr::forget($normalized, $path);
         } else {
             Arr::set($normalized, $path, $value);
@@ -101,15 +101,15 @@ function patched(array $changes): array
     return $normalized;
 }
 
-function decoded(array $normalized): LegacyProgress
+function legacyDecoderDecoded(array $normalized): LegacyProgress
 {
-    return (new LegacyDecoder)->decode($normalized, decoderFacts());
+    return (new LegacyDecoder)->decode($normalized, legacyDecoderFacts());
 }
 
-function rejection(array $normalized): ValidationException
+function legacyDecoderRejection(array $normalized): ValidationException
 {
     try {
-        decoded($normalized);
+        legacyDecoderDecoded($normalized);
     } catch (ValidationException $error) {
         return $error;
     }
@@ -118,13 +118,13 @@ function rejection(array $normalized): ValidationException
 }
 
 /** @return list<array{path: string, reason: string}> */
-function entries(array $reportEntries): array
+function legacyDecoderEntries(array $reportEntries): array
 {
     return array_map(fn ($entry) => $entry->toArray(), $reportEntries);
 }
 
 /** @return array<string, mixed> */
-function exerciseView(LegacyExercise $exercise): array
+function legacyDecoderExerciseView(LegacyExercise $exercise): array
 {
     $iso = fn ($at) => $at === null ? null : Instant::iso($at);
     $result = $exercise->result;
@@ -144,7 +144,7 @@ function exerciseView(LegacyExercise $exercise): array
 }
 
 it('decodes a valid normalized with the four sections into their records', function () {
-    $progress = decoded(validNormalized());
+    $progress = legacyDecoderDecoded(legacyDecoderValid());
 
     expect($progress->route->language)->toBe('go')
         ->and($progress->route->minutes)->toBe(45)
@@ -154,7 +154,7 @@ it('decodes a valid normalized with the four sections into their records', funct
         ->and($progress->route->quizAnswers)->toBe(['fx-step-1' => 2])
         ->and($progress->route->notes)->toBe(['rust' => ['learned' => 'Aprendí', 'next' => ''], 'go' => ['learned' => '  ', 'next' => 'Seguir']])
         ->and($progress->selected)->toBe(['rust' => 'fx-rust-01', 'go' => null])
-        ->and(array_map(exerciseView(...), $progress->exercises))->toBe([
+        ->and(array_map(legacyDecoderExerciseView(...), $progress->exercises))->toBe([
             [
                 'id' => 'fx-rust-01', 'predictionCorrect' => true, 'assisted' => false, 'solutionSeen' => true, 'prediction' => 2, 'hints' => 3,
                 'draft' => 'fn main() {}', 'reflection' => '', 'customTest' => 'assert!(true)', 'attempts' => 4,
@@ -183,7 +183,7 @@ it('decodes a valid normalized with the four sections into their records', funct
 });
 
 it('leaves the absent sections null or empty', function () {
-    $progress = decoded(['route' => validNormalized()['route']]);
+    $progress = legacyDecoderDecoded(['route' => legacyDecoderValid()['route']]);
 
     expect($progress->route)->not->toBeNull()
         ->and($progress->exercises)->toBe([])
@@ -192,14 +192,14 @@ it('leaves the absent sections null or empty', function () {
         ->and($progress->checkpoints)->toBe([])
         ->and($progress->workshops)->toBe([]);
 
-    $withoutRoute = decoded(Arr::except(validNormalized(), 'route'));
+    $withoutRoute = legacyDecoderDecoded(Arr::except(legacyDecoderValid(), 'route'));
 
     expect($withoutRoute->route)->toBeNull()
         ->and($withoutRoute->exercises)->not->toBe([]);
 });
 
 it('accepts the empty objects of a pristine browser, which json_decode turns into lists', function () {
-    $progress = decoded([
+    $progress = legacyDecoderDecoded([
         'lab' => ['version' => 1, 'records' => [], 'selected' => ['rust' => null, 'go' => null]],
         'campaign' => ['version' => 1, 'seals' => [], 'checkpoints' => []],
         'systems' => ['version' => 1, 'records' => []],
@@ -213,13 +213,13 @@ it('accepts the empty objects of a pristine browser, which json_decode turns int
 });
 
 it('keeps an optional attemptId of the result', function () {
-    $progress = decoded(patched(['lab.records.fx-rust-01.result.attemptId' => 77]));
+    $progress = legacyDecoderDecoded(legacyDecoderPatched(['lab.records.fx-rust-01.result.attemptId' => 77]));
 
     expect($progress->exercises[0]->result->attemptId)->toBe(77);
 });
 
 it('accepts the instants at the edges of DATETIME(3)', function (int $milliseconds, string $iso) {
-    $progress = decoded(patched(['lab.records.fx-rust-01.result.time' => $milliseconds]));
+    $progress = legacyDecoderDecoded(legacyDecoderPatched(['lab.records.fx-rust-01.result.time' => $milliseconds]));
 
     expect(Instant::iso($progress->exercises[0]->result->time))->toBe($iso)
         ->and($progress->omitted)->toBe([]);
@@ -229,7 +229,7 @@ it('accepts the instants at the edges of DATETIME(3)', function (int $millisecon
 ]);
 
 it('keeps the texts as they came, empty strings and spaces included', function () {
-    $progress = decoded(patched(['lab.records.fx-rust-01.draft' => '', 'lab.records.fx-rust-01.customTest' => ' ', 'systems.records.rust:fx-workshop-1.note' => '']));
+    $progress = legacyDecoderDecoded(legacyDecoderPatched(['lab.records.fx-rust-01.draft' => '', 'lab.records.fx-rust-01.customTest' => ' ', 'systems.records.rust:fx-workshop-1.note' => '']));
 
     expect($progress->exercises[0]->draft)->toBe('')
         ->and($progress->exercises[0]->customTest)->toBe(' ')
@@ -237,7 +237,7 @@ it('keeps the texts as they came, empty strings and spaces included', function (
 });
 
 it('counts characters and not bytes against the caps', function (string $path, int $cap) {
-    $progress = decoded(patched([$path => str_repeat('😀', $cap)]));
+    $progress = legacyDecoderDecoded(legacyDecoderPatched([$path => str_repeat('😀', $cap)]));
 
     expect($progress->omitted)->toBe([]);
 })->with([
@@ -252,7 +252,7 @@ it('counts characters and not bytes against the caps', function (string $path, i
     'workshop note' => ['systems.records.rust:fx-workshop-1.note', 10000],
 ]);
 
-dataset('invalid values', [
+dataset('legacy decoder invalid values', [
     'unknown field in normalized' => [['extra' => 1], 'normalized.extra', 'unknown_field'],
     'unknown field in route' => [['route.extra' => 1], 'normalized.route.extra', 'unknown_field'],
     'unknown field in notes' => [['route.notes.extra' => 1], 'normalized.route.notes.extra', 'unknown_field'],
@@ -276,7 +276,7 @@ dataset('invalid values', [
     'minutes as a string' => [['route.minutes' => '25'], 'normalized.route.minutes', 'wrong_type'],
     'a quiz answer that is a string' => [['route.quizAnswers.fx-step-1' => '1'], 'normalized.route.quizAnswers.fx-step-1', 'wrong_type'],
     'a note that is not a string' => [['route.notes.go.next' => 5], 'normalized.route.notes.go.next', 'wrong_type'],
-    'records as a list' => [['lab.records' => [decoderRecord()]], 'normalized.lab.records', 'wrong_type'],
+    'records as a list' => [['lab.records' => [legacyDecoderRecord()]], 'normalized.lab.records', 'wrong_type'],
     'a record that is not an object' => [['lab.records.fx-go-01' => 'x'], 'normalized.lab.records.fx-go-01', 'wrong_type'],
     'a flag as a string' => [['lab.records.fx-rust-01.assisted' => 'yes'], 'normalized.lab.records.fx-rust-01.assisted', 'wrong_type'],
     'hints as a string' => [['lab.records.fx-rust-01.hints' => '2'], 'normalized.lab.records.fx-rust-01.hints', 'wrong_type'],
@@ -300,17 +300,17 @@ dataset('invalid values', [
     'a step position as a string' => [['systems.records.rust:fx-workshop-1.steps' => ['1']], 'normalized.systems.records.rust:fx-workshop-1.steps[0]', 'wrong_type'],
     'a workshop note that is not a string' => [['systems.records.rust:fx-workshop-1.note' => 5], 'normalized.systems.records.rust:fx-workshop-1.note', 'wrong_type'],
 
-    'a missing route key' => [['route.minutes' => DECODER_UNSET], 'normalized.route.minutes', 'required'],
-    'a missing lab selected' => [['lab.selected' => DECODER_UNSET], 'normalized.lab.selected', 'required'],
-    'a missing record flag' => [['lab.records.fx-go-01.solutionSeen' => DECODER_UNSET], 'normalized.lab.records.fx-go-01.solutionSeen', 'required'],
-    'a missing result key' => [['lab.records.fx-rust-01.result.stderr' => DECODER_UNSET], 'normalized.lab.records.fx-rust-01.result.stderr', 'required'],
-    'a missing seal flag' => [['campaign.seals.fx-rust-01.assisted' => DECODER_UNSET], 'normalized.campaign.seals.fx-rust-01.assisted', 'required'],
-    'a missing workshop answer' => [['systems.records.rust:fx-workshop-1.answer' => DECODER_UNSET], 'normalized.systems.records.rust:fx-workshop-1.answer', 'required'],
+    'a missing route key' => [['route.minutes' => LEGACY_DECODER_UNSET], 'normalized.route.minutes', 'required'],
+    'a missing lab selected' => [['lab.selected' => LEGACY_DECODER_UNSET], 'normalized.lab.selected', 'required'],
+    'a missing record flag' => [['lab.records.fx-go-01.solutionSeen' => LEGACY_DECODER_UNSET], 'normalized.lab.records.fx-go-01.solutionSeen', 'required'],
+    'a missing result key' => [['lab.records.fx-rust-01.result.stderr' => LEGACY_DECODER_UNSET], 'normalized.lab.records.fx-rust-01.result.stderr', 'required'],
+    'a missing seal flag' => [['campaign.seals.fx-rust-01.assisted' => LEGACY_DECODER_UNSET], 'normalized.campaign.seals.fx-rust-01.assisted', 'required'],
+    'a missing workshop answer' => [['systems.records.rust:fx-workshop-1.answer' => LEGACY_DECODER_UNSET], 'normalized.systems.records.rust:fx-workshop-1.answer', 'required'],
 
-    'a route without version' => [['route.version' => DECODER_UNSET], 'normalized.route.version', 'unsupported_version'],
+    'a route without version' => [['route.version' => LEGACY_DECODER_UNSET], 'normalized.route.version', 'unsupported_version'],
     'a lab with version 2' => [['lab.version' => 2], 'normalized.lab.version', 'unsupported_version'],
     'a campaign with a string version' => [['campaign.version' => '1'], 'normalized.campaign.version', 'unsupported_version'],
-    'systems without version' => [['systems.version' => DECODER_UNSET], 'normalized.systems.version', 'unsupported_version'],
+    'systems without version' => [['systems.version' => LEGACY_DECODER_UNSET], 'normalized.systems.version', 'unsupported_version'],
 
     'a language outside rust and go' => [['route.language' => 'ruby'], 'normalized.route.language', 'out_of_domain'],
     'minutes of 20' => [['route.minutes' => 20], 'normalized.route.minutes', 'out_of_domain'],
@@ -341,12 +341,12 @@ dataset('invalid values', [
     'a route note one character too long' => [['route.notes.rust.next' => str_repeat('😀', 20001)], 'normalized.route.notes.rust.next', 'too_long'],
     'a workshop note one character too long' => [['systems.records.rust:fx-workshop-1.note' => str_repeat('a', 10001)], 'normalized.systems.records.rust:fx-workshop-1.note', 'too_long'],
 
-    'an unknown exercise' => [['lab.records.fx-nope' => decoderRecord()], 'normalized.lab.records.fx-nope', 'unknown_id'],
+    'an unknown exercise' => [['lab.records.fx-nope' => legacyDecoderRecord()], 'normalized.lab.records.fx-nope', 'unknown_id'],
     'an unknown selected exercise' => [['lab.selected.rust' => 'fx-nope'], 'normalized.lab.selected.rust', 'unknown_id'],
     'an unknown sealed exercise' => [['campaign.seals.fx-nope' => ['code' => true, 'prediction' => true, 'assisted' => true]], 'normalized.campaign.seals.fx-nope', 'unknown_id'],
     'an unknown world' => [['campaign.checkpoints.fx-nope' => ['passed' => true, 'lastAnswer' => null]], 'normalized.campaign.checkpoints.fx-nope', 'unknown_id'],
-    'an unknown workshop' => [['systems.records.rust:fx-nope' => validNormalized()['systems']['records']['rust:fx-workshop-1']], 'normalized.systems.records.rust:fx-nope', 'unknown_id'],
-    'a workshop of an unknown language' => [['systems.records.ruby:fx-workshop-1' => validNormalized()['systems']['records']['rust:fx-workshop-1']], 'normalized.systems.records.ruby:fx-workshop-1', 'unknown_id'],
+    'an unknown workshop' => [['systems.records.rust:fx-nope' => legacyDecoderValid()['systems']['records']['rust:fx-workshop-1']], 'normalized.systems.records.rust:fx-nope', 'unknown_id'],
+    'a workshop of an unknown language' => [['systems.records.ruby:fx-workshop-1' => legacyDecoderValid()['systems']['records']['rust:fx-workshop-1']], 'normalized.systems.records.ruby:fx-workshop-1', 'unknown_id'],
     'an unknown objective' => [['systems.records.rust:fx-workshop-1.observed' => ['fx-obj-1', 'fx-obj-9']], 'normalized.systems.records.rust:fx-workshop-1.observed[1]', 'unknown_id'],
     'an unknown completed step' => [['route.completed' => ['fx-step-9']], 'normalized.route.completed[0]', 'unknown_id'],
     'an unknown quiz step' => [['route.quizAnswers' => ['fx-step-9' => 0]], 'normalized.route.quizAnswers.fx-step-9', 'unknown_id'],
@@ -365,45 +365,45 @@ dataset('invalid values', [
 ]);
 
 it('rejects what a v1 parser cannot emit with the path in normalized and a Spanish message', function (array $changes, string $key, string $reason) {
-    $error = rejection(patched($changes));
+    $error = legacyDecoderRejection(legacyDecoderPatched($changes));
 
     expect(array_keys($error->errors()))->toBe([$key])
         ->and($error->errors()[$key])->toBe([trans("import.{$reason}")])
         ->and(trans("import.{$reason}"))->not->toStartWith('import.');
-})->with('invalid values');
+})->with('legacy decoder invalid values');
 
 it('rejects a normalized without any section', function (array $normalized) {
-    $error = rejection($normalized);
+    $error = legacyDecoderRejection($normalized);
 
     expect(array_keys($error->errors()))->toBe(['normalized'])
         ->and($error->errors()['normalized'])->toBe([trans('import.no_sections')]);
 })->with(['an empty one' => [[]]]);
 
 it('never repeats a received value in a message', function (array $changes) {
-    $messages = Arr::flatten(rejection(patched($changes))->errors());
+    $messages = Arr::flatten(legacyDecoderRejection(legacyDecoderPatched($changes))->errors());
 
     foreach ($messages as $message) {
-        expect($message)->not->toContain(DECODER_SENTINEL);
+        expect($message)->not->toContain(LEGACY_DECODER_SENTINEL);
     }
     expect($messages)->not->toBe([]);
 })->with([
-    'language' => [['route.language' => DECODER_SENTINEL]],
-    'a step id' => [['route.completed' => [DECODER_SENTINEL]]],
-    'an exercise id' => [['lab.records.'.DECODER_SENTINEL => decoderRecord()]],
-    'a too long text' => [['lab.records.fx-rust-01.draft' => DECODER_SENTINEL.str_repeat('a', 30001)]],
-    'a field name' => [['route.'.DECODER_SENTINEL => 1]],
-    'a confidence' => [['lab.records.fx-rust-01.confidence' => DECODER_SENTINEL]],
-    'a version' => [['lab.version' => DECODER_SENTINEL]],
+    'language' => [['route.language' => LEGACY_DECODER_SENTINEL]],
+    'a step id' => [['route.completed' => [LEGACY_DECODER_SENTINEL]]],
+    'an exercise id' => [['lab.records.'.LEGACY_DECODER_SENTINEL => legacyDecoderRecord()]],
+    'a too long text' => [['lab.records.fx-rust-01.draft' => LEGACY_DECODER_SENTINEL.str_repeat('a', 30001)]],
+    'a field name' => [['route.'.LEGACY_DECODER_SENTINEL => 1]],
+    'a confidence' => [['lab.records.fx-rust-01.confidence' => LEGACY_DECODER_SENTINEL]],
+    'a version' => [['lab.version' => LEGACY_DECODER_SENTINEL]],
 ]);
 
-dataset('omissions', [
+dataset('legacy decoder omissions', [
     'hints that are not an integer' => [
         ['lab.records.fx-rust-01.hints' => 2.5],
         [['path' => 'lab.records.fx-rust-01.hints', 'reason' => 'not_an_integer']],
         fn (LegacyProgress $progress) => expect($progress->exercises[0]->hints)->toBeNull(),
     ],
     'hints beyond the active ones' => [
-        ['lab.records.fx-rust-02' => decoderRecord(['hints' => 3])],
+        ['lab.records.fx-rust-02' => legacyDecoderRecord(['hints' => 3])],
         [['path' => 'lab.records.fx-rust-02.hints', 'reason' => 'beyond_active_hints']],
         fn (LegacyProgress $progress) => expect($progress->exercises[2]->hints)->toBeNull(),
     ],
@@ -490,20 +490,20 @@ dataset('omissions', [
 ]);
 
 it('applies the rest and reports what it left out with its path and reason', function (array $changes, array $expected, Closure $effect) {
-    $progress = decoded(patched($changes));
+    $progress = legacyDecoderDecoded(legacyDecoderPatched($changes));
 
-    expect(entries($progress->omitted))->toBe($expected)
+    expect(legacyDecoderEntries($progress->omitted))->toBe($expected)
         ->and($progress->replaced)->toBe([])
         ->and($progress->exercises[1]->exerciseId)->toBe('fx-go-01')
         ->and($progress->route->language)->toBe('go');
     $effect($progress);
-})->with('omissions');
+})->with('legacy decoder omissions');
 
 it('reports a text with a replacement character and keeps it as it is', function (string $path) {
     $text = "a\u{FFFD}b";
-    $progress = decoded(patched([$path => $text]));
+    $progress = legacyDecoderDecoded(legacyDecoderPatched([$path => $text]));
 
-    expect(entries($progress->replaced))->toBe([['path' => $path, 'reason' => 'replacement_character']])
+    expect(legacyDecoderEntries($progress->replaced))->toBe([['path' => $path, 'reason' => 'replacement_character']])
         ->and($progress->omitted)->toBe([]);
 })->with([
     'a route note' => ['route.notes.rust.learned'],
@@ -517,9 +517,9 @@ it('reports a text with a replacement character and keeps it as it is', function
     'a workshop note' => ['systems.records.rust:fx-workshop-1.note'],
 ]);
 
-it('keeps the text with the replacement character in the decoded record', function () {
+it('keeps the text with the replacement character in the legacyDecoderDecoded record', function () {
     $text = "a\u{FFFD}b";
-    $progress = decoded(patched(['lab.records.fx-rust-01.reflection' => $text, 'systems.records.rust:fx-workshop-1.note' => $text]));
+    $progress = legacyDecoderDecoded(legacyDecoderPatched(['lab.records.fx-rust-01.reflection' => $text, 'systems.records.rust:fx-workshop-1.note' => $text]));
 
     expect($progress->exercises[0]->reflection)->toBe($text)
         ->and($progress->workshops[0]->note)->toBe($text);

@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Tests\Support\ProgressWorld;
 
-function importContentWorld(): array
+function contentFactsWorld(): array
 {
     return [
         'contentVersion' => '0123456789abcdef0123456789abcdef',
@@ -21,7 +21,7 @@ function importContentWorld(): array
     ];
 }
 
-function importContentNormalized(): array
+function contentFactsNormalized(): array
 {
     return [
         'route' => [
@@ -49,11 +49,11 @@ function importContentNormalized(): array
 }
 
 beforeEach(function () {
-    ProgressWorld::seed(importContentWorld());
+    ProgressWorld::seed(contentFactsWorld());
 });
 
 it('brings the facts of every class that the normalized names', function () {
-    $facts = (new ImportContent)->factsFor(importContentNormalized());
+    $facts = (new ImportContent)->factsFor(contentFactsNormalized());
 
     expect($facts->exercises)->toEqual([
         'fx-rust-01' => ['language' => 'rust', 'predictionOptions' => 3, 'activeHints' => 3, 'testKeys' => ['t1', 't2', 't3']],
@@ -69,7 +69,7 @@ it('brings the facts of every class that the normalized names', function () {
 });
 
 it('does not know an id that the content does not have', function () {
-    $facts = (new ImportContent)->factsFor(importContentNormalized());
+    $facts = (new ImportContent)->factsFor(contentFactsNormalized());
 
     expect($facts->exercises)->not->toHaveKey('fx-nope');
 });
@@ -77,7 +77,7 @@ it('does not know an id that the content does not have', function () {
 it('counts only the active hints of an exercise', function () {
     DB::table('exercise_hints')->where(['exercise_id' => 'fx-rust-01', 'position' => 3])->update(['status' => 'deprecated', 'retired_at' => '2026-10-05 10:00:00.000']);
 
-    $facts = (new ImportContent)->factsFor(importContentNormalized());
+    $facts = (new ImportContent)->factsFor(contentFactsNormalized());
 
     expect($facts->exercises['fx-rust-01']['activeHints'])->toBe(2);
 });
@@ -93,7 +93,7 @@ it('finds what the content retired as existing', function () {
     DB::table('guide_steps')->where('id', 'fx-step-1')->update($retired);
     DB::table('guide_resources')->where('id', 'fx-res-1')->update($retired);
 
-    $facts = (new ImportContent)->factsFor(importContentNormalized());
+    $facts = (new ImportContent)->factsFor(contentFactsNormalized());
 
     expect($facts->exercises)->toHaveKey('fx-go-01')
         ->and($facts->exercises['fx-rust-01']['testKeys'])->toEqualCanonicalizing(['t1', 't2', 't3'])
@@ -107,7 +107,7 @@ it('finds what the content retired as existing', function () {
 it('leaves out a step with no v1 position', function () {
     DB::table('workshop_steps')->where('step_key', 'e2')->update(['v1_position' => null]);
 
-    $facts = (new ImportContent)->factsFor(importContentNormalized());
+    $facts = (new ImportContent)->factsFor(contentFactsNormalized());
 
     expect($facts->workshops['fx-workshop-1']['stepsByV1Position'])->toBe([1 => 'e1', 3 => 'e3', 4 => 'e4']);
 });
@@ -115,7 +115,7 @@ it('leaves out a step with no v1 position', function () {
 it('keeps a guide step without a quiz as a step with no options', function () {
     DB::table('guide_steps')->where('id', 'fx-step-1')->update(['quiz_json' => '{}']);
 
-    $facts = (new ImportContent)->factsFor(importContentNormalized());
+    $facts = (new ImportContent)->factsFor(contentFactsNormalized());
 
     expect($facts->quizOptions)->toBe(['fx-step-1' => 0, 'fx-step-2' => 2]);
 });
@@ -136,7 +136,7 @@ it('does not fail on a shape the decoder will reject', function (array $normaliz
 ]);
 
 it('makes at most one query per class of reference, however many exercises the normalized names', function () {
-    $normalized = importContentNormalized();
+    $normalized = contentFactsNormalized();
     for ($number = 1; $number <= 274; $number++) {
         $normalized['lab']['records']["fx-rust-extra-{$number}"] = ['predictionCorrect' => false, 'assisted' => false, 'solutionSeen' => false];
         $normalized['campaign']['seals']["fx-rust-extra-{$number}"] = ['code' => true, 'prediction' => true, 'assisted' => true];
@@ -153,7 +153,7 @@ it('makes at most one query per class of reference, however many exercises the n
 });
 
 it('feeds the decoder of a normalized from the test world end to end', function () {
-    $normalized = importContentNormalized();
+    $normalized = contentFactsNormalized();
     unset($normalized['lab']['records']['fx-nope']);
 
     $progress = (new LegacyDecoder)->decode($normalized, (new ImportContent)->factsFor($normalized));
@@ -168,7 +168,7 @@ it('feeds the decoder of a normalized from the test world end to end', function 
 });
 
 it('lets the decoder reject an id the content does not have', function () {
-    $normalized = importContentNormalized();
+    $normalized = contentFactsNormalized();
 
     expect(fn () => (new LegacyDecoder)->decode($normalized, (new ImportContent)->factsFor($normalized)))
         ->toThrow(ValidationException::class);
