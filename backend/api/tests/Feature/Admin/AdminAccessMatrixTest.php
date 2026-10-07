@@ -160,6 +160,8 @@ it('answers 409 account_mismatch to an admin that modifies with the header of an
     $signedIn = Browser::for($this)->useDatabaseDrivers()->signIn($this->admin);
     $browser = $header === 'missing' ? $signedIn->withoutAccountHeader() : $signedIn->withAccountHeader((string) $this->student->id);
     $writes = [];
+    $usersBefore = User::count();
+    $invitationsBefore = Invitation::count();
 
     $failures = adminMatrixCollectFailures(function (string $method, string $path, array $targets) use ($browser, &$writes) {
         DB::flushQueryLog();
@@ -174,10 +176,10 @@ it('answers 409 account_mismatch to an admin that modifies with the header of an
 
     expect($failures)->toBe([])
         ->and($writes)->toBe([])
-        ->and(User::count())->toBe(2)
+        ->and(User::count())->toBe($usersBefore)
         ->and($this->admin->fresh()->role)->toBe(Role::Admin)
         ->and($this->student->fresh()->role)->toBe(Role::Student)
-        ->and(Invitation::count())->toBe(1);
+        ->and(Invitation::count())->toBe($invitationsBefore);
 })->with(['the id of another account' => 'other', 'no header' => 'missing']);
 
 it('answers 404 not_found for every admin route with a target that is not an integer, whoever asks', function (string $who) {
