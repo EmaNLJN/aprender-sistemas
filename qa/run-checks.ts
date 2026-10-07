@@ -3,6 +3,7 @@ import path from 'node:path';
 
 const checks = [
   'build-check.ts',
+  'dist-content-check.ts',
   'load-order-check.ts',
   'seams-guard-check.ts',
   'content-tools-check.ts',
