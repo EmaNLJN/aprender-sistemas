@@ -1,12 +1,16 @@
 <?php
 
 use App\Http\ProgressLimiters;
+use App\Http\Middleware\RequirePassword;
 use App\Models\User;
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Tests\Feature\Session\ProbeRoutes;
 use Tests\Support\Browser;
 use Tests\Support\ProgressWorld;
+use Tests\TestCase;
 
 const RESET_ROUTE_ENDPOINT = '/api/progress/reset';
 
@@ -15,9 +19,9 @@ function resetRouteConfirmPassword(Browser $browser): void
     $browser->post('/api/probe/mark-confirmed')->assertNoContent();
 }
 
-function resetRouteSignedIn(User $user, bool $confirmed = true): Browser
+function resetRouteSignedIn(TestCase $test, User $user, bool $confirmed = true): Browser
 {
-    $browser = Browser::for(test())->useDatabaseDrivers()->signIn($user);
+    $browser = Browser::for($test)->useDatabaseDrivers()->signIn($user);
     if ($confirmed) {
         resetRouteConfirmPassword($browser);
     }
@@ -33,6 +37,7 @@ function resetRouteBody(int $epoch = 1): array
 
 beforeEach(function () {
     ProgressLimiters::register();
+    app(Kernel::class)->addToMiddlewarePriorityBefore(ThrottleRequests::class, RequirePassword::class);
     ProbeRoutes::register();
     Route::prefix('api')->middleware('api')->group(base_path('routes/api/progress-reset.php'));
     $this->user = ProgressWorld::user();
@@ -47,7 +52,7 @@ describe('the access', function () {
     });
 
     it('answers 409 account_mismatch without X-Taller-User', function () {
-        $browser = resetRouteSignedIn($this->user)->withoutAccountHeader();
+        $browser = resetRouteSignedIn($this, $this->user)->withoutAccountHeader();
 
         $browser->post(RESET_ROUTE_ENDPOINT, resetRouteBody())->assertStatus(409)->assertJsonPath('code', 'account_mismatch');
 
@@ -55,7 +60,7 @@ describe('the access', function () {
     });
 
     it('answers 423 password_confirmation_required when the password was not confirmed, and writes nothing', function () {
-        $browser = resetRouteSignedIn($this->user, confirmed: false);
+        $browser = resetRouteSignedIn($this, $this->user, confirmed: false);
 
         $browser->post(RESET_ROUTE_ENDPOINT, resetRouteBody())->assertStatus(423)->assertJsonPath('code', 'password_confirmation_required');
 
@@ -63,7 +68,7 @@ describe('the access', function () {
     });
 
     it('does not spend the daily limit on four 423 in a row', function () {
-        $browser = resetRouteSignedIn($this->user, confirmed: false);
+        $browser = resetRouteSignedIn($this, $this->user, confirmed: false);
         foreach (range(1, 4) as $ignored) {
             $browser->post(RESET_ROUTE_ENDPOINT, resetRouteBody())->assertStatus(423);
         }
@@ -75,7 +80,7 @@ describe('the access', function () {
 
 describe('the errors', function () {
     it('answers 422 validation_failed for an envelope that is not valid', function (array $body, string $field) {
-        $response = resetRouteSignedIn($this->user)->post(RESET_ROUTE_ENDPOINT, $body);
+        $response = resetRouteSignedIn($this, $this->user)->post(RESET_ROUTE_ENDPOINT, $body);
 
         $response->assertStatus(422)->assertJsonPath('code', 'validation_failed')->assertJsonStructure(['errors' => [$field]]);
         expect(DB::table('progress_heads')->where('user_id', $this->user->id)->value('epoch'))->toBe(1);
@@ -88,13 +93,13 @@ describe('the errors', function () {
     ]);
 
     it('answers 409 client_outdated for a format the server does not accept', function () {
-        resetRouteSignedIn($this->user)->post(RESET_ROUTE_ENDPOINT, ['format' => 1, 'epoch' => 1])->assertStatus(409)->assertJsonPath('code', 'client_outdated');
+        resetRouteSignedIn($this, $this->user)->post(RESET_ROUTE_ENDPOINT, ['format' => 1, 'epoch' => 1])->assertStatus(409)->assertJsonPath('code', 'client_outdated');
 
         expect(DB::table('progress_heads')->where('user_id', $this->user->id)->value('epoch'))->toBe(1);
     });
 
     it('answers 409 epoch_mismatch with the current epoch and revision', function () {
-        $response = resetRouteSignedIn($this->user)->post(RESET_ROUTE_ENDPOINT, resetRouteBody(epoch: 2));
+        $response = resetRouteSignedIn($this, $this->user)->post(RESET_ROUTE_ENDPOINT, resetRouteBody(epoch: 2));
 
         $response->assertStatus(409)->assertJsonPath('code', 'epoch_mismatch')->assertJsonPath('epoch', 1)->assertJsonPath('revision', 7);
         expect($response->headers->getCacheControlDirective('no-store'))->toBeTrue();
@@ -103,7 +108,7 @@ describe('the errors', function () {
 
 describe('the response', function () {
     it('answers 200 with exactly the epoch and the revision, and is not stored', function () {
-        $response = resetRouteSignedIn($this->user)->post(RESET_ROUTE_ENDPOINT, resetRouteBody());
+        $response = resetRouteSignedIn($this, $this->user)->post(RESET_ROUTE_ENDPOINT, resetRouteBody());
 
         $response->assertOk()->assertExactJson(['epoch' => 2, 'revision' => 8]);
         expect($response->headers->getCacheControlDirective('no-store'))->toBeTrue()
@@ -114,7 +119,7 @@ describe('the response', function () {
         $other = ProgressWorld::user();
         ProgressWorld::head($other, epoch: 1, revision: 3);
 
-        resetRouteSignedIn($this->user)->post(RESET_ROUTE_ENDPOINT, [...resetRouteBody(), 'user_id' => $other->id])->assertOk();
+        resetRouteSignedIn($this, $this->user)->post(RESET_ROUTE_ENDPOINT, [...resetRouteBody(), 'user_id' => $other->id])->assertOk();
 
         expect(DB::table('progress_heads')->where('user_id', $other->id)->value('epoch'))->toBe(1)
             ->and(DB::table('progress_heads')->where('user_id', $this->user->id)->value('epoch'))->toBe(2);
@@ -126,20 +131,20 @@ describe('who can reset', function () {
         $unverified = ProgressWorld::user(['email_verified_at' => null]);
         ProgressWorld::head($unverified);
 
-        resetRouteSignedIn($unverified)->post(RESET_ROUTE_ENDPOINT, resetRouteBody())->assertOk()->assertJsonPath('epoch', 2);
+        resetRouteSignedIn($this, $unverified)->post(RESET_ROUTE_ENDPOINT, resetRouteBody())->assertOk()->assertJsonPath('epoch', 2);
     });
 
     it('lets an admin reset the progress of its own account', function () {
         $admin = User::factory()->admin()->create();
         ProgressWorld::head($admin);
 
-        resetRouteSignedIn($admin)->post(RESET_ROUTE_ENDPOINT, resetRouteBody())->assertOk()->assertJsonPath('epoch', 2);
+        resetRouteSignedIn($this, $admin)->post(RESET_ROUTE_ENDPOINT, resetRouteBody())->assertOk()->assertJsonPath('epoch', 2);
     });
 });
 
 describe('the limit', function () {
     it('answers 429 with Retry-After to the fourth reset of the day', function () {
-        $browser = resetRouteSignedIn($this->user);
+        $browser = resetRouteSignedIn($this, $this->user);
         foreach ([1, 2, 3] as $epoch) {
             $browser->post(RESET_ROUTE_ENDPOINT, resetRouteBody($epoch))->assertOk();
         }
@@ -154,11 +159,11 @@ describe('the limit', function () {
     it('keeps the limit of one account apart from the limit of another', function () {
         $other = ProgressWorld::user();
         ProgressWorld::head($other);
-        $browser = resetRouteSignedIn($this->user);
+        $browser = resetRouteSignedIn($this, $this->user);
         foreach ([1, 2, 3] as $epoch) {
             $browser->post(RESET_ROUTE_ENDPOINT, resetRouteBody($epoch))->assertOk();
         }
 
-        resetRouteSignedIn($other)->post(RESET_ROUTE_ENDPOINT, resetRouteBody())->assertOk();
+        resetRouteSignedIn($this, $other)->post(RESET_ROUTE_ENDPOINT, resetRouteBody())->assertOk();
     });
 });
