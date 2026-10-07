@@ -1,54 +1,20 @@
 /* Modelos conceptuales locales. No ejecutan ni evalúan el código del editor. */
 import { escapeHtml } from './src/shared/lib/escape-html';
+import {
+  applyQuestOperation,
+  hex,
+  initialQuestState,
+  packetData,
+  questExplorerOf,
+} from './src/entities/exercise/explorers';
 (() => {
   'use strict';
   const states = new Map();
-  const hex = (value, digits = 2) => (value >>> 0).toString(16).toUpperCase().padStart(digits, '0');
-  const directions = {
-    N: [0, 1, 'norte'],
-    S: [0, -1, 'sur'],
-    E: [1, 0, 'este'],
-    O: [-1, 0, 'oeste'],
-  };
-  const sample = [0x53, 0x4f, 0x53, 0, 0xff, 0x2a];
-
   function descriptor(item) {
-    const match = /^(rust|go)-(10[1-6])$/.exec(item?.id || '');
-    return match
-      ? {
-          language: match[1],
-          number: Number(match[2]),
-          mode: Number(match[2]) < 104 ? 'robot' : 'packet',
-        }
-      : null;
-  }
-  function fresh(info, energy = 4) {
-    return info.mode === 'robot'
-      ? {
-          x: 0,
-          y: 0,
-          energy,
-          initialEnergy: energy,
-          attempts: 0,
-          moves: 0,
-          logs: [],
-          prediction: null,
-          notice:
-            'Partís de (0,0). Probá O para observar un choque; después buscá la baliza (2,2).',
-        }
-      : {
-          control: info.language === 'rust' ? 0x13 : 0xa3,
-          size: 3,
-          corrupt: false,
-          badLength: false,
-          reversed: false,
-          prediction: null,
-          notice:
-            'Alterná un bit o alterá el paquete. Compará la representación con la regla que usa el receptor.',
-        };
+    return questExplorerOf(item?.id || '');
   }
   function stateFor(item, info) {
-    if (!states.has(item.id)) states.set(item.id, fresh(info));
+    if (!states.has(item.id)) states.set(item.id, initialQuestState(info));
     return states.get(item.id);
   }
   function button(operation, label, extra = '') {
@@ -83,46 +49,6 @@ import { escapeHtml } from './src/shared/lib/escape-html';
       <p class="qx-scope">${info.language === 'go' ? 'Variante visual compartida: usa N/S/E/O y bordes. El jefe Go-103 usa F/R en un espacio sin estos bordes, y se detiene ante F sin energía. El contrato del editor manda.' : 'La grilla y batería corresponden al modelo de Rust-103. Rust-101 solo transforma coordenadas y Rust-102 valida un inventario: comparten la idea de decidir antes de modificar el estado.'}</p>`;
   }
 
-  // CRC-32 IEEE reflejado, solo para dibujar el modelo en JavaScript.
-  function crc32(bytes) {
-    let crc = 0xffffffff;
-    for (const byte of bytes) {
-      crc ^= byte;
-      for (let bit = 0; bit < 8; bit++) crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
-    }
-    return (crc ^ 0xffffffff) >>> 0;
-  }
-  function rotateChecksum(bytes) {
-    let value = 0;
-    for (const byte of bytes) value = (((value << 1) | (value >>> 7)) & 255) ^ byte;
-    return value;
-  }
-  function packetData(state, info) {
-    const rust = info.language === 'rust';
-    const original = Array.from(
-      { length: state.size },
-      (_, index) => sample[index % sample.length],
-    );
-    const received = original.slice();
-    if (state.corrupt && received.length) received[0] ^= 1;
-    let lengthBytes = rust ? [state.size] : [state.size >>> 8, state.size & 255];
-    if (state.reversed && !rust) lengthBytes.reverse();
-    if (state.badLength) lengthBytes[lengthBytes.length - 1] ^= 1;
-    const declared = rust ? lengthBytes[0] : lengthBytes[0] * 256 + lengthBytes[1];
-    const sent = rust ? rotateChecksum([state.control, state.size, ...original]) : crc32(original);
-    const computed = rust
-      ? rotateChecksum([state.control, ...lengthBytes, ...received])
-      : crc32(received);
-    const failure =
-      rust && state.control >>> 4 !== 1
-        ? 'version'
-        : declared !== state.size
-          ? 'largo'
-          : sent !== computed
-            ? 'checksum'
-            : null;
-    return { original, received, lengthBytes, declared, sent, computed, failure };
-  }
   function bytesPreview(bytes) {
     if (!bytes.length) return '∅';
     const beginning = bytes
@@ -189,31 +115,6 @@ import { escapeHtml } from './src/shared/lib/escape-html';
     const state = stateFor(item, info);
     return `<section class="quest-explorer" data-quest-explorer="${escapeHtml(item.id)}" aria-label="Explorador conceptual interactivo"><p class="qx-model-label">Modelo conceptual · No ejecuta el código del editor ni acredita la misión.</p><div data-q-view>${body(state, info)}</div><p class="qx-live" data-q-status role="status" aria-live="polite" aria-atomic="true">${escapeHtml(state.notice)}</p></section>`;
   }
-  function move(state, direction) {
-    const [dx, dy, name] = directions[direction];
-    const x = state.x + dx,
-      y = state.y + dy;
-    state.attempts++;
-    let summary, why;
-    if (x < 0 || x > 2 || y < 0 || y > 2) {
-      summary = `${direction} → choque; seguís en (${state.x},${state.y}), batería ${state.energy}.`;
-      why = `La propuesta (${x},${y}) cruza el borde. Se rechaza antes de gastar: el estado se conserva.`;
-    } else if (state.energy === 0) {
-      summary = `${direction} → sin batería; seguís en (${state.x},${state.y}).`;
-      why = `La propuesta (${x},${y}) entra en la grilla, pero necesita una unidad de energía. No se confirma.`;
-    } else {
-      const previous = `(${state.x},${state.y})`;
-      state.x = x;
-      state.y = y;
-      state.energy--;
-      state.moves++;
-      summary = `${direction} → ${previous} a (${x},${y}), batería ${state.energy}.`;
-      why = `Mover al ${name} es válido. Posición y batería cambian juntas; se consumió exactamente una unidad.`;
-    }
-    state.logs.push({ step: state.attempts, summary, why });
-    if (state.logs.length > 6) state.logs.shift();
-    state.notice = `Intento ${state.attempts}. ${summary} ${why}${state.x === 2 && state.y === 2 ? ' Baliza alcanzada.' : ''}`;
-  }
   function act(control, item, host) {
     const info = descriptor(item),
       operation = control?.dataset?.questOp;
@@ -221,57 +122,8 @@ import { escapeHtml } from './src/shared/lib/escape-html';
     const panel =
       control.closest?.('[data-quest-explorer]') || host?.querySelector?.('[data-quest-explorer]');
     if (!panel || panel.dataset.questExplorer !== item.id) return;
-    let state = stateFor(item, info);
-    const predictionMatch = /^predict-([0-2])$/.exec(operation);
-    if (predictionMatch) {
-      state.prediction = Number(predictionMatch[1]);
-      const correct = info.mode === 'robot' ? 0 : 1;
-      state.notice =
-        state.prediction === correct
-          ? 'Predicción correcta. Leé la explicación para conectar el resultado con su regla.'
-          : 'La predicción necesita un ajuste. La explicación muestra qué regla determina el resultado; podés probar otra respuesta.';
-    } else if (info.mode === 'robot') {
-      const moveMatch = /^move-([NSEO])$/.exec(operation),
-        energyMatch = /^battery-(2|4|6)$/.exec(operation);
-      if (moveMatch) move(state, moveMatch[1]);
-      else if (energyMatch) {
-        state = fresh(info, Number(energyMatch[1]));
-        state.notice = `Tablero reiniciado en (0,0), con batería ${state.energy}. La baliza está en (2,2).`;
-      } else return;
-    } else {
-      const bitMatch = /^bit-([0-7])$/.exec(operation),
-        sizeMatch = /^size-(0|3|6|260)$/.exec(operation);
-      if (bitMatch) {
-        const bit = Number(bitMatch[1]);
-        state.control ^= 1 << bit;
-        state.notice = `Alternaste b${bit}, de peso ${1 << bit}. El control ahora es 0x${hex(state.control)} (${state.control}). ${info.language === 'go' ? 'La trama Go-106 mantiene su marca fija 0x47.' : 'En el paquete Rust-106, los bits altos deben representar versión 1.'}`;
-      } else if (sizeMatch && (info.language === 'go' || Number(sizeMatch[1]) <= 255)) {
-        state.size = Number(sizeMatch[1]);
-        state.corrupt = false;
-        state.badLength = false;
-        state.reversed = false;
-        state.notice = `Se creó un paquete sin alteraciones con ${state.size} bytes de payload. Su longitud y comprobación fueron recalculadas; el byte de control seleccionado se conserva.`;
-      } else if (operation === 'corrupt' && state.size > 0) {
-        state.corrupt = !state.corrupt;
-        state.notice = state.corrupt
-          ? 'Se alternó el bit 0 del primer byte recibido. La comprobación enviada se conserva: ahora el receptor puede detectar esa alteración.'
-          : 'El primer byte volvió a su valor original. Compará nuevamente las comprobaciones.';
-      } else if (operation === 'bad-length') {
-        state.badLength = !state.badLength;
-        state.notice = state.badLength
-          ? 'Se alternó el bit de menor peso de la longitud declarada. La cantidad real de payload no cambió; el receptor compara ambas.'
-          : 'Se restauró el bit de longitud. Si invertiste los bytes, ese otro cambio sigue activo.';
-      } else if (operation === 'reverse-endian' && info.language === 'go') {
-        state.reversed = !state.reversed;
-        state.notice = state.reversed
-          ? 'Se invirtieron los dos bytes de longitud en tránsito. El receptor sigue leyendo big-endian: interpretará el orden recibido, sin adivinar tu intención.'
-          : 'Los bytes de longitud recuperaron su orden big-endian. Las demás alteraciones se conservan.';
-      } else if (operation === 'packet-reset') {
-        state = fresh(info);
-        state.notice =
-          'Paquete restaurado: 3 bytes de payload, sin alteraciones. El byte de control también recuperó su valor inicial.';
-      } else return;
-    }
+    const state = applyQuestOperation(stateFor(item, info), info, operation);
+    if (!state) return;
     states.set(item.id, state);
     const view = panel.querySelector('[data-q-view]'),
       live = panel.querySelector('[data-q-status]');
