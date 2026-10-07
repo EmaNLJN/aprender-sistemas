@@ -1,12 +1,7 @@
 <?php
 
-use App\Http\Middleware\RequirePassword;
-use App\Http\ProgressLimiters;
 use App\Models\User;
-use Illuminate\Contracts\Http\Kernel;
-use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Route;
 use Tests\Feature\Session\ProbeRoutes;
 use Tests\Support\Browser;
 use Tests\Support\ProgressWorld;
@@ -36,10 +31,7 @@ function resetRouteBody(int $epoch = 1): array
 }
 
 beforeEach(function () {
-    ProgressLimiters::register();
-    app(Kernel::class)->addToMiddlewarePriorityBefore(ThrottleRequests::class, RequirePassword::class);
     ProbeRoutes::register();
-    Route::prefix('api')->middleware('api')->group(base_path('routes/api/progress-reset.php'));
     $this->user = ProgressWorld::user();
     ProgressWorld::head($this->user, epoch: 1, revision: 7);
 });

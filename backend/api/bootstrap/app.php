@@ -36,10 +36,8 @@ return Application::configure(basePath: dirname(__DIR__))
             __DIR__.'/../routes/api/runs.php',
             __DIR__.'/../routes/api/sync.php',
             __DIR__.'/../routes/api/progress.php',
-            __DIR__.'/../routes/api/admin-users.php',
-            __DIR__.'/../routes/api/admin-invitations.php',
-            __DIR__.'/../routes/api/export.php',
-            __DIR__.'/../routes/api/deletion.php',
+            __DIR__.'/../routes/api/progress-import.php',
+            __DIR__.'/../routes/api/progress-reset.php',
         ],
         commands: __DIR__.'/../routes/console.php',
         health: '/api/up',
@@ -75,11 +73,23 @@ return Application::configure(basePath: dirname(__DIR__))
             SubstituteBindings::class,
             Authorize::class,
         ]);
+        // Laravel's default list without ThrottleRequests: a throttle runs where the route declares it, as the
+        // C3b contract orders (throttle:admin after account.admin, password.confirm before throttle:export).
+        $middleware->priority([
+            HandlePrecognitiveRequests::class,
+            EncryptCookies::class,
+            AddQueuedCookiesToResponse::class,
+            StartSession::class,
+            ShareErrorsFromSession::class,
+            AuthenticatesRequests::class,
+            AuthenticatesSessions::class,
+            SubstituteBindings::class,
+            Authorize::class,
+        ]);
         $middleware->prependToPriorityList(before: AuthenticatesRequests::class, prepend: EnsureUserIsActive::class);
         $middleware->group('account', ['account.active', 'auth:web', 'account.expected']);
-        $middleware->group('admin', ['account.active', 'auth:web', 'account.expected', 'verified', 'account.admin', 'throttle:admin']);
-        $middleware->trimStrings(except: [fn (Request $request) => $request->is('api/runs', 'api/runs/*', 'api/sync')]);
-        $middleware->convertEmptyStringsToNull(except: [fn (Request $request) => $request->is('api/runs', 'api/runs/*', 'api/sync')]);
+        $middleware->trimStrings(except: [fn (Request $request) => $request->is('api/runs', 'api/runs/*', 'api/sync', 'api/progress/import')]);
+        $middleware->convertEmptyStringsToNull(except: [fn (Request $request) => $request->is('api/runs', 'api/runs/*', 'api/sync', 'api/progress/import')]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Nginx passes only /api/, but REQUEST_URI arrives raw (/x/../api/zzz): a prefix rule would let it

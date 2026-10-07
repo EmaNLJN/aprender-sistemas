@@ -1,13 +1,11 @@
 <?php
 
-use App\Http\ProgressLimiters;
 use App\Models\User;
 use App\Progress\ChangesReader;
 use App\Progress\Import\LegacyWriter;
 use App\Runs\Record\Instant;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
 use Tests\Support\Browser;
 use Tests\Support\Import\FakeLegacyWriter;
@@ -20,8 +18,6 @@ const IMPORT_HTTP_RAW_LIMIT = 10485760;
 
 beforeEach(function () {
     $this->travelTo(Instant::parse('2026-10-06 12:00:00.123'));
-    ProgressLimiters::register();
-    Route::prefix('api')->middleware('api')->group(base_path('routes/api/progress-import.php'));
     $this->writer = new FakeLegacyWriter;
     $this->reader = new FakeChangesReader;
     app()->instance(LegacyWriter::class, $this->writer);

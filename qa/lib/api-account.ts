@@ -5,6 +5,7 @@ import { join } from 'node:path';
 
 export interface CheckAccount {
   cookie: string;
+  password: string;
   close: () => void;
 }
 
@@ -105,7 +106,7 @@ export async function openAccount(base: string): Promise<CheckAccount> {
     if (accepted.status !== 201)
       throw new Error(`accepting the invitation replied ${accepted.status}`);
     const cookies = new Map([...session.cookies, ...accepted.cookies]);
-    return { cookie: cookieHeader(cookies), close: () => removeAccount(email) };
+    return { cookie: cookieHeader(cookies), password, close: () => removeAccount(email) };
   } catch (error) {
     removeAccount(email);
     throw error;
