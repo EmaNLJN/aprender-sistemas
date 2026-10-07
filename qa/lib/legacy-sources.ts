@@ -29,8 +29,12 @@ export function systemsDomainSources(domain: SystemsDomain): readonly string[] {
 export const SYSTEMS_CATALOG_SOURCES: readonly string[] =
   SYSTEMS_DOMAINS.flatMap(systemsDomainSources);
 
+function runAdapter(context: vm.Context, source: string, options?: RunOptions): void {
+  runSource(context, source, { ...options, withContent: true });
+}
+
 export function loadGuideContent(context: vm.Context): void {
-  runSource(context, CATALOGS_SOURCE);
+  runAdapter(context, CATALOGS_SOURCE);
 }
 
 export interface AppShellModule {
@@ -42,7 +46,7 @@ export function loadAppShell(context: vm.Context): AppShellModule {
 }
 
 export function loadLabExercises(context: vm.Context): void {
-  runSource(context, CATALOGS_SOURCE);
+  runAdapter(context, CATALOGS_SOURCE);
 }
 
 export function loadSystemsDomain(
@@ -50,7 +54,7 @@ export function loadSystemsDomain(
   domain: SystemsDomain,
   options?: RunOptions,
 ): void {
-  for (const source of systemsDomainSources(domain)) runSource(context, source, options);
+  for (const source of systemsDomainSources(domain)) runAdapter(context, source, options);
 }
 
 export function loadSystemsCatalogs(context: vm.Context): void {
@@ -64,7 +68,7 @@ export function loadLabCatalogs(context: vm.Context): void {
 }
 
 export function loadCampaignWorlds(context: vm.Context): void {
-  runSource(context, CATALOGS_SOURCE);
+  runAdapter(context, CATALOGS_SOURCE);
 }
 
 export function loadLab(context: vm.Context): void {
