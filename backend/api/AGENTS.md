@@ -123,8 +123,9 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
     **Toda tabla nueva con `user_id` se declara en `UserTables` y en `Tests\Support\PopulatedAccount`**:
     si no, fallan las pruebas de cobertura de la purga y de la exportación.
   - La exportación (`UserExport`, formato `taller-export-2`) junta `account`, `progress` (la foto de
-    D1a, que lee `ProgressSection`) y `attempts`. Una sección nueva se registra ahí; quitar o
-    renombrar una clave cambia el `format`.
+    D1a, que lee `ProgressSection`), `attempts` e `imports` (las importaciones de D1b, que lee
+    `ImportsSection` de a una fila). Una sección nueva se registra ahí; quitar o renombrar una clave
+    cambia el `format`.
   - `PurgeUserData` borra una cuenta por lotes en la cola `default` y la anota en el libro
     `account_deletions`. `taller:resume-purges` vuelve a pedir las que quedaron en `deleting`, y
     `taller:reapply-deletions` reaplica una copia del libro sobre una base restaurada.
@@ -157,9 +158,9 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
     `npm test`, y `ImportLosslessTest` lo corre con el contenido real.
   - El `scheduler` borra el crudo de `progress_imports` a los 90 días y deja la fila
     (`progress:prune-import-payloads`, cada hora).
-  - Toda tabla nueva con `user_id` se declara en `UserTables` y en `Tests\Support\PopulatedAccount`
-    (C3b). Cuando C3b esté en la base, `progress_imports` y `campaign_seals` suman sus filas, y la
-    exportación, la sección `imports` (R39).
+  - `progress_imports` (exportada en `imports`, purgada por lotes) y `campaign_seals` (en la foto)
+    están declaradas en `UserTables` y en `Tests\Support\PopulatedAccount`, como toda tabla con
+    `user_id` (R39).
 - **Pruebas:**
   - `RefreshDatabase` es el default (`tests/Pest.php`). `DatabaseTruncation` queda para el
     código que hace `TRUNCATE` o abre sus propias transacciones.

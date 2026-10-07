@@ -187,13 +187,18 @@ El documento, con las claves en este orden:
     "id": 7, "exerciseId": "rust-01", "outcome": "passed", "attemptedAt": "2026-10-06T12:00:00.000Z", "…": "…",
     "tests": [{"testKey": "t1", "exerciseId": "rust-01", "position": 1, "outcome": "pass"}],
     "payload": {"code": "fn main() {}", "customTest": null, "stdout": "", "stderr": "", "createdAt": "…Z"}
+  }],
+  "imports": [{
+    "importId": "0b0d3c1e-5f6a-4b7c-8d9e-0a1b2c3d4e5f", "source": "export", "rawPayload": "{…}", "rawSha256": "…",
+    "report": {"…": "…"}, "epoch": 1, "revision": 4, "importedAt": "2026-10-07T12:00:00.000Z"
   }]
 }
 ```
 
 - **`account`:** sin el hash ni el token de «recordarme». **No** incluye sesiones, invitaciones ni tokens, ni `runs` ni `progress_heads` (motivos en [data-model.md](../data-model.md), sección 2).
-- **`progress`:** la foto de progreso de D1a, con las áreas y las filas de `GET /api/progress` (§5 de su [contrato](../../007-d1-progreso-sincronizacion/contracts/http.md)), sin `full` ni `userId`. La lee `ProgressSnapshotReader::areas(userId, null)` dentro de una transacción corta de sólo lectura (REPEATABLE READ). Los ejercicios salen de `exercise_progress`. D1b suma **`imports`** con los crudos importados.
+- **`progress`:** la foto de progreso de D1a, con las áreas y las filas de `GET /api/progress` (§5 de su [contrato](../../007-d1-progreso-sincronizacion/contracts/http.md)), sin `full` ni `userId`. La lee `ProgressSnapshotReader::areas(userId, null)` dentro de una transacción corta de sólo lectura (REPEATABLE READ). Los ejercicios salen de `exercise_progress`, y los sellos importados por D1b, de `campaign_seals` (`campaign.seals`).
 - **`attempts`:** cada intento con todas sus columnas menos `user_id`, sus pruebas (`tests`, sin `attemptId`) y su payload si se conserva (`payload`, sin `attemptId`; `null` si no se conserva).
+- **`imports`:** cada importación del progreso v1 de la cuenta (`progress_imports` de D1b), en orden, sin `id` ni `user_id`. `rawPayload` es el crudo tal como llegó, o `null` si ya se podó (a los 90 días); `report` es el informe de la importación, como objeto. `ImportsSection` lee de a una fila en transacciones cortas, porque un crudo puede pesar 10 MiB.
 - **La versión.** `format` cambia cuando el documento quita o renombra una clave. Es `taller-export-2` desde que `progress` reemplazó a `exerciseProgress`, la clave de `taller-export-1`, al integrarse C3b con D1a. Sumar una clave (D1b agrega `imports`) no lo cambia.
 - **Los nombres** de columna salen en camelCase. Las columnas `DATETIME` salen en ISO 8601 UTC con milisegundos y `Z`; los demás valores, como están en la base (un indicador es `0` o `1`).
 
@@ -236,7 +241,7 @@ Ninguna ruta de C3b entra en la lista blanca de la prueba de recorrido de C3a: t
 | Ítem | Qué toma |
 | --- | --- |
 | **B2** | `AccountRestricted` (`Disabled`, `Demoted` o `Deleting`), que B2 ya entregó y C3b dispara después de confirmar. El listener de B2 lee `users.status` ya confirmado |
-| **D1a y D1b** | Declarar sus tablas en `UserTables` y en `PopulatedAccount` al crearlas, y registrar su sección de exportación en `UserExport`. D1a ya está integrada: sus diez tablas tienen filas en `PopulatedAccount`, y `ProgressSection` lee `ProgressSnapshotReader::areas(userId, null)`. A D1b le faltan `progress_imports`, `campaign_seals` y la sección `imports` |
+| **D1a y D1b** | Declarar sus tablas en `UserTables` y en `PopulatedAccount` al crearlas, y registrar su sección de exportación en `UserExport`. Las dos están integradas: las diez tablas de D1a y `campaign_seals` viajan en la foto, que lee `ProgressSection` con `ProgressSnapshotReader::areas(userId, null)`, y `progress_imports`, en `imports`, que lee `ImportsSection` |
 | **C3c** | Los tres sitios que responden 503 (`InvitationController::store` y `::resend` con `delivery=email`, y `UserController::passwordReset`) y los dos puntos de aviso (la promoción en `AccountChanges::change` y el final de `PurgeUserData`). `MailUnavailable` y `ApiCode::MailUnavailable` son de C3b. `AccountDeletion::request(int $id)` es el pedido de supresión que C3c usa para las cuentas de registro nunca verificadas (su FR-022) |
 | **C4** | El libro de supresiones: `account_deletions` y su copia junto a cada respaldo, en el formato de [console.md](./console.md) |
 | **El front** | 423 en cada acción sensible; `Retry-After`; el link de una invitación se ve una sola vez; el 503 `mail_unavailable`; la descarga de la exportación es un `POST` con respuesta en streaming que se baja con `fetch` y se guarda como archivo; el mensaje de `DELETE /api/me` |
