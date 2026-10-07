@@ -13,7 +13,7 @@ Las ondas, los dueños de archivos, las interfaces y los puntos de sincronizaci�
 
 ## Phase 1: Setup — Línea base (coordinador K, onda 0)
 
-- [ ] T020 [US1] K · Línea base sobre la base de implementación (`master` con F2a entera): los oráculos, el script, el estilo y el marcado del dist con su hash, `html.length`, el multiconjunto del CSS, los 35 avisos y los escenarios de cada check, en `specs/009-f2-seams/research-f2b.md` (FR-002 a FR-004, FR-009, FR-016; plan 0.1; quickstart-f2b §1)
+- [x] T020 [US1] K · Línea base sobre la base de implementación (`master` con F2a entera): los oráculos, el script, el estilo y el marcado del dist con su hash, `html.length`, el multiconjunto del CSS, los 35 avisos y los escenarios de cada check, en `specs/009-f2-seams/research-f2b.md` (FR-002 a FR-004, FR-009, FR-016; plan 0.1; quickstart-f2b §1)
 
 ## Phase 2: Foundational
 
