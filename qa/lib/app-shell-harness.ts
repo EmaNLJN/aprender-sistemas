@@ -64,7 +64,6 @@ export interface HarnessOptions {
   failSystemsSync?: boolean;
   // Valor que devuelve applyImport de la sección (por defecto, true: se guardó).
   applyResults?: Partial<Record<ModuleKey, boolean>>;
-  // applyImport y reset de los adaptadores falsos devuelven promesas, como los de D1c.
   asyncAdapters?: boolean;
 }
 
