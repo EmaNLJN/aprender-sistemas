@@ -1,7 +1,5 @@
 <?php
 
-use App\Accounts\Ownership;
-use App\Accounts\UserData;
 use App\Accounts\UserPurge;
 use App\Auth\AccountStatus;
 use App\Models\User;
@@ -31,19 +29,6 @@ function reapplyLedger(string $path, string $contents): array
     return [$exit, Artisan::output()];
 }
 
-function reapplyRowsLeftOf(int $userId): int
-{
-    $left = 0;
-    foreach ((new UserData)->tables() as $table) {
-        $ownedByUser = in_array($table->ownership, [Ownership::UserId, Ownership::Child], true);
-        if ($ownedByUser && UserDataCoverage::exists($table->name)) {
-            $left += UserDataCoverage::rowsOf($table, $userId);
-        }
-    }
-
-    return $left;
-}
-
 function reapplyStandardLedger(): string
 {
     return "user_id\tuser_created_at\tdeleted_at\n"
@@ -65,7 +50,7 @@ it('purges the account that matches, leaves the one with a reused id and complet
 
     expect($exit)->toBe(0)
         ->and(DB::table('users')->where('id', 12)->count())->toBe(0)
-        ->and(reapplyRowsLeftOf(12))->toBe(0)
+        ->and(array_sum(UserDataCoverage::rowsLeftOf(12)))->toBe(0)
         ->and(DB::table('users')->where('id', 13)->value('status'))->toBe('active')
         ->and($output)->toContain('1 cuenta borrada, 1 id reutilizado salteado y 3 filas agregadas al libro')
         ->and($output)->toContain('13')
