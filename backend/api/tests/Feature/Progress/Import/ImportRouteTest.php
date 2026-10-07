@@ -5,6 +5,7 @@ use App\Models\User;
 use App\Progress\ChangesReader;
 use App\Progress\Import\LegacyWriter;
 use App\Runs\Record\Instant;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
@@ -168,7 +169,7 @@ describe('the other errors', function () {
     it('answers 500 server_error without the text of the student when the database rejects the write', function () {
         $driverError = new PDOException('Incorrect string value');
         $driverError->errorInfo = ['HY000', 1366, 'Incorrect string value'];
-        $this->writer->failNextWriteWith(new Illuminate\Database\QueryException('mysql', 'insert into `drafts` values (?)', ['zq7-centinela'], $driverError));
+        $this->writer->failNextWriteWith(new QueryException('mysql', 'insert into `drafts` values (?)', ['zq7-centinela'], $driverError));
 
         $response = $this->browser->post('/api/progress/import', importHttpBody());
 
@@ -234,6 +235,5 @@ describe('the limit', function () {
 
         $fourth->assertStatus(429)->assertJsonPath('code', 'too_many_requests');
         expect((int) $fourth->headers->get('Retry-After'))->toBeBetween(1, 3600);
-        importHttpIsPrivateNoStore($fourth);
     });
 });

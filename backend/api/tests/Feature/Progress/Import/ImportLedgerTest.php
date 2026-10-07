@@ -40,14 +40,14 @@ describe('record', function () {
     it('leaves the row with the raw, its sha256, the report in JSON, the epoch, the revision and the time', function () {
         $report = new ImportReport(['exercises' => 2], [new ReportEntry('lab.records.rust-02.reviewAt', 'date_out_of_range')], [], []);
 
-        $stored = $this->ledger->record($this->user->id, ledgerRequest(raw: "{\"nota\":\"ñandú\"}"), hash('sha256', "{\"nota\":\"ñandú\"}"), $report, 2, 7, $this->at);
+        $stored = $this->ledger->record($this->user->id, ledgerRequest(raw: '{"nota":"ñandú"}'), hash('sha256', '{"nota":"ñandú"}'), $report, 2, 7, $this->at);
 
         $row = DB::table('progress_imports')->first();
         expect($row->user_id)->toBe($this->user->id)
             ->and($row->import_id)->toBe(LEDGER_ID_1)
             ->and($row->source)->toBe('storage')
-            ->and($row->raw_payload)->toBe("{\"nota\":\"ñandú\"}")
-            ->and($row->raw_sha256)->toBe(hash('sha256', "{\"nota\":\"ñandú\"}"))
+            ->and($row->raw_payload)->toBe('{"nota":"ñandú"}')
+            ->and($row->raw_sha256)->toBe(hash('sha256', '{"nota":"ñandú"}'))
             ->and(json_decode($row->report, true))->toBe($report->toArray())
             ->and([$row->epoch, $row->revision, $row->imported_at])->toBe([2, 7, '2026-10-06 12:00:00.123'])
             ->and($stored->importId)->toBe(LEDGER_ID_1)

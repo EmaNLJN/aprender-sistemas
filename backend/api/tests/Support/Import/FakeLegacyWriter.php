@@ -18,9 +18,7 @@ final class FakeLegacyWriter implements LegacyWriter
     private array $failures = [];
 
     /** @param array<string, int> $counts */
-    public function __construct(public array $counts = [])
-    {
-    }
+    public function __construct(public array $counts = []) {}
 
     public function failNextWriteWith(Throwable $error): void
     {
