@@ -87,7 +87,7 @@ curl -s -D - -b "$STUDENT" -X POST -H 'Accept: application/json' -H "X-XSRF-TOKE
 node -p 'const d = JSON.parse(require("fs").readFileSync("export.json", "utf8")); [d.format, Object.keys(d).join(","), d.account.email].join(" | ")'
 ```
 
-**Esperado:** 200 con `Content-Type: application/json` y `Content-Disposition: attachment; filename="taller-<id>-<fecha>.json"`; el archivo es JSON válido, empieza por `taller-export-1`, trae las claves `format,exportedAt,account,exerciseProgress,attempts` y **sólo** los datos de esa cuenta, sin hash ni token. El cuarto pedido del día responde 429 con `Retry-After`.
+**Esperado:** 200 con `Content-Type: application/json` y `Content-Disposition: attachment; filename="taller-<id>-<fecha>.json"`; el archivo es JSON válido, empieza por `taller-export-2`, trae las claves `format,exportedAt,account,progress,attempts` y **sólo** los datos de esa cuenta, sin hash ni token. El cuarto pedido del día responde 429 con `Retry-After`.
 
 ## 5. Borrar la cuenta y ver que desaparece (historias 3 y 5, SC-007, SC-008 y SC-014)
 
