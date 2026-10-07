@@ -365,7 +365,7 @@ final class LegacyDecoder
         $customPassed = $this->flag($result['customPassed'], "{$path}.customPassed");
         $attemptId = array_key_exists('attemptId', $result) ? $this->integer($result['attemptId'], "{$path}.attemptId", 1, self::MAX_SAFE_INTEGER) : null;
 
-        $time = $this->instant($this->number($result['time'], "{$path}.time", PHP_INT_MIN, PHP_INT_MAX));
+        $time = $this->instant($this->numeric($result['time'], "{$path}.time"));
         if ($time === null) {
             $this->omit($path, self::DATE_OUT_OF_RANGE);
 
@@ -652,11 +652,18 @@ final class LegacyDecoder
         return array_key_exists($field, $record) ? $this->text($record[$field], "{$path}.{$field}", $maxChars) : null;
     }
 
-    private function number(mixed $value, string $path, int $minimum, int $maximum): int|float
+    private function numeric(mixed $value, string $path): int|float
     {
         if (! is_int($value) && ! is_float($value)) {
             $this->fail($path, 'wrong_type');
         }
+
+        return $value;
+    }
+
+    private function number(mixed $value, string $path, int $minimum, int $maximum): int|float
+    {
+        $value = $this->numeric($value, $path);
         if ($value < $minimum || $value > $maximum) {
             $this->fail($path, 'out_of_range');
         }

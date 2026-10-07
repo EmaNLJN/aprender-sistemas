@@ -447,6 +447,16 @@ dataset('omissions', [
         [['path' => 'lab.records.fx-rust-01.result', 'reason' => 'date_out_of_range']],
         fn (LegacyProgress $progress) => expect($progress->exercises[0]->result)->toBeNull(),
     ],
+    'a result time above any integer, as 1e21 decodes' => [
+        ['lab.records.fx-rust-01.result.time' => 1.0e21],
+        [['path' => 'lab.records.fx-rust-01.result', 'reason' => 'date_out_of_range']],
+        fn (LegacyProgress $progress) => expect($progress->exercises[0]->result)->toBeNull(),
+    ],
+    'a result time below any integer' => [
+        ['lab.records.fx-rust-01.result.time' => -1.0e21],
+        [['path' => 'lab.records.fx-rust-01.result', 'reason' => 'date_out_of_range']],
+        fn (LegacyProgress $progress) => expect($progress->exercises[0]->result)->toBeNull(),
+    ],
     'a prediction outside the options' => [
         ['lab.records.fx-rust-01.prediction' => 3],
         [['path' => 'lab.records.fx-rust-01.prediction', 'reason' => 'outside_options']],
