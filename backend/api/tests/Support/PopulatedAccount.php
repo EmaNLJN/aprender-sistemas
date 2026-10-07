@@ -26,6 +26,7 @@ final class PopulatedAccount
         self::insertProgress($user, $at);
         self::insertAttempt($user, $at);
         self::insertSyncedProgress($user);
+        self::insertImport($user);
         self::insertInvitation($user, $at);
         DB::table('password_reset_tokens')->insert(['email' => $user->email, 'token' => Str::random(40), 'created_at' => $at]);
 
@@ -80,6 +81,18 @@ final class PopulatedAccount
         DB::table('sync_operations')->insert([
             'user_id' => $user->id, 'operation_id' => random_bytes(16), 'payload_sha256' => random_bytes(32), 'status' => 'applied',
             'reason' => null, 'clock_offset_ms' => 0, 'received_at' => self::PROGRESS_AT,
+        ]);
+    }
+
+    private static function insertImport(User $user): void
+    {
+        DB::table('progress_imports')->insert([
+            'user_id' => $user->id, 'import_id' => '0b0d3c1e-5f6a-4b7c-8d9e-0a1b2c3d4e5f', 'source' => 'storage', 'raw_payload' => '{"v":1}',
+            'raw_sha256' => str_repeat('d', 64), 'report' => '{"imported":{"seals":1}}', 'epoch' => 1, 'revision' => 0, 'imported_at' => self::PROGRESS_AT,
+        ]);
+        DB::table('campaign_seals')->insert([
+            'user_id' => $user->id, 'exercise_id' => self::EXERCISE_ID, 'code' => 1, 'prediction' => 0, 'assisted' => 1,
+            'imported_at' => self::PROGRESS_AT, 'revision' => 0,
         ]);
     }
 

@@ -11,6 +11,7 @@ function exportedDocument(int $userId): array
 {
     $document = app(UserExport::class)->document($userId);
     $document['attempts'] = iterator_to_array($document['attempts'], false);
+    $document['imports'] = iterator_to_array($document['imports'], false);
 
     return $document;
 }
@@ -59,7 +60,7 @@ beforeEach(function () {
 it('builds the document with the keys in order and the versioned format', function () {
     $document = exportedDocument($this->ana->id);
 
-    expect(array_keys($document))->toBe(['format', 'exportedAt', 'account', 'progress', 'attempts'])
+    expect(array_keys($document))->toBe(['format', 'exportedAt', 'account', 'progress', 'attempts', 'imports'])
         ->and($document['format'])->toBe('taller-export-2')
         ->and($document['exportedAt'])->toBe('2026-10-12T15:30:00.123Z');
 });
@@ -89,7 +90,7 @@ it('exports the snapshot areas of a populated account and nothing else', functio
 
     expect(array_keys($progress))->toBe(['exercises', 'drafts', 'campaign', 'workshops', 'route', 'preferences'])
         ->and($progress['drafts'])->toBe([['exerciseId' => 'rust-01', 'code' => 'let x = 1;', 'starterHash' => str_repeat('c', 64), 'at' => $at, 'revision' => 0]])
-        ->and($progress['campaign'])->toBe(['seals' => [], 'checkpoints' => [[
+        ->and($progress['campaign'])->toBe(['seals' => [['exerciseId' => 'rust-01', 'code' => true, 'prediction' => false, 'assisted' => true, 'revision' => 0]], 'checkpoints' => [[
             'worldId' => 'fx-world-1', 'passed' => true, 'passedAt' => $at, 'lastAnswer' => ['value' => 2, 'at' => $at], 'revision' => 0,
         ]]])
         ->and($progress['workshops']['progress'][0]['note'])->toBe(['text' => 'Borrow first', 'at' => $at])
@@ -129,5 +130,34 @@ it('leaves out everything that belongs to another account or is secret', functio
 });
 
 it('lists the section keys that exist', function () {
-    expect(app(UserExport::class)->sectionKeys())->toBe(['account', 'progress', 'attempts']);
+    expect(app(UserExport::class)->sectionKeys())->toBe(['account', 'progress', 'attempts', 'imports']);
+});
+
+it('exports the imports of a populated account with the report as an object and without ids', function () {
+    $imports = exportedDocument(PopulatedAccount::create()->id)['imports'];
+
+    expect($imports)->toEqual([[
+        'importId' => '0b0d3c1e-5f6a-4b7c-8d9e-0a1b2c3d4e5f', 'source' => 'storage', 'rawPayload' => '{"v":1}', 'rawSha256' => str_repeat('d', 64),
+        'report' => (object) ['imported' => (object) ['seals' => 1]], 'epoch' => 1, 'revision' => 0, 'importedAt' => '2026-10-06T10:00:00.000Z',
+    ]]);
+});
+
+it('exports rawPayload as null for a pruned import and keeps the imports in id order', function () {
+    $user = PopulatedAccount::create();
+    DB::table('progress_imports')->insert([
+        'user_id' => $user->id, 'import_id' => '1c1d3c1e-5f6a-4b7c-8d9e-0a1b2c3d4e5f', 'source' => 'export', 'raw_payload' => null,
+        'raw_sha256' => str_repeat('e', 64), 'report' => '{}', 'epoch' => 1, 'revision' => 1, 'imported_at' => '2026-10-06 11:00:00.000',
+    ]);
+
+    $imports = exportedDocument($user->id)['imports'];
+
+    expect(array_column($imports, 'source'))->toBe(['storage', 'export'])
+        ->and($imports[1]['rawPayload'])->toBeNull()
+        ->and($imports[1]['report'])->toEqual(new stdClass);
+});
+
+it('exports no imports of another account', function () {
+    PopulatedAccount::create();
+
+    expect(exportedDocument($this->ana->id)['imports'])->toBe([]);
 });

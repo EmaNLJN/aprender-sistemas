@@ -21,12 +21,12 @@ function declared(string $name): UserTable
     throw new RuntimeException("{$name} is not declared");
 }
 
-it('declares the 20 tables of data-model section 2, without repeats', function () {
+it('declares the 22 tables of data-model section 2, without repeats', function () {
     expect(declaredNames())->toBe([
         'sessions', 'invitations', 'password_reset_tokens', 'account_deletions',
-        'progress_heads', 'runs', 'exercise_progress', 'attempts', 'attempt_tests', 'attempt_payloads', 'sync_operations',
+        'progress_heads', 'runs', 'exercise_progress', 'attempts', 'attempt_tests', 'attempt_payloads', 'sync_operations', 'progress_imports',
         'drafts', 'campaign_checkpoints', 'workshop_progress', 'route_marks', 'route_quiz_answers', 'route_notes', 'preferences',
-        'workshop_observations', 'workshop_step_marks',
+        'workshop_observations', 'workshop_step_marks', 'campaign_seals',
     ]);
 });
 
@@ -42,10 +42,10 @@ it('gives each of the four exceptions its reason', function (string $name, Owner
     ['account_deletions', Ownership::Ledger],
 ]);
 
-it('purges in batches runs, exercise_progress, attempts and sync_operations, in that order and by their key', function () {
+it('purges in batches runs, exercise_progress, attempts, sync_operations and progress_imports, in that order and by their key', function () {
     $batches = array_map(fn (UserTable $table) => [$table->name, $table->batchesBy], (new UserData)->batchTables());
 
-    expect($batches)->toBe([['runs', 'id'], ['exercise_progress', 'exercise_id'], ['attempts', 'id'], ['sync_operations', 'operation_id']]);
+    expect($batches)->toBe([['runs', 'id'], ['exercise_progress', 'exercise_id'], ['attempts', 'id'], ['sync_operations', 'operation_id'], ['progress_imports', 'id']]);
 });
 
 it('names a declared parent for every child', function (string $child, string $parent) {
