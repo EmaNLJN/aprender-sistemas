@@ -26,6 +26,8 @@ dataset('contract codes', [
     'client_run_id_reused' => [ApiCode::ClientRunIdReused, 'client_run_id_reused', 422, 'Ese identificador de ejecución ya se usó con otro código, otro ejercicio u otra prueba propia.'],
     'quota_exceeded' => [ApiCode::QuotaExceeded, 'quota_exceeded', 429, 'Llegaste a un límite de ejecuciones: esperá antes de volver a probar.'],
     'queue_full' => [ApiCode::QueueFull, 'queue_full', 503, 'El taller está ocupado ahora mismo: reintentá en unos segundos.'],
+    'epoch_mismatch' => [ApiCode::EpochMismatch, 'epoch_mismatch', 409, 'Tu progreso se borró desde otro dispositivo. Se cargará el estado nuevo.'],
+    'client_outdated' => [ApiCode::ClientOutdated, 'client_outdated', 409, 'Esta pestaña quedó vieja. Recargá la página para seguir sincronizando.'],
     'last_admin' => [ApiCode::LastAdmin, 'last_admin', 409, 'Tiene que quedar al menos un admin activo.'],
     'mail_unavailable' => [ApiCode::MailUnavailable, 'mail_unavailable', 503, 'El taller no puede mandar correos por ahora.'],
 ]);

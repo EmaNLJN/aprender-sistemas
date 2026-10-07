@@ -20,3 +20,4 @@ Schedule::command('queue:work database --queue=default --stop-when-empty --max-t
 Schedule::command('queue:prune-failed', ['--hours' => 168])->daily()->withoutOverlapping()->appendOutputTo('/proc/1/fd/2');
 Schedule::command('model:prune', ['--model' => DeletedAccount::class])->daily()->withoutOverlapping()->appendOutputTo('/proc/1/fd/2');
 Schedule::command('taller:resume-purges')->everyFiveMinutes()->withoutOverlapping()->appendOutputTo('/proc/1/fd/2');
+Schedule::command('progress:prune-sync-operations')->hourly()->withoutOverlapping()->appendOutputTo('/proc/1/fd/2');
