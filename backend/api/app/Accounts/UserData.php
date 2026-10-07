@@ -5,7 +5,7 @@ namespace App\Accounts;
 final class UserData
 {
     /** @var list<string> */
-    private const EXPORT_KEYS = ['account', 'exerciseProgress', 'attempts', 'progress', 'imports'];
+    private const EXPORT_KEYS = ['account', 'attempts', 'progress', 'imports'];
 
     /** @param list<UserTable>|null $tables */
     public function __construct(private ?array $tables = null) {}

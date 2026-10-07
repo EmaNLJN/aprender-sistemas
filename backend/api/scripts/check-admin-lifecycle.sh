@@ -107,7 +107,8 @@ echo "== Estudiante"
 check "$(call "$student_jar" "$student_id" POST /api/auth/confirm-password "{\"password\":\"$student_password\"}")" 201 \
   "el estudiante reconfirma la contraseña"
 check "$(call "$student_jar" "$student_id" POST /api/me/export)" 200 "el estudiante exporta sus datos"
-check "$(json "$body" 'd.format')" taller-export-1 "la copia trae format taller-export-1"
+check "$(json "$body" 'd.format')" taller-export-2 "la copia trae format taller-export-2"
+check "$(json "$body" 'Object.keys(d.progress).join(",")')" exercises,drafts,campaign,workshops,route,preferences "la copia trae la sección progress con las áreas de la foto"
 check "$(call "$student_jar" "$student_id" DELETE /api/me)" 202 "el estudiante pide borrar su cuenta"
 check "$(curl -s -b "$student_jar" -H 'Accept: application/json' "$base/api/session" | grep -c '"user":null')" 1 \
   "la sesión ya no tiene cuenta"

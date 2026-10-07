@@ -6,11 +6,11 @@ use App\Runs\Record\Instant;
 
 final class UserExport
 {
-    private const FORMAT = 'taller-export-1';
+    private const FORMAT = 'taller-export-2';
 
     public function __construct(
         private readonly AccountSection $account,
-        private readonly ExerciseProgressSection $progress,
+        private readonly ProgressSection $progress,
         private readonly AttemptsSection $attempts,
     ) {}
 
