@@ -62,6 +62,12 @@ export interface HarnessOptions {
 const CONTENT_PUBLISHED_EVENT = 'taller:content-published';
 const PUBLISHED_GLOBAL = /^(Taller|GUIDE_DATA$|RUST_|GO_|SYSTEMS_)/;
 
+export function publishedGlobals(context: vm.Context): string[] {
+  return Object.keys(context)
+    .filter((name) => PUBLISHED_GLOBAL.test(name))
+    .sort();
+}
+
 export function describeError(value: unknown): string {
   const stack = (value as { stack?: unknown } | null)?.stack;
   return typeof stack === 'string' ? stack : String(value);
@@ -209,8 +215,7 @@ export function createBootHarness(options: HarnessOptions = {}): BootHarness {
       ),
     dispatchEvent: (event: { type: string; detail?: unknown; defaultPrevented?: boolean }) => {
       if (event.type === CONTENT_PUBLISHED_EVENT) {
-        const globals = Object.keys(context).filter((name) => PUBLISHED_GLOBAL.test(name));
-        published.push({ content: event.detail, globals: globals.sort() });
+        published.push({ content: event.detail, globals: publishedGlobals(context) });
       }
       for (const listener of listeners.get(event.type) ?? []) listener(event);
       return !event.defaultPrevented;

@@ -18,19 +18,28 @@ import { missingAdapterMethods } from './lib/app-adapters.ts';
 import {
   createBootHarness,
   describeError,
+  publishedGlobals,
   VIEWS,
   type BootHarness,
   type HarnessOptions,
 } from './lib/boot-harness.ts';
-import { createContentServer } from './lib/content-server.ts';
+import {
+  createContentServer,
+  type ContentBehavior,
+  type ContentServer,
+} from './lib/content-server.ts';
+import { contentVersion, curriculumDocument } from './lib/content-document.ts';
 import type { FakeElement } from './lib/fake-dom.ts';
 import { loadAppShell, type AppShellModule } from './lib/legacy-sources.ts';
 import { bundleApp, runSource } from './lib/sources.ts';
 
 const ENTRY = 'frontend/src/app/main.tsx';
 
-async function boot(initialStorage: Record<string, string> = {}): Promise<BootHarness> {
-  const harness = createBootHarness({ fetch: createContentServer().fetch });
+async function boot(
+  initialStorage: Record<string, string> = {},
+  server: ContentServer = createContentServer(),
+): Promise<BootHarness> {
+  const harness = createBootHarness({ fetch: server.fetch });
   for (const [key, text] of Object.entries(initialStorage)) harness.storage.set(key, text);
   try {
     vm.runInContext(await bundleApp(ENTRY), harness.context, { filename: ENTRY });
@@ -360,6 +369,113 @@ await test('a second startApp call fails', async () => {
   );
   assert.equal(harness.listenerCount(), listenersBefore);
   assert.equal(harness.intervals, intervalsBefore);
+});
+
+const CONTENT_URL = `/content/curriculum.${contentVersion()}.json`;
+const LOADING_MESSAGE = 'Cargando el contenido del taller';
+
+await test('the gate publishes before any view or catalog exists', async () => {
+  const { published } = await boot();
+  assert.equal(published.length, 1, 'the gate did not publish the content once');
+  assert.deepEqual(published[0]?.globals, []);
+});
+
+await test('the happy path never shows the loading state and asks for the content once', async () => {
+  const server = createContentServer();
+  const harness = await boot({}, server);
+  assert.deepEqual(server.requests, [CONTENT_URL]);
+  assert.equal(harness.published.length, 1, 'the gate did not publish the content');
+  assert.deepEqual(
+    harness.mainWrites.filter((markup) => markup.includes(LOADING_MESSAGE)),
+    [],
+  );
+  assert.deepEqual(harness.errors, []);
+});
+
+function withoutPortion(): unknown {
+  const document = curriculumDocument<{ lab: Record<string, unknown> }>();
+  return { ...document, lab: { rust: document.lab['rust'] } };
+}
+
+function withMalformedPortion(): unknown {
+  const document = curriculumDocument<{ quests: Record<string, unknown> }>();
+  return { ...document, quests: { ...document.quests, rust: {} } };
+}
+
+interface FailureCase {
+  mode: string;
+  behavior: ContentBehavior;
+  failure: string;
+  extraText?: string;
+}
+
+const FAILURE_CASES: FailureCase[] = [
+  { mode: 'network', behavior: { kind: 'reject' }, failure: 'network' },
+  {
+    mode: '404',
+    behavior: { kind: 'status', status: 404 },
+    failure: 'version',
+    extraText: 'Recargá la página',
+  },
+  { mode: '500', behavior: { kind: 'status', status: 500 }, failure: 'status' },
+  { mode: 'timeout', behavior: { kind: 'hang' }, failure: 'timeout' },
+  { mode: 'body', behavior: { kind: 'text', body: '<html>' }, failure: 'body' },
+  {
+    mode: 'missing portion',
+    behavior: { kind: 'document', document: withoutPortion() },
+    failure: 'missing',
+  },
+  {
+    mode: 'malformed portion',
+    behavior: { kind: 'document', document: withMalformedPortion() },
+    failure: 'shape',
+  },
+];
+
+function retryButton(harness: BootHarness): FakeElement {
+  const button = harness.elements['content-retry'];
+  assert.ok(button, 'there is no «Reintentar» button');
+  return button;
+}
+
+for (const { mode, behavior, failure, extraText } of FAILURE_CASES) {
+  await test(`a failed content request (${mode}) leaves the views unevaluated and offers a retry`, async () => {
+    const harness = await boot(MASTER_STORAGE, createContentServer([behavior]));
+    assert.equal(harness.bootError, undefined);
+    assert.deepEqual(harness.errors, []);
+    assert.deepEqual(publishedGlobals(harness.context), []);
+    assert.deepEqual(harness.storageCalls, []);
+    assert.deepEqual(Object.fromEntries(harness.storage), MASTER_STORAGE);
+    assert.equal(harness.elements['toast']?.textContent, '');
+    const markup = harness.elements['main']?.innerHTML ?? '';
+    assert.ok(markup.includes('No se pudo cargar el contenido'), 'the error is not in #main');
+    assert.ok(markup.includes('Reintentar'));
+    assert.ok(markup.includes(`data-failure="${failure}"`), `the failure is not ${failure}`);
+    if (extraText) assert.ok(markup.includes(extraText));
+    assert.equal(retryButton(harness).focused, 1);
+  });
+}
+
+await test('a retry that succeeds starts the views without a second boot', async () => {
+  const server = createContentServer([{ kind: 'reject' }, { kind: 'serve' }]);
+  const harness = await boot({}, server);
+  await retryButton(harness).dispatch('click');
+  await harness.flush();
+  assert.deepEqual(harness.errors, []);
+  assert.ok(publishedGlobals(harness.context).includes('TallerLab'), 'the views did not start');
+  const markup = harness.elements['main']?.innerHTML ?? '';
+  assert.notEqual(markup, '');
+  assert.equal(markup.includes('No se pudo cargar el contenido'), false);
+  assert.equal(server.requests.length, 2);
+});
+
+await test('two consecutive clicks on retry make a single request', async () => {
+  const server = createContentServer([{ kind: 'reject' }, { kind: 'serve' }]);
+  const harness = await boot({}, server);
+  const button = retryButton(harness);
+  await Promise.all([button.dispatch('click'), button.dispatch('click')]);
+  await harness.flush();
+  assert.equal(server.requests.length, 2);
 });
 
 process.stdout.write(`\n${passed} passed, ${failed} failed\n`);
