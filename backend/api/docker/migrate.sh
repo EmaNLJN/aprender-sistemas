@@ -7,6 +7,9 @@ log=$(mktemp)
 trap 'rm -f "$log"' EXIT
 attempt=1
 
+# A decision, not a lock wait: it runs once and is never retried.
+php artisan taller:check-transactions || exit $?
+
 while :; do
   status=0
   { php artisan migrate --force && php artisan content:import; } >"$log" 2>&1 || status=$?

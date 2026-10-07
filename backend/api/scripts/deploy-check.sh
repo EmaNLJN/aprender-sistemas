@@ -2,6 +2,8 @@
 # FR-046: while a lock blocks migrate, php is not recreated and keeps serving the same ETag.
 set -u
 
+. backend/api/scripts/check-account.sh
+
 old_commit=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 new_commit=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 fail=0
@@ -27,6 +29,7 @@ sql() {
 }
 
 cleanup() {
+  check_account_close
   if [ -n "$holder_id" ]; then
     sql "kill $holder_id" >/dev/null 2>&1
   fi
@@ -37,13 +40,14 @@ trap cleanup EXIT
 trap 'abort "interrumpido"' INT TERM HUP
 
 guide() {
-  curl -s -D - -o /dev/null "http://$addr/api/guide" | tr -d '\r' \
+  curl -s -b "$CHECK_ACCOUNT_JAR" -D - -o /dev/null "http://$addr/api/guide" | tr -d '\r' \
     | sed -n -e 's/^[Ee][Tt]ag: /etag /p' -e 's/^[Cc]ontent-[Vv]ersion: /version /p'
 }
 
 echo "== 1. Despliegue sano con el commit $old_commit"
 CONTENT_SOURCE_COMMIT=$old_commit sh backend/api/scripts/deploy.sh || abort "el despliegue inicial falló"
 addr=$(docker compose port taller 8080 2>/dev/null) || abort "el servicio taller no está levantado"
+check_account_open "http://$addr" || abort "no se pudo abrir la cuenta de prueba"
 php_before=$(docker compose ps -q php)
 [ -n "$php_before" ] || abort "no hay contenedor php"
 started_before=$(docker inspect -f '{{.State.StartedAt}}' "$php_before")
@@ -83,4 +87,29 @@ php_after=$(docker compose ps -q php)
 if [ "$php_after" != "$php_before" ]; then recreated=si; else recreated=no; fi
 check "$recreated" si "con migrate sano, php se recrea con la imagen nueva"
 check "$(guide)" "$guide_before" "con otra imagen y el mismo contenido, el ETag y el Content-Version no cambian"
+
+echo "== 5. Una transacción abierta hace más de 30 s detiene migrate antes de migrar"
+migrations_before=$(sql 'SELECT COUNT(*) FROM migrations')
+sql 'START TRANSACTION; SELECT COUNT(*) FROM users; SELECT SLEEP(40)' >/dev/null 2>&1 &
+for i in 1 2 3 4 5 6 7 8 9 10; do
+  holder_id=$(sql 'show processlist' | awk -F '\t' '$8 ~ /^SELECT SLEEP\(40\)/ { print $1 }')
+  [ -n "$holder_id" ] && break
+  sleep 1
+done
+[ -n "$holder_id" ] || abort "no se encontró la sesión con la transacción abierta"
+sleep 32
+if CONTENT_SOURCE_COMMIT=$new_commit docker compose run --rm migrate >"$log" 2>&1; then
+  echo "FALLO migrate terminó bien con una transacción abierta: no se detuvo"
+  fail=1
+else
+  echo "ok    migrate se detuvo con una transacción abierta"
+fi
+tail -n 3 "$log" | sed 's/^/      compose: /'
+check "$(grep -c 'transacci[oó]n\(es\)\{0,1\} abierta' "$log")" 1 "la salida de migrate nombra la transacción abierta"
+check "$(docker compose ps -q php)" "$php_after" "php sigue siendo el mismo contenedor"
+check "$(sql 'SELECT COUNT(*) FROM migrations')" "$migrations_before" "migrate no tocó la tabla migrations"
+sql "kill $holder_id" >/dev/null 2>&1
+holder_id=""
+CONTENT_SOURCE_COMMIT=$new_commit docker compose run --rm migrate >/dev/null 2>&1
+check "$?" 0 "sin la transacción, el mismo migrate sale bien"
 exit "$fail"

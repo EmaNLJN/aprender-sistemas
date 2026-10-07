@@ -14,6 +14,7 @@ final class ContentTables
     /** @var array<string, non-empty-list<non-empty-string>> */
     public const KEYS = [
         'languages' => ['code'],
+        'harness_templates' => ['language'],
         'catalogs' => ['code'],
         'topics' => ['language', 'topic_key'],
         'workshops' => ['id'],
@@ -35,7 +36,7 @@ final class ContentTables
     ];
 
     /** Never retired: no lifecycle (ADR 0006 §5.1). */
-    public const WITHOUT_LIFECYCLE = ['languages'];
+    public const WITHOUT_LIFECYCLE = ['languages', 'harness_templates'];
 
     /**
      * Tables whose `position` is not part of the key: a retired row has it NULL

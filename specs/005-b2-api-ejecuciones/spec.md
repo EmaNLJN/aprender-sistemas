@@ -36,7 +36,7 @@
 
 - **D1:** la sincronización del progreso (`/api/sync`, `/api/progress`, la importación v1 y «Borrar todo»), las otras 12 tablas de progreso y la escritura de las columnas de `exercise_progress` que no salen de ejecuciones.
 - **A4:** la vista del laboratorio: el cliente de `/api/runs`, la vista previa con la plantilla, el retiro del cliente de Playgrounds y el id del intento en el `result` v1.
-- **C5:** `GET /api/admin/runs`, `GET /api/admin/queue` y las estadísticas. **B3:** la auditoría de todo el currículo. **C3a:** cuentas, sesión, roles, límites de acceso y `scheduler`. **C3b:** correo, administración y el ciclo de vida de la cuenta (exportar y suprimir). **C4:** TLS y la IP real. **E1:** Esenciales.
+- **C5:** `GET /api/admin/runs`, `GET /api/admin/queue` y las estadísticas. **B3:** la auditoría de todo el currículo. **C3a:** cuentas, sesión, roles, límites de acceso y `scheduler`. **C3b:** administración y el ciclo de vida de la cuenta (exportar y suprimir). **C3c:** el correo. **C4:** TLS y la IP real. **E1:** Esenciales.
 - El ejecutor de B1 queda como está: no se extiende para informar una fase en vivo (Q2).
 - Un veredicto inviolable, que el ADR 0005 §5 deja fuera, y los desbloqueos de la campaña, que decide el cliente (ADR 0006 D39).
 - Los endpoints de historial de intentos (`GET /api/attempts` y `GET /api/attempts/{id}`, Q4) y las cuotas reducidas para cuentas sin verificar, que llegan con el registro abierto, hoy apagado. Ningún ítem de la hoja de ruta trae hoy los endpoints de historial: los traería A4, si suma un historial, o una spec nueva.
@@ -409,7 +409,7 @@ Cómo se clasifica un resultado, en este orden (FR-021 y FR-022). Los estados y 
 
 ### C3a: lo que B2 supone
 
-B2 depende de C3a, la parte de autenticación y acceso de C3 (`specs/004-c3-identidad-acceso/spec.md`, en la rama `spec/c3-identidad`, todavía sin integrar y con su clarify abierto). C3b (correo, administración, exportar y suprimir la cuenta) tiene un borrador de spec (`specs/010-c3b-correo-admin/spec.md`, rama `spec/c3b-correo-admin`, sin clarify) y no hace falta que vaya antes ni después de B2: dispara un evento al que B2 se engancha y lleva un registro de `UserData` al que B2 suma sus tablas. Estos supuestos son dependencias explícitas: la tabla dice dónde está cada uno en la spec de C3a, y si C3a lo resuelve distinto, esta spec o la de C3a se ajustan. Los dos últimos no son de C3a.
+B2 depende de C3a, la parte de autenticación y acceso de C3 (`specs/004-c3-identidad-acceso/spec.md`, clarificada y planificada en #18; su implementación es #24). El resto de C3 se partió el 2026-10-06 en C3b, la administración y el ciclo de vida de la cuenta (exportar y suprimir; `specs/010-c3b-admin-ciclo-de-vida/`, planificada en #29), y C3c, el correo (`specs/011-c3c-correo/`, especificada en #29). C3b no hace falta que vaya antes ni después de B2: dispara un evento al que B2 se engancha y lleva un registro de `UserData` al que B2 suma sus tablas. Estos supuestos son dependencias explícitas: la tabla dice dónde está cada uno en la spec de C3a, y si C3a lo resuelve distinto, esta spec o la de C3a se ajustan. Los dos últimos no son de C3a.
 
 | B2 supone | Dónde está en C3a | Si no se entrega así |
 | --- | --- | --- |
@@ -456,7 +456,7 @@ Los agentes no las hacen. Ninguna se ejecuta ahora; las de implementación llega
 ## Assumptions
 
 - **ADR 0006 en propuesta.** Las decisiones de la tabla «Base del ADR 0006» son la base de esta spec hasta que el usuario lo apruebe.
-- **B1, C2 y C6 entregados antes de B2** (olas 2 y 3 de la hoja de ruta): el código parte de `master` con ellos. **C3a también** (spec 004, todavía sin integrar): ver la tabla de supuestos. B2 no depende de C3b ni C3b de B2.
+- **B1, C2 y C6 entregados antes de B2** (olas 2 y 3 de la hoja de ruta): el código parte de `master` con ellos. **C3a también** (spec 004, implementada en #24): ver la tabla de supuestos. B2 no depende de C3b ni C3b de B2.
 - **Hasta A4 no hay cliente.** Las pruebas usan un cliente de prueba y el ejecutor real. A4 y D1 corren en la misma ola, así que B2 se entrega sin que ninguno de los dos exista.
 - **Carga.** Hasta unas 5.000 cuentas, con unas 1.000 activas en el pico, y 2,5 s por ejecución: es la estimación del ADR 0006 S2, sin medir con runsc en carga.
 - **Límites del texto.** El código admite 64 KiB en bytes (ADR 0005). La prueba propia admite 3.000 caracteres, el límite que hoy tiene el laboratorio en `frontend/lab.js`, que el ADR no fija. Con el código, las pruebas y la plantilla, el programa armado cabe holgado en los 128 KiB del ejecutor. El plan lo confirma.

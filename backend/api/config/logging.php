@@ -1,5 +1,7 @@
 <?php
 
+use App\Logging\RequestContext;
+use App\Logging\SecretScrubber;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -110,7 +112,7 @@ return [
                 'stream' => 'php://stderr',
             ],
             'formatter' => env('LOG_STDERR_FORMATTER'),
-            'processors' => [PsrLogMessageProcessor::class],
+            'processors' => [PsrLogMessageProcessor::class, RequestContext::class, SecretScrubber::class],
         ],
 
         'syslog' => [

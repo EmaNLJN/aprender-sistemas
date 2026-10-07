@@ -74,8 +74,14 @@ function checkHints(value: unknown, place: Place): string[] {
   return hints;
 }
 
+// A test key is stable and never reused (ADR 0006 D14): the evidence markers and the stored
+// verdicts name it. `custom` is the student's own test.
+const TEST_KEY = /^[A-Za-z0-9_]{1,64}$/;
+const RESERVED_TEST_KEY = 'custom';
+
 function checkTests(value: unknown, place: Place): unknown[] {
   const tests = expectList(value, place, 1);
+  const keys = new Set<string>();
   tests.forEach((item, index) => {
     const at = child(place, index);
     const test = checkRecord(item, at, {
@@ -85,8 +91,19 @@ function checkTests(value: unknown, place: Place): unknown[] {
       why: expectText,
       failure: expectText,
     });
-    const expected = `t${index + 1}`;
-    if (test.id !== expected) fail(child(at, 'id'), `se esperaba «${expected}»`);
+    const key = test.id as string;
+    const keyPlace = child(at, 'id');
+    if (!TEST_KEY.test(key)) {
+      fail(
+        keyPlace,
+        'la clave de una prueba tiene de 1 a 64 letras ASCII, dígitos o guiones bajos',
+      );
+    }
+    if (key === RESERVED_TEST_KEY) {
+      fail(keyPlace, `«${RESERVED_TEST_KEY}» está reservada para la prueba propia del alumno`);
+    }
+    if (keys.has(key)) fail(keyPlace, `la clave «${key}» se repite en el ejercicio`);
+    keys.add(key);
   });
   return tests;
 }

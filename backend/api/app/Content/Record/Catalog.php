@@ -25,6 +25,20 @@ final readonly class Catalog
         return new self($code, $sliceBy, $chainPosition);
     }
 
+    /** @param array<string, mixed> $row a `catalogs` row */
+    public static function fromRow(array $row): self
+    {
+        $fields = new RowFields($row, 'catalogs');
+
+        return new self($fields->string('code'), $fields->string('slice_by'), $fields->nullableInt('chain_position'));
+    }
+
+    /** @return array{code: string, sliceBy: string, chainPosition: int|null} */
+    public function toPublished(): array
+    {
+        return ['code' => $this->code, 'sliceBy' => $this->sliceBy, 'chainPosition' => $this->chainPosition];
+    }
+
     /** @return array<string, int|string|null> */
     public function toRow(): array
     {

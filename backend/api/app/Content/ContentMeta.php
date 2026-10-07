@@ -99,7 +99,7 @@ final readonly class ContentMeta
     private static function portionHashes(mixed $value): array
     {
         if (! is_array($value) || array_keys($value) !== Arr::pluck(Portion::cases(), 'value')) {
-            throw InvalidContent::at(self::FILE, 'portions', 'se esperaban las 17 porciones, en el orden de la API');
+            throw InvalidContent::at(self::FILE, 'portions', 'se esperaban las 18 porciones, en el orden de la API');
         }
         $hashes = [];
         foreach ($value as $name => $hash) {

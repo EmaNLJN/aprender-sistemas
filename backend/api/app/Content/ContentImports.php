@@ -17,6 +17,13 @@ final class ContentImports
             : new LatestImport((int) $row->id, $row->document_hash, $row->source_commit, $this->portionHashes($row->portion_hashes));
     }
 
+    public function latestVersion(): ?string
+    {
+        $documentHash = DB::table('content_imports')->orderByDesc('id')->value('document_hash');
+
+        return is_string($documentHash) ? substr($documentHash, 0, 32) : null;
+    }
+
     /** @return array<string, string> */
     private function portionHashes(string $json): array
     {

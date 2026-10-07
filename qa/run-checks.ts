@@ -1,12 +1,13 @@
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 
-const checks = [
+const webChecks = [
   'build-check.ts',
   'dist-content-check.ts',
   'load-order-check.ts',
   'seams-guard-check.ts',
   'content-tools-check.ts',
+  'content-harness-check.ts',
   'content-exercises-check.ts',
   'content-records-check.ts',
   'content-guide-check.ts',
@@ -34,7 +35,17 @@ const checks = [
   'shared-lib-check.ts',
   'route-progress-check.ts',
   'versioned-storage-check.ts',
+  'nginx-api-blocks-check.ts',
+  'route-milestones-check.ts',
+  'merge-fixture-check.ts',
+  'import-cases-check.ts',
 ];
+
+// The web image (frontend/Dockerfile) builds without backend/ in its context and without the
+// openssl CLI, so it runs with QA_CHECKS=web and skips the checks of the operations files.
+const operationChecks = ['compose-runs-check.ts', 'init-env-check.ts'];
+
+const checks = process.env.QA_CHECKS === 'web' ? webChecks : [...webChecks, ...operationChecks];
 
 for (const check of checks) {
   const result = spawnSync(process.execPath, [path.join(import.meta.dirname, check)], {

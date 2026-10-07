@@ -360,6 +360,34 @@ test('Rust: the code is published byte for byte, without adding a trailing newli
 
 const RUST_01 = 'content/rust/exercises/rust-01';
 
+// A second test after the first one, with the key under test.
+function withSecondTest(key: string): string {
+  return EXERCISE.replace(
+    'hints:\n',
+    `  - id: ${key}
+    label: Cero más cero
+    expression: suma(0, 0) == 0
+    why: Caso nulo.
+    failure: Revisá el neutro.
+hints:\n`,
+  );
+}
+
+test('test keys: non-consecutive keys are accepted and kept in order', () => {
+  const root = rustLab({ [`${RUST_01}/exercise.yaml`]: withSecondTest('t7') });
+  const exercise = loadLanguage(root, 'rust').lab[0];
+  const keys = (exercise.tests as { id: string }[]).map((test) => test.id);
+  assert.deepEqual(keys, ['t1', 't7']);
+  const retired = rustLab({
+    [`${RUST_01}/exercise.yaml`]: EXERCISE.replace('  - id: t1\n', '  - id: prueba_unica_2\n'),
+  });
+  const renamed = loadLanguage(retired, 'rust').lab[0].tests as { id: string }[];
+  assert.deepEqual(
+    renamed.map((test) => test.id),
+    ['prueba_unica_2'],
+  );
+});
+
 test('validation: hints, tests and prediction', () => {
   const cases: [string, string][] = [
     [
@@ -367,8 +395,24 @@ test('validation: hints, tests and prediction', () => {
       `${RUST_01}/exercise.yaml: hints: se esperaban 3 pistas y hay 2`,
     ],
     [
-      EXERCISE.replace('  - id: t1\n', '  - id: t2\n'),
-      `${RUST_01}/exercise.yaml: tests[0].id: se esperaba «t1»`,
+      EXERCISE.replace('  - id: t1\n', '  - id: custom\n'),
+      `${RUST_01}/exercise.yaml: tests[0].id: «custom» está reservada para la prueba propia del alumno`,
+    ],
+    [
+      EXERCISE.replace('  - id: t1\n', '  - id: t-1\n'),
+      `${RUST_01}/exercise.yaml: tests[0].id: la clave de una prueba tiene de 1 a 64 letras ASCII, dígitos o guiones bajos`,
+    ],
+    [
+      EXERCISE.replace('  - id: t1\n', `  - id: ${'k'.repeat(65)}\n`),
+      `${RUST_01}/exercise.yaml: tests[0].id: la clave de una prueba tiene de 1 a 64 letras ASCII, dígitos o guiones bajos`,
+    ],
+    [
+      EXERCISE.replace('  - id: t1\n', '  - id: ñ1\n'),
+      `${RUST_01}/exercise.yaml: tests[0].id: la clave de una prueba tiene de 1 a 64 letras ASCII, dígitos o guiones bajos`,
+    ],
+    [
+      withSecondTest('t1'),
+      `${RUST_01}/exercise.yaml: tests[1].id: la clave «t1» se repite en el ejercicio`,
     ],
     [
       EXERCISE.replace('  answer: 1\n', '  answer: 2\n'),

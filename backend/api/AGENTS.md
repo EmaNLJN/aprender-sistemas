@@ -13,7 +13,22 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
   - `npm run api:analyse`: PHPStan con Larastan, nivel 9 desde C6 (`phpstan.neon`), sin baseline ni `ignoreErrors`, sobre `app`, `config`,
     `database`, `routes` y `bootstrap/app.php`.
   - `npm run api:smoke`: con `docker compose up --build -d --wait` corriendo.
+  - `npm run api:runs:check`: con el stack corriendo, ejecuciones reales contra el ejecutor (los doce
+    casos de B2, las cuotas, la cola llena y el log). Crea y borra sus cuentas, y tarda unos minutos
+    porque C3a acepta como mucho diez invitaciones por minuto desde una misma red.
+  - `npm run api:sync:check`: con el stack corriendo, la sincronización del progreso de punta a
+    punta (dos clientes de una cuenta que convergen, los reenvíos, la poda, la época y los límites)
+    y la medición de SC-010. Crea y borra sus cuentas, y tarda unos minutos por el mismo límite.
+  - `sh backend/api/scripts/check-admin-lifecycle.sh`: con el stack corriendo, la administración y el
+    ciclo de vida de punta a punta (un admin invita y lista; un estudiante exporta y borra su cuenta,
+    y la purga la quita en menos de tres minutos). Crea y borra sus cuentas.
+  - `npm run api:import:check`: con el stack corriendo, la importación del progreso v1 de punta a
+    punta (las tres copias del fixture, la repetida, «Borrar todo» y la restauración, y el 413 de
+    Nginx) y la medición de la importación más grande. Crea y borra su cuenta.
   - Ninguno forma parte de `npm test`.
+  - En un worktree, cada comando de Docker (`docker compose …`, `npm run api:*`) lleva su propio
+    `COMPOSE_PROJECT_NAME=<nombre-del-worktree>` en la misma línea: sin él, Compose usa el proyecto
+    por omisión, que es el stack del usuario.
 - **Dependencias:** se agregan con `composer:2.10` y `--no-install`, para que sólo cambien
   `composer.json` y `composer.lock`:
   `docker run --rm --user "$(id -u):$(id -g)" -v "$PWD/backend/api":/app -w /app composer:2.10 require --no-install --no-scripts 'vendor/paquete:^1.0'`.
@@ -22,9 +37,9 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
   Laravel, no encadenando `array_map`, `array_filter`, `array_values` o `array_column`. En los
   bordes entran y salen arreglos: con `->all()`, y una lista filtrada lleva antes `->values()`.
   `PublishedJson` y el query builder reciben siempre arreglos, nunca una Collection.
-- **Rutas:** van en `routes/api.php`, con prefijo `/api`. Sin rutas web y sin
-  `php artisan install:api`, que instala Sanctum; la autenticación llega en C3 con
-  `composer require`.
+- **Rutas:** van en `routes/api.php` y, por característica, en `routes/api/<característica>.php`
+  (registrado en `bootstrap/app.php`), con prefijo `/api`. Sin rutas web. No se usa Sanctum ni
+  Fortify: nunca corras `php artisan install:api`; la sesión se monta a mano en `bootstrap/app.php`.
 - **Configuración:**
   - Viene del entorno que define `docker/compose.yaml` (ancla `x-laravel-env`).
   - Los secretos vienen del `.env` de la raíz (`sh backend/api/scripts/init-env.sh`).
@@ -34,11 +49,118 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
   - Los IDs de contenido van en `ascii_bin`, por columna, en cada migración.
   - Sin SQLite, ni en pruebas.
 - **Contenido (C2):**
-  - `app/Content/` arma las 17 porciones desde las tablas con los bytes que fija el generador (`PublishedJson`): la respuesta es ese texto, nunca `response()->json()` ni un `JsonResource`. Las huellas las calcula sólo `tools/content`; PHP las guarda y las compara.
+  - `app/Content/` arma las 18 porciones (las 17 del contenido y, desde B2, `harness`, la plantilla de `content/harness/`) desde las tablas con los bytes que fija el generador (`PublishedJson`): la respuesta es ese texto, nunca `response()->json()` ni un `JsonResource`. Las huellas las calcula sólo `tools/content`; PHP las guarda y las compara.
   - `content:import` corre en el servicio `migrate` (`docker/migrate.sh`, el único backoff), toma el candado `GET_LOCK` y se auto-chequea en cada corrida.
   - Para desplegar, desde la raíz, `sh backend/api/scripts/deploy.sh`: corre `migrate` con la imagen nueva antes de reemplazar `php`, así un fallo deja sirviendo al anterior (FR-034). `docker compose up --build` no lo garantiza, y `sh backend/api/scripts/deploy-check.sh` lo prueba contra el stack.
   - Las tablas se escriben a mano en un único `CREATE TABLE` por migración, con el DDL de `specs/001-c2-contenido-mysql/data-model.md`.
   - Cada registro del contenido es una clase `readonly` de `app/Content/Record/` (C6), con `fromDocument`, `fromRow`, `toRow()` y `toPublished()`. En los bordes siguen los arreglos: el query builder recibe filas y `PublishedJson` recibe lo que da `toPublished()`, nunca un registro.
+- **Identidad y acceso (C3a):** contratos en `specs/004-c3-identidad-acceso/contracts/`.
+  - Una ruta protegida usa el grupo `account` (cuenta activa, `auth:web` y cuenta esperada); suma el
+    alias `verified` donde el email deba estar verificado. Una característica nueva trae su propio
+    `routes/api/<característica>.php`.
+  - Todo error de la API sale de `ApiError::of(ApiCode::…)`, con `{message, code}`; un caso nuevo
+    se agrega como `case` de `ApiCode` (con su estado y su mensaje en `lang/es/api.php`), no con
+    `response()->json()`.
+  - Toda contraseña entra como `PlainPassword::of($raw)` (normaliza a NFC) y se hashea, verifica o
+    cambia sólo con `AccountPasswords`: nunca `Hash::` ni `bcrypt()` sobre texto crudo.
+  - Los comandos corren con `docker compose exec php php artisan …`: `taller:invite {email} {--role=student}`
+    da de alta, `taller:password-reset-link {email}` recupera, y `taller:check-transactions` aborta el
+    despliegue desde `docker/migrate.sh`.
+  - El rol y el estado de una cuenta se cambian por `/api/admin` (C3b), que pasa siempre por
+    `AccountChanges`.
+  - `docker/mysql/db-grants.sql` es el único lugar de privilegios de MySQL. En un volumen que ya existe
+    se aplica con `docker compose --profile ops run --rm db-grants`.
+- **Ejecuciones (B2):** contratos en `specs/005-b2-api-ejecuciones/contracts/`.
+  - `app/Runs/` se reparte en `Admission` (las cuotas y el tope de la cola), `Program` (el programa
+    con la plantilla), `Evidence` (lee la salida del sandbox y clasifica), `Execution` (el cliente del
+    ejecutor, el reclamo, el cierre, el barrido y la poda) y `Record` (las filas). `app/Progress/`
+    tiene la cabecera de progreso de la cuenta.
+  - `Program` y `Evidence` son puros: no tocan la base, la cola, HTTP, el log ni la caché
+    (`PurityTest`, FR-038).
+  - `AccountLock` es la única forma de bloquear la cabecera de una cuenta (`progress_heads`): la
+    admisión y el cierre la toman, y lo que sume D1 también.
+  - `RunLog` es la única puerta al log de las ejecuciones (`LogArchTest`). El código del alumno nunca
+    va a un log ni al mensaje de una excepción.
+  - El trabajo es `ExecuteRun`: un solo intento (`#[Tries(1)]`, sin `release()`), 120 s, en la
+    conexión `runs` (una cola de base de datos con `retry_after` de 140 s). `queue:work` necesita
+    PCNTL para cortar a tiempo, y la imagen lo trae. Su cuerpo es el puerto `RunProcessor`, que
+    `AppServiceProvider` liga a `RunExecution` y las pruebas reemplazan.
+  - La cadena de plazos (el pedido al ejecutor, 100 s; el trabajo, 120 s; `retry_after`, 140 s) la
+    fijan `TimeoutChainTest` y `qa/compose-runs-check.ts`. Un plazo nuevo se suma en orden.
+  - El `scheduler` corre `runs:sweep` cada minuto y `runs:prune` cada hora.
+  - Los casos de la plantilla (`qa/fixtures/shared/harness-cases.json`) los corren
+    `qa/content-harness-check.ts` y `HarnessFixtureTest`: el `Dockerfile` copia esa carpeta a
+    `tests/Fixtures/shared`.
+- **Progreso (D1a):** contratos en `specs/007-d1-progreso-sincronizacion/contracts/` (`http.md` y
+  `merge-rules.md`).
+  - `app/Progress/` se reparte en `Operations` (los dieciséis tipos, la decodificación, el hash
+    canónico y el puerto `OperationProcessor`, que `AppServiceProvider` liga a
+    `DatabaseOperationProcessor`), `Merge` (las formas del SQL y `OperationWriter`), `Snapshot`
+    (`ProgressSnapshotReader`: la foto y el delta de `GET /api/progress` y de `changes`) y `Sync`
+    (`SyncService`, `ClockCorrection` y el registro de UUID en `sync_operations`).
+  - `AccountLock` sigue siendo la única puerta de la cabecera: `SyncService` aplica cada lote dentro
+    de su candado y sube la revisión a lo sumo una vez.
+  - Toda escritura de progreso es un `INSERT … ON DUPLICATE KEY UPDATE` que mira primero la guarda de
+    la revisión y compara los textos con `CAST(… AS BINARY)`, porque la colación de la conexión no
+    distingue mayúsculas ni acentos.
+  - `/api/sync` queda fuera de `TrimStrings` y de `ConvertEmptyStringsToNull` (`bootstrap/app.php`):
+    un texto llega como lo escribió el alumno, con sus espacios y la cadena vacía.
+  - El fixture de fusión (`qa/fixtures/shared/merge-cases.json`, con su sha256) es el contrato común
+    del servidor y del módulo de TypeScript (`frontend/src/features/progress-sync/model/`): no se
+    regenera ni se edita para que algo pase. `MergeFixtureTest` corre sus casos contra MySQL real.
+  - Ningún registro lleva texto del alumno: ni las reflexiones, ni los borradores, ni las notas.
+  - El `scheduler` poda `sync_operations` cada hora (`progress:prune-sync-operations`), con la
+    retención de `config/progress.php`.
+- **Administración y ciclo de vida (C3b):** contratos en `specs/010-c3b-admin-ciclo-de-vida/contracts/`.
+  - Las rutas de `/api/admin` usan el grupo `admin` de `bootstrap/app.php`, y ninguna usa el binding
+    implícito de modelos: el destino se busca después de comprobar el rol, así que un estudiante
+    recibe 403 también con un id que no existe.
+  - Cada `throttle` corre donde la ruta lo declara: la lista de prioridad de `bootstrap/app.php` es
+    la de Laravel sin `ThrottleRequests` (`ThrottleOrderTest`). Así un pedido sin la contraseña
+    confirmada no gasta el cupo de `throttle:export`.
+  - `role` y `status` los cambia sólo `AccountChanges`, con la guardia del último admin.
+  - `UserData` (`UserTables`, `UserPurge` y `UserExport`) sabe qué tablas guardan datos de una cuenta.
+    **Toda tabla nueva con `user_id` se declara en `UserTables` y en `Tests\Support\PopulatedAccount`**:
+    si no, fallan las pruebas de cobertura de la purga y de la exportación.
+  - La exportación (`UserExport`, formato `taller-export-2`) junta `account`, `progress` (la foto de
+    D1a, que lee `ProgressSection`), `attempts` e `imports` (las importaciones de D1b, que lee
+    `ImportsSection` de a una fila). Una sección nueva se registra ahí; quitar o renombrar una clave
+    cambia el `format`.
+  - `PurgeUserData` borra una cuenta por lotes en la cola `default` y la anota en el libro
+    `account_deletions`. `taller:resume-purges` vuelve a pedir las que quedaron en `deleting`, y
+    `taller:reapply-deletions` reaplica una copia del libro sobre una base restaurada.
+  - El `scheduler` suma el `queue:work` de la cola `default` (la cola `runs` es de `worker-runs`), la
+    poda de `failed_jobs`, la de `account_deletions` y el barrido de las purgas.
+  - Las carreras se prueban en la suite `Concurrency`, con `Tests\Support\Parallel`.
+  - Hasta C3c no hay correo: lo que pediría uno responde 503 `mail_unavailable`.
+- **Progreso: importación y reset (D1b):** contratos en `specs/007-d1-progreso-sincronizacion/contracts/`
+  (`http-d1b.md` e `import-fixture.md`).
+  - `app/Progress/Import/` decodifica la copia v1 afuera del candado (`LegacyDecoder`, con los tipos
+    de `Legacy/` y los datos de contenido de `ImportContent`) y la escribe adentro (`ImportService`).
+    La escritura pasa por el puerto `LegacyWriter`, que `AppServiceProvider` liga a
+    `DatabaseLegacyWriter`; el libro `progress_imports` es de `ImportLedger`, y el informe, de
+    `ImportReport` con `ImportConflicts`.
+  - `app/Progress/Reset/ProgressReset` borra las tablas de estado (`ProgressTables::STATE`) y sube la
+    época dentro de `AccountLock`. Después del COMMIT cancela las ejecuciones activas
+    (`ActiveRuns::cancelAllOf`).
+  - La importación escribe con el SQL de D1a (`UpsertSql`) y el reloj nulo, así que nunca pisa lo
+    sincronizado, que siempre tiene reloj. Una copia repetida (la misma `importId`, o el mismo crudo
+    en la época) responde 200 sin escribir.
+  - Pide confirmación (409 `import_needs_confirmation`) después de un «Borrar todo», si la cuenta ya
+    importó otra copia o si otra cuenta importó esta.
+  - `/api/progress/import` queda fuera de `TrimStrings` y de `ConvertEmptyStringsToNull`, como
+    `/api/sync`. Nginx le abre 24 MiB (`location = /api/progress/import`) y PHP, `post_max_size = 24M`.
+  - Ningún registro lleva el crudo, un texto ni un valor: `progress.import.applied`, `.repeated` y
+    `progress.reset` llevan ids, conteos, la duración y la memoria pico. Un error de escritura sale
+    como `ImportWriteFailed`, sin el SQL ni sus valores.
+  - El fixture `qa/fixtures/shared/import-cases.json` (con su sha256) es el contrato de la
+    importación: no se regenera ni se edita para que algo pase. Lo valida `import-cases-check` en
+    `npm test`, y `ImportLosslessTest` lo corre con el contenido real.
+  - El `scheduler` borra el crudo de `progress_imports` a los 90 días y deja la fila
+    (`progress:prune-import-payloads`, cada hora).
+  - `progress_imports` (exportada en `imports`, purgada por lotes) y `campaign_seals` (en la foto)
+    están declaradas en `UserTables` y en `Tests\Support\PopulatedAccount`, como toda tabla con
+    `user_id` (R39).
 - **Pruebas:**
   - `RefreshDatabase` es el default (`tests/Pest.php`). `DatabaseTruncation` queda para el
     código que hace `TRUNCATE` o abre sus propias transacciones.
@@ -47,7 +169,15 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
   - `tests/TestCase.php` corta antes de tocar una base que no sea `mysql-test`/`taller_test*`,
     con la conexión efectiva (DB_URL, socket y hosts de lectura o escritura incluidos) y antes de las bases de cada proceso
     en paralelo.
-  - Tres suites: `tests/Unit` (PHP puro, sin aplicación), `tests/Feature` (`RefreshDatabase`) y `tests/Content`
-    (`DatabaseTruncation`: el import, HTTP y el DDL confirman sus propias transacciones).
+  - Las pruebas que dependen de una sesión usan `Tests\Support\Browser` (cookies, CSRF y cuenta
+    esperada); con `Browser::useDatabaseDrivers()` la sesión y la caché van a la base, como en
+    producción.
+  - La suite corre con `memory_limit` de 512 MB (`phpunit.xml`): con 979 pruebas el pico fue de 127 MB,
+    por acumulación entre pruebas. Si se queda sin memoria, medí el pico (`memory_get_peak_usage`)
+    por suite antes de subir el límite, para distinguir una fuga del crecimiento de la suite.
+  - Cuatro suites: `tests/Unit` (PHP puro, sin aplicación), `tests/Feature` (`RefreshDatabase`),
+    `tests/Content` (`DatabaseTruncation`: el import, HTTP y el DDL confirman sus propias
+    transacciones) y `tests/Concurrency` (`DatabaseTruncation`: varios procesos confirman a la vez,
+    con `Tests\Support\Parallel`, que necesita PCNTL).
 - **Contenedores:** `php` y `migrate` corren como `www-data` y con disco de sólo lectura. Lo
   que necesite escribir va a un tmpfs declarado en `docker/compose.yaml`.

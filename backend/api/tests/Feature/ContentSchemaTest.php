@@ -10,7 +10,7 @@ const CONTENT_TABLES = [
     'exercise_grading_versions' => 4, 'exercise_tests' => 12, 'exercise_hints' => 7, 'workshop_objectives' => 10,
     'workshop_steps' => 13, 'workshop_related_exercises' => 7, 'worlds' => 18, 'world_exercises' => 8,
     'atlas_concepts' => 21, 'guide_resources' => 17, 'guide_sources' => 9, 'guide_tracks' => 8, 'guide_modules' => 10,
-    'guide_steps' => 14, 'guide_step_resources' => 7,
+    'guide_steps' => 14, 'guide_step_resources' => 7, 'harness_templates' => 2,
 ];
 
 /** Runs a query over the content tables: `{tables}` stands for their `?` placeholders, bound to their names. */
@@ -22,7 +22,7 @@ function schemaRows(string $sql): Collection
     return collect(DB::select(str_replace('{tables}', $placeholders, $sql), $tables->all()));
 }
 
-it('A: creates the 21 tables in InnoDB with the Spanish collation', function () {
+it('A: creates the 22 tables in InnoDB with the Spanish collation', function () {
     // MySQL 8+ uppercases information_schema column names unless aliased: without `as engine` there is no `engine` property.
     $tables = schemaRows('select table_name as name, engine as engine, table_collation as collation_name from information_schema.tables where table_schema = database() and table_name in ({tables})');
 
@@ -43,9 +43,9 @@ it('B: every table has its columns, with the ADR types for ID, hash, JSON, date 
             str_ends_with($column->c, '_json') => ['longtext', 'utf8mb4_0900_bin'],
             $column->c === 'key_order' => ['varchar(1024)', 'ascii_bin'],
             in_array($column->c, ['created_at', 'updated_at', 'retired_at'], true) => ['datetime(3)', null],
-            in_array($column->c, ['starter', 'solution'], true) => ['mediumtext', 'utf8mb4_0900_bin'],
+            in_array($column->c, ['starter', 'solution'], true), $column->t === 'harness_templates' && $column->c === 'template' => ['mediumtext', 'utf8mb4_0900_bin'],
             $column->c === 'expression', $column->t === 'atlas_concepts' && $column->c === 'code' => ['text', 'utf8mb4_0900_bin'],
-            in_array("{$column->t}.{$column->c}", ['exercises.id', 'workshops.id', 'topics.topic_key', 'exercise_tests.test_key', 'workshop_steps.step_key', 'languages.code', 'catalogs.code'], true) => [null, 'ascii_bin'],
+            in_array("{$column->t}.{$column->c}", ['exercises.id', 'workshops.id', 'topics.topic_key', 'exercise_tests.test_key', 'workshop_steps.step_key', 'languages.code', 'catalogs.code', 'harness_templates.language'], true) => [null, 'ascii_bin'],
             "{$column->t}.{$column->c}" === 'exercises.title' => [null, 'utf8mb4_es_0900_ai_ci'],
             default => null,
         };
@@ -98,7 +98,7 @@ it('C: the primary key is the only unique index, and the indexes are the ADR one
         ])->sort()->values()->all());
 });
 
-it('D: the 22 foreign keys point where the ADR says and block deletes and key changes', function () {
+it('D: the 23 foreign keys point where the ADR says and block deletes and key changes', function () {
     $foreign = schemaRows(
         "select k.constraint_name as name, concat(k.table_name, '(', group_concat(k.column_name order by k.ordinal_position), ') -> ', k.referenced_table_name, '(', group_concat(k.referenced_column_name order by k.ordinal_position), ')') as definition, any_value(r.delete_rule) as on_delete, any_value(r.update_rule) as on_update
          from information_schema.key_column_usage k join information_schema.referential_constraints r on r.constraint_schema = k.constraint_schema and r.constraint_name = k.constraint_name
@@ -124,6 +124,7 @@ it('D: the 22 foreign keys point where the ADR says and block deletes and key ch
         'world_exercises_exercise_id_foreign' => 'world_exercises(exercise_id) -> exercises(id)',
         'atlas_concepts_language_foreign' => 'atlas_concepts(language) -> languages(code)',
         'atlas_concepts_lab_exercise_id_foreign' => 'atlas_concepts(lab_exercise_id) -> exercises(id)',
+        'harness_templates_language_foreign' => 'harness_templates(language) -> languages(code)',
         'guide_tracks_language_foreign' => 'guide_tracks(language) -> languages(code)',
         'guide_modules_track_language_foreign' => 'guide_modules(track_language) -> guide_tracks(language)',
         'guide_steps_module_id_foreign' => 'guide_steps(module_id) -> guide_modules(id)',

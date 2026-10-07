@@ -43,6 +43,8 @@ los de cada carpeta para Claude Code; `.claude/` contiene symlinks de skills y s
 
 `backend/executor/` es el ejecutor Go del ADR 0005, un servicio interno que compila y ejecuta Rust y
 Go en contenedores endurecidos (gVisor por omisión); sus reglas están en `backend/executor/AGENTS.md`.
+La API lo usa desde la cola `runs` (B2, `specs/005-b2-api-ejecuciones/`): el servicio `executor` vive sólo
+en la red interna `sandbox`, y Compose levanta un `worker-runs` por cada lugar del ejecutor.
 
 ## Comandos
 
@@ -76,18 +78,24 @@ de `qa/` validan el currículo y los contratos de comportamiento por separado.
 Para construir y servir con Docker:
 
 ```sh
+docker compose --profile sandbox-images build
 docker compose up --build -d --wait
 docker compose down
 ```
+
+El primer comando construye las dos imágenes del sandbox, sin las que el ejecutor no arranca:
+corrélo la primera vez y al menos una vez por semana (ADR 0005).
 
 La web queda en `http://localhost:8080`. Para servir `dist/` generado en
 el host como preview (el HTML, el contenido y los avisos de licencia, montados enteros), usá `docker compose -f docker/compose.preview.yaml up --build -d --wait`
 y abrí `http://localhost:8765`; detenelo con
 `docker compose -f docker/compose.preview.yaml down`. El progreso de ambos puertos es independiente.
 
-Docker necesita un `.env` en la raíz con `APP_KEY`, `MYSQL_PASSWORD` y `MYSQL_ROOT_PASSWORD`:
-`sh backend/api/scripts/init-env.sh` agrega los que falten. Ese archivo queda fuera de Git y del
-contexto de Docker. Las pruebas de la API (`npm run api:test` y las demás de `backend/api/AGENTS.md`)
+Docker necesita un `.env` en la raíz con `APP_KEY`, `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD`,
+`LOG_HMAC_KEY`, `EXECUTOR_TOKEN` y `EXECUTOR_DOCKER_GID`: `sh backend/api/scripts/init-env.sh` agrega los
+que falten. `EXECUTOR_DOCKER_GID` sale del socket de Docker (`DOCKER_SOCKET` indica otra ruta) y, sin
+socket, el script falla. Un `.env` de antes de B2 necesita correr el script otra vez. Ese archivo queda
+fuera de Git y del contexto de Docker. Las pruebas de la API (`npm run api:test` y las demás de `backend/api/AGENTS.md`)
 usan Docker y no forman parte de `npm test`.
 
 ## Convenciones
