@@ -2,7 +2,6 @@
 
 use App\Models\User;
 use App\Progress\ProgressTables;
-use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
 use Tests\Support\MergeFixture;
