@@ -1087,7 +1087,7 @@ Ninguna. F2b no suma dependencias, y `postcss` (para la comparación del CSS) y 
 
 ## Complexity Tracking
 
-Ninguna de las dos decisiones contradice la constitución ni `AGENTS.md`; se registran porque un revisor las preguntaría.
+Ninguna de las dos decisiones contradice la constitución ni `AGENTS.md`; se registran porque un revisor las preguntaría. El usuario aceptó la segunda API pública el 2026-10-06, y confirmó que ningún check se retira.
 
 | Decisión | Por qué hace falta | Alternativa más simple que se descartó y por qué |
 | --- | --- | --- |

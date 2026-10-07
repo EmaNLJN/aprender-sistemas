@@ -66,6 +66,8 @@ La spec de F2 cuenta 51 escenarios en `app-shell-check`: F2a le sumó 2. Los 53 
 
 El índice sigue siendo la única puerta del singleton y no reexporta lo de esas entradas: cada símbolo tiene un solo camino. Entre las fuentes legacy y `app/`, una regla nueva del guard (R6) admite sólo el índice (para su dueño, R4) o una de esas tres entradas, nunca `model/**` ni `@x/**`. Cada entrada tiene una spec que prueba que importarla no evalúa ningún módulo con singleton.
 
+El usuario aceptó esta decisión el 2026-10-06.
+
 **Evidencia.**
 
 | Prueba | Resultado |
@@ -245,7 +247,7 @@ Al final de su hoja, cada regla queda después de todas las que hoy pisa por ord
 
 ## R8. La correspondencia de los checks (FR-013)
 
-Ningún escenario se retira en F2b. Las specs nuevas pasan a ser las dueñas del contrato de dominio, que sobrevive a los ports. Los checks siguen como pruebas de integración de los adaptadores legacy hasta que el port de cada vista borre el archivo que cargan (F7 y F8). Eso es «ningún check se retira por adelantado».
+Ningún escenario se retira en F2b. Las specs nuevas pasan a ser las dueñas del contrato de dominio, que sobrevive a los ports. Los checks siguen como pruebas de integración de los adaptadores legacy hasta que el port de cada vista borre el archivo que cargan (F7 y F8). Eso es «ningún check se retira por adelantado». El usuario lo confirmó el 2026-10-06.
 
 | Check | Hoy | Unidad | Qué cambia en el código del check |
 | --- | --- | --- | --- |
