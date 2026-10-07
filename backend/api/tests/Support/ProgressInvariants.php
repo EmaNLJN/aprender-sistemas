@@ -32,6 +32,7 @@ final class ProgressInvariants
         'route_quiz_answers' => ['user_id', 'step_id'],
         'route_notes' => ['user_id', 'language', 'field'],
         'preferences' => ['user_id'],
+        'campaign_seals' => ['user_id', 'exercise_id'],
     ];
 
     private const CLOCKS_WITH_VALUES = [
@@ -53,7 +54,7 @@ final class ProgressInvariants
             self::CLOCK_WITHOUT_VALUE => self::clocksWithoutValue($userId),
             self::REVIEW_GROUP => self::rows(
                 ['exercise_progress'],
-                '(confidence is null) <> (reviewed_at is null) or (confidence is null) <> (review_due_at is null)',
+                'review_set_at is not null and ((confidence is null) <> (reviewed_at is null) or (confidence is null) <> (review_due_at is null))',
                 $userId,
             ),
             self::REVISION_AHEAD_OF_HEAD => self::revisionsAheadOfHead($userId),

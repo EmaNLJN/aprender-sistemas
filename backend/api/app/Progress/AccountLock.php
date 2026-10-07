@@ -35,6 +35,24 @@ final class AccountLock
         return new ProgressHead($head->userId, $head->epoch, $head->revision + 1, $head->resetAt, $at);
     }
 
+    public function peek(int $userId): ProgressHead
+    {
+        $row = DB::selectOne('select * from `progress_heads` where `user_id` = ?', [$userId]);
+
+        return $row === null ? new ProgressHead($userId, 1, 0, null, null) : ProgressHead::fromRow(get_object_vars($row));
+    }
+
+    public function reset(ProgressHead $head, CarbonImmutable $at): ProgressHead
+    {
+        $now = Instant::format($at);
+        DB::update(
+            'update `progress_heads` set `epoch` = `epoch` + 1, `revision` = `revision` + 1, `reset_at` = ?, `last_activity_at` = ?, `updated_at` = ? where `user_id` = ?',
+            [$now, $now, $now, $head->userId],
+        );
+
+        return new ProgressHead($head->userId, $head->epoch + 1, $head->revision + 1, $at, $at);
+    }
+
     private function take(int $userId): ProgressHead
     {
         $now = Instant::format(Instant::now());
