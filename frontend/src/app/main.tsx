@@ -23,4 +23,6 @@ import '../../campaign.js';
 import './legacy/register-systems-engine';
 import './legacy/register-project-kit';
 import '../../systems.js';
-import '../../app.js';
+import { startApp } from '../../app.js';
+
+startApp();

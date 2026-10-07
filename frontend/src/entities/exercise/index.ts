@@ -8,6 +8,11 @@ export {
   createExerciseCatalogHolder,
   exerciseCatalog,
 } from './model/exercise-catalog';
+export { blankLabState } from './model/lab-state';
+export type { LabStateV1 } from './model/lab-state';
+export { createLabStore, labStore } from './model/lab-store';
+export type { LabImportPlan, LabStore } from './model/lab-store';
+export type { LabRecord } from './model/merge-record';
 export type {
   ExerciseCatalog,
   ExerciseCatalogHolder,

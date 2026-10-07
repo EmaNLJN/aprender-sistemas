@@ -1,33 +1,30 @@
-import { cloneJson } from './src/shared/lib/clone-json';
-import { isLosslessNormalization } from './src/shared/lib/is-lossless-normalization';
 import {
   buildProgram,
   exerciseCatalog,
   interpretRun,
-  mergeRecord,
+  labStore,
   syncAfterRun,
-  testPassed,
 } from './src/entities/exercise';
 import { escapeHtml } from './src/shared/lib/escape-html';
 import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
-import { describeLoadResult, openVersionedStore } from './src/shared/lib/versioned-storage';
 (() => {
   'use strict';
-  const KEY = 'taller-laboratorio-v1';
-  exerciseCatalog.init({
-    rustLab: window.RUST_LAB || [],
-    rustQuests: window.RUST_QUESTS || [],
-    goLab: window.GO_LAB || [],
-    goQuests: window.GO_QUESTS || [],
-    systemsLowlevel: window.SYSTEMS_LOWLEVEL_LABS || [],
-    systemsInfra: window.SYSTEMS_INFRA_LABS || [],
-    systemsPlay: window.SYSTEMS_PLAY_LABS || [],
-    systemsPc: window.SYSTEMS_PC_LABS || [],
-  });
+  function init() {
+    exerciseCatalog.init({
+      rustLab: window.RUST_LAB || [],
+      rustQuests: window.RUST_QUESTS || [],
+      goLab: window.GO_LAB || [],
+      goQuests: window.GO_QUESTS || [],
+      systemsLowlevel: window.SYSTEMS_LOWLEVEL_LABS || [],
+      systemsInfra: window.SYSTEMS_INFRA_LABS || [],
+      systemsPlay: window.SYSTEMS_PLAY_LABS || [],
+      systemsPc: window.SYSTEMS_PC_LABS || [],
+    });
+    // Nunca escribe al cargar: la primera escritura es una acción del alumno.
+    labStore.open(exerciseCatalog);
+  }
   const $ = (selector) => host?.querySelector(selector);
   const $$ = (selector) => (host ? [...host.querySelectorAll(selector)] : []);
-  const blank = () => ({ version: 1, records: {}, selected: { rust: null, go: null } });
-  let state = blank();
   let host = null,
     language = 'rust',
     notify = () => {},
@@ -37,8 +34,7 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
     query = '',
     dueOnly = false,
     extraOnly = false,
-    level = 'all',
-    saveAvailable = true;
+    level = 'all';
   const levels = [
     ['beginner', 'Inicial', 'Entendé las piezas'],
     ['medium', 'Intermedio', 'Conectá las ideas'],
@@ -75,154 +71,11 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
     flow: 0,
   };
   let confirmAction = null;
-  function sanitizeResult(result, exercise) {
-    const tests = exercise.tests.map((test) => ({
-      id: test.id,
-      passed: testPassed(result, test.id),
-    }));
-    return {
-      code: typeof result.code === 'string' ? result.code.slice(0, 30000) : '',
-      success: result.success === true,
-      stdout: String(result.stdout || '').slice(0, 12000),
-      stderr: String(result.stderr || '').slice(0, 18000),
-      transportError: result.transportError === true,
-      tests,
-      time: Number.isFinite(result.time) ? result.time : 0,
-      customTest: typeof result.customTest === 'string' ? result.customTest.slice(0, 3000) : '',
-      customPassed: result.customPassed === true,
-    };
-  }
-  function sanitizeRecord(record, exercise) {
-    const clean = {};
-    const textLimits = { draft: 30000, reflection: 10000, customTest: 3000 };
-    for (const [field, limit] of Object.entries(textLimits)) {
-      if (typeof record[field] === 'string') clean[field] = record[field].slice(0, limit);
-    }
-    const numberLimits = {
-      attempts: Number.MAX_SAFE_INTEGER,
-      hints: 3,
-      solvedAt: Number.MAX_SAFE_INTEGER,
-      reviewAt: Number.MAX_SAFE_INTEGER,
-      reviewedAt: Number.MAX_SAFE_INTEGER,
-    };
-    for (const [field, limit] of Object.entries(numberLimits)) {
-      const minimum = field === 'solvedAt' ? 1 : 0;
-      if (Number.isFinite(record[field]) && record[field] >= minimum)
-        clean[field] = Math.min(record[field], limit);
-    }
-    if (
-      Number.isInteger(record.prediction) &&
-      record.prediction >= 0 &&
-      record.prediction < exercise.prediction.options.length
-    ) {
-      clean.prediction = record.prediction;
-    }
-    for (const field of ['predictionCorrect', 'assisted', 'solutionSeen'])
-      clean[field] = record[field] === true;
-    if (['again', 'practice', 'confident'].includes(record.confidence))
-      clean.confidence = record.confidence;
-    if (record.result && typeof record.result === 'object')
-      clean.result = sanitizeResult(record.result, exercise);
-    return clean;
-  }
-  function assertBackupShape(raw) {
-    if (
-      !raw ||
-      raw.version !== 1 ||
-      typeof raw.records !== 'object' ||
-      !raw.records ||
-      Array.isArray(raw.records)
-    ) {
-      throw new Error('El laboratorio de esa copia no es compatible.');
-    }
-  }
-  function sanitizeSelected(raw, clean) {
-    for (const lang of ['rust', 'go']) {
-      if (exerciseCatalog.byId.get(raw.selected?.[lang])?.language === lang)
-        clean.selected[lang] = raw.selected[lang];
-    }
-  }
-  const isRecordObject = (id, record) =>
-    exerciseCatalog.byId.has(id) && Boolean(record) && typeof record === 'object';
-  // Importación: los registros de IDs desconocidos o que no son objetos se omiten en silencio.
-  function sanitize(raw) {
-    assertBackupShape(raw);
-    const clean = blank();
-    for (const [id, record] of Object.entries(raw.records)) {
-      if (isRecordObject(id, record))
-        clean.records[id] = sanitizeRecord(record, exerciseCatalog.byId.get(id));
-    }
-    sanitizeSelected(raw, clean);
-    return clean;
-  }
-  // Carga: igual que la importación, pero cuenta los registros descartados. Un `selected`
-  // inválido se ignora sin contarse.
-  function parseSaved(raw) {
-    assertBackupShape(raw);
-    const clean = blank();
-    let dropped = 0;
-    for (const [id, record] of Object.entries(raw.records)) {
-      try {
-        if (!isRecordObject(id, record)) throw new Error('Registro desconocido: ' + id);
-        clean.records[id] = sanitizeRecord(record, exerciseCatalog.byId.get(id));
-      } catch {
-        dropped++;
-      }
-    }
-    sanitizeSelected(raw, clean);
-    return { state: clean, dropped };
-  }
-  function loadWarningFor(loaded) {
-    return describeLoadResult(loaded, 'del laboratorio');
-  }
-  // Combina lo que guardó otra pestaña con el estado local, que gana en los campos editables
-  // (ver mergeRecord). Muta `local` en el lugar y no cambia su identidad ni la de sus
-  // registros: los handlers guardan una referencia a `record` antes de save() y siguen
-  // escribiéndola después; un estado nuevo la dejaría huérfana y esa edición se perdería.
-  function absorbStored(stored, local) {
-    for (const [id, storedRecord] of Object.entries(stored.records)) {
-      if (!local.records[id]) local.records[id] = storedRecord;
-      else
-        Object.assign(
-          local.records[id],
-          mergeRecord(storedRecord, local.records[id], exerciseCatalog.byId.get(id).tests),
-        );
-    }
-    return local;
-  }
-  const store = openVersionedStore(KEY, { blank, parse: parseSaved, merge: absorbStored });
-  // Nunca escribe al cargar: la primera escritura es una acción del alumno.
-  const loaded = store.load();
-  state = loaded.state;
-  saveAvailable = loaded.writable;
-  let loadWarning = loadWarningFor(loaded);
   function save() {
-    const result = store.write(state);
-    state = result.state;
-    saveAvailable = result.saved;
-    return saveAvailable;
+    return labStore.save();
   }
-  // Calcula el estado resultante de importar `raw` sin tocar `state`, `raw` ni el almacenamiento.
-  // `lossy` avisa que la normalización quitó o cambió datos de la copia.
-  function planImport(raw) {
-    const incoming = sanitize(raw);
-    const lossy = !isLosslessNormalization(raw, incoming);
-    const merged = cloneJson(state);
-    for (const [id, record] of Object.entries(incoming.records))
-      merged.records[id] = mergeRecord(
-        merged.records[id],
-        record,
-        exerciseCatalog.byId.get(id).tests,
-      );
-    for (const lang of ['rust', 'go'])
-      if (incoming.selected[lang]) merged.selected[lang] = incoming.selected[lang];
-    return { state: merged, lossy };
-  }
-  function applyImport(plan) {
-    state = cloneJson(plan.state);
-    return save();
-  }
-  const recordFor = (id) => state.records[id] || (state.records[id] = {});
+  const recordFor = (id) =>
+    labStore.getProgress().records[id] || (labStore.getProgress().records[id] = {});
   const list = () => exerciseCatalog.exercises.filter((exercise) => exercise.language === language);
   const current = () => exerciseCatalog.byId.get(selectedId);
   function navigationList() {
@@ -257,10 +110,11 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
   const resultMatches = (item, record) =>
     record.result?.code === draftFor(item) &&
     (record.result.customTest || '') === (record.customTest || '').trim();
-  const isSolved = (exercise) => Boolean(state.records[exercise.id]?.solvedAt);
+  const isSolved = (exercise) => Boolean(labStore.getProgress().records[exercise.id]?.solvedAt);
   const isDue = (exercise) =>
     Boolean(
-      state.records[exercise.id]?.reviewAt && state.records[exercise.id].reviewAt <= Date.now(),
+      labStore.getProgress().records[exercise.id]?.reviewAt &&
+      labStore.getProgress().records[exercise.id].reviewAt <= Date.now(),
     );
   const langName = () => (language === 'rust' ? 'Rust' : 'Go');
   function achievementStats() {
@@ -269,7 +123,7 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
       solved: items.filter(isSolved).length,
       due: items.filter(isDue).length,
       points: items.reduce((sum, item) => {
-        const r = state.records[item.id] || {};
+        const r = labStore.getProgress().records[item.id] || {};
         return (
           sum +
           (r.solvedAt ? 20 : 0) +
@@ -285,7 +139,7 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
     language = lang;
     notify = toast;
     if (!selectedId || exerciseCatalog.byId.get(selectedId)?.language !== lang) {
-      selectedId = state.selected[lang] || list()[0]?.id;
+      selectedId = labStore.getProgress().selected[lang] || list()[0]?.id;
       mode = 'map';
       phase = 'learn';
       query = '';
@@ -380,8 +234,8 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
       list()[0];
     return `<section class="lab-intro"><div><div class="eyebrow"><span class="eyebrow-line"></span> LABORATORIO · ${langName().toUpperCase()}</div><h1>Aprendé tocando.<br><em>Entendé probando.</em></h1><p>El código lo escribís vos. Un revisor te acompaña con pruebas, pistas y el porqué de cada resultado. Equivocarte también hace avanzar el experimento.</p></div><div class="lab-stamp" aria-label="${list().length} desafíos en ${langName()}"><span>HECHO PARA EXPLORAR</span><strong>${list().length}</strong><span>DESAFÍOS EN ${langName().toUpperCase()}</span></div></section>
     <div class="lab-metrics"><span><strong>${stats.solved}/${list().length}</strong> resueltos</span><span><strong>${stats.topics.length}</strong> temas</span><span><strong>${stats.points}</strong> puntos de práctica</span><span><strong>${stats.due}</strong> para repasar</span></div>
-    ${!saveAvailable ? '<div class="lab-storage-warning">El guardado local no está disponible. Exportá tu progreso desde Método y notas antes de cerrar.</div>' : ''}
-    ${loadWarning ? `<div class="lab-storage-warning">${escapeHtml(loadWarning)} Exportá tu progreso desde Método y notas para conservar lo que sigue.</div>` : ''}
+    ${!labStore.storageAvailable() ? '<div class="lab-storage-warning">El guardado local no está disponible. Exportá tu progreso desde Método y notas antes de cerrar.</div>' : ''}
+    ${labStore.loadWarning() ? `<div class="lab-storage-warning">${escapeHtml(labStore.loadWarning())} Exportá tu progreso desde Método y notas para conservar lo que sigue.</div>` : ''}
     <div class="lab-continue"><div><span class="small-label">UN DESAFÍO PARA HOY</span><h2>${escapeHtml(next?.title || 'Tu próximo experimento')}</h2><p>${escapeHtml(next?.objective || '')}</p></div><button class="button" data-lab-action="open" data-id="${escapeHtml(next?.id)}">${stats.solved ? 'Seguir aprendiendo' : 'Entrar al laboratorio'} ↗</button></div>
     <div class="quest-banner"><p><strong>¿Preferís aprender como una expedición?</strong><br>Campaña suma mundos, katas, reparaciones y desafíos finales con desbloqueos.</p><a class="button secondary" href="#campana">Jugar la campaña ↗</a></div>${levelTabsHTML()}<div class="lab-toolbar"><label class="search-wrap"><span aria-hidden="true">⌕</span><input id="lab-search" name="buscar-desafio" autocomplete="off" type="search" value="${escapeHtml(query)}" placeholder="Buscá un tema o desafío…" aria-label="Buscar ejercicios"></label><div class="lab-toolbar-actions"><button class="button small secondary" data-lab-action="extras" aria-pressed="${extraOnly}">Clásicos y sistemas · ${list().filter((item) => item.stage > 15 && item.stage <= 20).length}</button><button class="button small secondary" data-lab-action="surprise">Sorprendeme ↗</button><button class="button small secondary" data-lab-action="due" aria-pressed="${dueOnly}">${dueOnly ? 'Ver todos' : 'Repasar pendientes'}${stats.due ? ' · ' + stats.due : ''}</button></div></div><p id="lab-filter-status" class="lab-filter-status" role="status">${list().filter(matches).length} desafíos visibles${extraOnly ? ' · ampliación Clásicos y sistemas' : ''}.</p><div id="lab-topic-grid" class="topic-grid">${topicsHTML()}</div>
     <div class="lab-map-caption"><span><i class="legend-dot"></i> Resuelto con pruebas</span><span><i class="legend-dot pending"></i> Repaso sugerido</span><span>Podés explorar cualquier tema, sin bloqueos.</span></div>
@@ -455,7 +309,7 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
     activeRun = null;
     activeController = null;
     selectedId = id;
-    state.selected[language] = id;
+    labStore.getProgress().selected[language] = id;
     phase = 'learn';
     mode = 'exercise';
     save();
@@ -855,7 +709,10 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
   }
   function updateEditorStatus() {
     const status = $('#lab-editor-status');
-    if (status) status.textContent = saveAvailable ? 'Borrador guardado' : 'Exportá para conservar';
+    if (status)
+      status.textContent = labStore.storageAvailable()
+        ? 'Borrador guardado'
+        : 'Exportá para conservar';
   }
   function changePhase(next) {
     phase = next;
@@ -1153,7 +1010,7 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
     if (target.id === 'lab-reflection') {
       recordFor(selectedId).reflection = target.value;
       save();
-      $('#lab-reflection-status').textContent = saveAvailable
+      $('#lab-reflection-status').textContent = labStore.storageAvailable()
         ? 'Tu explicación está guardada. Contrastala con el razonamiento del revisor.'
         : 'El guardado no está disponible: exportá tu avance.';
     }
@@ -1208,24 +1065,22 @@ import { describeLoadResult, openVersionedStore } from './src/shared/lib/version
     if (mode === 'exercise') window.TallerExplorers?.change(event.target, current(), host);
   }
   window.TallerLab = {
+    init,
     mount,
     unmount,
-    loadWarning: () => loadWarning,
+    loadWarning: () => labStore.loadWarning(),
     getExercises: () => exerciseCatalog.exercises,
-    exportState: () => cloneJson(state),
-    planImport,
-    applyImport,
-    backups: () => store.backups(),
+    exportState: () => labStore.exportState(),
+    planImport: (raw) => labStore.planImport(raw),
+    applyImport: (plan) => labStore.applyImport(plan),
+    backups: () => labStore.backups(),
     reset() {
-      state = blank();
+      const removed = labStore.reset();
       selectedId = null;
       mode = 'map';
       phase = 'learn';
       activeController?.abort();
       activeRun = null;
-      loadWarning = '';
-      const removed = store.remove();
-      save();
       return removed;
     },
   };

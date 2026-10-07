@@ -9,6 +9,10 @@ nuevas del front (Vitest y Playwright, ADR 0008) viven aparte: ver «Pruebas del
   (JS o TS, con imports) y la ejecuta en un contexto VM con globals falsos
   (`runSource`), o la importa como módulo (`importModule`). Cargá siempre las fuentes
   por ahí: así los checks no dependen del formato ni de la ubicación del archivo.
+  `runModule` evalúa una fuente como módulo en el contexto VM y devuelve sus exportaciones, y
+  `bundleApp(path, { withoutStartCall: true })` empaqueta `main.tsx` sin su `startApp();` para probar
+  que evaluar no arranca. `qa/lib/legacy-sources.ts` da `loadAppShell` (las exportaciones de `app.js`,
+  sin arrancar) y `loadLab` (evalúa `lab.js` y llama `TallerLab.init()`).
 - Los checks importan archivos de `qa/` con extensión `.ts` explícita y sólo usan
   sintaxis TypeScript borrable; `tsconfig.qa.json` los tipa en `npm run typecheck`.
 - `qa/run-checks.ts` es la lista única de la suite que ejecuta `npm test`.
@@ -64,7 +68,8 @@ cambies y evitá reformatear las skills importadas o las salidas generadas.
 | Generador en `tools/content/` | El `node qa/content-*-check.ts` del módulo tocado (usan fixtures temporales y no leen `content/`), `node qa/curriculum-meta-check.ts` si toca el meta (`build/curriculum.meta.json`) y el oráculo de la fila anterior |
 | Ejercicios o contratos de revisión | `node qa/content-check.ts`, `node qa/runner-check.ts` |
 | Recorrido, biblioteca o respaldo global | `node qa/guide-content-check.ts`, `node qa/app-shell-check.ts` |
-| Lectura, respaldo o avisos de carga del progreso | `node qa/versioned-storage-check.ts` y el check del almacén afectado |
+| Lectura, respaldo o avisos de carga del progreso | `node qa/versioned-storage-check.ts` (incluida la regla de dos pestañas: el elemento que una quitó vuelve al guardar la otra, ADR 0003, decisión 9) y el check del almacén afectado |
+| Almacenes, motores o quién importa sus singletons | `node qa/seams-guard-check.ts`: cada clave del progreso en un solo archivo, `openVersionedStore` sólo en los cuatro dueños, ninguna fábrica importada y, entre las fuentes legacy y `app/`, ningún valor de los cuatro índices fuera de su dueño. Las specs de cada almacén y motor (`npm run test:unit`) prueban la suscripción |
 | Evidencia de aprobación o interpretación de ejecuciones | `node qa/exercise-evidence-check.ts` |
 | Atlas | `node qa/atlas-check.ts` |
 | Mundos, desbloqueos, XP o progreso de campaña | `node qa/campaign-check.ts`, `node qa/campaign-content-check.ts` |
@@ -129,7 +134,7 @@ checks de dominio de arriba siguen como están; no se migran en bloque.
   cambiá su escenario en el mismo commit TDD: primero la prueba nueva que falla,
   después la corrección.
 - `qa/lib/app-adapters.ts` lista los métodos de cada `window.Taller*` que consume
-  `frontend/app.js`: los fakes de `app-shell-check` salen de esa lista y `boot-check`, que
+  `frontend/app.js` (desde F2, `TallerLab` incluye `init`): los fakes de `app-shell-check` salen de esa lista y `boot-check`, que
   empaqueta `frontend/src/app/main.tsx` sobre el DOM falso de `qa/lib/fake-dom.ts`, exige que los
   adaptadores reales los publiquen y que todas las vistas y «Borrar todo» funcionen.
 - `load-order-check` declara qué fuente legacy debe evaluarse antes que otra y por
