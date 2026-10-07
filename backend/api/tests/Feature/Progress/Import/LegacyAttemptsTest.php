@@ -1,7 +1,7 @@
 <?php
 
-use App\Progress\Import\LegacyAttempts;
 use App\Progress\Import\Legacy\LegacyResult;
+use App\Progress\Import\LegacyAttempts;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\MergeFixture;
