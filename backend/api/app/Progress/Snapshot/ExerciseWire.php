@@ -14,7 +14,9 @@ final class ExerciseWire
     public static function of(array $row, array $verdictsByAttempt): array
     {
         $fields = new RowFields($row, 'exercise_progress');
-        $review = $fields->nullableString('confidence');
+        $confidence = $fields->nullableString('confidence');
+        $reviewedAt = $fields->nullableString('reviewed_at');
+        $reviewDueAt = $fields->nullableString('review_due_at');
         $predictionAnswer = $fields->nullableInt('prediction_answer');
         $reflection = $fields->nullableString('reflection');
         $customTest = $fields->nullableString('custom_test');
@@ -33,10 +35,10 @@ final class ExerciseWire
             'hintsRevealed' => $fields->nullableInt('hints_revealed'),
             'reflection' => $reflection === null ? null : ['text' => $reflection, 'at' => Wire::instant($fields->nullableString('reflection_set_at'))],
             'customTest' => $customTest === null ? null : ['text' => $customTest, 'at' => Wire::instant($fields->nullableString('custom_test_set_at'))],
-            'review' => $review === null ? null : [
-                'confidence' => $review,
-                'reviewedAt' => Wire::instant($fields->nullableString('reviewed_at')),
-                'reviewDueAt' => Wire::instant($fields->nullableString('review_due_at')),
+            'review' => $confidence === null && $reviewedAt === null && $reviewDueAt === null ? null : [
+                'confidence' => $confidence,
+                'reviewedAt' => Wire::instant($reviewedAt),
+                'reviewDueAt' => Wire::instant($reviewDueAt),
                 'at' => Wire::instant($fields->nullableString('review_set_at')),
             ],
             'solvedAt' => Wire::instant($fields->nullableString('solved_at')),
