@@ -192,8 +192,8 @@ describe('the reset', function () {
     it('leaves the invariants clean', function () {
         app(ProgressReset::class)->reset($this->user->id, resetRequest());
 
-        ProgressInvariants::assertClean();
-        RunInvariants::assertClean();
+        expect(ProgressInvariants::violations())->toBe([])
+            ->and(RunInvariants::violations())->toBe([]);
     });
 });
 
@@ -211,13 +211,12 @@ describe('the active runs', function () {
             ->and($storedQueued->reason)->toBeNull()
             ->and([$attempt->outcome, $attempt->epoch, $attempt->reason])->toBe(['canceled', 1, null])
             ->and(resetStoredRun($running->id)->cancelRequestedAt)->not->toBeNull()
-            ->and(resetStoredRun($others->id)->status)->toBe(RunStatus::Queued);
-        RunInvariants::assertClean();
+            ->and(resetStoredRun($others->id)->status)->toBe(RunStatus::Queued)
+            ->and(RunInvariants::violations())->toBe([]);
     });
 
     it('runs the cancellations after the commit: the deletes of the state come before the first statement on runs', function () {
         RunWorld::run($this->user, ['exercise_id' => 'fx-rust-01']);
-        DB::flushQueryListeners();
         DB::enableQueryLog();
 
         app(ProgressReset::class)->reset($this->user->id, resetRequest());
