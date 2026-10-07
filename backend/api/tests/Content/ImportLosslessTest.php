@@ -119,3 +119,51 @@ describe('SC-001, for each frozen case', function () {
         RunInvariants::assertClean();
     })->with(fn () => ImportCases::dataset());
 });
+
+describe('the same copy in another format', function () {
+    it('asks for confirmation and, with it, answers 201 with everything at 0 and the revision still', function () {
+        $cases = ImportCases::all();
+        $this->browser->post('/api/progress/import', losslessBody($cases['master-2a278ad-storage']))->assertCreated();
+        $revision = DB::table('progress_heads')->where('user_id', $this->user->id)->value('revision');
+        $counts = losslessRowCounts($this->user->id);
+        $export = losslessBody($cases['master-2a278ad-export'], LOSSLESS_OTHER_IMPORT_ID);
+
+        $withoutConfirm = $this->browser->post('/api/progress/import', $export);
+        $confirmed = $this->browser->post('/api/progress/import', [...$export, 'confirm' => true]);
+
+        $withoutConfirm->assertStatus(409)->assertJsonPath('code', 'import_needs_confirmation');
+        $confirmed->assertCreated();
+        expect($confirmed->json('report.written'))->toBe(array_fill_keys(array_keys($cases['master-2a278ad-export']['expect']['written']), 0))
+            ->and($confirmed->json('revision'))->toBe($revision)
+            ->and(DB::table('progress_heads')->where('user_id', $this->user->id)->value('revision'))->toBe($revision)
+            ->and(losslessRowCounts($this->user->id))->toBe([...$counts, 'progress_imports' => $counts['progress_imports'] + 1]);
+    });
+});
+
+describe('restoring the export after Borrar todo (US5.4, SC-005)', function () {
+    it('answers 409 and then 201 and gives back the same projection with the same legacy attempts', function () {
+        useSampleBlockedPasswords();
+        $user = User::factory()->withPassword('correct horse battery')->create();
+        $browser = Browser::for($this)->useDatabaseDrivers()->signIn($user);
+        $browser->post('/api/auth/confirm-password', ['password' => 'correct horse battery'])->assertCreated();
+        $case = ImportCases::all()['master-2a278ad-export'];
+        $browser->post('/api/progress/import', losslessBody($case))->assertCreated();
+        $projectionBefore = losslessProjectionOf($user->id);
+        $attemptIdsBefore = DB::table('attempts')->where('user_id', $user->id)->orderBy('id')->pluck('id')->all();
+        $browser->post('/api/progress/reset', ['format' => 2, 'epoch' => 1])->assertOk();
+        $afterReset = losslessBody($case, LOSSLESS_OTHER_IMPORT_ID);
+        $afterReset['epoch'] = 2;
+
+        $withoutConfirm = $browser->post('/api/progress/import', $afterReset);
+        $confirmed = $browser->post('/api/progress/import', [...$afterReset, 'confirm' => true]);
+
+        $withoutConfirm->assertStatus(409)->assertJsonPath('code', 'import_needs_confirmation');
+        $confirmed->assertCreated();
+        expect($confirmed->json('report.written.exercises'))->toBe(11)
+            ->and($confirmed->json('report.written.attempts'))->toBe(0)
+            ->and(losslessProjectionOf($user->id))->toEqual($projectionBefore)
+            ->and(DB::table('attempts')->where('user_id', $user->id)->orderBy('id')->pluck('id')->all())->toBe($attemptIdsBefore);
+        ProgressInvariants::assertClean($user->id);
+        RunInvariants::assertClean();
+    });
+});
