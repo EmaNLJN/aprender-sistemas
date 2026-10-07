@@ -40,6 +40,18 @@ final class SyncDevice
         return $this->browser->get('/api/progress');
     }
 
+    /** @return array<string, mixed> */
+    public function exercise(string $exerciseId = 'fx-rust-01'): array
+    {
+        foreach ($this->snapshot()->assertOk()->json('exercises') as $row) {
+            if ($row['exerciseId'] === $exerciseId) {
+                return $row;
+            }
+        }
+
+        return [];
+    }
+
     /**
      * @param  list<array<string, mixed>>  $operations
      * @param  array<string, mixed>  $envelope
