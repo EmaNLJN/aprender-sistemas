@@ -35,7 +35,7 @@ function importSvcWorld(): array
 {
     return [
         'contentVersion' => '0123456789abcdef0123456789abcdef',
-        'exercises' => [['id' => 'fx-rust-01', 'language' => 'rust', 'hints' => 3, 'predictionOptions' => 3]],
+        'exercises' => [['id' => 'fx-rust-01', 'language' => 'rust', 'hints' => 2, 'predictionOptions' => 3]],
         'worlds' => [], 'workshops' => [], 'guide' => ['steps' => [], 'resources' => []],
     ];
 }
@@ -67,6 +67,12 @@ function importSvcDeadlock(): QueryException
     return new QueryException('mysql', 'select 1', [], new PDOException('Deadlock found when trying to get lock; try restarting transaction'));
 }
 
+function importSvcRemoveContent(): void
+{
+    DB::table('exercise_grading_versions')->delete();
+    DB::table('content_imports')->delete();
+}
+
 function importSvcStoredHead(int $userId): object
 {
     return DB::table('progress_heads')->where('user_id', $userId)->first();
@@ -83,13 +89,13 @@ beforeEach(function () {
 
 describe('the errors, in the order of http-d1b.md section 2', function () {
     it('throws ClientOutdated for a format it does not accept, before looking for content', function () {
-        DB::table('content_imports')->delete();
+        importSvcRemoveContent();
 
         expect(fn () => $this->service->import($this->user->id, importSvcRequest(['format' => 1])))->toThrow(ClientOutdated::class);
     });
 
     it('throws ContentNotImported when there is no content, before comparing the epoch', function () {
-        DB::table('content_imports')->delete();
+        importSvcRemoveContent();
         ProgressWorld::head($this->user, epoch: 3);
 
         expect(fn () => $this->service->import($this->user->id, importSvcRequest(['epoch' => 1])))->toThrow(ContentNotImported::class);
@@ -284,7 +290,7 @@ describe('applying', function () {
     it('gathers what was omitted, what was replaced, what the writer wrote and the conflicts in the report', function () {
         $this->writer->counts = ['exercises' => 1, 'drafts' => 1];
         $this->reader->areas = new ProgressAreas(exercises: [['exerciseId' => 'fx-rust-01', 'reflection' => ['text' => 'v2', 'at' => '2026-10-05T12:00:00.000Z']]]);
-        $normalized = importSvcNormalized(['hints' => 5, 'reflection' => 'v1 con '."\u{FFFD}"]);
+        $normalized = importSvcNormalized(['hints' => 3, 'reflection' => 'v1 con '."\u{FFFD}"]);
 
         $outcome = $this->service->import($this->user->id, importSvcRequest(['normalized' => $normalized, 'raw' => "{\"a\":\"\u{FFFD}\"}"]));
 
