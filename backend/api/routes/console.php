@@ -10,11 +10,15 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('taller:prune-sessions')->everyFifteenMinutes()->withoutOverlapping();
-Schedule::command('auth:clear-resets')->everyFifteenMinutes()->withoutOverlapping();
-Schedule::command('taller:prune-cache')->everyFifteenMinutes()->withoutOverlapping();
-Schedule::command('model:prune', ['--model' => Invitation::class])->daily()->withoutOverlapping();
-Schedule::command('runs:sweep')->everyMinute()->withoutOverlapping();
-Schedule::command('runs:prune')->hourly()->withoutOverlapping();
-Schedule::command('progress:prune-sync-operations')->hourly()->withoutOverlapping();
-Schedule::command('progress:prune-import-payloads')->hourly()->withoutOverlapping();
+Schedule::command('taller:prune-sessions')->everyFifteenMinutes()->withoutOverlapping()->appendOutputTo('/proc/1/fd/2');
+Schedule::command('auth:clear-resets')->everyFifteenMinutes()->withoutOverlapping()->appendOutputTo('/proc/1/fd/2');
+Schedule::command('taller:prune-cache')->everyFifteenMinutes()->withoutOverlapping()->appendOutputTo('/proc/1/fd/2');
+Schedule::command('model:prune', ['--model' => Invitation::class])->daily()->withoutOverlapping()->appendOutputTo('/proc/1/fd/2');
+Schedule::command('runs:sweep')->everyMinute()->withoutOverlapping()->appendOutputTo('/proc/1/fd/2');
+Schedule::command('runs:prune')->hourly()->withoutOverlapping()->appendOutputTo('/proc/1/fd/2');
+Schedule::command('queue:work database --queue=default --stop-when-empty --max-time=50')->everyMinute()->withoutOverlapping(10)->appendOutputTo('/proc/1/fd/2');
+Schedule::command('queue:prune-failed', ['--hours' => 168])->daily()->withoutOverlapping()->appendOutputTo('/proc/1/fd/2');
+Schedule::command('model:prune', ['--model' => DeletedAccount::class])->daily()->withoutOverlapping()->appendOutputTo('/proc/1/fd/2');
+Schedule::command('taller:resume-purges')->everyFiveMinutes()->withoutOverlapping()->appendOutputTo('/proc/1/fd/2');
+Schedule::command('progress:prune-sync-operations')->hourly()->withoutOverlapping()->appendOutputTo('/proc/1/fd/2');
+Schedule::command('progress:prune-import-payloads')->hourly()->withoutOverlapping()->appendOutputTo('/proc/1/fd/2');
