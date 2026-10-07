@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\ProgressLimiters;
 use App\Http\Middleware\RequirePassword;
+use App\Http\ProgressLimiters;
 use App\Models\User;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Routing\Middleware\ThrottleRequests;
