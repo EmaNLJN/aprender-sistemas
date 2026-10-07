@@ -47,7 +47,7 @@ it('streams a valid document with only the data of the signed in account', funct
     $content = $response->streamedContent();
     $document = json_decode($content, true, flags: JSON_THROW_ON_ERROR);
 
-    expect($document['format'])->toBe('taller-export-1')
+    expect($document['format'])->toBe('taller-export-2')
         ->and($document['exportedAt'])->toBe('2026-10-12T15:30:00.000Z')
         ->and($document['account']['id'])->toBe($this->ana->id)
         ->and($document['account']['email'])->toBe('ana@example.com')

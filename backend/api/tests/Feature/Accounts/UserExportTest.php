@@ -4,6 +4,7 @@ use App\Accounts\Export\UserExport;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\PopulatedAccount;
 use Tests\Support\RunWorld;
 
 function exportedDocument(int $userId): array
@@ -58,8 +59,8 @@ beforeEach(function () {
 it('builds the document with the keys in order and the versioned format', function () {
     $document = exportedDocument($this->ana->id);
 
-    expect(array_keys($document))->toBe(['format', 'exportedAt', 'account', 'exerciseProgress', 'attempts'])
-        ->and($document['format'])->toBe('taller-export-1')
+    expect(array_keys($document))->toBe(['format', 'exportedAt', 'account', 'progress', 'attempts'])
+        ->and($document['format'])->toBe('taller-export-2')
         ->and($document['exportedAt'])->toBe('2026-10-12T15:30:00.123Z');
 });
 
@@ -73,14 +74,34 @@ it('exports exactly the account fields and none of the secrets', function () {
         ->and($account['createdAt'])->toBe('2026-10-12T15:30:00.123Z');
 });
 
-it('exports the progress rows of the account without the user id', function () {
-    $progress = exportedDocument($this->ana->id)['exerciseProgress'];
+it('exports the exercise rows of the account in the progress snapshot without the user id', function () {
+    $exercises = exportedDocument($this->ana->id)['progress']['exercises'];
 
-    expect($progress)->toHaveCount(2)
-        ->and(array_column($progress, 'exerciseId'))->toBe(['rust-01', 'rust-02'])
-        ->and($progress[0]['attemptCount'])->toBe(2)
-        ->and($progress[0]['solvedAt'])->toBe('2026-10-06T12:00:00.123Z')
-        ->and($progress[0])->not->toHaveKey('userId');
+    expect($exercises)->toHaveCount(2)
+        ->and(array_column($exercises, 'exerciseId'))->toBe(['rust-01', 'rust-02'])
+        ->and($exercises[0]['solvedAt'])->toBe('2026-10-06T12:00:00.123Z')
+        ->and($exercises[0])->not->toHaveKey('userId');
+});
+
+it('exports the snapshot areas of a populated account and nothing else', function () {
+    $at = '2026-10-06T10:00:00.000Z';
+    $progress = exportedDocument(PopulatedAccount::create()->id)['progress'];
+
+    expect(array_keys($progress))->toBe(['exercises', 'drafts', 'campaign', 'workshops', 'route', 'preferences'])
+        ->and($progress['drafts'])->toBe([['exerciseId' => 'rust-01', 'code' => 'let x = 1;', 'starterHash' => str_repeat('c', 64), 'at' => $at, 'revision' => 0]])
+        ->and($progress['campaign'])->toBe(['seals' => [], 'checkpoints' => [[
+            'worldId' => 'fx-world-1', 'passed' => true, 'passedAt' => $at, 'lastAnswer' => ['value' => 2, 'at' => $at], 'revision' => 0,
+        ]]])
+        ->and($progress['workshops']['progress'][0]['note'])->toBe(['text' => 'Borrow first', 'at' => $at])
+        ->and($progress['workshops']['objectives'])->toBe([['workshopId' => 'fx-workshop-1', 'language' => 'rust', 'objectiveKey' => 'fx-obj-1', 'observedAt' => $at, 'revision' => 0]])
+        ->and($progress['workshops']['steps'])->toBe([['workshopId' => 'fx-workshop-1', 'language' => 'rust', 'stepKey' => 'e1', 'marked' => true, 'at' => $at, 'revision' => 0]])
+        ->and($progress['route']['marks'])->toBe([['kind' => 'step', 'itemKey' => 'fx-step-1', 'marked' => true, 'at' => $at, 'revision' => 0]])
+        ->and($progress['route']['quiz'])->toBe([['stepId' => 'fx-step-1', 'answer' => 1, 'at' => $at, 'revision' => 0]])
+        ->and($progress['route']['notes'])->toBe([['language' => 'rust', 'field' => 'learned', 'body' => 'Ownership moves', 'at' => $at, 'revision' => 0]])
+        ->and($progress['preferences']['focusMinutes'])->toBe(['value' => 25, 'at' => $at])
+        ->and($progress['preferences']['labSelected']['rust'])->toBe(['value' => 'rust-01', 'at' => $at])
+        ->and($progress)->not->toHaveKey('full')
+        ->and(json_encode($progress, JSON_THROW_ON_ERROR))->not->toContain('userId');
 });
 
 it('exports the attempts of the account with tests and payload, null when the payload is not kept', function () {
@@ -108,5 +129,5 @@ it('leaves out everything that belongs to another account or is secret', functio
 });
 
 it('lists the section keys that exist', function () {
-    expect(app(UserExport::class)->sectionKeys())->toBe(['account', 'exerciseProgress', 'attempts']);
+    expect(app(UserExport::class)->sectionKeys())->toBe(['account', 'progress', 'attempts']);
 });

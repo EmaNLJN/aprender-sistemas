@@ -74,7 +74,7 @@ it('issues the statements per table in order, each with ORDER BY and LIMIT 2', f
     (new UserPurge(new UserData))->inBatches($user->id);
 
     $tables = array_map(fn (string $sql) => explode('`', $sql)[1], $statements);
-    expect(array_values(array_unique($tables)))->toBe(['runs', 'exercise_progress', 'attempts'])
+    expect(array_values(array_unique($tables)))->toBe(['runs', 'exercise_progress', 'attempts', 'sync_operations'])
         ->and($statements[0])->toContain('where `user_id` = ?')->toContain('order by `id`')->toContain('limit 2');
     foreach ($statements as $statement) {
         expect($statement)->toContain('order by')->toEndWith('limit 2');

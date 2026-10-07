@@ -38,8 +38,8 @@ it('maps each code to the status and Spanish message of the HTTP contract', func
         ->and($code->message())->toBe($message);
 })->with('contract codes');
 
-it('has exactly the 22 codes of the contract', function () {
-    expect(ApiCode::cases())->toHaveCount(22);
+it('has exactly the 24 codes of the contract', function () {
+    expect(ApiCode::cases())->toHaveCount(24);
 });
 
 it('words each run quota in Spanish', function (string $quota, string $message) {

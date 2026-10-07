@@ -84,7 +84,7 @@ it('purges every non-exception table in a batch or explains how it goes', functi
 });
 
 it('lists the export vocabulary once', function () {
-    expect((new UserData)->exportKeys())->toBe(['account', 'exerciseProgress', 'attempts', 'progress', 'imports']);
+    expect((new UserData)->exportKeys())->toBe(['account', 'attempts', 'progress', 'imports']);
 });
 
 it('uses the registry by default and the tables it is given otherwise', function () {

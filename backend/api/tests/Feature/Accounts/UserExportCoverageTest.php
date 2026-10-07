@@ -23,14 +23,14 @@ it('has a registered section for every declared table that exists', function () 
     expect(exportCoverageOffenders(new UserData))->toBe([]);
 });
 
-it('names a table that exists and declares progress or imports without a registered section', function () {
+it('names a table that exists and declares imports without a registered section', function () {
     $tables = [
         UserTable::owned('exercise_progress', 'progress', null, 'exercise_id', null),
         UserTable::owned('attempts', 'imports', null, 'id', null),
-        UserTable::owned('drafts', 'progress', null, null, 'Cascade.'),
+        UserTable::owned('drafts', 'imports', null, null, 'Cascade.'),
     ];
 
-    expect(exportCoverageOffenders(new UserData($tables)))->toBe(['exercise_progress', 'attempts']);
+    expect(exportCoverageOffenders(new UserData($tables)))->toBe(['attempts', 'drafts']);
 });
 
 it('exports rows for each declared table that exists with an export key, using a populated account', function () {
