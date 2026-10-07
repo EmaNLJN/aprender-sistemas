@@ -334,14 +334,14 @@ Es la prueba de US7.1: cambiar una regla en un solo lenguaje rompe el fixture. C
 | --- | --- | --- | --- | --- |
 | M1 | Relojes iguales: `>=` pasa a `>` | `incoming.at >= stored.at` | el `>=` del `wins` | 36 (`equal.*`) |
 | M2 | Un guardado sin reloj gana | quitar `stored.at === null` | quitar `stored.at IS NULL OR` | 31 (`empty-stored.*`) |
-| M3 | Una entrante sin reloj gana | `incoming.at === null \|\|` | quitar `n.at IS NOT NULL AND` | 31 (`empty-incoming.*`) |
+| M3 | Una entrante sin reloj gana | `incoming.at === null \|\|` | `n.at IS NULL OR n.at >= t.at` en lugar de `n.at IS NOT NULL AND n.at >= t.at` (quitar sólo `n.at IS NOT NULL AND` es un mutante equivalente: con un reloj nulo la comparación da `NULL` y gana lo guardado) | 31 (`empty-incoming.*`) |
 | M4 | La fecha más tardía en lugar de la más temprana | `a >= b` | `GREATEST` en lugar de `LEAST` | 8 |
 | M5 | `max` avisa cambio siempre | `changed = true` | quitar la guarda de `hints_revealed` | 2 |
 | M6 | Una escritura idéntica que gana cuenta como cambio | `changed: true` | estampar la revisión siempre (sin la guarda `IF(<cambia>, …)`) | TypeScript: 18 (`identical`); PHP: 103 (todos los casos sin cambio) |
 | M7 | `flag-or` toma la entrante | `state: incoming` | `assisted = n.assisted` | 2 (`true-then-false`, sólo TypeScript) |
 | M8 | `observed` conserva la primera fecha | `existing.at` | quitar el `LEAST` | 2 |
 | M9 | Estampar la revisión después de los valores y del reloj (D09: las guardas primero y el reloj al final) | — | mover `revision` y `updated_at` al final de las asignaciones | PHP: 145 (los casos con cambio sobre una fila que ya existe: la guarda ya ve lo nuevo y no estampa; los 27 que insertan, 25 `absent` y las dos `other-objective-added.*`, no los afecta el orden, porque el `INSERT` estampa desde su lista de valores) |
-| M10 | Comparar el texto con la colación de la conexión | — | quitar el `CAST(… AS BINARY)` de la guarda de texto | PHP: 6 (`text/case-only` y `text/accent-only` de los tres tipos con esa colación) |
+| M10 | Comparar el texto con la colación de la conexión | — | quitar el `CAST(… AS BINARY)` de la guarda de texto | PHP: el fixture no la alcanza, porque sus casos de texto llevan relojes distintos y el reloj ya cambia la guarda; la detecta `OperationWriterTest` con el mismo reloj (2 casos: mayúscula y acento) |
 | M11 | Recortar o convertir `''` en `NULL` en la entrada | — | volver a activar `TrimStrings` o `ConvertEmptyStringsToNull` sobre `/api/sync` | 8 (`text/to-empty-string` y `text/whitespace-kept` de los cuatro tipos de texto), en la prueba de HTTP |
 
 M3 en PHP sólo se ejerce a través del escritor, que acepta un reloj nulo. M11 no la ejerce la prueba del fixture del escritor sino la de HTTP; está acá porque es la mutación que más fácil se cuela. Las cifras de PHP suponen los 275 casos que corren allá: 172 con cambio (145 sobre una fila que ya existe y 27 que la insertan) y 103 sin cambio.

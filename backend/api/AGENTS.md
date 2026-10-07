@@ -16,6 +16,9 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
   - `npm run api:runs:check`: con el stack corriendo, ejecuciones reales contra el ejecutor (los doce
     casos de B2, las cuotas, la cola llena y el log). Crea y borra sus cuentas, y tarda unos minutos
     porque C3a acepta como mucho diez invitaciones por minuto desde una misma red.
+  - `npm run api:sync:check`: con el stack corriendo, la sincronización del progreso de punta a
+    punta (dos clientes de una cuenta que convergen, los reenvíos, la poda, la época y los límites)
+    y la medición de SC-010. Crea y borra sus cuentas, y tarda unos minutos por el mismo límite.
   - Ninguno forma parte de `npm test`.
   - En un worktree, cada comando de Docker (`docker compose …`, `npm run api:*`) lleva su propio
     `COMPOSE_PROJECT_NAME=<nombre-del-worktree>` en la misma línea: sin él, Compose usa el proyecto
@@ -81,6 +84,26 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
   - Los casos de la plantilla (`qa/fixtures/shared/harness-cases.json`) los corren
     `qa/content-harness-check.ts` y `HarnessFixtureTest`: el `Dockerfile` copia esa carpeta a
     `tests/Fixtures/shared`.
+- **Progreso (D1a):** contratos en `specs/007-d1-progreso-sincronizacion/contracts/` (`http.md` y
+  `merge-rules.md`).
+  - `app/Progress/` se reparte en `Operations` (los dieciséis tipos, la decodificación, el hash
+    canónico y el puerto `OperationProcessor`, que `AppServiceProvider` liga a
+    `DatabaseOperationProcessor`), `Merge` (las formas del SQL y `OperationWriter`), `Snapshot`
+    (`ProgressSnapshotReader`: la foto y el delta de `GET /api/progress` y de `changes`) y `Sync`
+    (`SyncService`, `ClockCorrection` y el registro de UUID en `sync_operations`).
+  - `AccountLock` sigue siendo la única puerta de la cabecera: `SyncService` aplica cada lote dentro
+    de su candado y sube la revisión a lo sumo una vez.
+  - Toda escritura de progreso es un `INSERT … ON DUPLICATE KEY UPDATE` que mira primero la guarda de
+    la revisión y compara los textos con `CAST(… AS BINARY)`, porque la colación de la conexión no
+    distingue mayúsculas ni acentos.
+  - `/api/sync` queda fuera de `TrimStrings` y de `ConvertEmptyStringsToNull` (`bootstrap/app.php`):
+    un texto llega como lo escribió el alumno, con sus espacios y la cadena vacía.
+  - El fixture de fusión (`qa/fixtures/shared/merge-cases.json`, con su sha256) es el contrato común
+    del servidor y del módulo de TypeScript (`frontend/src/features/progress-sync/model/`): no se
+    regenera ni se edita para que algo pase. `MergeFixtureTest` corre sus casos contra MySQL real.
+  - Ningún registro lleva texto del alumno: ni las reflexiones, ni los borradores, ni las notas.
+  - El `scheduler` poda `sync_operations` cada hora (`progress:prune-sync-operations`), con la
+    retención de `config/progress.php`.
 - **Pruebas:**
   - `RefreshDatabase` es el default (`tests/Pest.php`). `DatabaseTruncation` queda para el
     código que hace `TRUNCATE` o abre sus propias transacciones.
