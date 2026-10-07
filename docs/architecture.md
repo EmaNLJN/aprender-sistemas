@@ -43,6 +43,7 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | Interfaz de Sistemas | `frontend/systems.js`, `frontend/systems.css` |
 | Animaciones | `frontend/src/shared/lib/celebration.ts`, adaptador `frontend/src/app/legacy/register-effects.ts` |
 | Kits ZIP de proyecto | `frontend/src/features/download-project-kit/` (archivos puros y ZIP con fflate), `frontend/src/shared/lib/download-file.ts`, adaptador `frontend/src/app/legacy/register-project-kit.ts` |
+| Respaldo global del progreso: exportar, importar, «Borrar todo» y las ranuras de respaldo (F2, unidad 6) | `frontend/src/features/progress-backup/`: `createProgressBackup` recibe las cuatro áreas (el recorrido y los adaptadores del laboratorio, de campaña y de Sistemas) y devuelve promesas al importar y al borrar, para que D1c la reemplace sin tocar a quien la llama (Q4 de F2). `app.js` arma las áreas y sigue siendo dueño de la interfaz de Método hasta F8 |
 | Construcción y dependencias | `frontend/vite.config.ts` (su plugin copia el currículo y los avisos de licencia a `dist/`), `frontend/tsconfig.app.json`, `package.json`, `package-lock.json`; generador del currículo en `tools/content/` (`npm run curriculum`, validación, `build/curriculum.json` y oráculos de equivalencia) |
 | Servicio web, API y preview: Nginx, PHP-FPM, MySQL y migraciones | `dist/` entero, con el HTML y su contenido; `frontend/Dockerfile`, `compose.yaml` (raíz, incluye `docker/compose.yaml`), `docker/compose.preview.yaml`, `docker/nginx/nginx.conf` |
 | API Laravel del ADR 0004: rutas, configuración, migraciones, pruebas Pest e imagen PHP-FPM | `backend/api/` (reglas en `backend/api/AGENTS.md`) |
@@ -191,7 +192,7 @@ acciones de valor para el alumno y en `entities` para conceptos de dominio estab
 sólo cuando varios consumidores justifiquen ese seam. No agregues `processes` —está
 deprecada— ni `widgets` hasta que exista un bloque autónomo que realmente los necesite.
 Estado actual: `frontend/src/app` (entrada, arranque y adaptadores legacy), `frontend/src/pages/atlas`
-(primera página migrada), `frontend/src/features` (`download-project-kit` y `progress-sync`), las
+(primera página migrada), `frontend/src/features` (`download-project-kit`, `progress-backup` y `progress-sync`), las
 entidades `exercise` (evidencia, ejecución, fusión de registros, catálogo y `labStore`), `guide`
 (`routeStore`), `campaign` y `systems-workshop` (motores y puentes) y `systems-simulation`, y
 `frontend/src/shared` (helpers, la gramática de URL y constantes sin reglas de negocio).
