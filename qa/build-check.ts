@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
@@ -41,4 +42,27 @@ assert(
   'fflate license retained in standalone HTML',
 );
 assert(html.length < 2500000, 'unexpected standalone build growth');
+const { documentHash } = JSON.parse(
+  fs.readFileSync(path.join(root, 'build', 'curriculum.meta.json'), 'utf8'),
+) as { documentHash: string };
+const curriculumFile = path.join(
+  root,
+  'dist',
+  'content',
+  `curriculum.${documentHash.slice(0, 32)}.json`,
+);
+assert(fs.existsSync(curriculumFile), 'dist/content must hold the versioned curriculum');
+assert.equal(
+  createHash('sha256').update(fs.readFileSync(curriculumFile)).digest('hex'),
+  documentHash,
+  'dist curriculum must be the generator bytes',
+);
+for (const notice of ['EDITOR-LICENSES.txt', 'THIRD-PARTY-NOTICES.txt']) {
+  assert(
+    fs
+      .readFileSync(path.join(root, 'dist', notice))
+      .equals(fs.readFileSync(path.join(root, 'frontend', notice))),
+    `dist must carry ${notice} with the frontend bytes`,
+  );
+}
 console.log('Vite produced one standalone document with inline JS/CSS and retained licenses. PASS');
