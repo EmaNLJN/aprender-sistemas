@@ -71,9 +71,9 @@ cambies y evitá reformatear las skills importadas o las salidas generadas.
 | Importación, validación o exportación del laboratorio | `node qa/lab-state-check.ts`, campaña y Sistemas |
 | Contexto de campaña o Sistemas dentro del laboratorio | `node qa/lab-bridge-check.ts` |
 | Exploradores de robot y paquetes | `node qa/quest-explorers-check.ts` |
-| Catálogo, sellos o progreso de Sistemas | `node qa/systems-check.ts` |
+| Catálogo, sellos o progreso de Sistemas | `node qa/systems-check.ts` (carga el catálogo puro de `entities/exercise`, no evalúa `lab.js`) |
 | Modelo lowlevel, infra, play o pc | El correspondiente `node qa/systems-<dominio>-check.ts` |
-| Generación de proyectos o ZIP | `node qa/project-kit-check.ts` |
+| Generación de proyectos o ZIP | `node qa/project-kit-check.ts` (usa la fábrica pura del catálogo) |
 | Ejecutor Go (`backend/executor/`) | `npm run test:executor`; con Docker real, `npm run test:executor:integration` (no forman parte de `npm test`) |
 | API Laravel (`backend/api/`) | `npm run api:test`, `npm run api:format:check` y `npm run api:analyse`; con el stack levantado, `npm run api:smoke` y `npm run api:content:check` (las 17 porciones a través de Nginx; no forman parte de `npm test`) |
 | Lógica, almacenes y componentes del front nuevo o movido | `npm run test:unit` (Vitest; también corre dentro de `npm test`) |
@@ -147,7 +147,7 @@ Usá respuestas simuladas para comprobar transporte sin llamadas públicas masiv
 - `node qa/project-kit-check.ts --docker` ejecuta Cargo/Go en contenedores
   descartables. Necesita las imágenes locales `rust:1.90-alpine` y
   `golang:1.25-alpine`; el script no las descarga.
-- `node qa/runtime-check.ts rust --audit-record` y su variante `go` comparan
+- `node qa/runtime-check.ts` importa `buildProgram` de `entities/exercise`. `node qa/runtime-check.ts rust --audit-record` y su variante `go` comparan
   hashes con registros locales previos, sin red. Sólo tienen sentido si existen
   manifiestos actuales; en un clon limpio no hay evidencia previa garantizada.
 - `node qa/runtime-check.ts rust --ids=rust-113` y su variante
