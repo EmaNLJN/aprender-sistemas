@@ -177,3 +177,35 @@ it('reports the rows that the own batch changed in the same response', function 
         ->and($second->json('changes.exercises.0.customTest.text'))->toBe('dos')
         ->and($second->json('revision'))->toBe(2);
 });
+
+describe('an operation whose UUID was pruned after 15 days', function () {
+    beforeEach(function () {
+        $this->original = Ops::reflection(1, 'vieja', '2026-10-05T12:00:00.000Z');
+        $this->newer = Ops::reflection(2, 'nueva', '2026-10-05T13:00:00.000Z');
+        $this->travelTo(CarbonImmutable::parse('2026-10-05T13:10:00.000Z'));
+        $this->home->sync([$this->original])->assertOk();
+        $this->phone->sync([$this->newer])->assertOk();
+        $this->travelTo(CarbonImmutable::parse('2026-10-20T13:10:00.000Z'));
+        $this->artisan('progress:prune-sync-operations')->assertSuccessful();
+        $this->home = SyncDevice::signedIn($this, $this->home->user);
+    });
+
+    it('is applied again and does not overwrite a newer value', function () {
+        expect(DB::table('sync_operations')->count())->toBe(0);
+
+        $again = $this->home->sync([$this->original], ['knownRevision' => 2])->assertOk();
+
+        expect($again->json('results.0.status'))->toBe('applied')
+            ->and($this->home->exercise()['reflection'])->toBe(['text' => 'nueva', 'at' => '2026-10-05T13:00:00.000Z'])
+            ->and($again->json('revision'))->toBe(2)
+            ->and(DB::table('sync_operations')->count())->toBe(1);
+    });
+
+    it('is answered as a duplicate again once it has been recorded again', function () {
+        $this->home->sync([$this->original])->assertOk();
+
+        $third = $this->home->sync([$this->original])->assertOk();
+
+        expect($third->json('results.0.status'))->toBe('duplicate');
+    });
+});
