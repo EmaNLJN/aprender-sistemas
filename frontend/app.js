@@ -1,9 +1,9 @@
+import { routeStore } from './src/entities/guide';
 import {
-  ROUTE_FORMAT_ERROR,
-  mergeRouteProgress,
-  parseRouteProgress,
-  routeStore,
-} from './src/entities/guide';
+  assertImportSize,
+  createProgressBackup,
+  importFailureNotice,
+} from './src/features/progress-backup';
 import {
   isLinkLanguage,
   readLinkQuery,
@@ -12,8 +12,6 @@ import {
 } from './src/shared/config/url-grammar';
 import { downloadBlob } from './src/shared/lib/download-file';
 import { escapeHtml } from './src/shared/lib/escape-html';
-import { isLosslessNormalization } from './src/shared/lib/is-lossless-normalization';
-import { isPlainObject } from './src/shared/lib/is-plain-object';
 import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
 let started = false;
 export function startApp() {
@@ -285,18 +283,44 @@ export function startApp() {
   function tutorPrompt() {
     return `Estoy aprendiendo ${languageName()} y ya sé programar. Me interesan los sistemas y el rendimiento. Tengo ${routeState().minutes} minutos. Trabajemos un concepto con un ejercicio pequeño relacionado con archivos, memoria o redes.\n\nPrimero pedime predecir qué va a pasar y justificarlo. Esperá mi intento. Después dame una pista por vez, sin escribir ni modificar mi solución.\n\nCuando aparezca una duda de API, consultá Context7 o documentación oficial y enlazá la fuente. Si no tenés acceso, decímelo. Al terminar, pedime resolver una variante y explicar qué aprendí.\n\nMi próximo paso: ${routeState().notes[routeState().language].next || 'elegir un desafío pequeño del recorrido.'}`;
   }
-  // Ranuras de respaldo de todos los almacenes, cada una con el área a la que pertenece.
-  function collectBackups() {
-    const sources = [
-      ['recorrido', routeStore.backups()],
-      ['laboratorio', window.TallerLab?.backups?.() ?? []],
-      ['campaña', window.TallerCampaignEngine?.backups?.() ?? []],
-      ['Sistemas', window.TallerSystemsEngine?.backups?.() ?? []],
-    ];
-    return sources.flatMap(([area, slots]) => slots.map((slot) => ({ area, ...slot })));
-  }
+  const progressBackup = createProgressBackup({
+    guide: data,
+    areas: {
+      route: routeStore,
+      lab: {
+        exportState: () => window.TallerLab?.exportState(),
+        planImport: (raw) => window.TallerLab.planImport(raw),
+        applyImport: (plan) => window.TallerLab.applyImport(plan),
+        reset: () => window.TallerLab?.reset(),
+        backups: () => window.TallerLab?.backups?.() ?? [],
+      },
+      campaign: {
+        exportState: () => window.TallerCampaignEngine?.exportState(),
+        planImport: (raw) => window.TallerCampaignEngine.planImport(raw),
+        applyImport: (plan) => window.TallerCampaignEngine.applyImport(plan),
+        reset: async () => (await window.TallerCampaignEngine?.reset())?.removed,
+        backups: () => window.TallerCampaignEngine?.backups?.() ?? [],
+        syncDerivedSeals: () => window.TallerCampaign?.sync(),
+      },
+      systems: {
+        exportState: () => window.TallerSystemsEngine?.exportState(),
+        planImport: (raw) => window.TallerSystemsEngine.planImport(raw),
+        applyImport: (plan) => window.TallerSystemsEngine.applyImport(plan),
+        reset: async () => (await window.TallerSystemsEngine?.reset())?.removed,
+        backups: () => window.TallerSystemsEngine?.backups?.() ?? [],
+        syncDerivedSeals: () => window.TallerSystems?.sync(),
+      },
+    },
+    sessionResets: [
+      () => window.TallerSystems?.resetSimulations(),
+      () => {
+        timer.running = false;
+        timer.remaining = routeState().minutes * 60;
+      },
+    ],
+  });
   function backupsPanel() {
-    const backups = collectBackups();
+    const backups = progressBackup.listBackups();
     if (!backups.length) return '';
     const items = backups
       .map(
@@ -308,12 +332,9 @@ export function startApp() {
   }
   // Vuelve a leer la ranura al hacer clic: el texto descargado es el vigente, no el de la última vista.
   function downloadBackup(key) {
-    const backup = collectBackups().find((item) => item.key === key);
-    if (!backup) return;
-    downloadBlob(
-      new Blob([backup.text], { type: 'application/json' }),
-      `${key.replace(/[^a-z0-9-]/g, '-')}.json`,
-    );
+    const file = progressBackup.readBackup(key);
+    if (!file) return;
+    downloadBlob(new Blob([file.text], { type: 'application/json' }), file.fileName);
     toast('Respaldo descargado.');
   }
   function renderMethod() {
@@ -386,23 +407,8 @@ export function startApp() {
     if (lessonOpener?.isConnected) lessonOpener.focus({ preventScroll: true });
   });
   function exportProgress() {
-    const blob = new Blob(
-      [
-        JSON.stringify(
-          {
-            ...routeState(),
-            lab: window.TallerLab?.exportState(),
-            campaign: window.TallerCampaignEngine?.exportState(),
-            systems: window.TallerSystemsEngine?.exportState(),
-            exportedAt: new Date().toISOString(),
-          },
-          null,
-          2,
-        ),
-      ],
-      { type: 'application/json' },
-    );
-    downloadBlob(blob, `taller-progreso-${new Date().toISOString().slice(0, 10)}.json`);
+    const file = progressBackup.exportProgress();
+    downloadBlob(new Blob([file.text], { type: 'application/json' }), file.fileName);
     toast('Copia de progreso exportada.');
   }
   async function copyPrompt() {
@@ -574,106 +580,25 @@ export function startApp() {
   window.addEventListener('popstate', navigateFromLocation);
   $('#export-progress').addEventListener('click', exportProgress);
   $('#cancel-reset').addEventListener('click', () => $('#confirm-dialog').close());
-  $('#confirm-reset').addEventListener('click', () => {
-    // Un adaptador ausente devuelve undefined y no cuenta como fallo; sólo `false` lo es.
-    const removals = [
-      routeStore.reset(),
-      window.TallerLab?.reset(),
-      window.TallerCampaignEngine?.reset()?.removed,
-      window.TallerSystemsEngine?.reset()?.removed,
-    ];
-    window.TallerSystems?.resetSimulations();
-    timer.running = false;
-    timer.remaining = routeState().minutes * 60;
+  $('#confirm-reset').addEventListener('click', async () => {
+    const { notice } = await progressBackup.resetAll();
     save();
     $('#confirm-dialog').close();
     render();
-    toast(
-      removals.includes(false)
-        ? 'No se pudo borrar todo el progreso guardado. Recargá la página y volvé a intentarlo.'
-        : 'Progreso reiniciado. Un nuevo comienzo.',
-    );
+    toast(notice);
   });
-  // Claves de la copia que pertenecen a otros almacenes y no al recorrido.
-  const NON_ROUTE_KEYS = ['lab', 'campaign', 'systems', 'exportedAt'];
-  // Secciones importables en el orden en que se planifican y aplican.
-  const IMPORT_SECTIONS = [
-    { area: 'campaña', key: 'campaign', adapter: () => window.TallerCampaignEngine },
-    { area: 'laboratorio', key: 'lab', adapter: () => window.TallerLab },
-    { area: 'Sistemas', key: 'systems', adapter: () => window.TallerSystemsEngine },
-  ];
-  // Orden en que el aviso nombra las áreas con datos omitidos.
-  const NOTICE_AREAS = ['recorrido', 'laboratorio', 'campaña', 'Sistemas'];
-  // Calcula el recorrido resultante sin tocar el estado del recorrido. Lanza si el JSON no es
-  // un objeto reconocible. `lossy` avisa que se descartaron o cambiaron datos de la copia.
-  function planRouteImport(rawImport) {
-    if (!isPlainObject(rawImport)) throw new Error(ROUTE_FORMAT_ERROR);
-    const parsed = parseRouteProgress(rawImport, data);
-    const rawRoute = Object.fromEntries(
-      Object.entries(rawImport).filter(([key]) => !NON_ROUTE_KEYS.includes(key)),
-    );
-    return {
-      state: mergeRouteProgress(routeState(), parsed.state),
-      lossy: parsed.dropped > 0 || !isLosslessNormalization(rawRoute, parsed.state),
-    };
-  }
-  // Planifica cada sección presente: si alguna lanza, todavía no se aplicó nada.
-  function planSectionImports(rawImport) {
-    return IMPORT_SECTIONS.filter((section) => rawImport[section.key]).map((section) => {
-      const adapter = section.adapter();
-      return { area: section.area, adapter, plan: adapter.planImport(rawImport[section.key]) };
-    });
-  }
-  // `unsaved`: áreas cuya copia quedó aplicada sólo en memoria (el almacén no pudo escribir).
-  function importNotice(routePlan, sectionPlans, unsaved) {
-    const lossy = new Set(sectionPlans.filter((item) => item.plan.lossy).map((item) => item.area));
-    if (routePlan.lossy) lossy.add('recorrido');
-    const areas = NOTICE_AREAS.filter((area) => lossy.has(area));
-    const unsavedAreas = NOTICE_AREAS.filter((area) => unsaved.has(area));
-    const notice = unsavedAreas.length
-      ? `Copia importada en esta sesión, pero no se pudo guardar: ${unsavedAreas.join(', ')}. Exportá tu avance para conservarlo.`
-      : 'Copia importada y combinada con tu avance actual.';
-    if (!areas.length) return notice;
-    return `${notice} Se omitieron datos que esta versión no reconoce: ${areas.join(', ')}.`;
-  }
-  // Persiste los sellos que Sistemas y Campaña derivan del laboratorio recién importado.
-  // La copia ya quedó aplicada: un fallo acá sólo se registra, y cada sincronización
-  // es independiente para que un fallo de Sistemas no impida la de campaña.
-  function syncDerivedSeals() {
-    for (const sync of [() => window.TallerSystems?.sync(), () => window.TallerCampaign?.sync()]) {
-      try {
-        sync();
-      } catch (error) {
-        console.error(error);
-      }
-    }
-  }
   $('#import-file').addEventListener('change', async (event) => {
     const file = event.target.files[0];
     if (!file) return;
     try {
-      if (file.size > 10 * 1024 * 1024)
-        throw new Error('El archivo supera el tamaño permitido (10 MB).');
-      const rawImport = JSON.parse(await file.text());
-      // Fase 1: se valida todo antes de aplicar nada.
-      const routePlan = planRouteImport(rawImport);
-      const sectionPlans = planSectionImports(rawImport);
-      // Fase 2: se aplica cada plan y, por último, el recorrido.
-      // Sólo `false` cuenta como «no se guardó» en las secciones.
-      const unsaved = new Set();
-      for (const { area, adapter, plan } of sectionPlans) {
-        if (adapter.applyImport(plan) === false) unsaved.add(area);
-      }
-      if (!routeStore.applyImport(routePlan)) unsaved.add('recorrido');
+      assertImportSize(file.size);
+      const plan = progressBackup.planImport(await file.text());
+      const { notice } = await progressBackup.applyImport(plan);
       updateSaveLabel();
-      syncDerivedSeals();
       render();
-      toast(importNotice(routePlan, sectionPlans, unsaved));
+      toast(notice);
     } catch (error) {
-      toast(
-        'No se pudo importar: ' +
-          (error instanceof SyntaxError ? 'el archivo no contiene JSON válido.' : error.message),
-      );
+      toast(importFailureNotice(error));
     }
     event.target.value = '';
   });
