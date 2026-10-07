@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import vm from 'node:vm';
 import { repoRoot } from './sources.ts';
 
 export interface BuiltScript {
@@ -38,4 +39,25 @@ export function readBuiltContent(root: string = repoRoot): { fileName: string; b
   );
   const [fileName = ''] = names;
   return { fileName, bytes: readFileSync(path.join(directory, fileName)) };
+}
+
+const BUILT_PAGE_URL = 'http://taller.test/';
+
+export async function evaluateBuiltPage(page: BuiltPage, context: vm.Context): Promise<void> {
+  for (const script of page.scripts) {
+    const module = new vm.SourceTextModule(script.source, {
+      context,
+      identifier: script.name,
+      initializeImportMeta(meta) {
+        meta.url = BUILT_PAGE_URL;
+      },
+      importModuleDynamically() {
+        throw new Error('la salida usa import() dinámico real: la compuerta no lo espera');
+      },
+    });
+    await module.link(() => {
+      throw new Error(`${script.name} importa otro archivo: lo resuelve evaluateBuiltPage`);
+    });
+    await module.evaluate();
+  }
 }
