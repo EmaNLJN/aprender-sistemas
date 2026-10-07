@@ -37,9 +37,9 @@ final class AccountLock
 
     public function peek(int $userId): ProgressHead
     {
-        $row = DB::selectOne('select * from `progress_heads` where `user_id` = ?', [$userId]);
+        $rows = DB::select('select * from `progress_heads` where `user_id` = ?', [$userId]);
 
-        return $row === null ? new ProgressHead($userId, 1, 0, null, null) : ProgressHead::fromRow(get_object_vars($row));
+        return $rows === [] ? new ProgressHead($userId, 1, 0, null, null) : ProgressHead::fromRow(get_object_vars($rows[0]));
     }
 
     public function reset(ProgressHead $head, CarbonImmutable $at): ProgressHead
