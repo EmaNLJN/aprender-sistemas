@@ -42,7 +42,7 @@ El usuario respondió el clarify de D1 el 2026-10-06: aceptó la partición en t
 
 ## Propuestas del plan
 
-Esto es del plan y no se le preguntó al usuario: decisiones sobre lo que la spec o el ADR dejan abierto, y lo que D1b supone de otros ítems. Cada una se cambia en un lugar.
+Esto es del plan: decisiones sobre lo que la spec o el ADR dejan abierto, y lo que D1b supone de otros ítems. Cada una se cambia en un lugar. El usuario aceptó el 2026-10-06 las ocho que se le presentaron: R26, R27, R28 y R29, R31, R32, R35, R41 y que FR-010 mande sobre FR-034 (research-d1b.md).
 
 **1. Requisitos que cruzan la frontera.** La tabla de partición de la spec asigna rangos, y el plan de D1a ya repartió los que cruzan ([plan.md](./plan.md), «Propuestas del plan», punto 3). D1b cierra lo suyo:
 

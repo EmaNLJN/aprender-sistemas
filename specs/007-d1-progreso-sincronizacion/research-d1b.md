@@ -4,6 +4,8 @@
 
 Sigue la numeración de [research.md](./research.md), que es la de D1a (R1 a R22): las decisiones de D1b van de R23 a R44, y cuando una cita «R4» o «R20» se refiere a la de D1a. Cada decisión dice qué se eligió, por qué, qué se descartó y cómo se verificó. Las que completan algo que la spec o el ADR 0006 dejan abierto llevan la marca **(propuesta del plan)** y están resumidas en [plan-d1b.md](./plan-d1b.md), «Propuestas del plan». Lo que corrió al planificar está en R44.
 
+**Aceptadas por el usuario el 2026-10-06:** R26, R27, R28, R29, R31, R32, R35 y R41, y que FR-010 mande sobre FR-034 (R33: una importación que no cambia nada responde 201 y no sube la revisión).
+
 ## R23. Un plan por parte, en la misma carpeta
 
 - **Decisión.** Los documentos de D1b llevan el sufijo `-d1b`: `plan-d1b.md`, `research-d1b.md`, `data-model-d1b.md`, `contracts/http-d1b.md`, `contracts/import-fixture.md`, `quickstart-d1b.md` y `tasks-d1b.md`. Los de D1a quedan como están.

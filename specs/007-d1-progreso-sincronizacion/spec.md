@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-05
 
-**Status**: Clarificada el 2026-10-06: el usuario respondió Q1 a Q4 con la opción recomendada y aceptó la partición en tres (D1a, D1b y D1c). D1a está planificada ([plan.md](./plan.md) y [tasks.md](./tasks.md), con su análisis hecho); D1b y D1c todavía no tienen plan. Sin implementar
+**Status**: Clarificada el 2026-10-06: el usuario respondió Q1 a Q4 con la opción recomendada y aceptó la partición en tres (D1a, D1b y D1c). D1a y D1b están planificadas, con su análisis hecho: D1a en [plan.md](./plan.md) y [tasks.md](./tasks.md), y D1b en [plan-d1b.md](./plan-d1b.md) y [tasks-d1b.md](./tasks-d1b.md). D1c todavía no tiene plan. Sin implementar
 
 **Input**: Ítem **D1** de la hoja de ruta [`specs/backend-multiusuario/roadmap.md`](../backend-multiusuario/roadmap.md), «Progreso y sincronización». Fuente técnica: el [ADR 0006](../../docs/adr/0006-modelo-de-datos-y-api-multiusuario.md) (**propuesta**: el usuario todavía no lo aprobó), en sus decisiones D08, D09, D14, D22 a D25, D28, D29, D36 y D39, §5.3, §7, §8, §10, §12 y la pregunta 17 de §13 (con las transversales 13 y 14); el [ADR 0004](../../docs/adr/0004-backend-laravel-mysql-contenido-y-progreso.md) §3 y §4 (aceptada), que el 0006 enmienda en la sincronización; y el [ADR 0003](../../docs/adr/0003-integridad-del-progreso.md), cuyas reglas de integridad del progreso local siguen valiendo. Donde el 0006 difiere, manda, pero sólo como propuesta: lo que depende de él lleva la marca «(propuesta)» y cambia si el usuario lo enmienda. Las specs hermanas (B2, C3a y el épico del front) son borradores sin clarify: lo que esta spec toma de ahí está en «Relación con otras specs» y en Assumptions.
 
