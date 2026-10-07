@@ -9,8 +9,11 @@ import { escapeHtml } from './src/shared/lib/escape-html';
 import { isLosslessNormalization } from './src/shared/lib/is-lossless-normalization';
 import { isPlainObject } from './src/shared/lib/is-plain-object';
 import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
-(() => {
-  'use strict';
+let started = false;
+export function startApp() {
+  if (started) throw new Error('startApp ya se llamó: el arranque corre una sola vez.');
+  started = true;
+  window.TallerLab.init();
   const data = window.GUIDE_DATA;
   const views = [
     'recorrido',
@@ -680,4 +683,4 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
   });
   render();
   if (loadNotices.length) toast(loadNotices.join(' · '));
-})();
+}

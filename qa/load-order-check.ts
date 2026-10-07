@@ -83,10 +83,26 @@ function normalizeImport(specifier: string, entryDirectory: string): string {
   return path.relative(repoRoot, resolved).split(path.sep).join('/');
 }
 
+const IMPORT_STATEMENT = /^\s*import\s+(?:[^'"]*?\sfrom\s+)?['"]([^'"]+)['"]/gm;
+const START_CALL = /^[ \t]*startApp\(\);?[ \t]*$/gm;
+
 function readImports(source: string, entryDirectory: string): string[] {
-  return [...source.matchAll(/^\s*import\s+['"]([^'"]+)['"]\s*;?\s*$/gm)].map((match) =>
+  return [...source.matchAll(IMPORT_STATEMENT)].map((match) =>
     normalizeImport(match[1] ?? '', entryDirectory),
   );
+}
+
+function checkStartCall(source: string): string[] {
+  const calls = [...source.matchAll(START_CALL)];
+  if (calls.length !== 1) {
+    return [`startApp() debe llamarse exactamente una vez, pero se llama ${calls.length} veces`];
+  }
+  const lastImport = [...source.matchAll(IMPORT_STATEMENT)].at(-1);
+  const lastImportEnd = (lastImport?.index ?? 0) + (lastImport?.[0].length ?? 0);
+  if ((calls[0]?.index ?? 0) < lastImportEnd) {
+    return ['startApp() debe llamarse después del último import'];
+  }
+  return [];
 }
 
 function checkLoadOrder(imports: string[]): string[] {
@@ -114,8 +130,9 @@ function checkLoadOrder(imports: string[]): string[] {
 }
 
 const mainPath = path.join(repoRoot, 'frontend', 'src', 'app', 'main.tsx');
-const imports = readImports(fs.readFileSync(mainPath, 'utf8'), path.dirname(mainPath));
-const problems = checkLoadOrder(imports);
+const mainSource = fs.readFileSync(mainPath, 'utf8');
+const imports = readImports(mainSource, path.dirname(mainPath));
+const problems = [...checkLoadOrder(imports), ...checkStartCall(mainSource)];
 assert.deepEqual(
   problems,
   [],

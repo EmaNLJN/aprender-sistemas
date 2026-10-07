@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import esbuild from 'esbuild';
@@ -15,12 +16,20 @@ export interface RunOptions extends BundleOptions {
 const iifeCache = new Map<string, string>();
 const esmCache = new Map<string, string>();
 const appCache = new Map<string, string>();
+const moduleCache = new Map<string, string>();
+
+const MODULE_GLOBAL_NAME = '__sourceModule';
+const START_CALL_STATEMENT = /^[ \t]*startApp\(\);?[ \t]*$/gm;
+
+export interface AppBundleOptions {
+  withoutStartCall?: boolean;
+}
 
 function build(relativePath: string, options: esbuild.BuildOptions): string {
   const absolute = path.join(repoRoot, relativePath);
   try {
     const result = esbuild.buildSync({
-      entryPoints: [absolute],
+      ...(options.stdin ? {} : { entryPoints: [absolute] }),
       bundle: true,
       write: false,
       logLevel: 'silent',
@@ -54,10 +63,25 @@ export function bundleSource(relativePath: string, options: BundleOptions = {}):
   return text;
 }
 
-export function bundleApp(relativePath: string): string {
-  const cached = appCache.get(relativePath);
+function startCallEntry(relativePath: string): esbuild.StdinOptions {
+  const absolute = path.join(repoRoot, relativePath);
+  return {
+    contents: fs.readFileSync(absolute, 'utf8').replace(START_CALL_STATEMENT, ''),
+    resolveDir: path.dirname(absolute),
+    sourcefile: absolute,
+    loader: path.extname(absolute) === '.tsx' ? 'tsx' : 'ts',
+  };
+}
+
+export function bundleApp(relativePath: string, options: AppBundleOptions = {}): string {
+  const withoutStartCall = options.withoutStartCall ?? false;
+  const key = `${relativePath}|withoutStartCall=${withoutStartCall}`;
+  const cached = appCache.get(key);
   if (cached !== undefined) return cached;
   const text = build(relativePath, {
+    ...(withoutStartCall
+      ? { stdin: startCallEntry(relativePath), tsconfig: path.join(repoRoot, 'tsconfig.json') }
+      : {}),
     format: 'iife',
     platform: 'browser',
     target: 'es2020',
@@ -65,7 +89,7 @@ export function bundleApp(relativePath: string): string {
     loader: { '.css': 'empty' },
     define: { 'process.env.NODE_ENV': '"production"' },
   });
-  appCache.set(relativePath, text);
+  appCache.set(key, text);
   return text;
 }
 
@@ -78,6 +102,32 @@ export function runSource(
     filename: relativePath,
     timeout: options.timeout,
   });
+}
+
+export function runModule<T>(
+  context: vm.Context,
+  relativePath: string,
+  options: RunOptions = {},
+): T {
+  const minify = options.minify ?? false;
+  const key = `${relativePath}|minify=${minify}`;
+  let wrapped = moduleCache.get(key);
+  if (wrapped === undefined) {
+    const bundle = build(relativePath, {
+      format: 'iife',
+      globalName: MODULE_GLOBAL_NAME,
+      platform: 'browser',
+      target: 'es2020',
+      legalComments: 'inline',
+      minify,
+    });
+    wrapped = `(function () {\n${bundle}\nreturn ${MODULE_GLOBAL_NAME};\n})()`;
+    moduleCache.set(key, wrapped);
+  }
+  return vm.runInContext(wrapped, context, {
+    filename: relativePath,
+    timeout: options.timeout,
+  }) as T;
 }
 
 // Node does not resolve extensionless relative imports, so the module is bundled as ESM and loaded from a data: URL.
