@@ -2,8 +2,10 @@
 
 use App\Http\Middleware\EnsureExpectedAccount;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Routing\Route as RoutingRoute;
 use Illuminate\Support\Facades\Route;
 
@@ -92,10 +94,28 @@ it('answers 401 unauthenticated in JSON to every protected GET route, without a 
         ->values();
 
     foreach ($protectedReads as $route) {
-        $response = $this->get('/'.str_replace('{id}', 'rust-01', $route->uri()));
+        $response = $this->get('/'.preg_replace('/\{[^}]+\}/', '1', str_replace('{id}', 'rust-01', $route->uri())));
 
         $response->assertStatus(401)->assertExactJson(['message' => 'Iniciá sesión para continuar.', 'code' => 'unauthenticated']);
         expect($response->headers->get('Content-Type'))->toContain('application/json');
     }
     expect($protectedReads->count())->toBeGreaterThanOrEqual(7);
+});
+
+it('puts account.admin and throttle:admin on every route under /api/admin', function () {
+    $adminRoutes = collect(apiRoutes())->filter(fn (RoutingRoute $route) => str_starts_with($route->uri(), 'api/admin/'));
+
+    $lacking = $adminRoutes
+        ->filter(fn (RoutingRoute $route) => array_diff([EnsureUserIsAdmin::class, ThrottleRequests::class.':admin'], middlewareOf($route)) !== [])
+        ->map(fn (RoutingRoute $route) => implode('|', $route->methods()).' '.$route->uri())
+        ->values()
+        ->all();
+
+    expect($lacking)->toBe([])->and($adminRoutes)->toHaveCount(9);
+});
+
+it('flags an admin route declared outside the admin group', function () {
+    $invented = Route::get('api/admin/invented', fn () => 'data')->middleware(['account']);
+
+    expect(array_diff([EnsureUserIsAdmin::class, ThrottleRequests::class.':admin'], middlewareOf($invented)))->not->toBe([]);
 });

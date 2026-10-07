@@ -45,3 +45,17 @@ it('leaves the log HMAC key to the environment', function () {
 it('trusts no proxy, so the client network is REMOTE_ADDR', function () {
     expect(Request::getTrustedProxies())->toBe([]);
 });
+
+it('commits queued jobs after the transaction and retries them after the purge timeout', function () {
+    expect(config()->boolean('queue.connections.database.after_commit'))->toBeTrue()
+        ->and(config()->integer('queue.connections.database.retry_after'))->toBe(330)
+        ->and(config()->boolean('queue.connections.runs.after_commit'))->toBeFalse()
+        ->and(config()->integer('queue.connections.runs.retry_after'))->toBe(140);
+});
+
+it('sets the ledger, purge and export sizes', function () {
+    expect(config()->integer('taller.ledger_days'))->toBe(35)
+        ->and(config()->integer('taller.purge.batch_size'))->toBe(500)
+        ->and(config()->integer('taller.purge.stuck_minutes'))->toBe(15)
+        ->and(config()->integer('taller.export.chunk'))->toBe(100);
+});

@@ -13,5 +13,5 @@ it('gives the runs their own database queue with a 140 second retry_after', func
         'queue' => 'runs',
         'retry_after' => 140,
         'after_commit' => false,
-    ])->and(config('queue.connections.database.retry_after'))->toBe(90);
+    ])->and(config('queue.connections.database.retry_after'))->toBe(330);
 });

@@ -63,9 +63,9 @@ CREATE TABLE `account_deletions` (
 | `invitations` | C3a | Por email, y `invited_by` (`SET NULL`) | No (FR-043) | Al pedir la baja se borran las que creó, si es admin, y las de su email |
 | `password_reset_tokens` | C3a | Por email | No (FR-043) | Se borra al pedir la baja |
 | `account_deletions` | C3b | `user_id` sin clave foránea a propósito (FR-047) | No, con motivo: no tiene datos personales | No: es el libro; se poda a los 35 días |
-| `progress_heads` | B2 | `user_id` (clave primaria) | No, con motivo: es el candado de la cuenta; la época y la revisión salen en la foto de progreso de D1 | La transacción final la toma `FOR UPDATE` y la cascada la borra |
+| `progress_heads` | B2 | `user_id` (clave primaria) | No, con motivo: es el candado de la cuenta; la época y la revisión son de la sincronización, no datos de la persona | La transacción final la toma `FOR UPDATE` y la cascada la borra |
 | `runs` | B2 | `user_id` | No, con motivo: es operativa (dura 14 días) y su código y su salida viven en el payload del intento | Lote 1, después de cancelar las activas |
-| `exercise_progress` | B2 | `user_id` | Sí, como filas (`exerciseProgress`) hasta que D1a entregue la foto v2 (`progress`), que las incluye | Lote 2 |
+| `exercise_progress` | B2 | `user_id` | Sí, en la foto v2 de D1a (`progress.exercises`); hasta la integración con D1a salía como filas (`exerciseProgress`) | Lote 2 |
 | `attempts` | B2 | `user_id` | Sí, con sus pruebas y el payload que se conserve (`attempts`) | Lote 3 |
 | `attempt_tests` | B2 | Hija de `attempts` | Sí, con su intento | Cascada del lote 3 |
 | `attempt_payloads` | B2 | Hija de `attempts` | Sí, con su intento, el que se conserve | Cascada del lote 3 |

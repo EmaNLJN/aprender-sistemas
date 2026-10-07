@@ -49,9 +49,17 @@ beforeEach(function () {
 
 it('covers all the routes that modify, so a new one cannot escape the matrix', function () {
     expect(collect(protectedModifyingRoutes())->pluck(1)->sort()->values()->all())->toBe([
+        '/api/admin/invitations',
+        '/api/admin/invitations/{invitation}',
+        '/api/admin/invitations/{invitation}/resend',
+        '/api/admin/users/{user}',
+        '/api/admin/users/{user}',
+        '/api/admin/users/{user}/password-reset',
         '/api/auth/confirm-password',
         '/api/auth/logout',
         '/api/me',
+        '/api/me',
+        '/api/me/export',
         '/api/me/password',
         '/api/me/privacy',
         '/api/me/sessions/logout-others',
@@ -68,7 +76,7 @@ it('answers 409 account_mismatch and writes nothing but sessions and cache, with
         DB::flushQueryLog();
         DB::enableQueryLog();
 
-        $response = $browser->send($method, $path, ['name' => 'Otro', 'password' => 'x', 'privacyVersion' => 'x']);
+        $response = $browser->send($method, str_replace(['{user}', '{invitation}'], '1', $path), ['name' => 'Otro', 'password' => 'x', 'privacyVersion' => 'x']);
 
         if ($response->status() !== 409 || $response->json('code') !== 'account_mismatch') {
             $failures[] = "{$method} {$path} answered {$response->status()}";

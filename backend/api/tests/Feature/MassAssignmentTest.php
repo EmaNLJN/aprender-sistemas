@@ -63,3 +63,26 @@ it('takes the role of the account from the invitation, not from the accept body'
         ->and($other->fresh()->name)->toBe('Beto')
         ->and($other->fresh()->email)->toBe($other->email);
 });
+
+it('changes only the role on PATCH /api/admin/users/{id}, whatever else the body carries', function () {
+    $admin = User::factory()->admin()->create();
+    $target = User::factory()->admin()->create(['name' => 'Beto', 'email' => 'beto@x.com']);
+    $passwordHash = $target->password;
+    $browser = Browser::for($this)->useDatabaseDrivers()->signIn($admin);
+    $browser->post('/api/auth/confirm-password', ['password' => 'password'])->assertCreated();
+
+    $browser->send('PATCH', "/api/admin/users/{$target->id}", ['role' => 'student', 'email' => 'otra@x.com', 'name' => 'X', 'password' => 'x', 'user_id' => 99])
+        ->assertOk()
+        ->assertJsonPath('data.role', 'student')
+        ->assertJsonPath('data.email', 'beto@x.com')
+        ->assertJsonPath('data.name', 'Beto');
+
+    $stored = $target->fresh();
+    expect($stored->role)->toBe(Role::Student)
+        ->and($stored->email)->toBe('beto@x.com')
+        ->and($stored->name)->toBe('Beto')
+        ->and($stored->password)->toBe($passwordHash)
+        ->and($stored->id)->toBe($target->id)
+        ->and(User::find(99))->toBeNull()
+        ->and($admin->fresh()->name)->toBe($admin->name);
+});

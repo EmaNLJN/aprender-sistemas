@@ -18,7 +18,7 @@ Las rutas de `/api/admin` pertenecen al grupo de middleware `admin`, que arma `b
 8. La búsqueda del destino (404 `not_found`). **Ningún destino se resuelve antes del paso 4**: las rutas no usan el binding implícito de modelos, que corre antes que el rol. Por eso un estudiante recibe 403 también con un id que no existe.
 9. Las reglas de la operación (422 y 409), y por último el 503 de correo.
 
-El destino de la ruta es un entero: `{user}` y `{invitation}` sólo aceptan dígitos. Un valor que no lo es no coincide con la ruta y responde 404 `not_found`, como cualquier ruta inexistente.
+El destino de la ruta es un entero: `{user}` y `{invitation}` aceptan de 1 a 18 dígitos (`[0-9]{1,18}`). Un valor que no lo es, o uno más largo que no entra en un entero de PHP, no coincide con la ruta y responde 404 `not_found`, como cualquier ruta inexistente.
 
 ## Códigos nuevos
 
@@ -169,7 +169,7 @@ El documento, con las claves en este orden:
 
 ```json
 {
-  "format": "taller-export-1",
+  "format": "taller-export-2",
   "exportedAt": "2026-10-12T15:30:00.000Z",
   "account": {
     "id": 12, "name": "Ana Pérez", "email": "ana@x.com", "role": "student",
@@ -177,7 +177,12 @@ El documento, con las claves en este orden:
     "privacyAcceptedAt": "2026-10-05T12:00:00.000Z",
     "createdAt": "2026-10-05T12:00:00.000Z", "updatedAt": "2026-10-05T12:00:00.000Z"
   },
-  "exerciseProgress": [{"exerciseId": "rust-01", "solvedAt": null, "attemptCount": 2, "…": "…"}],
+  "progress": {
+    "exercises": [{"exerciseId": "rust-01", "revision": 3, "solvedAt": null, "…": "…"}],
+    "drafts": [], "campaign": {"seals": [], "checkpoints": []},
+    "workshops": {"progress": [], "objectives": [], "steps": []}, "route": {"marks": [], "quiz": [], "notes": []},
+    "preferences": null
+  },
   "attempts": [{
     "id": 7, "exerciseId": "rust-01", "outcome": "passed", "attemptedAt": "2026-10-06T12:00:00.000Z", "…": "…",
     "tests": [{"testKey": "t1", "exerciseId": "rust-01", "position": 1, "outcome": "pass"}],
@@ -187,9 +192,9 @@ El documento, con las claves en este orden:
 ```
 
 - **`account`:** sin el hash ni el token de «recordarme». **No** incluye sesiones, invitaciones ni tokens, ni `runs` ni `progress_heads` (motivos en [data-model.md](../data-model.md), sección 2).
-- **`exerciseProgress`:** las filas de `exercise_progress` de la cuenta, con todas sus columnas menos `user_id`. Cuando D1a entregue su lector de la foto de progreso, esta clave pasa a ser **`progress`** (la foto v2, que incluye esas filas), y D1b suma **`imports`** con los crudos importados.
+- **`progress`:** la foto de progreso de D1a, con las áreas y las filas de `GET /api/progress` (§5 de su [contrato](../../007-d1-progreso-sincronizacion/contracts/http.md)), sin `full` ni `userId`. La lee `ProgressSnapshotReader::areas(userId, null)` dentro de una transacción corta de sólo lectura (REPEATABLE READ). Los ejercicios salen de `exercise_progress`. D1b suma **`imports`** con los crudos importados.
 - **`attempts`:** cada intento con todas sus columnas menos `user_id`, sus pruebas (`tests`, sin `attemptId`) y su payload si se conserva (`payload`, sin `attemptId`; `null` si no se conserva).
-- **La versión.** `format` cambia cuando el documento quita o renombra una clave: D1a, al reemplazar `exerciseProgress` por `progress`, sube `format` a `taller-export-2` en `UserExport` y en este contrato. Sumar una clave (D1b agrega `imports`) no lo cambia.
+- **La versión.** `format` cambia cuando el documento quita o renombra una clave. Es `taller-export-2` desde que `progress` reemplazó a `exerciseProgress`, la clave de `taller-export-1`, al integrarse C3b con D1a. Sumar una clave (D1b agrega `imports`) no lo cambia.
 - **Los nombres** de columna salen en camelCase. Las columnas `DATETIME` salen en ISO 8601 UTC con milisegundos y `Z`; los demás valores, como están en la base (un indicador es `0` o `1`).
 
 ## `DELETE /api/me`
@@ -213,7 +218,7 @@ Grupo `account` (sin `verified`), más `password.confirm`. Sin cuerpo.
 Grupo `admin` más `password.confirm`. Sin cuerpo.
 
 - **202** `{"data": {"id": 12, "status": "deleting"}, "message": "Se está borrando la cuenta con todo lo que guardó: el progreso, los intentos, el código y las importaciones. No se puede deshacer."}`.
-- Hace lo mismo que `DELETE /api/me` para otra cuenta. Sobre una cuenta que ya está en `deleting` responde 202 igual: vuelve a pedir la purga, que es única por cuenta. Sobre la propia cuenta del admin vale igual que `DELETE /api/me`.
+- Hace lo mismo que `DELETE /api/me` para otra cuenta. Sobre una cuenta que ya está en `deleting` responde 202 igual: vuelve a pedir la purga, que es única por cuenta. Sobre la propia cuenta del admin conserva el cuerpo y el mensaje de esta ruta (con `data.id`) y tiene los efectos de `DELETE /api/me`: la sesión termina y rige la guardia del último admin.
 - **404** si no existe. **409 `last_admin`** si el destino es el único admin activo. **423** sin la contraseña reconfirmada.
 
 ## Rutas y límites
@@ -231,7 +236,7 @@ Ninguna ruta de C3b entra en la lista blanca de la prueba de recorrido de C3a: t
 | Ítem | Qué toma |
 | --- | --- |
 | **B2** | `AccountRestricted` (`Disabled`, `Demoted` o `Deleting`), que B2 ya entregó y C3b dispara después de confirmar. El listener de B2 lee `users.status` ya confirmado |
-| **D1a y D1b** | Declarar sus tablas en `UserTables` y en `PopulatedAccount` al crearlas. Registrar su sección de exportación (`progress` e `imports`) en `UserExport`. `ProgressSnapshotReader::areas(userId, null)` es lo que lee la sección `progress` |
+| **D1a y D1b** | Declarar sus tablas en `UserTables` y en `PopulatedAccount` al crearlas, y registrar su sección de exportación en `UserExport`. D1a ya está integrada: sus diez tablas tienen filas en `PopulatedAccount`, y `ProgressSection` lee `ProgressSnapshotReader::areas(userId, null)`. A D1b le faltan `progress_imports`, `campaign_seals` y la sección `imports` |
 | **C3c** | Los tres sitios que responden 503 (`InvitationController::store` y `::resend` con `delivery=email`, y `UserController::passwordReset`) y los dos puntos de aviso (la promoción en `AccountChanges::change` y el final de `PurgeUserData`). `MailUnavailable` y `ApiCode::MailUnavailable` son de C3b. `AccountDeletion::request(int $id)` es el pedido de supresión que C3c usa para las cuentas de registro nunca verificadas (su FR-022) |
 | **C4** | El libro de supresiones: `account_deletions` y su copia junto a cada respaldo, en el formato de [console.md](./console.md) |
 | **El front** | 423 en cada acción sensible; `Retry-After`; el link de una invitación se ve una sola vez; el 503 `mail_unavailable`; la descarga de la exportación es un `POST` con respuesta en streaming que se baja con `fetch` y se guarda como archivo; el mensaje de `DELETE /api/me` |

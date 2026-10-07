@@ -26,6 +26,8 @@ enum ApiCode: string
     case QueueFull = 'queue_full';
     case EpochMismatch = 'epoch_mismatch';
     case ClientOutdated = 'client_outdated';
+    case LastAdmin = 'last_admin';
+    case MailUnavailable = 'mail_unavailable';
 
     public function status(): int
     {
@@ -34,7 +36,7 @@ enum ApiCode: string
             self::Forbidden, self::AccountDisabled, self::EmailUnverified => 403,
             self::NotFound, self::InvitationNotFound => 404,
             self::MethodNotAllowed => 405,
-            self::EmailTaken, self::AccountMismatch, self::EpochMismatch, self::ClientOutdated => 409,
+            self::EmailTaken, self::AccountMismatch, self::EpochMismatch, self::ClientOutdated, self::LastAdmin => 409,
             self::InvitationExpired => 410,
             self::CsrfTokenMismatch => 419,
             self::ValidationFailed, self::AuthFailed, self::ClientRunIdReused => 422,
@@ -42,7 +44,7 @@ enum ApiCode: string
             self::TooManyRequests, self::QuotaExceeded => 429,
             self::BadRequest => 400,
             self::ServerError => 500,
-            self::QueueFull => 503,
+            self::QueueFull, self::MailUnavailable => 503,
         };
     }
 
