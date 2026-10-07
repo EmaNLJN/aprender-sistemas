@@ -2,15 +2,16 @@
 
 namespace App\Content\Record;
 
+use App\Content\InvalidContent;
 use stdClass;
 
 /**
- * A step of a workshop: `steps[i]` of the document ↔ a `workshop_steps` row. Its key and v1 index
- * come from the meta and are not published until D1 (ADR 0006 D14).
+ * A step of a workshop: `steps[i]` of the document ↔ a `workshop_steps` row. Its key is published
+ * as `id` and must match the meta; the v1 index comes from the meta and is not published (ADR 0006 D14).
  */
 final readonly class WorkshopStep
 {
-    public const KEYS = ['title', 'task', 'why', 'done'];
+    public const KEYS = ['id', 'title', 'task', 'why', 'done'];
 
     public function __construct(
         public string $workshopId,
@@ -27,6 +28,10 @@ final readonly class WorkshopStep
     public static function fromDocument(stdClass $step, string $workshopId, int $position, StepKey $key, string $path): self
     {
         $fields = DocumentFields::of($step, $path, self::KEYS);
+        $documentId = $fields->text('id');
+        if ($documentId !== $key->id) {
+            throw InvalidContent::at('curriculum.meta.json', "workshopSteps.{$workshopId}", "la etapa «{$documentId}» del documento es «{$key->id}» en el meta: regenerá los dos archivos juntos");
+        }
 
         return new self(
             workshopId: $workshopId,
@@ -78,6 +83,7 @@ final readonly class WorkshopStep
     public function toPublished(): stdClass
     {
         return $this->keyOrder->publish([
+            'id' => $this->stepKey,
             'title' => $this->title,
             'task' => $this->task,
             'why' => $this->why,

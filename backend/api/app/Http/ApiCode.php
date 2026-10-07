@@ -24,6 +24,8 @@ enum ApiCode: string
     case ClientRunIdReused = 'client_run_id_reused';
     case QuotaExceeded = 'quota_exceeded';
     case QueueFull = 'queue_full';
+    case EpochMismatch = 'epoch_mismatch';
+    case ClientOutdated = 'client_outdated';
 
     public function status(): int
     {
@@ -32,7 +34,7 @@ enum ApiCode: string
             self::Forbidden, self::AccountDisabled, self::EmailUnverified => 403,
             self::NotFound, self::InvitationNotFound => 404,
             self::MethodNotAllowed => 405,
-            self::EmailTaken, self::AccountMismatch => 409,
+            self::EmailTaken, self::AccountMismatch, self::EpochMismatch, self::ClientOutdated => 409,
             self::InvitationExpired => 410,
             self::CsrfTokenMismatch => 419,
             self::ValidationFailed, self::AuthFailed, self::ClientRunIdReused => 422,

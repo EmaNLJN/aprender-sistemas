@@ -142,6 +142,48 @@ it('a change only in the harness template writes one row and one record, and onl
         ->and(DB::table('harness_templates')->where('language', 'rust')->value('template'))->toEndWith("// edited\n");
 });
 
+/** @return array<string, string> the portion hashes of the content from before the step ids were published */
+function seedContentBeforeStepIds(): array
+{
+    importImageContent();
+    $before = ContentFixture::fromImage()->withoutStepIds();
+    $meta = $before->recomputedMeta($before->documentText());
+    DB::table('workshop_steps')->update(['key_order' => '["title","task","why","done"]']);
+    DB::table('content_imports')->update(['document_hash' => $meta['documentHash'], 'portion_hashes' => json_encode($meta['portions'])]);
+
+    return $meta['portions'];
+}
+
+it('the first import after the step ids are published rewrites only the 100 workshop steps and four portions (US6.1)', function () {
+    $previousPortions = seedContentBeforeStepIds();
+    $exercises = DB::table('exercises')->orderBy('id')->get(['id', 'content_hash', 'grading_hash', 'starter_hash'])->all();
+    $checksums = ContentDatabase::checksums();
+
+    $this->artisan('content:import', ['--dry-run' => true])
+        ->expectsOutputToContain('Filas escritas: workshop_steps 100')
+        ->expectsOutputToContain('Cambios de corrección: ninguno')
+        ->assertExitCode(0);
+    expect(ContentDatabase::checksums())->toBe($checksums);
+
+    importContent();
+
+    $after = ContentDatabase::checksums();
+    $changedTables = array_keys(array_diff_assoc($after, $checksums));
+    $portions = json_decode(DB::table('content_imports')->orderByDesc('id')->value('portion_hashes'), true);
+    $changedPortions = array_keys(array_diff_assoc($portions, $previousPortions));
+    sort($changedPortions);
+    expect($changedTables)->toBe(['content_imports', 'workshop_steps'])
+        ->and(DB::table('workshop_steps')->count())->toBe(100)
+        ->and(DB::table('workshop_steps')->where('key_order', '["id","title","task","why","done"]')->count())->toBe(100)
+        ->and(DB::table('content_imports')->count())->toBe(2)
+        ->and($changedPortions)->toBe(['workshops.infra', 'workshops.lowlevel', 'workshops.pc', 'workshops.play'])
+        ->and(DB::table('exercises')->orderBy('id')->get(['id', 'content_hash', 'grading_hash', 'starter_hash'])->all())->toEqual($exercises)
+        ->and(DB::table('exercise_grading_versions')->count())->toBe(274);
+
+    $writes = ContentDatabase::contentWritesDuring(fn () => importContent());
+    expect($writes)->toBe([]);
+});
+
 it('--dry-run reports new, grading, text and retired, without writing', function () {
     $base = ContentFixture::fromImage();
     $added = $base->unreferencedLabExercise('rust');

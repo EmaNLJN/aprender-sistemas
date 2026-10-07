@@ -16,7 +16,7 @@ function passwordGateCallsIn(string $source): array
 {
     $found = [];
     foreach (PASSWORD_GATE_CALLS as $call) {
-        if (str_contains($source, $call)) {
+        if (preg_match('/(?<!\w)'.preg_quote($call, '/').'/', $source) === 1) {
             $found[] = $call;
         }
     }
@@ -31,7 +31,12 @@ it('recognizes each call that has to go through the password gate', function (st
     ['Auth::attempt($credentials);', 'Auth::attempt('],
     ['Auth::attemptWhen($credentials, $callback);', 'attemptWhen('],
     ['Auth::logoutOtherDevices($x);', 'logoutOtherDevices('],
+    ['\\Illuminate\\Support\\Facades\\Hash::check($x, $y);', 'Hash::'],
 ]);
+
+it('does not mistake a class whose name ends in Hash for the facade', function () {
+    expect(passwordGateCallsIn('$hash = OperationHash::of($raw);'))->toBe([]);
+});
 
 it('keeps Hash, attempt and logoutOtherDevices inside AccountPasswords', function () {
     $root = dirname(__DIR__, 2);

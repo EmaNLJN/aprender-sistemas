@@ -34,6 +34,8 @@ const webChecks = [
   'route-progress-check.ts',
   'versioned-storage-check.ts',
   'nginx-api-blocks-check.ts',
+  'route-milestones-check.ts',
+  'merge-fixture-check.ts',
 ];
 
 // The web image (frontend/Dockerfile) builds without backend/ in its context and without the

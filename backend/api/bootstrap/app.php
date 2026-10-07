@@ -28,6 +28,8 @@ return Application::configure(basePath: dirname(__DIR__))
             __DIR__.'/../routes/api/access.php',
             __DIR__.'/../routes/api/harness.php',
             __DIR__.'/../routes/api/runs.php',
+            __DIR__.'/../routes/api/sync.php',
+            __DIR__.'/../routes/api/progress.php',
         ],
         commands: __DIR__.'/../routes/console.php',
         health: '/api/up',
@@ -51,8 +53,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->prependToPriorityList(before: AuthenticatesRequests::class, prepend: EnsureUserIsActive::class);
         $middleware->group('account', ['account.active', 'auth:web', 'account.expected']);
-        $middleware->trimStrings(except: [fn (Request $request) => $request->is('api/runs', 'api/runs/*')]);
-        $middleware->convertEmptyStringsToNull(except: [fn (Request $request) => $request->is('api/runs', 'api/runs/*')]);
+        $middleware->trimStrings(except: [fn (Request $request) => $request->is('api/runs', 'api/runs/*', 'api/sync')]);
+        $middleware->convertEmptyStringsToNull(except: [fn (Request $request) => $request->is('api/runs', 'api/runs/*', 'api/sync')]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Nginx passes only /api/, but REQUEST_URI arrives raw (/x/../api/zzz): a prefix rule would let it

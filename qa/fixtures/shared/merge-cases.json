@@ -1,0 +1,8179 @@
+{
+  "format": 1,
+  "contract": "specs/007-d1-progreso-sincronizacion/contracts/merge-rules.md",
+  "world": {
+    "contentVersion": "0123456789abcdef0123456789abcdef",
+    "staleContentVersion": "fedcba9876543210fedcba9876543210",
+    "exercises": [
+      {
+        "id": "fx-rust-01",
+        "language": "rust",
+        "hints": 3,
+        "predictionOptions": 3
+      },
+      {
+        "id": "fx-rust-02",
+        "language": "rust",
+        "hints": 2,
+        "predictionOptions": 3
+      },
+      {
+        "id": "fx-go-01",
+        "language": "go",
+        "hints": 3,
+        "predictionOptions": 3
+      },
+      {
+        "id": "fx-go-02",
+        "language": "go",
+        "hints": 3,
+        "predictionOptions": 3
+      }
+    ],
+    "worlds": [
+      {
+        "id": "fx-world-1",
+        "checkpointOptions": 3
+      }
+    ],
+    "workshops": [
+      {
+        "id": "fx-workshop-1",
+        "predictionOptions": 3,
+        "objectives": ["fx-obj-1", "fx-obj-2"],
+        "steps": ["e1", "e2", "e3", "e4"]
+      }
+    ],
+    "guide": {
+      "steps": [
+        {
+          "id": "fx-step-1",
+          "quizOptions": 3
+        }
+      ],
+      "resources": ["fx-res-1"]
+    },
+    "milestones": ["rust-memory", "go-memory"]
+  },
+  "kinds": {
+    "exercise.prediction.answer": {
+      "rule": "lww",
+      "target": "exercise",
+      "op": "exercise.prediction",
+      "samples": {
+        "A": 0,
+        "B": 2
+      }
+    },
+    "exercise.reflection": {
+      "rule": "lww",
+      "target": "exercise",
+      "op": "exercise.reflection",
+      "samples": {
+        "A": "Primera idea",
+        "B": "Segunda idea"
+      }
+    },
+    "exercise.customTest": {
+      "rule": "lww",
+      "target": "exercise",
+      "op": "exercise.customTest",
+      "samples": {
+        "A": "assert_eq!(f(1), 2);",
+        "B": "assert_eq!(f(2), 4);"
+      }
+    },
+    "checkpoint.lastAnswer": {
+      "rule": "lww",
+      "target": "world",
+      "op": "checkpoint.answer",
+      "samples": {
+        "A": 0,
+        "B": 2
+      }
+    },
+    "workshop.answer": {
+      "rule": "lww",
+      "target": "workshop",
+      "op": "workshop.prediction",
+      "samples": {
+        "A": 0,
+        "B": 2
+      }
+    },
+    "workshop.note": {
+      "rule": "lww",
+      "target": "workshop",
+      "op": "workshop.note",
+      "samples": {
+        "A": "Nota A",
+        "B": "Nota B"
+      }
+    },
+    "route.quiz": {
+      "rule": "lww",
+      "target": "guideStep",
+      "op": "route.quiz",
+      "samples": {
+        "A": 0,
+        "B": 2
+      }
+    },
+    "route.note": {
+      "rule": "lww",
+      "target": "language",
+      "op": "route.note",
+      "samples": {
+        "A": "Aprendí A",
+        "B": "Aprendí B"
+      }
+    },
+    "preference.routeLanguage": {
+      "rule": "lww",
+      "target": "account",
+      "op": "preference.set",
+      "samples": {
+        "A": "rust",
+        "B": "go"
+      }
+    },
+    "preference.focusMinutes": {
+      "rule": "lww",
+      "target": "account",
+      "op": "preference.set",
+      "samples": {
+        "A": 15,
+        "B": 45
+      }
+    },
+    "preference.labSelectedRust": {
+      "rule": "lww",
+      "target": "account",
+      "op": "preference.set",
+      "samples": {
+        "A": "fx-rust-01",
+        "B": "fx-rust-02"
+      }
+    },
+    "preference.labSelectedGo": {
+      "rule": "lww",
+      "target": "account",
+      "op": "preference.set",
+      "samples": {
+        "A": "fx-go-01",
+        "B": "fx-go-02"
+      }
+    },
+    "exercise.review": {
+      "rule": "lww-group",
+      "target": "exercise",
+      "op": "exercise.review",
+      "samples": {
+        "A": {
+          "confidence": "again",
+          "reviewedAt": "2026-10-05T11:00:00.000Z",
+          "reviewDueAt": "2026-10-06T11:00:00.000Z"
+        },
+        "B": {
+          "confidence": "confident",
+          "reviewedAt": "2026-10-05T11:30:00.000Z",
+          "reviewDueAt": "2026-10-12T11:30:00.000Z"
+        }
+      }
+    },
+    "exercise.draft": {
+      "rule": "lww-group",
+      "target": "exercise",
+      "op": "exercise.draft",
+      "samples": {
+        "A": {
+          "code": "fn a() {}",
+          "starterHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "B": {
+          "code": null,
+          "starterHash": null
+        }
+      }
+    },
+    "workshop.step": {
+      "rule": "tombstone",
+      "target": "workshop",
+      "op": "workshop.step",
+      "samples": {
+        "A": true,
+        "B": false
+      }
+    },
+    "route.mark.step": {
+      "rule": "tombstone",
+      "target": "guideStep",
+      "op": "route.mark",
+      "samples": {
+        "A": true,
+        "B": false
+      }
+    },
+    "route.mark.milestone": {
+      "rule": "tombstone",
+      "target": "milestone",
+      "op": "route.mark",
+      "samples": {
+        "A": true,
+        "B": false
+      }
+    },
+    "route.mark.favorite": {
+      "rule": "tombstone",
+      "target": "resource",
+      "op": "route.mark",
+      "samples": {
+        "A": true,
+        "B": false
+      }
+    },
+    "exercise.assisted": {
+      "rule": "flag-or",
+      "target": "exercise",
+      "op": "exercise.assist"
+    },
+    "exercise.solutionSeen": {
+      "rule": "flag-or",
+      "target": "exercise",
+      "op": "exercise.assist"
+    },
+    "exercise.hintsRevealed": {
+      "rule": "max",
+      "target": "exercise",
+      "op": "exercise.hints"
+    },
+    "exercise.predictionCorrect": {
+      "rule": "dated-flag",
+      "target": "exercise",
+      "op": "exercise.prediction"
+    },
+    "checkpoint.passed": {
+      "rule": "dated-flag",
+      "target": "world",
+      "op": "checkpoint.answer"
+    },
+    "workshop.predictionCorrect": {
+      "rule": "dated-flag",
+      "target": "workshop",
+      "op": "workshop.prediction"
+    },
+    "workshop.objective": {
+      "rule": "observed",
+      "target": "workshop",
+      "op": "workshop.objective"
+    }
+  },
+  "cases": [
+    {
+      "id": "exercise.prediction.answer/absent",
+      "kind": "exercise.prediction.answer",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.prediction.answer/newer.ab",
+      "kind": "exercise.prediction.answer",
+      "situation": "newer",
+      "order": "ab",
+      "stored": {
+        "value": 0,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 2,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 2,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.prediction.answer/newer.ba",
+      "kind": "exercise.prediction.answer",
+      "situation": "newer",
+      "order": "ba",
+      "stored": {
+        "value": 2,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 0,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.prediction.answer/older.ab",
+      "kind": "exercise.prediction.answer",
+      "situation": "older",
+      "order": "ab",
+      "stored": {
+        "value": 0,
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": 2,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.prediction.answer/older.ba",
+      "kind": "exercise.prediction.answer",
+      "situation": "older",
+      "order": "ba",
+      "stored": {
+        "value": 2,
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 2,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.prediction.answer/equal.ab",
+      "kind": "exercise.prediction.answer",
+      "situation": "equal",
+      "order": "ab",
+      "stored": {
+        "value": 0,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 2,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 2,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.prediction.answer/equal.ba",
+      "kind": "exercise.prediction.answer",
+      "situation": "equal",
+      "order": "ba",
+      "stored": {
+        "value": 2,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.prediction.answer/empty-stored.ab",
+      "kind": "exercise.prediction.answer",
+      "situation": "empty-stored",
+      "order": "ab",
+      "stored": {
+        "value": 0,
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": 2,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 2,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.prediction.answer/empty-stored.ba",
+      "kind": "exercise.prediction.answer",
+      "situation": "empty-stored",
+      "order": "ba",
+      "stored": {
+        "value": 2,
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.prediction.answer/empty-incoming.ab",
+      "kind": "exercise.prediction.answer",
+      "situation": "empty-incoming",
+      "order": "ab",
+      "stored": {
+        "value": 0,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 2,
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.prediction.answer/empty-incoming.ba",
+      "kind": "exercise.prediction.answer",
+      "situation": "empty-incoming",
+      "order": "ba",
+      "stored": {
+        "value": 2,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 0,
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 2,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.prediction.answer/identical",
+      "kind": "exercise.prediction.answer",
+      "situation": "identical",
+      "stored": {
+        "value": 0,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.reflection/absent",
+      "kind": "exercise.reflection",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "value": "Primera idea",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Primera idea",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.reflection/newer.ab",
+      "kind": "exercise.reflection",
+      "situation": "newer",
+      "order": "ab",
+      "stored": {
+        "value": "Primera idea",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Segunda idea",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Segunda idea",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.reflection/newer.ba",
+      "kind": "exercise.reflection",
+      "situation": "newer",
+      "order": "ba",
+      "stored": {
+        "value": "Segunda idea",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Primera idea",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Primera idea",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.reflection/older.ab",
+      "kind": "exercise.reflection",
+      "situation": "older",
+      "order": "ab",
+      "stored": {
+        "value": "Primera idea",
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Segunda idea",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Primera idea",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.reflection/older.ba",
+      "kind": "exercise.reflection",
+      "situation": "older",
+      "order": "ba",
+      "stored": {
+        "value": "Segunda idea",
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Primera idea",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Segunda idea",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.reflection/equal.ab",
+      "kind": "exercise.reflection",
+      "situation": "equal",
+      "order": "ab",
+      "stored": {
+        "value": "Primera idea",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Segunda idea",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Segunda idea",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.reflection/equal.ba",
+      "kind": "exercise.reflection",
+      "situation": "equal",
+      "order": "ba",
+      "stored": {
+        "value": "Segunda idea",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Primera idea",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Primera idea",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.reflection/empty-stored.ab",
+      "kind": "exercise.reflection",
+      "situation": "empty-stored",
+      "order": "ab",
+      "stored": {
+        "value": "Primera idea",
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": "Segunda idea",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Segunda idea",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.reflection/empty-stored.ba",
+      "kind": "exercise.reflection",
+      "situation": "empty-stored",
+      "order": "ba",
+      "stored": {
+        "value": "Segunda idea",
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": "Primera idea",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Primera idea",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.reflection/empty-incoming.ab",
+      "kind": "exercise.reflection",
+      "situation": "empty-incoming",
+      "order": "ab",
+      "stored": {
+        "value": "Primera idea",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Segunda idea",
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Primera idea",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.reflection/empty-incoming.ba",
+      "kind": "exercise.reflection",
+      "situation": "empty-incoming",
+      "order": "ba",
+      "stored": {
+        "value": "Segunda idea",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Primera idea",
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Segunda idea",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.reflection/identical",
+      "kind": "exercise.reflection",
+      "situation": "identical",
+      "stored": {
+        "value": "Primera idea",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Primera idea",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Primera idea",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.customTest/absent",
+      "kind": "exercise.customTest",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "value": "assert_eq!(f(1), 2);",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "assert_eq!(f(1), 2);",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.customTest/newer.ab",
+      "kind": "exercise.customTest",
+      "situation": "newer",
+      "order": "ab",
+      "stored": {
+        "value": "assert_eq!(f(1), 2);",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "assert_eq!(f(2), 4);",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "assert_eq!(f(2), 4);",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.customTest/newer.ba",
+      "kind": "exercise.customTest",
+      "situation": "newer",
+      "order": "ba",
+      "stored": {
+        "value": "assert_eq!(f(2), 4);",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "assert_eq!(f(1), 2);",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "assert_eq!(f(1), 2);",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.customTest/older.ab",
+      "kind": "exercise.customTest",
+      "situation": "older",
+      "order": "ab",
+      "stored": {
+        "value": "assert_eq!(f(1), 2);",
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": "assert_eq!(f(2), 4);",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "assert_eq!(f(1), 2);",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.customTest/older.ba",
+      "kind": "exercise.customTest",
+      "situation": "older",
+      "order": "ba",
+      "stored": {
+        "value": "assert_eq!(f(2), 4);",
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": "assert_eq!(f(1), 2);",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "assert_eq!(f(2), 4);",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.customTest/equal.ab",
+      "kind": "exercise.customTest",
+      "situation": "equal",
+      "order": "ab",
+      "stored": {
+        "value": "assert_eq!(f(1), 2);",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "assert_eq!(f(2), 4);",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "assert_eq!(f(2), 4);",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.customTest/equal.ba",
+      "kind": "exercise.customTest",
+      "situation": "equal",
+      "order": "ba",
+      "stored": {
+        "value": "assert_eq!(f(2), 4);",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "assert_eq!(f(1), 2);",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "assert_eq!(f(1), 2);",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.customTest/empty-stored.ab",
+      "kind": "exercise.customTest",
+      "situation": "empty-stored",
+      "order": "ab",
+      "stored": {
+        "value": "assert_eq!(f(1), 2);",
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": "assert_eq!(f(2), 4);",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "assert_eq!(f(2), 4);",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.customTest/empty-stored.ba",
+      "kind": "exercise.customTest",
+      "situation": "empty-stored",
+      "order": "ba",
+      "stored": {
+        "value": "assert_eq!(f(2), 4);",
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": "assert_eq!(f(1), 2);",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "assert_eq!(f(1), 2);",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.customTest/empty-incoming.ab",
+      "kind": "exercise.customTest",
+      "situation": "empty-incoming",
+      "order": "ab",
+      "stored": {
+        "value": "assert_eq!(f(1), 2);",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "assert_eq!(f(2), 4);",
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "assert_eq!(f(1), 2);",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.customTest/empty-incoming.ba",
+      "kind": "exercise.customTest",
+      "situation": "empty-incoming",
+      "order": "ba",
+      "stored": {
+        "value": "assert_eq!(f(2), 4);",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "assert_eq!(f(1), 2);",
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "assert_eq!(f(2), 4);",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.customTest/identical",
+      "kind": "exercise.customTest",
+      "situation": "identical",
+      "stored": {
+        "value": "assert_eq!(f(1), 2);",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "assert_eq!(f(1), 2);",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "assert_eq!(f(1), 2);",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "checkpoint.lastAnswer/absent",
+      "kind": "checkpoint.lastAnswer",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "checkpoint.lastAnswer/newer.ab",
+      "kind": "checkpoint.lastAnswer",
+      "situation": "newer",
+      "order": "ab",
+      "stored": {
+        "value": 0,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 2,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 2,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "checkpoint.lastAnswer/newer.ba",
+      "kind": "checkpoint.lastAnswer",
+      "situation": "newer",
+      "order": "ba",
+      "stored": {
+        "value": 2,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 0,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "checkpoint.lastAnswer/older.ab",
+      "kind": "checkpoint.lastAnswer",
+      "situation": "older",
+      "order": "ab",
+      "stored": {
+        "value": 0,
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": 2,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "checkpoint.lastAnswer/older.ba",
+      "kind": "checkpoint.lastAnswer",
+      "situation": "older",
+      "order": "ba",
+      "stored": {
+        "value": 2,
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 2,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "checkpoint.lastAnswer/equal.ab",
+      "kind": "checkpoint.lastAnswer",
+      "situation": "equal",
+      "order": "ab",
+      "stored": {
+        "value": 0,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 2,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 2,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "checkpoint.lastAnswer/equal.ba",
+      "kind": "checkpoint.lastAnswer",
+      "situation": "equal",
+      "order": "ba",
+      "stored": {
+        "value": 2,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "checkpoint.lastAnswer/empty-stored.ab",
+      "kind": "checkpoint.lastAnswer",
+      "situation": "empty-stored",
+      "order": "ab",
+      "stored": {
+        "value": 0,
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": 2,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 2,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "checkpoint.lastAnswer/empty-stored.ba",
+      "kind": "checkpoint.lastAnswer",
+      "situation": "empty-stored",
+      "order": "ba",
+      "stored": {
+        "value": 2,
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "checkpoint.lastAnswer/empty-incoming.ab",
+      "kind": "checkpoint.lastAnswer",
+      "situation": "empty-incoming",
+      "order": "ab",
+      "stored": {
+        "value": 0,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 2,
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "checkpoint.lastAnswer/empty-incoming.ba",
+      "kind": "checkpoint.lastAnswer",
+      "situation": "empty-incoming",
+      "order": "ba",
+      "stored": {
+        "value": 2,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 0,
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 2,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "checkpoint.lastAnswer/identical",
+      "kind": "checkpoint.lastAnswer",
+      "situation": "identical",
+      "stored": {
+        "value": 0,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "workshop.answer/absent",
+      "kind": "workshop.answer",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.answer/newer.ab",
+      "kind": "workshop.answer",
+      "situation": "newer",
+      "order": "ab",
+      "stored": {
+        "value": 0,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 2,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 2,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.answer/newer.ba",
+      "kind": "workshop.answer",
+      "situation": "newer",
+      "order": "ba",
+      "stored": {
+        "value": 2,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 0,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.answer/older.ab",
+      "kind": "workshop.answer",
+      "situation": "older",
+      "order": "ab",
+      "stored": {
+        "value": 0,
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": 2,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "workshop.answer/older.ba",
+      "kind": "workshop.answer",
+      "situation": "older",
+      "order": "ba",
+      "stored": {
+        "value": 2,
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 2,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "workshop.answer/equal.ab",
+      "kind": "workshop.answer",
+      "situation": "equal",
+      "order": "ab",
+      "stored": {
+        "value": 0,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 2,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 2,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.answer/equal.ba",
+      "kind": "workshop.answer",
+      "situation": "equal",
+      "order": "ba",
+      "stored": {
+        "value": 2,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.answer/empty-stored.ab",
+      "kind": "workshop.answer",
+      "situation": "empty-stored",
+      "order": "ab",
+      "stored": {
+        "value": 0,
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": 2,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 2,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.answer/empty-stored.ba",
+      "kind": "workshop.answer",
+      "situation": "empty-stored",
+      "order": "ba",
+      "stored": {
+        "value": 2,
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.answer/empty-incoming.ab",
+      "kind": "workshop.answer",
+      "situation": "empty-incoming",
+      "order": "ab",
+      "stored": {
+        "value": 0,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 2,
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "workshop.answer/empty-incoming.ba",
+      "kind": "workshop.answer",
+      "situation": "empty-incoming",
+      "order": "ba",
+      "stored": {
+        "value": 2,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 0,
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 2,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "workshop.answer/identical",
+      "kind": "workshop.answer",
+      "situation": "identical",
+      "stored": {
+        "value": 0,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "workshop.note/absent",
+      "kind": "workshop.note",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "value": "Nota A",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Nota A",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.note/newer.ab",
+      "kind": "workshop.note",
+      "situation": "newer",
+      "order": "ab",
+      "stored": {
+        "value": "Nota A",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Nota B",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Nota B",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.note/newer.ba",
+      "kind": "workshop.note",
+      "situation": "newer",
+      "order": "ba",
+      "stored": {
+        "value": "Nota B",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Nota A",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Nota A",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.note/older.ab",
+      "kind": "workshop.note",
+      "situation": "older",
+      "order": "ab",
+      "stored": {
+        "value": "Nota A",
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Nota B",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Nota A",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "workshop.note/older.ba",
+      "kind": "workshop.note",
+      "situation": "older",
+      "order": "ba",
+      "stored": {
+        "value": "Nota B",
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Nota A",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Nota B",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "workshop.note/equal.ab",
+      "kind": "workshop.note",
+      "situation": "equal",
+      "order": "ab",
+      "stored": {
+        "value": "Nota A",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Nota B",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Nota B",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.note/equal.ba",
+      "kind": "workshop.note",
+      "situation": "equal",
+      "order": "ba",
+      "stored": {
+        "value": "Nota B",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Nota A",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Nota A",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.note/empty-stored.ab",
+      "kind": "workshop.note",
+      "situation": "empty-stored",
+      "order": "ab",
+      "stored": {
+        "value": "Nota A",
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": "Nota B",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Nota B",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.note/empty-stored.ba",
+      "kind": "workshop.note",
+      "situation": "empty-stored",
+      "order": "ba",
+      "stored": {
+        "value": "Nota B",
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": "Nota A",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Nota A",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.note/empty-incoming.ab",
+      "kind": "workshop.note",
+      "situation": "empty-incoming",
+      "order": "ab",
+      "stored": {
+        "value": "Nota A",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Nota B",
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Nota A",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "workshop.note/empty-incoming.ba",
+      "kind": "workshop.note",
+      "situation": "empty-incoming",
+      "order": "ba",
+      "stored": {
+        "value": "Nota B",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Nota A",
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Nota B",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "workshop.note/identical",
+      "kind": "workshop.note",
+      "situation": "identical",
+      "stored": {
+        "value": "Nota A",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Nota A",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Nota A",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "route.quiz/absent",
+      "kind": "route.quiz",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.quiz/newer.ab",
+      "kind": "route.quiz",
+      "situation": "newer",
+      "order": "ab",
+      "stored": {
+        "value": 0,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 2,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 2,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.quiz/newer.ba",
+      "kind": "route.quiz",
+      "situation": "newer",
+      "order": "ba",
+      "stored": {
+        "value": 2,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 0,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.quiz/older.ab",
+      "kind": "route.quiz",
+      "situation": "older",
+      "order": "ab",
+      "stored": {
+        "value": 0,
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": 2,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "route.quiz/older.ba",
+      "kind": "route.quiz",
+      "situation": "older",
+      "order": "ba",
+      "stored": {
+        "value": 2,
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 2,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "route.quiz/equal.ab",
+      "kind": "route.quiz",
+      "situation": "equal",
+      "order": "ab",
+      "stored": {
+        "value": 0,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 2,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 2,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.quiz/equal.ba",
+      "kind": "route.quiz",
+      "situation": "equal",
+      "order": "ba",
+      "stored": {
+        "value": 2,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.quiz/empty-stored.ab",
+      "kind": "route.quiz",
+      "situation": "empty-stored",
+      "order": "ab",
+      "stored": {
+        "value": 0,
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": 2,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 2,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.quiz/empty-stored.ba",
+      "kind": "route.quiz",
+      "situation": "empty-stored",
+      "order": "ba",
+      "stored": {
+        "value": 2,
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.quiz/empty-incoming.ab",
+      "kind": "route.quiz",
+      "situation": "empty-incoming",
+      "order": "ab",
+      "stored": {
+        "value": 0,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 2,
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "route.quiz/empty-incoming.ba",
+      "kind": "route.quiz",
+      "situation": "empty-incoming",
+      "order": "ba",
+      "stored": {
+        "value": 2,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 0,
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 2,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "route.quiz/identical",
+      "kind": "route.quiz",
+      "situation": "identical",
+      "stored": {
+        "value": 0,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 0,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "route.note/absent",
+      "kind": "route.note",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "value": "Aprendí A",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Aprendí A",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.note/newer.ab",
+      "kind": "route.note",
+      "situation": "newer",
+      "order": "ab",
+      "stored": {
+        "value": "Aprendí A",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Aprendí B",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Aprendí B",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.note/newer.ba",
+      "kind": "route.note",
+      "situation": "newer",
+      "order": "ba",
+      "stored": {
+        "value": "Aprendí B",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Aprendí A",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Aprendí A",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.note/older.ab",
+      "kind": "route.note",
+      "situation": "older",
+      "order": "ab",
+      "stored": {
+        "value": "Aprendí A",
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Aprendí B",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Aprendí A",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "route.note/older.ba",
+      "kind": "route.note",
+      "situation": "older",
+      "order": "ba",
+      "stored": {
+        "value": "Aprendí B",
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Aprendí A",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Aprendí B",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "route.note/equal.ab",
+      "kind": "route.note",
+      "situation": "equal",
+      "order": "ab",
+      "stored": {
+        "value": "Aprendí A",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Aprendí B",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Aprendí B",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.note/equal.ba",
+      "kind": "route.note",
+      "situation": "equal",
+      "order": "ba",
+      "stored": {
+        "value": "Aprendí B",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Aprendí A",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Aprendí A",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.note/empty-stored.ab",
+      "kind": "route.note",
+      "situation": "empty-stored",
+      "order": "ab",
+      "stored": {
+        "value": "Aprendí A",
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": "Aprendí B",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Aprendí B",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.note/empty-stored.ba",
+      "kind": "route.note",
+      "situation": "empty-stored",
+      "order": "ba",
+      "stored": {
+        "value": "Aprendí B",
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": "Aprendí A",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Aprendí A",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.note/empty-incoming.ab",
+      "kind": "route.note",
+      "situation": "empty-incoming",
+      "order": "ab",
+      "stored": {
+        "value": "Aprendí A",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Aprendí B",
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Aprendí A",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "route.note/empty-incoming.ba",
+      "kind": "route.note",
+      "situation": "empty-incoming",
+      "order": "ba",
+      "stored": {
+        "value": "Aprendí B",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Aprendí A",
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Aprendí B",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "route.note/identical",
+      "kind": "route.note",
+      "situation": "identical",
+      "stored": {
+        "value": "Aprendí A",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "Aprendí A",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "Aprendí A",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "preference.routeLanguage/absent",
+      "kind": "preference.routeLanguage",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "value": "rust",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "rust",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.routeLanguage/newer.ab",
+      "kind": "preference.routeLanguage",
+      "situation": "newer",
+      "order": "ab",
+      "stored": {
+        "value": "rust",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "go",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "go",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.routeLanguage/newer.ba",
+      "kind": "preference.routeLanguage",
+      "situation": "newer",
+      "order": "ba",
+      "stored": {
+        "value": "go",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "rust",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "rust",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.routeLanguage/older.ab",
+      "kind": "preference.routeLanguage",
+      "situation": "older",
+      "order": "ab",
+      "stored": {
+        "value": "rust",
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": "go",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "rust",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "preference.routeLanguage/older.ba",
+      "kind": "preference.routeLanguage",
+      "situation": "older",
+      "order": "ba",
+      "stored": {
+        "value": "go",
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": "rust",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "go",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "preference.routeLanguage/equal.ab",
+      "kind": "preference.routeLanguage",
+      "situation": "equal",
+      "order": "ab",
+      "stored": {
+        "value": "rust",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "go",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "go",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.routeLanguage/equal.ba",
+      "kind": "preference.routeLanguage",
+      "situation": "equal",
+      "order": "ba",
+      "stored": {
+        "value": "go",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "rust",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "rust",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.routeLanguage/empty-stored.ab",
+      "kind": "preference.routeLanguage",
+      "situation": "empty-stored",
+      "order": "ab",
+      "stored": {
+        "value": "rust",
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": "go",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "go",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.routeLanguage/empty-stored.ba",
+      "kind": "preference.routeLanguage",
+      "situation": "empty-stored",
+      "order": "ba",
+      "stored": {
+        "value": "go",
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": "rust",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "rust",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.routeLanguage/empty-incoming.ab",
+      "kind": "preference.routeLanguage",
+      "situation": "empty-incoming",
+      "order": "ab",
+      "stored": {
+        "value": "rust",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "go",
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "rust",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "preference.routeLanguage/empty-incoming.ba",
+      "kind": "preference.routeLanguage",
+      "situation": "empty-incoming",
+      "order": "ba",
+      "stored": {
+        "value": "go",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "rust",
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "go",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "preference.routeLanguage/identical",
+      "kind": "preference.routeLanguage",
+      "situation": "identical",
+      "stored": {
+        "value": "rust",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "rust",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "rust",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "preference.focusMinutes/absent",
+      "kind": "preference.focusMinutes",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "value": 15,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 15,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.focusMinutes/newer.ab",
+      "kind": "preference.focusMinutes",
+      "situation": "newer",
+      "order": "ab",
+      "stored": {
+        "value": 15,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 45,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 45,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.focusMinutes/newer.ba",
+      "kind": "preference.focusMinutes",
+      "situation": "newer",
+      "order": "ba",
+      "stored": {
+        "value": 45,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 15,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 15,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.focusMinutes/older.ab",
+      "kind": "preference.focusMinutes",
+      "situation": "older",
+      "order": "ab",
+      "stored": {
+        "value": 15,
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": 45,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 15,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "preference.focusMinutes/older.ba",
+      "kind": "preference.focusMinutes",
+      "situation": "older",
+      "order": "ba",
+      "stored": {
+        "value": 45,
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": 15,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 45,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "preference.focusMinutes/equal.ab",
+      "kind": "preference.focusMinutes",
+      "situation": "equal",
+      "order": "ab",
+      "stored": {
+        "value": 15,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 45,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 45,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.focusMinutes/equal.ba",
+      "kind": "preference.focusMinutes",
+      "situation": "equal",
+      "order": "ba",
+      "stored": {
+        "value": 45,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 15,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 15,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.focusMinutes/empty-stored.ab",
+      "kind": "preference.focusMinutes",
+      "situation": "empty-stored",
+      "order": "ab",
+      "stored": {
+        "value": 15,
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": 45,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 45,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.focusMinutes/empty-stored.ba",
+      "kind": "preference.focusMinutes",
+      "situation": "empty-stored",
+      "order": "ba",
+      "stored": {
+        "value": 45,
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": 15,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 15,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.focusMinutes/empty-incoming.ab",
+      "kind": "preference.focusMinutes",
+      "situation": "empty-incoming",
+      "order": "ab",
+      "stored": {
+        "value": 15,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 45,
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 15,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "preference.focusMinutes/empty-incoming.ba",
+      "kind": "preference.focusMinutes",
+      "situation": "empty-incoming",
+      "order": "ba",
+      "stored": {
+        "value": 45,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 15,
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 45,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "preference.focusMinutes/identical",
+      "kind": "preference.focusMinutes",
+      "situation": "identical",
+      "stored": {
+        "value": 15,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": 15,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 15,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "preference.labSelectedRust/absent",
+      "kind": "preference.labSelectedRust",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "value": "fx-rust-01",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "fx-rust-01",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.labSelectedRust/newer.ab",
+      "kind": "preference.labSelectedRust",
+      "situation": "newer",
+      "order": "ab",
+      "stored": {
+        "value": "fx-rust-01",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "fx-rust-02",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "fx-rust-02",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.labSelectedRust/newer.ba",
+      "kind": "preference.labSelectedRust",
+      "situation": "newer",
+      "order": "ba",
+      "stored": {
+        "value": "fx-rust-02",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "fx-rust-01",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "fx-rust-01",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.labSelectedRust/older.ab",
+      "kind": "preference.labSelectedRust",
+      "situation": "older",
+      "order": "ab",
+      "stored": {
+        "value": "fx-rust-01",
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": "fx-rust-02",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "fx-rust-01",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "preference.labSelectedRust/older.ba",
+      "kind": "preference.labSelectedRust",
+      "situation": "older",
+      "order": "ba",
+      "stored": {
+        "value": "fx-rust-02",
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": "fx-rust-01",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "fx-rust-02",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "preference.labSelectedRust/equal.ab",
+      "kind": "preference.labSelectedRust",
+      "situation": "equal",
+      "order": "ab",
+      "stored": {
+        "value": "fx-rust-01",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "fx-rust-02",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "fx-rust-02",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.labSelectedRust/equal.ba",
+      "kind": "preference.labSelectedRust",
+      "situation": "equal",
+      "order": "ba",
+      "stored": {
+        "value": "fx-rust-02",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "fx-rust-01",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "fx-rust-01",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.labSelectedRust/empty-stored.ab",
+      "kind": "preference.labSelectedRust",
+      "situation": "empty-stored",
+      "order": "ab",
+      "stored": {
+        "value": "fx-rust-01",
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": "fx-rust-02",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "fx-rust-02",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.labSelectedRust/empty-stored.ba",
+      "kind": "preference.labSelectedRust",
+      "situation": "empty-stored",
+      "order": "ba",
+      "stored": {
+        "value": "fx-rust-02",
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": "fx-rust-01",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "fx-rust-01",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.labSelectedRust/empty-incoming.ab",
+      "kind": "preference.labSelectedRust",
+      "situation": "empty-incoming",
+      "order": "ab",
+      "stored": {
+        "value": "fx-rust-01",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "fx-rust-02",
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "fx-rust-01",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "preference.labSelectedRust/empty-incoming.ba",
+      "kind": "preference.labSelectedRust",
+      "situation": "empty-incoming",
+      "order": "ba",
+      "stored": {
+        "value": "fx-rust-02",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "fx-rust-01",
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "fx-rust-02",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "preference.labSelectedRust/identical",
+      "kind": "preference.labSelectedRust",
+      "situation": "identical",
+      "stored": {
+        "value": "fx-rust-01",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "fx-rust-01",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "fx-rust-01",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "preference.labSelectedGo/absent",
+      "kind": "preference.labSelectedGo",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "value": "fx-go-01",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "fx-go-01",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.labSelectedGo/newer.ab",
+      "kind": "preference.labSelectedGo",
+      "situation": "newer",
+      "order": "ab",
+      "stored": {
+        "value": "fx-go-01",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "fx-go-02",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "fx-go-02",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.labSelectedGo/newer.ba",
+      "kind": "preference.labSelectedGo",
+      "situation": "newer",
+      "order": "ba",
+      "stored": {
+        "value": "fx-go-02",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "fx-go-01",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "fx-go-01",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.labSelectedGo/older.ab",
+      "kind": "preference.labSelectedGo",
+      "situation": "older",
+      "order": "ab",
+      "stored": {
+        "value": "fx-go-01",
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": "fx-go-02",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "fx-go-01",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "preference.labSelectedGo/older.ba",
+      "kind": "preference.labSelectedGo",
+      "situation": "older",
+      "order": "ba",
+      "stored": {
+        "value": "fx-go-02",
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": "fx-go-01",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "fx-go-02",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "preference.labSelectedGo/equal.ab",
+      "kind": "preference.labSelectedGo",
+      "situation": "equal",
+      "order": "ab",
+      "stored": {
+        "value": "fx-go-01",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "fx-go-02",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "fx-go-02",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.labSelectedGo/equal.ba",
+      "kind": "preference.labSelectedGo",
+      "situation": "equal",
+      "order": "ba",
+      "stored": {
+        "value": "fx-go-02",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "fx-go-01",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "fx-go-01",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.labSelectedGo/empty-stored.ab",
+      "kind": "preference.labSelectedGo",
+      "situation": "empty-stored",
+      "order": "ab",
+      "stored": {
+        "value": "fx-go-01",
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": "fx-go-02",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "fx-go-02",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.labSelectedGo/empty-stored.ba",
+      "kind": "preference.labSelectedGo",
+      "situation": "empty-stored",
+      "order": "ba",
+      "stored": {
+        "value": "fx-go-02",
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": "fx-go-01",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "fx-go-01",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "preference.labSelectedGo/empty-incoming.ab",
+      "kind": "preference.labSelectedGo",
+      "situation": "empty-incoming",
+      "order": "ab",
+      "stored": {
+        "value": "fx-go-01",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "fx-go-02",
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "fx-go-01",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "preference.labSelectedGo/empty-incoming.ba",
+      "kind": "preference.labSelectedGo",
+      "situation": "empty-incoming",
+      "order": "ba",
+      "stored": {
+        "value": "fx-go-02",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "fx-go-01",
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "fx-go-02",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "preference.labSelectedGo/identical",
+      "kind": "preference.labSelectedGo",
+      "situation": "identical",
+      "stored": {
+        "value": "fx-go-01",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "fx-go-01",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "fx-go-01",
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.review/absent",
+      "kind": "exercise.review",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "value": {
+            "confidence": "again",
+            "reviewedAt": "2026-10-05T11:00:00.000Z",
+            "reviewDueAt": "2026-10-06T11:00:00.000Z"
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": {
+            "confidence": "again",
+            "reviewedAt": "2026-10-05T11:00:00.000Z",
+            "reviewDueAt": "2026-10-06T11:00:00.000Z"
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.review/newer.ab",
+      "kind": "exercise.review",
+      "situation": "newer",
+      "order": "ab",
+      "stored": {
+        "value": {
+          "confidence": "again",
+          "reviewedAt": "2026-10-05T11:00:00.000Z",
+          "reviewDueAt": "2026-10-06T11:00:00.000Z"
+        },
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": {
+            "confidence": "confident",
+            "reviewedAt": "2026-10-05T11:30:00.000Z",
+            "reviewDueAt": "2026-10-12T11:30:00.000Z"
+          },
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": {
+            "confidence": "confident",
+            "reviewedAt": "2026-10-05T11:30:00.000Z",
+            "reviewDueAt": "2026-10-12T11:30:00.000Z"
+          },
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.review/newer.ba",
+      "kind": "exercise.review",
+      "situation": "newer",
+      "order": "ba",
+      "stored": {
+        "value": {
+          "confidence": "confident",
+          "reviewedAt": "2026-10-05T11:30:00.000Z",
+          "reviewDueAt": "2026-10-12T11:30:00.000Z"
+        },
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": {
+            "confidence": "again",
+            "reviewedAt": "2026-10-05T11:00:00.000Z",
+            "reviewDueAt": "2026-10-06T11:00:00.000Z"
+          },
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": {
+            "confidence": "again",
+            "reviewedAt": "2026-10-05T11:00:00.000Z",
+            "reviewDueAt": "2026-10-06T11:00:00.000Z"
+          },
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.review/older.ab",
+      "kind": "exercise.review",
+      "situation": "older",
+      "order": "ab",
+      "stored": {
+        "value": {
+          "confidence": "again",
+          "reviewedAt": "2026-10-05T11:00:00.000Z",
+          "reviewDueAt": "2026-10-06T11:00:00.000Z"
+        },
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": {
+            "confidence": "confident",
+            "reviewedAt": "2026-10-05T11:30:00.000Z",
+            "reviewDueAt": "2026-10-12T11:30:00.000Z"
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": {
+            "confidence": "again",
+            "reviewedAt": "2026-10-05T11:00:00.000Z",
+            "reviewDueAt": "2026-10-06T11:00:00.000Z"
+          },
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.review/older.ba",
+      "kind": "exercise.review",
+      "situation": "older",
+      "order": "ba",
+      "stored": {
+        "value": {
+          "confidence": "confident",
+          "reviewedAt": "2026-10-05T11:30:00.000Z",
+          "reviewDueAt": "2026-10-12T11:30:00.000Z"
+        },
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": {
+            "confidence": "again",
+            "reviewedAt": "2026-10-05T11:00:00.000Z",
+            "reviewDueAt": "2026-10-06T11:00:00.000Z"
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": {
+            "confidence": "confident",
+            "reviewedAt": "2026-10-05T11:30:00.000Z",
+            "reviewDueAt": "2026-10-12T11:30:00.000Z"
+          },
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.review/equal.ab",
+      "kind": "exercise.review",
+      "situation": "equal",
+      "order": "ab",
+      "stored": {
+        "value": {
+          "confidence": "again",
+          "reviewedAt": "2026-10-05T11:00:00.000Z",
+          "reviewDueAt": "2026-10-06T11:00:00.000Z"
+        },
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": {
+            "confidence": "confident",
+            "reviewedAt": "2026-10-05T11:30:00.000Z",
+            "reviewDueAt": "2026-10-12T11:30:00.000Z"
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": {
+            "confidence": "confident",
+            "reviewedAt": "2026-10-05T11:30:00.000Z",
+            "reviewDueAt": "2026-10-12T11:30:00.000Z"
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.review/equal.ba",
+      "kind": "exercise.review",
+      "situation": "equal",
+      "order": "ba",
+      "stored": {
+        "value": {
+          "confidence": "confident",
+          "reviewedAt": "2026-10-05T11:30:00.000Z",
+          "reviewDueAt": "2026-10-12T11:30:00.000Z"
+        },
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": {
+            "confidence": "again",
+            "reviewedAt": "2026-10-05T11:00:00.000Z",
+            "reviewDueAt": "2026-10-06T11:00:00.000Z"
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": {
+            "confidence": "again",
+            "reviewedAt": "2026-10-05T11:00:00.000Z",
+            "reviewDueAt": "2026-10-06T11:00:00.000Z"
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.review/empty-stored.ab",
+      "kind": "exercise.review",
+      "situation": "empty-stored",
+      "order": "ab",
+      "stored": {
+        "value": {
+          "confidence": "again",
+          "reviewedAt": "2026-10-05T11:00:00.000Z",
+          "reviewDueAt": "2026-10-06T11:00:00.000Z"
+        },
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": {
+            "confidence": "confident",
+            "reviewedAt": "2026-10-05T11:30:00.000Z",
+            "reviewDueAt": "2026-10-12T11:30:00.000Z"
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": {
+            "confidence": "confident",
+            "reviewedAt": "2026-10-05T11:30:00.000Z",
+            "reviewDueAt": "2026-10-12T11:30:00.000Z"
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.review/empty-stored.ba",
+      "kind": "exercise.review",
+      "situation": "empty-stored",
+      "order": "ba",
+      "stored": {
+        "value": {
+          "confidence": "confident",
+          "reviewedAt": "2026-10-05T11:30:00.000Z",
+          "reviewDueAt": "2026-10-12T11:30:00.000Z"
+        },
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": {
+            "confidence": "again",
+            "reviewedAt": "2026-10-05T11:00:00.000Z",
+            "reviewDueAt": "2026-10-06T11:00:00.000Z"
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": {
+            "confidence": "again",
+            "reviewedAt": "2026-10-05T11:00:00.000Z",
+            "reviewDueAt": "2026-10-06T11:00:00.000Z"
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.review/empty-incoming.ab",
+      "kind": "exercise.review",
+      "situation": "empty-incoming",
+      "order": "ab",
+      "stored": {
+        "value": {
+          "confidence": "again",
+          "reviewedAt": "2026-10-05T11:00:00.000Z",
+          "reviewDueAt": "2026-10-06T11:00:00.000Z"
+        },
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": {
+            "confidence": "confident",
+            "reviewedAt": "2026-10-05T11:30:00.000Z",
+            "reviewDueAt": "2026-10-12T11:30:00.000Z"
+          },
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": {
+            "confidence": "again",
+            "reviewedAt": "2026-10-05T11:00:00.000Z",
+            "reviewDueAt": "2026-10-06T11:00:00.000Z"
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.review/empty-incoming.ba",
+      "kind": "exercise.review",
+      "situation": "empty-incoming",
+      "order": "ba",
+      "stored": {
+        "value": {
+          "confidence": "confident",
+          "reviewedAt": "2026-10-05T11:30:00.000Z",
+          "reviewDueAt": "2026-10-12T11:30:00.000Z"
+        },
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": {
+            "confidence": "again",
+            "reviewedAt": "2026-10-05T11:00:00.000Z",
+            "reviewDueAt": "2026-10-06T11:00:00.000Z"
+          },
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": {
+            "confidence": "confident",
+            "reviewedAt": "2026-10-05T11:30:00.000Z",
+            "reviewDueAt": "2026-10-12T11:30:00.000Z"
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.review/identical",
+      "kind": "exercise.review",
+      "situation": "identical",
+      "stored": {
+        "value": {
+          "confidence": "again",
+          "reviewedAt": "2026-10-05T11:00:00.000Z",
+          "reviewDueAt": "2026-10-06T11:00:00.000Z"
+        },
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": {
+            "confidence": "again",
+            "reviewedAt": "2026-10-05T11:00:00.000Z",
+            "reviewDueAt": "2026-10-06T11:00:00.000Z"
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": {
+            "confidence": "again",
+            "reviewedAt": "2026-10-05T11:00:00.000Z",
+            "reviewDueAt": "2026-10-06T11:00:00.000Z"
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.draft/absent",
+      "kind": "exercise.draft",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "value": {
+            "code": "fn a() {}",
+            "starterHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": {
+            "code": "fn a() {}",
+            "starterHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.draft/newer.ab",
+      "kind": "exercise.draft",
+      "situation": "newer",
+      "order": "ab",
+      "stored": {
+        "value": {
+          "code": "fn a() {}",
+          "starterHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": {
+            "code": null,
+            "starterHash": null
+          },
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": {
+            "code": null,
+            "starterHash": null
+          },
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.draft/newer.ba",
+      "kind": "exercise.draft",
+      "situation": "newer",
+      "order": "ba",
+      "stored": {
+        "value": {
+          "code": null,
+          "starterHash": null
+        },
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": {
+            "code": "fn a() {}",
+            "starterHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": {
+            "code": "fn a() {}",
+            "starterHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.draft/older.ab",
+      "kind": "exercise.draft",
+      "situation": "older",
+      "order": "ab",
+      "stored": {
+        "value": {
+          "code": "fn a() {}",
+          "starterHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": {
+            "code": null,
+            "starterHash": null
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": {
+            "code": "fn a() {}",
+            "starterHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.draft/older.ba",
+      "kind": "exercise.draft",
+      "situation": "older",
+      "order": "ba",
+      "stored": {
+        "value": {
+          "code": null,
+          "starterHash": null
+        },
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": {
+            "code": "fn a() {}",
+            "starterHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": {
+            "code": null,
+            "starterHash": null
+          },
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.draft/equal.ab",
+      "kind": "exercise.draft",
+      "situation": "equal",
+      "order": "ab",
+      "stored": {
+        "value": {
+          "code": "fn a() {}",
+          "starterHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": {
+            "code": null,
+            "starterHash": null
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": {
+            "code": null,
+            "starterHash": null
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.draft/equal.ba",
+      "kind": "exercise.draft",
+      "situation": "equal",
+      "order": "ba",
+      "stored": {
+        "value": {
+          "code": null,
+          "starterHash": null
+        },
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": {
+            "code": "fn a() {}",
+            "starterHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": {
+            "code": "fn a() {}",
+            "starterHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.draft/empty-stored.ab",
+      "kind": "exercise.draft",
+      "situation": "empty-stored",
+      "order": "ab",
+      "stored": {
+        "value": {
+          "code": "fn a() {}",
+          "starterHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": {
+            "code": null,
+            "starterHash": null
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": {
+            "code": null,
+            "starterHash": null
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.draft/empty-incoming.ba",
+      "kind": "exercise.draft",
+      "situation": "empty-incoming",
+      "order": "ba",
+      "stored": {
+        "value": {
+          "code": null,
+          "starterHash": null
+        },
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": {
+            "code": "fn a() {}",
+            "starterHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": {
+            "code": null,
+            "starterHash": null
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.draft/identical",
+      "kind": "exercise.draft",
+      "situation": "identical",
+      "stored": {
+        "value": {
+          "code": "fn a() {}",
+          "starterHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": {
+            "code": "fn a() {}",
+            "starterHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": {
+            "code": "fn a() {}",
+            "starterHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "workshop.step/absent",
+      "kind": "workshop.step",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.step/newer.ab",
+      "kind": "workshop.step",
+      "situation": "newer",
+      "order": "ab",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": false,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": false,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.step/newer.ba",
+      "kind": "workshop.step",
+      "situation": "newer",
+      "order": "ba",
+      "stored": {
+        "value": false,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.step/older.ab",
+      "kind": "workshop.step",
+      "situation": "older",
+      "order": "ab",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": false,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "workshop.step/older.ba",
+      "kind": "workshop.step",
+      "situation": "older",
+      "order": "ba",
+      "stored": {
+        "value": false,
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": false,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "workshop.step/equal.ab",
+      "kind": "workshop.step",
+      "situation": "equal",
+      "order": "ab",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": false,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": false,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.step/equal.ba",
+      "kind": "workshop.step",
+      "situation": "equal",
+      "order": "ba",
+      "stored": {
+        "value": false,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.step/empty-stored.ab",
+      "kind": "workshop.step",
+      "situation": "empty-stored",
+      "order": "ab",
+      "stored": {
+        "value": true,
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": false,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": false,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.step/empty-incoming.ba",
+      "kind": "workshop.step",
+      "situation": "empty-incoming",
+      "order": "ba",
+      "stored": {
+        "value": false,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": false,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "workshop.step/identical",
+      "kind": "workshop.step",
+      "situation": "identical",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "route.mark.step/absent",
+      "kind": "route.mark.step",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.mark.step/newer.ab",
+      "kind": "route.mark.step",
+      "situation": "newer",
+      "order": "ab",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": false,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": false,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.mark.step/newer.ba",
+      "kind": "route.mark.step",
+      "situation": "newer",
+      "order": "ba",
+      "stored": {
+        "value": false,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.mark.step/older.ab",
+      "kind": "route.mark.step",
+      "situation": "older",
+      "order": "ab",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": false,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "route.mark.step/older.ba",
+      "kind": "route.mark.step",
+      "situation": "older",
+      "order": "ba",
+      "stored": {
+        "value": false,
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": false,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "route.mark.step/equal.ab",
+      "kind": "route.mark.step",
+      "situation": "equal",
+      "order": "ab",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": false,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": false,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.mark.step/equal.ba",
+      "kind": "route.mark.step",
+      "situation": "equal",
+      "order": "ba",
+      "stored": {
+        "value": false,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.mark.step/empty-stored.ab",
+      "kind": "route.mark.step",
+      "situation": "empty-stored",
+      "order": "ab",
+      "stored": {
+        "value": true,
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": false,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": false,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.mark.step/empty-incoming.ba",
+      "kind": "route.mark.step",
+      "situation": "empty-incoming",
+      "order": "ba",
+      "stored": {
+        "value": false,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": false,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "route.mark.step/identical",
+      "kind": "route.mark.step",
+      "situation": "identical",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "route.mark.milestone/absent",
+      "kind": "route.mark.milestone",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.mark.milestone/newer.ab",
+      "kind": "route.mark.milestone",
+      "situation": "newer",
+      "order": "ab",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": false,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": false,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.mark.milestone/newer.ba",
+      "kind": "route.mark.milestone",
+      "situation": "newer",
+      "order": "ba",
+      "stored": {
+        "value": false,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.mark.milestone/older.ab",
+      "kind": "route.mark.milestone",
+      "situation": "older",
+      "order": "ab",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": false,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "route.mark.milestone/older.ba",
+      "kind": "route.mark.milestone",
+      "situation": "older",
+      "order": "ba",
+      "stored": {
+        "value": false,
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": false,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "route.mark.milestone/equal.ab",
+      "kind": "route.mark.milestone",
+      "situation": "equal",
+      "order": "ab",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": false,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": false,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.mark.milestone/equal.ba",
+      "kind": "route.mark.milestone",
+      "situation": "equal",
+      "order": "ba",
+      "stored": {
+        "value": false,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.mark.milestone/empty-stored.ab",
+      "kind": "route.mark.milestone",
+      "situation": "empty-stored",
+      "order": "ab",
+      "stored": {
+        "value": true,
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": false,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": false,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.mark.milestone/empty-incoming.ba",
+      "kind": "route.mark.milestone",
+      "situation": "empty-incoming",
+      "order": "ba",
+      "stored": {
+        "value": false,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": false,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "route.mark.milestone/identical",
+      "kind": "route.mark.milestone",
+      "situation": "identical",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "route.mark.favorite/absent",
+      "kind": "route.mark.favorite",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.mark.favorite/newer.ab",
+      "kind": "route.mark.favorite",
+      "situation": "newer",
+      "order": "ab",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": false,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": false,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.mark.favorite/newer.ba",
+      "kind": "route.mark.favorite",
+      "situation": "newer",
+      "order": "ba",
+      "stored": {
+        "value": false,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.mark.favorite/older.ab",
+      "kind": "route.mark.favorite",
+      "situation": "older",
+      "order": "ab",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": false,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "route.mark.favorite/older.ba",
+      "kind": "route.mark.favorite",
+      "situation": "older",
+      "order": "ba",
+      "stored": {
+        "value": false,
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": false,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "route.mark.favorite/equal.ab",
+      "kind": "route.mark.favorite",
+      "situation": "equal",
+      "order": "ab",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": false,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": false,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.mark.favorite/equal.ba",
+      "kind": "route.mark.favorite",
+      "situation": "equal",
+      "order": "ba",
+      "stored": {
+        "value": false,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.mark.favorite/empty-stored.ab",
+      "kind": "route.mark.favorite",
+      "situation": "empty-stored",
+      "order": "ab",
+      "stored": {
+        "value": true,
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": false,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": false,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.mark.favorite/empty-incoming.ba",
+      "kind": "route.mark.favorite",
+      "situation": "empty-incoming",
+      "order": "ba",
+      "stored": {
+        "value": false,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": false,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "route.mark.favorite/identical",
+      "kind": "route.mark.favorite",
+      "situation": "identical",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.reflection/text/case-only",
+      "kind": "exercise.reflection",
+      "situation": "text-exact",
+      "stored": {
+        "value": "Casa",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "casa",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "casa",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.reflection/text/accent-only",
+      "kind": "exercise.reflection",
+      "situation": "text-exact",
+      "stored": {
+        "value": "cafe",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "café",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "café",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.reflection/text/trailing-space",
+      "kind": "exercise.reflection",
+      "situation": "text-exact",
+      "stored": {
+        "value": "a",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "a ",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "a ",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.reflection/text/to-empty-string",
+      "kind": "exercise.reflection",
+      "situation": "text-exact",
+      "stored": {
+        "value": "x",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.reflection/text/emoji",
+      "kind": "exercise.reflection",
+      "situation": "text-exact",
+      "stored": {
+        "value": "hola",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "hola 🙂",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "hola 🙂",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.reflection/text/whitespace-kept",
+      "kind": "exercise.reflection",
+      "situation": "text-exact",
+      "stored": {
+        "value": "x",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "  sangría\n  ",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "  sangría\n  ",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.customTest/text/case-only",
+      "kind": "exercise.customTest",
+      "situation": "text-exact",
+      "stored": {
+        "value": "Casa",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "casa",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "casa",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.customTest/text/accent-only",
+      "kind": "exercise.customTest",
+      "situation": "text-exact",
+      "stored": {
+        "value": "cafe",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "café",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "café",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.customTest/text/trailing-space",
+      "kind": "exercise.customTest",
+      "situation": "text-exact",
+      "stored": {
+        "value": "a",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "a ",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "a ",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.customTest/text/to-empty-string",
+      "kind": "exercise.customTest",
+      "situation": "text-exact",
+      "stored": {
+        "value": "x",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.customTest/text/emoji",
+      "kind": "exercise.customTest",
+      "situation": "text-exact",
+      "stored": {
+        "value": "hola",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "hola 🙂",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "hola 🙂",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.customTest/text/whitespace-kept",
+      "kind": "exercise.customTest",
+      "situation": "text-exact",
+      "stored": {
+        "value": "x",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "  sangría\n  ",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "  sangría\n  ",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.note/text/case-only",
+      "kind": "workshop.note",
+      "situation": "text-exact",
+      "stored": {
+        "value": "Casa",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "casa",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "casa",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.note/text/accent-only",
+      "kind": "workshop.note",
+      "situation": "text-exact",
+      "stored": {
+        "value": "cafe",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "café",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "café",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.note/text/trailing-space",
+      "kind": "workshop.note",
+      "situation": "text-exact",
+      "stored": {
+        "value": "a",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "a ",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "a ",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.note/text/to-empty-string",
+      "kind": "workshop.note",
+      "situation": "text-exact",
+      "stored": {
+        "value": "x",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.note/text/emoji",
+      "kind": "workshop.note",
+      "situation": "text-exact",
+      "stored": {
+        "value": "hola",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "hola 🙂",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "hola 🙂",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.note/text/whitespace-kept",
+      "kind": "workshop.note",
+      "situation": "text-exact",
+      "stored": {
+        "value": "x",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "  sangría\n  ",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "  sangría\n  ",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.note/text/case-only",
+      "kind": "route.note",
+      "situation": "text-exact",
+      "stored": {
+        "value": "Casa",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "casa",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "casa",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.note/text/accent-only",
+      "kind": "route.note",
+      "situation": "text-exact",
+      "stored": {
+        "value": "cafe",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "café",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "café",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.note/text/trailing-space",
+      "kind": "route.note",
+      "situation": "text-exact",
+      "stored": {
+        "value": "a",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "a ",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "a ",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.note/text/to-empty-string",
+      "kind": "route.note",
+      "situation": "text-exact",
+      "stored": {
+        "value": "x",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.note/text/emoji",
+      "kind": "route.note",
+      "situation": "text-exact",
+      "stored": {
+        "value": "hola",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "hola 🙂",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "hola 🙂",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "route.note/text/whitespace-kept",
+      "kind": "route.note",
+      "situation": "text-exact",
+      "stored": {
+        "value": "x",
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": "  sangría\n  ",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": "  sangría\n  ",
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.step/sequence/late-older-mark-does-not-resurrect",
+      "kind": "workshop.step",
+      "situation": "tombstone-vs-older-mark",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": false,
+          "at": "2026-10-05T12:00:03.000Z"
+        },
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": false,
+          "at": "2026-10-05T12:00:03.000Z"
+        },
+        "changed": [true, false]
+      }
+    },
+    {
+      "id": "workshop.step/sequence/newer-mark-resurrects",
+      "kind": "workshop.step",
+      "situation": "tombstone-vs-older-mark",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": false,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:03.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:03.000Z"
+        },
+        "changed": [true, true]
+      }
+    },
+    {
+      "id": "route.mark.step/sequence/late-older-mark-does-not-resurrect",
+      "kind": "route.mark.step",
+      "situation": "tombstone-vs-older-mark",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": false,
+          "at": "2026-10-05T12:00:03.000Z"
+        },
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": false,
+          "at": "2026-10-05T12:00:03.000Z"
+        },
+        "changed": [true, false]
+      }
+    },
+    {
+      "id": "route.mark.step/sequence/newer-mark-resurrects",
+      "kind": "route.mark.step",
+      "situation": "tombstone-vs-older-mark",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": false,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:03.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:03.000Z"
+        },
+        "changed": [true, true]
+      }
+    },
+    {
+      "id": "exercise.assisted/absent",
+      "kind": "exercise.assisted",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "value": true
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.assisted/false-then-true",
+      "kind": "exercise.assisted",
+      "situation": "false-then-true",
+      "stored": {
+        "value": false
+      },
+      "incoming": [
+        {
+          "value": true
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.assisted/true-then-true",
+      "kind": "exercise.assisted",
+      "situation": "true-then-true",
+      "stored": {
+        "value": true
+      },
+      "incoming": [
+        {
+          "value": true
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.assisted/true-then-false",
+      "kind": "exercise.assisted",
+      "situation": "true-then-false",
+      "only": "ts",
+      "stored": {
+        "value": true
+      },
+      "incoming": [
+        {
+          "value": false
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.solutionSeen/absent",
+      "kind": "exercise.solutionSeen",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "value": true
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.solutionSeen/false-then-true",
+      "kind": "exercise.solutionSeen",
+      "situation": "false-then-true",
+      "stored": {
+        "value": false
+      },
+      "incoming": [
+        {
+          "value": true
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.solutionSeen/true-then-true",
+      "kind": "exercise.solutionSeen",
+      "situation": "true-then-true",
+      "stored": {
+        "value": true
+      },
+      "incoming": [
+        {
+          "value": true
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.solutionSeen/true-then-false",
+      "kind": "exercise.solutionSeen",
+      "situation": "true-then-false",
+      "only": "ts",
+      "stored": {
+        "value": true
+      },
+      "incoming": [
+        {
+          "value": false
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.hintsRevealed/absent",
+      "kind": "exercise.hintsRevealed",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "value": 2
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 2
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.hintsRevealed/raise",
+      "kind": "exercise.hintsRevealed",
+      "situation": "raise",
+      "stored": {
+        "value": 2
+      },
+      "incoming": [
+        {
+          "value": 3
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 3
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.hintsRevealed/lower-ignored",
+      "kind": "exercise.hintsRevealed",
+      "situation": "lower-ignored",
+      "stored": {
+        "value": 3
+      },
+      "incoming": [
+        {
+          "value": 2
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 3
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.hintsRevealed/equal",
+      "kind": "exercise.hintsRevealed",
+      "situation": "equal",
+      "stored": {
+        "value": 2
+      },
+      "incoming": [
+        {
+          "value": 2
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": 2
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.predictionCorrect/absent",
+      "kind": "exercise.predictionCorrect",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.predictionCorrect/earlier-date-wins",
+      "kind": "exercise.predictionCorrect",
+      "situation": "earlier-date-wins",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.predictionCorrect/later-date-ignored",
+      "kind": "exercise.predictionCorrect",
+      "situation": "later-date-ignored",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.predictionCorrect/legacy-date-filled",
+      "kind": "exercise.predictionCorrect",
+      "situation": "legacy-date-filled",
+      "stored": {
+        "value": true,
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.predictionCorrect/incoming-without-date-ignored",
+      "kind": "exercise.predictionCorrect",
+      "situation": "incoming-without-date-ignored",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.predictionCorrect/row-with-false-flag",
+      "kind": "exercise.predictionCorrect",
+      "situation": "row-with-false-flag",
+      "stored": {
+        "value": false,
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "exercise.predictionCorrect/not-correct-ignored",
+      "kind": "exercise.predictionCorrect",
+      "situation": "not-correct-ignored",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": false,
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "exercise.predictionCorrect/same-date",
+      "kind": "exercise.predictionCorrect",
+      "situation": "same-date",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "checkpoint.passed/absent",
+      "kind": "checkpoint.passed",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "checkpoint.passed/earlier-date-wins",
+      "kind": "checkpoint.passed",
+      "situation": "earlier-date-wins",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "checkpoint.passed/later-date-ignored",
+      "kind": "checkpoint.passed",
+      "situation": "later-date-ignored",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "checkpoint.passed/legacy-date-filled",
+      "kind": "checkpoint.passed",
+      "situation": "legacy-date-filled",
+      "stored": {
+        "value": true,
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "checkpoint.passed/incoming-without-date-ignored",
+      "kind": "checkpoint.passed",
+      "situation": "incoming-without-date-ignored",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "checkpoint.passed/row-with-false-flag",
+      "kind": "checkpoint.passed",
+      "situation": "row-with-false-flag",
+      "stored": {
+        "value": false,
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "checkpoint.passed/not-correct-ignored",
+      "kind": "checkpoint.passed",
+      "situation": "not-correct-ignored",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": false,
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "checkpoint.passed/same-date",
+      "kind": "checkpoint.passed",
+      "situation": "same-date",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "workshop.predictionCorrect/absent",
+      "kind": "workshop.predictionCorrect",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:02.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.predictionCorrect/earlier-date-wins",
+      "kind": "workshop.predictionCorrect",
+      "situation": "earlier-date-wins",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:02.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.predictionCorrect/later-date-ignored",
+      "kind": "workshop.predictionCorrect",
+      "situation": "later-date-ignored",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "workshop.predictionCorrect/legacy-date-filled",
+      "kind": "workshop.predictionCorrect",
+      "situation": "legacy-date-filled",
+      "stored": {
+        "value": true,
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.predictionCorrect/incoming-without-date-ignored",
+      "kind": "workshop.predictionCorrect",
+      "situation": "incoming-without-date-ignored",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "workshop.predictionCorrect/row-with-false-flag",
+      "kind": "workshop.predictionCorrect",
+      "situation": "row-with-false-flag",
+      "stored": {
+        "value": false,
+        "at": null
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.predictionCorrect/not-correct-ignored",
+      "kind": "workshop.predictionCorrect",
+      "situation": "not-correct-ignored",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": false,
+          "at": null
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "workshop.predictionCorrect/same-date",
+      "kind": "workshop.predictionCorrect",
+      "situation": "same-date",
+      "stored": {
+        "value": true,
+        "at": "2026-10-05T12:00:01.000Z"
+      },
+      "incoming": [
+        {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "value": true,
+          "at": "2026-10-05T12:00:01.000Z"
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "workshop.objective/absent",
+      "kind": "workshop.objective",
+      "situation": "absent",
+      "stored": null,
+      "incoming": [
+        {
+          "key": "fx-obj-1",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "observed": [
+            {
+              "key": "fx-obj-1",
+              "at": "2026-10-05T12:00:02.000Z"
+            }
+          ]
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.objective/earlier-date-wins",
+      "kind": "workshop.objective",
+      "situation": "earlier-date-wins",
+      "stored": {
+        "observed": [
+          {
+            "key": "fx-obj-1",
+            "at": "2026-10-05T12:00:02.000Z"
+          }
+        ]
+      },
+      "incoming": [
+        {
+          "key": "fx-obj-1",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "observed": [
+            {
+              "key": "fx-obj-1",
+              "at": "2026-10-05T12:00:01.000Z"
+            }
+          ]
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.objective/later-date-ignored",
+      "kind": "workshop.objective",
+      "situation": "later-date-ignored",
+      "stored": {
+        "observed": [
+          {
+            "key": "fx-obj-1",
+            "at": "2026-10-05T12:00:01.000Z"
+          }
+        ]
+      },
+      "incoming": [
+        {
+          "key": "fx-obj-1",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "observed": [
+            {
+              "key": "fx-obj-1",
+              "at": "2026-10-05T12:00:01.000Z"
+            }
+          ]
+        },
+        "changed": [false]
+      }
+    },
+    {
+      "id": "workshop.objective/legacy-date-filled",
+      "kind": "workshop.objective",
+      "situation": "legacy-date-filled",
+      "stored": {
+        "observed": [
+          {
+            "key": "fx-obj-1",
+            "at": null
+          }
+        ]
+      },
+      "incoming": [
+        {
+          "key": "fx-obj-1",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "observed": [
+            {
+              "key": "fx-obj-1",
+              "at": "2026-10-05T12:00:01.000Z"
+            }
+          ]
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.objective/other-objective-added.ab",
+      "kind": "workshop.objective",
+      "situation": "other-objective-added.ab",
+      "stored": {
+        "observed": [
+          {
+            "key": "fx-obj-1",
+            "at": "2026-10-05T12:00:01.000Z"
+          }
+        ]
+      },
+      "incoming": [
+        {
+          "key": "fx-obj-2",
+          "at": "2026-10-05T12:00:02.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "observed": [
+            {
+              "key": "fx-obj-1",
+              "at": "2026-10-05T12:00:01.000Z"
+            },
+            {
+              "key": "fx-obj-2",
+              "at": "2026-10-05T12:00:02.000Z"
+            }
+          ]
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.objective/other-objective-added.ba",
+      "kind": "workshop.objective",
+      "situation": "other-objective-added.ba",
+      "stored": {
+        "observed": [
+          {
+            "key": "fx-obj-2",
+            "at": "2026-10-05T12:00:02.000Z"
+          }
+        ]
+      },
+      "incoming": [
+        {
+          "key": "fx-obj-1",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "observed": [
+            {
+              "key": "fx-obj-1",
+              "at": "2026-10-05T12:00:01.000Z"
+            },
+            {
+              "key": "fx-obj-2",
+              "at": "2026-10-05T12:00:02.000Z"
+            }
+          ]
+        },
+        "changed": [true]
+      }
+    },
+    {
+      "id": "workshop.objective/same-objective-same-date",
+      "kind": "workshop.objective",
+      "situation": "same-objective-same-date",
+      "stored": {
+        "observed": [
+          {
+            "key": "fx-obj-1",
+            "at": "2026-10-05T12:00:01.000Z"
+          }
+        ]
+      },
+      "incoming": [
+        {
+          "key": "fx-obj-1",
+          "at": "2026-10-05T12:00:01.000Z"
+        }
+      ],
+      "expect": {
+        "state": {
+          "observed": [
+            {
+              "key": "fx-obj-1",
+              "at": "2026-10-05T12:00:01.000Z"
+            }
+          ]
+        },
+        "changed": [false]
+      }
+    }
+  ],
+  "serverCases": [
+    {
+      "id": "clock/in-sync",
+      "family": "clock-correction",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000001",
+              "type": "exercise.reflection",
+              "at": "2026-10-05T12:09:58.000Z",
+              "exerciseId": "fx-rust-01",
+              "text": "Hola"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "applied"
+          }
+        ],
+        "stored": [
+          {
+            "kind": "exercise.reflection",
+            "state": {
+              "value": "Hola",
+              "at": "2026-10-05T12:09:58.000Z"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "clock/device-ahead-one-hour",
+      "family": "clock-correction",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T13:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000002",
+              "type": "exercise.reflection",
+              "at": "2026-10-05T13:09:55.000Z",
+              "exerciseId": "fx-rust-01",
+              "text": "Hola"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "applied"
+          }
+        ],
+        "stored": [
+          {
+            "kind": "exercise.reflection",
+            "state": {
+              "value": "Hola",
+              "at": "2026-10-05T12:09:55.000Z"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "clock/device-behind-one-hour",
+      "family": "clock-correction",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T11:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000003",
+              "type": "exercise.reflection",
+              "at": "2026-10-05T11:09:55.000Z",
+              "exerciseId": "fx-rust-01",
+              "text": "Hola"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "applied"
+          }
+        ],
+        "stored": [
+          {
+            "kind": "exercise.reflection",
+            "state": {
+              "value": "Hola",
+              "at": "2026-10-05T12:09:55.000Z"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "clock/operation-after-send-is-capped",
+      "family": "clock-correction",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000004",
+              "type": "exercise.reflection",
+              "at": "2026-10-05T12:10:10.000Z",
+              "exerciseId": "fx-rust-01",
+              "text": "Hola"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "applied"
+          }
+        ],
+        "stored": [
+          {
+            "kind": "exercise.reflection",
+            "state": {
+              "value": "Hola",
+              "at": "2026-10-05T12:10:00.000Z"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "clock/old-offline-operation-keeps-its-age",
+      "family": "clock-correction",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000005",
+              "type": "exercise.reflection",
+              "at": "2026-10-02T12:10:00.000Z",
+              "exerciseId": "fx-rust-01",
+              "text": "Hola"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "applied"
+          }
+        ],
+        "stored": [
+          {
+            "kind": "exercise.reflection",
+            "state": {
+              "value": "Hola",
+              "at": "2026-10-02T12:10:00.000Z"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "clock/before-floor-is-out-of-range",
+      "family": "clock-correction",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000006",
+              "type": "exercise.reflection",
+              "at": "2019-12-31T23:59:59.000Z",
+              "exerciseId": "fx-rust-01",
+              "text": "Hola"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "out_of_range"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "clock/ahead-device-does-not-win-forever",
+      "family": "clock-correction",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T13:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000007",
+              "type": "exercise.reflection",
+              "at": "2026-10-05T13:10:00.000Z",
+              "exerciseId": "fx-rust-01",
+              "text": "Hola A"
+            }
+          ]
+        },
+        {
+          "serverNow": "2026-10-05T12:10:30.000Z",
+          "sentAt": "2026-10-05T12:10:30.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000008",
+              "type": "exercise.reflection",
+              "at": "2026-10-05T12:10:30.000Z",
+              "exerciseId": "fx-rust-01",
+              "text": "Hola B"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "applied"
+          },
+          {
+            "status": "applied"
+          }
+        ],
+        "stored": [
+          {
+            "kind": "exercise.reflection",
+            "state": {
+              "value": "Hola B",
+              "at": "2026-10-05T12:10:30.000Z"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "stale/exercise.prediction/current",
+      "family": "stale-content",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000009",
+              "type": "exercise.prediction",
+              "at": "2026-10-05T12:09:58.000Z",
+              "exerciseId": "fx-rust-01",
+              "answer": 1,
+              "correct": true,
+              "contentVersion": "0123456789abcdef0123456789abcdef"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "applied"
+          }
+        ],
+        "stored": [
+          {
+            "kind": "exercise.prediction.answer",
+            "state": {
+              "value": 1,
+              "at": "2026-10-05T12:09:58.000Z"
+            }
+          },
+          {
+            "kind": "exercise.predictionCorrect",
+            "state": {
+              "value": true,
+              "at": "2026-10-05T12:09:58.000Z"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "stale/exercise.prediction/stale",
+      "family": "stale-content",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000010",
+              "type": "exercise.prediction",
+              "at": "2026-10-05T12:09:58.000Z",
+              "exerciseId": "fx-rust-01",
+              "answer": 1,
+              "correct": true,
+              "contentVersion": "fedcba9876543210fedcba9876543210"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "stale_content"
+          }
+        ],
+        "stored": [
+          {
+            "kind": "exercise.prediction.answer",
+            "state": {
+              "value": 1,
+              "at": "2026-10-05T12:09:58.000Z"
+            }
+          },
+          {
+            "kind": "exercise.predictionCorrect",
+            "state": {
+              "value": false,
+              "at": null
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "stale/checkpoint.answer/current",
+      "family": "stale-content",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000011",
+              "type": "checkpoint.answer",
+              "at": "2026-10-05T12:09:58.000Z",
+              "worldId": "fx-world-1",
+              "answer": 1,
+              "passed": true,
+              "contentVersion": "0123456789abcdef0123456789abcdef"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "applied"
+          }
+        ],
+        "stored": [
+          {
+            "kind": "checkpoint.lastAnswer",
+            "state": {
+              "value": 1,
+              "at": "2026-10-05T12:09:58.000Z"
+            }
+          },
+          {
+            "kind": "checkpoint.passed",
+            "state": {
+              "value": true,
+              "at": "2026-10-05T12:09:58.000Z"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "stale/checkpoint.answer/stale",
+      "family": "stale-content",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000012",
+              "type": "checkpoint.answer",
+              "at": "2026-10-05T12:09:58.000Z",
+              "worldId": "fx-world-1",
+              "answer": 1,
+              "passed": true,
+              "contentVersion": "fedcba9876543210fedcba9876543210"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "stale_content"
+          }
+        ],
+        "stored": [
+          {
+            "kind": "checkpoint.lastAnswer",
+            "state": {
+              "value": 1,
+              "at": "2026-10-05T12:09:58.000Z"
+            }
+          },
+          {
+            "kind": "checkpoint.passed",
+            "state": {
+              "value": false,
+              "at": null
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "stale/workshop.prediction/current",
+      "family": "stale-content",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000013",
+              "type": "workshop.prediction",
+              "at": "2026-10-05T12:09:58.000Z",
+              "workshopId": "fx-workshop-1",
+              "language": "rust",
+              "answer": 1,
+              "correct": true,
+              "contentVersion": "0123456789abcdef0123456789abcdef"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "applied"
+          }
+        ],
+        "stored": [
+          {
+            "kind": "workshop.answer",
+            "state": {
+              "value": 1,
+              "at": "2026-10-05T12:09:58.000Z"
+            }
+          },
+          {
+            "kind": "workshop.predictionCorrect",
+            "state": {
+              "value": true,
+              "at": "2026-10-05T12:09:58.000Z"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "stale/workshop.prediction/stale",
+      "family": "stale-content",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000014",
+              "type": "workshop.prediction",
+              "at": "2026-10-05T12:09:58.000Z",
+              "workshopId": "fx-workshop-1",
+              "language": "rust",
+              "answer": 1,
+              "correct": true,
+              "contentVersion": "fedcba9876543210fedcba9876543210"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "stale_content"
+          }
+        ],
+        "stored": [
+          {
+            "kind": "workshop.answer",
+            "state": {
+              "value": 1,
+              "at": "2026-10-05T12:09:58.000Z"
+            }
+          },
+          {
+            "kind": "workshop.predictionCorrect",
+            "state": {
+              "value": false,
+              "at": null
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "stale/route.quiz/current",
+      "family": "stale-content",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000015",
+              "type": "route.quiz",
+              "at": "2026-10-05T12:09:58.000Z",
+              "stepId": "fx-step-1",
+              "answer": 1,
+              "contentVersion": "0123456789abcdef0123456789abcdef"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "applied"
+          }
+        ],
+        "stored": [
+          {
+            "kind": "route.quiz",
+            "state": {
+              "value": 1,
+              "at": "2026-10-05T12:09:58.000Z"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "stale/route.quiz/stale",
+      "family": "stale-content",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000016",
+              "type": "route.quiz",
+              "at": "2026-10-05T12:09:58.000Z",
+              "stepId": "fx-step-1",
+              "answer": 1,
+              "contentVersion": "fedcba9876543210fedcba9876543210"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "stale_content"
+          }
+        ],
+        "stored": [
+          {
+            "kind": "route.quiz",
+            "state": {
+              "value": 1,
+              "at": "2026-10-05T12:09:58.000Z"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "reject/unknown-type",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000017",
+              "type": "exercise.solved",
+              "at": "2026-10-05T12:09:58.000Z",
+              "exerciseId": "fx-rust-01"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "invalid"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/server-owned-field",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000018",
+              "type": "exercise.prediction",
+              "at": "2026-10-05T12:09:58.000Z",
+              "exerciseId": "fx-rust-01",
+              "answer": 1,
+              "correct": true,
+              "contentVersion": "0123456789abcdef0123456789abcdef",
+              "solvedAt": "2026-10-05T12:09:58.000Z"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "invalid"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/importer-only-field",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000019",
+              "type": "workshop.prediction",
+              "at": "2026-10-05T12:09:58.000Z",
+              "workshopId": "fx-workshop-1",
+              "language": "rust",
+              "answer": 1,
+              "correct": true,
+              "contentVersion": "0123456789abcdef0123456789abcdef",
+              "codeSealed": true
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "invalid"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/wrong-type",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000020",
+              "type": "exercise.prediction",
+              "at": "2026-10-05T12:09:58.000Z",
+              "exerciseId": "fx-rust-01",
+              "answer": "1",
+              "correct": true,
+              "contentVersion": "0123456789abcdef0123456789abcdef"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "invalid"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/assist-with-false",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000021",
+              "type": "exercise.assist",
+              "at": "2026-10-05T12:09:58.000Z",
+              "exerciseId": "fx-rust-01",
+              "assisted": false
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "invalid"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/assist-without-flags",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000022",
+              "type": "exercise.assist",
+              "at": "2026-10-05T12:09:58.000Z",
+              "exerciseId": "fx-rust-01"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "invalid"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/draft-null-code-with-hash",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000023",
+              "type": "exercise.draft",
+              "at": "2026-10-05T12:09:58.000Z",
+              "exerciseId": "fx-rust-01",
+              "code": null,
+              "starterHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "invalid"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/review-unknown-confidence",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000024",
+              "type": "exercise.review",
+              "at": "2026-10-05T12:09:58.000Z",
+              "exerciseId": "fx-rust-01",
+              "confidence": "sure",
+              "reviewedAt": "2026-10-05T12:09:58.000Z",
+              "reviewDueAt": "2026-10-05T12:09:58.000Z"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "invalid"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/lab-selected-of-other-language",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000025",
+              "type": "preference.set",
+              "at": "2026-10-05T12:09:58.000Z",
+              "name": "labSelectedRust",
+              "value": "fx-go-01"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "invalid"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/answer-outside-options",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000026",
+              "type": "exercise.prediction",
+              "at": "2026-10-05T12:09:58.000Z",
+              "exerciseId": "fx-rust-01",
+              "answer": 3,
+              "correct": false,
+              "contentVersion": "0123456789abcdef0123456789abcdef"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "out_of_range"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/hints-beyond-the-exercise",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000027",
+              "type": "exercise.hints",
+              "at": "2026-10-05T12:09:58.000Z",
+              "exerciseId": "fx-rust-01",
+              "revealed": 4
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "out_of_range"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/hints-zero",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000028",
+              "type": "exercise.hints",
+              "at": "2026-10-05T12:09:58.000Z",
+              "exerciseId": "fx-rust-01",
+              "revealed": 0
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "out_of_range"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/focus-minutes-not-allowed",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000029",
+              "type": "preference.set",
+              "at": "2026-10-05T12:09:58.000Z",
+              "name": "focusMinutes",
+              "value": 20
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "out_of_range"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/reflection-too-long",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000030",
+              "type": "exercise.reflection",
+              "at": "2026-10-05T12:09:58.000Z",
+              "exerciseId": "fx-rust-01",
+              "text": {
+                "repeat": "x",
+                "times": 10001
+              }
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "out_of_range"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/custom-test-too-long",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000031",
+              "type": "exercise.customTest",
+              "at": "2026-10-05T12:09:58.000Z",
+              "exerciseId": "fx-rust-01",
+              "text": {
+                "repeat": "x",
+                "times": 3001
+              }
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "out_of_range"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/draft-too-long",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000032",
+              "type": "exercise.draft",
+              "at": "2026-10-05T12:09:58.000Z",
+              "exerciseId": "fx-rust-01",
+              "code": {
+                "repeat": "x",
+                "times": 30001
+              },
+              "starterHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "out_of_range"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/workshop-note-too-long",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000033",
+              "type": "workshop.note",
+              "at": "2026-10-05T12:09:58.000Z",
+              "workshopId": "fx-workshop-1",
+              "language": "rust",
+              "text": {
+                "repeat": "x",
+                "times": 10001
+              }
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "out_of_range"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/route-note-too-long",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000034",
+              "type": "route.note",
+              "at": "2026-10-05T12:09:58.000Z",
+              "language": "rust",
+              "field": "learned",
+              "body": {
+                "repeat": "x",
+                "times": 20001
+              }
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "out_of_range"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/unknown-exercise",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000035",
+              "type": "exercise.reflection",
+              "at": "2026-10-05T12:09:58.000Z",
+              "exerciseId": "fx-no-existe",
+              "text": "x"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "unknown_reference"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/unknown-world",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000036",
+              "type": "checkpoint.answer",
+              "at": "2026-10-05T12:09:58.000Z",
+              "worldId": "fx-no-existe",
+              "answer": 0,
+              "passed": false,
+              "contentVersion": "0123456789abcdef0123456789abcdef"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "unknown_reference"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/unknown-workshop",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000037",
+              "type": "workshop.note",
+              "at": "2026-10-05T12:09:58.000Z",
+              "workshopId": "fx-no-existe",
+              "language": "rust",
+              "text": "x"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "unknown_reference"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/unknown-objective",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000038",
+              "type": "workshop.objective",
+              "at": "2026-10-05T12:09:58.000Z",
+              "workshopId": "fx-workshop-1",
+              "language": "rust",
+              "objectiveKey": "fx-no-existe"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "unknown_reference"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/unknown-step-key",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000039",
+              "type": "workshop.step",
+              "at": "2026-10-05T12:09:58.000Z",
+              "workshopId": "fx-workshop-1",
+              "language": "rust",
+              "stepKey": "e9",
+              "marked": true
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "unknown_reference"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/unknown-guide-step",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000040",
+              "type": "route.mark",
+              "at": "2026-10-05T12:09:58.000Z",
+              "kind": "step",
+              "itemKey": "fx-no-existe",
+              "marked": true
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "unknown_reference"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/unknown-resource",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000041",
+              "type": "route.mark",
+              "at": "2026-10-05T12:09:58.000Z",
+              "kind": "favorite",
+              "itemKey": "fx-no-existe",
+              "marked": true
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "unknown_reference"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/unknown-milestone",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000042",
+              "type": "route.mark",
+              "at": "2026-10-05T12:09:58.000Z",
+              "kind": "milestone",
+              "itemKey": "rust-fx-no-existe",
+              "marked": true
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "unknown_reference"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/unknown-lab-selected",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000043",
+              "type": "preference.set",
+              "at": "2026-10-05T12:09:58.000Z",
+              "name": "labSelectedGo",
+              "value": "fx-no-existe"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "unknown_reference"
+          }
+        ],
+        "stored": []
+      }
+    },
+    {
+      "id": "reject/mixed-batch-applies-the-valid-one",
+      "family": "rejection",
+      "batches": [
+        {
+          "serverNow": "2026-10-05T12:10:00.000Z",
+          "sentAt": "2026-10-05T12:10:00.000Z",
+          "operations": [
+            {
+              "id": "00000000-0000-4000-8000-000000000044",
+              "type": "exercise.solved",
+              "at": "2026-10-05T12:09:58.000Z",
+              "exerciseId": "fx-rust-01"
+            },
+            {
+              "id": "00000000-0000-4000-8000-000000000045",
+              "type": "exercise.reflection",
+              "at": "2026-10-05T12:09:58.000Z",
+              "exerciseId": "fx-rust-01",
+              "text": "Hola"
+            },
+            {
+              "id": "00000000-0000-4000-8000-000000000046",
+              "type": "exercise.hints",
+              "at": "2026-10-05T12:09:58.000Z",
+              "exerciseId": "fx-rust-01",
+              "revealed": 4
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "results": [
+          {
+            "status": "rejected",
+            "reason": "invalid"
+          },
+          {
+            "status": "applied"
+          },
+          {
+            "status": "rejected",
+            "reason": "out_of_range"
+          }
+        ],
+        "stored": [
+          {
+            "kind": "exercise.reflection",
+            "state": {
+              "value": "Hola",
+              "at": "2026-10-05T12:09:58.000Z"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

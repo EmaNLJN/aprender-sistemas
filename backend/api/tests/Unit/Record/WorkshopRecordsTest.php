@@ -153,19 +153,33 @@ it('writes the workshops row with the document values, its context and its key o
     ]);
 });
 
-it('keeps the step key and the v1 index in the row and out of the published step', function () {
+it('keeps the v1 index out of the published step and publishes the step key first', function () {
     $fixture = ContentFixture::fromImage();
     foreach (workshopsOf($fixture->document) as [$domain, $position, $workshop]) {
         $record = workshopFromDocument($fixture, $domain, $position, $workshop);
         $stepRows = $record->rowsByTable()['workshop_steps'];
 
         foreach ($fixture->meta['workshopSteps'][$workshop->id] as $index => $key) {
+            $published = $record->toPublished()->steps[$index];
             expect($stepRows[$index]['step_key'])->toBe($key['id'])
                 ->and($stepRows[$index]['v1_position'])->toBe($key['v1Index'])
                 ->and($stepRows[$index]['position'])->toBe($index)
-                ->and(get_object_vars($record->toPublished()->steps[$index]))->not->toHaveKeys(['step_key', 'stepKey', 'v1_position', 'id']);
+                ->and($stepRows[$index]['key_order'])->toBe('["id","title","task","why","done"]')
+                ->and(array_keys(get_object_vars($published)))->toBe(['id', 'title', 'task', 'why', 'done'])
+                ->and($published->id)->toBe($key['id'])
+                ->and(get_object_vars($published))->not->toHaveKeys(['step_key', 'stepKey', 'v1_position', 'v1Position']);
         }
     }
+});
+
+it('rejects a step whose id is not the meta key at its position', function () {
+    $fixture = ContentFixture::fromImage();
+    $workshop = $fixture->document->workshops->lowlevel[0];
+    $metaId = $fixture->meta['workshopSteps'][$workshop->id][0]['id'];
+    $workshop->steps[0]->id = 'e9';
+
+    expect(fn () => workshopFromDocument($fixture, 'lowlevel', 0, $workshop))
+        ->toThrow(InvalidContent::class, "curriculum.meta.json: workshopSteps.{$workshop->id}: la etapa «e9» del documento es «{$metaId}» en el meta: regenerá los dos archivos juntos");
 });
 
 it('writes the objective rows in the order of the document', function () {
