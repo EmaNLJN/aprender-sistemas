@@ -173,9 +173,12 @@ Las cuentas son por invitación: no hay registro abierto. Con el stack levantado
 
 - **Alta:** `docker compose exec php php artisan taller:invite ana@example.com` imprime el link de aceptación; para el primer administrador, agregá `--role=admin`. Repetirlo renueva la invitación.
 - **Recuperación:** `docker compose exec php php artisan taller:password-reset-link ana@example.com` imprime el link para elegir una contraseña nueva.
+- **Administración:** un admin gestiona usuarios e invitaciones por la API (`/api/admin`): el rol, el estado, la recuperación y las invitaciones, sin `tinker`.
+- **Exportar y suprimir:** `POST /api/me/export` descarga un JSON con todo lo que la cuenta guardó (hasta tres veces por día). `DELETE /api/me` (la propia) o `DELETE /api/admin/users/{id}` (un admin) borra la cuenta entera en segundo plano: el progreso, los intentos, el código y las importaciones. Las dos piden la contraseña reconfirmada.
+- **Respaldos:** cada supresión deja una fila en el libro `account_deletions` durante 35 días. Guardá una copia del libro junto a cada respaldo de la base. Al restaurar, después del volcado y del binlog y antes de abrir el tráfico, `docker compose exec -T php php artisan taller:reapply-deletions - < libro.tsv` vuelve a borrar las cuentas suprimidas desde ese respaldo. El formato del libro está en `specs/010-c3b-admin-ciclo-de-vida/contracts/console.md`.
 - **Volumen existente:** los privilegios de MySQL de `docker/mysql/db-grants.sql` se aplican solos al crear el volumen; en uno que ya tenías, corré `docker compose --profile ops run --rm db-grants` una vez. Sin ese permiso, el chequeo de transacciones abiertas de las migraciones falla.
 
-Los contratos están en `specs/004-c3-identidad-acceso/contracts/`.
+Los contratos están en `specs/004-c3-identidad-acceso/contracts/` y, para la administración y el ciclo de vida, en `specs/010-c3b-admin-ciclo-de-vida/contracts/`.
 
 ## Guardado y cambio de PC
 
