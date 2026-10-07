@@ -33,6 +33,8 @@ Lo que hace, fila por fila y en el orden de `user_id`:
 | Hay una cuenta con ese `user_id` pero otro `created_at` | Es una cuenta nueva que recibió un id reutilizado: **no la toca** y lo dice |
 | No hay cuenta con ese `user_id` | Nada que borrar |
 | Siempre | Si la fila no está en `account_deletions`, la agrega con sus valores originales (`insertOrIgnore`, antes de purgar), para que el libro de la base restaurada quede completo |
+| Una purga que terminó sin borrar la cuenta | No la cuenta como borrada y lo dice («la purga terminó sin borrarla») |
+| Al terminar el archivo | Sube el `AUTO_INCREMENT` de `users` por encima del mayor id de `users` y del mayor `user_id` del libro, ya completo (nunca lo baja; también con un archivo vacío), y dice «El próximo id de cuenta será N.». MySQL 8 conserva el contador al reiniciar, así que una restauración es la única forma de reusar un id: sin esto, una cuenta nueva podía recibir el id de una suprimida, su supresión no entraba al libro (que tiene una fila por id) y una restauración posterior la traía de vuelta. Decisión del usuario del 2026-10-06 |
 
 | Resultado | Código de salida |
 | --- | --- |
@@ -40,13 +42,13 @@ Lo que hace, fila por fila y en el orden de `user_id`:
 | No pudo leer el archivo, o purgó todas menos alguna: dice cuáles | 1 |
 | El archivo tiene una línea mal formada: dice el número de cada una y **no procesa nada** | 2 |
 
-- **Es idempotente:** una segunda corrida con el mismo archivo no encuentra cuentas que coincidan y no agrega filas.
+- **Es idempotente:** una segunda corrida con el mismo archivo no encuentra cuentas que coincidan, no agrega filas y deja el contador donde estaba.
 - Si al terminar no queda ningún admin activo, lo avisa con el comando que lo arregla (`taller:invite {email} --role=admin`); no falla.
 - La salida no lleva emails: sólo ids.
 
 ### `taller:resume-purges`
 
-El barrido de las supresiones trabadas (FR-046): vuelve a pedir `PurgeUserData` de cada cuenta que lleva **más de 15 minutos** en `deleting` (el corte es `users.updated_at`: nada más escribe una cuenta en ese estado) y deja una línea `purge.resumed` por cuenta en los registros. Lo agenda el `scheduler` cada 5 minutos; también se puede correr a mano. Si el trabajo de esa cuenta sigue en la cola o corriendo, el pedido no hace nada: la purga es única por cuenta. Siempre sale con 0 y dice cuántas cuentas retomó.
+El barrido de las supresiones trabadas (FR-046): vuelve a pedir `PurgeUserData` de cada cuenta que lleva **más de 15 minutos** en `deleting` (el corte es `users.updated_at`: nada más escribe una cuenta en ese estado) y deja una línea `purge.resumed` por cada purga que despachó. Lo agenda el `scheduler` cada 5 minutos; también se puede correr a mano. Si el trabajo de esa cuenta sigue en la cola o corriendo, el pedido no hace nada (la purga es única por cuenta) y no se cuenta como retomada. Siempre sale con 0 y dice las dos cosas: «N purgas retomadas, M ya en la cola».
 
 ## Tareas programadas
 
@@ -59,6 +61,7 @@ Las registra `routes/console.php` y las corre el servicio `scheduler` (`php arti
 | Libro de supresiones vencido (35 días) | Una vez al día | `model:prune --model=App\Models\DeletedAccount` | Sí |
 | Supresiones trabadas | Cada 5 minutos | `taller:resume-purges` | Sí |
 
+- **La salida de cada tarea** va al stderr del proceso principal del contenedor (`appendOutputTo('/proc/1/fd/2')`), así sus registros llegan a `docker compose logs scheduler`. Laravel la manda a `/dev/null` por omisión, y con ella los registros de la purga y del barrido; una prueba lo exige para cada tarea.
 - **Sólo la cola `default`.** B2 comparte la tabla `jobs` con la cola `runs`, que atiende `worker-runs`: el `scheduler` no la toca, y una prueba exige `--queue=default` en el comando.
 - El bloqueo de `queue:work` vence a los 10 minutos y no a las 24 horas por omisión: si el contenedor se reinicia a mitad de una corrida, la cola vuelve a procesarse al cabo de 10 minutos como mucho.
 - Una purga larga ocupa la corrida de ese minuto; lo que se encole en `default` espera a la siguiente. Es el riesgo 6 de la spec: lotes de 500 filas y el disparador de §9 del ADR para un worker propio.
@@ -80,7 +83,8 @@ Estructurados, a stderr, con el `user_id` del actor, el HMAC del email del actor
 | `admin.password_reset_refused` | `password-reset` que terminó en 503 | `target_id`, `reason` |
 | `account.deletion_requested` | `DELETE /api/me` y `DELETE /api/admin/users/{user}` | `target_id` |
 | `account.exported` | `POST /api/me/export` que empezó a responder | |
-| `purge.resumed` | El barrido volvió a pedir una purga | `user_id` |
+| `purge.resumed` | El barrido despachó una purga (no las que ya estaban en la cola) | `user_id` |
+| `purge.skipped` | La transacción final encontró la cuenta fuera de `deleting` y no la borró | `user_id`, `status` |
 | `purge.cancel_failed` | La cancelación de ejecuciones falló (la purga sigue) | `user_id`, `exception` |
 | `purge.done` | La transacción final confirmó | `user_id`, `rows` |
 | `purge.failed` | El trabajo agotó sus intentos | `user_id`, `exception` |
@@ -103,4 +107,4 @@ Ninguna variable de entorno ni secreto nuevo. Las claves nuevas de `config/talle
 2. Cambiar el rol o el estado de una cuenta, dar de alta y suprimir cuentas se hace por la API (las pantallas de F12) o, mientras no existan, con `curl` y la contraseña reconfirmada. `tinker` deja de hacer falta. El primer admin y el acceso de emergencia siguen siendo `taller:invite --role=admin` y `taller:password-reset-link`.
 3. Guardar la copia del libro (`account_deletions`) junto a cada respaldo, en el formato de arriba.
 4. Al restaurar: volcado, binlog, `taller:reapply-deletions` con la copia más reciente del libro y recién entonces abrir el tráfico.
-5. Si una supresión no termina, mirar `purge.resumed` y `purge.failed` en los registros y `failed_jobs`.
+5. Si una supresión no termina, mirar `purge.resumed`, `purge.skipped` y `purge.failed` en los registros (`docker compose logs scheduler`) y `failed_jobs`.

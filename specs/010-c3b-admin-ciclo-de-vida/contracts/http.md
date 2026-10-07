@@ -18,7 +18,7 @@ Las rutas de `/api/admin` pertenecen al grupo de middleware `admin`, que arma `b
 8. La búsqueda del destino (404 `not_found`). **Ningún destino se resuelve antes del paso 4**: las rutas no usan el binding implícito de modelos, que corre antes que el rol. Por eso un estudiante recibe 403 también con un id que no existe.
 9. Las reglas de la operación (422 y 409), y por último el 503 de correo.
 
-El destino de la ruta es un entero: `{user}` y `{invitation}` sólo aceptan dígitos. Un valor que no lo es no coincide con la ruta y responde 404 `not_found`, como cualquier ruta inexistente.
+El destino de la ruta es un entero: `{user}` y `{invitation}` aceptan de 1 a 18 dígitos (`[0-9]{1,18}`). Un valor que no lo es, o uno más largo que no entra en un entero de PHP, no coincide con la ruta y responde 404 `not_found`, como cualquier ruta inexistente.
 
 ## Códigos nuevos
 
@@ -213,7 +213,7 @@ Grupo `account` (sin `verified`), más `password.confirm`. Sin cuerpo.
 Grupo `admin` más `password.confirm`. Sin cuerpo.
 
 - **202** `{"data": {"id": 12, "status": "deleting"}, "message": "Se está borrando la cuenta con todo lo que guardó: el progreso, los intentos, el código y las importaciones. No se puede deshacer."}`.
-- Hace lo mismo que `DELETE /api/me` para otra cuenta. Sobre una cuenta que ya está en `deleting` responde 202 igual: vuelve a pedir la purga, que es única por cuenta. Sobre la propia cuenta del admin vale igual que `DELETE /api/me`.
+- Hace lo mismo que `DELETE /api/me` para otra cuenta. Sobre una cuenta que ya está en `deleting` responde 202 igual: vuelve a pedir la purga, que es única por cuenta. Sobre la propia cuenta del admin conserva el cuerpo y el mensaje de esta ruta (con `data.id`) y tiene los efectos de `DELETE /api/me`: la sesión termina y rige la guardia del último admin.
 - **404** si no existe. **409 `last_admin`** si el destino es el único admin activo. **423** sin la contraseña reconfirmada.
 
 ## Rutas y límites

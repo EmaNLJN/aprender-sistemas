@@ -45,3 +45,9 @@ it('works only the default queue, in a single worker whose overlap lock expires 
         expect($command)->not->toMatch('/--queue=\\S*runs/');
     }
 });
+
+it('appends the output of every task to the stderr of the scheduler container, so its logs reach docker compose logs', function () {
+    foreach (app(Schedule::class)->events() as $event) {
+        expect([$event->output, $event->shouldAppendOutput])->toBe(['/proc/1/fd/2', true]);
+    }
+});
