@@ -24,6 +24,14 @@ const INDEX_OWNERS: Readonly<Record<string, string>> = {
 const SLICE_INDEX_SPECIFIER =
   /(?:^|\/)entities\/(guide|exercise|campaign|systems-workshop)(?:\/index(?:\.ts)?)?$/;
 
+const SLICE_PATH_SPECIFIER = /(?:^|\/)entities\/(guide|exercise|campaign|systems-workshop)(\/.*)?$/;
+
+const STATELESS_ENTRIES: readonly string[] = [
+  'entities/campaign/bridge',
+  'entities/systems-workshop/bridge',
+  'entities/exercise/explorers',
+];
+
 const IMPORT_PATTERN =
   /^\s*import\s+(type\s+)?([^'";]*?)\s*from\s*['"]([^'"]+)['"]|^\s*import\s*['"]([^'"]+)['"]/gm;
 
@@ -114,6 +122,32 @@ function indexViolations(file: string, imports: ImportStatement[]): string[] {
     });
 }
 
+function isSliceIndexPath(pathInsideSlice: string | undefined): boolean {
+  return (
+    pathInsideSlice === undefined || pathInsideSlice === '/index' || pathInsideSlice === '/index.ts'
+  );
+}
+
+function isStatelessEntry(specifier: string): boolean {
+  return STATELESS_ENTRIES.some(
+    (entry) => specifier.endsWith(entry) || specifier.endsWith(`${entry}.ts`),
+  );
+}
+
+function deepSliceImportViolations(file: string, imports: ImportStatement[]): string[] {
+  if (!isLegacyOrAppFile(file)) return [];
+  return imports
+    .filter((statement) => {
+      const match = statement.specifier.match(SLICE_PATH_SPECIFIER);
+      if (match === null) return false;
+      return !isSliceIndexPath(match[2]) && !isStatelessEntry(statement.specifier);
+    })
+    .map(
+      (statement) =>
+        `R6 ${file}: imports ${statement.specifier}; outside a slice, import its index or a declared stateless entry`,
+    );
+}
+
 function curriculumViolations(file: string, imports: ImportStatement[]): string[] {
   if (!isLowerLayerFile(file)) return [];
   return imports
@@ -131,6 +165,7 @@ export function findViolations(sources: Readonly<Record<string, string>>): strin
         ...openerViolations(file, imports),
         ...factoryViolations(file, imports),
         ...indexViolations(file, imports),
+        ...deepSliceImportViolations(file, imports),
         ...curriculumViolations(file, imports),
       ];
     });
