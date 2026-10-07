@@ -154,7 +154,7 @@ Los mismos arreglos viajan en `GET /api/progress` y en `changes`. Cada fila llev
 | --- | --- |
 | `exercises` | `{exerciseId, revision, prediction: {answer, at} \| null, predictionCorrect: {value, at}, assisted, solutionSeen, hintsRevealed: int \| null, reflection: {text, at} \| null, customTest: {text, at} \| null, review: {confidence, reviewedAt, reviewDueAt, at} \| null, solvedAt, serverSolvedAt, proof: {attemptId, at, state, tests} \| null, lastAttempt: {attemptId, at, outcome, legacy, tests} \| null, attemptCount, legacyAttempts}` |
 | `drafts` | `{exerciseId, code: texto \| null, starterHash, at, revision}`; `code: null` es la lápida de «restaurar inicio» |
-| `campaign.seals` | `[]` hasta D1b, que escribe los sellos y fija la forma de sus filas |
+| `campaign.seals` | `{exerciseId, code, prediction, assisted, revision}`, ordenados por `exerciseId`; los escribe la importación de D1b ([http-d1b.md](./http-d1b.md), sección 5) |
 | `campaign.checkpoints` | `{worldId, passed, passedAt, lastAnswer: {value, at} \| null, revision}` |
 | `workshops.progress` | `{workshopId, language, codeSealed, predictionCorrect: {value, at}, answer: {value, at} \| null, note: {text, at} \| null, revision}` |
 | `workshops.objectives` | `{workshopId, language, objectiveKey, observedAt, revision}` |
@@ -167,6 +167,7 @@ Los mismos arreglos viajan en `GET /api/progress` y en `changes`. Cada fila llev
 - **El estado de una prueba aprobada** (`proof.state`, FR-022) se calcula al leer, comparando el `grading_hash` con que se verificó el intento aprobado con el vigente del ejercicio: `current` si coinciden, `changed` si no («cambió, volvé a verificarlo» en la interfaz) y `legacy` si el intento es un intento legado de la importación, que no trae `grading_hash`. Los valores del cable van en inglés y en minúscula, como los demás enums (sección 8) **(propuesta del plan)**: «vigente», «cambió» y «legado» son los nombres del concepto en la spec. No se borra ni se reinicia nada.
 - **Resúmenes de intentos** (sin código, sin prueba propia y sin salidas): sólo los de las dos puntas que guarda `exercise_progress`, la última aprobada (`proof`) y el último intento (`lastAttempt`), cada uno con el veredicto de sus pruebas, `tests: [{testKey, outcome}]` con `outcome` `pass`, `fail` o `missing`, en el orden de las pruebas. No hay un historial: el de intentos es un recurso de B2 que sigue sin dueño **(propuesta del plan)**.
 - **Fechas.** `solvedAt` y `serverSolvedAt` son de B2; `confidence` es `again`, `practice` o `confident`.
+- **El grupo de repaso.** `review` es `null` sólo si sus tres columnas (`confidence`, `reviewedAt` y `reviewDueAt`) son nulas. Un grupo legado que importó D1b (`at: null`) puede traer `confidence` y `reviewedAt` en `null` con `reviewDueAt`, como lo dejó el v1. Una escritura de `/api/sync` reemplaza el grupo entero ([http-d1b.md](./http-d1b.md), sección 5, y R41).
 
 ## 6. Errores
 
