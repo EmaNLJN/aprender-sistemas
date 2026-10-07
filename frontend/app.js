@@ -4,6 +4,12 @@ import {
   parseRouteProgress,
   routeStore,
 } from './src/entities/guide';
+import {
+  isLinkLanguage,
+  readLinkQuery,
+  viewFromHash,
+  withLanguageQuery,
+} from './src/shared/config/url-grammar';
 import { downloadBlob } from './src/shared/lib/download-file';
 import { escapeHtml } from './src/shared/lib/escape-html';
 import { isLosslessNormalization } from './src/shared/lib/is-lossless-normalization';
@@ -15,16 +21,6 @@ export function startApp() {
   started = true;
   window.TallerLab.init();
   const data = window.GUIDE_DATA;
-  const views = [
-    'recorrido',
-    'campana',
-    'sistemas',
-    'atlas',
-    'laboratorio',
-    'biblioteca',
-    'proyecto',
-    'metodo',
-  ];
   const $ = (query, root = document) => root.querySelector(query);
   const $$ = (query, root = document) => [...root.querySelectorAll(query)];
   const allSteps = Object.values(data.tracks).flatMap((track) =>
@@ -81,24 +77,23 @@ export function startApp() {
     window.TallerLab?.loadWarning?.(),
   ].filter(Boolean);
   function syncLinkedLanguage() {
-    const params = new URLSearchParams(location.search);
-    if (location.hash === '#sistemas' && ['rust', 'go'].includes(params.get('lenguaje')))
-      routeState().language = params.get('lenguaje');
-    if (location.hash === '#campana')
+    const params = readLinkQuery(location.search);
+    if (viewFromHash(location.hash) === 'sistemas' && isLinkLanguage(params.language))
+      routeState().language = params.language;
+    if (viewFromHash(location.hash) === 'campana')
       for (const lang of ['rust', 'go'])
         if (
           (lang === 'rust' ? window.RUST_CAMPAIGN : window.GO_CAMPAIGN)?.some(
-            (world) => world.id === params.get('mundo'),
+            (world) => world.id === params.world,
           )
         )
           routeState().language = lang;
-    const linked = window.TallerLab?.getExercises().find(
-      (item) => item.id === params.get('ejercicio'),
-    );
-    if (location.hash === '#laboratorio' && linked) routeState().language = linked.language;
+    const linked = window.TallerLab?.getExercises().find((item) => item.id === params.exercise);
+    if (viewFromHash(location.hash) === 'laboratorio' && linked)
+      routeState().language = linked.language;
   }
   syncLinkedLanguage();
-  let currentView = views.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'recorrido';
+  let currentView = viewFromHash(location.hash);
   let currentStepId = null;
   let lessonOpener = null;
   let toastTimeout;
@@ -550,10 +545,11 @@ export function startApp() {
     button.addEventListener('click', () => {
       if (routeState().language === button.dataset.language) return;
       routeState().language = button.dataset.language;
-      const url = new URL(location.href);
-      if (currentView === 'sistemas') url.searchParams.set('lenguaje', routeState().language);
-      else url.search = '';
-      history.replaceState(null, '', url);
+      history.replaceState(
+        null,
+        '',
+        withLanguageQuery(new URL(location.href), currentView, routeState().language),
+      );
       save();
       render();
       toast(`Recorrido de ${languageName()}. Tu otro avance sigue guardado.`);
@@ -568,7 +564,7 @@ export function startApp() {
   function navigateFromLocation() {
     if (lastNavigation === location.href) return;
     syncLinkedLanguage();
-    currentView = views.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'recorrido';
+    currentView = viewFromHash(location.hash);
     render();
     lastNavigation = location.href;
     window.scrollTo({ top: 0, behavior: 'instant' });

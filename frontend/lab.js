@@ -5,6 +5,7 @@ import {
   labStore,
   syncAfterRun,
 } from './src/entities/exercise';
+import { exercisePhaseOr, readLinkQuery, withLabQuery } from './src/shared/config/url-grammar';
 import { escapeHtml } from './src/shared/lib/escape-html';
 import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
 (() => {
@@ -79,12 +80,12 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
   const list = () => exerciseCatalog.exercises.filter((exercise) => exercise.language === language);
   const current = () => exerciseCatalog.byId.get(selectedId);
   function navigationList() {
-    const params = new URLSearchParams(location.search),
-      system = params.get('sistema'),
+    const link = readLinkQuery(location.search),
+      system = link.missionWorkshop,
       systemIds = system ? window.TallerSystems?.missionIDs(system, language) : [];
     if (systemIds?.includes(selectedId))
       return systemIds.map((id) => exerciseCatalog.byId.get(id)).filter(Boolean);
-    const worldId = params.get('campana');
+    const worldId = link.missionWorld;
     const world =
       worldId && window.TallerCampaignEngine?.getWorlds(language).find((w) => w.id === worldId);
     return world
@@ -92,13 +93,13 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
       : list();
   }
   function finishNavigation() {
-    const params = new URLSearchParams(location.search),
-      system = params.get('sistema');
+    const link = readLinkQuery(location.search),
+      system = link.missionWorkshop;
     if (system) {
       location.href = window.TallerSystems.returnURL(system, language);
       return;
     }
-    const worldId = params.get('campana');
+    const worldId = link.missionWorld;
     if (worldId) {
       location.href = window.TallerCampaign.returnURL(worldId);
       return;
@@ -145,14 +146,12 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
       query = '';
       dueOnly = false;
     }
-    const params = new URLSearchParams(location.search),
-      linked = exerciseCatalog.byId.get(params.get('ejercicio'));
+    const link = readLinkQuery(location.search),
+      linked = exerciseCatalog.byId.get(link.exercise);
     if (linked?.language === lang) {
       selectedId = linked.id;
       mode = 'exercise';
-      phase = ['learn', 'code', 'reflect'].includes(params.get('paso'))
-        ? params.get('paso')
-        : 'learn';
+      phase = exercisePhaseOr(link.phase, 'learn');
     }
     host.addEventListener('click', onClick);
     host.addEventListener('input', onInput);
@@ -202,18 +201,7 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
     }
   }
   function syncLocation() {
-    const url = new URL(location.href);
-    if (mode === 'map') {
-      url.searchParams.delete('campana');
-      url.searchParams.delete('sistema');
-    }
-    if (mode === 'exercise') {
-      url.searchParams.set('ejercicio', selectedId);
-      url.searchParams.set('paso', phase);
-    } else {
-      url.searchParams.delete('ejercicio');
-      url.searchParams.delete('paso');
-    }
+    const url = withLabQuery(new URL(location.href), mode, selectedId, phase);
     try {
       history.replaceState(null, '', url);
     } catch (error) {
@@ -331,7 +319,7 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
       record = recordFor(item.id),
       items = navigationList(),
       index = items.findIndex((exercise) => exercise.id === item.id);
-    return `${window.TallerSystems?.exerciseContextHTML(item.id, language) || window.TallerCampaign?.exerciseContextHTML(item.id, language) || ''}<div class="lab-breadcrumb"><button class="lab-back" data-lab-action="map">← ${new URLSearchParams(location.search).has('sistema') ? 'Volver al taller' : 'Volver al mapa'}</button><div class="lab-next-controls"><span class="small-label">${index + 1} / ${items.length}</span><button data-lab-action="previous" aria-label="Ejercicio anterior" ${index === 0 ? 'disabled' : ''}>←</button><button data-lab-action="next" aria-label="Ejercicio siguiente" ${index === items.length - 1 ? 'disabled' : ''}>→</button></div></div><header class="lab-exercise-heading"><div class="eyebrow">${langName().toUpperCase()} / ${escapeHtml(levels.find((entry) => entry[0] === levelFor(item))[1])} / ${escapeHtml(item.topic)} / ${item.kind === 'reparar' ? 'REPARÁ EL CÓDIGO' : 'CONSTRUÍ UNA SOLUCIÓN'}</div><h1 tabindex="-1">${escapeHtml(item.title)}</h1><p>${escapeHtml(item.objective)}</p></header><div class="lab-tabs" role="tablist" aria-label="Pasos del desafío">${[
+    return `${window.TallerSystems?.exerciseContextHTML(item.id, language) || window.TallerCampaign?.exerciseContextHTML(item.id, language) || ''}<div class="lab-breadcrumb"><button class="lab-back" data-lab-action="map">← ${readLinkQuery(location.search).missionWorkshop !== null ? 'Volver al taller' : 'Volver al mapa'}</button><div class="lab-next-controls"><span class="small-label">${index + 1} / ${items.length}</span><button data-lab-action="previous" aria-label="Ejercicio anterior" ${index === 0 ? 'disabled' : ''}>←</button><button data-lab-action="next" aria-label="Ejercicio siguiente" ${index === items.length - 1 ? 'disabled' : ''}>→</button></div></div><header class="lab-exercise-heading"><div class="eyebrow">${langName().toUpperCase()} / ${escapeHtml(levels.find((entry) => entry[0] === levelFor(item))[1])} / ${escapeHtml(item.topic)} / ${item.kind === 'reparar' ? 'REPARÁ EL CÓDIGO' : 'CONSTRUÍ UNA SOLUCIÓN'}</div><h1 tabindex="-1">${escapeHtml(item.title)}</h1><p>${escapeHtml(item.objective)}</p></header><div class="lab-tabs" role="tablist" aria-label="Pasos del desafío">${[
       ['learn', 'Descubrí'],
       ['code', 'Experimentá'],
       ['reflect', 'Explicá'],
@@ -642,7 +630,7 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
       )
       .join(
         '',
-      )}</div>${record.reviewAt ? `<p class="note-state">Próximo repaso: ${escapeHtml(new Date(record.reviewAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'long' }))}. No enviamos notificaciones.</p>` : ''}${sourcesHTML(item)}</section></div><div class="lab-phase-footer"><p>Podés volver a cualquier ejercicio. Las soluciones y las notas quedan guardadas.</p><button class="button" data-lab-action="next">${navigationList().findIndex((candidate) => candidate.id === item.id) === navigationList().length - 1 ? (new URLSearchParams(location.search).has('sistema') ? 'Volver al taller' : 'Volver al mapa') : 'Siguiente experimento'} →</button></div>`;
+      )}</div>${record.reviewAt ? `<p class="note-state">Próximo repaso: ${escapeHtml(new Date(record.reviewAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'long' }))}. No enviamos notificaciones.</p>` : ''}${sourcesHTML(item)}</section></div><div class="lab-phase-footer"><p>Podés volver a cualquier ejercicio. Las soluciones y las notas quedan guardadas.</p><button class="button" data-lab-action="next">${navigationList().findIndex((candidate) => candidate.id === item.id) === navigationList().length - 1 ? (readLinkQuery(location.search).missionWorkshop !== null ? 'Volver al taller' : 'Volver al mapa') : 'Siguiente experimento'} →</button></div>`;
   }
   function explorerHTML(item) {
     const special = window.TallerExplorers?.render(item);

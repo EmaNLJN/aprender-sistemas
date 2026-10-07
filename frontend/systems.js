@@ -2,6 +2,18 @@ import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
 import { escapeHtml } from './src/shared/lib/escape-html';
 import { mergeModelGroups } from './src/entities/systems-simulation';
 import { LEVEL_LABELS } from './src/shared/config/levels';
+import {
+  readLinkQuery,
+  workshopExerciseHref,
+  workshopPartOr,
+  workshopReturnHref,
+  withWorkshopQuery,
+} from './src/shared/config/url-grammar';
+import {
+  workshopExerciseRole,
+  workshopMissionIds,
+  workshopReturnTarget,
+} from './src/entities/systems-workshop/bridge';
 (() => {
   'use strict';
   const engine = window.TallerSystemsEngine;
@@ -43,12 +55,10 @@ import { LEVEL_LABELS } from './src/shared/config/levels';
     language = lang;
     notify = toast;
     refresh();
-    const params = new URLSearchParams(location.search),
-      id = params.get('taller');
+    const link = readLinkQuery(location.search),
+      id = link.workshop;
     selected = workshops().some((w) => w.id === id) ? id : null;
-    phase = ['explore', 'build', 'ship'].includes(params.get('parte'))
-      ? params.get('parte')
-      : 'explore';
+    phase = workshopPartOr(link.part, 'explore');
     host.addEventListener('click', onClick);
     host.addEventListener('input', onInput);
     host.addEventListener('change', onChange);
@@ -62,24 +72,20 @@ import { LEVEL_LABELS } from './src/shared/config/levels';
     window.TallerEffects?.stop();
   }
   function returnURL(id, lang = language) {
-    return `?taller=${encodeURIComponent(id)}&parte=build&lenguaje=${lang === 'go' ? 'go' : 'rust'}#sistemas`;
+    return workshopReturnHref(workshopReturnTarget(id, lang));
   }
   function missionIDs(id, lang) {
-    const w = workshops().find((item) => item.id === id);
-    return w ? [...new Set([...(w.related?.[lang] || []), w.code[lang]])] : [];
-  }
-  function codeURL(workshop, id) {
-    return `?sistema=${encodeURIComponent(workshop.id)}&ejercicio=${encodeURIComponent(id)}&paso=code#laboratorio`;
+    return workshopMissionIds(
+      workshops().find((item) => item.id === id),
+      lang,
+    );
   }
   function locationForSelection() {
-    const url = new URL(location.href);
-    url.search = '';
-    url.searchParams.set('lenguaje', language);
-    if (selected) {
-      url.searchParams.set('taller', selected);
-      url.searchParams.set('parte', phase);
-    }
-    history.replaceState(null, '', url);
+    history.replaceState(
+      null,
+      '',
+      withWorkshopQuery(new URL(location.href), language, selected, phase),
+    );
   }
   function stateFor(workshop) {
     const key = language + ':' + workshop.id;
@@ -210,13 +216,13 @@ import { LEVEL_LABELS } from './src/shared/config/levels';
   }
   function build(workshop) {
     const item = window.TallerLab.getExercises().find((ex) => ex.id === workshop.code[language]);
-    return `<div class="sys-build-callout"><div><span class="small-label">NÚCLEO EJECUTABLE · ${language.toUpperCase()}</span><h2>${escapeHtml(item.title)}</h2><p>${escapeHtml(item.objective)}</p><div class="sys-pills"><span>${item.tests.length} pruebas reales</span><span>Pistas progresivas</span><span>Tu propio caso extra</span></div></div><a class="button" href="${codeURL(workshop, item.id)}">Entrar al IDE ↗</a></div><div class="sys-concept"><section><h2>Del dibujo al código.</h2><p>${escapeHtml(workshop.bridge[language])}</p></section><section><h2>Lo que vas a verificar.</h2><ul>${item.tests.map((test) => `<li><strong>${escapeHtml(test.label)}</strong><br>${escapeHtml(test.why)}</li>`).join('')}</ul></section></div>${workshop.progress.code ? '<p class="sys-code-passed" role="status">✓ Este núcleo tiene una ejecución registrada con sus tres casos aprobados. Cambiarlo no borra el sello: ejecutá otra vez para verificar el código nuevo.</p>' : ''}<div class="sys-related"><h2>Herramientas que preparan esta idea.</h2><p>Estos ejercicios existentes se reutilizan como práctica previa. Podés ir directamente al núcleo si ya entendés el concepto.</p><div>${(
+    return `<div class="sys-build-callout"><div><span class="small-label">NÚCLEO EJECUTABLE · ${language.toUpperCase()}</span><h2>${escapeHtml(item.title)}</h2><p>${escapeHtml(item.objective)}</p><div class="sys-pills"><span>${item.tests.length} pruebas reales</span><span>Pistas progresivas</span><span>Tu propio caso extra</span></div></div><a class="button" href="${workshopExerciseHref(workshop.id, item.id)}">Entrar al IDE ↗</a></div><div class="sys-concept"><section><h2>Del dibujo al código.</h2><p>${escapeHtml(workshop.bridge[language])}</p></section><section><h2>Lo que vas a verificar.</h2><ul>${item.tests.map((test) => `<li><strong>${escapeHtml(test.label)}</strong><br>${escapeHtml(test.why)}</li>`).join('')}</ul></section></div>${workshop.progress.code ? '<p class="sys-code-passed" role="status">✓ Este núcleo tiene una ejecución registrada con sus tres casos aprobados. Cambiarlo no borra el sello: ejecutá otra vez para verificar el código nuevo.</p>' : ''}<div class="sys-related"><h2>Herramientas que preparan esta idea.</h2><p>Estos ejercicios existentes se reutilizan como práctica previa. Podés ir directamente al núcleo si ya entendés el concepto.</p><div>${(
       workshop.related?.[language] || []
     )
       .map((id) => {
         const ex = window.TallerLab.getExercises().find((x) => x.id === id);
         return ex
-          ? `<a href="${codeURL(workshop, id)}"><span>${id}</span>${escapeHtml(ex.title)} ↗</a>`
+          ? `<a href="${workshopExerciseHref(workshop.id, id)}"><span>${id}</span>${escapeHtml(ex.title)} ↗</a>`
           : '';
       })
       .join(
@@ -351,12 +357,13 @@ import { LEVEL_LABELS } from './src/shared/config/levels';
       );
   }
   function exerciseContextHTML(id, lang) {
-    const parent = new URLSearchParams(location.search).get('sistema'),
-      w = workshops().find((item) => item.id === parent);
-    if (!w || !missionIDs(parent, lang).includes(id)) return '';
+    const parent = readLinkQuery(location.search).missionWorkshop,
+      w = workshops().find((item) => item.id === parent),
+      role = workshopExerciseRole(w, id, lang);
+    if (!role) return '';
     refresh();
     const progress = engine.get(parent, lang);
-    return `<div class="quest-lab-context"><a href="${returnURL(parent, lang)}">← ${escapeHtml(w.title)}</a><span>${id === w.code[lang] ? 'Núcleo del taller' : 'Herramienta previa'}</span><span>${progress.progress.code ? '✓ Núcleo verificado' : 'Tres pruebas para verificar el núcleo'}</span></div>`;
+    return `<div class="quest-lab-context"><a href="${workshopReturnHref(workshopReturnTarget(parent, lang))}">← ${escapeHtml(w.title)}</a><span>${role === 'core' ? 'Núcleo del taller' : 'Herramienta previa'}</span><span>${progress.progress.code ? '✓ Núcleo verificado' : 'Tres pruebas para verificar el núcleo'}</span></div>`;
   }
   window.TallerSystems = {
     init,

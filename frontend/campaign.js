@@ -1,5 +1,13 @@
 import { escapeHtml } from './src/shared/lib/escape-html';
 import { LEVEL_LABELS } from './src/shared/config/levels';
+import {
+  FREE_LAB_HREF,
+  campaignMissionHref,
+  readLinkQuery,
+  withWorldQuery,
+  worldHref,
+} from './src/shared/config/url-grammar';
+import { campaignLinkAccess, campaignMissionContext } from './src/entities/campaign/bridge';
 (() => {
   'use strict';
   const engine = window.TallerCampaignEngine;
@@ -42,7 +50,7 @@ import { LEVEL_LABELS } from './src/shared/config/levels';
     language = lang;
     notify = toast;
     refresh();
-    const linked = new URLSearchParams(location.search).get('mundo');
+    const linked = readLinkQuery(location.search).world;
     const worlds = engine.getWorlds(language);
     if (worlds.some((world) => world.id === linked)) selected = linked;
     if (!worlds.some((world) => world.id === selected))
@@ -54,15 +62,6 @@ import { LEVEL_LABELS } from './src/shared/config/levels';
     host?.removeEventListener('click', onClick);
     host = null;
     window.TallerEffects?.stop();
-  }
-  function worldURL(id) {
-    return `?mundo=${encodeURIComponent(id)}#campana`;
-  }
-  function missionURL(world, id) {
-    return `?campana=${encodeURIComponent(world.id)}&ejercicio=${encodeURIComponent(id)}&paso=learn#laboratorio`;
-  }
-  function returnURL(worldId) {
-    return worldURL(worldId);
   }
   function missionType(item) {
     return item.challengeType === 'boss'
@@ -88,7 +87,7 @@ import { LEVEL_LABELS } from './src/shared/config/levels';
     }
     const complete = worlds.filter((w) => w.completed).length;
     host.innerHTML = `<section class="quest-hero"><div><div class="eyebrow"><span class="eyebrow-line"></span> CAMPAÑA · ${language.toUpperCase()}</div><h1>El próximo nivel<br>lo <em>construís vos.</em></h1><p>Una expedición por las ideas que hacen especial a ${language === 'rust' ? 'Rust' : 'Go'}. Repará, inventá y defendé tu solución frente a pruebas reales.</p><div class="quest-pills"><span>4 mundos</span><span>24 misiones</span><span>12 desafíos nuevos</span></div></div><div class="quest-rank"><span class="small-label">TU RANGO</span><div class="rank-symbol" aria-hidden="true">${icons[Math.min(complete, 3)]}</div><strong>${ranks[complete]}</strong><span>${summary.score} / ${summary.maxScore} XP de campaña</span><progress value="${summary.score}" max="${summary.maxScore}" aria-label="Experiencia de campaña"></progress><small>${complete} de 4 insignias</small></div></section>
-    ${summary.storageAvailable === false ? '<p class="quest-mode-note" role="status">Este navegador no pudo guardar tu campaña. Exportá tu progreso antes de cerrar la página.</p>' : ''}<div class="quest-mode-note"><span aria-hidden="true">↗</span><p><strong>Una ruta con propósito.</strong> Cada mundo abre el siguiente al reunir 150 XP, verificar sus seis misiones, resolver la predicción final y superar su checkpoint. Tu <a href="?#laboratorio">laboratorio libre</a> sigue disponible.</p></div>
+    ${summary.storageAvailable === false ? '<p class="quest-mode-note" role="status">Este navegador no pudo guardar tu campaña. Exportá tu progreso antes de cerrar la página.</p>' : ''}<div class="quest-mode-note"><span aria-hidden="true">↗</span><p><strong>Una ruta con propósito.</strong> Cada mundo abre el siguiente al reunir 150 XP, verificar sus seis misiones, resolver la predicción final y superar su checkpoint. Tu <a href="${FREE_LAB_HREF}">laboratorio libre</a> sigue disponible.</p></div>
     <nav class="quest-map" aria-label="Mundos de la campaña">${worlds.map((w, i) => `<button class="world-node ${w.completed ? 'complete' : w.unlocked ? 'available' : 'locked'} ${w.id === world.id ? 'selected' : ''}" data-quest="world" data-id="${escapeHtml(w.id)}" aria-pressed="${w.id === world.id}" aria-label="Mundo ${i + 1}: ${escapeHtml(w.title)}, ${w.completed ? 'completado' : w.unlocked ? 'disponible' : 'bloqueado; ver requisitos'}"><span class="world-icon" aria-hidden="true">${w.completed ? '✓' : w.unlocked ? icons[i] : '◇'}</span><span class="world-number">MUNDO 0${i + 1} · ${LEVEL_LABELS[w.level]}</span><strong>${escapeHtml(w.title)}</strong><span class="world-status">${w.completed ? 'Insignia conseguida' : w.unlocked ? `${w.score}/180 XP · explorar →` : 'Bloqueado · ver requisitos'}</span><progress value="${w.score}" max="180" aria-label="Experiencia en ${escapeHtml(w.title)}"></progress></button>`).join('')}</nav>
     <section class="quest-world" id="quest-world" aria-labelledby="quest-world-title"><div class="quest-world-head"><div><span class="eyebrow">${LEVEL_LABELS[world.level]} / ${world.completed ? 'MUNDO COMPLETADO' : world.unlocked ? 'TU EXPEDICIÓN' : 'PRÓXIMA FRONTERA'}</span><h2 id="quest-world-title" tabindex="-1">${escapeHtml(world.title)}</h2><p>${escapeHtml(world.subtitle)}</p></div><span class="world-score">${world.score}<small>/ 180 XP</small></span></div><p class="world-story">${escapeHtml(world.story)}</p><div class="concept-chips">${world.concepts.map((concept) => `<span>${escapeHtml(concept)}</span>`).join('')}</div>
     ${world.unlocked ? worldBody(world) : lockedBody(world)}
@@ -106,7 +105,7 @@ import { LEVEL_LABELS } from './src/shared/config/levels';
     );
     const next = world.missions.find((m) => m.allowed && (!m.code || !m.prediction));
     return `<div class="quest-brief"><div><span class="small-label">POR QUÉ EXPLORARLO</span><p>${escapeHtml(world.why)}</p></div><ol>${world.guide.map((step, i) => `<li><span>0${i + 1}</span>${escapeHtml(step)}</li>`).join('')}</ol></div>
-    ${world.completed ? `<div class="quest-unlocked" role="status"><span aria-hidden="true">✳</span><div><strong>Insignia conseguida: ${escapeHtml(world.badge)}</strong><p>Podés completar los puntos que faltan o seguir al siguiente mundo.</p></div>${nextWorldButton(world)}</div>` : next ? `<div class="quest-next"><div><span class="small-label">TU SIGUIENTE MOVIMIENTO</span><strong>${escapeHtml(itemFor(next.id).title)}</strong><small>${next.code ? 'Código aprobado. Volvé a Descubrí y razoná la predicción.' : 'Una misión, una hipótesis y tres pruebas.'}</small></div><a class="button" href="${missionURL(world, next.id)}">${next.code ? 'Resolver predicción' : 'Entrar al IDE'} ↗</a></div>` : ''}
+    ${world.completed ? `<div class="quest-unlocked" role="status"><span aria-hidden="true">✳</span><div><strong>Insignia conseguida: ${escapeHtml(world.badge)}</strong><p>Podés completar los puntos que faltan o seguir al siguiente mundo.</p></div>${nextWorldButton(world)}</div>` : next ? `<div class="quest-next"><div><span class="small-label">TU SIGUIENTE MOVIMIENTO</span><strong>${escapeHtml(itemFor(next.id).title)}</strong><small>${next.code ? 'Código aprobado. Volvé a Descubrí y razoná la predicción.' : 'Una misión, una hipótesis y tres pruebas.'}</small></div><a class="button" href="${campaignMissionHref(world.id, next.id)}">${next.code ? 'Resolver predicción' : 'Entrar al IDE'} ↗</a></div>` : ''}
     <div class="quest-mission-top"><h3>Seis misiones para conectar las piezas.</h3><div class="quest-filters" role="group" aria-label="Tipo de misión">${['all', 'Entrenamiento', 'Reparación', 'Kata', 'Desafío final'].map((type) => `<button data-quest="filter" data-filter="${type}" aria-pressed="${filter === type}">${type === 'all' ? 'Todas' : type}</button>`).join('')}</div></div>
     <div class="quest-missions">${missions.map((m) => missionHTML(world, m)).join('')}</div>${checkpointHTML(world)}`;
   }
@@ -121,7 +120,7 @@ import { LEVEL_LABELS } from './src/shared/config/levels';
   function missionHTML(world, mission) {
     const item = itemFor(mission.id),
       boss = item.id === world.bossId;
-    return `<article class="quest-mission ${boss ? 'is-boss' : ''} ${mission.code && mission.prediction ? 'is-mastered' : ''} ${!mission.allowed ? 'is-locked' : ''}"><div class="quest-mission-title"><span class="mission-type">${escapeHtml(missionType(item))}</span><span class="mission-points">${mission.points}/30 XP</span></div><h4>${escapeHtml(item.title)}</h4><p>${escapeHtml(item.objective)}</p><div class="mission-seals"><span class="${mission.code ? 'earned' : ''}">${mission.code ? '✓' : '○'} Pruebas · 20</span><span class="${mission.prediction ? 'earned' : ''}">${mission.prediction ? '✓' : '○'} Predicción · 10</span></div>${mission.assisted ? '<small class="mission-assisted">Práctica con solución de apoyo</small>' : ''}${mission.allowed ? `<a class="button small ${boss ? '' : 'secondary'}" href="${missionURL(world, item.id)}">${mission.code && mission.prediction ? 'Volver a experimentar' : boss ? 'Enfrentar el desafío final' : 'Abrir misión'} ↗</a>` : `<details class="mission-requirements"><summary>Ver qué falta para entrar</summary><ul>${mission.reasons.map((reason) => `<li>${escapeHtml(reason)}</li>`).join('')}</ul></details>`}</article>`;
+    return `<article class="quest-mission ${boss ? 'is-boss' : ''} ${mission.code && mission.prediction ? 'is-mastered' : ''} ${!mission.allowed ? 'is-locked' : ''}"><div class="quest-mission-title"><span class="mission-type">${escapeHtml(missionType(item))}</span><span class="mission-points">${mission.points}/30 XP</span></div><h4>${escapeHtml(item.title)}</h4><p>${escapeHtml(item.objective)}</p><div class="mission-seals"><span class="${mission.code ? 'earned' : ''}">${mission.code ? '✓' : '○'} Pruebas · 20</span><span class="${mission.prediction ? 'earned' : ''}">${mission.prediction ? '✓' : '○'} Predicción · 10</span></div>${mission.assisted ? '<small class="mission-assisted">Práctica con solución de apoyo</small>' : ''}${mission.allowed ? `<a class="button small ${boss ? '' : 'secondary'}" href="${campaignMissionHref(world.id, item.id)}">${mission.code && mission.prediction ? 'Volver a experimentar' : boss ? 'Enfrentar el desafío final' : 'Abrir misión'} ↗</a>` : `<details class="mission-requirements"><summary>Ver qué falta para entrar</summary><ul>${mission.reasons.map((reason) => `<li>${escapeHtml(reason)}</li>`).join('')}</ul></details>`}</article>`;
   }
   function checkpointHTML(world) {
     const q = world.checkpoint,
@@ -134,10 +133,7 @@ import { LEVEL_LABELS } from './src/shared/config/levels';
     if (button.dataset.quest === 'world') {
       selected = button.dataset.id;
       filter = 'all';
-      const url = new URL(location.href);
-      url.search = '';
-      url.searchParams.set('mundo', selected);
-      history.replaceState(null, '', url);
+      history.replaceState(null, '', withWorldQuery(new URL(location.href), selected));
       render();
       $('#quest-world')?.scrollIntoView({ block: 'start', behavior: 'instant' });
       focusAfter('#quest-world-title');
@@ -173,22 +169,24 @@ import { LEVEL_LABELS } from './src/shared/config/levels';
     }
   }
   function exerciseContextHTML(id, lang) {
-    const worldId = new URLSearchParams(location.search).get('campana');
+    const worldId = readLinkQuery(location.search).missionWorld;
     if (!worldId) return '';
     refresh();
-    const world = engine.getWorlds(lang).find((w) => w.id === worldId),
-      mission = world?.missions.find((m) => m.id === id);
-    if (!world || !mission) return '';
-    return `<div class="quest-lab-context"><a href="${worldURL(world.id)}">← ${escapeHtml(world.title)}</a><span>${mission.points}/30 XP · ${escapeHtml(missionType(itemFor(id)))}</span><span>${mission.code ? '✓' : '○'} Pruebas ${mission.prediction ? '✓' : '○'} Predicción</span></div>`;
+    const context = campaignMissionContext(engine.getWorlds(lang), worldId, id);
+    if (!context) return '';
+    return `<div class="quest-lab-context"><a href="${worldHref(context.worldId)}">← ${escapeHtml(context.worldTitle)}</a><span>${context.points}/30 XP · ${escapeHtml(missionType(itemFor(id)))}</span><span>${context.code ? '✓' : '○'} Pruebas ${context.prediction ? '✓' : '○'} Predicción</span></div>`;
   }
   function lockedExerciseHTML(id, lang) {
-    const worldId = new URLSearchParams(location.search).get('campana');
+    const worldId = readLinkQuery(location.search).missionWorld;
     if (!worldId) return '';
-    const world = engine.getWorlds(lang).find((w) => w.id === worldId),
-      mission = world?.missions.find((m) => m.id === id);
-    const gate = engine.canAttempt(id, lang);
-    if (world && mission && gate.allowed && gate.worldId === worldId) return '';
-    return `<section class="quest-direct-lock"><div class="eyebrow">CAMPAÑA · ACCESO A LA MISIÓN</div><h1>Primero, las piezas<br><em>que te preparan.</em></h1><p>Esta misión todavía no está disponible en tu campaña.</p><ul>${(mission ? gate.reasons : ['El enlace no corresponde a una misión de este mundo.']).map((reason) => `<li>${escapeHtml(reason)}</li>`).join('')}</ul><a class="button" href="${world ? worldURL(world.id) : '#campana'}">Ver mi mapa →</a></section>`;
+    const access = campaignLinkAccess(
+      engine.getWorlds(lang),
+      worldId,
+      id,
+      engine.canAttempt(id, lang),
+    );
+    if (access.allowed) return '';
+    return `<section class="quest-direct-lock"><div class="eyebrow">CAMPAÑA · ACCESO A LA MISIÓN</div><h1>Primero, las piezas<br><em>que te preparan.</em></h1><p>Esta misión todavía no está disponible en tu campaña.</p><ul>${access.reasons.map((reason) => `<li>${escapeHtml(reason)}</li>`).join('')}</ul><a class="button" href="${access.worldId ? worldHref(access.worldId) : '#campana'}">Ver mi mapa →</a></section>`;
   }
   window.TallerCampaign = {
     init,
@@ -196,7 +194,7 @@ import { LEVEL_LABELS } from './src/shared/config/levels';
     sync,
     mount,
     unmount,
-    returnURL,
+    returnURL: worldHref,
     exerciseContextHTML,
     lockedExerciseHTML,
   };
