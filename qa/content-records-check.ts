@@ -197,7 +197,7 @@ function step(id: string, v1Index: number | null, title: string): string {
   return `  - id: ${id}\n${index}    title: ${title}\n    task: Hacé ${title}.\n    why: Por ${title}.\n    done: ${title} listo.\n`;
 }
 
-test('workshops: step keys travel separately and the published step keeps its four texts', () => {
+test('workshops: step keys travel separately and the published step starts with its id and keeps its four texts', () => {
   const steps = step('e1', 0, 'Uno') + step('e2', 1, 'Dos') + step('e3', null, 'Tres');
   const { workshops, stepKeys } = loadWorkshops(fixture(workshopsWithSteps(steps)));
   assert.deepEqual(stepKeys['lowlevel-w'], [
@@ -207,12 +207,13 @@ test('workshops: step keys travel separately and the published step keeps its fo
   ]);
   const published = workshops.lowlevel[0].steps as Record<string, unknown>[];
   assert.deepEqual(published[2], {
+    id: 'e3',
     title: 'Tres',
     task: 'Hacé Tres.',
     why: 'Por Tres.',
     done: 'Tres listo.',
   });
-  assert.deepEqual(Object.keys(published[0]), ['title', 'task', 'why', 'done']);
+  assert.deepEqual(Object.keys(published[0]), ['id', 'title', 'task', 'why', 'done']);
 });
 
 test('workshops: the step key must exist, be valid and not repeat', () => {

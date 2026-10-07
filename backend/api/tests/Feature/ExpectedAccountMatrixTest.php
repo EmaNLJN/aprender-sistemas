@@ -55,6 +55,9 @@ it('covers all the routes that modify, so a new one cannot escape the matrix', f
         '/api/me/password',
         '/api/me/privacy',
         '/api/me/sessions/logout-others',
+        '/api/runs',
+        '/api/runs/{id}/cancel',
+        '/api/sync',
     ]);
 });
 

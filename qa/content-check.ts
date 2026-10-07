@@ -133,8 +133,11 @@ for (const language of ['rust', 'go'] as const) {
       3,
       ex.id + ': duplicate test expressions',
     );
-    for (const [i, test] of ex.tests.entries()) {
-      assert.equal(test.id, 't' + (i + 1));
+    const keys = ex.tests.map((test) => test.id);
+    assert.equal(new Set(keys).size, keys.length, ex.id + ': test keys are unique');
+    for (const test of ex.tests) {
+      assert.match(test.id, /^[A-Za-z0-9_]{1,64}$/, ex.id + ': test key shape');
+      assert.notEqual(test.id, 'custom', ex.id + ': custom is the student test');
       for (const field of ['label', 'expression', 'why', 'failure'])
         assert.ok(test[field] && test[field].trim(), ex.id + ': test ' + field);
       assert.ok(

@@ -23,7 +23,7 @@ beforeEach(function () {
     $this->assembler = ContentPipeline::assembler();
 });
 
-it('assembles each of the 17 portions with the bytes the generator fixed', function (Portion $portion) {
+it('assembles each of the 18 portions with the bytes the generator fixed', function (Portion $portion) {
     $bytes = $this->assembler->assemble($portion, $this->rows, $this->source->languages());
 
     expect(hash('sha256', $bytes))->toBe($this->source->meta->portionHash($portion));
@@ -52,7 +52,7 @@ it('assembles each exercise with its contentHash', function () {
 
 it('builds the rows ADR 0006 §5.1 describes', function () {
     expect(Arr::map($this->rows, fn (array $table) => count($table)))->toBe([
-        'languages' => 2, 'catalogs' => 3, 'topics' => 98, 'workshops' => 25, 'exercises' => 274,
+        'languages' => 2, 'harness_templates' => 2, 'catalogs' => 3, 'topics' => 98, 'workshops' => 25, 'exercises' => 274,
         'exercise_tests' => 822, 'exercise_hints' => 822, 'workshop_objectives' => 75, 'workshop_steps' => 100,
         'workshop_related_exercises' => 118, 'worlds' => 8, 'world_exercises' => 48, 'atlas_concepts' => 32,
         'guide_resources' => 15, 'guide_sources' => 9, 'guide_tracks' => 2, 'guide_modules' => 8,
@@ -60,11 +60,11 @@ it('builds the rows ADR 0006 §5.1 describes', function () {
     ]);
 });
 
-it('does not publish the step key or the v1 index, and stores them separately', function () {
+it('publishes the step key first and stores the v1 index separately', function () {
     $first = collect($this->rows['workshop_steps'])->firstWhere('workshop_id', 'algebra');
 
     expect($first)->toMatchArray(['step_key' => 'e1', 'v1_position' => 0, 'position' => 0])
-        ->and(json_decode($first['key_order']))->toBe(['title', 'task', 'why', 'done']);
+        ->and(json_decode($first['key_order']))->toBe(['id', 'title', 'task', 'why', 'done']);
 });
 
 it('leaves NULL what is not in the document: the level of a lab exercise and the further sources', function () {

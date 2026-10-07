@@ -3,7 +3,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY . .
-RUN npm run build && npm test && npm run lint && npm run format:check
+RUN npm run build && QA_CHECKS=web npm test && npm run lint && npm run format:check
 
 FROM nginxinc/nginx-unprivileged:stable-alpine@sha256:ed04ec1ff34502c339ee5c3ae3f855442398edc1d05591e2b98981dcbbd20b1e
 COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf

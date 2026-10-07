@@ -8,12 +8,12 @@ use Illuminate\Support\Facades\DB;
 
 final class ContentDatabase
 {
-    /** The 21 content tables, in migration order (parents before children). */
+    /** The 22 content tables, in migration order (parents before children). */
     public const TABLES = [
         'languages', 'catalogs', 'content_imports', 'topics', 'workshops', 'exercises', 'exercise_grading_versions',
         'exercise_tests', 'exercise_hints', 'workshop_objectives', 'workshop_steps', 'workshop_related_exercises',
         'worlds', 'world_exercises', 'atlas_concepts', 'guide_resources', 'guide_sources', 'guide_tracks',
-        'guide_modules', 'guide_steps', 'guide_step_resources',
+        'guide_modules', 'guide_steps', 'guide_step_resources', 'harness_templates',
     ];
 
     /** @return array<string, int> rows per table, active or retired */
@@ -72,6 +72,7 @@ final class ContentDatabase
             'workshops' => "/api/workshops?domain={$portion->slice()}",
             'atlas' => "/api/atlas?language={$portion->slice()}",
             'guide' => '/api/guide',
+            'harness' => '/api/harness',
         };
     }
 }

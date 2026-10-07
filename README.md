@@ -12,13 +12,21 @@ Necesitás Docker con Docker Compose. La primera vez, desde esta carpeta, creá 
 sh backend/api/scripts/init-env.sh
 ```
 
-El script agrega `APP_KEY`, `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD` y `LOG_HMAC_KEY` aleatorios sin tocar lo que el archivo ya tenga. `.env` queda fuera de Git y de las imágenes. Después:
+El script agrega `APP_KEY`, `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD`, `LOG_HMAC_KEY` y `EXECUTOR_TOKEN` aleatorios sin tocar lo que el archivo ya tenga. También agrega `EXECUTOR_DOCKER_GID`, el grupo del socket de Docker con el que el ejecutor crea los sandboxes. Si el socket no está en `/var/run/docker.sock`, indicá su ruta con `DOCKER_SOCKET=<ruta>`. Sin socket, el script falla y no deja la variable vacía. Un `.env` creado antes de la API de ejecuciones necesita correr el script otra vez, porque Compose exige esas dos variables. `.env` queda fuera de Git y de las imágenes.
+
+El código del alumno corre en dos imágenes de sandbox, una de Rust y otra de Go, que Compose no construye con el resto. Sin ellas, el ejecutor no arranca. Construilas la primera vez y reconstruilas al menos una vez por semana: el caché precalentado de Go se recorta a los cinco días sin uso (ADR 0005).
+
+```sh
+docker compose --profile sandbox-images build
+```
+
+Después:
 
 ```sh
 docker compose up --build -d --wait
 ```
 
-Abrí **http://localhost:8080/#sistemas**. También podés entrar por `#campana`, `#laboratorio` o `#atlas`. Compose construye la web, el editor, las animaciones y el generador de kits ZIP con Node en una etapa de construcción, y los sirve con Nginx dentro del contenedor. También levanta la API Laravel (PHP-FPM), MySQL y un servicio que aplica las migraciones, importa el contenido del currículo a la base y termina; si falla, PHP no arranca. Nginx pasa `/api/` a la API en el mismo origen, y **http://localhost:8080/api/up** responde si arrancó. En la PC anfitriona sólo necesitás Docker y Compose: no hace falta instalar Python, Node, PHP ni un servidor web. La primera construcción descarga las imágenes y las dependencias, también las de Node de la etapa que genera el contenido de la API. Las siguientes aprovechan la caché.
+Abrí **http://localhost:8080/#sistemas**. También podés entrar por `#campana`, `#laboratorio` o `#atlas`. Compose construye la web, el editor, las animaciones y el generador de kits ZIP con Node en una etapa de construcción, y los sirve con Nginx dentro del contenedor. También levanta la API Laravel (PHP-FPM), MySQL y un servicio que aplica las migraciones, importa el contenido del currículo a la base y termina; si falla, PHP no arranca. Para las ejecuciones levanta el ejecutor (`executor`), que crea un contenedor de sandbox por ejecución, y un worker de la cola `runs` por cada lugar del ejecutor (`worker-runs`, cuatro por omisión, según `EXECUTOR_MAX_CONCURRENT`). Nginx pasa `/api/` a la API en el mismo origen, y **http://localhost:8080/api/up** responde si arrancó. En la PC anfitriona sólo necesitás Docker y Compose: no hace falta instalar Python, Node, PHP ni un servidor web. La primera construcción descarga las imágenes y las dependencias, también las de Node de la etapa que genera el contenido de la API. Las siguientes aprovechan la caché.
 
 Para detenerlo:
 
@@ -28,11 +36,11 @@ docker compose down
 
 Todos los comandos de `docker compose` leen `.env`: sin los secretos, hasta `down` se niega a correr. `down` conserva la base, que vive en el volumen `taller-rust-go_mysql-data`; `docker compose down -v` la borra. MySQL toma las contraseñas al crear ese volumen: cambiarlas después en `.env` no cambia las de la base.
 
-Para usar otro puerto, agregá `TALLER_PORT=8090` al `.env` y ejecutá el mismo comando. El puerto se publica solo en tu equipo (127.0.0.1); MySQL (3306) y PHP-FPM (9000) no se publican. Compose crea redes propias: `edge`, la única con salida, para Nginx; `web`, interna, entre Nginx y PHP; `app`, interna, entre PHP y MySQL (Nginx no llega a MySQL), y `testing`, interna, para `npm run api:test`. Las imágenes base están fijadas por digest para reproducir esta entrega.
+Para usar otro puerto, agregá `TALLER_PORT=8090` al `.env` y ejecutá el mismo comando. El puerto se publica solo en tu equipo (127.0.0.1); MySQL (3306) y PHP-FPM (9000) no se publican. Compose crea redes propias: `edge`, la única con salida, para Nginx; `web`, interna, entre Nginx y PHP; `app`, interna, entre PHP y MySQL (Nginx no llega a MySQL); `sandbox`, interna, entre los workers de ejecuciones y el ejecutor, que no publica puertos ni llega a MySQL, y `testing`, interna, para `npm run api:test`. Las imágenes base están fijadas por digest para reproducir esta entrega.
 
 La imagen de la API genera su propio `curriculum.json` y `curriculum.meta.json` con el mismo generador que usa el front, y el servicio de migraciones los importa. Para que la base registre el commit del contenido, pasalo al construir: `CONTENT_SOURCE_COMMIT=$(git rev-parse HEAD) docker compose up --build -d --wait`; sin él queda nulo y el import lo avisa.
 
-Para desplegar una versión nueva sin cortar el servicio si fallan las migraciones o el import, usá `sh backend/api/scripts/deploy.sh`: construye las imágenes, corre las migraciones y el import con la nueva y recién entonces reemplaza PHP; si fallan, el PHP anterior sigue sirviendo. Con `docker compose up --build`, Compose detiene el PHP anterior antes de esperar a las migraciones. `sh backend/api/scripts/deploy-check.sh` comprueba ese comportamiento contra el stack.
+Para desplegar una versión nueva sin cortar el servicio si fallan las migraciones o el import, usá `sh backend/api/scripts/deploy.sh`: construye las imágenes, corre las migraciones y el import con la nueva y recién entonces reemplaza PHP, el ejecutor y sus workers; si fallan, el PHP anterior sigue sirviendo. Con `docker compose up --build`, Compose detiene el PHP anterior antes de esperar a las migraciones. `sh backend/api/scripts/deploy-check.sh` comprueba ese comportamiento contra el stack.
 
 ## Aprender en el taller
 
@@ -179,7 +187,7 @@ Para cambiar de PC, navegador, puerto o de archivo local a Docker:
 2. Copiá el JSON al otro equipo.
 3. Abrí el taller y usá **Importar progreso** en **Método y notas**.
 
-La importación combina el avance sin perder logros: para un ejercicio presente en la copia, sus datos importados reemplazan los campos existentes, pero las marcas de predicción y de ayuda se combinan, se conserva la fecha de resolución más antigua, un resultado aprobado no se reemplaza por uno sin aprobar y un borrador o una reflexión vacíos no pisan los tuyos. Los sellos y checkpoints de campaña, y los logros de Sistemas, se combinan conservando los obtenidos. Se aceptan copias anteriores sin campaña o Sistemas. Si una copia guardada en el navegador no se puede leer, o trae datos que esta versión no reconoce, el taller conserva el texto original en una ranura de respaldo (`…:respaldo` y hasta cuatro más, `…:respaldo-2` a `…:respaldo-5`, que nunca se pisan) y te avisa al abrir; al cargar o al cambiar de vista nunca reescribe tu progreso. Si no hay lugar para el respaldo, esa sección deja de guardar durante la sesión y el aviso te lo dice. En **Método y notas** podés descargar cada respaldo. Al importar, el aviso nombra las secciones con datos que esta versión no reconoce y que se omitieron. «Borrar todo» elimina también los respaldos y te avisa si no pudo. El progreso todavía no se guarda en MySQL: el volumen de la base existe, pero la sincronización llega en una fase posterior del ADR 0004. Una limpieza del navegador o el modo privado puede eliminarlos; exportá una copia al terminar una etapa. El ZIP de un proyecto y el JSON de progreso cumplen funciones diferentes: descargá ambos si querés conservar código y recorrido.
+La importación combina el avance sin perder logros: para un ejercicio presente en la copia, sus datos importados reemplazan los campos existentes, pero las marcas de predicción y de ayuda se combinan, se conserva la fecha de resolución más antigua, un resultado aprobado no se reemplaza por uno sin aprobar y un borrador o una reflexión vacíos no pisan los tuyos. Los sellos y checkpoints de campaña, y los logros de Sistemas, se combinan conservando los obtenidos. Se aceptan copias anteriores sin campaña o Sistemas. Si una copia guardada en el navegador no se puede leer, o trae datos que esta versión no reconoce, el taller conserva el texto original en una ranura de respaldo (`…:respaldo` y hasta cuatro más, `…:respaldo-2` a `…:respaldo-5`, que nunca se pisan) y te avisa al abrir; al cargar o al cambiar de vista nunca reescribe tu progreso. Si no hay lugar para el respaldo, esa sección deja de guardar durante la sesión y el aviso te lo dice. En **Método y notas** podés descargar cada respaldo. Al importar, el aviso nombra las secciones con datos que esta versión no reconoce y que se omitieron. «Borrar todo» elimina también los respaldos y te avisa si no pudo. El front todavía guarda el progreso sólo en el navegador. La API ya lo guarda por cuenta y lo sincroniza campo por campo entre dispositivos (`POST /api/sync` y `GET /api/progress`), pero el cliente que la usa desde el navegador llega más adelante (D1c). El servidor recuerda cada operación aplicada 14 días para reconocer un reenvío, y el `scheduler` poda las más viejas cada hora (`progress:prune-sync-operations`). Una limpieza del navegador o el modo privado puede eliminarlos; exportá una copia al terminar una etapa. El ZIP de un proyecto y el JSON de progreso cumplen funciones diferentes: descargá ambos si querés conservar código y recorrido.
 
 ## Desarrollo
 
@@ -202,9 +210,9 @@ Sistemas separa los datos y modelos puros: `frontend/src/entities/systems-simula
 
 El currículo se edita en `content/`; `build/curriculum.json` es una salida generada que no se versiona.
 
-El generador también escribe `build/curriculum.meta.json`, que acompaña al documento: la huella de cada una de las 17 porciones que sirve la API y de cada ejercicio, las claves de las etapas de taller y el commit de origen. Es lo único que `content:import` y la API toman como verdad de esas huellas; no se edita ni se versiona.
+El generador también escribe `build/curriculum.meta.json`, que acompaña al documento: la huella de cada una de las 18 porciones que sirve la API (las 17 del contenido y la plantilla del harness, en `GET /api/harness`) y de cada ejercicio, las claves de las etapas de taller y el commit de origen. Es lo único que `content:import` y la API toman como verdad de esas huellas; no se edita ni se versiona.
 
-Cada etapa de `content/workshops/<id>.yaml` lleva una clave estable `id: e<N>` y, si ya existía en la versión 1, su `v1Index`. Las claves no se renumeran ni se reutilizan, y todavía no se publican: `qa/fixtures/workshop-steps-v1.json` es el contrato de las 100 etapas actuales. Una etapa nueva lleva la clave siguiente y no lleva `v1Index`.
+Cada etapa de `content/workshops/<id>.yaml` lleva una clave estable `id: e<N>` y, si ya existía en la versión 1, su `v1Index`. Las claves no se renumeran ni se reutilizan, y se publican como el `id` de cada etapa (el `v1Index` no se publica): el progreso del servidor apunta a ellas. `qa/fixtures/workshop-steps-v1.json` es el contrato de las 100 etapas actuales. Una etapa nueva lleva la clave siguiente y no lleva `v1Index`.
 
 ```
 content/<rust|go>/manifest.yaml      etapas en orden (recorrido, desafíos y núcleos) y sus valores por defecto
@@ -212,6 +220,7 @@ content/<rust|go>/exercises/<id>/    exercise.yaml, starter.<rs|go> y solution.<
 content/campaign/  content/workshops/  content/atlas/
                                      manifest.yaml con el orden y un <id>.yaml por registro
 content/guide/                       biblioteca, fuentes y un manifiesto con sus pasos por recorrido
+content/harness/                     rust.tpl y go.tpl, la plantilla del programa que arma cada ejecución
 ```
 
 Para agregar un ejercicio:
@@ -219,11 +228,11 @@ Para agregar un ejercicio:
 1. Elegí un ID que nunca se haya usado: los IDs indexan el progreso guardado. El generador toma el orden y la etapa del manifiesto, pero `qa/content-check.ts` todavía ata cada ID a su posición (`rust-01`, `rust-02`…), calcula la etapa a partir de ella y espera 100 ejercicios de recorrido, 12 desafíos y 25 núcleos por lenguaje, y `qa/systems-check.ts` fija el total (274 ejercicios, 137 por lenguaje, con los núcleos en los IDs 113 a 137): el primer ejercicio nuevo cambia esos asserts en el mismo commit.
 2. Agregalo a la lista `exercises` de su etapa en `content/<lenguaje>/manifest.yaml`.
 3. Creá `content/<lenguaje>/exercises/<id>/` con tres archivos:
-   - `exercise.yaml`, sólo con lo que difiere de `defaults` y de la etapa: título, textos, instrucciones, pruebas `t1`, `t2`…, tres pistas, revisión, transferencia y predicción; si hace falta, también `level`, `kind`, `minutes`, `imports`, `visual` o `sources`. El generador además exige que un núcleo de infra lleve `workshopId` y `challengeType`; que un desafío no declare `challengeType`, porque lo fija su posición en el mundo (reparación, kata o jefe); y que cada mundo de desafíos tenga exactamente tres ejercicios;
+   - `exercise.yaml`, sólo con lo que difiere de `defaults` y de la etapa: título, textos, instrucciones, tres pruebas con su clave `id`, tres pistas, revisión, transferencia y predicción; si hace falta, también `level`, `kind`, `minutes`, `imports`, `visual` o `sources`. El generador además exige que un núcleo de infra lleve `workshopId` y `challengeType`; que un desafío no declare `challengeType`, porque lo fija su posición en el mundo (reparación, kata o jefe); y que cada mundo de desafíos tenga exactamente tres ejercicios;
    - `starter.<rs|go>` y `solution.<rs|go>`, con el código tal cual. Los `.go` empiezan con `package main` y una línea en blanco.
 4. Corré `npm run curriculum`, que valida todo `content/` y nombra el archivo y el campo de cada error. Después, `npm test`.
 
-Una prueba quitada de un ejercicio no puede volver con el mismo número hasta B2 (la API de ejecuciones): `content:import` no reutiliza un `test_key` retirado y el generador todavía exige `t1`, `t2`… en orden.
+La clave de una prueba tiene de 1 a 64 letras ASCII, dígitos o guiones bajos, es única dentro del ejercicio y no puede ser `custom`, que es la prueba propia del alumno. Las claves no cambian ni se reutilizan, porque las marcas de evidencia y los veredictos guardados las nombran: una prueba quitada no vuelve con la misma clave (`content:import` lo rechaza), y una prueba nueva lleva otra.
 
 En los YAML, un `#` después de un espacio empieza un comentario: un texto con `#` (como `#[test]` o `#2`) va entre comillas, y los comentarios van en su propia línea, sin más sangría que la clave: con más sangría, YAML la pega al valor sin comillas de arriba. `npm run curriculum` rechaza los dos casos.
 
@@ -270,7 +279,9 @@ npm run api:test:down     # apaga esa base de prueba y borra su red
 npm run api:format:check  # formato PHP con Pint
 npm run api:analyse       # análisis estático de PHP con PHPStan (Larastan, nivel 9)
 npm run api:smoke         # con el stack levantado: Nginx, PHP-FPM y Laravel
-npm run api:content:check # con el stack levantado: las 17 porciones del contenido a través de Nginx
+npm run api:content:check # con el stack levantado: las 18 porciones a través de Nginx
+npm run api:runs:check    # con el stack levantado: ejecuciones reales en el sandbox, cuotas y cola
+npm run api:sync:check    # con el stack levantado: dos clientes que convergen, reintentos, poda y las cifras de SC-010
 ```
 
 ## Fuentes y atribución

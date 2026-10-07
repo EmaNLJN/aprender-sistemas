@@ -100,6 +100,8 @@ final class ContentInvariants
             "select 1 from `worlds` w where w.`status` = 'active' and not exists (select 1 from `world_exercises` x where x.`world_id` = w.`id` and x.`status` = 'active' and x.`role` = 'boss') limit 1";
         $checks['la corrección vigente de un ejercicio activo no está en exercise_grading_versions'] =
             "select 1 from `exercises` e left join `exercise_grading_versions` v on v.`exercise_id` = e.`id` and v.`grading_hash` = e.`grading_hash` where e.`status` = 'active' and v.`exercise_id` is null limit 1";
+        $checks['hay lenguajes sin plantilla del harness'] =
+            'select 1 from `languages` l left join `harness_templates` h on h.`language` = l.`code` where h.`language` is null limit 1';
         $checks['la cadena de catálogos no es única y contigua desde 1'] =
             "select 1 from (select count(*) as n, count(distinct `chain_position`) as d, min(`chain_position`) as lowest, max(`chain_position`) as highest from `catalogs` where `status` = 'active' and `chain_position` is not null) c where c.n > 0 and (c.n <> c.d or c.lowest <> 1 or c.highest <> c.n) limit 1";
 

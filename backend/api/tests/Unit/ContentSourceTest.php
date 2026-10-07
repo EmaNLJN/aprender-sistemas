@@ -2,6 +2,8 @@
 
 use App\Content\ContentSource;
 use App\Content\InvalidContent;
+use App\Content\Portion;
+use App\Content\PublishedJson;
 use Closure;
 use Tests\Support\ContentFixture;
 
@@ -13,9 +15,39 @@ it('reads the document and its meta from the image', function () {
     expect($source->document)->toBe(file_get_contents(ContentFixture::imagePath().'/curriculum.json'))
         ->and($source->documentHash())->toBe(hash('sha256', $source->document))
         ->and($source->languages())->toBe(['rust', 'go'])
-        ->and($source->meta->portionHashes)->toHaveCount(17)
+        ->and($source->meta->portionHashes)->toHaveCount(18)
         ->and($source->meta->exerciseHashes)->toHaveCount(274)
-        ->and($source->meta->workshopSteps)->toHaveCount(25);
+        ->and($source->meta->workshopSteps)->toHaveCount(25)
+        ->and($source->harness)->toEqual(json_decode(file_get_contents(ContentFixture::imagePath().'/harness.json')));
+});
+
+it('returns the harness with a template per language, in the order of languages', function () {
+    $source = ContentSource::fromDirectory(ContentFixture::imagePath());
+
+    expect(array_keys(get_object_vars($source->part(Portion::Harness))))->toBe(['rust', 'go'])
+        ->and(hash('sha256', PublishedJson::encode($source->part(Portion::Harness))))->toBe($source->meta->portionHash(Portion::Harness));
+});
+
+it('rejects a harness from another build', function () {
+    $fixture = ContentFixture::fromImage();
+    $directory = $fixture->write();
+    $fixture->harness->rust .= '// another build';
+    file_put_contents("{$directory}/harness.json", PublishedJson::encode($fixture->harness));
+
+    expect(fn () => ContentSource::fromDirectory($directory))
+        ->toThrow(InvalidContent::class, 'harness.json no corresponde a curriculum.meta.json (son de builds distintos): regeneralos juntos con npm run curriculum o reconstruí la imagen.');
+});
+
+it('names harness.json when it is missing or is not an object', function () {
+    $directory = ContentFixture::fromImage()->write();
+    unlink("{$directory}/harness.json");
+    expect(fn () => ContentSource::fromDirectory($directory))
+        ->toThrow(InvalidContent::class, "harness.json: no existe en {$directory}");
+
+    $directory = ContentFixture::fromImage()->write();
+    file_put_contents("{$directory}/harness.json", '[]');
+    expect(fn () => ContentSource::fromDirectory($directory))
+        ->toThrow(InvalidContent::class, 'harness.json: (raíz): se esperaba un objeto');
 });
 
 it('rejects a meta from another build', function () {
@@ -113,7 +145,7 @@ it('validates the meta and names the field', function (Closure $break, string $m
 
             return $meta;
         },
-        'curriculum.meta.json: portions: se esperaban las 17 porciones',
+        'curriculum.meta.json: portions: se esperaban las 18 porciones',
     ],
     'invalid portion hash' => [
         function (array $meta) {

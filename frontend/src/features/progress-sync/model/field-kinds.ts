@@ -1,0 +1,30 @@
+export type Rule =
+  'lww' | 'lww-group' | 'tombstone' | 'flag-or' | 'max' | 'dated-flag' | 'observed';
+
+export const FIELD_KINDS: Readonly<Record<string, Rule>> = {
+  'exercise.prediction.answer': 'lww',
+  'exercise.reflection': 'lww',
+  'exercise.customTest': 'lww',
+  'checkpoint.lastAnswer': 'lww',
+  'workshop.answer': 'lww',
+  'workshop.note': 'lww',
+  'route.quiz': 'lww',
+  'route.note': 'lww',
+  'preference.routeLanguage': 'lww',
+  'preference.focusMinutes': 'lww',
+  'preference.labSelectedRust': 'lww',
+  'preference.labSelectedGo': 'lww',
+  'exercise.review': 'lww-group',
+  'exercise.draft': 'lww-group',
+  'workshop.step': 'tombstone',
+  'route.mark.step': 'tombstone',
+  'route.mark.milestone': 'tombstone',
+  'route.mark.favorite': 'tombstone',
+  'exercise.assisted': 'flag-or',
+  'exercise.solutionSeen': 'flag-or',
+  'exercise.hintsRevealed': 'max',
+  'exercise.predictionCorrect': 'dated-flag',
+  'checkpoint.passed': 'dated-flag',
+  'workshop.predictionCorrect': 'dated-flag',
+  'workshop.objective': 'observed',
+};

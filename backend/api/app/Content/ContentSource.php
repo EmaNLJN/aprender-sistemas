@@ -6,23 +6,33 @@ use JsonException;
 use stdClass;
 
 /**
- * The two files tools/content generates, read and verified: curriculum.json, shaped as the API
- * publishes it, and curriculum.meta.json, with the hashes and keys that PHP stores and compares
- * but never recomputes (ADR 0006 D10 to D14). A meta from another build is rejected: its hashes
- * would not describe the content being imported.
+ * The three files tools/content generates, read and verified: curriculum.json, shaped as the API
+ * publishes it, harness.json (the harness templates, the 18th portion) and curriculum.meta.json, with
+ * the hashes and keys that PHP stores and compares but never recomputes (ADR 0006 D10 to D14). A meta
+ * from another build is rejected: its hashes would not describe the content being imported.
  */
 final readonly class ContentSource
 {
-    private function __construct(public string $document, public stdClass $decoded, public ContentMeta $meta) {}
+    private function __construct(
+        public string $document,
+        public stdClass $decoded,
+        public stdClass $harness,
+        public ContentMeta $meta,
+    ) {}
 
     public static function fromDirectory(string $path): self
     {
         $document = self::read($path, 'curriculum.json');
+        $harnessText = self::read($path, 'harness.json');
         $metaText = self::read($path, 'curriculum.meta.json');
         $decoded = self::decode($document, 'curriculum.json', false);
+        $harness = self::decode($harnessText, 'harness.json', false);
         $meta = self::decode($metaText, 'curriculum.meta.json', true);
         if (! $decoded instanceof stdClass) {
             throw InvalidContent::at('curriculum.json', '(raíz)', 'se esperaba un objeto');
+        }
+        if (! $harness instanceof stdClass) {
+            throw InvalidContent::at('harness.json', '(raíz)', 'se esperaba un objeto');
         }
         if (! is_array($meta)) {
             throw InvalidContent::at('curriculum.meta.json', '(raíz)', 'se esperaba un objeto');
@@ -31,7 +41,12 @@ final readonly class ContentSource
             throw new InvalidContent('curriculum.meta.json no corresponde a este curriculum.json (son de builds distintos): regeneralos juntos con npm run curriculum o reconstruí la imagen.');
         }
 
-        return new self($document, $decoded, ContentMeta::fromDocument($meta));
+        $typedMeta = ContentMeta::fromDocument($meta);
+        if ($typedMeta->portionHash(Portion::Harness) !== hash('sha256', $harnessText)) {
+            throw new InvalidContent('harness.json no corresponde a curriculum.meta.json (son de builds distintos): regeneralos juntos con npm run curriculum o reconstruí la imagen.');
+        }
+
+        return new self($document, $decoded, $harness, $typedMeta);
     }
 
     public function documentHash(): string
@@ -52,6 +67,9 @@ final readonly class ContentSource
 
     public function part(Portion $portion): mixed
     {
+        if ($portion === Portion::Harness) {
+            return $this->harness;
+        }
         $group = $this->decoded->{$portion->group()};
 
         return $portion->slice() === null ? $group : $group->{$portion->slice()};

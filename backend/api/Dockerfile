@@ -31,6 +31,7 @@ FROM php:8.5-fpm-alpine@sha256:fa01fb1645cd0fc566a5f146b099adace33b906571f972f71
 RUN apk add --no-cache fcgi \
     && docker-php-ext-install pdo_mysql \
     && cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+RUN docker-php-ext-install pcntl
 COPY docker/opcache.ini /usr/local/etc/php/conf.d/zz-opcache.ini
 COPY docker/fpm-pool.conf /usr/local/etc/php-fpm.d/zz-taller.conf
 COPY docker/php.ini /usr/local/etc/php/conf.d/zz-taller.ini
@@ -39,7 +40,7 @@ WORKDIR /var/www/html
 
 FROM base AS runtime
 COPY --from=vendor /app /var/www/html
-COPY --from=curriculum /app/build/curriculum.json /app/build/curriculum.meta.json resources/content/
+COPY --from=curriculum /app/build/curriculum.json /app/build/curriculum.meta.json /app/build/harness.json resources/content/
 # /var/www/html is www-data 1777 in the base image: PHP could rename public/ or vendor/.
 RUN chown root:root /var/www/html && chmod 755 /var/www/html \
     && chown -R www-data:www-data storage bootstrap/cache
@@ -47,6 +48,7 @@ USER www-data
 
 FROM base AS dev
 COPY --from=dev-vendor /app /var/www/html
-COPY --from=curriculum /app/build/curriculum.json /app/build/curriculum.meta.json resources/content/
+COPY --from=curriculum /app/build/curriculum.json /app/build/curriculum.meta.json /app/build/harness.json resources/content/
+COPY --from=repo qa/fixtures/shared tests/Fixtures/shared
 # Without a .env, phpdotenv warns and Pest records it on every run. Empty: Compose provides the environment.
 RUN touch .env

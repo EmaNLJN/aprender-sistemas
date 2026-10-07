@@ -23,6 +23,11 @@ dataset('contract codes', [
     'too_many_requests' => [ApiCode::TooManyRequests, 'too_many_requests', 429, 'Demasiados intentos. Esperá un momento antes de volver a probar.'],
     'bad_request' => [ApiCode::BadRequest, 'bad_request', 400, 'No se pudo entender el pedido.'],
     'server_error' => [ApiCode::ServerError, 'server_error', 500, 'Algo salió mal de nuestro lado. Probá de nuevo en un rato.'],
+    'client_run_id_reused' => [ApiCode::ClientRunIdReused, 'client_run_id_reused', 422, 'Ese identificador de ejecución ya se usó con otro código, otro ejercicio u otra prueba propia.'],
+    'quota_exceeded' => [ApiCode::QuotaExceeded, 'quota_exceeded', 429, 'Llegaste a un límite de ejecuciones: esperá antes de volver a probar.'],
+    'queue_full' => [ApiCode::QueueFull, 'queue_full', 503, 'El taller está ocupado ahora mismo: reintentá en unos segundos.'],
+    'epoch_mismatch' => [ApiCode::EpochMismatch, 'epoch_mismatch', 409, 'Tu progreso se borró desde otro dispositivo. Se cargará el estado nuevo.'],
+    'client_outdated' => [ApiCode::ClientOutdated, 'client_outdated', 409, 'Esta pestaña quedó vieja. Recargá la página para seguir sincronizando.'],
 ]);
 
 it('maps each code to the status and Spanish message of the HTTP contract', function (ApiCode $code, string $value, int $status, string $message) {
@@ -31,6 +36,15 @@ it('maps each code to the status and Spanish message of the HTTP contract', func
         ->and($code->message())->toBe($message);
 })->with('contract codes');
 
-it('has exactly the 17 codes of the contract', function () {
-    expect(ApiCode::cases())->toHaveCount(17);
+it('has exactly the 22 codes of the contract', function () {
+    expect(ApiCode::cases())->toHaveCount(22);
 });
+
+it('words each run quota in Spanish', function (string $quota, string $message) {
+    expect(__("api.quota.{$quota}"))->toBe($message);
+})->with([
+    'active' => ['active', 'Ya tenés una ejecución en curso: esperá a que termine.'],
+    'per_minute' => ['per_minute', 'Hiciste demasiadas ejecuciones en el último minuto: esperá un momento.'],
+    'per_day' => ['per_day', 'Llegaste al máximo de ejecuciones de las últimas 24 horas.'],
+    'sandbox_time' => ['sandbox_time', 'Llegaste al máximo de tiempo de ejecución de las últimas 24 horas.'],
+]);

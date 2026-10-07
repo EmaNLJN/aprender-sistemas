@@ -3,6 +3,7 @@
 import { createHash } from 'node:crypto';
 import { CATALOGS, LANGUAGES, SYSTEMS_DOMAINS } from './catalogs.ts';
 import { ContentError } from './content-error.ts';
+import { harnessBody, type HarnessTemplates } from './harness.ts';
 import type { Curriculum } from './load-curriculum.ts';
 import type { JsonRecord } from './shape.ts';
 import type { WorkshopStepKeys } from './workshops.ts';
@@ -41,24 +42,34 @@ export function sha256Hex(text: string): string {
   return createHash('sha256').update(text, 'utf8').digest('hex');
 }
 
+// The Go harness imports these packages, so they decide what compiles (B2 FR-037): sorted and
+// without repeats, so reordering them is not a grading change. Rust has none.
+function gradingImports(exercise: JsonRecord): string[] {
+  if (exercise.language !== 'go') return [];
+  return [...new Set(exercise.imports as string[])].sort();
+}
+
 // contentHash covers the published bytes (FR-031); gradingHash and starterHash use canonical JSON,
-// so reordering keys is not a grading change (ADR 0004 §2, "Hashes").
+// so reordering keys is not a grading change (ADR 0004 §2, "Hashes"). The imports join the
+// grading hash only when there are some: the other exercises keep the hash they had.
 export function exerciseHashes(exercise: JsonRecord): ExerciseHashes {
   const tests = exercise.tests as JsonRecord[];
   const prediction = exercise.prediction as JsonRecord;
+  const grading: Record<string, unknown> = {
+    tests: tests.map((test) => ({ id: test.id, expression: test.expression })),
+    prediction: { options: prediction.options, answer: prediction.answer },
+  };
+  const imports = gradingImports(exercise);
+  if (imports.length > 0) grading.imports = imports;
   return {
     contentHash: sha256Hex(JSON.stringify(exercise)),
-    gradingHash: sha256Hex(
-      canonicalJson({
-        tests: tests.map((test) => ({ id: test.id, expression: test.expression })),
-        prediction: { options: prediction.options, answer: prediction.answer },
-      }),
-    ),
+    gradingHash: sha256Hex(canonicalJson(grading)),
     starterHash: sha256Hex(canonicalJson(exercise.starter)),
   };
 }
 
-// The 17 portions of ADR 0006 D11, in the order of PHP's Portion enum.
+// The 17 portions of ADR 0006 D11 that come from curriculum.json, in the order of PHP's Portion
+// enum; the 18th, the harness, comes from content/harness/.
 export function portionsOf(curriculum: Curriculum): Record<string, unknown> {
   const portions: Record<string, unknown> = {};
   for (const language of LANGUAGES) portions[`lab.${language}`] = curriculum.lab[language];
@@ -91,6 +102,7 @@ export function curriculumMeta(
   document: string,
   sourceCommit: string | null,
   workshopSteps: WorkshopStepKeys,
+  harness: HarnessTemplates,
 ): CurriculumMeta {
   const exercises: Record<string, ExerciseHashes> = {};
   const catalogs = [
@@ -100,12 +112,13 @@ export function curriculumMeta(
   ];
   for (const exercise of catalogs.flat())
     exercises[exercise.id as string] = exerciseHashes(exercise);
-  const portions = Object.fromEntries(
+  const portions: Record<string, string> = Object.fromEntries(
     Object.entries(portionsOf(curriculum)).map(([name, part]) => [
       name,
       sha256Hex(JSON.stringify(part)),
     ]),
   );
+  portions.harness = sha256Hex(harnessBody(harness));
   return {
     documentHash: sha256Hex(document),
     sourceCommit,

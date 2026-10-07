@@ -195,7 +195,7 @@ test('readYamlFile admits # inside quotes, without a preceding space, in blocks 
 });
 
 test('loadCurriculum: nada suelto en content/', () => {
-  const allowed = 'sólo se admiten atlas/, campaign/, guide/, workshops/, rust/ y go/';
+  const allowed = 'sólo se admiten atlas/, campaign/, guide/, harness/, workshops/, rust/ y go/';
   throwsContent(
     () => loadCurriculum(fixture({ 'content/notas.yaml': 'a: 1\n' })),
     `content/notas.yaml: ${allowed}`,

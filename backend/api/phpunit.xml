@@ -14,6 +14,9 @@
         <testsuite name="Content">
             <directory>tests/Content</directory>
         </testsuite>
+        <testsuite name="Concurrency">
+            <directory>tests/Concurrency</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>

@@ -240,7 +240,7 @@ it('responds 410 with the data of the retired exercise, before a 304 (US4)', fun
         ->and($response->json('retiredAt'))->toMatch('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/');
 });
 
-it('changes only the validator of the portion an import changed; the other 16 stay at 304 (US3)', function () {
+it('changes only the validator of the portion an import changed; the other 17 stay at 304 (US3)', function () {
     $meta = importedMeta();
     $validators = [];
     foreach (Portion::cases() as $portion) {
@@ -259,10 +259,10 @@ it('changes only the validator of the portion an import changed; the other 16 st
     $changed = collect($statuses)->filter(fn (int $status) => $status === 200);
     $notModified = collect($statuses)->filter(fn (int $status) => $status === 304);
 
-    expect($changed->keys()->all())->toBe(['lab.rust'])->and($notModified)->toHaveCount(16);
+    expect($changed->keys()->all())->toBe(['lab.rust'])->and($notModified)->toHaveCount(17);
 });
 
-it('gives 304 on all 17 portions, with the same version, after a new image with the same content (US3)', function () {
+it('gives 304 on all 18 portions, with the same version, after a new image with the same content (US3)', function () {
     importedMeta();
     $validators = [];
     $version = null;

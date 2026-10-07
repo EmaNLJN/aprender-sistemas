@@ -181,7 +181,7 @@ it('a test_key retired on its own is not reused, but comes back with its exercis
     $alone = $stored;
     $alone['exercise_tests'][$key]['status'] = 'deprecated';
     $alone['exercise_tests'][$key]['retired_at'] = '2026-10-05 01:00:00.000';
-    expect(fn () => $reuse($alone))->toThrow(InvalidContent::class, "exercise_tests.{$test['exercise_id']}.{$test['test_key']}: el test_key se retiró y no se reutiliza: esa prueba no puede volver hasta que B2 quite la regla t{i+1} del generador");
+    expect(fn () => $reuse($alone))->toThrow(InvalidContent::class, "exercise_tests.{$test['exercise_id']}.{$test['test_key']}: el test_key se retiró y no se reutiliza: dale otra clave a la prueba nueva");
 
     // Retired on its own, and the whole exercise later: the exercise comes back, the test does not.
     $later = retireExercise($alone, $test['exercise_id'], '2026-10-05 02:00:00.000');
@@ -226,7 +226,15 @@ it('a new step cannot take the v1 index of a step that left the document', funct
         $stored['workshop_steps'][$leaving] = ['status' => 'deprecated', 'retired_at' => '2026-10-05 01:00:00.000', 'position' => null] + $stored['workshop_steps'][$leaving];
     }
     // The document no longer has e3 and a new e5 asks for its index.
-    [$rows, $source] = diffDesired(editMeta: function (array $meta) {
+    [$rows, $source] = diffDesired(edit: function (ContentFixture $fixture) {
+        foreach ($fixture->document->workshops as $workshops) {
+            foreach ($workshops as $workshop) {
+                if ($workshop->id === 'cache') {
+                    $workshop->steps[2]->id = 'e5';
+                }
+            }
+        }
+    }, editMeta: function (array $meta) {
         $meta['workshopSteps']['cache'][2]['id'] = 'e5';
 
         return $meta;
