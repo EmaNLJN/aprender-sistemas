@@ -2,11 +2,13 @@
 
 namespace App\Console\Commands;
 
+use App\Accounts\PurgeLog;
 use App\Auth\AccountStatus;
 use App\Jobs\PurgeUserData;
 use App\Models\User;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Queue\Events\UniqueJobSkipped;
+use Illuminate\Support\Facades\Event;
 
 final class ResumePurges extends Command
 {
@@ -23,13 +25,29 @@ final class ResumePurges extends Command
             ->orderBy('id')
             ->get();
 
-        foreach ($stuck as $account) {
-            PurgeUserData::dispatch($account->id);
-            Log::info('purge.resumed', ['user_id' => $account->id]);
+        $resumed = 0;
+        $alreadyQueued = 0;
+        $skipped = false;
+        Event::listen(UniqueJobSkipped::class, function () use (&$skipped) {
+            $skipped = true;
+        });
+
+        try {
+            foreach ($stuck as $account) {
+                $skipped = false;
+                PurgeUserData::dispatch($account->id);
+                if ($skipped) {
+                    $alreadyQueued++;
+                } else {
+                    $resumed++;
+                    PurgeLog::resumed($account->id);
+                }
+            }
+        } finally {
+            Event::forget(UniqueJobSkipped::class);
         }
 
-        $count = $stuck->count();
-        $this->info($count === 1 ? '1 purga retomada' : "{$count} purgas retomadas");
+        $this->info(($resumed === 1 ? '1 purga retomada' : "{$resumed} purgas retomadas").", {$alreadyQueued} ya en la cola");
 
         return self::SUCCESS;
     }

@@ -2,6 +2,7 @@
 
 use App\Jobs\PurgeUserData;
 use App\Models\User;
+use Illuminate\Queue\Events\UniqueJobSkipped;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -50,13 +51,26 @@ it('does not log an email', function () {
         && ! str_contains(json_encode($context, JSON_THROW_ON_ERROR), $stuck->email))->once();
 });
 
-it('does not push a second job while the first one of the account holds its uniqueness', function () {
+it('does not push a second job while the first one of the account holds its uniqueness, and says so without logging a resume', function () {
     $stuck = resumePurgesAccount('deleting', '2026-10-06 10:00:00.000');
+    $alsoStuck = resumePurgesAccount('deleting', '2026-10-06 10:00:00.000');
     PurgeUserData::dispatch($stuck->id);
+    Log::spy();
 
     Artisan::call('taller:resume-purges');
 
-    Queue::assertPushed(PurgeUserData::class, 1);
+    Queue::assertPushed(PurgeUserData::class, 2);
+    expect(Artisan::output())->toContain('1 purga retomada, 1 ya en la cola');
+    Log::shouldHaveReceived('info')->with('purge.resumed', ['user_id' => $alsoStuck->id])->once();
+    Log::shouldNotHaveReceived('info', ['purge.resumed', ['user_id' => $stuck->id]]);
+});
+
+it('stops listening to skipped jobs when the sweep ends', function () {
+    resumePurgesAccount('deleting', '2026-10-06 10:00:00.000');
+
+    Artisan::call('taller:resume-purges');
+
+    expect(app('events')->hasListeners(UniqueJobSkipped::class))->toBeFalse();
 });
 
 it('says 0 purgas retomadas and exits 0 when nothing is stuck', function () {

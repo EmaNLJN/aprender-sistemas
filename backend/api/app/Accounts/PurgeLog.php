@@ -12,6 +12,11 @@ final class PurgeLog
         Log::warning('purge.skipped', ['user_id' => $userId, 'status' => $status]);
     }
 
+    public static function resumed(int $userId): void
+    {
+        Log::info('purge.resumed', ['user_id' => $userId]);
+    }
+
     public static function cancelFailed(int $userId, Throwable $error): void
     {
         Log::error('purge.cancel_failed', ['user_id' => $userId, 'exception' => $error::class]);
