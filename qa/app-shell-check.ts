@@ -8,6 +8,7 @@
  */
 import assert from 'node:assert/strict';
 import { plainJson } from './lib/plain-json.ts';
+import { loadAppShell } from './lib/legacy-sources.ts';
 import {
   BACKUP_KEY,
   STORAGE_KEY,
@@ -15,6 +16,7 @@ import {
   campaignExport,
   changeField,
   clickAction,
+  createHarness,
   exportedProgress,
   type Harness,
   importFile,
@@ -727,6 +729,33 @@ await test('shell: al cargar se inicializan campaña y Sistemas y se sincroniza 
   assert.equal(harness.elements['sidebar-language']?.textContent, 'RUST');
   assert.equal(harness.elements['sidebar-completed']?.textContent, '0 de 12');
   assert.equal(harness.context.document.body.dataset.language, 'rust');
+});
+
+await test('startApp calls the adapters in order and then renders', () => {
+  const harness = createHarness({ hash: '#laboratorio' });
+  loadAppShell(harness.context).startApp();
+  const startup = ['Lab.init', 'Campaign.init', 'Systems.init', 'Lab.loadWarning', 'Lab.mount'];
+  assert.deepEqual(
+    harness.calls.filter((name) => startup.includes(name)),
+    startup,
+  );
+});
+
+await test('a second startApp call fails and adds no timer or listener', () => {
+  const harness = createHarness();
+  const { startApp } = loadAppShell(harness.context);
+  startApp();
+  const timersBefore = harness.timers.length;
+  const intervalsBefore = harness.intervalCount();
+  const listenersBefore = harness.listenerCount();
+  assert.throws(
+    () => startApp(),
+    (error: unknown) =>
+      (error as Error).message === 'startApp ya se llamó: el arranque corre una sola vez.',
+  );
+  assert.equal(harness.timers.length, timersBefore);
+  assert.equal(harness.intervalCount(), intervalsBefore);
+  assert.equal(harness.listenerCount(), listenersBefore);
 });
 
 process.stdout.write(`\n${passed} passed, ${failed} failed\n`);

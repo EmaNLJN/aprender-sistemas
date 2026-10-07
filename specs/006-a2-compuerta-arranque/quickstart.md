@@ -33,7 +33,7 @@ node tools/content/dump-globals.ts . | sha256
 | Qué | Comando | Resultado esperado |
 | --- | --- | --- |
 | Los specs de una tarea | `npm run test:unit -- <ruta>` | Primero fallan por la razón que dice el plan; después de implementar, pasan |
-| Todos los checks y las specs | `npm test` | Verde, con el check nuevo (`dist-content-check`) y sin cambiar ningún valor esperado de los que ya había |
+| Todos los checks y las specs | `npm test` | Verde: los 31 checks de la base más el nuevo (`dist-content-check`), y las 12 specs de Vitest de la base (186 pruebas) más las 7 de A2, sin cambiar ningún valor esperado de los que ya había |
 | Un check suelto | `node qa/<check>.ts` | Verde (antes, `npm run curriculum`) |
 | Tipos, lint y formato | `npm run typecheck`, `npm run lint`, `npm run format:check` | Verde |
 | Espacios | `git diff --check` | Limpio |
@@ -43,15 +43,15 @@ node tools/content/dump-globals.ts . | sha256
 ```sh
 npm run build
 ls dist dist/content
-grep -o '<script' dist/index.html | wc -l
+node -e "const h=require('node:fs').readFileSync('dist/index.html','utf8');console.log([...h.matchAll(/<script\b[^>]*>[\s\S]*?<\/script>/g)].length)"
 ```
 
 **Resultado esperado:**
 
 - `dist/` tiene `index.html`, `content/curriculum.<versión>.json`, `EDITOR-LICENSES.txt` y `THIRD-PARTY-NOTICES.txt`, y nada más;
-- hay un solo `<script`;
+- hay un solo `<script>`, contado con la expresión de `build-check` (`grep -o '<script'` da 2, porque React DOM lleva `<script>` dentro de una cadena);
 - `sha256 dist/content/curriculum.<versión>.json` es el `documentHash` completo, y la `<versión>` son sus primeros 32 hexadecimales;
-- `node qa/build-check.ts` pasa: el HTML no tiene el currículo, pesa menos que el tope medido por T001 y contiene la versión.
+- `node qa/build-check.ts` pasa: el HTML no tiene el currículo, pesa menos que el tope de 1.250.000 caracteres que midió T001 y contiene la versión.
 
 ## 4. La compuerta, a mano en un navegador (opcional: la cubren los E2E)
 
@@ -68,13 +68,14 @@ Con `npm run preview` y las herramientas del navegador:
 npm run build && npm run test:e2e
 ```
 
-**Resultado esperado:** los escenarios de A2 pasan junto con los de F1. Los de A2 cubren los cinco enlaces profundos y la recarga, la falla de cada modo del transporte con el progreso de `qa/fixtures/progress-master-2a278ad-storage.json` intacto (0 lecturas y 0 escrituras de almacenamiento), el reintento, el teclado y el móvil. Corridos cinco veces seguidas, sin reintentos, pasan las cinco.
+**Resultado esperado:** los escenarios de A2 pasan junto con las 106 pruebas de F1, que desde el corte esperan la primera vista en `ShellPage.goto` (T008). Los de A2 cubren los cinco enlaces profundos y la recarga, la falla de cada modo del transporte con el progreso de `qa/fixtures/progress-master-2a278ad-storage.json` intacto (0 lecturas y 0 escrituras de almacenamiento), el reintento, el teclado y el móvil. Corridos cinco veces seguidas, sin reintentos, pasan las cinco.
 
 ## 6. Las mutaciones (descartadas después)
 
 | Mutación | Qué tiene que fallar |
 | --- | --- |
 | Intercambiar dos módulos de `legacy-views.ts` (T008) | `load-order-check` |
+| Sacar o duplicar `startApp()` en `legacy-views.ts` (T008) | `load-order-check`: la regla de `startApp()` |
 | Sacar `contentGate` de `runBoot([...])` (T008) | `boot-check` |
 | Un import estático del JSON desde un módulo de `main.tsx` (T008 y T010) | `build-check` (tope y marcadores) y `boot-check` («El contenido todavía no se publicó») |
 | Que la compuerta descarte la porción `quests.go` (T009) | `dist-content-check`: las 17 huellas |
@@ -107,9 +108,11 @@ docker compose down
 
 **Resultado esperado:** los dos hashes son el `documentHash` (SC-002); el encabezado trae `Content-Type: application/json` y `Content-Encoding: gzip`; el nombre ajeno da `404`; los dos avisos de licencia dan `200`, en las mismas URL de siempre. Con la vista previa (`docker compose -f docker/compose.preview.yaml up --build -d --wait`, puerto 8765) el HTML, el contenido y los avisos salen del `dist/` del host, que se monta entero; corré `npm run build` antes, porque Docker crearía un `dist/` vacío y a nombre de root si faltara. Se detiene con `down`.
 
-## 9. El tiempo hasta la primera vista (T001 antes, T013 después)
+## 9. El tiempo hasta la primera vista (T013, antes y después)
 
-Con el Playwright de F1, un script suelto (no un test) que carga `http://localhost:4173/` dos veces en el mismo contexto, la primera sin caché y la segunda con ella, e inyecta antes de cargar:
+T001 midió la base con este método; sus cifras sirven de orden de magnitud, porque se superpusieron con las pruebas de otro agente. T013 mide el build de A2 intercalado con uno de la base (`c5d497d`): un worktree para cada uno, cada uno con su `npm run build`, y series alternadas de 20 cargas.
+
+El método es el de `qa/e2e/specs/spike-first-view.spec.ts` de la rama descartable `a2/spike` (`3baadc2`), que no se integra: se copia sin commitear y se corre con el runner de F1 y un puerto libre (`E2E_PORT=<puerto> SPIKE_RUNS=20 npx playwright test --config qa/e2e/playwright.config.ts specs/spike-first-view.spec.ts`). Cada medición carga la página en un contexto nuevo, sin caché, y vuelve a navegar a la misma URL en el mismo contexto, con caché. Antes de cargar inyecta:
 
 ```ts
 await page.addInitScript(() => {
@@ -119,7 +122,8 @@ await page.addInitScript(() => {
     observer.disconnect();
   }).observe(document, { childList: true, subtree: true });
 });
-// después de goto: await page.evaluate(() => (window as any).__firstView)
+// con la compuerta, la primera vista llega después de `load`: después de page.goto,
+// await page.waitForFunction(() => (window as any).__firstView !== undefined) y recién ahí leerlo
 ```
 
-**Resultado esperado:** dos cifras antes y dos después, en milisegundos, que van al PR. Es un dato, sin umbral; sirve para ajustar el umbral de 400 ms del estado de carga.
+**Resultado esperado:** la mediana y el rango, sin caché y con caché, de la base y de A2, en milisegundos, que van al PR. Es un dato, sin umbral; sirve para ajustar el umbral de 400 ms del estado de carga.

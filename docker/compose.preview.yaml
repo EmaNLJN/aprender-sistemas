@@ -9,7 +9,7 @@ services:
     ports:
       - '127.0.0.1:8765:8080'
     volumes:
-      - ../dist/index.html:/usr/share/nginx/html/index.html:ro
+      - ../dist:/usr/share/nginx/html:ro
     read_only: true
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=32m

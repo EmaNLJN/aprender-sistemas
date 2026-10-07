@@ -4,7 +4,7 @@
 
 Taller educativo en español con ejercicios de Rust/Go y simulaciones de Sistemas.
 La interfaz migra por funcionalidades a **React con TypeScript/TSX**; Vite construye
-un HTML autónomo y Nginx lo sirve; Nginx también pasa `/api/` a la API Laravel de `backend/api/`
+un HTML y su contenido, y Nginx los sirve; Nginx también pasa `/api/` a la API Laravel de `backend/api/`
 (ADR 0004). Los compiladores son los Playgrounds oficiales.
 Atlas es la primera vista migrada; el resto conserva adaptadores legacy temporales.
 
@@ -38,8 +38,7 @@ están en `backend/api/AGENTS.md`.
 `frontend/src/index.html` y `frontend/src/app/main.tsx` son las entradas Vite; `dist/` es la salida
 generada. `content/` es la fuente del currículo (YAML y código Rust y Go real);
 `tools/content/` la valida y genera `build/curriculum.json`, otra salida ignorada que
-importan los adaptadores de `frontend/src/app/legacy/` y el Atlas
-(`frontend/src/pages/atlas/model/atlas-catalog.ts`). Los `CLAUDE.md` sólo importan este archivo y
+el build copia a `dist/content/` y lee la compuerta de arranque (`frontend/src/app/boot/`). Los `CLAUDE.md` sólo importan este archivo y
 los de cada carpeta para Claude Code; `.claude/` contiene symlinks de skills y subagentes.
 
 `backend/executor/` es el ejecutor Go del ADR 0005, un servicio interno que compila y ejecuta Rust y
@@ -69,10 +68,11 @@ punta a punta contra el `dist/index.html` construido (`npm run test:e2e` despué
 con el navegador que baja `npm run test:e2e:install`; no forma parte de `npm test`, porque la imagen
 web no tiene navegador).
 
-Vite empaqueta React, las fuentes legacy, los estilos y `build/curriculum.json` en
-`dist/index.html`. Ese JSON sale de `content/` con `npm run curriculum`, que corre antes de
+Vite empaqueta React, las fuentes legacy y los estilos en `dist/index.html`, y copia
+`build/curriculum.json` a `dist/content/curriculum.<versión>.json`. Ese JSON sale de `content/` con `npm run curriculum`, que corre antes de
 `npm run typecheck` (y por eso de `build` y `test`) y de `npm run dev`.
-`vite-plugin-singlefile` conserva el contrato de un documento autónomo; los checks
+`vite-plugin-singlefile` conserva un solo documento de código y estilos hasta C4; el currículo ya no
+va adentro. Los checks
 de `qa/` validan el currículo y los contratos de comportamiento por separado.
 
 Para construir y servir con Docker:
@@ -86,8 +86,8 @@ docker compose down
 El primer comando construye las dos imágenes del sandbox, sin las que el ejecutor no arranca:
 corrélo la primera vez y al menos una vez por semana (ADR 0005).
 
-La web queda en `http://localhost:8080`. Para servir `dist/index.html` generado en
-el host como preview, usá `docker compose -f docker/compose.preview.yaml up --build -d --wait`
+La web queda en `http://localhost:8080`. Para servir `dist/` generado en
+el host como preview (el HTML, el contenido y los avisos de licencia, montados enteros), usá `docker compose -f docker/compose.preview.yaml up --build -d --wait`
 y abrí `http://localhost:8765`; detenelo con
 `docker compose -f docker/compose.preview.yaml down`. El progreso de ambos puertos es independiente.
 

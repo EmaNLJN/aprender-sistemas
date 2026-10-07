@@ -1,3 +1,4 @@
+import type { StoreApi } from 'zustand/vanilla';
 import type { LevelId } from '../../../shared/config/levels';
 import type { BackupEntry } from '../../../shared/lib/versioned-storage';
 
@@ -164,6 +165,7 @@ export interface CampaignLabState {
 }
 
 export interface CampaignEngine {
+  readonly changes: StoreApi<{ revision: number }>;
   init(config: CampaignConfig, labState?: CampaignLabState | null): InitResult;
   refreshFromLab(labState?: CampaignLabState | null): RefreshResult;
   syncLab(labState?: CampaignLabState | null): SyncLabResult;

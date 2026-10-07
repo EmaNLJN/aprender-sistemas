@@ -1,7 +1,9 @@
-import { existsSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import vm from 'node:vm';
+import type { BuildOptions } from 'esbuild';
 
 interface SystemsModel {
   initial(workshop: unknown): unknown;
@@ -25,27 +27,75 @@ const files = [
   ),
 ];
 
-function loadInto(context: vm.Context, file: string): void {
+function bundleIife(entry: BuildOptions): string {
   const result = esbuild.buildSync({
-    entryPoints: [join(root, file)],
     bundle: true,
     write: false,
     format: 'iife',
     platform: 'browser',
     target: 'es2020',
     logLevel: 'silent',
+    ...entry,
   });
-  vm.runInContext(result.outputFiles[0].text, context, { filename: file, timeout: 5000 });
+  const output = result.outputFiles?.[0];
+  if (!output) throw new Error('esbuild no produjo salida');
+  return output.text;
+}
+
+function loadInto(context: vm.Context, file: string): void {
+  const text = bundleIife({ entryPoints: [join(root, file)] });
+  vm.runInContext(text, context, { filename: file, timeout: 5000 });
+}
+
+function importsBundledJson(file: string): boolean {
+  return readFileSync(join(root, file), 'utf8').includes('curriculum.json');
+}
+
+function loadPublishedContentInto(context: vm.Context): void {
+  const directory = mkdtempSync(join(tmpdir(), 'dump-globals-'));
+  try {
+    const publisher = join(directory, 'publish.ts');
+    const holder = join(root, 'frontend/src/shared/api/content/content-holder.ts');
+    writeFileSync(
+      publisher,
+      `import { storeContent } from ${JSON.stringify(holder)};\n` +
+        'storeContent(JSON.parse((globalThis as any).__DUMP_CONTENT__));\n',
+    );
+    const imports = [publisher, ...files.map((file) => join(root, file))]
+      .map((file) => `import ${JSON.stringify(file)};`)
+      .join('\n');
+    const contentModule = join(root, 'frontend/src/app/content/content.ts');
+    const contents =
+      `${imports}\n` +
+      `import { getContent } from ${JSON.stringify(contentModule)};\n` +
+      'globalThis.__dumpedAtlas = getContent().atlas;\n';
+    const text = bundleIife({
+      stdin: { contents, resolveDir: root, loader: 'ts', sourcefile: 'dump-globals-entry.ts' },
+    });
+    context.__DUMP_CONTENT__ = readFileSync(join(root, 'build/curriculum.json'), 'utf8');
+    vm.runInContext(text, context, { filename: 'dump-globals-entry.ts', timeout: 5000 });
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 }
 
 const window: Record<string, unknown> = {};
 const context = vm.createContext({ window, console });
 const errors: Record<string, string> = {};
-for (const file of files) {
+const publishesContent = !importsBundledJson(files[0]);
+if (publishesContent) {
   try {
-    loadInto(context, file);
+    loadPublishedContentInto(context);
   } catch (error) {
-    errors[file] = String((error as Error | undefined)?.message);
+    errors['dump-globals-entry.ts'] = String((error as Error | undefined)?.message);
+  }
+} else {
+  for (const file of files) {
+    try {
+      loadInto(context, file);
+    } catch (error) {
+      errors[file] = String((error as Error | undefined)?.message);
+    }
   }
 }
 
@@ -83,26 +133,30 @@ for (const domain of ['SYSTEMS_LOWLEVEL', 'SYSTEMS_INFRA', 'SYSTEMS_PLAY', 'SYST
 }
 out.models = models;
 
-const atlasCandidates = [
-  'frontend/src/pages/atlas/model/atlas-catalog.ts',
-  'frontend/src/pages/atlas/content/atlas-content.ts',
-];
-const atlasEntry = atlasCandidates
-  .map((candidate) => join(root, candidate))
-  .find((candidate) => existsSync(candidate));
-if (!atlasEntry) throw new Error('No se encontró el módulo del Atlas');
-const atlas = esbuild.buildSync({
-  entryPoints: [atlasEntry],
-  bundle: true,
-  write: false,
-  format: 'esm',
-  platform: 'neutral',
-  logLevel: 'silent',
-});
-const atlasUrl =
-  'data:text/javascript;base64,' + Buffer.from(atlas.outputFiles[0].text).toString('base64');
-const atlasModule = (await import(atlasUrl)) as { atlasByLanguage: unknown };
-out.atlas = canonical(atlasModule.atlasByLanguage);
+async function legacyAtlas(): Promise<unknown> {
+  const atlasCandidates = [
+    'frontend/src/pages/atlas/model/atlas-catalog.ts',
+    'frontend/src/pages/atlas/content/atlas-content.ts',
+  ];
+  const atlasEntry = atlasCandidates
+    .map((candidate) => join(root, candidate))
+    .find((candidate) => existsSync(candidate));
+  if (!atlasEntry) throw new Error('No se encontró el módulo del Atlas');
+  const atlas = esbuild.buildSync({
+    entryPoints: [atlasEntry],
+    bundle: true,
+    write: false,
+    format: 'esm',
+    platform: 'neutral',
+    logLevel: 'silent',
+  });
+  const atlasUrl =
+    'data:text/javascript;base64,' + Buffer.from(atlas.outputFiles[0].text).toString('base64');
+  const atlasModule = (await import(atlasUrl)) as { atlasByLanguage: unknown };
+  return atlasModule.atlasByLanguage;
+}
+
+out.atlas = canonical(publishesContent ? context.__dumpedAtlas : await legacyAtlas());
 
 process.stdout.write(JSON.stringify(out));
 if (Object.keys(errors).length > 0) process.exitCode = 1;
