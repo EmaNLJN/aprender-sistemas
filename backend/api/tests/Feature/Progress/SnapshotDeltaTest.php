@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use App\Progress\ProgressTables;
 use App\Runs\Evidence\TestVerdict;
 use App\Runs\Evidence\Verdict;
@@ -130,9 +131,9 @@ function deltaRowsNewerThan(array $snapshot, int $revision): array
     return $newer;
 }
 
-function deltaCloseRun(object $test, int $userId, string $exerciseId, RunStatus $status): void
+function deltaCloseRun(int $userId, string $exerciseId, RunStatus $status): void
 {
-    $run = RunWorld::run(App\Models\User::findOrFail($userId), ['exercise_id' => $exerciseId, 'status' => 'running', 'started_at' => Instant::now()]);
+    $run = RunWorld::run(User::findOrFail($userId), ['exercise_id' => $exerciseId, 'status' => 'running', 'started_at' => Instant::now()]);
     $outcome = $status === RunStatus::Passed ? TestOutcome::Pass : TestOutcome::Fail;
     $verdict = new Verdict($status, null, ExecutorPhase::Run, 0, false, 10, 10, 'ok', '', [new TestVerdict('t1', TestOutcome::Pass), new TestVerdict('t2', $outcome), new TestVerdict('t3', TestOutcome::Pass)], null);
 
@@ -147,19 +148,20 @@ beforeEach(function () {
 });
 
 it('gives the full snapshot at R when the snapshot at the previous revision gets the delta applied, with no state row deleted', function (int $seed) {
-    $batches = array_chunk(RandomOperations::sequence($seed, 40), (int) ceil(56 / DELTA_BATCHES));
+    $operations = RandomOperations::sequence($seed, 40);
+    $batches = array_chunk($operations, (int) ceil(count($operations) / DELTA_BATCHES));
     $known = $this->device->snapshot()->json();
     $keysBefore = deltaRowKeysOf($known);
     $statuses = [];
 
-    foreach ($batches as $number => $operations) {
+    foreach ($batches as $number => $batch) {
         if ($number === 2) {
-            deltaCloseRun($this, $this->device->user->id, 'fx-rust-02', RunStatus::Passed);
+            deltaCloseRun($this->device->user->id, 'fx-rust-02', RunStatus::Passed);
         }
         if ($number === 5) {
-            deltaCloseRun($this, $this->device->user->id, 'fx-go-02', RunStatus::Failed);
+            deltaCloseRun($this->device->user->id, 'fx-go-02', RunStatus::Failed);
         }
-        $response = $this->device->sync($operations, ['knownRevision' => $known['revision']])->assertOk();
+        $response = $this->device->sync($batch, ['knownRevision' => $known['revision']])->assertOk();
         array_push($statuses, ...array_column($response->json('results'), 'status'));
         $full = $this->device->snapshot()->json();
         $delta = $response->json('changes');
@@ -181,7 +183,7 @@ it('gives the full snapshot at R when the snapshot at the previous revision gets
 
 it('delivers the row that RunCloser changed in the delta of the next sync', function () {
     $first = $this->device->sync(RandomOperations::sequence(3, 0))->assertOk();
-    deltaCloseRun($this, $this->device->user->id, 'fx-rust-02', RunStatus::Passed);
+    deltaCloseRun($this->device->user->id, 'fx-rust-02', RunStatus::Passed);
 
     $delta = $this->device->sync([], ['knownRevision' => $first->json('revision')])->assertOk();
 

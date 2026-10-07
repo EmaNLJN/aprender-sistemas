@@ -2,12 +2,13 @@
 
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Testing\TestResponse;
 use Tests\Support\MergeFixture;
 use Tests\Support\ProgressWorld;
 use Tests\Support\Sync\Ops;
 use Tests\Support\Sync\SyncDevice;
 
-function postDistinctReflection(SyncDevice $device, int $number): Illuminate\Testing\TestResponse
+function postDistinctReflection(SyncDevice $device, int $number): TestResponse
 {
     return $device->sync([Ops::reflection($number, "texto {$number}", '2026-10-05T12:09:00.000Z')]);
 }
