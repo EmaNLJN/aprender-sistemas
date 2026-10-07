@@ -86,10 +86,10 @@ it('answers 202 for an account already deleting without touching it and asks for
     Queue::assertPushed(PurgeUserData::class, 1);
 });
 
-it('treats the admin own account as DELETE /api/me and ends the session', function () {
+it('keeps the shape of the administration answer for the admin own account and ends the session', function () {
     $response = deleteUserAs(deleteUserConfirmed($this->browser), $this->admin->id)->assertStatus(202);
 
-    expect($response->json('data'))->toBe(['status' => 'deleting'])
+    expect($response->json())->toBe(['data' => ['id' => $this->admin->id, 'status' => 'deleting'], 'message' => DELETE_USER_MESSAGE])
         ->and($this->admin->fresh()->status)->toBe(AccountStatus::Deleting);
     $this->browser->send('PATCH', '/api/me', ['name' => 'Otro'])->assertStatus(401);
 });

@@ -31,14 +31,13 @@ final class DeletionController
 
     public function destroyUser(Request $request, int $user): JsonResponse
     {
-        if ($user === CurrentAccount::of($request)->id) {
-            return $this->destroyOwn($request);
-        }
-
         try {
             $this->deletion->request($user);
         } catch (LastAdmin) {
             return ApiError::of(ApiCode::LastAdmin);
+        }
+        if ($user === CurrentAccount::of($request)->id) {
+            $this->endSessionOf($request);
         }
 
         return response()->json(['data' => ['id' => $user, 'status' => 'deleting'], 'message' => __('account.deletion.other')], 202);
