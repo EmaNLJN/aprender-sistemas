@@ -5,24 +5,11 @@ import '../../campaign.css';
 import '../../quest-explorers.css';
 import '../../systems.css';
 
-// The import order is the temporary compatibility seam for legacy window.Taller* adapters.
-import './legacy/register-catalogs';
-import './legacy/register-runner';
-import './legacy/register-editor';
-import '../../lab-explorers.js';
-import '../../quest-explorers.js';
-import './legacy/register-systems-lowlevel';
-import './legacy/register-systems-infra';
-import './legacy/register-systems-play';
-import './legacy/register-systems-pc';
-import '../../lab.js';
-import './legacy/register-atlas';
-import './legacy/register-campaign-engine';
-import './legacy/register-effects';
-import '../../campaign.js';
-import './legacy/register-systems-engine';
-import './legacy/register-project-kit';
-import '../../systems.js';
-import { startApp } from '../../app.js';
+import { contentGate } from './boot/content-stage';
+import { legacyViews } from './boot/legacy-views';
+import { runBoot } from './boot/run-boot';
 
-startApp();
+// qa/load-order-check.ts reads this call: a new stage goes here and in its table.
+runBoot([contentGate, legacyViews]).catch((error: unknown) => {
+  console.error('No se pudo iniciar el taller.', error);
+});

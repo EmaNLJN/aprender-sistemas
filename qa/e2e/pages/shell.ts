@@ -42,6 +42,7 @@ export class ShellPage {
 
   async goto(url: string): Promise<void> {
     await this.page.goto(url);
+    await this.page.locator('#main > :not([data-content-gate="loading"])').first().waitFor();
   }
 
   menuLink(view: View): Locator {
