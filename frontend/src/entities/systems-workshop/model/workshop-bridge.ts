@@ -11,7 +11,9 @@ export function workshopMissionIds(
   workshop: BridgeWorkshop | undefined,
   language: string,
 ): string[] {
-  throw new Error('not implemented');
+  return workshop
+    ? [...new Set([...(workshop.related?.[language] || []), workshop.code[language]])]
+    : [];
 }
 
 export function workshopExerciseRole(
@@ -19,9 +21,10 @@ export function workshopExerciseRole(
   exerciseId: string,
   language: string,
 ): WorkshopExerciseRole | null {
-  throw new Error('not implemented');
+  if (!workshop || !workshopMissionIds(workshop, language).includes(exerciseId)) return null;
+  return exerciseId === workshop.code[language] ? 'core' : 'tool';
 }
 
 export function workshopReturnTarget(workshopId: string, language: string): WorkshopLocation {
-  throw new Error('not implemented');
+  return { workshopId, part: 'build', language: language === 'go' ? 'go' : 'rust' };
 }

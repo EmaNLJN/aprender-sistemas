@@ -32,7 +32,16 @@ export function campaignMissionContext(
   linkedWorldId: string,
   exerciseId: string,
 ): CampaignMissionContext | null {
-  throw new Error('not implemented');
+  const world = worlds.find((candidate) => candidate.id === linkedWorldId);
+  const mission = world?.missions.find((candidate) => candidate.id === exerciseId);
+  if (!world || !mission) return null;
+  return {
+    worldId: world.id,
+    worldTitle: world.title,
+    points: mission.points,
+    code: mission.code,
+    prediction: mission.prediction,
+  };
 }
 
 export function campaignLinkAccess(
@@ -41,5 +50,15 @@ export function campaignLinkAccess(
   exerciseId: string,
   permission: Pick<AttemptPermission, 'allowed' | 'reasons' | 'worldId'>,
 ): CampaignLinkAccess {
-  throw new Error('not implemented');
+  const world = worlds.find((candidate) => candidate.id === linkedWorldId);
+  const mission = world?.missions.find((candidate) => candidate.id === exerciseId);
+  return {
+    allowed: Boolean(
+      world && mission && permission.allowed && permission.worldId === linkedWorldId,
+    ),
+    reasons: mission
+      ? permission.reasons
+      : ['El enlace no corresponde a una misión de este mundo.'],
+    worldId: world ? world.id : null,
+  };
 }
