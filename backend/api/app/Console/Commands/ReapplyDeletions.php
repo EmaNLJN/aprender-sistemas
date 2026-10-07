@@ -131,14 +131,19 @@ final class ReapplyDeletions extends Command
 
     private function raiseUserIdCounter(): void
     {
-        $highestUsedId = max((int) DB::table('users')->max('id'), (int) DB::table('account_deletions')->max('user_id'));
+        $highestUsedId = max($this->asInt(DB::table('users')->max('id')), $this->asInt(DB::table('account_deletions')->max('user_id')));
         DB::statement('SET SESSION information_schema_stats_expiry = 0');
-        $currentCounter = (int) DB::scalar("select AUTO_INCREMENT from information_schema.TABLES where TABLE_SCHEMA = database() and TABLE_NAME = 'users'");
+        $currentCounter = $this->asInt(DB::scalar("select AUTO_INCREMENT from information_schema.TABLES where TABLE_SCHEMA = database() and TABLE_NAME = 'users'"));
         $nextId = max($highestUsedId + 1, $currentCounter);
         if ($nextId > $currentCounter) {
             DB::statement("ALTER TABLE users AUTO_INCREMENT = {$nextId}");
         }
         $this->line("El próximo id de cuenta será {$nextId}.");
+    }
+
+    private function asInt(mixed $value): int
+    {
+        return is_numeric($value) ? (int) $value : 0;
     }
 
     private function report(): int

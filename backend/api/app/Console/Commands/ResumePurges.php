@@ -27,16 +27,16 @@ final class ResumePurges extends Command
 
         $resumed = 0;
         $alreadyQueued = 0;
-        $skipped = false;
-        Event::listen(UniqueJobSkipped::class, function () use (&$skipped) {
-            $skipped = true;
+        $skippedJobs = 0;
+        Event::listen(UniqueJobSkipped::class, function () use (&$skippedJobs) {
+            $skippedJobs++;
         });
 
         try {
             foreach ($stuck as $account) {
-                $skipped = false;
+                $skippedBefore = $skippedJobs;
                 PurgeUserData::dispatch($account->id);
-                if ($skipped) {
+                if ($skippedJobs > $skippedBefore) {
                     $alreadyQueued++;
                 } else {
                     $resumed++;
