@@ -62,6 +62,7 @@ final class ReapplyDeletions extends Command
         foreach ($entries as $entry) {
             $this->reapply($entry);
         }
+        $this->raiseUserIdCounter();
 
         return $this->report();
     }
@@ -120,6 +121,18 @@ final class ReapplyDeletions extends Command
         $this->deleted++;
         Log::info('ledger.reapplied', ['user_id' => $userId]);
         $this->line("Cuenta {$userId}: borrada.");
+    }
+
+    private function raiseUserIdCounter(): void
+    {
+        $highestUsedId = max((int) DB::table('users')->max('id'), (int) DB::table('account_deletions')->max('user_id'));
+        DB::statement('SET SESSION information_schema_stats_expiry = 0');
+        $currentCounter = (int) DB::scalar("select AUTO_INCREMENT from information_schema.TABLES where TABLE_SCHEMA = database() and TABLE_NAME = 'users'");
+        $nextId = max($highestUsedId + 1, $currentCounter);
+        if ($nextId > $currentCounter) {
+            DB::statement("ALTER TABLE users AUTO_INCREMENT = {$nextId}");
+        }
+        $this->line("El próximo id de cuenta será {$nextId}.");
     }
 
     private function report(): int

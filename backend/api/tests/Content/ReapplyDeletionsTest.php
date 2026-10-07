@@ -148,3 +148,36 @@ it('purges the only admin anyway and says how to create another one', function (
         ->and($output)->toContain('admin activo')
         ->and($output)->toContain('taller:invite {email} --role=admin');
 });
+
+function reapplyNextUserId(): int
+{
+    return User::factory()->create()->id;
+}
+
+it('gives the next new account an id above every id of the ledger', function () {
+    DB::statement('ALTER TABLE users AUTO_INCREMENT = 1');
+
+    [$exit, $output] = reapplyLedger($this->ledgerPath, "50\t2026-10-05 12:00:00.000\t2026-10-06 08:30:00.000\n");
+
+    expect($exit)->toBe(0)
+        ->and($output)->toContain('El próximo id de cuenta será 51.')
+        ->and(reapplyNextUserId())->toBe(51);
+});
+
+it('gives the next new account an id above every id of the ledger already stored', function () {
+    DB::statement('ALTER TABLE users AUTO_INCREMENT = 1');
+    DB::table('account_deletions')->insert(['user_id' => 70, 'user_created_at' => '2026-10-05 12:00:00.000', 'deleted_at' => '2026-10-06 08:30:00.000']);
+
+    reapplyLedger($this->ledgerPath, "user_id\tuser_created_at\tdeleted_at\n");
+
+    expect(reapplyNextUserId())->toBe(71);
+});
+
+it('does not lower the id counter when the ledger is empty', function () {
+    DB::statement('ALTER TABLE users AUTO_INCREMENT = 500');
+
+    [$exit] = reapplyLedger($this->ledgerPath, "user_id\tuser_created_at\tdeleted_at\n");
+
+    expect($exit)->toBe(0)
+        ->and(reapplyNextUserId())->toBe(500);
+});
