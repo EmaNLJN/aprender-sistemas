@@ -21,6 +21,7 @@ final class UserTables
             UserTable::child('attempt_tests', 'attempts', 'attempts', null, 'Cascade of the attempts batch.'),
             UserTable::child('attempt_payloads', 'attempts', 'attempts', null, 'Cascade of the attempts batch.'),
             UserTable::owned('sync_operations', null, 'Operational, it only keeps UUIDs and fingerprints.', 'operation_id', null),
+            UserTable::owned('progress_imports', 'imports', null, 'id', null),
             UserTable::owned('drafts', 'progress', null, null, self::CASCADE_FROM_USERS),
             UserTable::owned('campaign_checkpoints', 'progress', null, null, self::CASCADE_FROM_USERS),
             UserTable::owned('workshop_progress', 'progress', null, null, self::CASCADE_FROM_USERS),
@@ -30,6 +31,7 @@ final class UserTables
             UserTable::owned('preferences', 'progress', null, null, self::CASCADE_FROM_USERS),
             UserTable::child('workshop_observations', 'workshop_progress', 'progress', null, 'Cascade through workshop_progress.'),
             UserTable::child('workshop_step_marks', 'workshop_progress', 'progress', null, 'Cascade through workshop_progress.'),
+            UserTable::owned('campaign_seals', 'progress', null, null, self::CASCADE_FROM_USERS),
         ];
     }
 }

@@ -12,6 +12,7 @@ final class UserExport
         private readonly AccountSection $account,
         private readonly ProgressSection $progress,
         private readonly AttemptsSection $attempts,
+        private readonly ImportsSection $imports,
     ) {}
 
     /** @return array<string, mixed> */
@@ -39,6 +40,6 @@ final class UserExport
     /** @return list<ExportSection> */
     private function sections(): array
     {
-        return [$this->account, $this->progress, $this->attempts];
+        return [$this->account, $this->progress, $this->attempts, $this->imports];
     }
 }

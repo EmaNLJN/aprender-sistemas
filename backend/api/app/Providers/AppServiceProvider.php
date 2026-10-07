@@ -7,6 +7,8 @@ use App\Auth\Events\AccountRestricted;
 use App\Auth\Limiters;
 use App\Http\ProgressLimiters;
 use App\Progress\ChangesReader;
+use App\Progress\Import\DatabaseLegacyWriter;
+use App\Progress\Import\LegacyWriter;
 use App\Progress\Operations\DatabaseOperationProcessor;
 use App\Progress\Operations\OperationProcessor;
 use App\Progress\Snapshot\ProgressSnapshotReader;
@@ -27,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->when(ResultClassifier::class)->needs('$sandboxRuntime')->giveConfig('runs.executor.runtime');
         $this->app->bind(OperationProcessor::class, DatabaseOperationProcessor::class);
         $this->app->bind(ChangesReader::class, ProgressSnapshotReader::class);
+        $this->app->bind(LegacyWriter::class, DatabaseLegacyWriter::class);
     }
 
     public function boot(): void

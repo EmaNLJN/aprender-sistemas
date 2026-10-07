@@ -47,3 +47,17 @@ it('returns 0 for an account with no active runs', function () {
 
     expect(app(ActiveRuns::class)->cancelAllOf($user->id))->toBe(0);
 });
+
+it('cancels a queued run with no reason when the caller passes null', function () {
+    $user = RunWorld::user();
+    $queued = RunWorld::run($user);
+
+    $count = app(ActiveRuns::class)->cancelAllOf($user->id, null);
+
+    $stored = activeStored($queued->id);
+    expect($count)->toBe(1)
+        ->and($stored->status)->toBe(RunStatus::Canceled)
+        ->and($stored->reason)->toBeNull()
+        ->and(DB::table('attempts')->where('id', $stored->attemptId)->value('reason'))->toBeNull();
+    RunInvariants::assertClean();
+});

@@ -30,6 +30,7 @@ dataset('contract codes', [
     'client_outdated' => [ApiCode::ClientOutdated, 'client_outdated', 409, 'Esta pestaña quedó vieja. Recargá la página para seguir sincronizando.'],
     'last_admin' => [ApiCode::LastAdmin, 'last_admin', 409, 'Tiene que quedar al menos un admin activo.'],
     'mail_unavailable' => [ApiCode::MailUnavailable, 'mail_unavailable', 503, 'El taller no puede mandar correos por ahora.'],
+    'import_needs_confirmation' => [ApiCode::ImportNeedsConfirmation, 'import_needs_confirmation', 409, 'Confirmá que esta copia es tuya antes de combinarla con el progreso de tu cuenta.'],
 ]);
 
 it('maps each code to the status and Spanish message of the HTTP contract', function (ApiCode $code, string $value, int $status, string $message) {
@@ -38,8 +39,8 @@ it('maps each code to the status and Spanish message of the HTTP contract', func
         ->and($code->message())->toBe($message);
 })->with('contract codes');
 
-it('has exactly the 24 codes of the contract', function () {
-    expect(ApiCode::cases())->toHaveCount(24);
+it('has exactly the 25 codes of the contract', function () {
+    expect(ApiCode::cases())->toHaveCount(25);
 });
 
 it('words each run quota in Spanish', function (string $quota, string $message) {

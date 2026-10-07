@@ -144,11 +144,33 @@ it('names the rule that a planted violation breaks', function (Closure $plant, s
         fn (User $user) => plantProgressRow('exercise_progress', ['user_id' => $user->id, 'exercise_id' => 'fx-rust-01', 'confidence' => 'again', 'reviewed_at' => null, 'review_due_at' => null, 'review_set_at' => '2026-10-06 11:00:00.000']),
         ProgressInvariants::REVIEW_GROUP,
     ],
+    'a campaign seal with a revision newer than the head of its account' => [
+        fn (User $user) => DB::table('campaign_seals')->insert(['user_id' => $user->id, 'exercise_id' => 'fx-rust-01', 'code' => 1, 'prediction' => 0, 'assisted' => 0, 'imported_at' => '2026-10-06 11:00:00.000', 'revision' => 6]),
+        ProgressInvariants::REVISION_AHEAD_OF_HEAD,
+    ],
     'a row with a revision newer than the head of its account' => [
         fn (User $user) => plantProgressRow('route_quiz_answers', ['user_id' => $user->id, 'step_id' => 'fx-step-1', 'answer' => 1, 'revision' => 6]),
         ProgressInvariants::REVISION_AHEAD_OF_HEAD,
     ],
 ]);
+
+it('accepts a legacy review group that is incomplete because it has no clock', function () {
+    ProgressWorld::seed(referenceProgressWorld());
+    $user = ProgressWorld::user();
+    ProgressWorld::head($user, revision: 5);
+    plantProgressRow('exercise_progress', ['user_id' => $user->id, 'exercise_id' => 'fx-rust-01', 'confidence' => null, 'reviewed_at' => null, 'review_due_at' => '2026-10-07 11:00:00.000', 'review_set_at' => null]);
+
+    expect(ProgressInvariants::violations())->toBe([]);
+});
+
+it('still rejects a review group with a clock and without its dates', function () {
+    ProgressWorld::seed(referenceProgressWorld());
+    $user = ProgressWorld::user();
+    ProgressWorld::head($user, revision: 5);
+    plantProgressRow('exercise_progress', ['user_id' => $user->id, 'exercise_id' => 'fx-rust-01', 'confidence' => 'again', 'reviewed_at' => '2026-10-06 11:00:00.000', 'review_due_at' => null, 'review_set_at' => '2026-10-06 11:00:00.000']);
+
+    expect(array_keys(ProgressInvariants::violations()))->toBe([ProgressInvariants::REVIEW_GROUP]);
+});
 
 it('looks only at the account that it is asked about', function () {
     ProgressWorld::seed(referenceProgressWorld());

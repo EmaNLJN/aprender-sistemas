@@ -27,6 +27,7 @@ final class ProgressSnapshotReader implements ChangesReader
         return new ProgressAreas(
             exercises: $this->exercises($userId, $sinceRevision),
             drafts: $this->wire('drafts', $userId, $sinceRevision, 'exercise_id', DraftWire::of(...)),
+            campaignSeals: $this->wire('campaign_seals', $userId, $sinceRevision, 'exercise_id', CampaignWire::seal(...)),
             campaignCheckpoints: $this->wire('campaign_checkpoints', $userId, $sinceRevision, 'world_id', CampaignWire::checkpoint(...)),
             workshopProgress: $this->wire('workshop_progress', $userId, $sinceRevision, 'workshop_id, language', WorkshopWire::progress(...)),
             workshopObjectives: $this->wire('workshop_observations', $userId, $sinceRevision, 'workshop_id, language, objective_key', WorkshopWire::objective(...)),

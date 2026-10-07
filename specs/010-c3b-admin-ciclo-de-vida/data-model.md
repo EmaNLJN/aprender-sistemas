@@ -72,9 +72,11 @@ CREATE TABLE `account_deletions` (
 | `sync_operations` | D1a | `user_id` | No, con motivo: es operativa y sólo guarda UUID y huellas | Lote 4 |
 | `drafts`, `campaign_checkpoints`, `workshop_progress`, `route_marks`, `route_quiz_answers`, `route_notes`, `preferences` | D1a | `user_id` | Sí, por la foto de progreso v2 (`progress`) | Cascada de la transacción final |
 | `workshop_observations`, `workshop_step_marks` | D1a | Hijas de `workshop_progress` (clave compuesta en cascada) | Sí, por la misma foto | Cascada, por `workshop_progress` |
+| `progress_imports` | D1b | `user_id` | Sí, en `imports`: cada importación con su crudo (`null` si ya se podó) y su informe | Lote 5 |
+| `campaign_seals` | D1b | `user_id` | Sí, por la foto (`progress.campaign.seals`) | Cascada de la transacción final |
 
-- **Lo que D1b suma:** `progress_imports` (la exportación incluye sus crudos, como `imports`) y `campaign_seals`. No están declaradas: son de una spec que todavía no se planificó. La prueba de cobertura falla en el ítem que las cree sin declararlas.
-- **Los lotes**, en el orden de D06 y de B2: `runs` (por `id`), `exercise_progress` (por `exercise_id`), `attempts` (por `id`) y `sync_operations` (por `operation_id`). Cada uno borra `batch_size` filas por sentencia, con `DELETE … WHERE user_id = ? ORDER BY <clave> LIMIT <n>`, hasta que una sentencia afecta menos filas que el lote. `runs.attempt_id` cae en cascada desde `attempts`: borrar `runs` primero deja la cascada sin trabajo.
+- **Lo que D1b suma:** `progress_imports` y `campaign_seals` se declararon al integrarse D1b con C3b (R39 de D1b), junto con la sección `imports`.
+- **Los lotes**, en el orden de D06 y de B2: `runs` (por `id`), `exercise_progress` (por `exercise_id`), `attempts` (por `id`), `sync_operations` (por `operation_id`) y `progress_imports` (por `id`). Cada uno borra `batch_size` filas por sentencia, con `DELETE … WHERE user_id = ? ORDER BY <clave> LIMIT <n>`, hasta que una sentencia afecta menos filas que el lote. `runs.attempt_id` cae en cascada desde `attempts`: borrar `runs` primero deja la cascada sin trabajo.
 - **Lo que no es un lote:** una tabla que llega a `users` por cascada tiene a lo sumo unas decenas de filas por cuenta (las de D1a, salvo `sync_operations`). La clave foránea con cascada de C3a (su FR-004) es la red de seguridad de la supresión, no su mecanismo.
 - **Las excepciones** (`sessions`, `invitations`, `password_reset_tokens` y `account_deletions`) llevan su motivo en el registro: una excepción sin motivo rompe la prueba.
 

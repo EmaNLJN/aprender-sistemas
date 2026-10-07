@@ -79,8 +79,12 @@ check "$(head -c 204800 /dev/zero | curl -s -o /dev/null -w '%{http_code}' -X PO
   "un cuerpo de 200 KiB a POST /api/runs recibe 413 de Nginx antes de llegar a PHP"
 check "$(head -c 2097153 /dev/zero | curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' --data-binary @- "$base/api/sync")" 413 \
   "un cuerpo de 2 MiB más un byte a POST /api/sync recibe 413 de Nginx antes de llegar a PHP"
+check "$(head -c 25165825 /dev/zero | curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' --data-binary @- "$base/api/progress/import")" 413 \
+  "un cuerpo de 24 MiB más un byte a POST /api/progress/import recibe 413 de Nginx antes de llegar a PHP"
 check "$(curl -s -o /dev/null -w '%{http_code} %{content_type}' "$base/api/progress")" \
   '401 application/json' "GET /api/progress sin sesión responde 401 en JSON"
+check "$(curl -s -o /dev/null -w '%{http_code} %{content_type}' -X POST "$base/api/progress/reset")" \
+  '419 application/json' "POST /api/progress/reset sin sesión ni token responde 419 en JSON, porque CSRF responde antes que la sesión"
 check "$(docker compose ps --status running --services | grep -cx executor)" 1 \
   "el servicio executor corre"
 check "$(docker compose ps --status running --quiet worker-runs | grep -c .)" 4 \

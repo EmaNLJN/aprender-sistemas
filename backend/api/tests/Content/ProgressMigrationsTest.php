@@ -26,14 +26,15 @@ function progressCreateStatements(array $tables): array
     return $statements;
 }
 
-it('I: rolling back ten steps drops the ten tables and migrating again recreates them identically', function () {
+it('I: rolling back from the first migration of D1a drops its ten tables and migrating again recreates them identically', function () {
     foreach (PROGRESS_MIGRATION_TABLES as $table) {
         expect(Schema::hasTable($table))->toBeTrue();
     }
     $before = progressCreateStatements([...PROGRESS_MIGRATION_TABLES, ...UNTOUCHED_TABLES]);
 
     try {
-        Artisan::call('migrate:rollback', ['--step' => 10, '--force' => true]);
+        $fromFirstProgressMigration = DB::table('migrations')->where('migration', '>=', '2026_10_06_100001_create_sync_operations_table')->count();
+        Artisan::call('migrate:rollback', ['--step' => $fromFirstProgressMigration, '--force' => true]);
         foreach (PROGRESS_MIGRATION_TABLES as $table) {
             expect(Schema::hasTable($table))->toBeFalse();
         }

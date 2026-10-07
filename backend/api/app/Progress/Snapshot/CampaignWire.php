@@ -10,6 +10,23 @@ final class CampaignWire
      * @param  array<string, mixed>  $row
      * @return array<string, mixed>
      */
+    public static function seal(array $row): array
+    {
+        $fields = new RowFields($row, 'campaign_seals');
+
+        return [
+            'exerciseId' => $fields->string('exercise_id'),
+            'code' => $fields->flag('code'),
+            'prediction' => $fields->flag('prediction'),
+            'assisted' => $fields->flag('assisted'),
+            'revision' => $fields->int('revision'),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     * @return array<string, mixed>
+     */
     public static function checkpoint(array $row): array
     {
         $fields = new RowFields($row, 'campaign_checkpoints');

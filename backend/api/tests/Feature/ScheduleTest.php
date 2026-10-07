@@ -16,10 +16,10 @@ function scheduledTasks(): array
     return $tasks;
 }
 
-it('schedules exactly the eleven tasks of the contracts, none overlapping', function () {
+it('schedules exactly the twelve tasks of the contracts, none overlapping', function () {
     $tasks = scheduledTasks();
 
-    expect($tasks)->toHaveCount(11)
+    expect($tasks)->toHaveCount(12)
         ->and($tasks['taller:prune-sessions'][0])->toBe('*/15 * * * *')
         ->and($tasks['auth:clear-resets'][0])->toBe('*/15 * * * *')
         ->and($tasks['taller:prune-cache'][0])->toBe('*/15 * * * *')
@@ -27,6 +27,7 @@ it('schedules exactly the eleven tasks of the contracts, none overlapping', func
         ->and($tasks['runs:sweep'][0])->toBe('* * * * *')
         ->and($tasks['runs:prune'][0])->toBe('0 * * * *')
         ->and($tasks['progress:prune-sync-operations'][0])->toBe('0 * * * *')
+        ->and($tasks['progress:prune-import-payloads'][0])->toBe('0 * * * *')
         ->and($tasks['queue:work database --queue=default --stop-when-empty --max-time=50'][0])->toBe('* * * * *')
         ->and($tasks['queue:prune-failed --hours=168'][0])->toBe('0 0 * * *')
         ->and($tasks['model:prune --model=App\\Models\\DeletedAccount'][0])->toBe('0 0 * * *')

@@ -21,3 +21,4 @@ Schedule::command('queue:prune-failed', ['--hours' => 168])->daily()->withoutOve
 Schedule::command('model:prune', ['--model' => DeletedAccount::class])->daily()->withoutOverlapping()->appendOutputTo('/proc/1/fd/2');
 Schedule::command('taller:resume-purges')->everyFiveMinutes()->withoutOverlapping()->appendOutputTo('/proc/1/fd/2');
 Schedule::command('progress:prune-sync-operations')->hourly()->withoutOverlapping()->appendOutputTo('/proc/1/fd/2');
+Schedule::command('progress:prune-import-payloads')->hourly()->withoutOverlapping()->appendOutputTo('/proc/1/fd/2');

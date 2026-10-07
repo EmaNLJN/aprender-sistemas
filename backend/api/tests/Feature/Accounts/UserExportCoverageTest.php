@@ -6,9 +6,9 @@ use App\Accounts\UserTable;
 use Tests\Support\PopulatedAccount;
 use Tests\Support\UserDataCoverage;
 
-function exportCoverageOffenders(UserData $data): array
+function exportCoverageOffenders(UserData $data, ?array $keys = null): array
 {
-    $keys = app(UserExport::class)->sectionKeys();
+    $keys ??= app(UserExport::class)->sectionKeys();
     $offenders = [];
     foreach ($data->tables() as $table) {
         if ($table->export !== null && UserDataCoverage::exists($table->name) && ! in_array($table->export, $keys, true)) {
@@ -23,14 +23,15 @@ it('has a registered section for every declared table that exists', function () 
     expect(exportCoverageOffenders(new UserData))->toBe([]);
 });
 
-it('names a table that exists and declares imports without a registered section', function () {
+it('names a table that exists and declares a key without a registered section', function () {
     $tables = [
         UserTable::owned('exercise_progress', 'progress', null, 'exercise_id', null),
-        UserTable::owned('attempts', 'imports', null, 'id', null),
-        UserTable::owned('drafts', 'imports', null, null, 'Cascade.'),
+        UserTable::owned('attempts', 'attempts', null, 'id', null),
+        UserTable::owned('drafts', 'attempts', null, null, 'Cascade.'),
     ];
+    $keysWithoutAttempts = ['account', 'progress', 'imports'];
 
-    expect(exportCoverageOffenders(new UserData($tables)))->toBe(['attempts', 'drafts']);
+    expect(exportCoverageOffenders(new UserData($tables), $keysWithoutAttempts))->toBe(['attempts', 'drafts']);
 });
 
 it('exports rows for each declared table that exists with an export key, using a populated account', function () {

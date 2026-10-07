@@ -103,3 +103,60 @@ it('advances from the revision that the head already had', function () {
     expect($advanced->revision)->toBe(42)
         ->and(storedHead($user->id)->revision)->toBe(42);
 });
+
+it('peeks at an account without a head as epoch 1 and revision 0, without writing or locking', function () {
+    $user = RunWorld::user();
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    $head = (new AccountLock)->peek($user->id);
+    $statements = array_map(fn (array $query) => strtolower($query['query']), DB::getQueryLog());
+
+    expect($head->userId)->toBe($user->id)
+        ->and($head->epoch)->toBe(1)
+        ->and($head->revision)->toBe(0)
+        ->and($head->resetAt)->toBeNull()
+        ->and($statements)->not->toBeEmpty()
+        ->and(array_filter($statements, fn (string $sql) => ! str_starts_with($sql, 'select') || str_contains($sql, 'for update')))->toBe([])
+        ->and(DB::table('progress_heads')->where('user_id', $user->id)->exists())->toBeFalse();
+});
+
+it('peeks at the head that an account already has', function () {
+    $user = RunWorld::user();
+    $lock = new AccountLock;
+    $lock->within($user->id, fn () => null);
+    DB::update('update progress_heads set epoch = 3, revision = 8, reset_at = ? where user_id = ?', ['2026-10-01 08:00:00.250', $user->id]);
+
+    $head = $lock->peek($user->id);
+
+    expect($head->epoch)->toBe(3)
+        ->and($head->revision)->toBe(8)
+        ->and(Instant::format($head->resetAt))->toBe('2026-10-01 08:00:00.250');
+});
+
+it('resets the head: epoch and revision one higher, the three instants at the given time, and no other account touched', function () {
+    $user = RunWorld::user();
+    $other = RunWorld::user();
+    $lock = new AccountLock;
+    foreach ([$user, $other] as $account) {
+        $lock->within($account->id, fn () => null);
+        DB::update('update progress_heads set epoch = 2, revision = 9 where user_id = ?', [$account->id]);
+    }
+    $at = Instant::parse('2026-10-06 13:00:00.456');
+
+    $reset = $lock->within($user->id, fn (ProgressHead $head) => $lock->reset($head, $at));
+    $stored = storedHead($user->id);
+
+    expect($reset->epoch)->toBe(3)
+        ->and($reset->revision)->toBe(10)
+        ->and($stored->epoch)->toBe(3)
+        ->and($stored->revision)->toBe(10)
+        ->and(Instant::format($reset->resetAt))->toBe('2026-10-06 13:00:00.456')
+        ->and(Instant::format($reset->lastActivityAt))->toBe('2026-10-06 13:00:00.456')
+        ->and(Instant::format($stored->resetAt))->toBe('2026-10-06 13:00:00.456')
+        ->and(Instant::format($stored->lastActivityAt))->toBe('2026-10-06 13:00:00.456')
+        ->and(DB::table('progress_heads')->where('user_id', $user->id)->value('updated_at'))->toBe('2026-10-06 13:00:00.456')
+        ->and(storedHead($other->id)->epoch)->toBe(2)
+        ->and(storedHead($other->id)->revision)->toBe(9)
+        ->and(storedHead($other->id)->resetAt)->toBeNull();
+});
