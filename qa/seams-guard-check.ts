@@ -220,6 +220,42 @@ test('R5: entities, features and shared that import the curriculum JSON are repo
   assert.deepEqual(rulesOf(violations), ['R5', 'R5', 'R5']);
 });
 
+test('R6: a legacy view that imports a model file of a slice is reported', () => {
+  const violations = findViolations({
+    'frontend/campaign.js': `import { campaignMissionContext } from './src/entities/campaign/model/mission-bridge';`,
+  });
+  assert.deepEqual(rulesOf(violations), ['R6']);
+  assert.match(violations[0], /frontend\/campaign\.js/);
+  assert.match(violations[0], /\.\/src\/entities\/campaign\/model\/mission-bridge/);
+});
+
+test('R6: an adapter under app/legacy that imports a type from a slice model is reported', () => {
+  const violations = findViolations({
+    'frontend/src/app/legacy/register-x.ts': `import type { LabState } from '../../entities/exercise/model/lab-store';`,
+  });
+  assert.deepEqual(rulesOf(violations), ['R6']);
+});
+
+test('R6: an @x entry of a slice imported from a legacy source is reported', () => {
+  const violations = findViolations({
+    'frontend/lab-explorers.js': `import { hasPassingEvidence } from './src/entities/exercise/@x/campaign';`,
+  });
+  assert.deepEqual(rulesOf(violations), ['R6']);
+});
+
+test('R6: the declared stateless entries and the slice entries themselves are not reported', () => {
+  assert.deepEqual(
+    findViolations({
+      'frontend/campaign.js': `import { campaignLinkAccess } from './src/entities/campaign/bridge';`,
+      'frontend/systems.js': `import { workshopMissionIds } from './src/entities/systems-workshop/bridge';`,
+      'frontend/quest-explorers.js': `import { renderExplorer } from './src/entities/exercise/explorers';`,
+      'frontend/src/entities/campaign/bridge.ts': `export { campaignLinkAccess } from './model/mission-bridge';
+import { campaignLinkAccess } from './model/mission-bridge';`,
+    }),
+    [],
+  );
+});
+
 function productionSources(): Record<string, string> {
   const sources: Record<string, string> = {};
   const frontend = path.join(repoRoot, 'frontend');
