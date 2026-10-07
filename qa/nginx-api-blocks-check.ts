@@ -11,6 +11,7 @@ const config = readFileSync(path.join(repoRoot, 'docker/nginx/nginx.conf'), 'utf
 const cappedLocations = [
   { name: 'runs', opening: 'location ^~ /api/runs {', size: '192k' },
   { name: 'sync', opening: 'location = /api/sync {', size: '2m' },
+  { name: 'progress import', opening: 'location = /api/progress/import {', size: '24m' },
 ];
 
 function directivesOf(opening: string): string[] {
