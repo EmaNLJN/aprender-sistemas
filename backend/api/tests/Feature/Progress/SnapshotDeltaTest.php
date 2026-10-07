@@ -37,7 +37,7 @@ function deltaSeeds(): array
 {
     $random = random_int(1, 1000000);
 
-    return ['seed 1' => [1], 'seed 20261005' => [20261005], 'seed 7' => [7], "random seed {$random}" => [$random]];
+    return ['seed 1' => [1], 'seed 20261005' => [20261005], 'seed 7' => [7], 'seed 5' => [5], "random seed {$random}" => [$random]];
 }
 
 /** @param array<string, mixed> $row */

@@ -41,6 +41,27 @@ final class RandomOperations
             $sequence[] = $generator->operation(self::TYPES[mt_rand(0, count(self::TYPES) - 1)]);
         }
 
+        return self::withOneStaleAnswer($sequence);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $sequence
+     * @return list<array<string, mixed>>
+     */
+    private static function withOneStaleAnswer(array $sequence): array
+    {
+        $stale = MergeFixture::world()['staleContentVersion'];
+        if (in_array($stale, array_column($sequence, 'contentVersion'), true)) {
+            return $sequence;
+        }
+        foreach ($sequence as $index => $operation) {
+            if (array_key_exists('contentVersion', $operation)) {
+                $sequence[$index]['contentVersion'] = $stale;
+
+                return $sequence;
+            }
+        }
+
         return $sequence;
     }
 
