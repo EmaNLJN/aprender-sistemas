@@ -126,7 +126,7 @@ Un solo script sirve para las dos unidades. Se arma copiando de `qa/boot-check.t
 4. Capturar el JSON de «Exportar progreso» con un `URL.createObjectURL` que guarde el `Blob` (como el `FakeURL` de `app-shell-check`), sin `exportedAt`; el contenido final del almacenamiento; el texto del aviso (`#toast`).
 5. Comparar lo capturado entre la raíz de la base y la de la unidad.
 
-Esperado: en la unidad 1, 5 pares de JSON, de almacenamientos y de avisos iguales y 0 escrituras en el arranque. En la unidad 3, 4 secuencias de lecturas y escrituras iguales: con la fixture de master, `get taller-laboratorio-v1`, `get taller-learning-v1`, `get taller-campaign-v1` y `get taller-systems-v1`, y nada más.
+Esperado: en la unidad 1, 4 casos (las tres fixtures y el almacenamiento vacío) con su JSON, su almacenamiento y su aviso iguales, 12 pares, y 0 escrituras en el arranque. En la unidad 3, 4 secuencias de lecturas y escrituras iguales: con la fixture de master, `get taller-laboratorio-v1`, `get taller-learning-v1`, `get taller-campaign-v1` y `get taller-systems-v1`, y nada más.
 
 ## 4. Las pruebas de que las pruebas detectan algo
 
