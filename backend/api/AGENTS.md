@@ -94,14 +94,14 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
     confirmada no gasta el cupo de `throttle:export`.
   - `role` y `status` los cambia sólo `AccountChanges`, con la guardia del último admin.
   - `UserData` (`UserTables`, `UserPurge` y `UserExport`) sabe qué tablas guardan datos de una cuenta.
-    **Toda tabla nueva con `user_id` se declara en `UserTables` y en `Tests\\Support\\PopulatedAccount`**:
+    **Toda tabla nueva con `user_id` se declara en `UserTables` y en `Tests\Support\PopulatedAccount`**:
     si no, fallan las pruebas de cobertura de la purga y de la exportación.
   - `PurgeUserData` borra una cuenta por lotes en la cola `default` y la anota en el libro
     `account_deletions`. `taller:resume-purges` vuelve a pedir las que quedaron en `deleting`, y
     `taller:reapply-deletions` reaplica una copia del libro sobre una base restaurada.
   - El `scheduler` suma el `queue:work` de la cola `default` (la cola `runs` es de `worker-runs`), la
     poda de `failed_jobs`, la de `account_deletions` y el barrido de las purgas.
-  - Las carreras se prueban en la suite `Concurrency`, con `Tests\\Support\\Parallel`.
+  - Las carreras se prueban en la suite `Concurrency`, con `Tests\Support\Parallel`.
   - Hasta C3c no hay correo: lo que pediría uno responde 503 `mail_unavailable`.
 - **Pruebas:**
   - `RefreshDatabase` es el default (`tests/Pest.php`). `DatabaseTruncation` queda para el
