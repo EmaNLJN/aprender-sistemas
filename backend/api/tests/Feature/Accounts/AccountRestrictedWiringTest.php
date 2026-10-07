@@ -1,13 +1,13 @@
 <?php
 
+use App\Accounts\UserPurge;
 use App\Auth\Events\AccountRestricted;
 use App\Jobs\PurgeUserData;
 use App\Models\User;
+use App\Progress\AccountLock;
 use App\Runs\Execution\ActiveRuns;
 use App\Runs\Record\RunRow;
 use App\Runs\RunStatus;
-use App\Accounts\UserPurge;
-use App\Progress\AccountLock;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Tests\Support\Browser;
