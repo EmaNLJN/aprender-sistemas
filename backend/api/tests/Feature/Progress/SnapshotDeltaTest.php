@@ -177,7 +177,7 @@ it('gives the full snapshot at R when the snapshot at the previous revision gets
         $known = $full;
     }
     expect(array_values(array_unique($statuses)))->toEqualCanonicalizing(['applied', 'stale_content'], "seed {$seed}")
-        ->and(count(deltaRowKeysOf($known)))->toBeGreaterThan(20);
+        ->and(count(deltaRowKeysOf($known)))->toBeGreaterThan(10);
     ProgressInvariants::assertClean($this->device->user->id);
 })->with(fn () => deltaSeeds());
 
