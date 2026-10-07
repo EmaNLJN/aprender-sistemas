@@ -11,6 +11,8 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | --- | --- |
 | Documento, entrada ESM, arranque y adaptadores legacy | `frontend/src/index.html`, `frontend/src/app/main.tsx` (la secuencia de etapas), `frontend/src/app/boot/` (la compuerta del contenido y la cadena legacy, A2), `frontend/src/app/content/` (`getContent()`), `frontend/src/app/legacy/` |
 | Helpers y constantes compartidos, sin reglas de negocio | `frontend/src/shared/lib/`, `frontend/src/shared/config/` |
+| Gramática de URL (F2, unidad 5) | `frontend/src/shared/config/url-grammar.ts`: las vistas, la lectura de la query y los enlaces y las reescrituras de URL que usan `app.js`, `lab.js`, `campaign.js`, `systems.js` y el Atlas |
+| Puentes entre vistas como datos (F2, unidad 5) | `frontend/src/entities/campaign/bridge.ts` (`campaignMissionContext` y `campaignLinkAccess`) y `frontend/src/entities/systems-workshop/bridge.ts` (`workshopMissionIds`, `workshopExerciseRole` y `workshopReturnTarget`): entradas sin estado que las fuentes legacy importan sin abrir almacenes. Fuera de un slice, una fuente legacy o de `app/` importa el índice del slice, si es su dueño, o una entrada sin estado; lo hace cumplir la regla R6 de `qa/seams-guard-check.ts` |
 | Evidencia de aprobación, interpretación de ejecuciones y fusión de registros | `frontend/src/entities/exercise/` |
 | Lectura versionada, respaldo y avisos de carga del progreso | `frontend/src/shared/lib/versioned-storage.ts` (ADR 0003) |
 | Almacenes del progreso y motores, con suscripción (F2, unidad 1) | Un almacén por clave y un motor por tipo, cada uno un singleton: `routeStore` en `frontend/src/entities/guide/`, `labStore` en `frontend/src/entities/exercise/`, y `campaignEngine` y `systemsEngine` en sus slices. Cada uno expone `changes`, un store de `zustand/vanilla` que lleva sólo la revisión y sube una vez por operación, después de escribir; el progreso sigue en su almacén. En React se lee con un selector chico (`useStore(routeStore.changes, (state) => state.revision)`), nunca con el store entero. Entre las fuentes legacy y `app/`, cada singleton tiene un solo dueño (`app.js`, `lab.js` y los dos `register-*-engine.ts`); lo hace cumplir `qa/seams-guard-check.ts` |
@@ -188,10 +190,11 @@ para infraestructura o UI sin reglas de negocio. Abrí slices en `features` para
 acciones de valor para el alumno y en `entities` para conceptos de dominio estables
 sólo cuando varios consumidores justifiquen ese seam. No agregues `processes` —está
 deprecada— ni `widgets` hasta que exista un bloque autónomo que realmente los necesite.
-Estado actual: `frontend/src/app` (entrada y adaptadores legacy), `frontend/src/pages/atlas` (primera
-página migrada), `frontend/src/entities/exercise` (regla de evidencia, interpretación de la
-ejecución y fusión de registros, compartidas por laboratorio, campaña y Sistemas) y
-`frontend/src/shared` (helpers y constantes sin reglas de negocio).
+Estado actual: `frontend/src/app` (entrada, arranque y adaptadores legacy), `frontend/src/pages/atlas`
+(primera página migrada), `frontend/src/features` (`download-project-kit` y `progress-sync`), las
+entidades `exercise` (evidencia, ejecución, fusión de registros, catálogo y `labStore`), `guide`
+(`routeStore`), `campaign` y `systems-workshop` (motores y puentes) y `systems-simulation`, y
+`frontend/src/shared` (helpers, la gramática de URL y constantes sin reglas de negocio).
 
 - La dirección permitida es `app → pages → widgets → features → entities → shared`.
   Un módulo sólo importa su propio slice o capas inferiores; dos slices de la misma
