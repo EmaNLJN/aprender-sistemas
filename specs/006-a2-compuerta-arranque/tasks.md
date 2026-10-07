@@ -7,6 +7,7 @@ Las ondas, los dueños de archivos, las interfaces y los puntos de sincronizaci�
 ## Phase 1: Setup — Spike y línea base (coordinador, onda 0)
 
 - [x] T001 [US1] El spike, que es la compuerta del plan: P1 a P4 sobre la base con F1 y F2.1 a F2.4, con su regla de decisión; resultados en el mensaje del commit y en `specs/006-a2-compuerta-arranque/research.md` (SC-007, SC-008; plan 1.1)
+  - Commit: 92d2730
 - [ ] T002 [US1] Línea base de `node tools/content/dump-globals.ts .` sobre la base, con el `documentHash` del documento y antes de cualquier cambio de código (FR-017; plan 1.2)
 
 ## Phase 2: Foundational — Compuerta, soporte de QA y build (onda 1: G, Q y el coordinador a la vez)
@@ -22,15 +23,15 @@ Las ondas, los dueños de archivos, las interfaces y los puntos de sincronizaci�
 
 *Parte de S1. Las pruebas de T007 tienen que fallar antes de T008.*
 
-- [ ] T007 [US1] Pruebas del corte, que fallan: `qa/lib/{boot-harness,content-server}.ts`, `qa/boot-check.ts` (los casos de la base, sin cambiar sus valores, más los de FR-020) y `qa/load-order-check.ts` leyendo la secuencia de etapas (FR-001, FR-003, FR-007 a FR-009, FR-013, FR-020, FR-025; SC-004; plan 5.1)
-- [ ] T008 [US1] El corte, en un solo commit: `frontend/src/app/main.tsx` con `runBoot`, `frontend/src/app/boot/legacy-views.ts`, los adaptadores y el Atlas leyendo `getContent()`, y `frontend/src/pages/atlas/model/atlas-catalog.ts` borrado (FR-001 a FR-006, FR-013, FR-023; SC-001; plan 5.2)
+- [ ] T007 [US1] Pruebas del corte, que fallan: `qa/lib/{boot-harness,content-server}.ts`, `qa/boot-check.ts` (los 14 casos de la base, sin cambiar sus valores, con `withoutStartCall` sacando la llamada donde esté, más los de FR-020), `qa/load-order-check.ts` leyendo la secuencia de etapas y `legacy-views.ts`, con la regla de `startApp()`, y, si hace falta, `qa/lib/sources.ts` (FR-001, FR-003, FR-007 a FR-009, FR-013, FR-020, FR-025; SC-004; plan 5.1)
+- [ ] T008 [US1] El corte, en un solo commit: `frontend/src/app/main.tsx` con `runBoot`, `frontend/src/app/boot/legacy-views.ts` con `startApp()` después del último `import()`, los adaptadores y el Atlas leyendo `getContent()`, `frontend/src/pages/atlas/model/atlas-catalog.ts` borrado y la espera de `ShellPage.goto` en `qa/e2e/pages/shell.ts` (FR-001 a FR-006, FR-013, FR-023; SC-001; plan 5.2)
 
 ## Phase 4: User Stories 1 a 3 - Oráculos, tamaño y E2E (Priority: P1) — El HTML sin currículo y el navegador real (onda 3: Q, el coordinador y E a la vez)
 
 *Parten de S3.*
 
 - [ ] T009 [P] [US1] El check del bundle construido, `qa/dist-content-check.ts`, con `evaluateBuiltPage` en `qa/lib/built-page.ts` (globals, bytes y 17 huellas), su alta en `qa/run-checks.ts` y el retiro de `tools/content/dump-dist-globals.ts` (FR-002, FR-018, FR-025; SC-001, SC-002; plan 6.1)
-- [ ] T010 [P] [US3] `qa/build-check.ts` lee la página por `built-page.ts` y suma el módulo, el tope medido, el oráculo de ausencia y la versión en el HTML (FR-005, FR-014, FR-015; SC-003; plan 6.2)
+- [ ] T010 [P] [US3] `qa/build-check.ts` lee la página por `built-page.ts` y suma el módulo, el tope medido (1.250.000), el oráculo de ausencia y la versión en el HTML (FR-005, FR-014, FR-015; SC-003; plan 6.2)
 - [ ] T011 [P] [US2] E2E de A2 en la red de F1, en `qa/e2e/`: enlaces profundos, recarga, sin red, contenido roto, reintento, teclado y móvil (FR-001, FR-007 a FR-010, FR-024; SC-004, SC-007; plan 6.3)
 
 ## Phase 5: Polish — Documentación y compuerta final (coordinador, onda 4)
@@ -38,4 +39,4 @@ Las ondas, los dueños de archivos, las interfaces y los puntos de sincronizaci�
 *Parte de S4.*
 
 - [ ] T012 [US3] La documentación que llama «autónomo» al HTML: `README.md`, `AGENTS.md`, `docs/architecture.md`, `qa/AGENTS.md` y `docs/refactor-roadmap.md` (FR-021; plan, «Documentación del FR-021»)
-- [ ] T013 [US1] Compuerta final: `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `npm run test:e2e` y `git diff --check`; el volcado de T002 también sobre la raíz de un commit anterior; Docker, con permiso; el tiempo hasta la primera vista (FR-016, FR-017, FR-022 a FR-024; SC-001, SC-002, SC-005 a SC-007; plan 7.2)
+- [ ] T013 [US1] Compuerta final: `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `npm run test:e2e` y `git diff --check`, con los recuentos de T001 más lo que suma A2; el volcado de T002 también sobre la raíz de un commit anterior; Docker, con permiso; el tiempo hasta la primera vista, intercalado con un build de la base (FR-016, FR-017, FR-022 a FR-024; SC-001, SC-002, SC-005 a SC-007; plan 7.2)
