@@ -575,6 +575,17 @@ await test('async areas: an engine that resolves { removed: false } gives the fa
   assert.deepEqual(harness.storedState().completed, []);
 });
 
+await test('async areas: a campaign engine that resolves { removed: false } gives the failure notice', async () => {
+  const harness = buildHarness({
+    stored: localProgress,
+    asyncAdapters: true,
+    resets: { campaign: false },
+  });
+  await harness.elements['confirm-reset']?.dispatch('click');
+  assert.equal(harness.toast(), RESET_FAILED);
+  assert.deepEqual(harness.storedState().completed, []);
+});
+
 const scriptNote = '</textarea><img src=x onerror=alert(1)>';
 
 await test('seguridad: una nota importada con HTML se escapa en #metodo', async () => {
