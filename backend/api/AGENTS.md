@@ -19,9 +19,9 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
   - `npm run api:sync:check`: con el stack corriendo, la sincronización del progreso de punta a
     punta (dos clientes de una cuenta que convergen, los reenvíos, la poda, la época y los límites)
     y la medición de SC-010. Crea y borra sus cuentas, y tarda unos minutos por el mismo límite.
-  - `sh backend/api/scripts/check-admin-lifecycle.sh`: con el stack corriendo, la administración y el
-    ciclo de vida de punta a punta (un admin invita y lista; un estudiante exporta y borra su cuenta,
-    y la purga la quita en menos de tres minutos). Crea y borra sus cuentas.
+  - `npm run api:import:check`: con el stack corriendo, la importación del progreso v1 de punta a
+    punta (las tres copias del fixture, la repetida, «Borrar todo» y la restauración, y el 413 de
+    Nginx) y la medición de la importación más grande. Crea y borra su cuenta.
   - Ninguno forma parte de `npm test`.
   - En un worktree, cada comando de Docker (`docker compose …`, `npm run api:*`) lleva su propio
     `COMPOSE_PROJECT_NAME=<nombre-del-worktree>` en la misma línea: sin él, Compose usa el proyecto
@@ -108,27 +108,34 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
   - Ningún registro lleva texto del alumno: ni las reflexiones, ni los borradores, ni las notas.
   - El `scheduler` poda `sync_operations` cada hora (`progress:prune-sync-operations`), con la
     retención de `config/progress.php`.
-- **Administración y ciclo de vida (C3b):** contratos en `specs/010-c3b-admin-ciclo-de-vida/contracts/`.
-  - Las rutas de `/api/admin` usan el grupo `admin` de `bootstrap/app.php`, y ninguna usa el binding
-    implícito de modelos: el destino se busca después de comprobar el rol, así que un estudiante
-    recibe 403 también con un id que no existe.
-  - Cada `throttle` corre donde la ruta lo declara: la lista de prioridad de `bootstrap/app.php` es
-    la de Laravel sin `ThrottleRequests` (`ThrottleOrderTest`). Así un pedido sin la contraseña
-    confirmada no gasta el cupo de `throttle:export`.
-  - `role` y `status` los cambia sólo `AccountChanges`, con la guardia del último admin.
-  - `UserData` (`UserTables`, `UserPurge` y `UserExport`) sabe qué tablas guardan datos de una cuenta.
-    **Toda tabla nueva con `user_id` se declara en `UserTables` y en `Tests\Support\PopulatedAccount`**:
-    si no, fallan las pruebas de cobertura de la purga y de la exportación.
-  - La exportación (`UserExport`, formato `taller-export-2`) junta `account`, `progress` (la foto de
-    D1a, que lee `ProgressSection`) y `attempts`. Una sección nueva se registra ahí; quitar o
-    renombrar una clave cambia el `format`.
-  - `PurgeUserData` borra una cuenta por lotes en la cola `default` y la anota en el libro
-    `account_deletions`. `taller:resume-purges` vuelve a pedir las que quedaron en `deleting`, y
-    `taller:reapply-deletions` reaplica una copia del libro sobre una base restaurada.
-  - El `scheduler` suma el `queue:work` de la cola `default` (la cola `runs` es de `worker-runs`), la
-    poda de `failed_jobs`, la de `account_deletions` y el barrido de las purgas.
-  - Las carreras se prueban en la suite `Concurrency`, con `Tests\Support\Parallel`.
-  - Hasta C3c no hay correo: lo que pediría uno responde 503 `mail_unavailable`.
+- **Progreso: importación y reset (D1b):** contratos en `specs/007-d1-progreso-sincronizacion/contracts/`
+  (`http-d1b.md` e `import-fixture.md`).
+  - `app/Progress/Import/` decodifica la copia v1 afuera del candado (`LegacyDecoder`, con los tipos
+    de `Legacy/` y los datos de contenido de `ImportContent`) y la escribe adentro (`ImportService`).
+    La escritura pasa por el puerto `LegacyWriter`, que `AppServiceProvider` liga a
+    `DatabaseLegacyWriter`; el libro `progress_imports` es de `ImportLedger`, y el informe, de
+    `ImportReport` con `ImportConflicts`.
+  - `app/Progress/Reset/ProgressReset` borra las tablas de estado (`ProgressTables::STATE`) y sube la
+    época dentro de `AccountLock`. Después del COMMIT cancela las ejecuciones activas
+    (`ActiveRuns::cancelAllOf`).
+  - La importación escribe con el SQL de D1a (`UpsertSql`) y el reloj nulo, así que nunca pisa lo
+    sincronizado, que siempre tiene reloj. Una copia repetida (la misma `importId`, o el mismo crudo
+    en la época) responde 200 sin escribir.
+  - Pide confirmación (409 `import_needs_confirmation`) después de un «Borrar todo», si la cuenta ya
+    importó otra copia o si otra cuenta importó esta.
+  - `/api/progress/import` queda fuera de `TrimStrings` y de `ConvertEmptyStringsToNull`, como
+    `/api/sync`. Nginx le abre 24 MiB (`location = /api/progress/import`) y PHP, `post_max_size = 24M`.
+  - Ningún registro lleva el crudo, un texto ni un valor: `progress.import.applied`, `.repeated` y
+    `progress.reset` llevan ids, conteos, la duración y la memoria pico. Un error de escritura sale
+    como `ImportWriteFailed`, sin el SQL ni sus valores.
+  - El fixture `qa/fixtures/shared/import-cases.json` (con su sha256) es el contrato de la
+    importación: no se regenera ni se edita para que algo pase. Lo valida `import-cases-check` en
+    `npm test`, y `ImportLosslessTest` lo corre con el contenido real.
+  - El `scheduler` borra el crudo de `progress_imports` a los 90 días y deja la fila
+    (`progress:prune-import-payloads`, cada hora).
+  - Toda tabla nueva con `user_id` se declara en `UserTables` y en `Tests\Support\PopulatedAccount`
+    (C3b). Cuando C3b esté en la base, `progress_imports` y `campaign_seals` suman sus filas, y la
+    exportación, la sección `imports` (R39).
 - **Pruebas:**
   - `RefreshDatabase` es el default (`tests/Pest.php`). `DatabaseTruncation` queda para el
     código que hace `TRUNCATE` o abre sus propias transacciones.
