@@ -1,0 +1,30 @@
+<?php
+
+use Illuminate\Console\Scheduling\Event;
+use Illuminate\Console\Scheduling\Schedule;
+
+/** @return array<string, array{string, bool}> command => expression and withoutOverlapping */
+function scheduledTasks(): array
+{
+    $tasks = [];
+    foreach (app(Schedule::class)->events() as $event) {
+        /** @var Event $event */
+        $command = str_replace("'", '', (string) preg_replace('/^.*?artisan\'? /', '', (string) $event->command));
+        $tasks[$command] = [$event->expression, $event->withoutOverlapping];
+    }
+
+    return $tasks;
+}
+
+it('schedules exactly the four tasks of the contract, none overlapping and none processing a queue', function () {
+    $tasks = scheduledTasks();
+
+    expect($tasks)->toHaveCount(4)
+        ->and($tasks['taller:prune-sessions'][0])->toBe('*/15 * * * *')
+        ->and($tasks['auth:clear-resets'][0])->toBe('*/15 * * * *')
+        ->and($tasks['taller:prune-cache'][0])->toBe('*/15 * * * *')
+        ->and($tasks['model:prune --model=App\Models\Invitation'][0])->toBe('0 0 * * *');
+    foreach ($tasks as $command => [, $withoutOverlapping]) {
+        expect($withoutOverlapping)->toBeTrue()->and($command)->not->toContain('queue:work');
+    }
+});

@@ -21,6 +21,7 @@
         </include>
     </source>
     <php>
+        <ini name="memory_limit" value="512M"/>
         <!--
             The compose.yaml test service brings the production environment. force="true" replaces
             getenv() and $_ENV; <server> replaces $_SERVER, which Laravel reads first.
