@@ -1,7 +1,7 @@
-import curriculum from '../../../../build/curriculum.json';
 import type { CampaignWorldDefinition } from '../../entities/campaign';
 import type { Exercise } from '../../entities/exercise';
 import type { GuideData } from '../../entities/guide';
+import { getContent } from '../content/content';
 
 declare global {
   interface Window {
@@ -15,10 +15,11 @@ declare global {
   }
 }
 
-window.GUIDE_DATA = curriculum.guide as GuideData;
-window.RUST_LAB = curriculum.lab.rust as Exercise[];
-window.GO_LAB = curriculum.lab.go as Exercise[];
-window.RUST_QUESTS = curriculum.quests.rust as Exercise[];
-window.GO_QUESTS = curriculum.quests.go as Exercise[];
-window.RUST_CAMPAIGN = curriculum.campaign.rust as CampaignWorldDefinition[];
-window.GO_CAMPAIGN = curriculum.campaign.go as CampaignWorldDefinition[];
+const content = getContent();
+window.GUIDE_DATA = content.guide;
+window.RUST_LAB = content.lab.rust;
+window.GO_LAB = content.lab.go;
+window.RUST_QUESTS = content.quests.rust;
+window.GO_QUESTS = content.quests.go;
+window.RUST_CAMPAIGN = content.campaign.rust;
+window.GO_CAMPAIGN = content.campaign.go;

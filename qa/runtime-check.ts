@@ -4,8 +4,13 @@ import vm from 'node:vm';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
-import { importModule, repoRoot as root, runSource } from './lib/sources.ts';
-import { SYSTEMS_DOMAINS, systemsDomainSources } from './lib/legacy-sources.ts';
+import { importModule, repoRoot as root } from './lib/sources.ts';
+import {
+  loadLabExercises,
+  loadSystemsCatalogs,
+  SYSTEMS_DOMAINS,
+  systemsDomainSources,
+} from './lib/legacy-sources.ts';
 
 interface TestCase {
   id: string;
@@ -113,9 +118,8 @@ const systemFiles = SYSTEMS_DOMAINS.flatMap((domain) => systemsDomainSources(dom
 const hashedSources = [...catalogSources, ...systemFiles].filter((file) =>
   fs.existsSync(path.join(root, file)),
 );
-for (const file of ['frontend/src/app/legacy/register-catalogs.ts', ...systemFiles]) {
-  runSource(context, file);
-}
+loadLabExercises(context);
+loadSystemsCatalogs(context);
 const { buildProgram, createExerciseCatalog } = await importModule<ExerciseModule>(
   'frontend/src/entities/exercise/index.ts',
 );

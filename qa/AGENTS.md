@@ -10,21 +10,23 @@ nuevas del front (Vitest y Playwright, ADR 0008) viven aparte: ver «Pruebas del
   (`runSource`), o la importa como módulo (`importModule`). Cargá siempre las fuentes
   por ahí: así los checks no dependen del formato ni de la ubicación del archivo.
   `runModule` evalúa una fuente como módulo en el contexto VM y devuelve sus exportaciones, y
-  `bundleApp(path, { withoutStartCall: true })` empaqueta `main.tsx` sin su `startApp();` para probar
-  que evaluar no arranca. `qa/lib/legacy-sources.ts` da `loadAppShell` (las exportaciones de `app.js`,
+  `bundleApp(path, { withoutStartCall: true })` empaqueta el arranque sin su `startApp();` (un plugin de
+  esbuild la saca donde esté) para probar que evaluar no arranca. Con `withContent`, la fuente
+  arranca con el contenido ya publicado por `qa/lib/publish-content-fixture.ts`, como lo deja la
+  compuerta. `qa/lib/legacy-sources.ts` da `loadAppShell` (las exportaciones de `app.js`,
   sin arrancar) y `loadLab` (evalúa `lab.js` y llama `TallerLab.init()`).
 - Los checks importan archivos de `qa/` con extensión `.ts` explícita y sólo usan
   sintaxis TypeScript borrable; `tsconfig.qa.json` los tipa en `npm run typecheck`.
 - `qa/run-checks.ts` es la lista única de la suite que ejecuta `npm test`.
 - `qa/lib/legacy-sources.ts` concentra las rutas y el orden de carga de las fuentes
   del navegador; al mover o portar un archivo, cambiá su ruta ahí y no en cada check.
-- Los catálogos se publican desde `build/curriculum.json`, que `tools/content/` genera a partir
-  de `content/`. `npm test` lo regenera por `pretypecheck`; antes de un check suelto, después
+- Los catálogos se publican desde el contenido que carga la compuerta de arranque: `build/curriculum.json`,
+  que `tools/content/` genera a partir de `content/` y el build copia a `dist/content/`. `npm test` lo regenera por `pretypecheck`; antes de un check suelto, después
   de editar `content/`, corré `npm run curriculum`.
 - `tools/content/dump-globals.ts` es el oráculo de equivalencia. Vuelca en JSON canónico lo que
-  publican los adaptadores, los modelos de Sistemas y el Atlas. `tools/content/dump-dist-globals.ts`
-  vuelca sólo los catálogos `window.*` de un `dist/index.html` construido. Un refactor puro
-  deja el oráculo idéntico y los catálogos del dist iguales a los suyos.
+  publican los adaptadores, los modelos de Sistemas y el Atlas. `qa/dist-content-check.ts`
+  evalúa el `dist/` construido con su contenido y exige que sus globals sean los del oráculo. Un
+  refactor puro deja el oráculo idéntico.
 
 ## TDD para cambios de comportamiento
 
@@ -52,8 +54,8 @@ comandos: no hace falta inventar tests de producto.
 Para React Doctor y Desloppify, consultá `tools/quality/AGENTS.md`. Son controles
 complementarios; una puntuación no reemplaza las pruebas de comportamiento.
 
-`npm run build` regenera la aplicación mediante Vite y deja el documento autónomo
-en `dist/index.html`. `npm test` ejecuta todos los checks locales de
+`npm run build` regenera la aplicación mediante Vite y deja `dist/index.html` con su
+contenido en `dist/content/`. `npm test` ejecuta todos los checks locales de
 `qa/run-checks.ts`; al agregar un check, sumalo a esa lista. `npm run lint` y
 `npm run format:check` se ejecutan antes de cerrar cambios de código; el segundo es
 no mutante. Formateá los archivos propios que
@@ -61,8 +63,8 @@ cambies y evitá reformatear las skills importadas o las salidas generadas.
 
 | Cambio | Comprobaciones locales |
 | --- | --- |
-| Empaquetado, assets u orden de carga | `npm run build`; `node qa/build-check.ts`, `node qa/load-order-check.ts` |
-| Arranque, adaptadores `window.Taller*` o navegación por vistas | `node qa/boot-check.ts` |
+| Empaquetado, assets u orden de arranque | `npm run build`; `node qa/build-check.ts`, `node qa/dist-content-check.ts`, `node qa/load-order-check.ts` (lee la secuencia de etapas de `main.tsx` y la cadena de `legacy-views.ts`) |
+| Arranque, compuerta del contenido, adaptadores `window.Taller*` o navegación por vistas | `node qa/boot-check.ts`; los E2E de `qa/e2e/specs/content-gate.spec.ts` |
 | IDs de ejercicios, mundos, talleres o conceptos | `node qa/curriculum-ids-check.ts` |
 | Contenido en `content/` | `npm run curriculum` y, entre los checks que leen el currículo real, `content-check`, `campaign-content-check`, `guide-content-check`, `atlas-check`, `curriculum-meta-check`, `curriculum-ids-check`, `systems-check` y el `systems-<dominio>-check` que corresponda (`node qa/<nombre>.ts`); `npm test` los corre todos; si ningún catálogo debe cambiar, `npm run curriculum && node tools/content/dump-globals.ts .` da los mismos bytes antes y después |
 | Generador en `tools/content/` | El `node qa/content-*-check.ts` del módulo tocado (usan fixtures temporales y no leen `content/`), `node qa/curriculum-meta-check.ts` si toca el meta (`build/curriculum.meta.json`) y el oráculo de la fila anterior |
@@ -135,10 +137,12 @@ checks de dominio de arriba siguen como están; no se migran en bloque.
   después la corrección.
 - `qa/lib/app-adapters.ts` lista los métodos de cada `window.Taller*` que consume
   `frontend/app.js` (desde F2, `TallerLab` incluye `init`): los fakes de `app-shell-check` salen de esa lista y `boot-check`, que
-  empaqueta `frontend/src/app/main.tsx` sobre el DOM falso de `qa/lib/fake-dom.ts`, exige que los
-  adaptadores reales los publiquen y que todas las vistas y «Borrar todo» funcionen.
-- `load-order-check` declara qué fuente legacy debe evaluarse antes que otra y por
-  qué. Al mover o portar un archivo, actualizá su ruta en la tabla sin relajar la
+  empaqueta `frontend/src/app/main.tsx` sobre el DOM falso de `qa/lib/fake-dom.ts` y le sirve el
+  contenido con `qa/lib/content-server.ts`, exige que los adaptadores reales los publiquen, que todas
+  las vistas y «Borrar todo» funcionen, y que la compuerta espere el contenido, muestre la carga y
+  avise si falla (FR-020).
+- `load-order-check` lee la secuencia de etapas de `main.tsx` y la cadena de `legacy-views.ts`, y
+  declara qué fuente legacy debe evaluarse antes que otra y por qué. Al mover o portar un archivo, actualizá su ruta en la tabla sin relajar la
   restricción.
 
 Los checks locales prueban estructura y comportamiento JavaScript. No prueban

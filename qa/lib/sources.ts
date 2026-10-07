@@ -2,11 +2,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import esbuild from 'esbuild';
+import { contentVersion, curriculumDocumentText } from './content-document.ts';
 
 export const repoRoot: string = path.resolve(import.meta.dirname, '..', '..');
 
 export interface BundleOptions {
   minify?: boolean;
+  withContent?: boolean;
 }
 
 export interface RunOptions extends BundleOptions {
@@ -25,34 +27,69 @@ export interface AppBundleOptions {
   withoutStartCall?: boolean;
 }
 
+function buildOptions(relativePath: string, options: esbuild.BuildOptions): esbuild.BuildOptions {
+  return {
+    ...(options.stdin ? {} : { entryPoints: [path.join(repoRoot, relativePath)] }),
+    bundle: true,
+    write: false,
+    logLevel: 'silent',
+    ...options,
+  };
+}
+
+function firstOutput(result: esbuild.BuildResult): string {
+  const output = result.outputFiles?.[0];
+  if (!output) throw new Error('esbuild no produjo salida');
+  return output.text;
+}
+
+function bundleFailure(relativePath: string, error: unknown): Error {
+  const failure = error as { errors?: esbuild.Message[]; message?: string };
+  const details = failure.errors?.length
+    ? failure.errors.map((message) => message.text).join('\n')
+    : (failure.message ?? String(error));
+  return new Error(`Could not bundle ${relativePath}:\n${details}`, { cause: error });
+}
+
 function build(relativePath: string, options: esbuild.BuildOptions): string {
-  const absolute = path.join(repoRoot, relativePath);
   try {
-    const result = esbuild.buildSync({
-      ...(options.stdin ? {} : { entryPoints: [absolute] }),
-      bundle: true,
-      write: false,
-      logLevel: 'silent',
-      ...options,
-    });
-    const output = result.outputFiles?.[0];
-    if (!output) throw new Error('esbuild no produjo salida');
-    return output.text;
+    return firstOutput(esbuild.buildSync(buildOptions(relativePath, options)));
   } catch (error) {
-    const failure = error as { errors?: esbuild.Message[]; message?: string };
-    const details = failure.errors?.length
-      ? failure.errors.map((message) => message.text).join('\n')
-      : (failure.message ?? String(error));
-    throw new Error(`Could not bundle ${relativePath}:\n${details}`, { cause: error });
+    throw bundleFailure(relativePath, error);
   }
+}
+
+async function buildWithPlugins(
+  relativePath: string,
+  options: esbuild.BuildOptions,
+): Promise<string> {
+  try {
+    return firstOutput(await esbuild.build(buildOptions(relativePath, options)));
+  } catch (error) {
+    throw bundleFailure(relativePath, error);
+  }
+}
+
+function entryWithContent(adapter: string): esbuild.BuildOptions {
+  const fixture = path.join(repoRoot, 'qa', 'lib', 'publish-content-fixture.ts');
+  return {
+    stdin: {
+      contents: `import ${JSON.stringify(fixture)};\nimport ${JSON.stringify(path.join(repoRoot, adapter))};`,
+      resolveDir: repoRoot,
+      loader: 'js',
+      sourcefile: `with-content:${adapter}`,
+    },
+  };
 }
 
 export function bundleSource(relativePath: string, options: BundleOptions = {}): string {
   const minify = options.minify ?? false;
-  const key = `${relativePath}|minify=${minify}`;
+  const withContent = options.withContent ?? false;
+  const key = `${relativePath}|minify=${minify}|withContent=${withContent}`;
   const cached = iifeCache.get(key);
   if (cached !== undefined) return cached;
   const text = build(relativePath, {
+    ...(withContent ? entryWithContent(relativePath) : {}),
     format: 'iife',
     platform: 'browser',
     target: 'es2020',
@@ -63,31 +100,39 @@ export function bundleSource(relativePath: string, options: BundleOptions = {}):
   return text;
 }
 
-function startCallEntry(relativePath: string): esbuild.StdinOptions {
-  const absolute = path.join(repoRoot, relativePath);
+const APP_SOURCE = /[\\/]frontend[\\/]src[\\/]app[\\/].*\.tsx?$/;
+
+function stripStartCall(): esbuild.Plugin {
   return {
-    contents: fs.readFileSync(absolute, 'utf8').replace(START_CALL_STATEMENT, ''),
-    resolveDir: path.dirname(absolute),
-    sourcefile: absolute,
-    loader: path.extname(absolute) === '.tsx' ? 'tsx' : 'ts',
+    name: 'strip-start-call',
+    setup(pluginBuild) {
+      pluginBuild.onLoad({ filter: APP_SOURCE }, async (args) => ({
+        contents: (await fs.promises.readFile(args.path, 'utf8')).replace(START_CALL_STATEMENT, ''),
+        loader: args.path.endsWith('.tsx') ? 'tsx' : 'ts',
+      }));
+    },
   };
 }
 
-export function bundleApp(relativePath: string, options: AppBundleOptions = {}): string {
+export async function bundleApp(
+  relativePath: string,
+  options: AppBundleOptions = {},
+): Promise<string> {
   const withoutStartCall = options.withoutStartCall ?? false;
   const key = `${relativePath}|withoutStartCall=${withoutStartCall}`;
   const cached = appCache.get(key);
   if (cached !== undefined) return cached;
-  const text = build(relativePath, {
-    ...(withoutStartCall
-      ? { stdin: startCallEntry(relativePath), tsconfig: path.join(repoRoot, 'tsconfig.json') }
-      : {}),
+  const text = await buildWithPlugins(relativePath, {
+    ...(withoutStartCall ? { plugins: [stripStartCall()] } : {}),
     format: 'iife',
     platform: 'browser',
     target: 'es2020',
     jsx: 'automatic',
     loader: { '.css': 'empty' },
-    define: { 'process.env.NODE_ENV': '"production"' },
+    define: {
+      'process.env.NODE_ENV': '"production"',
+      __CONTENT_VERSION__: JSON.stringify(contentVersion()),
+    },
   });
   appCache.set(key, text);
   return text;
@@ -98,7 +143,8 @@ export function runSource(
   relativePath: string,
   options: RunOptions = {},
 ): void {
-  vm.runInContext(bundleSource(relativePath, { minify: options.minify }), context, {
+  if (options.withContent) context.__TALLER_QA_CONTENT__ = curriculumDocumentText();
+  vm.runInContext(bundleSource(relativePath, options), context, {
     filename: relativePath,
     timeout: options.timeout,
   });

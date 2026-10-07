@@ -31,6 +31,9 @@ export class ShellPage {
   readonly languages: Locator;
   readonly toast: Locator;
   readonly body: Locator;
+  readonly contentAlert: Locator;
+  readonly contentFailure: Locator;
+  readonly retryButton: Locator;
 
   constructor(readonly page: Page) {
     this.menu = page.getByRole('navigation', { name: 'Navegación principal' });
@@ -38,10 +41,14 @@ export class ShellPage {
     // No accessible name and other status regions exist: the id is the toast contract.
     this.toast = page.locator('#toast');
     this.body = page.locator('body');
+    this.contentFailure = page.locator('#main [data-content-gate="failed"]');
+    this.contentAlert = page.getByRole('alert');
+    this.retryButton = page.getByRole('button', { name: 'Reintentar' });
   }
 
   async goto(url: string): Promise<void> {
     await this.page.goto(url);
+    await this.page.locator('#main > :not([data-content-gate="loading"])').first().waitFor();
   }
 
   menuLink(view: View): Locator {

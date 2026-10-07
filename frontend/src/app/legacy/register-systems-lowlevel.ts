@@ -1,4 +1,4 @@
-import curriculum from '../../../../build/curriculum.json';
+import { getContent } from '../content/content';
 import type { Exercise } from '../../entities/exercise';
 import type { SystemsWorkshop } from '../../entities/systems-workshop';
 import { lowlevelModels, type LowlevelModels } from '../../entities/systems-simulation';
@@ -13,8 +13,9 @@ declare global {
   }
 }
 
+const content = getContent();
 window.SYSTEMS_LOWLEVEL = {
-  workshops: curriculum.workshops.lowlevel as SystemsWorkshop[],
+  workshops: content.workshops.lowlevel,
   models: lowlevelModels,
 };
-window.SYSTEMS_LOWLEVEL_LABS = curriculum.cores.lowlevel as Exercise[];
+window.SYSTEMS_LOWLEVEL_LABS = content.cores.lowlevel;

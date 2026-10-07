@@ -4,7 +4,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { loadCampaignWorlds, loadGuideContent, loadLabCatalogs } from './lib/legacy-sources.ts';
-import { importModule, repoRoot } from './lib/sources.ts';
+import { curriculumDocument } from './lib/content-document.ts';
+import { repoRoot } from './lib/sources.ts';
 import { plainJson } from './lib/plain-json.ts';
 
 type Language = 'rust' | 'go';
@@ -37,9 +38,6 @@ interface WorkshopSource {
 interface AtlasConcept {
   id: string;
   labId: string;
-}
-interface AtlasModule {
-  atlasByLanguage: Record<Language, AtlasConcept[]>;
 }
 interface CatalogWindow {
   [name: string]: unknown;
@@ -117,11 +115,11 @@ function collectWorkshops(win: CatalogWindow): Table {
   return result;
 }
 
-async function collectAtlas(): Promise<Table> {
-  const atlas = await importModule<AtlasModule>('frontend/src/pages/atlas/model/atlas-catalog.ts');
+function collectAtlas(): Table {
+  const { atlas } = curriculumDocument<{ atlas: Record<Language, AtlasConcept[]> }>();
   const result: Table = {};
   for (const language of ['rust', 'go'] as const) {
-    for (const concept of atlas.atlasByLanguage[language]) {
+    for (const concept of atlas[language]) {
       result[concept.id] = { language, labId: concept.labId };
     }
   }
@@ -213,7 +211,7 @@ const actual: Fixture = {
   exercises: collectExercises(win),
   worlds: collectWorlds(win),
   workshops: collectWorkshops(win),
-  atlas: await collectAtlas(),
+  atlas: collectAtlas(),
 };
 
 const differences = compareCurriculum(fixture, actual);

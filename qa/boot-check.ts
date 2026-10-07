@@ -15,247 +15,34 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { missingAdapterMethods } from './lib/app-adapters.ts';
-import { FakeElement, FakeText } from './lib/fake-dom.ts';
+import {
+  createBootHarness,
+  describeError,
+  publishedGlobals,
+  VIEWS,
+  type BootHarness,
+  type HarnessOptions,
+} from './lib/boot-harness.ts';
+import {
+  createContentServer,
+  type ContentBehavior,
+  type ContentServer,
+} from './lib/content-server.ts';
+import { contentVersion, curriculumDocument } from './lib/content-document.ts';
+import type { FakeElement } from './lib/fake-dom.ts';
 import { loadAppShell, type AppShellModule } from './lib/legacy-sources.ts';
 import { bundleApp, runSource } from './lib/sources.ts';
 
 const ENTRY = 'frontend/src/app/main.tsx';
-const VIEWS = [
-  'recorrido',
-  'campana',
-  'sistemas',
-  'atlas',
-  'laboratorio',
-  'biblioteca',
-  'proyecto',
-  'metodo',
-] as const;
-const ELEMENT_IDS = [
-  'main',
-  'save-label',
-  'toast',
-  'sidebar-language',
-  'sidebar-completed',
-  'sidebar-percent',
-  'sidebar-progress',
-  'resource-count',
-  'lesson-dialog',
-  'lesson-content',
-  'confirm-dialog',
-  'cancel-reset',
-  'confirm-reset',
-  'import-file',
-  'export-progress',
-];
 
-type Listener = () => void;
-
-interface BootHarness {
-  context: vm.Context;
-  elements: Record<string, FakeElement>;
-  storage: Map<string, string>;
-  // Excepciones y errores que la app reporta sin lanzar (console.error, reportError, timers).
-  errors: string[];
-  // Excepción que escapó de la evaluación de main.tsx; los adaptadores ya están publicados.
-  bootError?: string;
-  storageCalls: string[];
-  storageAccesses: number;
-  intervals: number;
-  listenerCount(): number;
-  navigate(view: string): void;
-  flush(): Promise<void>;
-}
-
-interface HarnessOptions {
-  blockStorage?: boolean;
-}
-
-// Los errores creados dentro del contexto vm no son `instanceof Error` del host.
-function describeError(value: unknown): string {
-  const stack = (value as { stack?: unknown } | null)?.stack;
-  return typeof stack === 'string' ? stack : String(value);
-}
-
-function createBootHarness(options: HarnessOptions = {}): BootHarness {
-  const elements: Record<string, FakeElement> = {};
-  for (const id of ELEMENT_IDS) elements[id] = new FakeElement('div', id);
-  elements['import-file'] = new FakeElement('input', 'import-file');
-  elements['skip-link'] = new FakeElement('a');
-  const languageButtons = ['rust', 'go'].map((language) => {
-    const button = new FakeElement('button');
-    button.dataset.language = language;
-    return button;
-  });
-  const viewLinks = VIEWS.map((view) => {
-    const link = new FakeElement('a');
-    link.dataset.view = view;
-    return link;
-  });
-  const errors: string[] = [];
-  const storage = new Map<string, string>();
-  const storageCalls: string[] = [];
-  const trackedElements: FakeElement[] = [];
-  const counters = { storageAccesses: 0, intervals: 0 };
-  const listeners = new Map<string, Listener[]>();
-  const timers: (() => void)[] = [];
-  const location = {
-    search: '',
-    hash: '',
-    get href() {
-      return `http://taller.test/${this.search}${this.hash}`;
-    },
-  };
-  const create = (tag: string): FakeElement => {
-    const element = new FakeElement(tag);
-    element.ownerDocument = document;
-    trackedElements.push(element);
-    return element;
-  };
-  // El DOM falso no parsea HTML: un id que aparece en el marcado de #main se registra
-  // como elemento vacío, para que el código de la vista pueda escribir en él.
-  const byId = (id: string): FakeElement | null => {
-    const known = elements[id];
-    if (known) return known;
-    if (!elements['main']?.innerHTML.includes(`id="${id}"`)) return null;
-    const created = create('div');
-    elements[id] = created;
-    return created;
-  };
-  const document: Record<string, unknown> = {
-    nodeType: 9,
-    nodeName: '#document',
-    addEventListener: () => undefined,
-    removeEventListener: () => undefined,
-    activeElement: null,
-    querySelector: (selector: string) =>
-      selector.startsWith('#')
-        ? byId(selector.slice(1))
-        : selector === '.skip-link'
-          ? elements['skip-link']
-          : null,
-    querySelectorAll: (selector: string) =>
-      selector === '[data-language]'
-        ? languageButtons
-        : selector === '[data-view]'
-          ? viewLinks
-          : [],
-    getElementById: byId,
-    createElement: create,
-    createElementNS: (_namespace: string, tag: string) => create(tag),
-    createTextNode: (text: string) => new FakeText(text),
-  };
-  document.body = create('body');
-  document.documentElement = create('html');
-  for (const element of Object.values(elements)) element.ownerDocument = document;
-  trackedElements.push(...Object.values(elements), ...languageButtons, ...viewLinks);
-  const context = {
-    console: {
-      error: (...args: unknown[]) => errors.push(args.map(describeError).join(' ')),
-      warn: () => undefined,
-      log: () => undefined,
-    },
-    reportError: (error: unknown) => errors.push(describeError(error)),
-    URL,
-    URLSearchParams,
-    Blob,
-    TextEncoder,
-    TextDecoder,
-    queueMicrotask,
-    performance,
-    structuredClone,
-    document,
-    location,
-    navigator: { userAgent: 'node', platform: 'Linux', vendor: '', language: 'es' },
-    history: { replaceState: () => undefined },
-    get localStorage() {
-      counters.storageAccesses++;
-      if (options.blockStorage) throw new Error('storage is blocked');
-      return {
-        getItem: (key: string) => {
-          storageCalls.push(`getItem ${key}`);
-          return storage.get(key) ?? null;
-        },
-        setItem: (key: string, value: string) => {
-          storageCalls.push(`setItem ${key}`);
-          storage.set(key, String(value));
-        },
-        removeItem: (key: string) => {
-          storageCalls.push(`removeItem ${key}`);
-          storage.delete(key);
-        },
-      };
-    },
-    // Los temporizadores se encolan y `flush` los ejecuta: React planifica su render así.
-    setTimeout: (callback: () => void) => timers.push(callback),
-    clearTimeout: () => undefined,
-    requestAnimationFrame: (callback: () => void) => timers.push(callback),
-    cancelAnimationFrame: () => undefined,
-    setInterval: () => ++counters.intervals,
-    clearInterval: () => undefined,
-    addEventListener: (type: string, listener: Listener) =>
-      listeners.set(type, [...(listeners.get(type) ?? []), listener]),
-    removeEventListener: (type: string, listener: Listener) =>
-      listeners.set(
-        type,
-        (listeners.get(type) ?? []).filter((item) => item !== listener),
-      ),
-    scrollTo: () => undefined,
-    // react-dom hace instanceof contra estos constructores del navegador.
-    HTMLIFrameElement: class {},
-    HTMLElement: FakeElement,
-    Element: FakeElement,
-    Node: class {},
-  } as Record<string, unknown>;
-  context.window = context;
-  context.self = context;
-  document.defaultView = context;
-  vm.createContext(context);
-  return {
-    context,
-    elements,
-    storage,
-    errors,
-    storageCalls,
-    get storageAccesses() {
-      return counters.storageAccesses;
-    },
-    get intervals() {
-      return counters.intervals;
-    },
-    listenerCount() {
-      const windowListeners = [...listeners.values()].reduce((sum, item) => sum + item.length, 0);
-      return trackedElements.reduce(
-        (sum, element) =>
-          sum + [...element.listeners.values()].reduce((count, item) => count + item.length, 0),
-        windowListeners,
-      );
-    },
-    navigate(view) {
-      location.hash = `#${view}`;
-      for (const listener of listeners.get('hashchange') ?? []) listener();
-    },
-    // Deja correr los microtasks (React los usa) y después los temporizadores
-    // encolados, hasta que no quede trabajo pendiente o se agote el tope.
-    async flush() {
-      for (let round = 0; round < 1000; round++) {
-        await new Promise((resolve) => setImmediate(resolve));
-        const callback = timers.shift();
-        if (!callback) return;
-        try {
-          callback();
-        } catch (error) {
-          errors.push(describeError(error));
-        }
-      }
-    },
-  };
-}
-
-async function boot(initialStorage: Record<string, string> = {}): Promise<BootHarness> {
-  const harness = createBootHarness();
+async function boot(
+  initialStorage: Record<string, string> = {},
+  server: ContentServer = createContentServer(),
+): Promise<BootHarness> {
+  const harness = createBootHarness({ fetch: server.fetch });
   for (const [key, text] of Object.entries(initialStorage)) harness.storage.set(key, text);
   try {
-    vm.runInContext(bundleApp(ENTRY), harness.context, { filename: ENTRY });
+    vm.runInContext(await bundleApp(ENTRY), harness.context, { filename: ENTRY });
   } catch (error) {
     harness.bootError = describeError(error);
     return harness;
@@ -505,16 +292,17 @@ interface UnstartedApp {
   startApp: AppShellModule['startApp'];
 }
 
-function evaluateWithoutStartCall(options: HarnessOptions = {}): UnstartedApp {
-  const harness = createBootHarness(options);
-  vm.runInContext(bundleApp(ENTRY, { withoutStartCall: true }), harness.context, {
+async function evaluateWithoutStartCall(options: HarnessOptions = {}): Promise<UnstartedApp> {
+  const harness = createBootHarness({ fetch: createContentServer().fetch, ...options });
+  vm.runInContext(await bundleApp(ENTRY, { withoutStartCall: true }), harness.context, {
     filename: ENTRY,
   });
+  await harness.flush();
   return { harness, startApp: loadAppShell(harness.context).startApp };
 }
 
-await test('main.tsx without its call evaluates quietly and leaves #main empty', () => {
-  const { harness } = evaluateWithoutStartCall({ blockStorage: true });
+await test('main.tsx without its call evaluates quietly and leaves #main empty', async () => {
+  const { harness } = await evaluateWithoutStartCall({ blockStorage: true });
   assert.equal(harness.storageAccesses, 0);
   assert.equal(harness.listenerCount(), 0);
   assert.equal(harness.intervals, 0);
@@ -548,8 +336,8 @@ function recordInitializations(harness: BootHarness): string[] {
   return initializations;
 }
 
-await test('startApp initializes in order and draws the first view', () => {
-  const { harness, startApp } = evaluateWithoutStartCall();
+await test('startApp initializes in order and draws the first view', async () => {
+  const { harness, startApp } = await evaluateWithoutStartCall();
   const initializations = recordInitializations(harness);
   startApp();
   assert.deepEqual(initializations, [
@@ -569,8 +357,8 @@ await test('startApp initializes in order and draws the first view', () => {
   assert.notEqual(harness.elements['main']?.innerHTML, '');
 });
 
-await test('a second startApp call fails', () => {
-  const { harness, startApp } = evaluateWithoutStartCall();
+await test('a second startApp call fails', async () => {
+  const { harness, startApp } = await evaluateWithoutStartCall();
   startApp();
   const listenersBefore = harness.listenerCount();
   const intervalsBefore = harness.intervals;
@@ -581,6 +369,113 @@ await test('a second startApp call fails', () => {
   );
   assert.equal(harness.listenerCount(), listenersBefore);
   assert.equal(harness.intervals, intervalsBefore);
+});
+
+const CONTENT_URL = `/content/curriculum.${contentVersion()}.json`;
+const LOADING_MESSAGE = 'Cargando el contenido del taller';
+
+await test('the gate publishes before any view or catalog exists', async () => {
+  const { published } = await boot();
+  assert.equal(published.length, 1, 'the gate did not publish the content once');
+  assert.deepEqual(published[0]?.globals, []);
+});
+
+await test('the happy path never shows the loading state and asks for the content once', async () => {
+  const server = createContentServer();
+  const harness = await boot({}, server);
+  assert.deepEqual(server.requests, [CONTENT_URL]);
+  assert.equal(harness.published.length, 1, 'the gate did not publish the content');
+  assert.deepEqual(
+    harness.mainWrites.filter((markup) => markup.includes(LOADING_MESSAGE)),
+    [],
+  );
+  assert.deepEqual(harness.errors, []);
+});
+
+function withoutPortion(): unknown {
+  const document = curriculumDocument<{ lab: Record<string, unknown> }>();
+  return { ...document, lab: { rust: document.lab['rust'] } };
+}
+
+function withMalformedPortion(): unknown {
+  const document = curriculumDocument<{ quests: Record<string, unknown> }>();
+  return { ...document, quests: { ...document.quests, rust: {} } };
+}
+
+interface FailureCase {
+  mode: string;
+  behavior: ContentBehavior;
+  failure: string;
+  extraText?: string;
+}
+
+const FAILURE_CASES: FailureCase[] = [
+  { mode: 'network', behavior: { kind: 'reject' }, failure: 'network' },
+  {
+    mode: '404',
+    behavior: { kind: 'status', status: 404 },
+    failure: 'version',
+    extraText: 'Recargá la página',
+  },
+  { mode: '500', behavior: { kind: 'status', status: 500 }, failure: 'status' },
+  { mode: 'timeout', behavior: { kind: 'hang' }, failure: 'timeout' },
+  { mode: 'body', behavior: { kind: 'text', body: '<html>' }, failure: 'body' },
+  {
+    mode: 'missing portion',
+    behavior: { kind: 'document', document: withoutPortion() },
+    failure: 'missing',
+  },
+  {
+    mode: 'malformed portion',
+    behavior: { kind: 'document', document: withMalformedPortion() },
+    failure: 'shape',
+  },
+];
+
+function retryButton(harness: BootHarness): FakeElement {
+  const button = harness.elements['content-retry'];
+  assert.ok(button, 'there is no «Reintentar» button');
+  return button;
+}
+
+for (const { mode, behavior, failure, extraText } of FAILURE_CASES) {
+  await test(`a failed content request (${mode}) leaves the views unevaluated and offers a retry`, async () => {
+    const harness = await boot(MASTER_STORAGE, createContentServer([behavior]));
+    assert.equal(harness.bootError, undefined);
+    assert.deepEqual(harness.errors, []);
+    assert.deepEqual(publishedGlobals(harness.context), []);
+    assert.deepEqual(harness.storageCalls, []);
+    assert.deepEqual(Object.fromEntries(harness.storage), MASTER_STORAGE);
+    assert.equal(harness.elements['toast']?.textContent, '');
+    const markup = harness.elements['main']?.innerHTML ?? '';
+    assert.ok(markup.includes('No se pudo cargar el contenido'), 'the error is not in #main');
+    assert.ok(markup.includes('Reintentar'));
+    assert.ok(markup.includes(`data-failure="${failure}"`), `the failure is not ${failure}`);
+    if (extraText) assert.ok(markup.includes(extraText));
+    assert.equal(retryButton(harness).focused, 1);
+  });
+}
+
+await test('a retry that succeeds starts the views without a second boot', async () => {
+  const server = createContentServer([{ kind: 'reject' }, { kind: 'serve' }]);
+  const harness = await boot({}, server);
+  await retryButton(harness).dispatch('click');
+  await harness.flush();
+  assert.deepEqual(harness.errors, []);
+  assert.ok(publishedGlobals(harness.context).includes('TallerLab'), 'the views did not start');
+  const markup = harness.elements['main']?.innerHTML ?? '';
+  assert.notEqual(markup, '');
+  assert.equal(markup.includes('No se pudo cargar el contenido'), false);
+  assert.equal(server.requests.length, 2);
+});
+
+await test('two consecutive clicks on retry make a single request', async () => {
+  const server = createContentServer([{ kind: 'reject' }, { kind: 'serve' }]);
+  const harness = await boot({}, server);
+  const button = retryButton(harness);
+  await Promise.all([button.dispatch('click'), button.dispatch('click')]);
+  await harness.flush();
+  assert.equal(server.requests.length, 2);
 });
 
 process.stdout.write(`\n${passed} passed, ${failed} failed\n`);
