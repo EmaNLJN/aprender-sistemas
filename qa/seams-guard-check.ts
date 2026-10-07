@@ -256,6 +256,33 @@ import { campaignLinkAccess } from './model/mission-bridge';`,
   );
 });
 
+test('R5: an entity that imports app/content is reported, and only as R5', () => {
+  const violations = findViolations({
+    'frontend/src/entities/guide/model/route-source.ts': `import { getContent } from '../../../app/content';`,
+  });
+  assert.deepEqual(rulesOf(violations), ['R5']);
+  assert.equal(
+    violations[0],
+    'R5 frontend/src/entities/guide/model/route-source.ts: imports app/content, and only app/ may read getContent()',
+  );
+});
+
+test('R5: a page that imports app/content/content is reported', () => {
+  const violations = findViolations({
+    'frontend/src/pages/atlas/ui/AtlasContent.tsx': `import { getContent } from '../../../app/content/content';`,
+  });
+  assert.deepEqual(rulesOf(violations), ['R5']);
+});
+
+test('R5: an adapter under app/legacy may import app/content', () => {
+  assert.deepEqual(
+    findViolations({
+      'frontend/src/app/legacy/register-atlas.tsx': `import { getContent } from '../content';`,
+    }),
+    [],
+  );
+});
+
 function productionSources(): Record<string, string> {
   const sources: Record<string, string> = {};
   const frontend = path.join(repoRoot, 'frontend');
