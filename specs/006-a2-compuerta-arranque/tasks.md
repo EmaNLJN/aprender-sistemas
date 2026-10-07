@@ -8,7 +8,7 @@ Las ondas, los dueños de archivos, las interfaces y los puntos de sincronizaci�
 
 - [x] T001 [US1] El spike, que es la compuerta del plan: P1 a P4 sobre la base con F1 y F2.1 a F2.4, con su regla de decisión; resultados en el mensaje del commit y en `specs/006-a2-compuerta-arranque/research.md` (SC-007, SC-008; plan 1.1)
   - Commit: 92d2730
-- [ ] T002 [US1] Línea base de `node tools/content/dump-globals.ts .` sobre la base, con el `documentHash` del documento y antes de cualquier cambio de código (FR-017; plan 1.2)
+- [x] T002 [US1] Línea base de `node tools/content/dump-globals.ts .` sobre la base, con el `documentHash` del documento y antes de cualquier cambio de código (FR-017; plan 1.2)
 
 ## Phase 2: Foundational — Compuerta, soporte de QA y build (onda 1: G, Q y el coordinador a la vez)
 

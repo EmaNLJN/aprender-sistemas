@@ -364,3 +364,12 @@ En `a2/spike` (`3baadc2`), después de `npm run build`:
 - P4: `node qa/boot-check.ts`, `node qa/spike-p4-timers.ts` y `node qa/spike-startapp-cases.ts`; el último, con la llamada quitada de `legacy-views.ts`.
 - P2 y P3: `node qa/spike-build-check-module.ts` (`build-check` con `node --check`), `node qa/spike-load-order-stages.ts` (R10) y `node qa/spike-markers.ts . <html>…` (los marcadores).
 - La auditoría de quién lee contenido al evaluarse: `node qa/spike-eval-audit.ts` con el `frontend/` de la base (`git checkout c5d497d -- frontend` antes y `git checkout HEAD -- frontend` después).
+
+## Línea base
+
+Tomada el 2026-10-06 sobre la base de la rama (`c5d497d`, con F1 y F2.1 a F2.4), antes de cualquier cambio de código de A2 (T002, FR-017):
+
+- `npm run curriculum && node tools/content/dump-globals.ts . | sha256`: `cd1f9e6240e291ecdcfbd9bb6c5d652d196663790c1a78bef06600d777b85745`.
+- `documentHash` de `build/curriculum.meta.json`: `ef8f57154734653554d40a43934c97f34ed550aad54867e31b197365355803d4`.
+
+Coinciden con lo esperado: para el documento `ef8f5715…`, el volcado empieza con `cd1f9e62…`, como el 2026-10-05 sobre `master`. F1 y F2 no cambiaron lo que se publica. T005, T008 y T013 comparan contra este par.
