@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 const KEY_OWNERS: Readonly<Record<string, string>> = {
   'taller-learning-v1': 'frontend/src/entities/guide/model/route-store.ts',
   'taller-laboratorio-v1': 'frontend/src/entities/exercise/model/lab-store.ts',
@@ -31,6 +33,8 @@ const STATELESS_ENTRIES: readonly string[] = [
   'entities/systems-workshop/bridge',
   'entities/exercise/explorers',
 ];
+
+const APP_CONTENT_DIRECTORY = 'frontend/src/app/content';
 
 const IMPORT_PATTERN =
   /^\s*import\s+(type\s+)?([^'";]*?)\s*from\s*['"]([^'"]+)['"]|^\s*import\s*['"]([^'"]+)['"]/gm;
@@ -155,6 +159,23 @@ function curriculumViolations(file: string, imports: ImportStatement[]): string[
     .map(() => `R5 ${file}: imports build/curriculum.json from a layer below pages`);
 }
 
+function isBelowApp(file: string): boolean {
+  return file.startsWith('frontend/src/') && !file.startsWith('frontend/src/app/');
+}
+
+function resolvesInsideAppContent(file: string, specifier: string): boolean {
+  if (!specifier.startsWith('.')) return false;
+  const resolved = path.posix.join(path.posix.dirname(file), specifier);
+  return resolved === APP_CONTENT_DIRECTORY || resolved.startsWith(`${APP_CONTENT_DIRECTORY}/`);
+}
+
+function appContentViolations(file: string, imports: ImportStatement[]): string[] {
+  if (!isBelowApp(file)) return [];
+  return imports
+    .filter((statement) => resolvesInsideAppContent(file, statement.specifier))
+    .map(() => `R5 ${file}: imports app/content, and only app/ may read getContent()`);
+}
+
 export function findViolations(sources: Readonly<Record<string, string>>): string[] {
   return Object.entries(sources)
     .filter(([file]) => isProductionFile(file))
@@ -167,6 +188,7 @@ export function findViolations(sources: Readonly<Record<string, string>>): strin
         ...indexViolations(file, imports),
         ...deepSliceImportViolations(file, imports),
         ...curriculumViolations(file, imports),
+        ...appContentViolations(file, imports),
       ];
     });
 }
