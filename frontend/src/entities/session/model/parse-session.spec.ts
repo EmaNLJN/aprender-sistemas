@@ -44,6 +44,26 @@ describe('parseSessionBody', () => {
       },
     ],
     ['a session without features', { user: null, contentVersion: null }],
+    [
+      'an account whose name is not text',
+      { ...sessionBodyFactory.build(), user: { ...ANA, name: 7 } },
+    ],
+    [
+      'an account whose email is not text',
+      { ...sessionBodyFactory.build(), user: { ...ANA, email: null } },
+    ],
+    [
+      'features that are not booleans',
+      { ...sessionBodyFactory.build(), features: { passwordReset: 'no', registration: 0 } },
+    ],
+    [
+      'a session without a content version',
+      { user: null, features: { passwordReset: false, registration: false } },
+    ],
+    [
+      'a session without the user key',
+      { features: { passwordReset: false, registration: false }, contentVersion: null },
+    ],
     ['a content version that is a number', { ...sessionBodyFactory.build(), contentVersion: 7 }],
   ])('rejects %s', (_name, body) => {
     expect(parseSessionBody(body)).toBeNull();

@@ -1,11 +1,8 @@
 import { Factory } from 'fishery';
-import type { PublishedUser } from './types';
+import type { PublishedUser, SessionSnapshot } from './types';
 
-export interface SessionBody {
-  user: PublishedUser | null;
-  features: { passwordReset: boolean; registration: boolean };
-  contentVersion: string | null;
-  catalogs: unknown[];
+export interface SessionBody extends SessionSnapshot {
+  readonly catalogs: unknown[];
 }
 
 export const publishedUserFactory = Factory.define<PublishedUser>(({ sequence }) => ({

@@ -38,6 +38,13 @@ describe('the session store', () => {
     expect(store.getState().user).toBeNull();
   });
 
+  it('replaces the account with the one of each new snapshot', () => {
+    const store = createSessionStore();
+    store.getState().applySnapshot({ user: ANA, features: FEATURES, contentVersion: 'v1' });
+    store.getState().applySnapshot({ user: BRUNO, features: FEATURES, contentVersion: 'v1' });
+    expect(store.getState().user).toEqual(BRUNO);
+  });
+
   it('keeps the features and the content version when a sign-in changes the account', () => {
     const store = createSessionStore();
     store.getState().applySnapshot({ user: null, features: FEATURES, contentVersion: 'v1' });
