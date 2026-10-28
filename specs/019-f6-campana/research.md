@@ -432,3 +432,30 @@ Se pasó el criterio de `/speckit-analyze` sobre la spec, el plan, `tasks.md` y 
 | A9 | Baja | Los nombres de módulos de la spec eran provisionales (`register-campaign.tsx` y el del puente) | El plan los fija: `register-campaign.tsx` y `campaign-bridges.ts`, más la hoja `campaign-page.css` (R11) |
 
 **Contra la constitución.** No hay conflictos. Las cuatro decisiones de Complexity Tracking del plan no contradicen ningún principio.
+
+## Línea base de la implementación
+
+Medida el 2026-10-28 sobre `24ba9d3de2353e010661016607498571aab597e6` (`master` con F2a, A2 y F2b; Node 24.21.0), en un worktree limpio. `npm ci --offline`, `npm run build`, `npm test`, `npm run lint` (0 errores), `npm run format:check` y `E2E_PORT=4186 npm run test:e2e` (123 pasan) dan verde.
+
+| Valor | Medida |
+| --- | --- |
+| `build/curriculum.json` | `4555e8500e6ef5bd38cdaf46010d3f14e3345d7ec0c69aea983acfe67f62fbb6` |
+| `dump-globals` | `859771e276be9dc757c25388fd617df7d8667ffab176992e82d79cf6e1dd6fa1` |
+| `frontend/src/index.html` | `6c3b7e6a81500f0067fa6932b841027773f8603ed7ea2bd363edf03e57a82179` |
+| `dist/index.html`, `chars` / `bytes` | 1 141 337 / 1 143 852 |
+| `script` | `a0d182f082b6a0b9af30ab39a821a171001badabac4fba0e9c66f231c0d9be94` |
+| `style` | `ae2971b09f63ae91d69f77007777d555159b8be1df652feb145535a963327b79` |
+| `markup` | `562c5364481ca6138bc41a18c3c5318083bdca479e087ac32461755081ac81d0` |
+| Etiquetas `<script` / `<style` | 2 (un `type="module"` y uno sin tipo) / 1 |
+| Multiconjunto del CSS | `base` 4319, `distinctBase` 4315, `onlyBase` 0, `onlyUnit` 0 |
+| Avisos de `npm run lint` (`complexity`) | 35, con `missionHTML` (15) y `onClick` (12) de `campaign.js` |
+| Escenarios | `boot-check` 25, `app-shell-check` 58, `lab-bridge-check` 21, `campaign-check` 34, `seams-guard-check` 25 |
+| `load-order-check` | OK: 24 imports, 16 restricciones de orden y 1 de etapas |
+| E2E | 123 en 9 archivos |
+| Pruebas unitarias | 719 en 29 archivos |
+
+**Predicados de R13 y R12.**
+
+- El arnés está: `jsdom` 30.1.2, Testing Library, `fishery` 2.4.0 y los proyectos `node` y `dom` de Vitest, desde `7aa96018` (#67).
+- `frontend/systems.js` existe y lee `TallerEffects` (líneas 72, 301 y 320): `register-effects.ts` se queda.
+- `qa/lib/legacy-sources.ts` todavía carga `SYSTEMS_UI_SOURCE = 'frontend/systems.js'`: F5 no entró.
