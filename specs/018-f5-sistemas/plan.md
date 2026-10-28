@@ -1259,11 +1259,9 @@ export default mergeConfig(
     test: {
       projects: [
         {
-          extends: true,
           test: { name: 'node', environment: 'node', include: ['**/*.spec.ts'] },
         },
         {
-          extends: true,
           test: {
             name: 'jsdom',
             environment: 'jsdom',
@@ -1276,6 +1274,8 @@ export default mergeConfig(
   }),
 );
 ```
+
+  La raíz sólo lleva `cacheDir` y `projects`. En Vitest 5, cada proyecto en línea hereda la configuración raíz por omisión (`extends: true`) y concatena los arreglos como `include` y `setupFiles`; si la raíz declarara un `include`, el proyecto `jsdom` correría también las specs de `node`.
 
 - **`frontend/src/vitest-setup.ts`:**
 
@@ -2300,12 +2300,12 @@ export default useWorkshopSelection;
 
 ```tsx
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { withNuqsTestingAdapter, type UrlUpdateEvent } from 'nuqs/adapters/testing';
+import { withNuqsTestingAdapter, type OnUrlUpdateFunction } from 'nuqs/adapters/testing';
 import { describe, expect, it, vi } from 'vitest';
 import useWorkshopSelection from './useWorkshopSelection';
 
 function renderSelection(searchParams: string) {
-  const onUrlUpdate = vi.fn<(event: UrlUpdateEvent) => void>();
+  const onUrlUpdate = vi.fn<OnUrlUpdateFunction>();
   const view = renderHook(() => useWorkshopSelection('rust'), {
     wrapper: withNuqsTestingAdapter({ searchParams, onUrlUpdate, hasMemory: true }),
   });
@@ -3923,7 +3923,7 @@ export default SystemsCatalog;
 - **Pasos:**
   1. El rojo, con `test(front): el catálogo de Sistemas (en rojo)`.
   2. El verde y los checks.
-  3. `node quickstart-texts.mjs` (quickstart.md §4.1): cada texto fijo de `SystemsCatalog.tsx`, `ExternalTools.tsx`, `WorkshopCard.tsx` y los componentes de T017 a T021 aparece en `frontend/systems.js`.
+  3. `node "$TMPDIR/f5-compare/texts.mjs" "$TMPDIR/f5-base" .` (quickstart.md §4.1): cada texto fijo de `SystemsCatalog.tsx`, `ExternalTools.tsx`, `WorkshopCard.tsx` y los componentes de T017 a T021 aparece en `frontend/systems.js`.
   4. **Commit:** `feat(front): el catálogo de Sistemas con su filtro de sesión`.
 
 ### Tarea 5.7 · El detalle, la página y su API pública (T023)
@@ -4093,7 +4093,7 @@ export type {
 ```tsx
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { NuqsTestingAdapter, type UrlUpdateEvent } from 'nuqs/adapters/testing';
+import { NuqsTestingAdapter, type OnUrlUpdateFunction } from 'nuqs/adapters/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { systemsEngine } from '../../../entities/systems-workshop';
 import { resetSimulations, saveCatalogFilter } from '../model/systems-session';
@@ -4101,7 +4101,7 @@ import { initProbeEngine, probeModels, workshopFactory } from '../model/systems-
 import SystemsPage from './SystemsPage';
 
 function renderPage(searchParams: string) {
-  const onUrlUpdate = vi.fn<(event: UrlUpdateEvent) => void>();
+  const onUrlUpdate = vi.fn<OnUrlUpdateFunction>();
   const scrollToTop = vi.fn();
   const exercises = initProbeEngine([
     workshopFactory.build(),
