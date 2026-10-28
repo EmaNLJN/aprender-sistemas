@@ -1,4 +1,4 @@
-import { createCampaignEngine, type CampaignEngine } from '../../entities/campaign';
+import { campaignEngine, type CampaignEngine } from '../../entities/campaign';
 
 declare global {
   interface Window {
@@ -6,4 +6,4 @@ declare global {
   }
 }
 
-window.TallerCampaignEngine = createCampaignEngine();
+window.TallerCampaignEngine = campaignEngine;

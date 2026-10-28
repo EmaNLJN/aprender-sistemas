@@ -5,6 +5,7 @@
 // exactamente estos métodos; si app.js empieza a usar otro, se agrega acá y ambos checks lo exigen.
 export const APP_ADAPTER_METHODS = {
   TallerLab: [
+    'init',
     'mount',
     'unmount',
     'getExercises',

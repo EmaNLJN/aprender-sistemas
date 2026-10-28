@@ -1,3 +1,4 @@
+import { createStore } from 'zustand/vanilla';
 import { cloneJson } from '../../../shared/lib/clone-json';
 import { isLosslessNormalization } from '../../../shared/lib/is-lossless-normalization';
 import {
@@ -71,10 +72,19 @@ export function createSystemsEngine(): SystemsEngine {
   let catalog: SystemsCatalog = { workshops: new Map(), exercises: new Map() };
   let storageAvailable = true;
   let store: VersionedStore<SystemsStateV1> | null = null;
+  const changes = createStore<{ revision: number }>(() => ({ revision: 0 }));
 
   function requireStore(): VersionedStore<SystemsStateV1> {
     if (!store) throw new Error('Inicializá Sistemas antes de usarlo.');
     return store;
+  }
+
+  function assertReady(): void {
+    requireStore();
+  }
+
+  function notify(): void {
+    changes.setState((current) => ({ revision: current.revision + 1 }));
   }
 
   // The store may merge with what another tab saved and returns the final state:
@@ -87,6 +97,7 @@ export function createSystemsEngine(): SystemsEngine {
   }
 
   function requireWorkshop(id: string, language: string): SystemsWorkshop {
+    assertReady();
     const workshop = catalog.workshops.get(id);
     if (!workshop || !isSystemsLanguage(language))
       throw new Error('Taller o lenguaje desconocido.');
@@ -133,6 +144,7 @@ export function createSystemsEngine(): SystemsEngine {
     if (added.length) {
       progress.observed = [...new Set([...progress.observed, ...added])];
       persist();
+      notify();
     }
     return { added: [...new Set(added)], ...get(id, language) };
   }
@@ -145,6 +157,7 @@ export function createSystemsEngine(): SystemsEngine {
     progress.answer = index;
     progress.predicted = progress.predicted || index === workshop.prediction.answer;
     persist();
+    notify();
     return {
       correct: index === workshop.prediction.answer,
       explanation: workshop.prediction.explanation,
@@ -153,6 +166,7 @@ export function createSystemsEngine(): SystemsEngine {
   }
 
   function refreshFromLab(lab?: unknown): SystemsSyncResult {
+    assertReady();
     let changed = false;
     for (const workshop of catalog.workshops.values())
       for (const language of SYSTEMS_LANGUAGES) {
@@ -164,7 +178,10 @@ export function createSystemsEngine(): SystemsEngine {
   function syncLab(lab?: unknown): SystemsSyncResult {
     refreshFromLab(lab);
     const changed = requireStore().hasUnsavedChanges(state);
-    if (changed) persist();
+    if (changed) {
+      persist();
+      notify();
+    }
     return { changed, storageAvailable };
   }
 
@@ -182,6 +199,7 @@ export function createSystemsEngine(): SystemsEngine {
   }
 
   function planImport(raw: unknown): SystemsImportPlan {
+    assertReady();
     const planned = cloneJson(state);
     const incoming = validateSystemsImport(catalog, raw);
     if (!incoming) return { state: planned, lossy: false };
@@ -190,9 +208,11 @@ export function createSystemsEngine(): SystemsEngine {
   }
 
   function applyImport(plan: SystemsImportPlan): SystemsSyncResult {
+    assertReady();
     state = cloneJson(plan.state);
     const changed = requireStore().hasUnsavedChanges(state);
     if (changed) persist();
+    notify();
     return { changed, storageAvailable };
   }
 
@@ -204,20 +224,26 @@ export function createSystemsEngine(): SystemsEngine {
       ? [...new Set([...progress.steps, index])]
       : progress.steps.filter((step) => step !== index);
     persist();
+    notify();
   }
 
   function setNote(id: string, language: string, note: string): NoteResult {
     record(id, language).note = truncateNote(String(note));
     persist();
+    notify();
     return { storageAvailable };
   }
 
   function reset(): SystemsResetResult {
+    assertReady();
     state = blankSystemsState();
-    return { removed: requireStore().remove() };
+    const removed = requireStore().remove();
+    notify();
+    return { removed };
   }
 
   return {
+    changes,
     init,
     get,
     observe,
@@ -227,10 +253,18 @@ export function createSystemsEngine(): SystemsEngine {
     planImport,
     applyImport,
     backups: () => requireStore().backups(),
-    list: (language) => [...catalog.workshops.keys()].map((id) => get(id, language)),
+    list(language) {
+      assertReady();
+      return [...catalog.workshops.keys()].map((id) => get(id, language));
+    },
     setStep,
     setNote,
-    exportState: () => cloneJson(state),
+    exportState() {
+      assertReady();
+      return cloneJson(state);
+    },
     reset,
   };
 }
+
+export const systemsEngine: SystemsEngine = createSystemsEngine();

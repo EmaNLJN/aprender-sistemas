@@ -1,4 +1,4 @@
-import curriculum from '../../../../build/curriculum.json';
+import { getContent } from '../content/content';
 import type { Exercise } from '../../entities/exercise';
 import { playModels } from '../../entities/systems-simulation';
 import type { SystemsWorkshop } from '../../entities/systems-workshop';
@@ -13,8 +13,9 @@ declare global {
   }
 }
 
+const content = getContent();
 window.SYSTEMS_PLAY = {
-  workshops: curriculum.workshops.play as SystemsWorkshop[],
+  workshops: content.workshops.play,
   models: playModels,
 };
-window.SYSTEMS_PLAY_LABS = curriculum.cores.play as Exercise[];
+window.SYSTEMS_PLAY_LABS = content.cores.play;

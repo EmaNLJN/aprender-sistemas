@@ -44,6 +44,35 @@ Medida el 2026-10-06 sobre una copia de `c5d497d` (Node 24.21.0, npm 11.19.0). T
 
 La spec de F2 cuenta 51 escenarios en `app-shell-check`: F2a le sumó 2. Los 53 son los de la tabla de R8.
 
+## Línea base de la implementación
+
+Medida el 2026-10-07 (T020) sobre `2ffbbc6`, con Node 24.21.0 y npm 11.19.0. Es la punta de `f2a/base`: las cuatro unidades de F2a y A2 (#38), con `master` mergeado (C3a, B2 con D1a, C3b y D1b) y el cierre de F2a (T019).
+
+| Qué | Valor |
+| --- | --- |
+| Base | `f2b/base`, que sale de `2ffbbc6`. F2a llega a `master` con el PR #40, todavía abierto; los PR de las unidades de F2b van contra `f2b/base`, y S1 es el PR de la unidad 5 integrado ahí. Cuando #40 entre, `f2b/base` se rebasa sobre `master` |
+| `build/curriculum.json` | sha256 `4555e8500e6ef5bd38cdaf46010d3f14e3345d7ec0c69aea983acfe67f62fbb6`, igual al `documentHash` del meta y al de `master`. Cambió desde la planificación porque D1a publica el `id` de cada etapa |
+| `dump-globals` (stdout) | `859771e276be9dc757c25388fd617df7d8667ffab176992e82d79cf6e1dd6fa1`, el mismo que en `master` |
+| Catálogos del dist | `dump-dist-globals` se retiró con el corte de A2; `dist-content-check` compara los globals del bundle con `dump-globals` y pasa |
+| `frontend/src/index.html` | `6c3b7e6a81500f0067fa6932b841027773f8603ed7ea2bd363edf03e57a82179`, sin cambios |
+| `dist/index.html` | 1 136 702 caracteres (`html.length`) y 1 139 218 bytes; 0 `import(` y 22 `import.meta`, la forma de A2 (los mismos 22 en `fc760f2`, la punta de A2). Con `master`, el dist sólo cambia en la versión del contenido que lleva adentro |
+| Script del dist | 1 030 087 caracteres; sha256 `dfae46d95c39de7e37ac1d75921826b4b85e415d3ab002f3f577c0e1e83104fb` |
+| `<style>` del dist | 102 229 caracteres; sha256 `850ef8219cf8a73e79b5edaf888d591051ec933b78ab2e09a175d1aa66623be1`, el de la planificación |
+| Marcado del dist | 4 331 caracteres; sha256 `562c5364481ca6138bc41a18c3c5318083bdca479e087ac32461755081ac81d0`, el de la planificación |
+| CSS del dist, parseado con `postcss` | 1 399 reglas; 4 319 declaraciones (4 315 distintas), como en la planificación |
+| `npm test` | 39 checks y Vitest con 19 archivos y 252 pruebas |
+| `npm run lint` | 0 errores y 35 avisos de complejidad |
+| Escenarios `PASS` | `app-shell` 53, `boot` 25 (14 de la base y 11 de A2), `lab-bridge` 21, `lab-state` 37, `systems` 46, `project-kit` 11, `campaign` 34, `versioned-storage` 34, `seams-guard` 18; `quest-explorers` 47 aserciones; `load-order` 24 imports, 16 restricciones de orden y 1 de etapas; `import-cases` 3 casos y 12 secciones |
+| E2E | 123 de 123: los 106 de F1 y los 17 de A2 |
+
+Lo que cambia en la compuerta de cada unidad (§0.2 del plan), por el corte de A2 y por `master`:
+
+- **La red:** son 123 E2E, todos sin editar.
+- **El tope:** `html.length` acumulado ≤ 1 144 702 (la base más 8 000) y bajo el de `build-check`, que A2 dejó en 1 250 000.
+- **`import(` e `import.meta`:** 0 y 22.
+- **El arnés de `app-shell-check`** vive en `qa/lib/app-shell-harness.ts` desde D1b, que lo movió sin cambiarlo. B (T035) es dueño también de ese archivo: `asyncAdapters` va en `HarnessOptions` y en `fakeAdapters`. `import-cases-check` usa el mismo `buildHarness`, así que entra en los checks de B.
+- **R5 y `getContent()`:** F2-I6 pide que nada por debajo de `app` importe `getContent()`. Hoy sólo lo importa `frontend/src/app/`, pero el guard no lo vigila. S suma esa regla en T023, con su escenario en rojo primero, junto con R6.
+
 ## R1. Dónde viven el plan y las tareas de F2b
 
 **Decisión.** En la misma carpeta de la spec, con archivos propios: `plan-f2b.md`, `research-f2b.md`, `quickstart-f2b.md` y `tasks-f2b.md`. Los de F2a (`plan.md`, `research.md`, `quickstart.md` y `tasks.md`) no se tocan. Las tareas siguen la numeración de F2a, de T020 a T038, para que un commit que nombra una tarea no sea ambiguo dentro de la carpeta.
