@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { campaignEngine, type CampaignConfig } from '../../../entities/campaign';
 import type { StorageLike } from '../../../shared/lib/versioned-storage';
 import { openCampaignSession } from './open-campaign-session';
@@ -36,13 +36,13 @@ function handMadeConfig(): CampaignConfig {
 }
 
 describe('openCampaignSession', () => {
-  let setItem: ReturnType<typeof vi.fn>;
-  let removeItem: ReturnType<typeof vi.fn>;
+  let setItem: Mock<StorageLike['setItem']>;
+  let removeItem: Mock<StorageLike['removeItem']>;
 
   beforeEach(() => {
     const items = new Map<string, string>();
-    setItem = vi.fn((key: string, value: string) => void items.set(key, value));
-    removeItem = vi.fn((key: string) => void items.delete(key));
+    setItem = vi.fn<StorageLike['setItem']>((key, value) => void items.set(key, value));
+    removeItem = vi.fn<StorageLike['removeItem']>((key) => void items.delete(key));
     const storage: StorageLike = {
       getItem: (key) => items.get(key) ?? null,
       setItem,
