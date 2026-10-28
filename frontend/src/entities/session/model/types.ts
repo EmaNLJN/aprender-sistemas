@@ -30,4 +30,8 @@ export interface SessionState extends SessionSnapshot {
 export type SessionOutcome =
   | { readonly kind: 'session'; readonly snapshot: SessionSnapshot }
   | { readonly kind: 'unreachable' }
-  | { readonly kind: 'rate-limited'; readonly message: string; readonly retryAfterSeconds: number | null };
+  | {
+      readonly kind: 'rate-limited';
+      readonly message: string;
+      readonly retryAfterSeconds: number | null;
+    };

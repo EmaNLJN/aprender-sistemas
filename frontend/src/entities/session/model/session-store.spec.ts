@@ -2,8 +2,20 @@ import { describe, expect, it } from 'vitest';
 import { createSessionStore, selectReadyAccount } from './session-store';
 import type { PublishedUser } from './types';
 
-const ANA: PublishedUser = { id: 41, name: 'Ana Pérez', email: 'ana@x.com', role: 'student', privacyAccepted: true };
-const BRUNO: PublishedUser = { id: 77, name: 'Bruno Díaz', email: 'bruno@x.com', role: 'student', privacyAccepted: true };
+const ANA: PublishedUser = {
+  id: 41,
+  name: 'Ana Pérez',
+  email: 'ana@x.com',
+  role: 'student',
+  privacyAccepted: true,
+};
+const BRUNO: PublishedUser = {
+  id: 77,
+  name: 'Bruno Díaz',
+  email: 'bruno@x.com',
+  role: 'student',
+  privacyAccepted: true,
+};
 const FEATURES = { passwordReset: true, registration: false };
 
 describe('the session store', () => {

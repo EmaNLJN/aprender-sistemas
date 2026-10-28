@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { parsePublishedUser, parseSessionBody } from './parse-session';
 import { publishedUserFactory, sessionBodyFactory } from './session.factory';
 
-const ANA = { id: 41, name: 'Ana Pérez', email: 'ana@x.com', role: 'student', privacyAccepted: true };
+const ANA = {
+  id: 41,
+  name: 'Ana Pérez',
+  email: 'ana@x.com',
+  role: 'student',
+  privacyAccepted: true,
+};
 
 describe('parseSessionBody', () => {
   it('keeps the account, the features and the content version and drops the catalogs', () => {
@@ -26,8 +32,17 @@ describe('parseSessionBody', () => {
   it.each([
     ['a body that is not an object', 'texto'],
     ['an account whose id is text', { ...sessionBodyFactory.build(), user: { ...ANA, id: '41' } }],
-    ['an account with an unknown role', { ...sessionBodyFactory.build(), user: { ...ANA, role: 'teacher' } }],
-    ['an account without privacyAccepted', { ...sessionBodyFactory.build(), user: { id: 41, name: 'Ana Pérez', email: 'ana@x.com', role: 'student' } }],
+    [
+      'an account with an unknown role',
+      { ...sessionBodyFactory.build(), user: { ...ANA, role: 'teacher' } },
+    ],
+    [
+      'an account without privacyAccepted',
+      {
+        ...sessionBodyFactory.build(),
+        user: { id: 41, name: 'Ana Pérez', email: 'ana@x.com', role: 'student' },
+      },
+    ],
     ['a session without features', { user: null, contentVersion: null }],
     ['a content version that is a number', { ...sessionBodyFactory.build(), contentVersion: 7 }],
   ])('rejects %s', (_name, body) => {

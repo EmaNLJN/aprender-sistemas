@@ -43,8 +43,14 @@ describe('fetchSession', () => {
   it.each([
     ['a body that is not a session', { ok: true as const, status: 200, body: { user: 'ana' } }],
     ['the network', { ok: false as const, failure: { kind: 'network' as const } }],
-    ['an answer that is not JSON', { ok: false as const, failure: { kind: 'unexpected' as const, status: 502 } }],
-    ['a server error', response(500, 'server_error', 'Algo salió mal de nuestro lado. Probá de nuevo en un rato.')],
+    [
+      'an answer that is not JSON',
+      { ok: false as const, failure: { kind: 'unexpected' as const, status: 502 } },
+    ],
+    [
+      'a server error',
+      response(500, 'server_error', 'Algo salió mal de nuestro lado. Probá de nuevo en un rato.'),
+    ],
   ])('treats %s as a server that did not answer', async (_name, result) => {
     const { client } = clientAnswering(result);
     expect(await fetchSession(client, {})).toEqual({ kind: 'unreachable' });
@@ -52,7 +58,11 @@ describe('fetchSession', () => {
 
   it('passes a rate limit on with its message and its wait', async () => {
     const { client } = clientAnswering(
-      response(429, 'too_many_requests', 'Demasiados intentos. Esperá un momento antes de volver a probar.'),
+      response(
+        429,
+        'too_many_requests',
+        'Demasiados intentos. Esperá un momento antes de volver a probar.',
+      ),
     );
     expect(await fetchSession(client, {})).toEqual({
       kind: 'rate-limited',
