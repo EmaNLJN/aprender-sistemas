@@ -1,5 +1,6 @@
 import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
 import { escapeHtml } from './src/shared/lib/escape-html';
+import { mergeModelGroups } from './src/entities/systems-simulation';
 import { LEVEL_LABELS } from './src/shared/config/levels';
 (() => {
   'use strict';
@@ -30,12 +31,7 @@ import { LEVEL_LABELS } from './src/shared/config/levels';
   const refresh = () => engine.refreshFromLab(window.TallerLab.exportState());
   const sync = () => engine.syncLab(window.TallerLab.exportState());
   function init() {
-    models = {};
-    for (const source of packages())
-      for (const [name, model] of Object.entries(source.models)) {
-        if (models[name]) throw new Error('Modelo de Sistemas repetido: ' + name);
-        models[name] = model;
-      }
+    models = mergeModelGroups(packages().map((source) => source.models));
     return engine.init({
       workshops: workshops(),
       models,

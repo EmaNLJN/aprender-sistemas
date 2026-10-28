@@ -166,12 +166,11 @@ posición de la entrada.
 
 ## Riesgos
 
-- **Tamaño del documento autónomo:** después de A1 el HTML pesa 2 202 074 bytes, unos 2,2 MB,
-  frente al límite de 2 500 000 de `qa/build-check`: quedan unos 300 KB de margen. La cifra de
-  2,04 MB era la de antes de A1. El check compara `html.length`, que cuenta caracteres y no
-  bytes, así que el margen real es algo mayor. A2 saca del HTML unos 1,07 MB de contenido, que
-  pasa a servir la API, y el tamaño deja de restringir. Hasta entonces cada dependencia de
-  runtime nueva se mide antes de entrar y la sesión «Esenciales» (E1) no entra.
+- **Tamaño del documento:** A2 sacó el currículo del HTML. Con F1 y F2a el HTML medía 2 190 106
+  caracteres; sin el contenido mide unos 1 136 706 (T001), y el tope de `qa/build-check` pasó de
+  2 500 000 a 1 250 000. El currículo (1 357 065 bytes, 308 588 con `gzip -6`) viaja aparte en
+  `dist/content/`, así que una sesión nueva como «Esenciales» (E1) ya no compite con el código por
+  el tope. Cada dependencia de runtime nueva se sigue midiendo antes de entrar.
 - **Orden de evaluación:** varios módulos leen globals al cargarse; cualquier adaptador nuevo
   ocupa la posición exacta del archivo que reemplaza.
 - **IDs y formato del progreso:** son contrato del currículo y del progreso guardado.

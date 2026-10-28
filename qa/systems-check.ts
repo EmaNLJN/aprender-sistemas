@@ -5,13 +5,11 @@ import vm from 'node:vm';
 import { plainJson as plain } from './lib/plain-json.ts';
 import {
   LAB_EXERCISE_SOURCES,
-  LAB_SOURCE,
   SYSTEMS_CATALOG_SOURCES,
-  loadLab,
   loadLabCatalogs,
   loadSystemsEngine,
 } from './lib/legacy-sources.ts';
-import { repoRoot as root } from './lib/sources.ts';
+import { importModule, repoRoot as root } from './lib/sources.ts';
 import {
   achievedBelongToWorkshop,
   assertFiniteJson,
@@ -190,7 +188,28 @@ interface SystemsWindow {
   SYSTEMS_INFRA_LABS?: Lab[];
   SYSTEMS_PLAY_LABS?: Lab[];
   SYSTEMS_PC_LABS?: Lab[];
-  TallerLab?: { getExercises(): Exercise[] };
+  RUST_LAB?: Exercise[];
+  RUST_QUESTS?: Exercise[];
+  GO_LAB?: Exercise[];
+  GO_QUESTS?: Exercise[];
+}
+interface ExerciseModule {
+  createExerciseCatalog(groups: Record<string, readonly unknown[]>): {
+    exercises: readonly Exercise[];
+  };
+}
+function exerciseGroups(window: SystemsWindow): Record<string, readonly unknown[]> {
+  const globals = window as Required<SystemsWindow>;
+  return {
+    rustLab: globals.RUST_LAB,
+    rustQuests: globals.RUST_QUESTS,
+    goLab: globals.GO_LAB,
+    goQuests: globals.GO_QUESTS,
+    systemsLowlevel: globals.SYSTEMS_LOWLEVEL_LABS,
+    systemsInfra: globals.SYSTEMS_INFRA_LABS,
+    systemsPlay: globals.SYSTEMS_PLAY_LABS,
+    systemsPc: globals.SYSTEMS_PC_LABS,
+  };
 }
 interface Domain {
   workshops: Workshop[];
@@ -979,15 +998,17 @@ if (process.argv.includes('--engine-only')) {
   );
 } else {
   let real: Catalog | undefined;
+  const { createExerciseCatalog } = await importModule<ExerciseModule>(
+    'frontend/src/entities/exercise/index.ts',
+  );
   test('All four workshop domains and lab integration files are available', () => {
-    const files = [...LAB_EXERCISE_SOURCES, ...SYSTEMS_CATALOG_SOURCES, LAB_SOURCE];
+    const files = [...LAB_EXERCISE_SOURCES, ...SYSTEMS_CATALOG_SOURCES];
     const context: Sandbox = { window: {}, localStorage: storage() };
     vm.createContext(context);
     for (const file of files) {
       assert(fs.existsSync(path.join(root, file)), `Awaiting completed snapshot: ${file}`);
     }
     loadLabCatalogs(context);
-    loadLab(context);
     const w = context.window,
       domains = [w.SYSTEMS_LOWLEVEL, w.SYSTEMS_INFRA, w.SYSTEMS_PLAY, w.SYSTEMS_PC].filter(
         (domain): domain is Domain => Boolean(domain),
@@ -1010,7 +1031,7 @@ if (process.argv.includes('--engine-only')) {
         ...(w.SYSTEMS_PLAY_LABS ?? []),
         ...(w.SYSTEMS_PC_LABS ?? []),
       ],
-      exercises: (w.TallerLab as { getExercises(): Exercise[] }).getExercises(),
+      exercises: createExerciseCatalog(exerciseGroups(w)).exercises as Exercise[],
     };
   });
   if (real) {

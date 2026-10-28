@@ -9,16 +9,17 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 
 | Responsabilidad | Fuentes |
 | --- | --- |
-| Documento, entrada ESM y adaptadores legacy | `frontend/src/index.html`, `frontend/src/app/main.tsx`, `frontend/src/app/legacy/` |
+| Documento, entrada ESM, arranque y adaptadores legacy | `frontend/src/index.html`, `frontend/src/app/main.tsx` (la secuencia de etapas), `frontend/src/app/boot/` (la compuerta del contenido y la cadena legacy, A2), `frontend/src/app/content/` (`getContent()`), `frontend/src/app/legacy/` |
 | Helpers y constantes compartidos, sin reglas de negocio | `frontend/src/shared/lib/`, `frontend/src/shared/config/` |
 | Evidencia de aprobación, interpretación de ejecuciones y fusión de registros | `frontend/src/entities/exercise/` |
 | Lectura versionada, respaldo y avisos de carga del progreso | `frontend/src/shared/lib/versioned-storage.ts` (ADR 0003) |
+| Almacenes del progreso y motores, con suscripción (F2, unidad 1) | Un almacén por clave y un motor por tipo, cada uno un singleton: `routeStore` en `frontend/src/entities/guide/`, `labStore` en `frontend/src/entities/exercise/`, y `campaignEngine` y `systemsEngine` en sus slices. Cada uno expone `changes`, un store de `zustand/vanilla` que lleva sólo la revisión y sube una vez por operación, después de escribir; el progreso sigue en su almacén. En React se lee con un selector chico (`useStore(routeStore.changes, (state) => state.revision)`), nunca con el store entero. Entre las fuentes legacy y `app/`, cada singleton tiene un solo dueño (`app.js`, `lab.js` y los dos `register-*-engine.ts`); lo hace cumplir `qa/seams-guard-check.ts` |
 | Navegación, recorrido y progreso general | `frontend/app.js`, `frontend/styles.css` |
 | Contenido del recorrido y biblioteca | `content/guide/`; tipos y progreso en `frontend/src/entities/guide/` |
-| Catálogos de contenido (publicados en `window.*`) | `content/` → `tools/content/` → `build/curriculum.json`; adaptador `frontend/src/app/legacy/register-catalogs.ts` |
+| Catálogos de contenido (publicados en `window.*`) | `content/` → `tools/content/` → `build/curriculum.json` → `dist/content/curriculum.<versión>.json` (el plugin de `frontend/vite.config.ts`) → la compuerta de arranque (`frontend/src/shared/api/content/` y `frontend/src/app/content/`) → adaptador `frontend/src/app/legacy/register-catalogs.ts`, que lee `getContent()` |
 | Contenido en MySQL (ADR 0006, C2) | `tools/content/` también escribe `build/curriculum.meta.json` (huellas y claves de etapa) → etapa `curriculum` de `backend/api/Dockerfile` → `content:import` y `backend/api/app/Content/`, con un registro tipado por fila en `app/Content/Record/` (C6) → 18 recursos de sólo lectura (`GET /api/exercises`, `worlds`, `workshops`, `atlas`, `guide` y, desde B2, `harness`, la plantilla de `content/harness/`); los bytes de cada porción los fija el generador, nunca `JsonResource`; desde D1a, cada etapa de taller publica su `id` |
 | Ejercicios del recorrido y tipo `Exercise` | sección `lab` de `content/{rust,go}/manifest.yaml` y `content/{rust,go}/exercises/<id>/`; `frontend/src/entities/exercise/model/types.ts` |
-| Laboratorio, revisión y modelos educativos | `frontend/lab.js`, `frontend/lab-explorers.js`, `frontend/lab.css` |
+| Laboratorio, revisión y modelos educativos | `frontend/lab.js`, `frontend/lab-explorers.js`, `frontend/lab.css`; el catálogo de ejercicios (`exerciseCatalog`, `createExerciseCatalog`) y `buildProgram` viven en `frontend/src/entities/exercise/` (F2, unidad 2) y `lab.js` los usa |
 | Transporte a los Playgrounds oficiales | `frontend/src/shared/api/playground/`, adaptador `frontend/src/app/legacy/register-runner.ts` |
 | Ejecutor Go en sandbox (ADR 0005; la API lo usa desde B2, y el laboratorio recién lo usará con A4) | `backend/executor/`: `internal/sandbox` (perfiles, argumentos de Docker, fases y barrido), `internal/api` (HTTP interno), `images/` (sandboxes Rust y Go); servicios `executor`, sólo en la red `sandbox`, y `worker-runs` en `docker/compose.yaml` |
 | API de ejecuciones (ADR 0006, B2) | `backend/api/app/Runs/` (admisión y cuotas, programa, evidencia, ejecución y filas), `backend/api/app/Progress/` (la cabecera de la cuenta y `AccountLock`), `backend/api/app/Jobs/ExecuteRun.php` y `backend/api/routes/api/runs.php`; el programa y la lectura de la evidencia son puros (FR-038). Contratos en `specs/005-b2-api-ejecuciones/contracts/` |
@@ -26,22 +27,22 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | Administración y ciclo de vida (ADR 0006, C3b) | `backend/api/app/Admin/` (los cambios de rol y estado con la guardia del último admin, el directorio de usuarios y las invitaciones), `backend/api/app/Accounts/` (`UserData`, la purga, la exportación y el libro de supresiones), `backend/api/app/Jobs/PurgeUserData.php` y `backend/api/routes/api/{admin-users,admin-invitations,export,deletion}.php`. Contratos en `specs/010-c3b-admin-ciclo-de-vida/contracts/` |
 | Importación y reset del progreso (ADR 0006, D1b) | `backend/api/app/Progress/Import/` (la decodificación de la copia v1, la escritura con el SQL de D1a, el libro `progress_imports` y el informe) y `backend/api/app/Progress/Reset/`, con `backend/api/routes/api/{progress-import,progress-reset}.php` (`POST /api/progress/import` y `POST /api/progress/reset`); el fixture compartido `qa/fixtures/shared/import-cases.json`, que corren Pest y `qa/import-cases-check.ts`. Contratos en `specs/007-d1-progreso-sincronizacion/contracts/` (`http-d1b.md` e `import-fixture.md`) |
 | Editor CodeMirror 6 | `frontend/src/shared/ui/code-editor/`, adaptador `frontend/src/app/legacy/register-editor.ts` |
-| Atlas migrado a React/TypeScript | `frontend/src/pages/atlas/` (`ui`, `model`, `lib`), conceptos en `content/atlas/` y adaptador `frontend/src/app/legacy/register-atlas.tsx` |
+| Atlas migrado a React/TypeScript | `frontend/src/pages/atlas/` (`ui`, `model`, `lib`), conceptos en `content/atlas/` y adaptador `frontend/src/app/legacy/register-atlas.tsx`, que lee `getContent().atlas` al montar |
 | Desafíos nuevos de campaña | sección `quests` de `content/{rust,go}/manifest.yaml` (la posición en el mundo fija tipo, `kind` y minutos del jefe) |
 | Mundos de campaña | `content/campaign/` |
 | Reglas, validación y progreso de campaña | `frontend/src/entities/campaign/`, adaptador `frontend/src/app/legacy/register-campaign-engine.ts` |
 | Interfaz y exploradores de campaña | `frontend/campaign.js`, `frontend/campaign.css`, `frontend/quest-explorers.js`, `frontend/quest-explorers.css` |
-| Contrato de simulaciones de Sistemas | `frontend/src/entities/systems-simulation/` (`defineModel`, tipos de vista y escena) |
+| Contrato de simulaciones de Sistemas | `frontend/src/entities/systems-simulation/` (`defineModel`, tipos de vista y escena, y `mergeModelGroups`, el registro que une los modelos de los cuatro dominios para `systems.js`; F2, unidad 4) |
 | Modelos de Sistemas | `frontend/src/entities/systems-simulation/models/{lowlevel,infra,play,pc}/` (un archivo por modelo, con `defineModel`) |
 | Fichas de los talleres | `content/workshops/` |
 | Núcleos Rust/Go de Sistemas | sección `systems` de `content/{rust,go}/manifest.yaml` y una carpeta por núcleo en `content/{rust,go}/exercises/` |
-| Catálogos de Sistemas publicados en `window.SYSTEMS_*` | adaptadores `frontend/src/app/legacy/register-systems-{lowlevel,infra,play,pc}.ts` |
+| Catálogos de Sistemas publicados en `window.SYSTEMS_*` | adaptadores `frontend/src/app/legacy/register-systems-{lowlevel,infra,play,pc}.ts`, que leen `getContent()` |
 | Sellos y progreso de Sistemas | `frontend/src/entities/systems-workshop/`, adaptador `frontend/src/app/legacy/register-systems-engine.ts` |
 | Interfaz de Sistemas | `frontend/systems.js`, `frontend/systems.css` |
 | Animaciones | `frontend/src/shared/lib/celebration.ts`, adaptador `frontend/src/app/legacy/register-effects.ts` |
 | Kits ZIP de proyecto | `frontend/src/features/download-project-kit/` (archivos puros y ZIP con fflate), `frontend/src/shared/lib/download-file.ts`, adaptador `frontend/src/app/legacy/register-project-kit.ts` |
-| Construcción y dependencias | `frontend/vite.config.ts`, `frontend/tsconfig.app.json`, `package.json`, `package-lock.json`; generador del currículo en `tools/content/` (`npm run curriculum`, validación, `build/curriculum.json` y oráculos de equivalencia) |
-| Servicio web, API y preview: Nginx, PHP-FPM, MySQL y migraciones | `frontend/Dockerfile`, `compose.yaml` (raíz, incluye `docker/compose.yaml`), `docker/compose.preview.yaml`, `docker/nginx/nginx.conf` |
+| Construcción y dependencias | `frontend/vite.config.ts` (su plugin copia el currículo y los avisos de licencia a `dist/`), `frontend/tsconfig.app.json`, `package.json`, `package-lock.json`; generador del currículo en `tools/content/` (`npm run curriculum`, validación, `build/curriculum.json` y oráculos de equivalencia) |
+| Servicio web, API y preview: Nginx, PHP-FPM, MySQL y migraciones | `dist/` entero, con el HTML y su contenido; `frontend/Dockerfile`, `compose.yaml` (raíz, incluye `docker/compose.yaml`), `docker/compose.preview.yaml`, `docker/nginx/nginx.conf` |
 | API Laravel del ADR 0004: rutas, configuración, migraciones, pruebas Pest e imagen PHP-FPM | `backend/api/` (reglas en `backend/api/AGENTS.md`) |
 | Identidad y acceso (ADR 0006, C3a) | `backend/api/app/Auth/` (contraseñas, invitaciones, bloqueo y sesiones), `backend/api/app/Http/` (`ApiCode`, `ApiError`, middleware y controladores), `backend/api/routes/api/` (un archivo por característica) y los contratos de `specs/004-c3-identidad-acceso/contracts/` |
 | Comprobaciones e investigación educativa | `qa/*-check.ts`, `qa/lib/`, `qa/fixtures/`, `qa/run-checks.ts`, `qa/research-*.md` |
@@ -60,10 +61,15 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 - La estructura plana es el estado legacy. Una reorganización a carpetas debe
   resolver un problema concreto y actualizar en el mismo cambio imports de
   `frontend/src/app/main.tsx`, scripts npm, QA, Docker y documentación.
-- `frontend/src/app/main.tsx` define temporalmente el orden de los imports legacy. Esos módulos
-  comparten contratos mediante `window.Taller*`; respetá sus dependencias hasta
+- La secuencia de etapas está en `frontend/src/app/main.tsx` (`runBoot`), y el orden de la cadena
+  legacy, en `frontend/src/app/boot/legacy-views.ts`, que evalúa cada módulo después de publicado el
+  contenido. Esos módulos comparten contratos mediante `window.Taller*`; respetá sus dependencias hasta
   reemplazarlas por imports explícitos dentro de cada funcionalidad.
   `qa/load-order-check.ts` declara esas dependencias.
+- Evaluar una fuente legacy no arranca nada (F2, unidad 3): `app.js` exporta `startApp()`, que
+  `legacy-views.ts` importa con nombre y llama una sola vez, después del último `import()`. `startApp()` llama
+  `TallerLab.init()` antes de abrir el recorrido, y una segunda llamada lanza. `load-order-check` exige
+  esa llamada después del último `import()` de la cadena.
 - Las fuentes legacy de `frontend/` son módulos ES: importan helpers de `frontend/src/shared/`
   (escape HTML, normalización de búsqueda, clon JSON, niveles) en lugar de copiarlos.
   Antes de escribir un helper, buscá si ya existe ahí.
@@ -75,9 +81,9 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
   definí el framework y el build objetivo, organizá componentes por funcionalidad
   y avanzá por vistas verificables. Conservá contenido, modelos, runner y progreso
   mediante contratos explícitos; adaptá los checks al build nuevo.
-- La salida autónoma `dist/index.html` es un contrato actual. Si la migración necesita
-  varios assets, definí ese cambio de entrega y actualizá Docker, Nginx, QA y README
-  antes de reemplazar el build. Un framework no exige compilar Rust/Go en el host.
+- La salida es `dist/index.html` más `dist/content/curriculum.<versión>.json` (A2), que A3 retira
+  cuando el contenido llegue de la API. El cambio de entrega ya está hecho en Docker, Nginx, QA y
+  README; otro asset nuevo sigue el mismo camino. Un framework no exige compilar Rust/Go en el host.
 - Preferí comandos y rutas portables entre Linux y macOS. Los comentarios siguen la regla de
   «Convenciones» en `AGENTS.md`.
 - Excluí credenciales, rutas de máquina, cachés, progreso exportado y estado generado.

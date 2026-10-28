@@ -353,6 +353,19 @@ test('if another tab changed the key after loading, write merges with merge(stor
   assert.deepEqual(store.write({ version: 1, items: ['local'] }).state.items, ['local']);
 });
 
+test('two raw instances on the same storage behave like two tabs: an item one removed comes back when the other saves', () => {
+  const storage = fakeStorage({ [KEY]: text(['a', 'b']) });
+  const first = openVersionedStore(KEY, options(storage, { merge: union }));
+  const second = openVersionedStore(KEY, options(storage, { merge: union }));
+  first.load();
+  second.load();
+  first.write({ version: 1, items: ['a'] });
+  assert.equal(storage.data.get(KEY), text(['a']));
+  const result = second.write({ version: 1, items: ['a', 'b', 'c'] });
+  assert.deepEqual(result.state.items, ['a', 'b', 'c']);
+  assert.equal(storage.data.get(KEY), text(['a', 'b', 'c']));
+});
+
 test('without merge, the local state wins over an external change', () => {
   const storage = fakeStorage({ [KEY]: text(['a']) });
   const store = openVersionedStore(KEY, { blank, parse, storage });

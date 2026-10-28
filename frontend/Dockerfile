@@ -7,9 +7,7 @@ RUN npm run build && QA_CHECKS=web npm test && npm run lint && npm run format:ch
 
 FROM nginxinc/nginx-unprivileged:stable-alpine@sha256:ed04ec1ff34502c339ee5c3ae3f855442398edc1d05591e2b98981dcbbd20b1e
 COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
-COPY --from=build /app/dist/index.html /usr/share/nginx/html/index.html
-COPY --from=build /app/frontend/EDITOR-LICENSES.txt /usr/share/nginx/html/EDITOR-LICENSES.txt
-COPY --from=build /app/frontend/THIRD-PARTY-NOTICES.txt /usr/share/nginx/html/THIRD-PARTY-NOTICES.txt
+COPY --from=build /app/dist/ /usr/share/nginx/html/
 EXPOSE 8080
 HEALTHCHECK --interval=15s --timeout=3s --start-period=5s --retries=3 CMD wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1
 ENTRYPOINT ["nginx"]

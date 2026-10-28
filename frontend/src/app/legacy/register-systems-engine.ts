@@ -1,4 +1,4 @@
-import { createSystemsEngine, type SystemsEngine } from '../../entities/systems-workshop';
+import { systemsEngine, type SystemsEngine } from '../../entities/systems-workshop';
 
 declare global {
   interface Window {
@@ -6,4 +6,4 @@ declare global {
   }
 }
 
-window.TallerSystemsEngine = createSystemsEngine();
+window.TallerSystemsEngine = systemsEngine;
