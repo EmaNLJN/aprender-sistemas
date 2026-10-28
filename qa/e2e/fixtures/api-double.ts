@@ -33,11 +33,12 @@ const CONTENT_VERSION = (
 
 function callOf(request: Request): ApiCall {
   const headers = request.headers();
+  const url = new URL(request.url());
   const text = request.postData();
   return {
     method: request.method(),
-    path: new URL(request.url()).pathname,
-    search: new URL(request.url()).search,
+    path: url.pathname,
+    search: url.search,
     xsrf: headers['x-xsrf-token'],
     user: headers['x-taller-user'],
     body: text ? (JSON.parse(text) as unknown) : undefined,
@@ -125,15 +126,16 @@ export class ApiDouble {
 
   private async replyTo(call: ApiCall): Promise<ApiReply> {
     const route = `${call.method} ${call.path}` as ApiRoute;
+    const queued = this.queued.get(route) ?? [];
+    const handler = this.handlers.get(route);
+    if (queued.length === 0 && handler === undefined) {
+      this.unhandled.push(route);
+      return { status: 404, json: errorBody('not_found') };
+    }
     if (MODIFYING.has(call.method) && call.xsrf !== this.xsrfValue()) {
       return { status: 419, json: errorBody('csrf_token_mismatch') };
     }
-    const next = this.queued.get(route)?.shift();
-    if (next !== undefined) return next;
-    const handler = this.handlers.get(route);
-    if (handler !== undefined) return handler(call);
-    this.unhandled.push(route);
-    return { status: 404, json: errorBody('not_found') };
+    return queued.shift() ?? handler!(call);
   }
 
   private installDefaults(): void {
