@@ -15,8 +15,8 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
-- [ ] Requirements are testable and unambiguous
+- [x] No [NEEDS CLARIFICATION] markers remain
+- [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
 - [x] All acceptance scenarios are defined
@@ -33,19 +33,13 @@
 
 ## Notes
 
-**Lo que queda abierto**
+**El clarify del 2026-10-28**
 
-- **Los marcadores.** Quedan cinco `[NEEDS CLARIFICATION]`, uno por pregunta:
-  - FR-010, por Q1 (la regla del spike y su umbral de peso);
-  - FR-034, por Q2 (la raíz única con el acceso de F11a y la compuerta de A2);
-  - FR-049, por Q3 (los globals de catálogos y su oráculo);
-  - FR-041, por Q4 (la forma de la ruta de administración y qué ve quien no es admin; FR-042 y FR-043 la siguen);
-  - FR-033, por Q5 (qué muestra el shell antes del contenido).
-
-  Hasta el clarify, cada uno usa como borrador la opción recomendada.
-- **«Requirements are testable and unambiguous»** queda sin marcar por esos cinco. El resto de los requisitos tiene una obligación comprobable cada uno, con su prueba en «Cómo se demuestra que nada cambió».
-- **Una aprobación pendiente que no es pregunta:** que `<body>` deje de llevar `aria-pressed` (FR-046). La red de F1 lo fija como `KNOWN DEFECT`, y la regla de la hoja de ruta pide la aprobación del usuario para editar ese E2E. Está en «Acciones del usuario».
-- **Lecturas que el usuario puede corregir:**
+- **Los marcadores.** Los cinco `[NEEDS CLARIFICATION]` que había (Q1 a Q5: FR-010, FR-034, FR-049, FR-041 y FR-033) se resolvieron en el clarify del 2026-10-28, todos con la opción recomendada, y ya no están en la spec. Las respuestas figuran en `## Clarifications`, y las opciones que no se eligieron, en «Alternativas consideradas».
+- **La partición (P4).** El usuario aceptó el corte en F10a, F10b y F10c. Cada requisito y cada criterio llevan la marca de su parte, y «La partición en F10a, F10b y F10c» tiene la tabla de las partes y la de sus requisitos.
+- **La aprobación de F10-A1.** El usuario aprobó que `<body>` deje de llevar `aria-pressed` y que `views.spec.ts`, de F1, se edite en un commit propio con TDD (FR-046). Salió de «Acciones del usuario» y está en «Clarifications».
+- **«Requirements are testable and unambiguous»** se marcó al responder el clarify: los cinco requisitos que dependían de una respuesta ya la tienen.
+- **Lecturas que el usuario puede corregir** (en «Clarifications», «Lecturas»):
   - qué cuenta cada número del menú (FR-032: Campaña, los mundos del idioma activo; Laboratorio, los ejercicios de los dos idiomas);
   - que el router conserve los remontajes de hoy en cada navegación y en cada cambio de idioma (FR-030);
   - que «Cerrar» la administración vuelva a la vista de la que vino (FR-043).
@@ -61,15 +55,15 @@
 - **«Non-technical stakeholders».** El lector es el dueño del taller, que conoce el mapa del front legacy y tomó las decisiones del épico. Para el alumno, el resultado es que no cambia nada, y la spec lo dice en su intención.
 - **«Technology-agnostic».** SC-002, SC-003, SC-005, SC-007, SC-008 y SC-012 nombran comandos, checks y búsquedas porque son lo que se ejecuta o se revisa. Los demás criterios hablan de pruebas, escrituras, montajes y diferencias.
 
-**El tamaño y la partición**
+**El tamaño y las partes**
 
-- **60 requisitos** (6 transversales y 54 propios) y 12 criterios, contra los 52 de C3a. La spec propone, sin aplicarlo, un corte en tres:
-  - F10a, el spike y la red: 13 requisitos con los transversales;
-  - F10b, la raíz única, el shell y el router: 51;
-  - F10c, la limpieza de `styles.css`: 8.
+- **60 requisitos** y 12 criterios, contra los 52 de C3a. Partida por P4, cada parte queda bajo ese tope, contando los requisitos que comparte:
+  - F10a, el spike y la red: 14 (7 propios);
+  - F10b, la raíz única, el shell y el router: 51 (43 propios);
+  - F10c, la limpieza de `styles.css`: 10 (2 propios).
 
-  El detalle está en «Partición propuesta».
-- **La cobertura.** Los 54 requisitos propios están en el «Cubre» de alguna historia; lo comprobó un script.
+  El clarify no sumó ni quitó requisitos.
+- **La cobertura.** Los 54 requisitos que no son transversales están en el «Cubre» de alguna historia; lo comprobó un script.
 
 **Qué se midió, sin ejecutar nada**
 
