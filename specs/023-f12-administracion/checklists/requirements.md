@@ -15,8 +15,8 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
-- [ ] Requirements are testable and unambiguous
+- [x] No [NEEDS CLARIFICATION] markers remain
+- [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
 - [x] All acceptance scenarios are defined
@@ -33,29 +33,26 @@
 
 ## Notes
 
-**Lo que queda abierto**
+**El clarify (2026-10-28)**
 
-- **Los marcadores.** Quedan tres `[NEEDS CLARIFICATION]`, uno por pregunta:
-  - FR-003, por Q1 (dónde se monta);
-  - FR-036, por Q3 (cómo se pide la contraseña);
-  - la línea de C4 en «Dependencias reales», por Q2 (si C4 espera a F12a). Q2 decide una dependencia de otro ítem, no un comportamiento de F12, así que no tiene un requisito propio.
-
-  Son tres, lo que admite la plantilla, y el coordinador admite hasta cinco preguntas. Cada pregunta trae sus opciones, una recomendada y su costo.
-- **La partición** no es una pregunta: está en su sección, con su recomendación, y el usuario la acepta o la cambia al responder.
-- **«Requirements are testable and unambiguous»** queda sin marcar hasta el clarify. FR-003 y FR-036 usan la opción recomendada como borrador, y los otros 59 ya se pueden probar.
+- **Sin marcadores.** El usuario respondió las tres preguntas y la partición, y la spec las registra en «Clarifications»:
+  - F12-Q1, diálogo ahora y ruta en F10: FR-003 sin marcador, y la sección «El compromiso con F10», con FR-062 y FR-063 y SC-010. El usuario eligió primero la ruta de F10 y la cambió por la consecuencia sobre C4; la secuencia está en «Alternativas consideradas»;
+  - F12-Q2, C4 espera a F12a: «Dependencias reales» sin marcador, y la relación con C4 y la hoja de ruta;
+  - F12-Q3, la contraseña a pedido: FR-036 sin marcador;
+  - P3, la partición aplicada en «La partición en F12a y F12b».
+- **«Requirements are testable and unambiguous»** queda marcado: ningún requisito depende ya de una pregunta abierta.
 
 **El conteo**
 
-- **61 requisitos,** con una sola obligación comprobable cada uno, contra los 52 de C3a. Por eso se propone un corte, sin aplicarlo:
+- **63 requisitos,** con una sola obligación comprobable cada uno, contra los 52 de C3a. Son los 61 de antes y dos nuevos del clarify (FR-062 y FR-063). La partición está aplicada (P3), y cada requisito lleva la marca de su parte:
 
 | Parte | Requisitos propios | Con los 12 transversales (FR-050 a FR-061) |
 | --- | --- | --- |
-| F12a · Sin correo (recomendada) | 43 (FR-001 a FR-043) | 55 |
+| F12a · Sin correo | 45 (FR-001 a FR-043, FR-062 y FR-063) | 57 |
 | F12b · Con correo (espera a C3c) | 6 (FR-044 a FR-049) | 18 |
 
-- **La alternativa en tres partes** queda en 28, 15 y 6 propios (40, 27 y 18 con los transversales): cuentas, invitaciones por enlace y correo.
-- **El motivo principal no es el tamaño:** la parte del correo no se puede entregar hasta C3c, cuyo plan espera el dominio. Es el mismo motivo de F11c.
-- **La cobertura:** cada requisito de FR-001 a FR-049 está en el «Cubre» de alguna historia (se comprobó con un script). Los transversales valen para todas, y sus criterios son SC-006, SC-007 y SC-009; FR-060 figura además en la historia 5.
+- **El motivo principal no es el tamaño:** la parte del correo no se puede entregar hasta C3c, cuyo plan espera el dominio. Es el mismo motivo de F11c. F12a queda por encima de 52 y por debajo de los 64 de F11a.
+- **La cobertura:** cada requisito propio (FR-001 a FR-049, FR-062 y FR-063) está en el «Cubre» de alguna historia, y los 63 llevan su marca de parte (se comprobó con un script). Los transversales valen para todas, y sus criterios son SC-006, SC-007 y SC-009; FR-060 figura además en la historia 5.
 
 **Excepciones deliberadas en «implementation details»**
 
@@ -65,7 +62,7 @@ F12 consume un contrato HTTP ya entregado, así que nombra lo que consume y dón
 2. Las herramientas que fijan otros:
    - React Hook Form, por pedido del usuario;
    - Vitest, Testing Library, fishery y Playwright, por el ADR 0008.
-3. Los elementos del shell y del arranque que limitan dónde se monta (`#main`, `.app-shell`, «Tu cuenta», `viewFromHash`) y las reglas de la red de F1 que Q1 mide.
+3. Los elementos del shell y del arranque que limitan dónde se monta (`#main`, `.app-shell`, «Tu cuenta», `viewFromHash`) y las reglas de la red de F1 contra las que se midieron las candidatas de F12-Q1.
 4. Los archivos de la API citados como evidencia del contrato (controladores, `FormRequest`, pruebas de Pest y `lang/es/`).
 
 Los nombres de módulos (`pages/admin`, `shared/api` y `entities/session`) son provisionales y los confirma el plan. No hay código.
@@ -102,7 +99,8 @@ Los nombres de módulos (`pages/admin`, `shared/api` y `entities/session`) son p
 **Discrepancias que la spec registra y no corrige**
 
 - La hoja de ruta del front dice que F12 depende de F11. Depende de F11a; F11b sólo comparte el pedido de la contraseña.
-- La hoja de ruta del front dice que F12 no bloquea a ningún otro ítem. Con Q2 en A, bloquea a C4.
+- La hoja de ruta del front dice que F12 no bloquea a ningún otro ítem. Desde F12-Q2, F12a bloquea a C4.
+- La hoja de ruta del front deja abierto dónde se monta F12; F12-Q1 lo cerró, y el «Entra» de F10 tiene que sumar la mudanza a una ruta enlazable.
 - La hoja de ruta del front todavía dice que el límite de `build-check` es de 2 500 000 caracteres; desde A2 es 1 250 000.
-- La compuerta G1 de C4 no nombra pantallas de administración, y su recorrido de la CSP no incluye las de F11 ni las de F12.
+- La compuerta G1 de C4 no nombra pantallas de administración (F12-Q2 la suma, y la enmienda la integra el coordinador), y su recorrido de la CSP no incluye las de F11 ni las de F12.
 - Las pantallas de C5 no tienen dueño en ninguna de las dos hojas de ruta.

@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-28
 
-**Status**: Borrador para el clarify: tres preguntas abiertas y una partición propuesta, sin aplicar; sin plan
+**Status**: Clarificada el 2026-10-28 (ver «Clarifications»): Q1 a Q3 respondidas y partida en F12a y F12b (P3), cada una con su plan; ninguno escrito todavía
 
 **Input**: Ítem **F12** de la hoja de ruta [`specs/front-react/roadmap.md`](../front-react/roadmap.md), «Administración»: las pantallas de administración de usuarios e invitaciones. Lo encargó el coordinador el 2026-10-28. No es un port, porque el legacy no tiene estas pantallas: son nuevas y consumen `/api/admin` de C3b, entregada en el PR #37 ([spec 010](../010-c3b-admin-ciclo-de-vida/spec.md) y su [contrato HTTP](../010-c3b-admin-ciclo-de-vida/contracts/http.md)). El contrato se contrastó con el código de la API en `master` (`e87772d`): `backend/api/routes/api/admin-users.php`, `admin-invitations.php` y `deletion.php`, los controladores de `app/Http/Controllers/Admin/` y `Account/DeletionController.php`, los `FormRequest` de `app/Http/Requests/Admin/`, los presentadores de `app/Admin/` (`PublishedAdminUser`, `PublishedInvitation` y `PageMeta`), `lang/es/` (`admin`, `invitations`, `api` y `account`) y las pruebas de Pest de `tests/Feature/Admin/` y `tests/Feature/Accounts/`. También toma lo que C3c ([spec 011](../011-c3c-correo/spec.md)) cambia cuando llega el correo, aunque C3c sólo está especificada. Depende de F11, cuya spec (015) está clarificada desde el 2026-10-28 y partida en F11a a F11d, pero sin merge: se cita por rama y ruta, sin enlace (`spec/f11-acceso`, `7a97bf74`, `specs/015-f11-acceso-cuenta/spec.md`). El código del front que se leyó es la integración local de F2a, A2 y F2b (`2b37caf`, sin rama publicada). Usa como base el [ADR 0008](../../docs/adr/0008-pruebas-del-front.md) (aceptado), el [ADR 0006](../../docs/adr/0006-modelo-de-datos-y-api-multiusuario.md) (en propuesta), el [mapa del front legacy](../front-react/legacy-map.md) y la [constitución](../../.specify/memory/constitution.md) 1.4.1.
 
@@ -26,7 +26,7 @@ F12 trae las pantallas que faltan. Desde el navegador, una persona con rol admin
 
 En ningún camino el taller se queda sin un admin activo. Cuando llegue el correo (C3c), las invitaciones también podrán salir por correo, y quien administra podrá mandarle a un alumno un enlace para elegir otra contraseña.
 
-Es para quien administra el taller. Indirectamente, también es para el alumno, que recibe su invitación sin pasar por la consola, y para C4, que expone el taller (Q2). El resto del taller no cambia: ni el aspecto, ni el comportamiento, ni el progreso guardado, ni las URL. Si esto no coincide con lo que se busca, es lo primero que hay que corregir: el resto de la spec sale de acá.
+Es para quien administra el taller. Indirectamente, también es para el alumno, que recibe su invitación sin pasar por la consola, y para C4, que espera a F12a para exponer el taller (F12-Q2). El resto del taller no cambia: ni el aspecto, ni el comportamiento, ni el progreso guardado, ni las URL. Si esto no coincide con lo que se busca, es lo primero que hay que corregir: el resto de la spec sale de acá.
 
 **Cómo sabremos que salió bien.**
 
@@ -37,12 +37,12 @@ Es para quien administra el taller. Indirectamente, también es para el alumno, 
 5. Todo se completa con el teclado, con el foco en su lugar después de cada diálogo, en un celular de 320 px y sin depender de una animación.
 6. La red E2E vigente pasa sin editar sus escenarios, y `dist/index.html` sigue bajo el límite de `build-check`, sin dependencias nuevas.
 
-**Entra** (entre paréntesis, la parte de la partición propuesta a la que va):
+**Entra** (entre paréntesis, la parte de la partición a la que va, P3):
 
-- **La entrada y el montaje (F12a):** la entrada «Administrar el taller» dentro de «Tu cuenta», sólo para el rol admin, y la administración como un diálogo propio (la ubicación depende de Q1).
+- **La entrada y el montaje (F12a):** la entrada «Administrar el taller» dentro de «Tu cuenta», sólo para el rol admin, y la administración como un diálogo propio a pantalla entera, que F10 convierte después en una ruta enlazable (F12-Q1). F12a deja la página lista para esa mudanza («El compromiso con F10»).
 - **Las cuentas (F12a):** la lista paginada, con búsqueda y filtros, y las acciones de deshabilitar, rehabilitar, hacer admin, quitar admin y borrar.
 - **Las invitaciones por enlace (F12a):** la lista paginada con sus filtros, invitar en lote, copiar los enlaces, reenviar (un enlace nuevo) y revocar.
-- **La contraseña reconfirmada (F12a):** pedirla cuando el servidor responde 423 y repetir la acción una vez (Q3).
+- **La contraseña reconfirmada (F12a):** pedirla cuando el servidor responde 423 y repetir la acción una vez (F12-Q3).
 - **Lo que llega con el correo (F12b, espera a C3c):** invitar y reenviar por correo, ver si una invitación salió o falló, pasar una invitación a enlace y mandarle a un alumno el enlace de recuperación.
 - **Las pruebas:** specs de Vitest con Testing Library y fishery; E2E con un Page Object de la administración sobre el doble de la API de F11a; la documentación que cambia con ellas, `docs/architecture.md` y `qa/AGENTS.md`.
 
@@ -51,7 +51,7 @@ Es para quien administra el taller. Indirectamente, también es para el alumno, 
 - **Las estadísticas del admin** (C5): `/api/admin/stats/*`, `GET /api/admin/runs`, `GET /api/admin/queue` y el resumen en la ficha de usuario.
 - **La API:** es de C3b y C3c. F12 no cambia ningún contrato, y lo que le falta a uno queda como hallazgo («Relación con otros ítems»).
 - **Las pantallas de cuenta** (F11): el ingreso, el alta, el aviso de privacidad, «Tu cuenta», «Salir», y descargar o borrar la propia cuenta.
-- **El router y la raíz única** (F10).
+- **El router, la raíz única y la ruta enlazable de la administración** (F10, con el compromiso de «El compromiso con F10»).
 - **Cambiar una vista legacy o `frontend/app.js`.**
 
 **Sin hacer a propósito (YAGNI):**
@@ -70,16 +70,20 @@ Es para quien administra el taller. Indirectamente, también es para el alumno, 
 
 - **Quien administra** (rol `admin`): opera el taller desde la administración. Un admin también estudia como cualquier cuenta (Q3 de C3a).
 - **El alumno** (rol `student`): no ve la administración. Recibe la invitación o, con C3c, el correo.
-- **Los ítems que se apoyan en F12:** C4, si Q2 lo decide así; F10, que decide su montaje definitivo; y C5, cuyas pantallas no tienen dueño todavía («Relación con otros ítems»).
+- **Los ítems que se apoyan en F12:** C4, que espera a F12a (F12-Q2); F10, que convierte la administración en una ruta enlazable (F12-Q1); y C5, cuyas pantallas no tienen dueño todavía («Relación con otros ítems»).
 
 ## Lo que pidió el usuario
 
-Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumptions) o una pregunta abierta.
+Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumptions).
 
 | Pedido | Fuente |
 | --- | --- |
 | F12 trae las pantallas de administración de usuarios e invitaciones, que consumen `/api/admin` de C3b, con sus E2E. Quedan fuera las estadísticas (C5), la API (C3b) y las pantallas de cuenta (F11) | Coordinador, 2026-10-05; hoja de ruta del front, F12 en «Ítems» y en «Alcance por ítem» |
-| Dónde se monta F12, y si C4 la espera, son decisiones abiertas | Hoja de ruta del front, «Decisiones abiertas», F12 (Q1 y Q2) |
+| Dónde se monta F12, y si C4 la espera, eran decisiones abiertas de la hoja de ruta; las cerró el clarify | Hoja de ruta del front, «Decisiones abiertas», F12 |
+| F12a entra como un diálogo a pantalla entera que se abre desde «Tu cuenta» y sólo ven los admins, y F10 lo convierte en una ruta enlazable | Usuario, clarify del 2026-10-28 (F12-Q1) |
+| C4 espera a F12a: su compuerta G1 suma «las pantallas de administración integradas» | Usuario, clarify del 2026-10-28 (F12-Q2) |
+| La contraseña se pide a pedido: ante un 423 se pide, se confirma y la acción se repite una vez | Usuario, clarify del 2026-10-28 (F12-Q3) |
+| F12 se parte en F12a, sin correo, y F12b, con correo, que espera a C3c como F11c | Usuario, clarify del 2026-10-28 (P3) |
 | F11 se parte en cuatro: F11a (el acceso, con las etapas de arranque, el cliente HTTP, el ingreso, el aviso de privacidad y «Tu cuenta»), F11b (la cuenta), F11c (el correo) y F11d (lo de D1) | Usuario, clarify del 2026-10-28 (P1) |
 | La sesión es obligatoria desde F11a. F11a introduce la etapa de sesión y «pedir el ingreso», trae el doble de la API como fixture automático de los E2E, con una sesión simulada por omisión, y la vista previa pasa `/api/` al stack | Usuario, clarify del 2026-10-28 (F11-Q1), y ruling C1 del coordinador |
 | La entrada a «Tu cuenta» es un botón de la barra superior, junto al selector de lenguaje, que abre un diálogo modal | Usuario, clarify del 2026-10-28 (F11-Q3) |
@@ -90,104 +94,39 @@ Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumption
 | Zustand y nuqs entran sólo con su primer caso real | `AGENTS.md` |
 | La spec, en español y sin código: como mucho cinco preguntas para el clarify, y un corte propuesto, sin aplicar, si pasa de 52 requisitos | Coordinador, 2026-10-28 |
 
-## Preguntas abiertas para el clarify
+## Clarifications
 
-Son tres, cada una con sus opciones y una recomendada. Se cierran en `/speckit-clarify`, y las respuestas pasan a una sección Clarifications.
+### Session 2026-10-28
 
-- **Los marcadores.** Cada pregunta deja un `[NEEDS CLARIFICATION]` donde decide algo, y esos tres son los únicos: Q1 en FR-003, Q3 en FR-036, y Q2 en «Dependencias reales», porque Q2 decide una dependencia de C4 y no un comportamiento de F12.
-- **La partición** no es una pregunta: está en su sección, con su recomendación, y el usuario la acepta o la cambia al responder.
-- **Hasta el clarify,** lo que depende de una pregunta usa como borrador la opción recomendada.
+El usuario respondió las tres preguntas y la partición de esta spec junto con el clarify de las otras specs del épico (`.coordinador/clarify-decisiones.md`, filas F12-Q1 a F12-Q3 y P3). Los requisitos, las historias, los criterios, los supuestos, los riesgos y la relación con otros ítems ya las aplican.
 
-### Q1. Dónde se monta la administración
+- Q: **Q1**, ¿dónde se monta la administración? → A: Diálogo ahora, ruta en F10 (F12-Q1). F12a entra como un diálogo a pantalla entera que se abre desde «Tu cuenta» y sólo ven los admins (la opción A), y F10 lo convierte en una ruta enlazable. Para F10 queda un compromiso, con lo que F12a deja listo para que la mudanza sea sólo el punto de montaje («El compromiso con F10»). El usuario eligió primero la ruta de F10 (la opción D); cuando se le mostró que, junto con Q2, eso dejaba a C4 detrás de todo el front, eligió esta. Decidió el usuario. (FR-003, FR-062 y FR-063)
+- Q: **Q2**, ¿C4 espera a F12? → A: Sí, a F12a (opción A, F12-Q2): la compuerta G1 de C4 suma «las pantallas de administración integradas». Descartadas: que C4 no espere y el camino con `curl` quede documentado (B), y que espere sólo a las cuentas (C). Decidió el usuario. («Dependencias reales» y «Relación con otros ítems», C4)
+- Q: **Q3**, ¿cómo se pide la contraseña reconfirmada? → A: A pedido (opción A, F12-Q3): ante un 423 se pide, se confirma y la acción se repite una sola vez. Descartadas: pedirla siempre antes, como F11b (B), y consultar `confirmed-password-status` antes de cada acción (C). Decidió el usuario. (FR-005 y FR-036 a FR-038)
+- Q: **P3**, ¿se parte F12? → A: Sí, en F12a (sin correo) y F12b (con correo, que espera a C3c, como F11c), la partición recomendada. Descartadas: tres partes (cuentas, invitaciones y correo) y no partir. Decidió el usuario. («La partición en F12a y F12b»)
 
-**Contexto.** Hasta F10, el shell es legacy, y las vistas viven en `#main` con la vista en el hash. Cada candidata se midió contra cuatro cosas:
+## La partición en F12a y F12b
 
-- **El contrato de las ocho vistas.** `viewFromHash` (`frontend/src/shared/config/url-grammar.ts`, de F2b) devuelve `recorrido` para cualquier hash que no sea una de las ocho vistas, y `app.js` lo usa en cada `hashchange`. Por esa misma razón, F11 descartó `#cuenta`.
-- **La red de F1.** `views.spec.ts` recorre las ocho vistas. El contrato de CSS mide `.navigation a:last-child` (R8) y el primer botón del documento (R4). F11a ya suma un botón a la barra superior.
-- **Lo que va a cambiar F10:** una raíz única con router, que decide si F11 y F12 pasan a ser rutas.
-- **El costo de tiempo:** de qué ítems pasa a depender F12.
+Decidida en el clarify (P3). Cada parte tiene su plan, sus tareas y su PR, como F11 y F7. Siguiendo el precedente de F2 y F7, el plan de F12a iría en `plan.md` y el de F12b en `plan-f12b.md`, porque los scripts de Spec Kit buscan `plan.md` por nombre; lo confirma el coordinador.
 
-(FR-003)
+| Parte | Qué entra | Depende de | La esperan |
+| --- | --- | --- | --- |
+| **F12a · Sin correo** | La entrada en «Tu cuenta» y el diálogo a pantalla entera; las cuentas (la lista, la búsqueda, los filtros, deshabilitar, rehabilitar, hacer y quitar admin, y borrar); las invitaciones por enlace (la lista, invitar en lote, copiar, reenviar y revocar); la contraseña reconfirmada a pedido; los errores comunes; la página lista para que F10 la mude a una ruta; sus specs y sus E2E | F11a; C3b (entregada) | C4 (F12-Q2) y F12b. F10 no la espera, pero la muda a una ruta si ya está integrada («El compromiso con F10») |
+| **F12b · Con correo** | Invitar y reenviar por correo, el estado del envío (`sentAt` y `sendFailedAt`), pasar a enlace, la recuperación de un tercero y el 503 `mail_unavailable` | F12a y C3c, que espera el dominio | Nadie |
 
-| Opción | Respuesta | Implicancias |
+**Los requisitos de cada parte** (cada uno lleva su marca en «Functional Requirements»):
+
+| Grupo | Requisitos | Cuántos |
 | --- | --- | --- |
-| **A (recomendada)** | Un diálogo propio, que se abre desde «Tu cuenta». Con rol admin, «Tu cuenta» muestra «Administrar el taller», que cierra «Tu cuenta» y abre la administración: un diálogo modal que ocupa la pantalla entera en todos los anchos, dibujado por la raíz de la cuenta de F11a, fuera de `#main` y de `.app-shell` | No toca el contrato de las ocho vistas, ni `app.js`, ni la barra lateral, ni la barra superior, y no suma una etapa al arranque: la red de F1 no ve nada. No espera a ningún port. F10 decide si pasa a ser una ruta: cambia el punto de montaje, no el código de la página. **Costo:** no se puede enlazar; recargar la cierra y pierde los filtros y los enlaces a la vista; las confirmaciones son diálogos sobre un diálogo (FR-005 limita a uno por vez); y una tabla de hasta 25 filas vive en un modal |
-| B | Una sección dentro del mismo diálogo «Tu cuenta»: con rol admin, el diálogo suma «Administración» junto a los datos de la cuenta, «Salir» y lo que agregan F11b y F11d | Tampoco toca el contrato de URL, ni el shell, ni el arranque, y no espera a ningún port. **Costo:** «Tu cuenta» ocupa la pantalla entera sólo en el celular (FR-067 de F11), así que en una computadora no entran una tabla de 25 filas con sus filtros ni el formulario de un lote, salvo que F11a pase el diálogo a pantalla entera para todos. Además, el diálogo que ya comparten F11a, F11b y F11d suma una sección que sólo ven los admins, y lo que se mueve en uno (el foco, el cierre, el aviso de «Salir») se prueba con los tres |
-| C | Una raíz previa al shell, como el acceso de F11. Una forma de URL nueva (por ejemplo, `?administracion`) que la etapa de sesión reconoce: con rol admin, monta la administración como una página entera y no evalúa el shell legacy; con otro rol, sigue el arranque de siempre | Página entera y enlazable, separada del legacy. **Costo:** una forma de URL nueva en la gramática de F2b y en `url-contract`; una rama en la etapa de sesión de F11a, que A3 también extiende, y una fila en `load-order-check`. Volver al taller recarga el documento, porque el shell no se evaluó, y entrar desde el shell exige un enlace que cambie la query, porque un cambio de hash solo cae en `#recorrido`. Hay que definir qué ve un alumno que llega por esa URL. F10 la convierte en una ruta |
-| D | Una ruta de la raíz única de F10 | Sin código de montaje que después se tire. **Costo:** F12 espera a F10, el final del tronco (F3 a F9 antes). Si C4 espera a F12 (Q2, A), C4 espera todo el port. La URL (probablemente una novena vista) la decide el router de F10 |
-| E | Una novena vista del shell legacy (`#administracion`), montada en `#main` por `app.js`, como el Atlas | Página entera y enlazable. **Costo:** cambia el contrato de las ocho vistas (`VIEWS` y `viewFromHash` de F2b), la navegación (R8 de la red) y `app.js`, que cada port toca y se integra de a uno; un enlace en el menú sólo para admins cambia lo que mide la red según el rol de la sesión simulada |
-| F | Como A, pero con su propio botón en la barra superior, sólo para admins | Un clic menos. **Costo:** cambia otra vez la barra superior, que F11a ya cambió (su riesgo 4); a 320 px tienen que entrar el selector de lenguaje, «Tu cuenta» y la nueva entrada; y lo que mide la red depende del rol de la sesión simulada |
-| Otra | Decir cuál | |
+| Sólo F12a | FR-001 a FR-043, FR-062 y FR-063 | 45 |
+| Sólo F12b | FR-044 a FR-049 | 6 |
+| Las dos, cada una sobre lo suyo (los transversales) | FR-050 a FR-061 | 12 |
 
-### Q2. ¿C4 espera a F12?
+F12a suma 57 requisitos con los transversales y F12b, 18. En total, la spec tiene 63, contra los 52 de C3a. F12a queda por encima de ese tope y por debajo de los 64 de F11a, que el usuario aceptó.
 
-**Contexto.**
-
-- **Lo que pide la spec de C4** ([008](../008-c4-exposicion/spec.md)): la compuerta G1 (su FR-044) exige C3 entregado (C3a, C3b y C3c), con una cuenta admin creada y el aviso de privacidad vigente. No nombra pantallas de administración.
-- **La hoja de ruta** dice «sin administración no se expone el taller». C3b ya entregó esa administración, pero sólo por HTTP.
-- **La consola** (`backend/api/routes/console.php` y `app/Console/Commands/`) tiene `taller:invite`, de a un email por vez, y `taller:password-reset-link`. No tiene ningún comando para listar cuentas, cambiar un rol o un estado, revocar una invitación ni borrar la cuenta de otra persona.
-- **Sin F12, eso queda en dos caminos:**
-  - HTTP con `curl`, una cookie de sesión, el token CSRF, `X-Taller-User` y la confirmación de la contraseña, como `check-admin-lifecycle.sh`;
-  - `tinker`, que se saltea la guardia del último admin y el evento `AccountRestricted` con el que B2 cancela las ejecuciones.
-- **Las dependencias:** F12a depende sólo de F11a, que A3 ya necesita, y C4 espera a A3 y al dominio de C3c.
-
-| Opción | Respuesta | Implicancias |
-| --- | --- | --- |
-| **A (recomendada)** | C4 espera a F12a: su compuerta G1 suma «las pantallas de administración integradas» | Con el taller expuesto, deshabilitar una cuenta comprometida o atender un pedido de supresión (Ley 25.326, art. 16) no exige `curl` ni `tinker`. Cuesta poco en calendario, porque F12a sólo espera a F11a, que va antes que A3 y, por lo tanto, antes que C4. **Costo:** C4 suma una dependencia en la otra hoja de ruta, y si F12a se demora, C4 espera. La hoja de ruta del front deja de decir que F12 no bloquea a nadie |
-| B | C4 no espera: el camino HTTP con un script como `check-admin-lifecycle.sh` queda como procedimiento documentado hasta F12 | C4 no suma nada. **Costo:** operar a mano con `curl` justo cuando apura (una cuenta comprometida), y la tentación de usar `tinker`, que se saltea la guardia y el evento |
-| C | C4 espera sólo a la parte de cuentas de F12 (listar, deshabilitar, rehabilitar y borrar), no a las invitaciones | La compuerta más chica que cubre la respuesta a un incidente; las invitaciones siguen por consola, de a una. **Costo:** obliga a la partición en tres partes («Partición propuesta») y a otro ciclo de plan |
-| Otra | Decir cuál | |
-
-La misma pregunta vale para F11b: sin ella, un alumno no tiene cómo descargar sus datos ni borrar su cuenta solo. F11 la dejó abierta, y este clarify no la responde.
-
-### Q3. Cómo se pide la contraseña reconfirmada
-
-**Contexto.**
-
-- **Qué rutas la piden.** C3b exige `password.confirm` para `PATCH` y `DELETE` de una cuenta, para la recuperación de un tercero y para crear o reenviar una invitación de admin. Listar, revocar y las invitaciones de alumnos no la piden. La matriz completa está en `backend/api/tests/Feature/Admin/PasswordConfirmMatrixTest.php`.
-- **Cuánto dura.** La confirmación vale 900 segundos (`AUTH_PASSWORD_TIMEOUT` en `config/auth.php`), y `GET /api/auth/confirmed-password-status` dice si sigue vigente.
-- **Un 423 no cambia nada.** En las rutas de `PATCH`, `DELETE` y la recuperación responde el middleware; al invitar y al reenviar, el controlador lo comprueba antes de escribir. Por eso es seguro repetir el pedido después de confirmar.
-- **El precedente de F11.** Para descargar los datos y borrar la cuenta, F11b pide la contraseña siempre, antes de la acción (sus «Alternativas consideradas»). Son dos acciones raras. La administración, en cambio, puede encadenar varias en pocos minutos.
-
-(FR-036)
-
-| Opción | Respuesta | Implicancias |
-| --- | --- | --- |
-| **A (recomendada)** | A pedido: la acción sale y, si el servidor responde 423, se pide la contraseña (en el mismo diálogo de la acción, si lo hay), se confirma con `POST /api/auth/confirm-password` y se repite la acción una sola vez | Decide el servidor, así que el front no copia la matriz, que en las invitaciones depende del rol. Quien deshabilita a varias cuentas seguidas escribe la contraseña una vez cada 15 minutos. **Costo:** dentro de esos 15 minutos, una acción destructiva sale sólo con su confirmación. El momento en que se pide es distinto del de F11b, aunque el componente sea el mismo |
-| B | Siempre, antes de cada acción sensible, como F11b | Cada acción sensible pide la contraseña. **Costo:** el front copia la matriz de C3b (y la mantiene si cambia); quien hace 40 cambios escribe la contraseña 40 veces |
-| C | Consultar `confirmed-password-status` antes de cada acción sensible y pedirla sólo si no está vigente | Pide la contraseña sólo cuando hace falta. **Costo:** un pedido más por acción; el front igual copia la matriz; y en el borde de los 900 segundos igual puede llegar un 423, así que también necesita el camino de A |
-| Otra | Decir cuál | |
-
-## Partición propuesta
-
-**Por qué se propone.** La spec tiene 61 requisitos, contra los 52 de C3a. Cada uno lleva una sola obligación que se puede comprobar. Además, la parte del correo no se puede entregar hasta C3c, cuyo plan espera el dominio. Es el mismo motivo por el que F11c quedó aparte (P1).
-
-**Recomendada: dos partes en una sola spec,** como F11 y F2. Cada parte tiene su plan y sus tareas, y toma su rango de requisitos.
-
-| Parte | Qué trae | Depende de | Requisitos propios | Con los 12 transversales (FR-050 a FR-061) |
-| --- | --- | --- | --- | --- |
-| **F12a · Sin correo** | La entrada y el montaje, las cuentas, las invitaciones por enlace, la contraseña reconfirmada y los errores comunes | F11a; C3b (entregada) | 43 (FR-001 a FR-043) | 55 |
-| **F12b · Con correo** | Invitar y reenviar por correo, el estado del envío, pasar a enlace, la recuperación de un tercero y el 503 | F12a y C3c, que espera el dominio | 6 (FR-044 a FR-049) | 18 |
-
-**Motivo.** El corte sigue la única dependencia externa que hay. F12a queda con 55, por debajo de los 64 de F11a, que el usuario aceptó. Cuentas e invitaciones comparten el diálogo, el pedido de la contraseña y el manejo de errores: separarlas suma un ciclo para quince requisitos.
-
-**Costo.**
-
-- Un segundo ciclo de plan y tareas, que se hace con C3c.
-- F12b toca las mismas pantallas después de F12a.
-- F12a es la segunda parte más grande del épico.
-
-**La alternativa: tres partes.**
-
-| Parte | Requisitos propios | Con los transversales |
-| --- | --- | --- |
-| F12a · Cuentas: la entrada, el montaje, las cuentas, la contraseña y los errores | 28 (FR-001 a FR-020 y FR-036 a FR-043) | 40 |
-| F12b · Invitaciones por enlace | 15 (FR-021 a FR-035) | 27 |
-| F12c · Con correo | 6 (FR-044 a FR-049) | 18 |
-
-Sirve si Q2 se responde con C, o si se quiere entregar antes lo que la consola no cubre: la consola invita de a una, pero no gestiona cuentas. Cuesta un ciclo más, y las invitaciones por enlace se integran después de las cuentas.
-
-**No partir** deja la parte del correo sin poder cerrarse hasta C3c.
+- **Qué gana:** F12a no espera ninguna decisión externa, y C4 la espera sólo a ella. F12b se planifica con C3c, cuando haya dominio.
+- **Qué cuesta:** un segundo ciclo de plan y tareas, y F12b toca las mismas pantallas después de F12a. F12a es la segunda parte más grande del épico.
+- **Descartadas:** tres partes (cuentas, invitaciones y correo, con 40, 27 y 18 requisitos con los transversales), que sumaba un ciclo para quince requisitos que comparten el diálogo, la contraseña y los errores; y no partir, que dejaba la parte del correo sin poder cerrarse hasta C3c.
 
 ## Dependencias reales
 
@@ -196,7 +135,7 @@ Sirve si Q2 se responde con C, o si se quiere entregar antes lo que la consola n
   - el cliente de la API, con el CSRF, `X-Taller-User`, los errores `{message, code}`, el reintento del 419, el 409 `account_mismatch`, el `Retry-After` y las respuestas que no son JSON;
   - el estado de la sesión, con `user.role` y `features`;
   - «pedir el ingreso» ante un 401;
-  - la raíz de la cuenta y el diálogo «Tu cuenta», donde va la entrada (Q1, A);
+  - la raíz de la cuenta y el diálogo «Tu cuenta», donde va la entrada (F12-Q1);
   - React Hook Form, que F11a instala con permiso;
   - el doble de la API de los E2E;
   - la pila de DOM de Vitest (`jsdom`, Testing Library y fishery), si F11a llega antes que F3.
@@ -206,22 +145,43 @@ Sirve si Q2 se responde con C, o si se quiere entregar antes lo que la consola n
 - **F11c:** no le cambia nada a F12. Pedir el enlace por correo es de la propia cuenta.
 - **F11d:** no le cambia nada.
 - **C3c:** le cambia a F12b lo que hace con `features.passwordReset: true` («Las invitaciones antes y después de C3c»).
-- **C4:** según Q2. **[NEEDS CLARIFICATION: Q2, si C4 espera a F12a]** Con el borrador (A), C4 espera a F12a, y F12 deja de ser un ítem que no bloquea a nadie.
-- **F10:** no es una dependencia. Decide si la administración sigue como diálogo o pasa a ser una ruta.
+- **C4 espera a F12a** (F12-Q2): su compuerta G1 suma «las pantallas de administración integradas». F12 deja de ser un ítem que no bloquea a nadie. C4 no espera a F12b.
+- **F10:** no es una dependencia de F12. Asume el compromiso de mudar la administración a una ruta enlazable (F12-Q1), sobre lo que F12a deja listo («El compromiso con F10»).
 
-## Dónde vive la administración (borrador con Q1, A)
+## Dónde vive la administración (F12-Q1)
 
 Esta sección fija la responsabilidad y el contrato. Los nombres de módulos son provisionales y los confirma el plan: por ejemplo, la página en `pages/admin`, sobre el cliente de `shared/api` y la sesión de `entities/session` de F11a.
 
 - **Quién la ve.** El front sabe el rol por `GET /api/session`: la cuenta publicada trae `{id, name, email, role, privacyAccepted}` (`backend/api/app/Auth/PublishedUser.php`; contrato de C3a). `features` sólo trae `passwordReset` y `registration`, y no dice nada del rol. Con `role: "admin"`, «Tu cuenta» muestra «Administrar el taller»; con cualquier otro rol, ese elemento no existe.
 - **El servidor es la autoridad.** Ocultar la entrada no protege nada: toda ruta de `/api/admin` exige sesión, el email verificado y el rol admin, y responde 403 `forbidden` a cualquier otro (C3b FR-031). El código de la administración viaja a todos en el mismo `dist/index.html` hasta que C4 retire `vite-plugin-singlefile`. No trae secretos: sólo nombra rutas que ya publican los contratos.
-- **Qué ve un alumno que llega por URL.** No hay URL: con el borrador, la administración no tiene una forma de URL propia, así que no hay nada a qué llegar. Si un alumno pide `/api/admin` por su cuenta, recibe 403.
+- **Qué ve un alumno que llega por URL.** Hasta F10 no hay URL: el diálogo no tiene una forma de URL propia, así que no hay nada a qué llegar. Con la ruta de F10, qué ve un alumno lo decide F10 («El compromiso con F10»). En los dos casos, si un alumno pide `/api/admin` por su cuenta, recibe 403.
 - **Si la cuenta pierde el rol con la administración abierta.** El servidor lee el rol en cada pedido, así que el siguiente responde 403 `forbidden`. La administración muestra el mensaje, explica que la cuenta puede haber perdido el rol y ofrece «Recargar». La recarga arranca el taller con la sesión vigente, ya sin la entrada.
 - **El montaje.** «Administrar el taller» cierra «Tu cuenta» y abre la administración: un diálogo modal que ocupa la pantalla entera en todos los anchos, dibujado por la raíz de la cuenta, fuera de `#main` y de `.app-shell`. No cambia la URL, la vista ni el historial. Tiene dos secciones, «Cuentas» e «Invitaciones», y abre en «Cuentas».
 - **Los diálogos.** Sobre la administración se abre como mucho un diálogo a la vez: la confirmación de una acción, el pedido de la contraseña o el ingreso de F11a ante un 401. Si una acción ya confirmada recibe un 423, la contraseña se pide en el mismo diálogo de la confirmación. Si recibe un 401, la confirmación se cierra diciendo que no se hizo ningún cambio (un 401 no llega a la acción), y recién entonces aparece el ingreso. Con la misma cuenta, la administración sigue donde estaba, y la acción se vuelve a pedir a mano.
 - **Cómo se cierra.** Con «Cerrar» o con Esc, el foco vuelve a la entrada «Tu cuenta» de la barra superior, y el shell queda como estaba. Si hay enlaces a la vista, primero pide confirmación (FR-031).
 - **Qué deja en el documento.** Con la administración cerrada, nada: ni elementos en el shell ni regiones `alert` o `status`. La red ubica el error de la compuerta con `getByRole('alert')` (FR-076 de F11).
-- **F10** decide si pasa a ser una ruta de la raíz única o sigue como diálogo. La página no cambia; cambia el punto de montaje.
+- **F10** la convierte en una ruta enlazable de la raíz única. La página no cambia; cambia el punto de montaje (sección siguiente).
+
+## El compromiso con F10
+
+El clarify (F12-Q1) decidió que F12a entre como un diálogo y que **F10 lo convierta en una ruta enlazable**. Esta sección es el compromiso que asume F10 y lo que F12a deja listo para que la mudanza toque sólo el punto de montaje.
+
+**Lo que hace F10** (va a su spec, que todavía no existe; la hoja de ruta lo suma a su «Entra»):
+
+- Monta la administración en una ruta de la raíz única, que se puede enlazar y que sobrevive a una recarga. La forma de la URL la decide su router, dentro del spike que ya tiene previsto: probablemente una vista más en el hash.
+- La URL lleva sólo la vista y, si F10 quiere, la sección («Cuentas» o «Invitaciones»). Nunca un nombre, un email, un filtro con datos de una persona ni un enlace (FR-008).
+- Decide qué ve en esa URL una cuenta que no es admin. El servidor sigue siendo la autoridad: cualquier pedido de esa cuenta a `/api/admin` recibe 403.
+- Reemplaza el diálogo y su entrada en «Tu cuenta» por la ruta y su enlace, y reescribe como escenarios de la ruta los E2E que abren y cierran el diálogo (la historia 5, escenarios 2 y 3). Es un cambio de comportamiento, con TDD y en su propio commit, como pide la hoja de ruta.
+
+**Lo que F12a deja listo** (FR-062 y FR-063):
+
+- **La página separada del diálogo.** La administración (sus secciones, sus listas, sus formularios y los diálogos de sus acciones) vive en su propio slice, provisionalmente `pages/admin`, con una API pública chica. El diálogo a pantalla entera y su entrada en «Tu cuenta» son un contenedor fino, la única pieza que F10 reemplaza.
+- **Lo que el contenedor le pasa a la página:** la sección inicial y qué hacer al cerrar. Hoy, el diálogo abre en «Cuentas» y cerrar lo cierra. Con F10, la ruta pasa la sección de la URL, y cerrar navega. La página no importa nada de «Tu cuenta», de la raíz de la cuenta ni de `<dialog>`.
+- **La condición de admin en un solo lugar,** que lee `user.role` de la sesión de F11a. La usan la entrada de hoy y la ruta de F10.
+- **Ningún estado atado a la vida del diálogo** más allá de descartarse al cerrar (FR-008). Con la ruta, se descarta al salir de ella.
+- **Los E2E listos para la mudanza:** el Page Object de la administración la abre desde un único método, el único que F10 cambia. Los demás escenarios ubican la administración por su título y sus roles accesibles, no por el diálogo que la contiene.
+
+**Qué pasa si F10 llega antes que F12a.** Es improbable, porque F12a sólo espera a F11a y F10 es el final del tronco. Si pasara, la administración nace directamente como una ruta, y el plan de F12a lo consulta con el usuario (Assumptions).
 
 ## Las invitaciones antes y después de C3c
 
@@ -443,7 +403,7 @@ Quien administra ve qué invitaciones siguen vigentes, cuáles vencieron y quié
 
 Quien administra busca una cuenta, la deshabilita o la rehabilita y le da o le quita el rol de admin. La propia cuenta no ofrece esas acciones, y si dos admins se cruzan y el cambio dejaría al taller sin admin, el servidor lo frena y la pantalla lo explica.
 
-**Why this priority**: es lo que la consola no hace y lo que hace falta ante una cuenta comprometida (Q2).
+**Why this priority**: es lo que la consola no hace y lo que hace falta ante una cuenta comprometida, y lo que C4 espera para exponer el taller (F12-Q2).
 
 **Independent Test**: con el doble, buscar, filtrar y paginar; deshabilitar y rehabilitar; promover y degradar; provocar un 409 `last_admin`, un 422 por una cuenta que se está borrando y un 429.
 
@@ -483,9 +443,9 @@ Una persona pide que borren su cuenta, o se va del aula, y quien administra la b
 
 Un alumno usa el taller sin enterarse de que existe la administración. Un admin la encuentra en «Tu cuenta». Si la cuenta pierde el rol mientras la usa, el siguiente pedido lo dice.
 
-**Why this priority**: protege la red de F1 y deja claro que la autoridad es el servidor.
+**Why this priority**: protege la red de F1, deja claro que la autoridad es el servidor y deja la página lista para que F10 la mude a una ruta (F12-Q1).
 
-**Independent Test**: con el doble, abrir «Tu cuenta» con una sesión de alumno y con una de admin; responder 403 `forbidden` y 401 a pedidos de la administración.
+**Independent Test**: con el doble, abrir «Tu cuenta» con una sesión de alumno y con una de admin; responder 403 `forbidden` y 401 a pedidos de la administración; en una spec de componente, montar la página sola, sin el diálogo.
 
 **Acceptance Scenarios**:
 
@@ -495,7 +455,10 @@ Un alumno usa el taller sin enterarse de que existe la administración. Un admin
 4. **Dada** una cuenta que perdió el rol en el medio, **cuando** un pedido responde 403 `forbidden`, **entonces** se ve el mensaje del servidor, la explicación y «Recargar», y no sale ningún reintento.
 5. **Dada** la sesión vencida y una confirmación abierta, **cuando** la acción recibe 401, **entonces** la confirmación se cierra con «No se hizo ningún cambio.», se abre el ingreso de F11a sin cerrar la administración y, si entra la misma cuenta, la administración sigue donde estaba.
 
-*Cubre: FR-001 a FR-005, FR-007, FR-008, FR-039 y FR-060; SC-002.*
+6. **Dada** la página de la administración montada sola en una spec de componente, fuera del diálogo y de «Tu cuenta», con «Invitaciones» como sección inicial, **cuando** se dibuja y se usa «Cerrar», **entonces** muestra «Invitaciones» y llama a la acción de cierre que recibió, sin abrir ni cerrar ningún `<dialog>`.
+7. **Dado** el Page Object de la administración, **cuando** un escenario la necesita abierta, **entonces** la abre con su único método de apertura, y los demás escenarios la ubican por su título y sus roles accesibles, no por el diálogo.
+
+*Cubre: FR-001 a FR-005, FR-007, FR-008, FR-039, FR-060, FR-062 y FR-063; SC-002 y SC-010.*
 
 ---
 
@@ -503,7 +466,7 @@ Un alumno usa el taller sin enterarse de que existe la administración. Un admin
 
 Quien administra encadena varios cambios. La primera acción sensible le pide la contraseña, y las siguientes, durante 15 minutos, no.
 
-**Why this priority**: sin esto, cada acción sensible termina en un 423 sin salida. Tiene P2 porque depende de Q3.
+**Why this priority**: sin esto, cada acción sensible termina en un 423 sin salida. Tiene P2 porque sólo aparece una vez cada 15 minutos (F12-Q3).
 
 **Independent Test**: con el doble, responder 423 a la primera acción y 200 después; equivocar la contraseña; cancelar; agotar el límite de la confirmación.
 
@@ -566,93 +529,100 @@ Los transversales (FR-050 a FR-061) valen para todas las historias. Sus criterio
 
 ### Functional Requirements
 
+Cada requisito lleva entre paréntesis la parte que lo entrega (P3): *(F12a)*, *(F12b)* o *(F12a y F12b)*, que son los transversales: cada parte los cumple sobre lo suyo. Las listas están en «La partición en F12a y F12b».
+
 **Entrada, montaje y protección (F12a)**
 
-- **FR-001**: La entrada «Administrar el taller» DEBE aparecer en «Tu cuenta» sólo cuando la sesión trae `user.role: "admin"`. Con otro rol, o sin sesión, NO DEBE existir en el documento. *(C3a, `GET /api/session`; `PublishedUser`)*
-- **FR-002**: Ante un 403 `forbidden` en cualquier pedido de la administración, DEBE mostrar el mensaje del servidor, explicar que la cuenta puede haber perdido el rol de admin y ofrecer «Recargar», sin reintentar: el servidor es la autoridad, y ocultar la entrada no protege nada. *(C3b FR-031)*
-- **FR-003**: La administración DEBE abrirse como un diálogo modal propio, que ocupa la pantalla entera en todos los anchos, dibujado por la raíz de la cuenta de F11a, fuera de `#main` y de `.app-shell`, sin cambiar la URL, la vista ni el historial. **[NEEDS CLARIFICATION: Q1, dónde se monta la administración]**
-- **FR-004**: Abrir la administración DEBE cerrar «Tu cuenta». Cerrarla, con su botón o con Esc, DEBE devolver el foco a la entrada «Tu cuenta» y dejar el shell como estaba, sin recargar.
-- **FR-005**: Sobre la administración DEBE haber como mucho un diálogo a la vez: una confirmación, el pedido de la contraseña o el ingreso de F11a ante un 401. Si una acción ya confirmada recibe un 423, la contraseña DEBE pedirse en el mismo diálogo de la confirmación. Si recibe un 401 (también en la confirmación de la contraseña o en el reintento), ese diálogo DEBE cerrarse diciendo que no se hizo ningún cambio antes de pedir el ingreso.
-- **FR-006**: Al cerrarse un diálogo, el foco DEBE volver al control que lo abrió o, si ese control ya no existe (porque la fila salió de la lista), al título de su tabla.
-- **FR-007**: Con la administración cerrada, F12 NO DEBE dejar nada en el documento: ni elementos nuevos en el shell (la barra lateral, la barra superior, la navegación), ni regiones `alert` o `status`. *(F11 FR-076)*
-- **FR-008**: Los nombres, los emails y los enlaces de la administración NO DEBEN guardarse en `localStorage`, `sessionStorage`, una cookie propia, la URL, el historial ni un estado global, ni escribirse en la consola: viven en la memoria del diálogo y se descartan al cerrarlo.
+- **FR-001** *(F12a)*: La entrada «Administrar el taller» DEBE aparecer en «Tu cuenta» sólo cuando la sesión trae `user.role: "admin"`. Con otro rol, o sin sesión, NO DEBE existir en el documento. *(C3a, `GET /api/session`; `PublishedUser`)*
+- **FR-002** *(F12a)*: Ante un 403 `forbidden` en cualquier pedido de la administración, DEBE mostrar el mensaje del servidor, explicar que la cuenta puede haber perdido el rol de admin y ofrecer «Recargar», sin reintentar: el servidor es la autoridad, y ocultar la entrada no protege nada. *(C3b FR-031)*
+- **FR-003** *(F12a)*: La administración DEBE abrirse como un diálogo modal propio, que ocupa la pantalla entera en todos los anchos, dibujado por la raíz de la cuenta de F11a, fuera de `#main` y de `.app-shell`, sin cambiar la URL, la vista ni el historial. F10 lo reemplaza por una ruta enlazable («El compromiso con F10»). *(F12-Q1)*
+- **FR-004** *(F12a)*: Abrir la administración DEBE cerrar «Tu cuenta». Cerrarla, con su botón o con Esc, DEBE devolver el foco a la entrada «Tu cuenta» y dejar el shell como estaba, sin recargar.
+- **FR-005** *(F12a)*: Sobre la administración DEBE haber como mucho un diálogo a la vez: una confirmación, el pedido de la contraseña o el ingreso de F11a ante un 401. Si una acción ya confirmada recibe un 423, la contraseña DEBE pedirse en el mismo diálogo de la confirmación. Si recibe un 401 (también en la confirmación de la contraseña o en el reintento), ese diálogo DEBE cerrarse diciendo que no se hizo ningún cambio antes de pedir el ingreso.
+- **FR-006** *(F12a)*: Al cerrarse un diálogo, el foco DEBE volver al control que lo abrió o, si ese control ya no existe (porque la fila salió de la lista), al título de su tabla.
+- **FR-007** *(F12a)*: Con la administración cerrada, F12 NO DEBE dejar nada en el documento: ni elementos nuevos en el shell (la barra lateral, la barra superior, la navegación), ni regiones `alert` o `status`. *(F11 FR-076)*
+- **FR-008** *(F12a)*: Los nombres, los emails y los enlaces de la administración NO DEBEN guardarse en `localStorage`, `sessionStorage`, una cookie propia, la URL, el historial ni un estado global, ni escribirse en la consola: viven en la memoria del diálogo y se descartan al cerrarlo.
 
 **Cuentas (F12a)**
 
-- **FR-009**: «Cuentas» DEBE listar con `GET /api/admin/users`, de a 25 y en el orden por omisión de la API (por nombre), con el nombre, el email, el rol, el estado, la fecha de alta en la hora local y la marca «Sin verificar» cuando `emailVerified` es `false`. *(C3b FR-032)*
-- **FR-010**: DEBE buscar por nombre o email, con hasta 80 caracteres, al enviar la búsqueda y nunca en cada tecla, porque el límite es de 120 pedidos por minuto por usuario. *(contrato de C3b; `throttle:admin`)*
-- **FR-011**: DEBE filtrar por rol (admin o alumno) y por estado (activa, deshabilitada o borrándose), combinar los filtros con la búsqueda y volver a la primera página al cambiar cualquiera de ellos.
-- **FR-012**: DEBE paginar con «Anterior» y «Siguiente» y decir la página, el total de páginas y el de cuentas (`meta`). Si una página que no es la primera llega vacía, DEBE pedir `lastPage` una sola vez.
-- **FR-013**: Sin resultados, DEBE decirlo y ofrecer limpiar la búsqueda y los filtros.
-- **FR-014**: En las dos secciones, mientras la lista carga, DEBE decirlo. Si no carga, DEBE ofrecer «Reintentar» sin perder la búsqueda, los filtros ni la página.
-- **FR-015**: Cada fila DEBE ofrecer sólo las acciones que le corresponden según la tabla «Qué acciones ofrece cada fila»: la propia cuenta, marcada «(vos)», y una cuenta que se está borrando no ofrecen ninguna.
-- **FR-016**: Deshabilitar, rehabilitar, hacer admin y quitar admin DEBEN pedir confirmación con el texto que dice qué cambia, y recién entonces llamar a `PATCH /api/admin/users/{id}` con `status` o `role`. *(C3b FR-033 y FR-035)*
-- **FR-017**: Borrar una cuenta DEBE pedir confirmación con el texto que dice qué se borra y que no se deshace, y habilitar el botón sólo después de marcar «Entiendo que no se puede deshacer.», antes de llamar a `DELETE /api/admin/users/{id}`. *(C3b FR-044 y FR-049)*
-- **FR-018**: Con un 200 de `PATCH`, DEBE actualizar la fila con la cuenta que devuelve el servidor y anunciar el cambio.
-- **FR-019**: Con un 202 al borrar, DEBE mostrar el mensaje del servidor y dejar la fila en «Borrándose» (`data.status`), sin acciones.
-- **FR-020**: Ante un 409 `last_admin` o un 422 (`errors.status`, `errors.role` o `errors.user`), DEBE mostrar el mensaje del servidor en el diálogo de la acción, no cambiar la fila y volver a pedir la página. *(C3b FR-034)*
+- **FR-009** *(F12a)*: «Cuentas» DEBE listar con `GET /api/admin/users`, de a 25 y en el orden por omisión de la API (por nombre), con el nombre, el email, el rol, el estado, la fecha de alta en la hora local y la marca «Sin verificar» cuando `emailVerified` es `false`. *(C3b FR-032)*
+- **FR-010** *(F12a)*: DEBE buscar por nombre o email, con hasta 80 caracteres, al enviar la búsqueda y nunca en cada tecla, porque el límite es de 120 pedidos por minuto por usuario. *(contrato de C3b; `throttle:admin`)*
+- **FR-011** *(F12a)*: DEBE filtrar por rol (admin o alumno) y por estado (activa, deshabilitada o borrándose), combinar los filtros con la búsqueda y volver a la primera página al cambiar cualquiera de ellos.
+- **FR-012** *(F12a)*: DEBE paginar con «Anterior» y «Siguiente» y decir la página, el total de páginas y el de cuentas (`meta`). Si una página que no es la primera llega vacía, DEBE pedir `lastPage` una sola vez.
+- **FR-013** *(F12a)*: Sin resultados, DEBE decirlo y ofrecer limpiar la búsqueda y los filtros.
+- **FR-014** *(F12a)*: En las dos secciones, mientras la lista carga, DEBE decirlo. Si no carga, DEBE ofrecer «Reintentar» sin perder la búsqueda, los filtros ni la página.
+- **FR-015** *(F12a)*: Cada fila DEBE ofrecer sólo las acciones que le corresponden según la tabla «Qué acciones ofrece cada fila»: la propia cuenta, marcada «(vos)», y una cuenta que se está borrando no ofrecen ninguna.
+- **FR-016** *(F12a)*: Deshabilitar, rehabilitar, hacer admin y quitar admin DEBEN pedir confirmación con el texto que dice qué cambia, y recién entonces llamar a `PATCH /api/admin/users/{id}` con `status` o `role`. *(C3b FR-033 y FR-035)*
+- **FR-017** *(F12a)*: Borrar una cuenta DEBE pedir confirmación con el texto que dice qué se borra y que no se deshace, y habilitar el botón sólo después de marcar «Entiendo que no se puede deshacer.», antes de llamar a `DELETE /api/admin/users/{id}`. *(C3b FR-044 y FR-049)*
+- **FR-018** *(F12a)*: Con un 200 de `PATCH`, DEBE actualizar la fila con la cuenta que devuelve el servidor y anunciar el cambio.
+- **FR-019** *(F12a)*: Con un 202 al borrar, DEBE mostrar el mensaje del servidor y dejar la fila en «Borrándose» (`data.status`), sin acciones.
+- **FR-020** *(F12a)*: Ante un 409 `last_admin` o un 422 (`errors.status`, `errors.role` o `errors.user`), DEBE mostrar el mensaje del servidor en el diálogo de la acción, no cambiar la fila y volver a pedir la página. *(C3b FR-034)*
 
 **Invitaciones (F12a)**
 
-- **FR-021**: «Invitaciones» DEBE listar con `GET /api/admin/invitations`, de a 25 y en el orden de la API, con el email, el rol, el vencimiento en la hora local (o «Vencida», con `expired`), quién la creó («Consola o cuenta borrada» si `invitedBy` es `null`) y la fecha de creación. Nunca hay un token. *(C3b FR-037)*
-- **FR-022**: Las invitaciones de admin vigentes DEBEN destacarse con un texto, «Admin pendiente», y no sólo con color, porque sin correo nadie recibe un aviso. *(C3b FR-037)*
-- **FR-023**: DEBE filtrar por rol y por estado (vigentes o vencidas), con la paginación de FR-012.
-- **FR-024**: «Invitar» DEBE pedir los emails en un campo de varias líneas, separados por saltos de línea, comas o espacios, y el rol: alumno por omisión, o admin.
-- **FR-025**: El cliente DEBE validar sólo que haya entre 1 y 100 emails. La forma, el largo y los repetidos los decide el servidor, que canonicaliza.
-- **FR-026**: DEBE enviar `POST /api/admin/invitations` con los emails en el orden escrito, el rol y `delivery: "link"`.
-- **FR-027**: Ante un 422, los errores de `emails` y de cada `emails.<n>` DEBEN ir al campo de los emails, cada uno precedido por el email de la posición `n` (desde 0) de la lista enviada. Los de `role` y `delivery` van al error general. *(`InviteRequest`; `InvitationsEndpointTest.php`)*
-- **FR-028**: Con un 200, DEBE mostrar un resultado por email, en el orden de la respuesta y con el email que devuelve el servidor, con el texto de `created`, `renewed`, `user_exists` o `invitation_pending` y el vencimiento de cada invitación creada o renovada. *(C3b FR-038)*
-- **FR-029**: Cada enlace DEBE verse en un campo de sólo lectura con «Copiar». Si hay más de uno, DEBE ofrecer «Copiar todos los enlaces», con un renglón por invitación (el email y el enlace). Al copiar, DEBE anunciar «Copiado.».
-- **FR-030**: Si el portapapeles no está disponible, el enlace DEBE quedar seleccionable, y la pantalla DEBE decir cómo copiarlo a mano.
-- **FR-031**: Mientras haya enlaces a la vista, DEBE avisar que no se vuelven a mostrar y cómo conseguir otro. Cerrar el resultado o la administración DEBE pedir confirmación.
-- **FR-032**: «Reenviar» DEBE pedir confirmación, porque el enlace anterior deja de valer, llamar a `POST /api/admin/invitations/{id}/resend` con `delivery: "link"` y mostrar el enlace nuevo con las reglas de FR-029 a FR-031. *(C3b FR-039)*
-- **FR-033**: «Revocar» DEBE pedir confirmación y llamar a `DELETE /api/admin/invitations/{id}`. Con un 204, la invitación sale de la lista. *(C3b FR-039)*
-- **FR-034**: Después de invitar, reenviar o revocar, la lista de invitaciones DEBE volver a pedirse.
-- **FR-035**: Mientras `features.passwordReset` sea `false`, la administración NO DEBE ofrecer la entrega por correo, el reenvío por correo ni la recuperación de un tercero, que hasta C3c responden siempre 503. DEBE decir, en cambio, que los enlaces se entregan a mano y que la recuperación sale por la consola. *(C3b FR-056; C3c FR-008)*
+- **FR-021** *(F12a)*: «Invitaciones» DEBE listar con `GET /api/admin/invitations`, de a 25 y en el orden de la API, con el email, el rol, el vencimiento en la hora local (o «Vencida», con `expired`), quién la creó («Consola o cuenta borrada» si `invitedBy` es `null`) y la fecha de creación. Nunca hay un token. *(C3b FR-037)*
+- **FR-022** *(F12a)*: Las invitaciones de admin vigentes DEBEN destacarse con un texto, «Admin pendiente», y no sólo con color, porque sin correo nadie recibe un aviso. *(C3b FR-037)*
+- **FR-023** *(F12a)*: DEBE filtrar por rol y por estado (vigentes o vencidas), con la paginación de FR-012.
+- **FR-024** *(F12a)*: «Invitar» DEBE pedir los emails en un campo de varias líneas, separados por saltos de línea, comas o espacios, y el rol: alumno por omisión, o admin.
+- **FR-025** *(F12a)*: El cliente DEBE validar sólo que haya entre 1 y 100 emails. La forma, el largo y los repetidos los decide el servidor, que canonicaliza.
+- **FR-026** *(F12a)*: DEBE enviar `POST /api/admin/invitations` con los emails en el orden escrito, el rol y `delivery: "link"`.
+- **FR-027** *(F12a)*: Ante un 422, los errores de `emails` y de cada `emails.<n>` DEBEN ir al campo de los emails, cada uno precedido por el email de la posición `n` (desde 0) de la lista enviada. Los de `role` y `delivery` van al error general. *(`InviteRequest`; `InvitationsEndpointTest.php`)*
+- **FR-028** *(F12a)*: Con un 200, DEBE mostrar un resultado por email, en el orden de la respuesta y con el email que devuelve el servidor, con el texto de `created`, `renewed`, `user_exists` o `invitation_pending` y el vencimiento de cada invitación creada o renovada. *(C3b FR-038)*
+- **FR-029** *(F12a)*: Cada enlace DEBE verse en un campo de sólo lectura con «Copiar». Si hay más de uno, DEBE ofrecer «Copiar todos los enlaces», con un renglón por invitación (el email y el enlace). Al copiar, DEBE anunciar «Copiado.».
+- **FR-030** *(F12a)*: Si el portapapeles no está disponible, el enlace DEBE quedar seleccionable, y la pantalla DEBE decir cómo copiarlo a mano.
+- **FR-031** *(F12a)*: Mientras haya enlaces a la vista, DEBE avisar que no se vuelven a mostrar y cómo conseguir otro. Cerrar el resultado o la administración DEBE pedir confirmación.
+- **FR-032** *(F12a)*: «Reenviar» DEBE pedir confirmación, porque el enlace anterior deja de valer, llamar a `POST /api/admin/invitations/{id}/resend` con `delivery: "link"` y mostrar el enlace nuevo con las reglas de FR-029 a FR-031. *(C3b FR-039)*
+- **FR-033** *(F12a)*: «Revocar» DEBE pedir confirmación y llamar a `DELETE /api/admin/invitations/{id}`. Con un 204, la invitación sale de la lista. *(C3b FR-039)*
+- **FR-034** *(F12a)*: Después de invitar, reenviar o revocar, la lista de invitaciones DEBE volver a pedirse.
+- **FR-035** *(F12a)*: Mientras `features.passwordReset` sea `false`, la administración NO DEBE ofrecer la entrega por correo, el reenvío por correo ni la recuperación de un tercero, que hasta C3c responden siempre 503. DEBE decir, en cambio, que los enlaces se entregan a mano y que la recuperación sale por la consola. *(C3b FR-056; C3c FR-008)*
 
 **Contraseña reconfirmada (F12a)**
 
-- **FR-036**: Ante un 423 `password_confirmation_required`, DEBE pedir la contraseña, confirmarla con `POST /api/auth/confirm-password` y, con un 201, repetir el pedido original exactamente una vez. El front NO DEBE llevar su propia lista de qué acciones piden la contraseña: lo decide el servidor con el 423. **[NEEDS CLARIFICATION: Q3, cómo se pide la contraseña reconfirmada]**
-- **FR-037**: Ante un 422 `auth_failed` en la confirmación, DEBE marcar el campo con «La contraseña no es correcta.». Ante un 429, DEBE decir cuánto falta según `Retry-After` y no permitir reenviar antes.
-- **FR-038**: Cancelar el pedido de la contraseña NO DEBE hacer la acción, y DEBE decir que no se hizo ningún cambio.
+- **FR-036** *(F12a)*: Ante un 423 `password_confirmation_required`, DEBE pedir la contraseña, confirmarla con `POST /api/auth/confirm-password` y, con un 201, repetir el pedido original exactamente una vez. El front NO DEBE llevar su propia lista de qué acciones piden la contraseña: lo decide el servidor con el 423. *(F12-Q3)*
+- **FR-037** *(F12a)*: Ante un 422 `auth_failed` en la confirmación, DEBE marcar el campo con «La contraseña no es correcta.». Ante un 429, DEBE decir cuánto falta según `Retry-After` y no permitir reenviar antes.
+- **FR-038** *(F12a)*: Cancelar el pedido de la contraseña NO DEBE hacer la acción, y DEBE decir que no se hizo ningún cambio.
 
 **Errores y estados comunes (F12a)**
 
-- **FR-039**: Todos los pedidos DEBEN salir por el cliente de la API de F11a y heredar su manejo de 401, 403 `account_disabled`, 409 `account_mismatch`, 419 y las respuestas que no son JSON. Cualquier otro `{message, code}` DEBE mostrar el mensaje del servidor. *(F11 FR-015 a FR-023)*
-- **FR-040**: Ante un 404 en una acción, DEBE decir que la cuenta o la invitación ya no existe y volver a pedir la lista.
-- **FR-041**: Ante un 429 del límite de la administración, DEBE mostrar el mensaje del servidor y cuánto falta según `Retry-After`, y no permitir reenviar antes. *(F11 FR-021)*
-- **FR-042**: Ante un 5xx, una respuesta que no es JSON o una falla de red, DEBE mostrar el mensaje común de F11 y conservar lo escrito: la búsqueda, los filtros y los emails.
-- **FR-043**: Mientras un pedido está en curso, su botón DEBE quedar deshabilitado y decir el estado, y NO DEBE salir un segundo envío.
+- **FR-039** *(F12a)*: Todos los pedidos DEBEN salir por el cliente de la API de F11a y heredar su manejo de 401, 403 `account_disabled`, 409 `account_mismatch`, 419 y las respuestas que no son JSON. Cualquier otro `{message, code}` DEBE mostrar el mensaje del servidor. *(F11 FR-015 a FR-023)*
+- **FR-040** *(F12a)*: Ante un 404 en una acción, DEBE decir que la cuenta o la invitación ya no existe y volver a pedir la lista.
+- **FR-041** *(F12a)*: Ante un 429 del límite de la administración, DEBE mostrar el mensaje del servidor y cuánto falta según `Retry-After`, y no permitir reenviar antes. *(F11 FR-021)*
+- **FR-042** *(F12a)*: Ante un 5xx, una respuesta que no es JSON o una falla de red, DEBE mostrar el mensaje común de F11 y conservar lo escrito: la búsqueda, los filtros y los emails.
+- **FR-043** *(F12a)*: Mientras un pedido está en curso, su botón DEBE quedar deshabilitado y decir el estado, y NO DEBE salir un segundo envío.
 
 **Con correo (F12b; espera a C3c)**
 
-- **FR-044**: Con `features.passwordReset: true`, «Invitar» DEBE ofrecer elegir la entrega, por correo o con enlace. *(C3c FR-008 y FR-057 (a))*
-- **FR-045**: Con la entrega por correo, `created` y `renewed` DEBEN decir que el correo sale, sin enlace, y `rate_limited`, que se llegó al tope de 300 correos por día. *(C3c FR-057 (a))*
-- **FR-046**: La lista DEBE mostrar si una invitación por correo salió (`sentAt`) o no salió (`sendFailedAt`). *(C3c FR-007)*
-- **FR-047**: «Reenviar» DEBE ofrecer «Reenviar por correo» y «Pasar a enlace», con la confirmación de FR-032. *(C3c FR-057 (a))*
-- **FR-048**: Las cuentas de alumnos activos DEBEN ofrecer «Mandarle un enlace para elegir contraseña», con confirmación, que llama a `POST /api/admin/users/{id}/password-reset`. Con un 202, DEBE decir que el enlace salió y vence en 60 minutos. A un admin o a una cuenta que no está activa NO DEBE ofrecérsele. *(C3b FR-036; C3c FR-057 (b))*
-- **FR-049**: Ante un 503 `mail_unavailable`, DEBE mostrar el mensaje del servidor y ofrecer el camino del enlace, sin dar por creada ninguna invitación. *(C3b FR-056)*
+- **FR-044** *(F12b)*: Con `features.passwordReset: true`, «Invitar» DEBE ofrecer elegir la entrega, por correo o con enlace. *(C3c FR-008 y FR-057 (a))*
+- **FR-045** *(F12b)*: Con la entrega por correo, `created` y `renewed` DEBEN decir que el correo sale, sin enlace, y `rate_limited`, que se llegó al tope de 300 correos por día. *(C3c FR-057 (a))*
+- **FR-046** *(F12b)*: La lista DEBE mostrar si una invitación por correo salió (`sentAt`) o no salió (`sendFailedAt`). *(C3c FR-007)*
+- **FR-047** *(F12b)*: «Reenviar» DEBE ofrecer «Reenviar por correo» y «Pasar a enlace», con la confirmación de FR-032. *(C3c FR-057 (a))*
+- **FR-048** *(F12b)*: Las cuentas de alumnos activos DEBEN ofrecer «Mandarle un enlace para elegir contraseña», con confirmación, que llama a `POST /api/admin/users/{id}/password-reset`. Con un 202, DEBE decir que el enlace salió y vence en 60 minutos. A un admin o a una cuenta que no está activa NO DEBE ofrecérsele. *(C3b FR-036; C3c FR-057 (b))*
+- **FR-049** *(F12b)*: Ante un 503 `mail_unavailable`, DEBE mostrar el mensaje del servidor y ofrecer el camino del enlace, sin dar por creada ninguna invitación. *(C3b FR-056)*
 
 **Accesibilidad, celular y movimiento reducido (todas las partes)**
 
-- **FR-050**: Todo DEBE poder hacerse sólo con el teclado, con el foco visible y un orden que sigue el visual. Las dos secciones se eligen con el teclado, y el foco inicial va al título del diálogo.
-- **FR-051**: Cada tabla DEBE tener título y encabezados de columna asociados a sus celdas. Los botones de cada fila DEBEN tener un nombre accesible que incluye a la persona o el email, por ejemplo «Deshabilitar a Ana Pérez».
-- **FR-052**: Desde 320 px, la página NO DEBE desplazarse en horizontal: una tabla que no entra se desplaza dentro de su propia región, con nombre y alcanzable con el teclado (el patrón de `.sys-table-scroll` de Sistemas). Los campos miden 16 px o más.
-- **FR-053**: Ningún estado DEBE depender de una animación. Con movimiento reducido rige la regla global de `styles.css`, sin librería de animación.
-- **FR-054**: Los estilos DEBEN ser clases de las hojas del taller, que reutilizan sus botones, diálogos y tokens. NO DEBE haber ningún `style=`, `style={…}`, `setAttribute('style', …)` ni `.cssText` nuevos. *(F11 FR-069; C4)*
+- **FR-050** *(F12a y F12b)*: Todo DEBE poder hacerse sólo con el teclado, con el foco visible y un orden que sigue el visual. Las dos secciones se eligen con el teclado, y el foco inicial va al título del diálogo.
+- **FR-051** *(F12a y F12b)*: Cada tabla DEBE tener título y encabezados de columna asociados a sus celdas. Los botones de cada fila DEBEN tener un nombre accesible que incluye a la persona o el email, por ejemplo «Deshabilitar a Ana Pérez».
+- **FR-052** *(F12a y F12b)*: Desde 320 px, la página NO DEBE desplazarse en horizontal: una tabla que no entra se desplaza dentro de su propia región, con nombre y alcanzable con el teclado (el patrón de `.sys-table-scroll` de Sistemas). Los campos miden 16 px o más.
+- **FR-053** *(F12a y F12b)*: Ningún estado DEBE depender de una animación. Con movimiento reducido rige la regla global de `styles.css`, sin librería de animación.
+- **FR-054** *(F12a y F12b)*: Los estilos DEBEN ser clases de las hojas del taller, que reutilizan sus botones, diálogos y tokens. NO DEBE haber ningún `style=`, `style={…}`, `setAttribute('style', …)` ni `.cssText` nuevos. *(F11 FR-069; C4)*
 
 **Formularios, librerías y peso (todas las partes)**
 
-- **FR-055**: La búsqueda, «Invitar» y la contraseña DEBEN armarse con React Hook Form, que instala F11a, y enviarse sólo desde su manejador, nunca con el envío nativo (`form-action 'none'`). Los `errors.<campo>` con campo visible van a `setError`, y el resto, a `root.serverError`. *(hoja de ruta, F11)*
-- **FR-056**: F12 NO DEBE sumar dependencias de runtime: ni librerías de tablas, de diálogos o de portapapeles, ni nuqs. Su estado DEBE ser local a la administración, sin un store compartido nuevo. *(`AGENTS.md`)*
-- **FR-057**: El PR DEBE medir `dist/index.html` antes y después (`html.length`) y quedar bajo el límite de `qa/build-check.ts` vigente al integrar: hoy, 1 250 000 caracteres; con C4, el tope por archivo.
+- **FR-055** *(F12a y F12b)*: La búsqueda, «Invitar» y la contraseña DEBEN armarse con React Hook Form, que instala F11a, y enviarse sólo desde su manejador, nunca con el envío nativo (`form-action 'none'`). Los `errors.<campo>` con campo visible van a `setError`, y el resto, a `root.serverError`. *(hoja de ruta, F11)*
+- **FR-056** *(F12a y F12b)*: F12 NO DEBE sumar dependencias de runtime: ni librerías de tablas, de diálogos o de portapapeles, ni nuqs. Su estado DEBE ser local a la administración, sin un store compartido nuevo. *(`AGENTS.md`)*
+- **FR-057** *(F12a y F12b)*: El PR DEBE medir `dist/index.html` antes y después (`html.length`) y quedar bajo el límite de `qa/build-check.ts` vigente al integrar: hoy, 1 250 000 caracteres; con C4, el tope por archivo.
 
 **Verificación (todas las partes)**
 
-- **FR-058**: Cada comportamiento DEBE empezar con una prueba que falla. Se usa Vitest con Testing Library para la lógica y los componentes, con el `fetch` inyectado en el cliente y las entradas armadas con fishery a partir de las formas del contrato (`AdminUser`, `AdminInvitation` y la página). Los valores esperados se escriben a mano, nunca con la misma factory. *(constitución, principio II; ADR 0008)*
-- **FR-059**: Los E2E DEBEN usar un Page Object de la administración, con localizadores accesibles, sobre el doble de la API de F11a con una sesión de admin y las rutas de `/api/admin` respondidas según el contrato de C3b, sin el stack ni servicios externos. Los diálogos, el foco y el portapapeles se prueban ahí. *(ADR 0008)*
-- **FR-060**: La red E2E vigente en la base de cada parte, `boot-check`, `dist-content-check` y `load-order-check` DEBEN seguir en verde sin editar sus escenarios.
-- **FR-061**: Cada parte DEBE cerrar con `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `npm run test:e2e` y `git diff --check` en verde, y actualizar `docs/architecture.md` y `qa/AGENTS.md` con lo que agrega.
+- **FR-058** *(F12a y F12b)*: Cada comportamiento DEBE empezar con una prueba que falla. Se usa Vitest con Testing Library para la lógica y los componentes, con el `fetch` inyectado en el cliente y las entradas armadas con fishery a partir de las formas del contrato (`AdminUser`, `AdminInvitation` y la página). Los valores esperados se escriben a mano, nunca con la misma factory. *(constitución, principio II; ADR 0008)*
+- **FR-059** *(F12a y F12b)*: Los E2E DEBEN usar un Page Object de la administración, con localizadores accesibles, sobre el doble de la API de F11a con una sesión de admin y las rutas de `/api/admin` respondidas según el contrato de C3b, sin el stack ni servicios externos. Los diálogos, el foco y el portapapeles se prueban ahí. *(ADR 0008)*
+- **FR-060** *(F12a y F12b)*: La red E2E vigente en la base de cada parte, `boot-check`, `dist-content-check` y `load-order-check` DEBEN seguir en verde sin editar sus escenarios.
+- **FR-061** *(F12a y F12b)*: Cada parte DEBE cerrar con `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `npm run test:e2e` y `git diff --check` en verde, y actualizar `docs/architecture.md` y `qa/AGENTS.md` con lo que agrega.
+
+**El compromiso con F10 (F12a; F12-Q1)**
+
+- **FR-062** *(F12a)*: La página de la administración DEBE vivir en su propio slice, separada del diálogo que la contiene. DEBE recibir del contenedor sólo la sección inicial y qué hacer al cerrar, y NO DEBE importar nada de «Tu cuenta», de la raíz de la cuenta ni de `<dialog>`. Así, el diálogo y su entrada son la única pieza que F10 reemplaza por la ruta. La condición de admin DEBE vivir en un solo lugar, que usan la entrada de hoy y la ruta de F10.
+- **FR-063** *(F12a)*: El Page Object de la administración DEBE abrirla desde un único método, el único que F10 cambia al pasarla a una ruta. Los demás escenarios DEBEN ubicarla por su título y sus roles accesibles, no por el diálogo que la contiene.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -678,15 +648,18 @@ Los transversales (FR-050 a FR-061) valen para todas las historias. Sus criterio
 - **SC-007** (todas): La red E2E vigente pasa sin editar sus escenarios. `dist/index.html` queda bajo el límite de `build-check`, y el PR informa cuánto creció. `package.json` suma 0 dependencias de runtime, y el código suma 0 sitios de estilo en línea.
 - **SC-008** (F12b): Con `features.passwordReset: false` hay 0 opciones de correo y 0 acciones de recuperación de terceros. Con `true`, los cuatro caminos de correo (invitar, reenviar, pasar a enlace y recuperar) se recorren contra el doble, y un 503 deja 0 invitaciones dadas por creadas.
 - **SC-009** (todas): Cada parte cierra con `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `npm run test:e2e` y `git diff --check` en verde.
+- **SC-010** (F12a): Una spec de componente monta la página de la administración sola, fuera del diálogo y de «Tu cuenta», con la sección inicial y la acción de cierre que recibe, y la usa sin errores. En los E2E, 1 solo método del Page Object sabe cómo se abre la administración (F12-Q1).
 
 ## Assumptions
 
 **Las dependencias y su estado**
 
 - **F11a está integrada antes de planificar F12a** (ver «Dependencias reales»). Los nombres que usa esta spec (el cliente de `shared/api`, la sesión de `entities/session`, «pedir el ingreso», la raíz de la cuenta, el doble de la API) son los provisionales de la spec de F11. Si su plan los cambia, esta spec se ajusta.
-- **El doble de la API de F11a** responde una sesión con cuenta por omisión, y F11 no dice con qué rol. F12 supone que el rol se puede elegir por escenario y que por omisión es `student`. Con el borrador de Q1, el rol por omisión no cambia lo que mide la red, porque la entrada vive dentro de «Tu cuenta». F12 suma la variante de admin y las rutas de `/api/admin`.
+- **El doble de la API de F11a** responde una sesión con cuenta por omisión, y F11 no dice con qué rol. F12 supone que el rol se puede elegir por escenario y que por omisión es `student`. Con el montaje de F12-Q1, el rol por omisión no cambia lo que mide la red, porque la entrada vive dentro de «Tu cuenta». F12 suma la variante de admin y las rutas de `/api/admin`.
 - **Los contratos de C3b** son los entregados y se contrastaron con el código de `e87772d` (las rutas, los controladores, los `FormRequest`, los presentadores, `lang/es/` y las pruebas de Pest de la administración). Si C3b cambia por flow-forward, esta spec se ajusta.
 - **C3c está sólo especificada,** y su plan espera el dominio. Lo que F12b toma de ella (`rate_limited`, `sentAt` y `sendFailedAt`, el 202 de la recuperación y la bandera) es un supuesto hasta que tenga plan.
+- **F12a llega antes que F10.** F12a sólo espera a F11a, y F10 es el final del tronco del front. Si F10 llegara primero, la administración nace como una ruta de la raíz única y el plan de F12a lo consulta con el usuario («El compromiso con F10»).
+- **C4 toma la compuerta.** La spec de C4 (008, planificada y sin implementar) suma F12a a su compuerta G1 cuando el coordinador integre este clarify (F12-Q2). Esta spec no la edita.
 - **La pila de DOM de Vitest** llega con F3 o con F11a, con permiso. F12 no baja nada.
 - **El ADR 0006 sigue en propuesta.** Lo que F12 toma de él llega a través de la spec de C3b.
 
@@ -702,10 +675,10 @@ Los transversales (FR-050 a FR-061) valen para todas las historias. Sus criterio
 
 | Tema | Alternativas | Decisión y motivo |
 | --- | --- | --- |
-| Dónde se monta (Q1) | Un diálogo desde «Tu cuenta»; una sección dentro de «Tu cuenta»; una raíz previa al shell; una ruta de F10; una novena vista legacy; un botón propio en la barra superior | **Un diálogo desde «Tu cuenta»** (recomendada): no toca el contrato de URL, ni `app.js`, ni el shell, ni el arranque, y no espera a ningún port. El detalle de cada una está en Q1 |
-| Si C4 espera (Q2) | Espera a F12a; no espera; espera sólo a las cuentas | **Espera a F12a** (recomendada): cuesta poco en calendario y saca a `curl` y a `tinker` de la respuesta a un incidente |
-| La contraseña reconfirmada (Q3) | A pedido, ante el 423; siempre antes, como F11b; consultar el estado antes | **A pedido** (recomendada): decide el servidor, y una tanda de cambios pide la contraseña una vez cada 15 minutos |
-| La partición | Dos partes (sin correo y con correo); tres (cuentas, invitaciones y correo); no partir | **Dos partes** (recomendada), por la dependencia de C3c, como F11c |
+| Dónde se monta (F12-Q1) | Las seis candidatas de la tabla siguiente | **Diálogo ahora, ruta en F10** (usuario). El usuario eligió primero la ruta de F10 (D). Cuando se le mostró que, junto con F12-Q2, eso dejaba a C4 detrás de todo el front (F3 a F10), la cambió por el diálogo de A como montaje de F12a, con el compromiso de que F10 lo convierta en una ruta enlazable. Así se conserva lo que buscaba con D, una administración enlazable, sin atar C4 al port. Costo: hasta F10 no se puede enlazar y recargar la cierra; F12a deja la página separada del diálogo (FR-062 y FR-063) |
+| Si C4 espera (F12-Q2) | Espera a F12a; no espera; espera sólo a las cuentas | **Espera a F12a** (usuario; era la recomendada): cuesta poco en calendario y saca a `curl` y a `tinker` de la respuesta a un incidente |
+| La contraseña reconfirmada (F12-Q3) | A pedido, ante el 423; siempre antes, como F11b; consultar el estado antes | **A pedido** (usuario; era la recomendada): decide el servidor, y una tanda de cambios pide la contraseña una vez cada 15 minutos |
+| La partición (P3) | Dos partes (sin correo y con correo); tres (cuentas, invitaciones y correo); no partir | **Dos partes** (usuario; era la recomendada), por la dependencia de C3c, como F11c |
 | La ficha de usuario | Una vista aparte con `GET /api/admin/users/{id}`; la fila de la lista | **La fila:** la lista trae la misma forma. C5 suma su resumen a la ficha cuando llegue |
 | El orden de la lista | Elegirlo (`sort`); el de la API, por nombre | **El de la API.** Buscar y filtrar alcanzan para un aula de 40, y `sort` queda disponible |
 | Cuándo se busca | En cada tecla, con espera; al enviar | **Al enviar:** el límite es de 120 pedidos por minuto, y un pedido por tecla lo come |
@@ -714,24 +687,36 @@ Los transversales (FR-050 a FR-061) valen para todas las historias. Sus criterio
 | La tabla en el celular | Una región que se desplaza; tarjetas en lugar de filas | **La región:** ya existe en Sistemas (`.sys-table-scroll`). Las tarjetas son un segundo diseño que mantener |
 | Librerías | Una de tablas o de diálogos; HTML y las clases del taller | **HTML y las clases del taller** (FR-056): el peso es chico y el `<dialog>` nativo ya está en uso |
 
+**Las candidatas de F12-Q1, medidas.** Cada una se midió contra el contrato de las ocho vistas (`viewFromHash`, de F2b, devuelve `recorrido` para cualquier otro hash, y por eso F11 descartó `#cuenta`), contra la red de F1 (`views.spec.ts` y las reglas R4 y R8 del contrato de CSS), contra lo que va a cambiar F10 y contra el costo de tiempo.
+
+| Candidata | Lo que gana | Lo que cuesta |
+| --- | --- | --- |
+| **A.** Un diálogo propio a pantalla entera, que se abre desde «Tu cuenta» (elegida para F12a) | No toca el contrato de las ocho vistas, ni `app.js`, ni el shell, ni el arranque: la red de F1 no ve nada. No espera a ningún port | No se puede enlazar; recargar la cierra; las confirmaciones son diálogos sobre un diálogo (FR-005 limita a uno por vez); la tabla vive en un modal |
+| **B.** Una sección dentro del mismo diálogo «Tu cuenta» | Lo mismo que A | «Tu cuenta» ocupa la pantalla entera sólo en el celular (FR-067 de F11): en una computadora no entran la tabla ni el lote. El diálogo que comparten F11a, F11b y F11d suma una sección más |
+| **C.** Una raíz previa al shell, con una forma de URL nueva | Página entera y enlazable | Una forma de URL nueva en la gramática de F2b y en `url-contract`, una rama en la etapa de sesión que A3 extiende, y una fila en `load-order-check`. Volver al taller recarga, y entrar desde el shell exige cambiar la query |
+| **D.** Una ruta de la raíz única de F10 (la primera elección del usuario) | Sin montaje que se tire | F12 espera a F10, el final del tronco; con F12-Q2, C4 espera todo el port |
+| **E.** Una novena vista del shell legacy | Página entera y enlazable | Cambia el contrato de las ocho vistas, la navegación (R8) y `app.js`, que cada port toca de a uno |
+| **F.** Como A, con su propio botón en la barra superior | Un clic menos | Vuelve a cambiar la barra superior que F11a ya cambió, tensa los 320 px, y lo que mide la red depende del rol simulado |
+
 ## Riesgos
 
 1. **El peso.** Después de F2a y A2, `dist/index.html` mide 1 136 702 caracteres (T020 de F2b), el límite de `qa/build-check.ts` es de 1 250 000 y F2b suma unos 4 266. F11a suma React Hook Form (unos 43 KB minificado, según su spec) y su propio código, así que a F12 le puede quedar poco margen para tablas, formularios y diálogos. *Mitigación:* FR-056 y FR-057, sin dependencias nuevas y con la medida en el PR. Si no entra, decide el usuario: subir el límite o esperar a que C4 cambie el contrato del build.
 2. **Un enlace que se ve una sola vez se pierde** si se cierra, se recarga o se cae la pestaña. *Mitigación:* el aviso, la confirmación al cerrar (FR-031) y «Reenviar», que invalida el anterior.
 3. **Dos admins con la lista vieja.** *Mitigación:* decide el servidor; la pantalla maneja el 404, el 409 y el 422 y vuelve a pedir la lista (FR-020, FR-034 y FR-040).
-4. **Una sesión de admin robada.** Con Q3 en A, durante los 15 minutos de la confirmación una acción destructiva sale sólo con su confirmación. *Mitigación:* es la política del servidor (900 s), cada acción pide confirmación, y C4 trae la CSP estricta. El riesgo de fondo, el admin sin segundo factor, es del ADR 0006 (§4.10).
+4. **Una sesión de admin robada.** Con la contraseña a pedido (F12-Q3), durante los 15 minutos de la confirmación una acción destructiva sale sólo con su confirmación. *Mitigación:* es la política del servidor (900 s), cada acción pide confirmación, y C4 trae la CSP estricta. El riesgo de fondo, el admin sin segundo factor, es del ADR 0006 (§4.10).
 5. **Diálogos sobre un diálogo y el foco.** jsdom no implementa `showModal` (ADR 0008). *Mitigación:* como mucho un diálogo sobre la administración (FR-005), y el foco se prueba en E2E (FR-059).
-6. **Un montaje que F10 cambia.** *Mitigación:* la página no depende del punto de montaje; F10 lo mueve sin reescribirla.
+6. **Una mudanza a la ruta de F10 que termine reescribiendo la página.** *Mitigación:* el compromiso con F10 y FR-062 y FR-063: la página recibe sólo la sección inicial y el cierre, no conoce el diálogo, y un solo método del Page Object sabe cómo se abre (SC-010).
 7. **El código de administración viaja a todos los alumnos** hasta C4. *Mitigación:* no trae secretos, sólo nombra rutas que los contratos ya publican, y el servidor exige el rol en cada una. Sin `vite-plugin-singlefile`, el plan de entonces puede separarlo en su propio archivo.
 8. **El contrato de C3c puede cambiar en su plan.** *Mitigación:* F12b se planifica con C3c, no antes.
 9. **Tablas a 320 px.** *Mitigación:* la región que se desplaza (FR-052) y los nombres accesibles por fila (FR-051).
 10. **F11a es grande, no tiene plan y sus nombres son provisionales.** *Mitigación:* F12a se planifica sobre F11a ya integrada, y esta spec sólo toma de F11 lo que su clarify fijó.
+11. **C4 espera a F12a** (F12-Q2): si F12a se demora, C4 espera. *Mitigación:* F12a sólo depende de F11a, que va antes que A3 y, por lo tanto, antes que C4; se planifica en cuanto F11a esté integrada.
 
 ## Relación con otros ítems
 
 **C3b** (spec 010, entregada). Hallazgos para su dueño, sin cambiar nada:
 
-1. No hay ningún comando de consola para listar cuentas, cambiar un rol o un estado, revocar una invitación ni borrar otra cuenta: sin F12, eso sólo se hace por HTTP o con `tinker` (Q2).
+1. No hay ningún comando de consola para listar cuentas, cambiar un rol o un estado, revocar una invitación ni borrar otra cuenta: sin F12, eso sólo se hace por HTTP o con `tinker`. Por eso C4 espera a F12a (F12-Q2).
 2. `lang/es/invitations.php` muestra los valores en inglés («admin o student», «link o email», «pending o expired»), mientras `lang/es/admin.php` dice «admin o estudiante». La interfaz no manda valores inválidos, así que es de baja severidad.
 3. F12 no usa `GET /api/admin/users/{user}`: la lista trae la misma forma. C5 lo extiende con su resumen.
 
@@ -740,9 +725,10 @@ Los transversales (FR-050 a FR-061) valen para todas las historias. Sus criterio
 - F12b consume el «enviar por correo» que la spec de C3c le atribuye a F12: la invitación y el reenvío por correo, la recuperación de un tercero, `sentAt`, `sendFailedAt` y `rate_limited`.
 - `features.passwordReset` es la bandera de «hay correo» (C3c FR-008).
 
-**C4** (spec 008, planificada):
+**C4** ([spec 008](../008-c4-exposicion/spec.md), planificada):
 
-- Q2 decide si espera a F12a. Su compuerta G1 hoy no la nombra.
+- Espera a F12a (F12-Q2): su compuerta G1 (FR-044 de C4) suma «las pantallas de administración integradas». Hoy no la nombra: la enmienda la integra el coordinador en la spec de C4, que está planificada y sin implementar, y en la hoja de ruta del backend. No espera a F12b.
+- F11 dejó abierta la misma pregunta para F11b (descargar y borrar la propia cuenta), y este clarify no la responde.
 - Su recorrido de la CSP (SC-004 de C4: las 8 vistas, los 5 enlaces profundos, el editor y la celebración) no incluye las pantallas de F11 ni las de F12. Si existen cuando C4 se implementa, conviene sumarlas al recorrido.
 - F12 no agrega estilos en línea (FR-054) y sus formularios no usan el envío nativo (`form-action 'none'`).
 - El tope de `build-check` cambia con C4 (un tope por archivo). FR-057 usa el vigente al integrar.
@@ -758,11 +744,11 @@ Los transversales (FR-050 a FR-061) valen para todas las historias. Sus criterio
 - un doble de la API con el rol de la sesión elegible por escenario y una forma de sumar rutas;
 - el rol por omisión de la sesión simulada, escrito en su plan.
 
-**F11b:** comparte el pedido de la contraseña. El que llegue segundo lo mueve a un lugar compartido, como propone F11. Con Q3 en A, F12 lo usa ante un 423 y F11b, antes de la acción: el componente es el mismo y cambia el momento.
+**F11b:** comparte el pedido de la contraseña. El que llegue segundo lo mueve a un lugar compartido, como propone F11. Con la contraseña a pedido (F12-Q3), F12 lo usa ante un 423 y F11b, antes de la acción: el componente es el mismo y cambia el momento.
 
 **F11c y F11d:** no le cambian nada a F12.
 
-**F10:** decide si la administración pasa a ser una ruta de la raíz única o sigue como diálogo.
+**F10:** asume el compromiso de convertir la administración en una ruta enlazable de la raíz única (F12-Q1): decide la forma de la URL y qué ve en ella una cuenta que no es admin, reemplaza el diálogo y su entrada y reescribe los E2E que los abren y cierran. F12a le deja la página separada del diálogo y un solo método de apertura en el Page Object (FR-062 y FR-063; «El compromiso con F10»). F10 no espera a F12a: si F12a ya está integrada cuando F10 llega, la muda.
 
 **F1, A2 y F2b:** F12 no edita sus escenarios ni sus checks, y no cambia la gramática de URL.
 
@@ -773,8 +759,10 @@ Los transversales (FR-050 a FR-061) valen para todas las historias. Sus criterio
 **Hojas de ruta** (las integra el coordinador):
 
 - en la del front, F12 depende de F11a, no de toda F11;
-- si Q2 queda en A, F12 deja de ser un ítem que «no bloquea a ningún otro», y C4 suma la dependencia en la del backend;
-- la partición, si se acepta, suma F12a y F12b a la tabla;
+- F12 deja de ser un ítem que «no bloquea a ningún otro»: C4 espera a F12a (F12-Q2), y la dependencia se suma en la del backend (la fila y el «Orden y paralelismo» de C4) y en la compuerta G1 de la spec de C4;
+- la tabla de ítems suma F12a y F12b (P3): F12a depende de F11a y la espera C4; F12b depende de F12a y de C3c;
+- el «Entra» de F10 suma convertir la administración en una ruta enlazable, con lo que dice «El compromiso con F10»;
+- la decisión abierta de F12 («dónde se monta y si C4 la espera») queda cerrada por el clarify del 2026-10-28;
 - la hoja de ruta del front todavía dice que el límite de `build-check` es de 2 500 000 caracteres: desde A2 es de 1 250 000.
 
 ## Acciones del usuario
@@ -783,7 +771,7 @@ Los agentes no las hacen. Las descargas piden permiso con nombre, origen y tama�
 
 | Cuándo | Acción |
 | --- | --- |
-| Ahora | Responder Q1 a Q3 y aceptar o cambiar la partición. |
+| Hecho el 2026-10-28 | Respondió Q1 a Q3 y aceptó la partición (ver «Clarifications»). |
 | Antes de integrar F12a | Nada nuevo: F12 no baja paquetes. Con el stack levantado, crear el primer admin por consola (`taller:invite --role=admin`) para probarla a mano. |
 | Antes de F12b | El dominio de C3c y C4. |
 
