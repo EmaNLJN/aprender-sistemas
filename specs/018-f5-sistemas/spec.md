@@ -122,7 +122,7 @@ El adaptador es un archivo nuevo de `frontend/src/app/legacy/` que reemplaza a `
 | `init()` | `app.js:startApp`, después de `TallerCampaign.init()`; devuelve `{ storageAvailable, loadWarning }` y `boot-check` fija el orden | F10 (con `startApp`) |
 | `mount(host, lang, toast)` | `app.js:render` | F10 |
 | `unmount()` | `app.js:render` | F10 |
-| `sync()` | `lab.js:onClick` y `lab.js:runExercise`, vía `syncAfterRun` (`syncSystems`); y `app.js`, como `syncDerivedSeals` del área de Sistemas de `progress-backup`, tras importar | El de `lab.js`: F7. El de `app.js`: F10, o F8 si F8 arma la instancia de `progress-backup` |
+| `sync()` | `lab.js:onClick` y `lab.js:runExercise`, vía `syncAfterRun` (`syncSystems`); y `app.js`, como `syncDerivedSeals` del área de Sistemas de `progress-backup`, tras importar | El de `lab.js`: F7. El de `app.js`: F10, o F8 si saca de `app.js` la composición de `progress-backup` |
 | `refresh()` | `lab.js:render` | F7 |
 | `missionIDs(id, lang)` | `lab.js:navigationList` | F7 |
 | `returnURL(id, lang)` | `lab.js:finishNavigation` | F7 |
