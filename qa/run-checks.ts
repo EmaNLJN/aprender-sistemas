@@ -5,6 +5,7 @@ const webChecks = [
   'build-check.ts',
   'dist-content-check.ts',
   'load-order-check.ts',
+  'vite-proxy-check.ts',
   'seams-guard-check.ts',
   'content-tools-check.ts',
   'content-harness-check.ts',

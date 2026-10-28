@@ -126,4 +126,14 @@ test('the deadline chain closes: executor write timeout < PHP request timeout, j
   assert.ok(executorJobTimeout < secondsOf(worker.stop_grace_period));
 });
 
+test('the preview joins the web network of the stack, so its Nginx reaches php for /api/', () => {
+  const preview = parse(read('docker/compose.preview.yaml')) as {
+    services: { preview: { networks?: string[]; network_mode?: string } };
+    networks: Record<string, { external?: boolean; name?: string }>;
+  };
+  assert.equal(preview.services.preview.network_mode, undefined);
+  assert.ok(preview.services.preview.networks?.includes('stack-web'));
+  assert.deepEqual(preview.networks['stack-web'], { external: true, name: 'taller-rust-go_web' });
+});
+
 done();
