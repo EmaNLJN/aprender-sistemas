@@ -188,7 +188,7 @@ Lo que el revisor mira primero:
 - **Los parches y el orden de claves:** `prediction` antes que `predictionCorrect`; `confidence`, `reviewedAt` y `reviewAt`; `result`, `solvedAt` y `reviewAt`.
 - **El `trim()` único de la prueba propia** en el envío, en la vista previa, en la copia y en la vigencia.
 - **El aislamiento:** la feature no carga motores, y `lab.js` empaquetado solo tiene una vez la clave del laboratorio y ninguna otra.
-- **Lo retirado:** `grep -rn "TallerRunner\|register-runner" frontend qa` da 0. Las únicas apariciones que quedan están en `docs/`, y T016 las actualiza.
+- **Lo retirado:** `grep -rn "TallerRunner\|register-runner" frontend qa` da 0. En `docs/` quedan dos: la de `docs/architecture.md`, que T016 actualiza, y la de `docs/refactor-roadmap.md`, que es el diagnóstico histórico del refactor y no se edita.
 - **Complejidad y tamaño:** el total de avisos no sube y el HTML queda bajo 1 250 000.
 
 **Lo que la spec implica y ninguna prueba de hoy ejercita**, cada caso con la tarea que suma su prueba:
