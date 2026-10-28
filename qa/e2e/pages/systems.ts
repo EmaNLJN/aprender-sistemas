@@ -149,6 +149,10 @@ export class SystemsPage {
     return this.page.getByRole('region', { name: 'Estado del modelo' });
   }
 
+  async forceStateTableOverflow(): Promise<void> {
+    await this.page.addStyleTag({ content: '.sys-table-scroll table { min-width: 800px; }' });
+  }
+
   scene(): Locator {
     return this.page.getByRole('region', { name: /^Modelo interactivo de / }).getByRole('img');
   }

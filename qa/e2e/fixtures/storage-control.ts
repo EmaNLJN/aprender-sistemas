@@ -66,12 +66,4 @@ export class StorageControl {
       Object.fromEntries(Object.keys(localStorage).map((key) => [key, localStorage.getItem(key)!])),
     );
   }
-
-  async failWrites(): Promise<void> {
-    await this.page.evaluate(() => {
-      Storage.prototype.setItem = () => {
-        throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
-      };
-    });
-  }
 }

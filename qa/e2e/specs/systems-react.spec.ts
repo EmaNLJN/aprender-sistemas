@@ -19,16 +19,21 @@ test.describe('what React keeps that innerHTML rebuilt (C2)', () => {
     await expect(systems.trace()).not.toHaveAttribute('open');
   });
 
-  test('the state table keeps its scroll after an action', async ({ shell, systems }) => {
-    await shell.goto(urls.workshop('rust', 'pc', 'explore'));
+  test('the overflowing state table keeps its scroll when an action changes its rows', async ({
+    shell,
+    systems,
+  }) => {
+    await shell.goto(urls.workshop('rust', 'scheduler', 'explore'));
+    await systems.forceStateTableOverflow();
     await systems.stateTable().evaluate((element) => {
-      element.querySelector('table')!.style.minWidth = '800px';
       element.scrollLeft = 40;
     });
     expect(await systems.stateTable().evaluate((element) => element.scrollLeft)).toBe(40);
+    const before = await systems.stateTable().textContent();
 
-    await systems.modelControls().first().click();
+    await systems.modelButton('Consumir un quantum').click();
 
+    await expect(systems.stateTable()).not.toHaveText(before!);
     expect(await systems.stateTable().evaluate((element) => element.scrollLeft)).toBe(40);
   });
 
@@ -37,9 +42,9 @@ test.describe('what React keeps that innerHTML rebuilt (C2)', () => {
     systems,
     storage,
   }) => {
+    await storage.blockWrites();
     await shell.goto(urls.workshop('rust', 'cache', 'explore'));
     await expect(systems.storageWarning()).toHaveCount(0);
-    await storage.failWrites();
 
     await systems.modelButton('Leer A').click();
 
