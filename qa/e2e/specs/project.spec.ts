@@ -1,6 +1,11 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from '../fixtures';
-import { frozenProgress, routeMilestoneIds, type StorageKey } from '../lib/curriculum';
+import {
+  frozenProgress,
+  routeMilestoneIds,
+  type Language,
+  type StorageKey,
+} from '../lib/curriculum';
 import { observeReload } from '../lib/document-marker';
 import { urls } from '../lib/urls';
 
@@ -34,7 +39,7 @@ function counterText(done: number): string {
   return `PROYECTO PERSONAL · ${done} / 5 HITOS`;
 }
 
-function routeProgress(language: 'rust' | 'go', milestones: string[]): string {
+function routeProgress(language: Language, milestones: string[]): string {
   return JSON.stringify({
     version: 1,
     language,
@@ -217,15 +222,15 @@ test.describe('the languages and the saved progress', () => {
     });
     await shell.goto(urls.view('proyecto'));
 
-    for (const [index, title] of TITLES.entries()) {
-      await project.milestone(title).click();
-      await expect(project.milestone(title)).toBeChecked();
+    for (const index of TITLES.keys()) {
+      await project.milestoneChecks().nth(index).click();
+      await expect(project.milestoneChecks().nth(index)).toBeChecked();
       expect(await storedMilestones(page)).toEqual(routeMilestoneIds.slice(0, index + 1));
     }
     await shell.switchLanguage('go');
-    for (const [index, title] of TITLES.entries()) {
-      await project.milestone(title).click();
-      await expect(project.milestone(title)).toBeChecked();
+    for (const index of TITLES.keys()) {
+      await project.milestoneChecks().nth(index).click();
+      await expect(project.milestoneChecks().nth(index)).toBeChecked();
       expect(await storedMilestones(page)).toEqual(routeMilestoneIds.slice(0, 6 + index));
     }
 

@@ -19,6 +19,10 @@ export class ProjectPage {
     return this.page.getByRole('checkbox', { name: `Completar hito: ${title}`, exact: true });
   }
 
+  milestoneChecks(): Locator {
+    return this.page.getByRole('article').getByRole('checkbox');
+  }
+
   hintToggle(title: string): Locator {
     return this.card(title).getByText('Necesito una pista', { exact: true });
   }
