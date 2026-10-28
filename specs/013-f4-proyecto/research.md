@@ -172,7 +172,7 @@ El PR abre con los E2E, como pide la hoja de ruta. Los dos commits que se suman 
 ### R14. El texto de la pista de Go (Q4: decisión del usuario)
 
 - **Hoy, en los dos idiomas:** «Definí primero el comportamiento esperado. Usá un mapa con claves y valores de texto. En Rust podés empezar con datos propios (String); explicá cada copia que hagas.»
-- **Propuesta para Go:** se conservan las dos primeras oraciones y se reemplaza sólo la de Rust:
+- **Texto aprobado para Go (el usuario, el 2026-10-28, al aprobar el plan #66, que traía este texto):** se conservan las dos primeras oraciones y se reemplaza sólo la de Rust:
 
   > Definí primero el comportamiento esperado. Usá un mapa con claves y valores de texto. En Go podés empezar con un map[string]string creado con make; leé con valor, ok := datos[clave] para distinguir una clave que no existe de un valor vacío.
 
@@ -281,4 +281,4 @@ Medida por T001 sobre `24ba9d3d` (`master` con F2a, A2 y F2b):
 - **Checks:** `app-shell-check` 58 escenarios, `boot-check` 25 y `load-order-check` con 24 imports y 16 restricciones de orden.
 - **Lo compartido con F3 y F9:** nada estaba en `master` salvo `jsdom` 30.1.2 con los dos proyectos de Vitest; T004 no corrió.
 
-Medida sobre el port con la pista de Go (`bd895dd1`): `chars` 1 144 143, `importMeta` 23 (Vite suma un `import.meta.url` por cada `import()` de `legacy-views.ts`), `script` y `style` cambiados, `markup` igual, 35 avisos, `render()` en 12, 746 pruebas de Vitest, 141 E2E.
+Medida sobre el port: `chars` 1 144 143 en `f5f4602b` (+2 806) y 1 144 218 en `bd895dd1` y en HEAD, con la pista de Go (+2 881); los dos bajo el tope de 1 151 337. `importMeta` 23 (Vite suma un `import.meta.url` por cada `import()` de `legacy-views.ts`), `script` y `style` cambiados, `markup` igual, 35 avisos, `render()` en 12, 746 pruebas de Vitest, 141 E2E.
