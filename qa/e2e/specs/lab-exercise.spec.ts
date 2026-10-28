@@ -1,12 +1,8 @@
 import { expect, test } from '../fixtures';
 import { frozenProgress } from '../lib/curriculum';
 import { observeReload } from '../lib/document-marker';
+import { LAB_KEY, LAB_WRITE, SYNC_WRITES } from '../lib/lab-storage';
 import { urls } from '../lib/urls';
-
-const LAB_KEY = 'taller-laboratorio-v1';
-const WRITE = `set ${LAB_KEY}`;
-// After a prediction or a run, the lab syncs Systems and the campaign, which save their own keys.
-const SYNC_WRITES = ['set taller-systems-v1', 'set taller-campaign-v1'];
 
 // rust-01 is not a campaign mission nor a Systems core: no context block and no XP notice.
 const RUST_01 = 'rust-01';
@@ -59,7 +55,7 @@ test.describe('the three phases', () => {
     ).toHaveAttribute('aria-pressed', 'true');
     await expect(lab.predictionFeedback()).toContainText('Esa es la idea.');
     await expect(lab.predictionFeedback()).toContainText(EXPLANATION);
-    expect(await storage.writes()).toEqual([WRITE, ...SYNC_WRITES]);
+    expect(await storage.writes()).toEqual([LAB_WRITE, ...SYNC_WRITES]);
     const stored = JSON.parse((await storage.snapshot())[LAB_KEY]);
     expect(stored.records[RUST_01]).toMatchObject({ prediction: 1, predictionCorrect: true });
   });
@@ -93,7 +89,7 @@ test.describe('the editor', () => {
     await lab.writeDraft('rust', 'fn energia(celdas: i32) -> i32 {\n    celdas * 7\n}');
     await page.keyboard.type('//');
 
-    expect(await storage.writes()).toEqual([WRITE, WRITE, WRITE]);
+    expect(await storage.writes()).toEqual([LAB_WRITE, LAB_WRITE, LAB_WRITE]);
     const stored = JSON.parse((await storage.snapshot())[LAB_KEY]);
     expect(stored.records[RUST_01].draft).toBe(
       'fn energia(celdas: i32) -> i32 {\n    celdas * 7\n}//',
@@ -153,7 +149,7 @@ test.describe('hints and the solution', () => {
     ]);
     await expect(lab.hintCounter()).toHaveText('3/3 pistas');
     await expect(lab.hintButton()).toBeDisabled();
-    expect(await storage.writes()).toEqual([WRITE, WRITE, WRITE]);
+    expect(await storage.writes()).toEqual([LAB_WRITE, LAB_WRITE, LAB_WRITE]);
   });
 
   test('KNOWN DEFECT (spec 021, quirk 6): opening the solution writes every time', async ({
@@ -168,7 +164,7 @@ test.describe('hints and the solution', () => {
     await lab.solutionToggle().click();
     await lab.solutionToggle().click();
 
-    expect(await storage.writes()).toEqual([WRITE, WRITE]);
+    expect(await storage.writes()).toEqual([LAB_WRITE, LAB_WRITE]);
     const stored = JSON.parse((await storage.snapshot())[LAB_KEY]);
     expect(stored.records[RUST_01]).toMatchObject({ solutionSeen: true, assisted: true });
   });
@@ -192,7 +188,7 @@ test.describe('hints and the solution', () => {
     await expect(lab.confirmDialog()).toBeHidden();
     await expect(lab.editor('rust')).toBeFocused();
     await expect(lab.editor('rust')).toContainText('celdas * 7');
-    expect(await storage.writes()).toEqual([WRITE, WRITE]);
+    expect(await storage.writes()).toEqual([LAB_WRITE, LAB_WRITE]);
     const stored = JSON.parse((await storage.snapshot())[LAB_KEY]);
     expect(stored.records[RUST_01]).toMatchObject({
       draft: 'fn energia(celdas: i32) -> i32 {\n    celdas * 7\n}',
@@ -234,7 +230,7 @@ test.describe('hints and the solution', () => {
 
     await expect(lab.editor('rust')).toBeFocused();
     await expect(lab.editor('rust')).toContainText('todo!("calcular energía")');
-    expect(await storage.writes()).toEqual([WRITE, WRITE]);
+    expect(await storage.writes()).toEqual([LAB_WRITE, LAB_WRITE]);
     const stored = JSON.parse((await storage.snapshot())[LAB_KEY]);
     expect(stored.records[RUST_01].draft).toBe(
       'fn energia(celdas: i32) -> i32 {\n    todo!("calcular energía")\n}',
@@ -264,7 +260,7 @@ test.describe('your own case', () => {
     await expect(shell.toast).toHaveText(
       'Cambiá una entrada o expectativa y ejecutá. Tu caso extra se revisa por separado.',
     );
-    expect(await storage.writes()).toEqual([WRITE]);
+    expect(await storage.writes()).toEqual([LAB_WRITE]);
 
     await lab.testCaseToggle('Tres celdas').click();
     await lab.inventVariantButton('Tres celdas').click();
@@ -273,7 +269,7 @@ test.describe('your own case', () => {
     await expect(shell.toast).toHaveText(
       'Conservé tu caso extra. Podés editarlo o borrarlo para partir de otra prueba.',
     );
-    expect(await storage.writes()).toEqual([WRITE]);
+    expect(await storage.writes()).toEqual([LAB_WRITE]);
   });
 });
 
@@ -356,7 +352,7 @@ test.describe('explaining', () => {
 
     await lab.reflectionBox().pressSequentially('abc');
 
-    expect(await storage.writes()).toEqual([WRITE, WRITE, WRITE]);
+    expect(await storage.writes()).toEqual([LAB_WRITE, LAB_WRITE, LAB_WRITE]);
     const stored = JSON.parse((await storage.snapshot())[LAB_KEY]);
     expect(stored.records[RUST_01].reflection).toBe('abc');
   });
@@ -381,7 +377,7 @@ test.describe('explaining', () => {
       'Próximo repaso: 9 de octubre. No enviamos notificaciones.',
     );
     await expect(shell.toast).toHaveText('Repaso agendado en tu mapa de aprendizaje.');
-    expect(await storage.writes()).toEqual([WRITE]);
+    expect(await storage.writes()).toEqual([LAB_WRITE]);
     const stored = JSON.parse((await storage.snapshot())[LAB_KEY]);
     expect(stored.records[RUST_01]).toMatchObject({
       confidence: 'practice',
@@ -414,7 +410,7 @@ test.describe('the footer and the way back', () => {
 
     await expect(lab.exerciseTitle()).toHaveText('Repará el contador inmutable');
     await expect(page).toHaveURL(/\?ejercicio=rust-02&paso=learn#laboratorio$/);
-    expect(await storage.writes()).toEqual([WRITE]);
+    expect(await storage.writes()).toEqual([LAB_WRITE]);
     const stored = JSON.parse((await storage.snapshot())[LAB_KEY]);
     expect(stored.selected.rust).toBe('rust-02');
   });

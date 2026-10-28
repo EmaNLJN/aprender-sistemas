@@ -1,11 +1,9 @@
 import { expect, test } from '../fixtures';
 import { PLAYGROUND_ENDPOINT, RUST_01, RUST_02, type CompilerKind } from '../lib/compiler-results';
 import { attemptsLine } from '../lib/lab-copy';
+import { LAB_KEY, LAB_WRITE, SYNC_WRITES } from '../lib/lab-storage';
 import { urls } from '../lib/urls';
 
-const LAB_KEY = 'taller-laboratorio-v1';
-const WRITE = `set ${LAB_KEY}`;
-const SYNC_WRITES = ['set taller-systems-v1', 'set taller-campaign-v1'];
 const SOLUTION = 'fn energia(celdas: i32) -> i32 {\n    celdas * 7\n}';
 
 interface Review {
@@ -101,7 +99,7 @@ test.describe('a free exercise with the Rust Playground simulated', () => {
       '¡Experimento resuelto! +20 puntos de práctica. Ahora explicá el porqué.',
     );
     await expect(lab.explainButton()).toBeVisible();
-    expect(await storage.writes()).toEqual([WRITE, WRITE, WRITE, ...SYNC_WRITES]);
+    expect(await storage.writes()).toEqual([LAB_WRITE, LAB_WRITE, LAB_WRITE, ...SYNC_WRITES]);
     expect(await storedRecord(storage)).toMatchObject({
       draft: SOLUTION,
       attempts: 1,
@@ -171,7 +169,7 @@ test.describe('a free exercise with the Rust Playground simulated', () => {
     await expect(shell.toast).toHaveText('Ejecución cancelada. Tu código sigue guardado.');
     await expect(lab.runButton()).toBeEnabled();
     await expect(lab.runButton()).toHaveText('▷ Ejecutar y revisar');
-    expect(await storage.writes()).toEqual([WRITE]);
+    expect(await storage.writes()).toEqual([LAB_WRITE]);
     const record = await storedRecord(storage);
     expect(record.attempts).toBe(1);
     expect(record.result).toBeUndefined();
