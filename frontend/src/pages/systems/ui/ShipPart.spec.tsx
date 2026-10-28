@@ -45,6 +45,20 @@ describe('ShipPart', () => {
     expect(notify).toHaveBeenCalledWith('Kit descargado con tu borrador y sus pruebas.');
   });
 
+  it('builds the kit with the progress of the mounted language', async () => {
+    const user = userEvent.setup();
+    const downloadKit = vi.fn();
+    systemsEngine.setNote('probe', 'rust', 'nota de rust');
+    systemsEngine.setNote('probe', 'go', 'nota de go');
+    render(<Subscribed downloadKit={downloadKit} />);
+
+    await user.click(screen.getByRole('button', { name: 'Descargar kit Rust ↓' }));
+
+    expect(downloadKit).toHaveBeenCalledWith(
+      expect.objectContaining({ progress: expect.objectContaining({ note: 'nota de rust' }) }),
+    );
+  });
+
   it('announces why the kit could not be prepared', async () => {
     const user = userEvent.setup();
     const notify = vi.fn();
