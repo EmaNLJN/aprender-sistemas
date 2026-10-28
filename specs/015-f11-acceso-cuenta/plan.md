@@ -2488,3 +2488,867 @@ Con U1, un navegador sin sesión ve «Ingresá al taller» con el shell inerte y
 
 5. **Correr** `npm run test:unit -- frontend/src/app/boot frontend/src/shared/lib`, en verde, y después `npm run typecheck` y `npm run lint`.
 6. **Commit:** `feat(front): las etapas de los tokens y de sesión`.
+
+### Tarea 1.9 · El servidor de contenido responde la sesión (T013, Q)
+
+**Archivos:** `qa/lib/content-server.ts` y `qa/boot-check.ts` (un escenario más; ninguno cambia).
+
+**Por qué así** (research.md, R11): `boot-check` y `dist-content-check` exigen que `server.requests` sea exactamente la lista de pedidos de contenido. La sesión se anota aparte, y `order` guarda los dos en el orden en que llegan.
+
+1. **El escenario nuevo de `qa/boot-check.ts`,** en rojo. Se agrega justo después de «the happy path never shows the loading state and asks for the content once»:
+
+   ```ts
+   await test('the session is asked once, before the content', async () => {
+     const server = createContentServer();
+     const harness = await boot({}, server);
+     assert.deepEqual(harness.errors, []);
+     assert.deepEqual(server.order, ['/api/session', CONTENT_URL]);
+   });
+   ```
+
+   Falla hasta que T012 cablea la etapa: antes, `order` sólo tiene el contenido.
+2. **`qa/lib/content-server.ts`.** Suma `sessionRequests` y `order` a la interfaz y responde la sesión con un `Response` real de Node, que trae `text()` y `headers`, como los usa el cliente:
+
+   ```ts
+   export interface ContentServer {
+     fetch: (url: string, init?: { signal?: AbortSignal }) => Promise<FakeResponse | Response>;
+     requests: string[];
+     sessionRequests: string[];
+     order: string[];
+   }
+
+   const SESSION_PATH = '/api/session';
+
+   function sessionResponse(): Response {
+     const body = {
+       user: { id: 41, name: 'Ana Pérez', email: 'ana@x.com', role: 'student', privacyAccepted: true },
+       features: { passwordReset: false, registration: false },
+       contentVersion: contentVersion(),
+       catalogs: [],
+     };
+     return new Response(JSON.stringify(body), {
+       status: 200,
+       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+     });
+   }
+   ```
+
+   En `createContentServer`, las dos listas nuevas se declaran junto a `requests`, y el comienzo de `fetch` pasa a ser este. El resto de la función no cambia:
+
+   ```ts
+   async fetch(requested, init) {
+     order.push(requested);
+     if (requested === SESSION_PATH) {
+       sessionRequests.push(requested);
+       return sessionResponse();
+     }
+     requests.push(requested);
+     if (requested !== url) return respond(404, 'not found');
+   ```
+
+   El objeto que devuelve `createContentServer` suma `sessionRequests` y `order`.
+3. **Correr** `node qa/boot-check.ts`: pasan todos menos el nuevo, que espera T012. Correr también `node qa/dist-content-check.ts` (después de `npm run build`): en verde, porque `requests` no cambió.
+4. **Commit:** `test(qa): el servidor de contenido responde la sesión, aparte, y boot-check pide la sesión antes`.
+
+### Tarea 1.10 · El doble de la API y los E2E de la etapa, en rojo (T014, E)
+
+**Archivos:** `qa/e2e/lib/api-contract.ts`, `qa/e2e/fixtures/api-double.ts`, `qa/e2e/fixtures/index.ts`, `qa/e2e/pages/access.ts` y `qa/e2e/specs/session-stage.spec.ts`.
+
+**Produce:** «`qa/e2e`: el doble de la API» del contrato.
+
+1. **`qa/e2e/lib/api-contract.ts`.** Los mensajes se copian de `backend/api/lang/es/api.php`, `passwords.php`, `password-policy.php` y `validation.php`, y del `messages()` de `PrivacyRequest`:
+
+   ```ts
+   export interface PublishedAccount {
+     id: number;
+     name: string;
+     email: string;
+     role: 'student' | 'admin';
+     privacyAccepted: boolean;
+   }
+
+   export const STUDENT: PublishedAccount = {
+     id: 41,
+     name: 'Ana Pérez',
+     email: 'ana@x.com',
+     role: 'student',
+     privacyAccepted: true,
+   };
+
+   export const ADMIN: PublishedAccount = {
+     id: 1,
+     name: 'Olga Ruiz',
+     email: 'olga@x.com',
+     role: 'admin',
+     privacyAccepted: true,
+   };
+
+   export const INVITATION = {
+     token: 'k3J8xQ2mN7pL4vR9tY6wZ1aB5cD0eF3gH8iJ2kL7mN4',
+     email: 'bruno@x.com',
+     role: 'student' as const,
+     expiresAt: '2026-10-12T15:30:00.000Z',
+   };
+
+   export const RESET_LINK = {
+     token: '9f2c4e6a8b0d1f3e5a7c9b1d3f5e7a9c2b4d6f8a0c1e3b5d7f9a1c3e5b7d9f0a',
+     email: 'ana@x.com',
+   };
+
+   export const MESSAGES = {
+     auth_failed: 'El email o la contraseña no son correctos.',
+     account_disabled: 'Tu cuenta está deshabilitada. Consultá con quien administra el taller.',
+     invitation_not_found: 'La invitación no existe o ya se usó.',
+     invitation_expired: 'La invitación venció. Pedí una nueva a quien te invitó.',
+     email_taken: 'Ya hay una cuenta con ese email.',
+     account_mismatch: 'La sesión cambió de cuenta: recargá la página.',
+     csrf_token_mismatch: 'La página venció: recargala e intentá de nuevo.',
+     validation_failed: 'Hay datos que corregir.',
+     too_many_requests: 'Demasiados intentos. Esperá un momento antes de volver a probar.',
+     unauthenticated: 'Iniciá sesión para continuar.',
+     not_found: 'No existe lo que pedís.',
+     server_error: 'Algo salió mal de nuestro lado. Probá de nuevo en un rato.',
+   } as const;
+
+   export type ApiCode = keyof typeof MESSAGES;
+
+   export const FIELD_MESSAGES = {
+     resetToken: 'El enlace para restablecer la contraseña no es válido o venció.',
+     privacyChanged: 'El aviso de privacidad cambió: leelo de nuevo antes de aceptarlo.',
+     tooShort: 'Tiene que tener al menos 15 caracteres.',
+     blocked: 'Es una contraseña muy usada: elegí otra.',
+     containsName: 'No puede contener tu nombre.',
+   } as const;
+
+   export function errorBody(code: ApiCode, errors?: Record<string, string[]>) {
+     return errors === undefined
+       ? { message: MESSAGES[code], code }
+       : { message: MESSAGES[code], code, errors };
+   }
+   ```
+
+2. **`qa/e2e/fixtures/api-double.ts`** (research.md, R10):
+
+   ```ts
+   import { readFileSync } from 'node:fs';
+   import { resolve } from 'node:path';
+   import { expect, type BrowserContext, type Page, type Request, type Route } from '@playwright/test';
+   import { INVITATION, STUDENT, errorBody, type PublishedAccount } from '../lib/api-contract';
+
+   export type ApiRoute = `${'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'} /api/${string}`;
+
+   export interface ApiCall {
+     method: string;
+     path: string;
+     xsrf: string | undefined;
+     user: string | undefined;
+     body: unknown;
+   }
+
+   export interface ApiReply {
+     status: number;
+     json?: unknown;
+     body?: string;
+     contentType?: string;
+     headers?: Record<string, string>;
+   }
+
+   export type ApiHandler = (call: ApiCall) => ApiReply | Promise<ApiReply>;
+
+   const MODIFYING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+   const FEATURES = { passwordReset: false, registration: false };
+   const META = resolve(import.meta.dirname, '../../../build/curriculum.meta.json');
+   const CONTENT_VERSION = (JSON.parse(readFileSync(META, 'utf8')) as { documentHash: string }).documentHash.slice(0, 32);
+
+   async function callOf(request: Request): Promise<ApiCall> {
+     const headers = await request.allHeaders();
+     const text = request.postData();
+     return {
+       method: request.method(),
+       path: new URL(request.url()).pathname,
+       xsrf: headers['x-xsrf-token'],
+       user: headers['x-taller-user'],
+       body: text ? (JSON.parse(text) as unknown) : undefined,
+     };
+   }
+
+   function nameOf(body: unknown): string {
+     const name = (body as { name?: unknown } | undefined)?.name;
+     return typeof name === 'string' ? name : '';
+   }
+
+   export class ApiDouble {
+     account: PublishedAccount | null;
+     signInAccount: PublishedAccount = STUDENT;
+     readonly calls: ApiCall[] = [];
+     private readonly unhandled: string[] = [];
+     private readonly handlers = new Map<ApiRoute, ApiHandler>();
+     private readonly queued = new Map<ApiRoute, ApiReply[]>();
+     private xsrfGeneration = 1;
+
+     private constructor(
+       private readonly context: BrowserContext,
+       private readonly origin: string,
+       account: PublishedAccount | null,
+     ) {
+       this.account = account;
+       this.installDefaults();
+     }
+
+     static async install(
+       page: Page,
+       context: BrowserContext,
+       baseURL: string,
+       account: PublishedAccount | null,
+     ): Promise<ApiDouble> {
+       const api = new ApiDouble(context, new URL(baseURL).origin, account);
+       await api.setXsrfCookie();
+       await page.route('**/api/**', (route) => api.handle(route));
+       return api;
+     }
+
+     xsrfValue(): string {
+       return `e2e-xsrf-${this.xsrfGeneration}=`;
+     }
+
+     on(route: ApiRoute, handler: ApiHandler): void {
+       this.handlers.set(route, handler);
+     }
+
+     reply(route: ApiRoute, ...replies: ApiReply[]): void {
+       this.queued.set(route, [...replies]);
+     }
+
+     callsTo(route: ApiRoute): ApiCall[] {
+       const [method, path] = route.split(' ');
+       return this.calls.filter((call) => call.method === method && call.path === path);
+     }
+
+     assertAllHandled(): void {
+       expect(this.unhandled, 'Pedidos a /api sin respuesta en el doble de la API').toEqual([]);
+     }
+
+     private async setXsrfCookie(): Promise<void> {
+       await this.context.addCookies([
+         { name: 'XSRF-TOKEN', value: encodeURIComponent(this.xsrfValue()), url: this.origin },
+       ]);
+     }
+
+     private async rotateXsrf(): Promise<void> {
+       this.xsrfGeneration += 1;
+       await this.setXsrfCookie();
+     }
+
+     private async handle(route: Route): Promise<void> {
+       const call = await callOf(route.request());
+       this.calls.push(call);
+       const reply = await this.replyTo(call);
+       await route.fulfill({
+         status: reply.status,
+         headers: reply.headers,
+         contentType: reply.contentType ?? (reply.json === undefined ? undefined : 'application/json'),
+         body: reply.json === undefined ? reply.body : JSON.stringify(reply.json),
+       });
+     }
+
+     private async replyTo(call: ApiCall): Promise<ApiReply> {
+       const route = `${call.method} ${call.path}` as ApiRoute;
+       if (MODIFYING.has(call.method) && call.xsrf !== this.xsrfValue()) {
+         return { status: 419, json: errorBody('csrf_token_mismatch') };
+       }
+       const next = this.queued.get(route)?.shift();
+       if (next !== undefined) return next;
+       const handler = this.handlers.get(route);
+       if (handler !== undefined) return handler(call);
+       this.unhandled.push(route);
+       return { status: 404, json: errorBody('not_found') };
+     }
+
+     private installDefaults(): void {
+       this.on('GET /api/session', () => ({
+         status: 200,
+         headers: { 'Cache-Control': 'no-store' },
+         json: { user: this.account, features: FEATURES, contentVersion: CONTENT_VERSION, catalogs: [] },
+       }));
+       this.on('POST /api/auth/login', async () => {
+         this.account = this.signInAccount;
+         await this.rotateXsrf();
+         return { status: 200, json: { data: this.signInAccount } };
+       });
+       this.on('POST /api/auth/logout', async () => {
+         this.account = null;
+         await this.rotateXsrf();
+         return { status: 204 };
+       });
+       this.on('POST /api/auth/invitations/lookup', () => ({
+         status: 200,
+         json: { email: INVITATION.email, role: INVITATION.role, expiresAt: INVITATION.expiresAt },
+       }));
+       this.on('POST /api/auth/invitations/accept', async (call) => {
+         const created: PublishedAccount = {
+           id: 77,
+           name: nameOf(call.body),
+           email: INVITATION.email,
+           role: 'student',
+           privacyAccepted: true,
+         };
+         this.account = created;
+         await this.rotateXsrf();
+         return { status: 201, json: { data: created } };
+       });
+       this.on('POST /api/auth/reset-password', () => ({ status: 200, json: {} }));
+       this.on('POST /api/me/privacy', () => {
+         if (this.account !== null) this.account = { ...this.account, privacyAccepted: true };
+         return { status: 204 };
+       });
+     }
+   }
+   ```
+
+3. **`qa/e2e/fixtures/index.ts`.** Suma la opción `sessionAccount`, el fixture automático `api` y los Page Objects `access` y `account`. `account` llega en U2 (T024): en U1 se suma sólo `access`.
+
+   ```ts
+   import { test as base, expect } from '@playwright/test';
+   import { STUDENT, type PublishedAccount } from '../lib/api-contract';
+   import { AccessPage } from '../pages/access';
+   import { AtlasPage } from '../pages/atlas';
+   import { CampaignPage } from '../pages/campaign';
+   import { LabPage } from '../pages/lab';
+   import { ShellPage } from '../pages/shell';
+   import { SystemsPage } from '../pages/systems';
+   import { ApiDouble } from './api-double';
+   import { CompilerDouble } from './compiler-double';
+   import { PageIssues } from './page-issues';
+   import { StorageControl } from './storage-control';
+   import { StrictNetwork } from './strict-network';
+
+   interface Options {
+     sessionAccount: PublishedAccount | null;
+   }
+
+   interface Fixtures {
+     pageIssues: PageIssues;
+     strictNetwork: StrictNetwork;
+     api: ApiDouble;
+     compiler: CompilerDouble;
+     storage: StorageControl;
+     shell: ShellPage;
+     lab: LabPage;
+     campaign: CampaignPage;
+     systems: SystemsPage;
+     atlas: AtlasPage;
+     access: AccessPage;
+   }
+
+   export const test = base.extend<Fixtures & Options>({
+     sessionAccount: [STUDENT, { option: true }],
+     pageIssues: [
+       async ({ page }, use) => {
+         const issues = new PageIssues(page);
+         await use(issues);
+         issues.assertClean();
+       },
+       { auto: true },
+     ],
+     strictNetwork: [
+       async ({ context, baseURL }, use) => {
+         const network = await StrictNetwork.install(context, baseURL!);
+         await use(network);
+         network.assertNothingBlocked();
+       },
+       { auto: true },
+     ],
+     api: [
+       async ({ page, context, baseURL, sessionAccount }, use) => {
+         const api = await ApiDouble.install(page, context, baseURL!, sessionAccount);
+         await use(api);
+         api.assertAllHandled();
+       },
+       { auto: true },
+     ],
+     compiler: async ({ page }, use) => use(new CompilerDouble(page)),
+     storage: async ({ context, page }, use) => use(new StorageControl(context, page)),
+     shell: async ({ page }, use) => use(new ShellPage(page)),
+     lab: async ({ page }, use) => use(new LabPage(page)),
+     campaign: async ({ page }, use) => use(new CampaignPage(page)),
+     systems: async ({ page }, use) => use(new SystemsPage(page)),
+     atlas: async ({ page }, use) => use(new AtlasPage(page)),
+     access: async ({ page }, use) => use(new AccessPage(page)),
+   });
+
+   export { expect };
+   ```
+
+4. **`qa/e2e/pages/access.ts`.** U1 usa `heading` y `alert`; los demás métodos se usan desde U2 y se escriben ya, para no editar el Page Object en cada unidad:
+
+   ```ts
+   import type { Locator, Page } from '@playwright/test';
+
+   export class AccessPage {
+     constructor(readonly page: Page) {}
+
+     heading(name: string): Locator {
+       return this.page.getByRole('heading', { name, exact: true });
+     }
+
+     field(label: string): Locator {
+       return this.page.getByLabel(label, { exact: true });
+     }
+
+     button(name: string): Locator {
+       return this.page.getByRole('button', { name, exact: true });
+     }
+
+     alert(): Locator {
+       return this.page.getByRole('alert');
+     }
+
+     async signIn(email: string, password: string): Promise<void> {
+       await this.field('Email').fill(email);
+       await this.field('Contraseña').fill(password);
+       await this.button('Ingresar').click();
+     }
+
+     async createAccount(name: string, password: string): Promise<void> {
+       await this.field('Tu nombre').fill(name);
+       await this.field('Contraseña').fill(password);
+       await this.field('Repetí la contraseña').fill(password);
+       await this.page.getByRole('checkbox', { name: 'Leí y acepto el aviso de privacidad' }).check();
+       await this.button('Crear mi cuenta').click();
+     }
+
+     async chooseNewPassword(password: string): Promise<void> {
+       await this.field('Contraseña nueva').fill(password);
+       await this.field('Repetí la contraseña nueva').fill(password);
+       await this.button('Cambiar la contraseña').click();
+     }
+   }
+   ```
+
+5. **`qa/e2e/specs/session-stage.spec.ts`.** Cubre SC-001 (la URL), SC-002 y SC-003, la historia 2 en sus escenarios 1 y 6, y la historia 5 en los escenarios 1 y 2:
+
+   ```ts
+   import type { Page } from '@playwright/test';
+   import { expect, test } from '../fixtures';
+   import { INVITATION, MESSAGES } from '../lib/api-contract';
+   import { trackContentRequests } from '../lib/content-requests';
+   import { urls } from '../lib/urls';
+
+   const FAILED_RESOURCE = /Failed to load resource/;
+   const UNREACHABLE = 'No pudimos conectar con el taller. Revisá tu conexión y probá de nuevo.';
+
+   function legacyEvaluated(page: Page): Promise<boolean> {
+     return page.evaluate(() => 'TallerLab' in window);
+   }
+
+   function trackApiAndContent(page: Page): string[] {
+     const seen: string[] = [];
+     page.on('request', (request) => {
+       const { pathname } = new URL(request.url());
+       if (pathname === '/api/session' || pathname.startsWith('/content/')) seen.push(pathname);
+     });
+     return seen;
+   }
+
+   test.describe('every start', () => {
+     test('asks for the session once, before the content', async ({ shell, lab, page }) => {
+       const seen = trackApiAndContent(page);
+       await shell.goto(urls.exercise('rust-02', 'code'));
+       await expect(lab.tab('code')).toHaveAttribute('aria-selected', 'true');
+       expect(seen.filter((path) => path === '/api/session')).toHaveLength(1);
+       expect(seen[0]).toBe('/api/session');
+     });
+   });
+
+   test.describe('without an account', () => {
+     test.use({ sessionAccount: null });
+
+     test('shows the access with the shell inert, evaluates no legacy source and asks for no content', async ({
+       access,
+       page,
+     }) => {
+       const contentRequests = trackContentRequests(page);
+       await page.goto(urls.exercise('rust-02', 'code'));
+       await expect(access.heading('Ingresá al taller')).toBeVisible();
+       await expect(page.locator('.app-shell')).toHaveAttribute('inert', '');
+       expect(contentRequests).toHaveLength(0);
+       expect(await legacyEvaluated(page)).toBe(false);
+     });
+   });
+
+   test.describe('a link with a token', () => {
+     test('leaves the address bar and the history before app.js runs', async ({ page }) => {
+       await page.goto(`/?ejercicio=rust-02&paso=code#invitacion=${INVITATION.token}`);
+       await expect(page).toHaveURL(/\/\?ejercicio=rust-02&paso=code$/);
+       expect(await page.evaluate(() => history.length)).toBe(1);
+       expect(await legacyEvaluated(page)).toBe(false);
+     });
+
+     test('of a reset leaves the address bar too', async ({ page }) => {
+       await page.goto('/#restablecer=9f2c&email=ana%40x.com');
+       await expect(page).toHaveURL(/\/$/);
+       expect(await legacyEvaluated(page)).toBe(false);
+     });
+   });
+
+   test.describe('the session does not answer', () => {
+     test('shows the error, evaluates no legacy source and retries without reloading', async ({
+       api,
+       lab,
+       pageIssues,
+       page,
+     }) => {
+       pageIssues.expectIssue(FAILED_RESOURCE, 'the 502 of the first session request');
+       api.reply('GET /api/session', {
+         status: 502,
+         body: '<html>Bad Gateway</html>',
+         contentType: 'text/html',
+       });
+       await page.goto(urls.exercise('rust-02', 'code'));
+       await expect(page.getByRole('alert')).toHaveText(UNREACHABLE);
+       expect(await legacyEvaluated(page)).toBe(false);
+       const retry = page.getByRole('button', { name: 'Reintentar' });
+       await expect(retry).toBeFocused();
+       await retry.click();
+       await expect(lab.tab('code')).toHaveAttribute('aria-selected', 'true');
+       expect(api.callsTo('GET /api/session')).toHaveLength(2);
+     });
+
+     test('with a 429 waits for Retry-After before letting retry', async ({ api, pageIssues, page }) => {
+       pageIssues.expectIssue(FAILED_RESOURCE, 'the 429 of the first session request');
+       await page.clock.install();
+       api.reply('GET /api/session', {
+         status: 429,
+         headers: { 'Retry-After': '2' },
+         json: { message: MESSAGES.too_many_requests, code: 'too_many_requests' },
+       });
+       await page.goto(urls.view('recorrido'));
+       await expect(page.getByRole('alert')).toHaveText(
+         `${MESSAGES.too_many_requests} Podés volver a intentar en 2 segundos.`,
+       );
+       const retry = page.getByRole('button', { name: 'Reintentar' });
+       await expect(retry).toBeDisabled();
+       await page.clock.fastForward(2_000);
+       await expect(retry).toBeEnabled();
+     });
+   });
+   ```
+
+6. **Correr** `npm run build && E2E_PORT=4191 npm run test:e2e`.
+   - **Los 123 de la red,** en verde: el doble ya responde la sesión, aunque todavía nadie la pida.
+   - **`session-stage.spec.ts`,** en rojo, por la razón esperada: sin la etapa, no hay acceso ni error, y el token sigue en la URL.
+   - **Antes de cablear,** `assertAllHandled` no ve ningún pedido sin manejador.
+7. **Commit:** `test(qa): el doble de la API de los E2E y los E2E de la etapa de sesión, en rojo`.
+
+### Tarea 1.11 · El cableado del arranque y de la raíz de la cuenta (T012, K, desde S1)
+
+**Archivos:** `frontend/src/index.html`, `frontend/styles.css`, `frontend/src/app/main.tsx`, `frontend/src/app/boot/account-stages.ts`, `frontend/src/app/account/` (`api-client.ts`, `reload-document.ts`, `shell-inertness.ts`, `mount-account-root.tsx` y `AccountRoot.tsx`) y `qa/load-order-check.ts`.
+
+**Consume:** todo lo de T005, T007, T009 y T011. **Produce:** el arranque de F11a, que pone en verde la spec de T014 y el escenario de T013.
+
+1. **`frontend/src/index.html`,** tres cambios.
+   - **La barra superior.** La línea de `<header class="topbar">` pasa a ser:
+
+     ```html
+           <header class="topbar"><span class="topbar-label">APRENDER ES CONSTRUIR</span><div class="topbar-actions"><div class="language-switch" role="group" aria-label="Lenguaje del recorrido"><button data-language="rust" aria-pressed="true">Rust <span class="recommended-dot" aria-hidden="true"></span></button><button data-language="go" aria-pressed="false">Go</button></div><div class="account-entry" id="account-entry"></div></div></header>
+           <div class="session-status" id="session-status" tabindex="-1"></div>
+     ```
+
+   - **La raíz.** Entre el cierre de `.app-shell` y `<dialog id="lesson-dialog"…>` se agrega `<div id="account-root"></div>`.
+2. **`frontend/styles.css`.** Al final del archivo, las reglas del elemento nuevo del shell, con los mismos rellenos que `main` en sus tres anchos:
+
+   ```css
+   .session-status {
+     max-width: 1330px;
+     margin: auto;
+     padding: 44px 52px 0;
+   }
+   .session-status:empty {
+     display: none;
+   }
+   @media (max-width: 1150px) {
+     .session-status {
+       padding: 34px 32px 0;
+     }
+   }
+   @media (max-width: 590px) {
+     .session-status {
+       padding: 29px 20px 0;
+     }
+   }
+   ```
+
+3. **`frontend/src/app/account/`.**
+   - **`api-client.ts`:**
+
+     ```ts
+     import { createApiClient } from '../../shared/api/http';
+
+     export const apiClient = createApiClient({
+       fetch: (input, init) => window.fetch(input, init),
+       readCookies: () => document.cookie,
+     });
+     ```
+
+   - **`reload-document.ts`:**
+
+     ```ts
+     export function reloadDocument(): void {
+       window.location.reload();
+     }
+     ```
+
+   - **`shell-inertness.ts`:**
+
+     ```ts
+     export function setShellInert(inert: boolean): void {
+       for (const element of document.querySelectorAll<HTMLElement>('.app-shell, .skip-link')) {
+         element.inert = inert;
+       }
+     }
+     ```
+
+   - **`AccountRoot.tsx`.** U2 le suma `AccountMenu`, que usa `entryHost`:
+
+     ```tsx
+     import { AccessGate, accessRequests } from '../../features/sign-in';
+     import { ApiClientContext, type ApiClient } from '../../shared/api/http';
+     import { reloadDocument } from './reload-document';
+     import { setShellInert } from './shell-inertness';
+
+     interface AccountRootProps {
+       readonly client: ApiClient;
+       readonly entryHost: HTMLElement;
+     }
+
+     const AccountRoot = ({ client }: AccountRootProps) => (
+       <ApiClientContext value={client}>
+         <AccessGate requests={accessRequests} setShellInert={setShellInert} reloadDocument={reloadDocument} />
+       </ApiClientContext>
+     );
+
+     export default AccountRoot;
+     ```
+
+   - **`mount-account-root.tsx`.** Sin los dos elementos no monta nada: es el caso del DOM falso de `boot-check` (research.md, R11):
+
+     ```tsx
+     import { createRoot } from 'react-dom/client';
+     import AccountRoot from './AccountRoot';
+     import { apiClient } from './api-client';
+
+     let mounted = false;
+
+     export function mountAccountRoot(): void {
+       if (mounted) return;
+       const host = document.getElementById('account-root');
+       const entryHost = document.getElementById('account-entry');
+       if (host === null || entryHost === null) return;
+       mounted = true;
+       const root = createRoot(host, {
+         onUncaughtError(error) {
+           console.error('No se pudo mostrar la cuenta.', error);
+         },
+       });
+       root.render(<AccountRoot client={apiClient} entryHost={entryHost} />);
+     }
+     ```
+
+4. **`frontend/src/app/boot/account-stages.ts`:**
+
+   ```ts
+   import { fetchSession, sessionStore } from '../../entities/session';
+   import { requestSignIn } from '../../features/sign-in';
+   import { apiClient } from '../account/api-client';
+   import { mountAccountRoot } from '../account/mount-account-root';
+   import { createTokenStage } from './access-tokens';
+   import { createSessionGate } from './session-gate';
+   import { createSessionView } from './session-view';
+
+   const SESSION_TIMEOUT_MS = 20_000;
+   const LOADING_DELAY_MS = 400;
+
+   export const tokenStage = createTokenStage({ location: window.location, history: window.history });
+
+   export const sessionStage = createSessionGate({
+     fetchSession: (request) => fetchSession(apiClient, request),
+     storeSession: (snapshot) => sessionStore.getState().applySnapshot(snapshot),
+     takeAccessToken: () => tokenStage.take(),
+     requestSignIn: (options) => {
+       mountAccountRoot();
+       return requestSignIn(options);
+     },
+     onReady: mountAccountRoot,
+     view: createSessionView(),
+     timeoutMs: SESSION_TIMEOUT_MS,
+     loadingDelayMs: LOADING_DELAY_MS,
+   });
+   ```
+
+5. **`frontend/src/app/main.tsx`:**
+
+   ```tsx
+   import '../../styles.css';
+   import '../../lab.css';
+   import '../pages/atlas/ui/atlas.css';
+   import '../../campaign.css';
+   import '../../quest-explorers.css';
+   import '../../systems.css';
+   import '../features/sign-in/ui/access.css';
+
+   import { sessionStage, tokenStage } from './boot/account-stages';
+   import { contentGate } from './boot/content-stage';
+   import { legacyViews } from './boot/legacy-views';
+   import { runBoot } from './boot/run-boot';
+
+   // qa/load-order-check.ts reads this call: a new stage goes here and in its table.
+   runBoot([tokenStage, sessionStage, contentGate, legacyViews]).catch((error: unknown) => {
+     console.error('No se pudo iniciar el taller.', error);
+   });
+   ```
+
+6. **`qa/load-order-check.ts`:** `STAGE_CONSTRAINTS` pasa a tener tres restricciones, y la de A2 no cambia:
+
+   ```ts
+   const STAGE_CONSTRAINTS: Constraint[] = [
+     [
+       'tokenStage',
+       'sessionStage',
+       'la etapa de los tokens borra de la URL los fragmentos con token antes de que la sesión decida qué mostrar y antes de que app.js mire el hash',
+     ],
+     [
+       'sessionStage',
+       'contentGate',
+       'sin sesión no se pide el contenido: la etapa de sesión espera «pedir el ingreso» antes de la compuerta (F11-Q1)',
+     ],
+     [
+       'contentGate',
+       'legacyViews',
+       'los adaptadores y las vistas legacy leen el contenido publicado al evaluarse',
+     ],
+   ];
+   ```
+
+7. **Correr:**
+   - `node qa/load-order-check.ts`;
+   - `node qa/boot-check.ts`, con el escenario de T013 ya en verde;
+   - `npm run build && node qa/dist-content-check.ts`;
+   - `npm test` y `npm run lint`;
+   - `E2E_PORT=4173 npm run test:e2e`: los 123 y `session-stage.spec.ts`, todos en verde.
+
+   Si `boot-check` anota oyentes en «main.tsx without its call evaluates quietly», la raíz se montó en el DOM falso: revisá la guarda de los hosts.
+8. **Commit:** `feat(front): las etapas de los tokens y de sesión en el arranque, y la raíz de la cuenta`.
+
+### Tarea 1.12 · El proxy de `npm run dev` y la vista previa con la API (T015, K)
+
+**Archivos:** `qa/vite-proxy-check.ts`, `qa/run-checks.ts`, `frontend/vite.config.ts`, `docker/compose.preview.yaml` y `qa/compose-runs-check.ts`.
+
+1. **`qa/vite-proxy-check.ts`,** en rojo. Fija el Review Focus 5:
+
+   ```ts
+   /* npm run dev pasa /api/ al stack, y vite preview, el servidor de los E2E, no (F11 FR-036).
+    * node qa/vite-proxy-check.ts
+    */
+   import assert from 'node:assert/strict';
+   import path from 'node:path';
+   import { loadConfigFromFile } from 'vite';
+   import { repoRoot } from './lib/sources.ts';
+
+   const loaded = await loadConfigFromFile(
+     { command: 'serve', mode: 'development' },
+     path.join(repoRoot, 'frontend', 'vite.config.ts'),
+   );
+   assert.ok(loaded, 'no se pudo leer frontend/vite.config.ts');
+   const stackPort = process.env.TALLER_PORT ?? '8080';
+   assert.deepEqual(loaded.config.server?.proxy, {
+     '/api': { target: `http://127.0.0.1:${stackPort}`, changeOrigin: false },
+   });
+   assert.deepEqual(
+     loaded.config.preview?.proxy,
+     {},
+     'vite preview hereda server.proxy si no se lo vacía: los E2E pegarían contra el stack',
+   );
+   console.log('vite-proxy-check OK: npm run dev pasa /api/ al stack y vite preview no.');
+   ```
+
+   Se registra en `qa/run-checks.ts`, en `webChecks`, justo después de `'load-order-check.ts'`. Correrlo da falla: `server.proxy` es `undefined`.
+2. **`frontend/vite.config.ts`.** Suma la constante y las dos claves:
+
+   ```ts
+   const stackOrigin = `http://127.0.0.1:${process.env.TALLER_PORT ?? '8080'}`;
+   ```
+
+   ```ts
+   server: { proxy: { '/api': { target: stackOrigin, changeOrigin: false } } },
+   preview: { proxy: {} },
+   ```
+
+   Van dentro de `defineConfig({...})`, después de `plugins`. Correr `node qa/vite-proxy-check.ts`: en verde.
+3. **`docker/compose.preview.yaml`.** Sale `network_mode: bridge`, y el servicio se une a la red interna del stack como externa (research.md, R12):
+
+   ```yaml
+   name: taller-rust-go-preview
+   services:
+     preview:
+       image: taller-rust-go-taller:latest
+       build:
+         context: ..
+         dockerfile: frontend/Dockerfile
+       networks: [edge, stack-web]
+       ports:
+         - '127.0.0.1:8765:8080'
+       volumes:
+         - ../dist:/usr/share/nginx/html:ro
+       read_only: true
+       tmpfs:
+         - /tmp:rw,noexec,nosuid,size=32m
+       security_opt:
+         - no-new-privileges:true
+       cap_drop:
+         - ALL
+       mem_limit: 128m
+       pids_limit: 64
+
+   networks:
+     edge: {}
+     stack-web:
+       external: true
+       name: taller-rust-go_web
+   ```
+
+4. **`qa/compose-runs-check.ts`.** Suma un escenario antes de `done()`:
+
+   ```ts
+   test('the preview joins the web network of the stack, so its Nginx reaches php for /api/', () => {
+     const preview = parse(read('docker/compose.preview.yaml')) as {
+       services: { preview: { networks?: string[]; network_mode?: string } };
+       networks: Record<string, { external?: boolean; name?: string }>;
+     };
+     assert.equal(preview.services.preview.network_mode, undefined);
+     assert.ok(preview.services.preview.networks?.includes('stack-web'));
+     assert.deepEqual(preview.networks['stack-web'], { external: true, name: 'taller-rust-go_web' });
+   });
+   ```
+
+   Escribilo antes de cambiar `compose.preview.yaml` y miralo fallar (`node qa/compose-runs-check.ts`).
+5. **Verificación con Docker,** con permiso del usuario:
+   - con el stack levantado (`docker compose up --build -d --wait`), primero `npm run build`, después `docker compose -f docker/compose.preview.yaml up --build -d --wait`;
+   - `curl -s http://127.0.0.1:8765/api/session` devuelve el JSON de C3a con `"user":null`;
+   - `npm run dev` y `curl -s http://127.0.0.1:5173/api/session` devuelven lo mismo;
+   - sin el stack, el `up` de la vista previa falla con «network taller-rust-go_web declared as external, but could not be found», como prevé la spec (SC-012).
+
+   Anotá las salidas en la descripción del PR.
+6. **Commits:**
+   - `test(qa): vite-proxy-check y la red de la vista previa, en rojo`;
+   - `feat(front): npm run dev y la vista previa pasan /api/ al stack`.
+
+### Tarea 1.13 · La compuerta de U1 (T016, K)
+
+La compuerta de 0.4, con estos puntos propios:
+
+- **El escenario de T013** pasa, y ningún otro de `boot-check` cambió.
+- **Los E2E:** los 123 y `session-stage.spec.ts` en verde, tres veces seguidas (`--repeat-each=3 --retries=0`). La etapa nueva no puede volver inestable la red.
+- **Lo que queda en el documento:** con un estudiante, `#session-status` está vacío y `#account-root` no tiene nodos (todavía no hay entrada). Se comprueba en el navegador con `document.getElementById('account-root').childNodes.length === 0`.
+- **El PR:** `feat(front): mandatory session stage, API client and the account root (F11a U1)`, contra `f11a/base`.
+
+**Reversión de U1:** se revierten T015, T012, T014, T013, T011, T009, T007 y T005, con sus specs, en ese orden. U0 se queda.
