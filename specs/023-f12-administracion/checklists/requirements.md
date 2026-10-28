@@ -84,7 +84,8 @@ Los nombres de módulos (`pages/admin`, `shared/api` y `entities/session`) son p
   - `PublishedAdminUser`, `PublishedInvitation`, `PageMeta`, `PublishedUser`, `RequirePassword`, `ApiCode` y `Limiters`;
   - `config/auth.php` (900 s), `config/taller.php` (los vencimientos y la poda) y `lang/es/` (`admin`, `invitations`, `api` y `account`);
   - las pruebas `PasswordConfirmMatrixTest`, `InvitationsEndpointTest`, `InvitationsListTest`, `UsersListTest`, `UserUpdateTest` y `DeleteUserTest`;
-  - el listener de B2 (`CancelRunsOfRestrictedAccount`): cancela las ejecuciones al deshabilitar o al borrar, no al degradar, y el texto de «Quitar admin» no lo promete.
+  - el listener de B2 (`CancelRunsOfRestrictedAccount`): cancela las ejecuciones al deshabilitar o al borrar, no al degradar, y el texto de «Quitar admin» no lo promete;
+  - `AccountChanges`: sólo rechaza los cambios sobre una cuenta que se está borrando, así que una cuenta deshabilitada también admite «Hacer admin» y «Quitar admin», como dice la tabla de acciones por fila.
 
   De ahí salen los hallazgos de «Relación con otros ítems»: no hay un comando de consola para gestionar cuentas, los mensajes de `invitations.php` muestran los valores en inglés, y `GET /api/admin/users/{user}` no le hace falta a F12.
 - **El front,** en la integración local de F2a, A2 y F2b (`2b37caf`):
