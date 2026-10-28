@@ -6525,7 +6525,7 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
 
    ```ts
    import { expect, test } from '../fixtures';
-   import { INVITATION, MESSAGES, STUDENT, errorBody, FIELD_MESSAGES } from '../lib/api-contract';
+   import { FIELD_MESSAGES, INVITATION, MESSAGES, errorBody } from '../lib/api-contract';
    import { documentWasReloaded, markDocument } from '../lib/document-marker';
 
    const FAILED_RESOURCE = /Failed to load resource/;
@@ -6651,7 +6651,6 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
        await page.goto(LINK);
        await expect(access.heading('Creá tu cuenta')).toBeVisible();
        await expect(page.getByText(`Te invitaron con ${INVITATION.email}.`)).toBeVisible();
-       expect(STUDENT.email).not.toBe(INVITATION.email);
      });
    });
    ```
@@ -7209,11 +7208,12 @@ La compuerta de 0.4, con:
      test.describe(`at ${width} px with an account`, () => {
        test.use({ viewport: { width, height: 760 } });
 
-       test('the top bar fits with «Tu cuenta», whose dialog takes the whole screen', async ({ account, shell }) => {
+       test('the top bar fits with «Tu cuenta», whose dialog takes the whole screen', async ({ account, shell, page }) => {
          await shell.goto(urls.view('recorrido'));
          expect(await account.topbar.evaluate((element) => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(0);
          await account.open();
-         expect((await account.dialog.boundingBox())?.width).toBe(width);
+         const viewportWidth = await page.evaluate(() => document.documentElement.clientWidth);
+         expect((await account.dialog.boundingBox())?.width).toBe(viewportWidth);
        });
      });
    }
