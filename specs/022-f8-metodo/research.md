@@ -112,7 +112,7 @@ El motivo está en el comentario de la regla: los checks empaquetan cada fuente 
   - «ignores the confirmation» sigue valiendo, porque sin el paso la confirmación no se usa.
 - **La lógica local no cambia un byte.** La función `resetAll(areas, sessionResets)` queda igual, y un envoltorio nuevo, `resetWithServer`, decide si la llama.
 - **La feature no importa el cliente ni F11** (FR-015). `ResetRefusal` es una forma propia, con los mensajes ya decididos, y el armado la produce (R5).
-- **Las pruebas nuevas** van en un archivo nuevo, `reset-with-server.spec.ts`, para que el viejo quede idéntico:
+- **Las pruebas nuevas** van en un archivo nuevo, `progress-backup-edges.spec.ts`, para que el viejo quede idéntico:
   - el orden: el servidor antes del primer `reset`;
   - con un rechazo, ningún evento local;
   - sin confirmación, una contraseña vacía.
@@ -305,7 +305,7 @@ El modelo puro, en `model/method-texts.ts`, tiene `tutorPrompt`, los dos textos 
 - `boot-harness.ts` pierde los cuatro ids estáticos de la confirmación y del campo de archivo, y suma `cookie: ''` al documento, porque el `send()` de F11a lee `document.cookie`.
 - `app-shell-harness.ts` pierde esos cuatro y también `note-state` y `tutor-prompt`, que eran de la bitácora.
 
-**La correspondencia de los 38 escenarios de `app-shell-check` y de los 3 de `boot-check`** está en el plan, §3.7. Los 20 que quedan en `app-shell-check` conservan sus valores. El de «almacén» que vaciaba una nota por el delegado pasa a `harness.writeNote`, que hace lo mismo que la página: asigna la nota y llama a `routeStore.save()` del mismo bundle.
+**La correspondencia de los 38 escenarios de `app-shell-check` y de los 3 de `boot-check`** está en el plan, §3.9. Los 20 que quedan en `app-shell-check` conservan sus valores. El de «almacén» que vaciaba una nota por el delegado pasa a `harness.writeNote`, que hace lo mismo que la página: asigna la nota y llama a `routeStore.save()` del mismo bundle.
 
 ## R11. Los E2E
 

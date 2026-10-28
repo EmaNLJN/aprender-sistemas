@@ -53,7 +53,7 @@ export interface ProgressBackup {
   2. si devuelve `confirmed: false`, resuelve `{refusal}` sin llamar a ningún área ni a los pasos de sesión;
   3. si devuelve `confirmed: true`, corre el borrado local de hoy y resuelve `{notice}`.
 
-`index.ts` suma los tipos `ResetOutcome`, `ResetRefusal`, `ResetRefused`, `ServerReset` y `ServerResetResult`.
+`index.ts` suma los tipos `ResetOutcome`, `ResetRefusal`, `ResetRefused`, `ServerReset` y `ServerResetResult`. Los tipos entran en U3 (T009), sin comportamiento; `resetWithServer` llega en U4 (T016).
 
 ## 2. `app/progress-backup`: el armado
 
@@ -185,6 +185,7 @@ export interface MethodPageProps {
   readonly progressBackup: ProgressBackup;
   readonly store?: RouteStore; // por omisión, routeStore; sólo las specs pasan otro
   notify(message: string): void;
+  reloadDocument(): void; // desde U4: «Recargar» de la confirmación
 }
 
 // pages/method/model/method-texts.ts
@@ -192,7 +193,12 @@ export const NOTE_STATE: Readonly<{ automatic: string; unavailable: string; save
 export function noteStateOnMount(storageAvailable: boolean): string;
 export function noteStateAfterWrite(storageAvailable: boolean): string;
 export function tutorPrompt(progress: RouteProgressV1): string;
+export function languageName(language: 'rust' | 'go'): string; // «Rust» o «Go»
 export function backupSizeLabel(text: string): string; // caracteres / 1024, con un decimal: «0.0 KB»
+
+// pages/method/model/write-note.ts
+export type NoteField = 'learned' | 'next';
+export function writeNote(store: RouteStore, field: NoteField, value: string): boolean; // asigna, guarda una vez y responde storageAvailable()
 
 // pages/method/lib/copy-with-fallback.ts
 export type CopyResult = 'clipboard' | 'command' | 'selection';
@@ -234,7 +240,7 @@ export function loadAppShell(context: vm.Context): AppShellModule;
 
 // qa/lib/app-shell-harness.ts
 export function startShell(harness: Harness): void; // startApp con la instancia de áreas falsas
-// Harness suma: writeNote(field: 'learned' | 'next', value: string): void
+// Harness suma: shell: AppShellModule | null; writeNote(field: 'learned' | 'next', value: string): void; resetRoute(): void
 ```
 
 ## 7. Los E2E
@@ -274,6 +280,6 @@ export function version2File(): FilePayload;
 
 - **Las rutas por omisión que suma F8:**
   - `POST /api/auth/confirm-password` responde 201 `{}`;
-  - `GET /api/progress` responde 200 con `{userId, epoch: 1, revision: 0, resetAt: null, contentVersion, serverTime}` y las áreas vacías;
+  - `GET /api/progress` responde 200 con `{userId, epoch: 1, revision: 0, resetAt: null, contentVersion, serverTime}`;
   - `POST /api/progress/reset` responde 200 `{epoch: 2, revision: 1}`.
 - **Los mensajes:** `MESSAGES` suma `password_confirmation_required`, `epoch_mismatch`, `client_outdated`, `email_unverified` y `content_not_imported`.
