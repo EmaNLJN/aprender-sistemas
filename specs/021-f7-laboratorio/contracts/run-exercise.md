@@ -111,6 +111,8 @@ export const IDLE_RUN: IdleRun = Object.freeze({ status: 'idle' });
   const runner = createExerciseRunner<ApiRunProgress>({ transport: createApiRunsTransport(…), … });
   ```
 
+- **El foco con los avisos de progreso (FR-039 de A4).** En F7a, `lab.js` repinta con `updateRunUI` en cada cambio de `state`, y eso reemplaza el `innerHTML` de `#lab-review`, con el botón «Cancelar ejecución» incluido. Con los Playgrounds sólo pasa al empezar y al terminar. Con A4 cada `report()` lo repintaría, y quien tiene el foco en «Cancelar ejecución» lo perdería. A4 repinta sólo la línea de estado mientras siga en `running` y conserva el nodo del botón.
+
 ## 3. La orquestación (`model/create-exercise-runner.ts`)
 
 ```ts
@@ -271,7 +273,7 @@ Repasados los requisitos de A4 que tocan la feature:
 | --- | --- |
 | FR-001, el envío | El adaptador de A4 recibe `exercise.id`, `draft` sin tocar y `customTest` normalizado. Cada llamada a `run` es un envío nuevo, con su `clientRunId` |
 | FR-002, el borrador blanco | La feature lo rechaza antes de llamar al puerto, sin intento |
-| FR-002, más de 64 KiB | Hallazgo: el puerto no tiene un rechazo previo. La salida sin cambiar la feature es que el adaptador devuelva una falla de transporte sin pedir nada, lo que guarda un `result` de transporte. Si A4 quiere no guardar, suma un rechazo previo al puerto y cambia la feature (ver el informe) |
+| FR-002, más de 64 KiB | Hallazgo: el puerto no tiene un rechazo previo. La salida que cumple FR-002 sin tocar el puerto ni la feature es una guarda en la raíz de composición: el manejador de ejecución (`runExercise` de `lab.js`, o el de la página en F7b) mide los bytes, avisa y no llama a `runner.run`. Así no hay pedido, ni intento, ni resultado guardado. Como corre antes de los rechazos de la feature, la raíz mira primero si hay una ejecución activa, y su aviso gana al del bloqueo. Que el adaptador devuelva una falla de transporte guardaría un `result`, y eso exige enmendar FR-002 (ver el informe) |
 | FR-003 a FR-011, la espera, los reintentos y las cuotas | Son del adaptador. La espera se ve por `report`, la cancelación llega por `signal`, y los rechazos y las cuotas son `transport-failure` con el mensaje |
 | FR-012 y FR-013, la sesión | Son del adaptador: puede esperar «pedir el ingreso» dentro de `run` |
 | FR-014 a FR-017, el resultado | `ExecutedVerdict` y `TransportFailureVerdict` cubren la tabla. La salida va sin las líneas de evidencia, y la feature recorta |
