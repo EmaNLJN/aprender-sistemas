@@ -63,7 +63,14 @@ La spec pide dos cosas a la vez sobre la consulta de sólo espacios: «el campo 
 - **Con un parser propio cuyo `eq` compara recortado (`a.trim() === b.trim()`):** `clearOnDefault` borra la clave de la URL. Pero `useQueryStates` también **pone el estado en `null`**, que vuelve al valor por omisión, así que el campo se vacía. Lo dice el código de `useQueryStates.ts` en `v2.10.2`: cuando `clearOnDefault` aplica y `eq` coincide, el valor pasa a `null` antes de emitirlo. El alumno no podría empezar una búsqueda con un espacio.
 - **Copiar la consulta en un `useState`:** lo prohíben FR-021 y `AGENTS.md`.
 
-**Decisión provisional del plan:** `parseAsString.withDefault('')` (opción A). Conserva el contrato de la tabla de la spec, que es lo que ve el alumno («el campo conserva lo escrito»), y la URL lleva el texto tal cual mientras sea sólo espacios: un `?buscar=+` no filtra y no rompe nada. Es la **decisión D1 para el usuario** (informe): si prefiere la URL limpia, la opción B cambia una línea de `library-query.ts` y dos casos de las specs. T002 confirma los dos comportamientos con el adaptador real antes de portar.
+**Decisión provisional del plan:** `parseAsString.withDefault('')` (opción A). Conserva el contrato de la tabla de la spec, que es lo que ve el alumno («el campo conserva lo escrito»), y la URL lleva el texto tal cual mientras sea sólo espacios: un `?buscar=+` no filtra y no rompe nada. Es la **decisión D1 para el usuario** (informe). T002 confirma los dos comportamientos con el adaptador real antes de portar.
+
+**Lo que costaría la opción B.** No es una línea:
+- sería un cuarto cambio visible, además de Q1 a Q3: el campo se vacía al escribir un espacio en una búsqueda vacía;
+- contradice la fila «Búsqueda» de lo que se conserva («el campo conserva lo escrito»);
+- hace fallar el E2E de la unidad 1 «a query of only spaces does not filter and the field keeps it». Ese E2E se escribe en verde contra el legacy y no se edita (FR-003), así que cambiarlo pide otra aprobación del usuario.
+
+Por eso A es la recomendación.
 
 ## R4 · Los ejemplos resueltos y la spec del modelo (FR-030 contra FR-007)
 

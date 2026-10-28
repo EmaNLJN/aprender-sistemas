@@ -24,7 +24,7 @@
 > **Para quien lo implementa.**
 >
 > - **Qué leer.** Leé completas las «Reglas para todos los agentes», la sección 0 y la sección de tu tarea. `tasks.md` tiene una línea por tarea (T001 a T023) y remite acá.
-> - **Qué está decidido.** El clarify del 2026-10-28 (spec, `## Clarifications`) y las decisiones de este plan («Decisiones»). D1, la búsqueda de sólo espacios, espera al usuario. El plan sigue con la opción recomendada, y cambiarla toca una línea y dos casos de prueba.
+> - **Qué está decidido.** El clarify del 2026-10-28 (spec, `## Clarifications`) y las decisiones de este plan («Decisiones»). D1, la búsqueda de sólo espacios, espera al usuario, y el plan sigue con la opción recomendada (A).
 > - **Código verificado.** Se planificó sin correr nada del repositorio y sin descargar paquetes. Lo único que corrió:
 >   - `npm view`, pedidos de un byte para medir los tarballs y la documentación con Context7 y `WebFetch`;
 >   - dos scripts de lectura en un directorio temporal, que recalcularon los ejemplos resueltos y listaron las reglas de CSS.
@@ -186,7 +186,7 @@ Valen para toda tarea. Los valores salen de la spec, la constitución 1.4.1, la 
 | Cuántos PR | Uno, el de la vista, revertible entero | Es la regla de la hoja de ruta («Un PR por vista»). El informe propone un PR previo con lo compartido |
 | Los contadores en la suscripción del shell | No: sólo el pie, que tiene prueba en rojo; F9 suma los contadores | R7 |
 
-**Abierta, para el usuario:** **D1**, la búsqueda de sólo espacios (research.md, R3). Este plan sigue con la opción A: el campo la conserva y la URL la lleva (`?buscar=+++`).
+**Abierta, para el usuario:** **D1**, la búsqueda de sólo espacios (research.md, R3). Este plan sigue con la opción A: el campo la conserva y la URL la lleva (`?buscar=+++`). La opción B (la URL limpia) sería un cuarto cambio visible: vacía el campo y hace fallar un E2E de la unidad 1, que sólo se edita con la aprobación del usuario.
 
 ## Project Structure
 
@@ -2651,7 +2651,7 @@ describe('writing the library form', () => {
 });
 ```
 
-Si el usuario elige la opción B de D1, el último caso pasa a esperar `''` y se suma el `eq` recortado de quickstart.md §2.
+Si el usuario elige la opción B de D1, el último caso pasa a esperar `''`, se suma el `eq` recortado de quickstart.md §2 y el E2E «a query of only spaces…» de la unidad 1 se edita con su aprobación (research.md, R3).
 
 - **La página.** En `LibraryPage.spec.tsx`, los imports suman `import type { OnUrlUpdateFunction } from 'nuqs/adapters/testing';`. Hay un ayudante nuevo y un `describe` nuevo:
   - el ayudante todavía pasa las dos props de la sesión, para que el componente de hoy compile;

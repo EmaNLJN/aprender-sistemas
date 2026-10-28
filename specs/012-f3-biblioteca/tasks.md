@@ -28,10 +28,7 @@ El detalle de cada tarea está en [plan.md](./plan.md): sus archivos, sus interf
 - [ ] T010 [US1] P · El modelo, con sus specs en rojo y después en verde: `filter-resources.ts`, `resource-labels.ts` y `guide-resource.factory.ts` en `frontend/src/pages/library/model/`, y los valores de la Biblioteca en `frontend/src/shared/config/url-grammar.ts` (FR-008, FR-015, FR-030, FR-034; plan 2.6)
 - [ ] T011 [US1] P · La página sin montar, `frontend/src/pages/library/ui/LibraryPage.tsx`, con `LibraryFiltersBar.tsx`, `ResourceCard.tsx`, `EmptyLibrary.tsx`, `model/use-library-filters.ts` e `index.ts`, y su spec `LibraryPage.spec.tsx` en rojo y después en verde (FR-007 a FR-010, FR-012, FR-016 a FR-018, FR-022 a FR-025, FR-032; plan 2.7)
 - [ ] T012 [US1] E · El caso del detalle abierto en `qa/e2e/specs/library.spec.ts`, en rojo contra el legacy (FR-003, FR-022; plan 3.1)
-- [ ] T013 [US3] K · El corte en un solo commit (FR-001, FR-009, FR-027 a FR-029, FR-035; SC-001, SC-005, SC-008; plan 3.2; quickstart §3.1). Toca:
-  - `frontend/src/app/legacy/register-library.tsx` y `frontend/src/app/boot/legacy-views.ts`;
-  - `frontend/app.js`;
-  - `qa/lib/app-adapters.ts`, `qa/lib/app-shell-harness.ts`, `qa/load-order-check.ts`, `qa/boot-check.ts` y `qa/lib/fake-dom.ts`.
+- [ ] T013 [US3] K · El corte en un solo commit: `frontend/src/app/legacy/register-library.tsx`, `frontend/src/app/boot/legacy-views.ts`, `frontend/app.js` y los cinco checks de `qa/` (FR-001, FR-009, FR-027 a FR-029, FR-035; SC-001, SC-005, SC-008; plan 3.2; quickstart §3.1)
 
 ## Phase 4: User Story 2 - Guarda favoritos y los encuentra al volver (Priority: P1) — El foco (P y E, onda 4)
 
@@ -41,15 +38,8 @@ El detalle de cada tarea está en [plan.md](./plan.md): sus archivos, sus interf
 
 - [ ] T015 [US4] K · `nuqs` 2.10.2 en `package.json` y su aviso en `frontend/THIRD-PARTY-NOTICES.txt`, con el permiso P1 (FR-042; plan 4.2)
 - [ ] T016 [US4] K · `frontend/src/app/legacy/url-state.tsx` (`UrlStateProvider` y `startUrlStateSync`), con su spec en rojo y después en verde (FR-042; plan 4.3)
-- [ ] T017 [US4] P y E · Las pruebas de la URL, en rojo (FR-003, FR-006, FR-018, FR-021, FR-043, FR-044; SC-013; plan 4.4), en estos archivos:
-  - `frontend/src/shared/config/url-grammar.spec.ts`;
-  - `frontend/src/pages/library/model/library-query.spec.ts`;
-  - `frontend/src/pages/library/ui/LibraryPage.spec.tsx`;
-  - `qa/e2e/specs/library.spec.ts` y `qa/e2e/specs/url-contract.spec.ts`.
-- [ ] T018 [US4] P y K · Los filtros en la URL (FR-006, FR-021, FR-028, FR-042 a FR-044; SC-001, SC-013; plan 4.5):
-  - `LIBRARY_QUERY_KEYS` y `withLanguageQuery` en `url-grammar.ts`;
-  - `library-query.ts` y `useQueryStates` en `LibraryPage.tsx`, sin la sesión;
-  - `UrlStateProvider` y `startUrlStateSync` en `register-library.tsx`.
+- [ ] T017 [US4] P y E · Las pruebas de la URL, en rojo: `url-grammar.spec.ts`, `library-query.spec.ts`, `LibraryPage.spec.tsx`, `qa/e2e/specs/library.spec.ts` y `qa/e2e/specs/url-contract.spec.ts` (FR-003, FR-006, FR-018, FR-021, FR-043, FR-044; SC-013; plan 4.4)
+- [ ] T018 [US4] P y K · Los filtros en la URL: `withLanguageQuery` en `url-grammar.ts`, `library-query.ts`, `useQueryStates` en `LibraryPage.tsx` sin la sesión, y `UrlStateProvider` y `startUrlStateSync` en `register-library.tsx` (FR-006, FR-021, FR-028, FR-042 a FR-044; SC-001, SC-013; plan 4.5)
 
 ## Phase 6: User Story 3 - Nada cambia fuera de la página (Priority: P1) — El CSS (H y K, onda 5)
 
