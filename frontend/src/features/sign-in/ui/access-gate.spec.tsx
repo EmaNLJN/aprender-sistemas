@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { ApiClientContext, createApiClient } from '../../../shared/api/http';
 import { createFakeFetch } from '../../../shared/api/http/fake-fetch';
@@ -77,5 +77,44 @@ describe('the access gate', () => {
       screen.getByRole('heading', { level: 2, name: 'Ingresá al taller' }),
     ).toBeInTheDocument();
     expect(setShellInert).not.toHaveBeenCalled();
+  });
+
+  it('opens the dialog again when the browser closes it while the request is pending', () => {
+    const requests = createAccessRequests();
+    const { container } = renderGate(requests);
+    act(() => {
+      void requests.request();
+    });
+    const dialog = container.querySelector('dialog')!;
+    dialog.close();
+    expect(dialog.open).toBe(false);
+    fireEvent(dialog, new Event('close'));
+    expect(dialog.open).toBe(true);
+  });
+
+  it('gives the focus back to whoever had it when the dialog finishes', () => {
+    const opener = document.createElement('button');
+    document.body.append(opener);
+    opener.focus();
+    const requests = createAccessRequests();
+    renderGate(requests);
+    act(() => {
+      void requests.request();
+    });
+    const inside = screen.getByRole('dialog').querySelector('p')!;
+    inside.tabIndex = -1;
+    inside.focus();
+    expect(document.activeElement).toBe(inside);
+    act(() => {
+      requests.finish({
+        id: 41,
+        name: 'Ana Pérez',
+        email: 'ana@x.com',
+        role: 'student',
+        privacyAccepted: true,
+      });
+    });
+    expect(document.activeElement).toBe(opener);
+    opener.remove();
   });
 });

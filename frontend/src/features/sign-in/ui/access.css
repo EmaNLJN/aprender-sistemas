@@ -1,0 +1,39 @@
+.access-page {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  overflow-y: auto;
+  background: var(--paper);
+}
+.access-main {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 72px 24px 48px;
+}
+.access-title {
+  font-size: 34px;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.access-notice {
+  color: var(--green);
+}
+.access-dialog {
+  width: min(520px, calc(100% - 32px));
+}
+@media (max-width: 590px) {
+  .access-main {
+    padding: 40px 16px 32px;
+  }
+  .access-title {
+    font-size: 28px;
+  }
+  .access-dialog {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    border-radius: 0;
+  }
+}
