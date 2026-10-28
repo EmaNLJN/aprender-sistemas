@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { EMPTY_CATALOG_FILTER, FAMILY_LABELS, filterWorkshops, type SearchableWorkshop } from './catalog-filter';
+import {
+  EMPTY_CATALOG_FILTER,
+  FAMILY_LABELS,
+  filterWorkshops,
+  type SearchableWorkshop,
+} from './catalog-filter';
 
 const workshop = (overrides: Partial<SearchableWorkshop>): SearchableWorkshop => ({
   id: 'alfa',
@@ -22,11 +27,19 @@ describe('filterWorkshops', () => {
   ];
 
   it('keeps every workshop with the empty filter, in order', () => {
-    expect(ids(filterWorkshops(catalog, EMPTY_CATALOG_FILTER))).toEqual(['cache', 'wal', 'raster', 'quorum']);
+    expect(ids(filterWorkshops(catalog, EMPTY_CATALOG_FILTER))).toEqual([
+      'cache',
+      'wal',
+      'raster',
+      'quorum',
+    ]);
   });
 
   it('keeps only the chosen family', () => {
-    expect(ids(filterWorkshops(catalog, { family: 'infra', query: '' }))).toEqual(['wal', 'quorum']);
+    expect(ids(filterWorkshops(catalog, { family: 'infra', query: '' }))).toEqual([
+      'wal',
+      'quorum',
+    ]);
   });
 
   it('ignores accents and case', () => {
@@ -35,7 +48,9 @@ describe('filterWorkshops', () => {
   });
 
   it('searches the subtitle, the why and the id', () => {
-    expect(ids(filterWorkshops(catalog, { family: 'all', query: 'registro previo' }))).toEqual(['wal']);
+    expect(ids(filterWorkshops(catalog, { family: 'all', query: 'registro previo' }))).toEqual([
+      'wal',
+    ]);
     expect(ids(filterWorkshops(catalog, { family: 'all', query: 'mayorias' }))).toEqual(['quorum']);
     expect(ids(filterWorkshops(catalog, { family: 'all', query: 'quorum' }))).toEqual(['quorum']);
   });
@@ -45,7 +60,9 @@ describe('filterWorkshops', () => {
   });
 
   it('does not trim the query', () => {
-    const only = [workshop({ id: 'cache', title: 'Alfa', subtitle: 'Beta', what: 'Gamma', why: 'Delta' })];
+    const only = [
+      workshop({ id: 'cache', title: 'Alfa', subtitle: 'Beta', what: 'Gamma', why: 'Delta' }),
+    ];
 
     expect(ids(filterWorkshops(only, { family: 'all', query: ' cache' }))).toEqual(['cache']);
     expect(ids(filterWorkshops(only, { family: 'all', query: 'cache ' }))).toEqual([]);
