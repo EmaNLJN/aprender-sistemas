@@ -34,7 +34,7 @@ export interface RunOutcome {
 
 const MARKER_PATTERN = /^__TALLER_TEST__(\w+):(PASS|FAIL)\s*$/gm;
 
-function readMarkers(stdout: string): Map<string, boolean> {
+export function readTestMarkers(stdout: string): ReadonlyMap<string, boolean> {
   const markers = new Map<string, boolean>();
   for (const match of stdout.matchAll(MARKER_PATTERN)) {
     const [, id, outcome] = match;
@@ -48,7 +48,7 @@ export function interpretRun(
   runnerResult: RunnerResult,
   { code, customTest, now }: RunContext,
 ): RunOutcome {
-  const markers = readMarkers(String(runnerResult.stdout || ''));
+  const markers = readTestMarkers(String(runnerResult.stdout || ''));
   const tests = exercise.tests.map((test) => ({
     id: test.id,
     passed: markers.get(test.id) === true,
