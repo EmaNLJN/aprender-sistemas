@@ -69,6 +69,18 @@ export default defineConfig([
     languageOptions: { globals: globals.node },
   },
   {
+    files: ['frontend/src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "CallExpression[callee.name='useStore'][arguments.length=1]",
+          message: 'useStore needs a selector: without one it subscribes to the whole store.',
+        },
+      ],
+    },
+  },
+  {
     rules: {
       complexity: ['warn', { max: 10, variant: 'classic' }],
     },
