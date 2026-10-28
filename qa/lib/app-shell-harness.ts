@@ -64,6 +64,7 @@ export interface HarnessOptions {
   failSystemsSync?: boolean;
   // Valor que devuelve applyImport de la sección (por defecto, true: se guardó).
   applyResults?: Partial<Record<ModuleKey, boolean>>;
+  asyncAdapters?: boolean;
 }
 
 const ids = [
@@ -118,6 +119,8 @@ function fakeAdapters(
       return options.applyResults?.[key] ?? true;
     };
   };
+  const asPromise = (behavior: Behavior): Behavior =>
+    options.asyncAdapters ? (...args) => Promise.resolve(behavior(...args)) : behavior;
   const backupsFor =
     (key: ModuleKey): Behavior =>
     () =>
@@ -129,8 +132,8 @@ function fakeAdapters(
     TallerLab: {
       exportState: () => labExport,
       planImport: planFor('lab'),
-      applyImport: applyFor('lab'),
-      reset: () => options.resets?.lab ?? true,
+      applyImport: asPromise(applyFor('lab')),
+      reset: asPromise(() => options.resets?.lab ?? true),
       backups: backupsFor('lab'),
       loadWarning: () => options.warnings?.lab ?? '',
       getExercises: () => [],
@@ -150,15 +153,15 @@ function fakeAdapters(
     TallerCampaignEngine: {
       exportState: () => campaignExport,
       planImport: planFor('campaign'),
-      applyImport: applyFor('campaign'),
-      reset: () => ({ removed: options.resets?.campaign ?? true }),
+      applyImport: asPromise(applyFor('campaign')),
+      reset: asPromise(() => ({ removed: options.resets?.campaign ?? true })),
       backups: backupsFor('campaign'),
     },
     TallerSystemsEngine: {
       exportState: () => systemsExport,
       planImport: planFor('systems'),
-      applyImport: applyFor('systems'),
-      reset: () => ({ removed: options.resets?.systems ?? true }),
+      applyImport: asPromise(applyFor('systems')),
+      reset: asPromise(() => ({ removed: options.resets?.systems ?? true })),
       backups: backupsFor('systems'),
     },
   };

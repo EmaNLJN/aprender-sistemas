@@ -483,10 +483,10 @@ await test('avisos: recorrido, campaña, Sistemas y laboratorio se acumulan sin 
   );
 });
 
-await test('h) borrar todo: elimina el respaldo del recorrido y reinicia a los motores', () => {
+await test('h) borrar todo: elimina el respaldo del recorrido y reinicia a los motores', async () => {
   const harness = buildHarness({ stored: localProgress, backup: 'copia anterior' });
   const before = harness.calls.length;
-  void harness.elements['confirm-reset']?.dispatch('click');
+  await harness.elements['confirm-reset']?.dispatch('click');
   assert.equal(harness.storage.has(BACKUP_KEY), false);
   assert.deepEqual(harness.storedState().completed, []);
   assert.deepEqual(
@@ -530,6 +530,60 @@ await test('h) borrar todo: sin acceso al almacenamiento no hay nada que borrar 
   const harness = buildHarness({ storageInaccessible: true });
   await harness.elements['confirm-reset']?.dispatch('click');
   assert.equal(harness.toast(), 'Progreso reiniciado. Un nuevo comienzo.');
+});
+
+await test('async areas: importing ends with the same notice and route', async () => {
+  const harness = buildHarness({ stored: localProgress, asyncAdapters: true });
+  await importFile(harness, JSON.stringify(validImport));
+  assert.equal(harness.toast(), 'Copia importada y combinada con tu avance actual.');
+  assert.deepEqual(harness.storedState().completed, [
+    'rust-ownership',
+    'go-save',
+    'rust-first-session',
+  ]);
+  assert.deepEqual(
+    harness.calls.filter((name) => name.endsWith('.applyImport')),
+    ['CampaignEngine.applyImport', 'Lab.applyImport', 'SystemsEngine.applyImport'],
+  );
+});
+
+await test('async areas: a lab that resolves false is named as not saved', async () => {
+  const harness = buildHarness({
+    stored: localProgress,
+    asyncAdapters: true,
+    applyResults: { lab: false },
+  });
+  await importFile(harness, JSON.stringify(validImport));
+  assert.equal(harness.toast(), NOT_SAVED_HEAD + 'laboratorio' + NOT_SAVED_TAIL);
+});
+
+await test('async areas: resetting everything ends with the same notice and a blank route', async () => {
+  const harness = buildHarness({ stored: localProgress, asyncAdapters: true });
+  await harness.elements['confirm-reset']?.dispatch('click');
+  assert.equal(harness.toast(), 'Progreso reiniciado. Un nuevo comienzo.');
+  assert.deepEqual(harness.storedState().completed, []);
+});
+
+await test('async areas: an engine that resolves { removed: false } gives the failure notice', async () => {
+  const harness = buildHarness({
+    stored: localProgress,
+    asyncAdapters: true,
+    resets: { systems: false },
+  });
+  await harness.elements['confirm-reset']?.dispatch('click');
+  assert.equal(harness.toast(), RESET_FAILED);
+  assert.deepEqual(harness.storedState().completed, []);
+});
+
+await test('async areas: a campaign engine that resolves { removed: false } gives the failure notice', async () => {
+  const harness = buildHarness({
+    stored: localProgress,
+    asyncAdapters: true,
+    resets: { campaign: false },
+  });
+  await harness.elements['confirm-reset']?.dispatch('click');
+  assert.equal(harness.toast(), RESET_FAILED);
+  assert.deepEqual(harness.storedState().completed, []);
 });
 
 const scriptNote = '</textarea><img src=x onerror=alert(1)>';
