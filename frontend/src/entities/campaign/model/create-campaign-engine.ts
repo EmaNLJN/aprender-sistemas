@@ -1,3 +1,4 @@
+import { createStore } from 'zustand/vanilla';
 import { cloneJson } from '../../../shared/lib/clone-json';
 import { isLosslessNormalization } from '../../../shared/lib/is-lossless-normalization';
 import {
@@ -55,6 +56,7 @@ export function createCampaignEngine(): CampaignEngine {
   let storageAvailable = true;
   let store: VersionedStore<CampaignStateV1> | null = null;
   let lastReportedXP = 0;
+  const changes = createStore<{ revision: number }>(() => ({ revision: 0 }));
 
   function assertReady(): CampaignCatalog {
     if (!catalog) throw new Error('Inicializá la campaña antes de usarla.');
@@ -64,6 +66,10 @@ export function createCampaignEngine(): CampaignEngine {
   function requireStore(): VersionedStore<CampaignStateV1> {
     if (!store) throw new Error('Inicializá la campaña antes de usarla.');
     return store;
+  }
+
+  function notify(): void {
+    changes.setState((current) => ({ revision: current.revision + 1 }));
   }
 
   // The store may merge with what another tab saved and returns the final state:
@@ -118,6 +124,7 @@ export function createCampaignEngine(): CampaignEngine {
     const total = totalXP(ready, state);
     const xpGained = total - lastReportedXP;
     lastReportedXP = total;
+    if (changed) notify();
     return { changed, xpGained, totalXP: total, storageAvailable };
   }
 
@@ -134,6 +141,7 @@ export function createCampaignEngine(): CampaignEngine {
     const passed = status.checkpointPassed || correct;
     state.checkpoints[worldId] = { passed, lastAnswer: index };
     persist();
+    notify();
     return {
       accepted: true,
       correct,
@@ -157,6 +165,7 @@ export function createCampaignEngine(): CampaignEngine {
     state = cloneJson(plan.state);
     const changed = requireStore().hasUnsavedChanges(state);
     if (changed) persist();
+    notify();
     return { changed, storageAvailable };
   }
 
@@ -165,10 +174,12 @@ export function createCampaignEngine(): CampaignEngine {
     state = blankCampaignState();
     lastReportedXP = 0;
     const removed = requireStore().remove();
+    notify();
     return { storageAvailable, removed };
   }
 
   return {
+    changes,
     init,
     refreshFromLab,
     syncLab,
@@ -195,3 +206,5 @@ export function createCampaignEngine(): CampaignEngine {
     reset,
   };
 }
+
+export const campaignEngine: CampaignEngine = createCampaignEngine();

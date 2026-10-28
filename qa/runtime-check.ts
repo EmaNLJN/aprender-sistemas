@@ -4,8 +4,13 @@ import vm from 'node:vm';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
-import { repoRoot as root, runSource } from './lib/sources.ts';
-import { SYSTEMS_DOMAINS, systemsDomainSources } from './lib/legacy-sources.ts';
+import { importModule, repoRoot as root } from './lib/sources.ts';
+import {
+  loadLabExercises,
+  loadSystemsCatalogs,
+  SYSTEMS_DOMAINS,
+  systemsDomainSources,
+} from './lib/legacy-sources.ts';
 
 interface TestCase {
   id: string;
@@ -17,9 +22,9 @@ interface Exercise {
   solution: string;
   tests: TestCase[];
 }
-interface LabApi {
-  getExercises: () => Exercise[];
+interface ExerciseModule {
   buildProgram: (exercise: Exercise, code: string) => string;
+  createExerciseCatalog: (groups: Record<string, Exercise[]>) => { exercises: Exercise[] };
 }
 interface ExerciseEntry {
   id: string;
@@ -98,11 +103,7 @@ const idsOption = options.find((option) => option.startsWith('--ids='));
 const fromOption = options.find((option) => option.startsWith('--from='));
 const hash = (value: string): string => crypto.createHash('sha256').update(value).digest('hex');
 if (!['rust', 'go'].includes(language)) throw new Error('Expected rust or go');
-const window: { TallerLab?: LabApi } = {};
-function requireLab(): LabApi {
-  if (!window.TallerLab) throw new Error('TallerLab was not published by lab.js');
-  return window.TallerLab;
-}
+const window: Record<string, Exercise[]> = {};
 const context = vm.createContext({
   window,
   localStorage: { getItem: () => null, setItem: () => {} },
@@ -117,15 +118,22 @@ const systemFiles = SYSTEMS_DOMAINS.flatMap((domain) => systemsDomainSources(dom
 const hashedSources = [...catalogSources, ...systemFiles].filter((file) =>
   fs.existsSync(path.join(root, file)),
 );
-for (const file of [
-  'frontend/src/app/legacy/register-catalogs.ts',
-  ...systemFiles,
-  'frontend/lab.js',
-]) {
-  runSource(context, file);
-}
-const lab = requireLab();
-const allExercises = lab.getExercises().filter((ex) => ex.language === language);
+loadLabExercises(context);
+loadSystemsCatalogs(context);
+const { buildProgram, createExerciseCatalog } = await importModule<ExerciseModule>(
+  'frontend/src/entities/exercise/index.ts',
+);
+const catalog = createExerciseCatalog({
+  rustLab: window.RUST_LAB ?? [],
+  rustQuests: window.RUST_QUESTS ?? [],
+  goLab: window.GO_LAB ?? [],
+  goQuests: window.GO_QUESTS ?? [],
+  systemsLowlevel: window.SYSTEMS_LOWLEVEL_LABS ?? [],
+  systemsInfra: window.SYSTEMS_INFRA_LABS ?? [],
+  systemsPlay: window.SYSTEMS_PLAY_LABS ?? [],
+  systemsPc: window.SYSTEMS_PC_LABS ?? [],
+});
+const allExercises = catalog.exercises.filter((ex) => ex.language === language);
 const sourceHash = (): string =>
   hash(
     hashedSources
@@ -149,9 +157,10 @@ if (starters && !options.includes('--all-starters')) exercises = [exercises[0]];
 if (!exercises.length || !exercises[0]) throw new Error('No matching exercises');
 
 function built(ex: Exercise, useStarter = starters): string {
-  return lab
-    .buildProgram(ex, useStarter ? ex.starter : ex.solution)
-    .replaceAll('__TALLER_TEST__', '__TALLER_TEST__' + ex.id.replace('-', '_') + '_');
+  return buildProgram(ex, useStarter ? ex.starter : ex.solution).replaceAll(
+    '__TALLER_TEST__',
+    '__TALLER_TEST__' + ex.id.replace('-', '_') + '_',
+  );
 }
 
 const recordPath = path.join(import.meta.dirname, language + '-validation.json');

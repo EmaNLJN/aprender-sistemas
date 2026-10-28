@@ -29,6 +29,8 @@ export interface Harness {
   languageButtons: FakeElement[];
   viewLinks: FakeElement[];
   storedState(): Record<string, unknown>;
+  intervalCount(): number;
+  listenerCount(): number;
 }
 
 export type ModuleKey = 'lab' | 'campaign' | 'systems';
@@ -184,7 +186,7 @@ function initialStorage(options: HarnessOptions): Map<string, string> {
   return storage;
 }
 
-export function buildHarness(options: HarnessOptions = {}): Harness {
+export function createHarness(options: HarnessOptions = {}): Harness {
   const elements: Record<string, FakeElement> = {};
   for (const id of ids) elements[id] = new FakeElement('div', id);
   elements['skip-link'] = new FakeElement('a');
@@ -208,6 +210,7 @@ export function buildHarness(options: HarnessOptions = {}): Harness {
   const callArgs: Record<string, unknown> = {};
   const errors: string[] = [];
   const storage = initialStorage(options);
+  const counters = { intervals: 0, windowListeners: 0 };
 
   const query = (selector: string): FakeElement | null => {
     if (selector.startsWith('#')) return elements[selector.slice(1)] ?? null;
@@ -286,9 +289,9 @@ export function buildHarness(options: HarnessOptions = {}): Harness {
     navigator: {},
     setTimeout: (callback: () => void, delay: number) => timers.push({ callback, delay }),
     clearTimeout: () => undefined,
-    setInterval: () => 0,
+    setInterval: () => counters.intervals++,
     clearInterval: () => undefined,
-    addEventListener: () => undefined,
+    addEventListener: () => counters.windowListeners++,
     scrollTo: () => undefined,
     ...fakeAdapters(record, options),
   } as Record<string, unknown>;
@@ -302,7 +305,6 @@ export function buildHarness(options: HarnessOptions = {}): Harness {
   context.window = context;
   vm.createContext(context);
   loadGuideContent(context);
-  loadAppShell(context);
   return {
     context,
     elements,
@@ -318,7 +320,20 @@ export function buildHarness(options: HarnessOptions = {}): Harness {
     viewLinks,
     toast: () => elements['toast']?.textContent ?? '',
     storedState: () => JSON.parse(storage.get(STORAGE_KEY) ?? 'null') as Record<string, unknown>,
+    intervalCount: () => counters.intervals,
+    listenerCount: () =>
+      [...Object.values(elements), ...languageButtons, ...viewLinks].reduce(
+        (sum, element) =>
+          sum + [...element.listeners.values()].reduce((count, item) => count + item.length, 0),
+        counters.windowListeners,
+      ),
   };
+}
+
+export function buildHarness(options: HarnessOptions = {}): Harness {
+  const harness = createHarness(options);
+  loadAppShell(harness.context).startApp();
+  return harness;
 }
 
 export function importFile(harness: Harness, text: string): Promise<void> {
