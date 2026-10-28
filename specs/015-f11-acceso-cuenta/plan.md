@@ -322,7 +322,8 @@ Los dueños tienen archivos disjuntos («Project Structure»). Cada uno trabaja 
 - **Comandos,** desde la raíz de tu worktree:
   - `npm ci --offline`;
   - `npm run test:unit -- <ruta>` y `node qa/<check>.ts` (antes de un check suelto, `npm run curriculum`);
-  - `npm run typecheck`, `npm run lint` y `npm run format:check`;
+  - `npm run typecheck` y `npm run lint`;
+  - `npx prettier --write <tus archivos>` antes de cada commit y, después, `npm run format:check`: el código de este plan respeta las reglas, pero no el ancho de línea de Prettier;
   - `npm run build` y, después, `E2E_PORT=<tu puerto> npm run test:e2e -- specs/<archivo>`.
 
   Si un comando intenta descargar algo, pará y pedí permiso. Docker lo corre sólo K, con permiso.
@@ -1712,7 +1713,7 @@ Con U1, un navegador sin sesión ve «Ingresá al taller» con el shell inerte y
    export default AccessPage;
    ```
 
-6. **`ui/AccessDialog.tsx`.** El ingreso como diálogo no se cierra con Esc, porque quien lo pidió espera una cuenta:
+6. **`ui/AccessDialog.tsx`.** El ingreso como diálogo no se cierra con Esc, porque quien lo pidió espera una cuenta. Sólo frena su propio `cancel`: React propaga `cancel` por el árbol, y el aviso de privacidad, que se abre adentro, sí tiene que cerrarse con Esc:
 
    ```tsx
    import { useEffect, useRef, type ReactNode } from 'react';
@@ -1733,7 +1734,9 @@ Con U1, un navegador sin sesión ve «Ingresá al taller» con el shell inerte y
          ref={dialog}
          className="access-dialog"
          aria-label="Ingresá al taller"
-         onCancel={(event) => event.preventDefault()}
+         onCancel={(event) => {
+           if (event.target === event.currentTarget) event.preventDefault();
+         }}
        >
          <div className="dialog-content">{children}</div>
        </dialog>
@@ -2663,8 +2666,8 @@ Con U1, un navegador sin sesión ve «Ingresá al taller» con el shell inerte y
    const META = resolve(import.meta.dirname, '../../../build/curriculum.meta.json');
    const CONTENT_VERSION = (JSON.parse(readFileSync(META, 'utf8')) as { documentHash: string }).documentHash.slice(0, 32);
 
-   async function callOf(request: Request): Promise<ApiCall> {
-     const headers = await request.allHeaders();
+   function callOf(request: Request): ApiCall {
+     const headers = request.headers();
      const text = request.postData();
      return {
        method: request.method(),
@@ -2743,7 +2746,7 @@ Con U1, un navegador sin sesión ve «Ingresá al taller» con el shell inerte y
      }
 
      private async handle(route: Route): Promise<void> {
-       const call = await callOf(route.request());
+       const call = callOf(route.request());
        this.calls.push(call);
        const reply = await this.replyTo(call);
        await route.fulfill({
@@ -3360,6 +3363,7 @@ La compuerta de 0.4, con estos puntos propios:
 
 - **El escenario de T013** pasa, y ningún otro de `boot-check` cambió.
 - **Los E2E:** los 123 y `session-stage.spec.ts` en verde, tres veces seguidas (`--repeat-each=3 --retries=0`). La etapa nueva no puede volver inestable la red.
+- **La carrera con el reloj simulado.** «shows the error when the request outlasts the 20 s cap», de A2, instala el reloj, hace `page.goto` y adelanta 20 s. Si la sesión no resolvió antes del adelanto, salta el tope de la sesión y no el de la compuerta, y se ve otro error. Se corre aparte: `E2E_PORT=4173 npm run test:e2e -- specs/content-gate.spec.ts -g "20 s cap" --repeat-each=30 --retries=0`. Si falla alguna vez, la palanca es que el doble responda `GET /api/session` sin ningún `await` antes de `route.fulfill`. Si sigue fallando, se lleva al coordinador, porque esa prueba no se edita.
 - **Lo que queda en el documento:** con un estudiante, `#session-status` está vacío y `#account-root` no tiene nodos (todavía no hay entrada). Se comprueba en el navegador con `document.getElementById('account-root').childNodes.length === 0`.
 - **El PR:** `feat(front): mandatory session stage, API client and the account root (F11a U1)`, contra `f11a/base`.
 
@@ -4324,7 +4328,7 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
 
 ### Tarea 2.4 · Las specs del ingreso y de «Salir», en rojo (T020, A, desde S2)
 
-**Archivos:** en `frontend/src/features/sign-in/`, los stubs de `api/access-endpoints.ts` (`login` y `EndpointResult`), `model/sign-out.ts` y `ui/LoginForm.tsx`, y las specs `api/access-endpoints.spec.ts`, `model/sign-out.spec.ts` y `ui/sign-in-screen.spec.tsx`. En `ui/access-gate.spec.tsx` (T008), el stub de `close` pasa a ser el de la introducción de U2.
+**Archivos:** en `frontend/src/features/sign-in/`, los stubs de `api/access-endpoints.ts` (`login` y `EndpointResult`), `model/sign-out.ts` y `ui/LoginForm.tsx`; la ayuda de las specs `ui/render-access.tsx`; y las specs `api/access-endpoints.spec.ts`, `model/sign-out.spec.ts` y `ui/sign-in-screen.spec.tsx`. En `ui/access-gate.spec.tsx` (T008), el `beforeAll` pasa a llamar a `stubDialogs`.
 
 **Consume:** de F, `shared/ui/form`; de P, `PrivacyNoticeDialog`; de C y S, lo de U1.
 
@@ -4418,22 +4422,31 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
    });
    ```
 
-3. **`ui/sign-in-screen.spec.tsx`.** El ingreso se prueba a través de la puerta, que es como lo usa la raíz:
+3. **`ui/render-access.tsx`,** la ayuda que comparten las specs del acceso (U2 a U4). No es una spec: Vitest no la corre, y ningún módulo de producción la importa. Arma la puerta con un cliente real y un `fetch` falso, y pide el acceso:
 
    ```tsx
    import { act, render, screen } from '@testing-library/react';
    import userEvent from '@testing-library/user-event';
-   import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+   import { vi, type Mock } from 'vitest';
    import { sessionStore, type PublishedUser } from '../../../entities/session';
    import { ApiClientContext, createApiClient, type FetchLike } from '../../../shared/api/http';
-   import { createFakeFetch, type FakeReply } from '../../../shared/api/http/fake-fetch';
-   import { createAccessRequests, type SignInOptions } from '../model/access-request';
+   import { createFakeFetch, type FakeReply, type RecordedCall } from '../../../shared/api/http/fake-fetch';
+   import { createAccessRequests, type AccessRequests, type SignInOptions } from '../model/access-request';
    import AccessGate from './AccessGate';
 
-   const ANA: PublishedUser = { id: 41, name: 'Ana Pérez', email: 'ana@x.com', role: 'student', privacyAccepted: true };
-   const PASSWORD = 'una frase larga para el taller';
+   export type AccessUser = ReturnType<typeof userEvent.setup>;
 
-   beforeAll(() => {
+   export interface RenderedAccess {
+     readonly user: AccessUser;
+     readonly signedIn: Promise<PublishedUser>;
+     readonly requests: AccessRequests;
+     readonly reloadDocument: Mock<() => void>;
+     readonly calls: readonly RecordedCall[];
+   }
+
+   const BOOT: SignInOptions = { presentation: 'page', reason: 'boot' };
+
+   export function stubDialogs(): void {
      HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) {
        this.open = true;
      };
@@ -4441,43 +4454,68 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
        this.open = false;
        this.dispatchEvent(new Event('close'));
      };
-   });
+   }
 
-   beforeEach(() => {
+   export function resetSession(user: PublishedUser | null = null): void {
      sessionStore.setState({
-       status: 'signed-out',
-       user: null,
+       status: user === null ? 'signed-out' : 'signed-in',
+       user,
        features: { passwordReset: false, registration: false },
        contentVersion: null,
      });
-   });
+   }
 
-   function renderAccess(fetch: FetchLike, options: SignInOptions = { presentation: 'page', reason: 'boot' }) {
+   export function renderAccess(
+     fetch: FetchLike,
+     options: SignInOptions = BOOT,
+     calls: readonly RecordedCall[] = [],
+   ): RenderedAccess {
      const user = userEvent.setup();
      const client = createApiClient({ fetch, readCookies: () => 'XSRF-TOKEN=abc' });
      const requests = createAccessRequests();
+     const reloadDocument = vi.fn<() => void>();
      render(
        <ApiClientContext value={client}>
-         <AccessGate requests={requests} setShellInert={vi.fn()} reloadDocument={vi.fn()} />
+         <AccessGate requests={requests} setShellInert={vi.fn()} reloadDocument={reloadDocument} />
        </ApiClientContext>,
      );
-     let signedIn: Promise<PublishedUser> | undefined;
+     let signedIn: Promise<PublishedUser> = new Promise<PublishedUser>(() => {});
      act(() => {
        signedIn = requests.request(options);
      });
-     return { user, signedIn };
+     return { user, signedIn, requests, reloadDocument, calls };
    }
 
-   function withReplies(replies: readonly FakeReply[], options?: SignInOptions) {
+   export function withReplies(replies: readonly FakeReply[], options: SignInOptions = BOOT): RenderedAccess {
      const fake = createFakeFetch(replies);
-     return { ...renderAccess(fake.fetch, options), calls: fake.calls };
+     return renderAccess(fake.fetch, options, fake.calls);
    }
 
-   async function signIn(user: ReturnType<typeof userEvent.setup>, email: string, password: string) {
+   export async function signIn(user: AccessUser, email: string, password: string): Promise<void> {
      await user.type(screen.getByLabelText('Email'), email);
      await user.type(screen.getByLabelText('Contraseña'), password);
      await user.click(screen.getByRole('button', { name: 'Ingresar' }));
    }
+   ```
+
+   La spec de la puerta de T008 pasa a usar `stubDialogs` en su `beforeAll`, en lugar de su stub propio.
+4. **`ui/sign-in-screen.spec.tsx`.** El ingreso se prueba a través de la puerta, que es como lo usa la raíz:
+
+   ```tsx
+   import { screen } from '@testing-library/react';
+   import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+   import { sessionStore, type PublishedUser } from '../../../entities/session';
+   import type { FetchLike } from '../../../shared/api/http';
+   import { renderAccess, resetSession, signIn, stubDialogs, withReplies } from './render-access';
+
+   const ANA: PublishedUser = { id: 41, name: 'Ana Pérez', email: 'ana@x.com', role: 'student', privacyAccepted: true };
+   const PASSWORD = 'una frase larga para el taller';
+
+   beforeAll(stubDialogs);
+
+   beforeEach(() => {
+     resetSession();
+   });
 
    describe('signing in', () => {
      it('focuses the email and ends the request with the account in the session', async () => {
@@ -4583,8 +4621,8 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
    });
    ```
 
-4. **Correr** `npm run test:unit -- frontend/src/features/sign-in`: las specs nuevas en rojo, y la de la puerta (T008) también, porque su título ya no alcanza sin el formulario.
-5. **Commit:** `test(front): specs del ingreso y de «Salir», en rojo`.
+5. **Correr** `npm run test:unit -- frontend/src/features/sign-in`: las specs nuevas en rojo, y la de la puerta (T008) también, porque su título ya no alcanza sin el formulario.
+6. **Commit:** `test(front): specs del ingreso y de «Salir», en rojo`.
 
 ### Tarea 2.5 · El ingreso y «Salir» (T021, A)
 
@@ -5647,9 +5685,28 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
    });
    ```
 
-4. **`ui/invitation-screen.spec.tsx`.** Usa el mismo arnés que `sign-in-screen.spec.tsx` (el stub de los diálogos, el `beforeEach` del store, `renderAccess` y `withReplies`), copiado entero en el archivo, con el pedido `{presentation: 'page', reason: 'boot', token: {kind: 'invitation', token: 'k3J8'}}` como valor por omisión de `options`:
+4. **`ui/invitation-screen.spec.tsx`,** con la ayuda de T020 y el pedido de un enlace de invitación:
 
    ```tsx
+   import { screen } from '@testing-library/react';
+   import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+   import type { FetchLike } from '../../../shared/api/http';
+   import { createFakeFetch, type FakeReply } from '../../../shared/api/http/fake-fetch';
+   import type { SignInOptions } from '../model/access-request';
+   import { renderAccess, resetSession, stubDialogs, withReplies, type AccessUser } from './render-access';
+
+   const INVITED: SignInOptions = { presentation: 'page', reason: 'boot', token: { kind: 'invitation', token: 'k3J8' } };
+
+   function invited(replies: readonly FakeReply[]) {
+     return withReplies(replies, INVITED);
+   }
+
+   beforeAll(stubDialogs);
+
+   beforeEach(() => {
+     resetSession();
+   });
+
    const LOOKUP: FakeReply = {
      status: 200,
      json: { email: 'bruno@x.com', role: 'student', expiresAt: '2026-10-12T15:30:00.000Z' },
@@ -5657,7 +5714,7 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
    const BRUNO = { id: 77, name: 'Bruno Díaz', email: 'bruno@x.com', role: 'student' as const, privacyAccepted: true };
    const PASSWORD = 'una frase larga para el alta';
 
-   async function fillSignup(user: ReturnType<typeof userEvent.setup>, password: string, confirmation = password) {
+   async function fillSignup(user: AccessUser, password: string, confirmation = password) {
      await user.type(await screen.findByLabelText('Tu nombre'), 'Bruno Díaz');
      await user.type(screen.getByLabelText('Contraseña'), password);
      await user.type(screen.getByLabelText('Repetí la contraseña'), confirmation);
@@ -5665,7 +5722,7 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
 
    describe('the invitation', () => {
      it('checks the invitation, then shows its email, its expiry and the warning, and focuses the name', async () => {
-       withReplies([LOOKUP]);
+       invited([LOOKUP]);
        expect(screen.getByRole('status')).toHaveTextContent('Revisando tu invitación…');
        expect(await screen.findByRole('heading', { level: 1, name: 'Creá tu cuenta' })).toBeInTheDocument();
        expect(screen.getByText('Te invitaron con bruno@x.com.')).toBeInTheDocument();
@@ -5676,12 +5733,12 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
      });
 
      it('says when the account will be an admin', async () => {
-       withReplies([{ status: 200, json: { ...(LOOKUP.json as object), role: 'admin' } }]);
+       invited([{ status: 200, json: { ...(LOOKUP.json as object), role: 'admin' } }]);
        expect(await screen.findByText('La cuenta va a tener rol de admin.')).toBeInTheDocument();
      });
 
      it('creates the account with the token, the name, both passwords and the version of the notice', async () => {
-       const { user, signedIn, calls } = withReplies([LOOKUP, { status: 201, json: { data: BRUNO } }]);
+       const { user, signedIn, calls } = invited([LOOKUP, { status: 201, json: { data: BRUNO } }]);
        await fillSignup(user, PASSWORD);
        await user.click(screen.getByRole('checkbox', { name: 'Leí y acepto el aviso de privacidad' }));
        await user.click(screen.getByRole('button', { name: 'Crear mi cuenta' }));
@@ -5696,7 +5753,7 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
      });
 
      it('stops a 14-character password in the browser and lets a 15-character one with a decomposed «á» go', async () => {
-       const { user, calls } = withReplies([LOOKUP, { status: 201, json: { data: BRUNO } }]);
+       const { user, calls } = invited([LOOKUP, { status: 201, json: { data: BRUNO } }]);
        await fillSignup(user, 'a'.repeat(14));
        await user.click(screen.getByRole('checkbox', { name: 'Leí y acepto el aviso de privacidad' }));
        await user.click(screen.getByRole('button', { name: 'Crear mi cuenta' }));
@@ -5714,7 +5771,7 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
      });
 
      it('stops a confirmation that does not match in the browser', async () => {
-       const { user, calls } = withReplies([LOOKUP]);
+       const { user, calls } = invited([LOOKUP]);
        await fillSignup(user, PASSWORD, 'otra frase larga distinta');
        await user.click(screen.getByRole('button', { name: 'Crear mi cuenta' }));
        expect(screen.getByLabelText('Repetí la contraseña')).toHaveAccessibleDescription(
@@ -5724,7 +5781,7 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
      });
 
      it('asks for the box of the notice, which comes unchecked', async () => {
-       const { user, calls } = withReplies([LOOKUP]);
+       const { user, calls } = invited([LOOKUP]);
        await fillSignup(user, PASSWORD);
        const box = screen.getByRole('checkbox', { name: 'Leí y acepto el aviso de privacidad' });
        expect(box).not.toBeChecked();
@@ -5734,7 +5791,7 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
      });
 
      it('shows every reason of the server on the password, marks it and focuses it', async () => {
-       const { user } = withReplies([
+       const { user } = invited([
          LOOKUP,
          {
            status: 422,
@@ -5762,11 +5819,7 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
          if (calls === 1) return createFakeFetch([LOOKUP]).fetch(path, init);
          return new Promise<Response>(() => {});
        };
-       const { user } = renderAccess(fetch, {
-         presentation: 'page',
-         reason: 'boot',
-         token: { kind: 'invitation', token: 'k3J8' },
-       });
+       const { user } = renderAccess(fetch, INVITED);
        await fillSignup(user, PASSWORD);
        await user.click(screen.getByRole('checkbox', { name: 'Leí y acepto el aviso de privacidad' }));
        await user.click(screen.getByRole('button', { name: 'Crear mi cuenta' }));
@@ -5774,7 +5827,7 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
      });
 
      it('reads the notice without losing what was typed', async () => {
-       const { user } = withReplies([LOOKUP]);
+       const { user } = invited([LOOKUP]);
        await user.type(await screen.findByLabelText('Tu nombre'), 'Bruno Díaz');
        await user.click(screen.getByRole('button', { name: 'Leer el aviso' }));
        expect(screen.getByRole('dialog', { name: 'Aviso de privacidad' })).toBeInTheDocument();
@@ -5787,7 +5840,7 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
        [404, 'invitation_not_found', 'La invitación no existe o ya se usó.', 'Si ya creaste tu cuenta, ingresá con tu email.'],
        [410, 'invitation_expired', 'La invitación venció. Pedí una nueva a quien te invitó.', null],
      ])('shows a %i of the lookup without a form and offers the sign-in', async (status, code, message, next) => {
-       const { user } = withReplies([{ status, json: { message, code } }]);
+       const { user } = invited([{ status, json: { message, code } }]);
        const alert = await screen.findByRole('alert');
        expect(alert).toHaveTextContent(message);
        if (next !== null) expect(alert).toHaveTextContent(next);
@@ -5797,14 +5850,14 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
      });
 
      it('shows the common message when the lookup meets a server error', async () => {
-       withReplies([{ status: 500, json: { message: 'Algo salió mal de nuestro lado. Probá de nuevo en un rato.', code: 'server_error' } }]);
+       invited([{ status: 500, json: { message: 'Algo salió mal de nuestro lado. Probá de nuevo en un rato.', code: 'server_error' } }]);
        expect(await screen.findByRole('alert')).toHaveTextContent(
          'Algo salió mal de nuestro lado. Probá de nuevo en un rato.',
        );
      });
 
      it('offers the sign-in when the email was taken in the meantime', async () => {
-       const { user } = withReplies([
+       const { user } = invited([
          LOOKUP,
          { status: 409, json: { message: 'Ya hay una cuenta con ese email.', code: 'email_taken' } },
        ]);
@@ -5819,14 +5872,21 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
    });
    ```
 
-5. **`ui/privacy-reacceptance.spec.tsx`.** Con el mismo arnés y el pedido `{presentation: 'page', reason: 'boot'}`. El `beforeEach` deja en el store a Ana con `privacyAccepted: false`:
+5. **`ui/privacy-reacceptance.spec.tsx`,** con la ayuda de T020 y el pedido del arranque. El `beforeEach` deja en el store a Ana con `privacyAccepted: false`:
 
    ```tsx
+   import { screen } from '@testing-library/react';
+   import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+   import type { PublishedUser } from '../../../entities/session';
+   import { resetSession, stubDialogs, withReplies } from './render-access';
+
    const ANA_BEFORE: PublishedUser = { id: 41, name: 'Ana Pérez', email: 'ana@x.com', role: 'student', privacyAccepted: false };
    const CHANGED = 'El aviso de privacidad cambió desde la última vez que lo aceptaste. Leelo y aceptalo para seguir.';
 
+   beforeAll(stubDialogs);
+
    beforeEach(() => {
-     sessionStore.setState({ status: 'signed-in', user: ANA_BEFORE });
+     resetSession(ANA_BEFORE);
    });
 
    describe('accepting the notice again', () => {
@@ -5879,7 +5939,7 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
      });
 
      it('asks for the notice after a sign-in whose account has an older one', async () => {
-       sessionStore.setState({ status: 'signed-out', user: null });
+       resetSession();
        const { user, signedIn } = withReplies([{ status: 200, json: { data: ANA_BEFORE } }, { status: 204 }]);
        await user.type(screen.getByLabelText('Email'), 'ana@x.com');
        await user.type(screen.getByLabelText('Contraseña'), 'una frase larga para el taller');
@@ -5891,7 +5951,6 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
    });
    ```
 
-   `withReplies` devuelve también `reloadDocument`: en las dos specs nuevas, `renderAccess` guarda el `vi.fn()` que le pasa a `AccessGate` y lo devuelve.
 6. **Correr** `npm run test:unit -- frontend/src/features/sign-in frontend/src/shared/lib`: lo nuevo en rojo.
 7. **Commit:** `test(front): specs del alta y de la reaceptación del aviso, en rojo`.
 
@@ -6751,13 +6810,35 @@ La compuerta de 0.4, con:
    });
    ```
 
-2. **`ui/reset-password-screen.spec.tsx`.** Usa el arnés de `sign-in-screen.spec.tsx`, copiado entero, con `{presentation: 'page', reason: 'boot', token: {kind: 'reset', token: '9f2c', email: 'ana@x.com'}}` por omisión. `renderAccess` devuelve también `requests`:
+2. **`ui/reset-password-screen.spec.tsx`,** con la ayuda de T020 y el pedido de un enlace de restablecimiento:
 
    ```tsx
+   import { screen } from '@testing-library/react';
+   import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+   import type { FakeReply } from '../../../shared/api/http/fake-fetch';
+   import type { SignInOptions } from '../model/access-request';
+   import { renderAccess, resetSession, stubDialogs, withReplies, type AccessUser } from './render-access';
+
+   const RESET_REQUEST: SignInOptions = {
+     presentation: 'page',
+     reason: 'boot',
+     token: { kind: 'reset', token: '9f2c', email: 'ana@x.com' },
+   };
+
+   function resetting(replies: readonly FakeReply[]) {
+     return withReplies(replies, RESET_REQUEST);
+   }
+
+   beforeAll(stubDialogs);
+
+   beforeEach(() => {
+     resetSession();
+   });
+
    const NEW_PASSWORD = 'otra frase larga para el cambio';
    const ASK_NEW_LINK = 'Pedile uno nuevo a quien administra el taller.';
 
-   async function chooseNewPassword(user: ReturnType<typeof userEvent.setup>, password: string, confirmation = password) {
+   async function chooseNewPassword(user: AccessUser, password: string, confirmation = password) {
      await user.type(screen.getByLabelText('Contraseña nueva'), password);
      await user.type(screen.getByLabelText('Repetí la contraseña nueva'), confirmation);
      await user.click(screen.getByRole('button', { name: 'Cambiar la contraseña' }));
@@ -6765,7 +6846,7 @@ La compuerta de 0.4, con:
 
    describe('resetting the password', () => {
      it('shows the email of the link, changes the password and shows the sign-in with the email, without a session', async () => {
-       const { user, calls, requests } = withReplies([{ status: 200, json: {} }]);
+       const { user, calls, requests } = resetting([{ status: 200, json: {} }]);
        expect(screen.getByText('Para ana@x.com.')).toBeInTheDocument();
        expect(screen.getByLabelText('Contraseña nueva')).toHaveFocus();
        await chooseNewPassword(user, NEW_PASSWORD);
@@ -6784,7 +6865,7 @@ La compuerta de 0.4, con:
      });
 
      it('shows a rejected link in the general error, with how to ask for another one', async () => {
-       const { user } = withReplies([
+       const { user } = resetting([
          {
            status: 422,
            json: {
@@ -6803,7 +6884,7 @@ La compuerta de 0.4, con:
      });
 
      it('shows a reason of the policy on the new password', async () => {
-       const { user } = withReplies([
+       const { user } = resetting([
          {
            status: 422,
            json: {
@@ -6819,7 +6900,7 @@ La compuerta de 0.4, con:
      });
 
      it('stops a confirmation that does not match in the browser', async () => {
-       const { user, calls } = withReplies([]);
+       const { user, calls } = resetting([]);
        await chooseNewPassword(user, NEW_PASSWORD, 'otra frase que no es igual');
        expect(screen.getByLabelText('Repetí la contraseña nueva')).toHaveAccessibleDescription(
          'La confirmación de la contraseña no coincide.',
@@ -6828,11 +6909,7 @@ La compuerta de 0.4, con:
      });
 
      it('keeps the button busy while the password changes', async () => {
-       const { user } = renderAccess(() => new Promise<Response>(() => {}), {
-         presentation: 'page',
-         reason: 'boot',
-         token: { kind: 'reset', token: '9f2c', email: 'ana@x.com' },
-       });
+       const { user } = renderAccess(() => new Promise<Response>(() => {}), RESET_REQUEST);
        await chooseNewPassword(user, NEW_PASSWORD);
        expect(screen.getByRole('button', { name: 'Cambiando la contraseña…' })).toBeDisabled();
      });
@@ -7013,29 +7090,96 @@ La compuerta de 0.4, con:
    export default ResetPasswordScreen;
    ```
 
-5. **`ui/AccessScreen.tsx`.** Ésta es la versión final, y la única diferencia con la de U3 es el restablecimiento:
-   - `Screen` suma `| { readonly kind: 'reset'; readonly token: string; readonly email: string | null }`;
-   - `initialScreen` suma, después de la línea de la invitación:
+5. **`ui/AccessScreen.tsx`,** la versión final. Respecto de la de U3 suma el restablecimiento:
 
-     ```ts
-     if (request.token?.kind === 'reset') {
-       return { kind: 'reset', token: request.token.token, email: request.token.email };
+   ```tsx
+   import { useState } from 'react';
+   import { useStore } from 'zustand';
+   import { sessionStore, type PublishedUser } from '../../../entities/session';
+   import type { AccessRequest } from '../model/access-request';
+   import { EXPIRED_NOTICE, PASSWORD_CHANGED } from './access-texts';
+   import InvitationScreen from './InvitationScreen';
+   import LoginForm from './LoginForm';
+   import PrivacyReacceptance from './PrivacyReacceptance';
+   import ResetPasswordScreen from './ResetPasswordScreen';
+
+   interface AccessScreenProps {
+     readonly request: AccessRequest;
+     onFinish(user: PublishedUser): void;
+     reloadDocument(): void;
+   }
+
+   type Screen =
+     | { readonly kind: 'login'; readonly email: string; readonly notice: string | null }
+     | { readonly kind: 'invitation'; readonly token: string }
+     | { readonly kind: 'reset'; readonly token: string; readonly email: string | null }
+     | { readonly kind: 'privacy'; readonly account: PublishedUser };
+
+   function loginScreen(notice: string | null, email = ''): Screen {
+     return { kind: 'login', email, notice };
+   }
+
+   function initialScreen(request: AccessRequest, account: PublishedUser | null): Screen {
+     const { token } = request;
+     if (token?.kind === 'invitation') return { kind: 'invitation', token: token.token };
+     if (token?.kind === 'reset') return { kind: 'reset', token: token.token, email: token.email };
+     if (account !== null && !account.privacyAccepted) return { kind: 'privacy', account };
+     return loginScreen(request.reason === 'expired' ? EXPIRED_NOTICE : null);
+   }
+
+   const AccessScreen = ({ request, onFinish, reloadDocument }: AccessScreenProps) => {
+     const account = useStore(sessionStore, (state) => state.user);
+     const passwordResetByMail = useStore(sessionStore, (state) => state.features.passwordReset);
+     const [screen, setScreen] = useState(() => initialScreen(request, account));
+     const level = request.presentation === 'page' ? 1 : 2;
+     const signedIn = (user: PublishedUser): void => {
+       if (user.privacyAccepted) onFinish(user);
+       else setScreen({ kind: 'privacy', account: user });
+     };
+     switch (screen.kind) {
+       case 'invitation':
+         return (
+           <InvitationScreen
+             token={screen.token}
+             headingLevel={level}
+             onCreated={onFinish}
+             onGoToSignIn={() => setScreen(loginScreen(null))}
+           />
+         );
+       case 'reset':
+         return (
+           <ResetPasswordScreen
+             token={screen.token}
+             email={screen.email}
+             headingLevel={level}
+             onDone={(email) => setScreen(loginScreen(PASSWORD_CHANGED, email))}
+           />
+         );
+       case 'privacy':
+         return (
+           <PrivacyReacceptance
+             account={screen.account}
+             headingLevel={level}
+             onAccepted={onFinish}
+             onSessionLost={() => setScreen(loginScreen(EXPIRED_NOTICE))}
+             reloadDocument={reloadDocument}
+           />
+         );
+       case 'login':
+         return (
+           <LoginForm
+             headingLevel={level}
+             initialEmail={screen.email}
+             notice={screen.notice}
+             passwordResetByMail={passwordResetByMail}
+             onSignedIn={signedIn}
+           />
+         );
      }
-     ```
+   };
 
-   - el `switch` suma este caso, con los imports de `ResetPasswordScreen` y de `PASSWORD_CHANGED`:
-
-     ```tsx
-     case 'reset':
-       return (
-         <ResetPasswordScreen
-           token={screen.token}
-           email={screen.email}
-           headingLevel={level}
-           onDone={(email) => setScreen(loginScreen(PASSWORD_CHANGED, email))}
-         />
-       );
-     ```
+   export default AccessScreen;
+   ```
 
 6. **Correr** `npm run test:unit -- frontend/src/features/sign-in`, en verde, y después `npm run typecheck` y `npm run lint`. `initialScreen` queda en 6.
 7. **Commit:** `feat(front): restablecer la contraseña con el enlace de la consola`.
@@ -7391,7 +7535,10 @@ Ninguna otra descarga. Docker corre sólo con permiso, en T015, T030 y T035.
 
 1. **Nada corrió al planificar.** Las firmas de React Hook Form, Vitest, Playwright y Vite salen de su documentación (research.md, «Consultas»). *Mitigación:* cada tarea corre `npm run typecheck` y su spec, y la compuerta corre la red completa varias veces.
 2. **El peso.** React Hook Form y el código propio pueden pasar el presupuesto de +60 000 caracteres. *Mitigación:* la condición de corte de T035 y la medida separada.
-3. **La red E2E con la etapa nueva.** Un pedido más por arranque puede volver inestable alguna prueba de F1 con reloj simulado. *Mitigación:* el doble responde la sesión sin esperas, la etapa limpia sus timers y cada compuerta corre la red varias veces seguidas.
+3. **La red E2E con la etapa nueva.** Un pedido más por arranque puede volver inestable alguna prueba de F1 o de A2 con reloj simulado, sobre todo el tope de 20 s de `content-gate.spec.ts`. *Mitigación:*
+   - el doble responde la sesión sin esperas, y la etapa limpia sus timers;
+   - T016 corre esa prueba 30 veces seguidas;
+   - cada compuerta corre la red varias veces seguidas.
 4. **La barra superior a 320 px** se calculó a mano (research.md). *Mitigación:* el E2E de T033 mide la barra, y la corrección vive en `account.css`.
 5. **jsdom no implementa `<dialog>`.** Las specs usan un stub, y el foco y Esc reales los prueban los E2E.
 6. **La cookie real, `SameSite` y el CSRF contra el stack** no los prueba la CI. *Mitigación:* la verificación a mano de T030 y T035.
