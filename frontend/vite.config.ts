@@ -12,6 +12,7 @@ const reactLicense = readFileSync(
 const reactLicenseBanner = `/*! React, ReactDOM and Scheduler\n${reactLicense.trim()}\n*/`;
 
 const buildDirectory = resolve(import.meta.dirname, '../build');
+const stackOrigin = `http://127.0.0.1:${process.env.TALLER_PORT ?? '8080'}`;
 const NOTICES = ['EDITOR-LICENSES.txt', 'THIRD-PARTY-NOTICES.txt'];
 
 function readCurriculum(): { bytes: Buffer; fileName: string; version: string } {
@@ -55,6 +56,8 @@ export default defineConfig({
   root: resolve(import.meta.dirname, 'src'),
   publicDir: false,
   plugins: [react(), viteSingleFile({ removeViteModuleLoader: true }), webRootFiles()],
+  server: { proxy: { '/api': { target: stackOrigin, changeOrigin: false } } },
+  preview: { proxy: {} },
   build: {
     outDir: resolve(import.meta.dirname, '../dist'),
     emptyOutDir: true,
