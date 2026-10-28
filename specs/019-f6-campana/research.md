@@ -401,3 +401,34 @@ F6 los deja escritos en `selectors.ts` (`RANKS` y `WORLD_SYMBOLS`) y en la pági
 | React Hook Form | — | — | No aplica: la campaña no tiene formularios | — |
 | Laravel, Pest y PHPStan | — | — | No aplican: F6 no toca el backend | — |
 | Docker y gVisor | — | — | No se configura nada; `docker compose build taller` corre una vez, con permiso, para comprobar la imagen web | — |
+
+## Análisis de consistencia (speckit-analyze)
+
+Se pasó el criterio de `/speckit-analyze` sobre la spec, el plan, `tasks.md` y los contratos, el 2026-10-28.
+
+**Cobertura.**
+
+| Qué | Resultado |
+| --- | --- |
+| Requisitos (FR-001 a FR-048) | 48 de 48 tienen tarea en «Cobertura de requisitos» |
+| Criterios (SC-001 a SC-012) | 12 de 12 |
+| Contratos de «Qué se conserva» | 14 de 14 tienen prueba (la tabla de SC-009 del plan) |
+| Roturas de FR-045 | las 6 de la spec están entre las 14 de T019 |
+| Historias | US1 a US6 trazadas en las tareas |
+| Tareas | 22, y cada una remite a una sección del plan |
+
+**Hallazgos y cómo quedaron.**
+
+| # | Severidad | Hallazgo | Resolución |
+| --- | --- | --- | --- |
+| A1 | Alta, resuelta | La spec de las constantes reemplazadas no podía cumplirse con un `vi.mock` del índice: el `maxScore` del motor sale de enlaces locales de `rules.ts` | R6: se envuelven `getWorlds` y `getSummary`, el catálogo es armado y sin números, y el barrido excluye los `<li>` del motor. Mover las constantes quedó descartado por FR-005 |
+| A2 | Media, a decidir | FR-043 prohíbe cambiar valores esperados, y retirar `init` (FR-034) cambia el nombre de lo espiado en tres lugares de dos checks | R2 y decisión 1 del informe; la correspondencia de §4.4 lo muestra |
+| A3 | Media, resuelta | FR-017 y FR-037 dicen que «la página» detiene la celebración; el legacy lo hace en todo `unmount` | `stop()` va en el `unmount` del adaptador, incondicional (R10); la página usa `celebrate`. Ninguno lee `window.TallerEffects` |
+| A4 | Media, resuelta | La comparación del DOM daría diferencias por los espacios de las clases del legacy y por los textos partidos | Las reglas de fidelidad (plan §3.1) y el normalizador de quickstart.md §3.2 |
+| A5 | Baja, resuelta | FR-001 pone los adaptadores en el commit del corte, y T015 crea sus firmas en el commit rojo | La unidad 4 son dos commits; el rojo sólo tiene firmas que lanzan, sin cablear (R1) |
+| A6 | Baja, resuelta | FR-016 pide refs; el foco de los filtros y de las opciones usa `event.currentTarget` | Es el mismo nodo que React conserva y el foco es explícito; el título del mundo usa un ref |
+| A7 | Baja, hallazgo para la spec | SC-003 dice que cambiar de idioma da 0 escrituras, pero `app.js` guarda el idioma en `taller-learning-v1` (lo usa la compatibilidad de `boot-check`) | Los E2E miden 0 escrituras en `taller-campaign-v1` |
+| A8 | Baja, hallazgo para la spec | US1-9 dice que el mundo y el filtro se pierden al recargar, pero si la URL tiene `?mundo=` el mundo vuelve por ella | El flujo (l) pasa por el laboratorio, que deja la URL sin query, y fija las dos cosas |
+| A9 | Baja | Los nombres de módulos de la spec eran provisionales (`register-campaign.tsx` y el del puente) | El plan los fija: `register-campaign.tsx` y `campaign-bridges.ts`, más la hoja `campaign-page.css` (R11) |
+
+**Contra la constitución.** No hay conflictos. Las cuatro decisiones de Complexity Tracking del plan no contradicen ningún principio.

@@ -36,7 +36,7 @@
   5. la documentación.
 
   Revertir la unidad 4 (sus dos commits) devuelve el legacy (research.md, R1).
-- **Los E2E primero.** Diecinueve pruebas de los quince flujos de FR-041, escritas contra el legacy y en verde antes de portar, que no se editan después. El flujo (p) son cinco pruebas aparte que fallan contra el legacy por la razón esperada y van en el commit rojo.
+- **Los E2E primero.** Veintiuna pruebas de los quince flujos de FR-041, escritas contra el legacy y en verde antes de portar, que no se editan después. El flujo (p) son cinco pruebas aparte que fallan contra el legacy por la razón esperada y van en el commit rojo.
 - **La página repite el árbol del legacy, nodo por nodo.**
   - Las mismas clases, con los mismos espacios de más, los mismos textos y los mismos atributos, salvo los cuatro `data-*` del delegado.
   - Así `campaign.css` se mueve sin cambiar una declaración y la comparación del DOM puede dar 0.
