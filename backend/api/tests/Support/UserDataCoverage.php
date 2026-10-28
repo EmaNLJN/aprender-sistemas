@@ -2,6 +2,7 @@
 
 namespace Tests\Support;
 
+use App\Accounts\Ownership;
 use App\Accounts\UserData;
 use App\Accounts\UserTable;
 use Illuminate\Support\Facades\DB;
@@ -57,6 +58,20 @@ final class UserDataCoverage
             "select count(*) from `{$table->name}` where `{$link->child_column}` in (select `{$link->parent_column}` from `{$table->parent}` where `user_id` = ?)",
             $userId,
         );
+    }
+
+    /** @return array<string, int> */
+    public static function rowsLeftOf(int $userId): array
+    {
+        $left = [];
+        foreach ((new UserData)->tables() as $table) {
+            $ownedByUser = in_array($table->ownership, [Ownership::UserId, Ownership::Child], true);
+            if ($ownedByUser && self::exists($table->name)) {
+                $left[$table->name] = self::rowsOf($table, $userId);
+            }
+        }
+
+        return $left;
     }
 
     private static function hasUserId(string $table): bool

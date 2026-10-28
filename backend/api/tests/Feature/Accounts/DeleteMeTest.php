@@ -13,13 +13,6 @@ use Tests\Support\Browser;
 
 const DELETE_ME_MESSAGE = 'Se está borrando tu cuenta con todo lo que guardó: el progreso, los intentos, el código y las importaciones. No se puede deshacer.';
 
-function deleteMeConfirmed(Browser $browser): Browser
-{
-    $browser->post('/api/auth/confirm-password', ['password' => 'password'])->assertCreated();
-
-    return $browser;
-}
-
 beforeEach(function () {
     Queue::fake();
     Event::fake([AccountRestricted::class]);
@@ -37,7 +30,7 @@ it('answers 423 without the reconfirmed password and changes nothing', function 
 it('answers 202 with exactly the contract body and starts the deletion', function () {
     Log::spy();
 
-    $response = deleteMeConfirmed($this->browser)->send('DELETE', '/api/me')->assertStatus(202);
+    $response = $this->browser->confirmPassword()->send('DELETE', '/api/me')->assertStatus(202);
 
     expect($response->json())->toBe(['data' => ['status' => 'deleting'], 'message' => DELETE_ME_MESSAGE])
         ->and($this->student->fresh()->status)->toBe(AccountStatus::Deleting)
@@ -48,7 +41,7 @@ it('answers 202 with exactly the contract body and starts the deletion', functio
 });
 
 it('ends the session of the request: the next one is 401 and a login is refused', function () {
-    deleteMeConfirmed($this->browser)->send('DELETE', '/api/me')->assertStatus(202);
+    $this->browser->confirmPassword()->send('DELETE', '/api/me')->assertStatus(202);
 
     $this->browser->send('PATCH', '/api/me', ['name' => 'Otro'])->assertStatus(401)->assertJsonPath('code', 'unauthenticated');
     Browser::for($this)->useDatabaseDrivers()
@@ -60,7 +53,7 @@ it('answers 409 last_admin for the only active admin and changes nothing', funct
     $admin = User::factory()->admin()->create();
     $browser = Browser::for($this)->useDatabaseDrivers()->signIn($admin);
 
-    deleteMeConfirmed($browser)->send('DELETE', '/api/me')->assertStatus(409)->assertJsonPath('code', 'last_admin');
+    $browser->confirmPassword()->send('DELETE', '/api/me')->assertStatus(409)->assertJsonPath('code', 'last_admin');
 
     expect($admin->fresh()->status)->toBe(AccountStatus::Active);
     Queue::assertNothingPushed();
@@ -72,7 +65,7 @@ it('answers 202 for an admin when another active admin remains', function () {
     $admin = User::factory()->admin()->create();
     $browser = Browser::for($this)->useDatabaseDrivers()->signIn($admin);
 
-    deleteMeConfirmed($browser)->send('DELETE', '/api/me')->assertStatus(202);
+    $browser->confirmPassword()->send('DELETE', '/api/me')->assertStatus(202);
 
     expect($admin->fresh()->status)->toBe(AccountStatus::Deleting);
 });
@@ -81,7 +74,7 @@ it('lets an account with an unverified email delete itself', function () {
     $unverified = User::factory()->unverified()->create();
     $browser = Browser::for($this)->useDatabaseDrivers()->signIn($unverified);
 
-    deleteMeConfirmed($browser)->send('DELETE', '/api/me')->assertStatus(202);
+    $browser->confirmPassword()->send('DELETE', '/api/me')->assertStatus(202);
 
     expect($unverified->fresh()->status)->toBe(AccountStatus::Deleting);
 });
