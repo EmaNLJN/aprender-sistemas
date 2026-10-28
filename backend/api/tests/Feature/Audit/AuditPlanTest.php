@@ -146,3 +146,15 @@ it('refuses when the sample exercise is not active', function () {
     expect(fn () => app(AuditPlan::class)->programs(app(AuditCatalogReader::class)->read(), AuditSelection::fromOptions(null, [])))
         ->toThrow(AuditRefused::class, 'La muestra de la prueba propia necesita rust-03, que no es un ejercicio activo: actualizá audit.custom_test_sample.');
 });
+
+it('refuses a sample exercise that belongs to another language', function () {
+    AuditWorld::curriculum();
+    config(['audit.custom_test_sample.rust.exercise' => 'go-01']);
+
+    expect(fn () => app(AuditPlan::class)->programs(app(AuditCatalogReader::class)->read(), AuditSelection::fromOptions(null, [])))
+        ->toThrow(AuditRefused::class, 'La muestra de la prueba propia necesita go-01, que no es un ejercicio activo: actualizá audit.custom_test_sample.');
+});
+
+it('drops repeated exercise ids from the selection', function () {
+    expect(AuditSelection::fromOptions(null, ['rust-02', 'go-01', 'rust-02'])->exercises)->toBe(['rust-02', 'go-01']);
+});
