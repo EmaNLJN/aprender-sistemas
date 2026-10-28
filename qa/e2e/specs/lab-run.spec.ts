@@ -1,5 +1,5 @@
 import { expect, test } from '../fixtures';
-import { RUST_01, type CompilerKind } from '../lib/compiler-results';
+import { PLAYGROUND_ENDPOINT, RUST_01, RUST_02, type CompilerKind } from '../lib/compiler-results';
 import { attemptsLine } from '../lib/lab-copy';
 import { urls } from '../lib/urls';
 
@@ -30,8 +30,11 @@ const REVIEW: Record<Exclude<CompilerKind, 'transportError'>, Review> = {
   },
 };
 
-async function storedRecord(storage: { snapshot(): Promise<Record<string, string>> }) {
-  return JSON.parse((await storage.snapshot())[LAB_KEY]).records[RUST_01.id];
+async function storedRecord(
+  storage: { snapshot(): Promise<Record<string, string>> },
+  id: string = RUST_01.id,
+) {
+  return JSON.parse((await storage.snapshot())[LAB_KEY]).records[id];
 }
 
 test.describe('a free exercise with the Rust Playground simulated', () => {
@@ -57,6 +60,7 @@ test.describe('a free exercise with the Rust Playground simulated', () => {
     shell,
     lab,
     compiler,
+    storage,
     pageIssues,
   }) => {
     pageIssues.expectIssue(
@@ -72,9 +76,12 @@ test.describe('a free exercise with the Rust Playground simulated', () => {
     await expect(lab.review()).toContainText(
       'Tu código sigue guardado. No se aprobaron ni desaprobaron pruebas sin ejecutarlas.',
     );
+    const record = await storedRecord(storage);
+    expect(record.result).toMatchObject({ success: false, transportError: true });
+    expect(record.solvedAt).toBeUndefined();
   });
 
-  test('the first approval saves before and after, marks the review and is announced', async ({
+  test('the first approval saves before and after, marks the review and is announced, and later runs keep it (F7-Q1)', async ({
     shell,
     lab,
     compiler,
@@ -114,18 +121,26 @@ test.describe('a free exercise with the Rust Playground simulated', () => {
       },
     });
 
+    await page.clock.setFixedTime(new Date('2026-10-06T13:00:00Z'));
     await lab.runCode();
     await expect(shell.toast).toHaveText('Estos casos siguen funcionando. Probá una variante.');
     await expect(lab.review()).toContainText(attemptsLine(2));
+    await compiler.answer(RUST_01, 'failedTest');
+    await lab.runCode();
+    await expect(lab.reviewHeading()).toHaveText(REVIEW.failedTest.heading);
+    expect(await storedRecord(storage)).toMatchObject({
+      solvedAt: Date.parse('2026-10-06T12:00:00Z'),
+      reviewAt: Date.parse('2026-10-07T12:00:00Z'),
+    });
   });
 
-  test('Ctrl/⌘ + Enter in the editor runs, and twice sends one request', async ({
+  test('Ctrl/⌘ + Enter in the editor runs, and twice sends one request and counts one attempt', async ({
     shell,
     lab,
     compiler,
     page,
   }) => {
-    await compiler.hold(RUST_01);
+    const release = await compiler.answerLater(RUST_01, 'passed');
     await shell.goto(urls.exercise(RUST_01.id, 'code'));
     await lab.editor('rust').click();
 
@@ -134,6 +149,9 @@ test.describe('a free exercise with the Rust Playground simulated', () => {
 
     await expect(lab.runningButton()).toBeDisabled();
     await expect(lab.review()).toContainText('Ejecutando código real…');
+    release();
+    await expect(lab.reviewHeading()).toHaveText(REVIEW.passed.heading);
+    await expect(lab.review()).toContainText(attemptsLine(1));
     expect(compiler.requests).toHaveLength(1);
   });
 
@@ -176,7 +194,7 @@ test.describe('a free exercise with the Rust Playground simulated', () => {
     await expect(lab.reviewHeading()).toHaveText(REVIEW.passed.heading);
   });
 
-  test('opening another exercise cancels the run and saves no result', async ({
+  test('the next and the previous exercise each cancel the run and save no result', async ({
     shell,
     lab,
     compiler,
@@ -187,11 +205,37 @@ test.describe('a free exercise with the Rust Playground simulated', () => {
     await lab.runCode();
 
     await lab.nextButton().click();
+    await lab.tab('code').click();
+    await lab.runCode();
+    await expect(lab.review()).toContainText('Ejecutando código real…');
     await lab.previousButton().click();
     await lab.tab('code').click();
-
-    await expect(lab.runButton()).toBeEnabled();
     await expect(lab.reviewHeading()).toHaveText('¿Qué queremos comprobar?');
+    await lab.runCode();
+
+    await expect(lab.review()).toContainText('Ejecutando código real…');
+    expect((await storedRecord(storage, RUST_01.id)).result).toBeUndefined();
+    expect((await storedRecord(storage, RUST_02.id)).result).toBeUndefined();
+  });
+
+  test('going back to the map cancels the run and saves no result', async ({
+    shell,
+    lab,
+    compiler,
+    storage,
+    page,
+  }) => {
+    await compiler.hold(RUST_01);
+    await shell.goto(urls.exercise(RUST_01.id, 'code'));
+    await lab.runCode();
+    const aborted = page.waitForEvent(
+      'requestfailed',
+      (request) => request.url() === PLAYGROUND_ENDPOINT.rust,
+    );
+
+    await lab.backButton().click();
+
+    expect((await aborted).failure()?.errorText).toBe('net::ERR_ABORTED');
     expect((await storedRecord(storage)).result).toBeUndefined();
   });
 
@@ -216,6 +260,7 @@ test.describe('a free exercise with the Rust Playground simulated', () => {
   test('a result goes stale when the code changes', async ({ shell, lab, compiler }) => {
     await compiler.answer(RUST_01, 'passed');
     await shell.goto(urls.exercise(RUST_01.id, 'code'));
+    await lab.writeDraft('rust', SOLUTION);
     await lab.runCode();
     await expect(lab.reviewHeading()).toHaveText(REVIEW.passed.heading);
 
@@ -232,6 +277,7 @@ test.describe('a free exercise with the Rust Playground simulated', () => {
 
     await lab.runCode();
 
+    await expect(lab.reviewHeading()).toHaveText(REVIEW.passed.heading);
     await expect(lab.review()).toContainText('Tu caso extra: encontró una diferencia ×');
     expect(JSON.parse(compiler.bodies[0]).code).toContain(
       'std::panic::catch_unwind(|| { energia(1) == 8 })',
