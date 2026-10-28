@@ -100,6 +100,49 @@ export function bundleSource(relativePath: string, options: BundleOptions = {}):
   return text;
 }
 
+const groupCache = new Map<string, string>();
+
+function groupEntry(relativePaths: readonly string[]): esbuild.BuildOptions {
+  return {
+    stdin: {
+      contents: relativePaths
+        .map((file) => `import ${JSON.stringify(path.join(repoRoot, file))};`)
+        .join('\n'),
+      resolveDir: repoRoot,
+      loader: 'js',
+      sourcefile: `group:${relativePaths.join('+')}`,
+    },
+  };
+}
+
+export function bundleSourceGroup(relativePaths: readonly string[]): string {
+  const key = relativePaths.join('|');
+  const cached = groupCache.get(key);
+  if (cached !== undefined) return cached;
+  const text = build(key, {
+    ...groupEntry(relativePaths),
+    format: 'iife',
+    platform: 'browser',
+    target: 'es2020',
+    jsx: 'automatic',
+    loader: { '.css': 'empty' },
+    define: { 'process.env.NODE_ENV': '"production"' },
+  });
+  groupCache.set(key, text);
+  return text;
+}
+
+export function runSourceGroup(
+  context: vm.Context,
+  relativePaths: readonly string[],
+  options: RunOptions = {},
+): void {
+  vm.runInContext(bundleSourceGroup(relativePaths), context, {
+    filename: relativePaths.join('+'),
+    timeout: options.timeout,
+  });
+}
+
 const APP_SOURCE = /[\\/]frontend[\\/]src[\\/]app[\\/].*\.tsx?$/;
 
 function stripStartCall(): esbuild.Plugin {

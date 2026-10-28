@@ -3,7 +3,7 @@
 // dependencias por window.* (ver qa/load-order-check.ts); los checks no repiten listas.
 import type vm from 'node:vm';
 import { SYSTEMS_DOMAINS, type SystemsDomain } from '../../tools/content/catalogs.ts';
-import { runModule, runSource, type RunOptions } from './sources.ts';
+import { runModule, runSource, runSourceGroup, type RunOptions } from './sources.ts';
 
 export type Language = 'rust' | 'go';
 
@@ -89,5 +89,5 @@ export function loadSystemsEngine(context: vm.Context): void {
 }
 
 export function loadSystemsUi(context: vm.Context): void {
-  runSource(context, SYSTEMS_UI_SOURCE);
+  runSourceGroup(context, [SYSTEMS_ENGINE_SOURCE, SYSTEMS_UI_SOURCE]);
 }

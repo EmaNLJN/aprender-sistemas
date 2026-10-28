@@ -15,7 +15,6 @@ import {
   loadCampaignUi,
   loadCampaignWorlds,
   loadLabCatalogs,
-  loadSystemsEngine,
   loadSystemsUi,
 } from './lib/legacy-sources.ts';
 import { repoRoot } from './lib/sources.ts';
@@ -124,7 +123,6 @@ function systemsBridge(
 ): { api: SystemsApi; context: BridgeContext } {
   const context = createContext(search, labState);
   afterCatalogs?.(context);
-  loadSystemsEngine(context);
   loadSystemsUi(context);
   const api = context.TallerSystems;
   assert.ok(api, 'systems.js no publicó TallerSystems');
