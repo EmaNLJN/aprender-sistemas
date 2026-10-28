@@ -23,12 +23,12 @@ Todos `final`; los de datos, `readonly`. Las firmas son las que obligan; los cue
 
 | Tipo | Forma | Responsabilidad |
 | --- | --- | --- |
-| `ExerciseKind` | enum `string`: `Completar = 'completar'`, `Reparar = 'reparar'` | El `kind` de `exercises` |
+| `ExerciseKind` | enum `string`: `Complete = 'completar'`, `Repair = 'reparar'` | El `kind` de `exercises` |
 | `ProgramRole` | enum `string`: `Solution = 'solution'`, `Starter = 'starter'`; `label(): string` (`solución`, `inicial`) | Qué código lleva el programa |
 | `AuditVerdict` | enum `string`: `Passes = 'passes'`, `FailsAsExpected = 'fails_as_expected'`, `Finding = 'finding'`, `NoVerdict = 'no_verdict'` | El veredicto de la auditoría |
 | `FindingKind` | enum `string` con siete casos (ver «La regla»); `message(): string` en español | Qué no cumple |
 | `CustomTestProbe` | `__construct(string $expression, TestOutcome $expected)` | Una prueba propia de la muestra (Q5) |
-| `AuditedExercise` | `__construct(ExerciseSnapshot $snapshot, string $section, ?string $domain, ExerciseKind $kind, string $starterHash, string $starter, string $solution, list<string> $testLabels)`; `id(): string`; `code(ProgramRole $role): string` | Un ejercicio activo, con su `ExerciseSnapshot` de B2. `testLabels` va alineada con `snapshot->tests` |
+| `AuditedExercise` | `__construct(ExerciseSnapshot $snapshot, string $section, ?string $domain, ExerciseKind $kind, string $starterHash, string $starter, string $solution, list<string> $testLabels)`; `id(): string`; `code(ProgramRole $role): string`; `labelOf(string $testKey): string` | Un ejercicio activo, con su `ExerciseSnapshot` de B2. `testLabels` va alineada con `snapshot->tests` |
 | `AuditCatalog` | `__construct(string $documentHash, string $harnessHash, ?string $sourceCommit, list<AuditedExercise> $exercises)`; `find(string $id): ?AuditedExercise` | Lo que leyó una instantánea |
 | `AuditCatalogReader` | `read(): AuditCatalog`, lanza `AuditRefused` | La lectura de sólo lectura (R2, R3) |
 | `AuditSelection` | `__construct(list<RunLanguage> $languages, list<string> $exercises)`; `static fromOptions(?string $language, list<string> $exercises): self`; `isFull(): bool`; `includes(AuditedExercise $exercise): bool`; `requireKnown(AuditCatalog $catalog): void` | Qué se audita (FR-015) |

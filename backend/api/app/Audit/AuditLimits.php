@@ -30,12 +30,18 @@ final readonly class AuditLimits
 
     public function compileMs(RunLanguage $language): int
     {
-        return $language === RunLanguage::Rust ? $this->rustCompileMs : $this->goCompileMs;
+        return match ($language) {
+            RunLanguage::Rust => $this->rustCompileMs,
+            RunLanguage::Go => $this->goCompileMs,
+        };
     }
 
     public function memoryMiB(ExecutorPhase $phase): int
     {
-        return $phase === ExecutorPhase::Compile ? $this->compileMemoryMiB : $this->runMemoryMiB;
+        return match ($phase) {
+            ExecutorPhase::Compile => $this->compileMemoryMiB,
+            ExecutorPhase::Run => $this->runMemoryMiB,
+        };
     }
 
     public function isNear(PhaseTiming $timing): bool

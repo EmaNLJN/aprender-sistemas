@@ -3,6 +3,7 @@
 namespace App\Audit;
 
 use App\Runs\Program\ExerciseSnapshot;
+use InvalidArgumentException;
 
 final readonly class AuditedExercise
 {
@@ -16,7 +17,16 @@ final readonly class AuditedExercise
         public string $starter,
         public string $solution,
         public array $testLabels,
-    ) {}
+    ) {
+        if (count($testLabels) !== count($snapshot->tests)) {
+            throw new InvalidArgumentException(sprintf(
+                '%s tiene %d pruebas y %d etiquetas.',
+                $snapshot->exerciseId,
+                count($snapshot->tests),
+                count($testLabels),
+            ));
+        }
+    }
 
     public function id(): string
     {
@@ -25,7 +35,10 @@ final readonly class AuditedExercise
 
     public function code(ProgramRole $role): string
     {
-        return $role === ProgramRole::Solution ? $this->solution : $this->starter;
+        return match ($role) {
+            ProgramRole::Solution => $this->solution,
+            ProgramRole::Starter => $this->starter,
+        };
     }
 
     public function labelOf(string $testKey): string
