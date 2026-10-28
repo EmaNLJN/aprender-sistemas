@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 const KEY_OWNERS: Readonly<Record<string, string>> = {
   'taller-learning-v1': 'frontend/src/entities/guide/model/route-store.ts',
   'taller-laboratorio-v1': 'frontend/src/entities/exercise/model/lab-store.ts',
@@ -23,6 +25,16 @@ const INDEX_OWNERS: Readonly<Record<string, string>> = {
 
 const SLICE_INDEX_SPECIFIER =
   /(?:^|\/)entities\/(guide|exercise|campaign|systems-workshop)(?:\/index(?:\.ts)?)?$/;
+
+const SLICE_PATH_SPECIFIER = /(?:^|\/)entities\/(guide|exercise|campaign|systems-workshop)(\/.*)?$/;
+
+const STATELESS_ENTRIES: readonly string[] = [
+  'entities/campaign/bridge',
+  'entities/systems-workshop/bridge',
+  'entities/exercise/explorers',
+];
+
+const APP_CONTENT_DIRECTORY = 'frontend/src/app/content';
 
 const IMPORT_PATTERN =
   /^\s*import\s+(type\s+)?([^'";]*?)\s*from\s*['"]([^'"]+)['"]|^\s*import\s*['"]([^'"]+)['"]/gm;
@@ -114,11 +126,54 @@ function indexViolations(file: string, imports: ImportStatement[]): string[] {
     });
 }
 
+function isSliceIndexPath(pathInsideSlice: string | undefined): boolean {
+  return (
+    pathInsideSlice === undefined || pathInsideSlice === '/index' || pathInsideSlice === '/index.ts'
+  );
+}
+
+function isStatelessEntry(specifier: string): boolean {
+  return STATELESS_ENTRIES.some(
+    (entry) => specifier.endsWith(entry) || specifier.endsWith(`${entry}.ts`),
+  );
+}
+
+function deepSliceImportViolations(file: string, imports: ImportStatement[]): string[] {
+  if (!isLegacyOrAppFile(file)) return [];
+  return imports
+    .filter((statement) => {
+      const match = statement.specifier.match(SLICE_PATH_SPECIFIER);
+      if (match === null) return false;
+      return !isSliceIndexPath(match[2]) && !isStatelessEntry(statement.specifier);
+    })
+    .map(
+      (statement) =>
+        `R6 ${file}: imports ${statement.specifier}; outside a slice, import its index or a declared stateless entry`,
+    );
+}
+
 function curriculumViolations(file: string, imports: ImportStatement[]): string[] {
   if (!isLowerLayerFile(file)) return [];
   return imports
     .filter((statement) => statement.specifier.endsWith('curriculum.json'))
     .map(() => `R5 ${file}: imports build/curriculum.json from a layer below pages`);
+}
+
+function isBelowApp(file: string): boolean {
+  return file.startsWith('frontend/src/') && !file.startsWith('frontend/src/app/');
+}
+
+function resolvesInsideAppContent(file: string, specifier: string): boolean {
+  if (!specifier.startsWith('.')) return false;
+  const resolved = path.posix.join(path.posix.dirname(file), specifier);
+  return resolved === APP_CONTENT_DIRECTORY || resolved.startsWith(`${APP_CONTENT_DIRECTORY}/`);
+}
+
+function appContentViolations(file: string, imports: ImportStatement[]): string[] {
+  if (!isBelowApp(file)) return [];
+  return imports
+    .filter((statement) => resolvesInsideAppContent(file, statement.specifier))
+    .map(() => `R5 ${file}: imports app/content, and only app/ may read getContent()`);
 }
 
 export function findViolations(sources: Readonly<Record<string, string>>): string[] {
@@ -131,7 +186,9 @@ export function findViolations(sources: Readonly<Record<string, string>>): strin
         ...openerViolations(file, imports),
         ...factoryViolations(file, imports),
         ...indexViolations(file, imports),
+        ...deepSliceImportViolations(file, imports),
         ...curriculumViolations(file, imports),
+        ...appContentViolations(file, imports),
       ];
     });
 }
