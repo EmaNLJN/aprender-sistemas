@@ -55,7 +55,7 @@ final class ProgramJudge
         return match ($verdict->status) {
             RunStatus::Passed => FindingKind::StarterPassed,
             RunStatus::Failed => $verdict->reason === null ? null : FindingKind::StarterFailedWithoutTests,
-            RunStatus::CompileError => $kind === ExerciseKind::Repair ? null : FindingKind::StarterCompileError,
+            RunStatus::CompileError => $kind === ExerciseKind::Repair && $verdict->reason === null ? null : FindingKind::StarterCompileError,
             default => FindingKind::StarterRuntimeError,
         };
     }
