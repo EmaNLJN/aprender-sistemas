@@ -79,9 +79,10 @@ Todas en versión exacta y con permiso (§«Descargas y permisos»).
 **Constraints**: las de «Restricciones globales».
 
 **Scale/Scope**:
-- 17 archivos de producción nuevos: la página, con su modelo, sus componentes y su hoja; el adaptador; `url-state.tsx`; `toggle-item.ts`; y el setup de Vitest.
-- 12 archivos de prueba nuevos: specs de Vitest, el Page Object, la spec E2E y la factory.
-- 13 archivos cambiados: `app.js`, `styles.css`, `main.tsx`, `legacy-views.ts`, `url-grammar.ts`, el índice de `entities/guide`, las configuraciones y los checks de `qa/`.
+- 15 archivos de producción nuevos, 14 al final porque T018 borra `use-library-filters.ts`: los 11 de la página (el índice, cinco del modelo, cuatro componentes y la hoja), el adaptador, `url-state.tsx`, `toggle-item.ts` y el setup de Vitest.
+- 10 archivos de prueba nuevos: siete specs de Vitest, la factory, el Page Object y la spec E2E.
+- 11 archivos de producción y configuración cambiados: `app.js`, `styles.css`, `main.tsx`, `legacy-views.ts`, `url-grammar.ts`, el índice de `entities/guide`, `vitest.config.ts`, `eslint.config.ts`, `package.json`, el lockfile y `THIRD-PARTY-NOTICES.txt`.
+- 12 archivos de prueba cambiados: `url-grammar.spec.ts`, ocho de `qa/` y tres de `qa/e2e/`.
 - 4 documentos.
 
 ## Restricciones globales
@@ -230,7 +231,7 @@ frontend/
         │   ├── resource-labels.ts (+ .spec.ts)       T010
         │   ├── focus-after-removal.ts (+ .spec.ts)   T014
         │   ├── library-query.ts (+ .spec.ts)         T017 y T018
-        │   ├── use-library-filters.ts                T011 · T018 pasa a nuqs
+        │   ├── use-library-filters.ts                T011 · T018 lo borra
         │   └── guide-resource.factory.ts             T010 (sólo specs)
         └── ui/
             ├── LibraryPage.tsx (+ .spec.tsx)         T011 · T014 · T018
@@ -378,7 +379,7 @@ Los tres tocan `render()` y los delegados en líneas vecinas: el rebase lo resue
 
 ### Tarea 0.2 · La verificación corta de nuqs (T002, K; riesgo 14)
 
-- **Cuándo:** después de T001 y antes de la unidad 1, con el permiso de la descarga (§«Descargas y permisos», P1). Si T001 encontró nuqs instalado, el paso 2 se salta y todo lo demás corre sobre la base.
+- **Cuándo:** después de T001 y antes de la unidad 1, con los permisos de las descargas (§«Descargas y permisos», P1 y P2). Si T001 encontró nuqs y la pila de DOM instalados, el paso 2 se salta y todo lo demás corre sobre la base.
 - **Dónde:** en una copia descartable de la base (`git worktree add --detach ../f3-nuqs-probe <hash de T001>`), nunca en la rama. Se borra al terminar (`git worktree remove ../f3-nuqs-probe`).
 - **Pasos:**
   1. **Los metadatos:** `npm view nuqs@2.10.2 version license dist.unpackedSize`. Tiene que dar 2.10.2, MIT y 480 252.

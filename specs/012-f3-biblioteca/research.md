@@ -20,7 +20,13 @@
 - el adaptador guarda en una variable de módulo el último conjunto de filtros;
 - la página lo recibe como `initialFilters` y avisa cada cambio con `onFiltersChange`.
 
-El commit de la URL borra las dos props y la variable, y la página pasa a leer y escribir la query con nuqs. El hook `useLibraryFilters` es la costura: en el corte envuelve un `useState` y en la URL, `useQueryStates`. Las dos versiones devuelven la misma forma (`[filters, changeFilters]`, con `changeFilters(cambio parcial | null)`), así que los componentes no cambian entre los dos commits.
+El commit de la URL borra las dos props y la variable, y la página pasa a leer y escribir la query con nuqs.
+
+La costura es el par `[filters, changeFilters]`, con `changeFilters(cambio parcial | null)`, la misma forma que el setter de `useQueryStates`:
+- en el corte, lo devuelve el hook `useLibraryFilters`, que envuelve un `useState`;
+- en T018, la página llama directamente a `useQueryStates` y el hook se borra, porque sin la sesión sería un envoltorio trivial.
+
+Los componentes hijos no cambian entre los dos commits.
 
 **Por qué.**
 
