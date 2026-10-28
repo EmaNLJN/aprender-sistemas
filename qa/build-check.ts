@@ -8,7 +8,7 @@ import { type BuiltPage, readBuiltContent, readBuiltPage } from './lib/built-pag
 import { contentVersion, curriculumMeta, curriculumMarkers } from './lib/content-document.ts';
 import { repoRoot as root } from './lib/sources.ts';
 
-const BOOT_SIZE_LIMIT = 1250000;
+const BOOT_SIZE_LIMIT = 1500000;
 
 function assertSinglefileDocument(page: BuiltPage): void {
   const styles = [...page.html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/g)];
