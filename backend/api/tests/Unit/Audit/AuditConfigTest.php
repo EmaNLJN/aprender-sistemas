@@ -1,5 +1,6 @@
 <?php
 
+use App\Audit\AuditLimits;
 use Tests\TestCase;
 
 uses(TestCase::class);
@@ -25,4 +26,8 @@ it('samples the custom test with one expression that passes and one that fails p
         'rust' => ['exercise' => 'rust-01', 'passing' => 'energia(5) == 35', 'failing' => 'energia(5) == 36'],
         'go' => ['exercise' => 'go-01', 'passing' => 'Bytes(2) == 2048', 'failing' => 'Bytes(2) == 2049'],
     ]);
+});
+
+it('reads the limits of ADR 0005 from the configuration', function () {
+    expect(AuditLimits::fromConfig())->toEqual(new AuditLimits(20000, 15000, 10000, 1024, 256, 0.5));
 });

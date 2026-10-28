@@ -1,10 +1,14 @@
 <?php
 
+use App\Audit\AuditedExercise;
 use App\Audit\AuditLimits;
+use App\Audit\ExerciseKind;
 use App\Audit\FindingKind;
 use App\Audit\PhaseTiming;
 use App\Audit\ProgramRole;
 use App\Runs\ExecutorPhase;
+use App\Runs\Program\ExerciseSnapshot;
+use App\Runs\Program\ExpectedTest;
 use App\Runs\RunLanguage;
 
 it('says each finding in Spanish', function (FindingKind $kind, string $message) {
@@ -51,3 +55,15 @@ it('picks the compile limit by language and the memory by phase', function () {
         ->and($limits->memoryMiB(ExecutorPhase::Compile))->toBe(1024)
         ->and($limits->memoryMiB(ExecutorPhase::Run))->toBe(256);
 });
+
+it('names the exercise kinds in English and stores them as the exercises table does', function () {
+    expect(ExerciseKind::Complete->value)->toBe('completar')
+        ->and(ExerciseKind::Repair->value)->toBe('reparar');
+});
+
+it('refuses labels that do not line up with the tests', function () {
+    $tests = [new ExpectedTest('a', 'x == 1', 1), new ExpectedTest('b', 'x == 2', 2)];
+    $snapshot = new ExerciseSnapshot('rust-01', RunLanguage::Rust, 'hash', $tests, [], 'template');
+
+    new AuditedExercise($snapshot, 'lab', null, ExerciseKind::Complete, 'h', 'starter', 'solution', ['only one']);
+})->throws(InvalidArgumentException::class, 'rust-01 tiene 2 pruebas y 1 etiquetas');
