@@ -298,7 +298,20 @@ describe('createExerciseRunner: the result', () => {
       stderr: 'falló el adaptador',
       transportError: true,
     });
+    expect(test.progress.records['rust-01'].solvedAt).toBeUndefined();
+    expect(test.progress.records['rust-01'].reviewAt).toBeUndefined();
     expect(test.events).not.toContain('sync systems');
+  });
+
+  it('an adapter that throws after a cancel saves nothing', async () => {
+    const pending = deferred<RunVerdict>();
+    const test = harness(() => pending.promise);
+    const runner = createExerciseRunner(test.dependencies);
+    const running = runner.run(EXERCISE);
+    runner.cancel();
+    pending.reject(new Error('llegó tarde'));
+    await running;
+    expect(test.progress.records['rust-01'].result).toBeUndefined();
   });
 
   it('an adapter that throws without a message saves the fallback text', async () => {
