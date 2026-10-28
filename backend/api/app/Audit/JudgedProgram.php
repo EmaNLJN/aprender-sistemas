@@ -53,6 +53,23 @@ final readonly class JudgedProgram
     {
         $cause = $reply->httpStatus === null ? $reply->cause : "{$reply->cause}:{$reply->httpStatus}";
 
-        return new self($program, AuditVerdict::NoVerdict, null, null, null, null, null, [], null, null, null, null, null, false, $cause, null);
+        return new self(
+            program: $program,
+            audit: AuditVerdict::NoVerdict,
+            finding: null,
+            status: null,
+            reason: null,
+            phase: null,
+            exitCode: null,
+            tests: [],
+            custom: null,
+            compile: null,
+            run: null,
+            truncated: null,
+            oomKilled: null,
+            warning: false,
+            noVerdictCause: $cause,
+            diagnostic: null,
+        );
     }
 }
