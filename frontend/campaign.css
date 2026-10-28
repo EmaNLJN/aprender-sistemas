@@ -595,22 +595,6 @@
   line-height: 1.9;
   color: var(--muted);
 }
-.quest-lab-context {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 13px;
-  justify-content: space-between;
-  background: var(--sage);
-  border: 1px solid var(--line);
-  padding: 14px 17px;
-  border-radius: 5px;
-  margin: 0 0 20px;
-  font: 10px/1.8 var(--mono);
-}
-.quest-lab-context a {
-  color: var(--accent);
-  font-weight: 600;
-}
 .quest-direct-lock h1 {
   font-size: 40px;
   letter-spacing: -1.4px;
@@ -628,25 +612,6 @@
 }
 .quest-direct-lock ul {
   margin: 25px 0;
-}
-.quest-banner {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  border: 1px solid var(--line);
-  padding: 20px 24px;
-  border-radius: 6px;
-  background: var(--surface);
-  margin: 25px 0;
-}
-.quest-banner p {
-  font-size: 12px;
-  line-height: 1.8;
-  margin: 0;
-}
-.quest-banner .button {
-  flex-shrink: 0;
 }
 @media (max-width: 1050px) {
   .quest-map {
@@ -761,19 +726,6 @@
   }
   .lock-symbol {
     font-size: 32px;
-  }
-  .quest-lab-context {
-    font-size: 9px;
-    gap: 8px;
-  }
-  .quest-banner {
-    display: block;
-  }
-  .quest-banner .button {
-    margin-top: 14px;
-  }
-  .navigation a:last-child {
-    grid-column: auto;
   }
 }
 @media (prefers-reduced-motion: no-preference) {
