@@ -355,3 +355,590 @@ Los tres tocan `render()` y los delegados en líneas vecinas: el rebase lo resue
   - `refactor(front): …` para lo que se mueve sin cambiar comportamiento;
   - `feat(front): …` para los cambios a propósito.
 - **Al terminar,** informá las tareas cerradas, los comandos con su resultado real, lo que no pudiste verificar y cualquier desvío del plan.
+
+## 0. Línea base y verificación (K, onda 0)
+
+**Cubre:** FR-002, FR-004, FR-038, FR-039 y FR-042; SC-001, SC-006, SC-009 y SC-011; riesgos 13 y 14.
+
+### Tarea 0.1 · La línea base y el estado de la base (T001, K)
+
+- **Cuándo:** sobre la base de implementación (`master` con F2a, A2 y F2b), antes de cualquier cambio. Si F4, F5 o F9 se integraron antes, también los incluye.
+- **Entrega:** un commit de documentación que suma a research.md la sección «Línea base de la implementación», con el hash de la base, los valores de quickstart.md §1 y la tabla «Qué ya está en la base».
+- **Pasos:**
+  1. `npm ci --offline --no-audit --no-fund`, `npm run build`, `npm test`, `npm run lint`, `npm run format:check` y `E2E_PORT=4173 npm run test:e2e`: todo en verde. Si algo falla, F3 no empieza.
+  2. Anotar los valores de quickstart.md §1:
+     - los hashes del script, del `<style>` y del marcado del dist;
+     - `html.length` y el conteo de `import(` y `import.meta`;
+     - el multiconjunto del CSS;
+     - los avisos de complejidad, con la función de 11 de `renderResourceResults`;
+     - la cantidad de pruebas de cada check y de Vitest;
+     - `npx playwright test --config qa/e2e/playwright.config.ts --list | tail -1`.
+  3. Correr las detecciones de quickstart.md §1.3 y anotar cada pieza compartida como «está» o «falta». Las tareas condicionales (T005, T006, T007, T008, T009, T013, T015, T016 y T019) siguen esa tabla.
+- **Compuerta:** los pasos 1 a 3, con los valores anotados.
+
+### Tarea 0.2 · La verificación corta de nuqs (T002, K; riesgo 14)
+
+- **Cuándo:** después de T001 y antes de la unidad 1, con el permiso de la descarga (§«Descargas y permisos», P1). Si T001 encontró nuqs instalado, el paso 2 se salta y todo lo demás corre sobre la base.
+- **Dónde:** en una copia descartable de la base (`git worktree add --detach ../f3-nuqs-probe <hash de T001>`), nunca en la rama. Se borra al terminar (`git worktree remove ../f3-nuqs-probe`).
+- **Pasos:**
+  1. **Los metadatos:** `npm view nuqs@2.10.2 version license dist.unpackedSize`. Tiene que dar 2.10.2, MIT y 480 252.
+  2. **La instalación en la copia:**
+     ```sh
+     npm install --save-exact nuqs@2.10.2
+     npm install --save-exact --save-dev jsdom@30.1.2 @testing-library/react@16.3.3 @testing-library/dom@10.4.2 @testing-library/user-event@14.6.7 @testing-library/jest-dom@7.0.1
+     ```
+     La segunda línea sólo si T001 encontró la pila de DOM ausente.
+  3. **Los exports:** `node --input-type=module -e "import('nuqs/adapters/react').then((m) => console.log(Object.keys(m).sort().join(',')))"`. Se espera `NuqsAdapter,enableHistorySync`.
+  4. **El peso, como cota superior.** Al final de `frontend/src/app/main.tsx` de la copia va el código de abajo. Después, `npm run build`, y el `html.length` menos el de T001 es lo que suma nuqs. Si pasa de 25 000, se detiene y decide el coordinador.
+     ```ts
+     import { NuqsAdapter, enableHistorySync } from 'nuqs/adapters/react';
+     import { parseAsBoolean, parseAsString, parseAsStringLiteral, useQueryStates } from 'nuqs';
+     Object.assign(window, {
+       __nuqsProbe: { NuqsAdapter, enableHistorySync, parseAsBoolean, parseAsString, parseAsStringLiteral, useQueryStates },
+     });
+     ```
+  5. **El comportamiento en jsdom.** En `frontend/vitest.config.ts` de la copia va un proyecto `jsdom` con la configuración de T006, y en `frontend/src/nuqs-probe.spec.tsx`, el código de quickstart.md §2. Corre con `npx vitest run --config frontend/vitest.config.ts --project jsdom src/nuqs-probe.spec.tsx`. Se esperan los siete casos en verde:
+     1. reemplaza la URL, conserva el hash y las claves ajenas, y no suma historial;
+     2. la búsqueda de sólo espacios con `parseAsString`: el campo la conserva y la URL la lleva (`?buscar=+++`);
+     3. la búsqueda de sólo espacios con un `eq` recortado: el campo se vacía (la opción B de D1);
+     4. con una clave repetida, manda la primera;
+     5. el setter con `null` borra las claves del hook y deja las ajenas;
+     6. con `enableHistorySync()`, un `history.replaceState` ajeno llega al hook;
+     7. `history.replaceState` actualiza `location` en jsdom.
+  6. **Anotar en research.md** («Verificación de nuqs») los exports, el peso y el resultado de cada caso. Si el caso 6 falla, la sincronización no existe en la versión: es un hallazgo que detiene la unidad 4 hasta que decida el coordinador.
+- **Compuerta:** los pasos 3 a 6.
+
+## 1. Unidad 1 · Los E2E de lo que se conserva, contra el legacy (E, onda 1)
+
+**Cubre:** FR-003, FR-005, FR-012, FR-013, FR-016 a FR-018, FR-020 y FR-031; SC-002, SC-003 y SC-007; US1, US2 y US3.
+
+### Tarea 1.1 · El Page Object, su fixture y el almacenamiento que lee y no escribe (T003, E)
+
+- **Archivos:**
+  - `qa/e2e/pages/library.ts`, nuevo;
+  - `qa/e2e/fixtures/index.ts`: suma la fixture `library`;
+  - `qa/e2e/fixtures/storage-control.ts`: suma `blockWrites()`.
+- **Produce:**
+
+```ts
+// qa/e2e/pages/library.ts
+import type { Locator, Page } from '@playwright/test';
+
+export type LibraryCategoryName = 'Todos' | 'Ejercicios' | 'Proyectos' | 'Lectura' | 'Herramientas';
+export type LibraryLanguageLabel = 'Todos los lenguajes' | 'Rust' | 'Go';
+export type LibraryCostLabel = 'Cualquier acceso' | 'Acceso gratuito' | 'Gratis + pago';
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+export class LibraryPage {
+  readonly search: Locator;
+  readonly languageFilter: Locator;
+  readonly costFilter: Locator;
+  readonly categories: Locator;
+  readonly favoritesOnly: Locator;
+  readonly results: Locator;
+  readonly cards: Locator;
+  readonly cardTitles: Locator;
+  readonly emptyHeading: Locator;
+  readonly clearFilters: Locator;
+
+  constructor(readonly page: Page) {
+    this.search = page.getByRole('searchbox', { name: 'Buscar recursos' });
+    this.languageFilter = page.getByRole('combobox', { name: 'Filtrar por lenguaje' });
+    this.costFilter = page.getByRole('combobox', { name: 'Filtrar por acceso' });
+    this.categories = page.getByRole('group', { name: 'Tipo de recurso' });
+    this.favoritesOnly = page.getByRole('checkbox', { name: 'Solo mis favoritos' });
+    this.results = page
+      .getByRole('status')
+      .filter({ hasText: 'recursos · abrí cada uno a tu ritmo' });
+    this.cards = page.getByRole('main').getByRole('article');
+    this.cardTitles = this.cards.getByRole('heading', { level: 2 });
+    this.emptyHeading = page.getByRole('heading', {
+      level: 2,
+      name: 'Ningún recurso con esos filtros.',
+    });
+    this.clearFilters = page.getByRole('button', { name: 'Limpiar filtros' });
+  }
+
+  category(name: LibraryCategoryName): Locator {
+    return this.categories.getByRole('button', { name, exact: true });
+  }
+
+  card(title: string): Locator {
+    return this.cards.filter({
+      has: this.page.getByRole('heading', { level: 2, name: title, exact: true }),
+    });
+  }
+
+  favoriteButton(title: string): Locator {
+    return this.page.getByRole('button', {
+      name: new RegExp(`^(Guardar en|Quitar de) favoritos: ${escapeRegExp(title)}$`),
+    });
+  }
+
+  detail(title: string): Locator {
+    return this.card(title).locator('details');
+  }
+
+  detailSummary(title: string): Locator {
+    return this.card(title).getByText('Antes de empezar', { exact: true });
+  }
+
+  link(title: string): Locator {
+    return this.card(title).getByRole('link', { name: 'Explorar recurso' });
+  }
+
+  async searchFor(text: string): Promise<void> {
+    await this.search.clear();
+    await this.search.pressSequentially(text);
+  }
+
+  async chooseLanguage(label: LibraryLanguageLabel): Promise<void> {
+    await this.languageFilter.selectOption({ label });
+  }
+
+  async chooseCost(label: LibraryCostLabel): Promise<void> {
+    await this.costFilter.selectOption({ label });
+  }
+
+  async chooseCategory(name: LibraryCategoryName): Promise<void> {
+    await this.category(name).click();
+  }
+
+  async toggleFavorite(title: string): Promise<void> {
+    await this.favoriteButton(title).click();
+  }
+}
+```
+
+```ts
+// qa/e2e/fixtures/storage-control.ts, a new method of StorageControl
+  async blockWrites(): Promise<void> {
+    await this.context.addInitScript(() => {
+      const setItem = Storage.prototype.setItem;
+      const removeItem = Storage.prototype.removeItem;
+      const quota = () => new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+      Storage.prototype.setItem = function (key: string, value: string) {
+        if (this === window.localStorage) throw quota();
+        return setItem.call(this, key, value);
+      };
+      Storage.prototype.removeItem = function (key: string) {
+        if (this === window.localStorage) throw quota();
+        return removeItem.call(this, key);
+      };
+    });
+  }
+```
+
+- **La fixture:** en `qa/e2e/fixtures/index.ts`, `import { LibraryPage } from '../pages/library';`, `library: LibraryPage;` en `Fixtures` y `library: async ({ page }, use) => use(new LibraryPage(page)),` después de `atlas`.
+- **Pasos:** `npm run typecheck` (incluye `qa/e2e/tsconfig.json`) y `npm run lint`. Las pruebas de estas piezas son las de T004. Commit: `test(e2e): el Page Object de la Biblioteca y el almacenamiento que lee y no escribe`.
+
+### Tarea 1.2 · Los flujos de la Biblioteca, en verde contra el legacy (T004, E)
+
+- **Archivo:** `qa/e2e/specs/library.spec.ts`, nuevo.
+- **De dónde salen los valores:** de la spec («Qué se conserva») y de research.md (R4), escritos a mano. Los títulos son los de `content/guide/` en el orden de su manifiesto, y el progreso, el de las fixtures congeladas o el de un literal en el formato v1 guardado.
+- **El código:**
+
+```ts
+import { expect, test } from '../fixtures';
+import { frozenProgress } from '../lib/curriculum';
+import { urls } from '../lib/urls';
+
+const TITLE = {
+  'rust-100': '100 Exercises to Learn Rust',
+  'rust-rover': '100 Exercises en RustRover',
+  rustlings: 'Rustlings',
+  'rust-brown': 'Rust Book interactivo de Brown',
+  'rust-google': 'Comprehensive Rust en español',
+  codecrafters: 'CodeCrafters',
+  protohackers: 'Protohackers',
+  'go-tour': 'A Tour of Go',
+  'go-tests': 'Learn Go with Tests',
+  'go-exercism': 'Exercism · Go',
+  gophercises: 'Gophercises',
+  'boot-dev': 'Boot.dev · Go',
+  context7: 'Context7',
+  'rust-examples': 'Rust by Example',
+  'go-examples': 'Go by Example',
+} as const;
+type ResourceId = keyof typeof TITLE;
+
+const ALL: ResourceId[] = [
+  'rust-100', 'rust-rover', 'rustlings', 'rust-brown', 'rust-google', 'codecrafters', 'protohackers',
+  'go-tour', 'go-tests', 'go-exercism', 'gophercises', 'boot-dev', 'context7', 'rust-examples', 'go-examples',
+];
+const RUST: ResourceId[] = ['rust-100', 'rust-rover', 'rustlings', 'rust-brown', 'rust-google', 'codecrafters', 'protohackers', 'context7', 'rust-examples'];
+const GO: ResourceId[] = ['codecrafters', 'protohackers', 'go-tour', 'go-tests', 'go-exercism', 'gophercises', 'boot-dev', 'context7', 'go-examples'];
+const FREE: ResourceId[] = ['rust-100', 'rustlings', 'rust-brown', 'rust-google', 'protohackers', 'go-tour', 'go-tests', 'go-exercism', 'gophercises', 'rust-examples', 'go-examples'];
+const MIXED: ResourceId[] = ['rust-rover', 'codecrafters', 'boot-dev', 'context7'];
+const BY_CATEGORY = {
+  Ejercicios: ['rust-100', 'rust-rover', 'rustlings', 'go-tour', 'go-exercism', 'boot-dev'],
+  Proyectos: ['codecrafters', 'protohackers', 'gophercises'],
+  Lectura: ['rust-brown', 'rust-google', 'go-tests', 'rust-examples', 'go-examples'],
+  Herramientas: ['context7'],
+} as const satisfies Record<string, readonly ResourceId[]>;
+const EXERCISES_QUERY: ResourceId[] = ['rust-100', 'rust-rover', 'rustlings', 'rust-google', 'go-tour', 'go-exercism', 'gophercises'];
+const BOTH: ResourceId[] = ['codecrafters', 'protohackers', 'context7'];
+
+const titlesOf = (ids: readonly ResourceId[]) => ids.map((id) => TITLE[id]);
+const countLabel = (shown: number) => `${shown} de 15 recursos · abrí cada uno a tu ritmo`;
+
+function savedRoute(favorites: ResourceId[]): string {
+  return JSON.stringify({
+    version: 1,
+    language: 'rust',
+    completed: [],
+    milestones: [],
+    favorites,
+    quizAnswers: {},
+    notes: { rust: { learned: '', next: '' }, go: { learned: '', next: '' } },
+    minutes: 25,
+  });
+}
+
+test.describe('(a) opening the library', () => {
+  test('shows the fifteen resources in content order and the controls at rest', async ({ shell, library, page }) => {
+    await shell.goto(urls.view('biblioteca'));
+
+    await expect(shell.heading('biblioteca')).toBeVisible();
+    await expect(page.getByText('RECURSOS CON INTENCIÓN')).toBeVisible();
+    await expect(
+      page.getByText('Todo lo que revisamos, en un lugar. Elegí según lo que necesitás hoy; guardá tus favoritos para volver sin buscar de nuevo.'),
+    ).toBeVisible();
+    await expect(
+      page.getByText('Accesos y modalidades revisados el 2 de octubre de 2026. Los recursos externos necesitan conexión y pueden cambiar. Los precios no se fijan aquí: revisá las condiciones de cada sitio.'),
+    ).toBeVisible();
+    await expect(library.cardTitles).toHaveText(titlesOf(ALL));
+    await expect(library.results).toHaveText(countLabel(15));
+    await expect(library.search).toHaveValue('');
+    await expect(library.search).toHaveAttribute('placeholder', 'Buscar un recurso, tema o formato…');
+    await expect(library.languageFilter).toHaveValue('all');
+    await expect(library.costFilter).toHaveValue('all');
+    await expect(library.category('Todos')).toHaveAttribute('aria-pressed', 'true');
+    for (const name of ['Ejercicios', 'Proyectos', 'Lectura', 'Herramientas'] as const) {
+      await expect(library.category(name)).toHaveAttribute('aria-pressed', 'false');
+    }
+    await expect(library.favoritesOnly).not.toBeChecked();
+  });
+});
+
+test.describe('(b) the search', () => {
+  test('matches the whole query as a substring, not word by word', async ({ shell, library }) => {
+    await shell.goto(urls.view('biblioteca'));
+
+    await library.searchFor('tour of');
+    await expect(library.cardTitles).toHaveText([TITLE['go-tour']]);
+    await expect(library.results).toHaveText(countLabel(1));
+
+    await library.searchFor('of tour');
+    await expect(library.cardTitles).toHaveCount(0);
+    await expect(library.emptyHeading).toBeVisible();
+    await expect(library.results).toHaveText(countLabel(0));
+  });
+
+  test('ignores accents and case', async ({ shell, library }) => {
+    await shell.goto(urls.view('biblioteca'));
+
+    await library.searchFor('EJÉRCICIOS');
+    await expect(library.cardTitles).toHaveText(titlesOf(EXERCISES_QUERY));
+    await library.searchFor('ejercicios');
+    await expect(library.cardTitles).toHaveText(titlesOf(EXERCISES_QUERY));
+  });
+
+  test('also matches the language ids and never the access', async ({ shell, library }) => {
+    await shell.goto(urls.view('biblioteca'));
+
+    await library.searchFor('both');
+    await expect(library.cardTitles).toHaveText(titlesOf(BOTH));
+    await library.searchFor('gratis');
+    await expect(library.cardTitles).toHaveCount(0);
+    await library.searchFor('mixto');
+    await expect(library.cardTitles).toHaveCount(0);
+  });
+
+  test('a query of only spaces does not filter and the field keeps it', async ({ shell, library }) => {
+    await shell.goto(urls.view('biblioteca'));
+
+    await library.searchFor('   ');
+    await expect(library.search).toHaveValue('   ');
+    await expect(library.cardTitles).toHaveText(titlesOf(ALL));
+  });
+});
+
+test.describe('(c) language, access and type', () => {
+  test('each filter alone', async ({ shell, library }) => {
+    await shell.goto(urls.view('biblioteca'));
+
+    await library.chooseLanguage('Rust');
+    await expect(library.cardTitles).toHaveText(titlesOf(RUST));
+    await library.chooseLanguage('Go');
+    await expect(library.cardTitles).toHaveText(titlesOf(GO));
+    await library.chooseLanguage('Todos los lenguajes');
+
+    await library.chooseCost('Acceso gratuito');
+    await expect(library.cardTitles).toHaveText(titlesOf(FREE));
+    await library.chooseCost('Gratis + pago');
+    await expect(library.cardTitles).toHaveText(titlesOf(MIXED));
+    await library.chooseCost('Cualquier acceso');
+
+    for (const [name, ids] of Object.entries(BY_CATEGORY) as [keyof typeof BY_CATEGORY, readonly ResourceId[]][]) {
+      await library.chooseCategory(name);
+      await expect(library.category(name)).toHaveAttribute('aria-pressed', 'true');
+      await expect(library.category('Todos')).toHaveAttribute('aria-pressed', 'false');
+      await expect(library.cardTitles).toHaveText(titlesOf(ids));
+    }
+  });
+
+  test('the filters combine with and', async ({ shell, library }) => {
+    await shell.goto(urls.view('biblioteca'));
+
+    await library.chooseLanguage('Go');
+    await library.chooseCost('Gratis + pago');
+    await expect(library.cardTitles).toHaveText(titlesOf(['codecrafters', 'boot-dev', 'context7']));
+
+    await library.chooseCost('Acceso gratuito');
+    await library.searchFor('tour of');
+    await expect(library.cardTitles).toHaveText([TITLE['go-tour']]);
+  });
+
+  test('the language of the menu does not filter the library', async ({ shell, library }) => {
+    await shell.goto(urls.view('biblioteca'));
+
+    await shell.switchLanguage('go');
+
+    await expect(library.languageFilter).toHaveValue('all');
+    await expect(library.cardTitles).toHaveText(titlesOf(ALL));
+  });
+});
+
+test('(d) Limpiar filtros resets the five criteria and leaves the focus on the search', async ({ shell, library, page }) => {
+  await shell.goto(urls.view('biblioteca'));
+  await library.chooseLanguage('Go');
+  await library.chooseCost('Gratis + pago');
+  await library.chooseCategory('Lectura');
+  await library.favoritesOnly.check();
+  await library.searchFor('zzz');
+  await expect(library.emptyHeading).toBeVisible();
+  await expect(page.getByText('Probá otro término o volvé a ver la biblioteca completa.')).toBeVisible();
+
+  await library.clearFilters.click();
+
+  await expect(library.cardTitles).toHaveText(titlesOf(ALL));
+  await expect(library.search).toHaveValue('');
+  await expect(library.languageFilter).toHaveValue('all');
+  await expect(library.costFilter).toHaveValue('all');
+  await expect(library.category('Todos')).toHaveAttribute('aria-pressed', 'true');
+  await expect(library.favoritesOnly).not.toBeChecked();
+  await expect(library.search).toBeFocused();
+});
+
+test.describe('(e) a favorite', () => {
+  test('one click saves once, changes the star and keeps the focus, and a reload keeps it', async ({ shell, library, storage, page }) => {
+    await storage.watchWrites();
+    await shell.goto(urls.view('biblioteca'));
+    const star = library.favoriteButton(TITLE['go-tour']);
+    await expect(star).toHaveAccessibleName('Guardar en favoritos: A Tour of Go');
+    await expect(star).toHaveAttribute('aria-pressed', 'false');
+    await expect(star).toHaveText('☆');
+
+    await star.click();
+
+    await expect(star).toHaveAccessibleName('Quitar de favoritos: A Tour of Go');
+    await expect(star).toHaveAttribute('aria-pressed', 'true');
+    await expect(star).toHaveText('★');
+    await expect(star).toBeFocused();
+    expect(await storage.writes()).toEqual(['set taller-learning-v1']);
+    await page.reload();
+    await expect(library.favoriteButton(TITLE['go-tour'])).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('the id goes to the end of the saved favorites and a second click removes it', async ({ shell, library, storage }) => {
+    await storage.seed({ 'taller-learning-v1': frozenProgress['taller-learning-v1'] });
+    await shell.goto(urls.view('biblioteca'));
+
+    await library.toggleFavorite(TITLE['go-tour']);
+    let saved = JSON.parse((await storage.snapshot())['taller-learning-v1'] ?? '{}') as { favorites: string[] };
+    expect(saved.favorites).toEqual(['rust-100', 'go-tour']);
+
+    await library.toggleFavorite(TITLE['go-tour']);
+    saved = JSON.parse((await storage.snapshot())['taller-learning-v1'] ?? '{}') as { favorites: string[] };
+    expect(saved.favorites).toEqual(['rust-100']);
+  });
+});
+
+test.describe('(f) Solo mis favoritos', () => {
+  test('shows the favorite of the frozen progress', async ({ shell, library, storage }) => {
+    await storage.seed({ 'taller-learning-v1': frozenProgress['taller-learning-v1'] });
+    await shell.goto(urls.view('biblioteca'));
+
+    await library.favoritesOnly.check();
+
+    await expect(library.cardTitles).toHaveText([TITLE['rust-100']]);
+    await expect(library.results).toHaveText(countLabel(1));
+  });
+
+  test('without favorites shows the empty state', async ({ shell, library }) => {
+    await shell.goto(urls.view('biblioteca'));
+
+    await library.favoritesOnly.check();
+
+    await expect(library.cardTitles).toHaveCount(0);
+    await expect(library.emptyHeading).toBeVisible();
+  });
+
+  test('a favorite that a filter hides stays saved and comes back', async ({ shell, library, storage }) => {
+    await storage.seed({ 'taller-learning-v1': frozenProgress['taller-learning-v1'] });
+    await shell.goto(urls.view('biblioteca'));
+
+    await library.chooseLanguage('Go');
+    await expect(library.card(TITLE['rust-100'])).toHaveCount(0);
+    await library.chooseLanguage('Todos los lenguajes');
+
+    await expect(library.favoriteButton(TITLE['rust-100'])).toHaveAttribute('aria-pressed', 'true');
+  });
+});
+
+test('(g) a favorite removed in the library stays removed after another part saves and a reload', async ({ shell, library, storage, page }) => {
+  await storage.seed({ 'taller-learning-v1': frozenProgress['taller-learning-v1'] });
+  await shell.goto(urls.view('biblioteca'));
+  await library.toggleFavorite(TITLE['rust-100']);
+  await expect(library.favoriteButton(TITLE['rust-100'])).toHaveAttribute('aria-pressed', 'false');
+
+  await shell.openFromMenu('recorrido');
+  await page.getByRole('checkbox', { name: /^Marcar como completado/ }).first().click();
+  await page.reload();
+  await shell.openFromMenu('biblioteca');
+
+  await expect(library.favoriteButton(TITLE['rust-100'])).toHaveAttribute('aria-pressed', 'false');
+});
+
+test('(h) with a storage that reads and does not write, the star changes in memory and the footer warns', async ({ shell, library, storage }) => {
+  await storage.blockWrites();
+  await shell.goto(urls.view('biblioteca'));
+  await expect(shell.saveStatus('Guardado en este navegador')).toBeVisible();
+
+  await library.toggleFavorite(TITLE['go-tour']);
+
+  await expect(library.favoriteButton(TITLE['go-tour'])).toHaveAttribute('aria-pressed', 'true');
+  await expect(shell.saveStatus('Exportá para conservar tu avance')).toBeVisible();
+});
+
+test.describe('(i) where the filters live', () => {
+  test('the menu keeps the filters and a reload drops them', async ({ shell, library, page }) => {
+    await shell.goto(urls.view('biblioteca'));
+    await library.chooseLanguage('Go');
+    await library.chooseCategory('Lectura');
+    await expect(library.cardTitles).toHaveText(titlesOf(['go-tests', 'go-examples']));
+
+    await shell.openFromMenu('recorrido');
+    await shell.openFromMenu('biblioteca');
+    await expect(library.languageFilter).toHaveValue('go');
+    await expect(library.category('Lectura')).toHaveAttribute('aria-pressed', 'true');
+    await expect(library.cardTitles).toHaveText(titlesOf(['go-tests', 'go-examples']));
+
+    await page.reload();
+    await expect(library.languageFilter).toHaveValue('all');
+    await expect(library.cardTitles).toHaveText(titlesOf(ALL));
+  });
+
+  test('«Borrar todo» keeps the filters and the library shows the blank progress', async ({ shell, library, storage, page }) => {
+    await storage.seed({ 'taller-learning-v1': frozenProgress['taller-learning-v1'] });
+    await shell.goto(urls.view('biblioteca'));
+    await library.chooseLanguage('Rust');
+
+    await shell.openFromMenu('metodo');
+    await page.getByRole('button', { name: 'Borrar mi progreso' }).click();
+    await page.getByRole('button', { name: 'Borrar todo' }).click();
+    await shell.openFromMenu('biblioteca');
+
+    await expect(library.languageFilter).toHaveValue('rust');
+    await expect(library.favoriteButton(TITLE['rust-100'])).toHaveAttribute('aria-pressed', 'false');
+  });
+});
+
+test.describe('(j) the keyboard', () => {
+  test('Tab goes through the controls in order and reaches the first star', async ({ shell, library, page }) => {
+    await shell.goto(urls.view('biblioteca'));
+    await library.search.focus();
+
+    const order = [
+      library.languageFilter,
+      library.costFilter,
+      library.category('Todos'),
+      library.category('Ejercicios'),
+      library.category('Proyectos'),
+      library.category('Lectura'),
+      library.category('Herramientas'),
+      library.favoritesOnly,
+      library.favoriteButton(TITLE['rust-100']),
+    ];
+    for (const control of order) {
+      await page.keyboard.press('Tab');
+      await expect(control).toBeFocused();
+    }
+  });
+
+  test('Enter and Space activate the chips, the checkbox and the stars, and the focus stays', async ({ shell, library, page }) => {
+    await shell.goto(urls.view('biblioteca'));
+
+    await library.category('Lectura').focus();
+    await page.keyboard.press('Enter');
+    await expect(library.category('Lectura')).toHaveAttribute('aria-pressed', 'true');
+    await expect(library.category('Lectura')).toBeFocused();
+
+    await library.category('Todos').focus();
+    await page.keyboard.press('Space');
+    await expect(library.category('Todos')).toHaveAttribute('aria-pressed', 'true');
+
+    const star = library.favoriteButton(TITLE['go-tour']);
+    await star.focus();
+    await page.keyboard.press('Enter');
+    await expect(star).toHaveAttribute('aria-pressed', 'true');
+    await expect(star).toBeFocused();
+
+    await library.favoritesOnly.focus();
+    await page.keyboard.press('Space');
+    await expect(library.favoritesOnly).toBeChecked();
+    await expect(library.cardTitles).toHaveText([TITLE['go-tour']]);
+  });
+});
+
+test('(k) a card shows its content and its link opens the resource in a new tab', async ({ shell, library }) => {
+  await shell.goto(urls.view('biblioteca'));
+  const card = library.card(TITLE['go-tour']);
+
+  await expect(card.getByText('Go', { exact: true })).toBeVisible();
+  await expect(card.getByText('Gratis', { exact: true })).toBeVisible();
+  await expect(card.getByText('Elegido para vos', { exact: true })).toBeVisible();
+  await expect(card.getByText('Lecciones ejecutables en el navegador · Inglés')).toBeVisible();
+  await expect(card.getByText('Para vos:')).toBeVisible();
+  await expect(library.detailSummary(TITLE['go-tour'])).toBeVisible();
+  await expect(library.card(TITLE['context7']).getByText('Go + Rust', { exact: true })).toBeVisible();
+  await expect(library.card(TITLE['context7']).getByText('Gratis + pago', { exact: true })).toBeVisible();
+  await expect(library.link(TITLE['go-tour'])).toHaveAttribute('href', 'https://go.dev/tour/');
+  await expect(library.link(TITLE['go-tour'])).toHaveAttribute('target', '_blank');
+  await expect(library.link(TITLE['go-tour'])).toHaveAttribute('rel', 'noopener noreferrer');
+});
+
+test('(l) switching the language on the library keeps the filters', async ({ shell, library }) => {
+  await shell.goto(urls.view('biblioteca'));
+  await library.searchFor('tour of');
+  await library.chooseLanguage('Go');
+
+  await shell.switchLanguage('go');
+
+  await expect(library.search).toHaveValue('tour of');
+  await expect(library.languageFilter).toHaveValue('go');
+  await expect(library.cardTitles).toHaveText([TITLE['go-tour']]);
+});
+```
+
+- **Pasos:**
+  1. Escribir la spec y correrla contra el build del legacy: `npm run build` y `E2E_PORT=4191 npm run test:e2e -- specs/library.spec.ts`. Todo tiene que pasar.
+  2. Correrla tres veces seguidas (`--repeat-each=3 --retries=0`) para descartar pruebas inestables.
+  3. `npx prettier --write qa/e2e/specs/library.spec.ts`, `npm run typecheck`, `npm run lint` y la red completa (`E2E_PORT=4191 npm run test:e2e`).
+  4. Commit: `test(e2e): la Biblioteca de hoy: búsqueda, filtros, favoritos, teclado, tarjeta e idioma`.
+- **Compuerta:** los 22 casos de la spec en verde contra el legacy, tres veces, y la red completa sin cambios.
+- **Si una prueba falla contra el legacy:** el valor esperado está mal escrito o el legacy hace otra cosa. Se compara con `renderResourceResults` y con la spec, y se informa a K; no se cambia la expectativa para que pase.
