@@ -585,19 +585,6 @@ const BOTH: ResourceId[] = ['codecrafters', 'protohackers', 'context7'];
 const titlesOf = (ids: readonly ResourceId[]) => ids.map((id) => TITLE[id]);
 const countLabel = (shown: number) => `${shown} de 15 recursos · abrí cada uno a tu ritmo`;
 
-function savedRoute(favorites: ResourceId[]): string {
-  return JSON.stringify({
-    version: 1,
-    language: 'rust',
-    completed: [],
-    milestones: [],
-    favorites,
-    quizAnswers: {},
-    notes: { rust: { learned: '', next: '' }, go: { learned: '', next: '' } },
-    minutes: 25,
-  });
-}
-
 test.describe('(a) opening the library', () => {
   test('shows the fifteen resources in content order and the controls at rest', async ({ shell, library, page }) => {
     await shell.goto(urls.view('biblioteca'));
@@ -2735,8 +2722,7 @@ describe('the filters in the URL', () => {
       await library.searchFor('tour of');
 
       await page.keyboard.press('Home');
-      await page.keyboard.press('ArrowRight', { delay: 0 });
-      for (let step = 1; step < 5; step++) await page.keyboard.press('ArrowRight');
+      for (let step = 0; step < 5; step++) await page.keyboard.press('ArrowRight');
       await page.keyboard.type('x');
 
       await expect(library.search).toHaveValue('tour xof');
@@ -3249,7 +3235,7 @@ window.TallerLibrary = Object.freeze({ mount, unmount });
 
 ### Tarea 6.1 · La comparación única, legacy contra port (T020, K)
 
-- **Qué compara:** el commit base de T001 (el legacy) contra el último commit del PR, con el script de quickstart.md §4. Pasa por 16 estados, a los que llega con la interfaz en los dos builds, a 981, 850, 650 y 590 px:
+- **Qué compara:** el commit base de T001 (el legacy) contra el último commit del PR, con el script de quickstart.md §4. Pasa por 15 estados, a los que llega con la interfaz en los dos builds, a 981, 850, 650 y 590 px:
   1. el inicial;
   2. dos búsquedas, «tour of» y «ejercicios»;
   3. Rust y Go;
@@ -3273,7 +3259,7 @@ window.TallerLibrary = Object.freeze({ mount, unmount });
 
 ### Tarea 6.2 · Las roturas deliberadas (T021, K)
 
-- Las doce roturas de quickstart.md §6, cada una en una copia descartable y sin commitear. Cada una tiene que fallar en la prueba prevista. Se informa N de N (FR-037, SC-007).
+- Las catorce roturas de quickstart.md §6, cada una en una copia descartable y sin commitear. Cada una tiene que fallar en la prueba prevista. Se informa N de N (FR-037, SC-007).
 
 ### Tarea 6.3 · La documentación (T022, K)
 
