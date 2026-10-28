@@ -183,14 +183,16 @@ frontend/src/
 │   │   └── index.ts
 │   └── privacy-notice/                         # nuevo (P)
 │       ├── config/privacy-notice.ts
-│       ├── ui/PrivacyNoticeText.tsx, ui/PrivacyNoticeDialog.tsx, ui/privacy-notice.spec.tsx
+│       ├── ui/PrivacyNoticeText.tsx, ui/PrivacyNoticeDialog.tsx, ui/privacy-notice.css
+│       ├── ui/privacy-notice.spec.tsx
 │       └── index.ts
 ├── features/sign-in/                           # nuevo (A)
-│   ├── model/access-request.ts, reauthenticate.ts, sign-out.ts (+ specs)
+│   ├── model/access-request.ts, reauthenticate.ts, sign-out.ts, invitation-problem.ts (+ specs)
 │   ├── api/access-endpoints.ts (+ .spec.ts)
-│   ├── ui/AccessGate.tsx, AccessPage.tsx, AccessDialog.tsx, AccessScreen.tsx, AccessHeading.tsx
-│   ├── ui/LoginForm.tsx, InvitationScreen.tsx, InvitationProblem.tsx, InvitationSummary.tsx, SignupForm.tsx
-│   ├── ui/ResetPasswordScreen.tsx, PrivacyReacceptance.tsx
+│   ├── ui/AccessGate.tsx, AccessPage.tsx, AccessDialog.tsx, AccessScreen.tsx, AccessHeading.tsx, access-texts.ts
+│   ├── ui/LoginForm.tsx, InvitationScreen.tsx, InvitationProblem.tsx, InvitationSummary.tsx
+│   ├── ui/SignupForm.tsx, AcceptPrivacyField.tsx, PrivacyReacceptance.tsx
+│   ├── ui/ResetPasswordScreen.tsx, ResetPasswordForm.tsx
 │   ├── ui/*.spec.tsx, ui/access.css
 │   └── index.ts
 └── pages/account/                              # nuevo (M)

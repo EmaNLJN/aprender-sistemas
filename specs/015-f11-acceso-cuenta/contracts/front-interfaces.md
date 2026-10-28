@@ -198,7 +198,7 @@ export const PRIVACY_NOTICE: PrivacyNotice; // la versión es la que va en PRIVA
 
 // Componentes
 PrivacyNoticeText:   { headingLevel: 2 | 3 }
-PrivacyNoticeDialog: { open: boolean; onClose(): void }
+PrivacyNoticeDialog: { onClose(): void } // abierto mientras está montado; al cerrar devuelve el foco a quien lo abrió
 ```
 
 ## `features/sign-in`: «pedir el ingreso» y el acceso
