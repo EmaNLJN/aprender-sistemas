@@ -7,16 +7,23 @@ import { celebrate } from '../../../shared/lib/celebration';
 import { readSimulation, resetSimulations } from '../model/systems-session';
 import { initProbeEngine, passingLabState, probeModel } from '../model/systems-page.factory';
 import { workshopView } from '../model/workshop-views';
+import type { SystemsLanguage } from '../model/types';
 import ExplorePart from './ExplorePart';
 
 vi.mock('../../../shared/lib/celebration', () => ({ celebrate: vi.fn(), stop: vi.fn() }));
 
-const Subscribed = ({ notify = vi.fn() }: { notify?: (message: string) => void }) => {
+const Subscribed = ({
+  notify = vi.fn(),
+  language = 'rust',
+}: {
+  notify?: (message: string) => void;
+  language?: SystemsLanguage;
+}) => {
   useStore(systemsEngine.changes, (state) => state.revision);
   return (
     <ExplorePart
-      workshop={workshopView('probe', 'rust')}
-      language="rust"
+      workshop={workshopView('probe', language)}
+      language={language}
       model={probeModel}
       notify={notify}
       onPartChange={vi.fn()}
@@ -126,5 +133,19 @@ describe('ExplorePart', () => {
       'celebrate',
       'Tres sellos conseguidos. Podés llevar esta idea a tu proyecto.',
     ]);
+  });
+
+  it('keeps the simulation of each language apart', async () => {
+    const user = userEvent.setup();
+    const rust = render(<Subscribed language="rust" />);
+    await user.click(screen.getByRole('button', { name: 'Tocar B' }));
+    rust.unmount();
+
+    const go = render(<Subscribed language="go" />);
+    expect(screen.getByText('Último valor: ninguno')).toBeInTheDocument();
+    go.unmount();
+
+    render(<Subscribed language="rust" />);
+    expect(screen.getByText('Último valor: [b]')).toBeInTheDocument();
   });
 });
