@@ -1,11 +1,11 @@
 import { createRoot, type Root } from 'react-dom/client';
 import {
   AtlasPage,
-  atlasByLanguage,
   createAtlasSession,
   type AtlasLanguage,
   type AtlasSession,
 } from '../../pages/atlas';
+import { getContent } from '../content/content';
 
 declare global {
   interface Window {
@@ -36,7 +36,7 @@ function mount(host: HTMLElement | null, requestedLanguage: string = 'rust'): vo
   });
   root.render(
     <AtlasPage
-      entries={atlasByLanguage[language] || []}
+      entries={getContent().atlas[language]}
       initialSession={sessions[language]}
       language={language}
       onSessionChange={(session) => {

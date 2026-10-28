@@ -7,12 +7,11 @@ import crypto from 'node:crypto';
 import { spawn, execFileSync } from 'node:child_process';
 import {
   SYSTEMS_DOMAINS,
-  loadLab,
   loadLabExercises,
   loadSystemsDomain,
   systemsDomainSources,
 } from './lib/legacy-sources.ts';
-import { bundleSource, repoRoot as root, runSource } from './lib/sources.ts';
+import { bundleSource, importModule, repoRoot as root, runSource } from './lib/sources.ts';
 
 type Language = 'rust' | 'go';
 interface TestCase {
@@ -72,6 +71,9 @@ interface ProjectKitApi {
 interface LabApi {
   getExercises(): Exercise[];
   exportState?(): unknown;
+}
+interface ExerciseModule {
+  createExerciseCatalog(groups: Record<string, Exercise[]>): { exercises: readonly Exercise[] };
 }
 interface BrowserWindow {
   TallerLab?: LabApi;
@@ -522,6 +524,24 @@ check('Unknown language/core is rejected rather than producing a misleading kit'
   );
 });
 
+const { createExerciseCatalog } = await importModule<ExerciseModule>(
+  'frontend/src/entities/exercise/index.ts',
+);
+
+function exerciseGroups(window: BrowserWindow): Record<string, Exercise[]> {
+  const globals = window as unknown as Record<string, Exercise[]>;
+  return {
+    rustLab: globals.RUST_LAB,
+    rustQuests: globals.RUST_QUESTS,
+    goLab: globals.GO_LAB,
+    goQuests: globals.GO_QUESTS,
+    systemsLowlevel: globals.SYSTEMS_LOWLEVEL_LABS,
+    systemsInfra: globals.SYSTEMS_INFRA_LABS,
+    systemsPlay: globals.SYSTEMS_PLAY_LABS,
+    systemsPc: globals.SYSTEMS_PC_LABS,
+  };
+}
+
 let real = undefined as RealCatalog | undefined;
 check('Load the actual workshop catalog and the production lab registry', () => {
   const ctx = context();
@@ -539,10 +559,11 @@ check('Load the actual workshop catalog and the production lab registry', () => 
     loadSystemsDomain(ctx, name);
     domains.push(ctx.window[global] as { workshops: Workshop[] });
   }
-  loadLab(ctx);
+  const w = ctx.window;
+  const exercises = createExerciseCatalog(exerciseGroups(w)).exercises as Exercise[];
+  w.TallerLab = { getExercises: () => exercises, exportState: () => ({ version: 1, records: {} }) };
   runSource(ctx, ADAPTER, { minify: true });
-  const workshops = domains.flatMap((d) => d.workshops),
-    exercises = ctx.window.TallerLab?.getExercises() ?? [];
+  const workshops = domains.flatMap((d) => d.workshops);
   if (!partial) {
     assert.equal(workshops.length, 25);
     assert.equal(exercises.length, 274);

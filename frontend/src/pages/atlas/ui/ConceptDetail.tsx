@@ -1,5 +1,6 @@
 import type { RefObject } from 'react';
 import { LEVEL_LABELS } from '../../../shared/config/levels';
+import { exerciseHref } from '../../../shared/config/url-grammar';
 import type { AtlasConcept, AtlasLanguage } from '../model/types';
 import safeHttpsUrl from '../lib/safe-https-url';
 import {
@@ -38,7 +39,7 @@ const ConceptDetail = ({
   const languageName = language === 'go' ? 'Go' : 'Rust';
   const compared = Boolean(session.compared[entry.id]);
   const pitfallShown = Boolean(session.pitfalls[entry.id]);
-  const labLink = `?ejercicio=${encodeURIComponent(entry.labId)}&paso=learn#laboratorio`;
+  const labLink = exerciseHref(entry.labId, 'learn');
 
   const handleAnswer = (answer: number, button: HTMLButtonElement) => {
     onChange((current) => answerQuiz(current, entry.id, answer));

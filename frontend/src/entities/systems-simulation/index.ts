@@ -29,3 +29,4 @@ export type { LowlevelModels } from './models/lowlevel';
 export { infraModels } from './models/infra';
 export type { InfraModels } from './models/infra';
 export { playModels } from './models/play';
+export { mergeModelGroups } from './model/model-registry';

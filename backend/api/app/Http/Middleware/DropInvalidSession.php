@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Auth\AccountSessions;
 use App\Auth\AccountStatus;
+use App\Auth\CurrentSession;
 use App\Auth\DropReason;
 use App\Models\User;
 use Closure;
@@ -30,7 +31,7 @@ final class DropInvalidSession
     {
         $reason = $this->reasonToDrop($request);
         if ($reason !== null) {
-            $this->drop($request);
+            CurrentSession::end($request);
             $request->attributes->set(self::DROPPED_ATTRIBUTE, $reason);
         }
 
@@ -82,13 +83,6 @@ final class DropInvalidSession
         $maximumSeconds = config()->integer('taller.session_max_hours') * 3600;
 
         return ! $carriesRememberCookie && now()->getTimestamp() - $startedAt > $maximumSeconds;
-    }
-
-    private function drop(Request $request): void
-    {
-        $this->guard()->logoutCurrentDevice();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
     }
 
     private function storePasswordHashIfMissing(Request $request): void
