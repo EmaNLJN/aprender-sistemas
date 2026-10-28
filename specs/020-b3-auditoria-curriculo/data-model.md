@@ -49,7 +49,7 @@ Todos `final`; los de datos, `readonly`. Las firmas son las que obligan; los cue
 | `AuditRunner` | `__construct(ExecutorDispatcher $dispatcher, ResultClassifier $classifier)`; `run(list<AuditProgram> $programs, int $concurrency, AuditLimits $limits, Closure(int, int): void $progress): list<JudgedProgram>` | Las tandas: envía, clasifica con B2 y decide |
 | `AuditRefused` | `RuntimeException` con constructores estáticos, uno por negativa | Los mensajes de FR-013 |
 
-Puros (sin base, HTTP, cola, log ni caché; lo fija una prueba de arquitectura, T009): `ExerciseKind`, `ProgramRole`, `AuditVerdict`, `FindingKind`, `CustomTestProbe`, `AuditedExercise`, `AuditCatalog`, `AuditSelection`, `AuditProgram`, `AuditPlan`, `PhaseTiming`, `Diagnostic`, `JudgedProgram`, `ProgramJudge`, `HostStamps`, `AuditRun`, `AuditReport` y `AuditReportText`. `AuditLimits::fromConfig` y `AuditPlan` leen la configuración, nada más.
+Puros (sin base, HTTP, cola, log ni caché; lo fija una prueba de arquitectura, T010): `ExerciseKind`, `ProgramRole`, `AuditVerdict`, `FindingKind`, `CustomTestProbe`, `AuditedExercise`, `AuditCatalog`, `AuditSelection`, `AuditProgram`, `AuditPlan`, `PhaseTiming`, `Diagnostic`, `JudgedProgram`, `ProgramJudge`, `HostStamps`, `AuditRun`, `AuditReport` y `AuditReportText`. `AuditLimits::fromConfig` y `AuditPlan` leen la configuración, nada más.
 
 ## La regla
 

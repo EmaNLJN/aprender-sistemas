@@ -2261,8 +2261,12 @@ it('refuses when it cannot reach the instance (FR-013)', function () {
 });
 
 it('refuses when healthz does not answer', function () {
-    AuditExecutorDouble::fake([]);
-    Http::fake(['executor-audit:8080/healthz' => Http::response('', 503)]);
+    config(['runs.executor.url' => AuditExecutorDouble::URL, 'runs.executor.token' => AuditExecutorDouble::TOKEN]);
+    Http::preventStrayRequests();
+    Http::fake([
+        'executor-audit:8080/healthz' => Http::response('', 503),
+        'executor-audit:8080/*' => Http::response(['error' => 'lenguaje no soportado'], 400),
+    ]);
 
     expect(fn () => app(ExecutorPreflight::class)->check())->toThrow(AuditRefused::class, '(GET /healthz respondió 503)');
 });
@@ -2300,6 +2304,8 @@ it('takes the lock and gives it back', function () {
     expect(DB::scalar("select is_free_lock(concat(database(), ':curriculum-audit'))"))->toBeIn([1, '1']);
 });
 ```
+
+Esa prueba no usa el doble: arma un solo `Http::fake` con la entrada de `/healthz` antes de la general, así el orden del arreglo decide qué responde. Ninguna prueba del plan llama dos veces a `Http::fake`.
 
 **Paso 2.** `npm run api:test -- --filter=AuditGuardsTest`: falla.
 
