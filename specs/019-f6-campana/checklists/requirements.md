@@ -15,8 +15,8 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
-- [ ] Requirements are testable and unambiguous
+- [x] No [NEEDS CLARIFICATION] markers remain
+- [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
 - [x] All acceptance scenarios are defined
@@ -33,7 +33,7 @@
 
 ## Notes
 
-- Quedan tres marcadores `[NEEDS CLARIFICATION]`, uno por pregunta abierta: Q1 en FR-031 (las palabras que repiten un conteo), Q2 en FR-018 (la región viva del checkpoint) y Q3 en FR-019 (los `<details>` abiertos). Por eso quedan sin marcar «No [NEEDS CLARIFICATION] markers remain» y «Requirements are testable and unambiguous»: esos tres requisitos usan la opción recomendada como borrador hasta que el usuario responda. Los demás son comprobables hoy. Q2 y Q3 se parecen a la Q3 de F9, a la de F3 y a la de F4 (specs en las ramas `spec/f9-recorrido`, `spec/f3-biblioteca` y `spec/f4-proyecto`), pero no coinciden con todas sus recomendaciones: la spec lo dice en cada pregunta.
+- Los tres marcadores `[NEEDS CLARIFICATION]` que quedaban (Q1 en FR-031, Q2 en FR-018 y Q3 en FR-019) se resolvieron en el clarify del 2026-10-28 y ya no están en la spec: las respuestas figuran en `## Clarifications` (el usuario eligió la opción recomendada en las tres) y las opciones que no se eligieron, en «Alternativas consideradas». Los tres requisitos ya son comprobables: FR-018 (la región montada), FR-019 (lo que `innerHTML` descartaba adopta el comportamiento de React, por la decisión X1 y el ruling C2) y FR-031 (el texto editorial con su spec de coherencia). Las decisiones X1 y X2 valen para todos los ports.
 - Excepciones deliberadas en «implementation details»: F6 es un port y su objeto son archivos, capas y contratos entre vistas. La spec nombra la capa y el slice de Feature-Sliced Design, las rutas de los archivos legacy y los métodos de `window.TallerCampaign` porque son lo que se retira o se conserva, y las herramientas (Vitest, Testing Library, fishery, Playwright, Zustand) porque las fijan el ADR 0008, `AGENTS.md` y la spec de F2. Los nombres de módulos, carpetas y adaptadores son provisionales y los confirma el plan; la spec fija la capa, la responsabilidad y el contrato. No hay código.
 - «Non-technical stakeholders»: el lector es el dueño del taller, que tomó las decisiones del épico y conoce el mapa del front legacy. Los términos técnicos son los suyos. Para el alumno, el resultado es que no cambia nada, y la spec lo dice en su intención.
 - «Technology-agnostic»: SC-001, SC-003, SC-004 y SC-012 nombran los comandos, los checks y las fixtures porque son lo que se ejecuta. Los demás criterios hablan de diferencias, de escrituras, de conteos y de pruebas, no de cómo se construyen.

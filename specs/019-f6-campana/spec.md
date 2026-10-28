@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-28
 
-**Status**: Borrador con tres preguntas abiertas para el clarify (Q1 a Q3). Sin plan ni tareas.
+**Status**: Clarificada (sesión del 2026-10-28); lista para el plan. Sin plan ni tareas.
 
 **Input**: Ítem **F6** de la hoja de ruta [`specs/front-react/roadmap.md`](../front-react/roadmap.md), «Campaña»: portar la campaña (héroe, mundos, misiones, vitrina y reglas) a React sin que el alumno note el cambio. Pedido del coordinador (ver «Lo que pidió el usuario»). Depende de F2b (la [spec de F2](../009-f2-seams/spec.md) y su [plan](../009-f2-seams/plan-f2b.md)), implementada en los PR #41 a #44; de F2a con A2 (PR #40, [plan](../009-f2-seams/plan.md)); y de F1 ([spec](../003-f1-red-de-seguridad/spec.md)). Usa el [ADR 0008](../../docs/adr/0008-pruebas-del-front.md) y el [ADR 0003](../../docs/adr/0003-integridad-del-progreso.md), el [mapa del front legacy](../front-react/legacy-map.md) y la [constitución](../../.specify/memory/constitution.md) 1.4.1. Ningún ADR en «propuesta» es base de esta spec. Lo que existe sólo en esas ramas (`url-grammar.ts`, `entities/campaign/bridge.ts`, `startApp()`, `getContent()` y la compuerta de A2) no está en `master` (`e87772d`): se cita como código, con su archivo, y se toma como hecho de la integración local de F2a, A2 y las cuatro unidades de F2b. Las specs de D1, F3, F4, F5 y F9 son borradores en otras ramas: lo que se toma de ahí es un supuesto.
 
@@ -22,8 +22,8 @@ F6 está en el camino crítico: F7 (el laboratorio) espera a F5 y a F6, A4 esper
 
 **Cómo sabremos que salió bien.**
 
-1. La red de F1 (106 E2E) y los 17 de A2 pasan sin editarse, y los E2E nuevos de la campaña, escritos contra el legacy y en verde antes de portar, pasan sin editarse sobre la página de React.
-2. Una comparación única entre el build de la base y el de F6 da 0 diferencias en el DOM de la campaña, en el estilo computado y en el árbol de accesibilidad, sobre un conjunto fijo de estados, con `campaign.css` ya borrada. Las únicas diferencias son las que el usuario acepte en Q2 y Q3.
+1. La red de F1 (106 E2E) y los 17 de A2 pasan sin editarse, y los E2E nuevos de la campaña, escritos contra el legacy y en verde antes de portar, pasan sin editarse sobre la página de React. Los E2E de lo que cambia a propósito (ver «Lo que cambia a propósito») se escriben aparte y sólo pasan sobre la página.
+2. Una comparación única entre el build de la base y el de F6 da 0 diferencias en el DOM de la campaña, en el estilo computado y en el árbol de accesibilidad, sobre un conjunto fijo de estados, con `campaign.css` ya borrada. Las únicas diferencias son las que el usuario aceptó en el clarify (ver «Lo que cambia a propósito»).
 3. Las tres fixtures congeladas arrancan sin escribir, sin respaldar y sin avisar, y `campaign-check` y `campaign-content-check` pasan sin cambios.
 4. Los conteos y el XP salen del catálogo y de las constantes exportadas: una página armada con un catálogo distinto del real los muestra bien, y con las constantes reemplazadas no queda un número viejo.
 5. `frontend/campaign.js` y `frontend/campaign.css` no existen, `window.TallerCampaign` publica sólo lo que otra vista legacy todavía lee, y el bloque de bloqueo del laboratorio se ve igual.
@@ -53,7 +53,7 @@ F6 está en el camino crítico: F7 (el laboratorio) espera a F5 y a F6, A4 esper
 
 ## Lo que pidió el usuario
 
-Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumptions) o una pregunta abierta (Preguntas abiertas).
+Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumptions) o una decisión del clarify (Clarifications).
 
 | Pedido | Fuente |
 | --- | --- |
@@ -67,44 +67,25 @@ Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumption
 | Vitest con Testing Library y fishery para las piezas nuevas, y Playwright con Page Objects | ADR 0008 (aceptado el 2026-10-05) |
 | Un PR por vista, que se revierte entero y devuelve la vista legacy; los ports se integran de a uno | Hoja de ruta, «Convenciones» |
 | Spec en español y sin código, con como mucho cinco preguntas y la partición propuesta sin aplicarla | Coordinador |
+| Las palabras que repiten un conteo quedan como texto editorial, con una spec de coherencia que avisa a E1 qué frases editar | Usuario, clarify del 2026-10-28 (Q1) |
+| La región viva del checkpoint queda montada, con una comprobación manual con lector de pantalla | Usuario, clarify del 2026-10-28 (Q2; decisión X2 para todos los ports) |
+| Se acepta el comportamiento de React donde `innerHTML` descartaba estado (los `<details>` abiertos y el foco), y los E2E lo fijan; vale también para cualquier otra rareza que exista sólo por la reconstrucción | Usuario, clarify del 2026-10-28 (Q3; decisión X1) y ruling C2 del coordinador |
 
-## Preguntas abiertas para el clarify
+## Clarifications
 
-Son tres, y cada una trae sus opciones con su costo, la recomendada y su motivo. Al responderlas, el clarify las registra en `## Clarifications`, bajo `### Session`, y reemplaza esta sección. Hasta entonces, los requisitos que señalan una pregunta (con su marcador) usan la opción recomendada como borrador. Q2 y Q3 se parecen a decisiones que toman otras specs sobre sus páginas: la Q3 de F9 (una región viva que hoy se recrea), la Q3 de F3 (el detalle abierto de una tarjeta) y la Q3 de F4 (las pistas abiertas de un hito). No son la misma decisión, porque cada caso tiene su costo, y las recomendaciones no coinciden en todos (se comparan en cada pregunta). Conviene que el usuario las responda juntas, para que un port no quede con el criterio contrario al de otro.
+### Session 2026-10-28
 
-### Q1 · Las palabras que repiten un conteo, ¿se derivan o quedan como texto? (FR-031)
+Las tres respuestas son del usuario y eligieron la opción recomendada. Las opciones que no se eligieron están en «Alternativas consideradas». X1 y X2 son decisiones que el clarify tomó para todos los ports; C2 es un ruling del coordinador que extiende X1.
 
-La página tiene tres clases de literal: (1) los conteos del catálogo («4 mundos», «24 misiones», «12 desafíos nuevos» y «de 4 insignias»), (2) las constantes de las reglas (20, 10, 30, 150 y 180) y (3) números escritos con letras dentro de la prosa: «Seis misiones para conectar las piezas.», «verificar sus seis misiones» (nota «Una ruta con propósito»), «Se abre al verificar las seis misiones…» (checkpoint cerrado) y «Completaste los cuatro mundos.» (aviso al completar el último). Las clases 1 y 2 se derivan: la hoja de ruta lo pone en el alcance y la sección «Los conteos y el XP» dice cómo. Lo abierto es la clase 3.
+- Q: **Q1**, las palabras que repiten un conteo («seis misiones», «los cuatro mundos»), ¿se derivan o quedan como texto? → A: Quedan como texto editorial, con una spec que las compara con el catálogo real y le avisa a E1 qué frases editar (opción A). Los numerales y las constantes se derivan siempre. (FR-031)
+- Q: **Q2**, la retroalimentación del checkpoint, ¿queda montada o se recrea en cada respuesta? → A: Queda montada, como pide la hoja de ruta, y su texto cambia en el lugar (opción A; decisión X2). Se comprueba a mano con un lector de pantalla. F9 conserva la suya hasta F10, que la monta con su regla `:empty`. (FR-018)
+- Q: **Q3**, los `<details>` abiertos, ¿siguen abiertos después de una acción? → A: Se acepta el comportamiento de React: quedan abiertos y el foco no se pierde, y los E2E fijan el comportamiento nuevo (opción A; decisión X1). F3 y F6 lo aceptan; F4 y F7 dejan de reproducir el cierre. (FR-019)
+- **Ruling C2**: cualquier comportamiento que exista sólo porque `innerHTML` rehace la vista (paneles, detalles, módulos o trazas que se cierran, foco que se pierde, transiciones que no se animan) adopta el de React, y los E2E lo fijan. Las rarezas de lógica (qué guarda una acción o qué se marca) se conservan. (FR-019)
 
-| Opción | Descripción | Costo |
-| --- | --- | --- |
-| A | Las palabras quedan como texto editorial. Una spec compara cada una con el conteo del catálogo real y falla cuando dejan de coincidir. | Con un catálogo que no es el real, el texto diría «seis» aunque haya siete misiones. Son cuatro frases que E1 edita a mano, y la spec le dice cuáles. El texto de hoy no cambia. |
-| B | Las palabras se derivan con una tabla de números a palabras («uno» a «doce», por ejemplo), con el género y el plural que pide cada frase. | Una tabla y reglas de concordancia que hoy no existen, con sus specs, para un caso que no existe todavía. Fuera de la tabla hay que decidir qué se muestra. |
-| C | No se deriva nada: los literales pasan a constantes con nombre y una spec los compara con el catálogo real. | Es un recorte del alcance que la hoja de ruta fijó (contradice la línea «Entra» de F6) y E1 edita cada número a mano. |
+**Lecturas.** Lo que sigue no son decisiones nuevas: es lo que las respuestas implican en esta spec y ya está aplicado en el texto.
 
-**Recomendada: A.** Deriva todo lo que el alumno lee como cifra, deja el texto idéntico y no inventa una concordancia para un catálogo que no existe. La spec que compara las palabras con el catálogo real es la alarma que E1 necesita. **Costo:** hasta que E1 edite esas cuatro frases, un catálogo distinto del real tendría un texto que contradice la cifra de al lado.
-
-### Q2 · La retroalimentación del checkpoint, ¿queda montada o se recrea en cada respuesta? (FR-018)
-
-Hoy cada acción rehace `#main` con `innerHTML`, así que la región `role="status"` con la retroalimentación del checkpoint («Bien razonado.» o «Revisemos esa idea.», con el porqué) se crea de nuevo en cada respuesta. El aviso del shell (`#toast`, que es estable) es lo que un lector de pantalla anuncia con seguridad. No está verificado qué anuncia hoy con la región. La regla de todo port de la hoja de ruta dice que las regiones vivas que hoy se recrean quedan montadas. La spec de F9 recomienda conservar el comportamiento de hoy en su región, por un motivo propio: la suya aparece y desaparece, y montarla siempre pide una regla de CSS. La del checkpoint está siempre visible, así que montarla no pide nada más: por eso esta recomendación es la opuesta a la de F9.
-
-| Opción | Descripción | Costo |
-| --- | --- | --- |
-| A | La región queda montada y su texto cambia en el lugar, que es lo natural en React y lo que dice la regla de todo port. | Un lector de pantalla puede anunciar la retroalimentación además del aviso: puede ser un doble anuncio. Es un cambio de lo que oye quien usa lector, sin verificar. Pide una comprobación manual con lector (acción del usuario). |
-| B | La región se recrea en cada respuesta, como hoy (por ejemplo con una `key` que cambia con cada respuesta). | Una `key` a propósito que reproduce un accidente de `innerHTML` y que F10 tendría que deshacer. La regla de todo port no se cumple en esta región. |
-
-**Recomendada: A.** Es la regla que la hoja de ruta ya fijó, no agrega código y la región queda más accesible, no menos. **Costo:** lo descrito arriba. Si el usuario elige B, F6 reproduce el comportamiento de hoy y la regla de la hoja de ruta se enmienda.
-
-### Q3 · Los `<details>` abiertos, ¿siguen abiertos después de una acción? (FR-019)
-
-La campaña tiene dos `<details>`: «Las reglas del juego y las herramientas que usamos» y «Ver qué falta para entrar» en cada misión que todavía no está abierta. Hoy cada acción (elegir un mundo, filtrar, responder un checkpoint) reconstruye `#main` y los cierra. En React, un `<details>` sin estado propio sigue abierto mientras su tarjeta no se desmonte. Ningún E2E de F1 fija el cierre.
-
-| Opción | Descripción | Costo |
-| --- | --- | --- |
-| A | Se acepta: los `<details>` que siguen visibles conservan su estado. | Un alumno puede notar que las reglas que abrió ya no se cierran al elegir un mundo. Es una diferencia visible que hay que aprobar. |
-| B | Se reconstruyen a propósito en cada acción (una `key` que cambia) y se fija con un E2E marcado `KNOWN DEFECT`. | Código que reproduce un accidente de `innerHTML`, que F10 tendría que deshacer, y un E2E que fija un defecto. |
-
-**Recomendada: A.** Es el comportamiento natural de React y reproducir el cierre es código que se tira. F3 recomienda lo mismo para el detalle de sus tarjetas; F4 recomienda lo contrario para las pistas de un hito (reproducir el cierre, fijado como `KNOWN DEFECT`, porque un port no cambia el comportamiento sin aprobación). **Costo:** la diferencia visible de arriba. Los E2E de F6 no fijan ni el cierre ni la apertura.
+- **Los E2E de lo que cambia.** La regla «E2E primero» pide que los E2E pasen contra el legacy antes de portar y sin editarse después. Los de lo que cambia a propósito no pueden pasar contra el legacy, así que se escriben aparte, en su propio commit, y fallan contra el legacy por la razón esperada (FR-003 y el flujo (p) de FR-041).
+- **La transición de `.world-node`.** Bajo `prefers-reduced-motion: no-preference`, `.world-node` anima `box-shadow` y `transform`. Hoy el nodo elegido no la anima porque el nodo se recrea; con React sí. Es una rareza de reconstrucción y por C2 adopta el comportamiento de React (FR-019).
 
 ## Qué se conserva
 
@@ -129,6 +110,19 @@ Es el contrato que verifican los E2E, las specs y la comparación única. Los te
 
 **Teclado, móvil y movimiento reducido.** Todos los controles son `button`, `a` y `summary` nativos, con la tabulación y el foco visible de hoy, y Enter o Espacio hacen lo que el clic. Las reglas de ancho (1 050 y 650 px) y la transición de `.world-node` bajo `prefers-reduced-motion: no-preference` viven en el CSS que se mueve sin cambios; la celebración consulta `matchMedia` en cada llamada y no anima con movimiento reducido. Al desmontar se detiene la celebración y se quitan los oyentes.
 
+## Lo que cambia a propósito
+
+Son las únicas diferencias que el usuario aceptó, y valen sólo donde hoy `innerHTML` rehace `#main` en cada acción (elegir un mundo, filtrar, responder un checkpoint). Los E2E fijan el comportamiento nuevo (FR-041, flujo p).
+
+| Hoy | Tras F6 | Decisión |
+| --- | --- | --- |
+| La región `role="status"` de la retroalimentación del checkpoint se crea de nuevo en cada respuesta | Queda montada y su texto cambia en el lugar. Un lector de pantalla puede anunciarla además del aviso: se comprueba a mano | Q2; X2 |
+| Los `<details>` (las reglas y «Ver qué falta para entrar») se cierran con cada acción | Conservan su estado mientras su tarjeta siga visible | Q3; X1 |
+| El foco se pierde con cada reconstrucción y se restaura a mano | El foco no se pierde. El título del mundo sigue recibiéndolo al elegir un mundo, porque eso es lógica y no un accidente | X1; C2 |
+| Una transición de CSS no se anima porque el nodo se recrea | Se anima donde el nodo persiste: el `box-shadow` de `.world-node` al cambiar el mundo elegido | C2 |
+
+Se conservan las rarezas de lógica: qué guarda una acción, qué se marca, qué avisa cada respuesta y el orden de los efectos.
+
 ## Los exploradores de robot y paquetes
 
 **Siguen en `quest-explorers.js` y `quest-explorers.css` hasta F7. F6 no los toca.** No hace falta una pregunta: la evidencia es concluyente.
@@ -140,13 +134,13 @@ Es el contrato que verifican los E2E, las specs y la comparación única. Los te
 
 ## Los conteos y el XP
 
-La página tiene tres clases de literal. Las clases 1 y 2 se derivan; la 3 es Q1.
+La página tiene tres clases de literal. Las clases 1 y 2 se derivan; la 3 queda como texto editorial (Clarifications, Q1).
 
 | Clase | Literal hoy | De dónde sale tras F6 |
 | --- | --- | --- |
 | 1 · Conteos del catálogo, por lenguaje | «4 mundos», «24 misiones», «12 desafíos nuevos» (pastillas) y «<n> de 4 insignias» | Mundos: cuántos mundos tiene el lenguaje. Misiones: la suma de las misiones de esos mundos. Desafíos nuevos: la suma de los `challengeIds` de esos mundos (las misiones que no son entrenamiento). Insignias: la cantidad de mundos |
 | 2 · Constantes de las reglas | 20 («Pruebas · 20», «20 XP por las pruebas…»), 10, 30 («<n>/30 XP», la suma), 150 («al reunir 150 XP», el checkpoint cerrado) y 180 («/ 180 XP», el máximo de las barras de los mundos) | `CODE_XP`, `PREDICTION_XP`, su suma, `PASS_SCORE` y `WORLD_MAX_SCORE`, exportados por `entities/campaign`. El máximo de cada mundo es el `maxScore` que ya trae el mundo derivado |
-| 3 · Números con letras en la prosa | «seis misiones» (tres frases) y «los cuatro mundos» | Q1 |
+| 3 · Números con letras en la prosa | «seis misiones» (tres frases) y «los cuatro mundos» | Siguen como texto editorial (Clarifications, Q1) |
 
 **Cómo se calculan.** Son funciones puras en `entities/campaign` que reciben los mundos derivados del lenguaje y devuelven los números; la página no cuenta. El «<puntos> / <máximo> XP de campaña» del rango ya sale del resumen del motor (`maxScore` es la cantidad de mundos por `WORLD_MAX_SCORE`, 720 por lenguaje hoy).
 
@@ -155,7 +149,7 @@ La página tiene tres clases de literal. Las clases 1 y 2 se derivan; la 3 es Q1
 1. **Catálogo real:** el 4, el 24, el 12 y el 720 que fijan `campaign-content-check` y el README, escritos a mano en un E2E y en una spec; no se recalculan con el código que se prueba.
 2. **Catálogo distinto:** una spec de componente arma a mano un catálogo que no es el real (por ejemplo cinco mundos de seis misiones, tres de ellas desafíos) y espera «5 mundos», «30 misiones», «15 desafíos nuevos» y «de 5 insignias», con los valores escritos a mano a partir de cómo se armó. Es la prueba de que los conteos sobreviven a E1.
 3. **Constantes reemplazadas:** otra spec reemplaza las constantes por otros valores y espera que cambien todos los números de XP de la página: el «Pruebas · 20» y el «Predicción · 10» de las tarjetas, el «<n>/30 XP», el «/ 180 XP» del mapa y del mundo, el máximo de las barras, el «150 XP» de la nota y del checkpoint cerrado, y el texto de las reglas. Si quedara un literal, falla.
-4. **Coherencia del texto editorial:** una spec compara las palabras de la clase 3 con los conteos del catálogo real (Q1 = A).
+4. **Coherencia del texto editorial:** una spec compara las palabras de la clase 3 con los conteos del catálogo real; si E1 cambia el catálogo, falla y le dice qué frases editar (Clarifications, Q1).
 
 ## Cómo lee el motor la página
 
@@ -203,7 +197,7 @@ Las rutas son las de la integración local de F2a, A2 y F2b. «Lo leen» sale de
 
 **El conjunto fijo de estados** (FR-044): navegador vacío en Rust y en Go; el progreso real de master (`progress-master-2a278ad-storage.json`) en los dos idiomas; cada uno de los cuatro mundos de Rust elegido con ese progreso (los hay abiertos, completos y bloqueados); cada filtro; sólo el almacén del laboratorio sembrado (el checkpoint abierto) antes de responder, después de responder mal y después de responder bien; el último mundo completo; el almacenamiento bloqueado; y una misión con práctica con apoyo. Son 18 como mínimo. La comparación del DOM ignora los espacios en blanco entre etiquetas y el orden de los atributos.
 
-**Las diferencias aceptadas** son sólo las de Q2 y Q3, según la respuesta, y los atributos `data-quest`, `data-id`, `data-filter` y `data-answer`, que existen para el delegado de clics del legacy y que la página de React no necesita. Todo lo demás es 0 diferencias.
+**Las diferencias aceptadas** son las de «Lo que cambia a propósito» (la región montada, los `<details>`, el foco y las transiciones que ya no se recrean) y los atributos `data-quest`, `data-id`, `data-filter` y `data-answer`, que existen para el delegado de clics del legacy y que la página de React no necesita. Todo lo demás es 0 diferencias.
 
 ## Qué cambia en `dist/index.html` y por qué
 
@@ -319,7 +313,7 @@ Cuando E1 sume contenido, la página muestra sus conteos y su XP sin que nadie e
 1. **Dado** el catálogo real en Rust, **cuando** se dibuja la página, **entonces** muestra «4 mundos», «24 misiones», «12 desafíos nuevos», «de 4 insignias», «/180», «<n>/30 XP», «Pruebas · 20», «Predicción · 10» y «150 XP», con los valores escritos a mano desde el README y `campaign-content-check`.
 2. **Dado** un catálogo armado a mano con otra cantidad de mundos, **cuando** se dibuja, **entonces** las pastillas y «de N insignias» muestran la cantidad de ese catálogo.
 3. **Dado** que una spec reemplaza `CODE_XP`, `PREDICTION_XP`, `PASS_SCORE` y `WORLD_MAX_SCORE` por otros valores, **cuando** se dibuja, **entonces** todos los números de XP de la página cambian: no queda un literal.
-4. **Dado** el catálogo real, **cuando** corre la spec de coherencia, **entonces** las palabras «seis» y «cuatro» de la prosa coinciden con los conteos; si E1 cambia el catálogo, falla y dice qué frases editar (Q1 = A).
+4. **Dado** el catálogo real, **cuando** corre la spec de coherencia, **entonces** las palabras «seis» y «cuatro» de la prosa coinciden con los conteos; si E1 cambia el catálogo, falla y dice qué frases editar.
 
 *Cubre: FR-027 a FR-032; SC-006 y SC-007.*
 
@@ -384,11 +378,11 @@ Quien porta F7 o revisa el PR de F6 encuentra la página, los selectores y los a
 
 - **FR-001**: El port DEBE entregarse como un cambio revertible entero que devuelve la vista legacy, en este orden de unidades: (1) el Page Object ampliado y los E2E, en verde contra el legacy; (2) los selectores y las constantes de `entities/campaign` con sus specs, y el traslado de `.quest-direct-lock` a `lab.css`, ambos sin cambio visible y con la red en verde; (3) la página, su sesión y sus specs, sin montar; (4) el corte, en un solo commit: los adaptadores, el montaje, `startApp()`, la lista de `legacy-views.ts`, la importación del CSS, el borrado de `campaign.js` y de `campaign.css` y las adaptaciones de `qa/`; (5) la documentación. Revertir la (4) devuelve el legacy con las demás sin efecto. Cada comportamiento empieza con una spec que falla por la razón esperada. *(Hoja de ruta, «Convenciones»; constitución, principio II)*
 - **FR-002**: La red de F1 (106 E2E) y los 17 de A2 DEBEN pasar antes de empezar y después del corte, sin editar ninguno. Los títulos de R6, R7, R8 y R10 de `css-contract` y dos comentarios de esa spec seguirán nombrando `campaign.css`: editarlos es editar un E2E, y no se hace. Editar uno es un cambio de comportamiento: va en su propio commit, con TDD y con la aprobación del usuario. *(Hoja de ruta, criterios globales)*
-- **FR-003**: Los E2E de la campaña DEBEN escribirse contra el build del legacy, estar en verde antes del corte y pasar sin editarse después. No fijan ninguna diferencia aceptada (Q2 y Q3). *(Clarify de F1, Q1; ADR 0008)*
+- **FR-003**: Los E2E de la campaña DEBEN escribirse contra el build del legacy, estar en verde antes del corte y pasar sin editarse después. Los de lo que cambia a propósito (FR-041, flujo p) son la excepción: se escriben aparte, en su propio commit, fallan contra el legacy por la razón esperada y pasan contra la página. *(Clarify de F1, Q1; ADR 0008; Clarifications, Q2 y Q3)*
 - **FR-004**: El progreso guardado DEBE quedar intacto (ADR 0003): la clave `taller-campaign-v1`, `version: 1`, la forma de `seals` y `checkpoints`, los IDs y las ranuras de respaldo no cambian, y F6 no abre otra clave. Con las tres fixtures congeladas de `qa/fixtures/progress-*.json`, el arranque no escribe, no respalda ni avisa, y abrir la campaña tampoco; sus exportaciones se importan sin omisiones; `curriculum-ids-check` sigue en verde. *(Spec de D1, borrador: sincroniza sellos y puntos de control)*
 - **FR-005**: Ninguna regla del motor DEBE cambiar: `campaign-check` y `campaign-content-check` pasan sin editarse, y F6 no toca `entities/campaign/model` salvo para sumar exports y selectores puros.
 - **FR-006**: Las ocho vistas por hash y las seis formas de URL con query DEBEN llevar adonde llevaban. La campaña sólo lee `?mundo=` (al montar) y sólo escribe `?mundo=` (al elegir un mundo), y arma los enlaces con la gramática de F2b (`url-grammar.ts`: `readLinkQuery`, `withWorldQuery`, `worldHref`, `campaignMissionHref` y `FREE_LAB_HREF`), carácter por carácter como hoy.
-- **FR-007**: El alumno NO DEBE ver nada distinto: la página DEBE conservar todo lo de «Qué se conserva», con los textos, el orden y las condiciones de hoy. Las únicas diferencias son las aceptadas en Q2 y Q3.
+- **FR-007**: El alumno NO DEBE ver nada distinto: la página DEBE conservar todo lo de «Qué se conserva», con los textos, el orden y las condiciones de hoy. Las únicas diferencias son las de «Lo que cambia a propósito» (FR-018 y FR-019).
 
 **La página**
 
@@ -402,8 +396,8 @@ Quien porta F7 o revisa el PR de F6 encuentra la página, los selectores y los a
 - **FR-015**: Los controles DEBEN seguir siendo nativos (`button`, `a` y `summary`): sin `tabindex` nuevo, sin manejadores de teclado nuevos y con la tabulación y el foco visible de hoy. El diseño móvil y el movimiento reducido DEBEN comportarse como hoy.
 - **FR-016**: El foco DEBE volver explícitamente después de cada redibujo que hoy lo reconstruye (el título del mundo, el botón del filtro, la opción del checkpoint), con refs y, si hace falta, `flushSync`, como el Atlas. *(Hoja de ruta, reglas de todo port)*
 - **FR-017**: Al desmontar, la página DEBE detener la celebración (`stop`) y no dejar oyentes ni timers; dos montajes seguidos no dejan nada del primero.
-- **FR-018**: La retroalimentación del checkpoint DEBE seguir siendo una región `role="status"`. [NEEDS CLARIFICATION: Q2, ¿queda montada entre respuestas o se recrea como hoy?] Hasta que responda, la región queda montada y su texto cambia en el lugar.
-- **FR-019**: Los `<details>` que siguen visibles después de una acción DEBEN conservar su estado. [NEEDS CLARIFICATION: Q3, ¿se acepta que un `<details>` abierto siga abierto?] Hasta que responda, vale A y ningún E2E fija el cierre ni la apertura.
+- **FR-018**: La retroalimentación del checkpoint DEBE seguir siendo una región `role="status"` y quedar montada entre respuestas: su texto cambia en el lugar y es el mismo nodo antes y después de responder. Qué anuncia un lector de pantalla se comprueba a mano (acción del usuario). *(Clarifications, Q2; decisión X2)*
+- **FR-019**: Lo que hoy sólo existe porque `innerHTML` rehace la vista DEBE adoptar el comportamiento de React: los `<details>` que siguen visibles después de una acción conservan su estado, el foco no se pierde y las transiciones de CSS se animan donde el nodo ya no se recrea (por ejemplo, el `box-shadow` de `.world-node` al cambiar el mundo elegido). Las rarezas de lógica (qué guarda una acción o qué se marca) se conservan. Los E2E fijan el comportamiento nuevo (FR-041, flujo p). *(Clarifications, Q3; decisión X1 y ruling C2)*
 - **FR-020**: Un error al dibujar la página DEBE informarse por `console.error` con un mensaje en español y no dejar la app inutilizable (`onUncaughtError`, como el Atlas).
 
 **Motor y contenido**
@@ -421,7 +415,7 @@ Quien porta F7 o revisa el PR de F6 encuentra la página, los selectores y los a
 - **FR-028**: Los selectores DEBEN ser funciones puras de `entities/campaign`, con los mismos textos de hoy: el rango y su símbolo según los mundos completos (cinco rangos y cuatro símbolos), la etiqueta de estado de un mundo («completado», «disponible» o «bloqueado; ver requisitos» y los rótulos del mapa), el tipo de una misión a partir de `challengeType` («Desafío final», «Reparación · lings», «Kata» o «Entrenamiento») y el predicado del filtro (el tipo empieza con el filtro).
 - **FR-029**: Los selectores DEBEN poder importarse sin evaluar el singleton del motor, porque el adaptador que conserva `exerciseContextHTML` necesita el tipo de misión y los checks lo cargan por separado: por la entrada sin estado del slice (`entities/campaign/bridge.ts`, de F2b) o por otra que el plan fije. R4 y R6 del guard no se relajan sin justificarlo, y el tipo de misión no se duplica.
 - **FR-030**: Los conteos de la clase 1 y las constantes de la clase 2 DEBEN derivarse como dice «Los conteos y el XP»: ningún 4, 24, 12, 180, 30, 20, 10 ni 150 escrito a mano en la página o en los adaptadores.
-- **FR-031**: Las palabras que repiten un conteo («seis misiones» y «los cuatro mundos») DEBEN [NEEDS CLARIFICATION: Q1, ¿se derivan o quedan como texto?] quedar como texto editorial, con una spec que las compara con los conteos del catálogo real y falla cuando dejan de coincidir. Hasta que responda vale A.
+- **FR-031**: Las palabras que repiten un conteo («seis misiones» y «los cuatro mundos») DEBEN quedar como texto editorial, con una spec que las compara con los conteos del catálogo real, falla cuando dejan de coincidir y dice a E1 qué frases editar. *(Clarifications, Q1)*
 - **FR-032**: Con un catálogo distinto del real, armado a mano en una spec, la página DEBE mostrar sus conteos; con las constantes reemplazadas, todos sus números de XP. Los valores esperados se escriben a mano a partir de cómo se arma el catálogo, no se recalculan con el código que se prueba.
 
 **Adaptadores y puentes**
@@ -440,10 +434,10 @@ Quien porta F7 o revisa el PR de F6 encuentra la página, los selectores y los a
 
 **Pruebas**
 
-- **FR-041**: Los E2E de la campaña DEBEN ser el Page Object `CampaignPage` ampliado (ya existe), una spec y estos quince flujos, con localizadores por rol y nombre accesible y las aserciones en la spec: (a) la apertura en un navegador vacío; (b) con el progreso real de master (rango, XP, insignia y mundo elegido); (c) elegir un mundo (región, `aria-pressed`, URL sin entrada nueva y foco); (d) un mundo bloqueado y «Volver a…»; (e) cada filtro, con su foco, y el filtro que vuelve a «Todas» al elegir un mundo; (f) las tarjetas (dominada, con práctica con apoyo, bloqueada con sus motivos y el `href` exacto de «Abrir misión»); (g) «Tu siguiente movimiento»; (h) el checkpoint cerrado, abierto, mal respondido, bien respondido y recargado; (i) el último mundo completo; (j) la vitrina y las reglas; (k) el cambio de idioma y `?mundo=` de Go; (l) la sesión que sobrevive al menú y se pierde al recargar; (m) el almacenamiento bloqueado; (n) el teclado; (o) 375 px sin desborde horizontal. Los estados se siembran con las fixtures congeladas o con factories de `qa/e2e/` tipadas por el formato v1 guardado, nunca por los tipos del código. Los valores esperados salen del README, de `curriculum-ids.json` y del contenido, no del código que se prueba. *(ADR 0008)*
+- **FR-041**: Los E2E de la campaña DEBEN ser el Page Object `CampaignPage` ampliado (ya existe), una spec y estos quince flujos, con localizadores por rol y nombre accesible y las aserciones en la spec: (a) la apertura en un navegador vacío; (b) con el progreso real de master (rango, XP, insignia y mundo elegido); (c) elegir un mundo (región, `aria-pressed`, URL sin entrada nueva y foco); (d) un mundo bloqueado y «Volver a…»; (e) cada filtro, con su foco, y el filtro que vuelve a «Todas» al elegir un mundo; (f) las tarjetas (dominada, con práctica con apoyo, bloqueada con sus motivos y el `href` exacto de «Abrir misión»); (g) «Tu siguiente movimiento»; (h) el checkpoint cerrado, abierto, mal respondido, bien respondido y recargado; (i) el último mundo completo; (j) la vitrina y las reglas; (k) el cambio de idioma y `?mundo=` de Go; (l) la sesión que sobrevive al menú y se pierde al recargar; (m) el almacenamiento bloqueado; (n) el teclado; (o) 375 px sin desborde horizontal. Se suma un flujo (p), que sólo pasa contra la página y se escribe aparte (FR-003): un `<details>` abierto sigue abierto después de elegir un mundo, de filtrar y de responder; el foco no se pierde; y la región de la retroalimentación es el mismo nodo antes y después de responder (una marca puesta en el nodo sobrevive). Los estados se siembran con las fixtures congeladas o con factories de `qa/e2e/` tipadas por el formato v1 guardado, nunca por los tipos del código. Los valores esperados salen del README, de `curriculum-ids.json` y del contenido, no del código que se prueba. *(ADR 0008)*
 - **FR-042**: Los selectores y los conteos DEBEN tener su spec de Vitest en `node`, y la página su spec en `jsdom` con Testing Library, con consultas por rol y nombre, `userEvent.setup()` antes de cada `render` y `await` en cada interacción, y los efectos (`celebrate`, `scrollIntoView`) doblados en su interfaz. Las factories de fishery (mundos, misiones y ejercicios) viven junto a lo que modelan, como `*.factory.ts`. El arnés es el del ADR 0008 (dos proyectos de Vitest, el setup y la guarda de `useStore`): lo trae el primer port que se integre.
 - **FR-043**: Cada check de `qa/` que F6 adapte (`lab-bridge-check`, `boot-check`, `app-shell-check` y `load-order-check`, más `qa/lib/app-adapters.ts` y `qa/lib/legacy-sources.ts`) DEBE cambiar sólo cómo carga el código o qué lista, no sus valores esperados. El PR DEBE listar la correspondencia de cada escenario de campaña: los once de `lab-bridge-check` (1 a 10 y 20): ocho los cubre también una spec de F2b (1, 2, 4 a 8 y 10), el 3 (el tipo de misión, que hoy sólo prueba el check) pasa a la spec de los selectores, y el 9 (el motor real) y el 20 (el escape del título de un mundo) quedan sólo en el check, que sigue cargando el adaptador; los de `boot-check` que tocan la campaña (la navegación, que pasa de `innerHTML` a nodos como la del Atlas, los dos de integridad, la lista de fuentes evaluadas solas y la de adaptadores); y los fakes de `app-shell-check`. Ningún check se retira por adelantado. *(ADR 0008, §5)*
-- **FR-044**: Una comparación única entre el build de la base y el de F6 DEBE cubrir el conjunto fijo de estados de «Cómo se demuestra que nada cambió»: el DOM de `#main`, el estilo computado de cada elemento a 1 280, 981, 850, 650, 590 y 375 px con y sin movimiento reducido (el barrido de la unidad 8 de F2b, ampliado) y el árbol de accesibilidad, más la comparación de los puentes. El PR informa cuántos estados, elementos y propiedades se compararon y cuántas diferencias dio, que son 0 fuera de las aceptadas.
+- **FR-044**: Una comparación única entre el build de la base y el de F6 DEBE cubrir el conjunto fijo de estados de «Cómo se demuestra que nada cambió»: el DOM de `#main`, el estilo computado de cada elemento a 1 280, 981, 850, 650, 590 y 375 px con y sin movimiento reducido (el barrido de la unidad 8 de F2b, ampliado) y el árbol de accesibilidad, más la comparación de los puentes. Los estados que siguen a una acción se miden cuando las transiciones terminaron, y la comparación no abre los `<details>`: son diferencias aceptadas. El PR informa cuántos estados, elementos y propiedades se compararon y cuántas diferencias dio, que son 0 fuera de las aceptadas.
 - **FR-045**: Cada protección nueva DEBE tener una rotura deliberada, en una copia descartable y sin commitear, que falle en la spec prevista: escribir un literal de XP en la página, suscribir el store completo, no mover `.quest-direct-lock`, abrir `taller-campaign-v1` desde la página, escribir en el montaje y devolver otro byte en `lockedExerciseHTML`.
 
 **Entrega**
@@ -468,7 +462,7 @@ Quien porta F7 o revisa el PR de F6 encuentra la página, los selectores y los a
 ### Measurable Outcomes
 
 - **SC-001**: Con el build portado, la red de F1 y los 17 E2E de A2 pasan 123 de 123, con 0 escenarios editados.
-- **SC-002**: Los quince flujos de FR-041 tienen cada uno al menos una prueba, y todas pasan contra el legacy antes del corte y contra la página después, con 0 editadas: 100 % en las dos corridas.
+- **SC-002**: Los quince flujos de FR-041 tienen cada uno al menos una prueba, y todas pasan contra el legacy antes del corte y contra la página después, con 0 editadas: 100 % en las dos corridas. El flujo (p) falla contra el legacy y pasa contra la página.
 - **SC-003**: Las 3 fixtures de progreso arrancan con 0 escrituras, 0 claves `:respaldo` y 0 avisos con la campaña abierta; elegir un mundo, filtrar y cambiar de idioma dan 0 escrituras; responder un checkpoint da 1 escritura en `taller-campaign-v1`; las 2 exportaciones congeladas se importan con 0 omisiones; `campaign-check` y `campaign-content-check` pasan sin editarse.
 - **SC-004**: La comparación única da 0 diferencias fuera de las aceptadas, en al menos 18 estados y 6 anchos, con y sin movimiento reducido; el multiconjunto de declaraciones del CSS del dist da 0 reglas sólo en la base y 0 sólo en F6; `css-contract` (R10 incluida) pasa sin editarse con `campaign.css` borrada.
 - **SC-005**: La comparación de los puentes da 0 diferencias en todas las combinaciones de mundo, ejercicio, idioma y parámetro de URL (presente, ausente y vacío), y `window.TallerCampaign` tiene 7 métodos y ninguno más.
@@ -485,7 +479,7 @@ Quien porta F7 o revisa el PR de F6 encuentra la página, los selectores y los a
 1. **F2b todavía no está en `master`.** F6 toma de ahí la gramática de URL, los puentes de datos, las reglas de CSS que ya pasaron a `lab.css` y la lista de adaptadores. Si una unidad cambia en la revisión de los PR #41 a #44, esta spec se ajusta.
 2. **El DOM de React no es idéntico al de `innerHTML` por sí solo.** Los espacios en blanco entre etiquetas, el orden de los atributos, el `<br>` del título, el espacio que separa `<strong>` del porqué en la retroalimentación y los atributos booleanos son los lugares donde React difiere. *Mitigación:* la comparación estructural de DOM y el árbol de accesibilidad.
 3. **Foco y desplazamiento.** Hoy cada acción rehace `#main` y el foco se restaura a mano. En React el DOM persiste y los cambios se agrupan; sin `flushSync` el foco puede ir antes del dibujo. *Mitigación:* FR-016 y los E2E de foco.
-4. **La región viva y los `<details>` (Q2 y Q3).** Lo que oye quien usa lector de pantalla puede cambiar y no está verificado. *Mitigación:* la pregunta, y una comprobación manual con lector que es acción del usuario.
+4. **La región viva y los `<details>` (Clarifications, Q2 y Q3).** Lo que oye quien usa lector de pantalla puede cambiar y no está verificado. *Mitigación:* la comprobación manual con lector, que es acción del usuario, y el flujo (p).
 5. **`refresh` no avisa.** Si se mueve al dibujado se vuelve un efecto secundario del render, y si se confunde con `sync` escribe al abrir la campaña. *Mitigación:* FR-021 y FR-023, `startup-storage` y los dos escenarios de integridad de `boot-check`.
 6. **Archivos compartidos.** `app.js`, `main.tsx`, `legacy-views.ts` y cinco archivos de `qa/` los tocan F3, F4, F5 y F9. *Mitigación:* «Integración con F2b y con los otros ports».
 7. **El margen de tamaño es de todos.** Quedan unos 108 000 caracteres bajo el tope de `build-check` para F3 a F11 y A3. *Mitigación:* FR-046 informa el aumento de F6.
@@ -501,7 +495,7 @@ Quien porta F7 o revisa el PR de F6 encuentra la página, los selectores y los a
 - **F2b (PR #41 a #44).** F6 toma, de la integración local de las cuatro unidades: la gramática de URL (`frontend/src/shared/config/url-grammar.ts`, unidad 5, rama `f2b/u5-puentes`: `readLinkQuery`, `worldHref`, `campaignMissionHref`, `withWorldQuery` y `FREE_LAB_HREF`); los datos de los puentes (`frontend/src/entities/campaign/bridge.ts` y `model/mission-bridge.ts`, unidad 5: `campaignMissionContext` y `campaignLinkAccess`); `.quest-banner` y `.quest-lab-context` ya en `lab.css` y el menú en `styles.css` (unidad 8, rama `f2b/u8-hojas`); y el respaldo (`features/progress-backup`, unidad 6), cuyo `syncDerivedSeals` llama a `TallerCampaign.sync`. De la unidad 8 queda `.quest-direct-lock` en `campaign.css`, que F6 mueve. De la unidad 7 (`entities/exercise/explorers.ts`) F6 no usa nada.
 - **F2a y A2 (PR #40).** El motor es un singleton con `changes` (la revisión); `startApp()` inicializa los motores antes de la primera vista; la página recibe su contenido por props (F2-I6); y `ShellPage.goto` de los E2E espera la primera vista.
 - **F5 (Sistemas).** Comparte `lab-bridge-check`, `startApp()`, `qa/lib/app-adapters.ts` y `register-effects.ts`. Retira `TallerSystems.init` por la misma razón que F6 retira el de campaña; el último de los dos retira `TallerEffects`.
-- **F3, F4 y F9.** Comparten `app.js`, el arnés de componentes, la guarda de `useStore`, `boot-check` y los archivos de «Integración». F6 no comparte el pie de guardado ni la barra lateral: la campaña no escribe el recorrido. Q2 y Q3 se parecen a la Q3 de F9, a la de F3 y a la de F4, pero no coinciden con todas sus recomendaciones (ver «Preguntas abiertas para el clarify»).
+- **F3, F4 y F9.** Comparten `app.js`, el arnés de componentes, la guarda de `useStore`, `boot-check` y los archivos de «Integración». F6 no comparte el pie de guardado ni la barra lateral: la campaña no escribe el recorrido. Las decisiones del clarify valen para todos los ports: F3, F4 y F7 aceptan el comportamiento de React donde `innerHTML` descartaba estado, F6 monta su región viva y F9 conserva la suya hasta F10 (ver «Clarifications»).
 - **F7 (Laboratorio).** Espera a F6. Retira los métodos de HTML y `returnURL` de `window.TallerCampaign` y el bloque de bloqueo (`.quest-direct-lock` en `lab.css`), dibuja los exploradores y reemplaza `exerciseContextHTML` y `lockedExerciseHTML` por datos. Para eso lee la tabla de «Qué se retira del legacy».
 - **F8 (Método).** Cablea el respaldo; si lo hace con el motor, deja de llamar a `TallerCampaign.sync` y a `TallerCampaignEngine`.
 - **F10 (Shell y router).** Retira `mount` y `unmount`, la llamada a `refresh` de `render()`, `syncLinkedLanguage` (que lee `RUST_CAMPAIGN` y `GO_CAMPAIGN`) y los conteos del menú.
@@ -509,7 +503,7 @@ Quien porta F7 o revisa el PR de F6 encuentra la página, los selectores y los a
 - **D1 y D1c** ([spec de D1](../007-d1-progreso-sincronizacion/spec.md), borrador). El cliente se monta sobre `campaignEngine.changes` y compara `exportState()`; la página no abre otra instancia y sólo escribe por las operaciones del motor, así que D1c ve cada checkpoint como cualquier escritura. El formato de sellos y puntos de control no cambia.
 - **C4.** F6 no suma estilos en línea: la campaña no tiene ninguno, y el `cssText` de `celebration.ts` no se toca.
 - **A3, A4 y F11.** Sin cambios: la página no sabe cómo llega el contenido, y el compilador es del laboratorio.
-- **Hoja de ruta, enmiendas que integra el coordinador.** F6 pasa a «En especificación» con el enlace a esta spec; la línea «Conserva» de F6 agrega que `init` se retira y que `refresh` y `sync` siguen hasta que `app.js` deje de llamarlos; la decisión abierta de F6 pasa a la Q1 de esta spec; el tope de 2 500 000 caracteres de los criterios globales quedó viejo (A2 lo dejó en 1 250 000) y `dump-dist-globals` ya no existe.
+- **Hoja de ruta, enmiendas que integra el coordinador.** F6 pasa a «En especificación» con el enlace a esta spec; la línea «Conserva» de F6 agrega que `init` se retira y que `refresh` y `sync` siguen hasta que `app.js` deje de llamarlos; la decisión abierta de F6 queda cerrada por la Q1 del clarify (las palabras que repiten un conteo quedan como texto editorial; los numerales y las constantes se derivan); el tope de 2 500 000 caracteres de los criterios globales quedó viejo (A2 lo dejó en 1 250 000) y `dump-dist-globals` ya no existe.
 
 ## Assumptions
 
@@ -526,13 +520,13 @@ Quien porta F7 o revisa el PR de F6 encuentra la página, los selectores y los a
 
 ## Alternativas consideradas
 
-Sólo las que cambian lo que se construye. Las tres primeras filas son las opciones de las preguntas del clarify.
+Sólo las que cambian lo que se construye. Las tres primeras filas son las opciones del clarify del 2026-10-28; el usuario eligió la A en las tres.
 
 | Tema | Alternativas | Decisión y motivo |
 | --- | --- | --- |
-| Palabras que repiten un conteo (Q1) | B: derivarlas con una tabla de números a palabras; C: no derivar nada | A (borrador): texto editorial con una spec de coherencia. B agrega concordancia para un caso que no existe; C contradice el alcance de la hoja de ruta |
-| Retroalimentación del checkpoint (Q2) | B: recrearla en cada respuesta | A (borrador): montada, como pide la regla de todo port. B reproduce un accidente de `innerHTML` |
-| `<details>` abiertos (Q3) | B: reconstruirlos a propósito | A (borrador): se acepta el comportamiento natural de React. B es código que F10 tendría que deshacer |
+| Palabras que repiten un conteo (Q1) | B: derivarlas con una tabla de números a palabras; C: no derivar nada | A (elegida): texto editorial con una spec de coherencia. B agrega concordancia para un caso que no existe; C contradice el alcance de la hoja de ruta |
+| Retroalimentación del checkpoint (Q2) | B: recrearla en cada respuesta | A (elegida): montada, como pide la regla de todo port. B reproduce un accidente de `innerHTML` |
+| `<details>` abiertos (Q3) | B: reconstruirlos a propósito | A (elegida): se acepta el comportamiento natural de React. B es código que F10 tendría que deshacer |
 | Cómo se dibuja la página | Un marcado propio con las mismas clases pero otra estructura; el mismo árbol que el legacy | El mismo árbol (FR-008): permite mover la hoja sin cambiar una declaración, mantener los Page Objects y probar «nada cambió» con una comparación estructural y un barrido de estilo. Un árbol propio sólo se prueba con capturas, que F1 descartó |
 | El CSS de la página | Reescribirlo (módulos de CSS o utilidades); moverlo sin cambios a la hoja de la página | Moverlo (FR-040): es un port, y `css-contract` ya mide estas clases |
 | Qué pasa con `TallerCampaign.init` | Conservarlo hasta F10 | Retirarlo en F6 (hoja de ruta y spec de F2): el adaptador publica sólo lo que otra vista lee. Conservarlo no toca `startApp()`, pero deja un método que nadie más necesita |
@@ -548,9 +542,8 @@ Sólo las que cambian lo que se construye. Las tres primeras filas son las opcio
 
 | Cuándo | Acción |
 | --- | --- |
-| Ahora | Responder el clarify (Q1 a Q3), junto con la Q3 de F9, la de F3 y la de F4, que deciden casos parecidos. |
 | Si F6 es el primer port que se integra | Permiso para `jsdom` 30.1.2 y Testing Library (`@testing-library/react` 16.3.3, `dom` 10.4.2, `user-event` 14.6.7 y `jest-dom` 7.0.1): 56 paquetes, unos 26,3 MB desempaquetados y 5,0 MB comprimidos (estimación del ADR 0008). Y permiso para `fishery` 2.4.0 (2 paquetes, unos 0,19 MB) si ninguna factory llegó antes: F6 arma catálogos a mano en varias specs. Si otro port ya los trajo, F6 no baja nada. |
-| Antes del PR | La comprobación manual con lector de pantalla de la retroalimentación del checkpoint (Q2) y de los `<details>` (Q3). |
+| Antes del PR | La comprobación manual con lector de pantalla de la retroalimentación del checkpoint y de los `<details>` (decisiones X1 y X2). |
 | Con permiso | `docker compose build taller` sobre la rama, para comprobar que la imagen web sigue construyendo. |
 
 F6 no suma dependencias de runtime: React y Zustand ya están, y `useStore` es la parte de React de `zustand`.
