@@ -5,22 +5,14 @@ import { createFakeFetch } from '../../../shared/api/http/fake-fetch';
 import { createAccessRequests, type AccessRequests } from '../model/access-request';
 import AccessDialog from './AccessDialog';
 import AccessGate from './AccessGate';
+import { stubDialogs } from './render-access';
 
 let showModal: Mock<(this: HTMLDialogElement) => void>;
 
 beforeAll(() => {
-  showModal = vi.fn(function showModal(this: HTMLDialogElement) {
-    this.open = true;
-    const delegate = this.querySelector<HTMLElement>(
-      'button, input, select, textarea, a[href], [tabindex]',
-    );
-    if (delegate === null) this.tabIndex = -1;
-    (delegate ?? this).focus();
-  });
+  stubDialogs();
+  showModal = vi.fn(HTMLDialogElement.prototype.showModal);
   HTMLDialogElement.prototype.showModal = showModal;
-  HTMLDialogElement.prototype.close = function close(this: HTMLDialogElement) {
-    this.open = false;
-  };
 });
 
 function renderGate(requests: AccessRequests) {
