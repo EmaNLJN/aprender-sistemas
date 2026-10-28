@@ -3361,3 +3361,2155 @@ La compuerta de 0.4, con estos puntos propios:
 - **El PR:** `feat(front): mandatory session stage, API client and the account root (F11a U1)`, contra `f11a/base`.
 
 **Reversión de U1:** se revierten T015, T012, T014, T013, T011, T009, T007 y T005, con sus specs, en ese orden. U0 se queda.
+
+## 2. U2 · El ingreso, «Tu cuenta» y «Salir» (onda 3: F, P, A, M y E; onda 4: K)
+
+**Cubre:** FR-012, FR-013, FR-020 (la regla, con `reauthenticate` de U1), FR-021 a FR-035, FR-048 (desde el ingreso y desde «Tu cuenta») y FR-049 a FR-052; SC-006 (el ingreso) y SC-007 (el diálogo); historia 2, escenarios 2 a 5 y 7, e historia 5, escenario 4.
+
+**Entrega:** los formularios compartidos, el aviso de privacidad, el ingreso, «Tu cuenta» con «Salir» y sus E2E.
+
+**Los diálogos en jsdom.** Toda spec de componente que abre un `<dialog>` define, en su `beforeAll`, este stub mínimo, que también dispara `close` como el navegador (ADR 0008):
+
+```ts
+beforeAll(() => {
+  HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) {
+    this.open = true;
+  };
+  HTMLDialogElement.prototype.close = function close(this: HTMLDialogElement) {
+    this.open = false;
+    this.dispatchEvent(new Event('close'));
+  };
+});
+```
+
+La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T020.
+
+### Tarea 2.1 · Las specs de los formularios, en rojo (T017, F)
+
+**Archivos:** en `frontend/src/shared/ui/form/`:
+
+- los stubs de `describe-failure.ts` (con `NETWORK_MESSAGE` y `UNEXPECTED_MESSAGE` ya escritos), `show-failure.ts`, `use-guarded-submit.ts`, `use-retry-countdown.ts`, `TextField.tsx`, `PasswordField.tsx` y `ServerError.tsx`;
+- `describe-failure.spec.ts`, `form-components.spec.tsx` y `form-hooks.spec.tsx`.
+
+**Consume:** de C, `ApiFailure`; de B, `formatWait`. **Produce:** «`shared/ui/form`» del contrato.
+
+1. **`describe-failure.spec.ts`.** Los mensajes salen de `lang/es/api.php` y de la spec («Mensajes comunes»):
+
+   ```ts
+   import { describe, expect, it } from 'vitest';
+   import type { ApiFailure } from '../../api/http';
+   import { describeFailure } from './describe-failure';
+
+   const NOTHING = {
+     fieldMessages: {},
+     generalMessages: [],
+     retryAfterSeconds: null,
+     offerReload: false,
+     signedOut: false,
+   };
+
+   function response(
+     status: number,
+     code: string,
+     message: string,
+     extra: { fieldErrors?: Record<string, string[]>; retryAfterSeconds?: number | null } = {},
+   ): ApiFailure {
+     return {
+       kind: 'response',
+       status,
+       code,
+       message,
+       fieldErrors: extra.fieldErrors ?? {},
+       retryAfterSeconds: extra.retryAfterSeconds ?? null,
+     };
+   }
+
+   describe('describeFailure', () => {
+     it('says the workshop could not be reached on a network failure', () => {
+       expect(describeFailure({ kind: 'network' }, [])).toEqual({
+         ...NOTHING,
+         generalMessages: ['No pudimos conectar con el taller. Revisá tu conexión y probá de nuevo.'],
+       });
+     });
+
+     it('says the answer was not the expected one when it is not JSON', () => {
+       expect(describeFailure({ kind: 'unexpected', status: 502 }, [])).toEqual({
+         ...NOTHING,
+         generalMessages: ['El taller no respondió como esperábamos. Probá de nuevo en un rato.'],
+       });
+     });
+
+     it('sends every message of a visible field to that field and the rest to the general error', () => {
+       const failure = response(422, 'validation_failed', 'Hay datos que corregir.', {
+         fieldErrors: {
+           password: ['No puede contener tu nombre.', 'Es una contraseña muy usada: elegí otra.'],
+           token: ['El enlace para restablecer la contraseña no es válido o venció.'],
+         },
+       });
+       expect(describeFailure(failure, ['password', 'password_confirmation'])).toEqual({
+         ...NOTHING,
+         fieldMessages: {
+           password: ['No puede contener tu nombre.', 'Es una contraseña muy usada: elegí otra.'],
+         },
+         generalMessages: ['El enlace para restablecer la contraseña no es válido o venció.'],
+       });
+     });
+
+     it('falls back to the message of the server when no field brings one', () => {
+       expect(describeFailure(response(422, 'validation_failed', 'Hay datos que corregir.'), ['email'])).toEqual({
+         ...NOTHING,
+         generalMessages: ['Hay datos que corregir.'],
+       });
+     });
+
+     it('shows wrong credentials only in the general error', () => {
+       const failure = response(422, 'auth_failed', 'El email o la contraseña no son correctos.');
+       expect(describeFailure(failure, ['email', 'password'])).toEqual({
+         ...NOTHING,
+         generalMessages: ['El email o la contraseña no son correctos.'],
+       });
+     });
+
+     it('adds the time left to a rate limit and keeps it', () => {
+       const failure = response(429, 'too_many_requests', 'Demasiados intentos. Esperá un momento antes de volver a probar.', {
+         retryAfterSeconds: 120,
+       });
+       expect(describeFailure(failure, [])).toEqual({
+         ...NOTHING,
+         generalMessages: [
+           'Demasiados intentos. Esperá un momento antes de volver a probar.',
+           'Podés volver a intentar en 2 minutos.',
+         ],
+         retryAfterSeconds: 120,
+       });
+     });
+
+     it('shows only the message of a rate limit without Retry-After', () => {
+       const failure = response(429, 'too_many_requests', 'Demasiados intentos. Esperá un momento antes de volver a probar.');
+       expect(describeFailure(failure, [])).toEqual({
+         ...NOTHING,
+         generalMessages: ['Demasiados intentos. Esperá un momento antes de volver a probar.'],
+       });
+     });
+
+     it('offers to reload when the session belongs to another account', () => {
+       const mismatch = response(409, 'account_mismatch', 'La sesión cambió de cuenta: recargá la página.');
+       expect(describeFailure(mismatch, [])).toEqual({
+         ...NOTHING,
+         generalMessages: ['La sesión cambió de cuenta: recargá la página.'],
+         offerReload: true,
+       });
+       expect(
+         describeFailure({ kind: 'account-changed', message: 'La página venció: recargala e intentá de nuevo.' }, []),
+       ).toEqual({
+         ...NOTHING,
+         generalMessages: ['La página venció: recargala e intentá de nuevo.'],
+         offerReload: true,
+       });
+     });
+
+     it('asks for the sign-in on a 401 or on a 419 without an account, with nothing to show', () => {
+       expect(describeFailure(response(401, 'unauthenticated', 'Iniciá sesión para continuar.'), [])).toEqual({
+         ...NOTHING,
+         signedOut: true,
+       });
+       expect(describeFailure({ kind: 'signed-out' }, [])).toEqual({ ...NOTHING, signedOut: true });
+     });
+
+     it('shows the message of the server for any other answer', () => {
+       const disabled = response(
+         403,
+         'account_disabled',
+         'Tu cuenta está deshabilitada. Consultá con quien administra el taller.',
+       );
+       expect(describeFailure(disabled, ['email'])).toEqual({
+         ...NOTHING,
+         generalMessages: ['Tu cuenta está deshabilitada. Consultá con quien administra el taller.'],
+       });
+     });
+   });
+   ```
+
+2. **`form-components.spec.tsx`:**
+
+   ```tsx
+   import { render, screen } from '@testing-library/react';
+   import userEvent from '@testing-library/user-event';
+   import { useForm } from 'react-hook-form';
+   import { describe, expect, it } from 'vitest';
+   import PasswordField from './PasswordField';
+   import ServerError from './ServerError';
+   import TextField from './TextField';
+
+   interface HarnessProps {
+     readonly messages: readonly string[];
+     readonly hint?: string;
+   }
+
+   const Harness = ({ messages, hint }: HarnessProps) => {
+     const { register } = useForm<{ email: string; password: string }>();
+     return (
+       <form>
+         <TextField
+           label="Email"
+           type="email"
+           autoComplete="username"
+           registration={register('email')}
+           messages={messages}
+           hint={hint}
+         />
+         <PasswordField
+           label="Contraseña"
+           autoComplete="current-password"
+           registration={register('password')}
+           messages={[]}
+         />
+       </form>
+     );
+   };
+
+   describe('TextField', () => {
+     it('labels its input and leaves it valid without messages', () => {
+       render(<Harness messages={[]} />);
+       const input = screen.getByLabelText('Email');
+       expect(input).toHaveAttribute('autocomplete', 'username');
+       expect(input).not.toHaveAttribute('aria-invalid');
+       expect(screen.queryByRole('list')).toBeNull();
+     });
+
+     it('marks the input and describes it with its hint and every message', () => {
+       render(
+         <Harness
+           messages={['No puede contener tu nombre.', 'Es una contraseña muy usada: elegí otra.']}
+           hint="Entre 15 y 64 caracteres."
+         />,
+       );
+       const input = screen.getByLabelText('Email');
+       expect(input).toHaveAttribute('aria-invalid', 'true');
+       expect(input).toHaveAccessibleDescription(
+         /Entre 15 y 64 caracteres\..*No puede contener tu nombre\..*Es una contraseña muy usada: elegí otra\./,
+       );
+       expect(screen.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+         'No puede contener tu nombre.',
+         'Es una contraseña muy usada: elegí otra.',
+       ]);
+     });
+
+     it('accepts a pasted value', async () => {
+       const user = userEvent.setup();
+       render(<Harness messages={[]} />);
+       await user.click(screen.getByLabelText('Email'));
+       await user.paste('ana@x.com');
+       expect(screen.getByLabelText('Email')).toHaveValue('ana@x.com');
+     });
+   });
+
+   describe('PasswordField', () => {
+     it('hides the password and shows it on demand without sending the form', async () => {
+       const user = userEvent.setup();
+       render(<Harness messages={[]} />);
+       const input = screen.getByLabelText('Contraseña');
+       expect(input).toHaveAttribute('type', 'password');
+       await user.click(screen.getByRole('button', { name: 'Mostrar' }));
+       expect(input).toHaveAttribute('type', 'text');
+       await user.click(screen.getByRole('button', { name: 'Ocultar' }));
+       expect(input).toHaveAttribute('type', 'password');
+       expect(screen.getByRole('button', { name: 'Mostrar' })).toHaveAttribute('type', 'button');
+     });
+   });
+
+   describe('ServerError', () => {
+     it('leaves no alert in the document without messages', () => {
+       render(<ServerError messages={[]} takeFocus />);
+       expect(screen.queryByRole('alert')).toBeNull();
+     });
+
+     it('announces every message, keeps its action and takes the focus when asked', () => {
+       render(
+         <ServerError messages={['La sesión cambió de cuenta: recargá la página.']} takeFocus>
+           <button type="button">Recargar</button>
+         </ServerError>,
+       );
+       const alert = screen.getByRole('alert');
+       expect(alert).toHaveTextContent('La sesión cambió de cuenta: recargá la página.');
+       expect(alert).toHaveFocus();
+       expect(screen.getByRole('button', { name: 'Recargar' })).toBeInTheDocument();
+     });
+
+     it('leaves the focus alone when a field has an error', () => {
+       render(<ServerError messages={['Hay datos que corregir.']} takeFocus={false} />);
+       expect(screen.getByRole('alert')).not.toHaveFocus();
+     });
+   });
+   ```
+
+3. **`form-hooks.spec.tsx`:**
+
+   ```tsx
+   import { act, render, screen } from '@testing-library/react';
+   import userEvent from '@testing-library/user-event';
+   import { afterEach, describe, expect, it, vi } from 'vitest';
+   import useGuardedSubmit from './use-guarded-submit';
+   import useRetryCountdown from './use-retry-countdown';
+
+   const GuardedButton = ({ handler }: { readonly handler: () => Promise<void> }) => {
+     const guarded = useGuardedSubmit(handler);
+     return (
+       <button type="button" onClick={() => void guarded()}>
+         Enviar
+       </button>
+     );
+   };
+
+   const Countdown = ({ seconds }: { readonly seconds: number }) => {
+     const { waiting, start } = useRetryCountdown();
+     return (
+       <button type="button" disabled={waiting} onClick={() => start(seconds)}>
+         Esperar
+       </button>
+     );
+   };
+
+   describe('useGuardedSubmit', () => {
+     it('lets one submission through while the previous one has not finished', async () => {
+       const user = userEvent.setup();
+       let release: () => void = () => {};
+       const handler = vi.fn(
+         () =>
+           new Promise<void>((resolve) => {
+             release = resolve;
+           }),
+       );
+       render(<GuardedButton handler={handler} />);
+       await user.dblClick(screen.getByRole('button', { name: 'Enviar' }));
+       expect(handler).toHaveBeenCalledOnce();
+       await act(async () => {
+         release();
+       });
+       await user.click(screen.getByRole('button', { name: 'Enviar' }));
+       expect(handler).toHaveBeenCalledTimes(2);
+     });
+   });
+
+   describe('useRetryCountdown', () => {
+     afterEach(() => {
+       vi.useRealTimers();
+     });
+
+     it('waits the seconds it was given', () => {
+       vi.useFakeTimers();
+       render(<Countdown seconds={2} />);
+       const button = screen.getByRole('button', { name: 'Esperar' });
+       act(() => button.click());
+       expect(button).toBeDisabled();
+       act(() => {
+         vi.advanceTimersByTime(1_999);
+       });
+       expect(button).toBeDisabled();
+       act(() => {
+         vi.advanceTimersByTime(1);
+       });
+       expect(button).toBeEnabled();
+     });
+   });
+   ```
+
+4. **Correr** `npm run test:unit -- frontend/src/shared/ui/form`: todo en rojo.
+5. **Commit:** `test(front): specs de los formularios compartidos, en rojo`.
+
+### Tarea 2.2 · Los formularios (T018, F)
+
+**Archivos:** los siete módulos de 2.1, `form.css` e `index.ts`, en `frontend/src/shared/ui/form/`.
+
+1. **`describe-failure.ts`:**
+
+   ```ts
+   import type { ApiFailure, FieldErrors } from '../../api/http';
+   import { formatWait } from '../../lib/format-wait';
+
+   export const NETWORK_MESSAGE = 'No pudimos conectar con el taller. Revisá tu conexión y probá de nuevo.';
+   export const UNEXPECTED_MESSAGE = 'El taller no respondió como esperábamos. Probá de nuevo en un rato.';
+
+   export interface FailureDescription {
+     readonly fieldMessages: FieldErrors;
+     readonly generalMessages: readonly string[];
+     readonly retryAfterSeconds: number | null;
+     readonly offerReload: boolean;
+     readonly signedOut: boolean;
+   }
+
+   type ResponseFailure = Extract<ApiFailure, { kind: 'response' }>;
+
+   const UNAUTHENTICATED = 401;
+   const TOO_MANY_REQUESTS = 429;
+   const NOTHING: FailureDescription = {
+     fieldMessages: {},
+     generalMessages: [],
+     retryAfterSeconds: null,
+     offerReload: false,
+     signedOut: false,
+   };
+
+   function describeRateLimit(failure: ResponseFailure): FailureDescription {
+     const seconds = failure.retryAfterSeconds;
+     if (seconds === null) return { ...NOTHING, generalMessages: [failure.message] };
+     return {
+       ...NOTHING,
+       generalMessages: [failure.message, `Podés volver a intentar en ${formatWait(seconds)}.`],
+       retryAfterSeconds: seconds,
+     };
+   }
+
+   function describeResponse(failure: ResponseFailure, visibleFields: readonly string[]): FailureDescription {
+     if (failure.status === UNAUTHENTICATED) return { ...NOTHING, signedOut: true };
+     if (failure.status === TOO_MANY_REQUESTS) return describeRateLimit(failure);
+     const fieldMessages: Record<string, readonly string[]> = {};
+     const generalMessages: string[] = [];
+     for (const [field, messages] of Object.entries(failure.fieldErrors)) {
+       if (visibleFields.includes(field)) fieldMessages[field] = messages;
+       else generalMessages.push(...messages);
+     }
+     if (generalMessages.length === 0 && Object.keys(fieldMessages).length === 0) {
+       generalMessages.push(failure.message);
+     }
+     return {
+       ...NOTHING,
+       fieldMessages,
+       generalMessages,
+       offerReload: failure.code === 'account_mismatch',
+     };
+   }
+
+   export function describeFailure(failure: ApiFailure, visibleFields: readonly string[]): FailureDescription {
+     switch (failure.kind) {
+       case 'network':
+         return { ...NOTHING, generalMessages: [NETWORK_MESSAGE] };
+       case 'unexpected':
+         return { ...NOTHING, generalMessages: [UNEXPECTED_MESSAGE] };
+       case 'signed-out':
+         return { ...NOTHING, signedOut: true };
+       case 'account-changed':
+         return { ...NOTHING, generalMessages: [failure.message], offerReload: true };
+       case 'response':
+         return describeResponse(failure, visibleFields);
+     }
+   }
+   ```
+
+2. **`show-failure.ts`:**
+
+   ```ts
+   import type { FieldError, FieldValues, Path, UseFormSetError } from 'react-hook-form';
+   import type { FailureDescription } from './describe-failure';
+
+   function typesOf(messages: readonly string[]): Record<string, string> {
+     return Object.fromEntries(messages.map((message, index) => [`server${index}`, message]));
+   }
+
+   export function messagesOf(error: FieldError | undefined): string[] {
+     if (error === undefined) return [];
+     const fromTypes = Object.values(error.types ?? {})
+       .flat()
+       .filter((value): value is string => typeof value === 'string');
+     if (fromTypes.length > 0) return fromTypes;
+     return error.message ? [error.message] : [];
+   }
+
+   export function showFailure<T extends FieldValues>(
+     setError: UseFormSetError<T>,
+     description: FailureDescription,
+     visibleFields: readonly Path<T>[],
+   ): void {
+     let focused = false;
+     for (const field of visibleFields) {
+       const messages = description.fieldMessages[field] ?? [];
+       if (messages.length === 0) continue;
+       setError(field, { type: 'server', types: typesOf(messages) }, { shouldFocus: !focused });
+       focused = true;
+     }
+     if (description.generalMessages.length > 0) {
+       setError('root.serverError', { type: 'server', types: typesOf(description.generalMessages) });
+     }
+   }
+   ```
+
+3. **`use-guarded-submit.ts`:**
+
+   ```ts
+   import { useCallback, useRef } from 'react';
+
+   const useGuardedSubmit = <A extends unknown[]>(handler: (...args: A) => Promise<void>) => {
+     const pending = useRef(false);
+     return useCallback(
+       async (...args: A): Promise<void> => {
+         if (pending.current) return;
+         pending.current = true;
+         try {
+           await handler(...args);
+         } finally {
+           pending.current = false;
+         }
+       },
+       [handler],
+     );
+   };
+
+   export default useGuardedSubmit;
+   ```
+
+4. **`use-retry-countdown.ts`:**
+
+   ```ts
+   import { useCallback, useEffect, useRef, useState } from 'react';
+
+   const useRetryCountdown = () => {
+     const [waiting, setWaiting] = useState(false);
+     const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+     useEffect(() => () => clearTimeout(timer.current), []);
+     const start = useCallback((seconds: number) => {
+       clearTimeout(timer.current);
+       if (seconds <= 0) return;
+       setWaiting(true);
+       timer.current = setTimeout(() => setWaiting(false), seconds * 1000);
+     }, []);
+     return { waiting, start };
+   };
+
+   export default useRetryCountdown;
+   ```
+
+5. **`TextField.tsx`:**
+
+   ```tsx
+   import { useId, type ReactNode } from 'react';
+   import type { UseFormRegisterReturn } from 'react-hook-form';
+
+   interface TextFieldProps {
+     readonly label: string;
+     readonly registration: UseFormRegisterReturn;
+     readonly messages: readonly string[];
+     readonly autoComplete: string;
+     readonly type?: 'text' | 'email' | 'password';
+     readonly hint?: string;
+     readonly adornment?: ReactNode;
+   }
+
+   const TextField = ({
+     label,
+     registration,
+     messages,
+     autoComplete,
+     type = 'text',
+     hint,
+     adornment,
+   }: TextFieldProps) => {
+     const id = useId();
+     const hintId = `${id}-hint`;
+     const errorsId = `${id}-errors`;
+     const invalid = messages.length > 0;
+     const describedBy = [hint === undefined ? '' : hintId, invalid ? errorsId : ''].filter(Boolean).join(' ');
+     return (
+       <div className="form-field">
+         <label className="field-label" htmlFor={id}>
+           {label}
+         </label>
+         <div className="form-control">
+           <input
+             id={id}
+             className="form-input"
+             type={type}
+             autoComplete={autoComplete}
+             aria-invalid={invalid || undefined}
+             aria-describedby={describedBy || undefined}
+             {...registration}
+           />
+           {adornment}
+         </div>
+         {hint === undefined ? null : (
+           <p id={hintId} className="form-hint">
+             {hint}
+           </p>
+         )}
+         {invalid ? (
+           <ul id={errorsId} className="form-errors">
+             {messages.map((message) => (
+               <li key={message}>{message}</li>
+             ))}
+           </ul>
+         ) : null}
+       </div>
+     );
+   };
+
+   export default TextField;
+   ```
+
+6. **`PasswordField.tsx`:**
+
+   ```tsx
+   import { useState } from 'react';
+   import type { UseFormRegisterReturn } from 'react-hook-form';
+   import TextField from './TextField';
+
+   interface PasswordFieldProps {
+     readonly label: string;
+     readonly registration: UseFormRegisterReturn;
+     readonly messages: readonly string[];
+     readonly autoComplete: 'current-password' | 'new-password';
+     readonly hint?: string;
+   }
+
+   const PasswordField = ({ label, registration, messages, autoComplete, hint }: PasswordFieldProps) => {
+     const [visible, setVisible] = useState(false);
+     return (
+       <TextField
+         label={label}
+         registration={registration}
+         messages={messages}
+         autoComplete={autoComplete}
+         hint={hint}
+         type={visible ? 'text' : 'password'}
+         adornment={
+           <button type="button" className="text-button form-reveal" onClick={() => setVisible((shown) => !shown)}>
+             {visible ? 'Ocultar' : 'Mostrar'}
+           </button>
+         }
+       />
+     );
+   };
+
+   export default PasswordField;
+   ```
+
+7. **`ServerError.tsx`:**
+
+   ```tsx
+   import { useEffect, useRef, type ReactNode } from 'react';
+
+   interface ServerErrorProps {
+     readonly messages: readonly string[];
+     readonly takeFocus: boolean;
+     readonly children?: ReactNode;
+   }
+
+   const ServerError = ({ messages, takeFocus, children }: ServerErrorProps) => {
+     const region = useRef<HTMLDivElement>(null);
+     const text = messages.join('\n');
+     useEffect(() => {
+       if (takeFocus && text !== '') region.current?.focus();
+     }, [takeFocus, text]);
+     if (messages.length === 0) return null;
+     return (
+       <div ref={region} className="form-server-error" role="alert" tabIndex={-1}>
+         {messages.map((message) => (
+           <p key={message}>{message}</p>
+         ))}
+         {children}
+       </div>
+     );
+   };
+
+   export default ServerError;
+   ```
+
+8. **`form.css`.** Los campos tienen 16 px (FR-067), y `.field-label` y `.text-button` son de `styles.css`:
+
+   ```css
+   .form-stack {
+     display: grid;
+     gap: 18px;
+     max-width: 440px;
+   }
+   .form-field {
+     display: grid;
+     gap: 6px;
+   }
+   .form-control {
+     display: flex;
+     align-items: center;
+     gap: 10px;
+   }
+   .form-input {
+     flex: 1 1 auto;
+     min-width: 0;
+     padding: 11px 13px;
+     border: 1px solid var(--line);
+     border-radius: 4px;
+     background: var(--surface);
+     color: var(--ink);
+     font-size: 16px;
+   }
+   .form-input[aria-invalid='true'] {
+     border-color: #a83928;
+   }
+   .form-hint {
+     margin: 0;
+     font-size: 12px;
+   }
+   .form-errors {
+     margin: 0;
+     padding-left: 18px;
+     color: #a83928;
+     font-size: 13px;
+   }
+   .form-check {
+     display: flex;
+     gap: 10px;
+     align-items: flex-start;
+     font-size: 13px;
+   }
+   .form-reveal {
+     flex: 0 0 auto;
+   }
+   .form-server-error {
+     padding: 12px 14px;
+     border: 1px solid #a83928;
+     border-radius: 4px;
+     background: var(--accent-soft);
+   }
+   .form-server-error:focus {
+     outline: 3px solid var(--accent);
+     outline-offset: 4px;
+   }
+   .form-server-error p {
+     margin: 0 0 6px;
+     color: var(--ink);
+     font-size: 13px;
+   }
+   .form-actions {
+     display: flex;
+     flex-wrap: wrap;
+     gap: 10px;
+     align-items: center;
+   }
+   ```
+
+9. **`index.ts`:**
+
+   ```ts
+   export {
+     NETWORK_MESSAGE,
+     UNEXPECTED_MESSAGE,
+     describeFailure,
+   } from './describe-failure';
+   export type { FailureDescription } from './describe-failure';
+   export { messagesOf, showFailure } from './show-failure';
+   export { default as useGuardedSubmit } from './use-guarded-submit';
+   export { default as useRetryCountdown } from './use-retry-countdown';
+   export { default as TextField } from './TextField';
+   export { default as PasswordField } from './PasswordField';
+   export { default as ServerError } from './ServerError';
+   ```
+
+10. **Correr** `npm run test:unit -- frontend/src/shared/ui/form`, en verde, y después `npm run typecheck` y `npm run lint`. `describeResponse` queda por debajo de 10.
+11. **Commit:** `feat(front): los formularios compartidos, con errores accesibles y el error general`.
+
+### Tarea 2.3 · El aviso de privacidad (T019, P)
+
+**Archivos:** en `frontend/src/entities/privacy-notice/`, `config/privacy-notice.ts`, `ui/PrivacyNoticeText.tsx`, `ui/PrivacyNoticeDialog.tsx`, `ui/privacy-notice.css`, `ui/privacy-notice.spec.tsx` e `index.ts`.
+
+**Produce:** «`entities/privacy-notice`» del contrato. `PrivacyNoticeDialog` está abierto mientras está montado: quien lo usa lo monta para abrirlo y lo desmonta en `onClose`.
+
+1. **La spec en rojo** (`ui/privacy-notice.spec.tsx`), con los stubs de los dos componentes y la constante. La versión esperada es la que el stack acepta por omisión (`backend/api/config/taller.php`):
+
+   ```tsx
+   import { render, screen } from '@testing-library/react';
+   import userEvent from '@testing-library/user-event';
+   import { useState } from 'react';
+   import { beforeAll, describe, expect, it } from 'vitest';
+   import { PRIVACY_NOTICE } from '../config/privacy-notice';
+   import PrivacyNoticeDialog from './PrivacyNoticeDialog';
+   import PrivacyNoticeText from './PrivacyNoticeText';
+
+   beforeAll(() => {
+     HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) {
+       this.open = true;
+     };
+     HTMLDialogElement.prototype.close = function close(this: HTMLDialogElement) {
+       this.open = false;
+       this.dispatchEvent(new Event('close'));
+     };
+   });
+
+   const Opener = () => {
+     const [open, setOpen] = useState(false);
+     return (
+       <>
+         <button type="button" onClick={() => setOpen(true)}>
+           Aviso de privacidad
+         </button>
+         {open ? <PrivacyNoticeDialog onClose={() => setOpen(false)} /> : null}
+       </>
+     );
+   };
+
+   describe('the privacy notice', () => {
+     it('carries the version that the stack accepts by default', () => {
+       expect(PRIVACY_NOTICE.version).toBe('2026-10-dev');
+     });
+
+     it('shows each section under a heading of the level it is given', () => {
+       render(<PrivacyNoticeText headingLevel={2} />);
+       for (const section of PRIVACY_NOTICE.sections) {
+         expect(screen.getByRole('heading', { level: 2, name: section.heading })).toBeInTheDocument();
+       }
+     });
+
+     it('opens as a dialog named after the notice and gives the focus back when it closes', async () => {
+       const user = userEvent.setup();
+       render(<Opener />);
+       const opener = screen.getByRole('button', { name: 'Aviso de privacidad' });
+       await user.click(opener);
+       expect(screen.getByRole('dialog', { name: 'Aviso de privacidad' })).toBeInTheDocument();
+       await user.click(screen.getByRole('button', { name: 'Cerrar' }));
+       expect(screen.queryByRole('dialog', { name: 'Aviso de privacidad' })).toBeNull();
+       expect(opener).toHaveFocus();
+     });
+   });
+   ```
+
+   Correrla (`npm run test:unit -- frontend/src/entities/privacy-notice`), verla fallar y hacer el commit `test(front): spec del aviso de privacidad, en rojo`.
+2. **`config/privacy-notice.ts`.** El texto es provisional, con la versión `2026-10-dev`, hasta que el usuario dé el suyo (Q2; «Acciones del usuario»):
+
+   ```ts
+   export interface PrivacyNoticeSection {
+     readonly heading: string;
+     readonly paragraphs: readonly string[];
+   }
+
+   export interface PrivacyNotice {
+     readonly version: string;
+     readonly title: string;
+     readonly sections: readonly PrivacyNoticeSection[];
+   }
+
+   export const PRIVACY_NOTICE: PrivacyNotice = {
+     version: '2026-10-dev',
+     title: 'Aviso de privacidad',
+     sections: [
+       {
+         heading: 'Un texto provisional',
+         paragraphs: [
+           'Este aviso es provisional y sirve para usar el taller en una computadora propia. Antes de abrir el taller a sus alumnos, quien lo administra lo reemplaza por el aviso definitivo.',
+         ],
+       },
+       {
+         heading: 'Qué guarda el taller',
+         paragraphs: [
+           'Tu nombre, tu email, tu rol, la fecha en que aceptaste este aviso y los datos de tus sesiones. Tu progreso sigue guardado en este navegador.',
+         ],
+       },
+       {
+         heading: 'Para qué',
+         paragraphs: [
+           'Para que ingreses con tu cuenta y para que quien administra el taller pueda invitarte y ayudarte a recuperar el acceso.',
+         ],
+       },
+       {
+         heading: 'Tus derechos',
+         paragraphs: [
+           'Podés pedirle a quien administra el taller una copia de tus datos o que borre tu cuenta (Ley 25.326, artículos 14 y 16).',
+         ],
+       },
+     ],
+   };
+   ```
+
+3. **`ui/PrivacyNoticeText.tsx`:**
+
+   ```tsx
+   import { PRIVACY_NOTICE } from '../config/privacy-notice';
+
+   interface PrivacyNoticeTextProps {
+     readonly headingLevel: 2 | 3;
+   }
+
+   const PrivacyNoticeText = ({ headingLevel }: PrivacyNoticeTextProps) => {
+     const Heading = headingLevel === 2 ? 'h2' : 'h3';
+     return (
+       <div className="privacy-notice">
+         {PRIVACY_NOTICE.sections.map((section) => (
+           <section key={section.heading}>
+             <Heading>{section.heading}</Heading>
+             {section.paragraphs.map((paragraph) => (
+               <p key={paragraph}>{paragraph}</p>
+             ))}
+           </section>
+         ))}
+       </div>
+     );
+   };
+
+   export default PrivacyNoticeText;
+   ```
+
+4. **`ui/PrivacyNoticeDialog.tsx`:**
+
+   ```tsx
+   import { useEffect, useId, useRef } from 'react';
+   import { PRIVACY_NOTICE } from '../config/privacy-notice';
+   import PrivacyNoticeText from './PrivacyNoticeText';
+
+   interface PrivacyNoticeDialogProps {
+     onClose(): void;
+   }
+
+   const PrivacyNoticeDialog = ({ onClose }: PrivacyNoticeDialogProps) => {
+     const dialog = useRef<HTMLDialogElement>(null);
+     const titleId = useId();
+     useEffect(() => {
+       const opener = document.activeElement;
+       const element = dialog.current;
+       if (element !== null && !element.open) element.showModal();
+       return () => {
+         if (opener instanceof HTMLElement) opener.focus();
+       };
+     }, []);
+     return (
+       <dialog ref={dialog} className="privacy-dialog" aria-labelledby={titleId} onClose={onClose}>
+         <div className="dialog-content">
+           <div className="dialog-top">
+             <h2 id={titleId}>{PRIVACY_NOTICE.title}</h2>
+             <button type="button" className="close-dialog" aria-label="Cerrar" onClick={() => dialog.current?.close()}>
+               ×
+             </button>
+           </div>
+           <PrivacyNoticeText headingLevel={3} />
+         </div>
+       </dialog>
+     );
+   };
+
+   export default PrivacyNoticeDialog;
+   ```
+
+5. **`ui/privacy-notice.css`:**
+
+   ```css
+   .privacy-notice section + section {
+     margin-top: 18px;
+   }
+   .privacy-notice h2,
+   .privacy-notice h3 {
+     font-size: 17px;
+     letter-spacing: -0.3px;
+     margin-bottom: 8px;
+   }
+   @media (max-width: 590px) {
+     .privacy-dialog {
+       width: 100%;
+       max-width: none;
+       height: 100%;
+       max-height: none;
+       margin: 0;
+       border-radius: 0;
+     }
+   }
+   ```
+
+6. **`index.ts`:**
+
+   ```ts
+   export { PRIVACY_NOTICE } from './config/privacy-notice';
+   export type { PrivacyNotice, PrivacyNoticeSection } from './config/privacy-notice';
+   export { default as PrivacyNoticeText } from './ui/PrivacyNoticeText';
+   export { default as PrivacyNoticeDialog } from './ui/PrivacyNoticeDialog';
+   ```
+
+7. **Correr** la spec, en verde, y después `npm run typecheck` y `npm run lint`.
+8. **Commit:** `feat(front): el aviso de privacidad del front, con su versión y su diálogo`.
+
+### Tarea 2.4 · Las specs del ingreso y de «Salir», en rojo (T020, A, desde S2)
+
+**Archivos:** en `frontend/src/features/sign-in/`, los stubs de `api/access-endpoints.ts` (`login` y `EndpointResult`), `model/sign-out.ts` y `ui/LoginForm.tsx`, y las specs `api/access-endpoints.spec.ts`, `model/sign-out.spec.ts` y `ui/sign-in-screen.spec.tsx`. En `ui/access-gate.spec.tsx` (T008), el stub de `close` pasa a ser el de la introducción de U2.
+
+**Consume:** de F, `shared/ui/form`; de P, `PrivacyNoticeDialog`; de C y S, lo de U1.
+
+1. **`api/access-endpoints.spec.ts`:**
+
+   ```ts
+   import { describe, expect, it } from 'vitest';
+   import { createApiClient } from '../../../shared/api/http';
+   import { createFakeFetch, type FakeReply } from '../../../shared/api/http/fake-fetch';
+   import { login } from './access-endpoints';
+
+   const ANA = { id: 41, name: 'Ana Pérez', email: 'ana@x.com', role: 'student', privacyAccepted: true };
+
+   function clientWith(replies: readonly FakeReply[]) {
+     const fake = createFakeFetch(replies);
+     return { client: createApiClient({ fetch: fake.fetch, readCookies: () => 'XSRF-TOKEN=abc' }), calls: fake.calls };
+   }
+
+   describe('login', () => {
+     it('sends the email, the password and «Recordarme», and returns the published account', async () => {
+       const { client, calls } = clientWith([{ status: 200, json: { data: ANA } }]);
+       expect(await login(client, { email: 'ana@x.com', password: 'una frase larga', remember: true })).toEqual({
+         ok: true,
+         value: ANA,
+       });
+       expect(calls[0]?.path).toBe('/api/auth/login');
+       expect(calls[0]?.body).toEqual({ email: 'ana@x.com', password: 'una frase larga', remember: true });
+       expect(calls[0]?.headers['x-taller-user']).toBeUndefined();
+     });
+
+     it('treats a 200 without an account as an unexpected answer', async () => {
+       const { client } = clientWith([{ status: 200, json: { data: null } }]);
+       expect(await login(client, { email: 'ana@x.com', password: 'x', remember: false })).toEqual({
+         ok: false,
+         failure: { kind: 'unexpected', status: 200 },
+       });
+     });
+   });
+   ```
+
+2. **`model/sign-out.spec.ts`:**
+
+   ```ts
+   import { describe, expect, it } from 'vitest';
+   import { createApiClient } from '../../../shared/api/http';
+   import { createFakeFetch, type FakeReply } from '../../../shared/api/http/fake-fetch';
+   import { signOut } from './sign-out';
+
+   function clientWith(replies: readonly (FakeReply | 'network-error')[]) {
+     const fake = createFakeFetch(replies);
+     return { client: createApiClient({ fetch: fake.fetch, readCookies: () => 'XSRF-TOKEN=abc' }), calls: fake.calls };
+   }
+
+   describe('signOut', () => {
+     it('sends the logout with X-Taller-User and is done with a 204', async () => {
+       const { client, calls } = clientWith([{ status: 204 }]);
+       expect(await signOut({ client, userId: 41 })).toEqual({ kind: 'signed-out' });
+       expect(calls[0]?.path).toBe('/api/auth/logout');
+       expect(calls[0]?.headers['x-taller-user']).toBe('41');
+     });
+
+     it('is done too when there was no session any more', async () => {
+       const { client } = clientWith([
+         { status: 401, json: { message: 'Iniciá sesión para continuar.', code: 'unauthenticated' } },
+       ]);
+       expect(await signOut({ client, userId: 41 })).toEqual({ kind: 'signed-out' });
+     });
+
+     it('fails with the network and with another account', async () => {
+       const mismatch = { message: 'La sesión cambió de cuenta: recargá la página.', code: 'account_mismatch' };
+       const { client } = clientWith(['network-error', { status: 409, json: mismatch }]);
+       expect(await signOut({ client, userId: 41 })).toEqual({ kind: 'failed', failure: { kind: 'network' } });
+       expect(await signOut({ client, userId: 41 })).toMatchObject({
+         kind: 'failed',
+         failure: { kind: 'response', status: 409, code: 'account_mismatch' },
+       });
+     });
+   });
+   ```
+
+3. **`ui/sign-in-screen.spec.tsx`.** El ingreso se prueba a través de la puerta, que es como lo usa la raíz:
+
+   ```tsx
+   import { act, render, screen } from '@testing-library/react';
+   import userEvent from '@testing-library/user-event';
+   import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+   import { sessionStore, type PublishedUser } from '../../../entities/session';
+   import { ApiClientContext, createApiClient, type FetchLike } from '../../../shared/api/http';
+   import { createFakeFetch, type FakeReply } from '../../../shared/api/http/fake-fetch';
+   import { createAccessRequests, type SignInOptions } from '../model/access-request';
+   import AccessGate from './AccessGate';
+
+   const ANA: PublishedUser = { id: 41, name: 'Ana Pérez', email: 'ana@x.com', role: 'student', privacyAccepted: true };
+   const PASSWORD = 'una frase larga para el taller';
+
+   beforeAll(() => {
+     HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) {
+       this.open = true;
+     };
+     HTMLDialogElement.prototype.close = function close(this: HTMLDialogElement) {
+       this.open = false;
+       this.dispatchEvent(new Event('close'));
+     };
+   });
+
+   beforeEach(() => {
+     sessionStore.setState({
+       status: 'signed-out',
+       user: null,
+       features: { passwordReset: false, registration: false },
+       contentVersion: null,
+     });
+   });
+
+   function renderAccess(fetch: FetchLike, options: SignInOptions = { presentation: 'page', reason: 'boot' }) {
+     const user = userEvent.setup();
+     const client = createApiClient({ fetch, readCookies: () => 'XSRF-TOKEN=abc' });
+     const requests = createAccessRequests();
+     render(
+       <ApiClientContext value={client}>
+         <AccessGate requests={requests} setShellInert={vi.fn()} reloadDocument={vi.fn()} />
+       </ApiClientContext>,
+     );
+     let signedIn: Promise<PublishedUser> | undefined;
+     act(() => {
+       signedIn = requests.request(options);
+     });
+     return { user, signedIn };
+   }
+
+   function withReplies(replies: readonly FakeReply[], options?: SignInOptions) {
+     const fake = createFakeFetch(replies);
+     return { ...renderAccess(fake.fetch, options), calls: fake.calls };
+   }
+
+   async function signIn(user: ReturnType<typeof userEvent.setup>, email: string, password: string) {
+     await user.type(screen.getByLabelText('Email'), email);
+     await user.type(screen.getByLabelText('Contraseña'), password);
+     await user.click(screen.getByRole('button', { name: 'Ingresar' }));
+   }
+
+   describe('signing in', () => {
+     it('focuses the email and ends the request with the account in the session', async () => {
+       const { user, signedIn, calls } = withReplies([{ status: 200, json: { data: ANA } }]);
+       expect(screen.getByLabelText('Email')).toHaveFocus();
+       await user.click(screen.getByRole('checkbox', { name: 'Recordarme en este navegador por 30 días' }));
+       await signIn(user, 'ana@x.com', PASSWORD);
+       await expect(signedIn).resolves.toEqual(ANA);
+       expect(calls).toHaveLength(1);
+       expect(calls[0]?.body).toEqual({ email: 'ana@x.com', password: PASSWORD, remember: true });
+       expect(sessionStore.getState().user).toEqual(ANA);
+     });
+
+     it('stops in the browser when a field is empty, and focuses the first one', async () => {
+       const { user, calls } = withReplies([]);
+       await user.click(screen.getByRole('button', { name: 'Ingresar' }));
+       expect(calls).toHaveLength(0);
+       expect(screen.getByLabelText('Email')).toHaveAccessibleDescription('Completá este campo.');
+       expect(screen.getByLabelText('Contraseña')).toHaveAccessibleDescription('Completá este campo.');
+       expect(screen.getByLabelText('Email')).toHaveFocus();
+     });
+
+     it('shows wrong credentials in the general error, focuses it and marks no field', async () => {
+       const { user } = withReplies([
+         { status: 422, json: { message: 'El email o la contraseña no son correctos.', code: 'auth_failed' } },
+       ]);
+       await signIn(user, 'nadie@x.com', PASSWORD);
+       const alert = await screen.findByRole('alert');
+       expect(alert).toHaveTextContent('El email o la contraseña no son correctos.');
+       expect(alert).toHaveFocus();
+       expect(screen.getByLabelText('Email')).not.toHaveAttribute('aria-invalid');
+       expect(screen.getByLabelText('Contraseña')).not.toHaveAttribute('aria-invalid');
+     });
+
+     it('sends a validation error to its field and focuses it', async () => {
+       const { user } = withReplies([
+         {
+           status: 422,
+           json: {
+             message: 'Hay datos que corregir.',
+             code: 'validation_failed',
+             errors: { email: ['El campo email debe ser un email válido.'] },
+           },
+         },
+       ]);
+       await signIn(user, 'ana', PASSWORD);
+       const email = screen.getByLabelText('Email');
+       expect(await screen.findByText('El campo email debe ser un email válido.')).toBeInTheDocument();
+       expect(email).toHaveAttribute('aria-invalid', 'true');
+       expect(email).toHaveFocus();
+     });
+
+     it('keeps the button busy and says so while the server answers', async () => {
+       const pending: FetchLike = () => new Promise<Response>(() => {});
+       const { user } = renderAccess(pending);
+       await signIn(user, 'ana@x.com', PASSWORD);
+       expect(screen.getByRole('button', { name: 'Ingresando…' })).toBeDisabled();
+     });
+
+     it('keeps the button disabled after a rate limit and says how long to wait', async () => {
+       const { user } = withReplies([
+         {
+           status: 429,
+           headers: { 'Retry-After': '120' },
+           json: { message: 'Demasiados intentos. Esperá un momento antes de volver a probar.', code: 'too_many_requests' },
+         },
+       ]);
+       await signIn(user, 'ana@x.com', PASSWORD);
+       expect(await screen.findByRole('alert')).toHaveTextContent('Podés volver a intentar en 2 minutos.');
+       expect(screen.getByRole('button', { name: 'Ingresar' })).toBeDisabled();
+     });
+
+     it('shows its own message when the answer is not JSON and keeps what was typed', async () => {
+       const { user } = withReplies([{ status: 502, text: '<html>Bad Gateway</html>' }]);
+       await signIn(user, 'ana@x.com', PASSWORD);
+       expect(await screen.findByRole('alert')).toHaveTextContent(
+         'El taller no respondió como esperábamos. Probá de nuevo en un rato.',
+       );
+       expect(screen.getByLabelText('Email')).toHaveValue('ana@x.com');
+     });
+
+     it('says how to recover the access without mail and offers no link for it', () => {
+       withReplies([]);
+       expect(
+         screen.getByText('¿Te olvidaste la contraseña? Pedile un enlace nuevo a quien administra el taller.'),
+       ).toBeInTheDocument();
+       expect(screen.queryByRole('link', { name: /olvidaste/ })).toBeNull();
+       expect(screen.queryByRole('button', { name: /olvidaste/ })).toBeNull();
+     });
+
+     it('leaves «Recordarme» unchecked and warns about shared computers', () => {
+       withReplies([]);
+       const remember = screen.getByRole('checkbox', { name: 'Recordarme en este navegador por 30 días' });
+       expect(remember).not.toBeChecked();
+       expect(remember).toHaveAccessibleDescription('No la marques en una computadora compartida.');
+     });
+
+     it('tells an expired session to sign in again, in a dialog with a level-two title', () => {
+       withReplies([], {});
+       expect(screen.getByText('Tu sesión venció. Ingresá de nuevo para seguir.')).toBeInTheDocument();
+       expect(screen.getByRole('heading', { level: 2, name: 'Ingresá al taller' })).toBeInTheDocument();
+     });
+   });
+   ```
+
+4. **Correr** `npm run test:unit -- frontend/src/features/sign-in`: las specs nuevas en rojo, y la de la puerta (T008) también, porque su título ya no alcanza sin el formulario.
+5. **Commit:** `test(front): specs del ingreso y de «Salir», en rojo`.
+
+### Tarea 2.5 · El ingreso y «Salir» (T021, A)
+
+**Archivos:** `api/access-endpoints.ts`, `model/sign-out.ts`, `ui/LoginForm.tsx`, `ui/AccessScreen.tsx` e `index.ts`, en `frontend/src/features/sign-in/`.
+
+1. **`api/access-endpoints.ts`.** U3 y U4 le suman endpoints:
+
+   ```ts
+   import { parsePublishedUser, type PublishedUser } from '../../../entities/session';
+   import type { ApiClient, ApiFailure, ApiResult } from '../../../shared/api/http';
+   import { isPlainObject } from '../../../shared/lib/is-plain-object';
+
+   export type EndpointResult<T> =
+     | { readonly ok: true; readonly value: T }
+     | { readonly ok: false; readonly failure: ApiFailure };
+
+   export interface LoginInput {
+     readonly email: string;
+     readonly password: string;
+     readonly remember: boolean;
+   }
+
+   function unexpected(status: number): EndpointResult<never> {
+     return { ok: false, failure: { kind: 'unexpected', status } };
+   }
+
+   async function accountFrom(pending: Promise<ApiResult>): Promise<EndpointResult<PublishedUser>> {
+     const result = await pending;
+     if (!result.ok) return result;
+     const user = isPlainObject(result.body) ? parsePublishedUser(result.body.data) : null;
+     return user === null ? unexpected(result.status) : { ok: true, value: user };
+   }
+
+   export function login(client: ApiClient, input: LoginInput): Promise<EndpointResult<PublishedUser>> {
+     return accountFrom(client.send('POST', '/api/auth/login', input));
+   }
+   ```
+
+2. **`model/sign-out.ts`:**
+
+   ```ts
+   import type { ApiClient, ApiFailure } from '../../../shared/api/http';
+
+   export interface SignOutDependencies {
+     readonly client: ApiClient;
+     readonly userId: number;
+   }
+
+   export type SignOutOutcome =
+     | { readonly kind: 'signed-out' }
+     | { readonly kind: 'failed'; readonly failure: ApiFailure };
+
+   const UNAUTHENTICATED = 401;
+
+   function alreadySignedOut(failure: ApiFailure): boolean {
+     if (failure.kind === 'signed-out') return true;
+     return failure.kind === 'response' && failure.status === UNAUTHENTICATED;
+   }
+
+   export async function signOut({ client, userId }: SignOutDependencies): Promise<SignOutOutcome> {
+     const result = await client.send('POST', '/api/auth/logout', undefined, { asUser: userId });
+     if (result.ok || alreadySignedOut(result.failure)) return { kind: 'signed-out' };
+     return { kind: 'failed', failure: result.failure };
+   }
+   ```
+
+3. **`ui/LoginForm.tsx`:**
+
+   ```tsx
+   import { useEffect, useId, useState } from 'react';
+   import { useForm } from 'react-hook-form';
+   import { PrivacyNoticeDialog } from '../../../entities/privacy-notice';
+   import type { PublishedUser } from '../../../entities/session';
+   import { useApiClient } from '../../../shared/api/http';
+   import {
+     PasswordField,
+     ServerError,
+     TextField,
+     describeFailure,
+     messagesOf,
+     showFailure,
+     useGuardedSubmit,
+     useRetryCountdown,
+   } from '../../../shared/ui/form';
+   import { login } from '../api/access-endpoints';
+   import AccessHeading from './AccessHeading';
+
+   interface LoginValues {
+     email: string;
+     password: string;
+     remember: boolean;
+   }
+
+   interface LoginFormProps {
+     readonly headingLevel: 1 | 2;
+     readonly initialEmail: string;
+     readonly notice: string | null;
+     readonly passwordResetByMail: boolean;
+     onSignedIn(user: PublishedUser): void;
+   }
+
+   const VISIBLE_FIELDS = ['email', 'password'] as const;
+   const REQUIRED = 'Completá este campo.';
+
+   const LoginForm = ({ headingLevel, initialEmail, notice, passwordResetByMail, onSignedIn }: LoginFormProps) => {
+     const client = useApiClient();
+     const countdown = useRetryCountdown();
+     const rememberId = useId();
+     const [privacyOpen, setPrivacyOpen] = useState(false);
+     const {
+       register,
+       handleSubmit,
+       setError,
+       setFocus,
+       formState: { errors, isSubmitting },
+     } = useForm<LoginValues>({
+       criteriaMode: 'all',
+       defaultValues: { email: initialEmail, password: '', remember: false },
+     });
+
+     useEffect(() => {
+       setFocus(initialEmail === '' ? 'email' : 'password');
+     }, [setFocus, initialEmail]);
+
+     const submit = useGuardedSubmit(async (values: LoginValues) => {
+       const result = await login(client, values);
+       if (result.ok) {
+         onSignedIn(result.value);
+         return;
+       }
+       const description = describeFailure(result.failure, VISIBLE_FIELDS);
+       showFailure(setError, description, VISIBLE_FIELDS);
+       if (description.retryAfterSeconds !== null) countdown.start(description.retryAfterSeconds);
+     });
+
+     const fieldHasError = errors.email !== undefined || errors.password !== undefined;
+     return (
+       <>
+         <form className="form-stack" noValidate onSubmit={handleSubmit(submit)}>
+           <AccessHeading level={headingLevel}>Ingresá al taller</AccessHeading>
+           <p>Usá el email con el que te invitaron.</p>
+           {notice === null ? null : <p className="access-notice">{notice}</p>}
+           <ServerError messages={messagesOf(errors.root?.serverError)} takeFocus={!fieldHasError} />
+           <TextField
+             label="Email"
+             type="email"
+             autoComplete="username"
+             registration={register('email', { required: REQUIRED })}
+             messages={messagesOf(errors.email)}
+           />
+           <PasswordField
+             label="Contraseña"
+             autoComplete="current-password"
+             registration={register('password', { required: REQUIRED })}
+             messages={messagesOf(errors.password)}
+           />
+           <div className="form-check">
+             <input id={rememberId} type="checkbox" aria-describedby={`${rememberId}-hint`} {...register('remember')} />
+             <label htmlFor={rememberId}>Recordarme en este navegador por 30 días</label>
+           </div>
+           <p id={`${rememberId}-hint`} className="form-hint">
+             No la marques en una computadora compartida.
+           </p>
+           <div className="form-actions">
+             <button className="button" type="submit" disabled={isSubmitting || countdown.waiting}>
+               {isSubmitting ? 'Ingresando…' : 'Ingresar'}
+             </button>
+           </div>
+           {passwordResetByMail ? null : (
+             <p className="form-hint">¿Te olvidaste la contraseña? Pedile un enlace nuevo a quien administra el taller.</p>
+           )}
+           <button type="button" className="text-button" onClick={() => setPrivacyOpen(true)}>
+             Aviso de privacidad
+           </button>
+         </form>
+         {privacyOpen ? <PrivacyNoticeDialog onClose={() => setPrivacyOpen(false)} /> : null}
+       </>
+     );
+   };
+
+   export default LoginForm;
+   ```
+
+4. **`ui/AccessScreen.tsx`,** la versión de U2:
+
+   ```tsx
+   import { useState } from 'react';
+   import { useStore } from 'zustand';
+   import { sessionStore, type PublishedUser } from '../../../entities/session';
+   import type { AccessRequest } from '../model/access-request';
+   import LoginForm from './LoginForm';
+
+   interface AccessScreenProps {
+     readonly request: AccessRequest;
+     onFinish(user: PublishedUser): void;
+     reloadDocument(): void;
+   }
+
+   interface LoginScreen {
+     readonly kind: 'login';
+     readonly email: string;
+     readonly notice: string | null;
+   }
+
+   const EXPIRED_NOTICE = 'Tu sesión venció. Ingresá de nuevo para seguir.';
+
+   function initialScreen(request: AccessRequest): LoginScreen {
+     return { kind: 'login', email: '', notice: request.reason === 'expired' ? EXPIRED_NOTICE : null };
+   }
+
+   const AccessScreen = ({ request, onFinish }: AccessScreenProps) => {
+     const [screen] = useState(() => initialScreen(request));
+     const passwordResetByMail = useStore(sessionStore, (state) => state.features.passwordReset);
+     return (
+       <LoginForm
+         headingLevel={request.presentation === 'page' ? 1 : 2}
+         initialEmail={screen.email}
+         notice={screen.notice}
+         passwordResetByMail={passwordResetByMail}
+         onSignedIn={onFinish}
+       />
+     );
+   };
+
+   export default AccessScreen;
+   ```
+
+5. **`index.ts`** suma:
+
+   ```ts
+   export { signOut } from './model/sign-out';
+   export type { SignOutDependencies, SignOutOutcome } from './model/sign-out';
+   ```
+
+6. **Correr** `npm run test:unit -- frontend/src/features/sign-in`, con todo en verde, también la spec de la puerta. Después, `npm run typecheck` y `npm run lint`; ninguna función pasa de 10.
+7. **Commit:** `feat(front): el ingreso con React Hook Form y «Salir»`.
+
+### Tarea 2.6 · Las specs de «Tu cuenta», en rojo (T022, M, desde S2)
+
+**Archivos:** en `frontend/src/pages/account/`, los stubs de `ui/AccountMenu.tsx`, `ui/AccountEntry.tsx`, `ui/AccountDialog.tsx` y `ui/SignOutSection.tsx`, y `ui/account-menu.spec.tsx`.
+
+**Consume:** de A, `signOut`; de F, `shared/ui/form`; de P, `PrivacyNoticeDialog`; de S, `sessionStore` y `selectReadyAccount`.
+
+1. **`ui/account-menu.spec.tsx`:**
+
+   ```tsx
+   import { act, render, screen, within } from '@testing-library/react';
+   import userEvent from '@testing-library/user-event';
+   import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+   import { sessionStore, type PublishedUser } from '../../../entities/session';
+   import { ApiClientContext, createApiClient } from '../../../shared/api/http';
+   import { createFakeFetch, type FakeReply } from '../../../shared/api/http/fake-fetch';
+   import AccountMenu from './AccountMenu';
+
+   const ANA: PublishedUser = { id: 41, name: 'Ana Pérez', email: 'ana@x.com', role: 'student', privacyAccepted: true };
+   const NOTE = 'Tu progreso se guarda en este navegador, no en tu cuenta: queda acá aunque salgas.';
+
+   beforeAll(() => {
+     HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) {
+       this.open = true;
+     };
+     HTMLDialogElement.prototype.close = function close(this: HTMLDialogElement) {
+       this.open = false;
+       this.dispatchEvent(new Event('close'));
+     };
+   });
+
+   let entryHost: HTMLElement;
+
+   beforeEach(() => {
+     entryHost = document.createElement('div');
+     document.body.append(entryHost);
+     sessionStore.setState({
+       status: 'signed-in',
+       user: ANA,
+       features: { passwordReset: false, registration: false },
+       contentVersion: null,
+     });
+   });
+
+   afterEach(() => {
+     entryHost.remove();
+   });
+
+   function renderMenu(replies: readonly FakeReply[] = []) {
+     const user = userEvent.setup();
+     const fake = createFakeFetch(replies);
+     const client = createApiClient({ fetch: fake.fetch, readCookies: () => 'XSRF-TOKEN=abc' });
+     const reloadDocument = vi.fn();
+     render(
+       <ApiClientContext value={client}>
+         <AccountMenu entryHost={entryHost} reloadDocument={reloadDocument} />
+       </ApiClientContext>,
+     );
+     return { user, calls: fake.calls, reloadDocument, entry: () => within(entryHost).getByRole('button', { name: 'Tu cuenta' }) };
+   }
+
+   describe('«Tu cuenta»', () => {
+     it('puts no entry while the account is missing or has not accepted the notice', () => {
+       sessionStore.setState({ user: null, status: 'signed-out' });
+       renderMenu();
+       expect(entryHost).toBeEmptyDOMElement();
+       act(() => {
+         sessionStore.setState({ user: { ...ANA, privacyAccepted: false }, status: 'signed-in' });
+       });
+       expect(entryHost).toBeEmptyDOMElement();
+     });
+
+     it('puts the entry in its own element and opens a dialog with the name, the email and the note', async () => {
+       const { user, entry } = renderMenu();
+       await user.click(entry());
+       const dialog = screen.getByRole('dialog', { name: 'Tu cuenta' });
+       expect(dialog).toHaveTextContent('Ana Pérez · ana@x.com');
+       expect(dialog).toHaveTextContent(NOTE);
+       expect(entry()).toHaveAttribute('aria-expanded', 'true');
+     });
+
+     it('closes with «Volver al taller» and gives the focus back to the entry', async () => {
+       const { user, entry } = renderMenu();
+       await user.click(entry());
+       await user.click(screen.getByRole('button', { name: 'Volver al taller' }));
+       expect(screen.queryByRole('dialog', { name: 'Tu cuenta' })).toBeNull();
+       expect(entry()).toHaveFocus();
+     });
+
+     it('signs out with X-Taller-User and reloads the document', async () => {
+       const { user, entry, calls, reloadDocument } = renderMenu([{ status: 204 }]);
+       await user.click(entry());
+       await user.click(screen.getByRole('button', { name: 'Salir' }));
+       expect(calls[0]?.path).toBe('/api/auth/logout');
+       expect(calls[0]?.headers['x-taller-user']).toBe('41');
+       expect(reloadDocument).toHaveBeenCalledOnce();
+     });
+
+     it('reloads too when there was no session any more', async () => {
+       const { user, entry, reloadDocument } = renderMenu([
+         { status: 401, json: { message: 'Iniciá sesión para continuar.', code: 'unauthenticated' } },
+       ]);
+       await user.click(entry());
+       await user.click(screen.getByRole('button', { name: 'Salir' }));
+       expect(reloadDocument).toHaveBeenCalledOnce();
+     });
+
+     it('keeps the session and offers to retry when the sign-out fails', async () => {
+       const { user, entry, reloadDocument } = renderMenu([{ status: 503, text: '<html>' }, { status: 204 }]);
+       await user.click(entry());
+       await user.click(screen.getByRole('button', { name: 'Salir' }));
+       expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos cerrar la sesión.');
+       expect(reloadDocument).not.toHaveBeenCalled();
+       await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+       expect(reloadDocument).toHaveBeenCalledOnce();
+     });
+
+     it('offers to reload when the session belongs to another account', async () => {
+       const { user, entry, reloadDocument } = renderMenu([
+         { status: 409, json: { message: 'La sesión cambió de cuenta: recargá la página.', code: 'account_mismatch' } },
+       ]);
+       await user.click(entry());
+       await user.click(screen.getByRole('button', { name: 'Salir' }));
+       expect(await screen.findByRole('alert')).toHaveTextContent('La sesión cambió de cuenta: recargá la página.');
+       await user.click(screen.getByRole('button', { name: 'Recargar' }));
+       expect(reloadDocument).toHaveBeenCalledOnce();
+     });
+
+     it('opens the privacy notice from «Tu cuenta»', async () => {
+       const { user, entry } = renderMenu();
+       await user.click(entry());
+       await user.click(screen.getByRole('button', { name: 'Aviso de privacidad' }));
+       expect(screen.getByRole('dialog', { name: 'Aviso de privacidad' })).toBeInTheDocument();
+     });
+   });
+   ```
+
+2. **Correr** `npm run test:unit -- frontend/src/pages/account`: en rojo.
+3. **Commit:** `test(front): specs de «Tu cuenta», en rojo`.
+
+### Tarea 2.7 · «Tu cuenta» (T023, M)
+
+**Archivos:** los cuatro componentes de 2.6, `ui/account.css` e `index.ts`, en `frontend/src/pages/account/`.
+
+1. **`ui/AccountEntry.tsx`.** React 19 recibe `ref` como prop:
+
+   ```tsx
+   import type { Ref } from 'react';
+
+   interface AccountEntryProps {
+     readonly ref: Ref<HTMLButtonElement>;
+     readonly expanded: boolean;
+     onOpen(): void;
+   }
+
+   const AccountEntry = ({ ref, expanded, onOpen }: AccountEntryProps) => (
+     <button
+       ref={ref}
+       type="button"
+       className="account-entry-button"
+       aria-haspopup="dialog"
+       aria-expanded={expanded}
+       onClick={onOpen}
+     >
+       Tu cuenta
+     </button>
+   );
+
+   export default AccountEntry;
+   ```
+
+2. **`ui/SignOutSection.tsx`:**
+
+   ```tsx
+   import { useState } from 'react';
+   import { signOut } from '../../../features/sign-in';
+   import { useApiClient } from '../../../shared/api/http';
+   import {
+     ServerError,
+     describeFailure,
+     useGuardedSubmit,
+     useRetryCountdown,
+     type FailureDescription,
+   } from '../../../shared/ui/form';
+
+   interface SignOutSectionProps {
+     readonly userId: number;
+     reloadDocument(): void;
+   }
+
+   const NOTE = 'Tu progreso se guarda en este navegador, no en tu cuenta: queda acá aunque salgas.';
+   const SIGN_OUT_FAILED = 'No pudimos cerrar la sesión.';
+
+   function messagesFor(failure: FailureDescription | null): readonly string[] {
+     if (failure === null) return [];
+     if (failure.offerReload || failure.retryAfterSeconds !== null) return failure.generalMessages;
+     return [SIGN_OUT_FAILED];
+   }
+
+   function buttonLabel(pending: boolean, failure: FailureDescription | null): string {
+     if (pending) return 'Saliendo…';
+     return failure === null ? 'Salir' : 'Reintentar';
+   }
+
+   const SignOutSection = ({ userId, reloadDocument }: SignOutSectionProps) => {
+     const client = useApiClient();
+     const countdown = useRetryCountdown();
+     const [pending, setPending] = useState(false);
+     const [failure, setFailure] = useState<FailureDescription | null>(null);
+     const leave = useGuardedSubmit(async () => {
+       setPending(true);
+       setFailure(null);
+       const outcome = await signOut({ client, userId });
+       if (outcome.kind === 'signed-out') {
+         reloadDocument();
+         return;
+       }
+       const description = describeFailure(outcome.failure, []);
+       setPending(false);
+       setFailure(description);
+       if (description.retryAfterSeconds !== null) countdown.start(description.retryAfterSeconds);
+     });
+     const offerReload = failure?.offerReload === true;
+     return (
+       <div className="account-sign-out">
+         <p className="form-hint">{NOTE}</p>
+         <ServerError messages={messagesFor(failure)} takeFocus>
+           {offerReload ? (
+             <button className="button secondary" type="button" onClick={reloadDocument}>
+               Recargar
+             </button>
+           ) : null}
+         </ServerError>
+         {offerReload ? null : (
+           <button className="button dark" type="button" disabled={pending || countdown.waiting} onClick={() => void leave()}>
+             {buttonLabel(pending, failure)}
+           </button>
+         )}
+       </div>
+     );
+   };
+
+   export default SignOutSection;
+   ```
+
+3. **`ui/AccountDialog.tsx`.** El aviso se monta como hermano del diálogo y no adentro: los dos son modales, y el evento `close` no burbujea:
+
+   ```tsx
+   import { useEffect, useId, useRef, useState } from 'react';
+   import { PrivacyNoticeDialog } from '../../../entities/privacy-notice';
+   import type { PublishedUser } from '../../../entities/session';
+   import SignOutSection from './SignOutSection';
+
+   interface AccountDialogProps {
+     readonly account: PublishedUser;
+     onClose(): void;
+     reloadDocument(): void;
+   }
+
+   const AccountDialog = ({ account, onClose, reloadDocument }: AccountDialogProps) => {
+     const dialog = useRef<HTMLDialogElement>(null);
+     const titleId = useId();
+     const [privacyOpen, setPrivacyOpen] = useState(false);
+     useEffect(() => {
+       const element = dialog.current;
+       if (element !== null && !element.open) element.showModal();
+     }, []);
+     return (
+       <>
+         <dialog ref={dialog} className="account-dialog" aria-labelledby={titleId} onClose={onClose}>
+           <div className="dialog-content">
+             <h2 id={titleId}>Tu cuenta</h2>
+             <p className="account-identity">
+               {account.name} · {account.email}
+             </p>
+             <button type="button" className="text-button" onClick={() => setPrivacyOpen(true)}>
+               Aviso de privacidad
+             </button>
+             <SignOutSection userId={account.id} reloadDocument={reloadDocument} />
+             <div className="dialog-actions">
+               <button type="button" className="button secondary" onClick={() => dialog.current?.close()}>
+                 Volver al taller
+               </button>
+             </div>
+           </div>
+         </dialog>
+         {privacyOpen ? <PrivacyNoticeDialog onClose={() => setPrivacyOpen(false)} /> : null}
+       </>
+     );
+   };
+
+   export default AccountDialog;
+   ```
+
+4. **`ui/AccountMenu.tsx`:**
+
+   ```tsx
+   import { useRef, useState } from 'react';
+   import { createPortal } from 'react-dom';
+   import { useStore } from 'zustand';
+   import { selectReadyAccount, sessionStore } from '../../../entities/session';
+   import AccountDialog from './AccountDialog';
+   import AccountEntry from './AccountEntry';
+
+   interface AccountMenuProps {
+     readonly entryHost: HTMLElement;
+     reloadDocument(): void;
+   }
+
+   const AccountMenu = ({ entryHost, reloadDocument }: AccountMenuProps) => {
+     const account = useStore(sessionStore, selectReadyAccount);
+     const [open, setOpen] = useState(false);
+     const entry = useRef<HTMLButtonElement>(null);
+     if (account === null) return null;
+     const close = (): void => {
+       setOpen(false);
+       entry.current?.focus();
+     };
+     return (
+       <>
+         {createPortal(<AccountEntry ref={entry} expanded={open} onOpen={() => setOpen(true)} />, entryHost)}
+         {open ? <AccountDialog account={account} onClose={close} reloadDocument={reloadDocument} /> : null}
+       </>
+     );
+   };
+
+   export default AccountMenu;
+   ```
+
+5. **`ui/account.css`:**
+
+   ```css
+   .topbar-actions {
+     display: flex;
+     align-items: center;
+     gap: 10px;
+   }
+   .account-entry:empty {
+     display: none;
+   }
+   .account-entry-button {
+     border: 1px solid #cccfc2;
+     border-radius: 30px;
+     background: transparent;
+     padding: 6px 14px;
+     font-size: 12px;
+     white-space: nowrap;
+   }
+   .account-identity {
+     color: var(--ink);
+     font-weight: 550;
+   }
+   .account-sign-out {
+     display: grid;
+     gap: 12px;
+     margin-top: 24px;
+     padding-top: 20px;
+     border-top: 1px solid var(--line);
+   }
+   @media (max-width: 590px) {
+     .account-entry-button {
+       padding: 4px 10px;
+       font-size: 11px;
+     }
+     .account-dialog {
+       width: 100%;
+       max-width: none;
+       height: 100%;
+       max-height: none;
+       margin: 0;
+       border-radius: 0;
+     }
+   }
+   ```
+
+6. **`index.ts`:** `export { default as AccountMenu } from './ui/AccountMenu';`.
+7. **Correr** `npm run test:unit -- frontend/src/pages/account`, en verde, y después `npm run typecheck` y `npm run lint`.
+8. **Commit:** `feat(front): «Tu cuenta» en la barra superior, con «Salir»`.
+
+### Tarea 2.8 · Los E2E del ingreso y de «Tu cuenta», en rojo (T024, E)
+
+**Archivos:** `qa/e2e/pages/account.ts`, `qa/e2e/fixtures/index.ts` (suma `account`), `qa/e2e/specs/sign-in.spec.ts` y `qa/e2e/specs/account.spec.ts`.
+
+1. **`qa/e2e/pages/account.ts`:**
+
+   ```ts
+   import type { Locator, Page } from '@playwright/test';
+
+   export class AccountPage {
+     readonly entry: Locator;
+     readonly dialog: Locator;
+
+     constructor(readonly page: Page) {
+       this.entry = page.getByRole('button', { name: 'Tu cuenta', exact: true });
+       this.dialog = page.getByRole('dialog', { name: 'Tu cuenta' });
+     }
+
+     async open(): Promise<void> {
+       await this.entry.click();
+     }
+
+     button(name: string): Locator {
+       return this.dialog.getByRole('button', { name, exact: true });
+     }
+
+     async signOut(): Promise<void> {
+       await this.button('Salir').click();
+     }
+   }
+   ```
+
+   En `fixtures/index.ts`, `account: AccountPage` se suma a `Fixtures`, con `account: async ({ page }, use) => use(new AccountPage(page))` y su import.
+2. **`qa/e2e/specs/sign-in.spec.ts`.** Cubre la historia 2 en sus escenarios 2 a 5, y FR-022, FR-023, FR-030 y FR-048:
+
+   ```ts
+   import { expect, test } from '../fixtures';
+   import { MESSAGES, STUDENT, errorBody } from '../lib/api-contract';
+   import { trackContentRequests } from '../lib/content-requests';
+   import { curriculumIds } from '../lib/curriculum';
+   import { documentWasReloaded, markDocument } from '../lib/document-marker';
+   import { urls } from '../lib/urls';
+
+   const FAILED_RESOURCE = /Failed to load resource/;
+   const PASSWORD = 'una frase larga para el taller';
+
+   test.use({ sessionAccount: null });
+
+   test.describe('signing in', () => {
+     test('goes on to the requested view without reloading, with the CSRF token and without X-Taller-User', async ({
+       access,
+       lab,
+       api,
+       page,
+     }) => {
+       const contentRequests = trackContentRequests(page);
+       const url = urls.exercise('rust-02', 'code');
+       await page.goto(url);
+       await expect(access.field('Email')).toBeFocused();
+       await markDocument(page);
+       const xsrf = api.xsrfValue();
+       await access.signIn(STUDENT.email, PASSWORD);
+       await expect(lab.exerciseTitle()).toHaveText(curriculumIds.exercises['rust-02'].title);
+       expect(await documentWasReloaded(page)).toBe(false);
+       await expect(page).toHaveURL(url);
+       expect(contentRequests).toHaveLength(1);
+       expect(api.callsTo('GET /api/session')).toHaveLength(2);
+       const [call] = api.callsTo('POST /api/auth/login');
+       expect(call?.xsrf).toBe(xsrf);
+       expect(call?.user).toBeUndefined();
+       expect(call?.body).toEqual({ email: STUDENT.email, password: PASSWORD, remember: false });
+       await expect(page.locator('.app-shell')).not.toHaveAttribute('inert', '');
+     });
+
+     test('shows the same text for an unknown email and for a wrong password, and marks no field', async ({
+       access,
+       api,
+       pageIssues,
+       page,
+     }) => {
+       pageIssues.expectIssue(FAILED_RESOURCE, 'the two 422 of the sign-in');
+       api.reply(
+         'POST /api/auth/login',
+         { status: 422, json: errorBody('auth_failed') },
+         { status: 422, json: errorBody('auth_failed') },
+       );
+       await page.goto(urls.view('recorrido'));
+       await access.signIn('nadie@x.com', PASSWORD);
+       await expect(access.alert()).toHaveText(MESSAGES.auth_failed);
+       const unknownEmail = await access.alert().innerText();
+       await access.field('Email').fill(STUDENT.email);
+       await access.field('Contraseña').fill('otra frase equivocada del todo');
+       await access.button('Ingresar').click();
+       await expect.poll(() => api.callsTo('POST /api/auth/login').length).toBe(2);
+       await expect(access.alert()).toHaveText(MESSAGES.auth_failed);
+       expect(await access.alert().innerText()).toBe(unknownEmail);
+       await expect(access.field('Email')).not.toHaveAttribute('aria-invalid', 'true');
+       await expect(access.field('Contraseña')).not.toHaveAttribute('aria-invalid', 'true');
+     });
+
+     test('waits for Retry-After before letting the button send again', async ({ access, api, pageIssues, page }) => {
+       pageIssues.expectIssue(FAILED_RESOURCE, 'the 429 of the sign-in');
+       await page.clock.install();
+       api.reply('POST /api/auth/login', {
+         status: 429,
+         headers: { 'Retry-After': '120' },
+         json: errorBody('too_many_requests'),
+       });
+       await page.goto(urls.view('recorrido'));
+       await access.signIn(STUDENT.email, PASSWORD);
+       await expect(access.alert()).toContainText(MESSAGES.too_many_requests);
+       await expect(access.alert()).toContainText('Podés volver a intentar en 2 minutos.');
+       await expect(access.button('Ingresar')).toBeDisabled();
+       await page.clock.fastForward(119_000);
+       await expect(access.button('Ingresar')).toBeDisabled();
+       await page.clock.fastForward(1_000);
+       await expect(access.button('Ingresar')).toBeEnabled();
+     });
+
+     test('keeps the button busy while the server answers and sends once', async ({ access, api, shell, page }) => {
+       let answer: () => void = () => {};
+       const answered = new Promise<void>((resolve) => {
+         answer = resolve;
+       });
+       api.on('POST /api/auth/login', async () => {
+         await answered;
+         api.account = STUDENT;
+         return { status: 200, json: { data: STUDENT } };
+       });
+       await page.goto(urls.view('recorrido'));
+       await access.field('Email').fill(STUDENT.email);
+       await access.field('Contraseña').fill(PASSWORD);
+       await access.button('Ingresar').dblclick();
+       await expect(access.button('Ingresando…')).toBeDisabled();
+       answer();
+       await expect(shell.heading('recorrido')).toBeVisible();
+       expect(api.callsTo('POST /api/auth/login')).toHaveLength(1);
+     });
+
+     test('a disabled account sees the message of the server and stays out', async ({ access, api, pageIssues, page }) => {
+       pageIssues.expectIssue(FAILED_RESOURCE, 'the 403 of the sign-in');
+       api.reply('POST /api/auth/login', { status: 403, json: errorBody('account_disabled') });
+       await page.goto(urls.view('recorrido'));
+       await access.signIn(STUDENT.email, PASSWORD);
+       await expect(access.alert()).toHaveText(MESSAGES.account_disabled);
+       await expect(access.heading('Ingresá al taller')).toBeVisible();
+     });
+
+     test('an answer that is not JSON shows its own message and keeps what was typed', async ({
+       access,
+       api,
+       pageIssues,
+       page,
+     }) => {
+       pageIssues.expectIssue(FAILED_RESOURCE, 'the 502 of the sign-in');
+       api.reply('POST /api/auth/login', { status: 502, body: '<html>Bad Gateway</html>', contentType: 'text/html' });
+       await page.goto(urls.view('recorrido'));
+       await access.signIn(STUDENT.email, PASSWORD);
+       await expect(access.alert()).toHaveText('El taller no respondió como esperábamos. Probá de nuevo en un rato.');
+       await expect(access.field('Email')).toHaveValue(STUDENT.email);
+     });
+
+     test('reads the privacy notice from the sign-in and comes back to the same place', async ({ access, page }) => {
+       await page.goto(urls.view('recorrido'));
+       await access.button('Aviso de privacidad').click();
+       const notice = page.getByRole('dialog', { name: 'Aviso de privacidad' });
+       await expect(notice).toBeVisible();
+       await page.keyboard.press('Escape');
+       await expect(notice).toBeHidden();
+       await expect(access.button('Aviso de privacidad')).toBeFocused();
+     });
+   });
+   ```
+
+3. **`qa/e2e/specs/account.spec.ts`.** Cubre la historia 2 en su escenario 7, la historia 5 en el 4, y FR-012, FR-013, FR-019, FR-048 y FR-050 a FR-052:
+
+   ```ts
+   import { expect, test } from '../fixtures';
+   import { MESSAGES, STUDENT, errorBody } from '../lib/api-contract';
+   import { frozenProgress, type StorageKey } from '../lib/curriculum';
+   import { observeReload } from '../lib/document-marker';
+   import { urls } from '../lib/urls';
+
+   const FAILED_RESOURCE = /Failed to load resource/;
+   const NOTE = 'Tu progreso se guarda en este navegador, no en tu cuenta: queda acá aunque salgas.';
+
+   test.describe('«Tu cuenta»', () => {
+     test('opens from the top bar without changing the URL and closes with Esc, giving the focus back', async ({
+       account,
+       shell,
+       page,
+     }) => {
+       await shell.goto(urls.view('biblioteca'));
+       const entryAfterSidebar = await page.evaluate(() => {
+         const sidebar = document.querySelector('.sidebar');
+         const entry = document.getElementById('account-entry');
+         if (sidebar === null || entry === null) return false;
+         return (sidebar.compareDocumentPosition(entry) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+       });
+       expect(entryAfterSidebar).toBe(true);
+       await account.open();
+       await expect(account.dialog).toContainText(`${STUDENT.name} · ${STUDENT.email}`);
+       await expect(account.dialog).toContainText(NOTE);
+       await expect(page).toHaveURL(urls.view('biblioteca'));
+       await page.keyboard.press('Escape');
+       await expect(account.dialog).toBeHidden();
+       await expect(account.entry).toBeFocused();
+       await expect(shell.heading('biblioteca')).toBeVisible();
+     });
+
+     test('signs out with X-Taller-User and reloads, and the progress of the browser stays', async ({
+       account,
+       shell,
+       storage,
+       api,
+       access,
+       page,
+     }) => {
+       await storage.seed(frozenProgress);
+       await shell.goto(urls.view('recorrido'));
+       const xsrf = api.xsrfValue();
+       await account.open();
+       expect(await observeReload(page, () => account.signOut())).toBe(true);
+       const [call] = api.callsTo('POST /api/auth/logout');
+       expect(call?.user).toBe(String(STUDENT.id));
+       expect(call?.xsrf).toBe(xsrf);
+       await expect(access.heading('Ingresá al taller')).toBeVisible();
+       const stored = await storage.snapshot();
+       for (const key of Object.keys(frozenProgress) as StorageKey[]) expect(stored[key]).toBe(frozenProgress[key]);
+     });
+
+     test('reloads too when the session had already ended', async ({ account, shell, api, pageIssues, page }) => {
+       pageIssues.expectIssue(FAILED_RESOURCE, 'the 401 of the sign-out');
+       api.reply('POST /api/auth/logout', { status: 401, json: errorBody('unauthenticated') });
+       await shell.goto(urls.view('recorrido'));
+       await account.open();
+       expect(await observeReload(page, () => account.signOut())).toBe(true);
+     });
+
+     test('keeps the session and offers to retry when the server fails', async ({
+       account,
+       shell,
+       api,
+       pageIssues,
+       page,
+     }) => {
+       pageIssues.expectIssue(FAILED_RESOURCE, 'the 503 of the sign-out');
+       api.reply('POST /api/auth/logout', { status: 503, body: '<html>', contentType: 'text/html' });
+       await shell.goto(urls.view('recorrido'));
+       await account.open();
+       await account.signOut();
+       await expect(account.dialog.getByRole('alert')).toHaveText('No pudimos cerrar la sesión.');
+       expect(await observeReload(page, () => account.button('Reintentar').click())).toBe(true);
+     });
+
+     test('offers to reload when the session belongs to another account', async ({
+       account,
+       shell,
+       api,
+       pageIssues,
+       page,
+     }) => {
+       pageIssues.expectIssue(FAILED_RESOURCE, 'the 409 of the sign-out');
+       api.reply('POST /api/auth/logout', { status: 409, json: errorBody('account_mismatch') });
+       await shell.goto(urls.view('recorrido'));
+       await account.open();
+       await account.signOut();
+       await expect(account.dialog.getByRole('alert')).toContainText(MESSAGES.account_mismatch);
+       expect(await observeReload(page, () => account.button('Recargar').click())).toBe(true);
+     });
+
+     test('opens the privacy notice from «Tu cuenta» and goes back to it', async ({ account, shell, page }) => {
+       await shell.goto(urls.view('recorrido'));
+       await account.open();
+       await account.button('Aviso de privacidad').click();
+       const notice = page.getByRole('dialog', { name: 'Aviso de privacidad' });
+       await expect(notice).toBeVisible();
+       await page.keyboard.press('Escape');
+       await expect(notice).toBeHidden();
+       await expect(account.dialog).toBeVisible();
+     });
+   });
+   ```
+
+4. **Correr** `npm run build && E2E_PORT=4191 npm run test:e2e -- specs/sign-in.spec.ts specs/account.spec.ts`. Fallan por la razón esperada hasta T025: no hay formulario cableado en la raíz, ni entrada.
+5. **Commit:** `test(qa): E2E del ingreso y de «Tu cuenta», en rojo`.
+
+### Tarea 2.9 · El cableado y la compuerta de U2 (T025, K)
+
+1. **`frontend/src/app/account/AccountRoot.tsx`** suma «Tu cuenta»:
+
+   ```tsx
+   import { AccessGate, accessRequests } from '../../features/sign-in';
+   import { AccountMenu } from '../../pages/account';
+   import { ApiClientContext, type ApiClient } from '../../shared/api/http';
+   import { reloadDocument } from './reload-document';
+   import { setShellInert } from './shell-inertness';
+
+   interface AccountRootProps {
+     readonly client: ApiClient;
+     readonly entryHost: HTMLElement;
+   }
+
+   const AccountRoot = ({ client, entryHost }: AccountRootProps) => (
+     <ApiClientContext value={client}>
+       <AccessGate requests={accessRequests} setShellInert={setShellInert} reloadDocument={reloadDocument} />
+       <AccountMenu entryHost={entryHost} reloadDocument={reloadDocument} />
+     </ApiClientContext>
+   );
+
+   export default AccountRoot;
+   ```
+
+2. **`frontend/src/app/main.tsx`:** las hojas quedan en este orden, después de `systems.css`:
+
+   ```tsx
+   import '../shared/ui/form/form.css';
+   import '../entities/privacy-notice/ui/privacy-notice.css';
+   import '../features/sign-in/ui/access.css';
+   import '../pages/account/ui/account.css';
+   ```
+
+3. **La compuerta de 0.4,** con:
+   - `sign-in.spec.ts` y `account.spec.ts` en verde, y los 123 y `session-stage.spec.ts` también, tres veces seguidas (`--repeat-each=3 --retries=0`);
+   - `css-contract.spec.ts` en verde: R4 (el primer botón visible sigue siendo el de la barra lateral), R5 (ningún `.sr-only` nuevo) y el contrato de movimiento reducido (ningún `.button` nuevo antes de `#main`);
+   - en el navegador, a 1 280 y a 390 px, la barra superior con «Tu cuenta» junto al selector de lenguaje;
+   - el PR `feat(front): sign-in, «Tu cuenta» and sign-out (F11a U2)`, contra `f11a/base`.
+
+**Reversión de U2:** se revierten T025, T024, T023, T022, T021, T020, T019, T018 y T017, en ese orden.
