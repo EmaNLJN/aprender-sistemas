@@ -31,6 +31,8 @@ Se planificó sin tocar el repositorio ni descargar nada. La base es `master` en
   - la copia o la vista de error de A2 con «Reintentar»;
   - el reintento, que repite el intento entero, sesión incluida (FR-027).
 
+**La cuenta después de recuperar.** Cuando el servidor no respondió al arrancar, la etapa no llama a `onReady`. Por eso el lector de la sesión de la compuerta monta la raíz de la cuenta (`mountAccountRoot`) cuando lee una sesión lista: después de un «Reintentar» que recupera, están «Tu cuenta» y «Salir», como pasaba con el reintento de F11a.
+
 **Por qué.**
 
 - **La spec lo pide así.** Una sesión que falla sin copia muestra la vista de error de A2 (FR-023 y FR-027). La tabla de los E2E de A2 hace fallar la sesión en el tope de 20 s y en el reintento («Lo que no responde es la sesión»; «Falla la sesión»).

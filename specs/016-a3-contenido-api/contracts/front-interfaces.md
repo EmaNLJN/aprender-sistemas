@@ -224,7 +224,7 @@ export const attemptBudget: AttemptBudget; // 20 000 ms
 export const tokenStage: TokenStage;
 export const signInFromBoot: RequestSignIn; // monta la raíz de la cuenta y pide el ingreso
 export const sessionStage: SessionStage;
-export const readSessionForContent: ReadSession;
+export const readSessionForContent: ReadSession; // con una lectura lista, monta la raíz de la cuenta (mountAccountRoot)
 
 // app/boot/content-stage.ts
 export const contentGate: BootStage;

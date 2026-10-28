@@ -223,6 +223,7 @@ Lo que el revisor mira primero:
   - con `user: null` no se piden porciones y no se usa la copia: se borra y se espera el ingreso;
   - con un 403 y con un token en la URL nunca se usa la copia sin servidor.
 - **Los temporizadores:** el presupuesto, la espera de carga y los `Retry-After` no hacen nada después de resolver, aunque `clearTimeout` no haga nada. El ingreso no corre bajo ningún tope.
+- **La cuenta después de recuperar:** con el servidor caído al arrancar, la etapa de sesión no llama a `onReady`. La lectura de la compuerta que llega lista monta la raíz de la cuenta, así que después de «Reintentar» están «Tu cuenta» y «Salir».
 - **Los pedidos:** como mucho 18 por ronda, sin CSRF, con el `ETag` guardado tal como llegó.
 - **La red sin editar:** el diff de `qa/e2e/specs/` toca sólo `content-gate.spec.ts`, en su commit; `session-stage.spec.ts` y `sign-in.spec.ts`, juntos en otro; y el archivo nuevo.
 - **Los oráculos:** `dump-globals` da los mismos bytes, y `dist-content-check` compara los globals y las 17 huellas.
@@ -3501,7 +3502,7 @@ La compuerta de 0.2, con estos puntos propios:
    }
    ```
 
-8. **`account-stages.ts`:**
+8. **`account-stages.ts`.** Una lectura lista de la compuerta monta la raíz de la cuenta, como `onReady` en la etapa: después de un «Reintentar» que recupera la sesión, aparecen «Tu cuenta» y «Salir». `mountAccountRoot` no hace nada la segunda vez ni sin sus elementos:
 
    ```ts
    import { fetchSession, sessionStore, type SessionSnapshot } from '../../entities/session';
@@ -3512,7 +3513,7 @@ La compuerta de 0.2, con estos puntos propios:
    import { createTokenStage } from './access-tokens';
    import { createAttemptBudget } from './attempt-budget';
    import { createSessionGate } from './session-gate';
-   import { createSessionReader } from './session-reader';
+   import { createSessionReader, type ReadSession } from './session-reader';
    import { createSessionView } from './session-view';
 
    const ATTEMPT_BUDGET_MS = 20_000;
@@ -3548,13 +3549,19 @@ La compuerta de 0.2, con estos puntos propios:
      loadingDelayMs: LOADING_DELAY_MS,
    });
 
-   export const readSessionForContent = createSessionReader({
+   const readFreshSession = createSessionReader({
      fetchSession: fetchFromApi,
      storeSession,
      requestSignIn: signInFromBoot,
      forgetContentCopy,
      budget: attemptBudget,
    });
+
+   export const readSessionForContent: ReadSession = async (request) => {
+     const read = await readFreshSession(request);
+     if (read.kind === 'ready') mountAccountRoot();
+     return read;
+   };
    ```
 
 9. **`content-stage.ts`:**
@@ -4819,6 +4826,7 @@ La compuerta de 0.2, con estos puntos propios:
          await expect(retry).toBeFocused();
          await retry.click();
          await expect(lab.tab('code')).toHaveAttribute('aria-selected', 'true');
+         await expect(page.getByRole('button', { name: 'Tu cuenta', exact: true })).toBeVisible();
          expect(api.callsTo('GET /api/session')).toHaveLength(2);
        });
 
@@ -5444,7 +5452,7 @@ La compuerta de 0.2 sobre las ramas de G, Q, E y K integradas, con estos puntos 
 | Archivo y caso | Se conserva | Cambia |
 | --- | --- | --- |
 | `session-stage.spec.ts`, «asks for the session once, before the content» | Una sesión y que sea el primer pedido | Se cuentan las porciones de la API en lugar de `/content/`: 18 pedidos |
-| `session-stage.spec.ts`, «the session does not answer…» | El 502, ninguna vista evaluada, el foco en «Reintentar», la recuperación sin recargar y dos sesiones | Se ve la vista de A2 (`data-failure="network"` y «Tu progreso sigue guardado»), no «No pudimos conectar…» |
+| `session-stage.spec.ts`, «the session does not answer…» | El 502, ninguna vista evaluada, el foco en «Reintentar», la recuperación sin recargar y dos sesiones | Se ve la vista de A2 (`data-failure="network"` y «Tu progreso sigue guardado»), no «No pudimos conectar…». Después de recuperar, se exige «Tu cuenta», que monta la lectura de la compuerta |
 | `session-stage.spec.ts`, «with a 429 waits for Retry-After before letting retry» | Que un 429 se respeta | Pasa a dos casos: un `Retry-After: 1` que cabe se espera solo y arranca (FR-009); un `Retry-After: 60`, que no cabe, muestra `status` enseguida |
 | `session-gate.spec.ts` (Vitest) | Una sesión, ningún temporizador después de resolver, la espera a los 400 ms, el ingreso como página y la sesión otra vez, ningún tope durante el ingreso, el token y el aviso sin aceptar | La falla, el reintento, el tope de 20 s y el 429: la etapa no muestra errores y deja `takeRead()`. La lectura sin cuenta borra la copia |
 | `session-view.spec.ts` (Vitest) | La espera, `role="status"` y que no haga nada sin su elemento | Salen la falla, «Reintentar» y la espera del 429, que no se usan desde A3. `document` se simula, sin jsdom |
