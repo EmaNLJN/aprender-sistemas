@@ -88,11 +88,11 @@ Son para el clarify. Cada una trae sus opciones con lo que cuesta cada una, la r
 
 | Opción | Descripción | Cuesta |
 | --- | --- | --- |
-| A | Un módulo de la propia página (`pages/systems/model`) con las tres cosas. La página lo lee al montar y lo escribe al cambiar, con su propio estado de React para redibujar. Su API pública exporta el reinicio de las simulaciones; hoy lo cablea el adaptador (`resetSimulations`) y F8 lo cablea directo desde `app/`. | `app/` depende de `pages/systems` sólo para el reinicio (la dirección permitida), y F8 tiene que armar los pasos de sesión en `app/` porque una página no importa a otra. Dos fuentes de verdad mientras la página vive (el módulo y su estado), que se mantienen sincronizadas por una sola función de escritura. |
-| B | Como el Atlas: la sesión vive en el módulo del adaptador `register-systems.tsx` y la página recibe `initialSession` y `onSessionChange`. | La página queda pura y es la más fácil de probar. Pero `resetSimulations` pasa a ser lo único que mantiene viva la sesión: F8 no puede retirarlo sin mover la sesión, y F10, que retira los adaptadores, la mueve otra vez. La lógica de crear el estado de un modelo la pone `app/` o se la pasa a la página. |
+| A | Un módulo de la propia página (`pages/systems/model`) con las tres cosas. La página lo lee al montar y lo escribe al cambiar, con su propio estado de React para redibujar. Su API pública exporta el reinicio de las simulaciones. Hasta que `app.js` deje de armar `progress-backup`, «Borrar todo» lo alcanza sólo por `window.TallerSystems.resetSimulations()`; cuando esa composición salga de `app.js`, el cableado directo es un import de la API pública de la página. | Hoy `app.js:startApp` arma `progress-backup` y sus pasos de sesión, y `app-shell-check` empaqueta `app.js` solo: un import de la página desde ahí traería el índice del motor a ese contexto (dos motores, FR-021). Por eso, en las tres opciones, el único camino hasta que la composición se mude (F10, o F8 si la mueve) es el método del adaptador. Con A, `app/` depende de `pages/systems` sólo para el reinicio (la dirección permitida). Dos fuentes de verdad mientras la página vive (el módulo y su estado), que se mantienen sincronizadas por una sola función de escritura. |
+| B | Como el Atlas: la sesión vive en el módulo del adaptador `register-systems.tsx` y la página recibe `initialSession` y `onSessionChange`. | La página queda pura y es la más fácil de probar. Pero la sesión vive en el adaptador: cuando la composición de «Borrar todo» salga de `app.js` y cuando F10 retire los adaptadores, hay que mudar la sesión a otro lugar para poder cablear el reinicio directo. La lógica de crear el estado de un modelo la pone `app/` o se la pasa a la página. |
 | C | Un módulo en `entities/systems-simulation` con su propio store de Zustand (revisión), como los motores. | La entidad, hoy sin estado, abre su primer singleton: el guard, `singletons-import.spec.ts` y los adaptadores `register-systems-*`, que importan los modelos de ese mismo índice, lo evaluarían en cada bundle de los checks. Es estado de un solo consumidor con Zustand, lo que `AGENTS.md` desaconseja («no eleves el estado sin consumidores compartidos reales»). |
 
-**Recomendada: A.** Es la más chica, deja la entidad sin estado, se alcanza desde «Borrar todo» por la API pública de la página y no obliga a F8 ni a F10 a mover nada que F5 no haya movido ya. **Costo:** que F8 arme los pasos de sesión en `app/` y que la página lleve su estado local sincronizado con el módulo. Si preferís la página pura, B es defendible, sabiendo que F8 y F10 mueven la sesión.
+**Recomendada: A.** Es la más chica, deja la entidad sin estado y, cuando la composición de «Borrar todo» salga de `app.js`, el cableado directo es un import de la API pública de la página y no una mudanza de la sesión. **Costo:** hasta entonces el único camino es el método del adaptador (igual que en B y en C), y la página lleva un estado local sincronizado con el módulo. Si preferís la página pura, B es defendible, sabiendo que la sesión se muda cuando se retire el adaptador.
 
 **Q2. ¿Cómo se retira el `style="…"` del SVG de la escena?** *(FR-025; hoja de ruta, F5; [spec de C4](../008-c4-exposicion/spec.md), Q3 y FR-017)* Hoy `scene()` arma `style="background:<color>"` dentro de la plantilla, con un color que sale del contenido y pasa por una lista blanca (los modelos usan `#14271f`). `.sys-scene` tiene `border`, `border-radius: 4px`, `overflow: hidden` y `max-height: 430px`. La premisa de la hoja de ruta cambió: el clarify de C4 (Q3, opción B) dejó `style-src-attr 'unsafe-inline'`, así que el atributo ya no bloquea a C4 y C4 no espera a F5. El retiro queda por pedido del alcance de F5, no por la CSP.
 
@@ -127,7 +127,7 @@ El adaptador es un archivo nuevo de `frontend/src/app/legacy/` que reemplaza a `
 | `missionIDs(id, lang)` | `lab.js:navigationList` | F7 |
 | `returnURL(id, lang)` | `lab.js:finishNavigation` | F7 |
 | `exerciseContextHTML(id, lang)` | `lab.js:exerciseHTML`, `updateRunUI` y el manejador de la predicción de `onClick` | F7, que lo reemplaza por datos |
-| `resetSimulations()` | `app.js`, como paso de sesión de `progress-backup` | F8 si F8 arma los pasos de sesión; si no, F10 |
+| `resetSimulations()` | `app.js:startApp`, como paso de sesión de `progress-backup` | F10, cuando esa composición salga de `app.js`; F8 sólo lo adelanta si la mueve |
 
 La hoja de ruta fecha `sync` en F7 y no lista `init`; el código de hoy los llama también desde `app.js`, y la tabla corrige eso (ver «Hallazgos»). Lo demás que `systems.js` tocaba queda como está: `window.TallerSystemsEngine` (lo publica `register-systems-engine.ts`), `window.SYSTEMS_*` y `window.SYSTEMS_*_LABS` (los publican los cuatro `register-systems-*.ts`; los lee `lab.js` y el oráculo `dump-globals`, que tiene que dar los mismos bytes), `window.TallerEffects` (campaña lo usa) y `window.TallerProjectKit`, cuyo único consumidor de producción pasa de `systems.js` al adaptador; lo retira F10 con los demás `register-*`.
 
@@ -294,7 +294,7 @@ F6, F7 y F8 reutilizan el Page Object, el módulo de sesión y la tabla de retir
 **Acceptance Scenarios**:
 
 1. **Given** el PR de F5, **When** F7 busca qué retirar, **Then** encuentra la tabla de los nueve métodos con sus llamadores y su ítem.
-2. **Given** el módulo de sesión, **When** F8 arma los pasos de «Borrar todo», **Then** importa el reinicio por la API pública de la página.
+2. **Given** el módulo de sesión, **When** F8 o F10 sacan de `app.js` los pasos de «Borrar todo», **Then** importan el reinicio por la API pública de la página, sin mover la sesión.
 
 ---
 
@@ -316,7 +316,7 @@ F6, F7 y F8 reutilizan el Page Object, el módulo de sesión y la tabla de retir
 ### Edge Cases
 
 - **El motor se usa antes de `init`:** lanza. El adaptador monta después de `init` (el orden de `startApp`), y montar antes sigue siendo un error ruidoso.
-- **Una acción del modelo que no alcanza un objetivo nuevo:** el motor no avisa (no cambia su revisión), pero la vista tiene que redibujarse igual.
+- **Una acción del modelo que no alcanza un objetivo nuevo:** el motor no avisa (no cambia su revisión), pero la vista tiene que mostrar el resultado igual.
 - **Escribir en el medio de la nota o de la búsqueda:** el cursor y el foco no se mueven; la nota se guarda en cada tecla.
 - **Una nota de más de 10 000 caracteres:** el `maxlength` la corta en la interfaz y el motor la trunca igual.
 - **Almacenamiento bloqueado desde el arranque:** el aviso del shell, el aviso del taller («No se pudo guardar el progreso. Exportá una copia antes de cerrar.») y el de la nota («No se pudo guardar: exportá tu avance antes de cerrar.») salen como hoy. Si el almacenamiento falla a mitad de la sesión, el aviso del taller hoy aparece en el próximo redibujo completo; en React puede aparecer al instante: es la única diferencia observable que se prevé, y el plan la lista o la elimina.
@@ -342,7 +342,7 @@ F6, F7 y F8 reutilizan el Page Object, el módulo de sesión y la tabla de retir
 - **FR-003**: Los textos de la vista DEBEN ser los de hoy, letra por letra (la presentación, las etiquetas, los avisos, los mensajes de estado y los defectos de redacción que se conservan), en español rioplatense con voseo.
 - **FR-004**: El catálogo DEBE conservar su orden (`pc`, `lowlevel`, `infra`, `play`, y dentro de cada uno el del contenido), los conteos («N talleres», «2N núcleos programables» y «hechos / N»), la tarjeta con sus sellos, el filtro por familia (cuatro botones con `aria-pressed`), la búsqueda (sin tildes ni mayúsculas, sin recortar, sobre título, subtítulo, qué, por qué e id), el contador en una región `role="status"` y el estado vacío con «Ver todos los talleres».
 - **FR-005**: El taller DEBE conservar sus tres partes con el contenido de hoy. Explorar: el concepto, el modelo, la investigación, el límite, el checkpoint, el pie y las fuentes. Construir: el núcleo del lenguaje con su título, objetivo y pruebas, el puente, el aviso de código verificado, las herramientas previas, el pie y las fuentes. Entregar: el kit, los usos, las etapas, el límite, la nota, el checkpoint y las fuentes.
-- **FR-006**: Una acción del modelo DEBE actualizar sólo la vista del modelo, su texto vivo, la lista de objetivos y el primer sello, sin redibujar el taller; DEBE dejar el foco en el mismo control; DEBE mostrar las últimas 8 líneas de la traza, abierta; y «Reiniciar modelo ↺» DEBE conservar objetivos y sellos. La vista DEBE redibujarse aunque la acción no alcance un objetivo nuevo.
+- **FR-006**: Después de una acción del modelo: el foco DEBE seguir en el mismo control, la posición de desplazamiento NO DEBE cambiar, el texto vivo del modelo DEBE actualizarse en su lugar, la traza DEBE quedar abierta y mostrar las últimas 8 líneas, y fuera de la vista del modelo, la lista de objetivos y el primer sello nada del DOM DEBE cambiar. «Reiniciar modelo ↺» DEBE conservar objetivos y sellos.
 - **FR-007**: Los sellos DEBEN seguir las reglas del README: Observación sólo con acciones del modelo (abrir o repetir no alcanza), Código sólo con evidencia del laboratorio, Predicción sólo respondiendo bien; se conservan al volver a practicar; los experimentos de la página no aprueban código (ADR 0003).
 - **FR-008**: El foco y el desplazamiento DEBEN ser los de hoy: al abrir un taller, el foco va al título y `#main` queda arriba; al cambiar de parte, el foco va al botón de la parte y las pestañas quedan arriba; al elegir una familia, el foco queda en su botón; en «Ver todos los talleres», va al buscador; tras una acción del modelo, al mismo control; tras responder, a la opción. Volver al catálogo no mueve el foco. El plan no suma ni quita movimientos.
 - **FR-009**: Todo DEBE poder operarse con el teclado, con foco visible y el diseño móvil de hoy. Las regiones vivas que hoy se recrean DEBEN quedar montadas (regla del épico), y el PR lista las diferencias de anuncio que eso produce.
@@ -358,7 +358,7 @@ F6, F7 y F8 reutilizan el Page Object, el módulo de sesión y la tabla de retir
 **Cómo lee la página**
 
 - **FR-018**: La página DEBE leer el progreso y el catálogo de talleres de `systemsEngine` con `useStore` y un selector que devuelva sólo la revisión, derivar el resto al dibujar (`get` y `list` clonan en cada llamada: nunca son el valor de un selector), y NO DEBE suscribirse al store completo ni guardar una copia del progreso en el estado de React. DEBE reflejar una escritura hecha fuera de la página, como el `sync` posterior a un ejercicio.
-- **FR-019**: La vista DEBE redibujarse después de toda acción del alumno aunque el motor no avise, con un estado que no sea un valor derivado guardado.
+- **FR-019**: La vista DEBE mostrar el resultado de toda acción del alumno aunque el motor no avise (su revisión no cambia cuando una acción del modelo no alcanza un objetivo nuevo), con un estado que no sea un valor derivado guardado.
 - **FR-020**: El contenido DEBE llegar por el adaptador de `app/`, el único que puede leer `getContent()` (regla R5). La página y sus módulos NO DEBEN importar `app/content` ni leer `window`, `location` ni `history`; lo que viene de afuera (el aviso, la descarga del kit, la selección inicial y su escritura) lo inyecta el adaptador.
 - **FR-021**: Cada contexto de evaluación DEBE tener una sola instancia del motor, de cada almacén y de la sesión: la página usa `systemsEngine` y ninguna fábrica, ninguna clave se abre fuera de su dueño y el guard (R1 a R6) sigue en verde sin relajarse. Si el plan debe cambiarlo, lo hace explícito, con su prueba. En particular, un check que empaqueta el adaptador por separado NO DEBE terminar con dos motores.
 - **FR-022**: `init` DEBE correr antes de cualquier montaje, con los mismos insumos que hoy (talleres en el orden de FR-004, modelos y ejercicios), y el catálogo DEBE armarse una sola vez.
@@ -404,7 +404,7 @@ F6, F7 y F8 reutilizan el Page Object, el módulo de sesión y la tabla de retir
 - **FR-047**: Los cambios DEBEN entregarse en un PR, revertible entero, con título y descripción en inglés (título `type(scope): subject`); el código, los nombres de test y los comentarios, en inglés; sin comentarios salvo que una función compleja o una referencia puntual los pida; la interfaz y los mensajes, en español.
 - **FR-048**: F5 DEBE integrarse de a uno con F3, F4, F6 y F9 (ver «Integración»): el que llega después rebasa y repite su compuerta.
 - **FR-049**: F5 NO DEBE editar `frontend/app.js`; el plan lo confirma con una búsqueda de `data-sys` y `sys-` y de las ramas de los delegados.
-- **FR-050**: El PR DEBE dejar a F6, F7 y F8 el Page Object ampliado, el reinicio de la sesión por su API pública y la tabla de retiros.
+- **FR-050**: El PR DEBE dejar a F6, F7 y F8 el Page Object ampliado, el reinicio de la sesión en la API pública de la página (hoy alcanzable por el adaptador) y la tabla de retiros.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -434,7 +434,7 @@ F6, F7 y F8 reutilizan el Page Object, el módulo de sesión y la tabla de retir
 
 1. **El DOM de React se aparta del legacy.** Un contenedor, un orden de hermanos o una clase de menos cambia la cascada y rompe cada clave del barrido. *Mitigación:* FR-001, la comparación del DOM (FR-043) y el barrido ampliado.
 2. **Actualizaciones parciales.** El legacy actualiza partes del DOM sin redibujar (el catálogo y el contador al buscar, el modelo al actuar, el estado de la nota al escribir); un redibujo completo perdería el foco, el cursor y el anuncio de las regiones vivas. *Mitigación:* FR-006, FR-008 y los E2E del cursor y del foco.
-3. **El motor no avisa de todo.** Una acción del modelo que no alcanza un objetivo no cambia la revisión; si la vista depende sólo de ella, no se redibuja. *Mitigación:* FR-019 y su E2E.
+3. **El motor no avisa de todo.** Una acción del modelo que no alcanza un objetivo no cambia la revisión; si la vista depende sólo de ella, no se actualiza. *Mitigación:* FR-019 y su E2E.
 4. **Dos motores en un check.** Cada fuente que un check empaqueta es un bundle aparte: si el adaptador importa el índice del motor, el contexto termina con dos. *Mitigación:* FR-021 y la verificación V3.
 5. **El selector de Zustand.** Un selector que devuelve un objeto nuevo en cada llamada (el resultado de `get` o de `list`) rompe `useSyncExternalStore`. *Mitigación:* FR-018.
 6. **Presupuesto de tamaño.** Quedan unos 100 KB bajo el tope de A2 (la última medida que el coordinador hizo del ensayo fue de unos 1,14 millones de caracteres; el plan la vuelve a tomar) y la entrada de React de Zustand se usa por primera vez. *Mitigación:* FR-045 y V1.
@@ -454,14 +454,14 @@ F6, F7 y F8 reutilizan el Page Object, el módulo de sesión y la tabla de retir
 | F3, F4, F6 y F9 | Se integran de a uno con F5; la pila de DOM la instala el primero que la necesite |
 | F6 | Tiene su propio adaptador y comparte `lab-bridge-check`, `legacy-views.ts` y las tablas de los checks. Retira `window.TallerCampaign`; no toca `window.TallerSystems` |
 | F7 | Retira `refresh`, `missionIDs`, `returnURL`, `exerciseContextHTML` y el `sync` de `lab.js` de `window.TallerSystems`. La spec de A4 (PR #50, `specs/017-a4-laboratorio-sandbox/`) exige en su FR-022 que la sincronización de Sistemas al aprobar siga igual |
-| F8 | Retira `resetSimulations` si arma los pasos de sesión, y amplía el Page Object mínimo de Método |
+| F8 | Retira `resetSimulations` sólo si saca de `app.js` la composición de `progress-backup`; si no, queda para F10. Amplía el Page Object mínimo de Método |
 | F10 | Retira `init`, `mount`, `unmount`, el `sync` de `app.js`, `window.TallerProjectKit` y los `register-*`, y decide el router y nuqs |
 | E1 | Los conteos de la vista («N talleres», «2N núcleos») ya salen del catálogo; los del menú estático (`.nav-count`) son de F10 |
 
 ### Hallazgos que afectan a otros ítems
 
 1. **C4 no espera a F5.** Con el clarify de C4 (Q3, B), el `style=` del SVG ya no bloquea la CSP; la hoja de ruta (fila de C4 y «Alcance» de F5) lo dice al revés.
-2. **Los retiros de `window.TallerSystems` están incompletos en la hoja de ruta.** `init` no figura y se retira con `startApp` (F10); `sync` lo llama también `app.js` (F10 o F8); `resetSimulations` depende de quién arme `progress-backup` (F8 o F10).
+2. **Los retiros de `window.TallerSystems` están incompletos en la hoja de ruta.** `init` no figura y se retira con `startApp` (F10); `sync` lo llama también `app.js` (F10 o F8); `resetSimulations` lo llama `app.js:startApp` dentro de `progress-backup`: hasta que esa composición salga de `app.js` (F10, o F8 si la mueve) es el único camino, y `app-shell-check` impide que `app.js` importe la página.
 3. **`AGENTS.md` y la hoja de ruta se contradicen sobre nuqs.** Sistemas es la primera vista portada con estado en la URL (Q3).
 4. **El tope de tamaño de la hoja de ruta quedó viejo.** Sus criterios globales citan 2 500 000 caracteres y unos 300 KB de margen; desde A2 el tope es 1 250 000.
 5. **La pila de DOM tiene dos candidatos a instalarla** (F3 y F5), y `boot-check` tiene el caso del Atlas escrito a mano: cada port lo generaliza.
@@ -473,7 +473,7 @@ F6, F7 y F8 reutilizan el Page Object, el módulo de sesión y la tabla de retir
 
 - F5 se implementa sobre `master` con F2a, A2 y F2b (PR #41 a #44) integrados; el ensayo `2b37caf4` es esa base. Si A2 no estuviera, la cadena sigue siendo la lista de imports de `main.tsx`.
 - El adaptador es un archivo `frontend/src/app/legacy/register-systems.tsx` (o dos, si el plan separa los métodos sin React) que, como el del Atlas, crea una raíz sobre `#main` en cada montaje y registra `onUncaughtError`. La página vive en `frontend/src/pages/systems/` (`ui`, `model`) y expone una API pública chica.
-- La página no lee `window`, `location` ni `history`: el adaptador le pasa la selección inicial, el aviso, la descarga del kit y lo que lee de `window.TallerLab`, y escribe la URL (FR-020).
+- La página no lee `window`, `location` ni `history` y no recibe datos del laboratorio: el adaptador le pasa sólo la selección inicial (y escribe la URL cuando cambia), el aviso y la descarga del kit (FR-020).
 - El sello de código se calcula en el adaptador antes del primer dibujo y no se vuelve a calcular mientras la vista está montada: el estado del laboratorio sólo cambia en la vista del laboratorio o en una importación, y las dos remontan la vista.
 - `window.TallerProjectKit` se queda y el adaptador inyecta la descarga del kit; la página no lee `window`. La alternativa (que la página use `features/download-project-kit` y los almacenes) deja al global sin consumidor.
 - Los `data-sys*` desaparecen; ninguna hoja, check ni herramienta los usa (se buscó en `qa/`, `tools/`, `frontend/src/` y las hojas).
