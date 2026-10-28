@@ -28,6 +28,7 @@
 - Las reglas de qué es «aprobar» y qué es «fallar», sobre la clasificación de B2 reutilizada.
 - El informe legible y el JSON, con los sellos que permiten saber contra qué contenido, plantilla, imágenes y runtime corrió.
 - El check estático que compara el caché precalentado de Go con los `imports` del currículo.
+- El check de la CI que lee el resumen de la auditoría en los PR que tocan la superficie auditada (FR-038).
 - La compuerta de la auditoría para los cambios que tocan lo que compila (Q3) y su documentación.
 - Corregir, como bugs de contenido, los hallazgos de la primera corrida completa.
 
@@ -64,7 +65,7 @@ Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumption
 | Cada descarga se pide con nombre, origen y tamaño | Hoja de ruta, «Acciones del usuario»; constitución, principio VII |
 | Esta spec deja claro qué se audita, qué es aprobar y fallar, cómo corre, el informe, dónde se integra, qué pasa cuando falla un ejercicio y la relación con A4, `runtime-check` y C4, con como mucho cinco preguntas | Pedido de esta tarea |
 | Un código inicial falla por sus pruebas, salvo los de `kind: reparar`, que también pueden no compilar; `rust-63` y `rust-71` se corrigen como bugs de contenido cuando la auditoría los confirme | Usuario, clarify del 2026-10-28 (Q1) |
-| La auditoría corre en local, con runsc y su propia instancia del ejecutor; en la CI, sólo el check estático | Usuario, clarify del 2026-10-28 (Q2) |
+| La auditoría corre en local, con runsc y su propia instancia del ejecutor. En la CI corren el check estático y el check del resumen de la última corrida, en los PR que tocan la superficie auditada | Usuario, clarify del 2026-10-28 (Q2, completada el mismo día) |
 | Es obligatoria en los PR que tocan lo auditado, con el resumen de una corrida sobre el último commit con el árbol limpio, y es condición para entregar A4 | Usuario, clarify del 2026-10-28 (Q3) |
 | El tiempo de cada programa contra su límite, con aviso cerca del límite; la memoria, sólo como «se agotó o no»; sin cambios en B1 ni en B2 | Usuario, clarify del 2026-10-28 (Q4) |
 | Una muestra de 4 programas con prueba propia, dos de Rust y dos de Go | Usuario, clarify del 2026-10-28 (Q5) |
@@ -77,7 +78,7 @@ Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumption
 ### Session 2026-10-28
 
 - Q: **Q1**, ¿qué cuenta como «fallar» para un código inicial? → A: Por sus pruebas, salvo los ejercicios `kind: reparar`, cuyo inicial también puede no compilar. `rust-63` y `rust-71`, que son de completar, se corrigen como bugs de contenido cuando la auditoría los confirme. Opción A. Decidió el usuario. (FR-006, FR-007, FR-030 y FR-031)
-- Q: **Q2**, ¿dónde corre la auditoría? → A: En local, con runsc y su propia instancia del ejecutor. En la CI sólo corre el check estático. Opción A. Decidió el usuario. (FR-009, FR-014 y FR-027)
+- Q: **Q2**, ¿dónde corre la auditoría? → A: En local, con runsc y su propia instancia del ejecutor. En la CI sólo corre el check estático. Opción A. Decidió el usuario. El usuario la completó el mismo 2026-10-28, al resolver una discrepancia de redacción: en los PR que tocan la superficie auditada, la CI también comprueba el resumen de la última corrida pegado en la descripción del PR. Comprueba el formato, que la corrida sea de registro, el veredicto en verde y los sellos del contenido y de la plantilla, sin correr la auditoría. (FR-009, FR-014, FR-027 y FR-038)
 - Q: **Q3**, ¿la auditoría bloquea el merge, y cuándo es obligatoria? → A: Es obligatoria en los PR que tocan lo auditado (el contenido que compila, la plantilla, las imágenes, los perfiles del ejecutor y las clases que clasifican), con el resumen de una corrida sobre el último commit del PR con el árbol limpio. También es condición para entregar A4. Opción A. Decidió el usuario. (FR-032)
 - Q: **Q4**, ¿qué se hace con los límites, y cómo se mide la memoria? → A: Se informa el tiempo de cada programa contra su límite, con un aviso cuando se acerca; la memoria, sólo como «se agotó o no». B1 y B2 no cambian. Opción A. Decidió el usuario. (FR-022 a FR-025)
 - Q: **Q5**, ¿la auditoría verifica la prueba propia? → A: Con una muestra de 4 programas: dos de Rust y dos de Go, con una prueba propia que pasa y otra que falla. Opción A. Decidió el usuario. (FR-034)
@@ -252,7 +253,7 @@ El informe muestra cuánto tardó cada fase de cada programa contra su límite, 
 
 ### User Story 5 - Una compuerta que se puede comprobar (Priority: P2)
 
-Un PR que cambia lo que compila lleva el resumen de la auditoría. El coordinador, o una máquina, comprueba que el informe corrió sobre el último commit del PR con el árbol limpio, y los sellos le dicen contra qué contenido, plantilla e imágenes.
+Un PR que cambia lo que compila lleva el resumen de la auditoría. La CI comprueba que existe, que es de registro, que está en verde y que sus sellos de contenido y de plantilla son los de la cabeza del PR. El coordinador comprueba lo que la CI no puede recalcular: las imágenes, el commit y el árbol limpio.
 
 **Why this priority**: sin sellos, un informe viejo parece actual, y `qa/AGENTS.md` prohíbe presentar un registro viejo como comprobación del código actual.
 
@@ -263,8 +264,10 @@ Un PR que cambia lo que compila lleva el resumen de la auditoría. El coordinado
 1. **Dado** un informe, **cuando** se cambia la expresión de una prueba o la solución de un ejercicio, **entonces** la huella del programa correspondiente deja de coincidir. La solución no entra en el `grading_hash` ni en el `starter_hash`: sólo la huella del programa la cubre.
 2. **Dado** un informe, **cuando** se cambia sólo un título o una pista, **entonces** ninguna huella de programa cambia.
 3. **Dado** un PR que toca la superficie auditada, **cuando** se revisa, **entonces** su descripción trae el resumen de una corrida completa y de registro, hecha sobre el último commit del PR con el árbol limpio (Q3).
+4. **Dado** un PR que toca la superficie auditada sin resumen, con un resumen en rojo, con uno que no es de registro o con una huella del documento o de la plantilla que no es la de su cabeza, **cuando** corre la CI, **entonces** el job falla y dice en español qué falta o qué sello no coincide. Al editar la descripción con un resumen válido, vuelve a correr y pasa.
+5. **Dado** un PR que no toca la superficie auditada, **cuando** corre la CI, **entonces** el check pasa sin pedir un resumen.
 
-*Cubre: FR-019 a FR-021 y FR-032; SC-004.*
+*Cubre: FR-019 a FR-021, FR-032 y FR-038; SC-004 y SC-009.*
 
 ---
 
@@ -334,7 +337,7 @@ Quien agrega a un ejercicio de Go un `import` que no está en el caché precalen
 - **FR-018**: La salida legible DEBE estar en español y traer una línea por hallazgo y por programa sin veredicto: el ejercicio, su lenguaje y su sección, si es la solución o el inicial, el estado y el motivo de B2, las pruebas que fallaron o faltaron con su clave y su etiqueta, y las primeras líneas del diagnóstico (del compilador o del programa), recortadas. Cierra con un resumen: cuántos programas, cuántos aprueban o fallan como corresponde, cuántos hallazgos, cuántos avisos, cuántos sin veredicto, el runtime y si es de registro.
 - **FR-019**: DEBE escribir además un JSON con un formato versionado que trae, por cada programa: el ejercicio, el lenguaje, la sección, el `kind`, si es la solución o el inicial, el estado, el motivo, la fase alcanzada, el veredicto de cada prueba por clave, el de la prueba propia si la hubo, `compileMs`, `runMs`, los límites de su fase, el margen, si se recortó la salida, si se agotó la memoria, el veredicto de la auditoría (aprueba, falla como corresponde, hallazgo o sin veredicto) y si suma un aviso.
 - **FR-020**: El JSON DEBE llevar los sellos que permiten saber contra qué corrió: el commit de la rama y si el árbol estaba limpio, el commit de origen del contenido, la huella del documento, la de la plantilla (`portions.harness`), por ejercicio su `grading_hash` y su `starter_hash`, por programa la huella del programa armado con un nonce fijo de ceros (como la vista previa), los identificadores de las dos imágenes del sandbox, el runtime, la etiqueta de la instancia, los programas simultáneos, la fecha y la duración. Los sellos que sólo se ven desde el host (las imágenes, el commit y el árbol limpio) los toma la entrada de `npm` y se los pasa al comando: quien corre la auditoría nunca recibe el socket de Docker, que sigue siendo sólo del ejecutor (ADR 0005 §1; spec 005, FR-045).
-- **FR-021**: El informe es salida generada: DEBE quedar fuera de Git y del contexto de Docker (`.gitignore` y `.dockerignore`), y no lleva el token ni secretos. Un informe cuyos sellos no coinciden con el contenido, la plantilla o las imágenes actuales no vale como comprobación (`qa/AGENTS.md`).
+- **FR-021**: El informe es salida generada: DEBE quedar fuera de Git y del contexto de Docker (`.gitignore` y `.dockerignore`), y no lleva el token ni secretos. Un informe cuyos sellos no coinciden con el contenido, la plantilla o las imágenes actuales no vale como comprobación (`qa/AGENTS.md`). Lo que viaja al PR es el resumen que imprime el comando, en la descripción y no en un archivo del repositorio, y la CI lo lee de ahí (FR-038).
 
 **Límites**
 
@@ -346,7 +349,7 @@ Quien agrega a un ejercicio de Go un `import` que no está en el caché precalen
 
 **El caché de Go**
 
-- **FR-027**: Un check estático, sin Docker y dentro de `npm test`, DEBE comprobar que cada paquete que declara un ejercicio de Go en `imports` (con los valores por omisión y los de su etapa ya aplicados, como se publica) está en `backend/executor/images/go/warm/main.go`. Si falta uno, falla con un mensaje en español que nombra el ejercicio y el paquete. Un paquete de la lista que nadie importa no es un error, y `fmt` lo importa la plantilla.
+- **FR-027**: Un check estático, sin Docker y dentro de `npm test`, DEBE comprobar que cada paquete que declara un ejercicio de Go en `imports` (con los valores por omisión y los de su etapa ya aplicados, como se publica) está en `backend/executor/images/go/warm/main.go`. Si falta uno, falla con un mensaje en español que nombra el ejercicio y el paquete. Un paquete de la lista que nadie importa no es un error, y `fmt` lo importa la plantilla. En la CI corre con `npm test`, en todo PR; el check del resumen (FR-038) es otro y sólo aplica a los PR que tocan la superficie auditada.
 - **FR-028**: Un cambio de la lista del caché DEBE reconstruir la imagen de Go antes de auditar, y es superficie auditada (Q3).
 
 **Cuando falla un ejercicio**
@@ -357,7 +360,7 @@ Quien agrega a un ejercicio de Go un `import` que no está en el caché precalen
 
 **Integración**
 
-- **FR-032**: La auditoría completa y de registro DEBE ser obligatoria en todo PR que toque la superficie auditada (Q3): el código, las pruebas o los `imports` de un ejercicio; un ejercicio nuevo o retirado; la plantilla; las imágenes del sandbox, sus digests o la lista del caché de Go; los perfiles y los flags del ejecutor; y las clases que arman el programa, leen la evidencia o clasifican. El PR lleva el resumen con los sellos, de una corrida sobre su último commit con el árbol limpio. También es condición para entregar A4 (Q3 y la Q5 de A4).
+- **FR-032**: La auditoría completa y de registro DEBE ser obligatoria en todo PR que toque la superficie auditada (Q3): el código, las pruebas o los `imports` de un ejercicio; un ejercicio nuevo o retirado; la plantilla; las imágenes del sandbox, sus digests o la lista del caché de Go; los perfiles y los flags del ejecutor; y las clases que arman el programa, leen la evidencia o clasifican. El PR lleva el resumen con los sellos, de una corrida sobre su último commit con el árbol limpio. La CI comprueba el resumen (FR-038), y una persona, los sellos que la CI no puede recalcular. La lista de rutas que define esta superficie vive en un solo lugar, que usan el check de la CI y la documentación, y la fija el plan. También es condición para entregar A4 (Q3 y la Q5 de A4).
 - **FR-033**: B3 DEBE documentar el comando, la instancia propia, la compuerta y el horario en `backend/api/AGENTS.md`, en «Verificación» del `README.md` y en «Compiladores y evidencia» de `qa/AGENTS.md`, donde reemplaza a `runtime-check` como auditoría masiva; y sumar en `backend/executor/AGENTS.md` que después de actualizar las imágenes del sandbox se corre también la auditoría. B3 no borra `runtime-check`: lo retira A4.
 - **FR-034**: Por lenguaje, la auditoría DEBE ejecutar además la solución de un ejercicio con una prueba propia que pasa y con otra que falla (cuatro programas: dos de Rust y dos de Go), y comprobar que la prueba propia se informa aparte y que el veredicto sigue en `passed` (Q5).
 
@@ -366,6 +369,19 @@ Quien agrega a un ejercicio de Go un `import` que no está en el caché precalen
 - **FR-035**: Las pruebas (Pest contra MySQL real, con un doble del ejecutor que devuelve respuestas de su contrato) DEBEN cubrir, con valores esperados que salen de esta spec y no del código que se prueba: un caso por fila de «Cómo se decide cada programa»; el código de salida y el campo «de registro» (completa, parcial, runc y sin veredicto); el formato del JSON contra un ejemplo escrito a mano; que la corrida no escribe ninguna fila (FR-012); las negativas a arrancar de FR-013; y que una prueba propia no cambia el veredicto.
 - **FR-036**: El check estático de FR-027 DEBE traer sus escenarios: un paquete que falta, uno que sobra y `fmt`.
 - **FR-037**: El código de B3 DEBE pasar Pint y PHPStan en el nivel 9, sin baseline ni errores ignorados, junto con `npm test`, `npm run lint`, `npm run format:check`, `git diff --check` y, si se toca el ejecutor, `npm run test:executor`. NO DEBE agregar paquetes de Composer ni de `npm`, y cada descarga se pide con nombre, origen y tamaño.
+
+**El check del resumen en la CI** (Q2, completada el 2026-10-28)
+
+- **FR-038**: La CI DEBE comprobar el resumen de la auditoría en los PR que tocan la superficie auditada de FR-032:
+  - **Cuándo aplica.** Se decide por el diff del PR contra su base, con la misma lista de rutas que define la superficie auditada. Si el PR no toca ninguna, el check pasa sin pedir nada. Como la lista es de rutas, un cambio sólo de textos en un `exercise.yaml` o en un manifiesto también cuenta: la ruta no distingue los textos de las pruebas. Los textos de otros archivos (Atlas, guía, talleres) no cuentan.
+  - **Qué lee.** El resumen que el comando de la auditoría imprime para pegar en la descripción del PR, en un formato versionado. Trae el veredicto, si es de registro, el runtime y los sellos de FR-020.
+  - **Qué comprueba.** Que el resumen existe y tiene ese formato; que la corrida es de registro, con runsc; que el veredicto está en verde, sin hallazgos ni programas sin veredicto; y que la huella del documento y la de la plantilla (`portions.harness`) coinciden con las que la CI recalcula desde la cabeza del PR con el generador, sin Docker ni gVisor. Por eso cualquier cambio de contenido después de la corrida, aunque sea de textos, pide volver a auditar.
+  - **Qué queda para una persona.** Los sellos que la CI no puede recalcular: los identificadores de las imágenes, el commit y el árbol limpio.
+  - **Si falla.** El job falla con un mensaje en español que dice qué falta o qué sello no coincide, con el valor esperado y el recibido.
+  - **Cuándo vuelve a correr.** En cada cambio del PR, y también cuando se edita su descripción.
+  - **Cómo se prueba.** El check corre en local si se le pasa el texto del resumen, y trae sus escenarios: falta el resumen, un sello no coincide, el veredicto está en rojo, la corrida no es de registro, el PR no toca la superficie y el caso en verde.
+
+  El job y el disparador exactos los fija el plan. El resumen lo pega una persona, así que el check protege contra el olvido y contra un resumen viejo, no contra uno inventado: la evidencia de la corrida sigue siendo autodeclarada.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -378,7 +394,8 @@ Quien agrega a un ejercicio de Go un `import` que no está en el caché precalen
 - **Instancia de auditoría:** un ejecutor propio, con su etiqueta y su red, las mismas imágenes y los mismos perfiles que el servicio.
 - **Informe:** la salida legible y el JSON versionado de una corrida, con sus sellos.
 - **Sellos:** lo que ata un informe al contenido, la plantilla, las imágenes y el runtime contra los que corrió.
-- **Superficie auditada:** lo que cambia lo que compila o cómo se clasifica (FR-032).
+- **Superficie auditada:** lo que cambia lo que compila o cómo se clasifica, como una lista de rutas (FR-032).
+- **Resumen de la corrida:** el bloque en formato versionado que imprime el comando para pegar en la descripción del PR, con el veredicto, si es de registro, el runtime y los sellos. Es lo que lee la CI (FR-038).
 - **Lista del caché de Go:** los paquetes que importa `warm/main.go` y que la imagen de Go compila al construirse.
 
 ## Success Criteria *(mandatory)*
@@ -393,13 +410,14 @@ Quien agrega a un ejercicio de Go un `import` que no está en el caché precalen
 - **SC-006**: El check del caché de Go da 0 diferencias con el contenido de hoy (26 paquetes en 49 ejercicios). Sacar un paquete de la lista o agregar un `import` nuevo a un ejercicio hace fallar `npm test` con el ejercicio y el paquete nombrados: 2 de 2.
 - **SC-007**: La muestra de la prueba propia (Q5) da 4 de 4 programas en `passed`, con la prueba propia informada como `pass` en dos y como `fail` en los otros dos.
 - **SC-008**: Pasan `npm run api:test`, `npm run api:format:check`, `npm run api:analyse` (nivel 9, sin baseline), `npm test`, `npm run lint`, `npm run format:check`, `git diff --check` y, si se tocó el ejecutor, `npm run test:executor`.
+- **SC-009**: El check del resumen (FR-038), corrido en local con el texto del resumen, da el resultado esperado en sus seis escenarios: falla si falta el resumen, si un sello no coincide, si el veredicto está en rojo o si la corrida no es de registro; pasa si el PR no toca la superficie auditada y con un resumen válido. Cada falla nombra en español qué falta o qué sello no coincide: 6 de 6.
 
 ## Riesgos
 
 1. **El host no es el sandbox.** La línea de base usa `rustc` 1.97.1 y `go` 1.27.2, sin gVisor ni límites; las imágenes traen Rust 1.99 y Go 1.27. Un lint o un error nuevo del compilador, o los hilos bajo gVisor, pueden cambiar resultados. *Mitigación:* el criterio es la corrida con runsc (FR-014), y FR-031 incluye corregir lo que sólo ella muestre.
 2. **Una etiqueta equivocada borra contenedores de alumnos.** El barrido inicial de un ejecutor borra todo lo de su etiqueta. *Mitigación:* etiqueta propia y distinta de la del servicio (FR-010), una sola corrida a la vez y la comprobación de SC-003.
 3. **CPU compartida.** La instancia propia no ocupa lugares del servicio, pero compite por CPU con él, y los tiempos suben con carga. *Mitigación:* horario recomendado (FR-011), la hora en el informe (FR-026) y avisos que no fallan (FR-022).
-4. **Una compuerta humana.** Con la auditoría en local y la compuerta en la revisión (Q2 y Q3), nada automático impide integrar un PR sin la auditoría. *Mitigación:* los sellos la hacen comprobable (FR-020) y la regla ya existe para la plantilla. Si se olvida seguido, se reabre con una corrida en la CI o un bloqueo automático (las opciones B a D de Q2 y la B de Q3).
+4. **Una compuerta en parte humana.** La auditoría corre en local (Q2), así que la CI no la repite. *Mitigación:* la CI exige el resumen en los PR que tocan la superficie auditada y comprueba que es de registro, que está en verde y que sus sellos de contenido y de plantilla son los de la cabeza del PR (FR-038). Quedan para una persona las imágenes, el commit y el árbol limpio. El resumen lo pega una persona, así que un resumen inventado no se detecta. Si eso preocupa, se reabre con una corrida en la CI (las opciones B a D de Q2).
 5. **Pruebas débiles.** Que el inicial falle no prueba que las pruebas rechacen toda solución incorrecta. *Mitigación:* se acepta: es lo que pide el criterio del ADR. Un inicial que aprueba es un hallazgo que suele terminar en una prueba nueva.
 6. **El margen de memoria no se mide.** *Mitigación:* la línea de base muestra un uso ínfimo; si hace falta, se reabre con la opción B de Q4.
 7. **Corregir `rust-63` y `rust-71` cambia su código inicial.** Cambia su `starter_hash` y su `content_hash`, no su `grading_hash`: el progreso guardado no pide volver a verificar. *Mitigación:* se corrigen como bugs (FR-029), con su revisión.
@@ -407,7 +425,7 @@ Quien agrega a un ejercicio de Go un `import` que no está en el caché precalen
 
 ## Relación con otras specs
 
-- **B2 (spec 005, entregada e inmutable).** B3 reutiliza el armado, la lectura de la evidencia y la clasificación, que son puros (su FR-038 y la `PurityTest`), sin cambiarlos. El código de referencia y el código inicial están en la tabla `exercises` (columnas `starter` y `solution`), que el lector de B2 no selecciona hoy: B3 los lee con su propia lectura de sólo lectura, y el plan decide cómo. `api:runs:check` sigue: prueba la API, las cuotas y la cola, que B3 no toca. Por la Q3 de B2, B3 es la compuerta de la plantilla.
+- **B2 (spec 005, entregada e inmutable).** B3 reutiliza el armado, la lectura de la evidencia y la clasificación, que son puros (el FR-038 de la spec 005 y la `PurityTest`), sin cambiarlos. El código de referencia y el código inicial están en la tabla `exercises` (columnas `starter` y `solution`), que el lector de B2 no selecciona hoy: B3 los lee con su propia lectura de sólo lectura, y el plan decide cómo. `api:runs:check` sigue: prueba la API, las cuotas y la cola, que B3 no toca. Por la Q3 de B2, B3 es la compuerta de la plantilla.
 - **A4 (spec 017, PR #50).** El usuario respondió su Q5 el 2026-10-28: A4 espera a B3, que va antes, en paralelo con F5, F6 y F7. B3 entra así en el camino crítico de A4, y su FR-034 retira `runtime-check` cuando B3 esté entregado. Las «Fases» del ADR 0005 ponen el laboratorio (3) antes de la auditoría (4): esa enmienda y el orden en la hoja de ruta los integra el coordinador.
 - **`runtime-check`.** Hasta A4 sigue como está, con el `buildProgram` viejo y los Playgrounds públicos, para lo que todavía los usa. Desde B3 deja de ser la auditoría masiva (FR-033): la masiva es local y no tiene la restricción de no repetir corridas contra servicios públicos. B3 no lo borra.
 - **C4 (spec 008, planificada).** C4 expone el taller en Internet, así que esta spec le recomienda al coordinador tener B3 en verde antes de la compuerta G2; decidirlo es de C4 y de la hoja de ruta, no de B3. Desde C4, la auditoría corre fuera de hora en el host de producción (FR-011). Como lee el contenido importado de MySQL, necesita un usuario de sólo lectura del contenido entre los usuarios por rol de C4, que hoy no figura.
