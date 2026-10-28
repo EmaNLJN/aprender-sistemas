@@ -1,0 +1,19 @@
+.privacy-notice section + section {
+  margin-top: 18px;
+}
+.privacy-notice h2,
+.privacy-notice h3 {
+  font-size: 17px;
+  letter-spacing: -0.3px;
+  margin-bottom: 8px;
+}
+@media (max-width: 590px) {
+  .privacy-dialog {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    border-radius: 0;
+  }
+}
