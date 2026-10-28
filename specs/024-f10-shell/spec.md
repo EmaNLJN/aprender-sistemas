@@ -48,7 +48,7 @@ Es para quien mantiene el front y para quien revisa los PR; para el alumno, nada
 
 - **El spike del router,** primera tarea, con su regla de decisión («El spike del router»).
 - **Una sola raíz de React** con:
-  - el shell: la barra lateral, la navegación, el salto al contenido, el selector de lenguaje, el pie de guardado, «Exportar mi progreso», `#toast`, la entrada «Tu cuenta» de F11a y los diálogos del shell;
+  - el shell: la barra lateral, la navegación, el salto al contenido, el selector de lenguaje, el pie de guardado, «Exportar mi progreso», `#toast`, la entrada «Tu cuenta» de F11a y los diálogos del shell (al empezar F10, el de «Tu cuenta» y cualquier otro que encuentre el inventario: FR-048);
   - el router, con `syncLinkedLanguage`;
   - la página actual, importada sin adaptador.
 - **Los conteos del menú,** derivados del catálogo.
@@ -138,7 +138,7 @@ Las dos cifras son la cota superior: el aumento real en `dist/index.html` lo mid
 
 | Opción | Respuesta | Implicancias |
 | --- | --- | --- |
-| **A (recomendada)** | **Ninguno por omisión, y una librería sólo si se gana el lugar.** El spike mide tres candidatos sobre la base de F10: un router propio y chico sobre `url-grammar`, React Router con `createHashRouter` y TanStack Router con historia por hash (o con una historia propia). Una librería entra sólo si cumple las tres condiciones: pasa los ocho criterios del contrato (FR-008), resuelve algo que F10 necesita y que el router propio no resuelve, nombrado en el informe, y su aumento medido en `dist/index.html` no pasa de un cuarto del margen que quede al empezar F10. Si no, entra el propio | Decide con datos, y no suma una dependencia que no paga su peso. Con el margen de F2b, un cuarto son 27 165 caracteres, y las cotas de bundlephobia ya lo superan. **Costo:** el spike corre igual, aunque lo más probable es que gane el propio, y ese router es código del taller, con sus pruebas. Si mañana hacen falta rutas anidadas o datos por ruta, se vuelve a decidir |
+| **A (recomendada)** | **Ninguno por omisión, y una librería sólo si se gana el lugar.** El spike mide tres candidatos sobre la base de F10: un router propio y chico sobre `url-grammar`, React Router con `createHashRouter` y TanStack Router con historia por hash (o con una historia propia). Una librería entra sólo si cumple las tres condiciones: pasa los ocho criterios del contrato (FR-008), resuelve algo que F10 necesita y que el router propio no resuelve, nombrado en el informe, y lo que suma a `dist/index.html` por encima de la variante con el router propio no pasa de un cuarto del margen que quede al empezar F10. Si no, entra el propio | Decide con datos, y no suma una dependencia que no paga su peso. Con el margen de F2b, un cuarto son 27 165 caracteres, y las cotas de bundlephobia ya lo superan. **Costo:** el spike corre igual, aunque lo más probable es que gane el propio, y ese router es código del taller, con sus pruebas. Si mañana hacen falta rutas anidadas o datos por ruta, se vuelve a decidir |
 | B | **Una librería siempre** (React Router, la más usada), y lo que no encaje en el contrato se adapta con una historia propia | Un router conocido y documentado. **Costo:** con las cotas de hoy, probablemente no entra bajo el tope; hay que escribir y mantener la adaptación a `?query#vista`; nuqs sigue con su adaptador de SPA (FR-020) |
 | C | **Ninguno, sin spike:** decidirlo ahora | Ahorra el spike. **Costo:** decide sin medir lo que la hoja de ruta pidió medir, y contra versiones que pueden cambiar antes de F10 |
 | Otra | Decir cuál, o fijar otro umbral (por ejemplo, un número fijo de caracteres) | |
@@ -269,18 +269,18 @@ Es la primera tarea de F10, antes de cualquier código de producción. Corre en 
 | C2 | La query va antes del hash y se lee de `location.search`, con `readLinkQuery` y con el adaptador de nuqs de SPA (`nuqs/adapters/react`) | Las seis formas con query de F1, las de F3 y F5, y una prueba de que la query no se muda adentro del hash |
 | C3 | Los 11 enlaces que cambian la query recargan el documento, y los de sólo hash no | `reload.spec.ts` de F1, sin editar |
 | C4 | Cada navegación por hash suma una entrada al historial, Atrás vuelve a la vista anterior, y abrir un ejercicio no suma ninguna | `views.spec.ts` («history»), sin editar |
-| C5 | Las escrituras con `replaceState` de las páginas, del idioma y de nuqs no disparan una navegación ni un remontaje, y nuqs las ve (`enableHistorySync()`) | Un E2E que cuenta los montajes de la página al cambiar de idioma, de ejercicio, de taller y de filtro |
+| C5 | Las escrituras con `replaceState` de las páginas, del idioma y de nuqs no disparan una navegación ni un remontaje, y nuqs las ve (`enableHistorySync()`) | Un E2E que cuenta los montajes de la página al cambiar de ejercicio, de taller y de filtro, sin ganchos en producción (FR-056) |
 | C6 | Los tokens nunca llegan al router: la etapa de los tokens corre antes | Los E2E de F11a, sin editar |
 | C7 | Un hash desconocido muestra el Recorrido y no se reescribe | `url-contract` y un caso nuevo |
 | C8 | El estado de la página de hoy sobrevive como hoy: el temporizador, las sesiones del Atlas y las simulaciones, a una navegación por hash, y no a una recarga | `reload.spec.ts` («what stays in memory»), sin editar |
 
 **Las medidas,** para cada candidato que pase los ocho criterios (FR-009):
 
-- el aumento real de `dist/index.html`, en caracteres, construido sobre la base de F10, no la cifra de bundlephobia;
+- el tamaño de `dist/index.html`, en caracteres, construido sobre la base de F10 con cada candidato, no la cifra de bundlephobia. El aumento de una librería se cuenta contra la variante con el router propio, para que los bytes del shell y del propio no se carguen a ninguno de los dos;
 - la licencia, la cantidad de dependencias y el tamaño desempaquetado, del registro;
 - qué resuelve que el router propio no resuelve, en una frase, o «nada».
 
-**La regla de decisión** (FR-010, Q1, borrador A): entra el router propio, salvo que una librería pase los ocho criterios, resuelva algo nombrado que F10 necesita y el propio no, y sume como mucho un cuarto del margen que quede al empezar F10. Si una librería gana, se instala sólo con el permiso del usuario, con su nombre, su versión exacta, su origen y su peso.
+**La regla de decisión** (FR-010, Q1, borrador A): entra el router propio, salvo que una librería pase los ocho criterios, resuelva algo nombrado que F10 necesita y el propio no, y sume, por encima de la variante con el router propio, como mucho un cuarto del margen que quede al empezar F10. Si una librería gana, se instala sólo con el permiso del usuario, con su nombre, su versión exacta, su origen y su peso.
 
 **Qué no decide el spike:** nuqs, que ya está instalado; la forma de la administración (Q4); y la raíz única (Q2).
 
@@ -470,7 +470,7 @@ Quien abre el taller ve el acceso si no tiene sesión, la carga o el error del c
 
 **Why this priority**: el arranque es el contrato que comparten A2, F11a, A3 y D1c, y el orden de inicialización tiene un riesgo alto verificado (el motor de campaña lanza si se usa antes de `init`).
 
-**Independent Test**: arrancar con y sin sesión (el doble de la API), con el contenido lento, fallido y recuperado, con las fixtures congeladas y con `#invitacion=<token>`; contar las raíces y las escrituras.
+**Independent Test**: arrancar con y sin sesión (el doble de la API), con el contenido lento, fallido y recuperado, con las fixtures congeladas y con `#invitacion=<token>`, y contar las escrituras. Que haya una sola raíz lo comprueba la búsqueda estática de SC-003, porque un E2E no ve las raíces sin un gancho en producción.
 
 **Acceptance Scenarios**:
 
@@ -478,8 +478,7 @@ Quien abre el taller ve el acceso si no tiene sesión, la carga o el error del c
 2. **Dado** el contenido que falla y después responde, **cuando** el alumno usa «Reintentar», **entonces** se ven el error y la recuperación de hoy dentro de `#main`, sin recargar, con un pedido por intento (los 17 E2E de A2, sin editar).
 3. **Dado** una sesión vencida, **cuando** arranca, **entonces** se ve el acceso de F11a y nada del taller responde detrás; al ingresar, el taller arranca sin recargar (los E2E de F11a, sin editar).
 4. **Dado** `#invitacion=<token>`, **cuando** arranca, **entonces** el token sale de la URL antes de que el router mire el hash, y el alta de F11a se muestra.
-5. **Dado** el taller arrancado, **cuando** se cuentan las raíces de React del documento, **entonces** hay una.
-6. **Dado** una copia de campaña ilegible, **cuando** arranca y se navega, **entonces** la copia no se pisa ni se borra, y con la clave de campaña ausente, arrancar y navegar no la crean.
+5. **Dado** una copia de campaña ilegible, **cuando** arranca y se navega, **entonces** la copia no se pisa ni se borra, y con la clave de campaña ausente, arrancar y navegar no la crean.
 
 *Cubre: FR-034 a FR-040, FR-057; SC-001, SC-003 y SC-006.*
 
@@ -594,8 +593,8 @@ Quien planifica F10 sabe, antes de escribir el shell, qué router entra o por qu
 
 - **FR-007**: La primera tarea DEBE ser el spike, antes de cualquier código de producción. Corre en una copia descartable de la base de F10, sin tocar el repositorio, y mide tres candidatos: un router propio sobre `url-grammar`; React Router con `createHashRouter` (modo de datos) y, si hace falta, `HashRouter`; y TanStack Router con `createHashHistory` o con una historia propia. Cada uno va con la versión del registro de ese día.
 - **FR-008**: Cada candidato DEBE medirse contra los ocho criterios del contrato (C1 a C8, «El spike del router»), y fallar uno lo descarta: la vista en `#vista` sin barra y sin reescribir `/`; la query antes del hash, leída de `location.search` por `readLinkQuery` y por nuqs; las 11 recargas; el historial; las escrituras con `replaceState` sin navegación y vistas por nuqs; los tokens fuera del router; el hash desconocido sin reescribir; y lo que sobrevive en memoria.
-- **FR-009**: Para cada candidato que pase los ocho, el spike DEBE medir el aumento real de `dist/index.html` en caracteres, construido sobre la base de F10, y registrar su licencia, sus dependencias, su tamaño desempaquetado y qué resuelve que el router propio no resuelve.
-- **FR-010**: Entra el router propio, salvo que una librería pase los ocho criterios, resuelva algo nombrado que F10 necesita y el propio no, y sume como mucho un cuarto del margen que quede bajo el tope al empezar F10. **[NEEDS CLARIFICATION: Q1, la regla del spike]**
+- **FR-009**: Para cada candidato que pase los ocho, el spike DEBE medir el tamaño de `dist/index.html` en caracteres, construido sobre la base de F10 con ese candidato, y contar el aumento de una librería contra la variante con el router propio. También DEBE registrar su licencia, sus dependencias, su tamaño desempaquetado y qué resuelve que el router propio no resuelve.
+- **FR-010**: Entra el router propio, salvo que una librería pase los ocho criterios, resuelva algo nombrado que F10 necesita y el propio no, y sume, por encima de la variante con el router propio, como mucho un cuarto del margen que quede bajo el tope al empezar F10. **[NEEDS CLARIFICATION: Q1, la regla del spike]**
 - **FR-011**: El spike DEBE dejar su informe en la investigación del plan: las medidas, la decisión con la regla aplicada y la documentación consultada (Context7 y el registro). Si gana una librería, DEBE pedirse el permiso del usuario, con el nombre, la versión exacta, el origen y el peso, antes de instalarla, y su aviso de licencia entra en `frontend/THIRD-PARTY-NOTICES.txt`.
 
 **El contrato de URL y la navegación**
@@ -663,7 +662,7 @@ Quien planifica F10 sabe, antes de escribir el shell, qué router entra o por qu
 **El retiro**
 
 - **FR-047**: `frontend/app.js` DEBE borrarse, junto con la etapa `legacyViews`, su lista de módulos, `startApp()` y el import de `app.js`. Sus responsabilidades pasan a la raíz, el shell y el router (FR-012 a FR-036).
-- **FR-048**: F10 DEBE empezar con un inventario del código real de cada `window.*` del taller y de sus lectores. Después DEBE retirar todos los `window.Taller*` y los `register-*` que los publicaban, con sus declaraciones `declare global`. Al terminar, ningún módulo de `frontend/` publica nada en `window`, y la búsqueda de `window.Taller` y `register-` da 0 en `frontend/`.
+- **FR-048**: F10 DEBE empezar con un inventario del código real: cada `window.*` del taller con sus lectores, y el marcado estático de `frontend/src/index.html` (diálogos, regiones y controles). Después DEBE retirar todos los `window.Taller*` y los `register-*` que los publicaban, con sus declaraciones `declare global`. Al terminar, ningún módulo de `frontend/` publica nada en `window`, y la búsqueda de `window.Taller` y `register-` da 0 en `frontend/`. Cada diálogo del shell que quede al empezar F10 pasa a la raíz y conserva cómo se abre, que Esc lo cierra y a quién le devuelve el foco. Con F8 y F9 entregadas, debería quedar sólo «Tu cuenta», porque `#confirm-dialog`, `#import-file` y `#lesson-dialog` ya se fueron con sus páginas.
 - **FR-049**: Los globals de catálogos (`GUIDE_DATA`, `RUST_*`, `GO_*`, `SYSTEMS_*` y `SYSTEMS_*_LABS`) y sus cinco adaptadores DEBEN retirarse. Los checks de `qa/` que los usan como cargador pasan a leer el contenido con el módulo de contenido, sin cambiar sus valores esperados. `tools/content/dump-globals.ts` y la prueba de globals de `qa/dist-content-check.ts` se retiran, con su motivo en la tabla de correspondencia. **[NEEDS CLARIFICATION: Q3, los globals de catálogos]**
 - **FR-050**: El estado de módulo que hoy guardan los adaptadores DEBE pasar a un módulo de la página o de `app/`, con la misma vida: sobrevive a la navegación por hash y se pierde al recargar. Por ejemplo, las sesiones del Atlas por idioma de `register-atlas.tsx`.
 - **FR-051**: Lo que inyectaban los adaptadores DEBE inyectarlo la raíz, sin prop drilling: el contenido de cada página desde `getContent()`, el toast, la descarga del kit de proyecto y la instancia de `progress-backup`. Las páginas siguen sin leer `window` ni `getContent()` (regla R5).
@@ -685,8 +684,8 @@ Quien planifica F10 sabe, antes de escribir el shell, qué router entra o por qu
   - los conteos;
   - un montaje por navegación.
 
-  Cada rareza conservada lleva `KNOWN DEFECT` en el nombre.
-- **FR-057**: Los E2E del arranque DEBEN reemplazar lo que `boot-check` cubría en un navegador: el orden de inicialización, observado por sus efectos; la copia de campaña ilegible que sobrevive; la clave ausente que no se crea; los avisos de carga juntos; las fixtures congeladas y el almacenamiento bloqueado; y una sola raíz.
+  Los montajes se cuentan sin ganchos en producción: por ejemplo, con un `MutationObserver` que el E2E inyecta sobre `#main` con `addInitScript` y que cuenta cuántas veces se reemplaza el primer elemento de la página. Cada rareza conservada lleva `KNOWN DEFECT` en el nombre.
+- **FR-057**: Los E2E del arranque DEBEN reemplazar lo que `boot-check` cubría en un navegador: el orden de inicialización, observado por sus efectos; la copia de campaña ilegible que sobrevive; la clave ausente que no se crea; los avisos de carga juntos; y las fixtures congeladas y el almacenamiento bloqueado. Todos se escriben contra la base y pasan en verde antes de cambiar el código. Lo que un navegador no puede provocar queda en Vitest: que el motor de campaña lance si se usa antes de inicializarlo (`engine-init-order.spec.ts`). Que haya una sola raíz lo comprueba la búsqueda de SC-003.
 - **FR-058**: Las specs nuevas de Vitest DEBEN cubrir el router (el propio o la integración de la librería) con URL escritas a mano, y el shell con componentes en `jsdom` y Testing Library. Los valores esperados salen del contrato, de la red de F1 y de las fixtures, nunca del algoritmo que se prueba.
 
 **La integración**
@@ -716,11 +715,11 @@ Quien planifica F10 sabe, antes de escribir el shell, qué router entra o por qu
 - **SC-003**: Las búsquedas de `window.Taller`, `register-`, `legacyViews` y `startApp` dan 0 en `frontend/`, `frontend/app.js` no existe y hay 1 llamada a `createRoot`.
 - **SC-004**: La comparación única del DOM del shell da 0 diferencias sobre su grilla, salvo las listadas en FR-024.
 - **SC-005**: El barrido de estilo computado da 0 diferencias, y el multiconjunto de declaraciones es el de la base menos las reglas borradas, cada una listada con su evidencia.
-- **SC-006**: Con las fixtures congeladas hay 0 escrituras, 0 claves `:respaldo` y 0 avisos. Los almacenes se abren en el orden de hoy, y un E2E falla si se usa el motor de campaña antes de inicializarlo.
+- **SC-006**: Con las fixtures congeladas hay 0 escrituras, 0 claves `:respaldo` y 0 avisos. Los almacenes se abren en el orden de hoy, y `engine-init-order.spec.ts` falla si el motor de campaña se usa antes de inicializarlo.
 - **SC-007**: El 100 % de los escenarios de `boot-check`, `load-order-check` y `app-shell-check` figura en la tabla de correspondencia.
 - **SC-008**: `dist/index.html` queda bajo 1 250 000 caracteres, con su tamaño antes, después y el aumento del router informados.
 - **SC-009**: El total de avisos de complejidad no sube, y 0 avisos quedan en código legacy.
-- **SC-010**: Cada navegación produce 1 montaje de la página, contado en un E2E.
+- **SC-010**: Cada navegación produce 1 montaje de la página, contado en un E2E sin ganchos en producción (FR-056).
 - **SC-011**: Con F12a entregada, el enlace a la administración la abre, la recarga la conserva y una cuenta de alumno ve el Recorrido, con 0 pedidos a `/api/admin`.
 - **SC-012**: `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `npm run test:e2e` y `git diff --check` pasan, y la imagen web sigue construyendo.
 
