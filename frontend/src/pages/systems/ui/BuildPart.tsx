@@ -11,7 +11,8 @@ interface BuildPartProps {
 
 const BuildPart = ({ workshop, language, exercises, onPartChange }: BuildPartProps) => {
   const core = exercises.find((exercise) => exercise.id === workshop.code[language]);
-  if (!core) throw new Error(`Falta el núcleo ${workshop.code[language]} del taller ${workshop.id}.`);
+  if (!core)
+    throw new Error(`Falta el núcleo ${workshop.code[language]} del taller ${workshop.id}.`);
   const tools = (workshop.related?.[language] ?? []).flatMap((id) => {
     const exercise = exercises.find((item) => item.id === id);
     return exercise ? [exercise] : [];
@@ -30,7 +31,9 @@ const BuildPart = ({ workshop, language, exercises, onPartChange }: BuildPartPro
             <span>Tu propio caso extra</span>
           </div>
         </div>
-        <a className="button" href={workshopExerciseHref(workshop.id, core.id)}>Entrar al IDE ↗</a>
+        <a className="button" href={workshopExerciseHref(workshop.id, core.id)}>
+          Entrar al IDE ↗
+        </a>
       </div>
       <div className="sys-concept">
         <section>
@@ -52,12 +55,16 @@ const BuildPart = ({ workshop, language, exercises, onPartChange }: BuildPartPro
       </div>
       {workshop.progress.code ? (
         <p className="sys-code-passed" role="status">
-          ✓ Este núcleo tiene una ejecución registrada con sus tres casos aprobados. Cambiarlo no borra el sello: ejecutá otra vez para verificar el código nuevo.
+          ✓ Este núcleo tiene una ejecución registrada con sus tres casos aprobados. Cambiarlo no
+          borra el sello: ejecutá otra vez para verificar el código nuevo.
         </p>
       ) : null}
       <div className="sys-related">
         <h2>Herramientas que preparan esta idea.</h2>
-        <p>Estos ejercicios existentes se reutilizan como práctica previa. Podés ir directamente al núcleo si ya entendés el concepto.</p>
+        <p>
+          Estos ejercicios existentes se reutilizan como práctica previa. Podés ir directamente al
+          núcleo si ya entendés el concepto.
+        </p>
         <div>
           {tools.map((tool) => (
             <a key={tool.id} href={workshopExerciseHref(workshop.id, tool.id)}>
@@ -68,8 +75,13 @@ const BuildPart = ({ workshop, language, exercises, onPartChange }: BuildPartPro
         </div>
       </div>
       <div className="sys-footer">
-        <p>El navegador comprueba el núcleo acotado. El próximo paso convierte esa pieza en un proyecto.</p>
-        <button className="button" onClick={() => onPartChange('ship')}>Armar mi proyecto →</button>
+        <p>
+          El navegador comprueba el núcleo acotado. El próximo paso convierte esa pieza en un
+          proyecto.
+        </p>
+        <button className="button" onClick={() => onPartChange('ship')}>
+          Armar mi proyecto →
+        </button>
       </div>
       <WorkshopSources sources={workshop.sources} />
     </>

@@ -11,10 +11,19 @@ describe('BuildPart', () => {
 
   it('shows the core of the language with its tests and its IDE link', () => {
     const exercises = initProbeEngine();
-    render(<BuildPart workshop={workshopView('probe', 'rust')} language="rust" exercises={exercises} onPartChange={vi.fn()} />);
+    render(
+      <BuildPart
+        workshop={workshopView('probe', 'rust')}
+        language="rust"
+        exercises={exercises}
+        onPartChange={vi.fn()}
+      />,
+    );
 
     expect(screen.getByText('NÚCLEO EJECUTABLE · RUST')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: 'El núcleo de la sonda' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'El núcleo de la sonda' }),
+    ).toBeInTheDocument();
     expect(screen.getByText('3 pruebas reales')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Entrar al IDE ↗' })).toHaveAttribute(
       'href',
@@ -26,8 +35,15 @@ describe('BuildPart', () => {
   it('links the known previous tools and skips the unknown ones', () => {
     const exercises = initProbeEngine();
     render(
-      <BuildPart workshop={{ ...workshopView('probe', 'rust'), related: { rust: ['rust-tool', 'rust-gone'] } }}
-        language="rust" exercises={exercises} onPartChange={vi.fn()} />,
+      <BuildPart
+        workshop={{
+          ...workshopView('probe', 'rust'),
+          related: { rust: ['rust-tool', 'rust-gone'] },
+        }}
+        language="rust"
+        exercises={exercises}
+        onPartChange={vi.fn()}
+      />,
     );
 
     expect(screen.getByRole('link', { name: /^rust-tool/ })).toHaveAttribute(
@@ -40,21 +56,42 @@ describe('BuildPart', () => {
   it('shows the verified-code notice only with the code seal', () => {
     const exercises = initProbeEngine();
     const { rerender } = render(
-      <BuildPart workshop={workshopView('probe', 'rust')} language="rust" exercises={exercises} onPartChange={vi.fn()} />,
+      <BuildPart
+        workshop={workshopView('probe', 'rust')}
+        language="rust"
+        exercises={exercises}
+        onPartChange={vi.fn()}
+      />,
     );
     expect(screen.queryByRole('status')).toBeNull();
 
     systemsEngine.syncLab(passingLabState());
-    rerender(<BuildPart workshop={workshopView('probe', 'rust')} language="rust" exercises={exercises} onPartChange={vi.fn()} />);
+    rerender(
+      <BuildPart
+        workshop={workshopView('probe', 'rust')}
+        language="rust"
+        exercises={exercises}
+        onPartChange={vi.fn()}
+      />,
+    );
 
-    expect(screen.getByRole('status')).toHaveTextContent(/^✓ Este núcleo tiene una ejecución registrada/);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      /^✓ Este núcleo tiene una ejecución registrada/,
+    );
   });
 
   it('the footer button asks for the ship part', async () => {
     const user = userEvent.setup();
     const onPartChange = vi.fn();
     const exercises = initProbeEngine();
-    render(<BuildPart workshop={workshopView('probe', 'rust')} language="rust" exercises={exercises} onPartChange={onPartChange} />);
+    render(
+      <BuildPart
+        workshop={workshopView('probe', 'rust')}
+        language="rust"
+        exercises={exercises}
+        onPartChange={onPartChange}
+      />,
+    );
 
     await user.click(screen.getByRole('button', { name: 'Armar mi proyecto →' }));
 

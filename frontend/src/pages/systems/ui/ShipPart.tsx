@@ -44,12 +44,17 @@ const ShipPart = ({ workshop, language, notify, downloadKit }: ShipPartProps) =>
           <span className="eyebrow">UNA PIEZA QUE PODÉS LLEVARTE</span>
           <h2>Del experimento al proyecto.</h2>
           <p>
-            Descargá un kit con tu borrador actual, tres tests, una solución separada para consultar y esta hoja de ruta.{' '}
-            {language === 'rust' ? 'Incluye Cargo.toml y pruebas de Rust.' : 'Incluye go.mod y pruebas de Go.'} El kit
-            implementa el núcleo del ejercicio; estas cuatro etapas guían la ampliación.
+            Descargá un kit con tu borrador actual, tres tests, una solución separada para consultar
+            y esta hoja de ruta.{' '}
+            {language === 'rust'
+              ? 'Incluye Cargo.toml y pruebas de Rust.'
+              : 'Incluye go.mod y pruebas de Go.'}{' '}
+            El kit implementa el núcleo del ejercicio; estas cuatro etapas guían la ampliación.
           </p>
         </div>
-        <button className="button" onClick={download}>Descargar kit {languageName} ↓</button>
+        <button className="button" onClick={download}>
+          Descargar kit {languageName} ↓
+        </button>
       </section>
       <div className="sys-real-uses">
         <h3>Dónde aparece esta idea</h3>
@@ -72,8 +77,13 @@ const ShipPart = ({ workshop, language, notify, downloadKit }: ShipPartProps) =>
                 <p>{step.done}</p>
               </div>
               <label>
-                <input type="checkbox" checked={workshop.progress.steps.includes(index)}
-                  onChange={(event) => systemsEngine.setStep(workshop.id, language, index, event.target.checked)} />{' '}
+                <input
+                  type="checkbox"
+                  checked={workshop.progress.steps.includes(index)}
+                  onChange={(event) =>
+                    systemsEngine.setStep(workshop.id, language, index, event.target.checked)
+                  }
+                />{' '}
                 Lo comprobé en mi proyecto · registro manual
               </label>
             </div>
@@ -87,10 +97,17 @@ const ShipPart = ({ workshop, language, notify, downloadKit }: ShipPartProps) =>
       </div>
       <label className="sys-note">
         <span>Dejá tu próximo experimento por escrito</span>
-        <textarea id="sys-note" maxLength={10000} placeholder="Observé que… Mi próximo test va a demostrar…"
-          defaultValue={workshop.progress.note} onChange={(event) => saveNote(event.target.value)} />
+        <textarea
+          id="sys-note"
+          maxLength={10000}
+          placeholder="Observé que… Mi próximo test va a demostrar…"
+          defaultValue={workshop.progress.note}
+          onChange={(event) => saveNote(event.target.value)}
+        />
       </label>
-      <p id="sys-note-status" className="note-state">{noteStatus}</p>
+      <p id="sys-note-status" className="note-state">
+        {noteStatus}
+      </p>
       <Checkpoint workshop={workshop} language={language} notify={notify} />
       <WorkshopSources sources={workshop.sources} />
     </>
