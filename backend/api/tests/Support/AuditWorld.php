@@ -2,6 +2,10 @@
 
 namespace Tests\Support;
 
+use App\Audit\AuditCatalogReader;
+use App\Audit\AuditPlan;
+use App\Audit\AuditProgram;
+use App\Audit\AuditSelection;
 use Illuminate\Support\Facades\DB;
 
 final class AuditWorld
@@ -31,6 +35,19 @@ final class AuditWorld
             'document_hash' => self::imageDocumentHash(),
             'portion_hashes' => json_encode(['harness' => self::imageHarnessHash()], JSON_THROW_ON_ERROR),
         ]);
+    }
+
+    /** @return array<string, AuditProgram> */
+    public static function keyedPrograms(?string $exercise = null): array
+    {
+        self::curriculum();
+        $selection = AuditSelection::fromOptions(null, $exercise === null ? [] : [$exercise]);
+        $keyed = [];
+        foreach (app(AuditPlan::class)->programs(app(AuditCatalogReader::class)->read(), $selection) as $index => $program) {
+            $keyed["p{$index}"] = $program;
+        }
+
+        return $keyed;
     }
 
     public static function code(string $id, string $role): string
