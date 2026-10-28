@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
 
 interface AccessDialogProps {
   readonly children: ReactNode;
@@ -6,7 +6,7 @@ interface AccessDialogProps {
 
 const AccessDialog = ({ children }: AccessDialogProps) => {
   const dialog = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const element = dialog.current;
     const opener = document.activeElement;
     if (element !== null && !element.open) element.showModal();
@@ -20,7 +20,9 @@ const AccessDialog = ({ children }: AccessDialogProps) => {
       ref={dialog}
       className="access-dialog"
       aria-label="Ingresá al taller"
-      onClose={(event) => event.currentTarget.showModal()}
+      onClose={(event) => {
+        if (event.target === event.currentTarget) event.currentTarget.showModal();
+      }}
       onCancel={(event) => {
         if (event.target === event.currentTarget) event.preventDefault();
       }}
