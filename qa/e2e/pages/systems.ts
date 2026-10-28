@@ -87,7 +87,7 @@ export class SystemsPage {
   }
 
   cardSeals(title: string): Locator {
-    return this.workshopCard(title).getByText(/sellos|Tres sellos conseguidos/);
+    return this.workshopCard(title).getByText(/sellos/);
   }
 
   openButton(title: string): Locator {
@@ -115,7 +115,7 @@ export class SystemsPage {
   }
 
   seal(label: 'Modelo explorado' | 'Código verificado' | 'Checkpoint razonado'): Locator {
-    return this.seals().locator('span', { hasText: label });
+    return this.seals().getByText(label);
   }
 
   // Objective rows have no role or name: the class is their locator.
@@ -150,7 +150,7 @@ export class SystemsPage {
   }
 
   scene(): Locator {
-    return this.page.locator('#sys-model-view').getByRole('img');
+    return this.page.getByRole('region', { name: /^Modelo interactivo de / }).getByRole('img');
   }
 
   // The answers container has no role or name.
@@ -207,7 +207,7 @@ export class SystemsPage {
 
   async mainTop(): Promise<number> {
     return this.page
-      .locator('#main')
+      .getByRole('main')
       .evaluate((element) => Math.round(element.getBoundingClientRect().top));
   }
 

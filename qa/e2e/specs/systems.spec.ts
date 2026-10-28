@@ -64,6 +64,10 @@ test.describe('the catalog', () => {
 
     await systems.search().fill('raycast');
     await expect(systems.workshopCards()).toHaveCount(1);
+
+    await systems.search().fill('visitas');
+    await expect(systems.workshopCards()).toHaveCount(1);
+    await expect(systems.workshopCard(CACHE)).toBeVisible();
   });
 
   test('the empty state clears the family and the search and focuses the search box', async ({
@@ -174,6 +178,7 @@ test.describe('the three parts', () => {
   }) => {
     await shell.goto(urls.workshop('rust', 'cache', 'explore'));
     for (const part of ['build', 'ship', 'explore'] as const) {
+      await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
       await systems.part(part).click();
 
       await expect(systems.part(part)).toHaveAttribute('aria-pressed', 'true');
@@ -188,9 +193,11 @@ test.describe('the three parts', () => {
 
     await systems.nextPart('Programar el núcleo →').click();
     await expect(systems.part('build')).toBeFocused();
+    await expect.poll(() => systems.partTabsTop()).toBe(25);
 
     await systems.nextPart('Armar mi proyecto →').click();
     await expect(systems.part('ship')).toBeFocused();
+    await expect.poll(() => systems.partTabsTop()).toBe(25);
   });
 
   test('an unknown part opens Explorar and a part without a workshop opens the catalog', async ({
@@ -249,15 +256,21 @@ test.describe('Explorar', () => {
   test('«Reiniciar modelo ↺» empties the trace and keeps the objectives and the seals', async ({
     shell,
     systems,
+    storage,
   }) => {
+    await storage.seed({
+      'taller-systems-v1': systemsProgress({ 'rust:cache': { observed: ['hit', 'evict'] } }),
+    });
     await shell.goto(urls.workshop('rust', 'cache', 'explore'));
     await systems.modelButton('Leer A').click();
     await expect(systems.traceEntries()).toHaveCount(1);
+    await expect(systems.seal('Modelo explorado')).toHaveClass(/earned/);
 
     await systems.resetModel().click();
 
     await expect(systems.traceEntries()).toHaveCount(0);
     await expect(systems.objective('Provocá una carga por miss')).toHaveClass(/earned/);
+    await expect(systems.seal('Modelo explorado')).toHaveClass(/earned/);
   });
 });
 
@@ -485,7 +498,10 @@ test.describe('the 25 workshops', () => {
       await shell.goto(urls.workshop('go', id, 'explore'));
 
       await systems.part('build').click();
-      await expect(systems.enterIde()).toBeVisible();
+      await expect(systems.enterIde()).toHaveAttribute(
+        'href',
+        `?sistema=${id}&ejercicio=${curriculumIds.workshops[id].cores.go}&paso=code#laboratorio`,
+      );
       await systems.part('ship').click();
       await expect(systems.downloadKit('Go')).toBeVisible();
     });
@@ -496,13 +512,18 @@ test('«Borrar todo» resets the simulations and the seals and keeps the family 
   shell,
   systems,
   method,
+  storage,
 }) => {
+  await storage.seed({
+    'taller-systems-v1': systemsProgress({ 'rust:cache': { observed: ['hit', 'evict'] } }),
+  });
   await shell.goto(urls.workshop('rust'));
   await systems.familyFilter('Dentro de la máquina').click();
   await systems.search().fill('caché');
   await systems.openWorkshop(CACHE);
   await systems.modelButton('Leer A').click();
   await expect(systems.traceEntries()).toHaveCount(1);
+  await expect(systems.seal('Modelo explorado')).toHaveClass(/earned/);
 
   await shell.openFromMenu('metodo');
   await method.resetProgress().click();
@@ -512,6 +533,7 @@ test('«Borrar todo» resets the simulations and the seals and keeps the family 
   await shell.openFromMenu('sistemas');
   await expect(systems.traceEntries()).toHaveCount(0);
   await expect(systems.objective('Provocá una carga por miss')).not.toHaveClass(/earned/);
+  await expect(systems.seal('Modelo explorado')).not.toHaveClass(/earned/);
   await systems.backToCatalog().click();
   await expect(systems.familyFilter('Dentro de la máquina')).toHaveAttribute(
     'aria-pressed',
