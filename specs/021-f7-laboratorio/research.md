@@ -45,6 +45,20 @@ Medida en la copia de `f2b-acum@2b37caf4`. T001 la vuelve a medir sobre la base 
 | `dist/index.html` | 1 147 227 bytes (+3 375); `html.length` da 1 144 712 caracteres, bajo `BOOT_SIZE_LIMIT` (1 250 000) |
 | `lab.js` empaquetado solo | 104 393 caracteres (suma el cliente de los Playgrounds, que antes vivía en el paquete de `register-runner.ts`); las claves, 1, 0, 0 y 0 |
 
+## Línea base de la implementación
+
+Medida el 2026-10-28 sobre `9973f5ea` (rama `impl/f7a-laboratorio`, con F2a, A2 y F2b), antes de cualquier cambio. Build, `npm test`, lint, formato y E2E en verde. Coincide con la línea base de planificación en todos los valores.
+
+| Qué | Valor |
+| --- | --- |
+| `npm run lint` | 0 errores, 35 avisos |
+| Avisos de `frontend/lab.js` | 12: `render` 13, `mapHTML` 17, `exerciseHTML` 11, `reviewHTML` 26, la flecha de `testsHTML` 12, `runExercise` 17, `updateRunUI` 15, `reflectHTML` 12, `explorerHTML` 12, `onClick` 59, `onInput` 13 y `onKeydown` 16 |
+| E2E | 123 |
+| Vitest | 29 archivos y 719 pruebas |
+| `lab-state-check` y `runner-check` | 37 y 12 escenarios |
+| `load-order-check` | 24 imports |
+| `dist/index.html` | 1 143 852 bytes; `html.length` da 1 141 337 caracteres |
+
 ## R1. La unión ampliable de los estados (F7-Q2)
 
 **El problema.** El clarify pide «un canal de progreso y la cancelación, con los estados de hoy en una unión ampliable», y que A4 sume los suyos «sin cambiar la feature». Una unión cerrada escrita en un archivo de la feature obliga a A4 a editarla.
