@@ -33,6 +33,16 @@ describe('campaign bridge entry', () => {
     await expect(import('./bridge')).resolves.toHaveProperty('campaignLinkAccess');
   });
 
+  it('exposes the mission type and the mission XP without creating any singleton', async () => {
+    failWhenLoaded();
+
+    const bridge = await import('./bridge');
+
+    expect(bridge.missionTypeLabel('repair')).toBe('Reparación · lings');
+    expect(bridge.CODE_XP).toBe(20);
+    expect(bridge.PREDICTION_XP).toBe(10);
+  });
+
   it('is isolated on purpose: the slice index does create the engine', async () => {
     failWhenLoaded();
 

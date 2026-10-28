@@ -5,3 +5,6 @@ export type {
   CampaignLinkAccess,
   CampaignMissionContext,
 } from './model/mission-bridge';
+export { CODE_XP, PREDICTION_XP } from './model/rules';
+export { missionTypeLabel } from './model/selectors';
+export type { MissionTypeLabel } from './model/selectors';
