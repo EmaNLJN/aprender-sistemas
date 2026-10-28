@@ -78,6 +78,15 @@ describe('sanitizeScene', () => {
       shapes: [
         { type: 'rect', x: 0, y: 0, width: 1, height: 1, fill: 'red', stroke: 'url(#evil)' },
         { type: 'text', x: 0, y: 0, text: 'a', fill: 'url(https://example.org/x)' },
+        {
+          type: 'rect',
+          x: 0,
+          y: 0,
+          width: 1,
+          height: 1,
+          fill: 'url(https://example.org/x) #fff',
+          stroke: 'expression(alert(1)) none',
+        },
       ],
     });
 
@@ -85,6 +94,16 @@ describe('sanitizeScene', () => {
     expect(scene.shapes).toEqual([
       { type: 'rect', x: 0, y: 0, width: 1, height: 1, ...DEFAULT_PAINT },
       { type: 'text', x: 0, y: 0, fill: '#252c27', fontSize: 12, text: 'a' },
+      {
+        type: 'rect',
+        x: 0,
+        y: 0,
+        width: 1,
+        height: 1,
+        fill: 'none',
+        stroke: 'none',
+        strokeWidth: 1,
+      },
     ]);
   });
 
