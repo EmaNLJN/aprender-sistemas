@@ -350,3 +350,22 @@ Qué entró antes (quickstart §1.2):
 | Ayudante de grupos (`runSourceGroup`, `bundleSourceGroup`) | Ninguno en `qa/` |
 | `REACT_VIEWS` en `boot-check` | Ausente: T010 corre |
 | F8 | No entró: `createProgressBackup` sigue en `frontend/app.js` |
+
+## Resultado del spike de V6 y V1 (T003)
+
+Corrido el 2026-10-28 sobre una copia descartable de `impl/f5-sistemas`, con el adaptador real de nuqs 2.10.2 en jsdom (6 tests; los casos 2 y 3 son uno solo). No cambia el plan.
+
+| # | Comprobación | Resultado |
+| --- | --- | --- |
+| 1 | jsdom actualiza `location` con `replaceState` | OK |
+| 2 | abrir desde `/#sistemas` escribe `?lenguaje=rust&taller=cache&parte=explore` y conserva `#sistemas` | OK |
+| 3 | no suma entrada al historial | OK |
+| 4 | cerrar deja `?lenguaje=rust` | OK |
+| 5 | un parámetro ajeno se conserva (`?basura=1&lenguaje=rust&taller=cache&parte=explore`) | OK |
+| 6 | las claves que ya estaban conservan su orden (`?taller=cache&parte=ship&lenguaje=rust`) | OK |
+| 7 | con `enableHistorySync()`, un `replaceState` ajeno llega al hook | OK |
+
+- **`enableHistorySync`** se exporta en `nuqs/dist/adapters/react.js` de la 2.10.2.
+- **`localStorage`** también aparece en `nuqs/dist/server.js`, que es el entry `nuqs/server`. El plan no lo importa.
+- **V1, el peso estimado con esbuild:** nuqs suma 17 451 bytes, bajo el umbral de 25 000; zustand suma 245 y `@standard-schema/spec`, 0. La medida real es la diferencia de `html.length` en T025.
+- **El filtro del quickstart §2.1:** `npm run test:unit -- src/pages/...` no encuentra el archivo, porque el filtro es relativo a `frontend/src`. Funciona con el nombre del archivo.
