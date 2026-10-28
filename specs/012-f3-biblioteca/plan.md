@@ -942,3 +942,1171 @@ test('(l) switching the language on the library keeps the filters', async ({ she
   4. Commit: `test(e2e): la Biblioteca de hoy: búsqueda, filtros, favoritos, teclado, tarjeta e idioma`.
 - **Compuerta:** los 22 casos de la spec en verde contra el legacy, tres veces, y la red completa sin cambios.
 - **Si una prueba falla contra el legacy:** el valor esperado está mal escrito o el legacy hace otra cosa. Se compara con `renderResourceResults` y con la spec, y se informa a K; no se cambia la expectativa para que pase.
+
+## 2. Unidad 2 · El arnés, lo compartido, el modelo y la página sin montar (K, S y P; ondas 1 y 2)
+
+**Cubre:** FR-007 a FR-012, FR-014, FR-015, FR-016, FR-017, FR-018, FR-022, FR-023, FR-024, FR-025, FR-030, FR-032 a FR-035; SC-010 y SC-012; US5.
+
+### Tarea 2.1 · La pila de componentes y fishery (T005, K)
+
+- **Si T001 encontró la pila de DOM y fishery instaladas:** no se hace nada.
+- **Si falta alguna:** con el permiso P2 (§«Descargas y permisos»), se instala sólo lo que falta:
+  ```sh
+  npm install --save-exact --save-dev jsdom@30.1.2 @testing-library/react@16.3.3 @testing-library/dom@10.4.2 @testing-library/user-event@14.6.7 @testing-library/jest-dom@7.0.1 fishery@2.4.0
+  ```
+- **Comprobaciones:**
+  - `git diff package.json` muestra sólo `devDependencies`, con versiones sin `^`;
+  - `npm ci --offline` reproduce el árbol;
+  - `npm run build` deja el script del dist con el mismo sha256 que en T001: nada de esto es alcanzable desde `main.tsx`.
+- **Commit:** `build(front): jsdom, Testing Library y fishery para las specs de componentes`.
+
+### Tarea 2.2 · Los dos proyectos de Vitest, el setup y la guarda de `useStore` (T006, K)
+
+- **Si T001 encontró `frontend/src/vitest-setup.ts`, los `projects` y la guarda:** no se cambia ningún archivo. Sólo se corre la prueba de la guarda del paso 4. Si no rechaza el temporal, es un hallazgo y K suma el bloque de ESLint de abajo.
+- **Archivos:** `frontend/vitest.config.ts`, `frontend/src/vitest-setup.ts` (nuevo) y `eslint.config.ts`. Su contenido es el mismo que el del plan de F5 (§2.1), para que el segundo en llegar no tenga nada que resolver.
+
+```ts
+// frontend/vitest.config.ts
+import { resolve } from 'node:path';
+import { defineConfig, mergeConfig } from 'vitest/config';
+import viteConfig from './vite.config.ts';
+
+export default mergeConfig(
+  viteConfig,
+  defineConfig({
+    // Vite's root is frontend/src: without this the cache would land in frontend/src/node_modules.
+    cacheDir: resolve(import.meta.dirname, '../node_modules/.vite'),
+    test: {
+      projects: [
+        {
+          extends: true,
+          test: { name: 'node', environment: 'node', include: ['**/*.spec.ts'] },
+        },
+        {
+          extends: true,
+          test: {
+            name: 'jsdom',
+            environment: 'jsdom',
+            include: ['**/*.spec.tsx'],
+            setupFiles: [resolve(import.meta.dirname, 'src/vitest-setup.ts')],
+          },
+        },
+      ],
+    },
+  }),
+);
+```
+
+La raíz sólo lleva `projects`. En Vitest 5, los proyectos en línea heredan la raíz y concatenan sus arreglos, así que un `include` en la raíz se sumaría al de `jsdom` (research.md, tabla). El comentario del `cacheDir` ya existe y se conserva.
+
+```ts
+// frontend/src/vitest-setup.ts
+import '@testing-library/jest-dom/vitest';
+import { cleanup } from '@testing-library/react';
+import { afterEach } from 'vitest';
+
+afterEach(() => {
+  cleanup();
+});
+```
+
+El bloque nuevo de `eslint.config.ts`, después del de `frontend/src/**/*.{js,jsx,ts,tsx}`:
+
+```ts
+  {
+    files: ['frontend/src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "CallExpression[callee.name='useStore'][arguments.length<2]",
+          message: 'useStore needs a small selector: never subscribe to the whole store (F2a, Q3).',
+        },
+      ],
+    },
+  },
+```
+
+- **Pasos:**
+  1. **La prueba del proyecto, en rojo.** `frontend/src/vitest-setup.probe.spec.tsx`, descartable:
+     ```tsx
+     import { render, screen } from '@testing-library/react';
+     import { expect, it } from 'vitest';
+
+     it('renders in jsdom', () => {
+       render(<p>hola</p>);
+       expect(screen.getByText('hola')).toBeInTheDocument();
+     });
+     ```
+     `npm run test:unit -- src/vitest-setup.probe.spec.tsx` falla: el proyecto de hoy no toma `*.spec.tsx`.
+  2. Escribir la configuración y el setup. La prueba pasa en el proyecto `jsdom`, y `npm run test:unit` corre en `node` la misma cantidad de pruebas que T001.
+  3. Se borra la prueba descartable.
+  4. **La guarda, en rojo y después en verde.** `frontend/src/app/use-store-probe.tsx`, descartable:
+     ```tsx
+     import { useStore } from 'zustand';
+     import { createStore } from 'zustand/vanilla';
+
+     const probeStore = createStore(() => ({ revision: 0 }));
+
+     const UseStoreProbe = () => {
+       const state = useStore(probeStore);
+       return <p>{state.revision}</p>;
+     };
+
+     export default UseStoreProbe;
+     ```
+     - Sin el bloque, `npx eslint frontend/src/app/use-store-probe.tsx` pasa: ése es el rojo.
+     - Con el bloque, falla con el mensaje de arriba.
+     - `useStore(probeStore, (state) => state.revision)` pasa.
+     - Se borra el temporal.
+  5. `npm run typecheck`, `npm run lint` y `npm run format:check`.
+- **Commit:** `test(front): el arnés de componentes de Vitest con jsdom y la guarda de useStore`.
+- **Compuerta:** los pasos 2 y 4, y SC-012: `grep -n library frontend/vitest.config.ts frontend/src/vitest-setup.ts eslint.config.ts` no imprime nada.
+
+### Tarea 2.3 · `toggleItem` baja a `entities/guide` (T007, S)
+
+- **Si T001 la encontró exportada por `entities/guide`:** no se hace nada.
+- **Archivos:**
+  - `frontend/src/entities/guide/model/toggle-item.ts` y `toggle-item.spec.ts`, nuevos;
+  - `frontend/src/entities/guide/index.ts`;
+  - `frontend/app.js`.
+- **Produce:** `export function toggleItem(collection: string[], id: string): void;`. Agrega `id` al final si falta, o lo quita, y **muta** el arreglo que recibe: el progreso se muta en el lugar antes de `routeStore.save()`.
+
+```ts
+// frontend/src/entities/guide/model/toggle-item.spec.ts
+import { describe, expect, it } from 'vitest';
+import { toggleItem } from './toggle-item';
+
+describe('toggleItem', () => {
+  it('adds a missing id at the end of the same array', () => {
+    const favorites = ['rust-100'];
+
+    toggleItem(favorites, 'go-tour');
+
+    expect(favorites).toEqual(['rust-100', 'go-tour']);
+  });
+
+  it('removes an id that is there and keeps the order of the rest', () => {
+    const favorites = ['rust-100', 'go-tour', 'context7'];
+
+    toggleItem(favorites, 'go-tour');
+
+    expect(favorites).toEqual(['rust-100', 'context7']);
+  });
+
+  it('returns to the start when it toggles twice', () => {
+    const completed = ['rust-ownership'];
+
+    toggleItem(completed, 'rust-first-session');
+    toggleItem(completed, 'rust-first-session');
+
+    expect(completed).toEqual(['rust-ownership']);
+  });
+});
+```
+
+```ts
+// frontend/src/entities/guide/model/toggle-item.ts
+export function toggleItem(collection: string[], id: string): void {
+  const index = collection.indexOf(id);
+  if (index === -1) collection.push(id);
+  else collection.splice(index, 1);
+}
+```
+
+- **Pasos:**
+  1. La spec, con `toggleItem` lanzando `not implemented`. `npm run test:unit -- src/entities/guide/model/toggle-item.spec.ts` falla. Commit: `test(front): toggleItem alterna un id del progreso del recorrido (rojo)`.
+  2. La implementación, y `export { toggleItem } from './model/toggle-item';` en el índice.
+  3. En `frontend/app.js`:
+     - el primer import pasa a `import { routeStore, toggleItem } from './src/entities/guide';`;
+     - se borra la función local `toggleItem`, sin tocar ninguna llamada.
+  4. `node qa/app-shell-check.ts` (los pasos, los hitos y los favoritos la usan), `node qa/boot-check.ts`, `node qa/seams-guard-check.ts`, `npm test` y `npm run lint`.
+  5. Commit: `refactor(front): toggleItem vive en entities/guide y app.js la importa`.
+- **Compuerta:** el paso 4, sin cambiar un valor esperado.
+
+### Tarea 2.4 · El almacén del bundle de `app.js` en `app-shell-check` y los dos escenarios de `favorite` (T008, S)
+
+- **Cuándo:** después de T007.
+- **Si T001 encontró el `routeStore` del arnés:** se usa el que está y se hace sólo el paso 4, con el ayudante equivalente.
+- **Archivos:** `qa/lib/sources.ts`, `qa/lib/legacy-sources.ts`, `qa/lib/app-shell-harness.ts` y `qa/app-shell-check.ts`.
+- **Produce:**
+
+```ts
+// qa/lib/sources.ts: a new export next to runModule
+export function runModuleEntry<T>(context: vm.Context, name: string, contents: string): T {
+  const key = `entry:${name}|${contents}`;
+  let wrapped = moduleCache.get(key);
+  if (wrapped === undefined) {
+    const bundle = build(name, {
+      stdin: { contents, resolveDir: repoRoot, loader: 'js', sourcefile: name },
+      format: 'iife',
+      globalName: MODULE_GLOBAL_NAME,
+      platform: 'browser',
+      target: 'es2020',
+      legalComments: 'inline',
+    });
+    wrapped = `(function () {\n${bundle}\nreturn ${MODULE_GLOBAL_NAME};\n})()`;
+    moduleCache.set(key, wrapped);
+  }
+  return vm.runInContext(wrapped, context, { filename: name }) as T;
+}
+```
+
+```ts
+// qa/lib/legacy-sources.ts
+const APP_SHELL_ENTRY = [
+  `export { startApp } from './${APP_SHELL_SOURCE}';`,
+  "export { routeStore, toggleItem } from './frontend/src/entities/guide';",
+].join('\n');
+
+export interface AppShellRouteStore {
+  getProgress(): { favorites: string[]; completed: string[] };
+  save(): boolean;
+}
+
+export interface AppShellModule {
+  startApp(): void;
+  routeStore: AppShellRouteStore;
+  toggleItem(collection: string[], id: string): void;
+}
+
+export function loadAppShell(context: vm.Context): AppShellModule {
+  return runModuleEntry<AppShellModule>(context, 'app-shell-entry.js', APP_SHELL_ENTRY);
+}
+```
+
+Así `startApp`, `routeStore` y `toggleItem` salen del mismo bundle: el almacén que abre `app.js` es el que usa la prueba, como pasa en el navegador con la página. `boot-check` también llama a `loadAppShell`, sólo para `startApp`, y no cambia.
+
+```ts
+// qa/lib/app-shell-harness.ts
+export interface LoadedHarness extends Harness {
+  routeStore: AppShellRouteStore;
+  // The library page saves this way: toggle the id in the shared progress, then save.
+  toggleFavorite(id: string): void;
+}
+
+export function buildHarness(options: HarnessOptions = {}): LoadedHarness {
+  const harness = createHarness(options);
+  const shell = loadAppShell(harness.context);
+  shell.startApp();
+  return {
+    ...harness,
+    routeStore: shell.routeStore,
+    toggleFavorite(id) {
+      shell.toggleItem(shell.routeStore.getProgress().favorites, id);
+      shell.routeStore.save();
+    },
+  };
+}
+```
+
+El comentario de `toggleFavorite` es la referencia puntual que permite `AGENTS.md`: dice qué consumidor simula. Los imports de `app-shell-harness.ts` suman `type AppShellRouteStore` de `./legacy-sources.ts`.
+
+- **Los dos escenarios** (`qa/app-shell-check.ts`), con los mismos valores esperados:
+  - «almacén: desmarcar un paso, quitar un favorito y vaciar una nota se conservan al recargar»: `await clickAction(harness, { action: 'favorite', id: 'rustlings' });` pasa a `harness.toggleFavorite('rustlings');`;
+  - «almacén: un cambio de otra pestaña se fusiona y gana el idioma y los minutos de esta»: `await clickAction(harness, { action: 'favorite', id: 'go-tour' });` pasa a `harness.toggleFavorite('go-tour');`.
+- **Pasos:**
+  1. Los tres cambios de `qa/lib/`. `node qa/app-shell-check.ts` sigue en verde, con la misma cantidad de escenarios.
+  2. Los dos reemplazos. Los dos escenarios pasan **contra el legacy** con sus aserciones intactas: el `save()` de la página y el de `app.js` son el mismo almacén.
+  3. `node qa/boot-check.ts`, `npm run typecheck` y `npm run lint`.
+  4. Commit: `test(qa): app-shell-check guarda los favoritos por el camino de la página`.
+- **Compuerta:** el paso 2, y `git diff qa/app-shell-check.ts` cambia sólo esas dos líneas.
+
+### Tarea 2.5 · El pie de guardado sigue a la revisión del recorrido (T009, S)
+
+- **Cuándo:** después de T008.
+- **Si T001 encontró la suscripción:** se corre el escenario de abajo. Si pasa, no se cambia nada. Si falla porque el oyente no actualiza el pie, se suma `updateSaveLabel()` al oyente que está.
+- **Archivos:** `qa/app-shell-check.ts` (un escenario nuevo, después de «almacenamiento sin escritura…») y `frontend/app.js`.
+- **La prueba en rojo:**
+
+```ts
+await test('almacén: un guardado de otro consumidor actualiza el pie', () => {
+  const harness = buildHarness({ stored: localProgress, writesBlocked: true });
+  assert.equal(harness.elements['save-label']?.textContent, 'Guardado en este navegador');
+
+  harness.toggleFavorite('go-tour');
+
+  assert.equal(harness.elements['save-label']?.textContent, 'Exportá para conservar tu avance');
+});
+```
+
+Falla hoy: el `save()` de la página no pasa por el de `app.js`, que es el que actualiza el pie.
+
+- **La implementación:** en `frontend/app.js`, inmediatamente después de `routeStore.open(data);`, va `routeStore.changes.subscribe(updateSaveLabel);`. `updateSaveLabel` es una declaración de función de `startApp`, así que ya está definida. El `save()` de `app.js` sigue llamándola: el pie se escribe dos veces con el mismo texto, como hoy.
+- **Lo que no entra:** los contadores de la barra lateral. Nada de la Biblioteca los cambia y no habría una prueba en rojo. F9 suma su línea al oyente, con su escenario (research.md, R7).
+- **Pasos:**
+  1. El escenario en rojo. Commit: `test(qa): un guardado de otro consumidor actualiza el pie (rojo)`.
+  2. La línea de `app.js`. `node qa/app-shell-check.ts` (todos), `node qa/boot-check.ts` (los oyentes del DOM no cambian), `npm test` y la red E2E.
+  3. Commit: `feat(front): el pie de guardado sigue a la revisión del recorrido`.
+- **Compuerta:** el paso 2.
+
+### Tarea 2.6 · El modelo de la Biblioteca y su factory (T010, P)
+
+- **Cuándo:** después de T005 y T006.
+- **Archivos nuevos** en `frontend/src/pages/library/model/`:
+  - `filter-resources.ts` y `filter-resources.spec.ts`;
+  - `resource-labels.ts` y `resource-labels.spec.ts`;
+  - `guide-resource.factory.ts`.
+- **También cambia** `frontend/src/shared/config/url-grammar.ts`: sólo suma los tres tipos y las tres listas de valores de la Biblioteca. La clave de la URL y `withLanguageQuery` llegan en T017 y T018.
+
+```ts
+// frontend/src/shared/config/url-grammar.ts, additions after LINK_LANGUAGES
+export const LIBRARY_LANGUAGES = ['all', 'rust', 'go'] as const;
+export const LIBRARY_COSTS = ['all', 'gratis', 'mixto'] as const;
+export const LIBRARY_CATEGORIES = ['all', 'ejercicios', 'proyectos', 'lectura', 'herramientas'] as const;
+export type LibraryLanguage = (typeof LIBRARY_LANGUAGES)[number];
+export type LibraryCost = (typeof LIBRARY_COSTS)[number];
+export type LibraryCategory = (typeof LIBRARY_CATEGORIES)[number];
+```
+
+```ts
+// frontend/src/pages/library/model/guide-resource.factory.ts
+import { Factory } from 'fishery';
+import type { GuideResource } from '../../../entities/guide';
+
+export const guideResourceFactory = Factory.define<GuideResource>(({ sequence }) => ({
+  id: `resource-${sequence}`,
+  title: `Recurso ${sequence}`,
+  url: `https://example.test/${sequence}`,
+  languages: ['rust'],
+  category: 'lectura',
+  cost: 'gratis',
+  format: 'Formato de prueba',
+  description: 'Texto de prueba.',
+  why: 'Motivo de prueba.',
+  caveat: 'Advertencia de prueba.',
+  featured: false,
+}));
+```
+
+Los textos por omisión no contienen ninguna de las consultas de las specs. Los arreglos (`languages`) se pasan siempre enteros: fishery los reemplaza, no los mezcla.
+
+```ts
+// frontend/src/pages/library/model/filter-resources.ts
+import type { GuideResource } from '../../../entities/guide';
+import type {
+  LibraryCategory,
+  LibraryCost,
+  LibraryLanguage,
+} from '../../../shared/config/url-grammar';
+import { normalizeSearchText } from '../../../shared/lib/normalize-search-text';
+
+export interface LibraryFilters {
+  query: string;
+  language: LibraryLanguage;
+  cost: LibraryCost;
+  category: LibraryCategory;
+  favoritesOnly: boolean;
+}
+
+export const DEFAULT_LIBRARY_FILTERS: LibraryFilters = {
+  query: '',
+  language: 'all',
+  cost: 'all',
+  category: 'all',
+  favoritesOnly: false,
+};
+
+function searchableText(resource: GuideResource): string {
+  return normalizeSearchText(
+    [resource.title, resource.description, resource.why, resource.format, ...resource.languages].join(' '),
+  );
+}
+
+function matchesLanguage(resource: GuideResource, language: LibraryLanguage): boolean {
+  return (
+    language === 'all' ||
+    resource.languages.includes(language) ||
+    resource.languages.includes('both')
+  );
+}
+
+export function filterResources(
+  resources: readonly GuideResource[],
+  filters: LibraryFilters,
+  favorites: readonly string[],
+): GuideResource[] {
+  const needle = normalizeSearchText(filters.query.trim());
+  return resources.filter(
+    (resource) =>
+      (needle === '' || searchableText(resource).includes(needle)) &&
+      matchesLanguage(resource, filters.language) &&
+      (filters.category === 'all' || resource.category === filters.category) &&
+      (filters.cost === 'all' || resource.cost === filters.cost) &&
+      (!filters.favoritesOnly || favorites.includes(resource.id)),
+  );
+}
+```
+
+La función flecha de `filter` suma 9 de complejidad y `matchesLanguage`, 3. El predicado de `renderResourceResults` (11) sale en T013.
+
+```ts
+// frontend/src/pages/library/model/resource-labels.ts
+import type { GuideResource } from '../../../entities/guide';
+
+export function languageLabel(languages: GuideResource['languages']): string {
+  if (languages.includes('both')) return 'Go + Rust';
+  return languages.map((language) => (language === 'rust' ? 'Rust' : 'Go')).join(' + ');
+}
+
+export function costLabel(cost: GuideResource['cost']): string {
+  return cost === 'gratis' ? 'Gratis' : 'Gratis + pago';
+}
+
+export function favoriteLabel(title: string, isFavorite: boolean): string {
+  return `${isFavorite ? 'Quitar de' : 'Guardar en'} favoritos: ${title}`;
+}
+
+export function resultsLabel(shown: number, total: number): string {
+  return `${shown} de ${total} recursos · abrí cada uno a tu ritmo`;
+}
+```
+
+**Las specs.** Los valores esperados se escriben a mano, a partir de las reglas de la spec y de research.md (R4):
+
+```ts
+// frontend/src/pages/library/model/filter-resources.spec.ts
+import { describe, expect, it } from 'vitest';
+import { DEFAULT_LIBRARY_FILTERS, filterResources, type LibraryFilters } from './filter-resources';
+import { guideResourceFactory } from './guide-resource.factory';
+
+const rustExercises = guideResourceFactory.build({
+  id: 'rust-100',
+  title: '100 Exercises to Learn Rust',
+  languages: ['rust'],
+  category: 'ejercicios',
+  format: 'Ejercicios con pruebas · Inglés',
+});
+const rustRover = guideResourceFactory.build({
+  id: 'rust-rover',
+  languages: ['rust'],
+  category: 'ejercicios',
+  cost: 'mixto',
+  description: 'Los mismos ejercicios dentro del IDE.',
+});
+const context7 = guideResourceFactory.build({
+  id: 'context7',
+  title: 'Context7',
+  languages: ['both'],
+  category: 'herramientas',
+  cost: 'mixto',
+});
+const tourOfGo = guideResourceFactory.build({
+  id: 'go-tour',
+  title: 'A Tour of Go',
+  languages: ['go'],
+  category: 'ejercicios',
+  format: 'Lecciones ejecutables en el navegador · Inglés',
+  caveat: 'No hace falta completar todo de una vez.',
+});
+const goTests = guideResourceFactory.build({
+  id: 'go-tests',
+  languages: ['go'],
+  category: 'lectura',
+  why: 'Escribí la prueba antes que el código.',
+});
+const twoLanguages = guideResourceFactory.build({
+  id: 'pair',
+  languages: ['rust', 'go'],
+  category: 'proyectos',
+});
+const CATALOG = [rustExercises, rustRover, context7, tourOfGo, goTests, twoLanguages];
+const EVERY_ID = ['rust-100', 'rust-rover', 'context7', 'go-tour', 'go-tests', 'pair'];
+
+const idsFor = (filters: Partial<LibraryFilters>, favorites: string[] = []) =>
+  filterResources(CATALOG, { ...DEFAULT_LIBRARY_FILTERS, ...filters }, favorites).map(
+    (resource) => resource.id,
+  );
+
+describe('the search', () => {
+  it('without filters keeps every resource in the received order', () => {
+    expect(idsFor({})).toEqual(EVERY_ID);
+  });
+
+  it('matches the whole query as a substring, not word by word', () => {
+    expect(idsFor({ query: 'tour of' })).toEqual(['go-tour']);
+    expect(idsFor({ query: 'of tour' })).toEqual([]);
+  });
+
+  it('ignores accents and case and trims the query', () => {
+    expect(idsFor({ query: 'EJÉRCICIOS' })).toEqual(['rust-100', 'rust-rover']);
+    expect(idsFor({ query: '  ejercicios ' })).toEqual(['rust-100', 'rust-rover']);
+  });
+
+  it('does not filter with an empty query or one of only spaces', () => {
+    expect(idsFor({ query: '' })).toEqual(EVERY_ID);
+    expect(idsFor({ query: '   ' })).toEqual(EVERY_ID);
+  });
+
+  it('looks at the title, the description, the why, the format and the language ids', () => {
+    expect(idsFor({ query: 'tour' })).toEqual(['go-tour']);
+    expect(idsFor({ query: 'mismos ejercicios' })).toEqual(['rust-rover']);
+    expect(idsFor({ query: 'prueba antes' })).toEqual(['go-tests']);
+    expect(idsFor({ query: 'navegador' })).toEqual(['go-tour']);
+    expect(idsFor({ query: 'both' })).toEqual(['context7']);
+  });
+
+  it('does not look at the access, the type, the caveat, the url or the id', () => {
+    expect(idsFor({ query: 'gratis' })).toEqual([]);
+    expect(idsFor({ query: 'mixto' })).toEqual([]);
+    expect(idsFor({ query: 'herramientas' })).toEqual([]);
+    expect(idsFor({ query: 'completar' })).toEqual([]);
+    expect(idsFor({ query: 'example.test' })).toEqual([]);
+    expect(idsFor({ query: 'rust-rover' })).toEqual([]);
+  });
+});
+
+describe('language, access and type', () => {
+  it('lets a language through the resources that list it or list both', () => {
+    expect(idsFor({ language: 'rust' })).toEqual(['rust-100', 'rust-rover', 'context7', 'pair']);
+    expect(idsFor({ language: 'go' })).toEqual(['context7', 'go-tour', 'go-tests', 'pair']);
+  });
+
+  it('compares the access and the type by equality', () => {
+    expect(idsFor({ cost: 'mixto' })).toEqual(['rust-rover', 'context7']);
+    expect(idsFor({ category: 'lectura' })).toEqual(['go-tests']);
+  });
+
+  it('combines the five criteria with and', () => {
+    expect(idsFor({ language: 'go', cost: 'mixto' })).toEqual(['context7']);
+    expect(idsFor({ query: 'tour of', language: 'go', cost: 'gratis' })).toEqual(['go-tour']);
+    expect(idsFor({ language: 'rust', category: 'ejercicios', cost: 'gratis' })).toEqual(['rust-100']);
+  });
+});
+
+describe('favorites only', () => {
+  it('keeps the saved ids in the order of the resources', () => {
+    expect(idsFor({ favoritesOnly: true }, ['go-tour', 'rust-100'])).toEqual(['rust-100', 'go-tour']);
+    expect(idsFor({ favoritesOnly: true }, [])).toEqual([]);
+  });
+
+  it('ignores the favorites when the criterion is off', () => {
+    expect(idsFor({ favoritesOnly: false }, ['go-tour'])).toEqual(EVERY_ID);
+  });
+});
+```
+
+```ts
+// frontend/src/pages/library/model/resource-labels.spec.ts
+import { describe, expect, it } from 'vitest';
+import type { GuideResource } from '../../../entities/guide';
+import { costLabel, favoriteLabel, languageLabel, resultsLabel } from './resource-labels';
+
+describe('languageLabel', () => {
+  it.each<[GuideResource['languages'], string]>([
+    [['rust'], 'Rust'],
+    [['go'], 'Go'],
+    [['both'], 'Go + Rust'],
+    [['rust', 'go'], 'Rust + Go'],
+    [['go', 'rust'], 'Go + Rust'],
+  ])('labels %j as %s', (languages, label) => {
+    expect(languageLabel(languages)).toBe(label);
+  });
+});
+
+describe('the other labels', () => {
+  it('names the access', () => {
+    expect(costLabel('gratis')).toBe('Gratis');
+    expect(costLabel('mixto')).toBe('Gratis + pago');
+  });
+
+  it('names the star after what it will do', () => {
+    expect(favoriteLabel('A Tour of Go', false)).toBe('Guardar en favoritos: A Tour of Go');
+    expect(favoriteLabel('A Tour of Go', true)).toBe('Quitar de favoritos: A Tour of Go');
+  });
+
+  it('counts the shown resources over the received list', () => {
+    expect(resultsLabel(1, 15)).toBe('1 de 15 recursos · abrí cada uno a tu ritmo');
+    expect(resultsLabel(0, 0)).toBe('0 de 0 recursos · abrí cada uno a tu ritmo');
+  });
+});
+```
+
+- **Pasos:**
+  1. Los dos módulos, con sus firmas lanzando `not implemented`, la factory y las specs. `npm run test:unit -- src/pages/library/model` falla por comportamiento. Commit: `test(front): el filtro y las etiquetas de la Biblioteca (rojo)`.
+  2. La implementación. Las specs pasan, y `npm run typecheck`, `npm run lint` y `npm run format:check` pasan.
+  3. Commit: `feat(front): el modelo de la Biblioteca`.
+- **Compuerta:** el paso 2 y `npm run lint` sin avisos nuevos.
+
+### Tarea 2.7 · La página, sin montar, y su spec (T011, P)
+
+- **Cuándo:** después de T007 y T010.
+- **Archivos nuevos:**
+  - en `frontend/src/pages/library/`: `index.ts`, `model/use-library-filters.ts` y, en `ui/`, `LibraryPage.tsx` (con `LibraryPage.spec.tsx`), `LibraryFiltersBar.tsx`, `ResourceCard.tsx` y `EmptyLibrary.tsx`;
+  - todavía no hay `library.css`: las reglas siguen en `styles.css` hasta T019.
+- **Produce** (la API pública del slice hasta T018):
+
+```ts
+// frontend/src/pages/library/index.ts
+export { default as LibraryPage } from './ui/LibraryPage';
+export { DEFAULT_LIBRARY_FILTERS, type LibraryFilters } from './model/filter-resources';
+```
+
+```ts
+// frontend/src/pages/library/model/use-library-filters.ts
+import { useState } from 'react';
+import { DEFAULT_LIBRARY_FILTERS, type LibraryFilters } from './filter-resources';
+
+export type LibraryFiltersChange = Partial<LibraryFilters> | null;
+
+const useLibraryFilters = (
+  initialFilters: LibraryFilters,
+  onFiltersChange: (filters: LibraryFilters) => void,
+): [LibraryFilters, (change: LibraryFiltersChange) => void] => {
+  const [filters, setFilters] = useState(initialFilters);
+  const changeFilters = (change: LibraryFiltersChange) => {
+    const next = change === null ? DEFAULT_LIBRARY_FILTERS : { ...filters, ...change };
+    setFilters(next);
+    onFiltersChange(next);
+  };
+  return [filters, changeFilters];
+};
+
+export default useLibraryFilters;
+```
+
+Es la sesión transitoria de research.md (R1): el adaptador guarda el último conjunto y la página lo recibe al montar. T018 cambia el cuerpo por `useQueryStates` y borra los dos parámetros. `changeFilters(null)` limpia, como el setter de nuqs.
+
+```tsx
+// frontend/src/pages/library/ui/LibraryFiltersBar.tsx
+import type { RefObject } from 'react';
+import {
+  LIBRARY_COSTS,
+  LIBRARY_LANGUAGES,
+  type LibraryCategory,
+} from '../../../shared/config/url-grammar';
+import type { LibraryFilters } from '../model/filter-resources';
+
+interface LibraryFiltersBarProps {
+  filters: LibraryFilters;
+  searchRef: RefObject<HTMLInputElement | null>;
+  onChange: (change: Partial<LibraryFilters>) => void;
+}
+
+const CATEGORY_CHIPS: ReadonlyArray<{ value: LibraryCategory; label: string }> = [
+  { value: 'all', label: 'Todos' },
+  { value: 'ejercicios', label: 'Ejercicios' },
+  { value: 'proyectos', label: 'Proyectos' },
+  { value: 'lectura', label: 'Lectura' },
+  { value: 'herramientas', label: 'Herramientas' },
+];
+
+const LibraryFiltersBar = ({ filters, searchRef, onChange }: LibraryFiltersBarProps) => (
+  <>
+    <div className="filter-bar">
+      <label className="search-wrap">
+        <span aria-hidden="true">⌕</span>
+        <input
+          ref={searchRef}
+          id="resource-search"
+          type="search"
+          value={filters.query}
+          onChange={(event) => onChange({ query: event.target.value })}
+          placeholder="Buscar un recurso, tema o formato…"
+          aria-label="Buscar recursos"
+        />
+      </label>
+      <select
+        id="filter-language"
+        aria-label="Filtrar por lenguaje"
+        value={filters.language}
+        onChange={(event) =>
+          onChange({
+            language: LIBRARY_LANGUAGES.find((value) => value === event.target.value) ?? 'all',
+          })
+        }
+      >
+        <option value="all">Todos los lenguajes</option>
+        <option value="rust">Rust</option>
+        <option value="go">Go</option>
+      </select>
+      <select
+        id="filter-cost"
+        aria-label="Filtrar por acceso"
+        value={filters.cost}
+        onChange={(event) =>
+          onChange({ cost: LIBRARY_COSTS.find((value) => value === event.target.value) ?? 'all' })
+        }
+      >
+        <option value="all">Cualquier acceso</option>
+        <option value="gratis">Acceso gratuito</option>
+        <option value="mixto">Gratis + pago</option>
+      </select>
+    </div>
+    <div className="filter-secondary">
+      <div className="filter-chips" role="group" aria-label="Tipo de recurso">
+        {CATEGORY_CHIPS.map(({ value, label }) => (
+          <button
+            className="filter-chip"
+            aria-pressed={filters.category === value}
+            onClick={() => onChange({ category: value })}
+            key={value}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <label className="favorite-filter">
+        <input
+          id="filter-favorites"
+          type="checkbox"
+          checked={filters.favoritesOnly}
+          onChange={(event) => onChange({ favoritesOnly: event.target.checked })}
+        />
+        {' Solo mis favoritos'}
+      </label>
+    </div>
+  </>
+);
+
+export default LibraryFiltersBar;
+```
+
+Los botones no llevan `type`, como los de hoy: la comparación del DOM los compara. El texto « Solo mis favoritos» es una sola expresión, para que React deje un solo nodo de texto con su espacio inicial.
+
+```tsx
+// frontend/src/pages/library/ui/ResourceCard.tsx
+import type { GuideResource } from '../../../entities/guide';
+import { costLabel, favoriteLabel, languageLabel } from '../model/resource-labels';
+
+interface ResourceCardProps {
+  resource: GuideResource;
+  isFavorite: boolean;
+  onToggleFavorite: (id: string) => void;
+}
+
+const ResourceCard = ({ resource, isFavorite, onToggleFavorite }: ResourceCardProps) => (
+  <article className="resource-card">
+    <div className="resource-top">
+      <div className="resource-tags">
+        <span className={resource.featured ? 'pill accent' : 'pill'}>
+          {languageLabel(resource.languages)}
+        </span>
+        <span className="pill">{costLabel(resource.cost)}</span>
+        {resource.featured && <span className="pill accent">Elegido para vos</span>}
+      </div>
+      <button
+        className="favorite-button"
+        aria-label={favoriteLabel(resource.title, isFavorite)}
+        aria-pressed={isFavorite}
+        onClick={() => onToggleFavorite(resource.id)}
+      >
+        {isFavorite ? '★' : '☆'}
+      </button>
+    </div>
+    <h2>{resource.title}</h2>
+    <div className="resource-format">{resource.format}</div>
+    <p>{resource.description}</p>
+    <p className="resource-fit">
+      <strong>Para vos:</strong>
+      {` ${resource.why}`}
+    </p>
+    <details>
+      <summary>Antes de empezar</summary>
+      <p>{resource.caveat}</p>
+    </details>
+    <a className="resource-link" href={resource.url} target="_blank" rel="noopener noreferrer">
+      {'Explorar recurso '}
+      <span aria-hidden="true">↗</span>
+      <span className="sr-only" />
+    </a>
+  </article>
+);
+
+export default ResourceCard;
+```
+
+```tsx
+// frontend/src/pages/library/ui/EmptyLibrary.tsx
+interface EmptyLibraryProps {
+  onClear: () => void;
+}
+
+const EmptyLibrary = ({ onClear }: EmptyLibraryProps) => (
+  <div className="empty-state">
+    <h2>Ningún recurso con esos filtros.</h2>
+    <p>Probá otro término o volvé a ver la biblioteca completa.</p>
+    <button className="button secondary" onClick={onClear}>
+      Limpiar filtros
+    </button>
+  </div>
+);
+
+export default EmptyLibrary;
+```
+
+```tsx
+// frontend/src/pages/library/ui/LibraryPage.tsx
+import { useRef } from 'react';
+import { useStore } from 'zustand';
+import { routeStore, toggleItem, type GuideResource } from '../../../entities/guide';
+import { filterResources, type LibraryFilters } from '../model/filter-resources';
+import { resultsLabel } from '../model/resource-labels';
+import useLibraryFilters from '../model/use-library-filters';
+import EmptyLibrary from './EmptyLibrary';
+import LibraryFiltersBar from './LibraryFiltersBar';
+import ResourceCard from './ResourceCard';
+
+interface LibraryPageProps {
+  resources: GuideResource[];
+  initialFilters: LibraryFilters;
+  onFiltersChange: (filters: LibraryFilters) => void;
+}
+
+const LibraryPage = ({ resources, initialFilters, onFiltersChange }: LibraryPageProps) => {
+  useStore(routeStore.changes, (state) => state.revision);
+  const [filters, changeFilters] = useLibraryFilters(initialFilters, onFiltersChange);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const favorites = routeStore.getProgress().favorites;
+  const visible = filterResources(resources, filters, favorites);
+
+  const toggleFavorite = (id: string) => {
+    toggleItem(routeStore.getProgress().favorites, id);
+    routeStore.save();
+  };
+
+  const clearFilters = () => {
+    changeFilters(null);
+    searchRef.current?.focus();
+  };
+
+  return (
+    <>
+      <div className="page-heading">
+        <div className="eyebrow">
+          <span className="eyebrow-line" />
+          {' RECURSOS CON INTENCIÓN'}
+        </div>
+        <h1>
+          Una biblioteca.
+          <br />
+          <em>Tu propia ruta.</em>
+        </h1>
+        <p>
+          Todo lo que revisamos, en un lugar. Elegí según lo que necesitás hoy; guardá tus favoritos
+          para volver sin buscar de nuevo.
+        </p>
+      </div>
+      <LibraryFiltersBar filters={filters} searchRef={searchRef} onChange={changeFilters} />
+      <p id="resource-results-label" className="resource-results-label" role="status" aria-live="polite">
+        {resultsLabel(visible.length, resources.length)}
+      </p>
+      <div id="resource-grid" className="resource-grid">
+        {visible.length > 0 ? (
+          visible.map((resource) => (
+            <ResourceCard
+              key={resource.id}
+              resource={resource}
+              isFavorite={favorites.includes(resource.id)}
+              onToggleFavorite={toggleFavorite}
+            />
+          ))
+        ) : (
+          <EmptyLibrary onClear={clearFilters} />
+        )}
+      </div>
+      <p className="resource-notice">
+        Accesos y modalidades revisados el 2 de octubre de 2026. Los recursos externos necesitan
+        conexión y pueden cambiar. Los precios no se fijan aquí: revisá las condiciones de cada sitio.
+      </p>
+    </>
+  );
+};
+
+export default LibraryPage;
+```
+
+- **Notas para quien implementa:**
+  - `useStore(routeStore.changes, (state) => state.revision)` va como sentencia. Suscribe la página a la revisión, y el progreso se vuelve a leer en cada render (FR-010). No se guarda en ninguna variable ni se memoiza nada.
+  - Los textos largos de los párrafos pueden partirse en varias líneas de JSX, como arriba. JSX une las líneas de texto con un espacio, y el texto renderizado tiene que ser el de «Restricciones globales». Si Prettier los parte distinto, lo comprueba la spec.
+  - `react-hooks/refs` permite leer `searchRef.current` dentro del manejador.
+
+**La spec de la página.** Es la primera spec de componente del repositorio. Las cinco entradas de «Review Focus» que le tocan están marcadas.
+
+```tsx
+// frontend/src/pages/library/ui/LibraryPage.spec.tsx
+import { act, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
+import type { GuideData, GuideResource, RouteProgressV1 } from '../../../entities/guide';
+import type { StorageLike } from '../../../shared/lib/versioned-storage';
+import { DEFAULT_LIBRARY_FILTERS, type LibraryFilters } from '../model/filter-resources';
+import { guideResourceFactory } from '../model/guide-resource.factory';
+
+const KEY = 'taller-learning-v1';
+const RUST_EXERCISES = guideResourceFactory.build({
+  id: 'rust-100',
+  title: '100 Exercises to Learn Rust',
+  languages: ['rust'],
+  category: 'ejercicios',
+  featured: true,
+});
+const TOUR_OF_GO = guideResourceFactory.build({
+  id: 'go-tour',
+  title: 'A Tour of Go',
+  languages: ['go'],
+  category: 'ejercicios',
+});
+const CONTEXT7 = guideResourceFactory.build({
+  id: 'context7',
+  title: 'Context7',
+  languages: ['both'],
+  category: 'herramientas',
+  cost: 'mixto',
+});
+const RESOURCES = [RUST_EXERCISES, TOUR_OF_GO, CONTEXT7];
+
+interface RecordingStorage extends StorageLike {
+  items: Map<string, string>;
+  writes: string[];
+}
+
+function memoryStorage(initial: Record<string, string>): RecordingStorage {
+  const items = new Map(Object.entries(initial));
+  const writes: string[] = [];
+  return {
+    items,
+    writes,
+    getItem: (key) => items.get(key) ?? null,
+    setItem: (key, value) => {
+      writes.push(key);
+      items.set(key, value);
+    },
+    removeItem: (key) => void items.delete(key),
+  };
+}
+
+function savedRoute(favorites: string[]): string {
+  return JSON.stringify({
+    version: 1,
+    language: 'rust',
+    completed: [],
+    milestones: [],
+    favorites,
+    quizAnswers: {},
+    notes: { rust: { learned: '', next: '' }, go: { learned: '', next: '' } },
+    minutes: 25,
+  });
+}
+
+function guideWith(resources: GuideResource[]): GuideData {
+  return {
+    resources,
+    tracks: {
+      rust: { title: 'Rust', description: '', modules: [] },
+      go: { title: 'Go', description: '', modules: [] },
+    },
+    sources: [],
+  };
+}
+
+interface RenderOptions {
+  favorites?: string[];
+  filters?: Partial<LibraryFilters>;
+  resources?: GuideResource[];
+}
+
+async function renderLibrary({ favorites = [], filters = {}, resources = RESOURCES }: RenderOptions = {}) {
+  vi.resetModules();
+  const { routeStore } = await import('../../../entities/guide');
+  const { default: LibraryPage } = await import('./LibraryPage');
+  const storage = memoryStorage({ [KEY]: savedRoute(favorites) });
+  routeStore.open(guideWith(resources), { storage });
+  const onFiltersChange = vi.fn<(filters: LibraryFilters) => void>();
+  const user = userEvent.setup();
+  render(
+    <LibraryPage
+      resources={resources}
+      initialFilters={{ ...DEFAULT_LIBRARY_FILTERS, ...filters }}
+      onFiltersChange={onFiltersChange}
+    />,
+  );
+  return { user, routeStore, storage, onFiltersChange };
+}
+
+const search = () => screen.getByRole('searchbox', { name: 'Buscar recursos' });
+const titles = () =>
+  screen
+    .queryAllByRole('article')
+    .map((article) => within(article).getByRole('heading', { level: 2 }).textContent);
+
+describe('what the library shows', () => {
+  it('lists the resources in the received order and counts them', async () => {
+    await renderLibrary();
+
+    expect(titles()).toEqual(['100 Exercises to Learn Rust', 'A Tour of Go', 'Context7']);
+    expect(screen.getByRole('status')).toHaveTextContent('3 de 3 recursos · abrí cada uno a tu ritmo');
+  });
+
+  it('shows 0 de 0 and the empty state without resources', async () => {
+    await renderLibrary({ resources: [] });
+
+    expect(screen.getByRole('status')).toHaveTextContent('0 de 0 recursos · abrí cada uno a tu ritmo');
+    expect(screen.getByRole('heading', { level: 2, name: 'Ningún recurso con esos filtros.' })).toBeInTheDocument();
+  });
+
+  it('draws the pills, the star and the link of a card', async () => {
+    await renderLibrary();
+    const card = screen.getAllByRole('article')[0];
+
+    expect(within(card).getByText('Rust')).toHaveClass('pill', 'accent');
+    expect(within(card).getByText('Gratis')).toHaveClass('pill');
+    expect(within(card).getByText('Elegido para vos')).toHaveClass('pill', 'accent');
+    expect(within(card).getByRole('button', { name: 'Guardar en favoritos: 100 Exercises to Learn Rust' })).toHaveAttribute('aria-pressed', 'false');
+    const link = within(card).getByRole('link', { name: 'Explorar recurso' });
+    expect(link).toHaveAttribute('href', RUST_EXERCISES.url);
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(within(screen.getAllByRole('article')[2]).getByText('Go + Rust')).toHaveClass('pill');
+  });
+});
+
+describe('the filters', () => {
+  it('filter while typing and keep what was typed', async () => {
+    const { user } = await renderLibrary();
+
+    await user.type(search(), 'tour of');
+
+    expect(search()).toHaveValue('tour of');
+    expect(titles()).toEqual(['A Tour of Go']);
+    expect(screen.getByRole('status')).toHaveTextContent('1 de 3 recursos · abrí cada uno a tu ritmo');
+  });
+
+  it('filter by language, access, type and favorites', async () => {
+    const { user } = await renderLibrary({ favorites: ['context7'] });
+    const language = screen.getByRole('combobox', { name: 'Filtrar por lenguaje' });
+    const cost = screen.getByRole('combobox', { name: 'Filtrar por acceso' });
+
+    await user.selectOptions(language, 'go');
+    expect(titles()).toEqual(['A Tour of Go', 'Context7']);
+    await user.selectOptions(cost, 'mixto');
+    expect(titles()).toEqual(['Context7']);
+    await user.selectOptions(language, 'all');
+    await user.selectOptions(cost, 'all');
+
+    await user.click(screen.getByRole('button', { name: 'Ejercicios' }));
+    expect(screen.getByRole('button', { name: 'Ejercicios' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Todos' })).toHaveAttribute('aria-pressed', 'false');
+    expect(titles()).toEqual(['100 Exercises to Learn Rust', 'A Tour of Go']);
+    await user.click(screen.getByRole('button', { name: 'Todos' }));
+
+    await user.click(screen.getByRole('checkbox', { name: 'Solo mis favoritos' }));
+    expect(titles()).toEqual(['Context7']);
+  });
+
+  it('hand each change to the session of the adapter', async () => {
+    const { user, onFiltersChange } = await renderLibrary();
+
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Filtrar por lenguaje' }), 'go');
+
+    expect(onFiltersChange).toHaveBeenLastCalledWith({ ...DEFAULT_LIBRARY_FILTERS, language: 'go' });
+  });
+
+  it('Limpiar filtros resets the five criteria and leaves the focus on the search', async () => {
+    const { user } = await renderLibrary({
+      filters: { query: 'zzz', language: 'go', cost: 'mixto', category: 'lectura', favoritesOnly: true },
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Limpiar filtros' }));
+
+    expect(titles()).toHaveLength(3);
+    expect(search()).toHaveValue('');
+    expect(screen.getByRole('combobox', { name: 'Filtrar por lenguaje' })).toHaveValue('all');
+    expect(screen.getByRole('combobox', { name: 'Filtrar por acceso' })).toHaveValue('all');
+    expect(screen.getByRole('button', { name: 'Todos' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('checkbox', { name: 'Solo mis favoritos' })).not.toBeChecked();
+    expect(search()).toHaveFocus();
+  });
+
+  it('keep the same status node while filtering and clearing', async () => {
+    const { user } = await renderLibrary();
+    const status = screen.getByRole('status');
+
+    await user.type(search(), 'zzz');
+    await user.click(screen.getByRole('button', { name: 'Limpiar filtros' }));
+
+    expect(screen.getByRole('status')).toBe(status);
+    expect(status).toHaveAttribute('aria-live', 'polite');
+  });
+
+  it('keep an open detail open while its card stays visible', async () => {
+    const { user } = await renderLibrary();
+    const card = screen.getAllByRole('article')[1];
+    const details = within(card).getByText('Antes de empezar').closest('details');
+    expect(details).not.toBeNull();
+    details!.open = true;
+
+    await user.type(search(), 'go');
+    await user.click(within(card).getByRole('button', { name: 'Guardar en favoritos: A Tour of Go' }));
+
+    expect(details!.open).toBe(true);
+    expect(details!.isConnected).toBe(true);
+  });
+});
+
+describe('the favorites', () => {
+  it('a star saves once and changes its name, its state and its glyph', async () => {
+    const { user, storage, routeStore } = await renderLibrary({ favorites: ['rust-100'] });
+
+    await user.click(screen.getByRole('button', { name: 'Guardar en favoritos: A Tour of Go' }));
+
+    const star = screen.getByRole('button', { name: 'Quitar de favoritos: A Tour of Go' });
+    expect(star).toHaveAttribute('aria-pressed', 'true');
+    expect(star).toHaveTextContent('★');
+    expect(storage.writes).toEqual([KEY]);
+    expect(routeStore.getProgress().favorites).toEqual(['rust-100', 'go-tour']);
+  });
+
+  it('shows what another consumer saves, a reset and an import, without a copy', async () => {
+    const { routeStore } = await renderLibrary();
+
+    act(() => {
+      routeStore.getProgress().favorites.push('context7');
+      routeStore.save();
+    });
+    expect(screen.getByRole('button', { name: 'Quitar de favoritos: Context7' })).toBeInTheDocument();
+
+    act(() => {
+      routeStore.reset();
+    });
+    expect(screen.getByRole('button', { name: 'Guardar en favoritos: Context7' })).toBeInTheDocument();
+
+    act(() => {
+      routeStore.applyImport({ state: JSON.parse(savedRoute(['go-tour'])) as RouteProgressV1, lossy: false });
+    });
+    expect(screen.getByRole('button', { name: 'Quitar de favoritos: A Tour of Go' })).toBeInTheDocument();
+  });
+
+  it('shows the merged favorites when another tab saved in between', async () => {
+    const { user, storage } = await renderLibrary({ favorites: ['rust-100'] });
+    storage.items.set(KEY, savedRoute(['rust-100', 'context7']));
+
+    await user.click(screen.getByRole('button', { name: 'Guardar en favoritos: A Tour of Go' }));
+
+    expect(screen.getByRole('button', { name: 'Quitar de favoritos: 100 Exercises to Learn Rust' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Quitar de favoritos: A Tour of Go' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Quitar de favoritos: Context7' })).toBeInTheDocument();
+  });
+
+  it('a change of the progress does not reset the filters', async () => {
+    const { user, routeStore } = await renderLibrary();
+    await user.type(search(), 'go');
+
+    act(() => {
+      routeStore.getProgress().favorites.push('context7');
+      routeStore.save();
+    });
+
+    expect(search()).toHaveValue('go');
+  });
+});
+```
+
+- **De dónde salen los valores:** los textos, de la spec; la fusión de la otra pestaña, de ADR 0003 (decisión 9, la unión de favoritos); la cuenta, de los tres recursos de la spec.
+- **Pasos:**
+  1. Los componentes y el hook con sus firmas, cada componente devolviendo `null`, y la spec. `npm run test:unit -- src/pages/library/ui` falla por comportamiento. Commit: `test(front): la página de la Biblioteca, sin montar (rojo)`.
+  2. La implementación de arriba. La spec pasa, y `npm run test:unit` corre los dos proyectos en verde.
+  3. `npm run typecheck`, `npm run lint` (sin avisos nuevos y sin `no-restricted-syntax`), `npm run format:check`, `node qa/seams-guard-check.ts` y `npm test`.
+  4. `npm run build` deja el script del dist con el mismo sha256 que antes de la tarea: la página no es alcanzable desde `main.tsx`.
+  5. Commit: `feat(front): la página de la Biblioteca en React, todavía sin montar`.
+- **Compuerta:** los pasos 2 a 4.
