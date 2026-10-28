@@ -4,9 +4,9 @@
 
 **Created**: 2026-10-28
 
-**Status**: Draft, con cuatro preguntas para el clarify (Q1 a Q4)
+**Status**: Clarificada (sesión del 2026-10-28); lista para el plan, con lecturas a confirmar en el PR
 
-**Input**: Ítem **F8** de la hoja de ruta [`specs/front-react/roadmap.md`](../front-react/roadmap.md), «Método». Hay que portar a React la página con su panel de respaldos: exportar, importar (`#import-file`) y «Borrar todo» con su confirmación. Por la decisión F9-Q1 del usuario, F8 también se lleva lo que dibuja `renderMethod`: la bitácora (`#note-learned` y `#note-next`), `#note-state` y el pedido al tutor. Es el último port de una vista del tronco antes de F10. Lo encargó el coordinador el 2026-10-28.
+**Input**: Ítem **F8** de la hoja de ruta [`specs/front-react/roadmap.md`](../front-react/roadmap.md), «Método». Hay que portar a React la página con su panel de respaldos: exportar, importar (`#import-file`) y «Borrar todo» con su confirmación. Por la decisión F9-Q1 del usuario, F8 también se lleva lo que dibuja `renderMethod`: la bitácora (`#note-learned` y `#note-next`), `#note-state` y el pedido al tutor. Es el último port de una vista del tronco antes de F10. Lo encargó el coordinador el 2026-10-28, y el usuario respondió su clarify el mismo día (ver «Clarifications»).
 
 **Describe el código de `f2b-acum@2b37caf4`**: F2a, A2 y las cuatro unidades de F2b integradas, en un ensayo de sólo lectura. No describe `master` (`e87772d`), que todavía no los tiene. Lo que toma de F2b es un hecho y cita su archivo: `features/progress-backup`, la gramática de URL y `startApp()`. El plan de F2b es [plan-f2b.md](../009-f2-seams/plan-f2b.md).
 
@@ -14,7 +14,8 @@ Usa como base:
 
 - los ADR [0008](../../docs/adr/0008-pruebas-del-front.md) y [0003](../../docs/adr/0003-integridad-del-progreso.md);
 - el [mapa del front legacy](../front-react/legacy-map.md);
-- la [spec de D1](../007-d1-progreso-sincronizacion/spec.md) con el [contrato de D1b](../007-d1-progreso-sincronizacion/contracts/http-d1b.md), entregado en el PR #39;
+- la [spec de D1](../007-d1-progreso-sincronizacion/spec.md), con el [contrato de D1a](../007-d1-progreso-sincronizacion/contracts/http.md) (entregado en el PR #36) y el [de D1b](../007-d1-progreso-sincronizacion/contracts/http-d1b.md) (entregado en el PR #39);
+- el [contrato HTTP de C3a](../004-c3-identidad-acceso/contracts/http.md);
 - la [constitución](../../.specify/memory/constitution.md) 1.4.1.
 
 Las specs de F3 (012), F4 (013), F5 (018), F7 (021), F9 (014) y F11 (015) ya tienen su clarify del 2026-10-28, pero viven en otras ramas: se citan sin enlace.
@@ -26,26 +27,38 @@ Las specs de F3 (012), F4 (013), F5 (018), F7 (021), F9 (014) y F11 (015) ya tie
 - una rama del delegado de entrada (`data-note`) y cinco del de clic, sobre `#main`;
 - tres oyentes sobre elementos estáticos de `index.html`: el `<dialog id="confirm-dialog">` y su par de botones, y el `<input id="import-file">` oculto.
 
-F8 la lleva a una página de React que conserva el aspecto, los textos, el teclado, el progreso guardado y el archivo exportado byte a byte. D1b ya importa ese formato legacy en el servidor. La exportación, la importación y «Borrar todo» no se reescriben: ya viven en `features/progress-backup` (F2b, unidad 6), con una interfaz que D1c va a reemplazar. F8 dibuja esa interfaz y la conecta.
+F8 la lleva a una página de React que conserva el aspecto, los textos, el teclado, el progreso guardado y el archivo exportado byte a byte. D1b ya importa ese formato legacy en el servidor. La exportación, la importación y el borrado local no se reescriben: ya viven en `features/progress-backup` (F2b, unidad 6), con una interfaz que D1c va a reemplazar. F8 dibuja esa interfaz, la conecta y lleva su armado a `frontend/src/app/` (Q2).
+
+**Lo que cambia a propósito.**
+
+- **«Borrar todo» pasa a pedir la contraseña** y a borrar también el progreso de la cuenta en el servidor con el reset de D1b, antes de borrar el de este navegador (Q1). Sin servidor no se borra nada. Con eso, F8 depende de F11a (la sesión, el cliente de la API y «pedir el ingreso») y de D1a y D1b, ya entregados, y la superficie 4 de D1 queda en F8.
+- **Lo que hoy existe sólo porque `innerHTML` rehace la vista** adopta el comportamiento de React (X1 y C2, sin excepciones por Q4):
+  - el foco ya no se pierde después de importar ni de «Borrar todo»;
+  - `#note-state` conserva su último texto.
+
+Fuera de «Borrar todo», el alumno no nota el cambio.
 
 **Lo que hay que cuidar,** porque la red de F1 no lo fija y un port ingenuo lo rompe:
 
 - el botón «Exportar mi progreso» es de la barra lateral, no de Método, y existe en las ocho vistas;
 - la bitácora escribe en cada tecla;
-- la importación y «Borrar todo» siguen un orden de efectos que hoy fija un check que pierde su punto de entrada.
+- la importación y «Borrar todo» siguen un orden de efectos que hoy fija un check que pierde su punto de entrada;
+- «Borrar todo» no puede borrar nada local si el servidor no confirmó el reset.
 
-**Cambios aceptados a propósito.** Lo que hoy existe sólo porque `innerHTML` rehace la vista adopta el comportamiento de React (X1 y C2): el foco ya no se pierde después de importar ni de «Borrar todo».
-
-Es para quien porta vistas y para quien revisa el PR. Para el alumno no cambia nada. Si esto no coincide con lo que se busca, es lo primero que hay que corregir: el resto de la spec sale de acá.
+Es para quien porta vistas y para quien revisa el PR. Si esto no coincide con lo que se busca, es lo primero que hay que corregir: el resto de la spec sale de acá.
 
 **Cómo sabremos que salió bien.**
 
 1. La red de F1 (106 E2E) y los 17 E2E de A2 pasan sin editarse con el build del port.
-2. Los E2E nuevos de Método pasan contra el legacy antes de portar y, sin editarse, contra la página nueva. Cubren la bitácora, el pedido al tutor, exportar, importar, «Borrar todo» y los respaldos, con la descarga y la carga de un archivo real. Los dos E2E que fijan un cambio aceptado (el foco, por X1) fallan contra el legacy por esa razón.
-3. El archivo exportado tiene los mismos bytes en el legacy y en el port, y las dos exportaciones congeladas se importan con el mismo resultado guardado.
-4. La página produce el mismo DOM que `renderMethod`, salvo las diferencias listadas. Las reglas de CSS que sólo usa Método se mudan a la hoja de la página y dan el mismo estilo computado.
-5. Cada tecla de la bitácora hace una escritura. Montar la página, copiar, exportar, descargar un respaldo y abrir o cancelar la confirmación no escriben nada. Las fixtures congeladas arrancan sin escribir, sin respaldar y sin avisar.
-6. `app.js` pierde todo lo de Método y conserva la exportación de la barra lateral. `index.html` pierde la confirmación y el selector de archivo estáticos, y nada más.
+2. Los E2E nuevos de Método pasan contra el legacy antes de portar y, sin editarse, contra la página nueva. Cubren la bitácora, el pedido al tutor, exportar, importar y los respaldos, con la descarga y la carga de un archivo real.
+3. Los E2E de lo que cambia a propósito se escriben con el comportamiento nuevo y fallan contra el legacy por esa razón:
+   - los tres de React: el foco después de importar, el foco después de «Borrar todo» y `#note-state`;
+   - los de «Borrar todo» con el servidor, contra el doble de la API de F11a.
+4. El archivo exportado tiene los mismos bytes en el legacy y en el port, y las dos exportaciones congeladas se importan con el mismo resultado guardado.
+5. Una confirmación exitosa hace exactamente tres pedidos, en este orden: confirmar la contraseña, leer la época y el reset. Recién después borra lo local. Cualquier falla del servidor deja las claves locales intactas.
+6. La página produce el mismo DOM que `renderMethod`, salvo las diferencias listadas. Las reglas de CSS que sólo usa Método se mudan a la hoja de la página y dan el mismo estilo computado.
+7. Cada tecla de la bitácora hace una escritura. Montar la página, copiar, exportar, descargar un respaldo y abrir o cancelar la confirmación no escriben nada. Las fixtures congeladas arrancan sin escribir, sin respaldar y sin avisar.
+8. `app.js` pierde todo lo de Método y el armado de `progress-backup`, recibe la instancia en `startApp()` y conserva la exportación de la barra lateral. `index.html` pierde la confirmación y el selector de archivo estáticos, y nada más.
 
 **Entra:**
 
@@ -56,31 +69,36 @@ Es para quien porta vistas y para quien revisa el PR. Para el alumno no cambia n
   - las fuentes;
   - el panel de respaldos;
   - «Tu progreso te pertenece», con exportar, importar y «Borrar todo»;
-  - la confirmación y el selector de archivo.
+  - la confirmación, con la contraseña, y el selector de archivo.
 - El modelo puro que necesita: el texto del pedido y el del estado de la nota.
+- «Borrar todo» con el reset del servidor (Q1): la contraseña confirmada, la época leída justo antes y el reset, a través del cliente de la API de F11a, como un paso que el armado le pasa a la feature.
+- El armado de `progress-backup` en `frontend/src/app/` y el contrato nuevo de `startApp()` (Q2).
 - El adaptador mínimo de `frontend/src/app/legacy/` y el corte de `app.js`, de `index.html` y de los arneses de `qa/`.
 - Las reglas de CSS que sólo usa Método (unas 23, X3) y el `style=` de la página.
-- Los E2E con su Page Object, con la descarga y la carga de archivos.
+- Los E2E con su Page Object, con la descarga y la carga de archivos, y las respuestas del servidor en el doble de la API de F11a.
 - Las specs de Vitest de modelo y de componentes.
 - La documentación que cambia con ellos: `docs/architecture.md` y `qa/AGENTS.md`.
 
 **Queda fuera:**
 
-- Pedir la contraseña en «Borrar todo» y llamar al reset del servidor (Q1).
-- La lógica de exportar, importar y «Borrar todo», que ya es de `features/progress-backup` y no cambia un byte.
-- El shell y el router (F10): la barra lateral, `#save-label`, `#toast`, «Exportar mi progreso» de la barra lateral, `syncShell` y el cambio de idioma.
-- Recorrido, Biblioteca, Proyecto, Sistemas y el laboratorio (F9, F3, F4, F5 y F7).
-- El contenido de `content/guide/` (las fuentes).
-- Cualquier cambio de IDs, de formas guardadas, del formato del archivo o de URL.
+- **El cliente v2 (D1c):**
+  - el espacio por cuenta y la sincronización;
+  - cargar la foto de la época nueva después del reset;
+  - importar al servidor;
+  - la guarda general contra el solape de dos operaciones (Q3).
+- **La lógica de exportar, importar y del borrado local,** que ya es de `features/progress-backup` y no cambia un byte. La importación de Método sigue siendo local hasta D1c.
+- **El shell y el router (F10):** la barra lateral, `#save-label`, `#toast`, «Exportar mi progreso» de la barra lateral, `syncShell` y el cambio de idioma.
+- **Las otras vistas y las pantallas de cuenta:** Recorrido, Biblioteca, Proyecto, Sistemas y el laboratorio (F9, F3, F4, F5 y F7); las pantallas de cuenta y «pedir el ingreso» (F11).
+- **El contenido de `content/guide/`** (las fuentes).
+- **Cualquier cambio** de IDs, de formas guardadas, del formato del archivo o de URL.
 
 **Sin hacer a propósito (YAGNI):**
 
-- un estado de espera o un botón deshabilitado mientras se importa o se borra (Q3);
+- un estado de espera en la importación, que sigue siendo local;
 - el debounce de la escritura;
-- una librería de diálogos, de formularios o de animación;
+- una librería de diálogos o de animación (el formulario de la contraseña usa la librería que instaló F11a);
 - un contexto o un provider del progreso;
 - memoización;
-- una región viva nueva;
 - capturas de pantalla y pruebas con axe;
 - E2E con dos pestañas.
 
@@ -89,11 +107,11 @@ Es para quien porta vistas y para quien revisa el PR. Para el alumno no cambia n
 - quien porta la vista: el usuario y los agentes que implementan;
 - quien revisa el PR;
 - el agente principal, que integra `main.tsx`, `legacy-views.ts`, `package.json`, las configuraciones y la documentación;
-- el alumno, que no debe notar nada.
+- el alumno, que nota sólo el cambio de «Borrar todo».
 
 ## Lo que pidió el usuario
 
-Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumptions) o una pregunta para el clarify.
+Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumptions) o una lectura a confirmar.
 
 | Pedido | Fuente |
 | --- | --- |
@@ -101,125 +119,145 @@ Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumption
 | Las vistas una por una, las hojas primero y cada raíz de React dentro del shell legacy, como el Atlas | Usuario, 2026-10-05 |
 | Antes de portar, E2E con Playwright y Page Objects contra la versión actual; las piezas nuevas llevan Vitest, Testing Library y fishery | Usuario, 2026-10-05; clarify de F1, Q1 |
 | La suscripción al progreso con Zustand: `useStore` con un selector chico, nunca con el store entero | Usuario, clarify de F2, 2026-10-06 (Q3); `AGENTS.md` |
-| `features/progress-backup` con promesas y una confirmación en «Borrar todo» que hoy se ignora, para que D1c la reemplace sin tocar a quien llama | Usuario, clarify de F2, 2026-10-06 (Q4); spec de F2, FR-052 |
+| `features/progress-backup` con promesas y una confirmación en «Borrar todo», para que D1c la reemplace sin tocar a quien llama | Usuario, clarify de F2, 2026-10-06 (Q4); spec de F2, FR-052 |
 | F8 trae la página y el panel de respaldos; la interfaz de exportar, importar (`#import-file`) y «Borrar todo» con su confirmación; los E2E, con la descarga y la carga de archivo. Borra `renderMethod`, `backupsPanel`, los manejadores de `#export-progress`, `#cancel-reset`, `#confirm-reset` e `#import-file`, el `#confirm-dialog` estático y el `style=` de la página. Conserva el toast del shell hasta F10 | Hoja de ruta, F8 («Entra», «Borra» y «Conserva»). El manejador de `#export-progress` es del shell: ver «El corte en `app.js`» |
 | Las notas, `#note-state` y el pedido al tutor van a F8, con Método, que los dibuja; F9 sólo garantiza que siguen por `routeStore` | Usuario, clarify del 2026-10-28 (F9-Q1); ruling C3 del coordinador |
 | Lo que existe sólo porque `innerHTML` rehace la vista adopta el comportamiento de React, y los E2E lo fijan; las rarezas de lógica se conservan; los E2E de un cambio aceptado van en el commit en rojo del TDD | Usuario, clarify del 2026-10-28 (X1); coordinador (C2) |
 | Las regiones vivas que hoy se recrean quedan montadas | Usuario, clarify del 2026-10-28 (X2) |
 | El CSS que sólo usa la página se muda con el port, probado con el barrido de estilo computado y el multiconjunto de F2b. El primero de F3, F4, F8 y F9 que se integre parte los bloques compartidos, y los demás rebasan | Usuario, clarify del 2026-10-28 (X3); coordinador (C3) |
 | El diálogo vive dentro de la raíz de la página, con un portal a `body`, y se cierra al navegar | Usuario, clarify del 2026-10-28 (F9-Q4, para la lección de F9 y la confirmación de F7) |
-| Medir si F8 necesita de verdad a F5 y F7 o sólo a F2b; decir qué pasa con «Borrar todo» y D1b; decir qué queda de `window.Taller*` y hasta cuándo | Coordinador, 2026-10-28 |
+| La sesión es obligatoria desde F11a, que trae el cliente de la API, «pedir el ingreso» y el doble de la API de los E2E | Usuario, clarify del 2026-10-28 (F11-Q1 y R1) |
+| «Borrar todo» usa ya el reset del servidor, con la contraseña, y F8 resuelve lo que eso trae | Usuario, clarify del 2026-10-28 (F8-Q1) |
+| El armado de `progress-backup` se lleva a `src/app/`; `resetSimulations` y `resetTimer` se retiran si F5 y F9 ya entraron, y si no, los retira el último que entre | Usuario, clarify del 2026-10-28 (F8-Q2) |
+| D1c evita el solape de dos «Borrar todo» o importaciones, con la espera visible de la red | Usuario, clarify del 2026-10-28 (F8-Q3) |
+| `#note-state` hace lo que haga React, sin excepción a C2 | Usuario, clarify del 2026-10-28 (F8-Q4) |
 | Spec en español y sin código, con como mucho cinco preguntas para el clarify y la partición propuesta sin aplicarla | Coordinador, 2026-10-28 |
 | La documentación va en español; el código y las pruebas, en inglés | `AGENTS.md` |
 
-## Preguntas para el clarify
+## Clarifications
 
-Son cuatro, cada una con su opción recomendada. Los requisitos de abajo asumen la recomendada. Llevan el marcador `[NEEDS CLARIFICATION]` donde la respuesta los cambia: FR-015, FR-018, FR-024, FR-025 y FR-028.
+### Session 2026-10-28
 
-### Q1 · ¿«Borrar todo» pide la contraseña y usa el reset del servidor de D1b, o se porta el flujo local?
+Las respuestas son del usuario (clarify con brainstorming). Las opciones que no se eligieron, con su costo, están en «Alternativas consideradas». Lo que las respuestas obligan a decidir y nadie contestó va como «lectura a confirmar» (L1 a L12), con su recomendación, en «“Borrar todo” con el reset del servidor» y en «El armado en `src/app/`».
 
-**Qué encontramos.** La hoja de ruta asigna a F8 la superficie 4 de «Superficies que pide D1», la confirmación de contraseña de «Borrar todo», como propuesta sin aceptar. La spec de F11 la da por hecha: «la confirmación de contraseña de «Borrar todo», que es de F8». D1b está entregado. En `master` (`e87772d`), `POST /api/progress/reset` exige lo siguiente:
+- Q: **Q1**, ¿«Borrar todo» pide la contraseña y usa el reset del servidor de D1b, o se porta el flujo local? → A: Opción C, el reset del servidor ya, con la contraseña (no era la recomendada). F8 resuelve lo que eso trae:
+  - la época sin D1c;
+  - la contraseña confirmada, con el 423;
+  - el tope de tres resets por día y `resetAt`, con las importaciones que vienen después;
+  - qué pasa sin servidor;
+  - el FR-074 de D1, con las claves v1 locales.
 
-- sesión activa y CSRF;
-- la cabecera `X-Taller-User` con el id de la cuenta (`EnsureExpectedAccount`);
-- la contraseña confirmada antes por `POST /api/auth/confirm-password`. Es una marca de la sesión que vence a los `auth.password_timeout` (`RequirePassword`) y, sin ella, la respuesta es 423;
-- 3 por día y cuenta (`config/progress.php`);
-- un cuerpo `{format: 2, epoch}` (`ResetBodyRequest`), donde `epoch` es la época que el cliente conoce. Si no coincide, la respuesta es 409 `epoch_mismatch`.
+  F8 depende también de F11a y de D1b, y la superficie 4 de D1 queda en F8. (FR-021, FR-022, FR-024, FR-047, FR-048 y FR-049)
+- Q: **Q2**, ¿F8 saca de `app.js` el armado de `features/progress-backup`? → A: Opción B, se lleva a `src/app/` (no era la recomendada), y cambia el contrato de `startApp()`. `resetSimulations` y `resetTimer` se retiran si F5 y F9 ya entraron; si no, los retira el último de F5, F8 y F9 que entre. (FR-015, FR-045 y FR-046)
+- Q: **Q3**, ¿quién evita que dos «Borrar todo» o dos importaciones se solapen? → A: Opción A, D1c, con la espera visible de la red. Como consecuencia de Q1, el reset deja de ser local, así que F8 muestra la espera de su propio pedido. Eso no es la guarda contra el solape, que sigue siendo de D1c. (FR-025)
+- Q: **Q4**, ¿qué dice `#note-state` después de importar y de «Borrar todo»? → A: Opción B, lo que haga React (no era la recomendada): queda el último texto, sin excepción a C2. Su E2E es el tercero en rojo, con los dos del foco. (FR-018 y FR-028)
 
-Lo que hace el reset: sube la época, fija `resetAt` y borra el estado de la cuenta en el servidor. Desde entonces, cualquier importación pide confirmación (D1, FR-045).
+## «Borrar todo» con el reset del servidor (Q1)
 
-Antes de D1c, nada del front lee `GET /api/progress`, así que nadie conoce la época. El progreso del navegador es todo v1 y no se sincroniza. El FR-074 de D1 (de D1c) manda que «Borrar todo» llame al reset, limpie el espacio de la cuenta y NO toque las claves v1 que la cuenta no importó. El «Borrar todo» de hoy borra justamente esas cuatro claves y sus respaldos.
+**Lo que exige el servidor** (en `master`, `e87772d`):
 
-Además, F11 ya escribe el texto «No es «Borrar todo» de Método, que borra el progreso de este navegador» (su FR-058). Y la sesión obligatoria llega recién con F11a (F11-Q1).
+- **`POST /api/progress/reset`** (`routes/api/progress-reset.php`) exige, en este orden:
+  1. sesión, CSRF y la cabecera `X-Taller-User` con el id de la cuenta (`EnsureExpectedAccount`, 409 `account_mismatch`);
+  2. la contraseña confirmada en los últimos 900 s (`RequirePassword`, 423 `password_confirmation_required`), que no gasta un reset del día;
+  3. 3 por día y cuenta (429 con `Retry-After`);
+  4. el cuerpo `{format: 2, epoch}` (`ResetBodyRequest`).
 
-| Opción | Qué es | Costo |
+  Si `epoch` no es la vigente, responde 409 `epoch_mismatch` con `{epoch, revision}`, y ese 409 ya gastó uno de los tres.
+- **Lo que hace el reset:** sube la época, fija `resetAt` y borra el estado de la cuenta en el servidor. Cancela las ejecuciones activas y conserva los intentos, sus payloads y las importaciones hasta su retención (D1, FR-041 a FR-045; contrato de D1b, §4).
+- **`POST /api/auth/confirm-password`** con `{password}` responde 201, o 422 `auth_failed` si la contraseña es incorrecta. Admite 5 por minuto y por usuario (contrato de C3a).
+- **`GET /api/progress`** (D1a) responde la foto con `userId`, `epoch` y `revision`, sin `X-Taller-User` y sin el límite de Laravel. Pide email verificado: una cuenta creada por invitación ya lo está. Puede responder 503 `content_not_imported`. A una cuenta sin cabecera le devuelve `epoch` 1, y leer no escribe nada (contrato de D1a, §4).
+
+**El flujo de F8.** El alumno escribe su contraseña en la confirmación y elige «Borrar todo».
+
+1. `POST /api/auth/confirm-password`.
+2. `GET /api/progress`, sólo para leer la época.
+3. `POST /api/progress/reset` con `{format: 2, epoch}`.
+4. Sólo con el 200, el borrado local de hoy: los cuatro almacenes, las simulaciones y el temporizador.
+5. El `save()`, el cierre, el estado en blanco y el aviso.
+
+Los tres pedidos van por el cliente de la API de F11a, que pone el CSRF y `X-Taller-User` y maneja el 419 y el 401. El paso del servidor lo arma `src/app/` con ese cliente y con «pedir el ingreso», y se lo pasa a la feature. La feature no importa el cliente ni F11. La página llama a `resetAll({password})`, como previó la interfaz de F2b para D1c.
+
+**Cómo se resuelve cada punto, con su lectura a confirmar:**
+
+| Punto | Qué hace F8 | Lectura a confirmar (recomendación) |
 | --- | --- | --- |
-| **A (recomendada)** | Se porta el flujo local tal como está. «Borrar todo» llama a `resetAll()` sin confirmación, sin contraseña y sin la API, y funciona sin sesión y sin servidor, como hoy. La interfaz conserva el parámetro de confirmación que D1c va a usar. La superficie 4 se va con D1c a su ítem del front (F11d, que ya va sobre D1c, o F13, si se acepta), y ese ítem le suma el campo al diálogo de React que deja F8 | La superficie 4 no llega con F8: la hoja de ruta («Superficies que pide D1», fila 4) y la spec de F11 (la línea de «Queda fuera») se corrigen. Más adelante otro ítem edita el diálogo de esta página. F8 no espera nada del backend ni de F11 |
-| B | Un campo de contraseña que aparece sólo cuando la implementación de `ProgressBackup` que recibe la página dice que lo necesita. Hoy nunca aparece; con D1c sí | Código y textos sin consumidor hasta D1c (YAGNI). Los mensajes del 423, del 429 y del `epoch_mismatch` son de D1c, así que F8 los dejaría sin escribir o los inventaría |
-| C | F8 pide la contraseña, la confirma y llama al reset del servidor, y después borra lo local | F8 pasa a depender de F11a (sesión, cliente de la API, CSRF y `X-Taller-User`) y tiene que leer `GET /api/progress` sólo para obtener la época: un cliente a medias que D1c tira. Borrar lo local viola el FR-074; no borrarlo deja al alumno con todo su progreso a la vista. Marca la cuenta con `resetAt` (cada importación posterior pide confirmación), gasta uno de los tres resets del día y deja «Borrar todo» sin funcionar sin servidor, un cambio visible en un port |
+| **La época sin D1c** | La lee con `GET /api/progress` justo antes del reset y no la guarda. Antes de D1c la foto es chica: hoy, nada; después de A4, lo que cerraron las ejecuciones. D1a midió 737 474 bytes para una cuenta con los 274 ejercicios | **L1.** Leerla con el `GET` y no adivinarla. La alternativa, mandar la época 1 y reintentar con la del 409, gasta uno de los tres resets del día en cada `epoch_mismatch` |
+| **La contraseña** | El diálogo la pide siempre, antes del primer pedido, como «Borrar la cuenta» de F11b (D1, FR-074: «DEBE pedir la contraseña»). Con 422 `auth_failed`, el mensaje del servidor queda en el campo. Con 423 en el reset, el campo vuelve a pedirla con «Confirmá tu contraseña para continuar.» y no se reintenta solo | **L2.** Pedirla siempre y confirmarla primero, como F11b. La alternativa, intentar el reset y pedirla sólo ante el 423, no cumple el «DEBE pedir» de FR-074 |
+| **El 401** | Llama a «pedir el ingreso» de F11a sin cerrar el shell. Si entra la misma cuenta, la confirmación sigue abierta, con el campo vacío y sin nada borrado. Si entra otra, el documento se recarga (F11 FR-020) | **L3.** No reintentar solo una operación destructiva: la sesión nueva no tiene la contraseña confirmada, y el alumno vuelve a decidir |
+| **El tope de tres por día** | Con el 429 del reset, el diálogo muestra el mensaje del servidor y cuánto falta según `Retry-After`, en horas o minutos, y «Borrar todo» no se puede reenviar antes (F11 FR-021). Un 423 no gasta un reset; un `epoch_mismatch` sí | **L4.** Usar el mensaje del servidor con el tiempo restante, como el resto de los formularios de F11a, sin un texto propio de Método |
+| **`resetAt` y las importaciones que siguen** | F8 no importa al servidor: su importación sigue local hasta D1c. El efecto lo ve D1c y su ítem del front: cualquier importación posterior pide confirmación (409 `import_needs_confirmation`, D1 FR-045). Importar el archivo que se exportó antes de borrar se aplica igual, con confirmación (D1, SC-005). El diálogo conserva «Podés exportarlos antes.» | — (consecuencia de D1, sin decisión de F8) |
+| **Lo que sobrevive al reset** | El diálogo lo dice, como pide la Q2 de D1 («la pantalla tiene que decirlo»): el historial de ejecuciones y las importaciones quedan en el servidor hasta su retención, y la supresión real es borrar la cuenta | **L8.** Los textos de abajo |
+| **`epoch_mismatch`** | Otra pestaña u otro dispositivo de la misma cuenta borró entre la lectura y el reset. No se borra nada local ni se reintenta solo | **L5.** Un texto propio, porque el del servidor promete cargar el estado nuevo, cosa que hace D1c: «Tu progreso de la cuenta se acaba de borrar desde otra pestaña o dispositivo. No se borró nada de este navegador: si querés, volvé a confirmar.» |
+| **Sin servidor** | Sin red, un 5xx, un 502 o 504 de Nginx, algo que no es JSON o el 503 `content_not_imported`: no se borra nada local, la confirmación sigue abierta con lo escrito y se puede volver a intentar. «Borrar todo» no está disponible sin conexión (contrato de D1b, §4.2). El resto de la página sigue funcionando | **L6.** El botón no se deshabilita por adelantado: se intenta y se avisa «No pudimos borrar tu progreso: el taller no responde. No se borró nada; probá de nuevo más tarde.» Así no hace falta detectar la conexión, que no es confiable |
+| **El FR-074 de D1** | Después del 200, F8 borra las cuatro claves v1 y sus respaldos, como hoy. El FR-074 prohíbe tocar «las claves v1 que la cuenta no importó» y pide limpiar «el espacio de la cuenta». Antes de D1c no hay espacio por cuenta ni importaciones: las claves v1 son el único progreso local, y lo escribe la cuenta que tiene la sesión. Así, la cláusula no se puede cumplir al pie de la letra sin que «Borrar todo» deje de borrar lo que el alumno ve | **L7.** La cláusula de las claves v1 rige desde D1c, que la enmienda como se enmendó el FR-070 por F11-Q5. Hasta entonces, F8 borra las claves v1 y el diálogo dice que borra el progreso de este navegador. No es un riesgo nuevo: desde F11-Q4, «Salir» no toca ese progreso y «Tu cuenta» avisa que vive en el navegador |
+| **La espera del pedido (Q3)** | Mientras corren los tres pedidos, «Borrar todo» dice «Borrando…» y queda deshabilitado, el campo queda de sólo lectura, y «Conservar mi avance» y Esc no cierran la confirmación, porque el servidor puede haber borrado ya. Es la espera de su propio pedido, consecuencia de Q1. La guarda general contra el solape sigue siendo de D1c (Q3) | **L9.** No dejar cerrar la confirmación con un pedido en curso; se cierra sola al terminar, con o sin éxito, según la tabla de FR-047 |
+| **El foco al abrir** | El campo de la contraseña va antes de los botones, así que el navegador lo enfoca al abrir. Hoy enfoca «Conservar mi avance». Lo fija el E2E | **L12.** El campo antes de los botones, sin `autofocus` |
 
-**Recomendada: A.** Antes de D1c, el reset del servidor borra un estado que el navegador no lee, y el borrado local que el alumno ve no pasa por el servidor. C rompe una regla de D1 o no borra nada visible, y B escribe hoy lo que D1c decide.
+**Los textos de la confirmación (L8, a confirmar en el PR):**
 
-### Q2 · ¿F8 saca de `app.js` el armado de `features/progress-backup`?
+- el título, como hoy: «¿Borrar tu progreso?»;
+- «Se borrarán los pasos, favoritos, notas, campaña, talleres de Sistemas y ejercicios del laboratorio de ambos lenguajes en este navegador y en tu cuenta. Podés exportarlos antes.» (hoy dice «en este navegador», sin «y en tu cuenta»);
+- «No se borran el historial de tus ejecuciones ni las copias que importaste: quedan en el servidor el tiempo que dice el aviso de privacidad. Para borrarlos, borrá tu cuenta desde «Tu cuenta».»;
+- el campo «Tu contraseña» (`type="password"`, `autocomplete="current-password"`, obligatorio);
+- los botones, como hoy: «Conservar mi avance» y «Borrar todo» (que pasa a «Borrando…» mientras espera).
 
-**Qué encontramos.** En `f2b-acum`, `startApp()` (`frontend/app.js`) arma una sola instancia con `createProgressBackup`. Lee las cuatro áreas por `window` al llamarlas:
+## El armado en `src/app/` (Q2)
 
-- `routeStore`;
-- `TallerLab` (exportar, planificar, aplicar, borrar y respaldos);
-- `TallerCampaignEngine` y `TallerSystemsEngine`;
-- los dos `sync` como `syncDerivedSeals`.
+**Qué cambia.** Hoy `startApp()` (`frontend/app.js`) arma la única instancia de `progress-backup`. Con Q2 la arma un módulo de `frontend/src/app/`, una vez, después de la compuerta, porque necesita `getContent().guide`. `startApp()` la recibe como parámetro y la usa para «Exportar mi progreso» de la barra lateral, y la página usa la misma.
 
-Registra dos pasos de sesión: `window.TallerSystems?.resetSimulations()` y un cierre sobre el temporizador del recorrido. Con F9 el cierre pasa a ser `window.TallerRoute?.resetTimer()`.
+`app.js` deja de importar `features/progress-backup`, y `app-shell-check`, que empaqueta `app.js` solo, le pasa una instancia hecha con áreas falsas.
 
-La misma instancia exporta desde «Exportar mi progreso» de la barra lateral, que es del shell. El plan de F2b la deja así: «La página usa la misma instancia que arma el shell; los pasos de sesión ya están registrados».
+**De dónde lee cada área.** El armado toma cada área de donde su dueño la ofrece cuando F8 entra:
 
-Lo que dicen las specs vecinas:
+- un singleton o la API pública de una página, si ya existe;
+- `window`, si no, con los mismos `?.` de hoy.
 
-- F5 (`resetSimulations` y el `sync` de `app.js`) y F7 (los métodos de respaldo de `TallerLab` y los dos `sync`) dicen «F10, o F8 si saca la composición de `app.js`».
-- F9 dice que `resetTimer` lo retira F8 y que «la spec de F8 lo confirma».
-- F5 midió que `app-shell-check` empaqueta `app.js` solo, y que si `app.js` importara una página traería un segundo motor.
-
-| Opción | Qué es | Costo |
+| Parte | Antes de su port | Después de su port |
 | --- | --- | --- |
-| **A (recomendada)** | El armado se queda en `app.js` hasta F10. `app.js` le entrega a la página, al montarla, la misma instancia. F8 no retira ningún método de `window.Taller*` que «Borrar todo» o la importación usan: todos quedan hasta F10 (tabla «Qué queda en `window.Taller*`») | La spec de F9 se corrige (`resetTimer` queda hasta F10), y la hoja de ruta, en F5 («`resetSimulations` hasta F8» pasa a «hasta F10»). F8 depende sólo de F2b, y el orden de integración con F5, F7 y F9 no cambia nada |
-| B | F8 lleva el armado a un módulo de `frontend/src/app/`, la capa de composición, que puede importar páginas. Importa los motores y el almacén del laboratorio como singletons y los reinicios de sesión desde la API pública de las páginas de Sistemas y del Recorrido. Se lo pasa a `app.js` (un parámetro de `startApp()`) y a la página | Sólo puede retirar `resetSimulations` y `resetTimer` si F5 y F9 ya se integraron; si no, conserva el camino por `window`. Cambia el contrato de `startApp()` que fijan F2a, A2, `boot-check` y `app-shell-check`. Mueve lógica que F10 vuelve a mover cuando arme la raíz única |
+| Recorrido (`routeStore`) | El singleton de F2a | — |
+| Laboratorio (exportar, planificar, aplicar, respaldos y borrar, que también reinicia la sesión del laboratorio) | `window.TallerLab` | La API que deje F7 |
+| Campaña y Sistemas (los cinco métodos del respaldo y los sellos derivados) | Los motores de F2a y los `sync` de `window` | Los motores y lo que dejen F5 y F6 |
+| Las simulaciones | `window.TallerSystems?.resetSimulations()` | La API pública de `pages/systems` (F5 FR-017 y US5-2) |
+| El temporizador | El cierre de `startApp()`, que lo registra en la instancia que recibe | La API pública de la página del Recorrido (F9) |
+| El reset del servidor (Q1) | El cliente de la API y «pedir el ingreso» de F11a | — |
 
-**Recomendada: A.** Es lo que planificó F2b y deja a F8 libre del orden de F5, F7 y F9. B cambia un contrato de arranque para adelantar retiros que F10 hace igual.
+**La regla de orden (Q2).** `resetSimulations` y `resetTimer` se retiran de `window` así:
 
-### Q3 · ¿Quién evita que dos «Borrar todo» o dos importaciones se solapen?
+- si F5 o F9 ya entraron, F8 los retira, porque el armado los importa de la API pública de su página;
+- si no, los retira el último de F5, F8 y F9 que entre, porque ese es el que deja el armado apuntando a la API pública.
 
-**Qué encontramos.** El plan de F2b (tabla «Lo que F5 a F8, F10, A2 y D1c toman de F2b», fila D1c) dice:
+**L11, a confirmar.** Esta spec aplica la misma regla a los demás métodos de `window.Taller*` que sólo lee el armado: los del área `lab` con F7, y los `sync` con F5 y F6. La excepción es un método que otra fuente legacy todavía lee: ése queda hasta que lo deje de leer, o hasta F10. Por ejemplo, `TallerLab.exportState` lo leen los adaptadores de Sistemas y de campaña. La respuesta de Q2 nombró sólo dos métodos; generalizarla evita que el armado lea `window` cuando ya existe la API.
 
-> «con la red, dos clics seguidos en «Borrar todo» o en importar pueden solaparse, cosa que en local no pasa (las esperas son microtareas que no cruzan un evento), así que su implementación o F8 tienen que impedirlo».
+**L10, a confirmar: un límite técnico que el plan resuelve.** R4 de `seams-guard-check` sólo deja que el dueño declarado de cada índice de `entities/*` importe sus valores desde `app/` o desde una fuente legacy (`qa/lib/seams-guard.ts`), para que ningún bundle de los checks termine con un segundo almacén o un segundo motor. El dueño del índice de `entities/guide` es `app.js`. El armado en `src/app/` importa `routeStore` y los motores, así que el plan elige una de tres:
 
-Con las áreas locales de hoy no hay forma de producirlo. Ningún E2E ni ninguna spec con las áreas reales lo puede mostrar.
+- el armado pasa a ser el dueño de esos índices;
+- los recibe de sus dueños;
+- R4 se amplía con su motivo.
 
-| Opción | Qué es | Costo |
-| --- | --- | --- |
-| **A (recomendada)** | Lo resuelve D1c, junto con el estado visible de la espera que la red va a necesitar (un texto como «Borrando…», el botón deshabilitado y los errores). F8 conserva el comportamiento local de hoy | D1c lo tiene que recordar; ya figura en el plan de F2b y esta spec lo repite en «Relación con otros ítems» |
-| B | F8 ignora una segunda activación mientras la primera no terminó, sin estado visible | Código que defiende un caso que en local no ocurre, probado sólo con un doble lento en una spec de componente. Con la red, un clic que no hace nada y no dice por qué |
-| C | F8 deshabilita los botones y muestra un estado de espera ya | Un cambio visible y textos nuevos en un port, sin la red que los justifique |
-
-**Recomendada: A.** En local no hay nada que impedir, y la forma correcta de esperar la decide quien trae la espera.
-
-### Q4 · ¿Qué dice `#note-state` después de importar y de «Borrar todo»?
-
-**Qué encontramos.** `#note-state` es el párrafo bajo la bitácora y tiene dos momentos:
-
-- al dibujar la página dice si el almacenamiento está disponible («Tus notas se guardan automáticamente en este navegador.» o «El guardado no está disponible…»);
-- después de escribir una nota dice si se guardó («Guardado. Tu próxima sesión ya tiene un punto de partida.» o «No se pudo guardar…»).
-
-Hoy, después de importar con éxito y después de «Borrar todo», `render()` rehace la página, así que el párrafo vuelve a su texto inicial. Por el ruling C2, lo que existe sólo porque `innerHTML` rehace la vista adopta el comportamiento de React: con la página sin remontarse, el párrafo conservaría el último texto. Pero acá ese texto habla de algo que la acción acaba de cambiar.
-
-| Opción | Qué es | Costo |
-| --- | --- | --- |
-| **A (recomendada)** | Conservar lo de hoy: después de importar y de «Borrar todo», el párrafo vuelve a su texto inicial | Una excepción explícita a C2, que la página implementa: no le alcanza con no remontarse. Si el usuario la elige, C2 queda leído como «estado que dejó el alumno», no como «todo lo que la reconstrucción reinicia» |
-| B | El comportamiento de React: queda el último texto que mostró | Después de «Borrar todo», con las notas recién borradas, puede decir «Guardado. Tu próxima sesión ya tiene un punto de partida.», que es falso. Y si el almacenamiento dejó de estar disponible, el alumno deja de ver el aviso inicial que se lo dice. Su E2E falla contra el legacy y va en el commit en rojo |
-
-**Recomendada: A.** El párrafo es un aviso sobre la última escritura de una nota, no un estado que el alumno eligió, y después de borrar todo el aviso viejo miente.
+La recomendación es la que no deje un segundo singleton en ningún bundle de los checks, verificado con `singletons-import.spec.ts`. El armado tampoco puede vivir en `app/boot/`: R4 no deja que un módulo de arranque importe índices. Se carga después de la compuerta, como `app.js`.
 
 ## Lecturas de las reglas del clarify
 
-No son decisiones nuevas: es cómo esta spec aplica reglas generales ya decididas. Ya están aplicadas en el texto de abajo, y el usuario puede corregirlas.
+No son decisiones nuevas: es cómo esta spec aplica reglas generales ya decididas. Ya están aplicadas en el texto de abajo, y el usuario las revisa en el PR.
 
 - **X1 y C2: lo que adopta el comportamiento de React.** Hoy, después de una importación exitosa y después de confirmar «Borrar todo», `app.js` llama a `render()`, que rehace la página. El elemento que tenía el foco desaparece y el foco cae al documento. Con React la página no se reconstruye, y eso da dos cambios aceptados, cuyos E2E se escriben con el comportamiento nuevo y van en el commit en rojo:
   - después de importar con éxito, el foco sigue en «Importar una copia»;
   - después de confirmar «Borrar todo», vuelve a «Borrar mi progreso», que abrió la confirmación.
 
   (FR-019 y FR-023.) La página no se remonta, pero lo que muestra cambia igual: la bitácora muestra las notas que quedaron, el pedido se recalcula y el panel de respaldos se vuelve a leer (después de «Borrar todo» desaparece).
-- **C2: las rarezas de lógica se conservan** (tabla de «Método de hoy»). El texto de `#note-state` después de importar y de «Borrar todo» no es una lectura: va al clarify como Q4, porque la recomendada se aparta de C2.
+- **C2: las rarezas de lógica se conservan** (tabla de «Método de hoy»). El texto de `#note-state` después de importar y de «Borrar todo» lo decidió Q4: hace lo que haga React, sin excepción.
 - **X2: no hay caso en Método.** Método no usa ninguna región viva que se recree:
   - `#toast` es estático y es del shell;
   - `#note-state` es un párrafo sin rol;
   - el diálogo no anuncia.
 
-  F8 no suma ninguna región viva: hacerlo cambiaría lo que anuncia un lector de pantalla. (FR-034)
+  F8 no suma ninguna región viva: hacerlo cambiaría lo que anuncia un lector de pantalla. (FR-034. El error del formulario de la contraseña, que trae Q1, sigue la convención de los formularios de F11a.)
 - **F9-Q4 aplicada a la confirmación.** El usuario decidió que el diálogo de la lección (F9) y la confirmación del laboratorio (F7) viven dentro de la raíz de su página, con un portal a `body`, y se cierran al navegar. Esta spec aplica lo mismo a la confirmación de «Borrar todo», que hoy es un `<dialog>` estático de `index.html`. (FR-021)
 - **X3 y C3: el bloque de 1 150 px también se parte.** El bloque de 590 px y la regla de impresión los nombra el ruling. Método tiene además `.method-grid` dentro de `@media (max-width: 1150px)`, que comparte con la Biblioteca (`.search-wrap`). Ese bloque se parte igual, por el primero que llegue. (FR-037)
 
 ## Método de hoy, en `f2b-acum@2b37caf4`
 
-Es el contrato que el port conserva. Las funciones son las de `frontend/app.js`, dentro de `startApp()`, salvo que se diga otra cosa.
+Es el contrato que el port conserva, salvo lo que cambia a propósito (Q1, Q4 y X1). Las funciones son las de `frontend/app.js`, dentro de `startApp()`, salvo que se diga otra cosa.
 
 **Lo que dibuja `renderMethod`, en orden:**
 
@@ -258,7 +296,7 @@ En la barra lateral, fuera de Método, están `#save-label` y «Exportar mi prog
 | Elegir un archivo (`change` de `#import-file`) | Sin archivo, nada. Si no, `assertImportSize` (10 MB, antes de leerlo), `planImport(await file.text())`, `await applyImport(plan)`, `updateSaveLabel()`, `render()` y el aviso. En el error, el aviso de `importFailureNotice`. En los dos caminos, al final, `value = ''` | El de la importación, o «No se pudo importar: …» |
 | «Borrar mi progreso» (`reset`) | `#confirm-dialog.showModal()` | — |
 | «Conservar mi avance» o Esc | Cierra el diálogo; no escribe | — |
-| «Borrar todo» (`#confirm-reset`) | `await progressBackup.resetAll()`, que borra en orden el recorrido, el laboratorio, campaña y Sistemas y después corre los pasos de sesión: las simulaciones y el temporizador. Después, `save()`, el cierre del diálogo, `render()` y el aviso | «Progreso reiniciado. Un nuevo comienzo.» o «No se pudo borrar todo el progreso guardado. Recargá la página y volvé a intentarlo.» |
+| «Borrar todo» (`#confirm-reset`) | `await progressBackup.resetAll()`, que borra en orden el recorrido, el laboratorio, campaña y Sistemas y después corre los pasos de sesión: las simulaciones y el temporizador. Después, `save()`, el cierre del diálogo, `render()` y el aviso. Hoy es sólo local; con Q1 lo precede el reset del servidor | «Progreso reiniciado. Un nuevo comienzo.» o «No se pudo borrar todo el progreso guardado. Recargá la página y volvé a intentarlo.» |
 
 **El pedido al tutor** (`tutorPrompt`) se arma con:
 
@@ -279,10 +317,10 @@ El texto es el de hoy, con sus saltos de línea.
 | --- | --- | --- |
 | Después de «Borrar todo», `save()` vuelve a escribir `taller-learning-v1` con el recorrido en blanco: la clave existe (idioma Rust, 25 minutos, todo vacío) en lugar de quedar ausente | el manejador de `#confirm-reset` | FR-022 |
 | «Borrar todo» también devuelve el idioma a Rust: la barra lateral, `body[data-language]` y «Tu bitácora de Rust.» | el recorrido en blanco (`blankRouteProgress`) | FR-022 y FR-033 |
-| Sin acceso al almacenamiento, «Borrar todo» avisa «Progreso reiniciado. Un nuevo comienzo.» aunque no había nada que borrar | `resetAll` | FR-022 |
+| Sin acceso al almacenamiento, el borrado local avisa «Progreso reiniciado. Un nuevo comienzo.» aunque no había nada que borrar | `resetAll` | FR-022 |
 | El tamaño de un respaldo son caracteres sobre 1 024, con un decimal y punto («0.0 KB»), no bytes | `backupsPanel` | FR-020 |
 
-**El estado que la reconstrucción descarta hoy** no está en la tabla: el foco después de importar y de «Borrar todo» adopta el comportamiento de React (X1, «Lecturas»).
+**El estado que la reconstrucción descarta hoy** no está en la tabla: el foco después de importar y de «Borrar todo» y el texto de `#note-state` adoptan el comportamiento de React (X1 y Q4).
 
 ## El corte en `app.js`
 
@@ -293,7 +331,8 @@ El texto es el de hoy, con sus saltos de línea.
 | `renderMethod`, `backupsPanel`, `tutorPrompt`, `copyPrompt` y `downloadBackup` | Los reemplaza la página |
 | En el delegado de clic, las ramas `copy-prompt`, `download-backup`, `export`, `import` y `reset`; en el de entrada, `data-note` (con sus escrituras en `#note-state` y `#tutor-prompt`) | Para no manejar un evento dos veces |
 | En `render()`, la rama `metodo: renderMethod` | Pasa a un `mount`, con su `unmount` junto a los otros |
-| Los oyentes de `#cancel-reset`, `#confirm-reset` e `#import-file`, y los imports de `assertImportSize` e `importFailureNotice` | La confirmación y la importación son de la página |
+| Los oyentes de `#cancel-reset`, `#confirm-reset` e `#import-file` | La confirmación y la importación son de la página |
+| `createProgressBackup` con sus áreas y sus pasos de sesión, y el import de `features/progress-backup` (con `assertImportSize` e `importFailureNotice`) | El armado pasa a `src/app/` (Q2); `startApp()` recibe la instancia |
 | En `frontend/src/index.html`, `<dialog id="confirm-dialog">…</dialog>` y `<input id="import-file">` | Pasan a la página (FR-012 y FR-021) |
 | En los arneses `qa/lib/app-shell-harness.ts` y `boot-harness.ts`, los ids `confirm-dialog`, `cancel-reset`, `confirm-reset` e `import-file` | Ya no existen en el marcado estático |
 
@@ -301,32 +340,31 @@ El texto es el de hoy, con sus saltos de línea.
 
 | Qué | Lo retira | Por qué |
 | --- | --- | --- |
-| `exportProgress` y el oyente de `#export-progress` | F10 | Es el botón de la barra lateral y funciona en las ocho vistas. El escenario 4 de la US4 de F9 exporta desde ahí. La hoja de ruta lo pone en el «Borra» de F8 por error (hallazgo) |
-| El armado de `createProgressBackup`, con sus áreas y sus pasos de sesión (Q2) | F10 | Lo usa el botón de la barra lateral, y sus áreas leen `window` |
+| `exportProgress` y el oyente de `#export-progress`, con la instancia que recibe `startApp()` | F10 | Es el botón de la barra lateral y funciona en las ocho vistas. El escenario 4 de la US4 de F9 exporta desde ahí. La hoja de ruta lo pone en el «Borra» de F8 por error (hallazgo) |
+| El registro del paso del temporizador en la instancia, mientras el temporizador viva en `app.js` | F9 (o F8, si F9 ya entró) | Es la regla de orden de Q2 |
 | `routeState`, `save`, `updateSaveLabel`, `toast`, `syncShell`, `languageName`, `render()`, la navegación y el cambio de idioma | F10 | Son del shell |
 | `escapeHtml` y el import de `downloadBlob` | `escapeHtml`, cuando lo deje de usar la última página legacy (F3, F4 y F9); `downloadBlob`, F10, con `exportProgress` | Los usan otras páginas legacy y la exportación de la barra lateral |
 
 **El adaptador mínimo.** `window.TallerMethod` (nombre provisional) se publica desde `frontend/src/app/legacy/register-method.tsx` con sólo `mount` y `unmount`, que retira F10. Al montar:
 
 - lee `getContent().guide` y le pasa a la página sus fuentes por props;
-- recibe de `app.js` el `toast` del shell y la instancia de `progress-backup` (el plan elige la forma).
+- recibe el `toast` del shell y la instancia de `progress-backup` del armado de `src/app/` (el plan elige la forma).
 
 No importa `routeStore` (R4 de `seams-guard-check`): lo importa la página. Se evalúa antes que `app.js` en `legacy-views.ts` y en la tabla de `load-order-check`, y entra en `qa/lib/app-adapters.ts`.
 
 ## Qué queda en `window.Taller*` y hasta cuándo
 
-Con la opción recomendada de Q2, F8 suma un global y no retira ningún método.
+Con Q2, el armado deja `app.js` en F8, y cada método que sólo lee el armado sigue la regla de orden (Q2 y L11).
 
-| Global y métodos | Quién los llama después de F8 | Lo retira |
+| Global y métodos | Quién los lee después de F8 | Lo retira |
 | --- | --- | --- |
 | `TallerMethod.mount` y `unmount` (nuevo) | `app.js:render` | F10 |
-| `TallerSystems.resetSimulations` | El primer paso de sesión de `progress-backup`, en `app.js` | F10, cuando el armado salga de `app.js` (F5-Q1: «hasta que su composición salga de `app.js`») |
-| `TallerRoute.resetTimer` (si F9 ya entró) o el cierre sobre el temporizador | El segundo paso de sesión, en `app.js` | F10. La spec de F9 dice F8, y se corrige |
-| `TallerLab.exportState`, `planImport`, `applyImport`, `backups` y `reset` | El área `lab` de `progress-backup`, en `app.js`. Tras F7, `reset` también reinicia la sesión del laboratorio y aborta la ejecución | F10 (como dice la spec de F7) |
-| `TallerCampaignEngine` y `TallerSystemsEngine` (los cinco métodos del respaldo) | Las áreas `campaign` y `systems`, en `app.js` | F10 |
-| `TallerCampaign.sync` y `TallerSystems.sync` | `syncDerivedSeals` de las mismas áreas, después de importar | F10 |
-
-Con la opción B de Q2, F8 retiraría `resetSimulations` y `resetTimer` sólo si F5 y F9 ya se integraron, y las áreas pasarían a importar sus singletons.
+| `TallerSystems.resetSimulations` | El armado, mientras Sistemas sea legacy | F8 si F5 ya entró; si no, F5 |
+| `TallerRoute.resetTimer` (si F9 entró antes que F8) | El armado no lo lee: importa el reinicio de la API pública de la página | F8 si F9 ya entró; si no, F9, que nunca lo publica |
+| `TallerLab.planImport`, `applyImport`, `backups` y `reset` | El área `lab` del armado, mientras el laboratorio sea legacy | El último de F7 y F8 (L11) |
+| `TallerLab.exportState` | El área `lab` y los adaptadores de Sistemas y de campaña (y el kit) | F10 (lo leen otras fuentes, como dice la spec de F7) |
+| `TallerCampaign.sync` y `TallerSystems.sync` | Los sellos derivados del armado; `lab.js` también los llama hasta F7 | El último de F8 y del port de su dueño (F6 y F5), y no antes de F7 (L11) |
+| `TallerCampaignEngine` y `TallerSystemsEngine` | El armado deja de leerlos e importa los motores de F2a (L10); `campaign.js`, `systems.js` y `lab.js` siguen leyéndolos | Con sus lectores legacy, o F10 |
 
 ## Qué cambia en `dist/index.html`
 
@@ -334,8 +372,8 @@ Con la opción B de Q2, F8 retiraría `resetSimulations` y `resetTimer` sólo si
 | --- | --- | --- |
 | `dist/content/curriculum.<versión>.json` | No | `content/` y el generador no cambian |
 | El marcado de `frontend/src/index.html` | Sí, dos elementos | Salen `<dialog id="confirm-dialog">` y `<input id="import-file">`. Quedan iguales los ids, el menú, los conteos, `#save-label`, `#export-progress` y `#toast` |
-| `<style>` | Sí, el orden | Unas 23 reglas de Método salen de `styles.css` y entran, enteras y en el orden de hoy, en la hoja de la página (X3). El conjunto de reglas es el mismo, salvo que la del `style=` pasa a una clase |
-| `<script type="module">` | Sí | Sale código de `app.js`; entran la página, su modelo y el adaptador. `useStore` de Zustand ya está instalado desde F2a |
+| `<style>` | Sí, el orden | Unas 23 reglas de Método salen de `styles.css` y entran, enteras y en el orden de hoy, en la hoja de la página (X3). El conjunto de reglas es el mismo, salvo que la del `style=` pasa a una clase y el campo de la contraseña, si necesita reglas, usa las de los formularios de F11a |
+| `<script type="module">` | Sí | Sale código de `app.js`; entran la página, su modelo, el adaptador y el armado. `useStore` de Zustand ya está desde F2a; el cliente de la API y React Hook Form, desde F11a |
 | El tamaño | Se informa | No se midió para esta spec: `f2b-acum` no tiene un `dist/`. La spec de F9 midió 1 136 702 caracteres en el `dist` de `f2a`, y el plan de F2b estima +4 266 para toda F2b. El tope de `qa/build-check` (`BOOT_SIZE_LIMIT`) es 1 250 000 |
 | Los avisos de licencia | No | Ninguna dependencia de ejecución nueva |
 
@@ -344,13 +382,14 @@ Con la opción B de Q2, F8 retiraría `resetSimulations` y `resetTimer` sólo si
 | Qué se afirma | Cómo se demuestra | Requisitos |
 | --- | --- | --- |
 | Los enlaces, las recargas, el arranque, las ocho vistas por hash y las seis formas de URL siguen igual | Los 106 E2E de F1 y los 17 de A2, sin editar | FR-002 |
-| Los flujos de Método (bitácora, pedido, exportar, importar, «Borrar todo» y respaldos) | E2E nuevos con un Page Object, en verde contra el legacy antes de portar y sin editar después. Los de los dos cambios aceptados fijan el comportamiento nuevo | FR-001 y FR-040 |
+| Los flujos de Método (bitácora, pedido, exportar, importar y respaldos) | E2E nuevos con un Page Object, en verde contra el legacy antes de portar y sin editar después. Los de los cambios aceptados fijan el comportamiento nuevo | FR-001 y FR-040 |
+| «Borrar todo» con el servidor | E2E contra el doble de la API de F11a, escritos en rojo en el commit del cambio de Q1: la secuencia de los tres pedidos, cada respuesta de FR-047 y las claves locales intactas ante cualquier falla | FR-024, FR-040, FR-047 y FR-048 |
 | El archivo exportado y lo que acepta la importación | El E2E de la descarga fija el nombre, la sangría, el orden de las claves y el contenido, y el de la carga importa las dos exportaciones congeladas y fija lo guardado. Los dos corren contra el legacy y contra el port. `create-progress-backup.spec` sigue en verde sin editar | FR-016, FR-017 y FR-031 |
-| La lógica y los componentes | Specs de Vitest (modelo en `node`, componentes en `jsdom`), con valores escritos a mano desde `content/guide/` y las fixtures | FR-039 |
+| La lógica y los componentes | Specs de Vitest (modelo en `node`, componentes en `jsdom`), con valores escritos a mano desde `content/guide/`, las fixtures y los contratos de C3a, D1a y D1b | FR-039 |
 | El DOM y los textos | Una comparación única del HTML del legacy contra la página, sobre una grilla de estados | FR-035 y FR-042 |
 | El aspecto | El barrido de estilo computado y el multiconjunto de reglas del dist de la unidad 8 de F2b, con 0 diferencias, también en impresión | FR-036 y FR-037 |
 | Lo guardado | Las fixtures congeladas arrancan sin escribir; `storage.watchWrites()` cuenta 0 y 1 escrituras. `route-progress-check`, `versioned-storage-check` y `curriculum-ids-check` siguen en verde | FR-031 y FR-032 |
-| El retiro de `app.js` | `grep` en 0, los checks adaptados con la correspondencia de cada escenario, y `seams-guard-check` en 0 violaciones | FR-010 y FR-041 |
+| El retiro de `app.js` y el armado | `grep` en 0, los checks adaptados con la correspondencia de cada escenario, `seams-guard-check` en 0 violaciones y `singletons-import.spec.ts` en verde | FR-010, FR-041, FR-045 y FR-046 |
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -415,35 +454,54 @@ El alumno descarga una copia de su progreso desde Método o desde la barra later
    - «No se pudo importar: Formato de progreso no compatible.».
 
    En ninguno de los tres se escribe nada.
-6. **Dado** una importación exitosa, **cuando** termina, **entonces** el foco sigue en «Importar una copia» (cambio aceptado por X1: hoy cae al documento) y `#note-state` muestra su texto inicial (Q4).
+6. **Dado** que el alumno escribió una nota y `#note-state` dice «Guardado. Tu próxima sesión ya tiene un punto de partida.», **cuando** termina una importación exitosa, **entonces** pasa esto, y son dos cambios aceptados (hoy el foco cae al documento y el párrafo vuelve a su texto inicial):
+   - el foco sigue en «Importar una copia» (X1);
+   - `#note-state` conserva ese último texto (Q4).
 
-*Cubre: FR-013, FR-016 a FR-019 y FR-031 a FR-033; SC-002 y SC-003.*
+*Cubre: FR-013, FR-016 a FR-019, FR-028 y FR-031 a FR-033; SC-002 y SC-003.*
 
 ---
 
-### User Story 3 - «Borrar todo» pide confirmación y deja el taller en blanco como hoy (Priority: P1)
+### User Story 3 - «Borrar todo» pide la contraseña y borra el progreso de la cuenta y del navegador (Priority: P1)
 
-El alumno quiere empezar de cero. Abre la confirmación, puede arrepentirse y, si confirma, todo su progreso de este navegador se borra.
+El alumno quiere empezar de cero. Abre la confirmación, puede arrepentirse y, si escribe su contraseña y confirma, se borra su progreso en el servidor y en este navegador. Si el servidor no confirma, no se borra nada.
 
-**Why this priority**: es la acción más destructiva del taller y la única que toca los cuatro almacenes y las sesiones de otras vistas. Su orden de efectos lo fija hoy un check que pierde su punto de entrada.
+**Why this priority**: es la acción más destructiva del taller, toca los cuatro almacenes, las sesiones de otras vistas y ahora la cuenta. Una falla a medias (borrar lo local sin el servidor) haría perder el progreso sin propagarse.
 
-**Independent Test**: con el progreso congelado de master y una ranura de respaldo sembrada, abrir la confirmación, cancelarla por botón y por Esc, confirmar y revisar el almacenamiento, la barra lateral, la página y el foco.
+**Independent Test**: con el doble de la API de F11a, el progreso congelado de master y una ranura de respaldo sembrada:
+
+- abrir la confirmación y cancelarla por botón y por Esc;
+- confirmar con la contraseña correcta y revisar los pedidos, el almacenamiento, la barra lateral, la página y el foco;
+- repetir con cada respuesta de error de FR-047.
 
 **Acceptance Scenarios**:
 
-1. **Dado** `#metodo`, **cuando** se usa «Borrar mi progreso», **entonces** se abre un diálogo modal nombrado «¿Borrar tu progreso?», con su párrafo, «Conservar mi avance» y «Borrar todo», y el foco queda donde lo pone hoy el navegador (se espera «Conservar mi avance»; lo fija el E2E contra el legacy).
-2. **Dado** el diálogo abierto, **cuando** se cierra con «Conservar mi avance» o con Esc, **entonces** no se escribe nada y el foco queda donde lo devuelve hoy el navegador al cerrar un `<dialog>` modal (se espera «Borrar mi progreso»; lo fija el E2E contra el legacy).
+1. **Dado** `#metodo`, **cuando** se usa «Borrar mi progreso», **entonces** se abre un diálogo modal nombrado «¿Borrar tu progreso?». Muestra los textos de L8, el campo «Tu contraseña», «Conservar mi avance» y «Borrar todo», y el foco queda en el campo de la contraseña (L12; lo fija el E2E).
+2. **Dado** el diálogo abierto, **cuando** se cierra con «Conservar mi avance» o con Esc, **entonces**:
+   - no sale ningún pedido y no se escribe nada;
+   - el foco queda donde lo devuelve hoy el navegador al cerrar un `<dialog>` modal (se espera «Borrar mi progreso»; lo fija el E2E contra el legacy).
 3. **Dado** el diálogo abierto, **cuando** el alumno usa Tab y Mayús+Tab, **entonces** el foco no sale del diálogo; un clic en el fondo no lo cierra.
-4. **Dado** el progreso congelado de master y una ranura `:respaldo`, **cuando** se confirma «Borrar todo», **entonces**:
-   - el aviso dice «Progreso reiniciado. Un nuevo comienzo.»;
+4. **Dado** el progreso congelado de master, una ranura `:respaldo` y la contraseña correcta, **cuando** se confirma «Borrar todo», **entonces**:
+   - salen, en este orden, `POST /api/auth/confirm-password`, `GET /api/progress` y `POST /api/progress/reset` con `{format: 2, epoch}` (la época del `GET`), `X-Taller-User` y `X-XSRF-TOKEN`;
+   - mientras esperan, el botón dice «Borrando…»;
+   - con el 200, el aviso dice «Progreso reiniciado. Un nuevo comienzo.»;
    - `taller-laboratorio-v1`, `taller-campaign-v1`, `taller-systems-v1` y todas las ranuras `:respaldo` quedan borradas;
    - `taller-learning-v1` queda escrita con el recorrido en blanco (idioma Rust, 25 minutos; `KNOWN DEFECT`, FR-022);
    - la página muestra «Tu bitácora de Rust.» con los campos vacíos y sin el panel de respaldos;
    - la barra lateral dice «RUST» y «0 de 12».
 5. **Dado** lo anterior, **cuando** se cierra el diálogo, **entonces** el foco vuelve a «Borrar mi progreso» (cambio aceptado por X1: hoy cae al documento).
-6. **Dado** un motor que no pudo borrar su clave, **cuando** se confirma, **entonces** el aviso dice «No se pudo borrar todo el progreso guardado. Recargá la página y volvé a intentarlo.» (spec de componente con un doble de `ProgressBackup`; en el navegador no se puede provocar).
+6. **Dado** una contraseña incorrecta (422 `auth_failed`), **cuando** se confirma, **entonces**:
+   - el diálogo sigue abierto, con el mensaje del servidor en el campo;
+   - no salen ni el `GET` ni el reset;
+   - las cuatro claves y sus respaldos siguen intactos.
+7. **Dado** el servidor caído (sin red o 5xx), un 429 del reset y un 423 del reset, **cuando** se confirma en cada caso, **entonces** las claves locales siguen intactas. El diálogo muestra, respectivamente:
+   - «No pudimos borrar tu progreso: el taller no responde. No se borró nada; probá de nuevo más tarde.»;
+   - el mensaje del servidor con cuánto falta, sin dejar reenviar antes;
+   - el pedido de la contraseña otra vez.
+8. **Dado** un 401 en cualquiera de los tres pedidos, **cuando** se confirma, **entonces** se pide el ingreso. Si entra la misma cuenta, la confirmación sigue abierta, con el campo vacío y nada borrado; si entra otra, el documento se recarga.
+9. **Dado** un motor local que no pudo borrar su clave después del 200, **cuando** termina, **entonces** el aviso dice «No se pudo borrar todo el progreso guardado. Recargá la página y volvé a intentarlo.» (spec de componente con un doble de `ProgressBackup`; en el navegador no se puede provocar).
 
-*Cubre: FR-021 a FR-025 y FR-031 a FR-033; SC-002 y SC-004.*
+*Cubre: FR-021 a FR-025, FR-032, FR-033 y FR-047 a FR-049; SC-002, SC-004 y SC-013.*
 
 ---
 
@@ -487,22 +545,23 @@ El progreso se guarda como hoy, el archivo exportado es el de hoy y D1 lo puede 
 
 ---
 
-### User Story 6 - `app.js` pierde Método, la barra lateral sigue exportando y los ports se integran de a uno (Priority: P2)
+### User Story 6 - `app.js` pierde Método y el armado, la barra lateral sigue exportando y los ports se integran de a uno (Priority: P2)
 
-Quien mantiene el front encuentra Método en una página con su modelo y sus pruebas, y `app.js` sin lo suyo. Quien integra F3, F4, F5, F7 y F9 sabe qué toca cada uno.
+Quien mantiene el front encuentra Método en una página con su modelo y sus pruebas, el armado de `progress-backup` en `src/app/` y `app.js` sin lo suyo. Quien integra F3, F4, F5, F7, F9 y F11a sabe qué toca cada uno.
 
 **Why this priority**: deja el camino libre a F10, pero no cambia nada para el alumno.
 
-**Independent Test**: `grep` sobre `frontend/app.js` y `frontend/src/index.html`, `seams-guard-check`, `load-order-check`, `boot-check` y `app-shell-check` con el adaptador nuevo, y la tabla de correspondencia de escenarios.
+**Independent Test**: `grep` sobre `frontend/app.js` y `frontend/src/index.html`, `seams-guard-check`, `singletons-import.spec.ts`, `load-order-check`, `boot-check` y `app-shell-check` con el adaptador y el contrato nuevo de `startApp()`, y la tabla de correspondencia de escenarios.
 
 **Acceptance Scenarios**:
 
 1. **Dado** `frontend/app.js` después del port, **cuando** se buscan los términos de FR-010, **entonces** no hay ninguna aparición, y `exportProgress` y el oyente de `#export-progress` siguen.
-2. **Dado** cada una de las ocho vistas, **cuando** se usa «Exportar mi progreso» de la barra lateral, **entonces** se descarga la copia con el aviso de hoy.
+2. **Dado** cada una de las ocho vistas, **cuando** se usa «Exportar mi progreso» de la barra lateral, **entonces** se descarga la copia con el aviso de hoy, desde la misma instancia que usa la página.
 3. **Dado** el adaptador, **cuando** se evalúa sin llamar a `startApp()`, **entonces** no toca el almacenamiento, no registra oyentes ni intervalos y publica sólo `mount` y `unmount`.
-4. **Dado** cada escenario de `app-shell-check` o de `boot-check` que cambia, **cuando** se lee la tabla del PR, **entonces** figura cubierto por una spec o un E2E, o descartado con su motivo, y el orden de los efectos de «Borrar todo» sigue afirmado por algún check.
+4. **Dado** que F5 o F9 entraron antes que F8, **cuando** se lista `window.TallerSystems` o `window.TallerRoute`, **entonces** `resetSimulations` o `resetTimer` ya no están, y «Borrar todo» igual reinicia las simulaciones y el temporizador (FR-045).
+5. **Dado** cada escenario de `app-shell-check` o de `boot-check` que cambia, **cuando** se lee la tabla del PR, **entonces** figura cubierto por una spec o un E2E, o descartado con su motivo, y el orden de los efectos de «Borrar todo» sigue afirmado por algún check.
 
-*Cubre: FR-010 a FR-015, FR-041, FR-043 y FR-044; SC-006 y SC-010.*
+*Cubre: FR-010 a FR-015, FR-041, FR-043 a FR-046; SC-006 y SC-010.*
 
 ---
 
@@ -512,17 +571,23 @@ Quien mantiene el front encuentra Método en una página con su modelo y sus pru
   - La bitácora vive en memoria hasta recargar.
   - Exportar descarga el estado en memoria.
   - Importar aplica en memoria y avisa «Copia importada en esta sesión, pero no se pudo guardar: … Exportá tu avance para conservarlo.».
-  - «Borrar todo» avisa éxito (rareza).
+  - «Borrar todo» hace el reset del servidor y el borrado local avisa éxito (rareza).
 - **Almacenamiento que lee pero no escribe:** la primera tecla cambia `#note-state` a «No se pudo guardar…» y el pie a «Exportá para conservar tu avance».
 - **Entrar directo a `#metodo` y borrar todo:** ni el Recorrido, ni Sistemas, ni el laboratorio se montaron. Sus pasos de sesión no lanzan: es el contrato de sus dueños (F9 FR-031, F5 FR-017 y F7 FR-021), y hoy también vale.
+- **Una ejecución en curso en el servidor** (después de A4): el reset la cancela (contrato de D1b, §4.2). Una ejecución en curso en el navegador la aborta el `reset` del laboratorio (F7 FR-021).
+- **Una cuenta sin email verificado:** `GET /api/progress` responde 403 `email_unverified` y el diálogo muestra el mensaje del servidor sin borrar nada. Una cuenta creada por invitación nace verificada.
+- **La sesión vence con la confirmación abierta:** el próximo pedido recibe 401, o 419 si cambió el token; se sigue FR-047.
+- **Dos pestañas, dos cuentas:** la vieja recibe 409 `account_mismatch` al confirmar o al borrar, muestra el mensaje del servidor con «Recargar» y no borra nada.
+- **Otra pestaña o dispositivo borró entre el `GET` y el reset:** 409 `epoch_mismatch`, el texto de L5, nada local borrado.
+- **El servidor borró, pero un almacén local no:** el aviso de fallo de hoy. Volver a intentarlo hace otro reset del servidor y gasta otro de los tres del día.
 - **Se cancela el selector de archivos:** no hay archivo y no pasa nada.
 - **Cambiar de idioma con Método abierto:** el shell remonta la página como hoy, con la bitácora del otro idioma y `#note-state` en su texto inicial.
-- **Atrás o Adelante con la confirmación abierta:** hoy sigue abierta sobre la vista nueva; ahora se cierra con la página (F9-Q4, «Lecturas»). Ese caso queda sin E2E, como el de la lección en F9.
+- **Atrás o Adelante con la confirmación abierta:** hoy sigue abierta sobre la vista nueva; ahora se cierra con la página (F9-Q4, «Lecturas»). Con un pedido en curso, la respuesta se descarta en la página desmontada, y lo que hizo el servidor ya está hecho. Ese caso queda sin E2E, como el de la lección en F9.
 - **Otra pestaña guardó entre dos teclas:** `routeStore.save()` fusiona y el estado vivo puede cambiar de objeto. La página lo vuelve a leer en cada render y en cada manejador, y no escucha el evento `storage`, como hoy.
 - **Una nota de 20 000 caracteres:** el campo no deja escribir más, como hoy.
 - **El portapapeles negado y `execCommand` sin efecto:** el pedido queda seleccionado y el aviso lo dice.
 - **Fuentes o notas con HTML:** se muestran como texto, nunca como marcado (hoy las escapa `escapeHtml`).
-- **Dos clics seguidos en «Borrar todo» o dos importaciones:** en local no se solapan; con la red es de D1c (Q3).
+- **Una importación y un «Borrar todo» a la vez, o dos pestañas borrando:** la confirmación no deja reenviar mientras espera; la guarda general es de D1c (Q3).
 - **El contenido no llega (A2):** la página no se monta; la compuerta muestra su error.
 - **Imprimir:** los botones de datos (`.data-actions`) no se imprimen, como hoy.
 
@@ -530,28 +595,30 @@ Quien mantiene el front encuentra Método en una página con su modelo y sus pru
 
 ### Functional Requirements
 
+Los IDs no se renumeraron después del clarify: FR-045 a FR-049 son nuevos y van en la sección que les toca.
+
 **Reglas de todo port** *(salen de la hoja de ruta y de la spec de F2)*
 
-- **FR-001**: El PR DEBE abrir con los E2E de comportamiento de Método (US1 a US5), escritos con un Page Object contra la vista legacy y en verde antes de portar. Esos E2E DEBEN pasar sin editarse sobre la página nueva.
-  - Los dos que fijan un cambio aceptado por X1 (el foco después de importar y después de «Borrar todo», FR-019 y FR-023) se escriben con el comportamiento nuevo, fallan contra el legacy por esa razón y van en el commit en rojo del TDD.
-  - Si hay que editar cualquier otro, es un cambio de comportamiento: va en su propio commit, con TDD y con la aprobación del usuario.
+- **FR-001**: El PR DEBE abrir con los E2E de comportamiento de Método (US1, US2, US4 y US5, y el «Borrar todo» local de hoy), escritos con un Page Object contra la vista legacy y en verde antes de portar. Esos E2E DEBEN pasar sin editarse sobre la página nueva, salvo los de lo que cambia a propósito:
+  - los tres de React (el foco después de importar y después de «Borrar todo», FR-019 y FR-023, y `#note-state`, FR-028) se escriben con el comportamiento nuevo, fallan contra el legacy por esa razón y van en el commit en rojo del TDD;
+  - los de «Borrar todo» con el servidor (Q1) cambian a propósito en su propio commit, después del port: primero en rojo contra el borrado local, después la implementación.
 
-  *(Hoja de ruta, «E2E primero»; ADR 0008, §3; clarify de F1, Q1; X1)*
+  Si hay que editar cualquier otro, es un cambio de comportamiento: va en su propio commit, con TDD y con la aprobación del usuario. *(Hoja de ruta, «E2E primero» y «Un PR por vista»; ADR 0008, §3; clarify de F1, Q1; X1; Q1 y Q4)*
 - **FR-002**: Los 106 E2E de F1 y los 17 de A2 DEBEN pasar sin editarse con el build de F8. *(Hoja de ruta, criterios de aceptación globales)*
-- **FR-003**: F8 NO DEBE agregar dependencias de ejecución ni estilos en línea (`style=`, `setAttribute('style', …)` ni `style.cssText`), salvo la excepción declarada de FR-036, que ya existe hoy. Las dependencias de desarrollo que piden la primera spec de componente (`jsdom` y Testing Library) y la primera factory (`fishery`) entran sólo con el permiso del usuario, con su peso medido, y sólo si ningún ítem anterior las instaló. *(`AGENTS.md`; hoja de ruta, «Acciones del usuario»)*
+- **FR-003**: F8 NO DEBE agregar dependencias de ejecución. El formulario de la contraseña usa React Hook Form, que instala F11a (F11 FR-024). Tampoco DEBE agregar estilos en línea (`style=`, `setAttribute('style', …)` ni `style.cssText`), salvo la excepción declarada de FR-036, que ya existe hoy. Las dependencias de desarrollo que piden la primera spec de componente (`jsdom` y Testing Library) y la primera factory (`fishery`) entran sólo con el permiso del usuario, con su peso medido, y sólo si ningún ítem anterior las instaló. *(`AGENTS.md`; hoja de ruta, «Acciones del usuario»)*
 - **FR-004**: `dist/index.html` DEBE conservar la forma que fija A2: un solo documento, con un script y un estilo en línea, y el contenido en su propio archivo. DEBE quedar bajo el tope de `qa/build-check` (`BOOT_SIZE_LIMIT`, 1 250 000 caracteres), y el PR informa su tamaño antes y después.
 - **FR-005**: Ninguna función nueva DEBE superar 10 de complejidad sin justificarlo en la revisión, y el total de avisos de `npm run lint` no sube. *(Hoja de ruta, criterios globales; `docs/architecture.md`)*
-- **FR-006**: F8 DEBE entregarse como un solo PR que se puede revertir entero y devuelve la vista legacy (`renderMethod`, el diálogo y el selector estáticos y sus oyentes) con la red de F1 en verde. Cada cambio de comportamiento DEBE empezar con una spec que falla por la razón esperada. *(Hoja de ruta, «Un PR por vista»; constitución, principio II)*
+- **FR-006**: F8 DEBE entregarse como un solo PR que se puede revertir entero y devuelve la vista legacy con la red de F1 en verde: `renderMethod`, el diálogo y el selector estáticos y sus oyentes, el borrado local y el armado en `app.js`. Cada cambio de comportamiento DEBE empezar con una spec que falla por la razón esperada. *(Hoja de ruta, «Un PR por vista»; constitución, principio II)*
 
 **Alcance y retiro**
 
-- **FR-007**: La página DEBE dibujar lo que hoy dibuja `renderMethod`, con `backupsPanel`, en el orden de «Método de hoy». También DEBE dibujar la confirmación de «Borrar todo» y el selector de archivo oculto, que hoy están en `index.html`.
+- **FR-007**: La página DEBE dibujar lo que hoy dibuja `renderMethod`, con `backupsPanel`, en el orden de «Método de hoy». También DEBE dibujar la confirmación de «Borrar todo», con la contraseña (FR-021), y el selector de archivo oculto, que hoy están en `index.html`.
 - **FR-008**: La página DEBE montarse con una raíz de React sobre `#main`, como el Atlas: `app.js` la desmonta junto con las otras vistas antes de escribir `#main` y la monta cuando la vista es `metodo`. Cuando `mount` vuelve, la página ya está dibujada. Si la página lanza al dibujarse, el adaptador lo registra con `console.error` y un mensaje en español, como el del Atlas.
 - **FR-009**: La página DEBE recibir las fuentes de la guía por props desde su adaptador, que las lee de `getContent().guide` al montar. NO DEBE leer `window` ni importar `getContent()`. *(Spec de F2, FR-015; A2, F2-I6)*
-- **FR-010**: DEBE salir de `app.js` todo lo que dice «Se retira» en «El corte en `app.js`». `frontend/app.js` NO DEBE contener `renderMethod`, `backupsPanel`, `tutorPrompt`, `copyPrompt`, `downloadBackup`, `confirm-dialog`, `cancel-reset`, `confirm-reset`, `import-file`, `data-note`, `copy-prompt` ni `download-backup`. Lo que dice «Queda en el shell» se conserva.
+- **FR-010**: DEBE salir de `app.js` todo lo que dice «Se retira» en «El corte en `app.js`». `frontend/app.js` NO DEBE contener `renderMethod`, `backupsPanel`, `tutorPrompt`, `copyPrompt`, `downloadBackup`, `createProgressBackup`, `features/progress-backup`, `confirm-dialog`, `cancel-reset`, `confirm-reset`, `import-file`, `data-note`, `copy-prompt` ni `download-backup`. Lo que dice «Queda en el shell» se conserva.
 - **FR-011**: Las ramas de Método en los delegados de `#main` y los oyentes de `#cancel-reset`, `#confirm-reset` e `#import-file` DEBEN salir en el mismo commit que monta la página, para no manejar un evento dos veces. *(Hoja de ruta, reglas de todo port)*
 - **FR-012**: `<dialog id="confirm-dialog">` e `<input id="import-file">` DEBEN salir de `frontend/src/index.html`. El resto del marcado estático NO DEBE cambiar.
-- **FR-013**: «Exportar mi progreso» de la barra lateral DEBE seguir funcionando en las ocho vistas, con el mismo archivo y el mismo aviso. Su oyente y `exportProgress` se quedan en `app.js` hasta F10. «Exportar progreso» de la página DEBE producir el mismo archivo y el mismo aviso, sin una segunda copia de cómo se arma y se descarga el archivo; el plan elige cómo lo comparten.
+- **FR-013**: «Exportar mi progreso» de la barra lateral DEBE seguir funcionando en las ocho vistas, con el mismo archivo y el mismo aviso. Su oyente y `exportProgress` se quedan en `app.js` hasta F10, con la instancia que recibe `startApp()`. «Exportar progreso» de la página DEBE producir el mismo archivo y el mismo aviso, sin una segunda copia de cómo se arma y se descarga el archivo; el plan elige cómo lo comparten.
 - **FR-014**: El adaptador mínimo DEBE ser `window.TallerMethod` (nombre provisional), publicado desde `frontend/src/app/legacy/`, con sólo `mount` y `unmount`, que retira F10.
   - DEBE evaluarse antes que `app.js` en `legacy-views.ts` y quedar fijado en la tabla de `load-order-check`.
   - `qa/lib/app-adapters.ts` DEBE sumar sus métodos.
@@ -559,7 +626,20 @@ Quien mantiene el front encuentra Método en una página con su modelo y sus pru
   - NO DEBE importar `routeStore` (R4 de `seams-guard-check`).
 
   *(Spec de F2, FR-021; A2, F2-I1 y F2-I4)*
-- **FR-015**: `[NEEDS CLARIFICATION: Q2, se escribe con la opción A]` El armado de `features/progress-backup` DEBE quedarse en `app.js`. La página DEBE usar la instancia que `app.js` le entrega al montarla: NO DEBE crear otra, importar los motores ni leer `window`. Los métodos de `window.Taller*` que usan las áreas y los pasos de sesión quedan hasta F10 (tabla «Qué queda en `window.Taller*`»). *(Plan de F2b, «Lo que F5 a F8… toman de F2b»; spec de F2, FR-051)*
+- **FR-015**: *(Q2)* El armado de `features/progress-backup` DEBE vivir en un módulo de `frontend/src/app/`, fuera de `app/boot/`. Crea una sola instancia después de la compuerta, con `getContent().guide`.
+  - Cada área sale de donde su dueño la ofrece cuando F8 entra: un singleton o la API pública de una página si existe, y `window` si no (tabla de «El armado en `src/app/`»).
+  - El paso del servidor (Q1) sale del cliente de la API y de «pedir el ingreso» de F11a.
+  - La reciben `startApp()` y la página, y nadie DEBE crear otra.
+  - La feature NO DEBE importar vistas, el cliente de la API ni F11, ni leer `window` (spec de F2, FR-051).
+  - Ningún bundle de los checks DEBE terminar con un segundo almacén o un segundo motor; `singletons-import.spec.ts` y `seams-guard-check` lo verifican (L10).
+- **FR-045**: *(Q2)* `resetSimulations` y `resetTimer` DEBEN salir de `window` según la regla de orden:
+  - si F5 o F9 ya entraron cuando entra F8, F8 hace que el armado importe el reinicio de la API pública de su página y lo retira del adaptador;
+  - si no, lo retira el último de F5, F8 y F9 que entre;
+  - mientras el temporizador viva en `app.js`, `startApp()` registra su paso de sesión en la instancia que recibe;
+  - el orden de los pasos no cambia: primero las simulaciones y después el temporizador, siempre después de los cuatro almacenes.
+
+  La misma regla vale para los demás métodos que sólo lee el armado, salvo los que otra fuente legacy todavía lee (L11, tabla «Qué queda en `window.Taller*`»).
+- **FR-046**: *(Q2)* `startApp()` DEBE recibir la instancia de `progress-backup` como parámetro: es el contrato nuevo, y `legacy-views.ts` se la pasa. `app.js` NO DEBE importar `features/progress-backup`. Los checks que llaman a `startApp()` DEBEN pasarle una instancia sin cambiar sus valores esperados: `app-shell-check` (con áreas falsas), `boot-check` (con la real) y las specs de arranque de A2. El PR DEBE informar a A2 y a F10 el contrato nuevo.
 
 **Exportar, importar y respaldos**
 
@@ -569,7 +649,7 @@ Quien mantiene el front encuentra Método en una página con su modelo y sus pru
   - el JSON con dos espacios y el orden de claves de hoy.
 
   Después DEBE mostrar «Copia de progreso exportada.». El formato es contrato con D1b, que lo importa como `source: export`. *(ADR 0003; contrato de D1b, §3.2)*
-- **FR-017**: Importar DEBE seguir el flujo de hoy:
+- **FR-017**: Importar DEBE seguir el flujo de hoy, que sigue siendo local hasta D1c:
   - «Importar una copia» abre el selector de un campo de archivo oculto, con el mismo `accept` (`application/json,.json`) y el mismo nombre accesible;
   - sin archivo, no pasa nada;
   - el tamaño se comprueba antes de leer (`assertImportSize`);
@@ -578,7 +658,7 @@ Quien mantiene el front encuentra Método en una página con su modelo y sus pru
   - en los dos caminos, el campo se vacía al final, para que el mismo archivo se pueda volver a elegir.
 
   *(Spec de F2, FR-049 y FR-050)*
-- **FR-018**: Después de una importación exitosa, sin remontarse, la página DEBE mostrar el estado nuevo: las notas que quedaron en la bitácora, el pedido recalculado y el panel de respaldos vuelto a leer. `[NEEDS CLARIFICATION: Q4, se escribe con la opción A]` `#note-state` DEBE volver a su texto inicial.
+- **FR-018**: *(Q4)* Después de una importación exitosa, sin remontarse, la página DEBE mostrar el estado nuevo: las notas que quedaron en la bitácora, el pedido recalculado y el panel de respaldos vuelto a leer. `#note-state` conserva el texto que tenía.
 - **FR-019**: Después de una importación exitosa, el foco DEBE seguir en «Importar una copia». Es un cambio aceptado: hoy la página se reconstruye y el foco cae al documento. Su E2E se escribe con el comportamiento nuevo (FR-001). Se espera que siga donde lo dejó el clic, porque abrir el selector no lo mueve; nadie lo verificó todavía. Si el navegador lo mueve al cerrar el selector, la página lo devuelve al botón. *(X1 y C2)*
 - **FR-020**: El panel de respaldos DEBE seguir las reglas de hoy:
   - aparece sólo si hay ranuras, antes de «Tu progreso te pertenece.»;
@@ -589,45 +669,72 @@ Quien mantiene el front encuentra Método en una página con su modelo y sus pru
 
 **«Borrar todo»**
 
-- **FR-021**: La confirmación DEBE ser un `<dialog>` nativo y modal (`showModal()`), con lo siguiente:
-  - nombrado por su título (`aria-labelledby`), con los textos, las clases y el orden de botones de hoy;
-  - lo abre «Borrar mi progreso», y al abrir, el foco queda donde lo pone hoy el navegador (se espera «Conservar mi avance»; la página no agrega `autofocus`);
-  - «Conservar mi avance» y Esc la cierran sin escribir, y el foco queda donde lo devuelve hoy el navegador (se espera «Borrar mi progreso»; lo fija el E2E contra el legacy);
+- **FR-021**: *(Q1)* La confirmación DEBE ser un `<dialog>` nativo y modal (`showModal()`), con lo siguiente:
+  - nombrado por su título (`aria-labelledby`), con las clases y el orden de botones de hoy;
+  - los textos de L8 y el campo «Tu contraseña» (`type="password"`, `autocomplete="current-password"`, obligatorio), antes de los botones y armado con React Hook Form, como los formularios de F11a (F11 FR-024 y FR-025);
+  - lo abre «Borrar mi progreso», y al abrir, el foco queda donde lo pone el navegador (se espera el campo de la contraseña, L12; la página no agrega `autofocus`);
+  - sin un pedido en curso, «Conservar mi avance» y Esc la cierran sin pedidos ni escrituras, y el foco queda donde lo devuelve hoy el navegador (se espera «Borrar mi progreso»; lo fija el E2E contra el legacy);
   - el clic en el fondo NO la cierra;
   - el estado de React NO DEBE desincronizarse del diálogo nativo.
 
-  DEBE vivir dentro de la raíz de la página, con un portal a `document.body`, y cerrarse con ella al desmontarse, también si el alumno navega. *(F9-Q4, aplicada en «Lecturas»)*
-- **FR-022**: Al confirmar, la página DEBE esperar `resetAll()` y, después, en este orden:
+  DEBE vivir dentro de la raíz de la página, con un portal a `document.body`, y cerrarse con ella al desmontarse, también si el alumno navega. *(F9-Q4, aplicada en «Lecturas»; D1, FR-074)*
+- **FR-022**: *(Q1)* Al confirmar, la página DEBE llamar a `resetAll({password})` y la instancia DEBE hacer, en este orden:
+  1. `POST /api/auth/confirm-password` con la contraseña escrita;
+  2. `GET /api/progress`, para leer la época;
+  3. `POST /api/progress/reset` con `{format: 2, epoch}`;
+  4. sólo con el 200, el borrado local de hoy: el recorrido, el laboratorio, campaña, Sistemas, las simulaciones y el temporizador.
+
+  Después, la página DEBE:
   1. llamar a `routeStore.save()`, que vuelve a escribir el recorrido en blanco (rareza);
   2. cerrar el diálogo;
   3. mostrar el estado en blanco (la bitácora de Rust vacía y sin el panel de respaldos), sin remontarse;
-  4. avisar con el texto que devuelve `resetAll()`.
+  4. avisar con el texto del borrado local: el de éxito o el de fallo de hoy.
 
-  Dentro de `resetAll()`, el orden es el de hoy: el recorrido, el laboratorio, campaña, Sistemas, las simulaciones y el temporizador. *(Plan de F2b, §4.0, «El orden de los efectos»)*
-- **FR-023**: Después de confirmar, el foco DEBE volver a «Borrar mi progreso». Es un cambio aceptado: hoy la página se reconstruye y el foco cae al documento. Su E2E se escribe con el comportamiento nuevo (FR-001).
+  *(Plan de F2b, §4.0, «El orden de los efectos»; contrato de D1b, §4)*
+- **FR-023**: Después de confirmar con éxito, el foco DEBE volver a «Borrar mi progreso». Es un cambio aceptado: hoy la página se reconstruye y el foco cae al documento. Su E2E se escribe con el comportamiento nuevo (FR-001).
   - Se espera que lo haga el navegador al cerrar el `<dialog>` modal, porque el botón que lo abrió sigue en el documento. Nadie lo verificó todavía.
   - Si el E2E contra el legacy muestra que el navegador no devuelve el foco al cerrar, la página lo devuelve explícitamente a «Borrar mi progreso» después de confirmar.
   - El camino de cancelar queda como lo fije su E2E contra el legacy (FR-021).
 
   *(X1 y C2)*
-- **FR-024**: `[NEEDS CLARIFICATION: Q1, se escribe con la opción A]` «Borrar todo» DEBE ser el flujo local de hoy:
-  - llama a `resetAll()` sin confirmación, sin pedir la contraseña y sin ningún pedido a la API;
-  - funciona sin sesión y sin servidor;
-  - NO DEBE quitarle a la interfaz de la feature el parámetro de confirmación que D1c va a usar.
+- **FR-024**: *(Q1)* «Borrar todo» DEBE pedir la contraseña y usar el reset de D1b, con los tres pedidos de FR-022 hechos por el cliente de la API de F11a, que pone `X-XSRF-TOKEN` y `X-Taller-User` y renueva una vez ante un 419 (F11 FR-016 a FR-018).
+  - La época sale del `GET` inmediatamente anterior, y NO DEBE guardarse ni adivinarse (L1).
+  - El paso del servidor llega a la feature desde el armado (FR-015), y la página no llama a la API.
+  - NO DEBE borrarse nada local si el servidor no respondió 200 al reset.
+- **FR-047**: *(Q1)* Cada respuesta del servidor DEBE tener este efecto. Salvo el 200 del reset, ninguna borra nada local.
 
-  La confirmación de contraseña (superficie 4 de D1) la trae el ítem del front que integre D1c.
-- **FR-025**: `[NEEDS CLARIFICATION: Q3, se escribe con la opción A]` F8 NO DEBE agregar un estado de espera, un botón deshabilitado ni una guarda contra una segunda activación mientras una importación o un «Borrar todo» están en curso. En local no se pueden solapar, y lo resuelve D1c con la espera de la red.
+  | Respuesta | Pedido | Qué hace la confirmación |
+  | --- | --- | --- |
+  | 422 `auth_failed` | confirmar | Sigue abierta, con el mensaje del servidor en el campo de la contraseña (L2) |
+  | 423 `password_confirmation_required` | reset | Sigue abierta y vuelve a pedir la contraseña con el mensaje del servidor, sin reintentar sola (L2) |
+  | 429 | confirmar o reset | El mensaje del servidor y cuánto falta según `Retry-After`; «Borrar todo» no se puede reenviar antes (F11 FR-021; L4) |
+  | 401 | cualquiera | «Pedir el ingreso». Con la misma cuenta, sigue abierta con el campo vacío y sin reintentar; con otra, el documento se recarga (F11 FR-020; L3) |
+  | 409 `account_mismatch` | confirmar o reset | El mensaje del servidor con «Recargar» (F11 FR-019) |
+  | 409 `epoch_mismatch` | reset | El texto de L5, sin reintentar |
+  | 409 `client_outdated` | reset | El mensaje del servidor con «Recargar» |
+  | 403 `account_disabled` o `email_unverified` | cualquiera | El mensaje del servidor; con la cuenta deshabilitada, vuelve al acceso (F11 FR-023) |
+
+  Los mensajes se muestran en la confirmación como los errores de los formularios de F11a, con `aria-invalid` en el campo y `role="alert"` en el error general.
+- **FR-048**: *(Q1)* Sin servidor, «Borrar todo» NO DEBE borrar nada local: sin red, un 5xx, un 502 o 504 de Nginx, una respuesta que no es JSON o el 503 `content_not_imported`, en cualquiera de los tres pedidos. La confirmación sigue abierta con lo escrito y muestra «No pudimos borrar tu progreso: el taller no responde. No se borró nada; probá de nuevo más tarde.» (L6). El botón NO DEBE deshabilitarse por adelantado. El resto de la página sigue funcionando sin servidor. *(Contrato de D1b, §4.2; F11 FR-022)*
+- **FR-049**: *(Q1)* Después del 200 del reset, el borrado local DEBE ser el de hoy: las cuatro claves v1 y sus respaldos, más los pasos de sesión.
+  - La cláusula del FR-074 de D1 que prohíbe tocar «las claves v1 que la cuenta no importó» no se puede cumplir antes de D1c sin que «Borrar todo» deje de borrar lo que el alumno ve: no hay espacio por cuenta ni importaciones, y la cuenta con sesión escribe esas claves.
+  - Esta spec la lee como vigente desde D1c, que la enmienda (L7).
+  - El diálogo dice que borra el progreso «en este navegador y en tu cuenta» (L8).
+- **FR-025**: *(Q3, consecuencia de Q1)* Mientras corren los pedidos de FR-022, la confirmación DEBE mostrar la espera de su propio pedido:
+  - «Borrar todo» dice «Borrando…» y queda deshabilitado;
+  - el campo queda de sólo lectura;
+  - «Conservar mi avance» y Esc no la cierran (L9).
+
+  Al terminar, sigue la tabla de FR-047, o FR-022 con el éxito. F8 NO DEBE agregar una guarda general contra el solape de una importación con un «Borrar todo», ni entre pestañas: es de D1c (Q3). La importación, que sigue siendo local, no muestra espera.
 
 **La bitácora y el pedido al tutor**
 
 - **FR-026**: La bitácora DEBE mostrar las notas del idioma activo en «Tu bitácora de Rust.» (o «de Go.»), con los dos campos de hoy: ids, etiquetas, `maxlength="20000"` y placeholders. Los valores salen de `routeStore`.
 - **FR-027**: Cada tecla en un campo de la bitácora DEBE asignar el valor a `notes[idioma activo][campo]` y hacer una sola llamada a `routeStore.save()`, sin debounce, sin tocar las notas del otro idioma ni del otro campo, y sin otra instancia ni otra clave. *(Spec de F2, FR-026; hoja de ruta, reglas de todo port)*
-- **FR-028**: `[NEEDS CLARIFICATION: Q4, se escribe con la opción A]` `#note-state` DEBE mostrar los textos de hoy:
-  - al montar, según `routeStore.storageAvailable()`;
-  - después de cada tecla, según si se pudo guardar;
-  - después de importar con éxito y después de «Borrar todo», otra vez el texto inicial.
-
-  DEBE seguir siendo un párrafo sin rol ni `aria-live`.
+- **FR-028**: *(Q4)* `#note-state` DEBE mostrar los textos de hoy al montar, según `routeStore.storageAvailable()`, y después de cada tecla, según si se pudo guardar.
+  - Después de importar con éxito y después de «Borrar todo» conserva el último texto, como hace React con una página que no se remonta. Es un cambio aceptado, porque hoy vuelve al texto inicial, y su E2E es el tercero en rojo (FR-001).
+  - Cuando el shell remonta la página (navegación o cambio de idioma), vuelve al texto inicial, como hoy.
+  - DEBE seguir siendo un párrafo sin rol ni `aria-live`.
 - **FR-029**: El pedido al tutor DEBE ser el texto de hoy, armado con el idioma activo, los minutos guardados y la nota «La próxima vez voy a…» del idioma activo (o «elegir un desafío pequeño del recorrido.»). DEBE recalcularse en cada tecla y después de importar o de «Borrar todo», y mostrarse como texto en el `blockquote` `#tutor-prompt`.
 - **FR-030**: «Copiar pedido para mi tutor» DEBE intentar, en este orden:
   1. el portapapeles: «Pedido copiado. Pegalo en tu asistente.»;
@@ -639,14 +746,19 @@ Quien mantiene el front encuentra Método en una página con su modelo y sus pru
 **Progreso y shell**
 
 - **FR-031**: El progreso DEBE leerse con `routeStore.getProgress()` en cada render y en cada manejador, nunca de una copia: ni `useState`, ni una ref, ni un contexto, ni un cierre. Un componente DEBE leer la revisión con `useStore(routeStore.changes, (state) => state.revision)`, nunca con el store entero. Lo que el formato guarda NO DEBE cambiar: las claves de `taller-learning-v1`, `version: 1` y el orden del JSON. *(Spec de F2, FR-026; plan de F2a, §3.0)*
-- **FR-032**: Desde la página, sólo la bitácora DEBE escribir, una vez por tecla. Montar, desmontar, copiar, exportar, descargar un respaldo y abrir o cancelar la confirmación NO DEBEN escribir ni subir la revisión. Importar y «Borrar todo» escriben lo que escriben la feature y el `save()` de FR-022, nada más. Las tres fixtures congeladas DEBEN arrancar sin escribir, sin respaldar y sin avisar. *(ADR 0003)*
+- **FR-032**: Desde la página, sólo la bitácora DEBE escribir, una vez por tecla.
+  - Montar, desmontar, copiar, exportar, descargar un respaldo, abrir o cancelar la confirmación y cualquier «Borrar todo» que el servidor no confirmó NO DEBEN escribir ni subir la revisión.
+  - Importar y «Borrar todo» escriben lo que escriben la feature y el `save()` de FR-022, nada más.
+  - Las tres fixtures congeladas DEBEN arrancar sin escribir, sin respaldar y sin avisar.
+
+  *(ADR 0003)*
 - **FR-033**: Después de cada escritura de la página, de una importación y de «Borrar todo», el shell DEBE mostrar el estado nuevo como hoy:
   - `#save-label`;
   - en la barra lateral, «N de 12», el porcentaje y la barra de progreso;
   - después de «Borrar todo», además, el idioma: «RUST», `aria-pressed` de los botones de idioma y `body[data-language]`.
 
   La página no conoce al shell. Hoy lo hacen `save()`, `updateSaveLabel()` y `render()`, de `app.js`. F8 reutiliza el mecanismo que cree el primero de F3, F4 y F9 (F3 FR-014, F4 FR-011 y F9 FR-022). Si ese mecanismo no cubre el idioma, F8 lo extiende; si F8 llega primero, lo crea.
-- **FR-034**: Los avisos DEBEN salir por el `toast` del shell (`#toast`), que el adaptador recibe en `mount`, con los textos de hoy, hasta F10. F8 NO DEBE sumar regiones vivas. *(Hoja de ruta, F8, «Conserva»; X2, «Lecturas»)*
+- **FR-034**: Los avisos DEBEN salir por el `toast` del shell (`#toast`), que el adaptador recibe en `mount`, con los textos de hoy, hasta F10. F8 NO DEBE sumar regiones vivas, salvo el error de la confirmación de FR-047 (`role="alert"`), que trae Q1 con la convención de los formularios de F11a. *(Hoja de ruta, F8, «Conserva»; X2, «Lecturas»)*
 
 **El aspecto y la accesibilidad**
 
@@ -654,6 +766,7 @@ Quien mantiene el front encuentra Método en una página con su modelo y sus pru
   - los atributos de delegación que se retiran (`data-action`, `data-key` y `data-note`);
   - la clase que reemplaza al `style=` (FR-036);
   - el lugar del diálogo y del campo de archivo en el árbol;
+  - lo que Q1 suma o cambia en la confirmación: el texto de L8, el campo de la contraseña, la espera y los errores;
   - las de serialización de React, que se listan.
 
   El contenido de la guía y las notas se muestran como texto, nunca como HTML.
@@ -681,12 +794,14 @@ Quien mantiene el front encuentra Método en una página con su modelo y sus pru
 
 **Las pruebas**
 
-- **FR-039**: Las specs nuevas DEBEN ser de Vitest. Los valores esperados se escriben a mano desde `content/guide/` y las fixtures.
-  - **De modelo** (proyecto `node`): el texto del pedido al tutor y el del estado de la nota.
+- **FR-039**: Las specs nuevas DEBEN ser de Vitest. Los valores esperados se escriben a mano desde `content/guide/`, las fixtures y los contratos de C3a, D1a y D1b.
+  - **De modelo** (proyecto `node`):
+    - el texto del pedido al tutor y el del estado de la nota;
+    - el paso del servidor con un doble del cliente: la secuencia de FR-022, cada fila de FR-047, FR-048, y que nada local se borra si el reset no dio 200.
   - **De componente** (proyecto `jsdom`, con Testing Library, `userEvent` y consultas por rol y nombre accesible):
     - una escritura por tecla;
     - los tres caminos de la copia, con dobles del portapapeles y de `execCommand`;
-    - importar y «Borrar todo» contra un doble de `ProgressBackup` que registra sus llamadas: el orden de FR-022, el aviso de fallo y una nota con HTML que se muestra como texto.
+    - importar y «Borrar todo» contra un doble de `ProgressBackup` que registra sus llamadas: el orden de FR-022, la espera de FR-025, los errores de FR-047, el aviso de fallo y una nota con HTML que se muestra como texto.
 
   Como jsdom no trae `showModal()` ni `close()` (ADR 0008), una spec que sólo necesita el diálogo define un stub, y el foco, Esc y el fondo se prueban en E2E.
 - **FR-040**: Los E2E nuevos DEBEN usar un Page Object de Método (`qa/e2e/pages/method.ts` y su fixture `method`, provisionales; si F5, F7 o F9 ya crearon uno mínimo para su «Borrar todo», F8 lo amplía), con localizadores por rol y nombre accesible. Cubren US1 a US5:
@@ -694,17 +809,20 @@ Quien mantiene el front encuentra Método en una página con su modelo y sus pru
   - el pedido y la copia, con el portapapeles permitido;
   - la exportación desde la página y desde la barra lateral: el evento `download` con `page.clock` fijo, el nombre, la sangría, el orden de las claves y el contenido comparado con la fixture sembrada;
   - la importación por el evento `filechooser`, que no depende de dónde esté el campo, con las dos exportaciones congeladas y los tres archivos inválidos;
-  - «Borrar todo», con el almacenamiento, la barra lateral, la página y el foco;
+  - «Borrar todo» contra el doble de la API de F11a, con `GET /api/progress`, `POST /api/auth/confirm-password` y `POST /api/progress/reset` sumados al doble:
+    - los pedidos y su orden;
+    - las respuestas de FR-047 y de FR-048;
+    - el almacenamiento, la barra lateral, la página y el foco;
   - los respaldos, con una clave ilegible sembrada;
   - el teclado de la confirmación.
 
-  Cada rareza de «Método de hoy» lleva `KNOWN DEFECT` en el nombre de su prueba; los dos cambios de foco, no.
+  Cada rareza de «Método de hoy» lleva `KNOWN DEFECT` en el nombre de su prueba; los cambios aceptados, no.
 - **FR-041**: Los checks de `qa/` que cargan `app.js` DEBEN cambiar sólo cómo cargan o qué observan, no sus valores esperados:
-  - **`app-shell-check`:** sus 38 escenarios de importar, formato, archivo, atomicidad, «Borrar todo», áreas asíncronas, seguridad, almacenamiento sin escritura y respaldos pierden su punto de entrada en `app.js`. Cada uno pasa a la spec de la feature, a una spec de componente o a un E2E, o se descarta con su motivo. Los dos de exportar siguen, porque exportan por la barra lateral. La nota del escenario «almacén» la comparten F3, F8 y F9.
-  - **`boot-check`:** la navegación a `#metodo` lee nodos de React; «borrar todo» y las dos «importación: <fixture>» se adaptan.
+  - **`app-shell-check`:** sus 38 escenarios de importar, formato, archivo, atomicidad, «Borrar todo», áreas asíncronas, seguridad, almacenamiento sin escritura y respaldos pierden su punto de entrada en `app.js`. Cada uno pasa a la spec de la feature, a una spec de componente o a un E2E, o se descarta con su motivo. Los dos de exportar siguen, porque exportan por la barra lateral, con la instancia que reciben en `startApp()`. La nota del escenario «almacén» la comparten F3, F8 y F9.
+  - **`boot-check`:** la navegación a `#metodo` lee nodos de React; «borrar todo» y las dos «importación: <fixture>» se adaptan, con un doble del paso del servidor.
   - **`load-order-check`, `app-adapters.ts` y los ids de los dos arneses** también se adaptan.
 
-  El orden de los efectos de «Borrar todo» (cuatro almacenes, simulaciones, temporizador, `save()`, cierre, redibujo y aviso) DEBE seguir afirmado por algún check. El PR DEBE listar la correspondencia de cada escenario que cambia o se retira. *(ADR 0008, §5; plan de F2b, §4.6)*
+  El orden de los efectos de «Borrar todo» (el servidor, los cuatro almacenes, las simulaciones, el temporizador, `save()`, el cierre, el redibujo y el aviso) DEBE seguir afirmado por algún check. El PR DEBE listar la correspondencia de cada escenario que cambia o se retira. *(ADR 0008, §5; plan de F2b, §4.6)*
 - **FR-042**: Una comparación única, no permanente, DEBE comparar el DOM de `#main` y de la confirmación del legacy contra el del port sobre una grilla de estados:
   - los dos idiomas, con y sin notas;
   - con y sin ranuras de respaldo;
@@ -715,15 +833,17 @@ Quien mantiene el front encuentra Método en una página con su modelo y sus pru
 
 **La integración**
 
-- **FR-043**: F8 DEBE integrarse de a uno con F2b (si alguna unidad todavía no entró), F3, F4, F5, F7, F9 y F10, que comparten:
-  - `app.js`: los delegados, `render()`, `startApp()` y los pasos de sesión;
+- **FR-043**: F8 DEBE integrarse de a uno con F2b (si alguna unidad todavía no entró), F3, F4, F5, F7, F9, F10 y F11a. Comparten:
+  - `app.js`: los delegados, `render()`, `startApp()` y su contrato nuevo;
   - `index.html`;
   - `legacy-views.ts`, `load-order-check`, `app-adapters.ts` y los arneses;
   - los bloques compartidos de `styles.css`;
-  - la suscripción del shell, la pila de DOM de Vitest y el Page Object de Método.
+  - la suscripción del shell, la pila de DOM de Vitest y el Page Object de Método;
+  - el doble de la API de los E2E y el cliente de la API (F11a).
 
-  El que llega después rebasa. *(Hoja de ruta, «Orden y paralelismo»)*
-- **FR-044**: En el mismo PR, `docs/architecture.md` (la fila de Método y la de `features/progress-backup`: lo que sigue en `app.js` hasta F10) y `qa/AGENTS.md` DEBEN reflejar el cambio. Los integra el agente principal. *(`AGENTS.md`)*
+  El que llega después rebasa. F8 no entra antes que F2b ni que F11a. *(Hoja de ruta, «Orden y paralelismo»)*
+- **FR-044**: En el mismo PR, `docs/architecture.md` y `qa/AGENTS.md` DEBEN reflejar el cambio. Los integra el agente principal. *(`AGENTS.md`)*
+  - En `docs/architecture.md`: la fila de Método, la de `features/progress-backup` (el armado en `src/app/`) y el contrato de `startApp()`.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -731,10 +851,12 @@ Quien mantiene el front encuentra Método en una página con su modelo y sus pru
 - **Estado de la nota:** el párrafo `#note-state`, que dice si las notas se guardan. No se guarda.
 - **Pedido al tutor:** un texto derivado del idioma, los minutos y la nota «La próxima vez». No se guarda.
 - **Copia de progreso (archivo exportado):** el JSON v1 con el recorrido en la raíz, más `lab`, `campaign`, `systems` y `exportedAt`. Lo arma `features/progress-backup`, lo importa Método y lo importa D1b como `source: export`.
-- **Importación:** una copia planificada entera antes de aplicar nada y aplicada después, sección por sección, con un aviso que nombra lo que no se guardó o se omitió.
-- **«Borrar todo»:** el borrado de los cuatro almacenes y sus respaldos, más los pasos de sesión de sus dueños (las simulaciones y el temporizador). Antes de D1c es sólo local.
+- **Importación:** una copia planificada entera antes de aplicar nada y aplicada después, sección por sección, con un aviso que nombra lo que no se guardó o se omitió. Sigue siendo local hasta D1c.
+- **«Borrar todo»:** el reset del progreso de la cuenta en el servidor, con la contraseña confirmada, seguido del borrado de los cuatro almacenes locales y sus respaldos y de los pasos de sesión de sus dueños (las simulaciones y el temporizador). Sin el 200 del servidor no se borra nada local.
+- **Época:** el contador de la cuenta en el servidor que sube con cada reset (D1). F8 la lee justo antes del reset y no la guarda.
+- **Contraseña confirmada:** la marca de la sesión que deja `POST /api/auth/confirm-password` durante 900 s (C3a), que el reset exige.
 - **Ranura de respaldo:** el texto original que un almacén guardó en `<clave>:respaldo` cuando no pudo leerlo (ADR 0003).
-- **Instancia de `progress-backup`:** la única, la que arma `app.js` (Q2); la usan la barra lateral y la página.
+- **Instancia de `progress-backup`:** la única, la que arma `src/app/` (Q2); la usan la barra lateral, por `startApp()`, y la página.
 - **Adaptador mínimo:** el `window.TallerMethod` que `app.js` lee hasta F10.
 - **Comparación única:** la corrida, una vez en el PR, que compara el DOM o el estilo del legacy con los del port.
 
@@ -743,69 +865,87 @@ Quien mantiene el front encuentra Método en una página con su modelo y sus pru
 ### Measurable Outcomes
 
 - **SC-001**: Los 106 E2E de F1 y los 17 de A2 pasan con el build de F8, con 0 escenarios editados y 0 fallas.
-- **SC-002**: Cada escenario de aceptación de US1 a US5 tiene una prueba que lo ejerce. Los E2E nuevos pasan contra el legacy antes del port y sin editarse después, salvo los dos de los cambios aceptados, que fallan contra el legacy y pasan contra la página: 100 %.
+- **SC-002**: Cada escenario de aceptación de US1 a US5 tiene una prueba que lo ejerce. Los E2E nuevos pasan contra el legacy antes del port y sin editarse después, salvo los de lo que cambia a propósito (los tres de React y los de «Borrar todo» con el servidor), que fallan contra el legacy y pasan contra la página: 100 %.
 - **SC-003**: El archivo exportado desde la fixture congelada de master con el reloj fijo cumple en los dos builds lo que fija el E2E (nombre, sangría, orden de claves y contenido), y la comparación única registra los mismos bytes. Importar cada una de las dos exportaciones congeladas deja las claves con los valores que fija el E2E, en los dos builds.
 - **SC-004**: Con las fixtures congeladas, montar Método, copiar, exportar, descargar un respaldo y abrir y cancelar la confirmación dan 0 escrituras, 0 claves `:respaldo` nuevas y 0 avisos. Cada tecla de la bitácora da exactamente 1 escritura de `taller-learning-v1`.
-- **SC-005**: El multiconjunto de declaraciones del CSS del dist tiene 0 diferencias contra el de la base (mismo conjunto, otro orden, con la regla que reemplaza al `style=` como única nueva). El barrido de estilo computado de FR-037 da 0 diferencias, y el marcado que dibuja la página tiene 0 `style=` (la excepción declarada de FR-036 es el campo temporal de la copia, fuera de la página).
-- **SC-006**: `frontend/app.js` tiene 0 apariciones de los términos de FR-010. `index.html` pierde 2 elementos y nada más. El adaptador publica 2 métodos, `seams-guard-check` da 0 violaciones y «Exportar mi progreso» funciona en las 8 vistas.
+- **SC-005**: El multiconjunto de declaraciones del CSS del dist tiene 0 diferencias contra el de la base: mismo conjunto, otro orden, con la regla que reemplaza al `style=` como única nueva de Método. El barrido de estilo computado de FR-037 da 0 diferencias, y el marcado que dibuja la página tiene 0 `style=` (la excepción declarada de FR-036 es el campo temporal de la copia, fuera de la página).
+- **SC-006**: `frontend/app.js` tiene 0 apariciones de los términos de FR-010, y `index.html` pierde 2 elementos y nada más.
+  - El adaptador publica 2 métodos.
+  - `seams-guard-check` da 0 violaciones y `singletons-import.spec.ts` sigue en verde.
+  - «Exportar mi progreso» funciona en las 8 vistas.
 - **SC-007**: La comparación única del DOM da 0 diferencias, salvo las admitidas de FR-035.
 - **SC-008**: `dist/index.html` queda bajo 1 250 000 caracteres, con su tamaño antes y después informados.
 - **SC-009**: El total de avisos de complejidad no sube de 35, la cuenta del plan de F2b.
 - **SC-010**: El 100 % de los escenarios de `app-shell-check` y de `boot-check` que cambian figura en la tabla de correspondencia, y el orden de los efectos de «Borrar todo» queda afirmado por al menos un check.
 - **SC-011**: El código nuevo tiene 0 llamadas a `useStore` sin selector (una regla de lint o una revisión explícita).
 - **SC-012**: `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `npm run test:e2e` y `git diff --check` pasan, y la imagen web sigue construyendo.
+- **SC-013**: Una confirmación exitosa hace exactamente 3 pedidos, en el orden de FR-022, y el reset lleva la época del `GET`. En cada una de las respuestas de FR-047 y de FR-048, las cuatro claves y sus respaldos quedan con el mismo texto que antes de confirmar.
 
 ## Riesgos
 
 1. **Borrar el manejador de la barra lateral.** La hoja de ruta pone `#export-progress` en el «Borra» de F8, pero es el botón del shell en las ocho vistas. *Mitigación:* FR-013 y el escenario 2 de US6.
 2. **El orden de «Borrar todo» pierde su check.** Hoy lo fija el escenario «borrar todo» de `boot-check`, que hace clic en un `#confirm-reset` estático que deja de existir. *Mitigación:* FR-041 y SC-010. La spec de la feature ya fija el orden dentro de `resetAll()`, y una spec de componente fija lo que viene después de la espera.
 3. **La bitácora no muestra lo importado.** Un campo que no lee el valor en cada render (por ejemplo, con `defaultValue`) se queda con la nota vieja si la página no se remonta. *Mitigación:* FR-018 y el escenario 3 de US2.
-4. **Dos comportamientos cambian a propósito.** El foco después de importar y después de «Borrar todo» (X1). *Mitigación:* FR-019 y FR-023, con E2E que fijan lo nuevo.
+4. **Tres comportamientos de React cambian a propósito.** El foco después de importar y después de «Borrar todo» (X1), y `#note-state` (Q4). *Mitigación:* FR-019, FR-023 y FR-028, con E2E que fijan lo nuevo.
 5. **Mudar unas 23 reglas puede cambiar la cascada.** `styles.css` se evalúa primero, y el multiconjunto no ve la cascada: en la unidad 8 de F2b, el control negativo dio 702 diferencias con 0 en el multiconjunto. *Mitigación:* FR-037, con el barrido ampliado y la impresión.
 6. **Lo que jsdom no hace.** No trae `showModal()` ni `close()`, ni un portapapeles real. *Mitigación:* el foco, Esc, el fondo y el portapapeles van en E2E; las specs de componente usan dobles (FR-039).
-7. **D1c va a tocar esta página.** La contraseña de «Borrar todo», la espera de la red y sus errores son de D1c (Q1 y Q3) y caen sobre el diálogo de F8. *Mitigación:* la interfaz conserva el parámetro de confirmación (FR-024), y la hoja de ruta asigna la superficie 4 a un ítem con D1c.
-8. **Conflictos en `app.js`, `index.html` y `styles.css`.** F2b, F3, F4, F5, F7, F9 y F10 tocan las mismas regiones. *Mitigación:* FR-043 y la tabla de «Relación con otros ítems».
-9. **El texto de `#note-state` se aparta de C2 (Q4).** Si el usuario elige el comportamiento de React, cambian FR-018 y FR-028, y el escenario 6 de US2 pasa a ser un tercer E2E en rojo.
-10. **Nada se ejecutó al especificar.** Sin `npm`, sin Docker, sin navegador y sin `dist/`. Las cuentas salen de leer el código de `f2b-acum`. *Mitigación:* el plan las vuelve a medir sobre la base de implementación.
+7. **Un borrado a medias.** Si lo local se borra sin el 200 del servidor, el alumno pierde su progreso y la cuenta no se entera. *Mitigación:* FR-024, FR-047, FR-048 y SC-013: el servidor va primero y cualquier falla deja las claves intactas.
+8. **El FR-074 de D1 no se puede cumplir al pie de la letra antes de D1c.** *Mitigación:* la lectura L7 y FR-049; D1c enmienda la cláusula cuando exista el espacio por cuenta. Si el usuario no la confirma, la salida es borrar sólo lo del servidor, y entonces «Borrar todo» no borra nada de lo que el alumno ve.
+9. **F8 depende de F11a.** La sesión, el cliente, «pedir el ingreso», React Hook Form y el doble de la API son de F11a. Si F11a se demora, todo F8 espera, también lo que no los usa. *Mitigación:* la partición de «Partición»: F8a, el port con el borrado local, depende sólo de F2b.
+10. **El armado en `src/app/` choca con R4.** El guard sólo deja importar los índices de `entities/*` a su dueño declarado. *Mitigación:* L10 y FR-015: el plan elige la salida con `singletons-import.spec.ts` como prueba.
+11. **El contrato de `startApp()` cambia.** Lo usan A2, `boot-check`, `app-shell-check` y F10. *Mitigación:* FR-046 y el aviso a A2 y F10 en el PR.
+12. **Los tres resets por día.** Un `epoch_mismatch` o un reintento después de un borrado local fallido gastan uno. *Mitigación:* la época se lee justo antes (L1), y los 423 no gastan.
+13. **Conflictos en `app.js`, `index.html`, `styles.css` y el doble de la API.** F2b, F3, F4, F5, F7, F9, F10 y F11a tocan las mismas regiones. *Mitigación:* FR-043 y la tabla de «Relación con otros ítems».
+14. **Nada se ejecutó al especificar.** Sin `npm`, sin Docker, sin navegador y sin `dist/`. Las cuentas salen de leer el código de `f2b-acum` y el backend de `master`. *Mitigación:* el plan las vuelve a medir sobre la base de implementación.
 
 ## Relación con otros ítems
 
 | Ítem | Qué comparte con F8 | Qué hace F8 y en qué orden |
 | --- | --- | --- |
-| F2a (PR #40) | `routeStore` y su `changes`, `startApp()`, `getContent()` y el guard | Los usa; no los cambia |
-| F2b, unidades 6 y 8 | `features/progress-backup` y su armado en `app.js`; el barrido de estilo computado y el multiconjunto | **Es la única dependencia real.** Usa la feature tal cual y reutiliza las dos comparaciones. Rebasa sobre la unidad que llegue después |
-| [A2](../006-a2-compuerta-arranque/spec.md) | `legacy-views.ts`, `load-order-check` y `getContent().guide` | Suma una línea a la cadena, antes de `app.js`, y su restricción; el agente principal las integra |
-| F3, F4 y F9 | Los delegados, `render()`, `startApp()`, la suscripción del shell (FR-033), el escenario «almacén» de `app-shell-check`, la pila de DOM de Vitest, los bloques compartidos de `styles.css` | De a uno. El primero crea lo compartido y los demás lo reutilizan; F8 extiende la suscripción al idioma si hace falta |
-| F5 | `TallerSystems.resetSimulations` como paso de sesión; el Page Object mínimo de Método de su E2E de «Borrar todo» | **No es una dependencia.** El paso de sesión funciona con `systems.js` o con el adaptador de F5. Con Q2-A queda hasta F10, y F8 amplía el Page Object si F5 llegó antes |
-| F7 | Los métodos de respaldo de `TallerLab` (el área `lab`) y su `reset`, que aborta la ejecución | **No es una dependencia.** El área funciona con `lab.js` o con el adaptador de F7. Con Q2-A queda hasta F10 |
-| F9 | El paso de sesión del temporizador (`resetTimer`) y su E2E de «Borrar todo»; las notas, ahora de F8 | Con Q2-A, `resetTimer` queda hasta F10 y la spec de F9 se corrige. F8 dibuja y escribe las notas por `routeStore`, como pide F9 |
-| F10 | `mount`, `unmount`, el armado de `progress-backup`, `exportProgress`, `#export-progress`, `#toast` y `syncShell` | Los retira F10, que arma la instancia en la raíz única e importa los pasos de sesión de sus dueños |
-| F11 | La sesión obligatoria (F11a) y los textos de «Tu cuenta», que distinguen «Borrar todo» de borrar la cuenta | Con Q1-A, F8 no usa la sesión. La línea de la spec de F11 que dice que la contraseña de «Borrar todo» es de F8 se corrige |
-| [D1](../007-d1-progreso-sincronizacion/spec.md), D1b y D1c | El formato del archivo (`source: export` de D1b); `resetAll(confirmation?)`; el FR-074 de D1 | F8 conserva el formato y la interfaz. D1c reimplementa la feature, y su ítem del front suma la contraseña al diálogo (Q1) y la espera de la red (Q3) |
+| F2a (PR #40) | `routeStore` y su `changes`, los motores, `startApp()`, `getContent()` y el guard | Los usa; cambia el contrato de `startApp()` (FR-046) |
+| F2b, unidades 6 y 8 | `features/progress-backup`; el barrido de estilo computado y el multiconjunto | Dependencia. Usa la feature con el paso del servidor como puerto, lleva su armado a `src/app/` y reutiliza las dos comparaciones |
+| F11a | La sesión, el cliente de la API, «pedir el ingreso», React Hook Form, el doble de la API de los E2E y el proxy de `/api/` | Dependencia (Q1). Usa todo eso y suma al doble `GET /api/progress`, `confirm-password` (si F11b no lo sumó) y el reset |
+| D1a y D1b (entregados) | `GET /api/progress` y `POST /api/progress/reset` | Dependencia (Q1). Los consume tal cual |
+| [A2](../006-a2-compuerta-arranque/spec.md) | `legacy-views.ts`, `load-order-check`, `getContent().guide` y el arranque | Suma el adaptador a la cadena y le pasa la instancia a `startApp()`; el agente principal lo integra |
+| F3, F4 y F9 | Los delegados, `render()`, `startApp()`, la suscripción del shell (FR-033), el escenario «almacén» de `app-shell-check`, la pila de DOM de Vitest, los bloques compartidos de `styles.css` | De a uno. El primero crea lo compartido y los demás lo reutilizan |
+| F5 | `resetSimulations`, `TallerSystems.sync` y el Page Object mínimo de Método | Regla de orden de Q2: si F5 entró antes, F8 importa el reinicio y lo retira; si no, lo hace F5 |
+| F7 | Los métodos de respaldo de `TallerLab` y su `reset` | Regla de orden (L11): el último de F7 y F8 deja de leerlos por `window`; `exportState` queda hasta F10 |
+| F9 | El paso del temporizador y su E2E de «Borrar todo»; las notas, ahora de F8 | Regla de orden de Q2: si F9 entró antes, F8 importa el reinicio y retira `resetTimer`; si no, F9 lo importa y nunca lo publica |
+| F10 | `mount`, `unmount`, `exportProgress`, `#export-progress`, `#toast` y `syncShell` | Los retira F10. El armado ya está en `src/app/` y no lo tiene que mover |
+| F11 (F11b y F11d) | «Borrar la cuenta» (el mismo patrón de contraseña); los textos de «Tu cuenta» sobre «Borrar todo»; «¿Este progreso es tuyo?» | El texto de F11 «No es «Borrar todo» de Método, que borra el progreso de este navegador» queda viejo: ahora también borra el de la cuenta (hallazgo) |
+| [D1](../007-d1-progreso-sincronizacion/spec.md) y D1c | El formato del archivo; `resetAll(confirmation)`; el FR-074 | D1c reimplementa la feature, conserva el diálogo y el paso del servidor, limpia su espacio en lugar de las claves v1 no importadas (L7), carga la foto de la época nueva y suma la guarda general (Q3). Después de «Borrar todo», `taller-learning-v1` queda en blanco (rareza): D1c no debería ofrecer importar un v1 vacío |
+| B2 y A4 | Las ejecuciones en el servidor | El reset cancela las activas y conserva el historial (contrato de D1b); el diálogo lo dice (L8) |
 | [C4](../008-c4-exposicion/spec.md) | Los estilos en línea | C4 ya no espera a F8: su Q3 dejó `style-src-attr 'unsafe-inline'`. F8 saca el `style=` por el alcance del port |
 
-**Hallazgos para la hoja de ruta (los integra el coordinador):**
+**Hallazgos para la hoja de ruta y otras specs (los integra el coordinador):**
 
-- **Dependencias de F8:** de «F2b, F5, F7» a «F2b», como pasó con F9 (que depende sólo de F2a). F5 y F7 dejan sus métodos en `window` hasta F10, y «Borrar todo» los alcanza por el armado de `app.js` con o sin sus ports. F8 puede salir del tramo 4 y entrar en cuanto F2b esté entregada. Igual se integra de a uno con los demás.
-- **El «Borra» de F8:** el manejador de `#export-progress` es del shell y queda hasta F10.
-- **El «Entra» de F8:** suma la bitácora, `#note-state`, el pedido al tutor (F9-Q1) y el CSS de Método (X3).
-- **«Superficies que pide D1», fila 4:** con Q1-A, la confirmación de contraseña de «Borrar todo» deja de ser de F8 y pasa al ítem del front que integre D1c (F11d o F13).
-- **F5 «Conserva»:** «`resetSimulations` hasta F8» pasa a «hasta F10» (Q2-A).
+- **Dependencias de F8:** de «F2b, F5, F7» a «F2b, F11a, D1a y D1b». F5 y F7 no son dependencias: la regla de orden de Q2 ordena los retiros entre ellos. Con F11a como dependencia, F8 entra después de F11a y puede salir del tramo 4.
+- **«Superficies que pide D1», fila 4:** queda en F8, y depende de D1b y de F11a. La línea de F11 que la pone en F8 sigue valiendo.
+- **El «Borra» de F8:** el manejador de `#export-progress` es del shell y queda hasta F10. F8 suma al «Borra» el armado de `progress-backup` en `app.js` (pasa a `src/app/`).
+- **El «Entra» de F8:** suma la bitácora, `#note-state`, el pedido al tutor (F9-Q1), el CSS de Método (X3), «Borrar todo» con el servidor (Q1) y el armado en `src/app/` (Q2).
+- **F5 «Conserva»** («`resetSimulations` hasta F8»), F9 (`resetTimer` lo retira F8) y la tabla de retiros de F7 pasan a la regla de orden de Q2.
+- **A2 y F10:** `startApp()` recibe la instancia de `progress-backup`.
+- **D1 (D1c):**
+  - la cláusula de las claves v1 del FR-074 rige desde D1c (L7);
+  - un `taller-learning-v1` en blanco después de «Borrar todo» no es un v1 para importar.
+- **F11:** el texto que distingue «Borrar todo» de borrar la cuenta tiene que decir que «Borrar todo» también borra el progreso de la cuenta en el servidor, salvo el historial.
 - **La fila de C4:** «espera a F5, F7 y F8» quedó vieja con la Q3 de C4.
 - **El tope de tamaño:** el criterio global de 2 500 000 caracteres quedó viejo con A2; hoy es 1 250 000.
-- **«Decisiones abiertas» de F8:** «Nada previo a la spec» se reemplaza por Q1 a Q4.
+- **«Decisiones abiertas» de F8:** cerradas en su clarify (Q1 a Q4); quedan las lecturas L1 a L12 para el PR.
 
 ## Assumptions
 
 - Esta spec describe `f2b-acum@2b37caf4`, un ensayo de sólo lectura con F2a, A2 y las cuatro unidades de F2b integradas. Lo que toma de F2b es un hecho del código de ese ensayo, citado por archivo, aunque todavía no esté en `master`.
-- Los nombres son provisionales y los confirma el plan: `pages/method`, `register-method.tsx`, `window.TallerMethod` y `qa/e2e/pages/method.ts`.
-- Q1 a Q4 se escriben con la opción recomendada. Las lecturas de X1, X2, X3 y F9-Q4 son de esta spec y el usuario puede corregirlas («Lecturas»).
+- Lo que toma de F11a sale de su spec con clarify (015), sin plan: el cliente de la API en `shared/api`, la sesión en `entities/session`, «pedir el ingreso» en la API pública de su slice, React Hook Form y el doble de la API. Si su plan cambia los nombres, esta spec los sigue.
+- Los nombres son provisionales y los confirma el plan: `pages/method`, `register-method.tsx`, `window.TallerMethod`, el módulo del armado en `src/app/` y `qa/e2e/pages/method.ts`.
+- Las lecturas L1 a L12 se escriben con la recomendación, y el usuario las confirma o las corrige en el PR. Las de X1, X2, X3 y F9-Q4 también son de esta spec («Lecturas»).
 - El barrido de estilo computado y el multiconjunto son los de la unidad 8 de F2b: scripts descartables fuera del repositorio (`quickstart-f2b.md`, §3.1). F8 los reutiliza y los amplía a lo que Método dibuja y a la impresión.
 - Vitest corre sólo en `node` y sólo para `*.spec.ts`: `jsdom`, Testing Library y `fishery` no están en el `package.json` de `f2b-acum`. El primer ítem que escriba una spec de componente los pide con permiso y pasa la configuración a dos proyectos. Si F8 es el primero, le toca a F8.
-- Los textos esperados salen de `frontend/app.js`, de `frontend/src/index.html`, de `features/progress-backup` y de las fixtures `qa/fixtures/progress-master-2a278ad-storage.json`, `progress-master-2a278ad-export.json` y `progress-d0e1b49-export.json`. La fixture de master tiene idioma Go, una nota «Lo que entendí» de Rust y `minutes: 25`. Que el contenido exportado de la fixture sembrada coincida con lo guardado (sin normalizar nada) lo confirma el plan.
+- Los textos esperados salen de `frontend/app.js`, de `frontend/src/index.html`, de `features/progress-backup`, de `backend/api/lang/es/api.php` y de las fixtures `qa/fixtures/progress-master-2a278ad-storage.json`, `progress-master-2a278ad-export.json` y `progress-d0e1b49-export.json`. La fixture de master tiene idioma Go, una nota «Lo que entendí» de Rust y `minutes: 25`. Que el contenido exportado de la fixture sembrada coincida con lo guardado (sin normalizar nada) lo confirma el plan.
+- Los textos nuevos de la confirmación (L8), del `epoch_mismatch` (L5) y de «sin servidor» (L6) son propuestas de esta spec.
 - El conteo de unas 23 reglas sale de leer `frontend/styles.css` de `f2b-acum` con `grep`, y que sólo Método las usa, de buscar cada clase en las fuentes de `frontend/`. El plan lo vuelve a medir con `postcss`.
 - Los 38 escenarios de `app-shell-check` que cambian salen de leer sus 58 en `f2b-acum`.
-- El backend del reset se leyó en `master` (`e87772d`): `backend/api/routes/api/progress-reset.php`, `app/Http/Requests/ResetBodyRequest.php`, `app/Http/Middleware/RequirePassword.php`, `EnsureExpectedAccount.php` y `config/progress.php`.
+- El backend se leyó en `master` (`e87772d`): `routes/api/progress-reset.php` y `progress.php`, `ResetBodyRequest.php`, `RequirePassword.php`, `EnsureExpectedAccount.php`, `config/progress.php` y `lang/es/api.php`, con los contratos de C3a, D1a y D1b. Que `GET /api/progress` pida email verificado sale de `routes/api/progress.php`.
 - Nada se ejecutó: sin `npm`, sin Docker, sin navegador, sin descargas y sin `dist/`. Sin verificar en un navegador:
   - el foco al abrir y al cerrar la confirmación;
   - qué devuelve el portapapeles en Chromium headless con el permiso concedido;
@@ -817,27 +957,36 @@ Quien mantiene el front encuentra Método en una página con su modelo y sus pru
 
 ## Alternativas consideradas
 
-Sólo las que cambian lo que se construye. Las de Q1 a Q4 están en sus tablas.
+Sólo las que cambian lo que se construye.
 
 | Tema | Alternativas | Decisión y motivo |
 | --- | --- | --- |
-| Qué pasa después de importar y de «Borrar todo» | Que el shell remonte la página con `render()`, como hoy; actualizarla en el lugar | En el lugar. Remontar pierde el foco, que es justamente lo que X1 descarta; devolverlo a mano compensa una pérdida que ya no tiene por qué ocurrir |
-| Dónde vive la confirmación | El `<dialog>` estático de `index.html`, manejado desde React; un hijo de `#main` sin portal; un portal a `body` desde la raíz de la página | El portal, como decidió F9-Q4 para la lección y la confirmación del laboratorio. El estático deja un elemento del shell atado a una página; sin portal, el diálogo cambia de padre y sus eventos suben por `#main` |
-| La exportación de la página | Una copia propia del armado y la descarga del archivo; compartir con la barra lateral el mismo camino | Compartirlo (FR-013): dos copias pueden divergir en el nombre o en el tipo, y el archivo es contrato con D1b. El plan elige cómo |
-| El campo de archivo | Dentro de la página, cerca de su botón; un portal a `body` | Lo decide el plan. Está oculto y nadie lo ve, y el E2E entra por el evento `filechooser`, así que su lugar en el árbol no cambia lo que prueba |
+| «Borrar todo» (Q1) | A: portar el flujo local y dejar la contraseña para el ítem que integre D1c. B: un campo de contraseña que aparece sólo cuando la implementación lo pide | **C, el reset del servidor ya (usuario).** A era la recomendada: sin dependencias de F11a ni del servidor, a costa de que la superficie 4 llegara después. B escribía hoy lo que D1c decide. Costo de C: F8 depende de F11a, lee la época sin el cliente v2, deja «Borrar todo» sin funcionar sin servidor, gasta resets del día, fija `resetAt` y no puede cumplir al pie de la letra el FR-074 antes de D1c (L7) |
+| El armado (Q2) | A: dejarlo en `app.js` hasta F10 y pasarle la instancia a la página | **B, a `src/app/` (usuario).** A era la recomendada: sin cambiar el contrato de `startApp()` y con todos los retiros en F10. Costo de B: el contrato nuevo, el choque con R4 (L10) y la regla de orden entre F5, F8 y F9 |
+| El solape (Q3) | B: una guarda invisible en F8. C: un estado de espera visible en las dos operaciones | **A, D1c (usuario).** La espera del reset la muestra F8 por Q1 (FR-025), sin que eso sea la guarda general |
+| `#note-state` (Q4) | A: volver al texto inicial, como hoy, con una excepción a C2 | **B, lo que haga React (usuario).** Costo: después de «Borrar todo», el párrafo puede seguir diciendo «Guardado…» con las notas recién borradas; un tercer E2E en rojo |
+| La época (L1) | Mandar la época 1 y reintentar con la del 409 | Leerla con el `GET`: el `epoch_mismatch` gasta uno de los tres resets del día |
+| La contraseña (L2) | Intentar el reset y pedirla sólo ante el 423 | Pedirla siempre y confirmarla primero, como «Borrar la cuenta» de F11b y el «DEBE pedir» del FR-074 |
+| El FR-074 (L7) | Borrar sólo el servidor; o una casilla «borrar también lo de este navegador» | Borrar las claves v1 como hoy: lo otro deja «Borrar todo» sin borrar lo que el alumno ve, o suma una decisión que hoy no existe |
+| Qué pasa después de importar y de «Borrar todo» | Que el shell remonte la página con `render()`, como hoy; actualizarla en el lugar | En el lugar. Remontar pierde el foco, que es justamente lo que X1 descarta |
+| Dónde vive la confirmación | El `<dialog>` estático de `index.html`, manejado desde React; un hijo de `#main` sin portal; un portal a `body` desde la raíz de la página | El portal, como decidió F9-Q4 para la lección y la confirmación del laboratorio |
+| La exportación de la página | Una copia propia del armado y la descarga del archivo; compartir con la barra lateral el mismo camino | Compartirlo (FR-013): dos copias pueden divergir en el nombre o en el tipo, y el archivo es contrato con D1b |
+| El campo de archivo | Dentro de la página, cerca de su botón; un portal a `body` | Lo decide el plan. Está oculto, y el E2E entra por el evento `filechooser` |
 | La bitácora | Campos con su valor leído en cada render; campos sin control con una clave que los remonte al cambiar las notas desde afuera | Lo decide el plan, con FR-018 y FR-027: lo observable es una escritura por tecla, el cursor que no salta y las notas importadas a la vista |
 
 ## Partición
 
-Esta spec tiene 44 requisitos, contra los 52 de C3a, la mayor del épico. No se propone cortarla.
+Esta spec tiene 49 requisitos (FR-001 a FR-049), contra los 52 de C3a, la mayor del épico. No supera el límite, así que no se propone un corte obligatorio.
 
-Si el plan la encuentra grande, el corte menos malo es en dos:
+Con Q1, sin embargo, aparece un corte natural, que el plan puede aplicar si F11a se demora. No se aplica acá.
 
-- **F8a, la página:** la rutina, la bitácora, el pedido, las fuentes y el CSS;
-- **F8b, el panel de respaldos:** exportar, importar, «Borrar todo» y los respaldos. Es la superficie que D1c reemplaza.
+- **F8a, el port.** La página entera con el «Borrar todo» local de hoy, el armado en `src/app/` y el CSS. Depende sólo de F2b. Entran todos los requisitos salvo FR-024, FR-047, FR-048 y FR-049, la espera de FR-025 y la parte de Q1 de FR-021 y FR-022.
+- **F8b, «Borrar todo» con el servidor.** La contraseña, la época, el reset y sus respuestas. Depende de F8a, de F11a y de D1b, y es justamente el cambio de comportamiento que FR-001 ya pone en su propio commit después del port.
 
 Su costo:
 
-- un puente temporal: mientras F8b no entre, la página de React tendría que convivir con los botones de datos legacy o dibujarlos sin conectar;
-- dos cortes de `app.js`, de los arneses y del barrido;
-- apartarse de «un PR por vista».
+- dos PR en lugar de uno, y apartarse de «un PR por vista»;
+- entre los dos, «Borrar todo» sigue siendo sólo local, como hoy;
+- la superficie 4 llega con F8b.
+
+La ganancia es que el port no espera a F11a.
