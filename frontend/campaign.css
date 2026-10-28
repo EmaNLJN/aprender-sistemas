@@ -595,24 +595,6 @@
   line-height: 1.9;
   color: var(--muted);
 }
-.quest-direct-lock h1 {
-  font-size: 40px;
-  letter-spacing: -1.4px;
-  line-height: 1.1;
-}
-.quest-direct-lock h1 em {
-  font-family: var(--serif);
-  font-weight: 400;
-  color: var(--accent);
-}
-.quest-direct-lock p,
-.quest-direct-lock li {
-  font-size: 13px;
-  line-height: 1.9;
-}
-.quest-direct-lock ul {
-  margin: 25px 0;
-}
 @media (max-width: 1050px) {
   .quest-map {
     grid-template-columns: repeat(2, minmax(0, 1fr));
