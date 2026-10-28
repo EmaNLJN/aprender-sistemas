@@ -248,7 +248,7 @@ export interface SignOutDependencies {
   readonly userId: number;
 }
 export type SignOutOutcome = { readonly kind: 'signed-out' } | { readonly kind: 'failed'; readonly failure: ApiFailure };
-export function signOut(dependencies: SignOutDependencies): Promise<SignOutOutcome>; // un 204 o un 401 dan 'signed-out'
+export function signOut(dependencies: SignOutDependencies): Promise<SignOutOutcome>; // un 204, un 401 o un 403 account_disabled dan 'signed-out'
 
 // Componente
 AccessGate: { requests: AccessRequests; setShellInert(inert: boolean): void; reloadDocument(): void }

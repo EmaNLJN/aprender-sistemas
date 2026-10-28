@@ -272,7 +272,7 @@ Los dueños tienen archivos disjuntos («Project Structure»). Cada uno trabaja 
 | Onda | Quién | Qué |
 | --- | --- | --- |
 | 0 | K | T001 a T003 (U0) |
-| 1 | C, S, A, B, Q, E y K a la vez | **C:** T004 y T005. **S:** T006 y T007. **A:** T008 y T009. **B:** T010 y T011. **Q:** T013. **E:** T014. **K:** T015 |
+| 1 | C, S, B, Q, E y K a la vez; A desde S0 | **C:** T004 y T005. **S:** T006 y T007. **A:** T008 y T009, desde S0. **B:** T010 y T011. **Q:** T013. **E:** T014. **K:** T015 |
 | 2 | K | T012 (cableado, desde S1) y T016 (compuerta de U1) |
 | 3 | F, P, A, M y E | **F:** T017 y T018. **P:** T019. **A:** T020 y T021 (desde S2). **M:** T022 y T023 (desde S2). **E:** T024 |
 | 4 | K | T025 (compuerta de U2) |
@@ -283,6 +283,7 @@ Los dueños tienen archivos disjuntos («Project Structure»). Cada uno trabaja 
 
 **Puntos de sincronización:**
 
+- **S0:** C y S entregaron T005 y T007. A parte de ahí, porque la spec de la puerta del acceso usa el cliente real con un `fetch` falso, y la puerta usa `sessionStore`. Las specs de B sólo importan tipos, así que B no espera.
 - **S1:** C, S, A y B entregaron. K cablea T012 sobre sus ramas integradas.
 - **S2:** F y P entregaron (T018 y T019). A y M usan `shared/ui/form` y `entities/privacy-notice`.
 - **S3:** cada compuerta (T016, T025, T030 y T035) integra su unidad en `f11a/base`.
@@ -1369,7 +1370,7 @@ Con U1, un navegador sin sesión ve «Ingresá al taller» con el shell inerte y
 6. **Correr** `npm run test:unit -- frontend/src/entities/session`, en verde, y después `npm run typecheck` y `npm run lint`.
 7. **Commit:** `feat(front): la sesión, su store y su lectura`.
 
-### Tarea 1.5 · Las specs de «pedir el ingreso» y de la puerta del acceso, en rojo (T008, A)
+### Tarea 1.5 · Las specs de «pedir el ingreso» y de la puerta del acceso, en rojo (T008, A, desde S0)
 
 **Archivos:** en `frontend/src/features/sign-in/`:
 
@@ -4392,6 +4393,19 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
        expect(await signOut({ client, userId: 41 })).toEqual({ kind: 'signed-out' });
      });
 
+     it('is done when the account was disabled meanwhile, so the reload goes back to the access', async () => {
+       const { client } = clientWith([
+         {
+           status: 403,
+           json: {
+             message: 'Tu cuenta está deshabilitada. Consultá con quien administra el taller.',
+             code: 'account_disabled',
+           },
+         },
+       ]);
+       expect(await signOut({ client, userId: 41 })).toEqual({ kind: 'signed-out' });
+     });
+
      it('fails with the network and with another account', async () => {
        const mismatch = { message: 'La sesión cambió de cuenta: recargá la página.', code: 'account_mismatch' };
        const { client } = clientWith(['network-error', { status: 409, json: mismatch }]);
@@ -4609,7 +4623,7 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
    }
    ```
 
-2. **`model/sign-out.ts`:**
+2. **`model/sign-out.ts`.** Un 401 y un 403 `account_disabled` cuentan como salida hecha: la sesión ya no sirve, y la recarga vuelve al acceso (FR-023 y FR-050):
 
    ```ts
    import type { ApiClient, ApiFailure } from '../../../shared/api/http';
@@ -4624,10 +4638,12 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
      | { readonly kind: 'failed'; readonly failure: ApiFailure };
 
    const UNAUTHENTICATED = 401;
+   const ACCOUNT_DISABLED = 'account_disabled';
 
    function alreadySignedOut(failure: ApiFailure): boolean {
      if (failure.kind === 'signed-out') return true;
-     return failure.kind === 'response' && failure.status === UNAUTHENTICATED;
+     if (failure.kind !== 'response') return false;
+     return failure.status === UNAUTHENTICATED || failure.code === ACCOUNT_DISABLED;
    }
 
    export async function signOut({ client, userId }: SignOutDependencies): Promise<SignOutOutcome> {
@@ -5818,6 +5834,7 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
        const { user, signedIn, calls } = withReplies([{ status: 204 }]);
        expect(screen.getByRole('heading', { level: 1, name: 'Aviso de privacidad' })).toBeInTheDocument();
        expect(screen.getByText(CHANGED)).toBeInTheDocument();
+       expect(screen.getByRole('button', { name: 'Acepto' })).toHaveFocus();
        await user.click(screen.getByRole('button', { name: 'Acepto' }));
        await expect(signedIn).resolves.toEqual({ ...ANA_BEFORE, privacyAccepted: true });
        expect(calls[0]?.path).toBe('/api/me/privacy');
@@ -6368,7 +6385,13 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
             ) : null}
           </ServerError>
           <div className="form-actions">
-            <button className="button" type="button" disabled={pending !== null} onClick={() => void accept()}>
+            <button
+              className="button"
+              type="button"
+              autoFocus
+              disabled={pending !== null}
+              onClick={() => void accept()}
+            >
               {pending === 'accept' ? 'Guardando…' : 'Acepto'}
             </button>
             <button className="button secondary" type="button" disabled={pending !== null} onClick={() => void leave()}>
