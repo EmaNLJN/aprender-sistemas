@@ -90,7 +90,7 @@ Valores exactos, de la spec, de la constitución y de la base:
   - los 61 de F7a (FR-001): `git diff <base> -- qa/e2e/specs/` sólo muestra los dos archivos nuevos;
   - el Page Object y los dobles sólo suman métodos, y `.quest-lab-context` sigue siendo la clase del bloque de contexto.
 - **Las clases y los ids que usan esos E2E** se conservan: `.lab-metrics`, `.lab-stamp`, `.lab-intro .eyebrow`, `.lab-continue`, `#lab-filter-status`, `.challenge-node`, `.lab-empty h2`, `.lab-storage-warning`, `#lab-prediction-feedback`, `#lab-editor-status`, `#lab-live-hint`, `.hint-item`, `.test-case summary`, `#lab-reflect-status`, `#lab-reflection-status`, `.lab-explorer`, `details.qx-history`, `.qx-verdict`, `.quest-lab-context`, `.quest-direct-lock`, `.lab-spinner`, `.quest-banner` y `#lab-confirm-dialog`. Los nombres accesibles también: «Editor de código Rust» y «Go», «Revisión del ejercicio» y «Explorador conceptual interactivo».
-- **El HTML:** `dist/index.html` queda bajo `BOOT_SIZE_LIMIT` de `qa/build-check`, **1 250 000 caracteres**, con la forma de A2. El aumento sobre T018 no pasa de **+17 000** (el prototipo midió +15 587). El tamaño antes y después va en el PR (FR-004, R12).
+- **El HTML:** `dist/index.html` queda bajo `BOOT_SIZE_LIMIT` de `qa/build-check`, **1 250 000 caracteres**, con la forma de A2. El aumento sobre T018 no pasa de **+17 000** (el prototipo midió +15 581). El tamaño antes y después va en el PR (FR-004, R12).
 - **Nada nuevo:**
   - ninguna dependencia de ejecución;
   - ningún `style=`, `setAttribute('style', …)`, `style.cssText` ni prop `style` en `pages/lab`, `features/run-exercise` ni el adaptador (FR-003, SC-011);
@@ -4406,6 +4406,8 @@ const CodePhase = ({
     normalizeCustomTest(record.customTest),
   );
 
+  const run = () => void runner.run(exercise);
+
   const writeField = (field: 'draft' | 'customTest', value: string) => {
     ensureRecord(labStore.getProgress(), exercise.id)[field] = value;
     saveLab();
@@ -4417,7 +4419,7 @@ const CodePhase = ({
     maxLength: DRAFT_LIMIT,
     label: `Editor de código ${languageName}`,
     onChange: (text) => writeField('draft', text),
-    onRun: () => void runner.run(exercise),
+    onRun: () => run(),
     onEscape: () => runButtonRef.current?.focus(),
   });
 
@@ -4496,7 +4498,7 @@ const CodePhase = ({
               className="button"
               disabled={running}
               ref={runButtonRef}
-              onClick={() => void runner.run(exercise)}
+              onClick={run}
             >
               {running ? (
                 <>
@@ -7670,7 +7672,7 @@ Ninguna descarga. El arnés de componentes lo trae F3, F5 o F6. Si al llegar F7b
 
 1. **Las specs de componente no corrieron** (R15). *Mitigación:* los E2E cubren los mismos comportamientos en el navegador, y T024 las corre en verde antes del corte.
 2. **Los archivos de F5 y F6** pueden diferir de sus planes. *Mitigación:* T018 los inspecciona, y T027 aplica la intención con la revisión de K.
-3. **El margen del peso** (R12): con los subpresupuestos de los otros planes, F7b deja 701 caracteres para F9 a F12 y A3. *Mitigación:* el tope de +17 000 en la compuerta, y el hallazgo para el coordinador.
+3. **El margen del peso** (R12): con los subpresupuestos de los otros planes, F7b deja 707 caracteres para F9 a F12 y A3. *Mitigación:* el tope de +17 000 en la compuerta, y el hallazgo para el coordinador.
 4. **Lo que anuncia un lector de pantalla** con las regiones vivas montadas (X2). *Mitigación:* la comprobación del usuario en T030.
 5. **El barrido no ve `:hover`, `:focus` ni las animaciones.** *Mitigación:* las hojas se mueven sin editarse, y las tres reglas nuevas no tienen esos estados.
 6. **La rama B de C4** depende de lo que A4 deje en `lab.js`. *Mitigación:* T025 sólo porta lo que está ahí, y los E2E de A4 lo vigilan.

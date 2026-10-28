@@ -64,7 +64,7 @@ Medida en la copia con F7a. T018 la vuelve a medir sobre la base real (`master` 
 | `npm test` | 37 checks (salen `lab-bridge-check` y `quest-explorers-check`); 45 archivos y 878 pruebas de Vitest |
 | `lab-state-check` | 33 escenarios (R10) |
 | `load-order-check` | 21 imports, 16 restricciones de orden y 1 de etapas |
-| `dist/index.html` | `html.length` 1 160 299 (+15 587) |
+| `dist/index.html` | `html.length` 1 160 293 (+15 581) |
 | Aporte al paquete | `pages/lab` 82 539 bytes y el adaptador 1 971: +17 737 sobre los 66 773 que se van (R12) |
 
 ## R1. La raíz de composición, partida en dos módulos (FR-009, FR-014, FR-044 y riesgo 12)
@@ -220,14 +220,14 @@ Los 7 E2E de `lab-react.spec.ts` lo fijan: en rojo contra el legacy de F7a y en 
 | Medida | Valor |
 | --- | --- |
 | `html.length` con F7a | 1 144 712 |
-| `html.length` con F7b | 1 160 299 (+15 587) |
+| `html.length` con F7b | 1 160 293 (+15 581) |
 | Lo que resta borrar el legacy (esbuild, minificado) | −66 773 bytes: `lab.js`, `lab-explorers.js`, `quest-explorers.js` y `register-editor.ts` |
 | Lo que suma la página | +82 539 bytes de `pages/lab` y +1 971 del adaptador |
 | Lo que resta sacar los métodos de HTML de `campaign.js` y `systems.js` | −1 506 bytes |
 
 JSX pesa más que las plantillas de texto: cada elemento es una llamada con sus props. Quitar todo el legacy sin la página no es una medida útil: el árbol que sólo alcanzaba `lab.js` (CodeMirror, la feature y los modelos) cae con él, y el HTML queda en 510 815.
 
-**El margen.** Los subpresupuestos de los otros planes, sobre la base de F7a, son: F3 +30 000 (con nuqs) o +15 000; F4 +10 000; F5 +40 000 (con nuqs) o +25 000; F6 hasta +15 000; F8 hasta +9 000. En el peor caso (nuqs una sola vez) suman 1 144 712 + 30 000 + 10 000 + 25 000 + 15 000 + 9 000 = 1 233 712, y con F7b, 1 249 299: deja 701 caracteres para F9 a F12 y A3. Es un hallazgo para el coordinador. **El tope de F7b:** +17 000 sobre la base de T018. La pieza más grande del paquete es CodeMirror (535 kB), y su `basicSetup` es la palanca si hace falta; cambiarla no es de un port.
+**El margen.** Los subpresupuestos de los otros planes, sobre la base de F7a, son: F3 +30 000 (con nuqs) o +15 000; F4 +10 000; F5 +40 000 (con nuqs) o +25 000; F6 hasta +15 000; F8 hasta +9 000. En el peor caso (nuqs una sola vez) suman 1 144 712 + 30 000 + 10 000 + 25 000 + 15 000 + 9 000 = 1 233 712, y con F7b, 1 249 293: deja 707 caracteres para F9 a F12 y A3. Es un hallazgo para el coordinador. **El tope de F7b:** +17 000 sobre la base de T018. La pieza más grande del paquete es CodeMirror (535 kB), y su `basicSetup` es la palanca si hace falta; cambiarla no es de un port.
 
 ## R13. La rama de C4: A4 entra antes que F7b
 

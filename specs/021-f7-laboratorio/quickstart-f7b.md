@@ -27,7 +27,7 @@ Lo que se anota, con lo que midió el prototipo:
 | E2E | 184 | 193 |
 | Checks y Vitest | 39 checks; 40 archivos y 843 pruebas | 37 checks; 45 archivos y 878 pruebas (más las 9 specs de componente, que no corrieron) |
 | `lab-state-check` | 39 | 33 |
-| `html.length` | 1 144 712 | 1 160 299 |
+| `html.length` | 1 144 712 | 1 160 293 |
 
 **El aporte de cada parte al paquete** (R12), con el script de §3.2 sobre cada raíz.
 
