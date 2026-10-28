@@ -243,9 +243,18 @@ export function reauthenticate(
   dependencies: { readonly requestSignIn: RequestSignIn; readonly reloadDocument: () => void },
 ): Promise<ReauthenticationOutcome>;
 
+export interface SignOutDependencies {
+  readonly client: ApiClient;
+  readonly userId: number;
+}
+export type SignOutOutcome = { readonly kind: 'signed-out' } | { readonly kind: 'failed'; readonly failure: ApiFailure };
+export function signOut(dependencies: SignOutDependencies): Promise<SignOutOutcome>; // un 204 o un 401 dan 'signed-out'
+
 // Componente
-AccessGate: { setShellInert(inert: boolean): void; reloadDocument(): void }
+AccessGate: { requests: AccessRequests; setShellInert(inert: boolean): void; reloadDocument(): void }
 ```
+
+`AccessGate` lee del `sessionStore` la cuenta y `features.passwordReset`, y al terminar un pedido llama a `sessionStore.getState().applyUser(user)` antes de `requests.finish(user)`. `signOut` vive acá y no en `pages/account` porque lo usan las dos: «Salir» de «Tu cuenta» y «Salir» de la reaceptación del aviso.
 
 **«Pedir el ingreso»** (R1 del clarify; FR-006):
 
@@ -267,16 +276,11 @@ AccessGate: { setShellInert(inert: boolean): void; reloadDocument(): void }
 ## `pages/account`: «Tu cuenta»
 
 ```ts
-export interface SignOutDependencies {
-  readonly client: ApiClient;
-  readonly userId: number;
-}
-export type SignOutOutcome = { readonly kind: 'signed-out' } | { readonly kind: 'failed'; readonly failure: ApiFailure };
-export function signOut(dependencies: SignOutDependencies): Promise<SignOutOutcome>;
-
 // Componente, exportado por el índice
 AccountMenu: { entryHost: HTMLElement; reloadDocument(): void }
 ```
+
+«Salir» usa `signOut` de `features/sign-in`.
 
 **El diálogo** (`ui/AccountDialog.tsx`) compone sus secciones en este orden:
 
@@ -290,7 +294,7 @@ AccountMenu: { entryHost: HTMLElement; reloadDocument(): void }
 - **F12a** suma «Administrar el taller» entre el aviso y «Salir», visible sólo con `isAdmin(user)`. Su diálogo a pantalla entera se monta en `AccountMenu`, que cierra «Tu cuenta» antes de abrirlo.
 - **F11b** suma sus tres secciones (contraseña, datos y supresión) antes de «Salir».
 - **F11d** suma «Estoy en una computadora compartida» después de «Salir».
-- **A3** suma, en `model/sign-out.ts` y antes de devolver `signed-out`, el borrado de la última copia (FR-050).
+- **A3** suma, en `features/sign-in/model/sign-out.ts` y antes de devolver `signed-out`, el borrado de la última copia (FR-050).
 - **D1c** suma el envío de la cola antes del `POST` de salida.
 
 ## `app/boot`: las etapas

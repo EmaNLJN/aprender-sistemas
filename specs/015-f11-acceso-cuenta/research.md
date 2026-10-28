@@ -232,6 +232,6 @@ La spec no los fija, y el usuario los corrige en la revisión del PR:
 
 - **Nada corrió:** ni un prototipo, ni la red, ni el build con React Hook Form. El peso es una estimación (R15).
 - **No se sabe si Playwright aplica un `Set-Cookie` de `route.fulfill`.** El doble no depende de eso (R10).
-- **El tamaño de la barra superior a 320 px** se calculó a mano: unos 338 px sin partir el rótulo, contra 280 útiles. La regla de `styles.css` que parte el rótulo y la entrada compacta salen de esa cuenta, y las prueba el E2E de U4.
+- **El tamaño de la barra superior a 320 px** se calculó a mano: unos 338 px con el rótulo en una línea, contra 280 útiles. Como ítem de flex, el rótulo ya se parte en sus espacios (su `min-width` es el de su palabra más larga), y así la barra suma unos 262 px con la entrada compacta (`white-space: nowrap`, `padding: 4px 10px`) de `account.css`. Ninguna regla de `styles.css` cambia por eso. Lo prueba el E2E de U4, que mide la barra a 320 y a 390 px.
 - **Faltan la cookie real, `SameSite` y el CSRF contra el stack.** Quedan para la verificación a mano declarada en el PR, como en C3a (spec, «Alternativas consideradas»).
 - **macOS, Docker y la CI** no se verificaron.
