@@ -44,7 +44,16 @@ describe('SceneView', () => {
       <SceneView
         scene={scene({
           shapes: [
-            { type: 'rect', x: 1, y: 2, width: 3, height: 4, fill: '#111', stroke: '#222', strokeWidth: 2 },
+            {
+              type: 'rect',
+              x: 1,
+              y: 2,
+              width: 3,
+              height: 4,
+              fill: '#111',
+              stroke: '#222',
+              strokeWidth: 2,
+            },
             { type: 'circle', x: 5, y: 6, r: 7 },
             { type: 'line', x1: 0, y1: 1, x2: 2, y2: 3 },
             {
