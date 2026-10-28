@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createApiClient } from './api-client';
+import { createApiClient, type ApiMethod, type FetchLike } from './api-client';
 import { apiErrorBodyFactory } from './api-error.factory';
 import { createFakeFetch, type FakeReply } from './fake-fetch';
 
@@ -141,6 +141,54 @@ describe('the API client', () => {
     expect(await client.get('/api/session')).toEqual({ ok: false, failure: { kind: 'network' } });
   });
 
+  describe('the request headers', () => {
+    it.each<ApiMethod>(['POST', 'PUT', 'PATCH', 'DELETE'])(
+      'sends the JSON, CSRF and account headers on a %s',
+      async (method) => {
+        const { client, calls } = clientWith([{ status: 204 }], 'XSRF-TOKEN=abc');
+        await client.send(method, '/api/me', { name: 'Ana' }, { asUser: 41 });
+        expect(calls[0]?.method).toBe(method);
+        expect(calls[0]?.headers).toEqual({
+          accept: 'application/json',
+          'content-type': 'application/json',
+          'x-xsrf-token': 'abc',
+          'x-taller-user': '41',
+        });
+      },
+    );
+
+    it('does not send X-Taller-User on a GET even when it receives an account', async () => {
+      const { client, calls } = clientWith([{ status: 200, json: { user: null } }]);
+      await client.get('/api/session', { asUser: 41 });
+      expect(calls[0]?.headers).toEqual({ accept: 'application/json' });
+    });
+  });
+
+  describe('the abort signal', () => {
+    const abortableFetch: FetchLike = (_path, init) =>
+      new Promise((_resolve, reject) => {
+        init.signal?.addEventListener('abort', () =>
+          reject(new DOMException('aborted', 'AbortError')),
+        );
+      });
+
+    it('reaches fetch, so an aborted GET is a network failure', async () => {
+      const client = createApiClient({ fetch: abortableFetch, readCookies: () => '' });
+      const controller = new AbortController();
+      const pending = client.get('/api/session', { signal: controller.signal });
+      controller.abort();
+      expect(await pending).toEqual({ ok: false, failure: { kind: 'network' } });
+    });
+
+    it('reaches fetch, so an aborted send is a network failure', async () => {
+      const client = createApiClient({ fetch: abortableFetch, readCookies: () => '' });
+      const controller = new AbortController();
+      const pending = client.send('POST', '/api/auth/login', {}, { signal: controller.signal });
+      controller.abort();
+      expect(await pending).toEqual({ ok: false, failure: { kind: 'network' } });
+    });
+  });
+
   describe('a 419', () => {
     it('renews the session and repeats an anonymous request once', async () => {
       const { client, calls } = clientWith([
@@ -200,6 +248,40 @@ describe('the API client', () => {
         failure: { kind: 'response', status: 419 },
       });
       expect(calls).toHaveLength(2);
+    });
+    it('repeats an anonymous request even when the renewed session has an account', async () => {
+      const { client, calls } = clientWith([CSRF_EXPIRED, sessionOf(7), { status: 204 }]);
+      expect((await client.send('POST', '/api/auth/login', {})).ok).toBe(true);
+      expect(calls).toHaveLength(3);
+    });
+
+    it('sends the cookie renewed by the session request when it repeats', async () => {
+      const fake = createFakeFetch([CSRF_EXPIRED, sessionOf(null), { status: 204 }]);
+      let cookieHeader = 'XSRF-TOKEN=stale';
+      const renewing: FetchLike = (path, init) => {
+        if (path === '/api/session') cookieHeader = 'XSRF-TOKEN=renewed%3D';
+        return fake.fetch(path, init);
+      };
+      const client = createApiClient({ fetch: renewing, readCookies: () => cookieHeader });
+      await client.send('POST', '/api/auth/login', {});
+      expect(fake.calls[0]?.headers['x-xsrf-token']).toBe('stale');
+      expect(fake.calls[2]?.headers['x-xsrf-token']).toBe('renewed=');
+    });
+
+    it('does not renew the session after a 401', async () => {
+      const { client, calls } = clientWith([
+        { status: 401, json: { message: 'Tenés que ingresar.', code: 'unauthenticated' } },
+      ]);
+      await client.send('POST', '/api/me/privacy', {}, { asUser: 41 });
+      expect(calls).toHaveLength(1);
+    });
+
+    it('does not renew the session after a 409 account_mismatch', async () => {
+      const { client, calls } = clientWith([
+        { status: 409, json: { message: 'Cambió la cuenta.', code: 'account_mismatch' } },
+      ]);
+      await client.send('POST', '/api/me/privacy', {}, { asUser: 41 });
+      expect(calls).toHaveLength(1);
     });
   });
 });
