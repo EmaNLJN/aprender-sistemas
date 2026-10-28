@@ -283,6 +283,32 @@ test('R5: an adapter under app/legacy may import app/content', () => {
   );
 });
 
+test('the campaign bridges adapter may import the stateless entry and the URL grammar', () => {
+  assert.deepEqual(
+    findViolations({
+      'frontend/src/app/legacy/campaign-bridges.ts': `import { CODE_XP, PREDICTION_XP, campaignLinkAccess, campaignMissionContext, missionTypeLabel } from '../../entities/campaign/bridge';
+import type { CampaignEngine } from '../../entities/campaign';
+import type { ChallengeType } from '../../entities/exercise';
+import { readLinkQuery, worldHref } from '../../shared/config/url-grammar';`,
+    }),
+    [],
+  );
+});
+
+test('R6: the campaign bridges adapter that imports the selectors module is reported', () => {
+  const violations = findViolations({
+    'frontend/src/app/legacy/campaign-bridges.ts': `import { missionTypeLabel } from '../../entities/campaign/model/selectors';`,
+  });
+  assert.deepEqual(rulesOf(violations), ['R6']);
+});
+
+test('R4: the campaign adapter that imports a selector from the slice index is reported', () => {
+  const violations = findViolations({
+    'frontend/src/app/legacy/register-campaign.tsx': `import { missionTypeLabel } from '../../entities/campaign';`,
+  });
+  assert.deepEqual(rulesOf(violations), ['R4']);
+});
+
 function productionSources(): Record<string, string> {
   const sources: Record<string, string> = {};
   const frontend = path.join(repoRoot, 'frontend');
