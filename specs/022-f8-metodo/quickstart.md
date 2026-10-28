@@ -42,6 +42,7 @@ git worktree add "$SCRATCH/f8-base" HEAD
 | B7 | `git log --oneline a24154d4..HEAD -- frontend/styles.css` | lista commits de F3, F4 o F9 |
 | B8 | `git grep -ln "confirmReset()" -- qa/e2e/specs` | lista archivos |
 | B9 | `git grep -n "projects" -- frontend/vitest.config.ts` | imprime algo (si no, parar) |
+| B10 | `git grep -n "api.on('GET /api/" -- qa/e2e` | imprime algo: A3 sirve el contenido por la API (plan, «Rama A3») |
 
 F11a tiene que estar:
 

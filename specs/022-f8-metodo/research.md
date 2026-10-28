@@ -217,7 +217,7 @@ El modelo puro, en `model/method-texts.ts`, tiene `tutorPrompt`, los dos textos 
   El foco explícito hace que el resultado no dependa del navegador (FR-023).
 - **La espera (L9).**
   - Mientras el envío está en curso, «Conservar mi avance» queda deshabilitado, el campo pasa a `readOnly` y «Borrar todo» dice «Borrando…» y queda deshabilitado.
-  - Esc se frena dos veces: `onCancel` con `preventDefault()` y `onKeyDown` con `preventDefault()` para `Escape`. El `cancel` de un diálogo se puede cancelar una sola vez sin una activación del usuario de por medio (el modelo de *close watchers* del estándar HTML). Prevenir el `keydown` corta el pedido de cierre en su origen.
+  - Esc se frena dos veces: `onCancel` con `preventDefault()`, y un oyente de `keydown` en captura sobre `document` que previene `Escape`. El `cancel` de un diálogo se puede cancelar una sola vez sin una activación del usuario de por medio (el modelo de *close watchers* del estándar HTML). Prevenir el `keydown` corta el pedido de cierre en su origen. El oyente va en `document` porque el foco cae al documento cuando el botón se deshabilita, y sólo frena el Esc dirigido a la confirmación o a `body`: la espera incluye el ingreso de `reauthenticate`, y el aviso de privacidad que se abre desde ahí tiene que seguir cerrándose.
   - Un E2E aprieta Esc dos veces con el pedido retenido. Es la entrada 2 de la «Review Focus».
 - **El formulario.** Lo arma React Hook Form, como en F11a: `criteriaMode: 'all'`, `noValidate`, `handleSubmit` y `useGuardedSubmit`, con `PasswordField`, `ServerError` y `useRetryCountdown` de `shared/ui/form`.
   - Los botones van dentro del `<form>`, en su `.dialog-actions` de siempre, y fuera de `.form-stack`, para que su ancho no los limite a 440 px.
@@ -229,7 +229,7 @@ El modelo puro, en `model/method-texts.ts`, tiene `tutorPrompt`, los dos textos 
 
 ## R8. El shell se entera de cada escritura
 
-- **Decisión:** `startApp()` se suscribe con `routeStore.changes.subscribe(() => syncShell());`, justo después de `routeStore.open(data);`. Es la forma de F9 (su research, R4).
+- **Decisión:** `startApp()` se suscribe con `routeStore.changes.subscribe(() => syncShell());`, después de declarar `currentView` y `timer`, y no justo después de `routeStore.open(data);` como dice F9: `syncShell` lee `currentView`, y un aviso antes de su `let` caería en la zona muerta temporal. Es la forma de F9 (su research, R4).
   - `syncShell` cubre `#save-label`, «N de 12», el porcentaje, la barra y el idioma (`body[data-language]`, `aria-pressed` y `#sidebar-language`), que «Borrar todo» devuelve a Rust (FR-033).
   - Todo lo que escribe es idempotente.
 - **Lo compartido** (R12):
@@ -363,6 +363,7 @@ T001 detecta con comandos qué hay en la base. Cada tarea condicional dice qué 
 | Los bloques compartidos de CSS | F3, F4 y F9 | T005 los parte | T005 rebasa y borra lo suyo por texto |
 | La pila de DOM de Vitest | F11a (o F3, F5 o F9 antes) | No puede faltar: F8 entra después de F11a | Los `*.spec.tsx` corren en el proyecto de DOM que haya (`dom` en F11a) |
 | `toggleItem` y `escapeHtml` en `app.js` | F3, F4 y F9 | F8 no los toca | Igual |
+| El contenido por la API | A3 | Nada | Los E2E de F8 filtran los pedidos a las tres rutas de progreso y miran sólo las claves de progreso; los scripts de las comparaciones responden el contenido como el doble de esa base |
 
 **L11, aplicada:**
 

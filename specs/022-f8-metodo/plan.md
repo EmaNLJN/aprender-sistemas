@@ -347,6 +347,7 @@ T001 corre las detecciones de quickstart.md, §1.2, y anota cada fila como «est
 | **B7.** Los bloques compartidos de CSS ya partidos (F3, F4, F9) | `git log --oneline -- frontend/styles.css` desde `a24154d4` | T005 parte los suyos | T005 rebasa y borra sólo lo suyo, por texto |
 | **B8.** E2E de «Borrar todo» de otros ítems (F5, F9) | `git grep -ln "confirmReset()" -- qa/e2e/specs` | — | T014 los cambia a `method.resetEverything()`, como cambio a propósito |
 | **B9.** El proyecto de DOM de Vitest | `git grep -n "projects" -- frontend/vitest.config.ts` | No puede faltar: F8 entra después de F11a. Si falta, T001 para | Los `*.spec.tsx` corren ahí |
+| **B10.** El contenido por la API (A3) | `git grep -n "api.on('GET /api/" -- qa/e2e` | — | Los E2E de F8 ya filtran los pedidos a las tres rutas de progreso y miran sólo las claves de progreso, así que no cambian. Los scripts de quickstart.md, §3, responden el contenido como el doble de esa base (ver «Rama A3») |
 
 **Rama F5** (B5 está):
 
@@ -359,6 +360,8 @@ T001 corre las detecciones de quickstart.md, §1.2, y anota cada fila como «est
   - en `app-shell-harness.ts`, el paso de sesión de `progressBackupFor` desaparece, porque el adaptador falso ya no lo tiene.
 
   La correspondencia: lo cubren `systems-session.spec.ts` de F5 y el E2E de «Borrar todo» de F5. La verificación: `git grep -n "resetSimulations" -- frontend/src/app/legacy qa/lib/app-adapters.ts` no imprime nada (US6-4).
+
+**Rama A3** (B10 está): `vite preview` ya no publica el contenido sin la API. En los dos scripts de quickstart.md, §3.1(b) y §3.2, las dos rutas de la sesión se reemplazan por un `context.route('**/api/**', …)` que responde lo mismo que el doble de los E2E de esa base: `installDefaults` y las porciones que sume A3, copiadas al script.
 
 **Rama F9** (B6 está):
 
@@ -384,11 +387,11 @@ T001 corre las detecciones de quickstart.md, §1.2, y anota cada fila como «est
    - el valor de `render()` de `app.js`;
    - los conteos de `npm test` (checks, escenarios de `app-shell-check` y `boot-check`, y pruebas de Vitest);
    - los E2E en verde.
-3. **Detectar** las piezas B1 a B9 de «Ramas», con quickstart.md, §1.2.
+3. **Detectar** las piezas B1 a B10 de «Ramas», con quickstart.md, §1.2.
 4. **Anotar** en research.md una sección nueva al final, «Línea base de la implementación», con:
    - el SHA de la base;
    - cada medida;
-   - la tabla B1 a B9 con «está» o «falta».
+   - la tabla B1 a B10 con «está» o «falta».
 5. **Commit:** `docs(specs): línea base de F8 y lo que trae la base`.
 
 **Compuerta de cada unidad** (K, al cerrar U1 a U5). Son los pasos de quickstart.md, §2:
@@ -905,7 +908,8 @@ Lo que esté en rojo a propósito figura en la tabla de la unidad.
        await method.confirmReset().click();
        await expect(shell.toast).toHaveText(RESET_DONE);
        const stored = await storage.snapshot();
-       expect(Object.keys(stored)).toEqual(['taller-learning-v1']);
+       const deleted = ['taller-laboratorio-v1', 'taller-campaign-v1', 'taller-systems-v1'];
+       expect(Object.keys(stored).filter((key) => deleted.includes(key) || key.includes(':respaldo'))).toEqual([]);
        expect(JSON.parse(stored['taller-learning-v1'] ?? 'null')).toEqual(BLANK_ROUTE);
        await expect(method.journalHeading('Rust')).toBeVisible();
        await expect(method.learnedNote).toHaveValue('');
@@ -1845,13 +1849,12 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
    ```tsx
    import { render } from '@testing-library/react';
    import curriculum from '../../../../../build/curriculum.json';
-   import { createRouteStore, type GuideData, type RouteStore } from '../../../entities/guide';
+   import type { GuideData, RouteStore } from '../../../entities/guide';
    import type { StorageLike } from '../../../shared/lib/versioned-storage';
    import MethodPage from './MethodPage';
    import { ProgressBackupDouble } from './progress-backup-double';
 
    export const guide = curriculum.guide as unknown as GuideData;
-   export const ROUTE_KEY = 'taller-learning-v1';
 
    export interface RecordingStorage extends StorageLike {
      readonly items: Map<string, string>;
@@ -1859,8 +1862,9 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
      failWrites: boolean;
    }
 
-   export function memoryStorage(initial: Record<string, string>, events: string[]): RecordingStorage {
+   export function memoryStorage(initial: Record<string, string>): RecordingStorage {
      const items = new Map(Object.entries(initial));
+     const events: string[] = [];
      const storage: RecordingStorage = {
        items,
        events,
@@ -1884,13 +1888,11 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
    }
 
    export function renderMethod(
-     stored: Record<string, string> = {},
+     store: RouteStore,
+     storage: RecordingStorage,
      configure: (backup: ProgressBackupDouble) => void = () => undefined,
    ): MethodRig & ReturnType<typeof render> {
-     const events: string[] = [];
-     const storage = memoryStorage(stored, events);
-     const store = createRouteStore();
-     store.open(guide, { storage });
+     const events = storage.events;
      const backup = new ProgressBackupDouble();
      configure(backup);
      const view = render(
@@ -1905,6 +1907,7 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
    }
    ```
 
+   La ayuda no importa `createRouteStore` ni nombra la clave del recorrido: es un archivo que no es spec, y R3 y R1 de `seams-guard-check` miran todo `frontend/src/`. Cada spec abre su almacén y se lo pasa, como en F9.
 4. **`ui/method-page.spec.tsx`.**
    - jsdom no trae `showModal()` ni `close()` (ADR 0008, §1). La spec los define y los restaura.
    - La descarga es una frontera de E/S: se reemplaza con `vi.mock`, y la prueba exige el archivo que recibe.
@@ -1913,10 +1916,21 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
    import { screen, within } from '@testing-library/react';
    import userEvent from '@testing-library/user-event';
    import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+   import { createRouteStore } from '../../../entities/guide';
    import { downloadJsonFile } from '../../../shared/lib/download-file';
-   import { ROUTE_KEY, guide, renderMethod } from './render-method';
+   import type { ProgressBackupDouble } from './progress-backup-double';
+   import { guide, memoryStorage, renderMethod } from './render-method';
 
    vi.mock('../../../shared/lib/download-file', () => ({ downloadJsonFile: vi.fn() }));
+
+   const ROUTE_KEY = 'taller-learning-v1';
+
+   function openMethod(stored: Record<string, string> = {}, configure?: (backup: ProgressBackupDouble) => void) {
+     const storage = memoryStorage(stored);
+     const store = createRouteStore();
+     store.open(guide, { storage });
+     return renderMethod(store, storage, configure);
+   }
 
    const SAVED = 'Guardado. Tu próxima sesión ya tiene un punto de partida.';
    const AUTOMATIC = 'Tus notas se guardan automáticamente en este navegador.';
@@ -1965,7 +1979,7 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
    describe('the journal', () => {
      it('shows the notes of the active language and writes once per keystroke', async () => {
        const user = userEvent.setup();
-       const rig = renderMethod(storedRoute({ notes: { rust: { learned: 'de Rust', next: '' }, go: { learned: '', next: '' } } }));
+       const rig = openMethod(storedRoute({ notes: { rust: { learned: 'de Rust', next: '' }, go: { learned: '', next: '' } } }));
        expect(screen.getByRole('heading', { name: 'Tu bitácora de Go.' })).toBeInTheDocument();
        expect(screen.getByText(AUTOMATIC)).toBeInTheDocument();
        await user.type(screen.getByRole('textbox', { name: 'La próxima vez voy a…' }), 'abc');
@@ -1980,7 +1994,7 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
 
      it('says that it could not save when the storage stops writing', async () => {
        const user = userEvent.setup();
-       const rig = renderMethod(storedRoute());
+       const rig = openMethod(storedRoute());
        rig.storage.failWrites = true;
        await user.type(screen.getByRole('textbox', { name: 'Lo que entendí / lo que todavía me cuesta' }), 'a');
        expect(screen.getByText('No se pudo guardar. Exportá tu avance al terminar.')).toBeInTheDocument();
@@ -1988,7 +2002,7 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
 
      it('Review Focus 1: shows what another tab saved between two keystrokes and keeps what was typed', async () => {
        const user = userEvent.setup();
-       const rig = renderMethod(storedRoute());
+       const rig = openMethod(storedRoute());
        const learned = screen.getByRole('textbox', { name: 'Lo que entendí / lo que todavía me cuesta' });
        await user.type(learned, 'a');
        const otherTab = JSON.parse(rig.storage.items.get(ROUTE_KEY) ?? 'null') as { notes: { go: { next: string } } };
@@ -2001,7 +2015,7 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
      });
 
      it('shows a note with HTML as text', () => {
-       renderMethod(storedRoute({ notes: { rust: { learned: '', next: '' }, go: { learned: NOTE_WITH_HTML, next: NOTE_WITH_HTML } } }));
+       openMethod(storedRoute({ notes: { rust: { learned: '', next: '' }, go: { learned: NOTE_WITH_HTML, next: NOTE_WITH_HTML } } }));
        expect(screen.getByRole('textbox', { name: 'Lo que entendí / lo que todavía me cuesta' })).toHaveValue(NOTE_WITH_HTML);
        expect(document.getElementById('tutor-prompt')).toHaveTextContent(`Mi próximo paso: ${NOTE_WITH_HTML}`);
        expect(document.querySelector('img')).toBeNull();
@@ -2018,7 +2032,7 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
        const user = userEvent.setup();
        const writeText = vi.fn(async () => undefined);
        stubClipboard(writeText, () => false);
-       const rig = renderMethod();
+       const rig = openMethod();
        await user.click(screen.getByRole('button', { name: 'Copiar pedido para mi tutor' }));
        expect(writeText).toHaveBeenCalledWith(document.getElementById('tutor-prompt')?.textContent);
        expect(rig.events).toEqual(['notify Pedido copiado. Pegalo en tu asistente.']);
@@ -2027,7 +2041,7 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
      it('falls back to the copy command with an off-screen field it removes', async () => {
        const user = userEvent.setup();
        stubClipboard(() => Promise.reject(new Error('denied')), () => true);
-       const rig = renderMethod();
+       const rig = openMethod();
        await user.click(screen.getByRole('button', { name: 'Copiar pedido para mi tutor' }));
        expect(rig.events).toEqual(['notify Pedido copiado.']);
        expect(document.body.querySelectorAll('body > textarea')).toHaveLength(0);
@@ -2036,7 +2050,7 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
      it('selects the prompt when both fail', async () => {
        const user = userEvent.setup();
        stubClipboard(() => Promise.reject(new Error('denied')), () => false);
-       const rig = renderMethod();
+       const rig = openMethod();
        await user.click(screen.getByRole('button', { name: 'Copiar pedido para mi tutor' }));
        expect(rig.events).toEqual(['notify Texto seleccionado. Usá Copiar en tu navegador.']);
        expect(document.getSelection()?.toString()).toBe(document.getElementById('tutor-prompt')?.textContent);
@@ -2045,7 +2059,7 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
 
    describe('the sources and the backups', () => {
      it('lists every source as a link to another tab with its note', () => {
-       renderMethod();
+       openMethod();
        const list = screen.getByRole('heading', { name: 'Las fuentes, a mano.' }).parentElement as HTMLElement;
        const links = within(list).getAllByRole('link');
        expect(links).toHaveLength(guide.sources.length);
@@ -2056,13 +2070,13 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
      });
 
      it('hides the backups panel without slots', () => {
-       renderMethod();
+       openMethod();
        expect(screen.queryByRole('heading', { name: 'Respaldos de seguridad.' })).toBeNull();
      });
 
      it('lists each slot with its area, key and size, and downloads the text it reads again', async () => {
        const user = userEvent.setup();
-       const rig = renderMethod({}, (backup) => {
+       const rig = openMethod({}, (backup) => {
          backup.backups = [
            { area: 'laboratorio', key: 'taller-laboratorio-v1:respaldo', text: 'x'.repeat(2048) },
            { area: 'campaña', key: 'taller-campaign-v1:respaldo', text: '{"campaign":1}' },
@@ -2083,7 +2097,7 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
    describe('exporting and importing', () => {
      it('downloads what the feature exports and announces it, without writing', async () => {
        const user = userEvent.setup();
-       const rig = renderMethod();
+       const rig = openMethod();
        await user.click(screen.getByRole('button', { name: 'Exportar progreso' }));
        expect(downloadJsonFile).toHaveBeenCalledWith(rig.backup.exportedFile);
        expect(rig.events).toEqual(['notify Copia de progreso exportada.']);
@@ -2091,7 +2105,7 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
 
      it('Review Focus 5: plans the exact text of the file, applies it, announces it and empties the picker', async () => {
        const user = userEvent.setup();
-       const rig = renderMethod();
+       const rig = openMethod();
        const input = document.getElementById('import-file') as HTMLInputElement;
        expect(input).toHaveAttribute('accept', 'application/json,.json');
        expect(input).toHaveAttribute('aria-label', 'Importar archivo de progreso');
@@ -2103,7 +2117,7 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
 
      it('rejects a file over 10 MB before reading it', async () => {
        const user = userEvent.setup();
-       const rig = renderMethod();
+       const rig = openMethod();
        const file = new File(['{}'], 'enorme.json', { type: 'application/json' });
        Object.defineProperty(file, 'size', { value: 10 * 1024 * 1024 + 1 });
        const read = vi.spyOn(file, 'text');
@@ -2116,7 +2130,7 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
 
      it('explains a broken JSON', async () => {
        const user = userEvent.setup();
-       const rig = renderMethod();
+       const rig = openMethod();
        rig.backup.planFailure = new SyntaxError('Unexpected end of JSON input');
        await user.upload(document.getElementById('import-file') as HTMLInputElement, new File(['{'], 'roto.json'));
        await vi.waitFor(() => expect(rig.events).toEqual(['notify No se pudo importar: el archivo no contiene JSON válido.']));
@@ -2124,7 +2138,7 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
 
      it('shows the imported notes without remounting and keeps the note status', async () => {
        const user = userEvent.setup();
-       const rig = renderMethod(storedRoute());
+       const rig = openMethod(storedRoute());
        await user.type(screen.getByRole('textbox', { name: 'La próxima vez voy a…' }), 'x');
        rig.backup.onApplyImport = () => {
          const progress = rig.store.getProgress();
@@ -2142,7 +2156,7 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
    describe('Borrar todo, local', () => {
      it('opens the confirmation in body and closes it with «Conservar mi avance» without resetting', async () => {
        const user = userEvent.setup();
-       const rig = renderMethod();
+       const rig = openMethod();
        await user.click(screen.getByRole('button', { name: 'Borrar mi progreso' }));
        const dialog = screen.getByRole('dialog', { name: '¿Borrar tu progreso?' });
        expect(dialog.parentElement).toBe(document.body);
@@ -2156,7 +2170,7 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
      it('resets, saves, closes, shows the blank route and announces, in that order, and focuses «Borrar mi progreso»', async () => {
        const user = userEvent.setup();
        const stored = storedRoute({ notes: { rust: { learned: '', next: '' }, go: { learned: 'de Go', next: '' } } });
-       const rig = renderMethod(stored, (backup) => {
+       const rig = openMethod(stored, (backup) => {
          backup.backups = [{ area: 'campaña', key: 'taller-campaign-v1:respaldo', text: '{' }];
        });
        rig.backup.onResetAll = () => {
@@ -2179,7 +2193,7 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
 
      it('announces the failure notice of the feature', async () => {
        const user = userEvent.setup();
-       const rig = renderMethod();
+       const rig = openMethod();
        rig.backup.resetNotice = 'No se pudo borrar todo el progreso guardado. Recargá la página y volvé a intentarlo.';
        await user.click(screen.getByRole('button', { name: 'Borrar mi progreso' }));
        await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Borrar todo' }));
@@ -2192,7 +2206,7 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
 
      it('closes the confirmation when the page unmounts', async () => {
        const user = userEvent.setup();
-       const rig = renderMethod();
+       const rig = openMethod();
        await user.click(screen.getByRole('button', { name: 'Borrar mi progreso' }));
        rig.unmount();
        expect(document.getElementById('confirm-dialog')).toBeNull();
@@ -3145,7 +3159,7 @@ Con las ramas F5 y F9, también lo que dice «Ramas».
 4. **`frontend/app.js`,** diez cambios:
    - **Los imports.** Salen las cinco líneas del import de `./src/features/progress-backup`. `import { downloadBlob } from './src/shared/lib/download-file';` pasa a `import { downloadJsonFile } from './src/shared/lib/download-file';`.
    - **La firma.** `export function startApp() {` pasa a `export function startApp(progressBackup) {`.
-   - **La suscripción** (B1). Justo después de `routeStore.open(data);` va `routeStore.changes.subscribe(() => syncShell());`. Si ya hay una que llama a `updateSaveLabel`, se reemplaza por esa; si ya llama a `syncShell`, no se toca.
+   - **La suscripción** (B1). Justo después de `const timer = { … };` va `routeStore.changes.subscribe(() => syncShell());`. Va ahí y no después de `routeStore.open(data);` porque `syncShell` lee `currentView`, un `let` declarado más abajo: un aviso antes de esa línea caería en la zona muerta temporal. Si ya hay una suscripción que llama a `updateSaveLabel`, se reemplaza por esta; si ya llama a `syncShell`, no se toca.
    - **El temporizador.** El bloque `const progressBackup = createProgressBackup({ … });` se reemplaza por el registro del paso:
 
      ```js
@@ -3461,6 +3475,12 @@ Research.md, R4, R5 y R7.
    const READ: ApiRoute = 'GET /api/progress';
    const RESET: ApiRoute = 'POST /api/progress/reset';
    const LATER: Record<string, readonly ApiRoute[]> = { [CONFIRM]: [READ, RESET], [READ]: [RESET], [RESET]: [] };
+   const PROGRESS_ROUTES: readonly string[] = [CONFIRM, READ, RESET];
+   const OTHER_PROGRESS_KEYS = ['taller-laboratorio-v1', 'taller-campaign-v1', 'taller-systems-v1'];
+
+   function progressCalls(api: ApiDouble): string[] {
+     return api.calls.map((call) => `${call.method} ${call.path}`).filter((route) => PROGRESS_ROUTES.includes(route));
+   }
 
    function failure(code: ApiCode, status: number, headers?: Record<string, string>): ApiReply {
      return { status, json: errorBody(code), headers };
@@ -3514,10 +3534,7 @@ Research.md, R4, R5 y R7.
      expect(await storage.snapshot()).toEqual(before);
      release();
      await expect(shell.toast).toHaveText(RESET_DONE);
-     const progressCalls = api.calls
-       .filter((call) => call.path !== '/api/session')
-       .map((call) => `${call.method} ${call.path}`);
-     expect(progressCalls).toEqual([CONFIRM, READ, RESET]);
+     expect(progressCalls(api)).toEqual([CONFIRM, READ, RESET]);
      const [confirm] = api.callsTo(CONFIRM);
      const [reset] = api.callsTo(RESET);
      expect(confirm?.body).toEqual({ password: E2E_PASSWORD });
@@ -3525,7 +3542,9 @@ Research.md, R4, R5 y R7.
      expect(reset?.body).toEqual({ format: 2, epoch: 1 });
      expect(reset?.user).toBe(String(STUDENT.id));
      expect(reset?.xsrf).toBe(api.xsrfValue());
-     expect(Object.keys(await storage.snapshot())).toEqual(['taller-learning-v1']);
+     const keys = Object.keys(await storage.snapshot());
+     expect(keys.filter((key) => OTHER_PROGRESS_KEYS.includes(key) || key.includes(':respaldo'))).toEqual([]);
+     expect(keys).toContain('taller-learning-v1');
      await expect(method.confirmation).toBeHidden();
      await expect(method.resetProgress()).toBeFocused();
    });
@@ -3556,7 +3575,7 @@ Research.md, R4, R5 y R7.
      await method.password.fill(E2E_PASSWORD);
      await method.keepProgress().click();
      await expect(method.confirmation).toBeHidden();
-     expect(api.calls.filter((call) => call.path !== '/api/session')).toEqual([]);
+     expect(progressCalls(api)).toEqual([]);
      expect(await storage.snapshot()).toEqual(before);
    });
 
@@ -3665,6 +3684,7 @@ Research.md, R4, R5 y R7.
      storage,
      api,
      access,
+     page,
      pageIssues,
    }) => {
      pageIssues.expectIssue(FAILED_RESOURCE, 'the 401 of the confirmation');
@@ -3673,6 +3693,8 @@ Research.md, R4, R5 y R7.
      const before = await storage.snapshot();
      await confirmWithPassword(method);
      await expect(access.heading('Ingresá al taller')).toBeVisible();
+     await access.button('Aviso de privacidad').click();
+     await page.keyboard.press('Escape');
      await access.signIn(STUDENT.email, 'una contraseña de prueba');
      await expect(access.heading('Ingresá al taller')).toBeHidden();
      await expect(method.confirmation).toBeVisible();
@@ -4214,8 +4236,19 @@ Research.md, R4, R5 y R7.
    import { act, fireEvent, screen, within } from '@testing-library/react';
    import userEvent from '@testing-library/user-event';
    import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+   import { createRouteStore } from '../../../entities/guide';
    import type { ResetRefusal } from '../../../features/progress-backup';
-   import { ROUTE_KEY, renderMethod } from './render-method';
+   import type { ProgressBackupDouble } from './progress-backup-double';
+   import { guide, memoryStorage, renderMethod } from './render-method';
+
+   const ROUTE_KEY = 'taller-learning-v1';
+
+   function openMethod(stored: Record<string, string> = {}, configure?: (backup: ProgressBackupDouble) => void) {
+     const storage = memoryStorage(stored);
+     const store = createRouteStore();
+     store.open(guide, { storage });
+     return renderMethod(store, storage, configure);
+   }
 
    const NO_REFUSAL: ResetRefusal = {
      passwordMessages: [],
@@ -4250,7 +4283,7 @@ Research.md, R4, R5 y R7.
      vi.useRealTimers();
    });
 
-   function holdReset(rig: ReturnType<typeof renderMethod>): () => void {
+   function holdReset(rig: ReturnType<typeof openMethod>): () => void {
      let release: () => void = () => undefined;
      rig.backup.hold = new Promise<void>((resolve) => {
        release = resolve;
@@ -4269,7 +4302,7 @@ Research.md, R4, R5 y R7.
    describe('the confirmation with the password', () => {
      it('shows the texts of L8 and the password field before the buttons', async () => {
        const user = userEvent.setup();
-       renderMethod();
+       openMethod();
        await user.click(screen.getByRole('button', { name: 'Borrar mi progreso' }));
        const dialog = screen.getByRole('dialog', { name: '¿Borrar tu progreso?' });
        expect(dialog).toHaveTextContent(
@@ -4288,7 +4321,7 @@ Research.md, R4, R5 y R7.
 
      it('asks for the password before calling the feature', async () => {
        const user = userEvent.setup();
-       const rig = renderMethod();
+       const rig = openMethod();
        await user.click(screen.getByRole('button', { name: 'Borrar mi progreso' }));
        const dialog = screen.getByRole('dialog');
        await user.click(within(dialog).getByRole('button', { name: 'Borrar todo' }));
@@ -4298,7 +4331,7 @@ Research.md, R4, R5 y R7.
 
      it('sends the password, then saves, closes and announces, and focuses «Borrar mi progreso»', async () => {
        const user = userEvent.setup();
-       const rig = renderMethod();
+       const rig = openMethod();
        await user.click(screen.getByRole('button', { name: 'Borrar mi progreso' }));
        const dialog = screen.getByRole('dialog');
        dialog.addEventListener('close', () => rig.events.push('close'));
@@ -4312,7 +4345,7 @@ Research.md, R4, R5 y R7.
 
      it('shows the wait and holds Esc, «Conservar mi avance» and the field while the request runs', async () => {
        const user = userEvent.setup();
-       const rig = renderMethod();
+       const rig = openMethod();
        const release = holdReset(rig);
        const dialog = await typePasswordAndConfirm(user);
        expect(await within(dialog).findByRole('button', { name: 'Borrando…' })).toBeDisabled();
@@ -4324,13 +4357,19 @@ Research.md, R4, R5 y R7.
        const cancel = new Event('cancel', { cancelable: true });
        dialog.dispatchEvent(cancel);
        expect(cancel.defaultPrevented).toBe(true);
+       const elsewhere = document.createElement('button');
+       document.body.append(elsewhere);
+       const escapeElsewhere = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+       elsewhere.dispatchEvent(escapeElsewhere);
+       expect(escapeElsewhere.defaultPrevented).toBe(false);
+       elsewhere.remove();
        release();
        await vi.waitFor(() => expect(rig.events.at(-1)).toBe(`notify ${RESET_DONE}`));
      });
 
      it('Review Focus 4: a double click sends a single reset', async () => {
        const user = userEvent.setup();
-       const rig = renderMethod();
+       const rig = openMethod();
        const release = holdReset(rig);
        await user.click(screen.getByRole('button', { name: 'Borrar mi progreso' }));
        const dialog = screen.getByRole('dialog');
@@ -4345,7 +4384,7 @@ Research.md, R4, R5 y R7.
 
      it('keeps the confirmation open with the message on the password, without saving', async () => {
        const user = userEvent.setup();
-       const rig = renderMethod();
+       const rig = openMethod();
        rig.backup.resetOutcomes = [{ refusal: { ...NO_REFUSAL, passwordMessages: ['El email o la contraseña no son correctos.'] } }];
        const dialog = await typePasswordAndConfirm(user);
        expect(await within(dialog).findByText('El email o la contraseña no son correctos.')).toBeInTheDocument();
@@ -4356,7 +4395,7 @@ Research.md, R4, R5 y R7.
 
      it('shows a general refusal in an alert and offers «Recargar»', async () => {
        const user = userEvent.setup();
-       const rig = renderMethod();
+       const rig = openMethod();
        rig.backup.resetOutcomes = [
          { refusal: { ...NO_REFUSAL, generalMessages: ['La sesión cambió de cuenta: recargá la página.'], offerReload: true } },
        ];
@@ -4369,7 +4408,7 @@ Research.md, R4, R5 y R7.
      it('does not let «Borrar todo» be sent again before Retry-After ends', async () => {
        vi.useFakeTimers({ shouldAdvanceTime: true });
        const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-       const rig = renderMethod();
+       const rig = openMethod();
        rig.backup.resetOutcomes = [
          {
            refusal: {
@@ -4389,7 +4428,7 @@ Research.md, R4, R5 y R7.
 
      it('empties the password after signing in again with the same account', async () => {
        const user = userEvent.setup();
-       const rig = renderMethod();
+       const rig = openMethod();
        rig.backup.resetOutcomes = [{ refusal: { ...NO_REFUSAL, clearPassword: true } }];
        const dialog = await typePasswordAndConfirm(user);
        await vi.waitFor(() => expect(within(dialog).getByLabelText('Tu contraseña')).toHaveValue(''));
@@ -4398,7 +4437,7 @@ Research.md, R4, R5 y R7.
 
      it('announces the failure notice when the server confirmed but a store could not delete', async () => {
        const user = userEvent.setup();
-       const rig = renderMethod();
+       const rig = openMethod();
        rig.backup.resetNotice = 'No se pudo borrar todo el progreso guardado. Recargá la página y volvé a intentarlo.';
        await typePasswordAndConfirm(user);
        await vi.waitFor(() =>
@@ -4478,7 +4517,10 @@ Research.md, R4, R5 y R7.
      useEffect(() => {
        if (!isSubmitting) return undefined;
        const holdEscape = (event: KeyboardEvent): void => {
-         if (event.key === 'Escape') event.preventDefault();
+         const target = event.target;
+         const aimsAtConfirmation =
+           target === document.body || (target instanceof Node && dialog.current?.contains(target) === true);
+         if (event.key === 'Escape' && aimsAtConfirmation) event.preventDefault();
        };
        document.addEventListener('keydown', holdEscape, true);
        return () => document.removeEventListener('keydown', holdEscape, true);
@@ -4575,6 +4617,7 @@ Research.md, R4, R5 y R7.
    ```
 
    - **El oyente de `keydown` en captura** sobre `document` existe sólo mientras corre el envío. Cubre el caso en que el foco cayó al documento, cuando el botón se deshabilitó (research.md, R7).
+   - **Sólo frena el Esc dirigido a la confirmación o a `body`.** La espera incluye `reauthenticate`, que dura lo que tarde el alumno en ingresar, y el aviso de privacidad que se abre desde ese ingreso tiene que seguir cerrándose con Esc.
    - **El estado de React** sigue al diálogo nativo con `onClose`.
 3. **`ui/ProgressPanel.tsx`.**
    - Los props suman `reloadDocument(): void;`.
@@ -4621,7 +4664,7 @@ Research.md, R4, R5 y R7.
      };
      ```
 
-   - **El principio de `fetch`.** Antes de mirar la sesión, `fetch` suma:
+   - **El principio de `fetch`.** Al principio de `fetch`, antes de `order.push(requested)`, va:
 
      ```ts
      const route = `${init?.method ?? 'GET'} ${requested}`;

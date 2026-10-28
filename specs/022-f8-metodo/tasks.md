@@ -8,7 +8,7 @@ description: "Tareas de F8, el port de Método"
 
 ## Phase 1: Setup (U0)
 
-- [ ] T001 La línea base, la detección de B1 a B9 y su registro en `specs/022-f8-metodo/research.md` (FR-004, FR-005, FR-043; SC-009)
+- [ ] T001 La línea base, la detección de B1 a B10 y su registro en `specs/022-f8-metodo/research.md` (FR-004, FR-005, FR-043; SC-009)
 
 ## Phase 2: Foundational · los E2E contra el legacy (U1)
 
