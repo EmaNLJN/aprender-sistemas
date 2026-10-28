@@ -9,6 +9,7 @@ use App\Runs\Program\ExpectedTest;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\AuditWorld;
 use Tests\Support\ContentDatabase;
+use Tests\Support\RunWorld;
 
 it('reads the active exercises of both languages in order, with their codes, kind, section and labels', function () {
     AuditWorld::curriculum();
@@ -82,11 +83,16 @@ it('refuses when the imported harness is not the harness of the image (R3)', fun
 
 it('orders the exercises by language, catalog, domain, position and id', function () {
     AuditWorld::curriculum();
+    DB::table('catalogs')->insertOrIgnore(['code' => 'cores', 'slice_by' => 'domain', 'status' => 'active', 'created_at' => now(), 'updated_at' => now()]);
+    RunWorld::exercise('rust-05', 'rust');
+    RunWorld::exercise('rust-04', 'rust');
+    DB::table('exercises')->where('id', 'rust-05')->update(['catalog' => 'cores', 'domain' => 'infra', 'position' => 2]);
+    DB::table('exercises')->where('id', 'rust-04')->update(['catalog' => 'cores', 'domain' => 'play', 'position' => 1]);
     DB::table('exercises')->whereIn('id', ['rust-01', 'go-01'])->update(['position' => 2]);
 
     $catalog = app(AuditCatalogReader::class)->read();
 
-    expect(array_map(fn (AuditedExercise $exercise) => $exercise->id(), $catalog->exercises))->toBe(['rust-02', 'rust-01', 'go-01', 'go-02']);
+    expect(array_map(fn (AuditedExercise $exercise) => $exercise->id(), $catalog->exercises))->toBe(['rust-02', 'rust-01', 'rust-05', 'rust-04', 'go-01', 'go-02']);
 });
 
 it('reads tests in position order, leaves out the retired ones and keeps the starter hash apart from the grading hash', function () {
