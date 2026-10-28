@@ -4,13 +4,12 @@ namespace App\Runs\Admission;
 
 use App\Content\ContentSnapshot;
 use App\Content\ExerciseId;
+use App\Content\ExerciseImports;
 use App\Content\Record\RowFields;
 use App\Runs\Program\ExerciseSnapshot;
 use App\Runs\Program\ExpectedTest;
 use App\Runs\RunLanguage;
 use Illuminate\Support\Facades\DB;
-use JsonException;
-use LogicException;
 
 final class ExerciseReader
 {
@@ -37,7 +36,7 @@ final class ExerciseReader
             $language,
             $exercise->string('grading_hash'),
             $this->tests($exerciseId),
-            $this->imports($exercise->string('imports_json')),
+            ExerciseImports::decode($exercise->string('imports_json')),
             $this->template($language),
         );
     }
@@ -63,24 +62,5 @@ final class ExerciseReader
         $rows = DB::select('select `template` from `harness_templates` where `language` = ?', [$language->value]);
 
         return (new RowFields($rows === [] ? [] : get_object_vars($rows[0]), 'harness_templates'))->string('template');
-    }
-
-    /** @return list<string> */
-    private function imports(string $json): array
-    {
-        try {
-            $decoded = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
-        } catch (JsonException) {
-            throw new LogicException('exercises.imports_json: se esperaba JSON');
-        }
-        $imports = [];
-        foreach (is_array($decoded) ? $decoded : [] as $import) {
-            if (! is_string($import)) {
-                throw new LogicException('exercises.imports_json: se esperaba una lista de textos');
-            }
-            $imports[] = $import;
-        }
-
-        return $imports;
     }
 }

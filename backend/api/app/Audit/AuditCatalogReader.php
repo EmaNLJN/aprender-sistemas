@@ -5,13 +5,13 @@ namespace App\Audit;
 use App\Content\ContentImports;
 use App\Content\ContentSnapshot;
 use App\Content\ContentSource;
+use App\Content\ExerciseImports;
 use App\Content\Portion;
 use App\Content\Record\RowFields;
 use App\Runs\Program\ExerciseSnapshot;
 use App\Runs\Program\ExpectedTest;
 use App\Runs\RunLanguage;
 use Illuminate\Support\Facades\DB;
-use JsonException;
 use LogicException;
 
 final class AuditCatalogReader
@@ -73,7 +73,7 @@ final class AuditCatalogReader
         $template = $templates[$language->value] ?? throw new LogicException("harness_templates: falta la plantilla de {$language->value}");
 
         return new AuditedExercise(
-            new ExerciseSnapshot($id, $language, $row->string('grading_hash'), $expected, $this->decodeImports($row->string('imports_json')), $template),
+            new ExerciseSnapshot($id, $language, $row->string('grading_hash'), $expected, ExerciseImports::decode($row->string('imports_json')), $template),
             $row->string('catalog'),
             $row->nullableString('domain'),
             ExerciseKind::from($row->string('kind')),
@@ -109,24 +109,5 @@ final class AuditCatalogReader
         }
 
         return $tests;
-    }
-
-    /** @return list<string> */
-    private function decodeImports(string $json): array
-    {
-        try {
-            $decoded = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
-        } catch (JsonException) {
-            throw new LogicException('exercises.imports_json: se esperaba JSON');
-        }
-        $imports = [];
-        foreach (is_array($decoded) ? $decoded : [] as $import) {
-            if (! is_string($import)) {
-                throw new LogicException('exercises.imports_json: se esperaba una lista de textos');
-            }
-            $imports[] = $import;
-        }
-
-        return $imports;
     }
 }
