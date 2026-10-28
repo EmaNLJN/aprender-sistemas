@@ -895,7 +895,7 @@ final class AuditRefused extends RuntimeException
 
 **Archivos:** crea `backend/api/app/Audit/AuditCatalogReader.php`, `backend/api/tests/Support/AuditWorld.php` y `backend/api/tests/Feature/Audit/AuditCatalogReaderTest.php`.
 
-**Interfaz:** `AuditCatalogReader::__construct(ContentImports $imports)`, `read(): AuditCatalog`, lanza `AuditRefused::noContent()` o `AuditRefused::staleContent()`.
+**Interfaz:** `AuditCatalogReader::__construct(ContentImports $imports)`, `read(): AuditCatalog`, lanza `AuditRefused::noContent()`, `AuditRefused::staleContent()` o `AuditRefused::staleHarness()`.
 
 **Paso 1, el mundo de prueba.** `AuditWorld.php` importa cinco ejercicios con `RunWorld` y los ajusta: `rust-01` (`lab`, `completar`), `rust-02` (`lab`, `reparar`), `rust-03` (retirado), `go-01` (`lab`, `completar`, `imports: ['strings']`) y `go-02` (`quests`, `reparar`). La importación lleva la huella del meta de la imagen, así la guardia de R3 pasa.
 
@@ -3301,7 +3301,7 @@ it('stamps the host values it receives and the content it audited (FR-020)', fun
         'cleanTree' => true,
         'contentSourceCommit' => null,
         'documentHash' => AuditWorld::imageDocumentHash(),
-        'harnessHash' => AuditWorld::HARNESS_HASH,
+        'harnessHash' => AuditWorld::imageHarnessHash(),
         'images' => ['rust' => $rust, 'go' => $go],
     ])->and($report['run']['instance'])->toBe('auditoria')
         ->and($report['run']['concurrency'])->toBe(4);
@@ -3329,6 +3329,7 @@ it('refuses to start, says why and runs nothing (FR-013)', function (string $sit
     }
     match ($situation) {
         'another build' => DB::table('content_imports')->update(['document_hash' => str_repeat('b', 64)]),
+        'another harness' => DB::table('content_imports')->update(['portion_hashes' => json_encode(['harness' => str_repeat('d', 64)], JSON_THROW_ON_ERROR)]),
         'too much concurrency' => config(['audit.concurrency' => 9]),
         'no report directory' => config(['audit.report_directory' => $this->reports.'/missing']),
         'a rejected token' => config(['runs.executor.token' => str_repeat('x', 40)]),
@@ -3341,6 +3342,7 @@ it('refuses to start, says why and runs nothing (FR-013)', function (string $sit
 })->with([
     'nothing imported' => ['nothing imported', [], 'No hay contenido importado'],
     'the import of another build' => ['another build', [], 'El contenido importado (bbbbbbbbbbbb) no es el de esta imagen'],
+    'the import of another harness' => ['another harness', [], 'La plantilla importada (dddddddddddd) no es la de esta imagen'],
     'an unknown exercise' => ['ready', ['--exercise' => ['rust-99']], 'rust-99 no es un ejercicio activo de rust y go.'],
     'an unknown language' => ['ready', ['--language' => 'kotlin'], '--language admite rust o go y llegó «kotlin».'],
     'a short commit' => ['ready', ['--commit' => 'abc'], '--commit tiene que ser el hash completo de un commit y llegó «abc».'],
@@ -3350,6 +3352,11 @@ it('refuses to start, says why and runs nothing (FR-013)', function (string $sit
 ]);
         AuditExecutorDouble::fake([]);
     }, [], 'El contenido importado (bbbbbbbbbbbb) no es el de esta imagen'],
+    'the import of another harness' => [function () {
+        AuditWorld::curriculum();
+        DB::table('content_imports')->update(['portion_hashes' => json_encode(['harness' => str_repeat('d', 64)], JSON_THROW_ON_ERROR)]);
+        AuditExecutorDouble::fake([]);
+    }, [], 'La plantilla importada (dddddddddddd) no es la de esta imagen'],
     'an unknown exercise' => [function () {
         AuditWorld::curriculum();
         AuditExecutorDouble::fake([]);
@@ -3972,6 +3979,7 @@ export const AUDITED_SURFACE: readonly string[] = [
   'backend/api/app/Runs/Program/',
   'backend/api/app/Runs/Evidence/',
   'backend/api/app/Runs/Admission/ExerciseReader.php',
+  'backend/api/app/Content/ExerciseImports.php',
   'backend/api/app/Runs/Execution/ExecutorClient.php',
   'backend/api/app/Runs/Execution/ExecutorReply.php',
   'backend/api/app/Runs/Execution/ReplyKind.php',

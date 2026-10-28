@@ -58,7 +58,7 @@ El primer servidor de Context7 agotó su cuota después de seis consultas; las s
 
 ### R3. El contenido importado tiene que ser el de la imagen
 
-**Decisión.** Antes de auditar, el comando compara el `documentHash` de la última importación con el del meta de la imagen (`ContentSource::fromDirectory(config('content.path'))`, que además verifica el trío de archivos). Si difieren, se niega a arrancar: los programas saldrían de un contenido y los sellos dirían otro. Sin importación, también se niega (FR-013).
+**Decisión.** Antes de auditar, el comando compara el `documentHash` de la última importación con el del meta de la imagen (`ContentSource::fromDirectory(config('content.path'))`, que además verifica el trío de archivos) y, después, el hash de la plantilla (`portions.harness`), porque el `documentHash` no la incluye y un cambio sólo en `harness/*.tpl` auditaría con la plantilla vieja. Si el documento difiere, se niega con `staleContent`; si difiere la plantilla, con `staleHarness`. En los dos casos se niega a arrancar: los programas saldrían de un contenido y los sellos dirían otro. Sin importación, también se niega (FR-013).
 
 **Por qué.** La entrada construye la imagen del comando desde el árbol actual (`run --build`), pero el contenido lo importó el `migrate` del último `up`. Sin la guardia, una corrida de diez minutos terminaría con un resumen que la CI rechaza por la huella del documento.
 
@@ -128,7 +128,7 @@ El commit de origen del contenido (`content_imports.source_commit`) también va 
 - **el contenido que compila:** `content/rust/`, `content/go/` y `content/harness/` (con los manifiestos, que deciden los `imports` y la etapa);
 - **el generador que les da forma:** `tools/content/exercises.ts` y `tools/content/harness.ts`;
 - **el sandbox:** `backend/executor/images/`, `backend/executor/internal/sandbox/` y `backend/executor/cmd/executor/main.go`;
-- **lo que arma, lee y clasifica:** `backend/api/app/Runs/Program/`, `backend/api/app/Runs/Evidence/`, `backend/api/app/Runs/Admission/ExerciseReader.php`, `backend/api/app/Runs/Execution/ExecutorClient.php`, `ExecutorReply.php` y `ReplyKind.php`;
+- **lo que arma, lee y clasifica:** `backend/api/app/Runs/Program/`, `backend/api/app/Runs/Evidence/`, `backend/api/app/Runs/Admission/ExerciseReader.php`, `backend/api/app/Content/ExerciseImports.php` (arma los `imports` de cada programa), `backend/api/app/Runs/Execution/ExecutorClient.php`, `ExecutorReply.php` y `ReplyKind.php`;
 - **la auditoría:** `backend/api/app/Audit/`, `backend/api/app/Console/Commands/AuditCurriculum.php` y `backend/api/config/audit.php`.
 
 **Fuera, a propósito:** `docker/compose.yaml` (lo tocan casi todos los ítems del backend; si un cambio suyo toca el ejecutor, la revisión lo pide), `content/campaign/`, `content/workshops/`, `content/atlas/` y `content/guide/` (textos que no compilan), y las pruebas.
