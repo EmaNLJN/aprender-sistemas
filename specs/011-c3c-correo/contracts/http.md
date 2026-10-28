@@ -38,7 +38,7 @@ Pública; CSRF; sin `X-Taller-User`.
 
 - **Cuerpo:** `{email: string}`. El email se canonicaliza (sin espacios, en NFC y en minúsculas).
 - **El orden:**
-  1. **429** `too_many_requests` con `Retry-After`: más de 5 pedidos por minuto o de 20 por hora desde la misma red (IPv4, o /64 en IPv6).
+  1. **429** `too_many_requests` con `Retry-After`: más de 5 pedidos por minuto o de 20 por hora desde la misma red (IPv4, o /64 en IPv6). Antes de este paso rigen Nginx y el CSRF de C3a (419 sin `X-XSRF-TOKEN`), como en toda ruta que modifica.
   2. **503** `mail_unavailable` en modo sólo link, para cualquier email.
   3. **422** `validation_failed`, con `errors.email`, si falta el email, no tiene forma de email o pasa de 254 caracteres.
   4. **202**, siempre con el mismo cuerpo:
@@ -64,7 +64,7 @@ Pública; CSRF; sin `X-Taller-User`.
 
 - **Cuerpo:** `{name, email, password, password_confirmation, privacyVersion}`, con las reglas de C3a para el alta por invitación: el nombre, de 1 a 80 caracteres y sin caracteres de control; la política de contraseñas; `privacyVersion`, la vigente. El email se canonicaliza.
 - **El orden:**
-  1. **404** `not_found` con el registro apagado (`REGISTRATION_OPEN=false`), sin mirar nada más.
+  1. **404** `not_found` con el registro apagado (`REGISTRATION_OPEN=false`), sin mirar nada más de la aplicación. Antes rigen Nginx y el CSRF de C3a: un pedido sin `X-XSRF-TOKEN` recibe 419 aun con el registro apagado, y las pruebas de este 404 mandan el token.
   2. **429** `too_many_requests` con `Retry-After`: el sexto registro de una hora desde la misma red (IPv4, o /48 en IPv6), o el que pasa los 100 por hora del taller entero.
   3. **503** `mail_unavailable` en modo sólo link, sin crear nada.
   4. **422** `validation_failed`:

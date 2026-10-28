@@ -760,7 +760,7 @@ final class MailLog
 
 - **Crea:**
   - `backend/api/app/Mail/Mailbox.php`;
-  - las pruebas: `backend/api/tests/Feature/Mail/MailboxTest.php`, `backend/api/tests/Feature/Mail/MailJobsAtRestTest.php` y `backend/api/tests/Unit/Mail/MailArchTest.php`.
+  - las pruebas: `backend/api/tests/Feature/Mail/MailboxTest.php`, `backend/api/tests/Feature/Mail/MailJobsAtRestTest.php`, `backend/api/tests/Feature/Mail/LogMailerScrubTest.php` y `backend/api/tests/Unit/Mail/MailArchTest.php`.
 - **Modifica:** `backend/api/app/Logging/SecretScrubber.php` y `backend/api/tests/Unit/Logging/SecretScrubberTest.php`.
 - **Entrega:**
 
@@ -800,8 +800,13 @@ final class Mailbox
    - `arch()->expect('App')->not->toUse(Mailer::class)->ignoring(['App\Jobs\SendMail', 'App\Mail\PlainTextMessage'])`;
    - una prueba de texto, como `ArchitectureTest`, que exige que ningún archivo de `app/` contenga `->notify(` ni `sendEmailVerificationNotification(`.
 4. **`SecretScrubberTest`** (cambia): un registro con `https://t.example/#verificar=12.1760000000.abcdef` sale con `verificar=[redactado]`, como ya pasa con `invitacion` y `restablecer`.
-5. **Implementá.** En `SecretScrubber`, el patrón pasa a `'/(invitacion|restablecer|verificar)=[^\s"\']*/'`.
-6. **Corré y verificá:** las pruebas en verde y `MailArchTest` en verde con el código de hoy. Si falla, el error está en otro archivo, no en la prueba.
+5. **`LogMailerScrubTest`** (el mailer `log` de verdad, no un texto escrito a mano). Es lo que sostienen el caso «Mailer `log` en local» de la spec, FR-008, «0 links en los registros» de SC-001 y el modo sin Mailpit de `check-mail.sh`.
+   - **La configuración:** `MailWorld::available()`, `MailWorld::onDatabaseQueue()`, `mail.default = log` y el canal por omisión reemplazado por uno que escribe en un `php://memory` con `SecretScrubber` como procesador, igual que el de stderr de C3a.
+   - **El recorrido:** se encolan una invitación, una recuperación y una verificación reales, y el worker corre tres veces.
+   - **Lo que exige:** lo escrito contiene `invitacion=[redactado]`, `restablecer=[redactado]` y `verificar=[redactado]`. No contiene ninguno de los tres tokens, ni el valor de `&email=`, ni la dirección en claro: el `To:` sale como `email:<HMAC>`.
+   - **Por qué alcanza con el depurador.** El transporte `log` de Laravel 13.34 decodifica el quoted-printable antes de registrar (`LogTransport::decodeQuotedPrintableContent`), así que el token llega entero. Si una versión futura dejara de decodificarlo, un salto suave partiría el token y la prueba fallaría.
+6. **Implementá.** En `SecretScrubber`, el patrón pasa a `'/(invitacion|restablecer|verificar)=[^\s"\']*/'`.
+7. **Corré y verificá:** las pruebas en verde y `MailArchTest` en verde con el código de hoy. Si falla, el error está en otro archivo, no en la prueba.
 
 ### Tarea 1.6 · La advertencia de `APP_URL` local (T008)
 
@@ -1353,7 +1358,7 @@ RateLimiter::for('register', fn (Request $request) => [
      - `::ffff:203.0.113.7` da `203.0.113.7`;
      - un texto que no es una IP da `unknown`.
    - **`RegistrationSwitchTest`:**
-     - **con el registro apagado:** `POST /api/auth/register`, `/api/auth/email/verification-notification` y `/api/auth/email/verify` responden 404 `not_found` en JSON, **sin sesión y con sesión**, y `features.registration` es `false`;
+     - **con el registro apagado:** `POST /api/auth/register`, `/api/auth/email/verification-notification` y `/api/auth/email/verify` responden 404 `not_found` en JSON, **sin sesión y con sesión**, y `features.registration` es `false`. Los pedidos llevan el token CSRF (`Tests\Support\Browser`): sin él, C3a responde 419 antes;
      - **con el registro abierto y una sesión:** las dos de verificación ya no responden 404;
      - **las rutas existen** en `Route::getRoutes()` en los dos estados, para que funcionen con la caché de rutas;
      - **el límite por red:** con el registro abierto y correo, el sexto `register` de una hora desde la misma red es 429 con `Retry-After`. Desde una red distinta pasa, aunque el cuerpo sea inválido: el limitador corre antes que la validación;
@@ -1617,7 +1622,7 @@ Desde acá hace falta Docker. Cada comando lleva `COMPOSE_PROJECT_NAME=taller-c3
 
 ```sql
 -- The only file with MySQL users and privileges. Only docker/mysql/apply-grants.sh applies it, as root: the init of a
--- new volume (users), the grants service after migrate (tables) and db-grants (all). It must stay idempotent.
+-- new volume (users), and the grants service after migrate and db-grants (all). It must stay idempotent.
 
 -- @phase users
 CREATE USER IF NOT EXISTS 'taller_mail'@'%' IDENTIFIED BY '@@MAIL_DB_PASSWORD@@';
@@ -1667,33 +1672,44 @@ render() {
   echo 'SET SESSION lock_wait_timeout = 5;'
   section "$phase" | sed -e "s/@@MAIL_DB_PASSWORD@@/$MAIL_DB_PASSWORD/g"
 }
-MYSQL_PWD=${MYSQL_ROOT_PASSWORD:?falta MYSQL_ROOT_PASSWORD}
-export MYSQL_PWD
-render | mysql -uroot ${host:+-h "$host"} --batch
+root=${MYSQL_ROOT_PASSWORD:?falta MYSQL_ROOT_PASSWORD}
+case "$root" in *[!A-Za-z0-9._~-]*|'') echo "MYSQL_ROOT_PASSWORD tiene caracteres que no van en un archivo de opciones de MySQL" >&2; exit 64 ;; esac
+umask 077
+options=$(mktemp)
+trap 'rm -f "$options"' EXIT
+printf '[client]\npassword=%s\n' "$root" > "$options"
+render | mysql --defaults-extra-file="$options" -uroot ${host:+-h "$host"} --batch
 ```
 
-C4 suma `APP RUNS MIGRATE BACKUP` a la lista del `for` y un `-e` por marcador. `docker/mysql/10-db-grants.sh`:
+La contraseña de root va en un archivo de opciones temporal, con permisos 0600 y borrado al salir, y no en `MYSQL_PWD`: esa variable está desaconsejada desde MySQL 8.0, aunque el cliente 9.7.2 de la imagen todavía la nombra. Nunca va en `-p`. C4 suma `APP RUNS MIGRATE BACKUP` a la lista del `for` y un `-e` por marcador.
+
+`docker/mysql/10-db-grants.sh` llama al script con `sh`, sin `exec`. El inicio de MySQL **sourcea** un `.sh` que no es ejecutable, y un `exec` reemplazaría al proceso de inicio a la mitad. Con `sh`, el script funciona igual con el bit de ejecución o sin él:
 
 ```sh
 #!/bin/sh
-exec /usr/local/bin/apply-grants.sh --phase users
+sh /usr/local/bin/apply-grants.sh --phase users
 ```
 
 **Pasos:**
 
 1. **`qa/apply-grants-check.ts`.** Es Node puro, con `scenarios()` de `qa/lib/content-fixtures.ts` como los demás checks de operación. Pone un `mysql` falso en el `PATH`, un script de `sh` que vuelca sus argumentos y su entrada estándar a dos archivos de un directorio temporal. Corre `sh docker/mysql/apply-grants.sh` con `DB_GRANTS_SQL=docker/mysql/db-grants.sql`, `MYSQL_ROOT_PASSWORD=root-de-ejemplo` y `MAIL_DB_PASSWORD` de 48 hexadecimales. Falla porque el script no existe, y comprueba:
    - **el encabezado:** con `--phase users --host mysql`, las dos primeras líneas de la entrada son `SET SESSION sql_log_bin = 0;` y `SET SESSION lock_wait_timeout = 5;`;
-   - **la contraseña:** no queda ningún `@@`, la contraseña está en la entrada y **no** en los argumentos, y los argumentos son exactamente `-uroot -h mysql --batch`;
+   - **las contraseñas:**
+     - no queda ningún `@@`, y la de `taller_mail` está en la entrada y **no** en los argumentos;
+     - los argumentos son exactamente `--defaults-extra-file=<archivo> -uroot -h mysql --batch`;
+     - el `mysql` falso copia ese archivo antes de salir: tiene permisos 0600 y `password=root-de-ejemplo`, y ya no existe cuando el script termina;
+     - la contraseña de root no está ni en los argumentos ni en la entrada;
    - **las fases:**
      - `users` contiene `CREATE USER IF NOT EXISTS 'taller_mail'@'%'`, `ALTER USER 'taller_mail'@'%'` y la línea de `taller`, y ninguna de `` `taller`.`mail_jobs` ``;
      - `tables`, al revés;
      - `all` tiene las dos;
-   - **sin `--host`,** los argumentos son `-uroot --batch`;
+   - **sin `--host`,** los argumentos son `--defaults-extra-file=<archivo> -uroot --batch`;
    - **los errores, con 64 y un mensaje en español:**
      - una contraseña de 10 caracteres, una con `'` y una vacía;
      - `--phase otra`;
      - un argumento `--x`;
-   - **sin `MYSQL_ROOT_PASSWORD`,** sale distinto de 0.
+   - **sin `MYSQL_ROOT_PASSWORD`,** sale distinto de 0, y con una que tiene `"`, con 64;
+   - **sin el bit de ejecución:** `sh docker/mysql/10-db-grants.sh`, con `apply-grants.sh` copiado a un directorio temporal sin `+x` y la ruta reemplazada, llega al `mysql` falso con `--phase users`.
 2. **Implementá** los dos scripts y el SQL.
 3. **Contra un MySQL descartable,** con la imagen local y sin publicar puertos ni tocar volúmenes:
 
@@ -1789,7 +1805,7 @@ x-laravel-env: &laravel-env
 
 x-grants: &grants
   image: *mysql-image
-  entrypoint: ['/usr/local/bin/apply-grants.sh', '--phase', 'tables', '--host', 'mysql']
+  entrypoint: ['sh', '/usr/local/bin/apply-grants.sh', '--phase', 'all', '--host', 'mysql']
   environment:
     MYSQL_ROOT_PASSWORD: '${MYSQL_ROOT_PASSWORD:?falta MYSQL_ROOT_PASSWORD en .env (sh backend/api/scripts/init-env.sh)}'
     MAIL_DB_PASSWORD: *mail-db-password
@@ -1841,7 +1857,6 @@ services:
   db-grants:
     <<: *grants
     profiles: [ops]
-    entrypoint: ['/usr/local/bin/apply-grants.sh', '--phase', 'all', '--host', 'mysql']
     depends_on:
       mysql:
         condition: service_healthy
@@ -1885,7 +1900,7 @@ networks:
      - los servicios con `MAIL_PASSWORD` o `MAIL_USERNAME` en su entorno son exactamente `['worker-mail']`;
      - el texto anterior a `services:` no contiene `MAIL_PASSWORD` ni `MAIL_USERNAME`;
    - **los valores por omisión:** el ancla `x-laravel-env` trae `MAIL_REQUIRED` con `${MAIL_REQUIRED:-true}` y `MAIL_MAILER` con `${MAIL_MAILER:-log}`, y `x-laravel-base-env` no trae ninguna `MAIL_*`;
-   - **los permisos:** `grants` no tiene `profiles`, corre `--phase tables` y depende de `migrate`; `db-grants` está en `ops` y corre `--phase all`;
+   - **los permisos:** `grants` no tiene `profiles`, corre `sh /usr/local/bin/apply-grants.sh --phase all --host mysql` y depende de `migrate`; `db-grants` está en `ops`, corre lo mismo y no depende de `migrate`. Los dos corren `all` para que un volumen de antes de C3c, sin `taller_mail`, arranque con un `docker compose up` a secas;
    - **la cadena de plazos:** `mail.mailers.smtp.timeout` (20, leído de `backend/api/config/mail.php`) < el `#[Timeout(60)]` de `backend/api/app/Jobs/SendMail.php` < el `retry_after` de la conexión `mail` (120, de `config/queue.php`) < el `stop_grace_period` de `worker-mail` (150). Los valores se leen con expresiones regulares, como hace `compose-runs-check`.
 2. **Implementá** los cambios de `docker/compose.yaml`.
 3. **Corré y verificá:**
@@ -1924,8 +1939,10 @@ El lazo de DNS de C3a queda como está, con sus seis servicios. `worker-mail` no
    - `COMPOSE_PROJECT_NAME=taller-c3c TALLER_PORT=8093 npm run api:smoke`, en modo sólo link: el 503;
    - otra vez con `MAIL_REQUIRED=false` en la misma línea del despliegue, que deja el correo «disponible» con el mailer `log`: el 202;
    - `COMPOSE_PROJECT_NAME=taller-c3c TALLER_PORT=8093 npm run api:content:check` y `COMPOSE_PROJECT_NAME=taller-c3c TALLER_PORT=8093 sh backend/api/scripts/deploy-check.sh`, sin editar.
-3. **El volumen existente.** Con un volumen creado con el `docker/compose.yaml` de `master` (una corrida de `deploy.sh` desde `master` con `COMPOSE_PROJECT_NAME=taller-c3c-viejo`), el `deploy.sh` nuevo con el mismo nombre crea `taller_mail` por `db-grants` y deja a `worker-mail` corriendo.
-4. **Al terminar,** `COMPOSE_PROJECT_NAME=taller-c3c-viejo docker compose down -v` (sólo ese proyecto, que es de la prueba).
+3. **El volumen existente.** Con un volumen creado con el `docker/compose.yaml` de `master` (una corrida de `deploy.sh` desde `master` con `COMPOSE_PROJECT_NAME=taller-c3c-viejo`):
+   - el `deploy.sh` nuevo con el mismo nombre crea `taller_mail` por `db-grants` y deja a `worker-mail` corriendo;
+   - sobre otro volumen viejo igual (`COMPOSE_PROJECT_NAME=taller-c3c-viejo2`), un `COMPOSE_PROJECT_NAME=taller-c3c-viejo2 TALLER_PORT=8094 docker compose up --build -d --wait` a secas, como documenta `AGENTS.md`, termina con `grants` en 0 y `worker-mail` corriendo: `grants` corre las dos fases y crea la cuenta que falta.
+4. **Al terminar,** `COMPOSE_PROJECT_NAME=taller-c3c-viejo docker compose down -v` y `COMPOSE_PROJECT_NAME=taller-c3c-viejo2 docker compose down -v` (sólo esos proyectos, que son de la prueba).
 
 ### Tarea 5.6 · `check-mail.sh` (T028)
 
@@ -2132,7 +2149,7 @@ Se planificó sin correr PHP ni el stack. Hay que medirlo al implementar, en la 
 
 - **C4** ([spec 008](../008-c4-exposicion/spec.md), planificada): C3c entrega antes, y su plan lo previó («Si C3c llegó antes de T014 con otro mecanismo, T014 lo adopta»).
   - **Lo que encuentra hecho:**
-    - `docker/mysql/apply-grants.sh`, `10-db-grants.sh` y el servicio `grants`, con los nombres, los marcadores y las fases de su plan;
+    - `docker/mysql/apply-grants.sh`, `10-db-grants.sh` y el servicio `grants`, con los nombres, los marcadores y las fases de su plan. Una diferencia: `grants` corre las dos fases y no sólo `tables`, para que un volumen viejo arranque con un `up` a secas. C4 puede volver a `tables` cuando su arranque cree las cuentas antes;
     - `worker-mail` con `taller_mail`.
   - **Lo que suma su T014:**
     - sus cuatro contraseñas al `for` del script y a `mysql`;

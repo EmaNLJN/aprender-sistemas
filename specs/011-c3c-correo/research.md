@@ -222,7 +222,10 @@ Un choque con la clave única de `users.email` entre la comprobación y el `UPDA
   - `tables`: los permisos de `taller_mail` por tabla y por columna.
 - **El script.** `docker/mysql/apply-grants.sh [--phase users|tables|all] [--host <nombre>]` valida `MAIL_DB_PASSWORD` (`[A-Za-z0-9._~-]{24,128}`), reemplaza el marcador, antepone `SET SESSION sql_log_bin = 0;` y `SET SESSION lock_wait_timeout = 5;` y entrega el SQL a `mysql -uroot` por la entrada estándar. C4 suma sus cuatro contraseñas a la lista de validación.
 - **Un volumen nuevo.** `docker/mysql/10-db-grants.sh` corre la fase `users` en el inicio y reemplaza al `10-db-grants.sql` que hoy se monta tal cual, que con un marcador crearía la cuenta con la contraseña literal `@@MAIL_DB_PASSWORD@@`.
-- **El arranque.** `grants`, un servicio sin perfil y de una sola corrida, aplica la fase `tables` después de `migrate`, y `worker-mail` depende de él. MySQL no concede permisos sobre una tabla que no existe salvo con `CREATE`.
+- **El arranque.** `grants`, un servicio sin perfil y de una sola corrida, aplica **las dos fases** después de `migrate`, y `worker-mail` depende de él. MySQL no concede permisos sobre una tabla que no existe salvo con `CREATE`: por eso los permisos van después de `migrate`.
+  - **Por qué las dos fases.** Con un volumen de antes de C3c, que no tiene `taller_mail`, una fase `tables` sola fallaría (un `GRANT` no crea la cuenta) y `worker-mail` no arrancaría con el `docker compose up --build -d --wait` que documenta `AGENTS.md`. El plan de C4 corre sólo `tables`, porque su arranque crea las cuentas antes. C4 puede volver a eso.
+  - **La contraseña de root.** El script la pasa en un archivo de opciones temporal (`--defaults-extra-file`, `umask 077`) y no en `MYSQL_PWD`, desaconsejada desde MySQL 8.0, aunque el cliente 9.7.2 de la imagen todavía la nombra. Nunca va en `-p`.
+  - **Sin `exec`.** `10-db-grants.sh` y las entradas de Compose llaman al script con `sh`, sin depender del bit de ejecución: el inicio de MySQL sourcea un `.sh` que no es ejecutable.
 - **Un volumen existente.** `db-grants` (perfil `ops`) corre las dos fases. `deploy.sh` lo corre en cada despliegue, después de `migrate`. Es idempotente y además sincroniza la contraseña de `.env`.
 
 **Los permisos** (FR-005, más R6):

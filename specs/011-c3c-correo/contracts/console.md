@@ -77,7 +77,7 @@ Es el mecanismo del plan de C4, sólo con `taller_mail`. C4 suma sus cuatro cuen
 | --- | --- | --- |
 | Perfil | Ninguno: está en la cadena de arranque | `ops` |
 | Imagen | `mysql:9.7`, la que ya fija Compose | La misma |
-| Qué corre | `apply-grants.sh --phase tables --host mysql` | `apply-grants.sh --phase all --host mysql` |
+| Qué corre | `sh /usr/local/bin/apply-grants.sh --phase all --host mysql` | Lo mismo |
 | Depende de | `mysql` sano y `migrate` terminado | `mysql` sano |
 | Quién depende de él | `worker-mail` | Nadie |
 | Entorno | `MYSQL_ROOT_PASSWORD` y `MAIL_DB_PASSWORD` | El mismo |
@@ -89,9 +89,10 @@ Es el mecanismo del plan de C4, sólo con `taller_mail`. C4 suma sus cuatro cuen
 - **El archivo que lee.** `docker/mysql/db-grants.sql`, o el de `DB_GRANTS_SQL`, con dos secciones: `-- @phase users` y `-- @phase tables`.
 - **La contraseña.** Valida que `MAIL_DB_PASSWORD` cumpla `[A-Za-z0-9._~-]{24,128}`. Si falta o no cumple, sale con 64 y el mensaje `MAIL_DB_PASSWORD falta o no tiene de 24 a 128 caracteres de [A-Za-z0-9._~-] (sh backend/api/scripts/init-env.sh)`.
 - **Las fases.** Una fase que no sea `users`, `tables` ni `all` sale con 64 y `fase inválida: <fase>`. Un argumento desconocido sale con 64 y el uso.
-- **Lo que manda a `mysql`.** Reemplaza `@@MAIL_DB_PASSWORD@@` en la sección pedida y antepone `SET SESSION sql_log_bin = 0;` y `SET SESSION lock_wait_timeout = 5;`. Entrega el SQL a `mysql -uroot --batch` **por la entrada estándar**, con `MYSQL_PWD` tomado de `MYSQL_ROOT_PASSWORD`: ninguna contraseña aparece en los argumentos. Sin `--host` usa el socket, que es lo que hace el inicio de un volumen nuevo.
+- **Lo que manda a `mysql`.** Reemplaza `@@MAIL_DB_PASSWORD@@` en la sección pedida y antepone `SET SESSION sql_log_bin = 0;` y `SET SESSION lock_wait_timeout = 5;`. Entrega el SQL **por la entrada estándar** a `mysql --defaults-extra-file=<archivo> -uroot --batch`. Ese archivo es un archivo de opciones temporal (`umask 077`, borrado al salir) con `MYSQL_ROOT_PASSWORD`, que tiene que cumplir el mismo `[A-Za-z0-9._~-]`: ninguna contraseña aparece en los argumentos ni en `MYSQL_PWD`, desaconsejada desde MySQL 8.0. Sin `--host` usa el socket, que es lo que hace el inicio de un volumen nuevo.
 - **Errores.** Sale con el estado de `mysql` y se detiene en el primer error de SQL.
-- **`docker/mysql/10-db-grants.sh`** corre `apply-grants.sh --phase users` en el inicio de un volumen nuevo. Reemplaza al `10-db-grants.sql` que hoy se monta tal cual.
+- **`docker/mysql/10-db-grants.sh`** corre `sh /usr/local/bin/apply-grants.sh --phase users` en el inicio de un volumen nuevo, sin `exec`: el inicio de MySQL sourcea un `.sh` sin bit de ejecución. Reemplaza al `10-db-grants.sql` que hoy se monta tal cual.
+- **Por qué `grants` corre las dos fases.** Así un volumen de antes de C3c, que no tiene `taller_mail`, arranca con un `docker compose up` a secas: la fase `users` crea la cuenta y la fase `tables` le da los permisos. C4 puede volver a `tables` cuando su arranque cree las cuentas antes.
 - **Las fases por dentro:**
   - `users`: `CREATE USER IF NOT EXISTS 'taller_mail'@'%' IDENTIFIED BY …`, `ALTER USER 'taller_mail'@'%' IDENTIFIED BY …` y la línea de C3a (`GRANT SELECT ON performance_schema.events_transactions_current TO 'taller'@'%'`);
   - `tables`: los permisos de [data-model.md](../data-model.md), §7.
