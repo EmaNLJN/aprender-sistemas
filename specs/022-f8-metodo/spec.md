@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-28
 
-**Status**: Draft, con tres preguntas para el clarify (Q1 a Q3)
+**Status**: Draft, con cuatro preguntas para el clarify (Q1 a Q4)
 
 **Input**: Ítem **F8** de la hoja de ruta [`specs/front-react/roadmap.md`](../front-react/roadmap.md), «Método». Hay que portar a React la página con su panel de respaldos: exportar, importar (`#import-file`) y «Borrar todo» con su confirmación. Por la decisión F9-Q1 del usuario, F8 también se lleva lo que dibuja `renderMethod`: la bitácora (`#note-learned` y `#note-next`), `#note-state` y el pedido al tutor. Es el último port de una vista del tronco antes de F10. Lo encargó el coordinador el 2026-10-28.
 
@@ -23,7 +23,7 @@ Las specs de F3 (012), F4 (013), F5 (018), F7 (021), F9 (014) y F11 (015) ya tie
 
 **Lo que entendemos.** Método (`#metodo`) es la página que propone una forma de estudiar. También es donde el alumno escribe su bitácora y donde gestiona su progreso. Hoy la dibuja `frontend/app.js` con una cadena de HTML (`renderMethod` y `backupsPanel`). La mueven:
 
-- dos ramas del delegado de entrada y cinco del de clic, sobre `#main`;
+- una rama del delegado de entrada (`data-note`) y cinco del de clic, sobre `#main`;
 - tres oyentes sobre elementos estáticos de `index.html`: el `<dialog id="confirm-dialog">` y su par de botones, y el `<input id="import-file">` oculto.
 
 F8 la lleva a una página de React que conserva el aspecto, los textos, el teclado, el progreso guardado y el archivo exportado byte a byte. D1b ya importa ese formato legacy en el servidor. La exportación, la importación y «Borrar todo» no se reescriben: ya viven en `features/progress-backup` (F2b, unidad 6), con una interfaz que D1c va a reemplazar. F8 dibuja esa interfaz y la conecta.
@@ -114,7 +114,7 @@ Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumption
 
 ## Preguntas para el clarify
 
-Son tres, cada una con su opción recomendada. Los requisitos de abajo asumen la recomendada. Llevan el marcador `[NEEDS CLARIFICATION]` donde la respuesta los cambia: FR-015, FR-024 y FR-025.
+Son cuatro, cada una con su opción recomendada. Los requisitos de abajo asumen la recomendada. Llevan el marcador `[NEEDS CLARIFICATION]` donde la respuesta los cambia: FR-015, FR-018, FR-024, FR-025 y FR-028.
 
 ### Q1 · ¿«Borrar todo» pide la contraseña y usa el reset del servidor de D1b, o se porta el flujo local?
 
@@ -182,6 +182,22 @@ Con las áreas locales de hoy no hay forma de producirlo. Ningún E2E ni ninguna
 
 **Recomendada: A.** En local no hay nada que impedir, y la forma correcta de esperar la decide quien trae la espera.
 
+### Q4 · ¿Qué dice `#note-state` después de importar y de «Borrar todo»?
+
+**Qué encontramos.** `#note-state` es el párrafo bajo la bitácora y tiene dos momentos:
+
+- al dibujar la página dice si el almacenamiento está disponible («Tus notas se guardan automáticamente en este navegador.» o «El guardado no está disponible…»);
+- después de escribir una nota dice si se guardó («Guardado. Tu próxima sesión ya tiene un punto de partida.» o «No se pudo guardar…»).
+
+Hoy, después de importar con éxito y después de «Borrar todo», `render()` rehace la página, así que el párrafo vuelve a su texto inicial. Por el ruling C2, lo que existe sólo porque `innerHTML` rehace la vista adopta el comportamiento de React: con la página sin remontarse, el párrafo conservaría el último texto. Pero acá ese texto habla de algo que la acción acaba de cambiar.
+
+| Opción | Qué es | Costo |
+| --- | --- | --- |
+| **A (recomendada)** | Conservar lo de hoy: después de importar y de «Borrar todo», el párrafo vuelve a su texto inicial | Una excepción explícita a C2, que la página implementa: no le alcanza con no remontarse. Si el usuario la elige, C2 queda leído como «estado que dejó el alumno», no como «todo lo que la reconstrucción reinicia» |
+| B | El comportamiento de React: queda el último texto que mostró | Después de «Borrar todo», con las notas recién borradas, puede decir «Guardado. Tu próxima sesión ya tiene un punto de partida.», que es falso. Y si el almacenamiento dejó de estar disponible, el alumno deja de ver el aviso inicial que se lo dice. Su E2E falla contra el legacy y va en el commit en rojo |
+
+**Recomendada: A.** El párrafo es un aviso sobre la última escritura de una nota, no un estado que el alumno eligió, y después de borrar todo el aviso viejo miente.
+
 ## Lecturas de las reglas del clarify
 
 No son decisiones nuevas: es cómo esta spec aplica reglas generales ya decididas. Ya están aplicadas en el texto de abajo, y el usuario puede corregirlas.
@@ -191,9 +207,7 @@ No son decisiones nuevas: es cómo esta spec aplica reglas generales ya decidida
   - después de confirmar «Borrar todo», vuelve a «Borrar mi progreso», que abrió la confirmación.
 
   (FR-019 y FR-023.) La página no se remonta, pero lo que muestra cambia igual: la bitácora muestra las notas que quedaron, el pedido se recalcula y el panel de respaldos se vuelve a leer (después de «Borrar todo» desaparece).
-- **C2: las rarezas de lógica se conservan** (tabla de «Método de hoy»).
-  - Esta spec lee además que `#note-state` vuelve a su texto inicial después de importar y de «Borrar todo», como hoy: no es estado que dejó el alumno, sino el aviso de la última escritura de una nota. Después de borrar las notas, «Guardado. Tu próxima sesión ya tiene un punto de partida.» diría algo falso. (FR-028)
-  - Si el usuario prefiere el comportamiento de React también acá, cambian FR-018 y FR-028.
+- **C2: las rarezas de lógica se conservan** (tabla de «Método de hoy»). El texto de `#note-state` después de importar y de «Borrar todo» no es una lectura: va al clarify como Q4, porque la recomendada se aparta de C2.
 - **X2: no hay caso en Método.** Método no usa ninguna región viva que se recree:
   - `#toast` es estático y es del shell;
   - `#note-state` es un párrafo sin rol;
@@ -401,7 +415,7 @@ El alumno descarga una copia de su progreso desde Método o desde la barra later
    - «No se pudo importar: Formato de progreso no compatible.».
 
    En ninguno de los tres se escribe nada.
-6. **Dado** una importación exitosa, **cuando** termina, **entonces** el foco sigue en «Importar una copia» (cambio aceptado por X1: hoy cae al documento) y `#note-state` muestra su texto inicial.
+6. **Dado** una importación exitosa, **cuando** termina, **entonces** el foco sigue en «Importar una copia» (cambio aceptado por X1: hoy cae al documento) y `#note-state` muestra su texto inicial (Q4).
 
 *Cubre: FR-013, FR-016 a FR-019 y FR-031 a FR-033; SC-002 y SC-003.*
 
@@ -418,7 +432,7 @@ El alumno quiere empezar de cero. Abre la confirmación, puede arrepentirse y, s
 **Acceptance Scenarios**:
 
 1. **Dado** `#metodo`, **cuando** se usa «Borrar mi progreso», **entonces** se abre un diálogo modal nombrado «¿Borrar tu progreso?», con su párrafo, «Conservar mi avance» y «Borrar todo», y el foco queda donde lo pone hoy el navegador (se espera «Conservar mi avance»; lo fija el E2E contra el legacy).
-2. **Dado** el diálogo abierto, **cuando** se cierra con «Conservar mi avance» o con Esc, **entonces** no se escribe nada y el foco vuelve a «Borrar mi progreso».
+2. **Dado** el diálogo abierto, **cuando** se cierra con «Conservar mi avance» o con Esc, **entonces** no se escribe nada y el foco queda donde lo devuelve hoy el navegador al cerrar un `<dialog>` modal (se espera «Borrar mi progreso»; lo fija el E2E contra el legacy).
 3. **Dado** el diálogo abierto, **cuando** el alumno usa Tab y Mayús+Tab, **entonces** el foco no sale del diálogo; un clic en el fondo no lo cierra.
 4. **Dado** el progreso congelado de master y una ranura `:respaldo`, **cuando** se confirma «Borrar todo», **entonces**:
    - el aviso dice «Progreso reiniciado. Un nuevo comienzo.»;
@@ -524,7 +538,7 @@ Quien mantiene el front encuentra Método en una página con su modelo y sus pru
 
   *(Hoja de ruta, «E2E primero»; ADR 0008, §3; clarify de F1, Q1; X1)*
 - **FR-002**: Los 106 E2E de F1 y los 17 de A2 DEBEN pasar sin editarse con el build de F8. *(Hoja de ruta, criterios de aceptación globales)*
-- **FR-003**: F8 NO DEBE agregar dependencias de ejecución ni estilos en línea (`style=`, `setAttribute('style', …)` ni `style.cssText`). Las dependencias de desarrollo que piden la primera spec de componente (`jsdom` y Testing Library) y la primera factory (`fishery`) entran sólo con el permiso del usuario, con su peso medido, y sólo si ningún ítem anterior las instaló. *(`AGENTS.md`; hoja de ruta, «Acciones del usuario»)*
+- **FR-003**: F8 NO DEBE agregar dependencias de ejecución ni estilos en línea (`style=`, `setAttribute('style', …)` ni `style.cssText`), salvo la excepción declarada de FR-036, que ya existe hoy. Las dependencias de desarrollo que piden la primera spec de componente (`jsdom` y Testing Library) y la primera factory (`fishery`) entran sólo con el permiso del usuario, con su peso medido, y sólo si ningún ítem anterior las instaló. *(`AGENTS.md`; hoja de ruta, «Acciones del usuario»)*
 - **FR-004**: `dist/index.html` DEBE conservar la forma que fija A2: un solo documento, con un script y un estilo en línea, y el contenido en su propio archivo. DEBE quedar bajo el tope de `qa/build-check` (`BOOT_SIZE_LIMIT`, 1 250 000 caracteres), y el PR informa su tamaño antes y después.
 - **FR-005**: Ninguna función nueva DEBE superar 10 de complejidad sin justificarlo en la revisión, y el total de avisos de `npm run lint` no sube. *(Hoja de ruta, criterios globales; `docs/architecture.md`)*
 - **FR-006**: F8 DEBE entregarse como un solo PR que se puede revertir entero y devuelve la vista legacy (`renderMethod`, el diálogo y el selector estáticos y sus oyentes) con la red de F1 en verde. Cada cambio de comportamiento DEBE empezar con una spec que falla por la razón esperada. *(Hoja de ruta, «Un PR por vista»; constitución, principio II)*
@@ -564,8 +578,8 @@ Quien mantiene el front encuentra Método en una página con su modelo y sus pru
   - en los dos caminos, el campo se vacía al final, para que el mismo archivo se pueda volver a elegir.
 
   *(Spec de F2, FR-049 y FR-050)*
-- **FR-018**: Después de una importación exitosa, sin remontarse, la página DEBE mostrar el estado nuevo: las notas que quedaron en la bitácora, el pedido recalculado y el panel de respaldos vuelto a leer. `#note-state` DEBE volver a su texto inicial («Lecturas», C2).
-- **FR-019**: Después de una importación exitosa, el foco DEBE seguir en «Importar una copia». Es un cambio aceptado: hoy la página se reconstruye y el foco cae al documento. Su E2E se escribe con el comportamiento nuevo (FR-001). *(X1 y C2)*
+- **FR-018**: Después de una importación exitosa, sin remontarse, la página DEBE mostrar el estado nuevo: las notas que quedaron en la bitácora, el pedido recalculado y el panel de respaldos vuelto a leer. `[NEEDS CLARIFICATION: Q4, se escribe con la opción A]` `#note-state` DEBE volver a su texto inicial.
+- **FR-019**: Después de una importación exitosa, el foco DEBE seguir en «Importar una copia». Es un cambio aceptado: hoy la página se reconstruye y el foco cae al documento. Su E2E se escribe con el comportamiento nuevo (FR-001). Se espera que siga donde lo dejó el clic, porque abrir el selector no lo mueve; nadie lo verificó todavía. Si el navegador lo mueve al cerrar el selector, la página lo devuelve al botón. *(X1 y C2)*
 - **FR-020**: El panel de respaldos DEBE seguir las reglas de hoy:
   - aparece sólo si hay ranuras, antes de «Tu progreso te pertenece.»;
   - cada ranura muestra «área · clave · N.N KB» (caracteres sobre 1 024, con un decimal; rareza) y un botón «Descargar» con el nombre accesible «Descargar respaldo de <área>: <clave>»;
@@ -578,7 +592,8 @@ Quien mantiene el front encuentra Método en una página con su modelo y sus pru
 - **FR-021**: La confirmación DEBE ser un `<dialog>` nativo y modal (`showModal()`), con lo siguiente:
   - nombrado por su título (`aria-labelledby`), con los textos, las clases y el orden de botones de hoy;
   - lo abre «Borrar mi progreso», y al abrir, el foco queda donde lo pone hoy el navegador (se espera «Conservar mi avance»; la página no agrega `autofocus`);
-  - «Conservar mi avance» y Esc la cierran sin escribir, y el clic en el fondo NO la cierra;
+  - «Conservar mi avance» y Esc la cierran sin escribir, y el foco queda donde lo devuelve hoy el navegador (se espera «Borrar mi progreso»; lo fija el E2E contra el legacy);
+  - el clic en el fondo NO la cierra;
   - el estado de React NO DEBE desincronizarse del diálogo nativo.
 
   DEBE vivir dentro de la raíz de la página, con un portal a `document.body`, y cerrarse con ella al desmontarse, también si el alumno navega. *(F9-Q4, aplicada en «Lecturas»)*
@@ -589,7 +604,12 @@ Quien mantiene el front encuentra Método en una página con su modelo y sus pru
   4. avisar con el texto que devuelve `resetAll()`.
 
   Dentro de `resetAll()`, el orden es el de hoy: el recorrido, el laboratorio, campaña, Sistemas, las simulaciones y el temporizador. *(Plan de F2b, §4.0, «El orden de los efectos»)*
-- **FR-023**: Después de confirmar, el foco DEBE volver a «Borrar mi progreso». Es un cambio aceptado: hoy la página se reconstruye y el foco cae al documento. Su E2E se escribe con el comportamiento nuevo (FR-001). *(X1 y C2)*
+- **FR-023**: Después de confirmar, el foco DEBE volver a «Borrar mi progreso». Es un cambio aceptado: hoy la página se reconstruye y el foco cae al documento. Su E2E se escribe con el comportamiento nuevo (FR-001).
+  - Se espera que lo haga el navegador al cerrar el `<dialog>` modal, porque el botón que lo abrió sigue en el documento. Nadie lo verificó todavía.
+  - Si el E2E contra el legacy muestra que el navegador no devuelve el foco al cerrar, la página lo devuelve explícitamente a «Borrar mi progreso» después de confirmar.
+  - El camino de cancelar queda como lo fije su E2E contra el legacy (FR-021).
+
+  *(X1 y C2)*
 - **FR-024**: `[NEEDS CLARIFICATION: Q1, se escribe con la opción A]` «Borrar todo» DEBE ser el flujo local de hoy:
   - llama a `resetAll()` sin confirmación, sin pedir la contraseña y sin ningún pedido a la API;
   - funciona sin sesión y sin servidor;
@@ -602,10 +622,10 @@ Quien mantiene el front encuentra Método en una página con su modelo y sus pru
 
 - **FR-026**: La bitácora DEBE mostrar las notas del idioma activo en «Tu bitácora de Rust.» (o «de Go.»), con los dos campos de hoy: ids, etiquetas, `maxlength="20000"` y placeholders. Los valores salen de `routeStore`.
 - **FR-027**: Cada tecla en un campo de la bitácora DEBE asignar el valor a `notes[idioma activo][campo]` y hacer una sola llamada a `routeStore.save()`, sin debounce, sin tocar las notas del otro idioma ni del otro campo, y sin otra instancia ni otra clave. *(Spec de F2, FR-026; hoja de ruta, reglas de todo port)*
-- **FR-028**: `#note-state` DEBE mostrar los textos de hoy:
+- **FR-028**: `[NEEDS CLARIFICATION: Q4, se escribe con la opción A]` `#note-state` DEBE mostrar los textos de hoy:
   - al montar, según `routeStore.storageAvailable()`;
   - después de cada tecla, según si se pudo guardar;
-  - después de importar con éxito y después de «Borrar todo», otra vez el texto inicial («Lecturas»).
+  - después de importar con éxito y después de «Borrar todo», otra vez el texto inicial.
 
   DEBE seguir siendo un párrafo sin rol ni `aria-live`.
 - **FR-029**: El pedido al tutor DEBE ser el texto de hoy, armado con el idioma activo, los minutos guardados y la nota «La próxima vez voy a…» del idioma activo (o «elegir un desafío pequeño del recorrido.»). DEBE recalcularse en cada tecla y después de importar o de «Borrar todo», y mostrarse como texto en el `blockquote` `#tutor-prompt`.
@@ -637,7 +657,12 @@ Quien mantiene el front encuentra Método en una página con su modelo y sus pru
   - las de serialización de React, que se listan.
 
   El contenido de la guía y las notas se muestran como texto, nunca como HTML.
-- **FR-036**: El `style="margin:22px 0 0"` del párrafo «¿Día complicado?…» DEBE pasar a una clase de la hoja de la página, con el mismo estilo computado. La página queda con 0 estilos en línea. El campo temporal de la copia (FR-030) conserva su comportamiento; el plan elige si lo saca de la pantalla con propiedades de `style` (CSSOM, que la política de C4 admite) o con una clase. *(Hoja de ruta, F8, «Borra»; C4, Q3)*
+- **FR-036**: El `style="margin:22px 0 0"` del párrafo «¿Día complicado?…» DEBE pasar a una clase de la hoja de la página, con el mismo estilo computado. El marcado que dibuja la página queda con 0 `style=`.
+  - **La única excepción declarada** es el campo temporal de la copia (FR-030), que no es parte de la página: se crea en `body` y se quita en el mismo manejador.
+  - Hoy `copyPrompt` lo saca de la pantalla con `field.style.position` y `field.style.top` (CSSOM, que la política de C4 admite), y eso escribe un atributo de estilo.
+  - El plan elige si conserva esas dos propiedades o usa una clase, con el mismo comportamiento.
+
+  *(Hoja de ruta, F8, «Borra»; C4, Q3)*
 - **FR-037**: Las reglas de CSS que sólo usa Método DEBEN mudarse a la hoja de la página, cada una entera, en el orden de hoy y sin cambiar sus declaraciones.
   - **Se mudan:**
     - `.button.danger` (sólo la usa la confirmación), `.method-grid`, `.method-panel` y sus `h2`, `p` y `li`;
@@ -721,7 +746,7 @@ Quien mantiene el front encuentra Método en una página con su modelo y sus pru
 - **SC-002**: Cada escenario de aceptación de US1 a US5 tiene una prueba que lo ejerce. Los E2E nuevos pasan contra el legacy antes del port y sin editarse después, salvo los dos de los cambios aceptados, que fallan contra el legacy y pasan contra la página: 100 %.
 - **SC-003**: El archivo exportado desde la fixture congelada de master con el reloj fijo cumple en los dos builds lo que fija el E2E (nombre, sangría, orden de claves y contenido), y la comparación única registra los mismos bytes. Importar cada una de las dos exportaciones congeladas deja las claves con los valores que fija el E2E, en los dos builds.
 - **SC-004**: Con las fixtures congeladas, montar Método, copiar, exportar, descargar un respaldo y abrir y cancelar la confirmación dan 0 escrituras, 0 claves `:respaldo` nuevas y 0 avisos. Cada tecla de la bitácora da exactamente 1 escritura de `taller-learning-v1`.
-- **SC-005**: El multiconjunto de declaraciones del CSS del dist tiene 0 diferencias contra el de la base (mismo conjunto, otro orden, con la regla que reemplaza al `style=` como única nueva). El barrido de estilo computado de FR-037 da 0 diferencias, y la página tiene 0 estilos en línea.
+- **SC-005**: El multiconjunto de declaraciones del CSS del dist tiene 0 diferencias contra el de la base (mismo conjunto, otro orden, con la regla que reemplaza al `style=` como única nueva). El barrido de estilo computado de FR-037 da 0 diferencias, y el marcado que dibuja la página tiene 0 `style=` (la excepción declarada de FR-036 es el campo temporal de la copia, fuera de la página).
 - **SC-006**: `frontend/app.js` tiene 0 apariciones de los términos de FR-010. `index.html` pierde 2 elementos y nada más. El adaptador publica 2 métodos, `seams-guard-check` da 0 violaciones y «Exportar mi progreso» funciona en las 8 vistas.
 - **SC-007**: La comparación única del DOM da 0 diferencias, salvo las admitidas de FR-035.
 - **SC-008**: `dist/index.html` queda bajo 1 250 000 caracteres, con su tamaño antes y después informados.
@@ -740,7 +765,7 @@ Quien mantiene el front encuentra Método en una página con su modelo y sus pru
 6. **Lo que jsdom no hace.** No trae `showModal()` ni `close()`, ni un portapapeles real. *Mitigación:* el foco, Esc, el fondo y el portapapeles van en E2E; las specs de componente usan dobles (FR-039).
 7. **D1c va a tocar esta página.** La contraseña de «Borrar todo», la espera de la red y sus errores son de D1c (Q1 y Q3) y caen sobre el diálogo de F8. *Mitigación:* la interfaz conserva el parámetro de confirmación (FR-024), y la hoja de ruta asigna la superficie 4 a un ítem con D1c.
 8. **Conflictos en `app.js`, `index.html` y `styles.css`.** F2b, F3, F4, F5, F7, F9 y F10 tocan las mismas regiones. *Mitigación:* FR-043 y la tabla de «Relación con otros ítems».
-9. **La lectura de `#note-state`.** Si el usuario quiere el comportamiento de React también para el texto del estado, cambian FR-018 y FR-028.
+9. **El texto de `#note-state` se aparta de C2 (Q4).** Si el usuario elige el comportamiento de React, cambian FR-018 y FR-028, y el escenario 6 de US2 pasa a ser un tercer E2E en rojo.
 10. **Nada se ejecutó al especificar.** Sin `npm`, sin Docker, sin navegador y sin `dist/`. Las cuentas salen de leer el código de `f2b-acum`. *Mitigación:* el plan las vuelve a medir sobre la base de implementación.
 
 ## Relación con otros ítems
@@ -768,13 +793,13 @@ Quien mantiene el front encuentra Método en una página con su modelo y sus pru
 - **F5 «Conserva»:** «`resetSimulations` hasta F8» pasa a «hasta F10» (Q2-A).
 - **La fila de C4:** «espera a F5, F7 y F8» quedó vieja con la Q3 de C4.
 - **El tope de tamaño:** el criterio global de 2 500 000 caracteres quedó viejo con A2; hoy es 1 250 000.
-- **«Decisiones abiertas» de F8:** «Nada previo a la spec» se reemplaza por Q1 a Q3.
+- **«Decisiones abiertas» de F8:** «Nada previo a la spec» se reemplaza por Q1 a Q4.
 
 ## Assumptions
 
 - Esta spec describe `f2b-acum@2b37caf4`, un ensayo de sólo lectura con F2a, A2 y las cuatro unidades de F2b integradas. Lo que toma de F2b es un hecho del código de ese ensayo, citado por archivo, aunque todavía no esté en `master`.
 - Los nombres son provisionales y los confirma el plan: `pages/method`, `register-method.tsx`, `window.TallerMethod` y `qa/e2e/pages/method.ts`.
-- Q1 a Q3 se escriben con la opción recomendada. Las lecturas de X1, X2, X3 y F9-Q4 son de esta spec y el usuario puede corregirlas («Lecturas»).
+- Q1 a Q4 se escriben con la opción recomendada. Las lecturas de X1, X2, X3 y F9-Q4 son de esta spec y el usuario puede corregirlas («Lecturas»).
 - El barrido de estilo computado y el multiconjunto son los de la unidad 8 de F2b: scripts descartables fuera del repositorio (`quickstart-f2b.md`, §3.1). F8 los reutiliza y los amplía a lo que Método dibuja y a la impresión.
 - Vitest corre sólo en `node` y sólo para `*.spec.ts`: `jsdom`, Testing Library y `fishery` no están en el `package.json` de `f2b-acum`. El primer ítem que escriba una spec de componente los pide con permiso y pasa la configuración a dos proyectos. Si F8 es el primero, le toca a F8.
 - Los textos esperados salen de `frontend/app.js`, de `frontend/src/index.html`, de `features/progress-backup` y de las fixtures `qa/fixtures/progress-master-2a278ad-storage.json`, `progress-master-2a278ad-export.json` y `progress-d0e1b49-export.json`. La fixture de master tiene idioma Go, una nota «Lo que entendí» de Rust y `minutes: 25`. Que el contenido exportado de la fixture sembrada coincida con lo guardado (sin normalizar nada) lo confirma el plan.
@@ -792,7 +817,7 @@ Quien mantiene el front encuentra Método en una página con su modelo y sus pru
 
 ## Alternativas consideradas
 
-Sólo las que cambian lo que se construye. Las de Q1 a Q3 están en sus tablas.
+Sólo las que cambian lo que se construye. Las de Q1 a Q4 están en sus tablas.
 
 | Tema | Alternativas | Decisión y motivo |
 | --- | --- | --- |
@@ -801,7 +826,6 @@ Sólo las que cambian lo que se construye. Las de Q1 a Q3 están en sus tablas.
 | La exportación de la página | Una copia propia del armado y la descarga del archivo; compartir con la barra lateral el mismo camino | Compartirlo (FR-013): dos copias pueden divergir en el nombre o en el tipo, y el archivo es contrato con D1b. El plan elige cómo |
 | El campo de archivo | Dentro de la página, cerca de su botón; un portal a `body` | Lo decide el plan. Está oculto y nadie lo ve, y el E2E entra por el evento `filechooser`, así que su lugar en el árbol no cambia lo que prueba |
 | La bitácora | Campos con su valor leído en cada render; campos sin control con una clave que los remonte al cambiar las notas desde afuera | Lo decide el plan, con FR-018 y FR-027: lo observable es una escritura por tecla, el cursor que no salta y las notas importadas a la vista |
-| El texto de `#note-state` después de importar o borrar | El de React (queda el último); el de hoy (vuelve al inicial) | El de hoy («Lecturas»), porque «Guardado…» después de borrar las notas diría algo falso. El usuario puede corregirlo |
 
 ## Partición
 

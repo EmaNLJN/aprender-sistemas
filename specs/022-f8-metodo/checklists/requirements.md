@@ -33,12 +33,11 @@
 
 ## Notes
 
-- **Marcadores `[NEEDS CLARIFICATION]`:** quedan tres, a propósito. Son Q1 (FR-024), Q2 (FR-015) y Q3 (FR-025), y van al clarify con su opción recomendada.
+- **Marcadores `[NEEDS CLARIFICATION]`:** quedan cinco, a propósito, de cuatro preguntas que van al clarify con su opción recomendada: Q1 (FR-024), Q2 (FR-015), Q3 (FR-025) y Q4 (FR-018 y FR-028).
   - Los requisitos están escritos con la recomendada, así que se pueden probar tal como están.
-  - Si el usuario elige otra opción, cambian esos tres requisitos y, en Q2, la tabla «Qué queda en `window.Taller*`».
-- **Las lecturas de las reglas del clarify:** X1, C2, X2, X3 y F9-Q4 ya están aplicadas, y quedan a la vista del usuario en «Lecturas». Dos pueden corregirse:
-  - que `#note-state` vuelva a su texto inicial después de importar y de «Borrar todo» (FR-018 y FR-028);
-  - que la confirmación viva en un portal, por analogía con F9-Q4 (FR-021).
+  - Si el usuario elige otra opción, cambian esos requisitos. En Q2 cambia también la tabla «Qué queda en `window.Taller*`», y en Q4, el escenario 6 de US2.
+- **Las lecturas de las reglas del clarify:** X1, X2, X3 y F9-Q4 ya están aplicadas, y quedan a la vista del usuario en «Lecturas». La que más puede corregirse es que la confirmación viva en un portal, por analogía con F9-Q4 (FR-021). El texto de `#note-state` no es una lectura: su recomendada se aparta de C2, así que va como Q4.
+- **El foco al cerrar la confirmación** se escribe con lo que se espera del navegador, y lo fija el E2E contra el legacy. Si el navegador no lo devuelve después de confirmar, la página lo devuelve (FR-021 y FR-023).
 - **Excepciones deliberadas a «implementation details»,** con el precedente de las specs de F2 y F9. F8 es un port, y su contrato es el comportamiento del código de hoy. La spec nombra lo que se retira, lo que se usa y lo que se verifica:
   - las funciones de `frontend/app.js`;
   - `features/progress-backup`, `routeStore` y `useStore`;
@@ -52,7 +51,7 @@
 - **Discrepancias que la spec registra y no corrige,** para el coordinador:
   - la hoja de ruta pone el manejador de `#export-progress` en el «Borra» de F8, y es del shell;
   - F8 depende sólo de F2b, no de F5 ni de F7;
-  - la superficie 4 de D1 pasa a D1c (Q1);
+  - la superficie 4 de D1 pasa al ítem que integre D1c (Q1);
   - F9 dice que F8 retira `resetTimer` (Q2);
   - la fila de C4 y el tope de 2 500 000 caracteres quedaron viejos.
 
