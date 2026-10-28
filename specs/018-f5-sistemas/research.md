@@ -318,3 +318,35 @@ Ninguno sale del código que se porta.
 - **V2 (la CSP), V4 (el DOM) y la comparación de las 9 escenas** corren en T025.
 - **La comprobación con lector de pantalla de X2** es del usuario.
 - **macOS, Docker y la CI.**
+
+## Línea base de la implementación
+
+Medida por T001 el 2026-10-28 sobre `24ba9d3d` (rama `impl/f5-sistemas`; el código es el de `master` en `dd870a9c`, con F2a, A2 y F2b, y encima sólo commits de `specs/`). `npm ci --offline`, `npm run build`, `npm test` (719 pruebas de Vitest), `npm run lint` (0 errores), `npm run format:check` y los E2E (123 de 123) dieron verde.
+
+| Qué | Valor |
+| --- | --- |
+| `dist/index.html` | 1 141 337 caracteres (tope vigente 1 250 000) |
+| sha256 del script | `a0d182f082b6a0b9af30ab39a821a171001badabac4fba0e9c66f231c0d9be94` |
+| sha256 del `<style>` | `ae2971b09f63ae91d69f77007777d555159b8be1df652feb145535a963327b79` |
+| sha256 del marcado | `8e060fe765d256c22639d3b31c98a3a60160eb4263d3d0396714022c562892d8` |
+| sha256 de `build/curriculum.json` | `4555e8500e6ef5bd38cdaf46010d3f14e3345d7ec0c69aea983acfe67f62fbb6` |
+| sha256 de `dump-globals` | `859771e276be9dc757c25388fd617df7d8667ffab176992e82d79cf6e1dd6fa1` |
+| Avisos de complejidad | 35; en `systems.js`, `onClick` (30) y `modelView` (11) |
+| `boot-check` | 25 `PASS` |
+| `lab-bridge-check` | 21 `PASS` |
+| `app-shell-check` | 58 `PASS` |
+| `systems-check` | 46 `PASS` |
+| `npm run test:e2e` con `--workers=1` | 123 pasan en 45,6 s |
+
+Qué entró antes (quickstart §1.2):
+
+| Pregunta | Respuesta |
+| --- | --- |
+| nuqs | Ausente: T002 lo pide |
+| Pila de componentes (`jsdom`, Testing Library) | Presente (jsdom 30.1.2, `@testing-library/react` 16.3.3): T007 no corre |
+| fishery | Presente (2.4.0): T002 no la pide |
+| Raíz de nuqs (`enableHistorySync`) | Ninguna; tampoco hay `url-state.tsx` |
+| F6 | No entró: `frontend/campaign.js` existe |
+| Ayudante de grupos (`runSourceGroup`, `bundleSourceGroup`) | Ninguno en `qa/` |
+| `REACT_VIEWS` en `boot-check` | Ausente: T010 corre |
+| F8 | No entró: `createProgressBackup` sigue en `frontend/app.js` |
