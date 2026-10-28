@@ -5513,3 +5513,1870 @@ La spec de la puerta del acceso de T008 cambia su stub de `close` por este en T0
    - el PR `feat(front): sign-in, «Tu cuenta» and sign-out (F11a U2)`, contra `f11a/base`.
 
 **Reversión de U2:** se revierten T025, T024, T023, T022, T021, T020, T019, T018 y T017, en ese orden.
+
+## 3. U3 · El alta y el aviso de privacidad (onda 5: A, E y K; onda 6: K)
+
+**Cubre:** FR-005 (el alta con una sesión viva), FR-037 a FR-041 y FR-045 a FR-047; SC-001 (el alta sin recargar); historias 1 y 4.
+
+**Entrega:** la invitación y el alta, la reaceptación del aviso, `PRIVACY_VERSION` hasta la API y sus E2E.
+
+### Tarea 3.1 · Las specs del alta y de la reaceptación, en rojo (T026, A)
+
+**Archivos:**
+
+- en `frontend/src/shared/lib/`, el stub de `format-local-date-time.ts` y `format-local-date-time.spec.ts`;
+- en `frontend/src/features/sign-in/`:
+  - el stub de `model/invitation-problem.ts` y `model/invitation-problem.spec.ts`;
+  - los stubs de `lookupInvitation`, `acceptInvitation` y `acceptPrivacy` en `api/access-endpoints.ts`, con sus casos sumados a `api/access-endpoints.spec.ts`;
+  - los stubs de `ui/InvitationScreen.tsx`, `InvitationProblem.tsx`, `InvitationSummary.tsx`, `SignupForm.tsx`, `AcceptPrivacyField.tsx` y `PrivacyReacceptance.tsx`;
+  - `ui/invitation-screen.spec.tsx` y `ui/privacy-reacceptance.spec.tsx`.
+
+1. **`format-local-date-time.spec.ts`:**
+
+   ```ts
+   import { describe, expect, it } from 'vitest';
+   import { formatLocalDateTime } from './format-local-date-time';
+
+   const BUENOS_AIRES = 'America/Argentina/Buenos_Aires';
+
+   describe('formatLocalDateTime', () => {
+     it.each([
+       ['2026-10-12T15:30:00.000Z', '12 de octubre de 2026 a las 12:30'],
+       ['2026-01-05T03:04:00.000Z', '5 de enero de 2026 a las 00:04'],
+     ])('says %s in Buenos Aires as «%s»', (iso, text) => {
+       expect(formatLocalDateTime(iso, BUENOS_AIRES)).toBe(text);
+     });
+   });
+   ```
+
+2. **`model/invitation-problem.spec.ts`.** Los mensajes salen de `lang/es/api.php`, y lo que sigue a cada uno, de la spec («Invitación y alta»):
+
+   ```ts
+   import { describe, expect, it } from 'vitest';
+   import type { ApiFailure } from '../../../shared/api/http';
+   import { invitationProblem } from './invitation-problem';
+
+   function response(status: number, code: string, message: string): ApiFailure {
+     return { kind: 'response', status, code, message, fieldErrors: {}, retryAfterSeconds: null };
+   }
+
+   describe('invitationProblem', () => {
+     it.each([
+       [
+         response(404, 'invitation_not_found', 'La invitación no existe o ya se usó.'),
+         ['La invitación no existe o ya se usó.', 'Si ya creaste tu cuenta, ingresá con tu email.'],
+       ],
+       [
+         response(410, 'invitation_expired', 'La invitación venció. Pedí una nueva a quien te invitó.'),
+         ['La invitación venció. Pedí una nueva a quien te invitó.'],
+       ],
+       [
+         response(409, 'email_taken', 'Ya hay una cuenta con ese email.'),
+         ['Ya hay una cuenta con ese email.', 'Ingresá con ese email.'],
+       ],
+     ])('explains %o and what to do', (failure, messages) => {
+       expect(invitationProblem(failure)).toEqual(messages);
+     });
+
+     it('leaves any other failure to the common messages', () => {
+       expect(invitationProblem({ kind: 'network' })).toBeNull();
+       expect(invitationProblem(response(422, 'validation_failed', 'Hay datos que corregir.'))).toBeNull();
+     });
+   });
+   ```
+
+3. **Los casos nuevos de `api/access-endpoints.spec.ts`,** con el `clientWith` de T020. El import suma `acceptInvitation`, `acceptPrivacy` y `lookupInvitation`:
+
+   ```ts
+   describe('the invitation', () => {
+     it('looks up the token and returns the email, the role and the expiry', async () => {
+       const { client, calls } = clientWith([
+         { status: 200, json: { email: 'bruno@x.com', role: 'student', expiresAt: '2026-10-12T15:30:00.000Z' } },
+       ]);
+       expect(await lookupInvitation(client, 'k3J8')).toEqual({
+         ok: true,
+         value: { email: 'bruno@x.com', role: 'student', expiresAt: '2026-10-12T15:30:00.000Z' },
+       });
+       expect(calls[0]?.path).toBe('/api/auth/invitations/lookup');
+       expect(calls[0]?.body).toEqual({ token: 'k3J8' });
+     });
+
+     it('accepts it and returns the new account', async () => {
+       const bruno = { id: 77, name: 'Bruno Díaz', email: 'bruno@x.com', role: 'student', privacyAccepted: true };
+       const { client, calls } = clientWith([{ status: 201, json: { data: bruno } }]);
+       const input = {
+         token: 'k3J8',
+         name: 'Bruno Díaz',
+         password: 'una frase larga para el alta',
+         password_confirmation: 'una frase larga para el alta',
+         privacyVersion: '2026-10-dev',
+       };
+       expect(await acceptInvitation(client, input)).toEqual({ ok: true, value: bruno });
+       expect(calls[0]?.path).toBe('/api/auth/invitations/accept');
+       expect(calls[0]?.body).toEqual(input);
+       expect(calls[0]?.headers['x-taller-user']).toBeUndefined();
+     });
+   });
+
+   describe('acceptPrivacy', () => {
+     it('sends the version of the notice for the account', async () => {
+       const { client, calls } = clientWith([{ status: 204 }]);
+       expect(await acceptPrivacy(client, 41, '2026-10-dev')).toEqual({ ok: true, value: null });
+       expect(calls[0]?.path).toBe('/api/me/privacy');
+       expect(calls[0]?.body).toEqual({ privacyVersion: '2026-10-dev' });
+       expect(calls[0]?.headers['x-taller-user']).toBe('41');
+     });
+   });
+   ```
+
+4. **`ui/invitation-screen.spec.tsx`.** Usa el mismo arnés que `sign-in-screen.spec.tsx` (el stub de los diálogos, el `beforeEach` del store, `renderAccess` y `withReplies`), copiado entero en el archivo, con el pedido `{presentation: 'page', reason: 'boot', token: {kind: 'invitation', token: 'k3J8'}}` como valor por omisión de `options`:
+
+   ```tsx
+   const LOOKUP: FakeReply = {
+     status: 200,
+     json: { email: 'bruno@x.com', role: 'student', expiresAt: '2026-10-12T15:30:00.000Z' },
+   };
+   const BRUNO = { id: 77, name: 'Bruno Díaz', email: 'bruno@x.com', role: 'student' as const, privacyAccepted: true };
+   const PASSWORD = 'una frase larga para el alta';
+
+   async function fillSignup(user: ReturnType<typeof userEvent.setup>, password: string, confirmation = password) {
+     await user.type(await screen.findByLabelText('Tu nombre'), 'Bruno Díaz');
+     await user.type(screen.getByLabelText('Contraseña'), password);
+     await user.type(screen.getByLabelText('Repetí la contraseña'), confirmation);
+   }
+
+   describe('the invitation', () => {
+     it('checks the invitation, then shows its email, its expiry and the warning, and focuses the name', async () => {
+       withReplies([LOOKUP]);
+       expect(screen.getByRole('status')).toHaveTextContent('Revisando tu invitación…');
+       expect(await screen.findByRole('heading', { level: 1, name: 'Creá tu cuenta' })).toBeInTheDocument();
+       expect(screen.getByText('Te invitaron con bruno@x.com.')).toBeInTheDocument();
+       expect(screen.getByText(/^La invitación vence el 12 de octubre de 2026 a las \d{2}:30\.$/)).toBeInTheDocument();
+       expect(screen.getByText('Si recargás esta página, vas a tener que abrir el enlace otra vez.')).toBeInTheDocument();
+       expect(screen.queryByText('La cuenta va a tener rol de admin.')).toBeNull();
+       expect(screen.getByLabelText('Tu nombre')).toHaveFocus();
+     });
+
+     it('says when the account will be an admin', async () => {
+       withReplies([{ status: 200, json: { ...(LOOKUP.json as object), role: 'admin' } }]);
+       expect(await screen.findByText('La cuenta va a tener rol de admin.')).toBeInTheDocument();
+     });
+
+     it('creates the account with the token, the name, both passwords and the version of the notice', async () => {
+       const { user, signedIn, calls } = withReplies([LOOKUP, { status: 201, json: { data: BRUNO } }]);
+       await fillSignup(user, PASSWORD);
+       await user.click(screen.getByRole('checkbox', { name: 'Leí y acepto el aviso de privacidad' }));
+       await user.click(screen.getByRole('button', { name: 'Crear mi cuenta' }));
+       await expect(signedIn).resolves.toEqual(BRUNO);
+       expect(calls[1]?.body).toEqual({
+         token: 'k3J8',
+         name: 'Bruno Díaz',
+         password: PASSWORD,
+         password_confirmation: PASSWORD,
+         privacyVersion: '2026-10-dev',
+       });
+     });
+
+     it('stops a 14-character password in the browser and lets a 15-character one with a decomposed «á» go', async () => {
+       const { user, calls } = withReplies([LOOKUP, { status: 201, json: { data: BRUNO } }]);
+       await fillSignup(user, 'a'.repeat(14));
+       await user.click(screen.getByRole('checkbox', { name: 'Leí y acepto el aviso de privacidad' }));
+       await user.click(screen.getByRole('button', { name: 'Crear mi cuenta' }));
+       expect(screen.getByLabelText('Contraseña')).toHaveAccessibleDescription(
+         /Tiene que tener al menos 15 caracteres\./,
+       );
+       expect(calls).toHaveLength(1);
+       const decomposed = `${'a'.repeat(14)}á`;
+       await user.clear(screen.getByLabelText('Contraseña'));
+       await user.clear(screen.getByLabelText('Repetí la contraseña'));
+       await user.type(screen.getByLabelText('Contraseña'), decomposed);
+       await user.type(screen.getByLabelText('Repetí la contraseña'), decomposed);
+       await user.click(screen.getByRole('button', { name: 'Crear mi cuenta' }));
+       await vi.waitFor(() => expect(calls).toHaveLength(2));
+     });
+
+     it('stops a confirmation that does not match in the browser', async () => {
+       const { user, calls } = withReplies([LOOKUP]);
+       await fillSignup(user, PASSWORD, 'otra frase larga distinta');
+       await user.click(screen.getByRole('button', { name: 'Crear mi cuenta' }));
+       expect(screen.getByLabelText('Repetí la contraseña')).toHaveAccessibleDescription(
+         'La confirmación de la contraseña no coincide.',
+       );
+       expect(calls).toHaveLength(1);
+     });
+
+     it('asks for the box of the notice, which comes unchecked', async () => {
+       const { user, calls } = withReplies([LOOKUP]);
+       await fillSignup(user, PASSWORD);
+       const box = screen.getByRole('checkbox', { name: 'Leí y acepto el aviso de privacidad' });
+       expect(box).not.toBeChecked();
+       await user.click(screen.getByRole('button', { name: 'Crear mi cuenta' }));
+       expect(box).toHaveAccessibleDescription('Para crear tu cuenta, aceptá el aviso de privacidad.');
+       expect(calls).toHaveLength(1);
+     });
+
+     it('shows every reason of the server on the password, marks it and focuses it', async () => {
+       const { user } = withReplies([
+         LOOKUP,
+         {
+           status: 422,
+           json: {
+             message: 'Hay datos que corregir.',
+             code: 'validation_failed',
+             errors: { password: ['No puede contener tu nombre.', 'Es una contraseña muy usada: elegí otra.'] },
+           },
+         },
+       ]);
+       await fillSignup(user, PASSWORD);
+       await user.click(screen.getByRole('checkbox', { name: 'Leí y acepto el aviso de privacidad' }));
+       await user.click(screen.getByRole('button', { name: 'Crear mi cuenta' }));
+       const password = screen.getByLabelText('Contraseña');
+       expect(await screen.findByText('Es una contraseña muy usada: elegí otra.')).toBeInTheDocument();
+       expect(screen.getByText('No puede contener tu nombre.')).toBeInTheDocument();
+       expect(password).toHaveAttribute('aria-invalid', 'true');
+       expect(password).toHaveFocus();
+     });
+
+     it('keeps the button busy while the account is created', async () => {
+       let calls = 0;
+       const fetch: FetchLike = async (path, init) => {
+         calls += 1;
+         if (calls === 1) return createFakeFetch([LOOKUP]).fetch(path, init);
+         return new Promise<Response>(() => {});
+       };
+       const { user } = renderAccess(fetch, {
+         presentation: 'page',
+         reason: 'boot',
+         token: { kind: 'invitation', token: 'k3J8' },
+       });
+       await fillSignup(user, PASSWORD);
+       await user.click(screen.getByRole('checkbox', { name: 'Leí y acepto el aviso de privacidad' }));
+       await user.click(screen.getByRole('button', { name: 'Crear mi cuenta' }));
+       expect(screen.getByRole('button', { name: 'Creando tu cuenta…' })).toBeDisabled();
+     });
+
+     it('reads the notice without losing what was typed', async () => {
+       const { user } = withReplies([LOOKUP]);
+       await user.type(await screen.findByLabelText('Tu nombre'), 'Bruno Díaz');
+       await user.click(screen.getByRole('button', { name: 'Leer el aviso' }));
+       expect(screen.getByRole('dialog', { name: 'Aviso de privacidad' })).toBeInTheDocument();
+       await user.click(screen.getByRole('button', { name: 'Cerrar' }));
+       expect(screen.getByLabelText('Tu nombre')).toHaveValue('Bruno Díaz');
+       expect(screen.getByRole('checkbox', { name: 'Leí y acepto el aviso de privacidad' })).not.toBeChecked();
+     });
+
+     it.each([
+       [404, 'invitation_not_found', 'La invitación no existe o ya se usó.', 'Si ya creaste tu cuenta, ingresá con tu email.'],
+       [410, 'invitation_expired', 'La invitación venció. Pedí una nueva a quien te invitó.', null],
+     ])('shows a %i of the lookup without a form and offers the sign-in', async (status, code, message, next) => {
+       const { user } = withReplies([{ status, json: { message, code } }]);
+       const alert = await screen.findByRole('alert');
+       expect(alert).toHaveTextContent(message);
+       if (next !== null) expect(alert).toHaveTextContent(next);
+       expect(screen.queryByLabelText('Tu nombre')).toBeNull();
+       await user.click(screen.getByRole('button', { name: 'Ir al ingreso' }));
+       expect(screen.getByRole('heading', { name: 'Ingresá al taller' })).toBeInTheDocument();
+     });
+
+     it('shows the common message when the lookup meets a server error', async () => {
+       withReplies([{ status: 500, json: { message: 'Algo salió mal de nuestro lado. Probá de nuevo en un rato.', code: 'server_error' } }]);
+       expect(await screen.findByRole('alert')).toHaveTextContent(
+         'Algo salió mal de nuestro lado. Probá de nuevo en un rato.',
+       );
+     });
+
+     it('offers the sign-in when the email was taken in the meantime', async () => {
+       const { user } = withReplies([
+         LOOKUP,
+         { status: 409, json: { message: 'Ya hay una cuenta con ese email.', code: 'email_taken' } },
+       ]);
+       await fillSignup(user, PASSWORD);
+       await user.click(screen.getByRole('checkbox', { name: 'Leí y acepto el aviso de privacidad' }));
+       await user.click(screen.getByRole('button', { name: 'Crear mi cuenta' }));
+       const alert = await screen.findByRole('alert');
+       expect(alert).toHaveTextContent('Ya hay una cuenta con ese email.');
+       expect(alert).toHaveTextContent('Ingresá con ese email.');
+       expect(screen.getByRole('button', { name: 'Ir al ingreso' })).toBeInTheDocument();
+     });
+   });
+   ```
+
+5. **`ui/privacy-reacceptance.spec.tsx`.** Con el mismo arnés y el pedido `{presentation: 'page', reason: 'boot'}`. El `beforeEach` deja en el store a Ana con `privacyAccepted: false`:
+
+   ```tsx
+   const ANA_BEFORE: PublishedUser = { id: 41, name: 'Ana Pérez', email: 'ana@x.com', role: 'student', privacyAccepted: false };
+   const CHANGED = 'El aviso de privacidad cambió desde la última vez que lo aceptaste. Leelo y aceptalo para seguir.';
+
+   beforeEach(() => {
+     sessionStore.setState({ status: 'signed-in', user: ANA_BEFORE });
+   });
+
+   describe('accepting the notice again', () => {
+     it('shows the current notice and accepts it with its version and X-Taller-User', async () => {
+       const { user, signedIn, calls } = withReplies([{ status: 204 }]);
+       expect(screen.getByRole('heading', { level: 1, name: 'Aviso de privacidad' })).toBeInTheDocument();
+       expect(screen.getByText(CHANGED)).toBeInTheDocument();
+       await user.click(screen.getByRole('button', { name: 'Acepto' }));
+       await expect(signedIn).resolves.toEqual({ ...ANA_BEFORE, privacyAccepted: true });
+       expect(calls[0]?.path).toBe('/api/me/privacy');
+       expect(calls[0]?.body).toEqual({ privacyVersion: '2026-10-dev' });
+       expect(calls[0]?.headers['x-taller-user']).toBe('41');
+     });
+
+     it('asks to reload when the server has another version, and does not retry', async () => {
+       const { user, calls, reloadDocument } = withReplies([
+         {
+           status: 422,
+           json: {
+             message: 'Hay datos que corregir.',
+             code: 'validation_failed',
+             errors: { privacyVersion: ['El aviso de privacidad cambió: leelo de nuevo antes de aceptarlo.'] },
+           },
+         },
+       ]);
+       await user.click(screen.getByRole('button', { name: 'Acepto' }));
+       expect(await screen.findByRole('alert')).toHaveTextContent(
+         'El aviso de privacidad cambió: recargá la página para leer el vigente.',
+       );
+       expect(calls).toHaveLength(1);
+       await user.click(screen.getByRole('button', { name: 'Recargar' }));
+       expect(reloadDocument).toHaveBeenCalledOnce();
+     });
+
+     it('goes to the sign-in when the session ended', async () => {
+       const { user } = withReplies([
+         { status: 401, json: { message: 'Iniciá sesión para continuar.', code: 'unauthenticated' } },
+       ]);
+       await user.click(screen.getByRole('button', { name: 'Acepto' }));
+       expect(await screen.findByRole('heading', { name: 'Ingresá al taller' })).toBeInTheDocument();
+       expect(screen.getByText('Tu sesión venció. Ingresá de nuevo para seguir.')).toBeInTheDocument();
+     });
+
+     it('signs out and reloads with «Salir»', async () => {
+       const { user, calls, reloadDocument } = withReplies([{ status: 204 }]);
+       await user.click(screen.getByRole('button', { name: 'Salir' }));
+       expect(calls[0]?.path).toBe('/api/auth/logout');
+       expect(reloadDocument).toHaveBeenCalledOnce();
+     });
+
+     it('asks for the notice after a sign-in whose account has an older one', async () => {
+       sessionStore.setState({ status: 'signed-out', user: null });
+       const { user, signedIn } = withReplies([{ status: 200, json: { data: ANA_BEFORE } }, { status: 204 }]);
+       await user.type(screen.getByLabelText('Email'), 'ana@x.com');
+       await user.type(screen.getByLabelText('Contraseña'), 'una frase larga para el taller');
+       await user.click(screen.getByRole('button', { name: 'Ingresar' }));
+       expect(await screen.findByRole('heading', { name: 'Aviso de privacidad' })).toBeInTheDocument();
+       await user.click(screen.getByRole('button', { name: 'Acepto' }));
+       await expect(signedIn).resolves.toEqual({ ...ANA_BEFORE, privacyAccepted: true });
+     });
+   });
+   ```
+
+   `withReplies` devuelve también `reloadDocument`: en las dos specs nuevas, `renderAccess` guarda el `vi.fn()` que le pasa a `AccessGate` y lo devuelve.
+6. **Correr** `npm run test:unit -- frontend/src/features/sign-in frontend/src/shared/lib`: lo nuevo en rojo.
+7. **Commit:** `test(front): specs del alta y de la reaceptación del aviso, en rojo`.
+
+### Tarea 3.2 · El alta y la reaceptación (T027, A)
+
+**Archivos:** `frontend/src/shared/lib/format-local-date-time.ts` y, en `frontend/src/features/sign-in/`, `model/invitation-problem.ts`, `api/access-endpoints.ts`, `ui/access-texts.ts` (nuevo), `ui/LoginForm.tsx` (sólo el import de `REQUIRED`) y los seis componentes de 3.1, además de `ui/AccessScreen.tsx`.
+
+1. **`format-local-date-time.ts`.** `formatToParts`, y no `dateStyle`, porque el formato completo cambia entre versiones de ICU (research.md, R18):
+
+   ```ts
+   export function formatLocalDateTime(iso: string, timeZone?: string): string {
+     const parts = new Intl.DateTimeFormat('es-AR', {
+       day: 'numeric',
+       month: 'long',
+       year: 'numeric',
+       hour: '2-digit',
+       minute: '2-digit',
+       hourCycle: 'h23',
+       timeZone,
+     }).formatToParts(new Date(iso));
+     const part = (type: Intl.DateTimeFormatPartTypes): string =>
+       parts.find((item) => item.type === type)?.value ?? '';
+     return `${part('day')} de ${part('month')} de ${part('year')} a las ${part('hour')}:${part('minute')}`;
+   }
+   ```
+
+2. **`model/invitation-problem.ts`:**
+
+   ```ts
+   import type { ApiFailure } from '../../../shared/api/http';
+
+   const SIGN_IN_INSTEAD = 'Si ya creaste tu cuenta, ingresá con tu email.';
+   const SIGN_IN_WITH_THAT_EMAIL = 'Ingresá con ese email.';
+
+   export function invitationProblem(failure: ApiFailure): readonly string[] | null {
+     if (failure.kind !== 'response') return null;
+     switch (failure.code) {
+       case 'invitation_not_found':
+         return [failure.message, SIGN_IN_INSTEAD];
+       case 'invitation_expired':
+         return [failure.message];
+       case 'email_taken':
+         return [failure.message, SIGN_IN_WITH_THAT_EMAIL];
+       default:
+         return null;
+     }
+   }
+   ```
+
+3. **`api/access-endpoints.ts`** suma lo siguiente. El import de `entities/session` suma `type AccountRole`:
+
+   ```ts
+   export interface InvitationDetails {
+     readonly email: string;
+     readonly role: AccountRole;
+     readonly expiresAt: string;
+   }
+
+   export interface SignupInput {
+     readonly token: string;
+     readonly name: string;
+     readonly password: string;
+     readonly password_confirmation: string;
+     readonly privacyVersion: string;
+   }
+
+   function parseInvitation(body: unknown): InvitationDetails | null {
+     if (!isPlainObject(body)) return null;
+     const { email, role, expiresAt } = body;
+     if (typeof email !== 'string' || typeof expiresAt !== 'string') return null;
+     if (role !== 'student' && role !== 'admin') return null;
+     return { email, role, expiresAt };
+   }
+
+   export async function lookupInvitation(
+     client: ApiClient,
+     token: string,
+   ): Promise<EndpointResult<InvitationDetails>> {
+     const result = await client.send('POST', '/api/auth/invitations/lookup', { token });
+     if (!result.ok) return result;
+     const details = parseInvitation(result.body);
+     return details === null ? unexpected(result.status) : { ok: true, value: details };
+   }
+
+   export function acceptInvitation(client: ApiClient, input: SignupInput): Promise<EndpointResult<PublishedUser>> {
+     return accountFrom(client.send('POST', '/api/auth/invitations/accept', input));
+   }
+
+   export async function acceptPrivacy(
+     client: ApiClient,
+     userId: number,
+     privacyVersion: string,
+   ): Promise<EndpointResult<null>> {
+     const result = await client.send('POST', '/api/me/privacy', { privacyVersion }, { asUser: userId });
+     return result.ok ? { ok: true, value: null } : result;
+   }
+   ```
+
+4. **`ui/access-texts.ts`.** `LoginForm.tsx` borra su `REQUIRED` local y lo importa de acá:
+
+   ```ts
+   export const REQUIRED = 'Completá este campo.';
+   export const MISMATCH = 'La confirmación de la contraseña no coincide.';
+   export const PASSWORD_HINT = 'Entre 15 y 64 caracteres. Puede ser una frase; no hace falta mezclar símbolos.';
+   export const EXPIRED_NOTICE = 'Tu sesión venció. Ingresá de nuevo para seguir.';
+   ```
+
+5. **`ui/InvitationSummary.tsx`:**
+
+   ```tsx
+   import { formatLocalDateTime } from '../../../shared/lib/format-local-date-time';
+   import type { InvitationDetails } from '../api/access-endpoints';
+
+   interface InvitationSummaryProps {
+     readonly details: InvitationDetails;
+   }
+
+   const InvitationSummary = ({ details }: InvitationSummaryProps) => (
+     <div className="form-field">
+       <p>Te invitaron con {details.email}.</p>
+       {details.role === 'admin' ? <p>La cuenta va a tener rol de admin.</p> : null}
+       <p>La invitación vence el {formatLocalDateTime(details.expiresAt)}.</p>
+       <p>Si recargás esta página, vas a tener que abrir el enlace otra vez.</p>
+     </div>
+   );
+
+   export default InvitationSummary;
+   ```
+
+6. **`ui/InvitationProblem.tsx`:**
+
+   ```tsx
+   import { ServerError } from '../../../shared/ui/form';
+   import AccessHeading from './AccessHeading';
+
+   interface InvitationProblemProps {
+     readonly headingLevel: 1 | 2;
+     readonly messages: readonly string[];
+     onGoToSignIn(): void;
+   }
+
+   const InvitationProblem = ({ headingLevel, messages, onGoToSignIn }: InvitationProblemProps) => (
+     <div className="form-stack">
+       <AccessHeading level={headingLevel}>Creá tu cuenta</AccessHeading>
+       <ServerError messages={messages} takeFocus>
+         <button className="button secondary" type="button" onClick={onGoToSignIn}>
+           Ir al ingreso
+         </button>
+       </ServerError>
+     </div>
+   );
+
+   export default InvitationProblem;
+   ```
+
+7. **`ui/AcceptPrivacyField.tsx`:**
+
+   ```tsx
+   import { useId } from 'react';
+   import type { UseFormRegisterReturn } from 'react-hook-form';
+
+   interface AcceptPrivacyFieldProps {
+     readonly registration: UseFormRegisterReturn;
+     readonly messages: readonly string[];
+     onRead(): void;
+   }
+
+   const AcceptPrivacyField = ({ registration, messages, onRead }: AcceptPrivacyFieldProps) => {
+     const id = useId();
+     const invalid = messages.length > 0;
+     return (
+       <div className="form-field">
+         <div className="form-check">
+           <input
+             id={id}
+             type="checkbox"
+             aria-invalid={invalid || undefined}
+             aria-describedby={invalid ? `${id}-errors` : undefined}
+             {...registration}
+           />
+           <label htmlFor={id}>Leí y acepto el aviso de privacidad</label>
+           <button type="button" className="text-button" onClick={onRead}>
+             Leer el aviso
+           </button>
+         </div>
+         {invalid ? (
+           <ul id={`${id}-errors`} className="form-errors">
+             {messages.map((message) => (
+               <li key={message}>{message}</li>
+             ))}
+           </ul>
+         ) : null}
+       </div>
+     );
+   };
+
+   export default AcceptPrivacyField;
+   ```
+
+8. **`ui/SignupForm.tsx`:**
+
+   ```tsx
+   import { useEffect, useState } from 'react';
+   import { useForm } from 'react-hook-form';
+   import { PRIVACY_NOTICE, PrivacyNoticeDialog } from '../../../entities/privacy-notice';
+   import { checkNewPasswordLength, type PublishedUser } from '../../../entities/session';
+   import { useApiClient } from '../../../shared/api/http';
+   import {
+     PasswordField,
+     ServerError,
+     TextField,
+     describeFailure,
+     messagesOf,
+     showFailure,
+     useGuardedSubmit,
+     useRetryCountdown,
+   } from '../../../shared/ui/form';
+   import { acceptInvitation, type InvitationDetails } from '../api/access-endpoints';
+   import { invitationProblem } from '../model/invitation-problem';
+   import AcceptPrivacyField from './AcceptPrivacyField';
+   import AccessHeading from './AccessHeading';
+   import { MISMATCH, PASSWORD_HINT, REQUIRED } from './access-texts';
+   import InvitationSummary from './InvitationSummary';
+
+   interface SignupValues {
+     name: string;
+     password: string;
+     password_confirmation: string;
+     accepted: boolean;
+   }
+
+   interface SignupFormProps {
+     readonly token: string;
+     readonly details: InvitationDetails;
+     readonly headingLevel: 1 | 2;
+     onCreated(user: PublishedUser): void;
+     onGoToSignIn(): void;
+   }
+
+   const VISIBLE_FIELDS = ['name', 'password', 'password_confirmation'] as const;
+   const ACCEPT_REQUIRED = 'Para crear tu cuenta, aceptá el aviso de privacidad.';
+
+   const SignupForm = ({ token, details, headingLevel, onCreated, onGoToSignIn }: SignupFormProps) => {
+     const client = useApiClient();
+     const countdown = useRetryCountdown();
+     const [privacyOpen, setPrivacyOpen] = useState(false);
+     const [offerSignIn, setOfferSignIn] = useState(false);
+     const {
+       register,
+       handleSubmit,
+       setError,
+       setFocus,
+       formState: { errors, isSubmitting },
+     } = useForm<SignupValues>({
+       criteriaMode: 'all',
+       defaultValues: { name: '', password: '', password_confirmation: '', accepted: false },
+     });
+
+     useEffect(() => {
+       setFocus('name');
+     }, [setFocus]);
+
+     const submit = useGuardedSubmit(async (values: SignupValues) => {
+       const result = await acceptInvitation(client, {
+         token,
+         name: values.name,
+         password: values.password,
+         password_confirmation: values.password_confirmation,
+         privacyVersion: PRIVACY_NOTICE.version,
+       });
+       if (result.ok) {
+         onCreated(result.value);
+         return;
+       }
+       const problem = invitationProblem(result.failure);
+       const described = describeFailure(result.failure, VISIBLE_FIELDS);
+       const description = problem === null ? described : { ...described, generalMessages: problem };
+       showFailure(setError, description, VISIBLE_FIELDS);
+       setOfferSignIn(problem !== null);
+       if (description.retryAfterSeconds !== null) countdown.start(description.retryAfterSeconds);
+     });
+
+     const fieldHasError = VISIBLE_FIELDS.some((field) => errors[field] !== undefined);
+     return (
+       <>
+         <form className="form-stack" noValidate onSubmit={handleSubmit(submit)}>
+           <AccessHeading level={headingLevel}>Creá tu cuenta</AccessHeading>
+           <InvitationSummary details={details} />
+           <ServerError messages={messagesOf(errors.root?.serverError)} takeFocus={!fieldHasError}>
+             {offerSignIn ? (
+               <button className="button secondary" type="button" onClick={onGoToSignIn}>
+                 Ir al ingreso
+               </button>
+             ) : null}
+           </ServerError>
+           <TextField
+             label="Tu nombre"
+             autoComplete="name"
+             registration={register('name', { required: REQUIRED })}
+             messages={messagesOf(errors.name)}
+           />
+           <PasswordField
+             label="Contraseña"
+             autoComplete="new-password"
+             hint={PASSWORD_HINT}
+             registration={register('password', {
+               required: REQUIRED,
+               validate: { length: (value) => value === '' || checkNewPasswordLength(value) },
+             })}
+             messages={messagesOf(errors.password)}
+           />
+           <PasswordField
+             label="Repetí la contraseña"
+             autoComplete="new-password"
+             registration={register('password_confirmation', {
+               required: REQUIRED,
+               validate: { same: (value, values) => value === values.password || MISMATCH },
+             })}
+             messages={messagesOf(errors.password_confirmation)}
+           />
+           <AcceptPrivacyField
+             registration={register('accepted', { required: ACCEPT_REQUIRED })}
+             messages={messagesOf(errors.accepted)}
+             onRead={() => setPrivacyOpen(true)}
+           />
+           <div className="form-actions">
+             <button className="button" type="submit" disabled={isSubmitting || countdown.waiting}>
+               {isSubmitting ? 'Creando tu cuenta…' : 'Crear mi cuenta'}
+             </button>
+           </div>
+         </form>
+         {privacyOpen ? <PrivacyNoticeDialog onClose={() => setPrivacyOpen(false)} /> : null}
+       </>
+     );
+   };
+
+   export default SignupForm;
+   ```
+
+9. **`ui/InvitationScreen.tsx`.** El efecto sincroniza con la API, que es un sistema externo, y descarta la respuesta si el componente ya no está:
+
+   ```tsx
+   import { useEffect, useState } from 'react';
+   import type { PublishedUser } from '../../../entities/session';
+   import { useApiClient, type ApiFailure } from '../../../shared/api/http';
+   import { describeFailure } from '../../../shared/ui/form';
+   import { lookupInvitation, type InvitationDetails } from '../api/access-endpoints';
+   import { invitationProblem } from '../model/invitation-problem';
+   import InvitationProblem from './InvitationProblem';
+   import SignupForm from './SignupForm';
+
+   interface InvitationScreenProps {
+     readonly token: string;
+     readonly headingLevel: 1 | 2;
+     onCreated(user: PublishedUser): void;
+     onGoToSignIn(): void;
+   }
+
+   type Lookup =
+     | { readonly state: 'checking' }
+     | { readonly state: 'ready'; readonly details: InvitationDetails }
+     | { readonly state: 'failed'; readonly messages: readonly string[] };
+
+   function lookupFailureMessages(failure: ApiFailure): readonly string[] {
+     return invitationProblem(failure) ?? describeFailure(failure, []).generalMessages;
+   }
+
+   const InvitationScreen = ({ token, headingLevel, onCreated, onGoToSignIn }: InvitationScreenProps) => {
+     const client = useApiClient();
+     const [lookup, setLookup] = useState<Lookup>({ state: 'checking' });
+     useEffect(() => {
+       let active = true;
+       void lookupInvitation(client, token).then((result) => {
+         if (!active) return;
+         setLookup(
+           result.ok
+             ? { state: 'ready', details: result.value }
+             : { state: 'failed', messages: lookupFailureMessages(result.failure) },
+         );
+       });
+       return () => {
+         active = false;
+       };
+     }, [client, token]);
+     if (lookup.state === 'checking') return <p role="status">Revisando tu invitación…</p>;
+     if (lookup.state === 'failed') {
+       return <InvitationProblem headingLevel={headingLevel} messages={lookup.messages} onGoToSignIn={onGoToSignIn} />;
+     }
+     return (
+       <SignupForm
+         token={token}
+         details={lookup.details}
+         headingLevel={headingLevel}
+         onCreated={onCreated}
+         onGoToSignIn={onGoToSignIn}
+       />
+     );
+   };
+
+   export default InvitationScreen;
+   ```
+
+10. **`ui/PrivacyReacceptance.tsx`:**
+
+    ```tsx
+    import { useState } from 'react';
+    import { PRIVACY_NOTICE, PrivacyNoticeText } from '../../../entities/privacy-notice';
+    import type { PublishedUser } from '../../../entities/session';
+    import { useApiClient, type ApiFailure } from '../../../shared/api/http';
+    import { ServerError, describeFailure, useGuardedSubmit } from '../../../shared/ui/form';
+    import { acceptPrivacy } from '../api/access-endpoints';
+    import { signOut } from '../model/sign-out';
+    import AccessHeading from './AccessHeading';
+
+    interface PrivacyReacceptanceProps {
+      readonly account: PublishedUser;
+      readonly headingLevel: 1 | 2;
+      onAccepted(user: PublishedUser): void;
+      onSessionLost(): void;
+      reloadDocument(): void;
+    }
+
+    interface Problem {
+      readonly messages: readonly string[];
+      readonly offerReload: boolean;
+    }
+
+    const NOTICE_CHANGED =
+      'El aviso de privacidad cambió desde la última vez que lo aceptaste. Leelo y aceptalo para seguir.';
+    const VERSION_CHANGED = 'El aviso de privacidad cambió: recargá la página para leer el vigente.';
+
+    function versionChanged(failure: ApiFailure): boolean {
+      return failure.kind === 'response' && failure.status === 422 && 'privacyVersion' in failure.fieldErrors;
+    }
+
+    function problemOf(failure: ApiFailure): Problem {
+      if (versionChanged(failure)) return { messages: [VERSION_CHANGED], offerReload: true };
+      const description = describeFailure(failure, []);
+      return { messages: description.generalMessages, offerReload: description.offerReload };
+    }
+
+    const PrivacyReacceptance = ({
+      account,
+      headingLevel,
+      onAccepted,
+      onSessionLost,
+      reloadDocument,
+    }: PrivacyReacceptanceProps) => {
+      const client = useApiClient();
+      const [pending, setPending] = useState<'accept' | 'leave' | null>(null);
+      const [problem, setProblem] = useState<Problem | null>(null);
+
+      const accept = useGuardedSubmit(async () => {
+        setPending('accept');
+        setProblem(null);
+        const result = await acceptPrivacy(client, account.id, PRIVACY_NOTICE.version);
+        if (result.ok) {
+          onAccepted({ ...account, privacyAccepted: true });
+          return;
+        }
+        setPending(null);
+        if (describeFailure(result.failure, []).signedOut) {
+          onSessionLost();
+          return;
+        }
+        setProblem(problemOf(result.failure));
+      });
+
+      const leave = useGuardedSubmit(async () => {
+        setPending('leave');
+        setProblem(null);
+        const outcome = await signOut({ client, userId: account.id });
+        if (outcome.kind === 'signed-out') {
+          reloadDocument();
+          return;
+        }
+        setPending(null);
+        setProblem(problemOf(outcome.failure));
+      });
+
+      return (
+        <div className="form-stack">
+          <AccessHeading level={headingLevel}>Aviso de privacidad</AccessHeading>
+          <p>{NOTICE_CHANGED}</p>
+          <PrivacyNoticeText headingLevel={headingLevel === 1 ? 2 : 3} />
+          <ServerError messages={problem?.messages ?? []} takeFocus>
+            {problem?.offerReload ? (
+              <button className="button secondary" type="button" onClick={reloadDocument}>
+                Recargar
+              </button>
+            ) : null}
+          </ServerError>
+          <div className="form-actions">
+            <button className="button" type="button" disabled={pending !== null} onClick={() => void accept()}>
+              {pending === 'accept' ? 'Guardando…' : 'Acepto'}
+            </button>
+            <button className="button secondary" type="button" disabled={pending !== null} onClick={() => void leave()}>
+              {pending === 'leave' ? 'Saliendo…' : 'Salir'}
+            </button>
+          </div>
+        </div>
+      );
+    };
+
+    export default PrivacyReacceptance;
+    ```
+
+11. **`ui/AccessScreen.tsx`,** la versión de U3:
+
+    ```tsx
+    import { useState } from 'react';
+    import { useStore } from 'zustand';
+    import { sessionStore, type PublishedUser } from '../../../entities/session';
+    import type { AccessRequest } from '../model/access-request';
+    import { EXPIRED_NOTICE } from './access-texts';
+    import InvitationScreen from './InvitationScreen';
+    import LoginForm from './LoginForm';
+    import PrivacyReacceptance from './PrivacyReacceptance';
+
+    interface AccessScreenProps {
+      readonly request: AccessRequest;
+      onFinish(user: PublishedUser): void;
+      reloadDocument(): void;
+    }
+
+    type Screen =
+      | { readonly kind: 'login'; readonly email: string; readonly notice: string | null }
+      | { readonly kind: 'invitation'; readonly token: string }
+      | { readonly kind: 'privacy'; readonly account: PublishedUser };
+
+    function loginScreen(notice: string | null, email = ''): Screen {
+      return { kind: 'login', email, notice };
+    }
+
+    function initialScreen(request: AccessRequest, account: PublishedUser | null): Screen {
+      if (request.token?.kind === 'invitation') return { kind: 'invitation', token: request.token.token };
+      if (account !== null && !account.privacyAccepted) return { kind: 'privacy', account };
+      return loginScreen(request.reason === 'expired' ? EXPIRED_NOTICE : null);
+    }
+
+    const AccessScreen = ({ request, onFinish, reloadDocument }: AccessScreenProps) => {
+      const account = useStore(sessionStore, (state) => state.user);
+      const passwordResetByMail = useStore(sessionStore, (state) => state.features.passwordReset);
+      const [screen, setScreen] = useState(() => initialScreen(request, account));
+      const level = request.presentation === 'page' ? 1 : 2;
+      const signedIn = (user: PublishedUser): void => {
+        if (user.privacyAccepted) onFinish(user);
+        else setScreen({ kind: 'privacy', account: user });
+      };
+      switch (screen.kind) {
+        case 'invitation':
+          return (
+            <InvitationScreen
+              token={screen.token}
+              headingLevel={level}
+              onCreated={onFinish}
+              onGoToSignIn={() => setScreen(loginScreen(null))}
+            />
+          );
+        case 'privacy':
+          return (
+            <PrivacyReacceptance
+              account={screen.account}
+              headingLevel={level}
+              onAccepted={onFinish}
+              onSessionLost={() => setScreen(loginScreen(EXPIRED_NOTICE))}
+              reloadDocument={reloadDocument}
+            />
+          );
+        case 'login':
+          return (
+            <LoginForm
+              headingLevel={level}
+              initialEmail={screen.email}
+              notice={screen.notice}
+              passwordResetByMail={passwordResetByMail}
+              onSignedIn={signedIn}
+            />
+          );
+      }
+    };
+
+    export default AccessScreen;
+    ```
+
+12. **Correr** `npm run test:unit -- frontend/src/features/sign-in frontend/src/shared/lib`, en verde, y después `npm run typecheck` y `npm run lint`. `AccessScreen`, `SignupForm` y `PrivacyReacceptance` quedan por debajo de 10; informá los valores en el PR.
+13. **Commit:** `feat(front): el alta por invitación y la reaceptación del aviso`.
+
+### Tarea 3.3 · `PRIVACY_VERSION` llega a la API (T028, K)
+
+**Archivos:** `docker/compose.yaml` y `qa/compose-runs-check.ts`.
+
+1. **El escenario en rojo** de `qa/compose-runs-check.ts`, antes de `done()`:
+
+   ```ts
+   test('the Laravel services read PRIVACY_VERSION, by default the version of the front notice', () => {
+     for (const name of ['php', 'migrate', 'scheduler', 'worker-runs']) {
+       assert.equal(
+         compose.services[name]?.environment?.PRIVACY_VERSION,
+         '${PRIVACY_VERSION:-2026-10-dev}',
+         `${name} does not receive PRIVACY_VERSION`,
+       );
+     }
+   });
+   ```
+
+   `node qa/compose-runs-check.ts` falla: hoy ningún servicio la recibe (research.md, R13).
+2. **`docker/compose.yaml`.** Al final del bloque `x-laravel-env: &laravel-env`, después de `RUNS_QUEUE_RETRY_AFTER`:
+
+   ```yaml
+     PRIVACY_VERSION: '${PRIVACY_VERSION:-2026-10-dev}'
+   ```
+
+   Va en `x-laravel-env` y no en `x-laravel-base-env`, para que el servicio `test` de Pest no la herede del `.env` del host.
+3. **Correr** `node qa/compose-runs-check.ts`, en verde, y `docker compose config | grep PRIVACY_VERSION`: aparece en los cuatro servicios.
+4. **Commits:**
+   - `test(qa): los servicios de Laravel reciben PRIVACY_VERSION, en rojo`;
+   - `fix(docker): PRIVACY_VERSION llega a la API`.
+
+### Tarea 3.4 · Los E2E del alta y del aviso, en rojo (T029, E)
+
+**Archivos:** `qa/e2e/specs/invitation.spec.ts` y `qa/e2e/specs/privacy-notice.spec.ts`.
+
+1. **`invitation.spec.ts`.** Cubre la historia 1, SC-001 y FR-005:
+
+   ```ts
+   import { expect, test } from '../fixtures';
+   import { INVITATION, MESSAGES, STUDENT, errorBody, FIELD_MESSAGES } from '../lib/api-contract';
+   import { documentWasReloaded, markDocument } from '../lib/document-marker';
+
+   const FAILED_RESOURCE = /Failed to load resource/;
+   const PASSWORD = 'una frase larga para el alta';
+   const LINK = `/#invitacion=${INVITATION.token}`;
+
+   test.describe('a person without an account and an invitation link', () => {
+     test.use({ sessionAccount: null });
+
+     test('creates the account and starts the workshop in «Mi recorrido» without reloading', async ({
+       access,
+       api,
+       shell,
+       page,
+     }) => {
+       await page.goto(LINK);
+       await expect(page).toHaveURL(/\/$/);
+       await expect(access.heading('Creá tu cuenta')).toBeVisible();
+       await expect(page.getByText(`Te invitaron con ${INVITATION.email}.`)).toBeVisible();
+       await expect(page.getByText('La invitación vence el 12 de octubre de 2026 a las 12:30.')).toBeVisible();
+       await markDocument(page);
+       const xsrf = api.xsrfValue();
+       await access.createAccount('Bruno Díaz', PASSWORD);
+       await expect(shell.heading('recorrido')).toBeVisible();
+       expect(await documentWasReloaded(page)).toBe(false);
+       const [call] = api.callsTo('POST /api/auth/invitations/accept');
+       expect(call?.body).toEqual({
+         token: INVITATION.token,
+         name: 'Bruno Díaz',
+         password: PASSWORD,
+         password_confirmation: PASSWORD,
+         privacyVersion: '2026-10-dev',
+       });
+       expect(call?.xsrf).toBe(xsrf);
+       expect(call?.user).toBeUndefined();
+     });
+
+     test('stops a 14-character password and lets a 15-character one with a decomposed «á» go', async ({
+       access,
+       api,
+       page,
+     }) => {
+       await page.goto(LINK);
+       await access.field('Tu nombre').fill('Bruno Díaz');
+       await access.field('Contraseña').fill('a'.repeat(14));
+       await access.field('Repetí la contraseña').fill('a'.repeat(14));
+       await page.getByRole('checkbox', { name: 'Leí y acepto el aviso de privacidad' }).check();
+       await access.button('Crear mi cuenta').click();
+       await expect(page.getByText(FIELD_MESSAGES.tooShort)).toBeVisible();
+       expect(api.callsTo('POST /api/auth/invitations/accept')).toHaveLength(0);
+       const decomposed = `${'a'.repeat(14)}á`;
+       await access.field('Contraseña').fill(decomposed);
+       await access.field('Repetí la contraseña').fill(decomposed);
+       await access.button('Crear mi cuenta').click();
+       await expect.poll(() => api.callsTo('POST /api/auth/invitations/accept').length).toBe(1);
+     });
+
+     test('shows both reasons of the server on the password and focuses it', async ({
+       access,
+       api,
+       pageIssues,
+       page,
+     }) => {
+       pageIssues.expectIssue(FAILED_RESOURCE, 'the 422 of the sign-up');
+       api.reply('POST /api/auth/invitations/accept', {
+         status: 422,
+         json: errorBody('validation_failed', { password: [FIELD_MESSAGES.containsName, FIELD_MESSAGES.blocked] }),
+       });
+       await page.goto(LINK);
+       await access.createAccount('Bruno Díaz', PASSWORD);
+       await expect(page.getByText(FIELD_MESSAGES.containsName)).toBeVisible();
+       await expect(page.getByText(FIELD_MESSAGES.blocked)).toBeVisible();
+       await expect(access.field('Contraseña')).toHaveAttribute('aria-invalid', 'true');
+       await expect(access.field('Contraseña')).toBeFocused();
+     });
+
+     for (const [status, code] of [
+       [404, 'invitation_not_found'],
+       [410, 'invitation_expired'],
+     ] as const) {
+       test(`a link answered with ${status} shows the message of the server and no form`, async ({
+         access,
+         api,
+         pageIssues,
+         page,
+       }) => {
+         pageIssues.expectIssue(FAILED_RESOURCE, `the ${status} of the lookup`);
+         api.reply('POST /api/auth/invitations/lookup', { status, json: errorBody(code) });
+         await page.goto(LINK);
+         await expect(access.alert()).toContainText(MESSAGES[code]);
+         await expect(access.field('Tu nombre')).toHaveCount(0);
+         await access.button('Ir al ingreso').click();
+         await expect(access.heading('Ingresá al taller')).toBeVisible();
+       });
+     }
+
+     test('an account created in the meantime offers the sign-in', async ({ access, api, pageIssues, page }) => {
+       pageIssues.expectIssue(FAILED_RESOURCE, 'the 409 of the sign-up');
+       api.reply('POST /api/auth/invitations/accept', { status: 409, json: errorBody('email_taken') });
+       await page.goto(LINK);
+       await access.createAccount('Bruno Díaz', PASSWORD);
+       await expect(access.alert()).toContainText(MESSAGES.email_taken);
+       await expect(access.alert()).toContainText('Ingresá con ese email.');
+       await access.button('Ir al ingreso').click();
+       await expect(access.heading('Ingresá al taller')).toBeVisible();
+     });
+
+     test('reads the notice without losing what was typed', async ({ access, page }) => {
+       await page.goto(LINK);
+       await access.field('Tu nombre').fill('Bruno Díaz');
+       await access.button('Leer el aviso').click();
+       const notice = page.getByRole('dialog', { name: 'Aviso de privacidad' });
+       await expect(notice).toBeVisible();
+       await page.keyboard.press('Escape');
+       await expect(notice).toBeHidden();
+       await expect(access.field('Tu nombre')).toHaveValue('Bruno Díaz');
+       await expect(page.getByRole('checkbox', { name: 'Leí y acepto el aviso de privacidad' })).not.toBeChecked();
+     });
+   });
+
+   test.describe('a person with a live session and an invitation link', () => {
+     test('still sees the sign-up of the invitation', async ({ access, page }) => {
+       await page.goto(LINK);
+       await expect(access.heading('Creá tu cuenta')).toBeVisible();
+       await expect(page.getByText(`Te invitaron con ${INVITATION.email}.`)).toBeVisible();
+       expect(STUDENT.email).not.toBe(INVITATION.email);
+     });
+   });
+   ```
+
+2. **`privacy-notice.spec.ts`.** Cubre la historia 4 y FR-046 a FR-048:
+
+   ```ts
+   import { expect, test } from '../fixtures';
+   import { STUDENT, errorBody, FIELD_MESSAGES } from '../lib/api-contract';
+   import { observeReload } from '../lib/document-marker';
+   import { urls } from '../lib/urls';
+
+   const FAILED_RESOURCE = /Failed to load resource/;
+   const CHANGED = 'El aviso de privacidad cambió desde la última vez que lo aceptaste. Leelo y aceptalo para seguir.';
+
+   test.describe('an account with an older notice', () => {
+     test.use({ sessionAccount: { ...STUDENT, privacyAccepted: false } });
+
+     test('accepts the current one before the workshop starts', async ({ access, account, api, shell, page }) => {
+       await page.goto(urls.view('recorrido'));
+       await expect(access.heading('Aviso de privacidad')).toBeVisible();
+       await expect(page.getByText(CHANGED)).toBeVisible();
+       await expect(account.entry).toHaveCount(0);
+       await access.button('Acepto').click();
+       await expect(shell.heading('recorrido')).toBeVisible();
+       const [call] = api.callsTo('POST /api/me/privacy');
+       expect(call?.body).toEqual({ privacyVersion: '2026-10-dev' });
+       expect(call?.user).toBe(String(STUDENT.id));
+       await expect(account.entry).toBeVisible();
+     });
+
+     test('asks to reload when the server has another version, and does not retry', async ({
+       access,
+       api,
+       pageIssues,
+       page,
+     }) => {
+       pageIssues.expectIssue(FAILED_RESOURCE, 'the 422 of the privacy notice');
+       api.reply('POST /api/me/privacy', {
+         status: 422,
+         json: errorBody('validation_failed', { privacyVersion: [FIELD_MESSAGES.privacyChanged] }),
+       });
+       await page.goto(urls.view('recorrido'));
+       await access.button('Acepto').click();
+       await expect(access.alert()).toContainText(
+         'El aviso de privacidad cambió: recargá la página para leer el vigente.',
+       );
+       await expect(access.button('Recargar')).toBeVisible();
+       expect(api.callsTo('POST /api/me/privacy')).toHaveLength(1);
+     });
+
+     test('signs out from the notice and reloads', async ({ access, page }) => {
+       await page.goto(urls.view('recorrido'));
+       expect(await observeReload(page, () => access.button('Salir').click())).toBe(true);
+       await expect(access.heading('Ingresá al taller')).toBeVisible();
+     });
+   });
+   ```
+
+3. **Correr** `npm run build && E2E_PORT=4191 npm run test:e2e -- specs/invitation.spec.ts specs/privacy-notice.spec.ts`. Antes de T027, en rojo por la razón esperada; después de T027, en verde.
+4. **Commit:** `test(qa): E2E del alta por invitación y de la reaceptación del aviso`.
+
+### Tarea 3.5 · La compuerta de U3 (T030, K)
+
+La compuerta de 0.4, con:
+
+- los E2E nuevos de U3, con los anteriores, tres veces seguidas;
+- en el navegador, el alta completa con la API del stack (`docker compose up`), un enlace de `taller:invite` y la versión `2026-10-dev`. Es la verificación a mano de la cookie real y del CSRF real (spec, «Alternativas consideradas»), y se declara en el PR;
+- el PR `feat(front): invitation sign-up and privacy notice acceptance (F11a U3)`, contra `f11a/base`.
+
+**Reversión de U3:** se revierten T029, T028, T027 y T026, en ese orden.
+
+## 4. U4 · El restablecimiento, la higiene, la documentación y el peso (onda 7: A, E y K; onda 8: K)
+
+**Cubre:** FR-042 a FR-044, FR-066 a FR-073 (las comprobaciones transversales) y FR-077; SC-001 (el restablecimiento), SC-005, SC-006 (el restablecimiento), SC-007, SC-008 y SC-011; historia 3.
+
+### Tarea 4.1 · Las specs del restablecimiento, en rojo (T031, A)
+
+**Archivos:** el stub de `resetPassword` en `api/access-endpoints.ts`, con su caso en `api/access-endpoints.spec.ts`; los stubs de `ui/ResetPasswordScreen.tsx` y `ui/ResetPasswordForm.tsx`; y `ui/reset-password-screen.spec.tsx`, en `frontend/src/features/sign-in/`.
+
+1. **El caso de `access-endpoints.spec.ts`:**
+
+   ```ts
+   describe('resetPassword', () => {
+     it('sends the token, the email and both passwords without opening a session', async () => {
+       const { client, calls } = clientWith([{ status: 200, json: {} }]);
+       const input = {
+         token: '9f2c',
+         email: 'ana@x.com',
+         password: 'otra frase larga para el cambio',
+         password_confirmation: 'otra frase larga para el cambio',
+       };
+       expect(await resetPassword(client, input)).toEqual({ ok: true, value: null });
+       expect(calls[0]?.path).toBe('/api/auth/reset-password');
+       expect(calls[0]?.body).toEqual(input);
+       expect(calls[0]?.headers['x-taller-user']).toBeUndefined();
+     });
+   });
+   ```
+
+2. **`ui/reset-password-screen.spec.tsx`.** Usa el arnés de `sign-in-screen.spec.tsx`, copiado entero, con `{presentation: 'page', reason: 'boot', token: {kind: 'reset', token: '9f2c', email: 'ana@x.com'}}` por omisión. `renderAccess` devuelve también `requests`:
+
+   ```tsx
+   const NEW_PASSWORD = 'otra frase larga para el cambio';
+   const ASK_NEW_LINK = 'Pedile uno nuevo a quien administra el taller.';
+
+   async function chooseNewPassword(user: ReturnType<typeof userEvent.setup>, password: string, confirmation = password) {
+     await user.type(screen.getByLabelText('Contraseña nueva'), password);
+     await user.type(screen.getByLabelText('Repetí la contraseña nueva'), confirmation);
+     await user.click(screen.getByRole('button', { name: 'Cambiar la contraseña' }));
+   }
+
+   describe('resetting the password', () => {
+     it('shows the email of the link, changes the password and shows the sign-in with the email, without a session', async () => {
+       const { user, calls, requests } = withReplies([{ status: 200, json: {} }]);
+       expect(screen.getByText('Para ana@x.com.')).toBeInTheDocument();
+       expect(screen.getByLabelText('Contraseña nueva')).toHaveFocus();
+       await chooseNewPassword(user, NEW_PASSWORD);
+       expect(
+         await screen.findByText('Listo: tu contraseña cambió y cerramos tus sesiones abiertas. Ingresá con la nueva.'),
+       ).toBeInTheDocument();
+       expect(screen.getByLabelText('Email')).toHaveValue('ana@x.com');
+       expect(screen.getByLabelText('Contraseña')).toHaveFocus();
+       expect(requests.current()).not.toBeNull();
+       expect(calls[0]?.body).toEqual({
+         token: '9f2c',
+         email: 'ana@x.com',
+         password: NEW_PASSWORD,
+         password_confirmation: NEW_PASSWORD,
+       });
+     });
+
+     it('shows a rejected link in the general error, with how to ask for another one', async () => {
+       const { user } = withReplies([
+         {
+           status: 422,
+           json: {
+             message: 'Hay datos que corregir.',
+             code: 'validation_failed',
+             errors: { token: ['El enlace para restablecer la contraseña no es válido o venció.'] },
+           },
+         },
+       ]);
+       await chooseNewPassword(user, NEW_PASSWORD);
+       const alert = await screen.findByRole('alert');
+       expect(alert).toHaveTextContent('El enlace para restablecer la contraseña no es válido o venció.');
+       expect(alert).toHaveTextContent(ASK_NEW_LINK);
+       expect(alert).toHaveFocus();
+       expect(screen.getByLabelText('Contraseña nueva')).not.toHaveAttribute('aria-invalid');
+     });
+
+     it('shows a reason of the policy on the new password', async () => {
+       const { user } = withReplies([
+         {
+           status: 422,
+           json: {
+             message: 'Hay datos que corregir.',
+             code: 'validation_failed',
+             errors: { password: ['Es una contraseña muy usada: elegí otra.'] },
+           },
+         },
+       ]);
+       await chooseNewPassword(user, NEW_PASSWORD);
+       expect(await screen.findByText('Es una contraseña muy usada: elegí otra.')).toBeInTheDocument();
+       expect(screen.getByLabelText('Contraseña nueva')).toHaveAttribute('aria-invalid', 'true');
+     });
+
+     it('stops a confirmation that does not match in the browser', async () => {
+       const { user, calls } = withReplies([]);
+       await chooseNewPassword(user, NEW_PASSWORD, 'otra frase que no es igual');
+       expect(screen.getByLabelText('Repetí la contraseña nueva')).toHaveAccessibleDescription(
+         'La confirmación de la contraseña no coincide.',
+       );
+       expect(calls).toHaveLength(0);
+     });
+
+     it('keeps the button busy while the password changes', async () => {
+       const { user } = renderAccess(() => new Promise<Response>(() => {}), {
+         presentation: 'page',
+         reason: 'boot',
+         token: { kind: 'reset', token: '9f2c', email: 'ana@x.com' },
+       });
+       await chooseNewPassword(user, NEW_PASSWORD);
+       expect(screen.getByRole('button', { name: 'Cambiando la contraseña…' })).toBeDisabled();
+     });
+
+     it('says a link without an email is incomplete, and shows no form', () => {
+       withReplies([], { presentation: 'page', reason: 'boot', token: { kind: 'reset', token: '9f2c', email: null } });
+       const alert = screen.getByRole('alert');
+       expect(alert).toHaveTextContent('El enlace para restablecer la contraseña no está completo.');
+       expect(alert).toHaveTextContent(ASK_NEW_LINK);
+       expect(screen.queryByLabelText('Contraseña nueva')).toBeNull();
+     });
+   });
+   ```
+
+3. **Correr** las specs: en rojo.
+4. **Commit:** `test(front): specs del restablecimiento con el enlace, en rojo`.
+
+### Tarea 4.2 · El restablecimiento (T032, A)
+
+**Archivos:** `api/access-endpoints.ts`, `ui/access-texts.ts`, `ui/ResetPasswordScreen.tsx`, `ui/ResetPasswordForm.tsx` y `ui/AccessScreen.tsx`, en `frontend/src/features/sign-in/`.
+
+1. **`api/access-endpoints.ts`** suma:
+
+   ```ts
+   export interface ResetInput {
+     readonly token: string;
+     readonly email: string;
+     readonly password: string;
+     readonly password_confirmation: string;
+   }
+
+   export async function resetPassword(client: ApiClient, input: ResetInput): Promise<EndpointResult<null>> {
+     const result = await client.send('POST', '/api/auth/reset-password', input);
+     return result.ok ? { ok: true, value: null } : result;
+   }
+   ```
+
+2. **`ui/access-texts.ts`** suma:
+
+   ```ts
+   export const ASK_NEW_LINK = 'Pedile uno nuevo a quien administra el taller.';
+   export const PASSWORD_CHANGED = 'Listo: tu contraseña cambió y cerramos tus sesiones abiertas. Ingresá con la nueva.';
+   ```
+
+3. **`ui/ResetPasswordForm.tsx`:**
+
+   ```tsx
+   import { useEffect } from 'react';
+   import { useForm } from 'react-hook-form';
+   import { checkNewPasswordLength } from '../../../entities/session';
+   import { useApiClient, type ApiFailure } from '../../../shared/api/http';
+   import {
+     PasswordField,
+     ServerError,
+     describeFailure,
+     messagesOf,
+     showFailure,
+     useGuardedSubmit,
+     useRetryCountdown,
+   } from '../../../shared/ui/form';
+   import { resetPassword } from '../api/access-endpoints';
+   import AccessHeading from './AccessHeading';
+   import { ASK_NEW_LINK, MISMATCH, PASSWORD_HINT, REQUIRED } from './access-texts';
+
+   interface ResetValues {
+     password: string;
+     password_confirmation: string;
+   }
+
+   interface ResetPasswordFormProps {
+     readonly token: string;
+     readonly email: string;
+     readonly headingLevel: 1 | 2;
+     onDone(email: string): void;
+   }
+
+   const VISIBLE_FIELDS = ['password', 'password_confirmation'] as const;
+
+   function tokenRejected(failure: ApiFailure): boolean {
+     return failure.kind === 'response' && 'token' in failure.fieldErrors;
+   }
+
+   const ResetPasswordForm = ({ token, email, headingLevel, onDone }: ResetPasswordFormProps) => {
+     const client = useApiClient();
+     const countdown = useRetryCountdown();
+     const {
+       register,
+       handleSubmit,
+       setError,
+       setFocus,
+       formState: { errors, isSubmitting },
+     } = useForm<ResetValues>({ criteriaMode: 'all', defaultValues: { password: '', password_confirmation: '' } });
+
+     useEffect(() => {
+       setFocus('password');
+     }, [setFocus]);
+
+     const submit = useGuardedSubmit(async (values: ResetValues) => {
+       const result = await resetPassword(client, { token, email, ...values });
+       if (result.ok) {
+         onDone(email);
+         return;
+       }
+       const described = describeFailure(result.failure, VISIBLE_FIELDS);
+       const description = tokenRejected(result.failure)
+         ? { ...described, generalMessages: [...described.generalMessages, ASK_NEW_LINK] }
+         : described;
+       showFailure(setError, description, VISIBLE_FIELDS);
+       if (description.retryAfterSeconds !== null) countdown.start(description.retryAfterSeconds);
+     });
+
+     const fieldHasError = VISIBLE_FIELDS.some((field) => errors[field] !== undefined);
+     return (
+       <form className="form-stack" noValidate onSubmit={handleSubmit(submit)}>
+         <AccessHeading level={headingLevel}>Elegí una contraseña nueva</AccessHeading>
+         <p>Para {email}.</p>
+         <ServerError messages={messagesOf(errors.root?.serverError)} takeFocus={!fieldHasError} />
+         <PasswordField
+           label="Contraseña nueva"
+           autoComplete="new-password"
+           hint={PASSWORD_HINT}
+           registration={register('password', {
+             required: REQUIRED,
+             validate: { length: (value) => value === '' || checkNewPasswordLength(value) },
+           })}
+           messages={messagesOf(errors.password)}
+         />
+         <PasswordField
+           label="Repetí la contraseña nueva"
+           autoComplete="new-password"
+           registration={register('password_confirmation', {
+             required: REQUIRED,
+             validate: { same: (value, values) => value === values.password || MISMATCH },
+           })}
+           messages={messagesOf(errors.password_confirmation)}
+         />
+         <div className="form-actions">
+           <button className="button" type="submit" disabled={isSubmitting || countdown.waiting}>
+             {isSubmitting ? 'Cambiando la contraseña…' : 'Cambiar la contraseña'}
+           </button>
+         </div>
+       </form>
+     );
+   };
+
+   export default ResetPasswordForm;
+   ```
+
+4. **`ui/ResetPasswordScreen.tsx`.** Sin hooks: elige entre el formulario y el aviso del enlace incompleto:
+
+   ```tsx
+   import { ServerError } from '../../../shared/ui/form';
+   import AccessHeading from './AccessHeading';
+   import { ASK_NEW_LINK } from './access-texts';
+   import ResetPasswordForm from './ResetPasswordForm';
+
+   interface ResetPasswordScreenProps {
+     readonly token: string;
+     readonly email: string | null;
+     readonly headingLevel: 1 | 2;
+     onDone(email: string): void;
+   }
+
+   const INCOMPLETE_LINK = 'El enlace para restablecer la contraseña no está completo.';
+
+   const ResetPasswordScreen = ({ token, email, headingLevel, onDone }: ResetPasswordScreenProps) => {
+     if (email !== null) {
+       return <ResetPasswordForm token={token} email={email} headingLevel={headingLevel} onDone={onDone} />;
+     }
+     return (
+       <div className="form-stack">
+         <AccessHeading level={headingLevel}>Elegí una contraseña nueva</AccessHeading>
+         <ServerError messages={[INCOMPLETE_LINK, ASK_NEW_LINK]} takeFocus />
+       </div>
+     );
+   };
+
+   export default ResetPasswordScreen;
+   ```
+
+5. **`ui/AccessScreen.tsx`.** Ésta es la versión final, y la única diferencia con la de U3 es el restablecimiento:
+   - `Screen` suma `| { readonly kind: 'reset'; readonly token: string; readonly email: string | null }`;
+   - `initialScreen` suma, después de la línea de la invitación:
+
+     ```ts
+     if (request.token?.kind === 'reset') {
+       return { kind: 'reset', token: request.token.token, email: request.token.email };
+     }
+     ```
+
+   - el `switch` suma este caso, con los imports de `ResetPasswordScreen` y de `PASSWORD_CHANGED`:
+
+     ```tsx
+     case 'reset':
+       return (
+         <ResetPasswordScreen
+           token={screen.token}
+           email={screen.email}
+           headingLevel={level}
+           onDone={(email) => setScreen(loginScreen(PASSWORD_CHANGED, email))}
+         />
+       );
+     ```
+
+6. **Correr** `npm run test:unit -- frontend/src/features/sign-in`, en verde, y después `npm run typecheck` y `npm run lint`. `initialScreen` queda en 6.
+7. **Commit:** `feat(front): restablecer la contraseña con el enlace de la consola`.
+
+### Tarea 4.3 · Los E2E del restablecimiento y de la higiene (T033, E)
+
+**Archivos:** `qa/e2e/specs/reset-password.spec.ts`, `qa/e2e/specs/access-hygiene.spec.ts`, `qa/e2e/pages/access.ts` (suma `layer()`) y `qa/e2e/pages/account.ts` (suma `topbar`).
+
+1. **Los Page Objects.** `AccessPage` suma el método siguiente, y `AccountPage` suma `readonly topbar: Locator`, inicializado con `page.locator('.topbar')`. La barra no tiene nombre accesible, así que el selector vive en el Page Object (`qa/AGENTS.md`):
+
+   ```ts
+   layer(): Locator {
+     return this.page.locator('.access-page');
+   }
+   ```
+
+2. **`reset-password.spec.ts`.** Cubre la historia 3 y SC-006:
+
+   ```ts
+   import { expect, test } from '../fixtures';
+   import { FIELD_MESSAGES, RESET_LINK, errorBody } from '../lib/api-contract';
+
+   const FAILED_RESOURCE = /Failed to load resource/;
+   const NEW_PASSWORD = 'otra frase larga para el cambio';
+   const LINK = `/#restablecer=${RESET_LINK.token}&email=ana%40x.com`;
+   const ASK_NEW_LINK = 'Pedile uno nuevo a quien administra el taller.';
+
+   test.use({ sessionAccount: null });
+
+   test.describe('the reset link', () => {
+     test('chooses a new password and then signs in with it, without a session in between', async ({
+       access,
+       api,
+       shell,
+       page,
+     }) => {
+       await page.goto(LINK);
+       await expect(page).toHaveURL(/\/$/);
+       await expect(page.getByText('Para ana@x.com.')).toBeVisible();
+       await access.chooseNewPassword(NEW_PASSWORD);
+       await expect(
+         page.getByText('Listo: tu contraseña cambió y cerramos tus sesiones abiertas. Ingresá con la nueva.'),
+       ).toBeVisible();
+       await expect(access.field('Email')).toHaveValue('ana@x.com');
+       expect(api.account).toBeNull();
+       const [call] = api.callsTo('POST /api/auth/reset-password');
+       expect(call?.body).toEqual({
+         token: RESET_LINK.token,
+         email: 'ana@x.com',
+         password: NEW_PASSWORD,
+         password_confirmation: NEW_PASSWORD,
+       });
+       expect(call?.user).toBeUndefined();
+       await access.field('Contraseña').fill(NEW_PASSWORD);
+       await access.button('Ingresar').click();
+       await expect(shell.heading('recorrido')).toBeVisible();
+     });
+
+     test('an invalid, an expired and an unknown link show the same text', async ({
+       access,
+       api,
+       pageIssues,
+       page,
+     }) => {
+       pageIssues.expectIssue(FAILED_RESOURCE, 'the three 422 of the reset');
+       const rejected = { status: 422, json: errorBody('validation_failed', { token: [FIELD_MESSAGES.resetToken] }) };
+       api.reply('POST /api/auth/reset-password', rejected, rejected, rejected);
+       await page.goto(LINK);
+       const texts: string[] = [];
+       for (let attempt = 1; attempt <= 3; attempt += 1) {
+         await access.chooseNewPassword(NEW_PASSWORD);
+         await expect.poll(() => api.callsTo('POST /api/auth/reset-password').length).toBe(attempt);
+         await expect(access.alert()).toContainText(ASK_NEW_LINK);
+         texts.push(await access.alert().innerText());
+       }
+       expect(new Set(texts).size).toBe(1);
+       await expect(access.alert()).toContainText(FIELD_MESSAGES.resetToken);
+     });
+
+     test('a link without a readable email says it is incomplete and shows no form', async ({ access, page }) => {
+       await page.goto('/#restablecer=9f2c');
+       await expect(access.alert()).toContainText('El enlace para restablecer la contraseña no está completo.');
+       await expect(access.field('Contraseña nueva')).toHaveCount(0);
+     });
+   });
+   ```
+
+3. **`access-hygiene.spec.ts`.** Cubre SC-005 y SC-007, y FR-066 a FR-068 y FR-070:
+
+   ```ts
+   import { expect, test } from '../fixtures';
+   import { INVITATION, RESET_LINK, STUDENT } from '../lib/api-contract';
+   import { observeReload } from '../lib/document-marker';
+   import { urls } from '../lib/urls';
+
+   const SIGN_UP_PASSWORD = 'una frase larga para el alta';
+   const NEW_PASSWORD = 'otra frase larga para el cambio';
+
+   test.describe('nothing secret is left behind', () => {
+     test.use({ sessionAccount: null });
+
+     test('after the sign-up, the sign-out, the reset and the sign-in', async ({ access, account, shell, page }) => {
+       const consoleTexts: string[] = [];
+       page.on('console', (message) => consoleTexts.push(message.text()));
+       await page.goto(`/#invitacion=${INVITATION.token}`);
+       await access.createAccount('Bruno Díaz', SIGN_UP_PASSWORD);
+       await expect(shell.heading('recorrido')).toBeVisible();
+       await account.open();
+       await observeReload(page, () => account.signOut());
+       await page.goto(`/#restablecer=${RESET_LINK.token}&email=ana%40x.com`);
+       await access.chooseNewPassword(NEW_PASSWORD);
+       await access.field('Contraseña').fill(NEW_PASSWORD);
+       await access.button('Ingresar').click();
+       await expect(shell.heading('recorrido')).toBeVisible();
+       const leftovers = await page.evaluate(() =>
+         [
+           ...Object.keys(localStorage).map((key) => `${key}=${localStorage.getItem(key) ?? ''}`),
+           ...Object.keys(sessionStorage).map((key) => `${key}=${sessionStorage.getItem(key) ?? ''}`),
+           document.cookie,
+           location.href,
+         ].join('\n'),
+       );
+       const history: string[] = [page.url()];
+       for (let step = 0; step < 5; step += 1) {
+         const response = await page.goBack({ waitUntil: 'commit' });
+         if (response === null) break;
+         history.push(page.url());
+       }
+       for (const secret of [SIGN_UP_PASSWORD, NEW_PASSWORD, INVITATION.token, RESET_LINK.token]) {
+         expect(leftovers).not.toContain(secret);
+         expect(consoleTexts.join('\n')).not.toContain(secret);
+         expect(history.join('\n')).not.toContain(secret);
+       }
+     });
+   });
+
+   test.describe('the keyboard alone', () => {
+     test.use({ sessionAccount: null });
+
+     test('signs in, then opens and closes «Tu cuenta»', async ({ access, account, shell, page }) => {
+       await page.goto(urls.view('recorrido'));
+       await expect(access.field('Email')).toBeFocused();
+       await page.keyboard.type(STUDENT.email);
+       await page.keyboard.press('Tab');
+       await expect(access.field('Contraseña')).toBeFocused();
+       await page.keyboard.type('una frase larga para el taller');
+       await page.keyboard.press('Enter');
+       await expect(shell.heading('recorrido')).toBeVisible();
+       await account.entry.focus();
+       await page.keyboard.press('Enter');
+       await expect(account.dialog).toBeVisible();
+       await page.keyboard.press('Escape');
+       await expect(account.entry).toBeFocused();
+     });
+   });
+
+   for (const width of [320, 390]) {
+     test.describe(`at ${width} px without an account`, () => {
+       test.use({ viewport: { width, height: 760 }, sessionAccount: null });
+
+       test('the access fits without sideways scrolling and its fields have 16 px', async ({ access, page }) => {
+         await page.goto(urls.view('recorrido'));
+         await expect(access.heading('Ingresá al taller')).toBeVisible();
+         expect(await access.layer().evaluate((element) => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(0);
+         const fontSize = await access.field('Email').evaluate((element) => parseFloat(getComputedStyle(element).fontSize));
+         expect(fontSize).toBeGreaterThanOrEqual(16);
+       });
+     });
+
+     test.describe(`at ${width} px with an account`, () => {
+       test.use({ viewport: { width, height: 760 } });
+
+       test('the top bar fits with «Tu cuenta», whose dialog takes the whole screen', async ({ account, shell }) => {
+         await shell.goto(urls.view('recorrido'));
+         expect(await account.topbar.evaluate((element) => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(0);
+         await account.open();
+         expect((await account.dialog.boundingBox())?.width).toBe(width);
+       });
+     });
+   }
+
+   test.describe('with reduced motion', () => {
+     test.use({ reducedMotion: 'reduce', sessionAccount: null });
+
+     test('the buttons of the access have no transition', async ({ access, page }) => {
+       await page.goto(urls.view('recorrido'));
+       const transition = await access.button('Ingresar').evaluate((element) => getComputedStyle(element).transitionProperty);
+       expect(transition).toBe('none');
+     });
+   });
+   ```
+
+4. **Correr** `npm run build && E2E_PORT=4191 npm run test:e2e`.
+   - Antes de T032, `reset-password.spec.ts` está en rojo, y `access-hygiene.spec.ts` también, porque usa el restablecimiento.
+   - Después, todo en verde.
+   - **Si la barra superior se desborda a 320 px,** la corrección va en `account.css`, achicando `.topbar-actions` o la entrada, y no en las reglas del shell. Se informa en el PR.
+5. **Commit:** `test(qa): E2E del restablecimiento y de la higiene del acceso`.
+
+### Tarea 4.4 · La documentación (T034, K)
+
+Cambia en el mismo PR que U4 (FR-077):
+
+- **`docs/architecture.md`:**
+  - **el «Mapa de archivos»** suma tres filas: «Cliente de la API y formularios» (`shared/api/http` y `shared/ui/form`), «Sesión, aviso de privacidad y acceso» (`entities/session`, `entities/privacy-notice` y `features/sign-in`) y «Tu cuenta y la raíz de la cuenta» (`pages/account` y `app/account`);
+  - **la fila del arranque** nombra las cuatro etapas;
+  - **el «Estado actual» de Feature-Sliced Design** suma los slices nuevos.
+- **`qa/AGENTS.md`:**
+  - **la fila de «Arranque, compuerta…»** suma las etapas de los tokens y de sesión y sus specs, y la de «Empaquetado…» suma `vite-proxy-check`;
+  - **una fila nueva, «Acceso, sesión y Tu cuenta»,** con las specs de `features/sign-in`, `pages/account`, `shared/api/http` y `shared/ui/form`, y los siete E2E de F11a;
+  - **«Pruebas del front»:**
+    - Vitest corre dos proyectos (`node` y `dom`), y una spec `.ts` que necesita DOM usa la directiva `// @vitest-environment jsdom`;
+    - el stub mínimo de los `<dialog>`;
+    - el doble de la API: la opción `sessionAccount`, `api.on` y `api.reply`, y que una ruta de `/api` sin respuesta hace fallar el test;
+    - `boot-check` y `dist-content-check` responden la sesión desde `qa/lib/content-server.ts`, aparte de `requests`.
+- **`AGENTS.md`, «Comandos»:**
+  - `npm run dev` pasa `/api/` al stack levantado en `TALLER_PORT` (8080 por omisión);
+  - la vista previa (8765) necesita el stack levantado, porque se une a su red;
+  - desde F11a no se entra sin cuenta, y la sesión de 8080 vale también en 8765 y en 5173, porque las cookies no distinguen puertos;
+  - `PRIVACY_VERSION` va en `.env` (opcional; por omisión, `2026-10-dev`) y tiene que coincidir con la versión de `entities/privacy-notice`.
+- **`README.md`:** las mismas tres notas, y el paso de despliegue: invitar a cada alumno con `taller:invite` antes de integrar F11a y entregarle el enlace, y `taller:password-reset-link` para quien olvidó la contraseña.
+
+**Comprobar** las rutas, los comandos y los enlaces locales de cada pasaje, y `git diff --check`. Commit: `docs: el acceso de F11a en la arquitectura, qa, AGENTS y README`.
+
+### Tarea 4.5 · El peso, la compuerta final y el PR a `master` (T035, K)
+
+1. **El peso** (SC-008 y FR-073). Con `npm run build`:
+   - `html.length` de `dist/index.html`, contra T001;
+   - el análisis de esbuild de quickstart.md §3, que separa los bytes de `node_modules/react-hook-form` de los de `frontend/src/` y de los del texto del aviso.
+
+   **La condición de corte:** si la diferencia con T001 pasa de +60 000 caracteres o el total llega a 1 250 000, F11a no cierra. Se informa la medida y decide el usuario entre achicar y subir el tope (spec, riesgo 2).
+2. **La compuerta de 0.4,** sobre `f11a/base` con U1 a U4, con:
+   - la red completa (los 123 y los 7 de F11a) cinco veces seguidas, con `--repeat-each=5 --retries=0`;
+   - `docker compose build taller`, con permiso;
+   - la verificación a mano contra el stack (quickstart.md §4).
+3. **Lo que tiene que haber hecho el usuario antes del PR a `master`:**
+   - el texto del aviso y su versión. Si cambia la versión, `config/privacy-notice.ts` y la `PRIVACY_VERSION` del `.env` cambian juntos, y `privacy-notice.spec.tsx` cambia su valor esperado en el mismo commit;
+   - la invitación de cada alumno;
+   - la confirmación de la raíz previa al shell (spec, «Acciones del usuario»).
+4. **El PR** de `f11a/base` a `master`: `feat(front): mandatory session with sign-in, invitation sign-up and password reset (F11a)`. La descripción en inglés lleva:
+   - la reversión por unidad;
+   - el peso, con la librería separada del código propio;
+   - la verificación a mano contra el stack;
+   - lo que queda para F11b, F11c, F11d y A3.
+
+**Reversión de U4:** se revierten T034, T033, T032 y T031.
+
+## 5. Documentación que cambia con cada unidad
+
+| Unidad | Qué cambia |
+| --- | --- |
+| U0 | research.md, «Línea base de la implementación» (T001); `frontend/THIRD-PARTY-NOTICES.txt` (T002) |
+| U1 | Ninguna: la documentación llega con U4, sobre la rama de integración |
+| U2 | Ninguna |
+| U3 | Ninguna |
+| U4 | `docs/architecture.md`, `qa/AGENTS.md`, `AGENTS.md` y `README.md` (T034) |
+
+La documentación va junta en U4 porque F11a llega a `master` en un solo PR. Las unidades intermedias no se integran en `master`, y describirlas por separado sólo produciría texto que la unidad siguiente reescribe.
+
+## Lo que A3, F8, F11b a F11d, F12 y D1c toman de F11a
+
+Está en el [contrato](./contracts/front-interfaces.md): cada interfaz dice qué le suma cada ítem. En resumen:
+
+- **A3** extiende `session-gate.ts` y suma al doble las 17 porciones. Usa `fetchSession`, `sessionStore.getState().contentVersion` y `tokenStage.hadToken`, y llama a `requestSignIn({presentation: 'page', reason: 'expired'})` ante un 401. En `features/sign-in/model/sign-out.ts` suma el borrado de la copia.
+- **F8** recibe desde `src/app/` el cliente y `reauthenticate`, y suma al doble `GET /api/progress`, `confirm-password` y el reset.
+- **F12a** suma `isAdmin` a `entities/session`, su entrada en `AccountDialog` y su diálogo en `AccountMenu`, y usa `test.use({sessionAccount: ADMIN})` y `api.on('… /api/admin/…')`.
+- **F11b** suma sus secciones a `AccountDialog` y, con F12a, mueve a un lugar compartido el pedido de la contraseña ante un 423.
+- **F11c** muestra «¿Te olvidaste la contraseña?» con `passwordResetByMail`, que ya llega a `LoginForm`.
+- **F11d** suma su sección a `AccountDialog`.
+- **D1c** compara la cuenta con `sessionStore`.
+
+## Cobertura de requisitos
+
+| Requisito | Tareas |
+| --- | --- |
+| FR-001 | T011, T012 (`runBoot` y la tabla de `load-order-check`) |
+| FR-002 | T010, T011, T014 |
+| FR-003, FR-004 | T010, T011, T014 |
+| FR-005 | T010 (token con sesión viva), T029 |
+| FR-006 | T008, T009, T010 (ningún tope durante el ingreso) |
+| FR-007 | T010, T024 (la sesión, dos veces y sin recargar) |
+| FR-008 | T006, T007, T011 |
+| FR-009 | T010, T011, T014 |
+| FR-010, FR-011 | T009 (`inert` y la página), T012 (los hosts), T014 |
+| FR-012, FR-013 | T022, T023, T024 |
+| FR-014 | T014 |
+| FR-015 a FR-018 | T004, T005; FR-016 y FR-017 también en T014 (el doble exige el CSRF) y T024 |
+| FR-019 | T017, T018 (`offerReload`), T022, T023, T024 |
+| FR-020 | T008, T009 (`reauthenticate`). En F11a ninguna pantalla con sesión recibe un 401 que no sea el de «Salir», que recarga (FR-050): la regla queda probada en su spec y la ejercen F11b, F8 y F12 |
+| FR-021 | T017, T018, T020, T024, T014 |
+| FR-022 | T004, T005, T017, T024 |
+| FR-023 | T020, T024 |
+| FR-024 | T020, T021 |
+| FR-025 a FR-027 | T017, T018, T020, T026 |
+| FR-028, FR-029 | T006, T007, T026, T029, T031 |
+| FR-030 | T017, T018, T020, T024, T026, T031 |
+| FR-031 | T017, T018 |
+| FR-032 a FR-035 | T020, T021, T024 |
+| FR-036 | T015 |
+| FR-037 a FR-041 | T026, T027, T029 |
+| FR-042 a FR-044 | T031, T032, T033 |
+| FR-045 | T019, T028 |
+| FR-046, FR-047 | T026, T027, T029 |
+| FR-048 | T019, T024 |
+| FR-049 a FR-052 | T020, T021, T022, T023, T024 |
+| FR-066 | T020 (el foco inicial), T033 (el teclado) |
+| FR-067 | T018 (16 px), T023 (la pantalla entera), T033 (320 y 390 px) |
+| FR-068 | T033 |
+| FR-069 | Compuerta de 0.4, paso 4, en cada unidad |
+| FR-070 | T033 (SC-005); research.md, R4 |
+| FR-071 | T020, T024 (el mismo texto en el ingreso), T033 (el restablecimiento) |
+| FR-072 | T002 |
+| FR-073 | T001, T035 |
+| FR-074 | Toda tarea de código (TDD) |
+| FR-075 | T014, T024, T029, T033 |
+| FR-076 | T012, T013, compuerta de 0.4, paso 3 |
+| FR-077 | T034, T035 |
+| SC-001 | T014, T029, T033 |
+| SC-002 | T014; la red en cada compuerta |
+| SC-003 | T010 (el reloj), T014, T024 |
+| SC-004 | La tabla siguiente |
+| SC-005 | T033 |
+| SC-006 | T024 (el ingreso), T033 (el restablecimiento) |
+| SC-007 | T024 (el foco de vuelta), T033 |
+| SC-008 | T035 |
+| SC-011 | La compuerta de cada unidad |
+| SC-012 | T015 |
+
+**SC-004: cada estado de «Pantallas, endpoints y estados» de F11a con su prueba** (los cuerpos salen del contrato de C3a):
+
+| Pantalla | Cargando | Error de campo | Error del servidor | Sesión vencida o de otra cuenta | Límite |
+| --- | --- | --- | --- | --- | --- |
+| Arranque | T010 («Conectando…») | — | T010, T014 (502, sin respuesta) | T014 (`user: null`) | T010, T014 (429) |
+| Ingreso | T020, T024 | T020 | T020, T024 (422 `auth_failed`, 403, 502) | T004 (419) | T020, T024 (429) |
+| Invitación | T026 («Revisando…») | — | T026, T029 (404, 410, 500) | T004 (419) | T017 (429) |
+| Alta | T026 («Creando…») | T026, T029 | T026, T029 (409, 404 y 410 al enviar); T017 (5xx) | T004 (419) | T017 (429) |
+| Restablecer | T031 («Cambiando…») | T031 | T031, T033 (`errors.token`); T017 (5xx) | T004 (419) | T017 (429) |
+| Aviso | T026 («Guardando…», con el botón deshabilitado) | T026, T029 (`privacyVersion` al general) | T017 (5xx) | T026 (401 al ingreso), T017 (409 `account_mismatch` con «Recargar»), T004 (419) | T017 (429) |
+| Tu cuenta | — | — | — | T008 (`reauthenticate`) | — |
+| Salir | T023 («Saliendo…») | — | T022, T024 (503) | T020, T022, T024 (401 recarga; 409 «Recargar») | T017 (429) |
+
+## Descargas y permisos
+
+| Qué | Origen | Tamaño | Licencia | Tarea |
+| --- | --- | --- | --- | --- |
+| `react-hook-form` 7.89.0 | registro de npm | 1 527 796 B desempaquetado, sin dependencias | MIT | T002 |
+| `jsdom` 30.1.2, `@testing-library/react` 16.3.3, `@testing-library/dom` 10.4.2, `@testing-library/user-event` 14.6.7 y `@testing-library/jest-dom` 7.0.1 | registro de npm | 56 paquetes, unos 26,3 MB desempaquetados (ADR 0008) | MIT | T003, salvo que F3, F4 o F9 las hayan instalado |
+| `fishery` 2.4.0 | registro de npm | 2 paquetes, unos 0,19 MB | MIT | T003 |
+
+Ninguna otra descarga. Docker corre sólo con permiso, en T015, T030 y T035.
+
+## Riesgos y lo que quedó sin verificar
+
+1. **Nada corrió al planificar.** Las firmas de React Hook Form, Vitest, Playwright y Vite salen de su documentación (research.md, «Consultas»). *Mitigación:* cada tarea corre `npm run typecheck` y su spec, y la compuerta corre la red completa varias veces.
+2. **El peso.** React Hook Form y el código propio pueden pasar el presupuesto de +60 000 caracteres. *Mitigación:* la condición de corte de T035 y la medida separada.
+3. **La red E2E con la etapa nueva.** Un pedido más por arranque puede volver inestable alguna prueba de F1 con reloj simulado. *Mitigación:* el doble responde la sesión sin esperas, la etapa limpia sus timers y cada compuerta corre la red varias veces seguidas.
+4. **La barra superior a 320 px** se calculó a mano (research.md). *Mitigación:* el E2E de T033 mide la barra, y la corrección vive en `account.css`.
+5. **jsdom no implementa `<dialog>`.** Las specs usan un stub, y el foco y Esc reales los prueban los E2E.
+6. **La cookie real, `SameSite` y el CSRF contra el stack** no los prueba la CI. *Mitigación:* la verificación a mano de T030 y T035.
+7. **`PRIVACY_VERSION` desfasada** bloquea todas las altas. *Mitigación:* T028, la documentación de T034 y el mensaje que pide recargar (FR-047).
+8. **El riesgo 6 de la spec** pedía que la entrada se dibujara en el DOM falso de `boot-check`. No se dibuja, a propósito (research.md, R11): la entrada se prueba con Testing Library y E2E.
+
+## Complexity Tracking
+
+| Decisión | Por qué hace falta | La alternativa más simple, y por qué no |
+| --- | --- | --- |
+| Dos raíces de React hasta F10: la de la cuenta y la de la vista montada | El acceso tiene que dibujarse antes de que existan las vistas, y «Tu cuenta», al costado del shell legacy (spec, «Dónde se dibuja») | Montar la cuenta dentro de `#main`: la compuerta y las vistas lo pisan con `innerHTML`. Esperar a F10: la sesión obligatoria no puede esperar |
+| La vista de la sesión con `innerHTML` en `#session-status`, fuera de React | Tiene que funcionar antes de montar la raíz y en el DOM falso de `boot-check`. Repite la forma de la vista de A2, que A3 reutiliza | Dibujarla con React: obliga a montar la raíz para un mensaje de espera, y `boot-check` no la vería |
+| El pedido de acceso en curso, en memoria del módulo de `features/sign-in` | «Pedir el ingreso» se espera desde la etapa, desde A3 y desde las pantallas, y dos llamadas comparten una sola promesa | Un store de Zustand: dejaría el token del enlace en el estado global, que FR-070 prohíbe |
