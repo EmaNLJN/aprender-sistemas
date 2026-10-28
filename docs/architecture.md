@@ -11,15 +11,17 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | --- | --- |
 | Documento, entrada ESM, arranque y adaptadores legacy | `frontend/src/index.html`, `frontend/src/app/main.tsx` (la secuencia de etapas), `frontend/src/app/boot/` (la compuerta del contenido y la cadena legacy, A2), `frontend/src/app/content/` (`getContent()`), `frontend/src/app/legacy/` |
 | Helpers y constantes compartidos, sin reglas de negocio | `frontend/src/shared/lib/`, `frontend/src/shared/config/` |
+| Gramática de URL (F2, unidad 5) | `frontend/src/shared/config/url-grammar.ts`: las vistas, la lectura de la query y los enlaces y las reescrituras de URL que usan `app.js`, `lab.js`, `campaign.js`, `systems.js` y el Atlas |
+| Puentes entre vistas como datos (F2, unidad 5) | `frontend/src/entities/campaign/bridge.ts` (`campaignMissionContext` y `campaignLinkAccess`) y `frontend/src/entities/systems-workshop/bridge.ts` (`workshopMissionIds`, `workshopExerciseRole` y `workshopReturnTarget`): entradas sin estado que las fuentes legacy importan sin abrir almacenes. Fuera de un slice, una fuente legacy o de `app/` importa el índice del slice, si es su dueño, o una entrada sin estado; lo hace cumplir la regla R6 de `qa/seams-guard-check.ts` |
 | Evidencia de aprobación, interpretación de ejecuciones y fusión de registros | `frontend/src/entities/exercise/` |
 | Lectura versionada, respaldo y avisos de carga del progreso | `frontend/src/shared/lib/versioned-storage.ts` (ADR 0003) |
 | Almacenes del progreso y motores, con suscripción (F2, unidad 1) | Un almacén por clave y un motor por tipo, cada uno un singleton: `routeStore` en `frontend/src/entities/guide/`, `labStore` en `frontend/src/entities/exercise/`, y `campaignEngine` y `systemsEngine` en sus slices. Cada uno expone `changes`, un store de `zustand/vanilla` que lleva sólo la revisión y sube una vez por operación, después de escribir; el progreso sigue en su almacén. En React se lee con un selector chico (`useStore(routeStore.changes, (state) => state.revision)`), nunca con el store entero. Entre las fuentes legacy y `app/`, cada singleton tiene un solo dueño (`app.js`, `lab.js` y los dos `register-*-engine.ts`); lo hace cumplir `qa/seams-guard-check.ts` |
-| Navegación, recorrido y progreso general | `frontend/app.js`, `frontend/styles.css` |
+| Navegación, recorrido y progreso general | `frontend/app.js` y `frontend/styles.css`, que es dueña de las reglas del shell que antes repartían `lab.css` y `campaign.css`: el menú y la barra lateral en cada ancho, `.lab-nav-count`, `.lab-empty`, `.sr-only` y el `touch-action` de los controles (F2, unidad 8). El banner de campaña y el contexto de la misión en el laboratorio (`.quest-banner` y `.quest-lab-context`) viven en `lab.css` |
 | Contenido del recorrido y biblioteca | `content/guide/`; tipos y progreso en `frontend/src/entities/guide/` |
 | Catálogos de contenido (publicados en `window.*`) | `content/` → `tools/content/` → `build/curriculum.json` → `dist/content/curriculum.<versión>.json` (el plugin de `frontend/vite.config.ts`) → la compuerta de arranque (`frontend/src/shared/api/content/` y `frontend/src/app/content/`) → adaptador `frontend/src/app/legacy/register-catalogs.ts`, que lee `getContent()` |
 | Contenido en MySQL (ADR 0006, C2) | `tools/content/` también escribe `build/curriculum.meta.json` (huellas y claves de etapa) → etapa `curriculum` de `backend/api/Dockerfile` → `content:import` y `backend/api/app/Content/`, con un registro tipado por fila en `app/Content/Record/` (C6) → 18 recursos de sólo lectura (`GET /api/exercises`, `worlds`, `workshops`, `atlas`, `guide` y, desde B2, `harness`, la plantilla de `content/harness/`); los bytes de cada porción los fija el generador, nunca `JsonResource`; desde D1a, cada etapa de taller publica su `id` |
 | Ejercicios del recorrido y tipo `Exercise` | sección `lab` de `content/{rust,go}/manifest.yaml` y `content/{rust,go}/exercises/<id>/`; `frontend/src/entities/exercise/model/types.ts` |
-| Laboratorio, revisión y modelos educativos | `frontend/lab.js`, `frontend/lab-explorers.js`, `frontend/lab.css`; el catálogo de ejercicios (`exerciseCatalog`, `createExerciseCatalog`) y `buildProgram` viven en `frontend/src/entities/exercise/` (F2, unidad 2) y `lab.js` los usa |
+| Laboratorio, revisión y modelos educativos | `frontend/lab.js`, `frontend/lab-explorers.js`, `frontend/lab.css`; el catálogo de ejercicios (`exerciseCatalog`, `createExerciseCatalog`) y `buildProgram` viven en `frontend/src/entities/exercise/` (F2, unidad 2) y `lab.js` los usa; los exploradores del laboratorio son modelos puros con un mapa explícito de qué ejercicio tiene cuál (`explorer-kinds.ts` y `lab-explorer.ts`, F2, unidad 7), que `lab-explorers.js` dibuja desde la entrada sin estado `frontend/src/entities/exercise/explorers.ts` |
 | Transporte a los Playgrounds oficiales | `frontend/src/shared/api/playground/`, adaptador `frontend/src/app/legacy/register-runner.ts` |
 | Ejecutor Go en sandbox (ADR 0005; la API lo usa desde B2, y el laboratorio recién lo usará con A4) | `backend/executor/`: `internal/sandbox` (perfiles, argumentos de Docker, fases y barrido), `internal/api` (HTTP interno), `images/` (sandboxes Rust y Go); servicios `executor`, sólo en la red `sandbox`, y `worker-runs` en `docker/compose.yaml` |
 | API de ejecuciones (ADR 0006, B2) | `backend/api/app/Runs/` (admisión y cuotas, programa, evidencia, ejecución y filas), `backend/api/app/Progress/` (la cabecera de la cuenta y `AccountLock`), `backend/api/app/Jobs/ExecuteRun.php` y `backend/api/routes/api/runs.php`; el programa y la lectura de la evidencia son puros (FR-038). Contratos en `specs/005-b2-api-ejecuciones/contracts/` |
@@ -31,7 +33,7 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | Desafíos nuevos de campaña | sección `quests` de `content/{rust,go}/manifest.yaml` (la posición en el mundo fija tipo, `kind` y minutos del jefe) |
 | Mundos de campaña | `content/campaign/` |
 | Reglas, validación y progreso de campaña | `frontend/src/entities/campaign/`, adaptador `frontend/src/app/legacy/register-campaign-engine.ts` |
-| Interfaz y exploradores de campaña | `frontend/campaign.js`, `frontend/campaign.css`, `frontend/quest-explorers.js`, `frontend/quest-explorers.css` |
+| Interfaz y exploradores de campaña | `frontend/campaign.js`, `frontend/campaign.css`, `frontend/quest-explorers.js`, `frontend/quest-explorers.css`; el robot y los paquetes son modelos puros (`frontend/src/entities/exercise/model/quest-explorer.ts`, F2, unidad 7), que `quest-explorers.js` dibuja desde `entities/exercise/explorers` |
 | Contrato de simulaciones de Sistemas | `frontend/src/entities/systems-simulation/` (`defineModel`, tipos de vista y escena, y `mergeModelGroups`, el registro que une los modelos de los cuatro dominios para `systems.js`; F2, unidad 4) |
 | Modelos de Sistemas | `frontend/src/entities/systems-simulation/models/{lowlevel,infra,play,pc}/` (un archivo por modelo, con `defineModel`) |
 | Fichas de los talleres | `content/workshops/` |
@@ -41,6 +43,7 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | Interfaz de Sistemas | `frontend/systems.js`, `frontend/systems.css` |
 | Animaciones | `frontend/src/shared/lib/celebration.ts`, adaptador `frontend/src/app/legacy/register-effects.ts` |
 | Kits ZIP de proyecto | `frontend/src/features/download-project-kit/` (archivos puros y ZIP con fflate), `frontend/src/shared/lib/download-file.ts`, adaptador `frontend/src/app/legacy/register-project-kit.ts` |
+| Respaldo global del progreso: exportar, importar, «Borrar todo» y las ranuras de respaldo (F2, unidad 6) | `frontend/src/features/progress-backup/`: `createProgressBackup` recibe las cuatro áreas (el recorrido y los adaptadores del laboratorio, de campaña y de Sistemas) y devuelve promesas al importar y al borrar, para que D1c la reemplace sin tocar a quien la llama (Q4 de F2). `app.js` arma las áreas y sigue siendo dueño de la interfaz de Método hasta F8 |
 | Construcción y dependencias | `frontend/vite.config.ts` (su plugin copia el currículo y los avisos de licencia a `dist/`), `frontend/tsconfig.app.json`, `package.json`, `package-lock.json`; generador del currículo en `tools/content/` (`npm run curriculum`, validación, `build/curriculum.json` y oráculos de equivalencia) |
 | Servicio web, API y preview: Nginx, PHP-FPM, MySQL y migraciones | `dist/` entero, con el HTML y su contenido; `frontend/Dockerfile`, `compose.yaml` (raíz, incluye `docker/compose.yaml`), `docker/compose.preview.yaml`, `docker/nginx/nginx.conf` |
 | API Laravel del ADR 0004: rutas, configuración, migraciones, pruebas Pest e imagen PHP-FPM | `backend/api/` (reglas en `backend/api/AGENTS.md`) |
@@ -188,10 +191,11 @@ para infraestructura o UI sin reglas de negocio. Abrí slices en `features` para
 acciones de valor para el alumno y en `entities` para conceptos de dominio estables
 sólo cuando varios consumidores justifiquen ese seam. No agregues `processes` —está
 deprecada— ni `widgets` hasta que exista un bloque autónomo que realmente los necesite.
-Estado actual: `frontend/src/app` (entrada y adaptadores legacy), `frontend/src/pages/atlas` (primera
-página migrada), `frontend/src/entities/exercise` (regla de evidencia, interpretación de la
-ejecución y fusión de registros, compartidas por laboratorio, campaña y Sistemas) y
-`frontend/src/shared` (helpers y constantes sin reglas de negocio).
+Estado actual: `frontend/src/app` (entrada, arranque y adaptadores legacy), `frontend/src/pages/atlas`
+(primera página migrada), `frontend/src/features` (`download-project-kit`, `progress-backup` y `progress-sync`), las
+entidades `exercise` (evidencia, ejecución, fusión de registros, catálogo y `labStore`), `guide`
+(`routeStore`), `campaign` y `systems-workshop` (motores y puentes) y `systems-simulation`, y
+`frontend/src/shared` (helpers, la gramática de URL y constantes sin reglas de negocio).
 
 - La dirección permitida es `app → pages → widgets → features → entities → shared`.
   Un módulo sólo importa su propio slice o capas inferiores; dos slices de la misma

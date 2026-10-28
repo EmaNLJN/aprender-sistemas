@@ -73,15 +73,16 @@ cambies y evitá reformatear las skills importadas o las salidas generadas.
 | Contenido en `content/` | `npm run curriculum` y, entre los checks que leen el currículo real, `content-check`, `campaign-content-check`, `guide-content-check`, `atlas-check`, `curriculum-meta-check`, `curriculum-ids-check`, `systems-check` y el `systems-<dominio>-check` que corresponda (`node qa/<nombre>.ts`); `npm test` los corre todos; si ningún catálogo debe cambiar, `npm run curriculum && node tools/content/dump-globals.ts .` da los mismos bytes antes y después |
 | Generador en `tools/content/` | El `node qa/content-*-check.ts` del módulo tocado (usan fixtures temporales y no leen `content/`), `node qa/curriculum-meta-check.ts` si toca el meta (`build/curriculum.meta.json`) y el oráculo de la fila anterior |
 | Ejercicios o contratos de revisión | `node qa/content-check.ts`, `node qa/runner-check.ts` |
-| Recorrido, biblioteca o respaldo global | `node qa/guide-content-check.ts`, `node qa/app-shell-check.ts` |
+| Recorrido, biblioteca o respaldo global | `node qa/guide-content-check.ts`, `node qa/app-shell-check.ts` (su opción `asyncAdapters` prueba áreas que devuelven promesas, como las de D1c) y, con `npm run test:unit`, la spec de `features/progress-backup` |
 | Lectura, respaldo o avisos de carga del progreso | `node qa/versioned-storage-check.ts` (incluida la regla de dos pestañas: el elemento que una quitó vuelve al guardar la otra, ADR 0003, decisión 9) y el check del almacén afectado |
-| Almacenes, motores o quién importa sus singletons | `node qa/seams-guard-check.ts`: cada clave del progreso en un solo archivo, `openVersionedStore` sólo en los cuatro dueños, ninguna fábrica importada y, entre las fuentes legacy y `app/`, ningún valor de los cuatro índices fuera de su dueño. Las specs de cada almacén y motor (`npm run test:unit`) prueban la suscripción |
+| Almacenes, motores o quién importa sus singletons | `node qa/seams-guard-check.ts`: cada clave del progreso en un solo archivo, `openVersionedStore` sólo en los cuatro dueños, ninguna fábrica importada y, entre las fuentes legacy y `app/`, ningún valor de los cuatro índices fuera de su dueño (R4) y ningún import profundo de un slice, sino su índice o una entrada sin estado (R6). Por debajo de `app/`, nada importa el JSON del currículo ni `getContent()` (R5). Las specs de cada almacén y motor (`npm run test:unit`) prueban la suscripción |
+| Enlaces entre vistas: la gramática de URL y los puentes como datos | Con `npm run test:unit`, las specs de la gramática (`shared/config/url-grammar.spec.ts`) y de los puentes (`entities/campaign/model/mission-bridge.spec.ts` y `entities/systems-workshop/model/workshop-bridge.spec.ts`, con sus entradas `bridge.spec.ts`). El contexto de campaña o Sistemas dentro del laboratorio sigue en `node qa/lab-bridge-check.ts` |
 | Evidencia de aprobación o interpretación de ejecuciones | `node qa/exercise-evidence-check.ts` |
 | Atlas | `node qa/atlas-check.ts` |
 | Mundos, desbloqueos, XP o progreso de campaña | `node qa/campaign-check.ts`, `node qa/campaign-content-check.ts` |
 | Importación, validación o exportación del laboratorio | `node qa/lab-state-check.ts`, campaña y Sistemas |
 | Contexto de campaña o Sistemas dentro del laboratorio | `node qa/lab-bridge-check.ts` |
-| Exploradores de robot y paquetes | `node qa/quest-explorers-check.ts` |
+| Exploradores del laboratorio, de robot y de paquetes | `node qa/quest-explorers-check.ts`; con `npm run test:unit`, las specs del mapa y de los modelos (`entities/exercise/model/explorer-kinds.spec.ts`, `lab-explorer.spec.ts` y `quest-explorer.spec.ts`, con la entrada `explorers.spec.ts`) |
 | Catálogo, sellos o progreso de Sistemas | `node qa/systems-check.ts` (carga el catálogo puro de `entities/exercise`, no evalúa `lab.js`) |
 | Modelo lowlevel, infra, play o pc | El correspondiente `node qa/systems-<dominio>-check.ts` |
 | Generación de proyectos o ZIP | `node qa/project-kit-check.ts` (usa la fábrica pura del catálogo) |
@@ -139,6 +140,9 @@ checks de dominio de arriba siguen como están; no se migran en bloque.
   cuatro claves de `localStorage` y dos exportaciones). Fijan la compatibilidad del
   formato v1: arrancar con ellas no escribe, no respalda ni avisa, y sus secciones se
   importan sin pérdida. Están congeladas: nunca las regeneres ni las edites.
+- `qa/fixtures/explorer-kinds-a179d03.json` es la clasificación de los 274 ejercicios que daban
+  las dos expresiones regulares de los exploradores en `a179d03`. El mapa explícito tiene que
+  coincidir con ella; está congelada.
 - `app-shell-check` y `lab-bridge-check` caracterizan el comportamiento actual,
   incluidos defectos conocidos con `KNOWN DEFECT` en el nombre de la prueba. Al corregir uno,
   cambiá su escenario en el mismo commit TDD: primero la prueba nueva que falla,
