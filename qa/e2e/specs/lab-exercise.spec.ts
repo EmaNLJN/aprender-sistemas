@@ -10,6 +10,8 @@ const SYNC_WRITES = ['set taller-systems-v1', 'set taller-campaign-v1'];
 
 // rust-01 is not a campaign mission nor a Systems core: no context block and no XP notice.
 const RUST_01 = 'rust-01';
+const EXPLANATION =
+  'El punto y coma convierte esa expresión en sentencia. El bloque queda con valor (), incompatible con -> i32.';
 
 interface CopiedWindow {
   __e2eCopied?: string[];
@@ -56,18 +58,22 @@ test.describe('the three phases', () => {
       lab.predictionOption('La función deja de devolver i32 y no compila'),
     ).toHaveAttribute('aria-pressed', 'true');
     await expect(lab.predictionFeedback()).toContainText('Esa es la idea.');
-    await expect(lab.predictionFeedback()).toContainText(
-      'El punto y coma convierte esa expresión en sentencia. El bloque queda con valor (), incompatible con -> i32.',
-    );
+    await expect(lab.predictionFeedback()).toContainText(EXPLANATION);
     expect(await storage.writes()).toEqual([WRITE, ...SYNC_WRITES]);
+    const stored = JSON.parse((await storage.snapshot())[LAB_KEY]);
+    expect(stored.records[RUST_01]).toMatchObject({ prediction: 1, predictionCorrect: true });
   });
 
-  test('a wrong prediction is explained too', async ({ shell, lab }) => {
+  test('a wrong prediction is explained too', async ({ shell, lab, storage }) => {
     await shell.goto(urls.exercise(RUST_01, 'learn'));
 
     await lab.predictionOption('Devuelve 21 siempre').click();
 
     await expect(lab.predictionFeedback()).toContainText('Veamos qué cambia.');
+    await expect(lab.predictionFeedback()).toContainText(EXPLANATION);
+    const stored = JSON.parse((await storage.snapshot())[LAB_KEY]);
+    expect(stored.records[RUST_01]).toMatchObject({ prediction: 0 });
+    expect(stored.records[RUST_01].predictionCorrect).toBeUndefined();
   });
 });
 
@@ -88,6 +94,10 @@ test.describe('the editor', () => {
     await page.keyboard.type('//');
 
     expect(await storage.writes()).toEqual([WRITE, WRITE, WRITE]);
+    const stored = JSON.parse((await storage.snapshot())[LAB_KEY]);
+    expect(stored.records[RUST_01].draft).toBe(
+      'fn energia(celdas: i32) -> i32 {\n    celdas * 7\n}//',
+    );
     await expect(lab.editorStatus()).toHaveText('Borrador guardado');
     await expect(lab.liveHint()).toHaveText(
       'No hace falta adivinar: proponé un cambio pequeño y comprobalo. println! muestra texto y devuelve (). Mostrar 21 no equivale a devolver 21.',
@@ -136,7 +146,11 @@ test.describe('hints and the solution', () => {
     await lab.hintButton().click();
     await lab.hintButton().click();
 
-    await expect(lab.hints()).toHaveCount(3);
+    await expect(lab.hints()).toHaveText([
+      'PISTA 1El operador de multiplicación es *.',
+      'PISTA 2La expresión final debe tener tipo i32.',
+      'PISTA 3Escribí celdas * 7 sin punto y coma al final.',
+    ]);
     await expect(lab.hintCounter()).toHaveText('3/3 pistas');
     await expect(lab.hintButton()).toBeDisabled();
     expect(await storage.writes()).toEqual([WRITE, WRITE, WRITE]);
@@ -236,21 +250,26 @@ test.describe('your own case', () => {
   }) => {
     await storage.watchWrites();
     await shell.goto(urls.exercise(RUST_01, 'code'));
-    await lab.testCaseToggle('Tres celdas').click();
+    await lab.testCaseToggle('Reactor vacío').click();
 
-    await lab.inventVariantButton('Tres celdas').click();
+    await lab.inventVariantButton('Reactor vacío').click();
 
-    await expect(lab.customTestBox('rust')).toHaveValue('energia(3) == 21');
+    await expect(lab.customTestBox('rust')).toHaveValue('energia(0) == 0');
     await expect(lab.customTestBox('rust')).toBeFocused();
+    expect(
+      await lab
+        .customTestBox('rust')
+        .evaluate((box: HTMLTextAreaElement) => [box.selectionStart, box.selectionEnd]),
+    ).toEqual([0, 'energia(0) == 0'.length]);
     await expect(shell.toast).toHaveText(
       'Cambiá una entrada o expectativa y ejecutá. Tu caso extra se revisa por separado.',
     );
     expect(await storage.writes()).toEqual([WRITE]);
 
-    await lab.testCaseToggle('Reactor vacío').click();
-    await lab.inventVariantButton('Reactor vacío').click();
+    await lab.testCaseToggle('Tres celdas').click();
+    await lab.inventVariantButton('Tres celdas').click();
 
-    await expect(lab.customTestBox('rust')).toHaveValue('energia(3) == 21');
+    await expect(lab.customTestBox('rust')).toHaveValue('energia(0) == 0');
     await expect(shell.toast).toHaveText(
       'Conservé tu caso extra. Podés editarlo o borrarlo para partir de otra prueba.',
     );
@@ -285,17 +304,26 @@ test.describe('copying the program', () => {
     page,
   }) => {
     await page.addInitScript(() => {
+      const copied: string[] = [];
+      (window as CopiedWindow).__e2eCopied = copied;
       Object.defineProperty(navigator, 'clipboard', {
         configurable: true,
         value: { writeText: async () => Promise.reject(new Error('denied')) },
       });
-      document.execCommand = () => true;
+      document.execCommand = (command: string) => {
+        if (command === 'copy') copied.push(String(document.getSelection()));
+        return command === 'copy';
+      };
     });
     await shell.goto(urls.exercise(RUST_01, 'code'));
+    await lab.programPreviewToggle().click();
+    const preview = await lab.programPreview().textContent();
 
     await lab.copyProgramButton().click();
 
     await expect(shell.toast).toHaveText('Código copiado.');
+    const copied = await page.evaluate(() => (window as CopiedWindow).__e2eCopied);
+    expect(copied).toEqual([preview]);
   });
 });
 
@@ -329,6 +357,8 @@ test.describe('explaining', () => {
     await lab.reflectionBox().pressSequentially('abc');
 
     expect(await storage.writes()).toEqual([WRITE, WRITE, WRITE]);
+    const stored = JSON.parse((await storage.snapshot())[LAB_KEY]);
+    expect(stored.records[RUST_01].reflection).toBe('abc');
   });
 
   test('a self-assessment schedules the review, saves once and announces it', async ({
@@ -378,12 +408,15 @@ test.describe('the footer and the way back', () => {
   }) => {
     await storage.watchWrites();
     await shell.goto(urls.exercise(RUST_01, 'reflect'));
+    await expect(lab.footerButton()).toHaveText('Siguiente experimento →');
 
     await lab.footerButton().click();
 
     await expect(lab.exerciseTitle()).toHaveText('Repará el contador inmutable');
     await expect(page).toHaveURL(/\?ejercicio=rust-02&paso=learn#laboratorio$/);
     expect(await storage.writes()).toEqual([WRITE]);
+    const stored = JSON.parse((await storage.snapshot())[LAB_KEY]);
+    expect(stored.selected.rust).toBe('rust-02');
   });
 
   test('the last exercise of the language goes back to the map', async ({ shell, lab }) => {
