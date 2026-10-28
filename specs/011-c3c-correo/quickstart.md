@@ -120,12 +120,12 @@ Al terminar, volvé al escenario 2 con su comando de despliegue.
 ## 6. Con Mailpit (sólo con el permiso de T002)
 
 ```sh
-COMPOSE_PROJECT_NAME=taller-c3c TALLER_PORT=8093 MAILPIT_PORT=8026 MAIL_REQUIRED=true MAIL_MAILER=smtp MAIL_HOST=mailpit MAIL_PORT=1025 MAIL_REQUIRE_TLS=false MAIL_FROM_ADDRESS=taller@taller.invalid docker compose --profile dev up --build -d --wait
+COMPOSE_PROJECT_NAME=taller-c3c TALLER_PORT=8093 MAILPIT_PORT=8026 MAIL_REQUIRED=true MAIL_MAILER=smtp MAIL_HOST=mailpit MAIL_PORT=1025 MAIL_REQUIRE_TLS=false MAIL_FROM_ADDRESS=taller@taller.invalid REGISTRATION_OPEN=true REGISTRATION_ALLOWED_DOMAINS=taller.invalid docker compose --profile dev up --build -d --wait
 COMPOSE_PROJECT_NAME=taller-c3c TALLER_PORT=8093 MAILPIT_PORT=8026 sh backend/api/scripts/check-mail.sh
 ```
 
 **Esperado:**
-- **El modo completo pasa** (FR-052): la invitación llega a Mailpit con un link que empieza por `APP_URL` y abre; la recuperación llega y su link restablece la contraseña; llega el aviso de contraseña cambiada.
+- **El modo completo pasa con 8 de 8** (SC-001, SC-015 y FR-052): llegan a Mailpit los ocho tipos de correo, entre ellos los cuatro ganchos de C3b (la invitación, la recuperación de un tercero, el rol de admin y la cuenta borrada). Cada link empieza por `APP_URL` y hace lo suyo, y los registros de `worker-mail` no tienen ni tokens ni direcciones.
 - **La interfaz** está en `http://127.0.0.1:8026` y sólo en `127.0.0.1`.
 - **Con `MAIL_REQUIRED=true` y `MAIL_MAILER=smtp`,** `features.passwordReset` es `true`: es la configuración real, con Mailpit en el lugar del proveedor.
 

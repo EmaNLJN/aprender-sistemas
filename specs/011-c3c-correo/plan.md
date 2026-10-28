@@ -1941,13 +1941,17 @@ El lazo de DNS de C3a queda como está, con sus seis servicios. `worker-mail` no
   3. `docker compose logs --no-log-prefix worker-mail` no contiene `check-mail-` ni `#invitacion=` seguido de 43 caracteres de base64url;
   4. un `forgot-password` para el admin de prueba responde 202, y en 3 minutos aparece un `mail.sent` del tipo `password_reset`. Ese tiempo es la medición de SC-002;
   5. imprime `LÍMITE: sin Mailpit, que el link abra queda como verificación manual (FR-052).`
-- **Con Mailpit** (T029):
-  1. lo mismo, sin el chequeo de los registros;
-  2. busca el mensaje en `http://127.0.0.1:${MAILPIT_PORT:-8025}/api/v1/search?query=to:"check-mail-<azar>@taller.invalid"` hasta 30 s;
-  3. lee `GET /api/v1/message/<ID>` y comprueba que `Text` contiene `$APP_URL/#invitacion=`;
-  4. extrae el token, y `POST /api/auth/invitations/lookup {token}` responde 200;
-  5. repite con `forgot-password` (hasta 3 minutos): el link `#restablecer=…&email=…` restablece la contraseña con `POST /api/auth/reset-password`, que responde 200;
-  6. comprueba que llegó el aviso de contraseña cambiada.
+- **Con Mailpit** (T029). Recorre los ocho correos (SC-001) y los cuatro ganchos de C3b (SC-015) con una cuenta de alumno de prueba (`check_account_open … student`, que nace verificada). Para cada correo busca el mensaje en `http://127.0.0.1:${MAILPIT_PORT:-8025}/api/v1/search?query=to:"<dirección>"` hasta 30 s (hasta 3 minutos para lo que espera al `scheduler`), lee `GET /api/v1/message/<ID>` y exige el asunto exacto de [contracts/mail.md](./contracts/mail.md), `HTML` vacío y, en los tres con link, que `Text` contenga `$APP_URL/#…`. El orden:
+  1. **la invitación:** un admin invita por correo; el link abre (`POST /api/auth/invitations/lookup` responde 200) y la fila tiene `sent_at`;
+  2. **la recuperación de un tercero:** el admin, con la contraseña reconfirmada, la pide para el alumno y recibe 202; llega `password_reset`, y su link restablece la contraseña (`POST /api/auth/reset-password` responde 200). Eso borra el token, así que el paso siguiente no choca con el límite de 60 s;
+  3. **la contraseña cambiada:** llega `password_changed` por el paso anterior;
+  4. **la recuperación por `forgot-password`:** responde 202, y en 3 minutos o menos llega otro `password_reset` cuyo link también restablece. Ese tiempo es la medición de SC-002;
+  5. **el rol de admin:** el admin promueve al alumno, llega `admin_role`, y lo vuelve a `student`, que no avisa;
+  6. **el cambio de email:** `docker compose exec -T php php artisan taller:change-email` con la dirección del alumno y `check-mail-nuevo-<azar>@taller.invalid`; llegan dos `email_changed`, uno a cada dirección;
+  7. **la cuenta borrada:** el cambio de email cerró las sesiones del alumno, así que vuelve a ingresar con su dirección nueva y la última contraseña que eligió en los pasos 2 y 4. Reconfirma la contraseña y hace `DELETE /api/me`; en 3 minutos o menos llega `account_deleted`;
+  8. **el registro,** sólo si `features.registration` es `true`: un registro con `check-mail-reg-<azar>@taller.invalid` responde 201 y llega `email_verification`; su token en `POST /api/auth/email/verify` responde 204; un segundo registro con el mismo email responde 422 y llega `registration_attempt`;
+  9. **los registros:** `docker compose logs --no-log-prefix worker-mail` no contiene `#invitacion=`, `#restablecer=` ni `#verificar=` seguidos de un token, ni ninguna dirección `check-mail-`;
+  10. **el resumen:** imprime `<n> de 8 tipos de correo llegaron a Mailpit` y falla si `n` es menor que 8 con el registro abierto, o menor que 6 con el registro cerrado, avisando cuáles faltan.
 
 **Pasos:**
 
@@ -1998,7 +2002,7 @@ El lazo de DNS de C3a queda como está, con sus seis servicios. `worker-mail` no
 3. **Comprobá el usuario, el binario y el disco:**
    - `docker image inspect` muestra el `User` y el `Entrypoint`. Si el binario no está en `/mailpit`, corregí el `healthcheck`;
    - con `read_only` y el tmpfs, `COMPOSE_PROJECT_NAME=taller-c3c MAILPIT_PORT=8026 docker compose --profile dev up -d --wait mailpit` queda sano. Si Mailpit necesita escribir fuera de `/tmp`, sumá el tmpfs que pida y anotalo.
-4. **Corré** `COMPOSE_PROJECT_NAME=taller-c3c TALLER_PORT=8093 MAILPIT_PORT=8026 MAIL_MAILER=smtp MAIL_HOST=mailpit MAIL_PORT=1025 MAIL_REQUIRE_TLS=false MAIL_FROM_ADDRESS=taller@taller.invalid docker compose --profile dev up -d --wait` y después `COMPOSE_PROJECT_NAME=taller-c3c TALLER_PORT=8093 MAILPIT_PORT=8026 sh backend/api/scripts/check-mail.sh`: el modo completo pasa (FR-052).
+4. **Corré** `COMPOSE_PROJECT_NAME=taller-c3c TALLER_PORT=8093 MAILPIT_PORT=8026 REGISTRATION_OPEN=true REGISTRATION_ALLOWED_DOMAINS=taller.invalid MAIL_MAILER=smtp MAIL_HOST=mailpit MAIL_PORT=1025 MAIL_REQUIRE_TLS=false MAIL_FROM_ADDRESS=taller@taller.invalid docker compose --profile dev up -d --wait` y después `COMPOSE_PROJECT_NAME=taller-c3c TALLER_PORT=8093 MAILPIT_PORT=8026 sh backend/api/scripts/check-mail.sh`: el modo completo pasa con 8 de 8 (SC-001, SC-015 y FR-052).
 5. **Sin el perfil:** `COMPOSE_PROJECT_NAME=taller-c3c TALLER_PORT=8093 npm run api:smoke` sigue pasando, y `mailpit` no existe.
 
 **Compuerta G5:**
