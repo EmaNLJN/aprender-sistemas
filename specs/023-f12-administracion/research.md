@@ -189,7 +189,7 @@ Eso suma entre 76 400 y 106 400, sin contar A3, F7b, F8, F10 ni F12a. Las reserv
 
 **Las pruebas del plan, corridas sobre el código del plan:**
 
-- **83 specs de Vitest en verde:** 40 de `node` (isAdmin, los parsers, los emails, las acciones, las reacciones, los textos de los enlaces y los endpoints) y 43 de `dom` (la página, la lista paginada, las cuentas, las invitaciones, el diálogo de acción, la entrada en «Tu cuenta» y el contenedor).
+- **86 specs de Vitest en verde:** 40 de `node` (isAdmin, los parsers, los emails, las acciones, las reacciones, los textos de los enlaces y los endpoints) y 46 de `dom` (la página, la lista paginada, las cuentas, las invitaciones, el diálogo de acción, la entrada en «Tu cuenta» y el contenedor).
 - **Las pruebas que muerden.** Dos se comprobaron rompiendo el código a propósito:
   - sin la comparación de `target` en el contenedor, falla «stays open when a confirmation inside it closes»;
   - sin la guarda `finished`, falla «does not send the action when the dialog closed while the password was being confirmed».
