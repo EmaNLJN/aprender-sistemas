@@ -2,11 +2,11 @@
 
 **Input**: `specs/013-f4-proyecto/` (`spec.md`, `plan.md`, `research.md` y `quickstart.md`)
 
-El detalle de cada tarea (archivos, interfaces, código y comandos) está en su sección de [plan.md](./plan.md). Los dueños son K (el agente principal), E (los E2E), H (las hojas) y P (el port); las ondas y el orden de los commits están en «Commits, dueños y ondas» del plan. `[P]` marca lo que corre a la vez que otras tareas de su onda, con archivos disjuntos. Las pruebas no son opcionales (constitución, principio II): los E2E nacen contra el legacy y las specs nuevas, en el único commit rojo.
+El detalle de cada tarea (archivos, interfaces, código y comandos) está en su sección de [plan.md](./plan.md). Los dueños son K (el agente principal), E (los E2E), H (las hojas) y P (el port); las ondas y el orden de los commits están en «Commits, dueños y ondas» del plan. `[P]` marca lo que corre a la vez que otras tareas de su onda, con archivos disjuntos. `[US#]` va en cada tarea, aunque no esté en una fase de historia, para trazarla a la spec, como en F2b. Las pruebas no son opcionales (constitución, principio II): los E2E nacen contra el legacy y las specs nuevas, en el único commit rojo.
 
 ## Phase 1: Setup — Línea base (K, onda 0)
 
-- [ ] T001 [US6] K · Línea base sobre `master` con F2a, A2 y F2b: oráculos, partes del dist, `html.length`, multiconjunto del CSS, avisos y `render()` en 11, escenarios de `app-shell-check` y `boot-check`, restricciones de `load-order-check`, archivos y pruebas de Vitest, y qué de lo compartido con F3 y F9 ya está en `master`, en `$TMPDIR/f4-baseline.txt` (FR-002, FR-033; plan 0.1; quickstart §1)
+- [ ] T001 [US6] K · Línea base sobre `master` con F2a, A2 y F2b: oráculos, partes del dist, `html.length`, multiconjunto del CSS, avisos y el valor de `render()`, escenarios de `app-shell-check` y `boot-check`, restricciones de `load-order-check`, archivos y pruebas de Vitest, y qué de lo compartido con F3 y F9 ya está en `master`, en `$TMPDIR/f4-baseline.txt` (FR-002, FR-033; plan 0.1; quickstart §1)
 
 ## Phase 2: Foundational — La red contra el legacy, el CSS y la pila de DOM (onda 1: E, H y K; onda 2: K integra)
 

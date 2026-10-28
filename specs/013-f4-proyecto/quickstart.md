@@ -42,7 +42,7 @@ sha() { node -e 'const h=require("node:crypto").createHash("sha256");process.std
 4. **El multiconjunto del CSS:** `node css-multiset.mjs <base> <base>` (§3.1) da `onlyBase: 0` y `onlyUnit: 0`. Anotá `base`.
 5. **La complejidad:**
    - `npm run lint 2>&1 | grep -c complexity` da la cantidad de avisos;
-   - `npx eslint frontend/app.js 2>&1 | grep "Function 'render'"` dice 11.
+   - `npx eslint frontend/app.js --rule '{"complexity":["warn",{"max":1,"variant":"classic"}]}' 2>&1 | grep "Function 'render'"` da el valor de `render()`, que por lectura es 11.
 6. **Los checks y Vitest:**
    - **`app-shell-check`:** `node qa/app-shell-check.ts | grep -c '^PASS'` da 58 en `2b37caf4`.
    - **`boot-check`:** `node qa/boot-check.ts | grep -c '^PASS'`.
@@ -74,7 +74,7 @@ git diff <base> --stat -- backend/ content/ frontend/src/features/download-proje
 git diff <base> -- package.json package-lock.json   # vacío, salvo el commit de T004
 grep -nE "renderProject|const milestones|data-milestone" frontend/app.js   # vacío desde el commit 5
 npm run lint 2>&1 | grep -c complexity   # igual a T001
-npx eslint frontend/app.js 2>&1 | grep "Function 'render'"   # 12 desde el commit 5
+npx eslint frontend/app.js --rule '{"complexity":["warn",{"max":1,"variant":"classic"}]}' 2>&1 | grep "Function 'render'"   # T001 + 1 desde el commit 5
 ```
 
 Los E2E esperados:

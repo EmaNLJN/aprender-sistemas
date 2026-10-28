@@ -75,7 +75,7 @@ Las decisiones técnicas del plan, con sus alternativas, la tabla de Context7 y 
 
 ### R7. `render()` de `app.js` y la complejidad (FR-005)
 
-- **Medición, por lectura con la variante `classic` de ESLint, que cuenta `if` y `?.`:**
+- **Medición, por lectura con la variante `classic` de ESLint, que cuenta `if` y `?.` (`docs/architecture.md`). T001 mide el valor real, y la compuerta exige el de T001 más 1:**
   - **Hoy:** `render()` vale 11 (1 + 5 `if` + 5 `?.`) y es uno de los 35 avisos.
   - **Con el port:** `window.TallerProjectPage.unmount()` sin `?.` (+0) y un `if (currentView === 'proyecto')` (+1) la dejan en **12**. La cuenta de avisos no sube.
   - **El delegado de `change`:** pierde la rama `data-milestone`, que suma un `if` y un `?.`, y baja 2.
@@ -216,7 +216,7 @@ El PR abre con los E2E, como pide la hoja de ruta. Los dos commits que se suman 
 | Vitest | 5.0.3 | Context7 no lo dice; `vitest/dist/chunks/index.DpLw24bj.js` leído en `a2-c` | ¿Un proyecto sin archivos hace fallar `vitest run`? | `FilesNotFoundError` sólo si no hay ningún archivo en ningún proyecto | Sí: el commit de la pila puede dejar `jsdom` vacío (R13) |
 | React Testing Library | `@testing-library/react` 16.3.3 | `/testing-library/testing-library-docs` | Vitest sin `globals` | `cleanup()` en un `afterEach` del setup, e `import '@testing-library/jest-dom/vitest'` para los matchers | No: confirma el setup del ADR 0008 |
 | Testing Library user-event | 14.6.7 | `/testing-library/user-event` | `userEvent.setup()` y `click` sobre una casilla | `setup()` crea la sesión y `click` alterna la casilla y la enfoca | No |
-| jsdom | 30.1.2 | `/jsdom/jsdom/v29.0.1` (no hay una de la 30) | `<details>` y `<summary>` | Sin documentación que coincida | Sí: la spec de componente abre la pista con la propiedad `open` y no depende de la activación del `summary`; Enter y Espacio sobre el resumen se prueban en el E2E 7 |
+| jsdom | 30.1.2 | `/jsdom/jsdom/v29.0.1` (no hay una de la 30) | `<details>` y `<summary>`: la activación del resumen y el reflejo de la propiedad `open` | Sin documentación que coincida | Sí: nada depende de eso. La spec de componente abre la pista con `setAttribute('open', '')` y comprueba el atributo; Enter sobre el resumen se prueba en el E2E 7, en Chromium |
 | React | 19.2.8 (lockfile) | `/websites/react_dev_reference` | Casilla controlada; `createRoot` y `root.unmount` desde una página que no es de React | La casilla controlada necesita actualizar su fuente de verdad de forma síncrona en `onChange` (`toggleMark` lo hace y `useSyncExternalStore` vuelve a dibujar); `root.unmount` libera suscripciones y manejadores, y una raíz desmontada no se reusa | No: confirma el adaptador del Atlas |
 | Playwright | 1.63.0 (lockfile) | `/microsoft/playwright/v1.63.0` | `emulateMedia({ media: 'print' })`, `locator.filter({ has })` y `toHaveJSProperty` | Las tres existen con esa firma; `filter({ has })` admite un localizador de la página como interno | Sí: la comparación usa `emulateMedia` para la impresión, y el Page Object ubica cada tarjeta con `filter({ has })` |
 | Vite | 8.3.2 (lockfile) | `/vitejs/vite/v8.0.10` (la más cercana) | Orden del CSS importado | Con `cssCodeSplit`, el CSS de un chunk asíncrono va aparte; con `vite-plugin-singlefile` todo se inlinea, y el orden de los imports estáticos de la entrada es el del `<style>` (así quedó `atlas.css`, medido por F2b) | Sí: `project.css` se importa en `main.tsx`, no en la página (R8) |

@@ -103,7 +103,7 @@ Valores exactos; valen para toda tarea.
   - ningún `style=`, `setAttribute('style', …)`, `.cssText` ni `dangerouslySetInnerHTML`;
   - ninguna dependencia de runtime;
   - ningún global además de `window.TallerProjectPage` (SC-008).
-- **La complejidad:** `npm run lint` da la misma cantidad de avisos que la base. `render()` de `app.js` pasa de 11 a 12, justificado en el PR (research.md, R7).
+- **La complejidad:** `npm run lint` da la misma cantidad de avisos que la base. `render()` de `app.js` sube exactamente 1 respecto de T001 (de 11 a 12, según la lectura de research.md, R7), justificado en el PR.
 - **Lo intocable:**
   - `features/download-project-kit/**` y `register-project-kit.ts` (FR-026);
   - `content/` y `build/`;
@@ -242,7 +242,7 @@ Lo que el revisor mira primero:
   - `MILESTONE_IDS` se deriva del catálogo; su spec de F2a, con los literales a mano, no cambió.
   - `route-milestones-check` importa los módulos.
   - El E2E 11 lee el fixture compartido.
-- **`render()` en 12,** con `window.TallerProjectPage.unmount()` sin `?.` y la restricción de `load-order-check` que lo justifica.
+- **`render()` sube 1** (de 11 a 12 por lectura), con `window.TallerProjectPage.unmount()` sin `?.` y la restricción de `load-order-check` que lo justifica.
 - **Lo que no se tocó:** el backend, los kits ZIP, `content/` y `milestone-ids.spec.ts`.
 
 **Lo que la spec implica y ninguna prueba de las tareas de arriba ejercita**, cada caso con la prueba que lo fija y la tarea que la suma:
@@ -382,7 +382,7 @@ Cada dueño la corre en lo que toca; K, completa, antes de integrar cada commit 
 4. **Lo que no se suma:**
    - `git diff <base> -- 'frontend/*.js' 'frontend/src' | grep -E '^\+.*(style=|setAttribute\(.style.|\.cssText|dangerouslySetInnerHTML)'` no imprime nada;
    - `git diff <base> --stat -- backend/ content/ frontend/src/features/download-project-kit/ frontend/src/app/legacy/register-project-kit.ts frontend/src/entities/guide/model/milestone-ids.spec.ts` no imprime nada.
-5. **Complejidad:** `npm run lint 2>&1 | grep -c complexity` igual a la base. Después del commit 5, `npx eslint frontend/app.js 2>&1 | grep "Function 'render'"` dice 12.
+5. **Complejidad:** `npm run lint 2>&1 | grep -c complexity` igual a T001. Después del commit 5, el valor de `render()` es el de T001 más 1. Se mide con `npx eslint frontend/app.js --rule '{"complexity":["warn",{"max":1,"variant":"classic"}]}' 2>&1 | grep "Function 'render'"`, que lo informa aunque no pase de 10.
 
 ## 1. Los E2E contra el legacy (T002, dueño E, commit 1)
 
@@ -1591,7 +1591,7 @@ window.TallerProjectPage: Readonly<{
            .getByText('Necesito una pista')
            .closest('details');
          if (hint === null) throw new Error('the second milestone has no hint');
-         hint.open = true;
+         hint.setAttribute('open', '');
          const checkbox = milestone('Un lugar para guardar cosas');
 
          await user.click(checkbox);
@@ -2155,7 +2155,7 @@ En `frontend/app.js`, por texto (los números son de `2b37caf4`):
 1. **La suite:**
    - `npm run build`, `npm test`, `npm run lint`, `npm run format:check` y `git diff --check`;
    - `npm run lint 2>&1 | grep -c complexity` igual a T001;
-   - `npx eslint frontend/app.js 2>&1 | grep "Function 'render'"` dice 12.
+   - el valor de `render()`, medido como en §0.2, paso 5, es el de T001 más 1.
 2. **Los E2E:** `E2E_PORT=4193 npm run test:e2e`: **141 de 141** (123 de la red y 18 de Proyecto, el 8 incluido).
 3. **La compuerta §0.2** (columna de los commits 5 y 6).
 4. **Un commit:** `refactor(front): Proyecto pasa a una página de React y sale de app.js`.
@@ -2288,7 +2288,7 @@ Sobre el commit 5, **antes de T008**, con un worktree del commit base:
      - el multiconjunto;
      - los bytes;
      - `html.length` antes y después;
-     - los avisos de complejidad y `render()` de 11 a 12, con su justificación;
+     - los avisos de complejidad y el valor de `render()` antes y después (+1), con su justificación;
      - las 11 roturas;
    - **la correspondencia** de `app-shell-check` (§5.4) y el cambio de `boot-check`;
    - **qué queda pendiente:**
@@ -2357,7 +2357,7 @@ Sobre el commit 5, **antes de T008**, con un worktree del commit base:
 
 | Señal | Por qué se acepta | Alternativa más simple descartada |
 | --- | --- | --- |
-| `render()` de `app.js` pasa de 11 a 12 (variante `classic`) | Suma un `if` de montaje igual a los de las otras vistas, y su `unmount` va sin `?.` porque `load-order-check` garantiza el adaptador. F10 retira `render()` con el router. La cuenta de avisos no sube | Una tabla de montaje o extraer `unmountViews()` reescribe las líneas de las vistas de F3, F5 a F9, que no son de F4; con `?.` daría 13 |
+| `render()` de `app.js` sube 1, de 11 a 12 por lectura (variante `classic`; T001 mide el valor real) | Suma un `if` de montaje igual a los de las otras vistas, y su `unmount` va sin `?.` porque `load-order-check` garantiza el adaptador. F10 retira `render()` con el router. La cuenta de avisos no sube | Una tabla de montaje o extraer `unmountViews()` reescribe las líneas de las vistas de F3, F5 a F9, que no son de F4; con `?.` daría 13 |
 
 ## Puntos de integración y riesgos residuales
 
