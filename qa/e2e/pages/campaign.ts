@@ -109,6 +109,10 @@ export class CampaignPage {
     return this.page.getByLabel(`${name}: ${state}`, { exact: true });
   }
 
+  badges(): Locator {
+    return this.page.locator('#main .quest-badge');
+  }
+
   rules(): Locator {
     return this.page.locator('#main details.quest-rules');
   }

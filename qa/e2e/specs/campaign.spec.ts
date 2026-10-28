@@ -1,6 +1,7 @@
 import { expect, test } from '../fixtures';
 import { missionsOf, savedCampaign } from '../lib/campaign-progress';
 import { curriculumIds, frozenProgress } from '../lib/curriculum';
+import { documentWasReloaded, markDocument } from '../lib/document-marker';
 import { urls } from '../lib/urls';
 
 const MASTER_RUST = {
@@ -392,7 +393,7 @@ test.describe('the last world', () => {
     await shell.goto(urls.view('campana'));
 
     await expect(campaign.world('Núcleo de la máquina')).toBeVisible();
-    await expect(campaign.rank()).toContainText('Arquitecto');
+    await expect(campaign.rank().getByText('Arquitecto', { exact: true })).toBeVisible();
     await expect(
       campaign.rank().getByText('720 / 720 XP de campaña', { exact: true }),
     ).toBeVisible();
@@ -402,7 +403,7 @@ test.describe('the last world', () => {
 
     await expect(shell.toast).toHaveText(LAST_WORLD_TOAST);
     await expect(campaign.projectLink()).toHaveAttribute('href', '#proyecto');
-    await expect(campaign.rank()).toContainText('Maestro del taller');
+    await expect(campaign.rank().getByText('Maestro del taller', { exact: true })).toBeVisible();
     await expect(campaign.rank().getByText('4 de 4 insignias', { exact: true })).toBeVisible();
     await expect(campaign.rankSymbol()).toHaveText('✳');
     await expect(campaign.celebration()).toBeAttached();
@@ -432,8 +433,9 @@ test.describe('the trophy case and the rules', () => {
     await shell.goto(urls.view('campana'));
 
     await expect(
-      page.getByRole('heading', { name: 'Ideas que ya pusiste a prueba.' }),
+      page.getByRole('heading', { name: 'Ideas que ya pusiste a prueba.', exact: true }),
     ).toBeVisible();
+    await expect(campaign.badges()).toHaveCount(4);
     for (const name of [
       'Piloto de estados',
       'Custodia del protocolo',
@@ -452,8 +454,9 @@ test.describe('the trophy case and the rules', () => {
     await expect(
       campaign
         .rules()
-        .getByText('20 XP por las pruebas del ejercicio y 10 por su predicción correcta.'),
+        .getByText(/^20 XP por las pruebas del ejercicio y 10 por su predicción correcta\./),
     ).toBeVisible();
+    await expect(campaign.rules().getByRole('link')).toHaveCount(4);
 
     const externalLinks = {
       CodeMirror: 'https://codemirror.net/',
@@ -476,14 +479,20 @@ test.describe('the language', () => {
     campaign,
     storage,
   }) => {
+    await storage.seed({
+      [CAMPAIGN_KEY]: savedCampaign({
+        mastered: missionsOf('go-world-1'),
+        passedCheckpoints: { 'go-world-1': 0 },
+      }),
+    });
     await storage.watchWrites();
     await shell.goto(urls.view('campana'));
 
     await campaign.filter('Kata').click();
-    await shell.languages.getByRole('button', { name: 'Go', exact: true }).click();
+    await shell.switchLanguage('go');
 
     await expect(campaign.hero()).toContainText('CAMPAÑA · GO');
-    await expect(campaign.world('La estación del rover')).toBeVisible();
+    await expect(campaign.world('La antena de telemetría')).toBeVisible();
     await expect(campaign.filter('Kata')).toHaveAttribute('aria-pressed', 'true');
     for (const other of ['Todas', 'Entrenamiento', 'Reparación', 'Desafío final'] as const) {
       await expect(campaign.filter(other)).toHaveAttribute('aria-pressed', 'false');
@@ -503,7 +512,7 @@ test.describe('the language', () => {
 });
 
 test.describe('the session', () => {
-  test('the session survives an in-document view change and is lost on a reload', async ({
+  test('the chosen world and the filter live in the session: they survive the menu and are lost on a reload', async ({
     shell,
     campaign,
     storage,
@@ -511,69 +520,38 @@ test.describe('the session', () => {
   }) => {
     await storage.seed(MASTER_RUST);
     await shell.goto(urls.view('campana'));
+    await expect(campaign.world('Puerto de señales')).toBeVisible();
     await campaign.worldNode(1).click();
     await campaign.filter('Kata').click();
-    await page.evaluate(() => {
-      (window as unknown as { __sameDocument: boolean }).__sameDocument = true;
-    });
+    await markDocument(page);
 
-    await page.evaluate(() => {
-      location.hash = '#laboratorio';
-    });
-    await expect(shell.heading('laboratorio')).toBeVisible();
-    await page.evaluate(() => {
-      location.hash = '#campana';
-    });
+    await shell.openFromMenu('atlas');
+    await expect(shell.heading('atlas')).toBeVisible();
+    await shell.switchLanguage('go');
+    await shell.switchLanguage('rust');
+    await expect(page).toHaveURL(urls.view('atlas'));
+    await shell.openFromMenu('campana');
 
+    await expect(page).toHaveURL(urls.view('campana'));
     await expect(campaign.world('Estación del robot')).toBeVisible();
     await expect(campaign.worldNode(1)).toHaveAttribute('aria-pressed', 'true');
+    for (const position of [2, 3, 4]) {
+      await expect(campaign.worldNode(position)).toHaveAttribute('aria-pressed', 'false');
+    }
     await expect(campaign.filter('Kata')).toHaveAttribute('aria-pressed', 'true');
-    expect(
-      await page.evaluate(() => (window as unknown as { __sameDocument?: boolean }).__sameDocument),
-    ).toBe(true);
+    for (const other of ['Todas', 'Entrenamiento', 'Reparación', 'Desafío final'] as const) {
+      await expect(campaign.filter(other)).toHaveAttribute('aria-pressed', 'false');
+    }
+    expect(await documentWasReloaded(page)).toBe(false);
 
     await page.reload();
-
-    await expect(campaign.world('Estación del robot')).toBeVisible();
+    await expect(campaign.world('Puerto de señales')).toBeVisible();
+    await expect(campaign.worldNode(2)).toHaveAttribute('aria-pressed', 'true');
     await expect(campaign.filter('Todas')).toHaveAttribute('aria-pressed', 'true');
     for (const other of ['Entrenamiento', 'Reparación', 'Kata', 'Desafío final'] as const) {
       await expect(campaign.filter(other)).toHaveAttribute('aria-pressed', 'false');
     }
   });
-
-  for (const chosenWorld of [true, false]) {
-    test(`KNOWN DEFECT (spec 019 US1-9): the menu (?#…) always reloads the document and drops the filter${chosenWorld ? ' and the chosen world' : ' (no world chosen)'}`, async ({
-      shell,
-      campaign,
-      storage,
-      page,
-    }) => {
-      await storage.seed(MASTER_RUST);
-      await shell.goto(urls.view('campana'));
-      if (chosenWorld) {
-        await campaign.worldNode(1).click();
-        await expect(page).toHaveURL(/\/\?mundo=rust-world-1#campana$/);
-      }
-      await campaign.filter('Kata').click();
-      await page.evaluate(() => {
-        (window as unknown as { __sameDocument: boolean }).__sameDocument = true;
-      });
-
-      await shell.openFromMenu('laboratorio');
-      await shell.openFromMenu('campana');
-
-      await expect(campaign.world('Puerto de señales')).toBeVisible();
-      await expect(campaign.filter('Todas')).toHaveAttribute('aria-pressed', 'true');
-      for (const other of ['Entrenamiento', 'Reparación', 'Kata', 'Desafío final'] as const) {
-        await expect(campaign.filter(other)).toHaveAttribute('aria-pressed', 'false');
-      }
-      expect(
-        await page.evaluate(
-          () => (window as unknown as { __sameDocument?: boolean }).__sameDocument,
-        ),
-      ).toBeUndefined();
-    });
-  }
 
   test('with the storage blocked the page draws and warns', async ({
     shell,
@@ -601,9 +579,17 @@ test.describe('the keyboard', () => {
 
     await campaign.worldNode(2).press('Enter');
     await expect(campaign.worldHeading('Puerto de señales')).toBeFocused();
+    await expect(campaign.worldNode(2)).toHaveAttribute('aria-pressed', 'true');
+    for (const position of [1, 3, 4]) {
+      await expect(campaign.worldNode(position)).toHaveAttribute('aria-pressed', 'false');
+    }
 
     await campaign.worldNode(1).press(' ');
     await expect(campaign.worldHeading('Estación del robot')).toBeFocused();
+    await expect(campaign.worldNode(1)).toHaveAttribute('aria-pressed', 'true');
+    for (const position of [2, 3, 4]) {
+      await expect(campaign.worldNode(position)).toHaveAttribute('aria-pressed', 'false');
+    }
     await expect(page).toHaveURL(/\/\?mundo=rust-world-1#campana$/);
   });
 
@@ -620,10 +606,18 @@ test.describe('the keyboard', () => {
 
     await campaign.filter('Todas').press('Enter');
     await expect(campaign.filter('Todas')).toHaveAttribute('aria-pressed', 'true');
+    await expect(campaign.filter('Todas')).toBeFocused();
+    for (const other of ['Entrenamiento', 'Reparación', 'Kata', 'Desafío final'] as const) {
+      await expect(campaign.filter(other)).toHaveAttribute('aria-pressed', 'false');
+    }
+    await expect(campaign.missionCards()).toHaveCount(6);
 
     await campaign.checkpointOption('B').press('Enter');
     await expect(campaign.checkpointOption('B')).toHaveAttribute('aria-pressed', 'true');
     await expect(campaign.checkpointOption('B')).toBeFocused();
+    for (const letter of ['A', 'C'] as const) {
+      await expect(campaign.checkpointOption(letter)).toHaveAttribute('aria-pressed', 'false');
+    }
     await expect(shell.toast).toHaveText(
       '¡Piloto de estados! Un mundo completado. Tu próximo nivel está disponible.',
     );
@@ -640,5 +634,22 @@ test.describe('on a phone', () => {
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
 
     expect(scrollWidth).toBeLessThanOrEqual(375);
+  });
+
+  test('at 375 px an empty browser with a locked world and the rules open does not scroll sideways', async ({
+    shell,
+    campaign,
+    page,
+  }) => {
+    const scrollWidth = () => page.evaluate(() => document.documentElement.scrollWidth);
+
+    await shell.goto(urls.view('campana'));
+    expect(await scrollWidth()).toBeLessThanOrEqual(375);
+
+    await campaign.worldNode(3).click();
+    await expect(campaign.world('Archivo de rutas')).toBeVisible();
+    await campaign.rulesSummary().click();
+    await expect(campaign.rules()).toHaveJSProperty('open', true);
+    expect(await scrollWidth()).toBeLessThanOrEqual(375);
   });
 });
