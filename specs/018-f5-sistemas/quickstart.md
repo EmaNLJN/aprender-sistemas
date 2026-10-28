@@ -282,6 +282,7 @@ git grep -n "systems\.js\|systems\.css" -- frontend docker package.json eslint.c
 git grep -nE "innerHTML|dangerouslySetInnerHTML|style=\"" -- frontend/src/pages/systems ':!*.spec.tsx'
 git grep -n "style={" -- frontend/src/pages/systems ':!*.spec.tsx'
 git grep -n "nuqs/debug" -- frontend/src
+git grep -nE "window\.|getContent|localStorage" -- frontend/src/pages/systems ':!*.spec.tsx' ':!*.factory.ts'
 node qa/seams-guard-check.ts && node qa/dist-content-check.ts && node qa/build-check.ts
 for check in boot lab-bridge app-shell systems; do echo "$check $(node qa/$check-check.ts | grep -c '^PASS')"; done
 ```
@@ -299,6 +300,7 @@ for check in boot lab-bridge app-shell systems; do echo "$check $(node qa/$check
 | `innerHTML`, `dangerouslySetInnerHTML` o `style="` en `pages/systems` | nada |
 | `style={` en `pages/systems` | exactamente una línea, en `ui/SceneView.tsx` |
 | `nuqs/debug` | nada |
+| `window.`, `getContent` o `localStorage` en el código de producción de `pages/systems` (FR-020) | nada |
 | Avisos de complejidad | los de T001 menos `onClick` y `modelView` de `systems.js` |
 | Escenarios de `boot`, `lab-bridge`, `app-shell` y `systems` | los de T001; `lab-bridge`, 21 |
 

@@ -258,8 +258,8 @@ Un solo PR, con commits en este orden. Los dueños delegables (E, Q, S, M, U y H
 | --- | --- | --- | --- |
 | 0 | K | T001 la línea base; T002 los permisos y las descargas; T003 el spike de V6 y V1 | — |
 | 1 | E, Q, S y H a la vez | **E:** T004, T005 y, si el usuario acepta D1, T006. **Q:** T009 y T010. **S:** T011 y T012. **H:** T007, si F3 no trajo el arnés | T001; para H, T002 |
-| 2 | M y K | **K:** T008, si F3 no trajo nuqs. **M:** T013 a T016 | T007 o el arnés de F3; T012 para el índice de la entidad |
-| 3 | U | T017 a T023, en ese orden | T013 a T016 y T008 |
+| 2 | M y K | **K:** T008, si F3 no trajo nuqs. **M:** T013 a T016 | T007 o el arnés de F3, y nuqs instalado (T002) |
+| 3 | U | T017 a T023, en ese orden | T012 y T013 a T016 |
 | 4 | K | T024 el corte; T025 la compuerta y las comparaciones; T026 la documentación y el PR | Todo lo anterior |
 
 **Puertos de E2E** (`E2E_PORT`): K 4173, E 4191 y U 4192. Las comparaciones usan 4501 y 4502.
@@ -781,17 +781,21 @@ test.describe('the three parts', () => {
 });
 
 test.describe('Explorar', () => {
-  test('a model action traces, marks the objective, announces it, saves once and keeps the focus; repeating a situation adds nothing', async ({
+  test('a model action traces, marks the objective, announces it, saves once and keeps the focus and the scroll; repeating a situation adds nothing', async ({
     shell,
     systems,
     storage,
+    page,
   }) => {
     await storage.watchWrites();
     await shell.goto(urls.workshop('rust', 'cache', 'explore'));
     await expect(systems.modelLive()).toHaveText(/^Probá A → B → C → A → D\./);
 
+    await systems.modelButton('Leer A').scrollIntoViewIfNeeded();
+    const scrolled = await page.evaluate(() => scrollY);
     await systems.modelButton('Leer A').click();
     await expect(systems.traceEntries()).toHaveCount(1);
+    expect(await page.evaluate(() => scrollY)).toBe(scrolled);
     await expect(systems.objective('Provocá una carga por miss')).toHaveClass(/earned/);
     await expect(shell.toast).toHaveText('Nueva situación comprendida: Provocá una carga por miss');
     await expect(systems.modelButton('Leer A')).toBeFocused();
@@ -4438,8 +4442,9 @@ window.TallerSystems = {
   4. **V2, la CSP** (quickstart.md §3.4): en la rama, 0 violaciones con muestra `14271f` y el fondo calculado en `rgb(20, 39, 31)`. En la base, 1 o más violaciones: es el control negativo.
   5. **V5:** el tiempo de `npm run test:e2e -- --workers=1` antes (T001) y después.
   6. **Las mutaciones** de quickstart.md §4: cada una hace fallar la prueba que la nombra.
-  7. Con permiso, `docker compose build taller`.
-  8. Un commit de documentación que agrega a research.md la sección «Resultados de la compuerta», con las cantidades.
+  7. **El revert** (SC-008): en una copia descartable, `git diff <base> HEAD | git apply -R`, que es lo que deja un revert del PR integrado como un solo commit. Después, `npm run build`, `npm test` y `E2E_PORT=4173 npm run test:e2e -- specs/systems.spec.ts`: la vista legacy vuelve y pasa su red.
+  8. Con permiso, `docker compose build taller`.
+  9. Un commit de documentación que agrega a research.md la sección «Resultados de la compuerta», con las cantidades.
 - **Compuerta:** cada número de los pasos 1 a 5. Con una sola casilla en rojo no se abre el PR.
 
 ### Tarea 7.2 · La documentación y el PR (T026)
