@@ -14,13 +14,7 @@ export type {
 export { mergeRouteProgress } from './model/route-progress';
 export type { RouteNotes, RouteProgressV1 } from './model/route-progress';
 export { MILESTONE_IDS } from './model/milestone-ids';
-export {
-  MILESTONE_LANGUAGES,
-  PROJECT_MILESTONES,
-  milestoneHint,
-  milestoneId,
-} from './model/project-milestones';
-export type { MilestoneHint, ProjectMilestone } from './model/project-milestones';
+export { PROJECT_MILESTONES, milestoneHint, milestoneId } from './model/project-milestones';
 export {
   ROUTE_FORMAT_ERROR,
   blankRouteProgress,
