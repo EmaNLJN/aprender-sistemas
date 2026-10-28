@@ -3764,7 +3764,23 @@ window.TallerRoute = Object.freeze({ mount, unmount, resetTimer });
 - **`qa/load-order-check.ts`:**
   - se agrega `const ROUTE = 'frontend/src/app/legacy/register-route.tsx';` junto a `ATLAS`;
   - en `BEFORE_APP_REASONS` se agrega `[ROUTE]: 'render() de app.js llama a window.TallerRoute.mount() sin guarda opcional en la vista recorrido, que es la vista por omisión',`.
-- **`qa/boot-check.ts`:** `RESET_METHODS` suma `['TallerRoute', 'resetTimer'],` al final. En la rama B, no.
+- **`qa/boot-check.ts`, en «borrar todo: confirm-reset reinicia cada adaptador y deja el recorrido en blanco»:**
+  - `RESET_METHODS` suma `['TallerRoute', 'resetTimer'],` al final. En la rama B, no.
+  - **El espía cambia cómo observa.** `window.TallerRoute` está congelado, como los demás adaptadores de `app/legacy/`, y el check corre en modo estricto: asignarle un método lanza un `TypeError`. Para un adaptador congelado, el espía reemplaza el global por una copia congelada con el método envuelto. `app.js` lee `window.TallerRoute?.resetTimer()` al llamarlo, así que ve la copia. Para los demás, envuelve el método como hoy. El bloque del bucle pasa a:
+
+    ```ts
+    for (const [adapter, method] of RESET_METHODS) {
+      const target = harness.context[adapter] as Record<string, (...args: unknown[]) => unknown>;
+      const original = target[method];
+      // Si falta, no se espía: el clic falla con el `not a function` real de app.js.
+      if (!original) continue;
+      const spy = (...args: unknown[]) => (reset.push(`${adapter}.${method}`), original(...args));
+      if (Object.isFrozen(target)) harness.context[adapter] = Object.freeze({ ...target, [method]: spy });
+      else target[method] = spy;
+    }
+    ```
+
+    El comentario es el que ya está en el check; se conserva.
 - **`qa/app-shell-check.ts`,** el escenario «almacén: desmarcar un paso, quitar un favorito y vaciar una nota se conservan al recargar»:
   - se borra la línea `await changeField(harness, 'change', { stepCheck: 'go-save' });`;
   - se borra la aserción `assert.deepEqual(exported.completed, ['rust-ownership']);`;
@@ -3861,7 +3877,7 @@ En el PR, integrada por K (FR-046):
 | `boot-check` | «navegación: cada vista se renderiza por hash sin lanzar», el Recorrido | Lee los nodos (`drawnText`) con el mismo texto, «TU TALLER DE RUST» | El mismo escenario; además, `views.spec.ts` de F1 |
 | `boot-check` | «startApp initializes in order and draws the first view» | La bandera «after drawing» y la última aserción leen los nodos | El mismo escenario |
 | `boot-check` | «a retry that succeeds starts the views without a second boot» | Lee los nodos | El mismo escenario |
-| `boot-check` | «borrar todo: confirm-reset reinicia cada adaptador y deja el recorrido en blanco» | Suma `TallerRoute.resetTimer` al final del orden (rama A) | El mismo escenario; `route-timer.spec.ts` (««Borrar todo» stops it…») |
+| `boot-check` | «borrar todo: confirm-reset reinicia cada adaptador y deja el recorrido en blanco» | Suma `TallerRoute.resetTimer` al final del orden (rama A); el espía reemplaza el global de un adaptador congelado en lugar de asignarle el método | El mismo escenario; `route-timer.spec.ts` (««Borrar todo» stops it…») |
 | `boot-check` | «startApp registers no interval» (nuevo) | Fija FR-013 | — |
 | `app-shell-check` | «almacén: desmarcar un paso, quitar un favorito y vaciar una nota se conservan al recargar» | Pierde el paso; el nombre cambia | El paso: `RoutePage.spec.tsx` («keeps an unchecked step when the store is opened again», `completed: ['rust-ownership']`) y `route-progress.spec.ts` |
 | `app-shell-check` | Los demás (todos arrancan en el Recorrido) | Ven `Route.mount` en lugar del HTML de `renderRoute`; ningún valor esperado cambia | Los mismos escenarios |
@@ -3942,10 +3958,14 @@ Ningún check se retira.
 2. **El foco del `<dialog>`.** Que el foco caiga en «×» al abrir, que Tab no salga del diálogo y el orden del evento `close` contra el redibujo de React se infirieron de la especificación de HTML. Los fijan T005 y T008 en el primer contacto con un navegador.
 3. **El DOM falso de `boot-check`** con `details`, casillas controladas y `flushSync` no se probó. T018 suma lo mínimo si hace falta (paso 2).
 4. **La guarda de `useStore`.** El selector `[arguments.length<2]` depende de `esquery`. T002 lo verifica y trae el de respaldo.
-5. **La exportación de un navegador vacío.** Que traiga `lab`, `campaign` y `systems` se supuso de US4-4. T007 lo fija contra el legacy.
-6. **El tamaño.** No se midió: T001 y T021.
-7. **Las otras ramas.** F3, F4 y F8 no tienen plan escrito al planificar F9. Lo que hagan con la suscripción, los ayudantes de `boot-check` o los bloques de CSS puede tener otros nombres; «Lo compartido» dice cómo detectarlo.
-8. **macOS, Firefox, WebKit, Docker y la CI** no corrieron.
+5. **Las reglas de React Compiler en `eslint-plugin-react-hooks` 7.1.1.** La regla `refs` puede marcar el callback `keepAction` de `RoutePage`, que escribe `cardAction.current` y se pasa a un componente propio, no a un `ref` de un elemento.
+   - **Dónde aparece:** en el paso de lint de T016.
+   - **El respaldo:** `FocusCard` recibe `actionRef: RefObject<HTMLElement | null>` y la asigna en el `ref` de su propio botón o enlace, con un callback (`ref={(element) => { actionRef.current = element; }}`). `RoutePage` le pasa `cardAction`.
+   - **El efecto:** el comportamiento no cambia, y la mutación del botón con `key` sigue fallando.
+6. **La exportación de un navegador vacío.** Que traiga `lab`, `campaign` y `systems` se supuso de US4-4. T007 lo fija contra el legacy.
+7. **El tamaño.** No se midió: T001 y T021.
+8. **Las otras ramas.** F3, F4 y F8 no tienen plan escrito al planificar F9. Lo que hagan con la suscripción, los ayudantes de `boot-check` o los bloques de CSS puede tener otros nombres; «Lo compartido» dice cómo detectarlo.
+9. **macOS, Firefox, WebKit, Docker y la CI** no corrieron.
 
 ## Complexity Tracking
 
