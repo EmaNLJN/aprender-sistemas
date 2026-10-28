@@ -1,14 +1,23 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { beforeAll, describe, expect, it, vi, type Mock } from 'vitest';
 import { ApiClientContext, createApiClient } from '../../../shared/api/http';
 import { createFakeFetch } from '../../../shared/api/http/fake-fetch';
 import { createAccessRequests, type AccessRequests } from '../model/access-request';
+import AccessDialog from './AccessDialog';
 import AccessGate from './AccessGate';
 
+let showModal: Mock<(this: HTMLDialogElement) => void>;
+
 beforeAll(() => {
-  HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) {
+  showModal = vi.fn(function showModal(this: HTMLDialogElement) {
     this.open = true;
-  };
+    const delegate = this.querySelector<HTMLElement>(
+      'button, input, select, textarea, a[href], [tabindex]',
+    );
+    if (delegate === null) this.tabIndex = -1;
+    (delegate ?? this).focus();
+  });
+  HTMLDialogElement.prototype.showModal = showModal;
   HTMLDialogElement.prototype.close = function close(this: HTMLDialogElement) {
     this.open = false;
   };
@@ -86,35 +95,50 @@ describe('the access gate', () => {
       void requests.request();
     });
     const dialog = container.querySelector('dialog')!;
-    dialog.close();
-    expect(dialog.open).toBe(false);
+    showModal.mockClear();
+    dialog.open = false;
     fireEvent(dialog, new Event('close'));
+    expect(showModal.mock.contexts).toEqual([dialog]);
     expect(dialog.open).toBe(true);
   });
 
-  it('gives the focus back to whoever had it when the dialog finishes', () => {
+  it('gives the focus back to whoever had it, even though opening moves it inside', () => {
     const opener = document.createElement('button');
     document.body.append(opener);
-    opener.focus();
-    const requests = createAccessRequests();
-    renderGate(requests);
-    act(() => {
-      void requests.request();
-    });
-    const inside = screen.getByRole('dialog').querySelector('p')!;
-    inside.tabIndex = -1;
-    inside.focus();
-    expect(document.activeElement).toBe(inside);
-    act(() => {
-      requests.finish({
-        id: 41,
-        name: 'Ana Pérez',
-        email: 'ana@x.com',
-        role: 'student',
-        privacyAccepted: true,
+    try {
+      opener.focus();
+      const requests = createAccessRequests();
+      const { container } = renderGate(requests);
+      act(() => {
+        void requests.request();
       });
-    });
-    expect(document.activeElement).toBe(opener);
-    opener.remove();
+      expect(container.querySelector('dialog')!.contains(document.activeElement)).toBe(true);
+      act(() => {
+        requests.finish({
+          id: 41,
+          name: 'Ana Pérez',
+          email: 'ana@x.com',
+          role: 'student',
+          privacyAccepted: true,
+        });
+      });
+      expect(document.activeElement).toBe(opener);
+    } finally {
+      opener.remove();
+    }
+  });
+
+  it('keeps itself open on Esc but lets a dialog inside it close', () => {
+    const { container } = render(
+      <AccessDialog>
+        <dialog className="inner" />
+      </AccessDialog>,
+    );
+    const own = new Event('cancel', { cancelable: true });
+    fireEvent(screen.getByRole('dialog', { name: 'Ingresá al taller' }), own);
+    expect(own.defaultPrevented).toBe(true);
+    const inner = new Event('cancel', { cancelable: true });
+    fireEvent(container.querySelector('dialog.inner')!, inner);
+    expect(inner.defaultPrevented).toBe(false);
   });
 });
