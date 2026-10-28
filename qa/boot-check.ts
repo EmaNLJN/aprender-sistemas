@@ -401,6 +401,13 @@ await test('the happy path never shows the loading state and asks for the conten
   assert.deepEqual(harness.errors, []);
 });
 
+await test('the session is asked once, before the content', async () => {
+  const server = createContentServer();
+  const harness = await boot({}, server);
+  assert.deepEqual(harness.errors, []);
+  assert.deepEqual(server.order, ['/api/session', CONTENT_URL]);
+});
+
 function withoutPortion(): unknown {
   const document = curriculumDocument<{ lab: Record<string, unknown> }>();
   return { ...document, lab: { rust: document.lab['rust'] } };

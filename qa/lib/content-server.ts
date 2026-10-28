@@ -15,8 +15,25 @@ export interface FakeResponse {
 }
 
 export interface ContentServer {
-  fetch: (url: string, init?: { signal?: AbortSignal }) => Promise<FakeResponse>;
+  fetch: (url: string, init?: { signal?: AbortSignal }) => Promise<FakeResponse | Response>;
   requests: string[];
+  sessionRequests: string[];
+  order: string[];
+}
+
+const SESSION_PATH = '/api/session';
+
+function sessionResponse(): Response {
+  const body = {
+    user: { id: 41, name: 'Ana Pérez', email: 'ana@x.com', role: 'student', privacyAccepted: true },
+    features: { passwordReset: false, registration: false },
+    contentVersion: contentVersion(),
+    catalogs: [],
+  };
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+  });
 }
 
 function respond(status: number, body: string): FakeResponse {
@@ -32,10 +49,19 @@ export function createContentServer(
 ): ContentServer {
   const url = `/content/curriculum.${contentVersion()}.json`;
   const requests: string[] = [];
+  const sessionRequests: string[] = [];
+  const order: string[] = [];
   let attempt = 0;
   return {
     requests,
+    sessionRequests,
+    order,
     async fetch(requested, init) {
+      order.push(requested);
+      if (requested === SESSION_PATH) {
+        sessionRequests.push(requested);
+        return sessionResponse();
+      }
       requests.push(requested);
       if (requested !== url) return respond(404, 'not found');
       const behavior = behaviors[Math.min(attempt++, behaviors.length - 1)] ?? { kind: 'serve' };
