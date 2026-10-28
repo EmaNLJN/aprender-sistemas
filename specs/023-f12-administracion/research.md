@@ -166,13 +166,13 @@ Todo se hizo en el scratchpad de la sesión, con el código del plan, el de F11a
 
 | Parte | Caracteres |
 | --- | --- |
-| `pages/admin/ui` (17 componentes) | 20 018 |
+| `pages/admin/ui` (17 componentes) | 20 298 |
 | `pages/admin/model` | 6 825 |
 | `pages/admin/api` | 1 491 |
 | `pages/admin/lib` | 1 514 |
 | `app/account/AdminDialog.tsx` | 406 |
 | `admin.css` | 1 515 |
-| **Total** | **31 978** (30 463 de JS y 1 515 de CSS) |
+| **Total** | **31 978**: 30 463 de JS (las partes suman 30 534; esbuild comparte ayudas en la salida) y 1 515 de CSS |
 
 Los cambios de `pages/account` y `entities/session` suman unos 200 más.
 

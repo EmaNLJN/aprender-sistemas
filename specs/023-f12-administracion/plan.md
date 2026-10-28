@@ -69,7 +69,7 @@ Los valores esperados salen del contrato de C3b, de `backend/api/lang/es/` y de 
 
 **Scale/Scope**:
 
-- **Lo nuevo:** unos 30 archivos de producción en `frontend/src/pages/admin/`, uno en `app/account/` y uno en `entities/session/`; 13 specs de Vitest; 4 E2E con un Page Object.
+- **Lo nuevo:** unos 30 archivos de producción en `frontend/src/pages/admin/`, uno en `app/account/` y uno en `entities/session/`; 14 specs de Vitest; 4 E2E con un Page Object.
 - **Lo que cambia:**
   - `AccountMenu.tsx`, `AccountDialog.tsx` y el índice de `pages/account`;
   - `AccountRoot.tsx` y `main.tsx`;
