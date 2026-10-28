@@ -286,7 +286,8 @@ capacidades, verificando fuente y alcance además de popularidad.
 Antes de cerrar un cambio, ejecutá los checks aplicables de `qa/AGENTS.md` y
 `git diff --check`. Informá resultados y limitaciones. En cada PR, `.github/workflows/ci.yml`
 corre los checks del front, de la API (Pint, PHPStan y Pest) y del ejecutor: un PR se mergea
-con los tres en verde. Para documentación,
+con los tres en verde. Un PR que sólo cambia Markdown fuera de `content/` los saltea, y GitHub los
+cuenta en verde (`.github/scripts/needs-full-ci.sh`). Para documentación,
 comprobá rutas, comandos y enlaces locales; para UI, revisá también el navegador.
 
 Actualizá esta guía cuando cambien comandos, arquitectura o convenciones.
