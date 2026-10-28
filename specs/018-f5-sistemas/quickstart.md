@@ -69,7 +69,7 @@ Cada comando contesta una pregunta de R13 (research.md). Se anota la respuesta.
 
 ### 2.1 V6: el adaptador real de nuqs en jsdom
 
-En la copia descartable del spike (`git worktree add "$TMPDIR/f5-spike" HEAD`, con nuqs y la pila de componentes instalados), se crea `frontend/src/pages/systems/model/v6-spike.spec.tsx`:
+En la copia descartable del spike (`git worktree add "$TMPDIR/f5-spike" HEAD`, con nuqs y la pila de componentes instalados), se crea `frontend/src/pages/systems/model/v6-spike.spec.tsx`. Si F3 no trajo el arnés, antes se copian a la copia `frontend/vitest.config.ts` y `frontend/src/vitest-setup.ts` de T007 (plan, tarea 2.1): sin el proyecto `jsdom`, Vitest no corre el `.spec.tsx`, y sin `cleanup()` los casos 2 a 6 fallan por botones repetidos.
 
 ```tsx
 import { render, screen, waitFor } from '@testing-library/react';

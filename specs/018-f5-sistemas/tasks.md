@@ -13,7 +13,7 @@ Cada línea remite a su tarea de [plan.md](./plan.md), que tiene los archivos, l
 
 - [ ] T001 [US2] K · Línea base y detección de lo que entró antes (F3, F6, F8), en «Línea base de la implementación» de `specs/018-f5-sistemas/research.md` (FR-045; plan 0.1; quickstart §1)
 - [ ] T002 [US6] K · Permisos y descargas de lo que falte: `nuqs` 2.10.2 con `@standard-schema/spec` 1.1.0, la pila de componentes y `fishery` 2.4.0, en `package.json` y `package-lock.json` (FR-046; plan 0.2)
-- [ ] T003 [US2] K · Spike descartable de V6 (el adaptador real de nuqs en jsdom) y de V1 (el peso), con sus resultados en `research.md`; si una salida difiere, la decisión vuelve al usuario (FR-011, FR-045; SC-010; plan 0.3; quickstart §2.1 y §2.2)
+- [ ] T003 [US2] K · Spike descartable de V6 (el adaptador real de nuqs en jsdom, con el arnés de T007 copiado a la copia si F3 no lo trajo) y de V1 (el peso), con sus resultados en `research.md`; si una salida difiere, la decisión vuelve al usuario (FR-011, FR-045; SC-010; plan 0.3; quickstart §2.1 y §2.2)
 
 ## Phase 2: Foundational — los E2E contra el legacy y la infraestructura compartida
 
@@ -53,5 +53,5 @@ Cada línea remite a su tarea de [plan.md](./plan.md), que tiene los archivos, l
 
 ## Phase 7: Polish — compuerta, comparaciones y entrega (K)
 
-- [ ] T025 [US7] K · Compuerta, DOM (V4), escenas, barrido de estilo ampliado, CSP (V2), V5, mutaciones y `docker compose build taller`, con los resultados en `research.md` (FR-027, FR-040, FR-043 a FR-045; SC-002 a SC-005, SC-007; plan 7.1; quickstart §3 y §4)
+- [ ] T025 [US7] K · Compuerta (con el grep de estilos en línea partido en dos: 0 `style="` y un solo `style={`, hallazgo 6 de la spec), DOM (V4), escenas, barrido de estilo ampliado, CSP (V2), V5, revert, mutaciones y `docker compose build taller`, con los resultados en `research.md` (FR-025, FR-027, FR-040, FR-043 a FR-045; SC-002 a SC-005, SC-007, SC-008; plan 7.1; quickstart §3 y §4)
 - [ ] T026 [US6] K · Documentación (`AGENTS.md`, `README.md`, `docs/architecture.md`, `qa/AGENTS.md` y la enmienda del ADR 0008 si F5 trajo el arnés) y el PR con la tabla de los nueve métodos (FR-033, FR-037, FR-047; SC-009; plan 7.2)

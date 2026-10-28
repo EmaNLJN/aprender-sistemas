@@ -334,6 +334,7 @@ Un solo PR, con commits en este orden. Los dueños delegables (E, Q, S, M, U y H
 ### Tarea 0.3 · El spike de V6 y V1 (T003)
 
 - **Cuándo:** después de T002, antes de T004. Corre en una copia descartable (`git worktree add "$TMPDIR/f5-spike" HEAD`) y no se commitea nada del spike. Sólo el resultado va a research.md.
+- **El arnés en la copia:** si T001 encontró que F3 no trajo el arnés, la copia recibe primero `frontend/vitest.config.ts` y `frontend/src/vitest-setup.ts` tal como están en T007. Sin el proyecto `jsdom`, Vitest no encuentra el `.spec.tsx`; sin el `cleanup()` del setup, los casos 2 a 6 fallan por botones repetidos y no por nuqs. T007 sigue en su lugar: en la rama, el arnés entra con su propio commit.
 - **V6:** la spec descartable de quickstart.md §2.1 monta el `NuqsAdapter` real en jsdom con los parsers de T016 y comprueba siete cosas:
   1. que jsdom actualiza `location` con `replaceState`;
   2. abrir desde `/#sistemas` escribe `?lenguaje=rust&taller=cache&parte=explore` y conserva `#sistemas`;
@@ -1196,7 +1197,7 @@ test.describe('what React keeps that innerHTML rebuilt (C2)', () => {
      - el foco está en `body`.
 
      Si alguna falla por otra razón (un localizador, un taller sin tabla que desborde), se corrige la prueba hasta que falle por la esperada. El mensaje de cada falla se copia en el informe de la tarea.
-  3. **Si `failWrites` produce un `console.error`** del motor, la prueba lo declara con `pageIssues.expectIssue(/QuotaExceededError/, 'the test makes the storage fail on purpose')`. No se toca la lista blanca.
+  3. `write` de `shared/lib/versioned-storage.ts` captura la excepción de `setItem` y devuelve `saved: false` sin escribir en la consola, así que no hace falta `expectIssue`. Si igual apareciera un `console.error`, la prueba lo declara con `pageIssues.expectIssue(/QuotaExceededError/, 'the test makes the storage fail on purpose')`, sin tocar la lista blanca.
   4. **Commit:** `test(e2e): lo que React conserva y innerHTML rehacía en Sistemas (C2, en rojo)`.
 - **Compuerta:** el paso 2, con los cuatro mensajes de falla.
 
@@ -4437,6 +4438,8 @@ window.TallerSystems = {
      - los avisos de complejidad de la línea base menos dos;
      - los escenarios de cada check, iguales;
      - los greps de estilos en línea, de `innerHTML` y de `systems.js`.
+
+     **El grep de estilos en línea cambia** (hallazgo 6 de la spec). El de las compuertas de F2b (`style=`) también encuentra el `style={` de JSX, así que F5 lo reemplaza por dos: `style="` tiene que dar 0 coincidencias, y `style={`, exactamente una, en `SceneView.tsx`. Ese único sitio se declara en el PR (FR-025).
   2. **El DOM** (V4, FR-043, SC-002; quickstart.md §3.2): 187 estados con 0 diferencias. Las 9 escenas reales con 0 diferencias de atributos (FR-027).
   3. **El barrido de estilo computado ampliado** (FR-044, SC-003; quickstart.md §3.3): 23 páginas a 6 anchos, con y sin movimiento reducido. 276 capturas con 0 diferencias.
   4. **V2, la CSP** (quickstart.md §3.4): en la rama, 0 violaciones con muestra `14271f` y el fondo calculado en `rgb(20, 39, 31)`. En la base, 1 o más violaciones: es el control negativo.
