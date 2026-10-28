@@ -30,25 +30,28 @@ test.describe('the hero and the map of the campaign', () => {
     await expect(campaign.pills()).toHaveText(['4 mundos', '24 misiones', '12 desafíos nuevos']);
     await expect(campaign.rank()).toContainText('TU RANGO');
     await expect(campaign.rank()).toContainText('Explorador');
-    await expect(campaign.rank()).toContainText('0 / 720 XP de campaña');
+    await expect(campaign.rank().getByText('0 / 720 XP de campaña', { exact: true })).toBeVisible();
     await expect(campaign.rank()).toContainText('0 de 4 insignias');
     await expect(campaign.campaignProgress()).toHaveAttribute('max', '720');
     await expect(campaign.campaignProgress()).toHaveAttribute('value', '0');
-    await expect(
-      campaign.page.getByRole('button', { name: 'Mundo 1: Estación del robot, disponible' }),
-    ).toHaveAttribute('aria-pressed', 'true');
-    for (const name of [
+    await expect(campaign.worldNode(1)).toHaveAccessibleName(
+      'Mundo 1: Estación del robot, disponible',
+    );
+    await expect(campaign.worldNode(1)).toHaveAttribute('aria-pressed', 'true');
+    const lockedNodes = [
       'Mundo 2: Puerto de señales, bloqueado; ver requisitos',
       'Mundo 3: Archivo de rutas, bloqueado; ver requisitos',
       'Mundo 4: Núcleo de la máquina, bloqueado; ver requisitos',
-    ]) {
-      await expect(campaign.page.getByRole('button', { name })).toHaveAttribute(
-        'aria-pressed',
-        'false',
-      );
+    ];
+    for (const [index, name] of lockedNodes.entries()) {
+      const node = campaign.worldNode(index + 2);
+      await expect(node).toHaveAccessibleName(name);
+      await expect(node).toHaveAttribute('aria-pressed', 'false');
     }
     await expect(campaign.world('Estación del robot')).toContainText('Inicial / TU EXPEDICIÓN');
-    await expect(campaign.world('Estación del robot')).toContainText('0/ 180 XP');
+    await expect(
+      campaign.world('Estación del robot').getByText('0/ 180 XP', { exact: true }),
+    ).toBeVisible();
     await expect(campaign.storageNotice()).toHaveCount(0);
     await expect(campaign.freeLabLink()).toHaveAttribute('href', '?#laboratorio');
     expect(await storage.writes()).toEqual([]);
@@ -74,7 +77,9 @@ test.describe('the hero and the map of the campaign', () => {
     await expect(campaign.worldNode(2)).toHaveAccessibleName(
       'Mundo 2: Puerto de señales, disponible',
     );
-    await expect(campaign.worldNode(2)).toContainText('0/180 XP · explorar →');
+    await expect(
+      campaign.worldNode(2).getByText('0/180 XP · explorar →', { exact: true }),
+    ).toBeVisible();
     await expect(campaign.worldNode(2)).toHaveAttribute('aria-pressed', 'true');
     await expect(campaign.world('Puerto de señales')).toContainText('Intermedio / TU EXPEDICIÓN');
     await expect(campaign.badge('Piloto de estados', 'conseguida')).toContainText('CONSEGUIDA');
@@ -93,7 +98,7 @@ test.describe('the hero and the map of the campaign', () => {
 
     await expect(campaign.hero()).toContainText('CAMPAÑA · GO');
     await expect(campaign.rank()).toContainText('Explorador');
-    await expect(campaign.rank()).toContainText('0 / 720 XP de campaña');
+    await expect(campaign.rank().getByText('0 / 720 XP de campaña', { exact: true })).toBeVisible();
     await expect(campaign.world('La estación del rover')).toBeVisible();
   });
 });
@@ -171,7 +176,9 @@ test.describe('the mission filter', () => {
 
       await expect(campaign.missionCards()).toHaveCount(ids.length);
       for (const id of ids) {
-        await expect(campaign.missionCard(TITLE(id))).toContainText(kind);
+        await expect(
+          campaign.missionCard(TITLE(id)).getByText(kind, { exact: true }),
+        ).toBeVisible();
       }
       await expect(campaign.filter(filter)).toHaveAttribute('aria-pressed', 'true');
       await expect(campaign.filter(filter)).toBeFocused();
@@ -183,8 +190,13 @@ test.describe('the mission filter', () => {
     await campaign.filter('Todas').click();
     await expect(campaign.missionCards()).toHaveCount(6);
     await expect(campaign.filter('Todas')).toHaveAttribute('aria-pressed', 'true');
+    await expect(campaign.filter('Todas')).toBeFocused();
+    for (const other of everyFilter.filter((name) => name !== 'Todas')) {
+      await expect(campaign.filter(other)).toHaveAttribute('aria-pressed', 'false');
+    }
 
     await campaign.filter('Kata').click();
+    await expect(campaign.filter('Kata')).toHaveAttribute('aria-pressed', 'true');
     await campaign.worldNode(1).click();
     await expect(campaign.filter('Todas')).toHaveAttribute('aria-pressed', 'true');
     await expect(campaign.filter('Kata')).toHaveAttribute('aria-pressed', 'false');
@@ -202,7 +214,7 @@ test.describe('the mission cards', () => {
     await campaign.worldNode(1).click();
 
     const assisted = campaign.missionCard(TITLE('rust-22'));
-    await expect(assisted).toContainText('Entrenamiento');
+    await expect(assisted.getByText('Entrenamiento', { exact: true })).toBeVisible();
     await expect(assisted).toContainText('30/30 XP');
     await expect(assisted).toContainText('✓ Pruebas · 20');
     await expect(assisted).toContainText('✓ Predicción · 10');
@@ -212,7 +224,7 @@ test.describe('the mission cards', () => {
     );
     await expect(campaign.missionLink(TITLE('rust-22'))).toHaveAttribute(
       'href',
-      urls.campaignMission('rust-world-1', 'rust-22').replace('/', ''),
+      '?campana=rust-world-1&ejercicio=rust-22&paso=learn#laboratorio',
     );
     await expect(campaign.missionLink(TITLE('rust-103'))).toHaveAccessibleName(
       'Volver a experimentar ↗',
@@ -227,7 +239,7 @@ test.describe('the mission cards', () => {
     await shell.goto(urls.view('campana'));
 
     const open = campaign.missionCard(TITLE('rust-02'));
-    await expect(open).toContainText('0/30 XP');
+    await expect(open.getByText('0/30 XP', { exact: true })).toBeVisible();
     await expect(open).toContainText('○ Pruebas · 20');
     await expect(open).toContainText('○ Predicción · 10');
     await expect(campaign.missionLink(TITLE('rust-02'))).toHaveAccessibleName('Abrir misión ↗');
@@ -274,7 +286,7 @@ test.describe('the next move', () => {
     await expect(campaign.nextMove()).toContainText('TU SIGUIENTE MOVIMIENTO');
     await expect(campaign.nextMove()).toContainText(TITLE('rust-02'));
     await expect(campaign.nextMove()).toContainText('Una misión, una hipótesis y tres pruebas.');
-    const enter = campaign.nextMove().getByRole('link', { name: 'Entrar al IDE ↗' });
+    const enter = campaign.nextMove().getByRole('link', { name: 'Entrar al IDE ↗', exact: true });
     await expect(enter).toHaveAttribute('href', href);
 
     await page.evaluate(
@@ -286,7 +298,9 @@ test.describe('the next move', () => {
     await expect(campaign.nextMove()).toContainText(
       'Código aprobado. Volvé a Descubrí y razoná la predicción.',
     );
-    const predict = campaign.nextMove().getByRole('link', { name: 'Resolver predicción ↗' });
+    const predict = campaign
+      .nextMove()
+      .getByRole('link', { name: 'Resolver predicción ↗', exact: true });
     await expect(predict).toHaveAttribute('href', href);
   });
 });
@@ -346,6 +360,8 @@ test.describe('the checkpoint', () => {
     await expect(
       page.getByRole('status').filter({ hasText: 'Insignia conseguida: Piloto de estados' }),
     ).toBeVisible();
+    await expect(campaign.checkpointOption('B')).toHaveAttribute('aria-pressed', 'true');
+    await expect(campaign.checkpointOption('B')).toBeFocused();
     await expect(campaign.nextWorldButton()).toBeVisible();
     expect(campaignWrites(await storage.writes())).toHaveLength(2);
 

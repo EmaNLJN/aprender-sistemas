@@ -700,12 +700,12 @@ Todo lo demás lo cubren `campaign.spec.ts` (T004 y T005), `campaign-kept-state.
   - **(a) `an empty browser opens Rust at world 1 with nothing earned`.** Con `storage.watchWrites()` y `urls.view('campana')`:
     - `hero()` contiene `CAMPAÑA · RUST`;
     - `pills()` tiene exactamente «4 mundos», «24 misiones» y «12 desafíos nuevos» (README, línea 119);
-    - `rank()` contiene «TU RANGO», «Explorador», «0 / 720 XP de campaña» y «0 de 4 insignias»;
+    - `rank()` contiene «TU RANGO», «Explorador», «0 / 720 XP de campaña» (texto exacto: «20 / 720» también contiene «0 / 720») y «0 de 4 insignias»;
     - `campaignProgress()` tiene `max` «720» y `value` «0»;
     - los cuatro nodos del mapa se llaman:
       - «Mundo 1: Estación del robot, disponible», con `aria-pressed` «true»;
       - «Mundo 2: Puerto de señales, bloqueado; ver requisitos», «Mundo 3: Archivo de rutas, bloqueado; ver requisitos» y «Mundo 4: Núcleo de la máquina, bloqueado; ver requisitos», con «false»;
-    - `world('Estación del robot')` contiene «Inicial / TU EXPEDICIÓN» y «0/ 180 XP»;
+    - `world('Estación del robot')` contiene «Inicial / TU EXPEDICIÓN» y tiene el texto exacto «0/ 180 XP»;
     - `storageNotice()` tiene 0 elementos;
     - `freeLabLink()` tiene `href` «?#laboratorio»;
     - `storage.writes()` es `[]`.
@@ -713,13 +713,13 @@ Todo lo demás lo cubren `campaign.spec.ts` (T004 y T005), `campaign-kept-state.
     - `rank()` contiene «Aprendiz de sistemas», «180 / 720 XP de campaña» y «1 de 4 insignias»;
     - `rankSymbol()` es «◈»;
     - `worldNode(1)` se llama «Mundo 1: Estación del robot, completado», contiene «Insignia conseguida» y tiene `aria-pressed` «false»;
-    - `worldNode(2)` se llama «Mundo 2: Puerto de señales, disponible», contiene «0/180 XP · explorar →» y tiene `aria-pressed` «true»;
+    - `worldNode(2)` se llama «Mundo 2: Puerto de señales, disponible», tiene el texto exacto «0/180 XP · explorar →» y tiene `aria-pressed` «true»;
     - `world('Puerto de señales')` contiene «Intermedio / TU EXPEDICIÓN»;
     - `badge('Piloto de estados', 'conseguida')` contiene «CONSEGUIDA»;
     - `badge('Custodia del protocolo', 'pendiente')` contiene «POR DESCUBRIR».
 
     Los valores salen a mano de la fixture: los seis sellos del mundo 1 con pruebas y predicción dan 6 × 30 = 180, y su checkpoint superado completa un mundo.
-  - **(b2) `the progress of master with its saved language opens Go`.** Con `MASTER_GO`: `hero()` contiene «CAMPAÑA · GO», `rank()` contiene «Explorador» y «0 / 720 XP de campaña», y `world('La estación del rover')` es visible (`go-01` no es misión de ningún mundo de Go).
+  - **(b2) `the progress of master with its saved language opens Go`.** Con `MASTER_GO`: `hero()` contiene «CAMPAÑA · GO», `rank()` contiene «Explorador» y el texto exacto «0 / 720 XP de campaña», y `world('La estación del rover')` es visible (`go-01` no es misión de ningún mundo de Go).
   - **(c) `choosing a world rewrites ?mundo= in place, presses it and focuses its title`.** Con `storage.watchWrites()` y `/?mundo=rust-world-1&extra=1#campana`:
     1. Se lee `history.length` con `page.evaluate`.
     2. Se hace clic en `worldNode(2)`.
@@ -740,20 +740,20 @@ Todo lo demás lo cubren `campaign.spec.ts` (T004 y T005), `campaign-kept-state.
     3. Se hace clic en `backToWorld('Estación del robot')` y se espera `world('Estación del robot')`, la URL `/?mundo=rust-world-1#campana` y su título enfocado.
   - **(e) `each filter shows the missions of its type, keeps the focus and resets on a new world`.** Con `MASTER_RUST` (el mundo 2 está abierto):
     - «Entrenamiento» da 3 tarjetas, las de `TITLE('rust-18')`, `TITLE('rust-27')` y `TITLE('rust-78')`;
-    - «Reparación» da 1, `TITLE('rust-104')`, con el tipo «Reparación · lings»;
+    - «Reparación» da 1, `TITLE('rust-104')`, con el texto exacto «Reparación · lings» (el título de `rust-105` contiene «Kata»: la comparación es exacta);
     - «Kata» da 1, `TITLE('rust-105')`, con el tipo «Kata»;
     - «Desafío final» da 1, `TITLE('rust-106')`, con el tipo «Desafío final»;
-    - «Todas» da 6.
+    - «Todas» da 6, con `aria-pressed` «true», el foco y los otros cuatro botones en «false».
 
-    Los tipos salen de la posición en `challengeIds` (README, «un desafío no declara `challengeType`, porque lo fija su posición en el mundo»). Después de cada clic, el botón tiene `aria-pressed` «true» y está enfocado, y los demás tienen «false». Al final, con «Kata» elegido, se hace clic en `worldNode(1)` y se espera `filter('Todas')` con `aria-pressed` «true».
+    Los tipos salen de la posición en `challengeIds` (README, «un desafío no declara `challengeType`, porque lo fija su posición en el mundo»). Después de cada clic, el botón tiene `aria-pressed` «true» y está enfocado, y los demás tienen «false». Al final, con «Kata» elegido (se comprueba que está en «true»), se hace clic en `worldNode(1)` y se espera `filter('Todas')` con `aria-pressed` «true».
   - **(f1) `mission cards of a completed world show their seals, the assisted practice and the way back`.** Con `MASTER_RUST`, `worldNode(1)` y la tarjeta de `TITLE('rust-22')`:
-    - contiene «Entrenamiento», «30/30 XP», «✓ Pruebas · 20», «✓ Predicción · 10» y «Práctica con solución de apoyo»;
+    - tiene el tipo exacto «Entrenamiento» y contiene «30/30 XP», «✓ Pruebas · 20», «✓ Predicción · 10» y «Práctica con solución de apoyo»;
     - su enlace se llama «Volver a experimentar ↗», con `href` «?campana=rust-world-1&ejercicio=rust-22&paso=learn#laboratorio».
 
     La tarjeta de `TITLE('rust-103')` también tiene «Volver a experimentar ↗».
   - **(f2) `an open mission links to the lab and a locked boss lists what is missing`.** En un navegador vacío:
     - la tarjeta de `TITLE('rust-02')`:
-      - contiene «0/30 XP», «○ Pruebas · 20» y «○ Predicción · 10»;
+      - tiene el texto exacto «0/30 XP» y contiene «○ Pruebas · 20» y «○ Predicción · 10»;
       - su enlace se llama «Abrir misión ↗», con `href` «?campana=rust-world-1&ejercicio=rust-02&paso=learn#laboratorio»;
     - la tarjeta de `TITLE('rust-103')`:
       - no tiene enlace;
@@ -787,9 +787,10 @@ Todo lo demás lo cubren `campaign.spec.ts` (T004 y T005), `campaign-kept-state.
        - `checkpointFeedback()` contiene «Bien razonado.»;
        - `checkpoint()` se llama «Una idea que ya podés explicar.»;
        - la página muestra un `status` con «Insignia conseguida: Piloto de estados»;
+       - B queda con `aria-pressed` «true» y con el foco;
        - `nextWorldButton()` es visible;
        - las escrituras de campaña son exactamente 2.
-    4. **`page.reload()`:** B sigue con `aria-pressed` «true».
+    4. **`page.reload()`:** abre el mundo 2, el primer mundo abierto (FR-013 y FR-014); `worldNode(1)` lo vuelve a mostrar y B sigue con `aria-pressed` «true».
     5. **Clic en `nextWorldButton()`:** `world('Puerto de señales')` es visible y la URL termina en `/?mundo=rust-world-2#campana`.
 - **Pasos:**
   1. Escribir las pruebas.
