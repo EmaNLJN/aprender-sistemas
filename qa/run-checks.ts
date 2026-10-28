@@ -3,7 +3,9 @@ import path from 'node:path';
 
 const webChecks = [
   'build-check.ts',
+  'dist-content-check.ts',
   'load-order-check.ts',
+  'seams-guard-check.ts',
   'content-tools-check.ts',
   'content-harness-check.ts',
   'content-exercises-check.ts',

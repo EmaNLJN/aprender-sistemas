@@ -133,6 +133,13 @@ final class Browser
         return $this->send('POST', $uri, $data);
     }
 
+    public function confirmPassword(): self
+    {
+        $this->post('/api/auth/confirm-password', ['password' => 'password'])->assertCreated();
+
+        return $this;
+    }
+
     /** Starts a session for the user through a test-only route and makes the following requests carry the account header. */
     public function signIn(User $user, bool $remember = false): self
     {

@@ -1,9 +1,11 @@
-/* Dependencias de evaluación entre los imports de frontend/src/app/main.tsx.
+/* Dependencias de evaluación entre las etapas de arranque y los módulos legacy.
  * node qa/load-order-check.ts
  *
  * Los scripts legacy se comunican por window.* y leen sus dependencias al
- * evaluarse, así que el orden de los imports es el contrato de carga. El check
- * sólo lee el texto de main.tsx: no ejecuta nada.
+ * evaluarse, así que el orden de la cadena es el contrato de carga. El check
+ * sólo lee texto y no ejecuta nada: de frontend/src/app/main.tsx, las hojas de estilo y
+ * la secuencia de etapas (runBoot([...])); de frontend/src/app/boot/legacy-views.ts, la cadena
+ * de módulos, un `() => import('…'),` por línea, y la llamada a startApp().
  *
  * Cada import se normaliza a una ruta relativa a la raíz del repo (resuelta desde el
  * directorio de la entrada, probando .ts, .tsx y .js cuando no lleva extensión), y la
@@ -70,6 +72,14 @@ const CONSTRAINTS: Constraint[] = [
   ]),
 ];
 
+const STAGE_CONSTRAINTS: Constraint[] = [
+  [
+    'contentGate',
+    'legacyViews',
+    'los adaptadores y las vistas legacy leen el contenido publicado al evaluarse',
+  ],
+];
+
 const SOURCE_EXTENSIONS = ['', '.ts', '.tsx', '.js'];
 
 // Ruta del import relativa a la raíz del repo, con barras; lo no relativo queda igual.
@@ -83,10 +93,60 @@ function normalizeImport(specifier: string, entryDirectory: string): string {
   return path.relative(repoRoot, resolved).split(path.sep).join('/');
 }
 
-function readImports(source: string, entryDirectory: string): string[] {
-  return [...source.matchAll(/^\s*import\s+['"]([^'"]+)['"]\s*;?\s*$/gm)].map((match) =>
+const IMPORT_STATEMENT = /^\s*import\s+(?:[^'"]*?\sfrom\s+)?['"]([^'"]+)['"]/gm;
+const CHAIN_ENTRY = /^\s*\(\)\s*=>\s*import\(\s*['"]([^'"]+)['"]\s*\),?\s*$/gm;
+const BOOT_STAGES = /runBoot\(\s*\[([^\]]*)\]/;
+const START_CALL = /^[ \t]*startApp\(\);?[ \t]*$/gm;
+
+function readStyles(source: string, entryDirectory: string): string[] {
+  return [...source.matchAll(IMPORT_STATEMENT)]
+    .map((match) => normalizeImport(match[1] ?? '', entryDirectory))
+    .filter((name) => name.endsWith('.css'));
+}
+
+function readChain(source: string, entryDirectory: string): string[] {
+  return [...source.matchAll(CHAIN_ENTRY)].map((match) =>
     normalizeImport(match[1] ?? '', entryDirectory),
   );
+}
+
+function readStages(source: string): string[] | undefined {
+  const list = BOOT_STAGES.exec(source)?.[1];
+  if (list === undefined) return undefined;
+  return list
+    .split(',')
+    .map((name) => name.trim())
+    .filter(Boolean);
+}
+
+function checkStages(stages: string[] | undefined): string[] {
+  if (stages === undefined) return ['main.tsx debe arrancar con runBoot([...]) y no lo hace'];
+  const problems: string[] = [];
+  for (const [before, after, reason] of STAGE_CONSTRAINTS) {
+    const first = stages.indexOf(before);
+    const second = stages.indexOf(after);
+    if (first < 0 || second < 0) {
+      problems.push(
+        `falta la etapa ${first < 0 ? before : after} en runBoot([${stages.join(', ')}])`,
+      );
+    } else if (first > second) {
+      problems.push(`la etapa ${before} debe correr antes que ${after}: ${reason}`);
+    }
+  }
+  return problems;
+}
+
+function checkStartCall(source: string): string[] {
+  const calls = [...source.matchAll(START_CALL)];
+  if (calls.length !== 1) {
+    return [`startApp() debe llamarse exactamente una vez, pero se llama ${calls.length} veces`];
+  }
+  const lastEntry = [...source.matchAll(CHAIN_ENTRY)].at(-1);
+  const lastEntryEnd = (lastEntry?.index ?? 0) + (lastEntry?.[0].length ?? 0);
+  if ((calls[0]?.index ?? 0) < lastEntryEnd) {
+    return ['startApp() debe llamarse después del último import() de la cadena'];
+  }
+  return [];
 }
 
 function checkLoadOrder(imports: string[]): string[] {
@@ -113,14 +173,32 @@ function checkLoadOrder(imports: string[]): string[] {
   return problems;
 }
 
-const mainPath = path.join(repoRoot, 'frontend', 'src', 'app', 'main.tsx');
-const imports = readImports(fs.readFileSync(mainPath, 'utf8'), path.dirname(mainPath));
-const problems = checkLoadOrder(imports);
-assert.deepEqual(
-  problems,
-  [],
-  `Orden de carga inválido en frontend/src/app/main.tsx:\n${problems.join('\n')}`,
-);
+const bootDirectory = path.join(repoRoot, 'frontend', 'src', 'app');
+const mainPath = path.join(bootDirectory, 'main.tsx');
+const viewsPath = path.join(bootDirectory, 'boot', 'legacy-views.ts');
+
+function checkBoot(): { problems: string[]; imports: string[] } {
+  const mainSource = fs.readFileSync(mainPath, 'utf8');
+  const stageProblems = checkStages(readStages(mainSource));
+  if (!fs.existsSync(viewsPath)) {
+    return {
+      problems: [...stageProblems, 'falta frontend/src/app/boot/legacy-views.ts'],
+      imports: [],
+    };
+  }
+  const viewsSource = fs.readFileSync(viewsPath, 'utf8');
+  const imports = [
+    ...readStyles(mainSource, path.dirname(mainPath)),
+    ...readChain(viewsSource, path.dirname(viewsPath)),
+  ];
+  return {
+    problems: [...stageProblems, ...checkLoadOrder(imports), ...checkStartCall(viewsSource)],
+    imports,
+  };
+}
+
+const { problems, imports } = checkBoot();
+assert.deepEqual(problems, [], `Orden de carga inválido:\n${problems.join('\n')}`);
 console.log(
-  `load-order-check OK: ${imports.length} imports, ${CONSTRAINTS.length} restricciones de orden.`,
+  `load-order-check OK: ${imports.length} imports, ${CONSTRAINTS.length} restricciones de orden y ${STAGE_CONSTRAINTS.length} de etapas.`,
 );

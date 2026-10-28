@@ -1,4 +1,4 @@
-import curriculum from '../../../../build/curriculum.json';
+import { getContent } from '../content/content';
 import type { Exercise } from '../../entities/exercise';
 import { infraModels, type InfraModels } from '../../entities/systems-simulation';
 import type { SystemsWorkshop } from '../../entities/systems-workshop';
@@ -13,8 +13,9 @@ declare global {
   }
 }
 
+const content = getContent();
 window.SYSTEMS_INFRA = {
-  workshops: curriculum.workshops.infra as SystemsWorkshop[],
+  workshops: content.workshops.infra,
   models: infraModels,
 };
-window.SYSTEMS_INFRA_LABS = curriculum.cores.infra as Exercise[];
+window.SYSTEMS_INFRA_LABS = content.cores.infra;

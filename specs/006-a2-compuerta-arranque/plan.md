@@ -15,7 +15,7 @@
 A2 saca el currículo de `dist/index.html` y hace que el arranque lo pida antes de evaluar las vistas legacy (spec, «Intención y alcance»). El enfoque:
 
 - **El contenido llega como un archivo.** El build copia `build/curriculum.json`, sin tocar un byte, a `dist/content/curriculum.<versión>.json`. El nombre lleva la versión: una página de otro build recibe un 404 y no contenido ajeno (research.md, R3). `dist/` queda como la raíz web completa (también los avisos de licencia) y se copia y se monta entero (R4).
-- **Una compuerta dentro de una secuencia de etapas.** `main.tsx` importa las hojas de estilo y recorre `runBoot([contentGate, legacyViews])`. La compuerta pide las 17 porciones a una fuente intercambiable, las valida todas, las guarda, avisa con un evento y recién entonces la etapa `legacyViews` evalúa la cadena de hoy, en el mismo orden, con `import()` (R1, R2, R6, R7).
+- **Una compuerta dentro de una secuencia de etapas.** `main.tsx` importa las hojas de estilo y recorre `runBoot([contentGate, legacyViews])`. La compuerta pide las 17 porciones a una fuente intercambiable, las valida todas, las guarda, avisa con un evento y recién entonces la etapa `legacyViews` evalúa la cadena de hoy, en el mismo orden, con `import()`, y llama `startApp()`, el arranque explícito de `app.js` (R1, R2, R6, R7).
 - **Todo o nada.** Si algo falla no se publica ni se evalúa nada, el almacenamiento y la URL quedan intactos y el alumno ve un mensaje con «Reintentar» (R6).
 - **Un acceso tipado.** `getContent()` reemplaza a los seis importadores estáticos del JSON (R5).
 - **Cuatro oráculos que no salen de la compuerta:** `dump-globals` con su línea base de T002; el `documentHash` y las huellas de `portions` del meta; el oráculo de ausencia y el tope medido de `build-check`; y los E2E de F1 en un navegador real.
@@ -46,7 +46,7 @@ A2 saca el currículo de `dist/index.html` y hace que el arranque lo pida antes 
 - sin scripts ni `style=` en línea nuevos: la CSP de C4 no admite `'unsafe-inline'`, y la compuerta vive dentro del módulo que Vite ya emite;
 - los checks leen la página construida por un solo módulo (`qa/lib/built-page.ts`): C4 retira `vite-plugin-singlefile` y el `dist/` pasa a varios archivos.
 
-**Scale/Scope**: 17 porciones; un documento de unos 1,3 MB (391.166 bytes con el gzip de Nginx, medidos sobre uno del 2026-10-04); una cadena de 18 módulos legacy hoy, que fija la base. Se crean 19 archivos en `frontend/src/` (12 de código y 7 specs) y 7 en `qa/` (6 de soporte y checks, más el de los E2E); cambian 6 adaptadores, `main.tsx`, `pages/atlas/index.ts`, 3 configuraciones y 11 archivos de `qa/` y `tools/`; y se borran `atlas-catalog.ts` y `dump-dist-globals.ts`.
+**Scale/Scope**: 17 porciones; un documento de unos 1,3 MB (391.166 bytes con el gzip de Nginx, medidos sobre uno del 2026-10-04); una cadena de 18 módulos legacy hoy, que fija la base. Se crean 19 archivos en `frontend/src/` (12 de código y 7 specs) y 7 en `qa/` (6 de soporte y checks, más el de los E2E); cambian 6 adaptadores, `main.tsx`, `pages/atlas/index.ts`, 3 configuraciones, 11 archivos de `qa/` y `tools/` y el Page Object del shell de F1; y se borran `atlas-catalog.ts` y `dump-dist-globals.ts`.
 
 ## Constitution Check
 
@@ -105,7 +105,8 @@ qa/
 ├── {atlas-check,curriculum-ids-check,runtime-check}.ts, fixtures/atlas-page-render.tsx   (T005)
 ├── build-check.ts                              (T006 y T010)
 ├── dist-content-check.ts                       (nuevo, T009) y su alta en run-checks.ts
-└── e2e/                                        (T011) los escenarios de A2 en la red de F1
+└── e2e/                                        (T008) la espera de ShellPage.goto; (T011) los escenarios
+                                                de A2 en la red de F1
 tools/content/{dump-globals.ts (T005), dump-dist-globals.ts (se borra, T009)}
 README.md  AGENTS.md  docs/architecture.md  docs/refactor-roadmap.md  qa/AGENTS.md   (T012)
 ```
@@ -122,7 +123,7 @@ El usuario aceptó las tres decisiones de diseño que este plan dejaba abiertas,
 | El build emite los dos avisos de licencia, y `frontend/Dockerfile` copia `dist/` entero con una sola línea | Q7; FR-016 | R4 | T006, T012, T013 |
 | Los marcadores del oráculo de ausencia son los de `curriculumMarkers()`: dos textos largos de una entrada y, si no es una palabra común del código, su ID | Q8; FR-015, SC-003 | R11 | T005, T010 |
 
-**Sigue abierta, a propósito:** qué hacer si P1 falla en T001. Se decide si pasa: con P1 en verde no hay nada que decidir, y con P1 en rojo el plan se detiene y el coordinador le lleva al usuario las alternativas de research.md (R1) con su costo (tarea 1.1).
+**Quedaba abierta, a propósito:** qué hacer si P1 fallaba en T001. No hubo nada que decidir: P1 pasó (research.md, «Resultados del spike»).
 
 ## Lo que A2 supone de F1 y F2
 
@@ -133,9 +134,10 @@ F1 y F2 no están entregadas (ver «Estado al 2026-10-06», abajo). Esta tabla e
 | F1 | `npm test` corre las specs de Vitest (`frontend/src/**/*.spec.ts`, proyecto `node`) además de los checks; existe `npm run test:unit`; el Playwright corre contra `vite preview`, que sirve `dist/` entero, con Page Objects en `qa/e2e/pages/` y sólo Chromium | T003, T004 y T011 siguen la estructura que F1 dejó, y T001 la anota. Si Vitest no llegó, A2 no empieza. Si el servidor de F1 sirve sólo el HTML, T011 pide que sirva `dist/content/` |
 | F1 | Qué hace con un `console.error` (Q3 de su spec, decidida el 2026-10-05: lo hace fallar el test, salvo una lista blanca) | Como lo hace fallar, cada escenario de falla de T011 declara su entrada en la lista blanca: Chromium escribe «Failed to load resource» ante un 404, un 500 o un pedido abortado (no verificado) |
 | F1 | Su configuración es de escritorio (Desktop Chrome) | T011 pide el viewport móvil con `test.use` |
+| F1 | `ShellPage.goto(url)` (`qa/e2e/pages/shell.ts`) deja la página lista para actuar: espera el evento `load`, y en la base la app ya arrancó en ese momento | Difiere (T001): con la compuerta, la app arranca cuando llega el contenido y tres pruebas de F1 fallan por una carrera. T008 hace que `goto` espere la primera vista o el error de `#main`, no el estado de carga |
 | F2.1 | Los almacenes y los motores son singletons importables y los `register-*` quedan como adaptadores finos | No cambia la cadena |
-| F2.2 | El catálogo `exercises`/`byId` es un módulo de `entities/exercise` que se evalúa dentro de la cadena diferida y lee los globals que publican los adaptadores, o recibe las porciones desde `app` | Si importa `build/curriculum.json` en estático, T008 lo reemplaza (FR-005); T001 anota el archivo |
-| F2.3 | El arranque de `app.js` es una función que se llama en orden | `legacyViews` la llama después del último `import()`; T001 anota su nombre |
+| F2.2 | El catálogo `exercises`/`byId` es un módulo de `entities/exercise` que se evalúa dentro de la cadena diferida y lee los globals que publican los adaptadores, o recibe las porciones desde `app` | Si importa `build/curriculum.json` en estático, T008 lo reemplaza (FR-005); T001 anota el archivo. T001: `entities/exercise/model/exercise-catalog.ts` no lo importa y lo inicializa `TallerLab.init()`, dentro de `startApp()` |
+| F2.3 | El arranque de `app.js` es una función que se llama en orden | `legacyViews` la llama después del último `import()`; T001 anota su nombre. T001: es `startApp()`, exportada por `frontend/app.js`, y cambia T007 y T008 |
 | F2.4 | El registro de modelos de Sistemas está en `entities/systems-simulation` | Los `register-systems-*` siguen publicando `SYSTEMS_*`: no cambia |
 | Épico | Los ports editan `legacy-views.ts` y las restricciones de `load-order-check`, no `main.tsx` | — |
 
@@ -146,7 +148,14 @@ F1 y F2 no están entregadas (ver «Estado al 2026-10-06», abajo). Esta tabla e
 - **F1 está implementada** en el PR #23 (abierto, apilado sobre el PR #16). En su rama se comprobó lo que la tabla supone: `npm test` corre `vitest run --config frontend/vitest.config.ts` además de los checks, y existen `npm run test:unit` y `npm run test:e2e`; Playwright corre un solo proyecto, Chromium con la configuración de escritorio, contra `npm run preview`; los Page Objects están en `qa/e2e/pages/` y los specs, en `qa/e2e/specs/`. Un `console.error` o una excepción de la página hace fallar el test salvo lo que declare `CONSOLE_ALLOWLIST` (hoy vacía) o `expectIssue(patrón, motivo)` en el propio test, y la guarda también falla si un error esperado no ocurre. El viewport móvil sigue siendo de T011 (`test.use`).
 - **F2 tiene spec y plan de F2a** en el PR #25 (borrador, apilado sobre el PR #16). El plan de F2a se está rehaciendo en `spec/f2-seams`, y ahí se fijan los nombres que A2 toma de F2a (F2-I1 a F2-I6, más abajo). T001 los contrasta con la base cuando la tenga.
 - **El usuario eligió Zustand** para la suscripción de los almacenes de F2, en lugar de una señal propia. La dependencia la suma la unidad 1 de F2a. A2 no se suscribe a ningún almacén: su código de referencia no cambia.
-- **De F2a, las unidades 2 (catálogo) y 4 (registro de modelos) están implementadas**, en las ramas `f2a/u2-c-catalogo` y `f2a/u4-m-modelos`. En la de la unidad 2, `exerciseCatalog` (`entities/exercise`) no importa `build/curriculum.json` (sólo lo hace su spec) y lo inicializa `lab.js`, al evaluarse, con los globals `window.*` que publican los adaptadores: es la primera forma de F2-I2, y cae dentro de la cadena diferida. Los seis importadores de FR-005 siguen siendo los mismos. Faltan la 1 (almacenes y motores, con Zustand) y la 3 (arranque explícito), que son las que fijan F2-I3 y F2-I1. A2 sigue sin empezar: T001 corre sobre la base con las cuatro.
+- **De F2a, las unidades 2 (catálogo) y 4 (registro de modelos) están implementadas**, en las ramas `f2a/u2-c-catalogo` y `f2a/u4-m-modelos`. En la de la unidad 2, `exerciseCatalog` (`entities/exercise`) no importa `build/curriculum.json` (sólo lo hace su spec) y lo inicializaba `lab.js`, al evaluarse, con los globals `window.*` que publican los adaptadores: es la primera forma de F2-I2. Los seis importadores de FR-005 siguen siendo los mismos. Faltan la 1 (almacenes y motores, con Zustand) y la 3 (arranque explícito), que son las que fijan F2-I3 y F2-I1. A2 sigue sin empezar: T001 corre sobre la base con las cuatro. En esa base (`c5d497d`), con la unidad 3, el catálogo ya no lo inicializa `lab.js` al evaluarse: lo inicializa `TallerLab.init()` (el `init()` de `lab.js`), al que llama `startApp()`, con los mismos globals. Sigue después de la compuerta y no cambia ninguna tarea.
+
+**Contraste de T001 (2026-10-06).** Sobre la base `c5d497d`, la regla se disparó y este plan ya está corregido (research.md, «Resultados del spike»):
+- `legacyViews` llama `startApp()` después del último `import()`: el código de referencia de T008 la incluye;
+- `boot-check` tiene 14 casos, no 10, y tres de la unidad 3 de F2a dependen de dónde se llama `startApp()`; la regla de `startApp()` de `load-order-check` pasa a `legacy-views.ts` (T007);
+- `ShellPage.goto` espera la primera vista o el error, y el cambio entra con el corte (T008), no con T011;
+- el arnés de T007 y T009 suma `Event` y un stub de `MutationObserver`;
+- el quickstart cuenta los `<script>` con la expresión de `build-check`.
 
 ### Interfaces y contratos que A2 fija para F2 y el épico
 
@@ -154,7 +163,7 @@ Lo que A2 fija y F2 (unidades 1 a 4) tiene que dejar. F2-I1 a F2-I5 son interfac
 
 | ID | Unidad | Interfaz | Cómo la usa A2 |
 | --- | --- | --- | --- |
-| F2-I1 | 3, arranque explícito | Evaluar `app.js` (y cada módulo de la cadena) no arranca la app: ni los `init` de campaña y Sistemas, ni `loadWarning`, ni el primer render, ni lecturas de almacenamiento o de la URL. Lo que hacía al evaluarse pasa a una función exportada que se llama una sola vez y en el mismo orden (campaña, Sistemas, aviso de carga, render). Si vive en `frontend/src/app/boot/`, no pisa los nombres de A2 (`run-boot`, `content-gate`, `content-stage`, `gate-view`, `legacy-views`) ni define `runBoot` ni `BootStage` | `legacyViews` la llama después del último `import()` de la cadena; T001 anota su nombre y su archivo |
+| F2-I1 | 3, arranque explícito | Evaluar `app.js` (y cada módulo de la cadena) no arranca la app: ni los `init` de campaña y Sistemas, ni `loadWarning`, ni el primer render, ni lecturas de almacenamiento o de la URL. Lo que hacía al evaluarse pasa a una función exportada que se llama una sola vez y en el mismo orden (campaña, Sistemas, aviso de carga, render). Si vive en `frontend/src/app/boot/`, no pisa los nombres de A2 (`run-boot`, `content-gate`, `content-stage`, `gate-view`, `legacy-views`) ni define `runBoot` ni `BootStage` | `legacyViews` la llama después del último `import()` de la cadena; T001 anota su nombre y su archivo. T001: `startApp()`, de `frontend/app.js` |
 | F2-I2 | 2, catálogo | El módulo del catálogo (`exercises`, `byId`) no importa `build/curriculum.json` ni otro contenido en estático, y se construye después de la compuerta: se evalúa dentro de la cadena diferida y lee los globals que publican los adaptadores, o expone una función de las porciones de ejercicio (`lab`, `quests` y `cores`) que `app` llama después de la compuerta | Una entidad no puede importar `getContent` (las capas lo impiden): A2 sólo cambia su fuente en T008 si hace falta |
 | F2-I3 | 1, almacenes y motores | Ningún módulo alcanzable por imports estáticos desde `main.tsx` abre un almacén ni crea un motor al evaluarse: los singletons se crean cuando la cadena importa los `register-*`, o cuando se llama el arranque | La compuerta no lee ni escribe almacenamiento (FR-008) |
 | F2-I4 | 1 a 4 | Los `register-*` siguen siendo módulos con efectos que publican `window.*`, y cada cambio de la lista de imports y de la tabla de `qa/load-order-check.ts` se hace sobre la forma vigente: la lista de `main.tsx` antes del corte de A2 y `legacy-views.ts` después | La cadena de A2 es esa lista |
@@ -171,13 +180,13 @@ Lo que el revisor mira primero, porque es lo que más cuesta equivocar o lo que 
   - Nada se guarda ni se publica hasta que están las 17 porciones, con la versión esperada y con su forma: `storeContent` y el evento van después de `checkPortions`.
   - Ningún módulo alcanzable por imports estáticos desde `main.tsx` lee contenido ni abre `localStorage` al evaluarse: sólo las hojas de estilo, `boot/`, `content/` y `shared/api/content/`.
 - **Los temporizadores.** El del umbral y el del tope no hacen nada una vez que el intento terminó, porque `boot-check` los corre todos y no cancela ninguno. El spec lo prueba con un `clearTimeout` sin efecto.
-- **El orden.** La cadena de `legacy-views.ts` es la lista de imports de la base, sin las hojas de estilo y en el mismo orden. `load-order-check` mantiene todas sus restricciones.
+- **El orden.** La cadena de `legacy-views.ts` es la lista de imports de la base, sin las hojas de estilo y en el mismo orden, y `startApp()` se llama una vez, después del último `import()`. `load-order-check` mantiene todas sus restricciones y sus tres reglas.
 - **Los mismos valores.** Los globals se arman con las porciones por referencia: sin copias, sin congelar y con el mismo orden de claves. `dump-globals` da los mismos bytes que en T002.
 - **Los bytes y la versión.** `dist/content/curriculum.<versión>.json` tiene el sha256 del `documentHash`. El HTML no tiene el currículo (tope y marcadores) y sí la versión. `dist/` es la raíz web completa (también los dos avisos de licencia): la imagen lo copia y la vista previa lo monta entero.
 - **Capas.** Los imports siguen `app → pages → … → shared`: el almacén sin imports en `shared`, el tipo `Content` en `app` y ninguna página que importe de `app`.
 - **El dist se lee por un solo módulo.** `build-check` y `dist-content-check` no parsean `dist/index.html` por su cuenta: usan `qa/lib/built-page.ts`, que es lo único que cambia cuando C4 retire `vite-plugin-singlefile`.
 - **Ningún script ni estilo en línea nuevo.** La compuerta vive en el módulo que Vite ya emite; el botón usa `addEventListener` y el marcado no lleva `style=` ni manejadores en línea. `frontend/src/index.html` no cambia.
-- **El corte es atómico.** T008 es el único commit que mezcla `main.tsx`, `legacy-views.ts`, los adaptadores y el Atlas. Revertirlo devuelve el import estático.
+- **El corte es atómico.** T008 es el único commit que mezcla `main.tsx`, `legacy-views.ts`, los adaptadores, el Atlas y la espera de `ShellPage.goto`. Revertirlo devuelve el import estático.
 - **Los textos.** Español rioplatense con voseo, sin estilos en línea y con el foco en «Reintentar».
 - **Lo que no se ejecutó al planificar:** el plugin de Vite, Docker y los E2E (ver «Riesgos»).
 
@@ -201,8 +210,8 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 | --- | --- | --- | --- |
 | G · Compuerta | `frontend/src/shared/api/content/**`, `frontend/src/app/content/**`, `frontend/src/app/boot/{run-boot,content-gate,gate-view,content-stage}.ts` y sus specs; en T004, la línea que reexporta `AtlasByLanguage` en `frontend/src/pages/atlas/index.ts` | Los tipos de las entidades | El transporte, el almacén, el tipo `Content` y la compuerta, sin cablear |
 | Q · QA | `qa/lib/{sources,legacy-sources,content-document,publish-content-fixture,built-page,boot-harness,content-server}.ts`, `qa/{boot-check,load-order-check,atlas-check,curriculum-ids-check,runtime-check,dist-content-check}.ts`, `qa/fixtures/atlas-page-render.tsx`, `tools/content/{dump-globals,dump-dist-globals}.ts` | De G: el almacén (`content-holder.ts`), `__CONTENT_VERSION__` y la señal; de C: el plugin (T009) | Los arneses, los oráculos y las pruebas que fallan del corte |
-| E · E2E | El archivo de specs de A2 en `qa/e2e/` y la parte del Page Object del shell que usa | El build de C (T008) | Los escenarios de A2 en la red de F1 |
-| C · Coordinador | `frontend/src/app/main.tsx`, `frontend/src/app/boot/legacy-views.ts`, `frontend/src/app/legacy/register-{catalogs,systems-lowlevel,systems-infra,systems-play,systems-pc,atlas}.ts(x)`, `frontend/src/pages/atlas/{index.ts (en T008),model/atlas-catalog.ts}`, el módulo de catálogo de F2.2 si hay que cambiarle la fuente (T001 anota su ruta), `frontend/vite.config.ts`, `frontend/Dockerfile`, `docker/compose.preview.yaml`, `qa/build-check.ts`, `qa/run-checks.ts`, `package.json` (sin cambios), la documentación de T012 y `tasks.md` | Todo | El build, el corte y el cierre |
+| E · E2E | El archivo de specs de A2 en `qa/e2e/` y lo que suma al Page Object del shell (la región del error y el botón) | El build de C (T008), con la espera de `ShellPage.goto` | Los escenarios de A2 en la red de F1 |
+| C · Coordinador | `frontend/src/app/main.tsx`, `frontend/src/app/boot/legacy-views.ts`, la espera de `ShellPage.goto` en `qa/e2e/pages/shell.ts` (T008), `frontend/src/app/legacy/register-{catalogs,systems-lowlevel,systems-infra,systems-play,systems-pc,atlas}.ts(x)`, `frontend/src/pages/atlas/{index.ts (en T008),model/atlas-catalog.ts}`, el módulo de catálogo de F2.2 si hay que cambiarle la fuente (T001: no hace falta), `frontend/vite.config.ts`, `frontend/Dockerfile`, `docker/compose.preview.yaml`, `qa/build-check.ts`, `qa/run-checks.ts`, `package.json` (sin cambios), la documentación de T012 y `tasks.md` | Todo | El build, el corte y el cierre |
 
 G, Q y E son slices delegables en el subagente `implementador` (`AGENTS.md`, «Trabajo con subagentes»): se le dan sus archivos, sus interfaces y sus checks, y se le dice que no deje comentarios. C lo hace el agente principal, que además revisa cada diff y corre los checks de cada integración.
 
@@ -220,7 +229,7 @@ G, Q y E son slices delegables en el subagente `implementador` (`AGENTS.md`, «T
 | --- | --- | --- |
 | `frontend/src/app/main.tsx` | F2.1 a F2.4 y, después, F10 y F11 | A2 parte de la base con F2.4 integrada. Después de A2, los ports editan `legacy-views.ts`; F11 suma una etapa previa en la llamada a `runBoot`; F10, una posterior |
 | `qa/load-order-check.ts`, `qa/boot-check.ts`, `qa/lib/legacy-sources.ts` | Los ports de F2 y de F3 a F10 | A2 los cambia en T005 y T007; después cada port edita sus tablas |
-| `qa/e2e/**`, `package.json` y `.github/workflows/ci.yml` | F1 | A2 sólo suma archivos y la parte del Page Object que usa. No cambia `package.json` ni el workflow |
+| `qa/e2e/**`, `package.json` y `.github/workflows/ci.yml` | F1 | A2 suma archivos, cambia la espera de `ShellPage.goto` en el corte (T008) y suma al Page Object del shell la parte que usa (T011). No cambia `package.json` ni el workflow |
 | `README.md`, `AGENTS.md`, `docs/architecture.md`, `docs/refactor-roadmap.md`, `qa/AGENTS.md` | El PR #16, F1 (adopción del ADR 0008) y los demás ítems | T012 los edita al final, sobre lo que ya esté integrado |
 | `specs/backend-multiusuario/roadmap.md` | El PR #16 (la fila de A2 y «Orden y paralelismo») | Esta rama sólo cambia la fila de A2 y una línea de «Estado y evidencia»; el conflicto es de una línea y se resuelve con el texto del PR #16 y el estado «Planificado» |
 | `docker/compose.yaml`, `backend/api/**` | C3, C6 y los demás ítems del backend | A2 no los toca |
@@ -1060,20 +1069,24 @@ COPY --from=build /app/dist/ /usr/share/nginx/html/
 
 ### Tarea 5.1 · Las pruebas del corte, que fallan (T007, dueño Q)
 
-- **Crea** `qa/lib/boot-harness.ts` y `qa/lib/content-server.ts`. **Cambia** `qa/boot-check.ts` y `qa/load-order-check.ts`.
+- **Crea** `qa/lib/boot-harness.ts` y `qa/lib/content-server.ts`. **Cambia** `qa/boot-check.ts`, `qa/load-order-check.ts` y, si `withoutStartCall` lo pide, `qa/lib/sources.ts` (paso 2).
 - **Entrega:**
-  - `createBootHarness({ fetch })`: el arnés de hoy (movido de `boot-check.ts`), más `fetch`, `AbortController`, `CustomEvent` y `dispatchEvent` en el contexto; espías de `getItem`, `setItem` y `removeItem` (`storageCalls`); `published`, con el contenido de cada evento de publicación y los globals que existían en ese instante; y `mainWrites`, con cada valor que se asignó a `#main.innerHTML`. `bootError` sigue para lo síncrono (la evaluación del grafo estático); una excepción de la cadena es asíncrona y queda en `errors`, porque `main.tsx` la registra con `console.error`.
+  - `createBootHarness({ fetch })`: el arnés de hoy (movido de `boot-check.ts`), más `fetch`, `AbortController`, `Event`, `CustomEvent`, `dispatchEvent` y un stub de `MutationObserver` en el contexto (`Event` y el stub los pide la salida de Vite que evalúa T009, no el IIFE de `boot-check`: [research.md](./research.md), R12). Sin `fetch`, la compuerta no lanza: muestra el error `network`, así que un caso sin el servidor simulado falla por el contenido y no por el arnés. También suma espías de `getItem`, `setItem` y `removeItem` (`storageCalls`); `published`, con el contenido de cada evento de publicación y los globals que existían en ese instante; y `mainWrites`, con cada valor que se asignó a `#main.innerHTML`. `bootError` sigue para lo síncrono (la evaluación del grafo estático); una excepción de la cadena es asíncrona y queda en `errors`, porque `main.tsx` la registra con `console.error`.
   - `createContentServer(behaviors)`: un `fetch` simulado que sirve los bytes de `build/curriculum.json` en `/content/curriculum.<contentVersion()>.json`, da 404 a cualquier otra ruta y registra cada pedido. Responde con objetos mínimos (`ok`, `status` y un `json()` que se resuelve con microtareas), no con un `Response` de Node.
 - **Pasos:**
-  1. En `load-order-check.ts`: la lectura de las dos formas textuales de [research.md](./research.md) (R10), con la tabla de restricciones intacta sobre la lista de `legacy-views.ts` y una restricción de etapas (`contentGate` antes de `legacyViews`). Con `main.tsx` de hoy falla: no encuentra `runBoot`.
-  2. En `boot-check.ts`: cada `boot()` usa el arnés con `createContentServer()` y `bundleApp`. Los 10 casos conservan sus valores esperados y siguen en verde con `main.tsx` de hoy (el `fetch` simplemente no se usa).
+  1. En `load-order-check.ts`: la lectura de las dos formas textuales de [research.md](./research.md) (R10), con la tabla de 16 restricciones intacta sobre la lista de `legacy-views.ts`, una restricción de etapas (`contentGate` antes de `legacyViews`) y las tres reglas de la base. «`app.js` último» y «`styles.css` primera» no cambian. «`startApp()` exactamente una vez, después del último import», que hoy lee `main.tsx`, pasa a leer `legacy-views.ts` y se ancla al último `() => import(…)` de la cadena: el `import type` del principio del archivo no cuenta. Con `main.tsx` de hoy falla: no encuentra `runBoot`. El spike no corrió la regla de `startApp()` sobre `legacy-views.ts`: la prueba es una mutación de T008 (sacar o duplicar la llamada).
+  2. En `boot-check.ts`: cada `boot()` usa el arnés con `createContentServer()` y `bundleApp`. Los 14 casos de la base (los 10 del 2026-10-05 y 4 de la unidad 3 de F2a) conservan sus valores esperados y siguen en verde con `main.tsx` de hoy (el `fetch` simplemente no se usa). Tres de los de F2a, «main.tsx without its call…», «startApp initializes in order…» y «a second startApp call fails», evalúan `bundleApp(ENTRY, { withoutStartCall: true })`, que hoy saca la llamada sólo de la entrada, por el `stdin` de esbuild. Después del corte la llamada está en `legacy-views.ts` y esa opción no la saca: el primero pasa en vacío y los otros dos fallan con un `TypeError`, porque `window.TallerLab` todavía no existe. Cambian dos cosas del procedimiento y ningún valor esperado:
+     - `withoutStartCall` saca la llamada donde esté: de `main.tsx` hasta T008 y de `legacy-views.ts` desde T008. Cómo lo hace lo decide esta tarea, porque la API síncrona de esbuild (`buildSync`) no tiene plugins.
+     - Los tres casos evalúan con el servidor simulado y hacen `flush()` antes de llamar a `startApp()` (el primero, antes de sus aserciones), para que la compuerta publique y la cadena se evalúe.
+
+     El spike lo comprobó después del corte, con la llamada quitada a mano de `legacy-views.ts`: los tres pasan con sus mismos valores esperados. Con `main.tsx` de hoy no se corrió: lo comprueba este paso.
   3. Los escenarios nuevos, que fallan con `main.tsx` de hoy porque no hay compuerta:
      - **Antes de publicar:** en el instante del evento, ningún global de las vistas ni de los catálogos existe (`published[0].globals` vacío).
      - **El camino feliz no muestra la carga:** `mainWrites` no contiene «Cargando el contenido del taller»: el pedido se asienta antes de la primera ronda de `flush()`, que corre un temporizador encolado por ronda y empezaría por el del umbral y el del tope. Si no pasara, el arreglo está en `createContentServer` (responde con un objeto mínimo cuyo `json()` se resuelve con microtareas) y no en la compuerta.
      - **Los siete modos del transporte** (red, 404, 500, tope de espera, cuerpo que no es JSON, porción ausente y porción con otra forma), uno por caso: después de `flush()` no existe ningún global `Taller*` ni de catálogo, `storageCalls` está vacío, no hay claves `:respaldo`, el aviso (`toast`) está vacío, `#main` muestra «No se pudo cargar el contenido» y «Reintentar» con `data-failure` del tipo que corresponde (el 404 es `version` y suma «recargá la página»), el foco está en `content-retry` (`focused === 1`) y `errors` está vacío. El tope usa un `fetch` que se cuelga hasta que la señal aborta: `flush()` corre el temporizador del tope.
      - **El reintento que arranca:** el primer pedido falla y el segundo sirve; el clic en `content-retry` hace que arranquen las vistas, `#main` ya no muestra el error y hubo exactamente dos pedidos.
      - **Un pedido por vez:** dos clics seguidos suman un solo pedido más.
-  4. `node qa/load-order-check.ts` y `node qa/boot-check.ts`: los nuevos fallan por esas razones y los 10 casos pasan.
+  4. `node qa/load-order-check.ts` y `node qa/boot-check.ts`: los nuevos fallan por esas razones y los 14 casos pasan.
 - **Código de referencia** (sin ejecutar):
 
 ```ts
@@ -1139,15 +1152,16 @@ export function createContentServer(behaviors: ContentBehavior[] = [{ kind: 'ser
 
 ### Tarea 5.2 · El corte (T008, dueño C)
 
-- **Cambia** `frontend/src/app/main.tsx`, los adaptadores `register-{catalogs,systems-lowlevel,systems-infra,systems-play,systems-pc,atlas}`, `frontend/src/pages/atlas/index.ts` y, si F2.2 dejó un import estático del JSON, su módulo de catálogo. **Crea** `frontend/src/app/boot/legacy-views.ts`. **Borra** `frontend/src/pages/atlas/model/atlas-catalog.ts`.
+- **Cambia** `frontend/src/app/main.tsx`, los adaptadores `register-{catalogs,systems-lowlevel,systems-infra,systems-play,systems-pc,atlas}`, `frontend/src/pages/atlas/index.ts`, la espera de `ShellPage.goto` en `qa/e2e/pages/shell.ts` (de F1) y, si F2.2 dejó un import estático del JSON, su módulo de catálogo (T001: no lo dejó). **Crea** `frontend/src/app/boot/legacy-views.ts`. **Borra** `frontend/src/pages/atlas/model/atlas-catalog.ts`.
 - **Entrega:** el arranque en etapas, sin ningún importador estático del JSON (FR-005).
 - **Pasos:**
   1. Partir de S2: las pruebas de T007 fallan.
-  2. Escribir `legacy-views.ts` con la lista de imports de la base (hoy, 18 módulos), sin las hojas de estilo y en el mismo orden; `main.tsx` con las hojas y la llamada a `runBoot`.
+  2. Escribir `legacy-views.ts` con la lista de imports de la base (hoy, 18 módulos), sin las hojas de estilo y en el mismo orden, y, después del último `import()`, la llamada a `startApp()` que hoy hace `main.tsx`; `main.tsx` con las hojas y la llamada a `runBoot`. La línea que trae `startApp` no tiene la forma `() => import('…'),`: si la tuviera, `load-order-check` contaría `app.js` dos veces.
   3. Los adaptadores: `const content = getContent();` en lugar de `import curriculum from '…/curriculum.json'`, y sin los `as` que ya no hacen falta. `register-atlas.tsx` lee `getContent().atlas[language]` al montar, y `pages/atlas/index.ts` deja de exportar `atlasByLanguage`.
-  4. `npm run build && npm test`: los casos de T007 pasan, el resto no cambia sus valores esperados.
-  5. `node tools/content/dump-globals.ts . | sha256`: es el hash de T002.
-  6. **Mutaciones**, descartadas: intercambiar dos módulos de `legacy-views.ts` hace fallar `load-order-check`; sacar `contentGate` de `runBoot` hace fallar `boot-check`; hacer que un adaptador lea `getContent()` fuera de la cadena (un import estático desde `main.tsx`) hace fallar `boot-check` con «El contenido todavía no se publicó».
+  4. `ShellPage.goto(url)` espera, después de `page.goto`, la primera vista o el error de `#main`, no el estado de carga (código abajo). En la base la app ya arrancó en `load`, porque arranca al evaluarse el módulo; con la compuerta arranca cuando llega el contenido. Sin esta espera, tres pruebas de F1 fallan por una carrera (`css-contract`, «the counter of the current entry», y dos de `url-contract`, «the language switch writes the query»). Esperar cualquier hijo de `#main` (`#main > *`) no alcanza: resuelve sobre el estado de carga, y con el contenido demorado 1,2 s la prueba falla (research.md, «Resultados del spike»). Va con el corte y no con T011: sin él, la red de F1 se vuelve intermitente desde este commit.
+  5. `npm run build && npm test`: los casos de T007 pasan, el resto no cambia sus valores esperados. `npm run test:e2e`: la red de F1 da 106 de 106. Como la falla era una carrera, una corrida verde no alcanza: también `npm run test:e2e -- --repeat-each 5 css-contract url-contract`, sin fallas.
+  6. `node tools/content/dump-globals.ts . | sha256`: es el hash de T002.
+  7. **Mutaciones**, descartadas: intercambiar dos módulos de `legacy-views.ts` hace fallar `load-order-check`; sacar o duplicar `startApp()` en `legacy-views.ts` hace fallar `load-order-check` (la regla de `startApp()`); sacar `contentGate` de `runBoot` hace fallar `boot-check`; hacer que un adaptador lea `getContent()` fuera de la cadena (un import estático desde `main.tsx`) hace fallar `boot-check` con «El contenido todavía no se publicó».
 - **Revisión:** `git diff --stat` no incluye `frontend/app.js`, `lab.js`, `campaign.js`, `systems.js`, `lab-explorers.js` ni `quest-explorers.js` (FR-023).
 - **Código de referencia** (sin ejecutar):
 
@@ -1176,7 +1190,7 @@ import type { BootStage } from './run-boot';
 
 // The legacy chain, in the order of the old list of imports of main.tsx. qa/load-order-check.ts
 // reads it: one `() => import('…'),` per line. Each module is evaluated when its turn comes, after
-// the content was published.
+// the content was published; then startApp(), the explicit start of app.js, runs once.
 const LEGACY_MODULES: readonly (() => Promise<unknown>)[] = [
   () => import('../legacy/register-catalogs'),
   () => import('../legacy/register-runner'),
@@ -1202,8 +1216,18 @@ export const legacyViews: BootStage = {
   name: 'legacyViews',
   async run() {
     for (const load of LEGACY_MODULES) await load();
+    const { startApp } = await import('../../../app.js');
+    startApp();
   },
 };
+```
+
+```ts
+// qa/e2e/pages/shell.ts (F1): goto waits for the first view or the gate's error, not its loading state
+async goto(url: string): Promise<void> {
+  await this.page.goto(url);
+  await this.page.locator('#main > :not([data-content-gate="loading"])').first().waitFor();
+}
 ```
 
 ```ts
@@ -1238,7 +1262,7 @@ window.GO_CAMPAIGN = content.campaign.go;
 - **Resumen del check** (sin ejecutar; con el mecanismo y el desvío de [research.md](./research.md), R9):
   - se relanza con `--experimental-vm-modules --disable-warning=ExperimentalWarning` si `vm.SourceTextModule` no existe;
   - los esperados salen del generador: `build/curriculum.meta.json` (`documentHash`, `portions`) y `portionsOf` y `sha256Hex` de `tools/content/meta.ts` para proyectar el contenido publicado en sus 17 porciones;
-  - lee la página con `readBuiltPage()`, exige un solo script de arranque (hoy) y lo evalúa con `evaluateBuiltPage(page, harness.context)` en el contexto de `createBootHarness({ fetch: createContentServer([...]) })`; después, `await harness.flush()`;
+  - lee la página con `readBuiltPage()`, exige un solo script de arranque (hoy) y lo evalúa con `evaluateBuiltPage(page, harness.context)` en el contexto de `createBootHarness({ fetch: createContentServer([...]) })`; después, `await harness.flush()`. El contexto necesita el stub de `MutationObserver` que suma T007: el polyfill de precarga de Vite corre al principio del script y, sin él, el módulo lanza `ReferenceError`. `Event` y `dispatchEvent` los usa el ayudante de precarga, que despacha `vite:preloadError` si un módulo de la cadena lanza (research.md, «Resultados del spike», P2);
   - exige: `harness.errors` vacío; un solo evento de publicación; un solo pedido de contenido, a `/content/curriculum.<versión>.json`;
   - **(2) bytes servidos:** el sha256 de los bytes que sirvió el simulador, leídos con `readBuiltContent()`, es el `documentHash` del meta;
   - **(3) las 17 porciones:** con `portionsOf(published)`, `sha256Hex(JSON.stringify(parte))` de cada una es su huella de `portions`;
@@ -1275,31 +1299,31 @@ export async function evaluateBuiltPage(page: BuiltPage, context: vm.Context): P
 - **Cambia** `qa/build-check.ts`.
 - **Entrega:** FR-015 completo.
 - **Pasos:**
-  1. `build-check` lee la página con `readBuiltPage()` y `readBuiltContent()`, no con su propio `matchAll`, y agrupa lo que sólo vale con `vite-plugin-singlefile` (un `<script>`, un `<style>`, ningún enlace ni script externo y ningún `modulepreload`) en una función, `assertSinglefileDocument(page)`, que C4 reemplaza. Las aserciones nuevas: cada script de `page.scripts` parsea como módulo (`node --check` sobre un `.mjs` temporal en lugar de `new vm.Script`); `page.bootSize < tope`, con el valor de T001; las licencias se buscan en `page.bootText`; ningún marcador del currículo está en `page.bootText` y todos están en el archivo servido; `page.bootText` contiene la versión; el artefacto de T006 sigue exigido.
-  2. Con el build de T008 pasan. El tope se baja por el `html.length` medido: el commit lo escribe con la medida que lo respalda.
+  1. `build-check` lee la página con `readBuiltPage()` y `readBuiltContent()`, no con su propio `matchAll`, y agrupa lo que sólo vale con `vite-plugin-singlefile` (un `<script>`, un `<style>`, ningún enlace ni script externo y ningún `modulepreload`) en una función, `assertSinglefileDocument(page)`, que C4 reemplaza. Las aserciones nuevas: cada script de `page.scripts` parsea como módulo (`node --check` sobre un `.mjs` temporal en lugar de `new vm.Script`); `page.bootSize < tope`, con el tope de T001, 1.250.000; las licencias se buscan en `page.bootText`; ningún marcador del currículo está en `page.bootText` y todos están en el archivo servido; `page.bootText` contiene la versión; el artefacto de T006 sigue exigido.
+  2. Con el build de T008 pasan. El tope baja de 2.500.000 a 1.250.000: es `piso(1.136.706 × 1,10)` redondeado hacia abajo a la decena de miles, con el `html.length` que midió T001 sobre el prototipo, sin las marcas del spike (P3). T010 vuelve a medir el `html.length` sobre el build de T008 con la misma fórmula, y el commit escribe el valor y la medida que lo respalda.
   3. **Mutación**, descartada, que es la prueba de que el oráculo detecta algo: un import estático del JSON desde una página (`import c from '../../../build/curriculum.json'` en un módulo alcanzado) hace fallar el check por el tope y por los marcadores (US3, escenario 3).
 - **Marcadores** (research.md, R11): salen de `curriculumMarkers()` (T005), que fija la regla y que C4 reutiliza: por cada familia, los dos textos más largos de la primera entrada que los tenga (al menos 24 caracteres, ASCII imprimible sin comillas ni barras, y no enlaces) y su `id` si es igual de plano, descartando los que aparecen en las fuentes de `frontend/`. El helper falla si una familia no tiene una entrada así.
 
 ### Tarea 6.3 · Los E2E de A2 (T011, dueño E)
 
-- **Crea** el archivo de specs de A2 en `qa/e2e/` (`content-gate.spec.ts`, o el nombre que siga la convención de F1) y suma al Page Object del shell la región del error y el botón, en `qa/e2e/pages/`.
+- **Crea** el archivo de specs de A2 en `qa/e2e/` (`content-gate.spec.ts`, o el nombre que siga la convención de F1) y suma al Page Object del shell la región del error y el botón, en `qa/e2e/pages/shell.ts`. La espera de `goto` ya la cambió el corte (T008).
 - **Entrega:** los escenarios de [research.md](./research.md) (R13) sobre el build servido por `vite preview`.
 - **Pasos:**
   1. Escribir los escenarios. Con el build de T008 pasan; la prueba de que detectan algo es una mutación, descartada: un build con el nombre del archivo mal construido (por ejemplo, otra versión en la constante) tiene que hacerlos fallar.
   2. Los casos:
      - los cinco enlaces profundos de la User Story 1 y la recarga completa, con un solo pedido de contenido por carga;
-     - las fallas (red, 404, 500, cuerpo roto, porción ausente y porción con otra forma, y el tope con `page.clock.fastForward(20000)`) con el progreso de `qa/fixtures/progress-master-2a278ad-storage.json` sembrado: las cuatro claves no cambian, no hay `:respaldo` y un espía de `Storage.prototype` cuenta 0 lecturas y 0 escrituras;
+     - las fallas (red, 404, 500, cuerpo roto, porción ausente y porción con otra forma, y el tope con `page.clock.fastForward(20000)`; como `shell.goto` espera la primera vista o el error, y en el tope el error recién aparece al adelantar el reloj, ese escenario navega con `page.goto`) con el progreso de `qa/fixtures/progress-master-2a278ad-storage.json` sembrado: las cuatro claves no cambian, no hay `:respaldo` y un espía de `Storage.prototype` cuenta 0 lecturas y 0 escrituras;
      - el reintento: el primer pedido falla y el segundo pasa, el arranque sigue sin recargar;
      - el teclado: el foco queda en «Reintentar» y Enter lo opera;
      - el móvil: `test.use({ viewport: { width: 390, height: 844 } })`.
   3. Si F1 hace fallar el test con un `console.error`, cada escenario de falla declara la entrada «Failed to load resource» de su pedido y nada más.
   4. `npm run build && npm run test:e2e` en verde, cinco veces seguidas sin reintentos (el criterio de F1).
-- **Ejemplo** (sin ejecutar; `shell` y sus métodos son los nombres que F1 dé a su Page Object del shell, que T001 anota):
+- **Ejemplo** (sin ejecutar; `shell` es el fixture de F1 con el `ShellPage` de `qa/e2e/pages/shell.ts`, y `goto` recibe la URL):
 
 ```ts
 test('shows the error with «Reintentar» focused when the content request is aborted', async ({ page, shell }) => {
   await page.route('**/content/curriculum.*.json', (route) => route.abort());
-  await shell.goto();
+  await shell.goto('/');
   await expect(page.getByRole('alert')).toContainText('Tu progreso sigue guardado');
   await expect(page.getByRole('button', { name: 'Reintentar' })).toBeFocused();
 });
@@ -1315,7 +1339,13 @@ test('shows the error with «Reintentar» focused when the content request is ab
 ### Tarea 7.2 · La compuerta final (T013)
 
 - **Pasos:**
-  1. `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `npm run test:e2e` y `git diff --check`, todos en verde (FR-024).
+  1. `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `npm run test:e2e` y `git diff --check`, todos en verde (FR-024). Los recuentos son los de la base que midió T001 más lo que suma A2, y reemplazan a los de la spec (FR-003, FR-020, FR-024 y SC-005):
+     - `qa/run-checks.ts`: los 31 checks de la base más `dist-content-check`;
+     - Vitest: las 12 specs de la base, con sus 186 pruebas, más las 7 de A2;
+     - `load-order-check`: las 16 restricciones de la base, sin relajar ninguna, más la de etapas, y las tres reglas: «`app.js` último», «`styles.css` primera» y «`startApp()` exactamente una vez, después del último `import()`»;
+     - `boot-check`: los 14 casos de la base, con sus valores esperados, más los de FR-020;
+     - `build-check`: el HTML por debajo del tope de 1.250.000 caracteres;
+     - `npm run test:e2e`: las 106 pruebas de F1 más las de A2.
   2. **Los oráculos:** `node tools/content/dump-globals.ts . | sha256` da el hash de T002 (SC-001), y lo mismo sobre la raíz de un commit anterior a A2 (`git worktree add <dir> <commit>`, con `ln -s "$PWD/node_modules" <dir>/node_modules` y `npm run curriculum` adentro: el volcado resuelve esbuild desde esa raíz; FR-017).
   3. **Dependencias:** `git diff <base> -- package.json package-lock.json` vacío (FR-022, SC-006). **Vistas legacy:** `git diff --stat <base>` sin ningún `frontend/*.js` (FR-023). **Scripts en línea:** `frontend/src/index.html` sin cambios.
   4. **Docker, con permiso** (el único paso que lo usa; las imágenes ya están en la máquina, `--pull never`):
@@ -1323,7 +1353,7 @@ test('shows the error with «Reintentar» focused when the content request is ab
      - el HTML de un build anterior contra el contenido de otro: Nginx responde 404 y la página muestra el mensaje de versión (R3);
      - `curl -sI http://localhost:8080/THIRD-PARTY-NOTICES.txt` y `curl -sI http://localhost:8080/EDITOR-LICENSES.txt` dan 200: los avisos se sirven en las mismas URL que antes;
      - `docker compose -f docker/compose.preview.yaml up --build -d --wait` sirve el HTML, el contenido y los avisos de licencia en el puerto 8765 (cuidado: ese nombre de proyecto y ese puerto son del checkout principal; no correrlo desde otro worktree sin cambiarlos).
-  5. **Tiempo hasta la primera vista, después**, con el mismo método de T001, con y sin caché del navegador (R13).
+  5. **Tiempo hasta la primera vista, antes y después**, con y sin caché del navegador (R13). T013 mide el build de A2 intercalado con uno de la base (`c5d497d`), en series alternadas, con el método de T001 ([quickstart.md](./quickstart.md), §9). No se compara con las cifras de T001: se tomaron mientras corrían las pruebas de otro agente y sirven de orden de magnitud.
   6. Registrar la evidencia en la hoja de ruta (el coordinador): PR, commit y lo que se ejecutó; lo que no se pudo verificar, escrito.
 
 ## Contrato de salida hacia A3 y C4
@@ -1420,16 +1450,17 @@ La edita T012. Hoy llaman «autónomo» al HTML o describen cómo se carga el co
 
 ## Riesgos y lo que quedó sin verificar
 
-- **P1 no está medido.** La técnica es una hipótesis hasta T001: la sonda previa corrió sobre tres módulos triviales en Node. Si falla, el plan se detiene.
-- **F1 y F2 no están entregadas.** F1 está implementada (PR #23) y, de F2a, las unidades 2 y 4; faltan la 1 y la 3 (ver «Estado al 2026-10-06»). Lo que A2 supone de ellas es el cuadro de arriba. El riesgo mayor es el arranque de F2.3, que cambia la cadena y todavía no está hecho; el catálogo de F2.2 ya lo está y cumple F2-I2 en la rama de su unidad, y T001 lo contrasta con la base.
-- **El plugin de Vite no se ejecutó.** Su API está confirmada en la documentación (`emitFile` con `fileName` y `source` de bytes, `config`, `configureServer`), pero no hay un build detrás. T006 lo prueba, y `vite-plugin-singlefile` podría tratar distinto un activo emitido.
-- **`SourceTextModule` sobre la salida de Vite.** Funciona con un módulo de prueba en Node 24.21 (verificado) y es una API experimental. T001 lo prueba sobre la salida real, y R9 deja el desvío.
+- **P1 pasó en T001**, con la cadena real (research.md, «Resultados del spike»): la técnica ya no es una hipótesis.
+- **F1 y F2 no están entregadas.** F1 y las unidades 1 a 4 de F2a están en la base de T001, `c5d497d`, que todavía no está en `master`. Lo que A2 supone de ellas es el cuadro de arriba: T001 lo contrastó con esa base, y lo que difirió (dónde se llama `startApp()`, la espera de `goto` y el arnés) ya está corregido en este plan.
+- **El plugin de Vite corrió en el prototipo de T001:** `npm run build` emitió el contenido y los dos avisos de licencia, y `vite-plugin-singlefile` dejó los activos emitidos como archivos (research.md, «Resultados del spike», P1). T006 lo prueba en la rama.
+- **`SourceTextModule` sobre la salida de Vite.** T001 lo probó sobre la salida real y no hace falta el desvío de R9 (research.md, «Resultados del spike», P2). Sigue siendo una API experimental.
+- **Lo que el spike no corrió:** la regla de `startApp()` de `load-order-check` sobre `legacy-views.ts` (la prueba es una mutación de T008) y los tres casos de `boot-check` que sacan la llamada, con su procedimiento nuevo y `main.tsx` de hoy (T007, paso 2).
 - **Docker, la vista previa y Nginx sin correr:** el `COPY` de `dist/`, el montaje entero y el 404 ante un nombre ajeno se prueban en T013. `vite preview` responde con `index.html` ante un archivo que no existe, así que ahí un nombre equivocado da `body` y no `version`.
 - **Los E2E dependen de dos decisiones de F1** (los errores de consola y el viewport). La de la consola está decidida e implementada: un `console.error` hace fallar el test salvo la lista blanca. El viewport sigue siendo de escritorio, y T011 pide el móvil con `test.use`.
 - **Los marcadores del oráculo de ausencia** pueden coincidir con texto del código (IDs). La regla los descarta, y la mutación de T010 muestra que el oráculo detecta el contenido de verdad.
 - **Los avisos de licencia salen del build.** Cambia cómo se entregan (antes, el `Dockerfile` los copiaba de `frontend/`), no sus nombres ni sus URL. `build-check` (T006) y Docker (T013) lo comprueban; sin eso, la vista previa los perdería.
 - **C4 cambia el dist.** Con varios archivos, lo que cambia son las aserciones de singlefile de `build-check` y `evaluateBuiltPage` (los `import` entre archivos en el vm). Está aislado en `qa/lib/built-page.ts` y en `assertSinglefileDocument` (ver «Contrato de salida hacia A3 y C4»). No se probó con chunks.
-- **El tope medido** de `build-check` depende de T001: hasta entonces la cifra es una estimación (del orden de 1,1 MB de HTML).
+- **El tope medido** de `build-check` es 1.250.000: T001 midió 1.136.706 caracteres de HTML sin el currículo (P3), y T010 lo vuelve a medir sobre el build de T008.
 - **El contenido sin sesión** mientras exista el documento estático (riesgo 11 de la spec): lo cierra A3, que retira el documento. La hoja de ruta todavía no lo anota en el alcance de A3.
 - **El trabajo descartable** es el de «Lo que A3 retira» ([research.md](./research.md), R14): la fuente estática, el plugin y los montajes. La compuerta, los estados, el almacén y los oráculos se quedan.
 

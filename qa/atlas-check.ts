@@ -1,14 +1,12 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
+import { curriculumDocument } from './lib/content-document.ts';
 import { importModule } from './lib/sources.ts';
 
 interface AtlasConcept {
   id: string;
   title: string;
   labId: string;
-}
-interface AtlasContentModule {
-  atlasByLanguage: Record<string, AtlasConcept[]>;
 }
 interface ConceptFilters {
   query: string;
@@ -37,15 +35,15 @@ interface SessionModule {
   retryQuiz: (session: AtlasSession, id: string) => AtlasSession;
 }
 interface RenderModule {
-  renderAtlasPage: (language: string) => string;
+  renderAtlasPage: (language: string, entries: AtlasConcept[]) => string;
 }
 
 // The esbuild ESM bundle resolves Node builtins through a global require.
 (globalThis as { require?: NodeJS.Require }).require ??= createRequire(import.meta.url);
 
-const { atlasByLanguage } = await importModule<AtlasContentModule>(
-  'frontend/src/pages/atlas/model/atlas-catalog.ts',
-);
+const { atlas: atlasByLanguage } = curriculumDocument<{
+  atlas: Record<string, AtlasConcept[]>;
+}>();
 const { filterConcepts } = await importModule<FilterModule>(
   'frontend/src/pages/atlas/model/filter-concepts.ts',
 );
@@ -187,7 +185,7 @@ assert.deepEqual(cleared.answers, { 'rust-types': 1 });
 assert.deepEqual(cleared.compared, { 'rust-types': true });
 assert.deepEqual(cleared.pitfalls, { 'rust-flow': true });
 
-const html = renderAtlasPage('rust');
+const html = renderAtlasPage('rust', atlasByLanguage.rust);
 assert(html.includes('Entender el'), 'AtlasPage: title');
 assert(html.includes('16 conceptos'), 'AtlasPage: concept count');
 assert(html.includes(rust[0].title), 'AtlasPage: title of the first concept');

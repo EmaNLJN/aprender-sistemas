@@ -3,7 +3,7 @@
 // dependencias por window.* (ver qa/load-order-check.ts); los checks no repiten listas.
 import type vm from 'node:vm';
 import { SYSTEMS_DOMAINS, type SystemsDomain } from '../../tools/content/catalogs.ts';
-import { runSource, type RunOptions } from './sources.ts';
+import { runModule, runSource, type RunOptions } from './sources.ts';
 
 export type Language = 'rust' | 'go';
 
@@ -29,16 +29,24 @@ export function systemsDomainSources(domain: SystemsDomain): readonly string[] {
 export const SYSTEMS_CATALOG_SOURCES: readonly string[] =
   SYSTEMS_DOMAINS.flatMap(systemsDomainSources);
 
-export function loadGuideContent(context: vm.Context): void {
-  runSource(context, CATALOGS_SOURCE);
+function runAdapter(context: vm.Context, source: string, options?: RunOptions): void {
+  runSource(context, source, { ...options, withContent: true });
 }
 
-export function loadAppShell(context: vm.Context): void {
-  runSource(context, APP_SHELL_SOURCE);
+export function loadGuideContent(context: vm.Context): void {
+  runAdapter(context, CATALOGS_SOURCE);
+}
+
+export interface AppShellModule {
+  startApp(): void;
+}
+
+export function loadAppShell(context: vm.Context): AppShellModule {
+  return runModule<AppShellModule>(context, APP_SHELL_SOURCE);
 }
 
 export function loadLabExercises(context: vm.Context): void {
-  runSource(context, CATALOGS_SOURCE);
+  runAdapter(context, CATALOGS_SOURCE);
 }
 
 export function loadSystemsDomain(
@@ -46,7 +54,7 @@ export function loadSystemsDomain(
   domain: SystemsDomain,
   options?: RunOptions,
 ): void {
-  for (const source of systemsDomainSources(domain)) runSource(context, source, options);
+  for (const source of systemsDomainSources(domain)) runAdapter(context, source, options);
 }
 
 export function loadSystemsCatalogs(context: vm.Context): void {
@@ -60,11 +68,12 @@ export function loadLabCatalogs(context: vm.Context): void {
 }
 
 export function loadCampaignWorlds(context: vm.Context): void {
-  runSource(context, CATALOGS_SOURCE);
+  runAdapter(context, CATALOGS_SOURCE);
 }
 
 export function loadLab(context: vm.Context): void {
   runSource(context, LAB_SOURCE);
+  (context.window as { TallerLab: { init(): void } }).TallerLab.init();
 }
 
 export function loadCampaignEngine(context: vm.Context): void {
