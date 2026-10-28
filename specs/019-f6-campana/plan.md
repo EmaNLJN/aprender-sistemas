@@ -1505,7 +1505,7 @@ La comparación de T018 compara el DOM nodo por nodo. Para que dé 0:
   | 7 | `answering wrong marks the option, keeps the focus and writes once` | `labState` con el laboratorio de master, sin clave de campaña | clic en la opción A:<br>• `aria-pressed` `true`, la clase `incorrect` y el foco<br>• el `status` del checkpoint con «Revisemos esa idea.»<br>• `notify` con «Leé el porqué y probá otra explicación.»<br>• `storage.writes` igual a `['taller-campaign-v1']`<br>• `celebrate` sin llamar |
   | 8 | `answering right completes the world and celebrates once` | la de la prueba 7 | clic en B:<br>• `notify` con «¡Piloto de estados! Un mundo completado. Tu próximo nivel está disponible.»<br>• `celebrate` una vez<br>• un `status` con «Insignia conseguida: Piloto de estados»<br>• el botón «Siguiente mundo →» |
   | 9 | `the feedback region is the same node after answering` (X2) | la de la prueba 7 | el nodo que dice «Elegí la explicación que mejor sostenga tu decisión.» es `toBe` el mismo `status` después del clic en A |
-  | 10 | `the rules and a mission's requirements stay open after an action` (X1) | nada | abrir «Las reglas del juego…» y «Ver qué falta para entrar» del jefe; clic en «Desafío final» y en «Mundo 1: …»: los dos `<details>` siguen con `open` `true` |
+  | 10 | `the rules and a mission's requirements stay open after an action` (X1) | nada | se ponen en `true` las propiedades `open` del `<details>` de «Las reglas del juego…» y del de «Ver qué falta para entrar» del jefe (`screen.getByText(…).closest('details')`), sin hacer clic en el `summary`, porque lo que importa es que el estado sobreviva y no que jsdom despliegue el elemento; clic en «Desafío final» y en «Mundo 1: …»: los dos siguen con `open` `true`. El clic real en el `summary` lo prueban los E2E |
   | 11 | `opening, choosing a world and filtering write nothing` | nada | `storage.writes` es `[]` después del `render`, de elegir el mundo 2 y de volver al 1 y filtrar «Kata» |
   | 12 | `redraws when the engine accepts a checkpoint without the page asking` (FR-022) | la de la prueba 7 | `act(() => { campaignEngine.answerCheckpoint('rust-world-1', 1); })`: «Bien razonado.» en el `status` |
   | 13 | `a blocked storage shows the notice` | un `localStorage` cuyo `getItem` lanza `new DOMException('Storage is blocked', 'SecurityError')` | el `status` «Este navegador no pudo guardar tu campaña. Exportá tu progreso antes de cerrar la página.» |
@@ -1525,14 +1525,18 @@ La comparación de T018 compara el DOM nodo por nodo. Para que dé 0:
 - **`CampaignPage.constants.spec.tsx`** (research.md R6).
 
   ```ts
-  vi.mock(import('../../../entities/campaign'), async (importOriginal) => ({
-    ...(await importOriginal()),
+  vi.mock('../../../entities/campaign', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('../../../entities/campaign')>()),
     CODE_XP: 7,
     PREDICTION_XP: 4,
     PASS_SCORE: 77,
     WORLD_MAX_SCORE: 99,
   }));
   ```
+
+  Va la forma con la ruta como texto. La forma `vi.mock(import(…))` exige que la fábrica devuelva los tipos del módulo, y `CODE_XP` tiene el tipo literal `20`: `7` no compila y el commit rojo fallaría por `npm run typecheck`, no por comportamiento.
+
+  Para que el reemplazo llegue, **todo componente de la página importa las constantes del índice** (`'../../../entities/campaign'`), nunca de `bridge.ts` ni de `model/rules`.
 
   En `beforeEach` se envuelven el motor y el resumen:
 
@@ -1553,7 +1557,7 @@ La comparación de T018 compara el DOM nodo por nodo. Para que dé 0:
     - cada barra del mapa tiene `max` «99», y la de la campaña, «396»;
     - el rango dice «0 / 396 XP de campaña»;
     - la nota dice «al reunir 77 XP» y el checkpoint cerrado, «reunir 77 XP»;
-    - las reglas, abiertas, dicen «7 XP por las pruebas del ejercicio y 4 por su predicción correcta.».
+    - las reglas dicen «7 XP por las pruebas del ejercicio y 4 por su predicción correcta.». No hace falta abrirlas: `getByText` encuentra el texto dentro de un `<details>` cerrado.
   - **Lo que no queda:** sobre un clon de `container` sin sus `li` (los motivos los escribe el motor, que F6 no toca), ni el texto ni ningún valor de atributo contiene `/(?<!\d)(?:20|10|30|150|180|720)(?!\d)/`.
 - **`CampaignPage.editorial.spec.tsx`** (research.md R7). Con el catálogo real.
   1. En un navegador vacío, busca en la página:
@@ -1733,12 +1737,231 @@ La comparación de T018 compara el DOM nodo por nodo. Para que dé 0:
   | `TrophyCase` | `worlds` | línea 95 | `aria-label={`${world.badge}: ${world.completed ? 'conseguida' : 'pendiente'}`}`, el ícono `worldSymbol(index)` |
   | `CampaignRules` | — | línea 96 | «{CODE_XP} XP por las pruebas del ejercicio y {PREDICTION_XP} por su predicción correcta.»; los cuatro enlaces con `target="_blank"` y `rel="noopener noreferrer"`; el resto, copiado |
 
-- **Pasos:**
-  1. Implementar componente por componente, hasta que pasen las cuatro specs.
-  2. `npm run typecheck` y `npm run lint`: ninguna función nueva pasa de 10, y ninguna llamada a `useStore` va sin selector. Si una función pasa de 10, se parte por un componente con nombre, como `MissionSeal` y `MissionAction`.
-  3. `npm run format:check`.
-  4. `npm run build`: el script del dist no cambia todavía, porque nadie importa la página.
-  5. Commit: `feat(front): la página de la campaña en React, sin montar`.
+- **Los cinco componentes que más cuidan el DOM,** completos. Son donde los espacios de las clases y los textos partidos dan diferencias en T018.
+
+  ```tsx
+  // ui/WorldMap.tsx
+  import {
+    worldMapStatus,
+    worldState,
+    worldStateName,
+    worldSymbol,
+    type DerivedWorld,
+  } from '../../../entities/campaign';
+  import { LEVEL_LABELS } from '../../../shared/config/levels';
+
+  interface WorldMapProps {
+    worlds: readonly DerivedWorld[];
+    selectedId: string;
+    onChoose: (worldId: string) => void;
+  }
+
+  const WorldMap = ({ worlds, selectedId, onChoose }: WorldMapProps) => (
+    <nav className="quest-map" aria-label="Mundos de la campaña">
+      {worlds.map((world, index) => {
+        const state = worldState(world);
+        const selected = world.id === selectedId;
+        return (
+          <button
+            key={world.id}
+            className={`world-node ${state} ${selected ? 'selected' : ''}`}
+            aria-pressed={selected}
+            aria-label={`Mundo ${index + 1}: ${world.title}, ${worldStateName(state)}`}
+            onClick={() => onChoose(world.id)}
+          >
+            <span className="world-icon" aria-hidden="true">
+              {world.completed ? '✓' : world.unlocked ? worldSymbol(index) : '◇'}
+            </span>
+            <span className="world-number">
+              MUNDO 0{index + 1} · {LEVEL_LABELS[world.level]}
+            </span>
+            <strong>{world.title}</strong>
+            <span className="world-status">{worldMapStatus(world)}</span>
+            <progress value={world.score} max={world.maxScore} aria-label={`Experiencia en ${world.title}`} />
+          </button>
+        );
+      })}
+    </nav>
+  );
+
+  export default WorldMap;
+
+  // ui/MissionSeal.tsx
+  interface MissionSealProps {
+    earned: boolean;
+    label: string;
+    points: number;
+  }
+
+  const MissionSeal = ({ earned, label, points }: MissionSealProps) => (
+    <span className={earned ? 'earned' : ''}>
+      {earned ? '✓' : '○'} {label} · {points}
+    </span>
+  );
+
+  export default MissionSeal;
+
+  // ui/MissionAction.tsx
+  import type { CampaignMission, DerivedWorld } from '../../../entities/campaign';
+  import { campaignMissionHref } from '../../../shared/config/url-grammar';
+
+  interface MissionActionProps {
+    world: DerivedWorld;
+    mission: CampaignMission;
+    boss: boolean;
+    mastered: boolean;
+  }
+
+  const MissionAction = ({ world, mission, boss, mastered }: MissionActionProps) => {
+    if (!mission.allowed)
+      return (
+        <details className="mission-requirements">
+          <summary>Ver qué falta para entrar</summary>
+          <ul>
+            {mission.reasons.map((reason, index) => (
+              <li key={index}>{reason}</li>
+            ))}
+          </ul>
+        </details>
+      );
+    return (
+      <a className={`button small ${boss ? '' : 'secondary'}`} href={campaignMissionHref(world.id, mission.id)}>
+        {mastered ? 'Volver a experimentar' : boss ? 'Enfrentar el desafío final' : 'Abrir misión'} ↗
+      </a>
+    );
+  };
+
+  export default MissionAction;
+
+  // ui/MissionCard.tsx
+  import {
+    CODE_XP,
+    PREDICTION_XP,
+    missionTypeLabel,
+    type CampaignMission,
+    type DerivedWorld,
+  } from '../../../entities/campaign';
+  import type { MissionContent } from '../model/types';
+  import MissionAction from './MissionAction';
+  import MissionSeal from './MissionSeal';
+
+  interface MissionCardProps {
+    world: DerivedWorld;
+    mission: CampaignMission;
+    content: MissionContent;
+  }
+
+  const MissionCard = ({ world, mission, content }: MissionCardProps) => {
+    const boss = mission.id === world.bossId;
+    const mastered = mission.code && mission.prediction;
+    return (
+      <article
+        className={`quest-mission ${boss ? 'is-boss' : ''} ${mastered ? 'is-mastered' : ''} ${!mission.allowed ? 'is-locked' : ''}`}
+      >
+        <div className="quest-mission-title">
+          <span className="mission-type">{missionTypeLabel(content.challengeType)}</span>
+          <span className="mission-points">
+            {mission.points}/{CODE_XP + PREDICTION_XP} XP
+          </span>
+        </div>
+        <h4>{content.title}</h4>
+        <p>{content.objective}</p>
+        <div className="mission-seals">
+          <MissionSeal earned={mission.code} label="Pruebas" points={CODE_XP} />
+          <MissionSeal earned={mission.prediction} label="Predicción" points={PREDICTION_XP} />
+        </div>
+        {mission.assisted ? <small className="mission-assisted">Práctica con solución de apoyo</small> : null}
+        <MissionAction world={world} mission={mission} boss={boss} mastered={mastered} />
+      </article>
+    );
+  };
+
+  export default MissionCard;
+
+  // ui/WorldCheckpoint.tsx
+  import { PASS_SCORE, type DerivedWorld } from '../../../entities/campaign';
+
+  interface WorldCheckpointProps {
+    world: DerivedWorld;
+    onAnswer: (worldId: string, index: number, option: HTMLButtonElement) => void;
+  }
+
+  const WorldCheckpoint = ({ world, onAnswer }: WorldCheckpointProps) => {
+    const question = world.checkpoint;
+    const answer = world.checkpointAnswer;
+    return (
+      <section className="quest-checkpoint" id="quest-checkpoint" aria-labelledby="checkpoint-title">
+        <div className="checkpoint-heading">
+          <span aria-hidden="true">{world.checkpointPassed ? '✓' : '?'}</span>
+          <div>
+            <span className="small-label">CHECKPOINT · LA ÚLTIMA LLAVE</span>
+            <h3 id="checkpoint-title">
+              {world.checkpointPassed ? 'Una idea que ya podés explicar.' : 'El código funciona. ¿Sabés por qué?'}
+            </h3>
+          </div>
+        </div>
+        {world.checkpointReady ? (
+          <>
+            <p className="checkpoint-question">{question.question}</p>
+            <div className="checkpoint-options">
+              {question.options.map((option, index) => (
+                <button
+                  key={index}
+                  aria-pressed={answer === index}
+                  className={answer === index ? (index === question.answer ? 'correct' : 'incorrect') : ''}
+                  onClick={(event) => onAnswer(world.id, index, event.currentTarget)}
+                >
+                  <span>{String.fromCharCode(65 + index)}</span>
+                  {option}
+                </button>
+              ))}
+            </div>
+            <div className="checkpoint-feedback" role="status">
+              {answer === null ? (
+                'Elegí la explicación que mejor sostenga tu decisión.'
+              ) : (
+                <>
+                  <strong>{answer === question.answer ? 'Bien razonado.' : 'Revisemos esa idea.'}</strong>{' '}
+                  {world.checkpointFeedback}
+                </>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <p>
+              Se abre al verificar las seis misiones, reunir {PASS_SCORE} XP y resolver la predicción del desafío
+              final.
+            </p>
+            <ul>
+              {world.checkpointReasons.map((reason, index) => (
+                <li key={index}>{reason}</li>
+              ))}
+            </ul>
+          </>
+        )}
+      </section>
+    );
+  };
+
+  export default WorldCheckpoint;
+  ```
+
+  Cuidados que el JSX de arriba ya respeta:
+  - `MUNDO 0{index + 1} · {…}` da los nodos de texto `MUNDO 0`, `1`, ` · ` e `Inicial`, que `normalize()` junta como en el legacy;
+  - el salto de línea entre `<span>{…}</span>` y `{option}` no agrega texto, porque JSX descarta el espacio con salto de línea entre una etiqueta y una expresión;
+  - el `{' '}` después de `</strong>` es el espacio que el legacy escribe antes del porqué;
+  - la frase del checkpoint cerrado, partida en dos líneas, queda con un solo espacio entre «desafío» y «final».
+- **Pasos,** por grupo de componentes. Cada uno deja en verde las filas que nombra y termina con `npm run test:unit -- pages/campaign`:
+  1. **`CampaignPage` y `CampaignHero`,** con la raíz de arriba y la nota. Quedan en verde las filas 13 y 17 de `CampaignPage.spec.tsx` y la de los cinco mundos de la spec del catálogo.
+  2. **`WorldMap`, `SelectedWorld` y `LockedWorld`.** Quedan en verde las filas 1 a 4 y la del título con caracteres de HTML.
+  3. **`OpenWorld`, `WorldProgress`, `MissionCard`, `MissionSeal` y `MissionAction`.** Quedan en verde las filas 5, 6 y 11 y la del filtro sin misiones.
+  4. **`WorldCheckpoint`.** Quedan en verde las filas 7 a 9, 12 y 14 a 16, y la spec del texto editorial.
+  5. **`TrophyCase` y `CampaignRules`.** Quedan en verde la fila 10 y la spec de las constantes, que necesita la página entera.
+  6. `npm run typecheck` y `npm run lint`: ninguna función nueva pasa de 10, y ninguna llamada a `useStore` va sin selector. Si una función pasa de 10, se parte por un componente con nombre, como `MissionSeal` y `MissionAction`.
+  7. `npm run format:check`. Si Prettier mueve un texto de JSX, se revisa que el espacio siga, con `{' '}` si hace falta.
+  8. `npm run build`: el script del dist no cambia todavía, porque nadie importa la página.
+  9. Commit: `feat(front): la página de la campaña en React, sin montar`.
 - **Compuerta:** las cuatro specs y la de la sesión en verde; `npm test` en verde.
 - **Vuelta atrás:** revertí el commit; la página no está montada.
 
@@ -2300,11 +2523,12 @@ Se corren con los scripts de [quickstart.md](./quickstart.md) §3, fuera del rep
 | Comparación | Qué compara | Esperado |
 | --- | --- | --- |
 | (a) El multiconjunto del CSS del dist | Contexto `@media`, selector, propiedad, valor e `!important`, cada selector por separado | 0 sólo en la base y 0 sólo en F6 (SC-004) |
-| (b) El DOM, el estilo y la accesibilidad | Los 19 estados de research.md R14: el DOM normalizado de `#main` y su `ariaSnapshot()` a 1 280 px, y el estilo computado de cada elemento a 1 280, 981, 850, 650, 590 y 375 px con y sin movimiento reducido. Suma `lock` y `mission`, las dos páginas del laboratorio que dibujan campaña | 0 diferencias. Las únicas aceptadas son los cuatro `data-*`, que el normalizador ya quita. Los `<details>` no se abren, y las transiciones se esperan hasta el final |
+| (b) El DOM, el estilo y la accesibilidad | Los 19 estados de research.md R14: el DOM normalizado de `#main` y su `ariaSnapshot()` a 1 280 px, y el estilo computado de cada elemento a 1 280, 981, 850, 650, 590 y 375 px con y sin movimiento reducido. Suma `lock` y `mission`, las dos páginas del laboratorio que dibujan campaña | 0 diferencias fuera de las aceptadas por la spec. Los cuatro `data-*` los quita el normalizador; los `<details>` no se abren y las transiciones se esperan hasta el final, así que esas dos no aparecen. La del foco puede aparecer y se acepta sólo así: propiedades `outline*` del elemento enfocado, que es el mismo en las dos versiones |
 | (c) Los puentes | `exerciseContextHTML`, `lockedExerciseHTML` y `returnURL` de `campaign.js` de la base contra `campaign-bridges.ts`, para:<br>• los 274 ejercicios y `nope`;<br>• los dos lenguajes;<br>• los ocho mundos, `no-existe`, `?campana=` vacío y ausente;<br>• dos estados del laboratorio (vacío y el de master);<br>• cuatro ids hostiles en `returnURL` | 0 diferencias (SC-005) |
 
 - **Si una diferencia aparece,** se corrige el código, nunca la lista de aceptadas: es una clase con otro espacio, un nodo de más o un texto partido.
-- **Si el barrido muestra una diferencia de foco o de `:hover`,** se revisa que el script haya movido el puntero a (0, 0) y que las dos versiones enfoquen el mismo elemento.
+- **Si sólo difieren las propiedades `outline*` del elemento enfocado** (`:focus-visible`), y las dos versiones enfocan el mismo elemento, es la diferencia del foco que la spec aceptó (X1 y C2): se anota en el PR y no se corrige. Nunca se «arregla» una diferencia aceptada devolviendo el comportamiento del legacy.
+- **Si el barrido muestra una diferencia de `:hover`,** se revisa que el script haya movido el puntero a (0, 0).
 - **La prueba de que el barrido detecta algo:** en una copia descartable, el `import` de `campaign-page.css` antes de `lab.css` en `main.tsx` da diferencias (quickstart.md §3.4).
 
 ### Tarea 5.2 · Las roturas deliberadas (T019)

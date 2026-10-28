@@ -158,8 +158,8 @@ Un `vi.mock` del índice con `importOriginal` cambia lo que la página importa (
 
 **Decisión** (la del advisor, que respeta FR-005: el modelo no se toca salvo para sumar exports y selectores). `CampaignPage.constants.spec.tsx`:
 
-1. Reemplaza en el índice las cuatro constantes por 7, 3, 77 y 99, con `vi.mock(import('../../../entities/campaign'), async (importOriginal) => ({ ...(await importOriginal()), … }))`.
-2. Envuelve `campaignEngine.getWorlds` y `getSummary` con `vi.spyOn`: llaman al original y devuelven `maxScore` 99 por mundo y 4 × 99 = 396 en el resumen.
+1. Reemplaza en el índice las cuatro constantes por 7, 4, 77 y 99, con `vi.mock('../../../entities/campaign', async (importOriginal) => ({ ...(await importOriginal<typeof import('../../../entities/campaign')>()), … }))`. La forma con `import()` exige los tipos del módulo, y `CODE_XP` tiene el tipo literal `20`. Los componentes importan las constantes del índice, no de `bridge.ts`, para que el reemplazo les llegue.
+2. Envuelve `campaignEngine.getWorlds` y `getSummary` con `vi.spyOn`: llaman al original y devuelven `maxScore` 99 por mundo y 4 × 99 = 396 en el resumen. La misión vale 7 + 4 = 11, que no coincide con ningún literal viejo.
 3. Arma el catálogo a mano, con textos sin números (fábricas de fishery), y el progreso en blanco, así que ningún punto derivado coincide con un literal viejo.
 4. Afirma cada número de la lista de la spec con su valor nuevo. Después busca `20`, `10`, `30`, `150`, `180` y `720` como palabras en el texto y en los atributos de `#main`, sin los `<li>`.
 

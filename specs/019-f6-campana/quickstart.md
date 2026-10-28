@@ -280,7 +280,14 @@ try {
 } finally { base.kill(); unit.kill(); }
 ```
 
-Esperado: `states` 21, `doms` 21, `trees` 21, `snapshots` 252 (21 × 6 × 2) y `differences` 0.
+Esperado: `states` 21, `doms` 21, `trees` 21, `snapshots` 252 (21 × 6 × 2) y `differences` 0 fuera de las aceptadas.
+
+De las diferencias que la spec aceptó, sólo una puede aparecer: la del foco. Se acepta si son propiedades `outline*` del elemento enfocado y las dos versiones enfocan el mismo elemento, y se anota en el PR. Las otras no aparecen:
+- los `data-*` los quita el normalizador;
+- los `<details>` no se abren;
+- las transiciones se esperan.
+
+Cualquier otra diferencia se corrige en el código, nunca devolviendo el comportamiento del legacy.
 
 Si aparece una diferencia del DOM, se compara a mano con `STATES=<estado>`, guardando las dos salidas de `domOf` en archivos. La causa suele ser:
 
