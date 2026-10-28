@@ -151,6 +151,7 @@ Las respuestas son del usuario (clarify con brainstorming). Las opciones que no 
 - Q: **Q2**, ¿F8 saca de `app.js` el armado de `features/progress-backup`? → A: Opción B, se lleva a `src/app/` (no era la recomendada), y cambia el contrato de `startApp()`. `resetSimulations` y `resetTimer` se retiran si F5 y F9 ya entraron; si no, los retira el último de F5, F8 y F9 que entre. (FR-015, FR-045 y FR-046)
 - Q: **Q3**, ¿quién evita que dos «Borrar todo» o dos importaciones se solapen? → A: Opción A, D1c, con la espera visible de la red. Como consecuencia de Q1, el reset deja de ser local, así que F8 muestra la espera de su propio pedido. Eso no es la guarda contra el solape, que sigue siendo de D1c. (FR-025)
 - Q: **Q4**, ¿qué dice `#note-state` después de importar y de «Borrar todo»? → A: Opción B, lo que haga React (no era la recomendada): queda el último texto, sin excepción a C2. Su E2E es el tercero en rojo, con los dos del foco. (FR-018 y FR-028)
+- Q: **L7**, ¿cómo convive «Borrar todo» con la cláusula del FR-074 de D1 sobre las claves v1 que la cuenta no importó? → A: Rige desde D1c, que la enmienda como F11-Q5 enmendó el FR-070. Hasta entonces, F8 borra las claves v1 como hoy. Decidió el usuario. (FR-049; «“Borrar todo” con el reset del servidor»)
 
 ## «Borrar todo» con el reset del servidor (Q1)
 
@@ -890,7 +891,7 @@ Los IDs no se renumeraron después del clarify: FR-045 a FR-049 son nuevos y van
 5. **Mudar unas 23 reglas puede cambiar la cascada.** `styles.css` se evalúa primero, y el multiconjunto no ve la cascada: en la unidad 8 de F2b, el control negativo dio 702 diferencias con 0 en el multiconjunto. *Mitigación:* FR-037, con el barrido ampliado y la impresión.
 6. **Lo que jsdom no hace.** No trae `showModal()` ni `close()`, ni un portapapeles real. *Mitigación:* el foco, Esc, el fondo y el portapapeles van en E2E; las specs de componente usan dobles (FR-039).
 7. **Un borrado a medias.** Si lo local se borra sin el 200 del servidor, el alumno pierde su progreso y la cuenta no se entera. *Mitigación:* FR-024, FR-047, FR-048 y SC-013: el servidor va primero y cualquier falla deja las claves intactas.
-8. **El FR-074 de D1 no se puede cumplir al pie de la letra antes de D1c.** *Mitigación:* la lectura L7 y FR-049; D1c enmienda la cláusula cuando exista el espacio por cuenta. Si el usuario no la confirma, la salida es borrar sólo lo del servidor, y entonces «Borrar todo» no borra nada de lo que el alumno ve.
+8. **El FR-074 de D1 no se puede cumplir al pie de la letra antes de D1c.** *Mitigación:* la lectura L7 y FR-049; D1c enmienda la cláusula cuando exista el espacio por cuenta. El usuario la confirmó el 2026-10-28.
 9. **F8 depende de F11a.** La sesión, el cliente, «pedir el ingreso», React Hook Form y el doble de la API son de F11a. Si F11a se demora, todo F8 espera, también lo que no los usa. *Mitigación:* la partición de «Partición»: F8a, el port con el borrado local, depende sólo de F2b.
 10. **El armado en `src/app/` choca con R4.** El guard sólo deja importar los índices de `entities/*` a su dueño declarado. *Mitigación:* L10 y FR-015: el plan elige la salida con `singletons-import.spec.ts` como prueba.
 11. **El contrato de `startApp()` cambia.** Lo usan A2, `boot-check`, `app-shell-check` y F10. *Mitigación:* FR-046 y el aviso a A2 y F10 en el PR.
