@@ -113,7 +113,7 @@ El adaptador es un archivo nuevo de `frontend/src/app/legacy/` que reemplaza a `
 | `missionIDs(id, lang)` | `lab.js:navigationList` | F7 |
 | `returnURL(id, lang)` | `lab.js:finishNavigation` | F7 |
 | `exerciseContextHTML(id, lang)` | `lab.js:exerciseHTML`, `updateRunUI` y el manejador de la predicción de `onClick` | F7, que lo reemplaza por datos |
-| `resetSimulations()` | `app.js:startApp`, como paso de sesión de `progress-backup` | F10, cuando esa composición salga de `app.js`; F8 sólo lo adelanta si la mueve |
+| `resetSimulations()` | `app.js:startApp`, como paso de sesión de `progress-backup` | El último de F5 y F8 que entre: F8 saca esa composición de `app.js` (F8-Q2, spec 022) |
 
 La hoja de ruta fecha `sync` en F7 y no lista `init`; el código de hoy los llama también desde `app.js`, y la tabla corrige eso (ver «Hallazgos»). Lo demás que `systems.js` tocaba queda como está: `window.TallerSystemsEngine` (lo publica `register-systems-engine.ts`), `window.SYSTEMS_*` y `window.SYSTEMS_*_LABS` (los publican los cuatro `register-systems-*.ts`; los lee `lab.js` y el oráculo `dump-globals`, que tiene que dar los mismos bytes), `window.TallerEffects` (campaña lo usa) y `window.TallerProjectKit`, cuyo único consumidor de producción pasa de `systems.js` al adaptador; lo retira F10 con los demás `register-*`.
 
@@ -447,7 +447,7 @@ F6, F7 y F8 reutilizan el Page Object, el módulo de sesión y la tabla de retir
 | F3, F4, F6 y F9 | Se integran de a uno con F5. F3 también lleva sus filtros a la URL con nuqs: el primero de los dos que llegue instala la dependencia y fija la configuración compartida (historial `replace`, escritura lo más inmediata posible); la pila de DOM la instala el primero que la necesite |
 | F6 | Tiene su propio adaptador y comparte `lab-bridge-check`, `legacy-views.ts` y las tablas de los checks. Retira `window.TallerCampaign`; no toca `window.TallerSystems` |
 | F7 | Retira `refresh`, `missionIDs`, `returnURL`, `exerciseContextHTML` y el `sync` de `lab.js` de `window.TallerSystems`. La spec de A4 (PR #50, `specs/017-a4-laboratorio-sandbox/`) exige en su FR-022 que la sincronización de Sistemas al aprobar siga igual |
-| F8 | Retira `resetSimulations` sólo si saca de `app.js` la composición de `progress-backup`; si no, queda para F10. Amplía el Page Object mínimo de Método |
+| F8 | Saca de `app.js` la composición de `progress-backup` (F8-Q2); `resetSimulations` lo retira el último de F5 y F8 que entre. Amplía el Page Object mínimo de Método |
 | F10 | Retira `init`, `mount`, `unmount`, el `sync` de `app.js`, `window.TallerProjectKit` y los `register-*`, y decide el router; hereda nuqs en lugar de decidirlo |
 | E1 | Los conteos de la vista («N talleres», «2N núcleos») ya salen del catálogo; los del menú estático (`.nav-count`) son de F10 |
 

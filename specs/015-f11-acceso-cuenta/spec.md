@@ -316,7 +316,7 @@ Son propuestas, para que el usuario las corrija. «(servidor)» marca un mensaje
 
 - Título «Borrar tu cuenta».
 - «Se borra tu cuenta con todo lo que guardó en el servidor: el progreso, los intentos, el código y las importaciones. No se puede deshacer. Las copias de seguridad lo conservan un tiempo: el aviso de privacidad dice cuánto.».
-- «No es «Borrar todo» de Método, que borra el progreso de este navegador. El progreso guardado en este navegador no se borra con la cuenta.».
+- «No es «Borrar todo» de Método, que borra tu progreso en este navegador y en tu cuenta. El progreso guardado en este navegador no se borra con la cuenta.».
 - Campo «Tu contraseña».
 - Casilla «Entiendo que no se puede deshacer.».
 - Botón «Borrar mi cuenta», que mientras espera dice «Borrando…».

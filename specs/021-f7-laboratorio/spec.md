@@ -330,7 +330,7 @@ Expone cómo enfocarlo y cómo reemplazar su texto (para «Restaurar inicio» y 
 | `TallerCampaign.mount`, `unmount` y `refresh` | `app.js:render` | F10 |
 | `TallerCampaign.sync` y `TallerSystems.sync` | `syncDerivedSeals` de `progress-backup`, en `app.js` | F10 (o F8, como en la fila de `reset`) |
 | `TallerSystems.mount`, `unmount` e `init` | `app.js` (`render` y `startApp`) | F10 (supuesto F5-S1) |
-| `TallerSystems.resetSimulations` | `sessionResets` de `progress-backup` | F8 (hoja de ruta), o F10 si `progress-backup` sigue en `app.js` |
+| `TallerSystems.resetSimulations` | `sessionResets` de `progress-backup` | El último de F5 y F8 que entre (F8-Q2, spec 022) |
 | `TallerCampaignEngine` y `TallerSystemsEngine` | `progress-backup`, en `app.js` (los cinco métodos del respaldo) | F10 |
 | `TallerCampaign.exerciseContextHTML`, `lockedExerciseHTML` y `returnURL`; `TallerSystems.exerciseContextHTML`, `missionIDs`, `returnURL` y `refresh` | Nadie | **F7b** |
 | `TallerExplorers`, `TallerQuestExplorers`, `TallerRunner` y `TallerEditor` | Nadie | **F7b** (`TallerRunner`, en F7a) |
