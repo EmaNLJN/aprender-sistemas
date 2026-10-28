@@ -2977,10 +2977,19 @@ Con U1, un navegador sin sesión ve «Ingresá al taller» con el shell inerte y
    });
 
    test.describe('a link with a token', () => {
-     test('leaves the address bar and the history before app.js runs', async ({ page }) => {
+     test('leaves the address bar and the history before app.js runs', async ({ context, page }) => {
+       await context.addInitScript(() => {
+         const pushes: string[] = [];
+         (window as unknown as { __e2ePushes: string[] }).__e2ePushes = pushes;
+         const pushState = history.pushState.bind(history);
+         history.pushState = (data, unused, url) => {
+           pushes.push(String(url));
+           pushState(data, unused, url);
+         };
+       });
        await page.goto(`/?ejercicio=rust-02&paso=code#invitacion=${INVITATION.token}`);
        await expect(page).toHaveURL(/\/\?ejercicio=rust-02&paso=code$/);
-       expect(await page.evaluate(() => history.length)).toBe(1);
+       expect(await page.evaluate(() => (window as unknown as { __e2ePushes: string[] }).__e2ePushes)).toEqual([]);
        expect(await legacyEvaluated(page)).toBe(false);
      });
 
