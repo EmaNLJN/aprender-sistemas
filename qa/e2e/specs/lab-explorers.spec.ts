@@ -7,9 +7,13 @@ test.describe('the mission explorers', () => {
     lab,
   }) => {
     await shell.goto(urls.exercise('rust-103', 'learn'));
-    await expect(lab.questExplorer()).toContainText(
-      'Modelo conceptual · No ejecuta el código del editor ni acredita la misión.',
-    );
+    await expect(
+      lab
+        .questExplorer()
+        .getByText('Modelo conceptual · No ejecuta el código del editor ni acredita la misión.', {
+          exact: true,
+        }),
+    ).toBeVisible();
     await lab.robotHistoryToggle().click();
 
     await lab.explorerButton('Ir al oeste: restar uno a x').click();
@@ -29,7 +33,9 @@ test.describe('the mission explorers', () => {
 
     await lab.explorerButton('Alternar b0 de la longitud').click();
 
-    await expect(lab.packetVerdict()).toContainText('Rechazado: declara 2 bytes, pero llegaron 3.');
+    await expect(lab.packetVerdict()).toHaveText(
+      'Rechazado: declara 2 bytes, pero llegaron 3.Orden de validación: mínimo → versión → largo exacto → checksum.',
+    );
     await expect(lab.questStatus()).toHaveText(
       'Se alternó el bit de menor peso de la longitud declarada. La cantidad real de payload no cambió; el receptor compara ambas.',
     );
@@ -41,8 +47,8 @@ test.describe('the mission explorers', () => {
 
     await lab.explorerButton('Alternar b0 del primer byte').click();
 
-    await expect(lab.packetVerdict()).toContainText(
-      'Rechazado: la comprobación recibida no coincide con la calculada.',
+    await expect(lab.packetVerdict()).toHaveText(
+      'Rechazado: la comprobación recibida no coincide con la calculada.Orden de validación: mínimo → marca → largo exacto → CRC.',
     );
     await expect(lab.questStatus()).toHaveText(
       'Se alternó el bit 0 del primer byte recibido. La comprobación enviada se conserva: ahora el receptor puede detectar esa alteración.',
@@ -90,7 +96,9 @@ test.describe('the lab explorers', () => {
 
     await lab.explorerSelect('Le pasás').selectOption('record');
 
-    await expect(lab.labExplorer()).toContainText('Falta cumplir el contrato ×');
+    await expect(
+      lab.labExplorer().getByText('Falta cumplir el contrato ×', { exact: true }),
+    ).toBeVisible();
     await expect(lab.labExplorerStatus()).toHaveText(
       'Un struct no implementa automáticamente Ord, Eq o Display. Necesitás implementar el trait o derivarlo si ese trait lo admite y sus campos cumplen las restricciones.',
     );
@@ -113,7 +121,14 @@ test.describe('the lab explorers', () => {
 
   test('ownership (rust-05): moving leaves the origin unusable', async ({ shell, lab }) => {
     await shell.goto(urls.exercise('rust-05', 'learn'));
-    await expect(lab.labExplorer()).toContainText('Modelo conceptual: un String llamado origen.');
+    await expect(
+      lab
+        .labExplorer()
+        .getByText(
+          'Modelo conceptual: un String llamado origen. Probá cada operación y mirá quién puede usar sus datos.',
+          { exact: true },
+        ),
+    ).toBeVisible();
 
     await lab.explorerButton('Mover').click();
 
@@ -126,7 +141,14 @@ test.describe('the lab explorers', () => {
 
   test('slices (go-11): an independent copy stops sharing the array', async ({ shell, lab }) => {
     await shell.goto(urls.exercise('go-11', 'learn'));
-    await expect(lab.labExplorer()).toContainText('Modelo conceptual: vista := original[1:].');
+    await expect(
+      lab
+        .labExplorer()
+        .getByText(
+          'Modelo conceptual: vista := original[1:]. Cambiá un valor o hacé una copia independiente antes de modificarlo.',
+          { exact: true },
+        ),
+    ).toBeVisible();
 
     await lab.explorerButton('Copia independiente').click();
 
@@ -144,14 +166,16 @@ test.describe('the lab explorers', () => {
     await shell.goto(urls.exercise('rust-01', 'learn'));
 
     await lab.explorerButton('Siguiente paso →').click();
-    await expect(lab.labExplorer()).toContainText(
-      'Rust distingue las expresiones, que producen un valor, de las sentencias.',
+    await expect(lab.labExplorer().locator('.flow-step.active')).toHaveText(
+      '02DecisiónRust distingue las expresiones, que producen un valor, de las sentencias. El compilador comprueba que el valor final coincida con el tipo de retorno: esa verificación detecta muchos olvidos antes de ejecutar.',
     );
     await expect(lab.explorerButton('Siguiente paso →')).toBeFocused();
 
     await lab.explorerButton('Siguiente paso →').click();
 
-    await expect(lab.labExplorer()).toContainText('La salida depende del argumento.');
+    await expect(lab.labExplorer().locator('.flow-step.active')).toHaveText(
+      '03ResultadoLa salida depende del argumento.',
+    );
     await expect(lab.explorerButton('Volver al inicio ↺')).toBeFocused();
   });
 
@@ -164,7 +188,9 @@ test.describe('the lab explorers', () => {
 
     await lab.tab('code').click();
     await lab.tab('learn').click();
-    await expect(lab.labExplorerStatus()).toContainText('El productor espera');
+    await expect(lab.labExplorerStatus()).toHaveText(
+      'El productor espera: sin buffer no puede completar el envío hasta que aparezca una recepción.0 mensajes entregados.',
+    );
 
     await lab.nextButton().click();
 
@@ -187,6 +213,8 @@ test.describe('the lab explorers', () => {
     await shell.openFromMenu('atlas');
     await page.goBack();
 
-    await expect(lab.labExplorerStatus()).toContainText('El productor espera');
+    await expect(lab.labExplorerStatus()).toHaveText(
+      'El productor espera: sin buffer no puede completar el envío hasta que aparezca una recepción.0 mensajes entregados.',
+    );
   });
 });
