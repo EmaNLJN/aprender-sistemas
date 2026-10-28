@@ -36,7 +36,7 @@ Las ondas, los dueños de archivos y los puntos de sincronización (S1 a S3) est
 - [ ] T017 [P] [US2] F · Specs en rojo de los formularios: `describe-failure.spec.ts`, `form-components.spec.tsx` y `form-hooks.spec.tsx` en `frontend/src/shared/ui/form/` (FR-019, FR-021, FR-022 y FR-025 a FR-031; plan 2.1)
 - [ ] T018 [US2] F · `describe-failure.ts`, `show-failure.ts`, `use-guarded-submit.ts`, `use-retry-countdown.ts`, `TextField.tsx`, `PasswordField.tsx`, `ServerError.tsx`, `form.css` e `index.ts` (FR-025 a FR-031 y FR-067; plan 2.2)
 - [ ] T019 [P] [US4] P · `frontend/src/entities/privacy-notice/`: spec en rojo y después `config/privacy-notice.ts`, `PrivacyNoticeText.tsx`, `PrivacyNoticeDialog.tsx` y `privacy-notice.css` (FR-045 y FR-048; plan 2.3)
-- [ ] T020 [US2] A · Desde S2, specs en rojo del ingreso y de «Salir»: `access-endpoints.spec.ts`, `sign-out.spec.ts` y `sign-in-screen.spec.tsx` (FR-023, FR-024 y FR-030 a FR-035; plan 2.4)
+- [ ] T020 [US2] A · Desde S2, la ayuda `ui/render-access.tsx` y las specs en rojo del ingreso y de «Salir»: `access-endpoints.spec.ts`, `sign-out.spec.ts` y `sign-in-screen.spec.tsx` (FR-023, FR-024 y FR-030 a FR-035; plan 2.4)
 - [ ] T021 [US2] A · `access-endpoints.ts` (`login`), `sign-out.ts`, `LoginForm.tsx` y `AccessScreen.tsx` en `frontend/src/features/sign-in/` (FR-024 y FR-032 a FR-035; plan 2.5)
 - [ ] T022 [US2] M · Desde S2, spec en rojo de «Tu cuenta»: `frontend/src/pages/account/ui/account-menu.spec.tsx` (FR-012, FR-013 y FR-049 a FR-052; plan 2.6)
 - [ ] T023 [US2] M · `AccountMenu.tsx`, `AccountEntry.tsx`, `AccountDialog.tsx`, `SignOutSection.tsx`, `account.css` e `index.ts` de `frontend/src/pages/account/` (FR-012, FR-013, FR-019, FR-049 a FR-052 y FR-067; plan 2.7)

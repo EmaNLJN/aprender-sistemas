@@ -193,7 +193,7 @@ frontend/src/
 │   ├── ui/LoginForm.tsx, InvitationScreen.tsx, InvitationProblem.tsx, InvitationSummary.tsx
 │   ├── ui/SignupForm.tsx, AcceptPrivacyField.tsx, PrivacyReacceptance.tsx
 │   ├── ui/ResetPasswordScreen.tsx, ResetPasswordForm.tsx
-│   ├── ui/*.spec.tsx, ui/access.css
+│   ├── ui/*.spec.tsx, ui/render-access.tsx (la ayuda de las specs del acceso), ui/access.css
 │   └── index.ts
 └── pages/account/                              # nuevo (M)
     ├── ui/AccountMenu.tsx, AccountEntry.tsx, AccountDialog.tsx, SignOutSection.tsx
