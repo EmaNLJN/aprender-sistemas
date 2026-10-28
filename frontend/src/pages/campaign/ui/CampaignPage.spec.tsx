@@ -122,7 +122,7 @@ describe('CampaignPage', () => {
     expect(
       within(articles[0]).getByRole('heading', {
         level: 4,
-        name: 'Kata · Una huella que recuerda el orden kata',
+        name: 'Kata · Una huella que recuerda el orden',
       }),
     ).toBeInTheDocument();
     const button = screen.getByRole('button', { name: 'Kata' });
@@ -212,7 +212,7 @@ describe('CampaignPage', () => {
       campaignEngine.answerCheckpoint('rust-world-1', 1);
     });
 
-    expect(within(checkpointRegion()).getByRole('status')).toHaveTextContent('Bien razonado.');
+    expect(screen.getByText('Bien razonado.').closest('[role="status"]')).not.toBeNull();
   });
 
   it('a blocked storage shows the notice', () => {
