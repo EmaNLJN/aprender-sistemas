@@ -2110,3 +2110,1209 @@ describe('the favorites', () => {
   4. `npm run build` deja el script del dist con el mismo sha256 que antes de la tarea: la página no es alcanzable desde `main.tsx`.
   5. Commit: `feat(front): la página de la Biblioteca en React, todavía sin montar`.
 - **Compuerta:** los pasos 2 a 4.
+
+## 3. Unidad 3 · El corte (E y K, onda 3)
+
+**Cubre:** FR-001, FR-003, FR-005, FR-009, FR-013, FR-022, FR-027 a FR-029 y FR-035; SC-002, SC-005 y SC-008; riesgos 1, 2 y 9.
+
+### Tarea 3.1 · El detalle abierto sigue abierto, en rojo contra el legacy (T012, E)
+
+- **Archivo:** `qa/e2e/specs/library.spec.ts`. Se suma un caso, después de (k).
+
+```ts
+test('(k) an open «Antes de empezar» stays open while its card stays visible', async ({ shell, library }) => {
+  await shell.goto(urls.view('biblioteca'));
+  await library.detailSummary(TITLE['go-tour']).click();
+  await expect(library.detail(TITLE['go-tour'])).toHaveJSProperty('open', true);
+
+  await library.searchFor('go');
+  await expect(library.card(TITLE['go-tour'])).toBeVisible();
+  await expect(library.detail(TITLE['go-tour'])).toHaveJSProperty('open', true);
+
+  await library.toggleFavorite(TITLE['go-tour']);
+  await expect(library.detail(TITLE['go-tour'])).toHaveJSProperty('open', true);
+});
+```
+
+- **Pasos:**
+  1. Correrlo contra el build del legacy. Tiene que fallar en la segunda aserción de `open`: la búsqueda reconstruye las tarjetas con `innerHTML` y el detalle se cierra. Ésa es la razón esperada (X1, Q3).
+  2. Commit: `test(e2e): el detalle abierto de una tarjeta sigue abierto al filtrar (rojo contra el legacy)`.
+
+### Tarea 3.2 · El corte, en un solo commit (T013, K, con los diffs de S y P)
+
+- **Cuándo:** después de T004, T009, T011 y T012.
+- **Archivos:**
+  - `frontend/src/app/legacy/register-library.tsx` (nuevo) y `frontend/src/app/boot/legacy-views.ts`;
+  - `frontend/app.js`;
+  - en `qa/`: `lib/app-adapters.ts`, `lib/app-shell-harness.ts`, `load-order-check.ts`, `boot-check.ts` y `lib/fake-dom.ts`.
+- **El adaptador** (con la sesión transitoria, que T018 borra):
+
+```tsx
+// frontend/src/app/legacy/register-library.tsx
+import { createRoot, type Root } from 'react-dom/client';
+import { DEFAULT_LIBRARY_FILTERS, LibraryPage, type LibraryFilters } from '../../pages/library';
+import { getContent } from '../content/content';
+
+declare global {
+  interface Window {
+    TallerLibrary: Readonly<{ mount: typeof mount; unmount: typeof unmount }>;
+  }
+}
+
+let filters: LibraryFilters = DEFAULT_LIBRARY_FILTERS;
+let root: Root | null = null;
+
+function unmount(): void {
+  root?.unmount();
+  root = null;
+}
+
+function mount(host: HTMLElement | null): void {
+  unmount();
+  if (!host) return;
+
+  root = createRoot(host, {
+    onUncaughtError(error) {
+      console.error('No se pudo mostrar la Biblioteca.', error);
+    },
+  });
+  root.render(
+    <LibraryPage
+      resources={getContent().guide.resources}
+      initialFilters={filters}
+      onFiltersChange={(next) => {
+        filters = next;
+      }}
+    />,
+  );
+}
+
+window.TallerLibrary = Object.freeze({ mount, unmount });
+```
+
+- **`legacy-views.ts`:** una línea nueva, `() => import('../legacy/register-library'),`, inmediatamente después de `() => import('../legacy/register-atlas'),`.
+- **`frontend/app.js`, todo en el mismo commit:**
+  1. Se borran `import { normalizeSearchText } from './src/shared/lib/normalize-search-text';` y la línea `const filters = { … };`.
+  2. En `render()`:
+     - después de `window.TallerAtlas?.unmount();` va `window.TallerLibrary?.unmount();`;
+     - `biblioteca: renderLibrary,` pasa a `biblioteca: () => '',`;
+     - `if (currentView === 'biblioteca') renderResourceResults();` pasa a `if (currentView === 'biblioteca') window.TallerLibrary.mount($('#main'));`, sin `?.`, como el Atlas.
+  3. Se borran las funciones `renderLibrary` y `renderResourceResults`.
+  4. En el delegado de `click` de `#main`, se borran los tres bloques `if (action === 'favorite')`, `if (action === 'category')` y `if (action === 'clear-filters')`.
+  5. En el de `change`, los tres bloques `if (target.id === 'filter-language' | 'filter-cost' | 'filter-favorites')`.
+  6. En el de `input`, el bloque `if (target.id === 'resource-search')`.
+  7. Nada más cambia: `escapeHtml`, `toggleItem`, `data.resources` (el contador del menú y la lección) y los enlaces `#biblioteca` siguen.
+- **Los checks de `qa/`** (cambian cómo cargan o qué listan, no sus valores esperados):
+  - `qa/lib/app-adapters.ts`: `TallerLibrary: ['mount', 'unmount'],` después de `TallerAtlas`.
+  - `qa/lib/app-shell-harness.ts`:
+    - `TallerLibrary: {},` en `behaviors`, después de `TallerAtlas: {},`;
+    - en `ids` se borran `'resource-results-label'` y `'resource-grid'`;
+    - el comentario de arriba pasa a `// La bitácora (notas) los usa al guardar.`.
+  - `qa/load-order-check.ts`:
+    - `const LIBRARY = 'frontend/src/app/legacy/register-library.tsx';` junto a `ATLAS`;
+    - en `BEFORE_APP_REASONS`, `[LIBRARY]: 'render() de app.js llama a window.TallerLibrary.mount() sin guarda opcional en la vista biblioteca',`.
+  - `qa/lib/fake-dom.ts`: una función exportada que junta el texto de un árbol, porque `textContent` de `FakeElement` devuelve sólo el texto propio. Usa el tipo de nodo de `childNodes` (`FakeNode`, o la unión `FakeElement | FakeText` si no está exportado):
+    ```ts
+    export function renderedText(node: FakeNode): string {
+      if (node instanceof FakeText) return node.textContent;
+      return node.textContent + node.childNodes.map(renderedText).join('');
+    }
+    ```
+  - `qa/boot-check.ts`: el caso del Atlas pasa a un conjunto `REACT_VIEWS`, con el mismo encabezado esperado («RECURSOS CON INTENCIÓN» para la Biblioteca y `''` para el Atlas):
+    ```ts
+    // React views mount real nodes in #main instead of writing innerHTML.
+    const REACT_VIEWS: ReadonlySet<string> = new Set(['atlas', 'biblioteca']);
+    ```
+    El cuerpo del recorrido de vistas pasa a:
+    ```ts
+    if (REACT_VIEWS.has(view)) {
+      assert.ok(main.childNodes.length > 0, `#${view} no montó nodos en #main`);
+      assert.ok(renderedText(main).includes(VIEW_HEADINGS[view]), `#${view} no mostró su encabezado`);
+    } else {
+      assert.ok(main.innerHTML.includes(VIEW_HEADINGS[view]), `#${view} no mostró su encabezado`);
+    }
+    ```
+    El comentario del conjunto reemplaza al que hoy está dentro de la rama del Atlas. Si T001 encontró `REACT_VIEWS`, sólo se suma `'biblioteca'`.
+- **Pasos:**
+  1. Integrar los cambios de arriba en un solo commit: `feat(front): la Biblioteca es una página de React que app.js monta por window.TallerLibrary`.
+  2. `npm test`:
+     - `boot-check`, `app-shell-check` y `load-order-check` en verde, sin cambiar un valor esperado;
+     - `boot-check` monta la Biblioteca sin «Abrí el almacén del recorrido antes de usarlo.» (FR-009);
+     - `seams-guard-check` en verde.
+  3. `npm run build` y la red completa con `E2E_PORT=4173 npm run test:e2e`: los 106 de F1, los 17 de A2 y los 23 de `library.spec.ts`, el de T012 incluido. Ninguno se editó.
+  4. SC-005: el `grep` de quickstart.md §3.1 no imprime nada.
+  5. `npm run lint`: el aviso de complejidad 11 de `renderResourceResults` desaparece, y no aparece ninguno nuevo.
+  6. El dist, contra T001: el `<style>` (que todavía no cambia) y el marcado vaciado iguales, y `html.length` dentro del subpresupuesto.
+- **Compuerta:** los pasos 2 a 6.
+- **Vuelta atrás:** revertir este commit devuelve la Biblioteca legacy. La página y el resto de la unidad 2 quedan sin montar.
+
+## 4. Unidad 4 · Los cambios a propósito (P, E y K, onda 4)
+
+**Cubre:** FR-006, FR-018, FR-019, FR-021, FR-025, FR-031, FR-032, FR-042 a FR-044; SC-002, SC-013; US2 (escenario 3) y US4; riesgos 6, 14, 15, 16 y 18.
+
+### Tarea 4.1 · El foco no cae al documento (T014, E y P)
+
+- **Archivos:**
+  - `qa/e2e/specs/library.spec.ts`;
+  - en `frontend/src/pages/library/`: `model/focus-after-removal.ts` y `model/focus-after-removal.spec.ts` (nuevos), y en `ui/`, `LibraryPage.tsx`, `LibraryPage.spec.tsx`, `ResourceCard.tsx` y `EmptyLibrary.tsx`.
+- **El E2E en rojo** (E). En `library.spec.ts` se suma el literal `savedRoute`, en el formato v1 guardado, después de `countLabel`, y un caso dentro de `(f) Solo mis favoritos`:
+
+```ts
+function savedRoute(favorites: ResourceId[]): string {
+  return JSON.stringify({
+    version: 1,
+    language: 'rust',
+    completed: [],
+    milestones: [],
+    favorites,
+    quizAnswers: {},
+    notes: { rust: { learned: '', next: '' }, go: { learned: '', next: '' } },
+    minutes: 25,
+  });
+}
+```
+
+```ts
+  test('removing a favorite moves the focus to the card that takes its place, never to the document', async ({ shell, library, storage, page }) => {
+    await storage.seed({ 'taller-learning-v1': savedRoute(['rust-100', 'go-tour', 'context7']) });
+    await shell.goto(urls.view('biblioteca'));
+    await library.favoritesOnly.check();
+    await expect(library.cardTitles).toHaveText(titlesOf(['rust-100', 'go-tour', 'context7']));
+
+    await library.toggleFavorite(TITLE['rust-100']);
+    await expect(library.favoriteButton(TITLE['go-tour'])).toBeFocused();
+
+    await library.toggleFavorite(TITLE['context7']);
+    await expect(library.favoriteButton(TITLE['go-tour'])).toBeFocused();
+
+    await page.keyboard.press('Enter');
+    await expect(library.cardTitles).toHaveCount(0);
+    await expect(library.clearFilters).toBeFocused();
+  });
+```
+
+Falla contra el corte: al desaparecer la tarjeta, su botón sale del DOM y el foco cae a `<body>`.
+
+- **La spec del modelo y la de la página, en rojo** (P):
+
+```ts
+// frontend/src/pages/library/model/focus-after-removal.spec.ts
+import { describe, expect, it } from 'vitest';
+import { focusAfterRemoval } from './focus-after-removal';
+
+describe('focusAfterRemoval', () => {
+  it('goes to the card that takes the place of the removed one', () => {
+    expect(focusAfterRemoval(['a', 'b', 'c'], 'a')).toBe('b');
+    expect(focusAfterRemoval(['a', 'b', 'c'], 'b')).toBe('c');
+  });
+
+  it('goes to the previous card when the removed one was the last', () => {
+    expect(focusAfterRemoval(['a', 'b', 'c'], 'c')).toBe('b');
+  });
+
+  it('has nowhere to go when no card is left', () => {
+    expect(focusAfterRemoval(['a'], 'a')).toBeNull();
+  });
+});
+```
+
+Dentro de `LibraryPage.spec.tsx`, un `describe` nuevo:
+
+```tsx
+describe('the focus after a star', () => {
+  it('stays on the star while its card stays visible', async () => {
+    const { user } = await renderLibrary();
+
+    await user.click(screen.getByRole('button', { name: 'Guardar en favoritos: A Tour of Go' }));
+
+    expect(screen.getByRole('button', { name: 'Quitar de favoritos: A Tour of Go' })).toHaveFocus();
+  });
+
+  it('moves to the star of the card that takes the place of the removed favorite', async () => {
+    const { user } = await renderLibrary({
+      favorites: ['rust-100', 'go-tour', 'context7'],
+      filters: { favoritesOnly: true },
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Quitar de favoritos: 100 Exercises to Learn Rust' }));
+
+    expect(titles()).toEqual(['A Tour of Go', 'Context7']);
+    expect(screen.getByRole('button', { name: 'Quitar de favoritos: A Tour of Go' })).toHaveFocus();
+  });
+
+  it('moves to the previous star when the removed favorite was the last one', async () => {
+    const { user } = await renderLibrary({
+      favorites: ['rust-100', 'go-tour', 'context7'],
+      filters: { favoritesOnly: true },
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Quitar de favoritos: Context7' }));
+
+    expect(screen.getByRole('button', { name: 'Quitar de favoritos: A Tour of Go' })).toHaveFocus();
+  });
+
+  it('moves to Limpiar filtros when no favorite is left', async () => {
+    const { user } = await renderLibrary({ favorites: ['go-tour'], filters: { favoritesOnly: true } });
+
+    await user.click(screen.getByRole('button', { name: 'Quitar de favoritos: A Tour of Go' }));
+
+    expect(screen.getByRole('button', { name: 'Limpiar filtros' })).toHaveFocus();
+  });
+});
+```
+
+- **La implementación** (P):
+
+```ts
+// frontend/src/pages/library/model/focus-after-removal.ts
+export function focusAfterRemoval(visibleIds: readonly string[], removedId: string): string | null {
+  const index = visibleIds.indexOf(removedId);
+  const remaining = visibleIds.filter((id) => id !== removedId);
+  if (remaining.length === 0) return null;
+  return remaining[Math.min(index, remaining.length - 1)];
+}
+```
+
+En `ResourceCard.tsx`:
+- suma la prop `registerFavoriteButton: (id: string, node: HTMLButtonElement) => () => void;`;
+- el botón de la estrella suma la ref de abajo. En React 19, la limpieza que devuelve la ref se llama cuando el nodo sale.
+
+```tsx
+        ref={(node) => {
+          if (!node) return;
+          return registerFavoriteButton(resource.id, node);
+        }}
+```
+
+En `EmptyLibrary.tsx`:
+- suma la prop `clearButtonRef: RefObject<HTMLButtonElement | null>;`, con `import type { RefObject } from 'react';`;
+- el botón suma `ref={clearButtonRef}`.
+
+En `LibraryPage.tsx`:
+- los imports suman `flushSync` de `react-dom` y `focusAfterRemoval`;
+- `toggleFavorite` pasa a la versión de abajo;
+- `ResourceCard` recibe `registerFavoriteButton={registerFavoriteButton}`, y `EmptyLibrary`, `clearButtonRef={clearButtonRef}`.
+
+```tsx
+  const favoriteButtons = useRef(new Map<string, HTMLButtonElement>());
+  const clearButtonRef = useRef<HTMLButtonElement>(null);
+
+  const registerFavoriteButton = (id: string, node: HTMLButtonElement) => {
+    favoriteButtons.current.set(id, node);
+    return () => {
+      favoriteButtons.current.delete(id);
+    };
+  };
+
+  const toggleFavorite = (id: string) => {
+    const leavesTheList = filters.favoritesOnly && favorites.includes(id);
+    const nextFocusId = leavesTheList
+      ? focusAfterRemoval(
+          visible.map((resource) => resource.id),
+          id,
+        )
+      : null;
+    flushSync(() => {
+      toggleItem(routeStore.getProgress().favorites, id);
+      routeStore.save();
+    });
+    if (!leavesTheList) return;
+    const target =
+      nextFocusId === null ? clearButtonRef.current : favoriteButtons.current.get(nextFocusId);
+    target?.focus({ preventScroll: true });
+  };
+```
+
+- **Por qué `flushSync`:** «Limpiar filtros» recién existe cuando React confirma el estado vacío, y el foco se mueve en el mismo evento. El guardado sube la revisión y `flushSync` aplica en el acto el render que eso agenda. La rotura deliberada 5 lo demuestra (quickstart.md §6).
+- **Pasos:**
+  1. El E2E, la spec del modelo (con `focusAfterRemoval` lanzando `not implemented`) y las cuatro pruebas de la página. Todas fallan: la del modelo, por comportamiento, y la de la página y el E2E, porque el foco cae al documento. Commit: `test(front): el foco no cae al documento al quitar un favorito (rojo)`.
+  2. La implementación. `npm run test:unit -- src/pages/library` en verde, y `npm run build` con `E2E_PORT=4193 npm run test:e2e -- specs/library.spec.ts` en verde.
+  3. `npm run lint` (sin avisos de `react-hooks`), `npm run typecheck` y `npm run format:check`.
+  4. Commit: `feat(front): el foco pasa a la tarjeta que ocupa el lugar del favorito quitado (Q3)`.
+- **Compuerta:** los pasos 2 y 3 y la red completa.
+
+### Tarea 4.2 · nuqs, si no está (T015, K)
+
+- **Si T001 encontró `"nuqs": "2.10.2"`:** no se hace nada. Si es otra versión, K lo informa como hallazgo y sigue con la instalada, si exporta `enableHistorySync` (T002, paso 3).
+- **Si falta:** con el permiso P1 (§«Descargas y permisos»):
+  1. `npm install --save-exact nuqs@2.10.2`. `package.json` suma `"nuqs": "2.10.2"` en `dependencies` y el lockfile suma `nuqs` y `@standard-schema/spec`.
+  2. En `frontend/THIRD-PARTY-NOTICES.txt`, después del aviso de Zustand y con su formato, un párrafo con la línea `nuqs — https://github.com/47ng/nuqs`, una línea en blanco y el texto completo de `node_modules/nuqs/LICENSE`.
+  3. `npm ci --offline`, `npm run build` (el script del dist no cambia: nada importa nuqs todavía) y `npm test`.
+  4. Commit: `build(front): nuqs 2.10.2 para los filtros de la Biblioteca en la URL`.
+
+### Tarea 4.3 · La raíz compartida de nuqs, si no está (T016, K)
+
+- **Si T001 encontró `frontend/src/app/legacy/url-state.tsx`:**
+  - se comprueba que exporte `UrlStateProvider` y `startUrlStateSync`;
+  - se comprueba que `startUrlStateSync` llame a `enableHistorySync()` y que nadie la llame al evaluar un módulo: `grep -rn "startUrlStateSync()" frontend/src` muestra sólo llamadas dentro de un `mount`;
+  - no se cambia nada más.
+- **Si falta:** los dos archivos del plan de F5 (§2.2), sin cambios, para que el segundo en llegar no tenga nada que resolver:
+
+```tsx
+// frontend/src/app/legacy/url-state.tsx
+import type { ReactNode } from 'react';
+import { NuqsAdapter, enableHistorySync } from 'nuqs/adapters/react';
+
+interface UrlStateProviderProps {
+  children: ReactNode;
+}
+
+export const UrlStateProvider = ({ children }: UrlStateProviderProps) => (
+  <NuqsAdapter defaultOptions={{ history: 'replace' }}>{children}</NuqsAdapter>
+);
+
+export function startUrlStateSync(): void {
+  enableHistorySync();
+}
+```
+
+```tsx
+// frontend/src/app/legacy/url-state.spec.tsx
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { parseAsString, useQueryStates } from 'nuqs';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { UrlStateProvider, startUrlStateSync } from './url-state';
+
+const Probe = () => {
+  const [query, setQuery] = useQueryStates({ taller: parseAsString }, { history: 'replace' });
+  return (
+    <>
+      <p>taller: {query.taller ?? 'none'}</p>
+      <button onClick={() => setQuery({ taller: 'heap' })}>open heap</button>
+    </>
+  );
+};
+
+describe('url state', () => {
+  beforeEach(() => {
+    history.replaceState(null, '', '/?lenguaje=rust#sistemas');
+  });
+
+  it('writes with replace, keeps the other keys and keeps the hash', async () => {
+    const user = userEvent.setup();
+    const entries = history.length;
+    render(
+      <UrlStateProvider>
+        <Probe />
+      </UrlStateProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'open heap' }));
+
+    await waitFor(() => expect(location.search).toBe('?lenguaje=rust&taller=heap'));
+    expect(location.hash).toBe('#sistemas');
+    expect(history.length).toBe(entries);
+  });
+
+  it('shows a foreign replaceState while mounted once the sync started', async () => {
+    startUrlStateSync();
+    startUrlStateSync();
+    render(
+      <UrlStateProvider>
+        <Probe />
+      </UrlStateProvider>,
+    );
+    expect(screen.getByText('taller: none')).toBeInTheDocument();
+
+    history.replaceState(null, '', '/?lenguaje=go&taller=wal#sistemas');
+
+    expect(await screen.findByText('taller: wal')).toBeInTheDocument();
+  });
+});
+```
+
+- **Pasos:**
+  1. La spec en rojo, contra un `url-state.tsx` cuyas dos exportaciones lanzan `not implemented`. Commit: `test(front): la raíz de nuqs escribe con replace y ve las escrituras ajenas (rojo)`.
+  2. La implementación. `npm run test:unit -- src/app/legacy/url-state.spec.tsx` en verde.
+  3. Comentar `enableHistorySync()` hace fallar el segundo caso; después se restaura.
+  4. `grep -rn "nuqs/debug" frontend/src` no imprime nada.
+  5. Commit: `feat(front): la raíz compartida de nuqs para las páginas con estado en la URL`.
+
+### Tarea 4.4 · Los filtros en la URL, en rojo (T017, E y P)
+
+- **Cuándo:** después de T014 y T016.
+- **Archivos:**
+  - `frontend/src/shared/config/url-grammar.ts` y `url-grammar.spec.ts` (P): se suman la constante y un `describe`, sin editar las pruebas que hay;
+  - `frontend/src/pages/library/model/library-query.ts` (nuevo, un esqueleto) y `library-query.spec.ts` (P);
+  - `frontend/src/pages/library/ui/LibraryPage.spec.tsx` (P);
+  - `qa/e2e/specs/library.spec.ts` y `qa/e2e/specs/url-contract.spec.ts` (E).
+- **La gramática.** En `url-grammar.ts` se suma la constante de las claves, que es un dato del contrato:
+
+```ts
+export const LIBRARY_QUERY_KEYS = {
+  query: 'buscar',
+  language: 'en',
+  cost: 'acceso',
+  category: 'tipo',
+  favoritesOnly: 'favoritos',
+} as const;
+```
+
+En `url-grammar.spec.ts`, los imports suman `LIBRARY_CATEGORIES`, `LIBRARY_COSTS`, `LIBRARY_LANGUAGES` y `LIBRARY_QUERY_KEYS`, y al final va un `describe` nuevo:
+
+```ts
+describe('the library form', () => {
+  it('names its keys apart from the keys of the other views', () => {
+    expect(LIBRARY_QUERY_KEYS).toEqual({
+      query: 'buscar',
+      language: 'en',
+      cost: 'acceso',
+      category: 'tipo',
+      favoritesOnly: 'favoritos',
+    });
+    const otherKeys = ['ejercicio', 'paso', 'campana', 'sistema', 'mundo', 'lenguaje', 'taller', 'parte'];
+    expect(Object.values(LIBRARY_QUERY_KEYS).filter((key) => otherKeys.includes(key))).toEqual([]);
+  });
+
+  it('lists the valid values of each filter, the default first', () => {
+    expect([...LIBRARY_LANGUAGES]).toEqual(['all', 'rust', 'go']);
+    expect([...LIBRARY_COSTS]).toEqual(['all', 'gratis', 'mixto']);
+    expect([...LIBRARY_CATEGORIES]).toEqual(['all', 'ejercicios', 'proyectos', 'lectura', 'herramientas']);
+  });
+
+  it('keeps the library filters and drops foreign keys when the language changes on the library', () => {
+    expect(withLanguageQuery(at('?buscar=tour+of&basura=1&en=go#biblioteca'), 'biblioteca', 'go').href).toBe(
+      `${ORIGIN}?buscar=tour+of&en=go#biblioteca`,
+    );
+  });
+
+  it('leaves #biblioteca without a query when no filter is set', () => {
+    expect(withLanguageQuery(at('?basura=1#biblioteca'), 'biblioteca', 'go').href).toBe(`${ORIGIN}#biblioteca`);
+  });
+
+  it('keeps a repeated filter and the encoding of a search', () => {
+    expect(
+      withLanguageQuery(at('?tipo=lectura&tipo=proyectos&buscar=a%26b+c#biblioteca'), 'biblioteca', 'rust').href,
+    ).toBe(`${ORIGIN}?tipo=lectura&tipo=proyectos&buscar=a%26b+c#biblioteca`);
+  });
+
+  it('does not modify the URL it receives', () => {
+    const current = at('?buscar=go&basura=1#biblioteca');
+
+    withLanguageQuery(current, 'biblioteca', 'go');
+
+    expect(current.href).toBe(`${ORIGIN}?buscar=go&basura=1#biblioteca`);
+  });
+});
+```
+
+- **Los parsers.** El esqueleto de `library-query.ts`, con parsers vacíos, compila y hace fallar la spec por comportamiento:
+
+```ts
+// frontend/src/pages/library/model/library-query.ts, the skeleton of T017
+export const libraryFilterParsers = {};
+export const libraryFilterOptions = { history: 'replace', urlKeys: {} } as const;
+```
+
+```ts
+// frontend/src/pages/library/model/library-query.spec.ts
+import { createLoader, createSerializer } from 'nuqs';
+import { describe, expect, it } from 'vitest';
+import { libraryFilterOptions, libraryFilterParsers } from './library-query';
+
+const DEFAULTS = { query: '', language: 'all', cost: 'all', category: 'all', favoritesOnly: false };
+const load = createLoader(libraryFilterParsers, { urlKeys: libraryFilterOptions.urlKeys });
+const serialize = createSerializer(libraryFilterParsers, { urlKeys: libraryFilterOptions.urlKeys });
+const read = (query: string) => load(new URLSearchParams(query));
+
+describe('reading the library form', () => {
+  it('reads the worked example of the spec', () => {
+    expect(read('?buscar=tour+of&en=go&acceso=gratis')).toEqual({
+      ...DEFAULTS,
+      query: 'tour of',
+      language: 'go',
+      cost: 'gratis',
+    });
+  });
+
+  it('reads an unknown value as the default', () => {
+    expect(read('?tipo=zzz&en=python&acceso=caro&favoritos=1')).toEqual(DEFAULTS);
+  });
+
+  it('lets the first of a repeated key win', () => {
+    expect(read('?tipo=lectura&tipo=proyectos').category).toBe('lectura');
+  });
+
+  it('ignores foreign keys, lenguaje included', () => {
+    expect(read('?basura=1&lenguaje=go&taller=cache')).toEqual(DEFAULTS);
+  });
+
+  it('reads favoritos=true in any case', () => {
+    expect(read('?favoritos=TRUE').favoritesOnly).toBe(true);
+  });
+});
+
+describe('writing the library form', () => {
+  it('writes nothing for the defaults', () => {
+    expect(serialize(DEFAULTS)).toBe('');
+  });
+
+  it('writes only what differs from the default, with the keys of the grammar', () => {
+    expect(serialize({ category: 'lectura', favoritesOnly: true })).toBe('?tipo=lectura&favoritos=true');
+  });
+
+  it('encodes the characters that would break the query and reads them back', () => {
+    expect(serialize({ query: 'a&b #c%+' })).toBe('?buscar=a%26b+%23c%25%2B');
+    expect(read('?buscar=a%26b+%23c%25%2B').query).toBe('a&b #c%+');
+  });
+
+  it('keeps a query of only spaces (D1, option A)', () => {
+    expect(serialize({ query: '   ' })).toBe('?buscar=+++');
+  });
+});
+```
+
+Si el usuario elige la opción B de D1, el último caso pasa a esperar `''` y se suma el `eq` recortado de quickstart.md §2.
+
+- **La página.** En `LibraryPage.spec.tsx`, los imports suman `withNuqsTestingAdapter` y `type OnUrlUpdateFunction` de `nuqs/adapters/testing`. Hay un ayudante nuevo, que todavía pasa las dos props de la sesión para que el componente de hoy compile, y un `describe` nuevo:
+
+```tsx
+async function renderLibraryAt(search: string) {
+  vi.resetModules();
+  const { routeStore } = await import('../../../entities/guide');
+  const { default: LibraryPage } = await import('./LibraryPage');
+  routeStore.open(guideWith(RESOURCES), { storage: memoryStorage({ [KEY]: savedRoute([]) }) });
+  const onUrlUpdate = vi.fn<OnUrlUpdateFunction>();
+  const user = userEvent.setup();
+  render(
+    <LibraryPage resources={RESOURCES} initialFilters={DEFAULT_LIBRARY_FILTERS} onFiltersChange={() => {}} />,
+    { wrapper: withNuqsTestingAdapter({ searchParams: search, onUrlUpdate, hasMemory: true }) },
+  );
+  return { user, onUrlUpdate };
+}
+
+describe('the filters in the URL', () => {
+  it('applies the query it opens with', async () => {
+    await renderLibraryAt('?buscar=tour+of&en=go');
+
+    expect(search()).toHaveValue('tour of');
+    expect(screen.getByRole('combobox', { name: 'Filtrar por lenguaje' })).toHaveValue('go');
+    expect(titles()).toEqual(['A Tour of Go']);
+  });
+
+  it('writes each change to the query with replace', async () => {
+    const { user, onUrlUpdate } = await renderLibraryAt('');
+
+    await user.click(screen.getByRole('button', { name: 'Lectura' }));
+
+    const event = onUrlUpdate.mock.calls.at(-1)?.[0];
+    expect(event?.queryString).toBe('?tipo=lectura');
+    expect(event?.options.history).toBe('replace');
+  });
+
+  it('removes a filter from the query when it goes back to its default', async () => {
+    const { user, onUrlUpdate } = await renderLibraryAt('?tipo=lectura');
+
+    await user.click(screen.getByRole('button', { name: 'Todos' }));
+
+    expect(onUrlUpdate.mock.calls.at(-1)?.[0].queryString).toBe('');
+  });
+
+  it('Limpiar filtros clears its keys and keeps foreign ones', async () => {
+    const { user, onUrlUpdate } = await renderLibraryAt('?buscar=zzz&basura=1');
+
+    await user.click(screen.getByRole('button', { name: 'Limpiar filtros' }));
+
+    expect(onUrlUpdate.mock.calls.at(-1)?.[0].queryString).toBe('?basura=1');
+  });
+
+  it('reads an unknown value as the default', async () => {
+    await renderLibraryAt('?tipo=zzz');
+
+    expect(screen.getByRole('button', { name: 'Todos' })).toHaveAttribute('aria-pressed', 'true');
+    expect(titles()).toHaveLength(3);
+  });
+});
+```
+
+- **Los E2E** (E):
+  - En el caso «the menu keeps the filters and a reload drops them» de `(i)`, el nombre pasa a «the menu and a reload keep the filters», y las dos últimas aserciones, a `await expect(library.languageFilter).toHaveValue('go');` y `await expect(library.cardTitles).toHaveText(titlesOf(['go-tests', 'go-examples']));`. Es la única edición de un E2E de la unidad 1, aprobada por el clarify (FR-003).
+  - En `(j) the keyboard` se suma el caso del cursor en medio de la consulta (entrada 1 de «Review Focus»), en verde con la sesión, como protección:
+    ```ts
+    test('typing in the middle of the query keeps the caret while each key rewrites the URL', async ({ shell, library, page }) => {
+      await shell.goto(urls.view('biblioteca'));
+      await library.searchFor('tour of');
+
+      await page.keyboard.press('Home');
+      await page.keyboard.press('ArrowRight', { delay: 0 });
+      for (let step = 1; step < 5; step++) await page.keyboard.press('ArrowRight');
+      await page.keyboard.type('x');
+
+      await expect(library.search).toHaveValue('tour xof');
+      await expect(library.search).toBeFocused();
+      await expect(library.cardTitles).toHaveCount(0);
+    });
+    ```
+  - Después del `describe('(i) where the filters live', …)` va un `describe` nuevo:
+
+```ts
+test.describe('(i) the filters in the URL', () => {
+  test('a link with filters opens the library with them applied', async ({ shell, library }) => {
+    await shell.goto('/?buscar=tour+of&en=go&acceso=gratis#biblioteca');
+
+    await expect(library.search).toHaveValue('tour of');
+    await expect(library.languageFilter).toHaveValue('go');
+    await expect(library.costFilter).toHaveValue('gratis');
+    await expect(library.cardTitles).toHaveText([TITLE['go-tour']]);
+    await expect(library.results).toHaveText(countLabel(1));
+  });
+
+  test('filtering rewrites the query in place and Back returns to the previous view', async ({ shell, library, page }) => {
+    await shell.goto(urls.view('recorrido'));
+    await shell.openFromMenu('biblioteca');
+    const entries = await page.evaluate(() => history.length);
+
+    await library.chooseLanguage('Go');
+    await library.chooseCost('Acceso gratuito');
+
+    await expect(page).toHaveURL(
+      (url) => url.searchParams.get('en') === 'go' && url.searchParams.get('acceso') === 'gratis' && url.hash === '#biblioteca',
+    );
+    expect(await page.evaluate(() => history.length)).toBe(entries);
+    await page.goBack();
+    await expect(shell.heading('recorrido')).toBeVisible();
+  });
+
+  test('typing writes the query key by key', async ({ shell, library, page }) => {
+    await shell.goto(urls.view('biblioteca'));
+
+    await library.searchFor('tour of');
+
+    await expect(page).toHaveURL((url) => url.searchParams.get('buscar') === 'tour of');
+    await expect(library.search).toBeFocused();
+  });
+
+  test('without filters the address is #biblioteca', async ({ shell, library, page }) => {
+    await shell.goto(urls.view('biblioteca'));
+    await library.chooseCategory('Lectura');
+    await expect(page).toHaveURL((url) => url.searchParams.get('tipo') === 'lectura');
+
+    await library.chooseCategory('Todos');
+
+    await expect(page).toHaveURL(urls.view('biblioteca'));
+  });
+
+  test('an unknown value reads as the default and clearing the filters leaves #biblioteca', async ({ shell, library, page }) => {
+    await shell.goto('/?tipo=zzz#biblioteca');
+    await expect(library.category('Todos')).toHaveAttribute('aria-pressed', 'true');
+    await expect(library.cardTitles).toHaveText(titlesOf(ALL));
+
+    await library.searchFor('zzz');
+    await library.clearFilters.click();
+
+    await expect(page).toHaveURL(urls.view('biblioteca'));
+  });
+
+  test('a search with special characters survives a reload', async ({ shell, library, page }) => {
+    await shell.goto(urls.view('biblioteca'));
+    await library.searchFor('a&b #c%+á');
+    await expect(page).toHaveURL((url) => url.searchParams.get('buscar') === 'a&b #c%+á');
+
+    await page.reload();
+
+    await expect(library.search).toHaveValue('a&b #c%+á');
+    await expect(page).toHaveURL((url) => url.hash === '#biblioteca');
+  });
+
+  test('the language switch keeps the library keys and drops the others', async ({ shell, library, page }) => {
+    await shell.goto('/?buscar=tour+of&basura=1#biblioteca');
+
+    await shell.switchLanguage('go');
+
+    await expect(page).toHaveURL(
+      (url) => url.searchParams.get('buscar') === 'tour of' && !url.searchParams.has('basura') && url.hash === '#biblioteca',
+    );
+    await expect(library.search).toHaveValue('tour of');
+  });
+
+  test('from another view the language switch drops the filters, as it drops any query today', async ({ shell, page }) => {
+    await shell.goto('/?buscar=tour+of#recorrido');
+
+    await shell.switchLanguage('go');
+
+    await expect(page).toHaveURL(urls.view('recorrido'));
+  });
+
+  test('a foreign write of the query reaches the filters while the library is mounted', async ({ shell, library, page }) => {
+    await shell.goto(urls.view('biblioteca'));
+
+    await page.evaluate(() => history.replaceState(null, '', '?tipo=lectura#biblioteca'));
+
+    await expect(library.category('Lectura')).toHaveAttribute('aria-pressed', 'true');
+    await expect(library.results).toHaveText(countLabel(5));
+  });
+});
+```
+
+  - En `url-contract.spec.ts`, la fixture `library` llega por `test` (la de `../fixtures`), y al final va un `describe` con un solo caso:
+
+```ts
+test.describe('?buscar=&en=&acceso=&tipo=&favoritos=#biblioteca', () => {
+  test('a link with filters opens the library with them applied', async ({ shell, library, page }) => {
+    await shell.goto('/?buscar=tour+of&en=go&acceso=gratis#biblioteca');
+
+    await expect(shell.menuLink('biblioteca')).toHaveAttribute('aria-current', 'page');
+    await expect(library.cardTitles).toHaveText(['A Tour of Go']);
+    await expect(page).toHaveURL('/?buscar=tour+of&en=go&acceso=gratis#biblioteca');
+  });
+});
+```
+
+- **Por qué cada prueba falla ahora:**
+  - la gramática no conserva los filtros en `#biblioteca`, porque `withLanguageQuery` vacía la query;
+  - los parsers están vacíos;
+  - la página ignora la URL;
+  - los E2E no encuentran la query o pierden los filtros al recargar.
+
+  El del cursor y el de «from another view» pasan con la sesión y siguen como protección.
+- **Pasos:**
+  1. Correr cada prueba y anotar la razón del fallo. Si una falla por otra cosa (un import, un error de tipos en tiempo de ejecución), se corrige la prueba antes del commit.
+  2. Commit: `test(front): los filtros de la Biblioteca en la URL (rojo)`.
+
+### Tarea 4.5 · Los filtros en la URL (T018, P y K)
+
+- **Archivos:**
+  - `url-grammar.ts` y `library-query.ts` (se completan);
+  - `LibraryPage.tsx` y `LibraryPage.spec.tsx`;
+  - `frontend/src/pages/library/index.ts`;
+  - `register-library.tsx` (K);
+  - se borra `use-library-filters.ts`.
+- **La gramática:**
+
+```ts
+// frontend/src/shared/config/url-grammar.ts, after LIBRARY_QUERY_KEYS
+const LIBRARY_KEYS: readonly string[] = Object.values(LIBRARY_QUERY_KEYS);
+
+function libraryQueryOf(params: URLSearchParams): string {
+  return new URLSearchParams([...params].filter(([key]) => LIBRARY_KEYS.includes(key))).toString();
+}
+
+export function withLanguageQuery(current: URL, view: View, language: string): URL {
+  const url = new URL(current.href);
+  if (view === 'sistemas') url.searchParams.set('lenguaje', language);
+  else if (view === 'biblioteca') url.search = libraryQueryOf(current.searchParams);
+  else url.search = '';
+  return url;
+}
+```
+
+- **Los parsers:**
+
+```ts
+// frontend/src/pages/library/model/library-query.ts
+import { parseAsBoolean, parseAsString, parseAsStringLiteral } from 'nuqs';
+import {
+  LIBRARY_CATEGORIES,
+  LIBRARY_COSTS,
+  LIBRARY_LANGUAGES,
+  LIBRARY_QUERY_KEYS,
+} from '../../../shared/config/url-grammar';
+
+export const libraryFilterParsers = {
+  query: parseAsString.withDefault(''),
+  language: parseAsStringLiteral(LIBRARY_LANGUAGES).withDefault('all'),
+  cost: parseAsStringLiteral(LIBRARY_COSTS).withDefault('all'),
+  category: parseAsStringLiteral(LIBRARY_CATEGORIES).withDefault('all'),
+  favoritesOnly: parseAsBoolean.withDefault(false),
+};
+
+export const libraryFilterOptions = {
+  history: 'replace',
+  urlKeys: LIBRARY_QUERY_KEYS,
+} as const;
+```
+
+- **La página.** En `LibraryPage.tsx`:
+  - sale el import de `useLibraryFilters` y entra `import { useQueryStates } from 'nuqs';` con `import { libraryFilterOptions, libraryFilterParsers } from '../model/library-query';`;
+  - las props quedan en `interface LibraryPageProps { resources: GuideResource[]; }`;
+  - la línea del hook pasa a `const [filters, changeFilters] = useQueryStates(libraryFilterParsers, libraryFilterOptions);`;
+  - nada más cambia: `changeFilters(null)` limpia las claves del hook y deja las ajenas;
+  - se borra `model/use-library-filters.ts`, que era la costura de la sesión;
+  - sin la sesión, `useQueryStates` es una línea legible en el componente y un hook propio sería un envoltorio trivial.
+- **La API pública:** `frontend/src/pages/library/index.ts` queda en una línea, `export { default as LibraryPage } from './ui/LibraryPage';`.
+- **El adaptador:**
+
+```tsx
+// frontend/src/app/legacy/register-library.tsx
+import { createRoot, type Root } from 'react-dom/client';
+import { LibraryPage } from '../../pages/library';
+import { getContent } from '../content/content';
+import { UrlStateProvider, startUrlStateSync } from './url-state';
+
+declare global {
+  interface Window {
+    TallerLibrary: Readonly<{ mount: typeof mount; unmount: typeof unmount }>;
+  }
+}
+
+let root: Root | null = null;
+
+function unmount(): void {
+  root?.unmount();
+  root = null;
+}
+
+function mount(host: HTMLElement | null): void {
+  unmount();
+  if (!host) return;
+
+  startUrlStateSync();
+  root = createRoot(host, {
+    onUncaughtError(error) {
+      console.error('No se pudo mostrar la Biblioteca.', error);
+    },
+  });
+  root.render(
+    <UrlStateProvider>
+      <LibraryPage resources={getContent().guide.resources} />
+    </UrlStateProvider>,
+  );
+}
+
+window.TallerLibrary = Object.freeze({ mount, unmount });
+```
+
+- **La spec de la página** se adapta a la página sin sesión:
+  - `renderLibrary` recibe `search?: string` en lugar de `filters`. Renderiza `<LibraryPage resources={resources} />` con `{ wrapper: withNuqsTestingAdapter({ searchParams: search, hasMemory: true }) }`.
+  - Los casos que usaban `filters` pasan a la query equivalente:
+    - «Limpiar filtros resets…» usa `search: '?buscar=zzz&en=go&acceso=mixto&tipo=lectura&favoritos=true'`;
+    - los tres casos del foco con «Solo mis favoritos» usan `search: '?favoritos=true'`.
+  - Se borra «hand each change to the session of the adapter»: la sesión ya no existe y la cubre «writes each change to the query with replace».
+  - `renderLibraryAt` deja de pasar las dos props.
+  - Ningún valor esperado cambia.
+- **Pasos:**
+  1. La implementación. `npm run test:unit` en verde: la gramática, los parsers y la página.
+  2. `npm run build`, `E2E_PORT=4193 npm run test:e2e`, `node qa/boot-check.ts` y `node qa/seams-guard-check.ts`. Pasan:
+     - la red completa: F1 sin editar, C2 incluido; los 17 de A2; y `url-contract`, con su caso nuevo;
+     - la Biblioteca con sus casos nuevos;
+     - `boot-check`, que monta la Biblioteca con `NuqsAdapter` sobre el DOM falso.
+  3. Ningún `useState` de filtros: `grep -rn "useState" frontend/src/pages/library` no imprime nada, y `grep -rn "initialFilters\|onFiltersChange\|DEFAULT_LIBRARY_FILTERS" frontend/src/app` tampoco.
+  4. `startUrlStateSync()` sólo en `mount`, y el escenario de `boot-check` «main.tsx without its call evaluates quietly» sigue en verde, con 0 oyentes.
+  5. El dist: `html.length` dentro del subpresupuesto, con nuqs aparte, y la forma de A2 en `build-check`.
+  6. `npm run lint`, `npm run typecheck` y `npm run format:check`.
+  7. Commit: `feat(front): los filtros de la Biblioteca viven en la URL con nuqs (Q1)`.
+- **Compuerta:** los pasos 1 a 6.
+- **Vuelta atrás:** revertir T018 deja la página con la sesión del corte. Revertir también T017 deja las pruebas como antes.
+
+## 5. Unidad 5 · La mudanza del CSS (H y K, onda 5)
+
+**Cubre:** FR-020, FR-026 y FR-038; SC-006; Q2 y X3; riesgo 17.
+
+### Tarea 5.1 · Las reglas de la Biblioteca a su hoja (T019, H, con K para `main.tsx`)
+
+- **Cuándo:** se prepara desde la onda 4 y se commitea sobre T018.
+- **Archivos:**
+  - `frontend/src/pages/library/ui/library.css` (nuevo);
+  - `frontend/styles.css`;
+  - `frontend/src/app/main.tsx`, que integra K: una línea, `import '../pages/library/ui/library.css';`, **inmediatamente después** de `import '../../styles.css';`.
+- **Si F4 o F9 ya partieron los bloques:** se rebasa sobre su `styles.css`, se sacan sólo los 43 selectores de abajo, y la hoja de la Biblioteca va también justo después de `styles.css`. Las hojas de página no comparten selectores, y su orden entre ellas no cambia la cascada: el barrido lo confirma.
+- **`library.css`:** el texto de las reglas, copiado sin cambiar una declaración, en el orden de `styles.css`. La única excepción es el bloque de impresión, que va entre los dos bloques de 590 px (research.md, R9):
+
+```css
+.filter-bar {
+  display: grid;
+  grid-template-columns: minmax(170px, 1fr) auto auto;
+  gap: 12px;
+  padding-bottom: 17px;
+}
+.filter-bar select {
+  border: 1px solid var(--line);
+  padding: 10px;
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+}
+.filter-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 23px;
+}
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.filter-chip {
+  font-size: 11px;
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  background: transparent;
+  border-radius: 20px;
+}
+.filter-chip[aria-pressed='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+}
+.favorite-filter {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.resource-results-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+.resource-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 17px;
+}
+.resource-card {
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.resource-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 17px;
+}
+.resource-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.resource-card h2 {
+  font-size: 22px;
+  letter-spacing: -0.7px;
+  margin: 0 0 7px;
+}
+.resource-format {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+.resource-card p {
+  font-size: 12px;
+  line-height: 1.75;
+  margin-bottom: 12px;
+}
+.favorite-button {
+  background: none;
+  border: 0;
+  font-size: 22px;
+  color: var(--muted);
+  line-height: 1;
+  padding: 4px;
+}
+.favorite-button[aria-pressed='true'] {
+  color: var(--accent);
+}
+.resource-fit {
+  border-top: 1px solid var(--line);
+  padding-top: 13px;
+}
+.resource-card details {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+.resource-card details summary {
+  cursor: pointer;
+}
+.resource-card details p {
+  font-size: 11px;
+  margin: 7px 0 0;
+}
+.resource-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  font-size: 12px;
+  font-weight: 550;
+  text-decoration: none;
+  padding-top: 8px;
+  color: var(--accent);
+}
+.resource-link:hover {
+  text-decoration: underline;
+}
+.resource-notice {
+  font-size: 11px;
+  margin-top: 25px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+@media (max-width: 1150px) {
+  .filter-bar {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 850px) {
+  .resource-grid {
+    gap: 13px;
+  }
+  .resource-card {
+    padding: 20px;
+  }
+}
+@media (max-width: 590px) {
+  .resource-grid {
+    grid-template-columns: 1fr;
+  }
+  .resource-card {
+    padding: 22px;
+  }
+  .resource-card h2 {
+    font-size: 23px;
+  }
+  .filter-bar {
+    gap: 9px;
+  }
+  .filter-bar select {
+    max-width: 100%;
+    width: 100%;
+    font-size: 11px;
+  }
+  .filter-secondary {
+    gap: 15px;
+  }
+  .filter-chip {
+    font-size: 10px;
+    padding: 5px 9px;
+  }
+  .resource-fit {
+    margin-bottom: 10px;
+  }
+  .resource-link {
+    min-height: 42px;
+  }
+  .favorite-button {
+    min-width: 36px;
+    min-height: 36px;
+  }
+}
+@media print {
+  .filter-bar,
+  .filter-secondary,
+  .favorite-button {
+    display: none;
+  }
+  .resource-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .resource-card {
+    break-inside: avoid;
+  }
+}
+@media (max-width: 590px) {
+  .favorite-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+```
+
+- **`styles.css`:** se borran esas reglas, y nada más. Las líneas son las de la base, y si T001 encontró otra base se buscan por selector:
+  - en la base, `.filter-bar` (715 a 720), de `.filter-bar select` a `.favorite-filter` (743 a 782), de `.resource-results-label` a `.resource-link:hover` (786 a 874) y `.resource-notice` (1281 a 1286). Quedan `.page-heading`, `.search-wrap` con sus hijas, `input[type='checkbox']:not(.step-check)` y `.empty-state` con sus hijas;
+  - en `@media (max-width: 1150px)`, `.filter-bar` (queda `.search-wrap`);
+  - en `@media (max-width: 850px)`, `.resource-grid` y `.resource-card`;
+  - en el primer `@media (max-width: 590px)`, `.resource-grid`, `.resource-card`, `.resource-card h2`, `.filter-bar`, `.filter-bar select`, `.filter-secondary`, `.filter-chip`, `.resource-fit`, `.resource-link` y `.favorite-button` (quedan `.page-heading h1` y `.page-heading p`);
+  - en el segundo `@media (max-width: 590px)`, `.favorite-button`;
+  - en `@media print`:
+    - de la lista de `display: none` salen `.filter-bar`, `.filter-secondary` y `.favorite-button`, y quedan `.sidebar, .topbar, .focus-timer, .data-actions, .main-footer, #toast`;
+    - sale `.resource-grid`;
+    - de `.resource-card, .module, .milestone` sale `.resource-card`.
+- **Pasos:**
+  1. Una copia descartable del árbol de T018 como base (`git worktree add --detach ../f3-css-base <hash de T018>`), con `npm ci --offline` y `npm run build`.
+  2. Los tres cambios, y `npm run build`.
+  3. **El multiconjunto** (quickstart.md §5.1): `base` y `unit` con la misma cantidad, y `onlyBase` y `onlyUnit` en 0. Si sólo faltan declaraciones repetidas que lightningcss fusionó, se anota cuáles y se ajusta el orden de `library.css` para que no queden contiguas. Ninguna regla cambia de contenido.
+  4. **El barrido de estilo computado** (quickstart.md §5.2): las 14 páginas de F2b y los 6 estados de la Biblioteca, a 1 280, 981, 850, 650, 590 y 375 px, con y sin movimiento reducido, y en impresión. Se esperan 0 diferencias.
+  5. **El control negativo,** una vez y sin commitear: invertir en `library.css` el bloque de 850 px y el primero de 590 px. El barrido tiene que dar más de 0 diferencias a 590 px (en el `padding` de `.resource-card` y el `gap` de `.resource-grid`), y el multiconjunto, 0. Se restaura.
+  6. `npm test` (`load-order-check`: `styles.css` sigue primera), y la red completa: `css-contract` R1 a R10 sin editar, la `.sr-only` de R5 incluida.
+  7. El dist: el script y el marcado iguales a los de T018, y el `<style>` con otro hash y el mismo multiconjunto.
+  8. Commit: `refactor(front): las reglas de la Biblioteca viven en la hoja de su página (Q2, X3)`.
+- **Compuerta:** los pasos 3 a 7, con las cantidades en la descripción del PR.
+- **Vuelta atrás:** revertir el commit devuelve las reglas a `styles.css`.
+
+## 6. Unidad 6 · El cierre (K, onda 6)
+
+**Cubre:** FR-002, FR-036 a FR-041; SC-001, SC-004, SC-006, SC-007, SC-009 y SC-011.
+
+### Tarea 6.1 · La comparación única, legacy contra port (T020, K)
+
+- **Qué compara:** el commit base de T001 (el legacy) contra el último commit del PR, con el script de quickstart.md §4. Pasa por 16 estados, a los que llega con la interfaz en los dos builds, a 981, 850, 650 y 590 px:
+  1. el inicial;
+  2. dos búsquedas, «tour of» y «ejercicios»;
+  3. Rust y Go;
+  4. Acceso gratuito y Gratis + pago;
+  5. los cuatro tipos;
+  6. «Solo mis favoritos» sin favoritos (vacío) y con las fixtures congeladas;
+  7. el vacío de «zzz»;
+  8. un favorito marcado (`go-tour`).
+
+  En cada uno compara tres cosas:
+  - **el DOM de `#main` normalizado:** la etiqueta, los tokens de clase, el texto colapsado, `id`, `role`, `aria-*`, `href`, `target`, `rel`, `type`, `placeholder`, y `value`, `checked`, `selected` y `open` como propiedades. Los nodos de texto vacíos se descartan y los contiguos se unen;
+  - **el estilo computado** de cada elemento de `#main`;
+  - **la instantánea de accesibilidad** de `#main` (`locator.ariaSnapshot()`).
+- **Esperado:** 0 diferencias fuera de la lista de FR-036. Por construcción, el script no ve las aceptadas:
+  - no compara `data-*`;
+  - las clases van por tokens, así que `"pill "` vale lo mismo que `"pill"`;
+  - no compara la URL ni el foco;
+  - ningún estado abre un detalle;
+  - espera a que la página esté dibujada, así que el turno de React no cuenta.
+- **Se informa:** los estados, los elementos y las propiedades comparados, en la descripción del PR (SC-004).
+
+### Tarea 6.2 · Las roturas deliberadas (T021, K)
+
+- Las doce roturas de quickstart.md §6, cada una en una copia descartable y sin commitear. Cada una tiene que fallar en la prueba prevista. Se informa N de N (FR-037, SC-007).
+
+### Tarea 6.3 · La documentación (T022, K)
+
+En el mismo PR (FR-040):
+
+- **`docs/architecture.md`:**
+  - en el «Mapa de archivos», una fila «Biblioteca migrada a React/TypeScript», con `frontend/src/pages/library/` (`ui`, `model`), su hoja `ui/library.css`, el adaptador `frontend/src/app/legacy/register-library.tsx` y la raíz de nuqs `frontend/src/app/legacy/url-state.tsx`;
+  - la fila de la gramática de URL suma «y la forma de la Biblioteca (`buscar`, `en`, `acceso`, `tipo`, `favoritos`)»;
+  - la de «Navegación, recorrido y progreso general» deja de nombrar la Biblioteca;
+  - el «Estado actual» de Feature-Sliced Design suma `frontend/src/pages/library`.
+- **`qa/AGENTS.md`:**
+  - en «Pruebas del front», la oración «La pila de DOM… llega con la primera spec de componente» pasa a «`*.spec.ts` corre en el proyecto `node` y `*.spec.tsx`, en `jsdom`, con Testing Library y el setup `frontend/src/vitest-setup.ts`»;
+  - la fila «Recorrido, biblioteca o respaldo global» suma «la Biblioteca: `qa/e2e/specs/library.spec.ts` y, con `npm run test:unit`, las specs de `pages/library`»;
+  - la de «Almacenes, motores…» suma la guarda de `useStore` sin selector en `npm run lint`.
+- **`docs/agent-skills.md`:** el «Alcance» dice que la pila de DOM y fishery ya están instaladas (F3).
+- **`docs/adr/0008-pruebas-del-front.md`:** una «Enmienda (F3)» con:
+  - los dos proyectos;
+  - que la raíz sólo lleva `projects`, porque Vitest 5 concatena los arreglos;
+  - el setup;
+  - las versiones instaladas y lo que midió `npm ci` (paquetes y tamaño);
+  - el tiempo de `npm run test:unit` antes y después;
+  - que `vi.resetModules()` con `import()` dinámico es el patrón para una página que usa un singleton.
+
+  Si T001 encontró la pila ya instalada, sólo lo que F3 suma.
+
+### Tarea 6.4 · La compuerta y el PR (T023, K)
+
+- **La compuerta,** sobre la rama entera (quickstart.md §3):
+  - `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `git diff --check` y `E2E_PORT=4173 npm run test:e2e`, tres veces (`--repeat-each=3 --retries=0`);
+  - con permiso, `docker compose build taller`;
+  - los bytes y el tamaño contra T001;
+  - las tres comparaciones;
+  - las roturas;
+  - la complejidad: 0 funciones nuevas sobre 10, y un aviso menos que en T001.
+- **La comprobación manual con lector de pantalla** (X2) es una acción del usuario. El recuento y el estado vacío se leen como antes.
+- **El PR:**
+  - título en inglés, `feat(front): port the library to React with its filters in the URL`;
+  - la descripción cuenta el contexto, qué faltaba, qué cambia y por qué;
+  - cómo se verificó: los comandos y las medidas de arriba, los conteos de la comparación única, el barrido y el multiconjunto, y las roturas;
+  - la correspondencia de los escenarios de `qa/` (research.md, R10);
+  - los tres cambios a propósito, el nombre `en`, D1 y lo que queda pendiente;
+  - termina con la línea de atribución de Claude Code.
