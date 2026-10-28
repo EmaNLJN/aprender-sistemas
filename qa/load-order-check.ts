@@ -22,6 +22,7 @@ const APP = 'frontend/app.js';
 const LAB = 'frontend/lab.js';
 const STYLES = 'frontend/styles.css';
 const ATLAS = 'frontend/src/app/legacy/register-atlas.tsx';
+const PROJECT_PAGE = 'frontend/src/app/legacy/register-project-page.tsx';
 const CAMPAIGN_ENGINE = 'frontend/src/app/legacy/register-campaign-engine.ts';
 const SYSTEMS_ENGINE = 'frontend/src/app/legacy/register-systems-engine.ts';
 const CATALOGS = 'frontend/src/app/legacy/register-catalogs.ts';
@@ -42,6 +43,8 @@ const BEFORE_APP_REASONS: Record<string, string> = {
     'app.js lee window.GUIDE_DATA al cargar; syncLinkedLanguage() lee window.RUST_CAMPAIGN/GO_CAMPAIGN y campaign.js init() los pasa al motor al cargar app.js',
   [ATLAS]:
     'render() de app.js llama a window.TallerAtlas.mount() sin guarda opcional en la vista atlas',
+  [PROJECT_PAGE]:
+    'render() de app.js llama a window.TallerProjectPage.unmount() y mount() sin guarda opcional',
 };
 
 const CONSTRAINTS: Constraint[] = [

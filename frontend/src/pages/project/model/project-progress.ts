@@ -1,4 +1,9 @@
-import type { GuideLanguage } from '../../../entities/guide';
+import {
+  PROJECT_MILESTONES,
+  milestoneHint,
+  milestoneId,
+  type GuideLanguage,
+} from '../../../entities/guide';
 
 export interface MilestoneView {
   id: string;
@@ -19,7 +24,20 @@ export function projectProgress(
   marked: readonly string[],
   language: GuideLanguage,
 ): ProjectProgress {
-  void marked;
-  void language;
-  throw new Error('not implemented');
+  const milestones = PROJECT_MILESTONES.map((milestone, index) => {
+    const id = milestoneId(language, milestone);
+    return {
+      id,
+      heading: `${String(index + 1).padStart(2, '0')}. ${milestone.title}`,
+      title: milestone.title,
+      task: milestone.task,
+      doneWhen: milestone.doneWhen,
+      hint: milestoneHint(milestone, language),
+      completed: marked.includes(id),
+    };
+  });
+  return {
+    milestones,
+    completedCount: milestones.filter((milestone) => milestone.completed).length,
+  };
 }

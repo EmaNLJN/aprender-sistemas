@@ -1,25 +1,36 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { importModule } from './lib/sources.ts';
+
+interface MilestoneCatalog {
+  MILESTONE_LANGUAGES: readonly string[];
+  PROJECT_MILESTONES: readonly { suffix: string }[];
+}
 
 const root = join(import.meta.dirname, '..');
-const source = readFileSync(join(root, 'frontend', 'app.js'), 'utf8');
-
-const start = source.indexOf('const milestones = [');
-const end = source.indexOf('\n  ];', start);
-assert.ok(start >= 0 && end > start, 'no se encontró el arreglo milestones en frontend/app.js');
-
-const ids = [...source.slice(start, end).matchAll(/^\s{6}id: '([a-z-]+)',/gm)].map(
-  (match) => match[1],
+const catalog = await importModule<MilestoneCatalog>(
+  'frontend/src/entities/guide/model/project-milestones.ts',
 );
-const expected = ['rust', 'go'].flatMap((language) => ids.map((id) => `${language}-${id}`));
+const { MILESTONE_IDS } = await importModule<{ MILESTONE_IDS: readonly string[] }>(
+  'frontend/src/entities/guide/model/milestone-ids.ts',
+);
+
+const fromCatalog = catalog.MILESTONE_LANGUAGES.flatMap((language) =>
+  catalog.PROJECT_MILESTONES.map((milestone) => `${language}-${milestone.suffix}`),
+);
 const shared = JSON.parse(
   readFileSync(join(root, 'qa', 'fixtures', 'shared', 'route-milestones.json'), 'utf8'),
 ) as string[];
 
 assert.deepEqual(
   shared,
-  expected,
-  'route-milestones.json no coincide con los hitos de frontend/app.js',
+  fromCatalog,
+  'route-milestones.json no coincide con el catálogo de hitos de entities/guide',
+);
+assert.deepEqual(
+  shared,
+  [...MILESTONE_IDS],
+  'route-milestones.json no coincide con MILESTONE_IDS de entities/guide',
 );
 console.log(`route-milestones-check: ${shared.length} hitos PASS.`);

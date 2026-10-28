@@ -95,9 +95,14 @@ export function createRouteStore(): RouteStore {
       return saved;
     },
     toggleMark(collection, id) {
-      void collection;
-      void id;
-      throw new Error('not implemented');
+      const current = opened();
+      const marks = current.state[collection];
+      const index = marks.indexOf(id);
+      if (index === -1) marks.push(id);
+      else marks.splice(index, 1);
+      const saved = write(current);
+      notify();
+      return saved;
     },
     applyImport(plan) {
       const current = opened();
