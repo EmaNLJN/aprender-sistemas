@@ -31,11 +31,13 @@
       </div>
     </aside>
     <div class="workspace">
-      <header class="topbar"><span class="topbar-label">APRENDER ES CONSTRUIR</span><div class="language-switch" role="group" aria-label="Lenguaje del recorrido"><button data-language="rust" aria-pressed="true">Rust <span class="recommended-dot" aria-hidden="true"></span></button><button data-language="go" aria-pressed="false">Go</button></div></header>
+      <header class="topbar"><span class="topbar-label">APRENDER ES CONSTRUIR</span><div class="topbar-actions"><div class="language-switch" role="group" aria-label="Lenguaje del recorrido"><button data-language="rust" aria-pressed="true">Rust <span class="recommended-dot" aria-hidden="true"></span></button><button data-language="go" aria-pressed="false">Go</button></div><div class="account-entry" id="account-entry"></div></div></header>
+      <div class="session-status" id="session-status" tabindex="-1"></div>
       <main id="main" tabindex="-1"></main>
       <footer class="main-footer"><span>Hecho para la curiosidad, no para correr.</span><span>Recursos revisados · 02 OCT 2026</span></footer>
     </div>
   </div>
+  <div id="account-root"></div>
   <dialog id="lesson-dialog" aria-labelledby="lesson-title"><div class="dialog-content" id="lesson-content"></div></dialog>
   <dialog id="confirm-dialog" aria-labelledby="confirm-title"><div class="dialog-content"><h2 id="confirm-title">¿Borrar tu progreso?</h2><p>Se borrarán los pasos, favoritos, notas, campaña, talleres de Sistemas y ejercicios del laboratorio de ambos lenguajes en este navegador. Podés exportarlos antes.</p><div class="dialog-actions"><button class="button secondary" id="cancel-reset">Conservar mi avance</button><button class="button danger" id="confirm-reset">Borrar todo</button></div></div></dialog>
   <div id="toast" role="status" aria-live="polite"></div>

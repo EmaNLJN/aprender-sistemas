@@ -77,6 +77,16 @@ const CONSTRAINTS: Constraint[] = [
 
 const STAGE_CONSTRAINTS: Constraint[] = [
   [
+    'tokenStage',
+    'sessionStage',
+    'la etapa de los tokens borra de la URL los fragmentos con token antes de que la sesión decida qué mostrar y antes de que app.js mire el hash',
+  ],
+  [
+    'sessionStage',
+    'contentGate',
+    'sin sesión no se pide el contenido: la etapa de sesión espera «pedir el ingreso» antes de la compuerta (F11-Q1)',
+  ],
+  [
     'contentGate',
     'legacyViews',
     'los adaptadores y las vistas legacy leen el contenido publicado al evaluarse',

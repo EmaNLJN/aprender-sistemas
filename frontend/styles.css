@@ -1719,3 +1719,21 @@ summary {
     grid-column: auto;
   }
 }
+.session-status {
+  max-width: 1330px;
+  margin: auto;
+  padding: 44px 52px 0;
+}
+.session-status:empty {
+  display: none;
+}
+@media (max-width: 1150px) {
+  .session-status {
+    padding: 34px 32px 0;
+  }
+}
+@media (max-width: 590px) {
+  .session-status {
+    padding: 29px 20px 0;
+  }
+}
