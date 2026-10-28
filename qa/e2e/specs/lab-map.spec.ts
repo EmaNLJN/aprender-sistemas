@@ -74,6 +74,8 @@ test.describe('the lab map', () => {
       '0 desafíos visibles para tu búsqueda · ampliación Clásicos y sistemas.',
     );
     await expect(lab.emptyMapHeading()).toHaveText('No encontré ese desafío.');
+    await lab.dueButton().click();
+    await expect(lab.dueButton()).toHaveAttribute('aria-pressed', 'true');
 
     await lab.showAllButton().click();
 
@@ -120,11 +122,12 @@ test.describe('the lab map', () => {
       Math.random = () => 0.999;
     });
     await shell.goto(urls.view('laboratorio'));
+    await lab.levelButton('Inicial').click();
 
     await lab.surpriseButton().click();
 
-    await expect(page).toHaveURL(/\?ejercicio=rust-137&paso=learn#laboratorio$/);
-    await expect(lab.exerciseTitle()).toHaveText('Núcleo · Una instrucción llega hasta la RAM');
+    await expect(page).toHaveURL(/\?ejercicio=rust-134&paso=learn#laboratorio$/);
+    await expect(lab.exerciseTitle()).toHaveText('Hacé crecer una generación');
     await expect(shell.toast).toHaveText('Un desafío elegido para tu próxima idea.');
   });
 
@@ -169,6 +172,7 @@ test.describe('the lab map', () => {
     await shell.goto(urls.view('laboratorio'));
     await lab.levelButton('Avanzado').click();
     await lab.extrasButton().click();
+    await lab.dueButton().click();
     await lab.searchBox().fill('memoria');
 
     await shell.switchLanguage('go');
@@ -177,5 +181,6 @@ test.describe('the lab map', () => {
     await expect(lab.searchBox()).toHaveValue('');
     await expect(lab.levelButton('Avanzado')).toHaveAttribute('aria-pressed', 'true');
     await expect(lab.extrasButton()).toHaveAttribute('aria-pressed', 'true');
+    await expect(lab.dueButton()).toHaveAttribute('aria-pressed', 'false');
   });
 });

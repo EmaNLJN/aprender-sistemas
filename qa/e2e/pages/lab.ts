@@ -92,7 +92,7 @@ export class LabPage {
   }
 
   mapStamp(): Locator {
-    return this.page.locator('.lab-stamp');
+    return this.page.getByLabel(/^\d+ desafíos en (Rust|Go)$/);
   }
 
   mapMetrics(): Locator {
@@ -138,7 +138,10 @@ export class LabPage {
   }
 
   emptyMapHeading(): Locator {
-    return this.page.locator('.lab-empty h2');
+    return this.page.getByRole('heading', {
+      level: 2,
+      name: /^(No encontré ese desafío|Hoy no tenés repasos vencidos)\.$/,
+    });
   }
 
   showAllButton(): Locator {
