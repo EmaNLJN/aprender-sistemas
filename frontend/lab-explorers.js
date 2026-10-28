@@ -1,29 +1,20 @@
 import { escapeHtml } from './src/shared/lib/escape-html';
+import {
+  FIRST_STEP_NOTICE,
+  applyLabExplorerOperation,
+  chooseLabExplorerOption,
+  genericContract,
+  initialLabExplorerState,
+  labExplorerKindOf,
+} from './src/entities/exercise/explorers';
 (() => {
   'use strict';
-  let model;
+  let model = initialLabExplorerState();
   function reset() {
-    model = {
-      value: 10,
-      copy: 10,
-      capacity: 0,
-      queue: [],
-      sender: false,
-      receiver: false,
-      delivered: 0,
-      notice: 'Elegí qué participante da el primer paso.',
-      type: 'int',
-      constraint: 'ordered',
-    };
+    model = initialLabExplorerState();
   }
-  reset();
   function kind(item) {
-    const topic = (item.topic + ' ' + item.title + ' ' + item.visual).toLowerCase();
-    if (/goroutine|concurren|canal|threads|mutex|worker|waitgroup|atomic|sync\./.test(topic))
-      return 'channel';
-    if (/generic|genéric|constraint|dispatch|trait|asociado/.test(topic)) return 'generic';
-    if (/puntero|pointer|box|refcell|\brc\b|\bweak\b|\bunsafe\b/.test(topic)) return 'pointer';
-    return '';
+    return labExplorerKindOf(item.id) ?? '';
   }
   function button(op, label, extra = '') {
     return `<button data-lab-action="explore" data-operation="${op}" ${extra}>${label}</button>`;
@@ -36,7 +27,7 @@ import { escapeHtml } from './src/shared/lib/escape-html';
   function body(item, mode) {
     const rust = item.language === 'rust';
     if (mode === 'pointer')
-      return `<span class="small-label">MINILAB · ALIAS O COPIA</span><h3>Dos nombres. ¿Un mismo lugar?</h3><p>Modelo de un entero: copiá el valor o accedé al original a través de ${rust ? 'una referencia mutable' : 'un puntero'}. Cada botón incrementa en uno.</p><div class="pointer-board"><div class="pointer-box"><span>original</span><strong>${model.value}</strong><small>celda A</small></div><div class="pointer-route"><code>${rust ? '&mut original' : '&original'}</code><span>→ celda A</span></div><div class="pointer-box independent"><span>copia</span><strong>${model.copy}</strong><small>celda B</small></div></div><div class="explorer-actions">${button('pointer-copy', 'Modificar copia +1')}${button('pointer-ref', rust ? 'Modificar por &mut +1' : 'Modificar por *p +1')}${button('reset', 'Reiniciar ↺')}</div><div class="explorer-explanation" role="status">${escapeHtml(model.notice === 'Elegí qué participante da el primer paso.' ? 'Una copia de este entero es independiente. Un acceso indirecto permite modificar el mismo dato original.' : model.notice)}</div><p class="model-caveat">${rust ? 'Este dibujo usa i32, que es Copy, y préstamos sucesivos. Un raw pointer no obtiene estas garantías: dereferenciarlo exige un bloque unsafe y demostrar validez, alineación y reglas de aliasing. Box posee; Rc comparte propiedad; RefCell comprueba préstamos en ejecución.' : 'Go pasa argumentos por valor, incluso los punteros: se copia la dirección, no el objeto apuntado. El recolector evita liberar objetos todavía alcanzables; no evita carreras entre goroutines.'} Es un modelo conceptual, no una inspección de memoria real.</p>`;
+      return `<span class="small-label">MINILAB · ALIAS O COPIA</span><h3>Dos nombres. ¿Un mismo lugar?</h3><p>Modelo de un entero: copiá el valor o accedé al original a través de ${rust ? 'una referencia mutable' : 'un puntero'}. Cada botón incrementa en uno.</p><div class="pointer-board"><div class="pointer-box"><span>original</span><strong>${model.value}</strong><small>celda A</small></div><div class="pointer-route"><code>${rust ? '&mut original' : '&original'}</code><span>→ celda A</span></div><div class="pointer-box independent"><span>copia</span><strong>${model.copy}</strong><small>celda B</small></div></div><div class="explorer-actions">${button('pointer-copy', 'Modificar copia +1')}${button('pointer-ref', rust ? 'Modificar por &mut +1' : 'Modificar por *p +1')}${button('reset', 'Reiniciar ↺')}</div><div class="explorer-explanation" role="status">${escapeHtml(model.notice === FIRST_STEP_NOTICE ? 'Una copia de este entero es independiente. Un acceso indirecto permite modificar el mismo dato original.' : model.notice)}</div><p class="model-caveat">${rust ? 'Este dibujo usa i32, que es Copy, y préstamos sucesivos. Un raw pointer no obtiene estas garantías: dereferenciarlo exige un bloque unsafe y demostrar validez, alineación y reglas de aliasing. Box posee; Rc comparte propiedad; RefCell comprueba préstamos en ejecución.' : 'Go pasa argumentos por valor, incluso los punteros: se copia la dirección, no el objeto apuntado. El recolector evita liberar objetos todavía alcanzables; no evita carreras entre goroutines.'} Es un modelo conceptual, no una inspección de memoria real.</p>`;
     if (mode === 'channel')
       return `<span class="small-label">MINILAB · COORDINÁ DOS PARTICIPANTES</span><h3>¿Quién está esperando a quién?</h3><p>Probá enviar antes de recibir y después invertí el orden. Modelamos ${rust ? 'sync_channel' : 'un channel de Go'} con capacidad 0 o 2; no modelamos el planificador completo.</p><div class="explorer-actions" role="group" aria-label="Capacidad del canal">${button('capacity-0', 'Sin buffer', `aria-pressed="${model.capacity === 0}"`)}${button('capacity-2', 'Buffer de 2', `aria-pressed="${model.capacity === 2}"`)}</div><div class="channel-board"><div class="actor ${model.sender ? 'blocked' : ''}"><strong>Productor</strong><span>${model.sender ? 'esperando envío' : 'listo para enviar'}</span></div><div class="channel-pipe"><span aria-hidden="true">→</span><div>${model.capacity ? Array.from({ length: model.capacity }, (_, i) => `<i class="channel-slot ${i < model.queue.length ? 'filled' : ''}">${i < model.queue.length ? '●' : '·'}</i>`).join('') : '<span class="rendezvous">encuentro</span>'}</div><span aria-hidden="true">→</span></div><div class="actor ${model.receiver ? 'blocked' : ''}"><strong>Consumidor</strong><span>${model.receiver ? 'esperando recepción' : 'listo para recibir'}</span></div></div><div class="explorer-actions">${button('send', 'Paso del productor →', model.sender ? 'disabled' : '')}${button('receive', 'Paso del consumidor →', model.receiver ? 'disabled' : '')}${button('reset', 'Reiniciar ↺')}</div><div class="explorer-explanation" role="status">${escapeHtml(model.notice)}<br><strong>${model.delivered} mensajes entregados.</strong></div><p class="model-caveat">Un buffer permite desacoplar algunos envíos, pero también puede llenarse. Concurrencia no implica paralelismo. Este modelo explica espera y coordinación; un test que pasa no demuestra ausencia de carreras o deadlocks.</p>`;
     const options = [
@@ -44,82 +35,12 @@ import { escapeHtml } from './src/shared/lib/escape-html';
       ['string', 'Texto'],
       ['record', rust ? 'Struct sin derives' : 'Struct { ID int }'],
     ];
-    const valid =
-      model.constraint === 'ordered'
-        ? model.type !== 'record'
-        : model.constraint === 'comparable'
-          ? !rust || model.type !== 'record'
-          : model.type !== 'record';
-    const constraintName =
-      model.constraint === 'ordered'
-        ? rust
-          ? 'Ord'
-          : '~int | ~string'
-        : model.constraint === 'comparable'
-          ? rust
-            ? 'Eq'
-            : 'comparable'
-          : rust
-            ? 'Display'
-            : '~int | ~string';
+    const { valid, constraintName } = genericContract(model.constraint, model.type, item.language);
     return `<span class="small-label">MINILAB · EL CONTRATO DEL TIPO</span><h3>¿Este tipo puede entrar?</h3><p>Una función genérica promete usar ciertas operaciones. Elegí una necesidad y un tipo: la restricción se verifica antes de ejecutar.</p><div class="generic-controls"><label>La función necesita<select data-explorer="constraint"><option value="ordered" ${model.constraint === 'ordered' ? 'selected' : ''}>Comparar orden</option><option value="comparable" ${model.constraint === 'comparable' ? 'selected' : ''}>Comparar igualdad</option>${rust ? `<option value="display" ${model.constraint === 'display' ? 'selected' : ''}>Mostrar con Display</option>` : ''}</select></label><label>Le pasás<select data-explorer="type">${options.map(([id, label]) => `<option value="${id}" ${model.type === id ? 'selected' : ''}>${label}</option>`).join('')}</select></label></div><div class="generic-gate ${valid ? 'accepted' : 'rejected'}"><code>${escapeHtml(constraintName)}</code><span aria-hidden="true">→</span><strong>${valid ? 'El contrato se cumple ✓' : 'Falta cumplir el contrato ×'}</strong></div><div class="explorer-explanation" role="status">${valid ? 'Este tipo admite las operaciones que esta restricción permite. La función puede usarlas sin conocer un valor específico.' : rust ? 'Un struct no implementa automáticamente Ord, Eq o Display. Necesitás implementar el trait o derivarlo si ese trait lo admite y sus campos cumplen las restricciones.' : 'Un struct con un campo int es comparable, pero no pertenece al conjunto ~int | ~string. La igualdad no implica que exista un orden con <.'}</div><p class="model-caveat">${rust ? 'Este ejemplo usa enteros y String; no generaliza Ord a todos los números: f64 no implementa Ord. Los traits expresan comportamientos y sus leyes también importan.' : 'El ~ incluye tipos cuyo tipo subyacente coincide. Slices y maps no cumplen comparable. Un conjunto de tipos restringe qué argumentos acepta la función; no convierte sus valores.'} Cambiá después el código real para observar el diagnóstico del compilador.</p>`;
   }
   function act(button, item, host) {
     const op = button.dataset.operation;
-    if (op === 'reset') reset();
-    if (op === 'pointer-copy') {
-      model.copy++;
-      model.notice =
-        'Cambió la celda B. El original conserva su valor porque copiar un entero crea otro valor independiente.';
-    }
-    if (op === 'pointer-ref') {
-      model.value++;
-      model.notice =
-        'Cambió la celda A: la referencia o el puntero lleva al original. La copia de la celda B sigue igual.';
-    }
-    if (op.startsWith('capacity-')) {
-      reset();
-      model.capacity = Number(op.slice(-1));
-      model.notice = model.capacity
-        ? 'Hay dos lugares para mensajes pendientes. Probá tres envíos seguidos.'
-        : 'Sin buffer, el envío y la recepción necesitan encontrarse. Probá iniciar uno antes que el otro.';
-    }
-    if (op === 'send') {
-      if (model.receiver) {
-        model.receiver = false;
-        model.delivered++;
-        model.notice = 'El consumidor ya esperaba. El mensaje se entregó y ambos pueden continuar.';
-      } else if (model.queue.length < model.capacity) {
-        model.queue.push(1);
-        model.notice =
-          'El mensaje quedó en el buffer. El productor puede continuar antes de que el consumidor lo lea.';
-      } else {
-        model.sender = true;
-        model.notice = model.capacity
-          ? 'El buffer está lleno. Este envío espera a que una recepción libere espacio.'
-          : 'El productor espera: sin buffer no puede completar el envío hasta que aparezca una recepción.';
-      }
-    }
-    if (op === 'receive') {
-      if (model.queue.length) {
-        model.queue.shift();
-        model.delivered++;
-        if (model.sender) {
-          model.queue.push(1);
-          model.sender = false;
-          model.notice = 'La recepción liberó un lugar y permitió completar el envío que esperaba.';
-        } else model.notice = 'El consumidor retiró un mensaje del buffer.';
-      } else if (model.sender) {
-        model.sender = false;
-        model.delivered++;
-        model.notice =
-          'La recepción se encontró con el envío pendiente. Los dos participantes pueden continuar.';
-      } else {
-        model.receiver = true;
-        model.notice =
-          'No hay mensajes: el consumidor espera un envío. Otra tarea tiene que producirlo.';
-      }
-    }
+    model = applyLabExplorerOperation(model, op);
     host.querySelector('#lab-special-explorer').innerHTML = body(item, kind(item));
     const same = host.querySelector(`[data-operation="${op}"]`);
     const next =
@@ -130,7 +51,7 @@ import { escapeHtml } from './src/shared/lib/escape-html';
   }
   function change(target, item, host) {
     if (!target.dataset.explorer) return;
-    model[target.dataset.explorer] = target.value;
+    model = chooseLabExplorerOption(model, target.dataset.explorer, target.value);
     host.querySelector('#lab-special-explorer').innerHTML = body(item, kind(item));
     host.querySelector(`[data-explorer="${target.dataset.explorer}"]`)?.focus();
   }
