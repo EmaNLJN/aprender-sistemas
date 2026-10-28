@@ -2005,10 +2005,12 @@ window.TallerCampaign = Object.freeze({ mount, unmount, ...campaignBridges });
   import { act, within } from '@testing-library/react';
   import { afterEach, describe, expect, it, vi, type Mock } from 'vitest';
   import curriculum from '../../../../build/curriculum.json';
+  import masterStorage from '../../../../qa/fixtures/progress-master-2a278ad-storage.json';
   import type { CampaignConfig } from '../../entities/campaign';
   import type { StorageLike } from '../../shared/lib/versioned-storage';
 
   const METHODS = ['exerciseContextHTML', 'lockedExerciseHTML', 'mount', 'refresh', 'returnURL', 'sync', 'unmount'];
+  const MASTER_LAB = JSON.parse(masterStorage['taller-laboratorio-v1']);
   const EXERCISES = [
     ...curriculum.lab.rust, ...curriculum.quests.rust, ...curriculum.lab.go, ...curriculum.quests.go,
     ...curriculum.cores.lowlevel, ...curriculum.cores.infra, ...curriculum.cores.play, ...curriculum.cores.pc,
@@ -2042,15 +2044,17 @@ window.TallerCampaign = Object.freeze({ mount, unmount, ...campaignBridges });
     vi.doMock('../../shared/lib/celebration', () => ({ celebrate: vi.fn(), stop }));
     vi.doMock('../content/content', () => ({ getContent: () => ({ lab: curriculum.lab, quests: curriculum.quests }) }));
     const { campaignEngine } = await import('../../entities/campaign');
-    campaignEngine.init({ exercises: EXERCISES, worlds: curriculum.campaign } as CampaignConfig, { records: {} });
+    campaignEngine.init({ exercises: EXERCISES, worlds: curriculum.campaign } as CampaignConfig, MASTER_LAB);
     window.TallerCampaignEngine = campaignEngine;
-    Object.assign(window, { TallerLab: { getExercises: () => EXERCISES, exportState: () => ({ records: {} }) } });
+    Object.assign(window, { TallerLab: { getExercises: () => EXERCISES, exportState: () => MASTER_LAB } });
     await import('./register-campaign');
     const host = document.createElement('div');
     document.body.append(host);
     return { host, writes, stop, toast: vi.fn() };
   }
   ```
+
+  El laboratorio es el de master, con evidencia de las seis misiones del mundo 1 y sin clave de campaña. Así, un `sync()` en el montaje escribiría, y la rotura de quickstart.md §4 se ve.
 
   `afterEach` hace:
   1. `act(() => window.TallerCampaign?.unmount())`, dentro de un `try`, porque en el rojo el global no existe;
