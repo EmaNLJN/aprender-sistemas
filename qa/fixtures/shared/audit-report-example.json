@@ -1,0 +1,265 @@
+{
+  "format": "taller-curriculum-audit-1",
+  "run": {
+    "startedAt": "2026-11-02T03:00:00.000Z",
+    "finishedAt": "2026-11-02T03:00:09.500Z",
+    "durationMs": 9500,
+    "runtime": "runsc",
+    "instance": "auditoria",
+    "concurrency": 4,
+    "scope": "partial",
+    "selection": {
+      "languages": ["rust"],
+      "exercises": []
+    },
+    "record": false,
+    "verdict": "red",
+    "exitCode": 1
+  },
+  "stamps": {
+    "commit": "dd870a9ccb7cb50b8b06b584bcf988acaccbf22e",
+    "cleanTree": true,
+    "contentSourceCommit": null,
+    "documentHash": "4555e8500e6ef5bd38cdaf46010d3f14e3345d7ec0c69aea983acfe67f62fbb6",
+    "harnessHash": "6a86d9fef4cbeebd95703a6e239f08d885071dc7a122a7ca25883d953457a6fa",
+    "images": {
+      "rust": "sha256:f525ccf76aec49d19b686a8d4cff8baad441ef2f30a0688c74d1a3905c17c356",
+      "go": "sha256:e66df8bf3b16022cc6426093be100ba59c09e2eaff9b88d492166e35f0a756b7"
+    }
+  },
+  "limits": {
+    "compileMs": {
+      "rust": 20000,
+      "go": 15000
+    },
+    "runMs": 10000,
+    "compileMemoryMiB": 1024,
+    "runMemoryMiB": 256,
+    "warningRatio": 0.5
+  },
+  "totals": {
+    "programs": 6,
+    "solutions": 2,
+    "solutionsPass": 2,
+    "starters": 2,
+    "startersFailAsExpected": 1,
+    "customTestSample": 2,
+    "customTestSamplePass": 2,
+    "findings": 1,
+    "noVerdict": 0,
+    "warnings": 1,
+    "byLanguage": {
+      "rust": {
+        "exercises": 2,
+        "programs": 6
+      }
+    },
+    "bySection": {
+      "lab": {
+        "exercises": 2
+      }
+    },
+    "timing": {
+      "rust": {
+        "compile": {
+          "programs": 6,
+          "medianMs": 808,
+          "maxMs": 11000,
+          "minMarginMs": 9000,
+          "limitMs": 20000
+        },
+        "run": {
+          "programs": 5,
+          "medianMs": 34,
+          "maxMs": 40,
+          "minMarginMs": 9960,
+          "limitMs": 10000
+        }
+      }
+    }
+  },
+  "programs": [
+    {
+      "exercise": "rust-01",
+      "language": "rust",
+      "section": "lab",
+      "domain": null,
+      "kind": "completar",
+      "role": "solution",
+      "gradingHash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "starterHash": "2222222222222222222222222222222222222222222222222222222222222222",
+      "programHash": "3333333333333333333333333333333333333333333333333333333333333333",
+      "customTest": null,
+      "status": "passed",
+      "reason": null,
+      "phase": "run",
+      "exitCode": 0,
+      "tests": [
+        { "key": "t1", "label": "Tres celdas", "outcome": "pass" },
+        { "key": "t2", "label": "Reactor vacío", "outcome": "pass" },
+        { "key": "t3", "label": "Escala distinta", "outcome": "pass" }
+      ],
+      "compile": { "ms": 812, "limitMs": 20000, "marginMs": 19188, "ratio": 0.041 },
+      "run": { "ms": 34, "limitMs": 10000, "marginMs": 9966, "ratio": 0.003 },
+      "truncated": false,
+      "oomKilled": false,
+      "memoryLimitMiB": 256,
+      "audit": "passes",
+      "finding": null,
+      "warning": false,
+      "noVerdictCause": null,
+      "diagnostic": null
+    },
+    {
+      "exercise": "rust-01",
+      "language": "rust",
+      "section": "lab",
+      "domain": null,
+      "kind": "completar",
+      "role": "starter",
+      "gradingHash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "starterHash": "2222222222222222222222222222222222222222222222222222222222222222",
+      "programHash": "4444444444444444444444444444444444444444444444444444444444444444",
+      "customTest": null,
+      "status": "failed",
+      "reason": null,
+      "phase": "run",
+      "exitCode": 0,
+      "tests": [
+        { "key": "t1", "label": "Tres celdas", "outcome": "fail" },
+        { "key": "t2", "label": "Reactor vacío", "outcome": "fail" },
+        { "key": "t3", "label": "Escala distinta", "outcome": "fail" }
+      ],
+      "compile": { "ms": 792, "limitMs": 20000, "marginMs": 19208, "ratio": 0.04 },
+      "run": { "ms": 31, "limitMs": 10000, "marginMs": 9969, "ratio": 0.003 },
+      "truncated": false,
+      "oomKilled": false,
+      "memoryLimitMiB": 256,
+      "audit": "fails_as_expected",
+      "finding": null,
+      "warning": false,
+      "noVerdictCause": null,
+      "diagnostic": null
+    },
+    {
+      "exercise": "rust-63",
+      "language": "rust",
+      "section": "lab",
+      "domain": null,
+      "kind": "completar",
+      "role": "solution",
+      "gradingHash": "5555555555555555555555555555555555555555555555555555555555555555",
+      "starterHash": "6666666666666666666666666666666666666666666666666666666666666666",
+      "programHash": "7777777777777777777777777777777777777777777777777777777777777777",
+      "customTest": null,
+      "status": "passed",
+      "reason": null,
+      "phase": "run",
+      "exitCode": 0,
+      "tests": [
+        { "key": "t1", "label": "Expresiones y coma opcional", "outcome": "pass" },
+        { "key": "t2", "label": "Sin argumentos", "outcome": "pass" },
+        { "key": "t3", "label": "Efecto una vez", "outcome": "pass" }
+      ],
+      "compile": { "ms": 11000, "limitMs": 20000, "marginMs": 9000, "ratio": 0.55 },
+      "run": { "ms": 40, "limitMs": 10000, "marginMs": 9960, "ratio": 0.004 },
+      "truncated": false,
+      "oomKilled": false,
+      "memoryLimitMiB": 256,
+      "audit": "passes",
+      "finding": null,
+      "warning": true,
+      "noVerdictCause": null,
+      "diagnostic": null
+    },
+    {
+      "exercise": "rust-63",
+      "language": "rust",
+      "section": "lab",
+      "domain": null,
+      "kind": "completar",
+      "role": "starter",
+      "gradingHash": "5555555555555555555555555555555555555555555555555555555555555555",
+      "starterHash": "6666666666666666666666666666666666666666666666666666666666666666",
+      "programHash": "8888888888888888888888888888888888888888888888888888888888888888",
+      "customTest": null,
+      "status": "compile_error",
+      "reason": null,
+      "phase": "compile",
+      "exitCode": 1,
+      "tests": [],
+      "compile": { "ms": 640, "limitMs": 20000, "marginMs": 19360, "ratio": 0.032 },
+      "run": null,
+      "truncated": false,
+      "oomKilled": false,
+      "memoryLimitMiB": 1024,
+      "audit": "finding",
+      "finding": "starter_compile_error",
+      "warning": false,
+      "noVerdictCause": null,
+      "diagnostic": "error[E0277]: can't compare `!` with `i32`\n --> /tmp/main.rs:12:57"
+    },
+    {
+      "exercise": "rust-01",
+      "language": "rust",
+      "section": "lab",
+      "domain": null,
+      "kind": "completar",
+      "role": "solution",
+      "gradingHash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "starterHash": "2222222222222222222222222222222222222222222222222222222222222222",
+      "programHash": "9999999999999999999999999999999999999999999999999999999999999999",
+      "customTest": { "expression": "energia(5) == 35", "expected": "pass", "outcome": "pass" },
+      "status": "passed",
+      "reason": null,
+      "phase": "run",
+      "exitCode": 0,
+      "tests": [
+        { "key": "t1", "label": "Tres celdas", "outcome": "pass" },
+        { "key": "t2", "label": "Reactor vacío", "outcome": "pass" },
+        { "key": "t3", "label": "Escala distinta", "outcome": "pass" }
+      ],
+      "compile": { "ms": 805, "limitMs": 20000, "marginMs": 19195, "ratio": 0.04 },
+      "run": { "ms": 33, "limitMs": 10000, "marginMs": 9967, "ratio": 0.003 },
+      "truncated": false,
+      "oomKilled": false,
+      "memoryLimitMiB": 256,
+      "audit": "passes",
+      "finding": null,
+      "warning": false,
+      "noVerdictCause": null,
+      "diagnostic": null
+    },
+    {
+      "exercise": "rust-01",
+      "language": "rust",
+      "section": "lab",
+      "domain": null,
+      "kind": "completar",
+      "role": "solution",
+      "gradingHash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "starterHash": "2222222222222222222222222222222222222222222222222222222222222222",
+      "programHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "customTest": { "expression": "energia(5) == 36", "expected": "fail", "outcome": "fail" },
+      "status": "passed",
+      "reason": null,
+      "phase": "run",
+      "exitCode": 0,
+      "tests": [
+        { "key": "t1", "label": "Tres celdas", "outcome": "pass" },
+        { "key": "t2", "label": "Reactor vacío", "outcome": "pass" },
+        { "key": "t3", "label": "Escala distinta", "outcome": "pass" }
+      ],
+      "compile": { "ms": 818, "limitMs": 20000, "marginMs": 19182, "ratio": 0.041 },
+      "run": { "ms": 36, "limitMs": 10000, "marginMs": 9964, "ratio": 0.004 },
+      "truncated": false,
+      "oomKilled": false,
+      "memoryLimitMiB": 256,
+      "audit": "passes",
+      "finding": null,
+      "warning": false,
+      "noVerdictCause": null,
+      "diagnostic": null
+    }
+  ]
+}
