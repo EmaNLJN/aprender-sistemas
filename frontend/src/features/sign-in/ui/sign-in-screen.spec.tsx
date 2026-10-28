@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { sessionStore, type PublishedUser } from '../../../entities/session';
 import type { FetchLike } from '../../../shared/api/http';
@@ -22,7 +22,7 @@ beforeEach(() => {
 describe('signing in', () => {
   it('focuses the email and ends the request with the account in the session', async () => {
     const { user, signedIn, calls } = withReplies([{ status: 200, json: { data: ANA } }]);
-    expect(screen.getByLabelText('Email')).toHaveFocus();
+    await waitFor(() => expect(screen.getByLabelText('Email')).toHaveFocus());
     await user.click(
       screen.getByRole('checkbox', { name: 'Recordarme en este navegador por 30 días' }),
     );

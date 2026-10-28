@@ -11,3 +11,5 @@ export type {
 export { reauthenticate } from './model/reauthenticate';
 export type { ReauthenticationOutcome } from './model/reauthenticate';
 export { default as AccessGate } from './ui/AccessGate';
+export { signOut } from './model/sign-out';
+export type { SignOutDependencies, SignOutOutcome } from './model/sign-out';
