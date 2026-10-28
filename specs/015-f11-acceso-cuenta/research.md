@@ -236,3 +236,13 @@ La spec no los fija, y el usuario los corrige en la revisión del PR:
 - **El tamaño de la barra superior a 320 px** se calculó a mano: unos 338 px con el rótulo en una línea, contra 280 útiles. Como ítem de flex, el rótulo ya se parte en sus espacios (su `min-width` es el de su palabra más larga), y así la barra suma unos 262 px con la entrada compacta (`white-space: nowrap`, `padding: 4px 10px`) de `account.css`. Ninguna regla de `styles.css` cambia por eso. Lo prueba el E2E de U4, que mide la barra a 320 y a 390 px.
 - **Faltan la cookie real, `SameSite` y el CSRF contra el stack.** Quedan para la verificación a mano declarada en el PR, como en C3a (spec, «Alternativas consideradas»).
 - **macOS, Docker y la CI** no se verificaron.
+
+## Línea base de la implementación
+
+Medida en `f11a/base` (`737a5e95`, 2026-10-28), antes de cualquier cambio de F11a, con `E2E_PORT=4182`.
+
+- **`html.length` de `dist/index.html`:** 1 141 337 caracteres (el valor del coordinador; los 1 136 702 de F2b quedan 4 635 por debajo). El presupuesto de F11a (+60 000) se cuenta desde este valor.
+- **`npm test`:** en verde; 39 checks en el último bloque y 719 pruebas de Vitest en 29 archivos.
+- **`npm run lint`:** 0 errores y 35 avisos.
+- **`npm run format:check`:** en verde.
+- **E2E:** 123 en verde.
