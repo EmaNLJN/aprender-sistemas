@@ -29,6 +29,17 @@ export class StorageControl {
     });
   }
 
+  async blockWrites(): Promise<void> {
+    await this.context.addInitScript(() => {
+      const setItem = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (key: string, value: string) {
+        if (this === window.localStorage)
+          throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+        return setItem.call(this, key, value);
+      };
+    });
+  }
+
   async watchWrites(): Promise<void> {
     await this.context.addInitScript(() => {
       const writes: string[] = [];

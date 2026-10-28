@@ -29,3 +29,4 @@ export const curriculumIds = readFixture<CurriculumIds>('qa/fixtures/curriculum-
 export const frozenProgress = readFixture<Record<StorageKey, string>>(
   'qa/fixtures/progress-master-2a278ad-storage.json',
 );
+export const routeMilestoneIds = readFixture<string[]>('qa/fixtures/shared/route-milestones.json');
