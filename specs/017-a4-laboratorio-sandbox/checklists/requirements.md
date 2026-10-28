@@ -15,7 +15,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -33,14 +33,14 @@
 
 ## Notes
 
-- **Quedan cinco preguntas abiertas** (Q1 a Q5), en «Preguntas abiertas», cada una con sus opciones, su costo, la recomendada y su motivo; el clarify las cierra antes del plan. Siguen la forma de la spec de D1 y no usan el marcador literal: los requisitos que dependen de una pregunta llevan «(Q*n*)» y usan la opción recomendada como borrador (FR-010, FR-019, FR-024, FR-031, FR-032, FR-036, FR-038 y FR-041, entre otros). Por eso el ítem de los marcadores queda sin tildar. Q1 (el id del intento) y Q5 (si A4 espera a B3) cambian el alcance y las dependencias; Q2 a Q4, lo que ve el alumno.
+- **Clarify del 2026-10-28:** el usuario respondió Q1 a Q5 con la opción recomendada, y quedaron en «Clarifications», con las descartadas; la sección «Preguntas abiertas» se retiró. Se registraron también tres decisiones de otras specs que cambian lo que A4 construye: la Q2 de F7 (un canal de progreso con una unión ampliable), P2 (F7 se parte y A4 espera a F7a) y que A3 no pide la plantilla del arnés al arrancar (la pide A4). Los requisitos que llevaban «(Q*n*)» como borrador aplican la respuesta (FR-010, FR-019, FR-024, FR-028, FR-029, FR-031 a FR-036, FR-038, FR-041, FR-043, FR-044 y FR-047), y los supuestos F7-S1 a F7-S9 pasaron a la tabla de lo que decidió F7. Ya no quedan preguntas abiertas: el ítem de los marcadores queda tildado.
 - **Excepciones deliberadas en «implementation details».** A4 cambia un transporte contra contratos HTTP entregados (B2, C3a y D1b), así que los requisitos nombran las rutas, los campos, los estados, los códigos de error, el fixture compartido, los E2E y los checks que cambian: son el resultado observable. No nombran clases, archivos ni módulos nuevos; dónde viven el cliente y el adaptador (FSD) queda para el plan. Los supuestos sobre F7 hablan del puerto por los datos que entran y salen, no por su firma.
 - **«Non-technical stakeholders»:** el lector es el dueño del taller, que tomó las decisiones de los ADR 0005 y 0006 y conoce el laboratorio. Los términos técnicos son los suyos.
 - **«Technology-agnostic»:** los criterios usan los textos que ve el alumno, `hasPassingEvidence` (la regla única del ADR 0003), el fixture compartido, la cantidad de pedidos y los comandos del proyecto, porque el valor de A4 es qué ve el alumno y qué se guarda. SC-007 incluye una medición sin objetivo, como la SC-012 de B2.
 - **«Testable and unambiguous»:** los números de la espera (15 s, 30 s, 2 minutos y 12 minutos) son propuestas que el plan confirma con las mediciones de B2, y los textos son propuestas que el usuario corrige; con eso fijado, cada requisito se verifica.
-- **«Scope is clearly bounded»:** trae lo que entra, lo que queda fuera, lo que no se hace a propósito y la lista de cambios visibles. «El seam de hoy y lo que A4 supone de F7» explica por qué A4 es más que el adaptador, y «Qué se puede planificar antes de F7», qué parte depende de F7.
-- **Dependencias:** B2 está entregado; A3 (spec 016) y F11 (spec 015) se especifican en paralelo y se citan sin enlace; F7 no tiene spec y entra como los supuestos F7-S1 a F7-S9; B3 es Q5.
-- **Partición:** 48 requisitos, por debajo de los 52 de C3a; no se propone partir. El corte natural, si el plan crece, está en «Qué se puede planificar antes de F7».
+- **«Scope is clearly bounded»:** trae lo que entra, lo que queda fuera, lo que no se hace a propósito y la lista de cambios visibles. «El seam de hoy y lo que F7 decidió» explica por qué A4 era más que el adaptador y qué contrato recibe de F7a, y «Qué se puede planificar antes de F7a», qué parte depende de F7a.
+- **Dependencias:** B2 está entregado; A3 (016), F11a (015), F7a (021) y B3 (020) están clarificadas en sus ramas y se citan sin enlace hasta que se integren.
+- **Partición:** 48 requisitos, por debajo de los 52 de C3a; no se parte. El corte natural, si el plan crece, es la frontera de F7a («Qué se puede planificar antes de F7a»).
 - **Lo que se midió al especificar** (2026-10-07, sin Docker, sin `npm` y sin descargas):
   - la expresión de `interpretRun` sobre una salida de la plantilla nueva: 0 coincidencias (`node -e`);
   - dónde publica el backend el id del intento: sólo en la foto de `GET /api/progress` y en la exportación de la cuenta, no en la ejecución (búsqueda en `backend/api/app`);
