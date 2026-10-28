@@ -241,7 +241,7 @@ Esta sección fija dónde entra F11 en el arranque de A2 y cómo convive con la 
 
 - la etapa de sesión del arranque es de A3: pide `GET /api/session` y entrega a las etapas siguientes `user`, `features` y `contentVersion`, o que el servidor no respondió;
 - F11 borra los tokens de la URL antes de esa etapa, aunque el servidor no responda, y le avisa al arranque, en memoria, que los había;
-- F11 toma `user` y `features`, dibuja el acceso con `user: null` y, después del ingreso, devuelve el arranque a la etapa de sesión;
+- F11 toma `user` y `features`, dibuja el acceso con `user: null` y, después del ingreso, el arranque vuelve a pedir la sesión;
 - la salida es de F11, y con la opción B de la Q2 de A3 también borra la última copia del contenido.
 
 Las diferencias que quedan están en «Relación con otros ítems», A3, y el coordinador las concilia.
@@ -258,7 +258,7 @@ Las diferencias que quedan están en «Relación con otros ítems», A3, y el co
 **La etapa de acceso, en el modo obligatorio** (desde A3):
 
 - Recibe lo que entrega la etapa de sesión de A3, sin volver a pedirlo.
-- Con `user: null`, muestra el acceso (el ingreso, o el alta o el restablecimiento si hay token) y no resuelve: la compuerta no corre y ninguna fuente legacy se evalúa. Después del ingreso o del alta, devuelve el arranque a la etapa de sesión, que vuelve a preguntar.
+- Con `user: null`, muestra el acceso (el ingreso, o el alta o el restablecimiento si hay token) y no resuelve: la compuerta no corre y ninguna fuente legacy se evalúa. Después del ingreso o del alta, el arranque tiene que volver a pedir la sesión. Como `runBoot` corre cada etapa una vez y en orden, la propuesta es que la etapa de sesión de A3 llame a «pedir el ingreso» de F11 y lo espere cada vez que recibe `user: null`, también después de un 401 en el contenido (diferencia 5 con A3).
 - Con sesión, pide aceptar el aviso si cambió, y resuelve. La compuerta sigue sin recargar el documento y con la URL que pidió el alumno.
 - Si el servidor no respondió, no dibuja nada: la vista de error o la última copia son de A3.
 
@@ -273,7 +273,7 @@ Las diferencias que quedan están en «Relación con otros ítems», A3, y el co
 
 **Cómo se vuelve al shell:**
 
-- Después de ingresar o de crear la cuenta en el arranque, la etapa de acceso resuelve (en el modo abierto) o devuelve el arranque a la etapa de sesión (en el obligatorio), y después sigue la compuerta.
+- Después de ingresar o de crear la cuenta en el arranque, la etapa de acceso resuelve (en el modo abierto), o el arranque vuelve a pedir la sesión (en el obligatorio), y después sigue la compuerta.
 - Desde «Tu cuenta», cerrar el diálogo deja el shell como estaba.
 - «Salir», borrar la cuenta y un cambio de cuenta recargan el documento. El shell legacy no se puede desmontar (`app.js` registra oyentes y un `setInterval` que nunca limpia), y la recarga asegura que no quede en memoria nada de la sesión anterior.
 
@@ -446,7 +446,7 @@ Un alumno abre «Tu cuenta», ingresa con su email y su contraseña, y más tard
 2. **Dadas** credenciales válidas, **cuando** ingresa, **entonces** sale `POST /api/auth/login` con `X-XSRF-TOKEN` y sin `X-Taller-User`, y con 200 «Tu cuenta» muestra su nombre y su email.
 3. **Dados** un email que no existe y la contraseña equivocada de uno que sí existe, **cuando** el servidor responde 422 `auth_failed` a los dos, **entonces** los dos casos muestran el mismo texto, y ningún campo queda marcado solo.
 4. **Dado** un 429 con `Retry-After: 120`, **cuando** llega, **entonces** se ve el mensaje del servidor, seguido de «Podés volver a intentar en 2 minutos.», y el botón no se habilita antes de ese plazo.
-5. **Dado** el modo obligatorio con `user: null` y la URL `?ejercicio=rust-02&paso=code#laboratorio`, **cuando** el alumno ingresa, **entonces** el arranque vuelve a la etapa de sesión, que ahora trae la cuenta, y la compuerta del contenido corre una sola vez, sin recargar, con la URL que pidió.
+5. **Dado** el modo obligatorio con `user: null` y la URL `?ejercicio=rust-02&paso=code#laboratorio`, **cuando** el alumno ingresa, **entonces** el arranque vuelve a pedir la sesión, que ahora trae la cuenta, y la compuerta del contenido corre una sola vez, sin recargar, con la URL que pidió.
 6. **Dado** el modo obligatorio, **cuando** la etapa de sesión de A3 informa que el servidor no respondió, **entonces** la etapa de acceso no dibuja nada, y el arranque sigue lo que decida A3: su vista de error o la última copia.
 7. **Dado** un alumno con sesión, **cuando** usa «Salir», **entonces** sale `POST /api/auth/logout` con `X-Taller-User`, y con 204 el documento se recarga y el progreso del navegador queda como estaba.
 
@@ -613,7 +613,7 @@ Los transversales (FR-066 a FR-077) valen para todas las historias. Sus criterio
 - **FR-004**: En el modo abierto y sin un fragmento con token, la etapa de acceso NO DEBE pedir nada a la red ni mostrar el acceso al arrancar: el arranque sigue como hoy, y lo único nuevo es la entrada «Tu cuenta».
 - **FR-005**: En el modo abierto y con un fragmento con token, la etapa de acceso DEBE mostrar el alta o el restablecimiento antes de que se evalúen las vistas, y resolver cuando el alumno termina o elige «Seguir sin ingresar».
 - **FR-006**: En el modo obligatorio, la etapa de acceso DEBE decidir con el `user` que entrega la etapa de sesión de A3: con `user: null`, DEBE mostrar sólo el acceso (el ingreso, o el alta o el restablecimiento si hay token), sin que corra la compuerta ni se evalúe una fuente legacy. *(A3 FR-002 y FR-003; C3a FR-034)*
-- **FR-007**: En el modo obligatorio, después de un ingreso o de un alta, la etapa de acceso DEBE devolver el arranque a la etapa de sesión de A3, que vuelve a preguntar. Con sesión, resuelve sin recargar el documento y con la URL que pidió el alumno, ya sin el token. *(A3 FR-002)*
+- **FR-007**: En el modo obligatorio, después de un ingreso o de un alta, F11 DEBE dejar que el arranque vuelva a pedir la sesión antes de seguir, sin recargar el documento y con la URL que pidió el alumno, ya sin el token. Para eso, «pedir el ingreso» es una operación que se espera y termina con la cuenta, y la puede llamar la etapa de sesión de A3 cada vez que recibe `user: null` (propuesta; diferencia 5 con A3). *(A3 FR-002 y FR-012)*
 - **FR-008**: El estado de la sesión de F11 DEBE tomar `user` y `features` de lo que entrega la etapa de sesión de A3, sin volver a pedir `GET /api/session`. Antes de A3, el cliente lo pide sólo al abrir «Tu cuenta» o antes del primer pedido que modifica. *(A3 FR-003)*
 - **FR-009**: Si la etapa de sesión informa que el servidor no respondió, la etapa de acceso NO DEBE dibujar nada: resuelve, y A3 decide entre la última copia y su vista de error. *(A3 FR-023, FR-024 y FR-027)*
 - **FR-010**: La raíz de la cuenta DEBE dibujar en elementos propios y NO DEBE dejar una raíz viva en un contenedor que dibuja otro: la compuerta y las vistas escriben `#main`. El acceso y el diálogo van fuera de `#main` y de `.app-shell`; la entrada, en su propio elemento, donde fije Q3.
@@ -724,7 +724,7 @@ Los transversales (FR-066 a FR-077) valen para todas las historias. Sus criterio
 
 - **FR-074**: Cada comportamiento DEBE empezar con una prueba que falla. Se usa Vitest con Testing Library para la lógica y los componentes, con el `fetch` inyectado y las respuestas armadas con fishery a partir de los contratos. Los valores esperados se escriben a mano, nunca con la misma factory. *(constitución, principio II; ADR 0008)*
 - **FR-075**: Los E2E DEBEN usar Page Objects con localizadores accesibles y responder `/api/*` con `page.route` según los contratos, sin servicios externos ni el stack de Docker. *(ADR 0008)*
-- **FR-076**: Los 123 E2E de F1 y A2, `boot-check` y `load-order-check` DEBEN seguir en verde sin editar sus escenarios; de `load-order-check` sólo cambia su tabla de etapas. F11 NO DEBE dejar regiones `alert` ni `status` en el documento mientras no muestra nada, porque la red ubica el error de la compuerta con `getByRole('alert')`.
+- **FR-076**: La red E2E vigente en la base de cada parte (en F11a, los 123 de F1 y A2), `boot-check` y `load-order-check` DEBEN seguir en verde sin editar sus escenarios; de `load-order-check` sólo cambia su tabla de etapas. F11 NO DEBE dejar regiones `alert` ni `status` en el documento mientras no muestra nada, porque la red ubica el error de la compuerta con `getByRole('alert')`.
 - **FR-077**: Cada parte DEBE cerrar con `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `npm run test:e2e` y `git diff --check` en verde, y actualizar `docs/architecture.md` y `qa/AGENTS.md` con lo que agrega.
 
 ### Key Entities *(include if feature involves data)*
@@ -744,7 +744,7 @@ Los transversales (FR-066 a FR-077) valen para todas las historias. Sus criterio
 
 - **SC-001** (F11a): Al abrir un enlace con `#invitacion=` y otro con `#restablecer=`, la URL que lee `app.js` y el historial tienen 0 tokens en los 2 casos, y al terminar el alta la sesión está abierta sin recargar el documento.
 - **SC-002** (F11a, modo abierto): Con el build de F11a, los 123 E2E de F1 y A2 pasan sin editar ningún escenario, y el arranque sin token hace 0 pedidos a `/api/`.
-- **SC-003** (F11a, modo obligatorio, en las specs de la etapa de acceso con la etapa de sesión simulada; los E2E llegan con A3): con `user: null`, se evalúan 0 fuentes legacy y se hacen 0 pedidos de contenido; después del ingreso, el arranque vuelve una vez a la etapa de sesión, y la compuerta corre una sola vez, sin recargar, con la URL pedida.
+- **SC-003** (F11a, modo obligatorio, en las specs de la etapa de acceso con la etapa de sesión simulada; los E2E llegan con A3): con `user: null`, se evalúan 0 fuentes legacy y se hacen 0 pedidos de contenido; después del ingreso, el arranque vuelve a pedir la sesión una vez, y la compuerta corre una sola vez, sin recargar, con la URL pedida.
 - **SC-004** (todas): Cada fila de «Pantallas, endpoints y estados» tiene al menos una prueba, de Vitest o E2E, por cada estado que no esté en blanco, con un cuerpo tomado del contrato, y el 100 % de esos estados muestra un mensaje visible que dice qué hacer.
 - **SC-005** (todas): Después de recorrer todas las pantallas en un E2E, hay 0 contraseñas y 0 tokens en `localStorage`, `sessionStorage`, `document.cookie`, la URL, el historial y la consola.
 - **SC-006** (F11a): Un email inexistente y una contraseña equivocada muestran el mismo texto visible (0 diferencias), y lo mismo pasa con un token inválido, uno vencido y un email sin cuenta en el restablecimiento.
@@ -780,7 +780,7 @@ Los transversales (FR-066 a FR-077) valen para todas las historias. Sus criterio
 
 - **El estado de la sesión es compartido:** lo usan F11, A3, D1c, A4 y F12. Es el primer caso real de estado de cliente compartido entre funcionalidades después de los almacenes de F2a, así que va en Zustand, que ya está instalado (`AGENTS.md`).
 - **El cliente de la API es de todo el front:** vive en `shared/api` y lo usan después A3, D1c, A4 y F12. La sesión vive en `entities/session`, y las pantallas, en `pages/`. Los nombres los confirma el plan.
-- **«Pedir el ingreso» es parte de la API pública del slice,** porque F11 la usa en sus propias pantallas ante un 401; D1c y A4 la toman cuando lleguen. En el arranque, A3 no la llama: ante un 401 vuelve a la etapa de sesión, y con `user: null` sigue la de acceso (su FR-012).
+- **«Pedir el ingreso» es parte de la API pública del slice,** porque F11 la usa en sus propias pantallas ante un 401; D1c y A4 la toman cuando lleguen. En el arranque, la propuesta es que la llame la etapa de sesión de A3 cada vez que recibe `user: null`, también después de un 401 en el contenido (su FR-012), porque `runBoot` no vuelve a una etapa anterior. Es la diferencia 5 con A3.
 - **El servidor de desarrollo no tiene `/api` hasta A3:** `npm run dev` y `vite preview` no lo pasan. Hasta que A3 sume el proxy de `/api` a `npm run dev` (su FR-032), las pruebas a mano contra la API usan el build que sirve Nginx (`docker compose up`).
 
 **Las cuentas y los límites**
@@ -830,7 +830,7 @@ Los transversales (FR-066 a FR-077) valen para todas las historias. Sus criterio
 - Esta spec adopta la interfaz que propone A3:
   - la etapa de sesión es de A3 y entrega `user`, `features` y `contentVersion`, o que el servidor no respondió;
   - F11 borra los tokens antes de esa etapa y avisa que los había (FR-002);
-  - F11 dibuja el acceso con `user: null` y, después del ingreso, devuelve el arranque a la etapa de sesión (FR-006 y FR-007);
+  - F11 dibuja el acceso con `user: null` y, después del ingreso, el arranque vuelve a pedir la sesión (FR-006 y FR-007);
   - la salida es de F11 (FR-050).
 - A3 enciende el modo obligatorio al sumar su etapa, y su API simulada automática de los E2E reutiliza las respuestas de cuentas de F11a (FR-014).
 - Sin backend, la etapa de acceso no dibuja nada (FR-009): la copia o la vista de error son de A3.
@@ -840,6 +840,7 @@ Los transversales (FR-066 a FR-077) valen para todas las historias. Sus criterio
   2. Con un token y una sesión viva, el flujo de A3 sigue al contenido. Esta spec propone que la etapa de acceso igual muestre el alta o el restablecimiento (ver «Edge Cases»).
   3. La reaceptación del aviso (FR-046) pasa por la etapa de acceso aun con sesión, entre la etapa de sesión y la compuerta. A3 no la menciona.
   4. Que la salida borre la copia depende de la Q2 de A3: FR-050 lo cumple si se elige la opción B.
+  5. A3 dice que después del ingreso el arranque «vuelve a pedir la sesión» y que, ante un 401 en una porción, «sigue el acceso» (sus FR-002 y FR-012 y su historia 4). Pero `runBoot` (rama `f2a/base`) corre cada etapa una vez y en orden, y no vuelve atrás: cuando llega el 401, la etapa de acceso ya resolvió. La propuesta de esta spec es que F11 exponga «pedir el ingreso» como una operación que se espera y termina con la cuenta, y que la etapa de sesión de A3 la llame cada vez que recibe `user: null`, en el arranque y después de un 401. Con eso, la etapa de acceso aparte podría quedar sólo para los tokens y la reaceptación del aviso.
 
 **C3a** (spec 004, entregada). Hallazgos para su dueño, sin cambiar nada:
 

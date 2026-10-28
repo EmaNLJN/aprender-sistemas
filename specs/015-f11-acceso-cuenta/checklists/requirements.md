@@ -95,5 +95,5 @@ Los nombres de módulos y de slices son provisionales y los confirma el plan. No
 - La hoja de ruta del front todavía dice que el límite de `build-check` es de 2 500 000 caracteres; desde A2 es 1 250 000.
 - La fila de F11 en la hoja de ruta no cita a C3c, de la que depende pedir el enlace por correo.
 - A2 nombra dos etapas previas, «la sesión de A3» y «el acceso de F11». Con la interfaz que propone A3 son tres: la de los tokens (F11), la de sesión (A3) y la de acceso (F11).
-- La spec de A3 (016, PR #49) pone el aviso de privacidad en «la cuenta», y esta spec lo pone en F11a. Esa diferencia y otras tres de la interfaz están en «Relación con otros ítems», A3, para que las concilie el coordinador.
+- La spec de A3 (016, PR #49) pone el aviso de privacidad en «la cuenta», y esta spec lo pone en F11a. Esa diferencia y otras cuatro de la interfaz están en «Relación con otros ítems», A3, para que las concilie el coordinador.
 - La spec de C3c supone que F11 trae el registro y la verificación de email, y esta spec los deja fuera.
