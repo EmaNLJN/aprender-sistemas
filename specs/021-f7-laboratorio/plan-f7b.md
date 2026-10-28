@@ -20,7 +20,7 @@
 > **Para quien lo implementa.**
 >
 > - **Qué leer.** Las «Reglas para todos los agentes», la sección 0 («Línea base y compuerta») y la sección de tu dueño. `tasks-f7b.md` tiene una línea por tarea (T018 a T030) y remite acá. La numeración sigue la de F7a (T001 a T017).
-> - **El código del plan corrió.** Todo lo que trae este plan corrió en un prototipo (research-f7b.md, «Cómo se verificó»): la página, el adaptador, los checks, los 193 E2E (los 184 de hoy sin editar y 9 nuevos), las comparaciones únicas y `npm test`. **No corrieron** las specs de componente (el arnés no estaba instalado), los diffs sobre los archivos de F5 y F6 (no existen todavía) ni la rama B de C4.
+> - **El código del plan corrió.** Todo lo que trae este plan corrió en un prototipo (research-f7b.md, «Cómo se verificó»): la página, el adaptador, los checks, los 193 E2E (los 184 de hoy sin editar y 9 nuevos), las cinco comparaciones únicas y `npm test`. Los 11 diffs se aplican con `git apply`, en orden, sobre la base de F7a. **No corrieron** las specs de componente (el arnés no estaba instalado), los diffs sobre los archivos de F5 y F6 (no existen todavía) ni la rama B de C4.
 > - **Los valores esperados salen del contrato:** los textos de hoy, el contenido de `content/` y las fixtures congeladas. Si un E2E de hoy falla con la página, el error está en la página: no se edita el E2E.
 > - **La base de implementación** es `master` con F7a, F5 y F6 integradas. Si algún número de esta sección difiere en la base, T018 lo vuelve a medir y manda lo medido.
 
@@ -3172,6 +3172,7 @@ describe('two tabs over the same storage (lab-state-check scenarios of spec 021,
 
 ### Tarea 2.5 · La página (T024, P)
 
+- **Tres entregas para el implementador,** una por región, cada una con sus specs de T023 en verde: el mapa (`map/`, con `LabMap.spec.tsx`), los exploradores (`explorers/`, con `LabExplorer.spec.tsx` y `QuestExplorer.spec.tsx`) y el ejercicio (`exercise/`, `LabPage.tsx`, `CampaignLock.tsx`, la hoja y el índice, con el resto). Los commits pueden ser uno por región.
 - **Escribe** los componentes, la hoja nueva y el índice del slice. El DOM es el de las funciones de `lab.js`, `lab-explorers.js` y `quest-explorers.js` en la base:
   - las mismas clases (con el mismo texto del `className` cuando hoy se arma con plantilla), los mismos ids y los mismos `aria-*`;
   - sin los `data-*` de delegación;
@@ -6391,7 +6392,78 @@ export type { LabWorkshop } from './model/types';
   - la línea de intentos sin el número (su FR-038), en `FinishedReview`;
   - la espera: la rama `running` de `reviewHTML` pasa a `RunningReview`, que recibe el progreso con `useStore(runner.state, (state) => (state.status === 'running' ? state.progress : null))` y dibuja la línea de estado con la función de A4 que hoy la arma. «Cancelar ejecución» está en todos los estados y conserva su nodo;
   - el tipo: `LabPageProps.runner` y `CodePhaseProps.runner` pasan a `ExerciseRunner<ApiRunProgress>`, con el tipo que exporte A4.
-- **La spec,** en `CodePhase.spec.tsx`: «keeps the cancel button when the queue position changes». Un runner doble cuyo `state` es un store de `zustand/vanilla`; se pasa de `{ status: 'running', exerciseId, progress: <el primer progreso de A4> }` al segundo, y el botón «Cancelar ejecución» es el mismo nodo y conserva el foco.
+- **La firma.** `Review` recibe la línea de estado ya armada, y `RunningReview` la dibuja en el mismo nodo de hoy. `describeRunProgress` es el nombre de ejemplo de la función de A4; se usa la que A4 deje en la base:
+
+```tsx
+// CodePhase.tsx
+const progress = useStore(runner.state, (state) =>
+  state.status === 'running' ? state.progress : null,
+);
+<Review … running={runningHere} runningLine={describeRunProgress(progress)} onCancel={() => runner.cancel()} />
+
+// Review.tsx
+const RunningReview = ({ line, onCancel }: { line: string; onCancel: () => void }) => (
+  <>
+    <h3>Probemos tu hipótesis.</h3>
+    <p>
+      El compilador está revisando el programa. Después ejecutamos los casos del ejercicio y
+      conectamos cada resultado con el concepto.
+    </p>
+    <p className="runner-status busy">
+      <span className="lab-spinner" aria-hidden="true" />
+      {` ${line}`}
+    </p>
+    <button className="text-button" onClick={onCancel}>
+      Cancelar ejecución
+    </button>
+  </>
+);
+```
+
+  Los textos de la primera línea y de la descripción son los que A4 dejó en `reviewHTML`; si los cambió, se copian los suyos.
+- **La spec,** en `CodePhase.spec.tsx`. El runner doble tiene un `state` de `zustand/vanilla`. La unión de progreso es la de ejemplo del contrato de F7a (§2), y se reemplaza por el tipo que exporte A4:
+
+```tsx
+import { act } from '@testing-library/react';
+import { createStore } from 'zustand/vanilla';
+import type { ExerciseRunner, RunState } from '../../../../features/run-exercise';
+
+type ApiRunProgress =
+  | { phase: 'queued'; position: number }
+  | { phase: 'waiting-turn' }
+  | { phase: 'delayed' };
+
+it('keeps the cancel button and its focus when the queue position changes', () => {
+  const state = createStore<RunState<ApiRunProgress>>(() => ({
+    status: 'running',
+    exerciseId: 'rust-01',
+    progress: { phase: 'queued', position: 3 },
+  }));
+  const queued = { state, run: vi.fn(), cancel: vi.fn(), abort: vi.fn() } as unknown as ExerciseRunner<ApiRunProgress>;
+  render(
+    <CodePhase
+      exercise={exercise}
+      record={{}}
+      runner={queued}
+      running
+      runningHere
+      programBuilder={() => ''}
+      notify={vi.fn()}
+      onPhase={vi.fn()}
+    />,
+  );
+  const cancel = screen.getByRole('button', { name: 'Cancelar ejecución' });
+  cancel.focus();
+
+  act(() =>
+    state.setState({ status: 'running', exerciseId: 'rust-01', progress: { phase: 'queued', position: 1 } }),
+  );
+
+  expect(screen.getByRole('button', { name: 'Cancelar ejecución' })).toBe(cancel);
+  expect(cancel).toHaveFocus();
+});
+```
+
 - **La red:** los E2E de A4 (los de F1 pasados al doble de `/api/runs` y los suyos) pasan sin editarse con la página.
 - **Commit:** `feat(front): la página dibuja los estados de la espera de A4`.
 
@@ -6809,6 +6881,7 @@ index 6721950..2129bc0 100644
 +  getExercises(): readonly KitExercise[];
    exportState(): { records: Record<string, KitDraftRecord | undefined> };
  }
+
 ```
 
 **4. Los adaptadores de F5 y F6** (R11). Se escribieron contra el código de sus planes y **no corrieron**. Si la versión integrada difiere, se aplica la misma intención y K revisa.
@@ -7489,10 +7562,11 @@ Corren fuera del repositorio, con el script de quickstart-f7b.md §3, sobre dos 
 
 | Comparación | Qué mira | Esperado (medido en el prototipo) |
 | --- | --- | --- |
-| **El DOM** (`dom`) | `#main` y el diálogo abierto en 32 estados: el mapa (vacío, con el progreso congelado, sin resultados, con búsqueda, con «Repasar pendientes» y en Go), cada fase, los estados del revisor, el bloqueo, los dos contextos, las pistas, el diálogo y los nueve exploradores | 32 estados, **0 diferencias** fuera de la lista |
-| **Las trazas de los exploradores** (`explorers`) | En los 73 ejercicios con explorador, hasta 12 botones de cada uno: el texto dibujado, la región viva y el foco después de cada operación | 73 trazas y 177 pasos, **0 diferencias** |
-| **El barrido de estilo computado** (`style`) | Las mismas 32 situaciones a 1200, 981, 850, 700, 650 y 590 px, con y sin movimiento reducido: cada propiedad computada de cada elemento y su caja | 384 capturas, **0 diferencias** |
-| **Lo que se escribe** | Los E2E de F7a con `storage.watchWrites()` y la exportación de cada fixture congelada (SC-012) | Las tres fixtures con 0 escrituras; las secuencias, iguales |
+| **El DOM** (`dom`) | `#main` y el diálogo abierto en 39 estados: el mapa (vacío, con el progreso congelado, sin resultados, con búsqueda, con «Repasar pendientes» y en Go), cada fase, los seis estados del revisor (ejecutando, falla de transporte, error, parcial, aprobado y vencido, con el doble del compilador), «Explicá» después de aprobar, el bloqueo, los dos contextos, las pistas, el diálogo y los nueve exploradores | 39 estados, **0 diferencias** fuera de la lista |
+| **Las trazas de los exploradores** (`explorers`) | Los 274 ejercicios: cuál explorador se dibuja (o ninguno) y, en cada uno, hasta 12 botones, con el texto dibujado, la región viva y el foco después de cada operación | 274 trazas y 720 pasos, **0 diferencias** |
+| **El barrido de estilo computado** (`style`) | Los 32 estados de la primera versión de la grilla a 1200, 981, 850, 700, 650 y 590 px, y los 7 del revisor a esos mismos anchos, con y sin movimiento reducido: cada propiedad computada de cada elemento y su caja. La fase de una animación en curso (el giro del indicador) no se compara | 384 capturas más 84 del revisor, **0 diferencias** |
+| **Lo que se escribe** (`writes`, SC-003) | Con el reloj fijo y `Math.random` fijo, 22 secuencias: cada fila de «Lo que guarda y cuándo» (recorrer, abrir desde un nodo, desde el desafío de hoy, con «Sorprendeme» y con «siguiente», predecir, el editor, el caso propio, la variante, las pistas, la solución, restaurar, cargar la solución, ejecutar con los tres resultados, cancelar, la reflexión y la autoevaluación) y dos combinadas, una sobre el progreso congelado. Compara la lista de `set taller-laboratorio-v1` y el texto final | 22 secuencias y 51 escrituras, **0 diferencias** |
+| **La exportación** (`exports`, SC-012) | Cada fixture congelada: el mapa, las tres fases de `rust-09` y el bloqueo de `rust-112`; después, `window.TallerLab.exportState()` | 3 fixtures, 0 escrituras y la misma exportación |
 
 **La lista de diferencias admitidas** (FR-064), que va en el PR:
 
@@ -7505,10 +7579,10 @@ Corren fuera del repositorio, con el script de quickstart-f7b.md §3, sobre dos 
 - el texto de «Copia independiente», que hoy vuelve a ese texto en cada redibujo aunque la copia siga activa y con la página sigue al estado (C2).
 
 - **Pasos:**
-  1. Las cuatro comparaciones, con los puertos libres (`ss -ltn | grep -E ':450[12]\b'` no imprime nada).
+  1. Las cinco comparaciones, con los puertos libres (`ss -ltn | grep -E ':450[12]\b'` no imprime nada).
   2. **El control negativo** (en una copia descartable, una vez): en `TopicGrid.tsx`, `` {`${solvedTotal}/${total.length}`} `` pasa a `{solvedTotal}/{total.length}`. Esperado: el barrido da diferencias de ancho en las tarjetas de temas (784 a 1200 px, con y sin movimiento reducido, en el prototipo) y el DOM, ninguna.
   3. Las cantidades, en la descripción del PR.
-- **Compuerta:** las cuatro en 0 fuera de la lista, y el control negativo detectado.
+- **Compuerta:** las cinco en 0 fuera de la lista, y el control negativo detectado.
 
 ### Tarea 4.2 · La documentación (T029, K)
 
@@ -7622,7 +7696,7 @@ Corren fuera del repositorio, con el script de quickstart-f7b.md §3, sobre dos 
 | FR-013 | T027 | Los adaptadores de F5 y F6 (R11) |
 | FR-014 | T027 | `lab-api.ts` sin la vista: diez métodos con `mount` y `unmount`; el aislamiento |
 | FR-015 | T027 | `load-order`, `boot-check`, `seams-guard`, `legacy-sources` y el aislamiento |
-| FR-016 | T024, T027, T028 | Las escrituras de los manejadores; los E2E de F7a |
+| FR-016 | T024, T027, T028 | Las escrituras de los manejadores; los E2E de F7a; la comparación `writes` |
 | FR-017 | T020, T021 | `enterLab` y `showExercise` |
 | FR-018 | T027, T028 | Las fixtures sin escrituras; la exportación igual |
 | FR-019 | T023, T024 | `labStore.getProgress()` en cada manejador; `useStore` con la revisión; `lab-two-tabs.spec.tsx` |
@@ -7645,7 +7719,7 @@ Corren fuera del repositorio, con el script de quickstart-f7b.md §3, sobre dos 
 | FR-056 a FR-059 | T023, T024, T019 | Los exploradores, su foco, sus regiones y los modelos visuales |
 | FR-062 | T020, T023 | 5 specs de modelo y 9 de componente |
 | FR-063 | T027 | §5 |
-| FR-064 | T028 | La comparación del DOM y las trazas |
+| FR-064 | T028 | La comparación del DOM (39 estados) y las trazas de los 274 ejercicios |
 | FR-065 | T028 | El barrido |
 | FR-066 | T029 | La documentación |
 
@@ -7653,14 +7727,14 @@ Corren fuera del repositorio, con el script de quickstart-f7b.md §3, sobre dos 
 | --- | --- |
 | SC-001 | T019, T026, T027 |
 | SC-002 | T027 (`grep`) y §6 |
-| SC-003 | T027, T028 |
+| SC-003 | T028 (`writes`) |
 | SC-004 y SC-005 | T028 |
 | SC-007 | T027 (`npm test` y §5) |
 | SC-008 | T030 |
 | SC-009 | T024, T027 |
 | SC-010 | T019, T023, T026 y la comprobación de T030 |
 | SC-011 | T024, T030 |
-| SC-012 | T027, T028 |
+| SC-012 | T027 (`lab-state-check`) y T028 (`exports`) |
 
 SC-006 es de F7a.
 

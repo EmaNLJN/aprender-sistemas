@@ -27,7 +27,13 @@ Se planificó sin tocar el código de `master` y sin descargar nada. El prototip
   - `npm run build`;
   - los E2E: **193 de 193** (los 123 de F1 y A2, los 61 de F7a sin editar y 9 nuevos);
   - los 7 E2E de X1 contra el legacy de F7a: **7 en rojo, cada uno por la razón de X1** (el foco que se pierde, el panel que se cierra o el estado del filtro sin la búsqueda);
-  - la comparación del DOM (32 estados), las trazas de los exploradores (73 ejercicios, 177 pasos) y el barrido de estilo computado (384 capturas), las tres con 0 diferencias fuera de la lista (quickstart-f7b.md §3);
+  - las cinco comparaciones únicas de quickstart-f7b.md §3, todas con 0 diferencias fuera de la lista:
+    - el DOM, en 39 estados, con los seis del revisor;
+    - las trazas de los exploradores, en los 274 ejercicios (720 pasos);
+    - el barrido de estilo computado, en 468 capturas;
+    - las escrituras de 22 secuencias, con 51 `set taller-laboratorio-v1` iguales byte a byte (SC-003);
+    - la exportación de las tres fixtures congeladas después de recorrerlas, sin escrituras (SC-012);
+  - los 11 diffs del plan, que se aplican con `git apply`, en orden, sobre la base de F7a;
   - el control negativo del barrido: un texto partido en `.topic-fraction` da 784 diferencias a 1200 px, y el DOM ninguna;
   - las mutaciones, cada una detectada por la prueba que la vigila:
     - `replaceText` sin la anotación: fallan dos E2E de F7a que cuentan las escrituras;

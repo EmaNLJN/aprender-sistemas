@@ -27,7 +27,7 @@ Lo que se anota, con lo que midió el prototipo:
 | E2E | 184 | 193 |
 | Checks y Vitest | 39 checks; 40 archivos y 843 pruebas | 37 checks; 45 archivos y 878 pruebas (más las 9 specs de componente, que no corrieron) |
 | `lab-state-check` | 39 | 33 |
-| `html.length` | 1 144 712 | 1 160 293 |
+| `html.length` | 1 144 712 | 1 160 218 |
 
 **El aporte de cada parte al paquete** (R12), con el script de §3.2 sobre cada raíz.
 
@@ -55,9 +55,11 @@ Y `window.TallerLab` publica diez métodos: lo verifica `boot-check` («adaptado
 git worktree add ../f7b-base <base>
 (cd ../f7b-base && npm ci --offline --no-audit --no-fund && npm run build)
 npm run build
-node lab-parity.mjs ../f7b-base . dom          # 32 estados; esperado: 0 diferencias
-node lab-parity.mjs ../f7b-base . explorers    # 73 trazas y 177 pasos; esperado: 0
-node lab-parity.mjs ../f7b-base . style        # 384 capturas, unos 40 minutos; esperado: 0
+node lab-parity.mjs ../f7b-base . dom          # 39 estados; esperado: 0 diferencias
+node lab-parity.mjs ../f7b-base . explorers    # 274 trazas y 720 pasos; esperado: 0
+node lab-parity.mjs ../f7b-base . style        # 468 capturas, cerca de una hora; esperado: 0
+node lab-parity.mjs ../f7b-base . writes       # 22 secuencias y 51 escrituras; esperado: 0 (SC-003)
+node lab-parity.mjs ../f7b-base . exports      # 3 fixtures; esperado: 0 escrituras y la misma exportación (SC-012)
 ```
 
 `STATES=map,code` y `WIDTHS=1200` acotan una corrida. `SAMPLES=60` muestra más diferencias.
@@ -72,8 +74,11 @@ node lab-parity.mjs ../f7b-base . style        # 384 capturas, unos 40 minutos; 
   - compara las clases como un conjunto, sin `lab-reasoning`;
   - une los nodos de texto vecinos y colapsa los espacios;
   - el editor cuenta como un solo nodo.
-- **En el estilo:** compara cada propiedad computada y la caja de cada elemento. No compara el tamaño de lo que está dentro de un `details` cerrado: no se dibuja, y Chrome devuelve un tamaño que depende de si alguna vez se midió.
-- **En los exploradores:** compara el texto dibujado (`innerText`), la región viva y el elemento con el foco.
+- **En el estilo:** compara cada propiedad computada y la caja de cada elemento, con dos excepciones:
+  - el tamaño de lo que está dentro de un `details` cerrado: no se dibuja, y Chrome devuelve un tamaño que depende de si alguna vez se midió;
+  - el `transform` y la caja de un elemento con una animación en curso, porque su fase depende del momento de la captura. Con movimiento reducido no hay animación, y se compara todo.
+- **En los exploradores:** recorre los 274 ejercicios y anota cuál se dibuja (o ninguno). Compara el texto dibujado (`innerText`), la región viva y el elemento con el foco.
+- **En las escrituras y la exportación:** reloj fijo (2026-10-06 12:00 UTC), `Math.random` fijo y el doble del compilador de `qa/e2e/lib/compiler-results.ts`. Envuelve `localStorage.setItem` y guarda cada escritura de la clave del laboratorio.
 
 ```js
 // node lab-parity.mjs <legacy root> <page root> [dom|style|explorers]; WIDTHS=… and STATES=a,b narrow a run.
@@ -82,6 +87,9 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 
 const [legacyRoot, pageRoot, mode = 'dom'] = process.argv.slice(2);
+const { PLAYGROUND_ENDPOINT, RUST_01, compilerReply } = await import(
+  pageRoot + '/qa/e2e/lib/compiler-results.ts'
+);
 const require = createRequire(pageRoot + '/package.json');
 const { chromium } = require('@playwright/test');
 const FROZEN = readFileSync(pageRoot + '/qa/fixtures/progress-master-2a278ad-storage.json', 'utf8');
@@ -154,6 +162,50 @@ const ALL_STATES = [
   ['ownership', ex('rust-05', 'learn')],
   ['slices', ex('go-11', 'learn')],
   ['flow', ex('rust-01', 'learn')],
+  [
+    'review-running',
+    ex('rust-01', 'code'),
+    [
+      ['compiler', 'hold'],
+      ['click', '#lab-run'],
+      ['wait', 100],
+    ],
+  ],
+  [
+    'review-transport',
+    ex('rust-01', 'code'),
+    [['compiler', 'transportError'], ['click', '#lab-run'], ['settle']],
+  ],
+  [
+    'review-error',
+    ex('rust-01', 'code'),
+    [['compiler', 'compileError'], ['click', '#lab-run'], ['settle']],
+  ],
+  [
+    'review-partial',
+    ex('rust-01', 'code'),
+    [['compiler', 'failedTest'], ['click', '#lab-run'], ['settle']],
+  ],
+  [
+    'review-passed',
+    ex('rust-01', 'code'),
+    [['compiler', 'passed'], ['click', '#lab-run'], ['settle']],
+  ],
+  [
+    'review-stale',
+    ex('rust-01', 'code'),
+    [['compiler', 'passed'], ['click', '#lab-run'], ['settle'], ['type', '.cm-content', 'x']],
+  ],
+  [
+    'reflect-after-run',
+    ex('rust-01', 'code'),
+    [
+      ['compiler', 'passed'],
+      ['click', '#lab-run'],
+      ['settle'],
+      ['click', 'role=tab[name=/Explicá/]'],
+    ],
+  ],
   ['campaign-view', '/#campana'],
   ['systems-view', '/?lenguaje=rust&taller=cache&parte=build#sistemas'],
 ];
@@ -240,41 +292,64 @@ function styleSnapshot() {
       ])
         delete props[name];
     }
+    const animated = el.getAnimations().some((animation) => animation.playState === 'running');
+    if (animated) delete props.transform;
     const r = el.getBoundingClientRect();
-    props['@rect'] = [r.x, r.y, r.width, r.height].map(Math.round).join(',');
+    if (!animated) props['@rect'] = [r.x, r.y, r.width, r.height].map(Math.round).join(',');
     out[keyOf(el)] = props;
   }
   return out;
 }
 
-async function open(browser, origin, [, path, actions, language, frozen], width, motion, legacy) {
+async function act(page, [kind, target, value]) {
+  if (kind === 'fill') await page.fill(target, value);
+  else if (kind === 'type') {
+    await page.locator(target).first().click();
+    await page.keyboard.type(value);
+  } else if (kind === 'press') await page.keyboard.press(target);
+  else if (kind === 'compiler') {
+    await page.route(PLAYGROUND_ENDPOINT.rust, async (route) => {
+      if (target === 'hold') return;
+      const reply = compilerReply(RUST_01, target);
+      if (reply.kind === 'abort') await route.abort('failed');
+      else await route.fulfill({ status: 200, contentType: 'application/json', json: reply.body });
+    });
+  } else if (kind === 'settle')
+    await page.waitForFunction(() => !document.querySelector('#lab-run')?.disabled);
+  else if (kind === 'wait') await page.waitForTimeout(target);
+  else await page.locator(target).first().click();
+}
+
+async function open(browser, origin, [, path, actions, , seed], width, motion, legacy) {
   const context = await browser.newContext({
     viewport: { width, height: 900 },
     reducedMotion: motion,
     locale: 'es-AR',
     timezoneId: 'America/Argentina/Buenos_Aires',
   });
-  await context.addInitScript(
-    ([frozenText, lang]) => {
+  const seedText = seed === true ? JSON.parse(FROZEN)['taller-laboratorio-v1'] : seed || null;
+  await context.addInitScript((text) => {
+    Math.random = () => 0.5;
+    if (!sessionStorage.getItem('parity-seeded')) {
       localStorage.clear();
-      if (frozenText)
-        localStorage.setItem(
-          'taller-laboratorio-v1',
-          JSON.parse(frozenText)['taller-laboratorio-v1'],
-        );
-      if (lang)
-        localStorage.setItem('taller-learning-v1', JSON.stringify({ version: 1, language: lang }));
-    },
-    [frozen ? FROZEN : null, language],
-  );
+      if (text) localStorage.setItem('taller-laboratorio-v1', text);
+      sessionStorage.setItem('parity-seeded', '1');
+    }
+    const writes = JSON.parse(sessionStorage.getItem('parity-writes') ?? '[]');
+    const setItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (this === localStorage && key === 'taller-laboratorio-v1') {
+        writes.push(value);
+        sessionStorage.setItem('parity-writes', JSON.stringify(writes));
+      }
+      return setItem.call(this, key, value);
+    };
+  }, seedText);
   const page = await context.newPage();
   await page.clock.setFixedTime(new Date('2026-10-06T12:00:00Z'));
   await page.goto(origin + path);
   await page.waitForFunction(() => document.querySelector('#main')?.children.length > 0);
-  for (const [kind, selector, value] of actions ?? []) {
-    if (kind === 'fill') await page.fill(selector, value);
-    else await page.locator(selector).first().click();
-  }
+  for (const action of actions ?? []) await act(page, action);
   await page.waitForTimeout(50);
   if (legacy) await page.evaluate(normalizeLegacy);
   return { context, page };
@@ -326,10 +401,232 @@ async function compareStates(browser) {
   return { compared, differences, samples };
 }
 
+const RUN = (kind) => [['compiler', kind], ['click', '#lab-run'], ['settle']];
+const SOLUTION = 'text=Ver una solución razonada';
+const CONTINUE = 'role=button[name="Continuar"]';
+const WRITE_ROWS = [
+  [
+    'browse-map',
+    '/#laboratorio',
+    [
+      ['click', 'role=button[name=/^Inicial/]'],
+      ['fill', '#lab-search', 'memoria'],
+      ['click', 'role=button[name=/^Clásicos y sistemas/]'],
+      ['click', 'role=button[name=/^Repasar pendientes|^Ver todos/]'],
+    ],
+  ],
+  [
+    'browse-exercise',
+    ex('rust-01', 'learn'),
+    [
+      ['click', 'role=tab[name=/Experimentá/]'],
+      ['click', 'role=tab[name=/Explicá/]'],
+      ['click', 'role=tab[name=/Descubrí/]'],
+      ['click', 'role=button[name="Siguiente paso →"]'],
+      ['click', 'role=button[name=/^← Volver al/]'],
+    ],
+  ],
+  ['open-node', '/#laboratorio', [['click', 'role=button[name="La energía del reactor"]']]],
+  [
+    'open-today',
+    '/#laboratorio',
+    [['click', 'role=button[name=/Entrar al laboratorio|Seguir aprendiendo/]']],
+  ],
+  ['open-surprise', '/#laboratorio', [['click', 'role=button[name="Sorprendeme ↗"]']]],
+  ['next', ex('rust-01', 'learn'), [['click', 'role=button[name="Ejercicio siguiente"]']]],
+  ['predict', ex('rust-02', 'learn'), [['click', '.lab-prediction']]],
+  ['draft-keys', ex('rust-01', 'code'), [['type', '.cm-content', 'ab']]],
+  [
+    'custom-keys',
+    ex('rust-01', 'code'),
+    [
+      ['click', 'text=＋ Inventá tu propio caso'],
+      ['type', '#lab-custom-test', 'x > 1'],
+    ],
+  ],
+  [
+    'variant',
+    ex('rust-01', 'code'),
+    [
+      ['click', '.test-case summary'],
+      ['click', 'role=button[name="Inventar una variante ↗"]'],
+    ],
+  ],
+  [
+    'hints',
+    ex('rust-01', 'code'),
+    [
+      ['click', 'role=button[name="Dame una pista"]'],
+      ['click', 'role=button[name="Otra pista"]'],
+    ],
+  ],
+  [
+    'solution',
+    ex('rust-01', 'code'),
+    [
+      ['click', SOLUTION],
+      ['click', SOLUTION],
+      ['click', SOLUTION],
+    ],
+  ],
+  [
+    'restore',
+    ex('rust-01', 'code'),
+    [
+      ['type', '.cm-content', 'q'],
+      ['click', 'role=button[name="Restaurar inicio ↺"]'],
+      ['click', CONTINUE],
+    ],
+  ],
+  [
+    'load-solution',
+    ex('rust-01', 'code'),
+    [
+      ['click', SOLUTION],
+      ['click', 'role=button[name="Cargarla y experimentar"]'],
+      ['click', CONTINUE],
+    ],
+  ],
+  ['run-passed', ex('rust-01', 'code'), RUN('passed')],
+  ['run-failed', ex('rust-01', 'code'), RUN('failedTest')],
+  ['run-transport', ex('rust-01', 'code'), RUN('transportError')],
+  [
+    'run-cancel',
+    ex('rust-01', 'code'),
+    [
+      ['compiler', 'hold'],
+      ['click', '#lab-run'],
+      ['wait', 100],
+      ['click', 'role=button[name="Cancelar ejecución"]'],
+    ],
+  ],
+  ['reflection-keys', ex('rust-01', 'reflect'), [['type', '#lab-reflection', 'abc']]],
+  [
+    'self-assessment',
+    ex('rust-01', 'reflect'),
+    [['click', 'role=button[name=/^Lo entiendo, quiero otra vuelta/]']],
+  ],
+  [
+    'combined',
+    ex('rust-02', 'learn'),
+    [
+      ['click', '.lab-prediction'],
+      ['click', 'role=tab[name=/Experimentá/]'],
+      ['click', 'role=button[name="Dame una pista"]'],
+      ['type', '.cm-content', 'z'],
+      ...RUN('passed'),
+      ['click', 'role=tab[name=/Explicá/]'],
+      ['type', '#lab-reflection', 'porque sí'],
+      ['click', 'role=button[name=/^Puedo explicarlo sin mirar/]'],
+      ['click', 'role=button[name=/Siguiente experimento/]'],
+    ],
+  ],
+  [
+    'combined-frozen',
+    ex('rust-09', 'code'),
+    [['type', '.cm-content', 'w'], ...RUN('passed'), ['click', 'role=button[name=/^← Volver al/]']],
+    ,
+    true,
+  ],
+];
+
+function frozenLab(name) {
+  const text = readFileSync(pageRoot + '/qa/fixtures/' + name, 'utf8');
+  return name.endsWith('-storage.json')
+    ? JSON.parse(text)['taller-laboratorio-v1']
+    : JSON.stringify(JSON.parse(text).lab);
+}
+const FROZEN_FIXTURES = [
+  'progress-master-2a278ad-storage.json',
+  'progress-master-2a278ad-export.json',
+  'progress-d0e1b49-export.json',
+];
+const VISITS = [
+  '/#laboratorio',
+  ex('rust-09', 'learn'),
+  ex('rust-09', 'code'),
+  ex('rust-09', 'reflect'),
+  ex('rust-112', 'learn', 'campana=rust-world-4&'),
+];
+
+async function written(page) {
+  return page.evaluate(() => ({
+    writes: JSON.parse(sessionStorage.getItem('parity-writes') ?? '[]'),
+    final: localStorage.getItem('taller-laboratorio-v1'),
+    exported: JSON.stringify(window.TallerLab.exportState()),
+  }));
+}
+
+async function compareWrites(browser) {
+  let rows = 0,
+    writes = 0,
+    differences = 0;
+  const samples = [];
+  for (const row of WRITE_ROWS) {
+    const a = await open(browser, 'http://127.0.0.1:4501', row, 1200, 'no-preference', false);
+    const b = await open(browser, 'http://127.0.0.1:4502', row, 1200, 'no-preference', false);
+    await a.page.waitForTimeout(200);
+    await b.page.waitForTimeout(200);
+    const wa = await written(a.page);
+    const wb = await written(b.page);
+    await a.context.close();
+    await b.context.close();
+    rows++;
+    writes += wa.writes.length;
+    const same = JSON.stringify(wa.writes) === JSON.stringify(wb.writes) && wa.final === wb.final;
+    if (!same) {
+      differences++;
+      samples.push(
+        `${row[0]} | legacy ${wa.writes.length} writes | page ${wb.writes.length} writes`,
+      );
+    }
+    samples.push(`  ${row[0]}: ${wa.writes.length} writes`);
+  }
+  return { rows, writes, differences, samples };
+}
+
+async function compareExports(browser) {
+  let fixtures = 0,
+    differences = 0;
+  const samples = [];
+  for (const name of FROZEN_FIXTURES) {
+    const result = [];
+    for (const [origin, legacy] of [
+      ['http://127.0.0.1:4501', true],
+      ['http://127.0.0.1:4502', false],
+    ]) {
+      const { context, page } = await open(
+        browser,
+        origin,
+        [name, VISITS[0], [], , frozenLab(name)],
+        1200,
+        'no-preference',
+        legacy,
+      );
+      for (const visit of VISITS.slice(1)) {
+        await page.goto(origin + visit);
+        await page.waitForFunction(() => document.querySelector('#main')?.children.length > 0);
+      }
+      await page.waitForTimeout(100);
+      result.push(await written(page));
+      await context.close();
+    }
+    fixtures++;
+    const [a, b] = result;
+    samples.push(`  ${name}: export of ${a.exported.length} characters, ${a.writes.length} writes`);
+    if (a.exported !== b.exported || a.writes.length || b.writes.length) {
+      differences++;
+      samples.push(
+        `${name} | writes ${a.writes.length}/${b.writes.length} | export equal ${a.exported === b.exported}`,
+      );
+    }
+  }
+  return { fixtures, differences, samples };
+}
+
 async function compareExplorers(browser) {
-  const ids = Object.entries(KINDS.kinds)
-    .filter(([, kind]) => kind)
-    .map(([id]) => id);
+  const ids = Object.keys(KINDS.kinds);
+
   let traces = 0,
     steps = 0,
     differences = 0;
@@ -344,30 +641,28 @@ async function compareExplorers(browser) {
       legacy,
     );
     const out = [];
-    const region = '.quest-explorer, #lab-special-explorer';
-    const count = await page.locator(`${region} button:not([disabled])`).count();
+    const region = '.quest-explorer, .lab-explorer';
+    const snapshot = () =>
+      page.evaluate((selector) => {
+        const host = document.querySelector(selector);
+        if (!host) return 'none';
+        const live = host.querySelector('[role="status"]');
+        const focused = document.activeElement;
+        const text = (n) => n.innerText.replace(/\s+/g, ' ').trim();
+        return [
+          text(host),
+          live ? text(live) : '',
+          `${focused?.tagName}:${focused ? text(focused) : ''}:${focused?.getAttribute('aria-label') ?? ''}`,
+        ].join(' ¦ ');
+      }, region);
+    out.push(await snapshot());
+    const count = await page.locator(`${region} button`).count();
     for (let i = 0; i < Math.min(count, 12); i++) {
       const button = page.locator(`${region} button`).nth(i);
       if (await button.isDisabled()) continue;
       await button.click();
       await page.waitForTimeout(10);
-      out.push(
-        await page.evaluate((selector) => {
-          const host = document.querySelector(selector);
-          const live = host.querySelector('[role="status"]');
-          const focused = document.activeElement;
-          const text = (n) => n.innerText.replace(/\s+/g, ' ').trim();
-          return [
-            text(host),
-            live ? text(live) : '',
-            focused?.tagName +
-              ':' +
-              (focused ? text(focused) : '') +
-              ':' +
-              (focused?.getAttribute('aria-label') ?? ''),
-          ].join(' ¦ ');
-        }, region),
-      );
+      out.push(await snapshot());
     }
     await context.close();
     return out;
@@ -403,7 +698,13 @@ try {
   await waitFor('http://127.0.0.1:4502/');
   const browser = await chromium.launch();
   const result =
-    mode === 'explorers' ? await compareExplorers(browser) : await compareStates(browser);
+    mode === 'explorers'
+      ? await compareExplorers(browser)
+      : mode === 'writes'
+        ? await compareWrites(browser)
+        : mode === 'exports'
+          ? await compareExports(browser)
+          : await compareStates(browser);
   await browser.close();
   console.log(JSON.stringify({ mode, ...result, samples: undefined }));
   for (const s of result.samples) console.log(s);
