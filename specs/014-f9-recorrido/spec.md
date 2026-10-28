@@ -4,19 +4,19 @@
 
 **Created**: 2026-10-07
 
-**Status**: Draft: especificada, con cuatro preguntas abiertas para el clarify (Q1 a Q4) y sin plan
+**Status**: Clarificada (sesión del 2026-10-28); lista para el plan
 
-**Input**: Ítem **F9** de la hoja de ruta [`specs/front-react/roadmap.md`](../front-react/roadmap.md), «Recorrido»: portar a React los pasos, el temporizador, las notas y la lección sin que el alumno note el cambio. Encargo del coordinador del 2026-10-07 (ver «Lo que pidió el usuario»). Depende sólo de F2a ([spec](../009-f2-seams/spec.md), [plan](../009-f2-seams/plan.md)), implementada en el PR #40, aunque la hoja de ruta lo ubique en el tramo 4. **Describe el código de `f2a` (`2ffbbc6`: `master` más F2a y A2), no el de `master` (`e87772d`), que todavía no los tiene.** Lo que toma de F2b (unidades 5 a 8, con su [plan](../009-f2-seams/plan-f2b.md), en implementación) es un supuesto. Usa como base el [ADR 0008](../../docs/adr/0008-pruebas-del-front.md), el [ADR 0003](../../docs/adr/0003-integridad-del-progreso.md), el [mapa del front legacy](../front-react/legacy-map.md) y la [constitución](../../.specify/memory/constitution.md) 1.4.1.
+**Input**: Ítem **F9** de la hoja de ruta [`specs/front-react/roadmap.md`](../front-react/roadmap.md), «Recorrido»: portar a React los pasos, el temporizador, las notas y la lección sin que el alumno note el cambio. Encargo del coordinador del 2026-10-07 y clarify del 2026-10-28 (ver «Lo que pidió el usuario» y «Clarifications»). Depende sólo de F2a ([spec](../009-f2-seams/spec.md), [plan](../009-f2-seams/plan.md)), implementada en el PR #40, aunque la hoja de ruta lo ubique en el tramo 4. **Describe el código de `f2a` (`2ffbbc6`: `master` más F2a y A2), no el de `master` (`e87772d`), que todavía no los tiene.** Lo que toma de F2b (unidades 5 a 8, con su [plan](../009-f2-seams/plan-f2b.md), en implementación) es un supuesto. Usa como base el [ADR 0008](../../docs/adr/0008-pruebas-del-front.md), el [ADR 0003](../../docs/adr/0003-integridad-del-progreso.md), el [mapa del front legacy](../front-react/legacy-map.md) y la [constitución](../../.specify/memory/constitution.md) 1.4.1.
 
 ## Intención y alcance
 
-**Lo que entendemos.** El Recorrido es la vista de entrada del taller (`#recorrido`, y lo que muestra cualquier hash desconocido). Hoy lo dibuja `frontend/app.js` con cadenas de HTML (`renderRoute`, `timerMarkup` y `openLesson`) y lo mueven tres delegados de eventos sobre `#main`, dos oyentes del `<dialog id="lesson-dialog">` estático de `index.html` y un `setInterval` de 500 ms que corre en todas las vistas desde el arranque. F9 lo lleva a una página de React que conserva el aspecto, los textos, el teclado, las URL y el progreso guardado. Tres cosas hay que cuidar, porque la red de F1 no las fija (o las fija sólo en parte) y un port ingenuo las rompe: el temporizador sigue corriendo, y avisa al terminar, aunque el alumno esté en otra vista; la barra lateral y la etiqueta de guardado las actualiza `app.js` después de cada escritura, y la página nueva ya no pasa por ahí; y el foco vuelve por tres caminos distintos según cómo se cierre la lección. Además, el encargo y la hoja de ruta ponen las «notas» en F9, pero en el código el Recorrido no dibuja ni escribe ninguna: viven en Método (Q1). Es para quien porta vistas y para quien revisa el PR; para el alumno no cambia nada. Si esto no coincide con lo que se busca, es lo primero que hay que corregir: el resto de la spec sale de acá.
+**Lo que entendemos.** El Recorrido es la vista de entrada del taller (`#recorrido`, y lo que muestra cualquier hash desconocido). Hoy lo dibuja `frontend/app.js` con cadenas de HTML (`renderRoute`, `timerMarkup` y `openLesson`) y lo mueven tres delegados de eventos sobre `#main`, dos oyentes del `<dialog id="lesson-dialog">` estático de `index.html` y un `setInterval` de 500 ms que corre en todas las vistas desde el arranque. F9 lo lleva a una página de React que conserva el aspecto, los textos, el teclado, las URL y el progreso guardado. Dos cosas hay que cuidar, porque la red de F1 no las fija (o las fija sólo en parte) y un port ingenuo las rompe: el temporizador sigue corriendo, y avisa al terminar, aunque el alumno esté en otra vista; y la barra lateral y la etiqueta de guardado las actualiza `app.js` después de cada escritura, y la página nueva ya no pasa por ahí. Hay además cambios aceptados a propósito: lo que hoy existe sólo porque `innerHTML` rehace la vista (los módulos que se cierran, el foco que se pierde) adopta el comportamiento de React (C2 del clarify). El encargo y la hoja de ruta ponen las «notas» en F9, pero en el código el Recorrido no dibuja ni escribe ninguna: viven en Método y las porta F8 (Q1). Es para quien porta vistas y para quien revisa el PR; para el alumno no cambia nada. Si esto no coincide con lo que se busca, es lo primero que hay que corregir: el resto de la spec sale de acá.
 
 **Cómo sabremos que salió bien.**
 
 1. La red de F1 (106 E2E) y los 17 de A2 pasan sin editarse con el build del port, incluido el E2E que fija que el temporizador sobrevive a una navegación por hash y se pierde al recargar.
-2. Los E2E nuevos del Recorrido (pasos, lección, temporizador, idioma y «Borrar todo») pasan contra el legacy antes de portar y, sin editarse, contra la página nueva.
-3. La página produce el mismo DOM que `renderRoute` y `openLesson` (salvo los `data-*` de delegación, que se retiran con sus ramas) y las hojas de estilo no cambian (Q2, opción A): el alumno no ve nada distinto.
+2. Los E2E nuevos del Recorrido (pasos, lección, temporizador, idioma y «Borrar todo») pasan contra el legacy antes de portar y, sin editarse, contra la página nueva. Los que fijan un cambio aceptado (módulos y foco, C2) se escriben con el comportamiento nuevo y fallan contra el legacy por esa razón.
+3. La página produce el mismo DOM que `renderRoute` y `openLesson` (salvo los `data-*` de delegación, que se retiran con sus ramas), y las reglas de CSS del Recorrido, mudadas a la hoja de la página, dan el mismo estilo computado: el alumno no ve nada distinto.
 4. Cada acción que cambia el progreso hace una escritura; montar la página, contar el tiempo y abrir o cerrar la lección sin responder no escriben nada. Las fixtures congeladas de progreso arrancan sin escribir, sin respaldar y sin avisar.
 5. `app.js` pierde todo lo del Recorrido (`renderRoute`, el intervalo, `#lesson-dialog` y sus ramas) y el shell conserva un adaptador de tres métodos.
 6. Con el temporizador detenido no queda ningún intervalo vivo, y el aviso de fin sale aunque el alumno esté en otra vista.
@@ -25,22 +25,23 @@
 
 - La página del Recorrido y la lección, con el modelo puro que necesitan (los selectores de pasos, las acciones de escritura y el temporizador), en una página nueva de `frontend/src/pages/`.
 - El adaptador mínimo de `frontend/src/app/legacy/` y el corte de `app.js`, de `index.html` y de los arneses de `qa/` que lo cargan.
+- Las reglas de CSS que sólo usa el Recorrido (unas 114), que se mudan a la hoja de la página (Q2).
 - Los E2E de comportamiento con su Page Object, las specs de Vitest (modelo y componentes) y la documentación que cambia con ellos (`docs/architecture.md` y `qa/AGENTS.md`).
 
 **Queda fuera:**
 
-- La bitácora de notas, `#note-state`, el pedido al tutor y su botón de copiar: están en `renderMethod`, que porta F8 (Q1).
+- La bitácora de notas, `#note-state`, el pedido al tutor y su botón de copiar: están en `renderMethod`, que porta F8 con ellas (Q1).
 - Biblioteca, Proyecto y Método (F3, F4 y F8); el shell, el router, la barra lateral y `syncShell` (F10); el contenido de `content/guide/`; cualquier cambio de IDs, de formas guardadas o de URL.
 - Guardar el temporizador (en `localStorage`, en `sessionStorage` o en el servidor) y la sincronización de la cuenta (D1c).
-- Mover o editar reglas de CSS (Q2, opción A) y el `aria-pressed` que `syncShell` pone en `<body>`, defecto que F1 fija y corrige quien porte el shell.
+- Editar reglas de CSS que no sean del Recorrido, y el `aria-pressed` que `syncShell` pone en `<body>`, defecto que F1 fija y corrige quien porte el shell.
 
-**Sin hacer a propósito (YAGNI):** un temporizador por lenguaje, otras duraciones, sonido o notificaciones del navegador; recordar los módulos que el alumno abrió; un contexto o un provider del progreso; memoización; una librería de animación o de diálogos; capturas de pantalla y pruebas con axe; E2E con dos pestañas; el debounce de la escritura (el Recorrido no tiene campos de texto).
+**Sin hacer a propósito (YAGNI):** un temporizador por lenguaje, otras duraciones, sonido o notificaciones del navegador; un contexto o un provider del progreso; memoización; una librería de animación o de diálogos; capturas de pantalla y pruebas con axe; E2E con dos pestañas; el debounce de la escritura (el Recorrido no tiene campos de texto).
 
 **Actores:** quien porta una vista (el usuario y los agentes que implementan); quien revisa el PR; el agente principal, que integra `main.tsx`, `legacy-views.ts`, `package.json`, las configuraciones y la documentación; y el alumno, que no debe notar nada.
 
 ## Lo que pidió el usuario
 
-Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumptions) o una pregunta del clarify.
+Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumptions).
 
 | Pedido | Fuente |
 | --- | --- |
@@ -48,62 +49,33 @@ Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumption
 | Las vistas una por una, las hojas primero y cada raíz de React dentro del shell legacy, como el Atlas | Usuario, 2026-10-05 |
 | Antes de portar, E2E con Playwright y Page Objects contra la versión actual; las piezas nuevas llevan Vitest, Testing Library y fishery | Usuario, 2026-10-05; clarify de F1, Q1 |
 | La suscripción al progreso con Zustand: `useStore` con un selector chico, nunca con el store entero | Usuario, clarify de F2, 2026-10-06 (Q3); `AGENTS.md` |
-| F9: pasos, temporizador (sin el `setInterval` global), notas y el diálogo de la lección, que devuelve el foco a quien lo abrió | Hoja de ruta, F9 (la parte de las «notas» choca con el código: Q1) |
+| F9: pasos, temporizador (sin el `setInterval` global), notas y el diálogo de la lección, que devuelve el foco a quien lo abrió | Hoja de ruta, F9 (las «notas» van a F8: Q1) |
 | Con la recarga se pierde el temporizador | Hoja de ruta, «Estado y evidencia», 2026-10-05; E2E de F1 |
 | Pasos, minutos y notas se leen y se escriben por `routeStore`, sin otra instancia ni otra clave; D1 los sincroniza, así que los IDs y las formas no cambian | Coordinador, 2026-10-07 |
 | F9 depende sólo de F2a y se integra de a uno con F2b, F3 y F4, que comparten `app.js` | Coordinador, 2026-10-07 |
 | Spec en español y sin código, con como mucho cinco preguntas para el clarify y la partición propuesta sin aplicarla | Coordinador, 2026-10-07 |
+| Las notas van a F8, con Método, que las dibuja; F9 sólo garantiza que siguen por `routeStore` | Usuario, clarify del 2026-10-28 (Q1) |
+| El CSS del Recorrido se muda con el port a la hoja de su página, probado con el barrido de estilo computado y el multiconjunto de F2b (no era la recomendada) | Usuario, clarify del 2026-10-28 (Q2; X3) |
+| La región viva de la lección se conserva hasta F10, que la monta con su regla `:empty` | Usuario, clarify del 2026-10-28 (Q3; X2) |
+| El diálogo vive dentro de la raíz de la página, con un portal a `body`, y se cierra al navegar | Usuario, clarify del 2026-10-28 (Q4) |
+| Lo que existe sólo porque `innerHTML` rehace la vista adopta el comportamiento de React; las rarezas de lógica se conservan | Usuario, clarify del 2026-10-28 (X1); coordinador (C2) |
 | La documentación va en español; el código y las pruebas, en inglés | `AGENTS.md` |
 
-## Preguntas para el clarify
+## Clarifications
 
-Cuatro, con su opción recomendada. Los requisitos de abajo asumen la recomendada y llevan el marcador `[NEEDS CLARIFICATION]` donde la respuesta los cambia (FR-008, FR-017, FR-037 y FR-041).
+### Session 2026-10-28
 
-### Q1 · ¿Dónde van las notas, el estado de la nota y el pedido al tutor?
+Las respuestas son del usuario (clarify con brainstorming). Las opciones que no se eligieron, con su costo, están en «Alternativas consideradas».
 
-**Qué encontramos.** En `f2a`, `#recorrido` no dibuja ni escribe ninguna nota. La bitácora (`#note-learned` y `#note-next`), `#note-state`, `#tutor-prompt` y «Copiar pedido para mi tutor» son de `renderMethod`; la entrada del menú que los aloja se llama «Método y notas» y el README las lista aparte del recorrido. Las guarda la rama `data-note` del delegado de entrada, que F8 retira con la página. Del Recorrido sólo dependen por los `minutes` (el pedido dice «Tengo N minutos», y los elige la tarjeta del temporizador) y por el aviso «Dejá una nota…» que muestra la lección. La hoja de ruta pone «notas» en F9 y no las nombra en F8.
+- Q: **Q1**, ¿a qué port van las notas, el estado de la nota y el pedido al tutor? → A: A F8, con Método, que las dibuja (opción A, la recomendada). En `f2a`, `#recorrido` no dibuja ni escribe ninguna nota; son de `renderMethod`. F9 sólo garantiza que siguen por `routeStore`, sin otra instancia ni otra clave, y la hoja de ruta se corrige (F9 pierde «notas»; F8 las suma con su estado y el pedido al tutor). (FR-008, FR-018)
+- Q: **Q2**, ¿se mueven a otra hoja las reglas de `styles.css` que sólo usa el Recorrido? → A: Sí, se mudan con el port a la hoja de su página, como `atlas.css` (opción B; no era la recomendada). Son unas 114 de las 336 reglas (71 en el bloque base y 43 en cinco `@media`). Se prueban con el barrido de estilo computado y el multiconjunto de reglas del dist de la unidad 8 de F2b; el primero que se integre de F3, F4, F8 y F9 parte los bloques compartidos (`@media`, `.search-wrap`, `.empty-state` e impresión) y los demás rebasan. La convención de la hoja de ruta no cambia. (FR-041, SC-005)
+- Q: **Q3**, ¿qué hacemos con la región viva de la lección (`#quiz-feedback`)? → A: Conservar la de hoy (opción A) hasta F10, que la monta con su regla `:empty`; todas las regiones vivas del épico llevan una comprobación manual con lector de pantalla. Campaña y laboratorio sí las montan (regla X2); F9 no. (FR-037)
+- Q: **Q4**, ¿dónde vive el diálogo de la lección? → A: Dentro de la raíz de la página, con un portal a `document.body` (opción A): sigue siendo hijo de `<body>` y, si el alumno navega con la lección abierta, se cierra con la página. (FR-017)
 
-| Opción | Qué es | Costo |
-| --- | --- | --- |
-| **A (recomendada)** | Son de F8, con la página de Método. F9 porta lo que dibuja `#recorrido` y la lección; las notas siguen en `renderMethod` y se siguen escribiendo por `routeStore`, sin cambios | La hoja de ruta cambia: F9 pierde «notas» y F8 suma la bitácora, su estado y el pedido al tutor (escritura en cada tecla y el `execCommand` de respaldo del portapapeles). F9 queda más chico |
-| B | F9 porta la bitácora y el pedido al tutor como un componente y lo monta dentro del HTML de Método hasta F8 | Una raíz anidada en una vista que se redibuja entera: se pierde en cada `render()`, que es la razón por la que los exploradores migran con el laboratorio. F9 toca una vista que no es suya y F8 lo vuelve a portar |
-| C | F9 sólo extrae `tutorPrompt` como modelo puro, con su spec | Código sin consumidor hasta F8 (YAGNI); el resto queda como en A |
+**Lecturas.** Lo que sigue no son decisiones nuevas: es cómo esta spec aplica reglas generales del clarify. Ya están aplicadas en el texto de abajo.
 
-**Recomendada: A.** F9 no tendría qué dibujar ni qué probar para las notas, y B repite el patrón que la hoja de ruta ya descartó para los exploradores.
-
-### Q2 · ¿Se mueven a otra hoja las reglas de `styles.css` que sólo usa el Recorrido?
-
-**Qué encontramos.** El Recorrido no tiene hoja propia. Una lectura con `postcss` de `styles.css` en `f2a` da unas 114 reglas de las 336 cuyos selectores nombran una clase que sólo usa el Recorrido (71 en el bloque base y 43 repartidas en cinco `@media`: 1 550, 1 150, 850 y 590 px, y `print`). La hoja de ruta dice que los ports «borran las reglas que ninguna otra vista usa» y que F10 borra «las reglas de `styles.css` que ya nadie use». Ningún E2E de F1 mide el aspecto propio del Recorrido: `css-contract.spec.ts` lo usa como pantalla neutra para medir el menú y la barra lateral.
-
-| Opción | Qué es | Costo |
-| --- | --- | --- |
-| **A (recomendada)** | Ninguna hoja cambia en F9: la página usa las mismas clases y el `<style>` del dist queda idéntico (se compara por hash). Las reglas exclusivas del Recorrido siguen en `styles.css` hasta que F10, que ya borra las reglas sin uso, las reubique con la raíz única | La convención de la hoja de ruta no se cumple en este port: `styles.css` conserva unas 114 reglas del Recorrido hasta F10, y F10 hereda ese traslado |
-| B | Mover las reglas exclusivas a la hoja de la página, como `atlas.css`, cada una entera y en el orden de hoy | Un barrido de estilo computado como el de la unidad 8 de F2b (981, 850, 650 y 590 px, más 1 280 y 375, con el movimiento reducido encendido y apagado) y la comparación del conjunto de reglas del dist; riesgo de cascada, porque `styles.css` se evalúa primero; el `<style>` cambia de orden |
-
-**Recomendada: A.** Es lo único que protege el aspecto sin construir una protección que hoy no existe. La decisión vale para F3, F4 y F8: conviene que las cuatro specs digan lo mismo.
-
-### Q3 · ¿Qué hacemos con la región viva de la lección (`#quiz-feedback`)?
-
-**Qué encontramos.** Es la pregunta abierta de F9 en la hoja de ruta («si se anuncian las regiones vivas que hoy se recrean»). `openLesson` reescribe el contenido del diálogo en cada apertura, así que `#quiz-feedback` (`role="status"`, `aria-live="polite"`, con `hidden` hasta que hay respuesta) se recrea cada vez, y al responder se muestra con su texto. Es la única región viva del Recorrido que se recrea: `#toast` es estático y los dígitos del temporizador (`role="timer"`) no anuncian por omisión. Nadie verificó qué anuncia un lector de pantalla, y esta spec tampoco pudo. React reutiliza el nodo entre aperturas salvo que se lo remonte a propósito.
-
-| Opción | Qué es | Costo |
-| --- | --- | --- |
-| **A (recomendada)** | Conservar: el contenido de la lección se remonta en cada apertura, como hoy, y la región se muestra al responder. La comprobación con un lector de pantalla queda como acción manual del usuario, antes sobre el legacy y después sobre la página | El «no verificado» sigue: sin lector de pantalla no se puede asegurar que la devolución se anuncie |
-| B | Mantener la región montada y siempre visible (vacía hasta que haya respuesta), para que el cambio de texto se anuncie de forma fiable | Cambia el comportamiento (mejora de accesibilidad): va en su propio commit, con TDD y con aprobación. Una región vacía visible dibuja el borde y el relleno de `.quiz-feedback`, así que exige una regla de CSS (`:empty`), lo que choca con Q2 opción A |
-
-**Recomendada: A.** Un port conserva lo que se anuncia hoy; mejorarlo pide un lector de pantalla para medirlo, y B además toca el CSS.
-
-### Q4 · ¿Dónde vive el diálogo de la lección?
-
-**Qué encontramos.** `#lesson-dialog` es un `<dialog>` estático de `index.html`, hijo directo de `<body>` y fuera de `#main`, y `render()` nunca lo toca. Si el alumno usa Atrás o Adelante con la lección abierta, la lección sigue abierta sobre la vista nueva con el contenido de la anterior, y «Marcar como hecho» redibuja la vista nueva. La hoja de ruta dice «Borra: `#lesson-dialog`». Dentro de `main` el diálogo heredaría estilos de otro padre: se leyeron `.app-shell`, `.workspace` y `main`, con sus variantes de `@media` (1 550, 1 150, 850 y 590 px, y `print`), y fijan grilla, ancho y relleno, ninguna propiedad heredable (`color`, `font-*`, `line-height`, `letter-spacing` o `text-align`); lo hereda todo de `body`.
-
-| Opción | Qué es | Costo |
-| --- | --- | --- |
-| **A (recomendada)** | Dentro de la raíz de la página, con un portal a `document.body`: sigue siendo hijo de `<body>`, como hoy (mismo CSS heredado, y sus eventos no suben por los delegados de `#main`), sale de `index.html` y, si el alumno navega con la lección abierta, se cierra con la página. Es la única diferencia visible con hoy en este flujo | Un comportamiento distinto en un caso borde, y ese caso queda sin E2E (uno que fije «sigue abierta» tendría que editarse). El código de la página toca `document.body` |
-| B | Dentro de la raíz de la página, como hijo de `main`, sin portal | Con las hojas de hoy se vería igual (ver arriba), pero el diálogo cambia de padre, sus eventos suben por `#main` y cualquier regla futura sobre `main` lo alcanzaría. Misma diferencia al navegar con Atrás |
-| C | En una raíz propia sobre un contenedor estable del shell (un `<div>` en `index.html` en lugar del `<dialog>`): la lección sigue abierta como hoy | Un segundo `createRoot` y un host nuevo en el marcado estático, que F10 mueve a la raíz única; conserva un comportamiento que es un defecto, no un contrato |
-
-**Recomendada: A.** Replica el padre de hoy sin un segundo `createRoot`, y una lección abierta sobre otra vista, con contenido viejo, no es algo que el alumno use.
+- **X1 y C2, qué adopta el comportamiento de React.** Lo que hoy existe sólo porque `innerHTML` rehace la vista lo adopta React, y los E2E fijan el comportamiento nuevo, sin `KNOWN DEFECT`. Acá son dos cosas: los módulos que el alumno abrió o cerró a mano se quedan como están mientras la página sigue montada (hoy cada redibujo los vuelve al estado por omisión), y el foco no se pierde. Esta spec lee lo segundo así: al cerrar la lección por cualquier camino, también al completar o reabrir, el foco vuelve al elemento que la abrió, porque la página ya no se reconstruye; el `restoreStepFocus` que hoy lo manda al primer botón de lección del paso compensaba esa pérdida. Si el usuario esperaba conservar ese destino, cambian FR-036 y los escenarios 5 y 6 de US2. (FR-025, FR-036)
+- **C2, las rarezas de lógica se conservan.** Elegir la duración ya elegida guarda y reinicia el temporizador, y «Volver a practicar» pasa el paso a incompleto. (FR-020, FR-028, FR-035)
 
 ## El Recorrido de hoy, en `f2a@2ffbbc6`
 
@@ -124,18 +96,16 @@ Las duraciones son un grupo («Duración de la sesión») de botones con `aria-p
 
 **La lección de hoy.** `openLesson(id, opener)` recuerda al elemento que la abrió, reescribe `#lesson-content` y abre el `<dialog>` con `showModal()`. Contiene la etiqueta («RUST · UNA SESIÓN ORIENTATIVA»), el botón «×» («Cerrar sesión»), el título (`#lesson-title`), el objetivo, «Tu desafío», «LO LOGRASTE CUANDO», los recursos como enlaces, la pregunta con sus opciones A, B y C (`aria-pressed`), la devolución (`#quiz-feedback`) y dos acciones: «Seguir después» y «Marcar como hecho ✓» (o «Volver a practicar ✓» si el paso ya estaba completo). Responder guarda la respuesta y muestra «Bien pensado. » o «Revisemos la idea. » más la explicación. Completar alterna el paso, guarda, cierra, redibuja la página, devuelve el foco y avisa («Un paso más. Dejá una nota para tu próxima sesión.» o «Paso disponible para volver a practicar.»).
 
-**El foco, por tres caminos.** (a) «×», «Seguir después» y Esc: el evento `close` enfoca al elemento que abrió la lección, si sigue en el documento (`preventScroll`). (b) «Marcar como hecho» y «Volver a practicar»: la página se redibuja y `restoreStepFocus` enfoca el primer botón de lección de ese paso en el orden del documento, abriendo su módulo; el `close` posterior ya no encuentra al abridor conectado (inferido de la especificación de `<dialog>`, sin verificar en un navegador: lo fija el E2E). El primer botón es el de la tarjeta si el paso vuelve a ser el próximo. (c) Una casilla: tras guardar y redibujar, el foco vuelve a esa casilla con su módulo abierto.
+**El foco, por tres caminos (hoy).** (a) «×», «Seguir después» y Esc: el evento `close` enfoca al elemento que abrió la lección, si sigue en el documento (`preventScroll`). (b) «Marcar como hecho» y «Volver a practicar»: la página se redibuja y `restoreStepFocus` enfoca el primer botón de lección de ese paso en el orden del documento, abriendo su módulo; el `close` posterior ya no encuentra al abridor conectado (inferido de la especificación de `<dialog>`, sin verificar en un navegador: lo fija el E2E). El primer botón es el de la tarjeta si el paso vuelve a ser el próximo. (c) Una casilla: tras guardar y redibujar, el foco vuelve a esa casilla con su módulo abierto. Los caminos (b) y (c) existen porque `render()` rehace la página y el foco se pierde: con React no hace falta (C2, «Lecturas»).
 
 **Lo que comparte con el shell.** `save()` guarda por `routeStore` y llama a `updateSaveLabel()`; `render()` desmonta las otras vistas, llama a `syncShell()` (idioma, `aria-current`, «N de 12», el porcentaje, la barra de progreso y la etiqueta de guardado) y dibuja la vista. La barra lateral sólo se entera de un cambio del recorrido porque `save()` y `render()` son de `app.js`.
 
-**Rarezas que el port conserva** (cambiarlas es otro commit, con TDD y con aprobación; cada una lleva `KNOWN DEFECT` en el nombre de su E2E):
+**Rarezas de lógica que el port conserva** (cambiarlas es otro commit, con TDD y con aprobación; cada una lleva `KNOWN DEFECT` en el nombre de su E2E). Los módulos que se cierran con cada redibujo y el foco que se pierde no están: los adopta React (C2).
 
 | Rareza | Dónde se ve | Requisito |
 | --- | --- | --- |
-| Los módulos vuelven a su estado por omisión con cada redibujo (casilla, lección completada, idioma, importar y «Borrar todo»), también los que el alumno abrió a mano | `render()` reescribe `#main` | FR-025 |
 | Elegir la duración ya elegida guarda de nuevo y detiene y reinicia el temporizador en marcha | `duration` | FR-020 y FR-028 |
 | «Volver a practicar ✓» no repasa nada: pasa el paso a incompleto | `complete` | FR-035 |
-| Al completar o reabrir, el foco va al primer botón de lección del paso, que puede ser el de la tarjeta | `restoreStepFocus` | FR-036 |
 | El aviso de fin sale en cualquier vista, también con una lección abierta (el toast está fuera del diálogo) | el intervalo global | FR-029 |
 | La etiqueta de la lección usa el idioma activo, no el del paso | `openLesson` | FR-033 |
 | El `div` de la ilustración lleva `aria-label` sin rol | `renderRoute` | FR-040 |
@@ -181,9 +151,9 @@ Las duraciones son un grupo («Duración de la sesión») de botones con `aria-p
 | --- | --- | --- |
 | `dist/content/curriculum.<versión>.json` | No | `content/` y el generador no cambian: `dump-globals`, `dump-dist-globals` y `dist-content-check` dan los mismos bytes |
 | El marcado de `frontend/src/index.html` | Sí, una línea | sale `<dialog id="lesson-dialog">` (Q4); el resto (ids, menú, conteos, `#confirm-dialog`, `#toast` e `#import-file`) queda igual |
-| `<style>` | No (Q2, opción A) | ninguna hoja se edita: 102 229 caracteres en el `dist` construido de `f2a`. Con la opción B cambiaría de orden, no de conjunto |
+| `<style>` | Sí, el orden | unas 114 reglas del Recorrido salen de `styles.css` y entran, enteras y en el orden de hoy, en la hoja de la página (Q2): el conjunto de reglas y de declaraciones es el mismo y el estilo computado no cambia. 102 229 caracteres en el `dist` construido de `f2a` |
 | `<script type="module">` | Sí | sale código de `app.js`; entran la página, su modelo, el temporizador, el adaptador y `useStore` de Zustand (el paquete ya está instalado desde F2a) |
-| El tamaño | Se informa | el HTML de `f2a` mide 1 136 702 caracteres (`dist/index.html` ya construido, sin reconstruir) y el tope de `qa/build-check` es de 1 250 000 |
+| El tamaño | Se informa | el HTML de `f2a` mide 1 136 702 caracteres (`dist/index.html` ya construido, sin reconstruir) y el tope de `qa/build-check` es de 1 250 000; mudar reglas no suma caracteres de CSS |
 | Los avisos de licencia | No | ninguna dependencia de ejecución nueva |
 
 ## Cómo se demuestra que nada cambió
@@ -192,10 +162,10 @@ Las duraciones son un grupo («Duración de la sesión») de botones con `aria-p
 | --- | --- | --- |
 | Los enlaces, las recargas, el arranque, las ocho vistas por hash y las seis formas de URL siguen igual | Los 106 E2E de F1 y los 17 de A2, sin editar | FR-002 y FR-016 |
 | El temporizador sobrevive a una navegación por hash y se pierde al recargar | `reload.spec.ts` (F1), sin editar | FR-002 y FR-026 |
-| Los flujos del Recorrido (pasos, lección, temporizador, idioma y «Borrar todo») | E2E nuevos con un Page Object, en verde contra el legacy antes de portar y sin editar después | FR-001 y FR-043 |
+| Los flujos del Recorrido (pasos, lección, temporizador, idioma y «Borrar todo») | E2E nuevos con un Page Object, en verde contra el legacy antes de portar y sin editar después; los de los cambios aceptados (módulos y foco) fijan el comportamiento nuevo | FR-001 y FR-043 |
 | La lógica y los componentes | Specs de Vitest (modelo en `node`, componentes en `jsdom`) con valores escritos a mano desde `content/guide/` y las fixtures | FR-042 |
 | El DOM y los textos | Una comparación única del HTML del legacy contra la página, sobre una grilla de estados | FR-040 |
-| El aspecto | Mismo DOM y `<style>` idéntico por hash (Q2, opción A) | FR-040 y FR-041 |
+| El aspecto | Mismo DOM, y el barrido de estilo computado y el multiconjunto de reglas del dist de la unidad 8 de F2b, con 0 diferencias | FR-040 y FR-041 |
 | Lo guardado | Las fixtures congeladas arrancan sin escribir; `storage.watchWrites()` cuenta 0 y 1 escrituras; `route-progress-check`, `versioned-storage-check` y `curriculum-ids-check` en verde | FR-020 y FR-021 |
 | El retiro de `app.js` | `grep` en 0 y los checks adaptados, con la correspondencia de cada escenario; `seams-guard-check` en 0 violaciones | FR-011, FR-018 y FR-044 |
 
@@ -215,7 +185,7 @@ Un alumno abre el taller, ve el siguiente paso, marca lo que hizo y encuentra su
 2. **Dado** lo anterior, **cuando** se marca la casilla del primer paso, **entonces** los contadores pasan a «1 DE 12» y «1/3», la tarjeta pasa a «02 / 12» con «Seguí el recorrido de un valor», la barra lateral dice «1 de 12» y «8%», el foco queda en la casilla, `taller-learning-v1` guarda `completed: ["rust-first-session"]` con una sola escritura y, al recargar, la casilla sigue marcada.
 3. **Dado** el progreso congelado de master (idioma Go, con los dos primeros pasos de Rust completos), **cuando** se abre `#recorrido`, **entonces** muestra el recorrido de Go con «TU PRÓXIMO PASO · 01 / 12» y «Modificá tu primer ejemplo» sin escribir ni avisar, y al pasar a Rust, «2 DE 12», «03 / 12» y «Tratamiento de entradas inválidas», con el aviso «Recorrido de Rust. Tu otro avance sigue guardado.».
 4. **Dado** un recorrido con los 12 pasos completos, **cuando** se abre `#recorrido`, **entonces** aparece «Completaste tu recorrido inicial…», la tarjeta dice «TU SIGUIENTE EXPERIMENTO» y «Continuar mi proyecto» lleva a `#proyecto`.
-5. **Dado** un módulo cerrado que el alumno abrió a mano, **cuando** marca una casilla de otro módulo, **entonces** los módulos vuelven al estado por omisión, como hoy (rareza, FR-025).
+5. **Dado** un módulo cerrado que el alumno abrió a mano, **cuando** marca una casilla de otro módulo, **entonces** el módulo que abrió sigue abierto y los demás siguen como estaban (cambio aceptado, FR-025).
 6. **Dado** una navegación por hash a otra vista y de vuelta, **cuando** vuelve el Recorrido, **entonces** se muestra con el avance guardado y el menú marca «Mi recorrido» con `aria-current`.
 
 *Cubre: FR-007 a FR-010, FR-018 a FR-025 y FR-040; SC-001 a SC-004.*
@@ -226,7 +196,7 @@ Un alumno abre el taller, ve el siguiente paso, marca lo que hizo y encuentra su
 
 El alumno abre la lección de un paso, lee, responde la pregunta y la cierra o la completa. El teclado, el foco y los avisos son los de hoy.
 
-**Why this priority**: es lo más delicado del port: un diálogo modal, tres caminos de foco y dos escrituras, que ninguna prueba de hoy cubre.
+**Why this priority**: es lo más delicado del port: un diálogo modal, el foco al cerrarlo y dos escrituras, que ninguna prueba de hoy cubre.
 
 **Independent Test**: en un navegador real, abrir la lección desde la tarjeta, desde el título de un paso y desde «↗»; responder; cerrarla por «×», «Seguir después» y Esc; y completarla.
 
@@ -236,8 +206,8 @@ El alumno abre la lección de un paso, lee, responde la pregunta y la cierra o l
 2. **Dado** la lección abierta, **cuando** se elige la opción B, **entonces** queda con `aria-pressed="true"`, aparece «Bien pensado. Un test verifica un caso y sus condiciones. Todavía pueden faltar entradas, propiedades y comportamientos por cubrir.» y `quizAnswers` guarda `{"rust-first-session": 1}` con una sola escritura. Con la opción A, aparece «Revisemos la idea. » con la misma explicación.
 3. **Dado** el progreso congelado de master con el idioma en Rust, **cuando** se abre esa misma lección, **entonces** la opción B ya está marcada, la devolución ya se ve y el botón dice «Volver a practicar ✓».
 4. **Dado** cualquiera de las tres formas de abrirla, **cuando** se cierra con «×», con «Seguir después» o con Esc, **entonces** el foco vuelve al elemento que la abrió, sin desplazar la página, y no se escribe nada.
-5. **Dado** la lección abierta desde «Empezar esta sesión», **cuando** se elige «Marcar como hecho ✓», **entonces** se cierra, el paso queda completo, el aviso dice «Un paso más. Dejá una nota para tu próxima sesión.», la tarjeta pasa al paso siguiente y el foco queda en el título de ese paso, dentro de su módulo abierto.
-6. **Dado** un paso completo que vuelve a ser el próximo, **cuando** se abre su lección y se elige «Volver a practicar ✓», **entonces** el paso queda sin completar, el aviso dice «Paso disponible para volver a practicar.» y el foco va al botón de la tarjeta.
+5. **Dado** la lección abierta desde «Empezar esta sesión», **cuando** se elige «Marcar como hecho ✓», **entonces** se cierra, el paso queda completo, el aviso dice «Un paso más. Dejá una nota para tu próxima sesión.», la tarjeta pasa al paso siguiente y el foco vuelve al botón de la tarjeta que la abrió (cambio aceptado: hoy iba al título del paso en su módulo).
+6. **Dado** un paso completo, **cuando** se abre su lección desde el título del paso y se elige «Volver a practicar ✓», **entonces** el paso queda sin completar, el aviso dice «Paso disponible para volver a practicar.» y el foco vuelve al título del paso que la abrió.
 7. **Dado** la lección abierta, **cuando** el alumno usa Tab y Mayús+Tab, **entonces** el foco no sale del diálogo.
 
 *Cubre: FR-033 a FR-039; SC-001, SC-002 y SC-004.*
@@ -313,7 +283,7 @@ Quien mantiene el front encuentra el Recorrido en una página con su modelo y su
 - **`syncLinkedLanguage` cambia el idioma sin guardar:** como el estado se lee vivo, la página muestra el idioma que ve `app.js`.
 - **Recurso de un paso que ya no existe en la guía:** se omite de la lista, como hoy.
 - **El temporizador termina con la lección abierta:** el aviso se muestra en `#toast`, que está fuera del diálogo modal; no cambia.
-- **Lección abierta y Atrás o Adelante:** hoy sigue abierta sobre la vista nueva; con Q4, opción A, se cierra con la página.
+- **Lección abierta y Atrás o Adelante:** hoy sigue abierta sobre la vista nueva; ahora se cierra con la página (Q4).
 - **Doble clic en «Iniciar foco»:** el primer clic inicia y el segundo pausa; no se duplican oyentes ni intervalos.
 - **Desmontaje con el temporizador en marcha:** la página libera su suscripción; el dueño del temporizador sigue contando y avisando.
 - **Entrar directo a `#metodo` y borrar todo:** el Recorrido nunca se montó, así que `resetTimer()` corre sobre un temporizador en reposo y todavía sin `toast`; no lanza.
@@ -327,7 +297,7 @@ Quien mantiene el front encuentra el Recorrido en una página con su modelo y su
 
 **Reglas de todo port** *(salen de la hoja de ruta y de la spec de F2)*
 
-- **FR-001**: El PR DEBE abrir con los E2E de comportamiento del Recorrido (US1 a US4), escritos con un Page Object contra la vista legacy y en verde antes de portar, y esos E2E DEBEN pasar sin editarse sobre la página nueva. Si hay que editar uno, es un cambio de comportamiento: va en su propio commit, con TDD y con la aprobación del usuario. *(Hoja de ruta, «E2E primero»; ADR 0008, §3; clarify de F1, Q1)*
+- **FR-001**: El PR DEBE abrir con los E2E de comportamiento del Recorrido (US1 a US4), escritos con un Page Object contra la vista legacy y en verde antes de portar, y esos E2E DEBEN pasar sin editarse sobre la página nueva. Los que fijan un cambio aceptado por el clarify (los módulos y el foco, FR-025 y FR-036) se escriben con el comportamiento nuevo, fallan contra el legacy por esa razón y van en su propio commit, con TDD. Si hay que editar cualquier otro, es un cambio de comportamiento: va en su propio commit, con TDD y con la aprobación del usuario. *(Hoja de ruta, «E2E primero»; ADR 0008, §3; clarify de F1, Q1)*
 - **FR-002**: Los 106 E2E de F1 y los 17 de A2 DEBEN pasar sin editarse con el build de F9. Entre ellos, `reload.spec.ts` («the focus timer survives a hash navigation and is lost on a reload») es el contrato del dueño del temporizador (FR-026 a FR-030). *(Hoja de ruta, criterios de aceptación globales)*
 - **FR-003**: F9 NO DEBE agregar dependencias de ejecución ni ningún estilo en línea (`style=`, `setAttribute('style', …)` ni `style.cssText`) a los que C4 cuenta. Las de desarrollo que piden la primera spec de componente (`jsdom` y Testing Library) y la primera factory (`fishery`) entran sólo con el permiso del usuario, con su peso medido, y sólo si ningún ítem anterior las instaló. *(`AGENTS.md`; hoja de ruta, «Acciones del usuario»; C4)*
 - **FR-004**: `dist/index.html` DEBE conservar la forma que fija A2 (un solo documento con un script y un estilo en línea, y el contenido en su propio archivo) y quedar bajo el tope de `qa/build-check` (`BOOT_SIZE_LIMIT`, 1 250 000 caracteres), con su tamaño antes y después informado en el PR. El tope de 2 500 000 de la hoja de ruta quedó viejo con A2.
@@ -337,7 +307,7 @@ Quien mantiene el front encuentra el Recorrido en una página con su modelo y su
 **Alcance y retiro**
 
 - **FR-007**: La página DEBE dibujar lo que hoy dibujan `renderRoute` y `openLesson` (ver «El Recorrido de hoy»): el encabezado con su ilustración, el aviso de recorrido completo, la tarjeta de la sesión de hoy con el temporizador, la lista de módulos con sus pasos, la franja de recomendación y el diálogo de la lección.
-- **FR-008**: La página NO DEBE dibujar ni escribir las notas de la bitácora, `#note-state`, el pedido al tutor ni su botón de copiar: siguen en `renderMethod` hasta F8. [NEEDS CLARIFICATION: Q1, ¿de F8 (A), de F9 dentro de Método (B) o sólo `tutorPrompt` (C)?]
+- **FR-008**: La página NO DEBE dibujar ni escribir las notas de la bitácora, `#note-state`, el pedido al tutor ni su botón de copiar: siguen en `renderMethod` hasta F8, que las porta con Método. *(Clarifications, Q1)*
 - **FR-009**: La página DEBE montarse con una raíz de React sobre `#main`, como el Atlas: `app.js` la desmonta junto con las otras vistas antes de escribir `#main` y la monta cuando la vista es `recorrido`, y cuando `mount` vuelve la página ya está dibujada, para que el arranque y el foco que siguen no dependan de un cuadro posterior. Si la página lanza al dibujarse, el adaptador lo registra con `console.error` y un mensaje en español, como el del Atlas.
 - **FR-010**: La página DEBE recibir su contenido (el recorrido del idioma y sus pasos) por props desde su adaptador, que lo lee de `getContent().guide` al montar; NO DEBE leer `window` ni importar `getContent()`. *(Spec de F2, FR-015; A2, F2-I6)*
 - **FR-011**: DEBE salir de `app.js` todo lo que dice «Se retira» en «El corte en `app.js`», y `frontend/app.js` NO DEBE contener `renderRoute`, `timerMarkup`, `updateTimer`, `setInterval`, `openLesson`, `lesson-dialog`, `data-step-check` ni `data-dialog-action`. Lo que dice «Queda en el shell» se conserva.
@@ -346,11 +316,11 @@ Quien mantiene el front encuentra el Recorrido en una página con su modelo y su
 - **FR-014**: El adaptador mínimo DEBE ser `window.TallerRoute` (nombre provisional), publicado desde `frontend/src/app/legacy/`, con sólo `mount(host, language, toast)`, `unmount()` y `resetTimer()`. `mount` y `unmount` los retira F10 y `resetTimer`, F8. NO DEBE importar `routeStore` (R4 de `seams-guard-check`): lo importa la página.
 - **FR-015**: El adaptador DEBE evaluarse antes que `app.js` en `legacy-views.ts` y quedar fijado en la tabla de `load-order-check`; `qa/lib/app-adapters.ts` DEBE sumar sus tres métodos; y evaluarlo NO DEBE tocar el almacenamiento, abrir el almacén, registrar oyentes ni crear intervalos. *(Spec de F2, FR-021; A2, F2-I1 y F2-I4)*
 - **FR-016**: El idioma activo y la URL son del shell. La página NO DEBE leer ni escribir `location`; sus únicos enlaces internos son anclas de hash (`#proyecto` y `#biblioteca`); el cambio de idioma lo hace el shell, con su aviso («Recorrido de Go. Tu otro avance sigue guardado.») y su `history.replaceState`, y vuelve a montar la página como cualquier `render()` (idioma, navegación, importar y «Borrar todo»), con el idioma vivo de `routeStore` como el que se muestra. Las ocho vistas por hash y las seis formas de URL siguen llevando adonde llevan (`url-contract` y `views`, sin editar).
-- **FR-017**: `<dialog id="lesson-dialog">` DEBE salir de `frontend/src/index.html`, y el resto del marcado estático NO DEBE cambiar. La lección DEBE seguir colgando de `<body>`, con un portal desde la raíz de la página, y cerrarse con ella al desmontarse. [NEEDS CLARIFICATION: Q4, ¿con un portal a `body` (A), como hijo de `main` (B) o en una raíz propia (C)?]
+- **FR-017**: `<dialog id="lesson-dialog">` DEBE salir de `frontend/src/index.html`, y el resto del marcado estático NO DEBE cambiar. La lección DEBE seguir colgando de `<body>`, con un portal desde la raíz de la página, y cerrarse con ella al desmontarse, también cuando el alumno navega con Atrás o Adelante. *(Clarifications, Q4)*
 
 **Datos y progreso**
 
-- **FR-018**: La página DEBE leer y escribir los pasos completados (`completed`), las respuestas (`quizAnswers`) y los minutos (`minutes`) por `routeStore`, el singleton de F2a: sin abrir otra instancia ni otra clave, con `seams-guard-check` en 0 violaciones. Lo mismo vale para las notas (`notes`), que escribe `renderMethod` y portará F8 (Q1). *(Spec de F2, FR-020 y FR-029)*
+- **FR-018**: La página DEBE leer y escribir los pasos completados (`completed`), las respuestas (`quizAnswers`) y los minutos (`minutes`) por `routeStore`, el singleton de F2a: sin abrir otra instancia ni otra clave, con `seams-guard-check` en 0 violaciones. Lo mismo vale para las notas (`notes`), que escribe `renderMethod` y portará F8 (Q1): F9 no las toca. *(Spec de F2, FR-020 y FR-029)*
 - **FR-019**: El progreso DEBE leerse con `routeStore.getProgress()` en cada render y en cada manejador, nunca de una copia (`useState`, una ref, un contexto o un cierre), y nada DEBE memoizarse sobre la identidad del progreso: el estado vivo se muta en el lugar, puede cambiar de objeto al fusionar con otra pestaña y `syncLinkedLanguage` cambia el idioma sin guardar. Un componente DEBE leer la revisión con `useStore(routeStore.changes, (state) => state.revision)` y nunca con el store entero. *(Spec de F2, FR-026; plan de F2a, §3.0)*
 - **FR-020**: Cada acción del alumno que cambia el progreso (marcar o desmarcar un paso, elegir una duración, responder la pregunta, completar o reabrir una lección) DEBE hacer una sola llamada a `routeStore.save()`, con el estado ya cambiado, aunque el valor no cambie (elegir la duración ya elegida también guarda, como hoy). Montar, desmontar, correr el temporizador y abrir o cerrar la lección sin responder NO DEBEN escribir ni subir la revisión.
 - **FR-021**: El formato guardado NO DEBE cambiar: las claves de `taller-learning-v1`, `version: 1`, el orden de las claves del JSON, los IDs de los pasos de `content/guide/` y la forma de la exportación. Las tres fixtures congeladas DEBEN arrancar sin escribir, sin respaldar y sin avisar (ADR 0003), y lo que escribe la página DEBE releerse sin pérdida. D1 sincroniza campo por campo `route.mark.step`, `route.quiz` y `preference.focusMinutes`: la página no agrega campos ni cambia la forma de los que escribe, y el temporizador en marcha no se guarda ni se sincroniza.
@@ -360,7 +330,7 @@ Quien mantiene el front encuentra el Recorrido en una página con su modelo y su
 
 - **FR-023**: La tarjeta, los contadores y el aviso DEBEN derivarse en cada render del progreso y del recorrido del idioma activo, con los textos de hoy: el próximo paso es el primero sin completar de ese idioma, «TU PRÓXIMO PASO · NN / MM», «N DE MM COMPLETADOS», el conteo por módulo y, con todos completos, el aviso, «TU SIGUIENTE EXPERIMENTO» y «Continuar mi proyecto». Los literales que coinciden con los datos («4 etapas») DEBEN salir de los datos y dar el mismo texto. Los selectores de pasos (los del lenguaje, los completados y el próximo) DEBEN ser una sola fuente para la página y para la barra lateral, y no dos copias que puedan divergir.
 - **FR-024**: Marcar o desmarcar una casilla DEBE escribir una vez, actualizar la tarjeta y los contadores, y dejar el foco en esa casilla con su módulo abierto, sin desplazar la página.
-- **FR-025**: Los módulos DEBEN abrirse al montar como hoy (sólo el primero con un paso pendiente, o el último si no queda ninguno) y volver a ese estado después de cada acción que hoy redibuja la página (casilla, lección completada, idioma, importar y «Borrar todo»), más el módulo del paso que recupera el foco. Es una rareza de hoy que el port conserva: su E2E lleva `KNOWN DEFECT` y mejorarla es otro commit con aprobación.
+- **FR-025**: Los módulos DEBEN abrirse al montar como hoy (sólo el primero con un paso pendiente, o el último si no queda ninguno). Después, mientras la página sigue montada, una acción de la página (casilla, lección completada) NO DEBE abrir ni cerrar los módulos que el alumno dejó a mano: es el comportamiento de React, que reemplaza al de hoy, donde cada redibujo los vuelve al estado por omisión. Un cambio de idioma, importar y «Borrar todo» siguen remontando la página (`render()` de `app.js`) y por eso vuelven a abrirla en el estado por omisión. Su E2E fija el comportamiento nuevo y no lleva `KNOWN DEFECT`. *(Clarifications, X1 y C2)*
 
 **El temporizador**
 
@@ -377,25 +347,25 @@ Quien mantiene el front encuentra el Recorrido en una página con su modelo y su
 - **FR-033**: La lección DEBE seguir siendo un `<dialog>` nativo y modal (`showModal()`), nombrado por su título (`aria-labelledby`), con el contenido y los textos de hoy (la etiqueta con el idioma activo, el título, el objetivo, «Tu desafío», «LO LOGRASTE CUANDO», los recursos como enlaces a otra pestaña con `rel="noopener noreferrer"`, la pregunta con sus opciones y las dos acciones). DEBE cerrarse con «×», «Seguir después» o Esc, y el clic en el fondo NO DEBE cerrarla. El estado de React NO DEBE desincronizarse del diálogo nativo (Esc lo cierra y el estado queda cerrado).
 - **FR-034**: Responder DEBE marcar la opción con `aria-pressed`, escribir una vez y mostrar la devolución («Bien pensado. » o «Revisemos la idea. », más la explicación del paso); al reabrir una lección ya respondida, la opción y la devolución ya están.
 - **FR-035**: «Marcar como hecho» y «Volver a practicar» DEBEN alternar el paso, escribir una vez, cerrar el diálogo y avisar por el toast («Un paso más. Dejá una nota para tu próxima sesión.» o «Paso disponible para volver a practicar.»); el rótulo del botón depende de si el paso ya estaba completo.
-- **FR-036**: El foco DEBE ir como hoy, sin desplazar la página en ningún caso: al abrir, donde lo pone hoy el navegador con `showModal()` (se espera el primer elemento enfocable, «×»; la página no cambia el orden del DOM ni agrega `autofocus`, y lo fija el E2E contra el legacy); al cerrar sin completar, al elemento que la abrió; al completar o reabrir, al primer botón de lección de ese paso en el orden del documento (el de la tarjeta si es el próximo paso; si no, el título del paso), con su módulo abierto; y al usar una casilla, a la casilla (FR-024). Los tres caminos DEBEN tener su E2E, escrito antes contra el legacy.
-- **FR-037**: La devolución de la pregunta DEBE ser una región `role="status"` con `aria-live="polite"`, oculta hasta que hay respuesta, y recrearse en cada apertura de la lección, como hoy. [NEEDS CLARIFICATION: Q3, ¿se conserva (A) o se mantiene montada y visible (B)?]
+- **FR-036**: El foco no DEBE perderse ni desplazar la página: al abrir, queda donde lo pone hoy el navegador con `showModal()` (se espera el primer elemento enfocable, «×»; la página no cambia el orden del DOM ni agrega `autofocus`, y lo fija el E2E contra el legacy); al cerrar la lección por cualquier camino, también al completar o reabrir, vuelve al elemento que la abrió, que sigue en el documento porque la página no se reconstruye; y una casilla conserva el foco al marcarse (FR-024). Reemplaza al `restoreStepFocus` de hoy, que mandaba el foco al primer botón de lección del paso. Los E2E de este comportamiento se escriben con él (FR-001). *(Clarifications, X1 y C2)*
+- **FR-037**: La devolución de la pregunta DEBE ser una región `role="status"` con `aria-live="polite"`, oculta hasta que hay respuesta, y recrearse en cada apertura de la lección, como hoy, hasta que F10 la monte con su regla `:empty`. La comprobación manual con un lector de pantalla queda como acción del usuario, antes sobre el legacy y después sobre la página. *(Clarifications, Q3 y X2)*
 - **FR-038**: Mientras la lección está abierta, Tab y Mayús+Tab DEBEN quedarse dentro del diálogo; Enter y Espacio DEBEN operar los botones, las casillas y los `summary` de los módulos; y el orden de tabulación de la página DEBE ser el de hoy.
 - **FR-039**: La página NO DEBE sumar animaciones ni transiciones ni una librería de animación: las que hay (el botón, el chevron del módulo y el toast) siguen bajo la regla global de `prefers-reduced-motion` de `styles.css`.
 
 **El aspecto**
 
 - **FR-040**: Salvo los atributos `data-*` de delegación que se retiran con sus ramas (`data-action`, `data-id`, `data-minutes`, `data-step-check`, `data-dialog-action` y `data-answer`), la página y la lección DEBEN producir el mismo DOM que `renderRoute` y `openLesson`: etiquetas, clases, ids (`route-title`, `lesson-title` y `quiz-feedback`), roles, `aria-*`, textos y orden, con las diferencias de serialización de React listadas. Una comparación única del HTML contra el legacy lo mide en el PR (SC-003). La comparación incluye dónde cuelga la lección (hijo de `<body>`) y su estilo computado abierto (fuente, color, interlineado y ancho). El contenido de la guía se muestra como texto, nunca como HTML.
-- **FR-041**: Ninguna hoja de estilo DEBE cambiar: la página usa las mismas clases y el `<style>` del dist DEBE quedar idéntico (por hash). [NEEDS CLARIFICATION: Q2, ¿se deja todo en `styles.css` hasta F10 (A) o se mueven las reglas exclusivas (B)?]
+- **FR-041**: Las reglas de CSS que sólo usa el Recorrido (unas 114 de las 336 de `styles.css`: 71 en el bloque base y 43 en cinco `@media`) DEBEN mudarse a la hoja de la página (como `atlas.css`), cada una entera y en el orden de hoy, sin cambiar sus declaraciones; las clases base que otras vistas usan (`.button`, `.eyebrow`, `.pill`, `.small-label`, `.text-button`, `.step-check`, `.recommendation-strip`, `dialog`, `.dialog-content` y `.dialog-actions`) se quedan en `styles.css`. DEBE probarse con el multiconjunto de declaraciones del CSS del dist (mismo conjunto, otro orden) y con el barrido de estilo computado de la unidad 8 de F2b, a 1 280, 981, 850, 650, 590 y 375 px y con el movimiento reducido encendido y apagado, ampliado a lo que el Recorrido dibuja y el barrido no cubre (pasos completos, módulos abiertos, el aviso de recorrido completo y la lección abierta con una respuesta correcta y otra incorrecta), con 0 diferencias. El primero que se integre de F3, F4, F8 y F9 parte los bloques compartidos (`@media`, `.search-wrap`, `.empty-state` e impresión) y los demás rebasan. *(Clarifications, Q2 y X3)*
 
 **Las pruebas**
 
 - **FR-042**: Las specs nuevas DEBEN ser de Vitest: de modelo (proyecto `node`: los selectores del recorrido, el temporizador con `vi.useFakeTimers()` y las acciones de escritura) y de componente (proyecto `jsdom`, con Testing Library, `userEvent` y consultas por rol y nombre accesible). Los valores esperados DEBEN escribirse a mano desde `content/guide/` y las fixtures congeladas. Como jsdom no trae `showModal()` ni `close()` (ADR 0008), una spec que sólo necesita el diálogo define un stub, y el foco y Esc se prueban en E2E. Las entradas repetidas usan fábricas de fishery sólo si hacen falta, y antes se reutiliza `buildGuide()`.
-- **FR-043**: Los E2E nuevos DEBEN usar un Page Object del Recorrido (`qa/e2e/pages/route.ts` y su fixture `route`, provisionales) con localizadores por rol y nombre accesible, y cubrir US1 a US4: los pasos, los tres caminos del foco, la lección, el temporizador con `page.clock` (incluido el aviso de fin desde otra vista y «Borrar todo»), la barra lateral, el idioma y las escrituras con `storage.watchWrites()`. Cada rareza de «El Recorrido de hoy» lleva `KNOWN DEFECT` en el nombre de su prueba.
+- **FR-043**: Los E2E nuevos DEBEN usar un Page Object del Recorrido (`qa/e2e/pages/route.ts` y su fixture `route`, provisionales) con localizadores por rol y nombre accesible, y cubrir US1 a US4: los pasos, el foco de la casilla y de la lección, los módulos abiertos a mano, la lección, el temporizador con `page.clock` (incluido el aviso de fin desde otra vista y «Borrar todo»), la barra lateral, el idioma y las escrituras con `storage.watchWrites()`. Cada rareza de lógica de «El Recorrido de hoy» lleva `KNOWN DEFECT` en el nombre de su prueba; los módulos y el foco, no (FR-025 y FR-036).
 - **FR-044**: Los checks de `qa/` que cargan `app.js` DEBEN cambiar sólo cómo cargan o qué observan, no sus valores esperados: `app-shell-check` (el escenario «almacén: desmarcar un paso, quitar un favorito y vaciar una nota se conservan al recargar» lo comparten F3, F8 y F9), `boot-check` (cuatro escenarios leen `#main.innerHTML` como señal de que se dibujó y, con el Recorrido en React, pasan a leer sus nodos, como ya hace el Atlas; el orden de «Borrar todo» incluye el paso del temporizador), `load-order-check`, `app-adapters.ts` y los ids de los dos arneses. El PR DEBE listar la correspondencia de cada escenario que cambia o se retira (cubierto por una spec o un E2E, o descartado con su motivo). *(ADR 0008, §5)*
 
 **La integración**
 
-- **FR-045**: F9 DEBE integrarse de a uno con F2b (unidades 5 y 6), F3, F4, F8 y F10, que comparten `app.js`, `legacy-views.ts` y los arneses; el que llega después rebasa. *(Hoja de ruta, «Orden y paralelismo»)*
+- **FR-045**: F9 DEBE integrarse de a uno con F2b (unidades 5 y 6), F3, F4, F8 y F10, que comparten `app.js`, `legacy-views.ts`, los arneses y los bloques compartidos de `styles.css` (FR-041); el que llega después rebasa. *(Hoja de ruta, «Orden y paralelismo»)*
 - **FR-046**: En el mismo PR, `docs/architecture.md` (la fila del recorrido, la página y el módulo del temporizador) y `qa/AGENTS.md` DEBEN reflejar el cambio; los integra el agente principal. *(`AGENTS.md`)*
 
 ### Key Entities *(include if feature involves data)*
@@ -416,10 +386,10 @@ Quien mantiene el front encuentra el Recorrido en una página con su modelo y su
 ### Measurable Outcomes
 
 - **SC-001**: Los 106 E2E de F1 y los 17 de A2 pasan con el build de F9: 0 escenarios editados y 0 fallas.
-- **SC-002**: Cada escenario de aceptación de US1 a US4 tiene una prueba que lo ejerce, y los E2E nuevos pasan contra el legacy antes del port y sin editarse después: 100 %.
+- **SC-002**: Cada escenario de aceptación de US1 a US4 tiene una prueba que lo ejerce, y los E2E nuevos pasan contra el legacy antes del port y sin editarse después, salvo los de los cambios aceptados, que fallan contra el legacy y pasan contra la página: 100 %.
 - **SC-003**: La comparación única del HTML da 0 diferencias, salvo las listadas, sobre una grilla que cubre como mínimo los 24 pasos con cada respuesta posible y sin respuesta, completos y sin completar, y los dos lenguajes con ningún paso, algunos y todos completos, con las tres duraciones y los cuatro estados del temporizador.
 - **SC-004**: Con las fixtures congeladas, montar el Recorrido, mover el temporizador y abrir y cerrar una lección sin responder dan 0 escrituras, 0 claves `:respaldo` y 0 avisos; cada acción de FR-020 da exactamente 1 escritura de `taller-learning-v1`.
-- **SC-005**: El `<style>` del dist tiene el mismo hash que el de la base (Q2, opción A); `build/curriculum.json`, `dump-globals` y los catálogos del dist tienen los mismos bytes; el marcado de `index.html` cambia en 1 línea.
+- **SC-005**: El multiconjunto de declaraciones del CSS del dist tiene 0 diferencias contra el de la base (mismo conjunto, otro orden) y el barrido de estilo computado, ampliado según FR-041, da 0 diferencias; `build/curriculum.json`, `dump-globals` y los catálogos del dist tienen los mismos bytes; el marcado de `index.html` cambia en 1 línea.
 - **SC-006**: `frontend/app.js` tiene 0 apariciones de los términos de FR-011, el adaptador publica 3 métodos y `seams-guard-check` da 0 violaciones.
 - **SC-007**: `startApp()` y la evaluación del adaptador dejan 0 intervalos, 0 oyentes de más y 0 accesos al almacenamiento; con el temporizador detenido hay 0 temporizadores de la página vivos.
 - **SC-008**: `dist/index.html` queda bajo 1 250 000 caracteres, con su tamaño antes (1 136 702 en `f2a`) y después informados.
@@ -431,14 +401,14 @@ Quien mantiene el front encuentra el Recorrido en una página con su modelo y su
 ## Riesgos
 
 1. **El temporizador cambia de dueño.** Un temporizador atado al montaje de la página pierde el aviso de fin fuera de la vista y el restante al navegar. *Mitigación:* FR-026 a FR-032, `reload.spec.ts` sin editar y un E2E del aviso de fin desde otra vista con `page.clock`.
-2. **El foco, en tres caminos que ninguna prueba de hoy ejerce.** El orden exacto del `close` y del redibujo se infirió de la especificación de `<dialog>` y no se verificó en un navegador. *Mitigación:* los E2E de FR-036 se escriben primero contra el legacy.
+2. **El foco de la lección, que ninguna prueba de hoy ejerce.** Dónde queda el foco al abrir y al cerrar el diálogo se infirió de la especificación de `<dialog>` y no se verificó en un navegador. *Mitigación:* los E2E de FR-036 se escriben con el comportamiento nuevo y su primera corrida contra el legacy muestra qué cambia.
 3. **La barra lateral y la etiqueta quedan viejas.** La página ya no pasa por `save()` ni por `render()` de `app.js`. *Mitigación:* FR-022 y un E2E de la barra lateral; F3 y F4 tienen el mismo problema, y lo resuelve el primero en integrarse.
-4. **React conserva lo que hoy se redibuja.** Los módulos que el alumno abrió a mano dejarían de cerrarse. *Mitigación:* FR-025 lo conserva a propósito y la tabla de rarezas lo lista.
-5. **El aspecto del Recorrido no tiene protección propia.** `css-contract.spec.ts` no mide ninguna regla suya. *Mitigación:* Q2 opción A (las hojas no cambian, el `<style>` se compara por hash) y la comparación del DOM; con B, un barrido de estilo computado.
+4. **Dos comportamientos cambian a propósito.** Los módulos que el alumno abrió a mano dejan de cerrarse y el foco ya no se pierde (X1 y C2). *Mitigación:* FR-025 y FR-036, con E2E que fijan lo nuevo; si el usuario esperaba conservar el destino del foco de hoy, cambia FR-036.
+5. **Mudar unas 114 reglas puede cambiar la cascada.** `styles.css` se evalúa primero, el multiconjunto de reglas no ve la cascada (en la unidad 8 de F2b, el control negativo dio 702 diferencias con 0 en el multiconjunto) y `css-contract.spec.ts` no mide ninguna regla del Recorrido. *Mitigación:* FR-041: cada regla entera y en el orden de hoy, el barrido de estilo computado ampliado a lo que el Recorrido dibuja, y el multiconjunto.
 6. **Lo que jsdom no hace.** No trae `showModal()` ni `close()`: el foco y Esc se prueban sólo en E2E (FR-042).
 7. **El DOM falso de `boot-check`.** Tiene que aguantar elementos que el Atlas no usa (`details`, `dialog`, casillas) y los cuatro escenarios que leen `innerHTML`. *Mitigación:* FR-044; el plan lo verifica antes de implementar.
 8. **Conflictos en `app.js`.** F2b (unidades 5 y 6), F3, F4, F8 y F10 tocan las mismas regiones. *Mitigación:* FR-045 y la tabla de «Relación con otros ítems».
-9. **Las notas.** Si el usuario las deja en F9 (Q1, B o C), F9 toca Método y F8 se superpone. *Mitigación:* la pregunta, con A como recomendada.
+9. **Partir los bloques compartidos de `styles.css`.** El Recorrido comparte `@media`, impresión y clases base con Biblioteca, Proyecto y Método; el primero en integrarse los parte y los demás rebasan. *Mitigación:* FR-041 y FR-045, y el orden de integración que fija el coordinador.
 10. **Nada se ejecutó al especificar.** Sin `npm`, sin Docker y sin navegador: las cuentas salen de leer el código, del `dist` ya construido de `f2a` y de `postcss` y `node` sobre sus fuentes. *Mitigación:* el plan las vuelve a medir sobre la base de implementación.
 
 ## Relación con otros ítems
@@ -448,20 +418,21 @@ Quien mantiene el front encuentra el Recorrido en una página con su modelo y su
 | F2a (entregada, PR #40) | `routeStore` y su `changes`, `startApp()`, `getContent()` y el guard | Los usa; no los cambia |
 | [A2](../006-a2-compuerta-arranque/spec.md) | `legacy-views.ts`, `load-order-check` y `getContent().guide` | Suma una línea a la cadena, antes de `app.js`, y su restricción; el agente principal las integra |
 | F2b, unidades 5 y 6 | las regiones de `app.js` de la tabla «Qué toca de lo que F2b mueve» | Rebasa sobre la que llegue antes y re-apunta el reinicio del temporizador |
-| F3 y F4 | los delegados, `render()`, `toggleItem`, `startApp()`, el escenario «almacén» de `app-shell-check`, la suscripción del shell a `routeStore.changes` y la pila de DOM de las specs | Se integran de a uno; el primero suma la suscripción del shell y el último borra `toggleItem`; el que llegue primero a una spec de componente pide `jsdom`, Testing Library y `fishery` y pasa la configuración de Vitest a dos proyectos |
-| F8 | «Borrar todo» y `resetTimer`; las notas si Q1 es A | `resetTimer` queda hasta F8; las notas pasan a F8 |
-| F10 | `mount`, `unmount`, `syncShell` y `viewFromHash` | Los retira F10 |
+| F3 y F4 | los delegados, `render()`, `toggleItem`, `startApp()`, el escenario «almacén» de `app-shell-check`, la suscripción del shell a `routeStore.changes`, los bloques compartidos de `styles.css` (FR-041) y la pila de DOM de las specs | Se integran de a uno; el primero suma la suscripción del shell y el último borra `toggleItem`; el que llegue primero a una spec de componente pide `jsdom`, Testing Library y `fishery` y pasa la configuración de Vitest a dos proyectos |
+| F8 | «Borrar todo» y `resetTimer`; las notas, su estado y el pedido al tutor (Q1); el CSS de Método (X3) | `resetTimer` queda hasta F8; las notas pasan a F8, que además muda su CSS |
+| F10 | `mount`, `unmount`, `syncShell` y `viewFromHash`; la región viva de la lección | Los retira F10, que además monta `#quiz-feedback` con su regla `:empty` (Q3, X2) |
 | [D1](../007-d1-progreso-sincronizacion/spec.md) y D1c | `routeStore.changes` y los campos `route.mark.step`, `route.quiz` y `preference.focusMinutes` | Una revisión por acción y las formas intactas (FR-020 y FR-021) |
 | [C4](../008-c4-exposicion/spec.md) | los estilos en línea | Ninguno nuevo (FR-003) |
 | E1 | los literales que cuentan el contenido | «4 etapas» sale de los datos (FR-023) |
 
-**Hoja de ruta (enmiendas que integra el coordinador):** F9 pasa de «Pendiente» a «En especificación», con el enlace a esta spec; su «Entra: notas» se corrige según Q1, y su «Borra» suma `routeCode`, `showQuizFeedback`, `restoreStepFocus`, las ramas de los delegados, los oyentes del diálogo y el reinicio del temporizador de «Borrar todo»; su decisión abierta («regiones vivas») queda en Q3; el criterio global de tamaño pasa de 2 500 000 a 1 250 000 caracteres (A2); la fila «Primera spec de componente» de «Acciones del usuario» se vuelve «el primero que llegue: F3 o F9»; y F9 puede salir del tramo 4, porque depende sólo de F2a.
+**Hoja de ruta (enmiendas que integra el coordinador):** F9 pasa de «Pendiente» a «Planificado» cuando tenga plan, y mientras tanto a «En especificación», con el enlace a esta spec; su «Entra: notas» se corrige (Q1: las notas, su estado y el pedido al tutor son de F8); su «Entra» suma el CSS del Recorrido (X3) y su «Borra» suma `routeCode`, `showQuizFeedback`, `restoreStepFocus`, las ramas de los delegados, los oyentes del diálogo, el reinicio del temporizador de «Borrar todo» y las reglas de `styles.css` que se mudan; su decisión abierta («regiones vivas») queda cerrada (Q3) y F10 suma la regla `:empty`; el criterio global de tamaño pasa de 2 500 000 a 1 250 000 caracteres (A2); la fila «Primera spec de componente» de «Acciones del usuario» se vuelve «el primero que llegue: F3 o F9»; y F9 puede salir del tramo 4, porque depende sólo de F2a.
 
 ## Assumptions
 
 - Esta spec describe `f2a` (`2ffbbc6`, PR #40 abierto). Los nombres (`pages/route`, `register-route.tsx`, `window.TallerRoute`, `qa/e2e/pages/route.ts`) son provisionales y los confirma el plan.
 - Lo que toma de F2b sale de `plan-f2b.md` (unidades 5 y 6). Si cambia, esta spec ajusta «Qué toca de lo que F2b mueve».
-- Los requisitos asumen la opción recomendada de Q1 a Q4. Si el usuario responde otra, cambian FR-008 (Q1), FR-041 (Q2), FR-037 (Q3) y FR-017 (Q4, con una cláusula de FR-040), y con ellos el alcance de la página, el `<style>`, la región viva y el lugar del diálogo.
+- Q1 a Q4 están decididos (Clarifications): notas a F8, el CSS se muda con el port, la región viva se conserva hasta F10 y el diálogo vive en la raíz con un portal a `body`. Lo que esta spec lee de X1 y C2 sobre el foco (que al cerrar la lección vuelve a quien la abrió) es una lectura que el usuario puede corregir.
+- El barrido de estilo computado y el multiconjunto son los de la unidad 8 de F2b (scripts descartables fuera del repositorio, `quickstart-f2b.md`, §3.1); F9 los reutiliza y los amplía a lo que el Recorrido dibuja.
 - Hoy Vitest corre sólo en `node` y sólo para `*.spec.ts`; `jsdom`, Testing Library y `fishery` no están instalados (`package.json` de `f2a`). El primer ítem que escriba una spec de componente los pide con permiso (hoja de ruta, «Acciones del usuario»; unos 26,3 MB y 5,0 MB comprimidos la pila de DOM y 0,19 MB `fishery`, según el ADR 0008) y pasa la configuración a dos proyectos. Si F9 llega antes que F3, le toca a F9.
 - El contenido de `build/curriculum.json` es el de `f2a`: 12 pasos por lenguaje, 4 módulos de 3, 25 minutos y 3 opciones por pregunta. Los textos esperados de los escenarios salen de `content/guide/` y de `qa/fixtures/progress-master-2a278ad-storage.json` (idioma Go; `rust-first-session` y `rust-ownership` completos; `quizAnswers` con `rust-first-session: 1`; `minutes: 25`).
 - Se leyó el código de `f2a` y de los checks de `qa/`, y se midió sin reconstruir: el tamaño del `dist/index.html` ya construido (1 136 702 caracteres, con 102 229 de `<style>`), las 114 reglas de `styles.css` (con `postcss`, sin modificar nada) y la composición de la guía. Nada se ejecutó: sin `npm`, sin Docker, sin navegador y sin descargas.
@@ -471,7 +442,7 @@ Quien mantiene el front encuentra el Recorrido en una página con su modelo y su
 
 ## Alternativas consideradas
 
-Sólo las que cambian lo que se construye. Las de Q1 a Q4 están en sus preguntas.
+Sólo las que cambian lo que se construye. Las de Q1 a Q4 son las opciones que el usuario no eligió en el clarify del 2026-10-28; la que eligió figura en la tercera columna.
 
 | Tema | Alternativas | Decisión y motivo |
 | --- | --- | --- |
@@ -481,7 +452,11 @@ Sólo las que cambian lo que se construye. Las de Q1 a Q4 están en sus pregunta
 | Cómo se entera el shell de un cambio | `app.js` se suscribe a `routeStore.changes`; un callback que el adaptador pasa a `mount`; la página llama a `syncShell` | Lo decide el plan. La tercera acopla la página al shell que F10 reemplaza |
 | El diálogo | El `<dialog>` nativo con `showModal()`; una librería de diálogos | El nativo: es lo que hay, trae el foco y Esc, y no suma una dependencia al bundle |
 | Cómo se demuestra que el DOM no cambió | Sólo E2E; una comparación única del HTML; la equivalencia por árbol de accesibilidad | Los E2E y la comparación única, como en F2 (FR-011): los E2E miran lo visible y la comparación detecta lo que ninguno mira (una clase, un orden, un texto) |
-| Los módulos abiertos a mano | Conservar la rareza de hoy; recordar lo que el alumno abrió | Conservar: un port no cambia comportamiento, y mejorarlo es un commit aparte con aprobación |
+| Los módulos abiertos a mano y el foco tras redibujar (X1 y C2) | Reproducir lo de hoy (los módulos vuelven al estado por omisión y `restoreStepFocus` manda el foco al primer botón de lección del paso); adoptar el comportamiento de React | El de React. Hoy existe sólo porque `innerHTML` rehace la vista; reproducirlo exige una clave que remonte la lista o un foco explícito que compensa una pérdida que ya no ocurre, y habría que fijar con E2E un defecto |
+| Notas (Q1) | Un componente propio dentro del HTML de Método hasta F8 (B); sólo `tutorPrompt` como modelo puro (C) | A F8, con Método (A). B es una raíz anidada en una vista que se redibuja entera, el patrón que la hoja de ruta descartó para los exploradores, y F8 lo vuelve a portar; C es código sin consumidor hasta F8. Costo de A: la hoja de ruta cambia y F8 crece (escritura en cada tecla, el estado de la nota, el pedido y el `execCommand` de respaldo del portapapeles) |
+| CSS del Recorrido (Q2) | Dejar las reglas en `styles.css` hasta F10, con el `<style>` idéntico por hash (A) | Mudarlas con el port (B, no recomendada). A era la opción sin riesgo de cascada, pero deja unas 114 reglas del Recorrido en la hoja base hasta F10 y contradice la convención de la hoja de ruta. Costo de B: un barrido de estilo computado y el multiconjunto, un riesgo de cascada (`styles.css` se evalúa primero) y partir los bloques compartidos con F3, F4 y F8 |
+| Región viva de la lección (Q3) | Mantenerla montada y siempre visible, vacía hasta que haya respuesta (B) | Conservar la de hoy hasta F10 (A). B es un cambio de comportamiento (una mejora de accesibilidad) y una región vacía visible dibuja el borde y el relleno de `.quiz-feedback`, así que exige la regla `:empty`, que llega con F10. Costo de A: el «no verificado» sigue hasta la comprobación manual con lector de pantalla |
+| Dónde vive el diálogo (Q4) | Como hijo de `main`, sin portal (B); en una raíz propia sobre un contenedor estable del shell, con la lección abierta al navegar (C) | Un portal a `document.body` (A). Con B se vería igual con las hojas de hoy (`.app-shell`, `.workspace` y `main` y sus `@media` fijan grilla, ancho y relleno, ninguna propiedad heredable), pero el diálogo cambia de padre y sus eventos suben por `#main`. C suma un segundo `createRoot` y un host en `index.html`, y conserva un defecto, no un contrato. Costo de A: la lección se cierra al navegar, y ese caso queda sin E2E; el código de la página toca `document.body` |
 
 ## Partición
 
