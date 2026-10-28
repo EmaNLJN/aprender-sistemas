@@ -26,6 +26,7 @@ describe('ModelPanel', () => {
     const { container } = render(<ModelPanel view={view({})} onAction={vi.fn()} />);
 
     expect(screen.getByRole('heading', { level: 2, name: 'Una estantería' })).toBeInTheDocument();
+    expect(screen.getByText('Izquierda: menos reciente.')).toHaveClass('sys-model-summary');
     expect(screen.getByText('Hits').nextSibling).toHaveTextContent('2');
     expect([...container.querySelectorAll('.sys-cell')].map((cell) => cell.className)).toEqual([
       'sys-cell active',
@@ -107,5 +108,95 @@ describe('ModelPanel', () => {
     );
 
     expect(screen.getByRole('region', { name: 'Estado del modelo' })).toBe(region);
+  });
+
+  it('keeps the focus on the pressed one of two controls with the same action and value', () => {
+    const twins = [
+      { action: 'deliver', label: 'Entregar #0', value: '0' },
+      { action: 'deliver', label: 'Duplicar #0', value: '0' },
+    ];
+    const { rerender } = render(<ModelPanel view={view({ controls: twins })} onAction={vi.fn()} />);
+    screen.getByRole('button', { name: 'Duplicar #0' }).focus();
+
+    rerender(
+      <ModelPanel
+        view={view({ controls: [{ action: 'drop-one', label: 'Perder #1' }, ...twins] })}
+        onAction={vi.fn()}
+      />,
+    );
+
+    expect(screen.getAllByRole('button').map((button) => button.textContent)).toEqual([
+      'Perder #1',
+      'Entregar #0',
+      'Duplicar #0',
+    ]);
+    expect(screen.getByRole('button', { name: 'Duplicar #0' })).toHaveFocus();
+  });
+
+  it('keeps the focus on the same control when its label and its neighbours change', () => {
+    const { rerender } = render(
+      <ModelPanel
+        view={view({
+          controls: [
+            { action: 'toggle', label: 'Habilitar IRQ' },
+            { action: 'reset', label: 'Reiniciar simulación' },
+          ],
+        })}
+        onAction={vi.fn()}
+      />,
+    );
+    screen.getByRole('button', { name: 'Habilitar IRQ' }).focus();
+
+    rerender(
+      <ModelPanel
+        view={view({
+          controls: [
+            { action: 'step', label: 'Un paso' },
+            { action: 'toggle', label: 'Enmascarar IRQ' },
+            { action: 'reset', label: 'Reiniciar simulación' },
+          ],
+        })}
+        onAction={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Enmascarar IRQ' })).toHaveFocus();
+  });
+
+  it('draws the rows of the state table under headers scoped to their column', () => {
+    render(
+      <ModelPanel
+        view={view({
+          columns: ['Tarea', 'Estado'],
+          rows: [
+            ['A', 'lista'],
+            ['B', 'espera'],
+          ],
+        })}
+        onAction={vi.fn()}
+      />,
+    );
+
+    expect(screen.getAllByRole('columnheader')[0]).toHaveAttribute('scope', 'col');
+    expect(screen.getAllByRole('cell').map((cell) => cell.textContent)).toEqual([
+      'A',
+      'lista',
+      'B',
+      'espera',
+    ]);
+  });
+
+  it('presses a control with Enter and with Space', async () => {
+    const user = userEvent.setup();
+    const onAction = vi.fn();
+    render(<ModelPanel view={view({})} onAction={onAction} />);
+
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'Leer A' })).toHaveFocus();
+    await user.keyboard('{Enter}');
+    await user.keyboard(' ');
+
+    expect(onAction).toHaveBeenCalledTimes(2);
+    expect(onAction).toHaveBeenLastCalledWith({ action: 'read', label: 'Leer A', value: 'A' });
   });
 });

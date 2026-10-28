@@ -92,4 +92,36 @@ describe('SceneView', () => {
       'monospace',
     ]);
   });
+
+  it('draws a hostile scene only with sanitized values', () => {
+    const hostile = {
+      width: Number.NaN,
+      height: -5,
+      background: '#14271f',
+      alt: '<b>"alt"</b>',
+      shapes: [
+        {
+          type: 'rect',
+          x: Infinity,
+          y: 2,
+          width: -3,
+          height: 4,
+          fill: 'red',
+          stroke: 'url(#x)',
+          strokeWidth: -2,
+        },
+        { type: 'ellipse', x: 1, y: 1 },
+      ],
+    } as unknown as Scene;
+    const { container } = render(<SceneView scene={hostile} />);
+
+    const svg = screen.getByRole('img', { name: '<b>"alt"</b>' });
+    expect(svg).toHaveAttribute('viewBox', '0 0 400 1');
+    expect([...svg.children].map((child) => child.tagName)).toEqual(['rect']);
+    expect(
+      ['x', 'width', 'fill', 'stroke', 'stroke-width'].map((name) =>
+        container.querySelector('rect')?.getAttribute(name),
+      ),
+    ).toEqual(['0', '0', 'none', 'none', '0']);
+  });
 });
