@@ -6,8 +6,6 @@ use Illuminate\Support\Facades\DB;
 
 final class AuditWorld
 {
-    public const HARNESS_HASH = 'c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00';
-
     public const ACTIVE = ['rust-01', 'rust-02', 'go-01', 'go-02'];
 
     /** @param  list<array{key: string, expression: string}>|null  $rustTests */
@@ -31,7 +29,7 @@ final class AuditWorld
         DB::table('exercises')->where('id', 'rust-03')->update(['status' => 'deprecated', 'retired_at' => now(), 'position' => null]);
         DB::table('content_imports')->update([
             'document_hash' => self::imageDocumentHash(),
-            'portion_hashes' => json_encode(['harness' => self::HARNESS_HASH], JSON_THROW_ON_ERROR),
+            'portion_hashes' => json_encode(['harness' => self::imageHarnessHash()], JSON_THROW_ON_ERROR),
         ]);
     }
 
@@ -47,5 +45,12 @@ final class AuditWorld
         $meta = json_decode((string) file_get_contents(ContentFixture::imagePath().'/curriculum.meta.json'), true, 512, JSON_THROW_ON_ERROR);
 
         return $meta['documentHash'];
+    }
+
+    public static function imageHarnessHash(): string
+    {
+        $meta = json_decode((string) file_get_contents(ContentFixture::imagePath().'/curriculum.meta.json'), true, 512, JSON_THROW_ON_ERROR);
+
+        return $meta['portions']['harness'];
     }
 }
