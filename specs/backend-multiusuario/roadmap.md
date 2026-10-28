@@ -33,10 +33,10 @@
 | C5 | Estadísticas del admin | Dar al admin métricas de uso sin exponer nunca el código ni los textos del alumno | D1, B2 | Pendiente | — |
 | E1 | Sesión Esenciales | Sumar Esenciales como catálogo nuevo, primero de la cadena | A1, D1 | Pendiente | — |
 | A2 | Compuerta de arranque | Que el front espere el contenido antes de evaluar las vistas legacy y que el HTML deje de embeberlo | A1, [F1 y F2 (unidades 1 a 4)](../front-react/roadmap.md) | Planificado | [006-a2-compuerta-arranque](../006-a2-compuerta-arranque/spec.md) |
-| A3 | El front lee el contenido de la API | Que el front lea las 17 porciones con el protocolo de arranque, guarde la última copia y avise si el backend no responde | A2, C2, C3, [F11](../front-react/roadmap.md#pantallas-de-acceso-a3-y-c3) | Pendiente | — |
-| C4 | Exposición | Exponer el taller en Internet con certificado propio, cabeceras estrictas y mínimo privilegio | A3, C3 (C3a, C3b y C3c) | Planificado | [008-c4-exposicion](../008-c4-exposicion/spec.md), con su [plan](../008-c4-exposicion/plan.md) y sus [tareas](../008-c4-exposicion/tasks.md) |
-| A4 | Laboratorio con el sandbox propio | Que el laboratorio use `/api/runs` en lugar de los Playgrounds públicos | B2, A3, [F7](../front-react/roadmap.md) | Pendiente | — |
-| B3 | Auditoría local del currículo | Probar en el ejecutor local que todas las soluciones aprueban y todos los códigos iniciales fallan | B2 | Pendiente | — |
+| A3 | El front lee el contenido de la API | Que el front lea las 17 porciones con el protocolo de arranque, guarde la última copia y avise si el backend no responde | A2, C2, C3, [F11a](../front-react/roadmap.md#pantallas-de-acceso-a3-y-c3) | En especificación | [016-a3-contenido-api](../016-a3-contenido-api/spec.md), clarify del 2026-10-28, sin plan |
+| C4 | Exposición | Exponer el taller en Internet con certificado propio, cabeceras estrictas y mínimo privilegio | A3, C3 (C3a, C3b y C3c), [F12a](../front-react/roadmap.md) | Planificado | [008-c4-exposicion](../008-c4-exposicion/spec.md), con su [plan](../008-c4-exposicion/plan.md) y sus [tareas](../008-c4-exposicion/tasks.md) |
+| A4 | Laboratorio con el sandbox propio | Que el laboratorio use `/api/runs` en lugar de los Playgrounds públicos | B2, A3, B3, [F7a](../front-react/roadmap.md) | En especificación | [017-a4-laboratorio-sandbox](../017-a4-laboratorio-sandbox/spec.md), que extiende a la [005](../005-b2-api-ejecuciones/spec.md) con `attemptId`; clarify del 2026-10-28, sin plan |
+| B3 | Auditoría local del currículo | Probar en el ejecutor local que todas las soluciones aprueban y todos los códigos iniciales fallan | B2 | En especificación | [020-b3-auditoria-curriculo](../020-b3-auditoria-curriculo/spec.md), clarify del 2026-10-28, sin plan |
 | C6 | Registros tipados del contenido | Que los registros del contenido viajen por la API como objetos tipados e inmutables, sin cambiar un byte publicado ni una fila, y que el análisis estático suba de nivel | C2 | Planificado | [002-c6-registros-tipados](../002-c6-registros-tipados/spec.md), que extiende a la 001 |
 
 ## Alcance por ítem
@@ -60,10 +60,14 @@ Cada línea nombra lo que entra y lo que queda fuera. Los detalles están en el 
 - **B2:**
   - Entra: `progress_heads` y `exercise_progress` completas, `attempts`, `attempt_tests`, `attempt_payloads` y `runs`; `/api/runs` con cola propia, cuotas por usuario y tope global; `executor` y `worker-runs`; la plantilla del harness como recurso. Precondición: `test_key` único e inmutable (el generador deja de exigir `t{índice+1}`).
   - Fuera: sincronización del progreso (D1) y la vista del laboratorio (A4).
+  - Lo extiende A4, que suma `attemptId` a la ejecución (A4-Q1; ver «Enmiendas pendientes»).
 - **D1:**
   - Entra: las 12 tablas de progreso sin alterar las de B2; `POST /api/sync`, `GET /api/progress`, `POST /api/progress/import` y `POST /api/progress/reset`; cliente v2 con espacios por cuenta; el contenido publica el id de cada etapa; fixture compartido de fusión.
   - Fuera: estadísticas (C5).
   - Partición (clarify del 2026-10-06, spec 007): D1a (la sincronización del servidor), D1b (la importación y el reset) y D1c (el cliente v2, que entra en servicio después de A4). Q1 a Q4 con la opción recomendada; cierran la pregunta 17 del ADR 0006 §13 en sus tres partes.
+  - D1c enmienda dos requisitos de D1 (clarify del 2026-10-28):
+    - el FR-070, por F11-Q5: la «computadora compartida» se elige en «Tu cuenta» (F11d) y no antes de guardar, y al activarla el cliente borra el espacio local de la cuenta, incluida la copia del contenido de A3;
+    - la cláusula de las claves v1 del FR-074, por F8-L7: rige desde D1c. Hasta entonces, «Borrar todo» de F8, que ya usa el reset de D1b con la contraseña (F8-Q1), borra las claves v1 como hoy.
 - **C5:**
   - Entra: `/api/admin/stats/*`, `GET /api/admin/runs` y `GET /api/admin/queue`, resumen en la ficha de usuario y caché de 10 minutos. Los índices llegan después de medir con 5.000 alumnos sintéticos.
   - Fuera: rollups diarios (camino de escala, §9) y cualquier exportación de admin.
@@ -74,14 +78,18 @@ Cada línea nombra lo que entra y lo que queda fuera. Los detalles están en el 
   - Entra: la compuerta con su spike previo; el diseño admite el protocolo por porciones (§7).
   - Fuera: la lectura real de la API (A3).
 - **A3:**
-  - Entra: el protocolo de arranque completo (`GET /api/session`, validador por porción, comparación de `Content-Version`, reintento con tope), la última copia en caché y el aviso sin backend.
+  - Entra: el protocolo de arranque completo (validador por porción, comparación de `Content-Version`, reintento con tope), como extensión de la etapa de sesión que introduce F11a (ruling C1): usa la `Content-Version` de la sesión para las porciones y, ante un 401 en una porción, llama a «pedir el ingreso» de F11a; la última copia en IndexedDB (A3-Q4), que sólo usa quien no cerró su sesión en ese navegador, con un aviso, y que salir borra (A3-Q2); el aviso sin backend; y el retiro del archivo estático del contenido, también de la imagen web.
+  - Fuera: la etapa de sesión, el doble de la API de los E2E y el proxy de `/api/` de la vista previa y de `npm run dev`, que llegan con F11a (C1 y A3-Q3); la plantilla del harness, que pide A4.
 - **C4:**
   - Entra: TLS propio con renovación, HSTS, cookies `__Host-` y `Secure`, CSP sin `'unsafe-inline'`, retiro de `vite-plugin-singlefile`, IP real del cliente para los límites, usuarios de MySQL con mínimo privilegio y respaldos fuera del host.
   - Clarify del 2026-10-06 (spec 008, Q1 a Q5 con la opción recomendada): el certificado con el módulo ACME del Nginx que ya hay; los respaldos cifrados en almacenamiento de objetos con una credencial que sólo agrega; `style-src` con nonce y `style-src-attr 'unsafe-inline'`, porque CodeMirror asigna `style.cssText`; un comando de estado y un monitor externo; un usuario de MySQL por rol. La compuerta se parte en G1 (local, con Pebble) y G2 (abre el router).
+  - Con `style-src-attr 'unsafe-inline'`, C4 no espera a los ports del front por sus `style=`. Espera, en cambio, a F12a: su compuerta G1 suma «las pantallas de administración integradas» (F12-Q2), y no espera a F12b. Recomendación de B3: B3 en verde antes de G2. Las specs de A3, B3 y F12 le dejan hallazgos (ver «Enmiendas pendientes»).
 - **A4:**
-  - Entra: el laboratorio sobre `/api/runs`, la vista previa con la misma plantilla y el retiro del cliente de Playgrounds, como un cambio del adaptador de transporte de `features/run-exercise` que deja F7 (A4 espera a F7: decidido el 2026-10-05). Además, guarda el id del intento del servidor en el `result` v1 y deja de sumar `attempts` por las ejecuciones del servidor.
+  - Entra: el laboratorio sobre `/api/runs` con el puerto de `features/run-exercise` que deja F7a, la vista previa con la plantilla del servidor y el retiro del cliente de Playgrounds. No es sólo un cambio del adaptador: la [spec 017](../017-a4-laboratorio-sandbox/spec.md) y su tabla F7-S1 a F7-S9 dicen qué toma de F7. Su clarify (2026-10-28): suma `attemptId` a la ejecución de la API, aditivo y con Pest (A4-Q1); retira los Playgrounds del todo, así que la CSP de C4 queda estricta y con el sandbox caído no se ejecuta (A4-Q2); espera con la fila visible, un aviso de demora a los 15 s y una espera de turno automática ante `active` y `queue_full`, con el mismo `clientRunId`, bajo 30 envíos por minuto y hasta 2 min (A4-Q3); oculta el número de intentos hasta que D1c lo traiga del servidor (A4-Q4); y la auditoría de B3 en verde es su condición (A4-Q5). Un 401 llama a «pedir el ingreso» de F11a, y `runtime-check` se retira con A4. Guarda el id del intento del servidor en el `result` v1 y deja de sumar `attempts` por las ejecuciones del servidor.
+  - Sus estados y sus textos los dibuja la vista vigente cuando entra (ruling C4): la revisión de `lab.js` si F7b todavía no entró, y entonces F7b los porta con sus E2E, o la página React si ya entró.
 - **B3:**
-  - Entra: la auditoría fuera de hora o con su propia instancia del ejecutor, sin escribir `runs` ni `attempts`.
+  - Entra: un comando dentro de la imagen de la API que corre los 548 programas (la solución y el inicial de cada uno de los 274 ejercicios) contra su propia instancia del ejecutor con runsc (desde C4, fuera de hora en producción), con el armado y la clasificación de B2 y sin escribir `runs` ni `attempts`; un informe legible y en JSON, con sellos, fuera de Git y de Docker; el check estático del caché de Go en `npm test`. Su clarify (2026-10-28): un inicial falla por sus pruebas, salvo `kind: reparar`, que también puede no compilar (B3-Q1); corre en local, con runsc y su instancia del ejecutor, y la CI no la repite: en los PR que tocan lo auditado, un check lee el resumen de la corrida en la descripción del PR y comprueba su formato, que la corrida sea de registro con runsc, el veredicto en verde y las huellas del documento y de la plantilla recalculadas desde la cabeza del PR; las imágenes, el commit y el árbol limpio quedan para una persona (B3-Q2, FR-038 y SC-009); es obligatoria en los PR que tocan lo auditado (contenido, plantilla e imágenes), con el resumen de una corrida sobre el último commit con el árbol limpio, y es condición de A4 (B3-Q3); informa el tiempo de cada programa contra su límite, con un aviso cerca, y la memoria sólo como OOM, sin cambiar B1 ni B2 (B3-Q4); y verifica la prueba propia con una muestra de 4 programas (B3-Q5).
+  - Un ejercicio que falla es un bug de contenido: se corrige en `content/`, nunca en `build/`. Los dos primeros probables, `rust-63` y `rust-71`, están en «Enmiendas pendientes».
 - **C6:**
   - Entra: una forma tipada e inmutable para cada registro del contenido (los 19 tipos de fila y el meta del generador), con constructores con nombre desde el documento y desde la fila y salidas explícitas hacia la fila y hacia la forma publicada. Entran también un oráculo de filas tomado del código de C2 y la subida del análisis estático al nivel 9, sin baseline ni ignores, con la CI y la documentación que lo citan.
   - Fuera: cambios en el generador, en los bytes publicados, en las tablas, en el contrato HTTP y en el comportamiento del import; la diferencia del import sobre registros (sigue sobre filas); `spatie/laravel-data` y cualquier dependencia nueva; formas tipadas para los valores JSON anidados, que quedan opacos; y los registros de otros módulos (C3, B2 y D1).
@@ -91,16 +99,17 @@ Cada línea nombra lo que entra y lo que queda fuera. Los detalles están en el 
 - **Tronco del ADR 0006 §10:** C2 → C3 → B2 → D1 → C5 → E1. C3 va después de C2 porque protege las rutas de contenido que C2 publica.
 - **El resto:**
   - **A2** depende de A1 y de F1 y F2 del [épico del front](../front-react/roadmap.md): la red de pruebas y los seams que vuelven explícito el arranque. Corre después de ellos, en paralelo con C3 y C6.
-  - **A3** espera a A2, C2, C3 y F11, las pantallas de cuenta (login, invitación, recuperar y cambiar la contraseña, exportar y borrar la cuenta y el aviso de privacidad). La ubicación de esas pantallas es una propuesta pendiente del usuario. Con ese alcance F11 espera también a C3b, y si A3 espera a todo F11 o sólo al acceso se decide en el clarify de F11 (hoja de ruta del front, «Decisiones abiertas»).
-  - **C4** espera a A3 y a las tres partes de C3: C3a, C3b y C3c.
-  - **A4** espera a B2, A3 y F7, el port del laboratorio (decidido el 2026-10-05: F7 va antes).
-  - **B3** espera a B2.
+  - **A3** espera a A2, C2, C3 y F11a, el acceso de F11 (ingreso, alta por invitación, restablecer la contraseña con el enlace, el aviso de privacidad, «Tu cuenta» y «Salir»): el clarify del 2026-10-28 partió F11 en F11a a F11d, y A3 espera sólo a F11a (P1 y A3-Q1). Así desaparece el ciclo A3 → F11 → D1c → A4 → A3. La ubicación de las pantallas, una raíz previa al shell, sigue siendo una propuesta pendiente del usuario.
+  - **C4** espera a A3, a las tres partes de C3 (C3a, C3b y C3c) y a F12a, la administración sin correo del front (F12-Q2), que su compuerta G1 suma como «las pantallas de administración integradas». Recomendación de B3: B3 en verde antes de la compuerta G2.
+  - **A4** espera a B2, A3, F7a y B3, no a F7b (ruling C4 y A4-Q5): toma el puerto de `features/run-exercise` que deja F7a.
+  - **B3** espera a B2 y va antes que A4 (ADR 0005 §8), en paralelo con F5, F6 y F7 del front.
+  - **D1c** sigue esperando a A4 (Q4 de su clarify) y enmienda el FR-070 de D1 (F11-Q5; ver «Alcance por ítem», D1).
 - **C6** (decidido en su clarify, Q5): depende sólo de C2, corre en paralelo con C3, en la ola 2, y se entrega antes de B2, que cambia las pruebas de ejercicio y el generador y por eso depende de C6. Con C3 comparte `phpstan.neon`, `config/` y la documentación, que integra el agente principal; los puntos de integración están en su plan. Desde que C6 sube el análisis al nivel 9, el código de C3 tiene que pasarlo.
 - **Olas** (un paso puede arrancar cuando terminó el anterior; los de una misma ola corren en paralelo sólo con archivos disjuntos):
   1. C2.
   2. C3 y C6. A2 entra en cuanto el front entregue F1 y F2.
   3. B2 y A3.
-  4. D1, C4, A4 y B3.
+  4. D1, C4, A4 y B3: B3 va antes que A4, en paralelo con F5, F6 y F7 del front, y D1c entra después de A4.
   5. C5 y E1.
 
 ## Estado y evidencia
@@ -125,6 +134,7 @@ Cada línea nombra lo que entra y lo que queda fuera. Los detalles están en el 
 - **D1b entregado** (2026-10-07, PR #39, sobre B2): 3076 pruebas de Pest (20 452 aserciones) en el orden por omisión y en uno aleatorio (semilla 1791346417), con la suite `Concurrency`; PHPStan nivel 9 y Pint sin errores, y `npm test` en verde. `ImportLosslessTest` detecta las seis mutaciones del escritor (J1 a J6). Contra un stack nuevo: `nginx -t`, el smoke (el 413 de 24 MiB y el 419 del reset sin token), `api:content:check`, `api:sync:check` y `api:import:check`. La importación sintética de 274 ejercicios con borradores de 30.000 caracteres (8,2 MB de crudo) aplicó en 306 ms, con 51,3 MiB de memoria pico sobre 128M; una sincronización de la misma cuenta esperó 269 ms el candado. El 2026-10-07 se integró con C3b, que entró antes a master (#37): sus dos tablas en `UserTables` y en `PopulatedAccount`, y la sección `imports` de la exportación; la suite da 3455 pruebas (22 354 aserciones), también con la semilla 777. Pendiente: el cliente (D1c).
 - **C3b y C3c** (2026-10-06): clarify de C3b, que parte otra vez el resto de C3: C3b, la administración y el ciclo de vida de la cuenta (spec 010, renombrada desde `010-c3b-correo-admin`), y C3c, el correo (spec 011, sólo especificada). Plan de C3b, con investigación, modelo de datos, contratos HTTP y de consola, guía de validación y 25 tareas en cuatro ondas, con dueños de archivos disjuntos; la única tabla nueva es `account_deletions`. El análisis cubrió 32 requisitos y criterios con sus 25 tareas, sin hallazgos críticos. Sin implementar: el código del plan es de referencia.
 - **C4** (2026-10-06): clarify (Q1 a Q5 con la opción recomendada), investigación, modelo de datos, contratos HTTP y de consola, guía de validación, plan y 27 tareas en cinco ondas, con los spikes V1 a V5 antes de construir. El análisis cruzado (47 requisitos y 13 criterios con tarea, dueños sin archivos compartidos, sin ciclos) dejó hallazgos que se corrigieron. Sin implementar: ningún código, script ni SQL del plan se ejecutó.
+- **A3, A4 y B3** (2026-10-28): specs redactadas en paralelo con nueve del front y clarificadas por el usuario el 2026-10-28; ninguna tiene plan. A3 (spec 016, PR #49): 43 requisitos y 10 criterios, Q1 a Q4 con la opción recomendada. A4 (spec 017, PR #50): 48 requisitos y 10 criterios, Q1 a Q5 con la opción recomendada. B3 (spec 020, PR #54): 38 requisitos y 9 criterios, Q1 a Q5 con la opción recomendada; la Q2 la completó el usuario después, con el check del resumen en la CI (FR-038 y SC-009, commit `2d015b47` de la rama de la spec). Sin Docker ni descargas, B3 midió en el host, con `rustc` 1.97.1 y `go` 1.27.2, sin gVisor ni límites: las 274 soluciones aprueban, los 137 iniciales de Go fallan por sus pruebas, `rust-63` no compila y `rust-71` aborta, y la compilación más lenta fue la de `go-69`, 8,0 s contra un límite de 15. Las decisiones del clarify y los rulings del coordinador están en la entrada del 2026-10-28 de la [hoja de ruta del front](../front-react/roadmap.md).
 
 Las evidencias salen de los mensajes de los commits y de la hoja de ruta anterior.
 
@@ -144,7 +154,7 @@ Las evidencias salen de los mensajes de los commits y de la hoja de ruta anterio
 
 - **C2:** cada porción de contenido que sirve la API es idéntica a su parte de `build/curriculum.json` (el sha256 del cuerpo es la huella que escribe el generador), y el oráculo `dump-globals` no cambia. Antes lo decía `GET /api/content`, que el ADR 0006 reemplaza.
 - **D1:** el progreso real de master (`qa/fixtures/progress-master-2a278ad-storage.json` y los dos exports de `qa/fixtures`) entra a las tablas y vuelve a salir sin pérdida (`isLosslessNormalization`, ADR 0006 D24).
-- **B3:** en el ejecutor local, todas las soluciones de referencia aprueban y todos los códigos iniciales fallan.
+- **B3:** en el ejecutor local, todas las soluciones de referencia aprueban y todos los códigos iniciales fallan por sus pruebas, salvo los `kind: reparar`, que también pueden no compilar (B3-Q1).
 - **C6:** las 17 porciones y cada ejercicio salen con las huellas del generador, y desplegar la imagen nueva sobre una base que importó el código de C2 no escribe filas ni cambia validadores.
 - **Todo subplan** cierra con `npm test`, `npm run lint`, `npm run format:check` y `git diff --check` en verde, y con las pruebas propias de su lenguaje (Pest o Go).
 
@@ -161,6 +171,9 @@ Se cierran en el paso clarify de la spec de cada ítem.
 | C5 | 6 (qué ve el admin) |
 | E1 | 1 (resto: Esenciales antes de Inicial o en su lugar, y su código) |
 | C6 | Cerradas en su clarify (2026-10-05): Q1 a Q5 de su spec, que no vienen del ADR 0006. También la del plan, decidida por el usuario el 2026-10-05: una fila que el import no pudo escribir responde 500 (research.md, R10) |
+| A3 | Cerradas en su clarify (2026-10-28): Q1, espera sólo a F11a; Q2, la copia sin servidor sólo para quien no cerró su sesión, y salir la borra; Q3, la vista previa pasa `/api/` al stack, desde F11a; Q4, la copia vive en IndexedDB |
+| A4 | Cerradas en su clarify (2026-10-28): Q1, A4 suma `attemptId` a la ejecución; Q2, los Playgrounds se retiran del todo y la CSP de C4 queda estricta; Q3, la fila visible, el aviso a los 15 s y la espera de turno automática; Q4, el número de intentos se oculta hasta D1c; Q5, A4 espera a B3 |
+| B3 | Cerradas en su clarify (2026-10-28): Q1, un inicial falla por sus pruebas, salvo `kind: reparar`; Q2, en local con runsc y su instancia del ejecutor, y la CI comprueba el resumen de la corrida en los PR que tocan lo auditado (el usuario la completó al resolver una discrepancia de redacción: FR-038 y SC-009); Q3, obligatoria en los PR que tocan lo auditado y condición de A4; Q4, el tiempo con aviso y la memoria sólo como OOM; Q5, una muestra de 4 programas con prueba propia |
 | Transversales | 13 (retenciones), 14 (Ley 25.326), 15 (carga esperada), 19 (imágenes nuevas) |
 
 ## Enmiendas pendientes
@@ -175,3 +188,17 @@ Cuando el usuario apruebe el ADR 0006, hay que registrar en los ADR anteriores l
 - **ADR 0004:** el montaje de la sesión, el alta, el TOTP y el bloqueo (§1); las rutas públicas; la partición de `workshop_exercises` y las tablas de guía y pistas; el ETag por porción; los cambios de `attempts`; los sellos v2; `/api/sync` con delta, `POST /api/progress/reset` y la importación combinable; y la corrección del reloj por lote.
 - **ADR 0005:** sin fase en vivo (§3), un intento liviano y su payload aparte por ejecución, cuotas por usuario con tope global, y la evidencia autodeclarada como riesgo con muchos usuarios.
 - **Hoja de ruta anterior:** hecho en este archivo (C2 con 17 recursos, C3 sin Sanctum ni TOTP, A3 sin `/api/content`, A4 con el id del intento, Sanctum fuera de los paquetes y C5 nuevo).
+
+Aparte de la aprobación del ADR 0006, las specs del 2026-10-28 dejan estos pendientes:
+
+- **ADR 0005:** sus «Fases» ponen el laboratorio (3) antes que la auditoría (4), al revés de A4-Q5, que pone B3 antes que A4 como pide su §8; y su §8 dice que «hoy hay uno» uso de `time.Sleep`, cuando ya no queda ninguno (specs de A4 y B3).
+- **C4:**
+  - su compuerta G1 (FR-044 de la spec 008) suma F12a, «las pantallas de administración integradas» (F12-Q2): la enmienda de la spec de C4 la integra el coordinador;
+  - su recorrido de la CSP (SC-004: las ocho vistas, cinco enlaces, el editor y la celebración) no incluye las pantallas de F11 ni las de F12 (spec de F12);
+  - la pregunta de F12-Q2, «¿C4 espera?», vale también para F11b, que descarga y borra la propia cuenta, y nadie la respondió (specs de F11 y F12);
+  - la zona `api` de Nginx admite una ráfaga de 400 con `nodelay` por IP, así que una clase de 40 detrás de un NAT que arranca junta (40 × 18 pedidos, unos 720) recibe 429 inmediatos por el exceso. A3 respeta `Retry-After` y su copia baja cada arranque siguiente a un pedido, pero C4 debería afinar los límites para ese arranque (spec de A3);
+  - la auditoría de B3 lee el contenido importado de MySQL, así que necesita un usuario de sólo lectura del contenido entre los usuarios por rol de C4, que hoy no figura (spec de B3).
+- **El contenido:** `rust-63` (no compila) y `rust-71` (aborta antes de mostrar una prueba), los dos de `completar`, son los dos primeros bugs probables. Se corrigen en `content/` cuando B3 los confirme (B3-Q1).
+- **B2:** A4 le suma `attemptId` a la ejecución (A4-Q1): `RunPresenter` no lo expone, aunque `RunRow` lo tiene, y D1b espera `result.attemptId`. Es aditivo, con Pest, y la spec 017 extiende a la 005.
+- **C3b:** no tiene un comando de consola para gestionar cuentas (listar, cambiar un rol o un estado, revocar invitaciones ni borrar otra cuenta); sin F12a, eso queda para `curl` o para `tinker`, que se saltea la guardia del último admin (spec de F12).
+- **C5:** sus pantallas (las estadísticas, las ejecuciones, la cola y el resumen en la ficha de usuario) no tienen dueño en ninguna de las dos hojas de ruta (spec de F12).
