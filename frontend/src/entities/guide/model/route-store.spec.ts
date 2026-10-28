@@ -292,3 +292,73 @@ describe('merging with another tab', () => {
     expect(store.changes.getState().revision).toBe(1);
   });
 });
+
+describe('toggling a mark of the route', () => {
+  it('appends an absent id at the end and saves once with one revision', () => {
+    const storage = memoryStorage({ [KEY]: savedRoute({ milestones: ['go-files'] }) });
+    const store = openStore(storage);
+
+    expect(store.toggleMark('milestones', 'rust-memory')).toBe(true);
+
+    expect(storage.writes).toEqual([KEY]);
+    expect(store.changes.getState().revision).toBe(1);
+    expect(storedRoute(storage).milestones).toEqual(['go-files', 'rust-memory']);
+  });
+
+  it('removes a present id and changes no other field', () => {
+    const before = {
+      language: 'go' as const,
+      completed: ['rust-ownership'],
+      favorites: ['rust-100'],
+      minutes: 45,
+    };
+    const storage = memoryStorage({
+      [KEY]: savedRoute({ ...before, milestones: ['rust-memory', 'go-files'] }),
+    });
+    const store = openStore(storage);
+
+    store.toggleMark('milestones', 'rust-memory');
+
+    expect(storedRoute(storage)).toEqual(
+      JSON.parse(savedRoute({ ...before, milestones: ['go-files'] })),
+    );
+  });
+
+  it('toggles favorites and completed steps in their own collection', () => {
+    const storage = memoryStorage();
+    const store = openStore(storage);
+
+    store.toggleMark('favorites', 'go-tour');
+    store.toggleMark('completed', 'rust-ownership');
+
+    expect(storedRoute(storage).favorites).toEqual(['go-tour']);
+    expect(storedRoute(storage).completed).toEqual(['rust-ownership']);
+    expect(storedRoute(storage).milestones).toEqual([]);
+    expect(store.changes.getState().revision).toBe(2);
+  });
+
+  it('keeps the toggled state in memory when the write fails', () => {
+    const storage = memoryStorage();
+    const store = openStore(storage);
+    storage.setItem = () => {
+      throw new Error('quota');
+    };
+
+    expect(store.toggleMark('milestones', 'go-memory')).toBe(false);
+
+    expect(store.getProgress().milestones).toEqual(['go-memory']);
+    expect(store.storageAvailable()).toBe(false);
+    expect(store.changes.getState().revision).toBe(1);
+    expect(storage.items.has(KEY)).toBe(false);
+  });
+
+  it('unmarking while another tab kept the mark brings it back (ADR 0003, decision 9)', () => {
+    const storage = memoryStorage({ [KEY]: savedRoute({ milestones: ['rust-memory'] }) });
+    const store = openStore(storage);
+    storage.items.set(KEY, savedRoute({ milestones: ['rust-memory', 'go-files'] }));
+
+    store.toggleMark('milestones', 'rust-memory');
+
+    expect(storedRoute(storage).milestones).toEqual(['rust-memory', 'go-files']);
+  });
+});

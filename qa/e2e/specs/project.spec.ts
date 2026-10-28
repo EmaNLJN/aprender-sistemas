@@ -343,6 +343,21 @@ test.describe('the links and the history', () => {
 });
 
 test.describe('the hints', () => {
+  test('an open hint stays open and the focus stays on the checkbox when a milestone is checked (clarify Q3, X1)', async ({
+    shell,
+    project,
+  }) => {
+    await shell.goto(urls.view('proyecto'));
+    await project.hintToggle(TITLES[1]).click();
+    await expect(project.hint(TITLES[1])).toHaveJSProperty('open', true);
+
+    await project.milestone(TITLES[0]).click();
+
+    await expect(project.milestone(TITLES[0])).toBeChecked();
+    await expect(project.milestone(TITLES[0])).toBeFocused();
+    await expect(project.hint(TITLES[1])).toHaveJSProperty('open', true);
+  });
+
   test('KNOWN DEFECT (spec 013, FR-015): the hint of the first milestone in Go names Rust', async ({
     shell,
     project,
