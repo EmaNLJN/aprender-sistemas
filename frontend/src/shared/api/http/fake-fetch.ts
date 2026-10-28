@@ -20,9 +20,11 @@ export interface FakeFetch {
   readonly calls: RecordedCall[];
 }
 
+const STATUSES_WITHOUT_BODY = new Set([204, 205, 304]);
+
 function responseOf(reply: FakeReply): Response {
   const text = reply.text ?? (reply.json === undefined ? '' : JSON.stringify(reply.json));
-  return new Response(reply.status === 204 ? null : text, {
+  return new Response(STATUSES_WITHOUT_BODY.has(reply.status) ? null : text, {
     status: reply.status,
     headers: reply.headers,
   });

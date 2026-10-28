@@ -98,16 +98,17 @@ export function createApiClient({ fetch, readCookies }: ApiClientOptions): ApiCl
     body: unknown,
     options: ApiRequestOptions,
   ): Promise<ApiResult> {
+    const init: RequestInit = {
+      method,
+      credentials: 'same-origin',
+      headers: headersFor(method, options.asUser),
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: options.signal,
+    };
     let response: Response;
     let text: string;
     try {
-      response = await fetch(path, {
-        method,
-        credentials: 'same-origin',
-        headers: headersFor(method, options.asUser),
-        body: body === undefined ? undefined : JSON.stringify(body),
-        signal: options.signal,
-      });
+      response = await fetch(path, init);
       text = await response.text();
     } catch {
       return { ok: false, failure: { kind: 'network' } };
@@ -129,7 +130,9 @@ export function createApiClient({ fetch, readCookies }: ApiClientOptions): ApiCl
     const first = await perform(method, path, body, options);
     const expiredMessage = csrfExpiredMessage(first);
     if (expiredMessage === null) return first;
-    const account = sessionAccountOf(await perform('GET', SESSION_PATH, undefined, {}));
+    const account = sessionAccountOf(
+      await perform('GET', SESSION_PATH, undefined, { signal: options.signal }),
+    );
     if (account === undefined) return first;
     if (options.asUser === undefined || account === options.asUser) {
       return perform(method, path, body, options);
