@@ -283,5 +283,32 @@ describe('the API client', () => {
       await client.send('POST', '/api/me/privacy', {}, { asUser: 41 });
       expect(calls).toHaveLength(1);
     });
+
+    it('lets the renewal be aborted with the signal of the caller', async () => {
+      const seen: (AbortSignal | null | undefined)[] = [];
+      const fake = createFakeFetch([CSRF_EXPIRED, sessionOf(null), { status: 204 }]);
+      const spying: FetchLike = (path, init) => {
+        seen.push(init.signal);
+        return fake.fetch(path, init);
+      };
+      const client = createApiClient({ fetch: spying, readCookies: () => '' });
+      const controller = new AbortController();
+      await client.send('POST', '/api/auth/login', {}, { signal: controller.signal });
+      expect(seen).toEqual([controller.signal, controller.signal, controller.signal]);
+    });
+  });
+
+  it('reports a status without a body, such as a 304, as unexpected', async () => {
+    const { client } = clientWith([{ status: 304 }]);
+    expect(await client.get('/api/curriculum')).toEqual({
+      ok: false,
+      failure: { kind: 'unexpected', status: 304 },
+    });
+  });
+
+  it('lets a body that cannot be serialized propagate instead of reporting a network failure', async () => {
+    const { client, calls } = clientWith([{ status: 204 }]);
+    await expect(client.send('POST', '/api/auth/login', { id: 1n })).rejects.toThrow(TypeError);
+    expect(calls).toHaveLength(0);
   });
 });
