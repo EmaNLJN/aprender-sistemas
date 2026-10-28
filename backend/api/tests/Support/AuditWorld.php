@@ -42,15 +42,17 @@ final class AuditWorld
 
     public static function imageDocumentHash(): string
     {
-        $meta = json_decode((string) file_get_contents(ContentFixture::imagePath().'/curriculum.meta.json'), true, 512, JSON_THROW_ON_ERROR);
-
-        return $meta['documentHash'];
+        return self::imageMeta()['documentHash'];
     }
 
     public static function imageHarnessHash(): string
     {
-        $meta = json_decode((string) file_get_contents(ContentFixture::imagePath().'/curriculum.meta.json'), true, 512, JSON_THROW_ON_ERROR);
+        return self::imageMeta()['portions']['harness'];
+    }
 
-        return $meta['portions']['harness'];
+    /** @return array{documentHash: string, portions: array{harness: string}} */
+    private static function imageMeta(): array
+    {
+        return json_decode((string) file_get_contents(ContentFixture::imagePath().'/curriculum.meta.json'), true, 512, JSON_THROW_ON_ERROR);
     }
 }
