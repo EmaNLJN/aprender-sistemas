@@ -3285,7 +3285,8 @@ En el mismo PR (FR-040):
   - el setup;
   - las versiones instaladas y lo que midió `npm ci` (paquetes y tamaño);
   - el tiempo de `npm run test:unit` antes y después;
-  - que `vi.resetModules()` con `import()` dinámico es el patrón para una página que usa un singleton.
+  - que `vi.resetModules()` con `import()` dinámico es el patrón para una página que usa un singleton;
+  - que nuqs ya no espera al spike de F10: entra con F3, o con F5 si llega antes. Su «Queda fuera» lo dejaba para F10.
 
   Si T001 encontró la pila ya instalada, sólo lo que F3 suma.
 
