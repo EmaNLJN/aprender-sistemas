@@ -5,6 +5,7 @@ namespace App\Audit;
 use App\Content\ContentImports;
 use App\Content\ContentSnapshot;
 use App\Content\ContentSource;
+use App\Content\Portion;
 use App\Content\Record\RowFields;
 use App\Runs\Program\ExerciseSnapshot;
 use App\Runs\Program\ExpectedTest;
@@ -29,9 +30,13 @@ final class AuditCatalogReader
     public function read(): AuditCatalog
     {
         $catalog = ContentSnapshot::read(fn (): AuditCatalog => $this->readSnapshot());
-        $imageHash = ContentSource::fromDirectory(config()->string('content.path'))->documentHash();
-        if ($catalog->documentHash !== $imageHash) {
-            throw AuditRefused::staleContent($catalog->documentHash, $imageHash);
+        $source = ContentSource::fromDirectory(config()->string('content.path'));
+        if ($catalog->documentHash !== $source->documentHash()) {
+            throw AuditRefused::staleContent($catalog->documentHash, $source->documentHash());
+        }
+        $imageHarnessHash = $source->meta->portionHash(Portion::Harness);
+        if ($catalog->harnessHash !== $imageHarnessHash) {
+            throw AuditRefused::staleHarness($catalog->harnessHash, $imageHarnessHash);
         }
 
         return $catalog;

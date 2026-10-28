@@ -91,6 +91,7 @@ Del ejecutor usa lo de B2: `runs.executor.url` (`EXECUTOR_URL`), `runs.executor.
 | No puede escribir el informe | `No puedo escribir el informe en <directorio>: corré la auditoría con npm run api:audit, que monta qa/curriculum-audit/.` |
 | Sin importación | `No hay contenido importado: levantá el stack con «docker compose up --build -d --wait» y volvé a auditar.` |
 | La importación no es la de la imagen | `El contenido importado (<12 hex>) no es el de esta imagen (<12 hex>): levantá el stack con «docker compose up --build -d --wait» y volvé a auditar.` |
+| La plantilla importada no es la de la imagen | `La plantilla importada (<12 hex>) no es la de esta imagen (<12 hex>): reimportá el contenido levantando el stack con «docker compose up --build -d --wait» y volvé a auditar.` |
 | Un `--exercise` que no está activo en los lenguajes elegidos | `<id> no es un ejercicio activo de <lenguajes>.` |
 | El ejercicio de la muestra no está activo | `La muestra de la prueba propia necesita <id>, que no es un ejercicio activo: actualizá audit.custom_test_sample.` |
 | No alcanza al ejecutor | `No alcanzo al ejecutor de auditoría en <url> (<causa>). npm run api:audit lo levanta; si lo usaste, mirá «docker compose --profile audit logs executor-audit».` |

@@ -39,6 +39,14 @@ final class AuditRefused extends RuntimeException
         return new self("El contenido importado ({$importedShort}) no es el de esta imagen ({$imageShort}): levantá el stack con «docker compose up --build -d --wait» y volvé a auditar.");
     }
 
+    public static function staleHarness(string $imported, string $image): self
+    {
+        $importedShort = substr($imported, 0, 12);
+        $imageShort = substr($image, 0, 12);
+
+        return new self("La plantilla importada ({$importedShort}) no es la de esta imagen ({$imageShort}): reimportá el contenido levantando el stack con «docker compose up --build -d --wait» y volvé a auditar.");
+    }
+
     public static function unknownExercise(string $id, string $languages): self
     {
         return new self("{$id} no es un ejercicio activo de {$languages}.");
