@@ -125,7 +125,7 @@ function systemsBridge(
   afterCatalogs?.(context);
   loadSystemsUi(context);
   const api = context.TallerSystems;
-  assert.ok(api, 'systems.js no publicó TallerSystems');
+  assert.ok(api, 'el adaptador de Sistemas no publicó TallerSystems');
   assert.deepEqual(plainJson(api.init()), { storageAvailable: true, loadWarning: '' });
   return { api, context };
 }

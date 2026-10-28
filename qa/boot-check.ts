@@ -82,6 +82,8 @@ await test('adaptadores: cada window.Taller* real publica los métodos que consu
   assert.deepEqual(missingAdapterMethods(context), []);
 });
 
+const REACT_VIEWS: ReadonlySet<string> = new Set(['atlas', 'proyecto', 'sistemas']);
+
 function mountedText(node: FakeNode): string {
   if (node instanceof FakeText) return node.nodeValue;
   return node.textContent + node.childNodes.map(mountedText).join('');
@@ -108,8 +110,7 @@ await test('navegación: cada vista se renderiza por hash sin lanzar', async () 
     harness.navigate(view);
     await harness.flush();
     assert.deepEqual(harness.errors, [], `errores al navegar a #${view}`);
-    if (view === 'atlas' || view === 'proyecto') {
-      // El Atlas y Proyecto son React: montan nodos reales en #main en lugar de escribir innerHTML.
+    if (REACT_VIEWS.has(view)) {
       assert.ok(main.childNodes.length > 0, `#${view} no montó nodos en #main`);
       assert.ok(
         mountedText(main).includes(VIEW_HEADINGS[view]),
@@ -274,7 +275,6 @@ const LEGACY_SOURCES = [
   'frontend/app.js',
   'frontend/lab.js',
   'frontend/campaign.js',
-  'frontend/systems.js',
   'frontend/lab-explorers.js',
   'frontend/quest-explorers.js',
 ];

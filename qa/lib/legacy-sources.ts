@@ -14,7 +14,7 @@ export const LAB_SOURCE = 'frontend/lab.js';
 export const CAMPAIGN_ENGINE_SOURCE = 'frontend/src/app/legacy/register-campaign-engine.ts';
 export const CAMPAIGN_UI_SOURCE = 'frontend/campaign.js';
 export const SYSTEMS_ENGINE_SOURCE = 'frontend/src/app/legacy/register-systems-engine.ts';
-export const SYSTEMS_UI_SOURCE = 'frontend/systems.js';
+export const SYSTEMS_UI_SOURCE = 'frontend/src/app/legacy/register-systems.tsx';
 
 // Ejercicios del recorrido y desafíos de campaña.
 export const LAB_EXERCISE_SOURCES: readonly string[] = [CATALOGS_SOURCE];

@@ -270,7 +270,7 @@ test('records: ID without file, repeated across groups, unknown key and group', 
   );
 });
 
-test('workshops: category is one that systems.js knows', () => {
+test('workshops: category is one that the Systems page knows', () => {
   const files: Record<string, string> = {
     'content/workshops/manifest.yaml': ['lowlevel', 'infra', 'play', 'pc']
       .map((domain) => `${domain}:\n  - ${domain}-w\n`)
