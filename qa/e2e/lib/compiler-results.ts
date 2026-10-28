@@ -6,6 +6,11 @@ export interface ExerciseUnderTest {
   testIds: readonly string[];
 }
 
+export const RUST_01: ExerciseUnderTest = {
+  id: 'rust-01',
+  language: 'rust',
+  testIds: ['t1', 't2', 't3'],
+};
 export const RUST_02: ExerciseUnderTest = {
   id: 'rust-02',
   language: 'rust',
@@ -21,11 +26,18 @@ export type CompilerKind = 'passed' | 'failedTest' | 'compileError' | 'transport
 
 export type CompilerReply = { kind: 'json'; body: unknown } | { kind: 'abort' };
 
+export type CustomOutcome = 'PASS' | 'FAIL';
+
 // Marker format of ADR 0003, point 7.
-function markers(exercise: ExerciseUnderTest, failing: readonly string[]): string {
-  return exercise.testIds
+function markers(
+  exercise: ExerciseUnderTest,
+  failing: readonly string[],
+  custom?: CustomOutcome,
+): string {
+  const expected = exercise.testIds
     .map((id) => `__TALLER_TEST__${id}:${failing.includes(id) ? 'FAIL' : 'PASS'}\n`)
     .join('');
+  return custom ? `${expected}__TALLER_TEST__custom:${custom}\n` : expected;
 }
 
 function rustReply(success: boolean, stdout: string, stderr: string): CompilerReply {
@@ -53,15 +65,19 @@ const COMPILE_ERROR = {
   go: 'prog.go:12:2: declared and not used: x\n',
 };
 
-export function compilerReply(exercise: ExerciseUnderTest, kind: CompilerKind): CompilerReply {
+export function compilerReply(
+  exercise: ExerciseUnderTest,
+  kind: CompilerKind,
+  custom?: CustomOutcome,
+): CompilerReply {
   if (kind === 'transportError') return { kind: 'abort' };
   const failing = kind === 'failedTest' ? ['t2'] : [];
   if (exercise.language === 'rust') {
     if (kind === 'compileError') return rustReply(false, '', COMPILE_ERROR.rust);
-    return rustReply(true, markers(exercise, failing), '');
+    return rustReply(true, markers(exercise, failing, custom), '');
   }
   if (kind === 'compileError') return goReply(COMPILE_ERROR.go, '', 2);
-  return goReply('', markers(exercise, failing), 0);
+  return goReply('', markers(exercise, failing, custom), 0);
 }
 
 export const PLAYGROUND_ENDPOINT: Record<Language, string> = {
