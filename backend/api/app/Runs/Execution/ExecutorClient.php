@@ -6,6 +6,7 @@ use App\Runs\Evidence\ExecutorResult;
 use App\Runs\RunLanguage;
 use GuzzleHttp\Exception\ConnectException;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 
@@ -16,18 +17,37 @@ final class ExecutorClient
     public function send(RunLanguage $language, string $program): ExecutorReply
     {
         try {
-            $response = Http::baseUrl(config()->string('runs.executor.url'))
-                ->withToken(config()->string('runs.executor.token'))
-                ->acceptJson()
-                ->asJson()
-                ->connectTimeout(config()->integer('runs.executor.connect_timeout'))
-                ->timeout(config()->integer('runs.executor.request_timeout'))
-                ->post('/v1/run', ['language' => $language->value, 'program' => $program]);
+            $response = $this->prepare(Http::withOptions([]))->post('/v1/run', self::body($language, $program));
         } catch (ConnectionException $error) {
-            return $this->neverReached($error) ? ExecutorReply::notReached() : ExecutorReply::failed('connection', null);
+            return $this->read($error);
         }
 
-        return $this->fromResponse($response);
+        return $this->read($response);
+    }
+
+    public function prepare(PendingRequest $request): PendingRequest
+    {
+        return $request->baseUrl(config()->string('runs.executor.url'))
+            ->withToken(config()->string('runs.executor.token'))
+            ->acceptJson()
+            ->asJson()
+            ->connectTimeout(config()->integer('runs.executor.connect_timeout'))
+            ->timeout(config()->integer('runs.executor.request_timeout'));
+    }
+
+    /** @return array{language: string, program: string} */
+    public static function body(RunLanguage $language, string $program): array
+    {
+        return ['language' => $language->value, 'program' => $program];
+    }
+
+    public function read(Response|ConnectionException $outcome): ExecutorReply
+    {
+        if ($outcome instanceof ConnectionException) {
+            return $this->neverReached($outcome) ? ExecutorReply::notReached() : ExecutorReply::failed('connection', null);
+        }
+
+        return $this->fromResponse($outcome);
     }
 
     // A ConnectionException also covers a timeout and an empty reply, which may have run the code (R8).
