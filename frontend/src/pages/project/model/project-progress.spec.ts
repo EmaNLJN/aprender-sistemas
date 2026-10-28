@@ -10,6 +10,8 @@ const HEADINGS = [
 ];
 const FIRST_HINT_TODAY =
   'Definí primero el comportamiento esperado. Usá un mapa con claves y valores de texto. En Rust podés empezar con datos propios (String); explicá cada copia que hagas.';
+const FIRST_HINT_GO =
+  'Definí primero el comportamiento esperado. Usá un mapa con claves y valores de texto. En Go podés empezar con un map[string]string creado con make; leé con valor, ok := datos[clave] para distinguir una clave que no existe de un valor vacío.';
 
 describe('the progress shown by the project page', () => {
   it('lists the five milestones of Rust with their numbered headings and their ids', () => {
@@ -65,8 +67,9 @@ describe('the progress shown by the project page', () => {
     );
   });
 
-  it('KNOWN DEFECT (spec 013, FR-015): the hint of the first milestone in Go names Rust', () => {
+  it('shows the hint of the active language, and the one of Go does not name Rust', () => {
     expect(projectProgress([], 'rust').milestones[0].hint).toBe(FIRST_HINT_TODAY);
-    expect(projectProgress([], 'go').milestones[0].hint).toBe(FIRST_HINT_TODAY);
+    expect(projectProgress([], 'go').milestones[0].hint).toBe(FIRST_HINT_GO);
+    expect(projectProgress([], 'go').milestones[0].hint).not.toContain('Rust');
   });
 });

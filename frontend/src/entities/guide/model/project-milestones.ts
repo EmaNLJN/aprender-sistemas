@@ -21,7 +21,7 @@ export const PROJECT_MILESTONES: readonly ProjectMilestone[] = [
       'Podés guardar una clave, leerla, reemplazar su valor y borrarla. Un test comprueba qué ocurre si la clave no existe.',
     hint: {
       rust: 'Definí primero el comportamiento esperado. Usá un mapa con claves y valores de texto. En Rust podés empezar con datos propios (String); explicá cada copia que hagas.',
-      go: 'Definí primero el comportamiento esperado. Usá un mapa con claves y valores de texto. En Rust podés empezar con datos propios (String); explicá cada copia que hagas.',
+      go: 'Definí primero el comportamiento esperado. Usá un mapa con claves y valores de texto. En Go podés empezar con un map[string]string creado con make; leé con valor, ok := datos[clave] para distinguir una clave que no existe de un valor vacío.',
     },
   },
   {

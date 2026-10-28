@@ -32,6 +32,8 @@ const HEADINGS = [
 const TERMINAL = '> SET curiosidad encendida\nOK\n> GET curiosidad\nencendida\n> _';
 const FIRST_HINT_RUST =
   'Definí primero el comportamiento esperado. Usá un mapa con claves y valores de texto. En Rust podés empezar con datos propios (String); explicá cada copia que hagas.';
+const FIRST_HINT_GO =
+  'Definí primero el comportamiento esperado. Usá un mapa con claves y valores de texto. En Go podés empezar con un map[string]string creado con make; leé con valor, ok := datos[clave] para distinguir una clave que no existe de un valor vacío.';
 const DROPPED_NOTICE =
   'Se descartó 1 registro del recorrido que esta versión no reconoce; se conservó una copia en taller-learning-v1:respaldo.';
 
@@ -363,7 +365,7 @@ test.describe('the hints', () => {
     await expect(project.hint(TITLES[1])).toHaveJSProperty('open', true);
   });
 
-  test('KNOWN DEFECT (spec 013, FR-015): the hint of the first milestone in Go names Rust', async ({
+  test('the hint of the first milestone is one per language, and the one of Go does not name Rust', async ({
     shell,
     project,
   }) => {
@@ -374,6 +376,7 @@ test.describe('the hints', () => {
     await shell.switchLanguage('go');
     await project.hintToggle(TITLES[0]).click();
 
-    await expect(project.hintText(TITLES[0])).toHaveText(FIRST_HINT_RUST);
+    await expect(project.hintText(TITLES[0])).toHaveText(FIRST_HINT_GO);
+    await expect(project.hintText(TITLES[0])).not.toContainText('Rust');
   });
 });

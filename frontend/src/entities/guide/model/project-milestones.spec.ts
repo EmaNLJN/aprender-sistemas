@@ -27,6 +27,8 @@ const TEN_IDS = [
 ];
 const FIRST_HINT_TODAY =
   'Definí primero el comportamiento esperado. Usá un mapa con claves y valores de texto. En Rust podés empezar con datos propios (String); explicá cada copia que hagas.';
+const FIRST_HINT_GO =
+  'Definí primero el comportamiento esperado. Usá un mapa con claves y valores de texto. En Go podés empezar con un map[string]string creado con make; leé con valor, ok := datos[clave] para distinguir una clave que no existe de un valor vacío.';
 const LAST_HINT =
   'TCP transporta un flujo de bytes: cada lectura no equivale a un comando completo. Acumulá bytes hasta el delimitador. Después podés investigar varios clientes y acceso compartido a los datos.';
 
@@ -52,8 +54,9 @@ describe('the catalog of project milestones', () => {
     expect(milestoneHint(PROJECT_MILESTONES[4], 'go')).toBe(LAST_HINT);
   });
 
-  it('KNOWN DEFECT (spec 013, FR-015): the first milestone gives Go the hint that names Rust', () => {
+  it('gives the first milestone one hint per language, and the one of Go does not name Rust', () => {
     expect(milestoneHint(PROJECT_MILESTONES[0], 'rust')).toBe(FIRST_HINT_TODAY);
-    expect(milestoneHint(PROJECT_MILESTONES[0], 'go')).toBe(FIRST_HINT_TODAY);
+    expect(milestoneHint(PROJECT_MILESTONES[0], 'go')).toBe(FIRST_HINT_GO);
+    expect(milestoneHint(PROJECT_MILESTONES[0], 'go')).not.toContain('Rust');
   });
 });
