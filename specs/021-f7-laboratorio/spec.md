@@ -319,7 +319,7 @@ Recibe el transporte como un puerto. El adaptador de hoy, el de los Playgrounds,
 
 | # | Supuesto de A4 | Decisión de F7 | Requisito | Matiz |
 | --- | --- | --- | --- | --- |
-| F7-S1 | El transporte es un puerto inyectable y ninguna vista legacy lee `window.TallerRunner` | Se adopta | FR-044 y FR-012 | El puerto llega desde `app`. En F7a, `lab.js` ya lo recibe así |
+| F7-S1 | El transporte es un puerto inyectable y ninguna vista legacy lee `window.TallerRunner` | Se adopta | FR-044 y FR-012 | El puerto llega desde `app`. En F7a lo elige `lab.js`, que hace de raíz de composición del laboratorio legacy |
 | F7-S2 | La entrada es el ejercicio, el borrador, la prueba propia y la señal, nunca el programa | Se adopta | FR-045 | El adaptador de los Playgrounds arma el programa adentro |
 | F7-S3 | La salida es un veredicto y no la salida cruda; el adaptador llama a `interpretRun` | Se adopta | FR-046 y FR-052 | La feature agrega `code`, `customTest` y `time`, y arma el `result` en un solo lugar, también el de una falla de transporte. Los recortes se aplican una vez |
 | F7-S4 | Contar o no `attempts` lo decide el adaptador (o viene en su resultado) | Se adopta con un matiz: el adaptador lo **declara antes de ejecutar**; «viene en su resultado», no | FR-047 | Hoy el intento se suma y se guarda antes de ejecutar, y una ejecución cancelada no trae resultado: si el conteo viniera en el resultado, la cancelación dejaría de contar. Para A4 da lo mismo, porque su adaptador declara que no suma |
@@ -507,7 +507,7 @@ Nada de lo que el alumno guardó se pierde ni cambia de forma, y cada acción es
 
 **Why this priority**: es el contrato del ADR 0003 y lo que D1c va a sincronizar campo por campo; una escritura de más o de menos rompe la fusión.
 
-**Independent Test**: con `storage.watchWrites()` y una instantánea de `localStorage`, repetir en el legacy y en la página cada fila de «Lo que guarda y cuándo» y una secuencia combinada, y comparar.
+**Independent Test**: con `storage.watchWrites()`, una instantánea de `localStorage`, el mismo reloj fijo y la misma fuente de azar, repetir en el legacy y en la página cada fila de «Lo que guarda y cuándo» y una secuencia combinada, y comparar.
 
 **Acceptance Scenarios**:
 
@@ -613,13 +613,14 @@ Cada requisito lleva entre paréntesis la mitad que lo entregaría si se acepta 
 - **FR-011** *(F7b)*: `frontend/lab.css` y `frontend/quest-explorers.css` DEBEN salir de `frontend/`. Sus reglas se mueven sin editarse al slice (`pages/lab/ui/`, como `atlas.css`) y se importan en el mismo lugar de la cascada de `main.tsx` (decisión D4). Con eso, el `<style>` del dist queda igual salvo las reglas que reemplazan a los estilos en línea (FR-003).
 - **FR-012** *(F7a: `TallerRunner`; F7b: el resto)*: DEBEN retirarse `window.TallerExplorers`, `window.TallerQuestExplorers`, `window.TallerRunner` con `register-runner.ts`, y `window.TallerEditor` con `register-editor.ts` (decisión D5). `runner-check` DEBE pasar a cargar `shared/api/playground` directamente, sin perder escenarios; lo retira A4. *(Supuesto F7-S9 de A4)*
 - **FR-013** *(F7b)*: DEBEN retirarse de los adaptadores de campaña y de Sistemas los métodos que sólo leía el laboratorio: `TallerCampaign.exerciseContextHTML`, `lockedExerciseHTML` y `returnURL`, y `TallerSystems.exerciseContextHTML`, `missionIDs`, `returnURL` y `refresh`. `TallerCampaign.refresh`, `TallerCampaign.sync` y `TallerSystems.sync` DEBEN quedarse mientras `app.js` los lea (ver «Qué queda en `window.*`»).
-- **FR-014** *(F7b)*: `window.TallerLab` DEBE publicar exactamente los diez métodos que `app.js` invoca (`qa/lib/app-adapters.ts`), delegando en `labStore`, en `exerciseCatalog` y en la sesión de la página: `init` abre el catálogo y el almacén como hoy, sin escribir. `reset` borra el almacén, reinicia la sesión y aborta la ejecución (FR-021). El PR DEBE listar quién lee cada método y qué ítem lo retira.
+- **FR-014** *(F7b)*: `window.TallerLab` DEBE publicar exactamente los diez métodos que `app.js` invoca (`qa/lib/app-adapters.ts`), delegando en `labStore`, en `exerciseCatalog` y en la sesión de la página: `init` abre el catálogo y el almacén como hoy, sin escribir. `reset` borra el almacén, reinicia la sesión y aborta la ejecución (FR-021). Los métodos que no dibujan DEBEN poder evaluarse en los checks sin empaquetar la página ni los motores: un check que carga el adaptador junto con `register-campaign-engine.ts` no puede terminar con dos motores ni con dos almacenes (spec de F2, FR-018). El plan elige cómo; por ejemplo, separar la parte que dibuja, y que la sesión se reinicie desde un módulo que no importa la vista. El PR DEBE listar quién lee cada método y qué ítem lo retira.
 - **FR-015** *(F7a y F7b)*: Los checks de infraestructura DEBEN cambiar sólo cómo cargan o qué observan, sin relajar ninguna restricción:
   - `load-order-check` y `legacy-views.ts`, con el adaptador en el lugar de `lab.js`;
   - `boot-check`, que lee los nodos de la vista del laboratorio como ya lo hace con el Atlas y exige que evaluar el adaptador no toque el almacenamiento;
   - `seams-guard` y su check, donde el dueño del índice de `exercise` pasa de `lab.js` al adaptador y salen las fixtures que citan `lab-explorers.js` y `quest-explorers.js`;
   - `qa/lib/legacy-sources.ts`;
-  - `qa/lib/app-adapters.ts`, cuya lista no cambia.
+  - `qa/lib/app-adapters.ts`, cuya lista no cambia;
+  - una comprobación de aislamiento, como las de las entradas sin estado de F2b, que pruebe que empaquetar `lab.js` (en F7a) o el adaptador (en F7b) no trae otra instancia de un motor ni del almacén.
 
 **Datos y progreso**
 
@@ -713,7 +714,9 @@ Cada requisito lleva entre paréntesis la mitad que lo entregaría si se acepta 
   - los avisos;
   - `syncAfterRun`;
   - el descarte de un resultado que llega cuando la ejecución ya no es la activa.
-- **FR-044** *(F7a)*: El transporte DEBE llegar como un puerto inyectado desde `app`. Ni la feature ni la vista importan un adaptador, y ninguna vista legacy lee `window.TallerRunner`. *(F7-S1)*
+
+  La feature recibe como dependencias inyectadas el almacén, el reloj, el aviso, las dos sincronizaciones y la consulta de si el ejercicio es una misión de campaña, como hoy `syncAfterRun` recibe sus funciones. NO DEBE importar el índice de ningún motor: así, empaquetarla junto a `lab.js` o al adaptador no duplica un singleton en los checks.
+- **FR-044** *(F7a)*: El transporte DEBE llegar como un puerto inyectado desde la raíz de composición: en F7b, el adaptador de `app/legacy`; en F7a, `lab.js`, que hace de raíz del laboratorio legacy. Ni la feature ni la vista importan un adaptador, y nadie lee `window.TallerRunner`. *(F7-S1)*
 - **FR-045** *(F7a)*: La entrada del puerto DEBE ser el ejercicio (id, lenguaje, pruebas e imports), el borrador tal cual, la prueba propia normalizada y la señal de cancelación, nunca el programa armado. *(F7-S2)*
 - **FR-046** *(F7a)*: La salida del puerto DEBE ser un veredicto:
   - si se ejecutó o el mensaje de la falla de transporte;
@@ -797,7 +800,7 @@ Cada requisito lleva entre paréntesis la mitad que lo entregaría si se acepta 
   - los exploradores, con las trazas de operaciones sobre los 274 ejercicios (el oráculo de la unidad 7 de F2b).
 
   El PR lista las diferencias de serialización de React y los atributos `data-*` de delegación que se retiran, que ninguna hoja ni ningún E2E usa.
-- **FR-065** *(F7b)*: Un barrido de estilo computado DEBE comparar el antes y el después de mover las hojas y de reemplazar los estilos en línea, con 0 diferencias. Recorre el mapa, las tres fases, los estados del revisor, el bloqueo, los contextos, el diálogo y cada explorador, más las vistas de Campaña y de Sistemas, que pueden usar clases de `lab.css`. Mide en 1200, 981, 850, 700, 650 y 590 px.
+- **FR-065** *(F7b)*: Un barrido de estilo computado DEBE comparar el antes y el después de mover las hojas y de reemplazar los estilos en línea, con 0 diferencias. Recorre el mapa, las tres fases, los estados del revisor, el bloqueo, los contextos, el diálogo y cada explorador, más las vistas de Campaña y de Sistemas, que pueden usar clases de `lab.css`. Mide en 1200, 981, 850, 700, 650 y 590 px, con y sin `prefers-reduced-motion: reduce`. Con movimiento reducido, el spinner (`.lab-spinner`) y las transiciones quedan apagados como hoy, por la regla global de `styles.css` y la de la hoja del laboratorio, y la página no suma animaciones ni una librería de animación.
 
 **La integración**
 
@@ -820,9 +823,9 @@ Cada requisito lleva entre paréntesis la mitad que lo entregaría si se acepta 
 
 - **SC-001**: Los 123 E2E de F1 y A2 pasan sin editarse después de cada PR. Los E2E nuevos del laboratorio y de los exploradores pasan contra el legacy antes de portar y contra la página después, sin editarse, y su cantidad se informa.
 - **SC-002**: `grep` da 0 apariciones de `lab.js`, `lab-explorers.js`, `quest-explorers.js`, `lab.css` y `quest-explorers.css` en `frontend/` y en `qa/`, y 0 asignaciones a `window.TallerExplorers`, `TallerQuestExplorers`, `TallerRunner` o `TallerEditor`. `window.TallerLab` publica 10 métodos y los adaptadores de campaña y Sistemas, los de la tabla.
-- **SC-003**: Para cada fila de «Lo que guarda y cuándo» y para una secuencia combinada, la lista de escrituras y el texto final de `taller-laboratorio-v1` son iguales byte a byte en el legacy y en la página. Las tres fixtures arrancan con 0 escrituras.
+- **SC-003**: Para cada fila de «Lo que guarda y cuándo» y para una secuencia combinada, la lista de escrituras y el texto final de `taller-laboratorio-v1` son iguales byte a byte en el legacy y en la página. Las dos corridas usan el mismo reloj fijo (`page.clock`), porque `time`, `solvedAt`, `reviewAt` y `reviewedAt` salen de la hora, y la misma fuente de azar, por «Sorprendeme». Las tres fixtures arrancan con 0 escrituras.
 - **SC-004**: La comparación del DOM da 0 diferencias fuera de la lista del PR, y las trazas de los exploradores sobre los 274 ejercicios dan 0 diferencias (la unidad 7 de F2b midió 2 214 comparaciones).
-- **SC-005**: El barrido de estilo computado da 0 diferencias en los seis anchos, y `css-contract` (R1 a R10) sigue en verde.
+- **SC-005**: El barrido de estilo computado da 0 diferencias en los seis anchos, con y sin movimiento reducido, y `css-contract` (R1 a R10) sigue en verde.
 - **SC-006**: Una spec de la feature corre el ciclo completo (aprobado, parcial, error, falla de transporte y cancelación) con un adaptador doble que no arma programa, no lee marcas y declara que no suma intentos, sin cambiar la feature ni la vista. El adaptador de los Playgrounds reproduce los cuatro resultados de F1.
 - **SC-007**: `npm test` pasa, y las correspondencias de `lab-state-check` (37), `quest-explorers-check` (47) y `lab-bridge-check` (21) tienen 0 filas sin destino ni motivo.
 - **SC-008**: `dist/index.html` queda bajo 1 250 000 caracteres, con el antes y el después informados, y no entra ninguna dependencia de ejecución.
@@ -857,6 +860,7 @@ No las pidió el usuario y no se preguntan porque no cambian lo que el alumno ve
 9. **Las fechas y el azar en los E2E** (repasos y «Sorprendeme»). *Mitigación:* `page.clock` y una fuente de azar inyectable.
 10. **El orden de integración con F8, F10 y A4,** que tocan `app.js`, `legacy-views.ts` y la feature. *Mitigación:* de a uno, el que llega después rebasa.
 11. **La comparación del DOM y la serialización de React** (orden de atributos, atributos booleanos y `data-*` retirados). *Mitigación:* la lista de diferencias admitidas en el PR, con el barrido como juez del aspecto.
+12. **Dos instancias de un motor o del almacén en los checks.** La regla R4 sólo mira los imports directos. Si el adaptador empaqueta la página, que importa los motores, o si la feature importa uno, un check que también carga `register-campaign-engine.ts` termina con dos (spec de F2, FR-018). El borrador de F5 lo plantea en su V3, y el de F6 lo resuelve en su FR-036. *Mitigación:* la feature recibe sus dependencias inyectadas (FR-043), los métodos del adaptador que no dibujan se evalúan sin la página (FR-014) y una comprobación de aislamiento lo vigila (FR-015).
 
 ## Relación con otros ítems
 
