@@ -26,6 +26,8 @@
 >   - un arnés en Chromium, para el foco, los 320 px y Esc.
 >
 >   Los E2E tipan pero no corrieron, porque necesitan F11a cableada (research.md, «Mediciones» y «Lo que no se verificó»).
+>
+>   El tipado pasó con `messagesOf(error: FieldError | GlobalError | undefined)`. La firma del contrato de F11a (`FieldError | undefined`) no acepta `errors.root?.serverError` de React Hook Form 7.89.0, y con ella no tipan `PasswordStep.tsx`, `InviteForm.tsx` ni el `LoginForm` de F11a (hallazgo 1 para F11a). Si F11a resuelve otra cosa, T001 lo anota y T012 y T018 usan la firma de `master`.
 
 ## Summary
 
@@ -5640,6 +5642,7 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
 4. **`admin-layout.spec.ts`.** Cubre FR-008, FR-050, FR-052 y FR-053, SC-001 y SC-006:
 
    ```ts
+   import type { Locator, Page } from '@playwright/test';
    import { expect, test } from '../fixtures';
    import { ADMIN } from '../lib/api-contract';
    import { ANA_ROW, OWN_ROW, adminUser, linkFor, pageOf } from '../lib/admin-contract';
@@ -5651,6 +5654,13 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
      name: 'María de los Ángeles Fernández Etcheverry',
      email: 'maria.de.los.angeles.fernandez.etcheverry@universidad.example',
    });
+
+   async function tabTo(page: Page, target: Locator): Promise<void> {
+     for (let presses = 0; presses < 60; presses += 1) {
+       if (await target.evaluate((element) => element === document.activeElement)) return;
+       await page.keyboard.press('Tab');
+     }
+   }
 
    test.use({ sessionAccount: ADMIN });
 
@@ -5715,16 +5725,14 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
        json: { data: { ...ANA_ROW, status: 'disabled' } },
      }));
      await shell.goto(urls.view('recorrido'));
-     await account.entry.focus();
+     await tabTo(page, account.entry);
+     await expect(account.entry).toBeFocused();
      await page.keyboard.press('Enter');
-     await account.button('Administrar el taller').focus();
+     await tabTo(page, account.button('Administrar el taller'));
      await page.keyboard.press('Enter');
      await expect(admin.title).toBeFocused();
      const target = admin.button('Deshabilitar a Ana Pérez');
-     for (let presses = 0; presses < 20; presses += 1) {
-       if (await target.evaluate((element) => element === document.activeElement)) break;
-       await page.keyboard.press('Tab');
-     }
+     await tabTo(page, target);
      await expect(target).toBeFocused();
      await page.keyboard.press('Enter');
      const dialog = admin.dialog('¿Deshabilitar la cuenta de Ana Pérez?');
@@ -6093,7 +6101,7 @@ Está en el [contrato](./contracts/admin-page.md), «Lo que hace cada ítem que 
 | SC-003 | La tabla siguiente |
 | SC-004 | T011 (una contraseña, un reintento, cancelar sin pedido); T022 (la segunda acción no pide la contraseña) |
 | SC-005 | T003 y T015 (0 acciones en la propia y en la que se borra); T015 y T022 (el 409 vuelve a pedir la página una vez); T022 (10 letras, 0 pedidos) |
-| SC-006 | T022 (el teclado, el foco, 320 y 390 px y el movimiento reducido) |
+| SC-006 | En parte. T022 recorre sólo con el teclado un flujo entero: de la entrada «Tu cuenta» a deshabilitar una cuenta. También cubre el foco de vuelta en cada diálogo, 320 y 390 px y el movimiento reducido. Las demás historias usan los mismos controles nativos (botones, campos, `<select>` y `<dialog>`), pero no se recorren enteras con el teclado |
 | SC-007 | Compuerta de 0.3; T026 (el peso y `package.json`) |
 | SC-009 | T026 |
 | SC-010 | T019 (la página sola); T009 (un solo método de apertura) |

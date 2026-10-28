@@ -194,6 +194,7 @@ Eso suma entre 76 400 y 106 400, sin contar A3, F7b, F8, F10 ni F12a. Las reserv
   - sin la comparación de `target` en el contenedor, falla «stays open when a confirmation inside it closes»;
   - sin la guarda `finished`, falla «does not send the action when the dialog closed while the password was being confirmed».
 - **Los checks:** `tsc` (con `noUncheckedIndexedAccess`), ESLint con `eslint.config.ts` del repo (`react-hooks` recomendado y complejidad 10) y Prettier con `prettier.config.ts`, todos en verde. La función más compleja es `usePagedList`, con 10.
+- **La condición del tipado.** `tsc` pasó con `messagesOf(error: FieldError | GlobalError | undefined)` en la copia de F11a. Con la firma del contrato de F11a (`FieldError | undefined`), `errors.root?.serverError` no tipa, porque React Hook Form 7.89.0 lo declara como `GlobalError`. Así fallan `PasswordStep.tsx` e `InviteForm.tsx`, y también el `LoginForm` del plan de F11a. Es el hallazgo 1 para F11a; si F11a resuelve otra cosa, T001 lo anota y T012 y T018 la usan.
 - **Los E2E:** tipan con el doble de F11a copiado de su plan, pero **no corrieron**, porque necesitan F11a cableada.
 
 **Chromium headless (Playwright 1.63, `chromium_headless_shell-1243`)** sobre un arnés que monta `AdminDialog` con un `fetch` falso, `styles.css`, `form.css` de F11a y `admin.css`:
@@ -235,3 +236,4 @@ La spec no los fija. Van como propuesta, para que el usuario los corrija.
   - `ConfirmPasswordController` regenera la sesión. El cliente de F11a lee la cookie en cada pedido, así que el reintento lleva el token vigente;
   - lo comprueba la verificación a mano de T026 (quickstart §4).
 - **El lector de pantalla** sobre los anuncios (`role="status"`) y los diálogos anidados.
+- **SC-006 queda cubierto en parte.** Un solo flujo se recorre entero con el teclado en E2E: de «Tu cuenta» a deshabilitar una cuenta. Las demás historias usan los mismos controles nativos, pero no se recorren enteras.
