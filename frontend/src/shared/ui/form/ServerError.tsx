@@ -1,4 +1,4 @@
-import type { FunctionComponent, ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 
 interface ServerErrorProps {
   readonly messages: readonly string[];
@@ -6,6 +6,21 @@ interface ServerErrorProps {
   readonly children?: ReactNode;
 }
 
-const ServerError: FunctionComponent<ServerErrorProps> = () => null;
+const ServerError = ({ messages, takeFocus, children }: ServerErrorProps) => {
+  const region = useRef<HTMLDivElement>(null);
+  const text = messages.join('\n');
+  useEffect(() => {
+    if (takeFocus && text !== '') region.current?.focus();
+  }, [takeFocus, text]);
+  if (messages.length === 0) return null;
+  return (
+    <div ref={region} className="form-server-error" role="alert" tabIndex={-1}>
+      {messages.map((message) => (
+        <p key={message}>{message}</p>
+      ))}
+      {children}
+    </div>
+  );
+};
 
 export default ServerError;
