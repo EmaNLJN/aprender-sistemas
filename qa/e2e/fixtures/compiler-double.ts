@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Page, Route } from '@playwright/test';
 import {
   PLAYGROUND_ENDPOINT,
   compilerReply,
@@ -7,6 +7,11 @@ import {
   type CustomOutcome,
   type ExerciseUnderTest,
 } from '../lib/compiler-results';
+
+async function respond(route: Route, reply: CompilerReply): Promise<void> {
+  if (reply.kind === 'abort') await route.abort('failed');
+  else await route.fulfill({ status: 200, contentType: 'application/json', json: reply.body });
+}
 
 export class CompilerDouble {
   readonly requests: string[] = [];
@@ -18,8 +23,7 @@ export class CompilerDouble {
     const reply = compilerReply(exercise, kind);
     await this.page.route(PLAYGROUND_ENDPOINT[exercise.language], async (route) => {
       this.requests.push(`${route.request().method()} ${route.request().url()}`);
-      if (reply.kind === 'abort') await route.abort('failed');
-      else await route.fulfill({ status: 200, contentType: 'application/json', json: reply.body });
+      await respond(route, reply);
     });
   }
 
@@ -46,8 +50,7 @@ export class CompilerDouble {
     await this.page.route(PLAYGROUND_ENDPOINT[exercise.language], async (route) => {
       this.requests.push(`held ${exercise.language}`);
       await released;
-      if (reply.kind === 'abort') await route.abort('failed');
-      else await route.fulfill({ status: 200, contentType: 'application/json', json: reply.body });
+      await respond(route, reply);
     });
     return release;
   }
@@ -56,8 +59,7 @@ export class CompilerDouble {
     await this.page.route(PLAYGROUND_ENDPOINT[exercise.language], async (route) => {
       this.requests.push(`${route.request().method()} ${route.request().url()}`);
       this.bodies.push(route.request().postData() ?? '');
-      if (reply.kind === 'abort') await route.abort('failed');
-      else await route.fulfill({ status: 200, contentType: 'application/json', json: reply.body });
+      await respond(route, reply);
     });
   }
 }

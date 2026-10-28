@@ -87,7 +87,6 @@ export class LabPage {
     return this.page.getByRole('button', { name: /^← Volver al/ });
   }
 
-  // Elements without an accessible name: the class or the id is their contract (ADR 0008).
   mapEyebrow(): Locator {
     return this.page.locator('.lab-intro .eyebrow');
   }
