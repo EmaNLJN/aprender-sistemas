@@ -292,7 +292,7 @@ docs/architecture.md, qa/AGENTS.md               # cambian (K, T022)
 
 - **S1:** A entregó T009 (`progress-areas.ts` existe), y Q parte de ahí.
 - **S2:** M entregó T011 y Q entregó T012, y K corta en T013.
-- **S3:** en U4, K integra en este orden: T019 (el servidor de contenido responde la API), T016, T018 y T014. Así `boot-check` nunca ve un «Borrar todo» sin servidor.
+- **S3:** en U4, K integra primero los rojos, T019, T014, T015 y T017, y después T016 y T018. Como T019 entra antes que T016, `boot-check` nunca corre un «Borrar todo» con el paso del servidor y sin las rutas de la API en su servidor de contenido.
 
 **Puertos de los E2E** (`vite preview` usa `--strictPort`): K `E2E_PORT=4173` y E `4194`.
 
@@ -358,7 +358,7 @@ T001 corre las detecciones de quickstart.md, §1.2, y anota cada fila como «est
   - `resetSimulations` sale del objeto que publica `frontend/src/app/legacy/register-systems.tsx`, de `APP_ADAPTER_METHODS.TallerSystems` en `qa/lib/app-adapters.ts` y de `RESET_METHODS` en `qa/boot-check.ts`;
   - en `app-shell-harness.ts`, el paso de sesión de `progressBackupFor` desaparece, porque el adaptador falso ya no lo tiene.
 
-  La correspondencia: lo cubren `systems-session.spec.ts` de F5 y el E2E de «Borrar todo» de F5.
+  La correspondencia: lo cubren `systems-session.spec.ts` de F5 y el E2E de «Borrar todo» de F5. La verificación: `git grep -n "resetSimulations" -- frontend/src/app/legacy qa/lib/app-adapters.ts` no imprime nada (US6-4).
 
 **Rama F9** (B6 está):
 
@@ -369,7 +369,7 @@ T001 corre las detecciones de quickstart.md, §1.2, y anota cada fila como «est
   - `resetTimer` sale de `register-route.tsx`, de `APP_ADAPTER_METHODS.TallerRoute` y de `RESET_METHODS`;
   - el escenario de T019 no lista `TallerRoute.resetTimer`.
 
-  La correspondencia: lo cubren la spec del temporizador de F9 (`reset()` vuelve a reposo) y su E2E de «Borrar todo».
+  La correspondencia: lo cubren la spec del temporizador de F9 (`reset()` vuelve a reposo) y su E2E de «Borrar todo». La verificación: `git grep -n "resetTimer" -- frontend qa` no imprime nada (US6-4).
 
 ## 0. U0 · La línea base (K, onda 0)
 
@@ -2039,7 +2039,7 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
        const rig = renderMethod();
        await user.click(screen.getByRole('button', { name: 'Copiar pedido para mi tutor' }));
        expect(rig.events).toEqual(['notify Texto seleccionado. Usá Copiar en tu navegador.']);
-       expect(window.getSelection()?.toString()).toBe(document.getElementById('tutor-prompt')?.textContent);
+       expect(document.getSelection()?.toString()).toBe(document.getElementById('tutor-prompt')?.textContent);
      });
    });
 
@@ -2234,7 +2234,7 @@ Los textos se copian de esos archivos, carácter por carácter, con sus `′`, `
    function selectContents(target: HTMLElement): void {
      const range = document.createRange();
      range.selectNodeContents(target);
-     const selection = window.getSelection();
+     const selection = document.getSelection();
      selection?.removeAllRanges();
      selection?.addRange(range);
    }
@@ -3289,6 +3289,8 @@ Con las ramas F5 y F9, también lo que dice «Ramas».
       - la red de F1, A2, F11a y los ítems que ya entraron;
       - los de U1;
       - los tres de `method-kept-state.spec.ts`, ahora en verde.
+
+      Si «after a successful import the focus stays on «Importar una copia»» falla porque el navegador mueve el foco al cerrar el selector, `ProgressPanel` suma una ref en ese botón y `importChosenFile` termina con `importButton.current?.focus()` (FR-019). Va en el mismo commit, y la prueba no se toca.
 12. **Commit:** `feat(front): Método en React con su adaptador window.TallerMethod, y startApp recibe progress-backup`.
 13. **Guardar la punta** como rama local `f8/u3-port`, para las comparaciones de T021.
 
@@ -4684,7 +4686,7 @@ Research.md, R4, R5 y R7.
 
 **Cubre:** FR-042 y FR-016; SC-003 y SC-007. Las recetas están en quickstart.md, §3.2 y §3.3.
 
-1. **El DOM de la página.** Se compara el `dist/` de T001 (el legacy) con el de `f8/u3-port` (el port con el borrado local) sobre la grilla de FR-042:
+1. **El DOM de la página.** Se compara el `dist/` de T005 (el legacy, ya con `.routine-note`) con el de `f8/u3-port` (el port con el borrado local) sobre la grilla de FR-042:
    - Rust y Go, con notas y sin notas;
    - con ranuras de respaldo y sin ranuras;
    - con la confirmación abierta;
@@ -4732,6 +4734,7 @@ Research.md, R4, R5 y R7.
    - si crece más de 9 000 caracteres o pasa de 1 250 000, parar y avisar con la medida por módulo.
 2. **La compuerta de §0.1,** con la red repetida tres veces (`--repeat-each=3 --retries=0`):
    - `git diff --check`;
+   - `git grep -n "useStore(" -- frontend/src/pages/method` muestra una sola llamada, con su selector (SC-011);
    - la cuenta de avisos igual a T001;
    - `render()` en T001 + 1;
    - con permiso, `docker compose build taller`, porque la imagen web corre `QA_CHECKS=web`.

@@ -51,8 +51,11 @@ El motivo está en el comentario de la regla: los checks empaquetan cada fuente 
 - `seams-guard-check` suma dos escenarios, primero en rojo:
   - el armado puede importar los tres índices;
   - otro archivo de `app/` al lado del armado sigue reportado por lo mismo, para mostrar que la ampliación es angosta.
-- `singletons-import.spec.ts` suma un caso: importar el armado no toca `localStorage` ni lee `window`.
+- `singletons-import.spec.ts` suma un caso: importar el armado no toca `localStorage`. No cuenta las lecturas de `window`, porque `react-dom` mira `typeof window` al evaluarse.
 - «the real tree has no violations» sigue en verde.
+- **La prueba de que no hay un segundo singleton en los checks que cargan el armado:**
+  - en `boot-check`, «borrar todo» espía `window.TallerCampaignEngine.reset` y ve la llamada del armado: es el mismo motor;
+  - en `app-shell-check`, la exportación lee el `routeStore` que abrió `startApp`. Con un segundo almacén, lanzaría «Abrí el almacén del recorrido antes de usarlo.».
 
 **Por qué importar los motores y no leer `window`:**
 
@@ -189,7 +192,7 @@ El modelo puro, en `model/method-texts.ts`, tiene `tutorPrompt`, los dos textos 
   2. el campo temporal con `execCommand('copy')`;
   3. la selección del `blockquote`.
 
-  Conserva las dos propiedades CSSOM de hoy en el campo temporal (`style.position` y `style.top`): FR-036 deja elegir, y una clase sería una segunda regla nueva, que SC-005 no admite.
+  Conserva las dos propiedades CSSOM de hoy en el campo temporal (`style.position` y `style.top`): FR-036 deja elegir, y una clase sería una segunda regla nueva, que SC-005 no admite. La selección usa `document.getSelection()`: son API del DOM, no datos de `window`, que FR-009 prohíbe leer.
 - **El campo de archivo.** Va dentro de la página, después de `.data-explainer`, con `hidden`, el mismo `accept` y el mismo `aria-label`.
   - Un `ref` lo abre desde «Importar una copia».
   - `hidden` lo saca del flujo con `[hidden] { display: none !important; }` de `styles.css`, así que no cambia la grilla de `.data-actions`.
