@@ -125,7 +125,7 @@ docker compose up -d --wait --no-deps mysql php taller scheduler executor worker
 | Comando | Qué suma C3c |
 | --- | --- |
 | `npm run api:smoke` | Comprueba siete cosas: <br>• `worker-mail` corre; <br>• resuelve `mysql` y no resuelve `php`; <br>• es la única excepción del lazo de DNS de C3a (`php`, `scheduler`, `migrate` y los demás siguen sin resolver nombres de Internet); <br>• `php` no tiene `MAIL_PASSWORD` ni `MAIL_USERNAME`; <br>• `grants` y `mailpit` no existen sin su perfil, o terminaron; <br>• `POST /api/auth/forgot-password` responde 202 con correo y 503 `mail_unavailable` en modo sólo link; <br>• `features.passwordReset` lo dice |
-| `sh backend/api/scripts/check-mail.sh` (nuevo) | **Con Mailpit** (perfil `dev`): una invitación por correo creada por la API llega a Mailpit por `worker-mail`, con `taller_mail`; su link empieza por `APP_URL`, la consulta del token responde 200 y la fila tiene `sent_at`. La recuperación llega y su link restablece la contraseña. <br>**Sin Mailpit** (`MAIL_REQUIRED=false` y el mailer `log`): `sent_at` se completa, y los registros de `worker-mail` no tienen un token ni un email en claro. Avisa que «el link abre» queda como verificación manual. <br>Crea y borra sus cuentas (`check-mail-*@taller.invalid`) |
+| `sh backend/api/scripts/check-mail.sh` (nuevo) | **Con Mailpit** (perfil `dev`): una invitación por correo creada por la API llega a Mailpit por `worker-mail`, con `taller_mail`; su link empieza por `APP_URL`, la consulta del token responde 200 y la fila tiene `sent_at`. La recuperación llega y su link restablece la contraseña. <br>**Sin Mailpit** (`MAIL_REQUIRED=false` y el mailer `log`): `sent_at` se completa, y los registros de `worker-mail` no tienen un token ni un email en claro. Avisa que «el link abre» queda como verificación manual. <br>**Con `CHECK_MAIL_EXPECT=failed`** (el proveedor caído): `send_failed_at` en lugar de `sent_at`, `failed_jobs` sin la dirección y la respuesta del pedido en menos de un segundo. <br>Crea y borra sus cuentas (`check-mail-*@taller.invalid`) |
 | `npm run api:content:check` y `sh backend/api/scripts/deploy-check.sh` | Pasan sin editarse, con `worker-mail` en el stack y con o sin proveedor |
 
 ## Registros
@@ -141,7 +141,7 @@ Todos van a stderr en JSON, con el `X-Request-Id` cuando hay un pedido. **Ningun
 | `mail.failed` | `worker-mail` | `job`, `kind`, `recipient_hmac` y `cause` (`expired`, `unavailable` o la clase y el código) |
 | `mail.superseded` | `worker-mail` | `job`, `invitation_id` |
 | `mail.app_url_local` | `worker-mail`, al arrancar | `host` |
-| `mail.reset_skipped` | `scheduler` | `reason`: `no_account`, `not_active`, `admin` o `throttled` |
+| `mail.reset_skipped` | `scheduler` | `reason`: `link_only`, `no_account`, `not_active`, `admin` o `throttled` |
 | `account.email_changed` | consola | `user_id`, `from_hmac` y `to_hmac` |
 | `account.unverified_pruned` | consola | `user_id` |
 | `admin.password_reset_requested` | `php` | `target_id` |
