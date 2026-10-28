@@ -2652,13 +2652,16 @@ describe('writing the library form', () => {
 
 Si el usuario elige la opción B de D1, el último caso pasa a esperar `''` y se suma el `eq` recortado de quickstart.md §2.
 
-- **La página.** En `LibraryPage.spec.tsx`, los imports suman `withNuqsTestingAdapter` y `type OnUrlUpdateFunction` de `nuqs/adapters/testing`. Hay un ayudante nuevo, que todavía pasa las dos props de la sesión para que el componente de hoy compile, y un `describe` nuevo:
+- **La página.** En `LibraryPage.spec.tsx`, los imports suman `import type { OnUrlUpdateFunction } from 'nuqs/adapters/testing';`. Hay un ayudante nuevo y un `describe` nuevo:
+  - el ayudante todavía pasa las dos props de la sesión, para que el componente de hoy compile;
+  - importa `withNuqsTestingAdapter` **después** de `vi.resetModules()`, igual que la página. Así el adaptador de prueba y la página usan la misma instancia de nuqs aunque Vitest la vuelva a evaluar.
 
 ```tsx
 async function renderLibraryAt(search: string) {
   vi.resetModules();
   const { routeStore } = await import('../../../entities/guide');
   const { default: LibraryPage } = await import('./LibraryPage');
+  const { withNuqsTestingAdapter } = await import('nuqs/adapters/testing');
   routeStore.open(guideWith(RESOURCES), { storage: memoryStorage({ [KEY]: savedRoute([]) }) });
   const onUrlUpdate = vi.fn<OnUrlUpdateFunction>();
   const user = userEvent.setup();
@@ -2960,7 +2963,7 @@ window.TallerLibrary = Object.freeze({ mount, unmount });
 ```
 
 - **La spec de la página** se adapta a la página sin sesión:
-  - `renderLibrary` recibe `search?: string` en lugar de `filters`. Renderiza `<LibraryPage resources={resources} />` con `{ wrapper: withNuqsTestingAdapter({ searchParams: search, hasMemory: true }) }`.
+  - `renderLibrary` recibe `search?: string` en lugar de `filters`. Después de `vi.resetModules()` importa `withNuqsTestingAdapter`, como `renderLibraryAt`, y renderiza `<LibraryPage resources={resources} />` con `{ wrapper: withNuqsTestingAdapter({ searchParams: search, hasMemory: true }) }`.
   - Los casos que usaban `filters` pasan a la query equivalente:
     - «Limpiar filtros resets…» usa `search: '?buscar=zzz&en=go&acceso=mixto&tipo=lectura&favoritos=true'`;
     - los tres casos del foco con «Solo mis favoritos» usan `search: '?favoritos=true'`.
@@ -3302,3 +3305,121 @@ En el mismo PR (FR-040):
   - la correspondencia de los escenarios de `qa/` (research.md, R10);
   - los tres cambios a propósito, el nombre `en`, D1 y lo que queda pendiente;
   - termina con la línea de atribución de Claude Code.
+
+## Cobertura de requisitos
+
+| Requisito | Tareas |
+| --- | --- |
+| FR-001 (unidades y corte en un commit) | Todo el plan; T013 |
+| FR-002 (la red sin editar) | T001, T013, T018, T019 y T023 |
+| FR-003 (E2E primero; los de los cambios, en rojo) | T004, T012, T014 y T017 |
+| FR-004 (el progreso intacto) | T001, T004 (e y g) y T023 |
+| FR-005 (nada más cambia) | T004, T011 y T020 |
+| FR-006 (los filtros en la query) | T017 y T018 |
+| FR-007 (el contenido por props) | T011, T013 y `seams-guard-check` (R5) |
+| FR-008 (el orden y el total recibidos) | T010 y T011 |
+| FR-009 (el singleton, una sola instancia) | T008, T011 y T013 (`boot-check`) |
+| FR-010 (sin copia del progreso) | T011; rotura 4 |
+| FR-011 (`useStore` con selector) | T006; rotura 3 |
+| FR-012 (una escritura por clic) | T004 (e), T007 y T011 |
+| FR-013 (sin doble manejo; el favorito quitado no vuelve) | T004 (g), T008 y T013; rotura 1 |
+| FR-014 (el pie) | T009 y T004 (h); rotura 10 |
+| FR-015 (el filtro puro, por subcadena) | T010; rotura 7 |
+| FR-016 (el recuento montado) | T011 |
+| FR-017 (el vacío y «Limpiar filtros») | T004 (d) y T011 |
+| FR-018 (controles nativos; foco y cursor al escribir) | T004 (j), T011 y T017; rotura 13 |
+| FR-019 (el foco no se pierde) | T014; rotura 5 |
+| FR-020 (la `.sr-only` vacía) | T011 y T019 (`css-contract` R5); rotura 12 |
+| FR-021 (la URL, única fuente) | T018; roturas 6 y 8 |
+| FR-022 (el estado de la tarjeta) | T011 y T012 |
+| FR-023 (el marcado, sin `style=`) | T011, T020 y §3.1 de quickstart.md |
+| FR-024 (FSD y un componente por archivo) | T010, T011 y «Project Structure» |
+| FR-025 (`useEffect` sólo para lo externo) | T011, T014 y §3.1 de quickstart.md |
+| FR-026 (la mudanza del CSS) | T019; rotura 11 |
+| FR-027 (lo que pierde `app.js`) | T013 |
+| FR-028 (`window.TallerLibrary`) | T013 y T018 |
+| FR-029 (el error al dibujar) | T013 y T018 |
+| FR-030 (la spec del modelo) | T010 (research.md, R4) |
+| FR-031 (los E2E y su Page Object) | T003, T004, T012, T014 y T017 |
+| FR-032 (la spec de la página) | T011, T014, T017 y T018 |
+| FR-033 (el arnés) | T005, T006 y T022 |
+| FR-034 (fishery) | T005 y T010 |
+| FR-035 (los checks de `qa/` y su correspondencia) | T008 y T013 (research.md, R10) |
+| FR-036 (la comparación única) | T020 |
+| FR-037 (las roturas deliberadas) | T021 |
+| FR-038 (el dist) | T001, T013, T018, T019 y T023 |
+| FR-039 (la complejidad) | T001, T010, T013 y T023 |
+| FR-040 (la documentación) | T022 |
+| FR-041 (la integración de a uno) | «Unidades, reparto y orden»; T013 y T019 |
+| FR-042 (nuqs) | T002, T015 y T016 |
+| FR-043 (la forma en la gramática) | T017 y T018; contracts/library-url.md |
+| FR-044 (el cambio de idioma conserva los filtros) | T017 y T018; E2E (l); rotura 14 |
+
+| Criterio | Tareas |
+| --- | --- |
+| SC-001 (123 de 123 y un caso nuevo) | T013, T018 y T023 |
+| SC-002 (los flujos, antes y después) | T004, T012, T014 y T017 |
+| SC-003 (0 escrituras al arrancar; 1 por clic) | T001, T004 (e y g) y T023 |
+| SC-004 (la comparación única) | T020 |
+| SC-005 (lo que sale de `app.js`) | T013 |
+| SC-006 (los bytes y el CSS) | T019 y T023 |
+| SC-007 (los 16 contratos y las roturas) | La tabla de abajo; T021 |
+| SC-008 (la correspondencia de `qa/`) | T008 y T013 |
+| SC-009 (la complejidad) | T010, T013 y T023 |
+| SC-010 (`useStore` y las aperturas) | T006 y `seams-guard-check`; roturas 2 y 3 |
+| SC-011 (los comandos de cierre) | T023 |
+| SC-012 (el arnés fuera de la página) | T006 |
+| SC-013 (la URL) | T017 y T018 |
+
+**Los 16 contratos de «Qué se conserva y qué cambia a propósito» (SC-007):**
+
+| Contrato | Lo prueba |
+| --- | --- |
+| Recursos y orden | E2E (a); la spec de la página («lists the resources…») |
+| Textos fijos | E2E (a), (d) y (k); la spec de la página |
+| Controles | E2E (a) y (j); la spec de la página («filter by language…») |
+| Búsqueda | La spec del modelo; E2E (b) |
+| Lenguaje, acceso y tipo | La spec del modelo; E2E (c) |
+| Solo favoritos | La spec del modelo; E2E (f) |
+| Recuento | E2E (a) y (b); la spec de la página («keep the same status node…») |
+| Vacío | E2E (d); la spec de la página («Limpiar filtros resets…» y «shows 0 de 0…») |
+| Tarjeta | E2E (k); la spec de la página («draws the pills…»); las etiquetas; la comparación única |
+| Favoritos | E2E (e), (g) y (h); la spec de la página («a star saves once…») |
+| Cambia · Filtros | E2E (i) en la URL; las specs de la gramática, de los parsers y de la página |
+| Cambia · Estado de la tarjeta | E2E (k), el de T012; la spec de la página («keep an open detail open…») |
+| Cambia · Foco | E2E (f), el de T014, y (j); la spec de la página («the focus after a star») |
+| Aspecto | La comparación única; `css-contract` de F1; el multiconjunto y el barrido |
+| URL | La red de F1 (`views`, `reload` y `url-contract`) y el caso nuevo de `url-contract` |
+| Progreso guardado | E2E (e) y (g); las fixtures congeladas en `startup-storage` y `boot-check` |
+
+## Descargas y permisos
+
+Ninguna tarea baja nada sin el permiso del usuario, dado con nombre, origen y tamaño. Los tamaños son los de research.md (R12). Si T001 encontró un paquete instalado, su permiso no se pide.
+
+| Permiso | Cuándo | Qué | Tamaño |
+| --- | --- | --- | --- |
+| P1 · nuqs | Antes de T002 (la copia descartable) y de T015 (la rama) | `nuqs` 2.10.2 y su dependencia `@standard-schema/spec` 1.1.0, del registro de npm. MIT. De ejecución | 2 paquetes, 502 886 B desempaquetados y 131 106 B comprimidos. En el dist, el peso que mida T002 (se estiman entre 12 000 y 20 000 caracteres) |
+| P2 · la pila de DOM y fishery | Antes de T002 y de T005 | `jsdom` 30.1.2, `@testing-library/react` 16.3.3, `@testing-library/dom` 10.4.2, `@testing-library/user-event` 14.6.7 y `@testing-library/jest-dom` 7.0.1; `fishery` 2.4.0 con `lodash.mergewith` 4.6.2. Del registro de npm. MIT. De desarrollo | Unos 56 paquetes, 26,27 MB desempaquetados y 5,03 MB comprimidos (estimación del ADR 0008); fishery: 2 paquetes, 189 789 B y 42 617 B |
+| P3 · la imagen web | T023 | `docker compose build taller`, que puede bajar la imagen base fijada por digest | Lo que falte en la caché local |
+
+La comprobación manual con lector de pantalla (X2) del recuento y del estado vacío, antes sobre el legacy y después sobre la página, es una acción del usuario.
+
+## Riesgos y lo que quedó sin verificar
+
+1. **Nada corrió al planificar.** Los tamaños son estimaciones, y la red, los checks y las specs no se ejecutaron sobre la base. T001 y T002 miden antes del primer cambio, y la compuerta de cada unidad, después.
+2. **nuqs en la práctica.** El hash, el reemplazo, la consulta de sólo espacios, la clave repetida, `null` y la sincronización salen del código de `v2.10.2`, no de una corrida: los confirma T002. Si la sincronización no existe, la unidad 4 espera al coordinador.
+3. **jsdom y `history.replaceState`.** El README no lo documenta. Lo usan la spec de `url-state.tsx` (T016) y el caso 7 de T002.
+4. **El DOM falso de `boot-check` no tiene `history.pushState`.** El parche de nuqs lo guarda igual (`undefined`) y sólo fallaría si alguien lo llamara. Ningún código lo llama: si un port futuro lo hace, el arnés suma un `pushState` vacío, como el `replaceState` que ya tiene.
+5. **Las reglas de React Compiler** de `eslint-plugin-react-hooks` 7 (`refs`, `globals` e `immutability`) sobre el mapa de refs y la mutación de `favorites` en el manejador. No se corrieron. Si alguna avisa, la implementación se detiene en T011 o T014 y K decide; no se desactiva una regla.
+6. **lightningcss** puede fusionar reglas al minificar. El orden de `library.css` lo evita para los dos bloques de 590 px (R9), y el multiconjunto lo comprueba.
+7. **El presupuesto del HTML del épico** no alcanza para todos los ports (R11). Es un hallazgo para el coordinador.
+8. **El tiempo de la red E2E** crece con unos 35 casos nuevos. Si la suite de F1 tardó unos 35 s con un worker, se esperan entre 10 y 15 s más. T023 lo mide.
+9. **El plan de F5 está en curso.** Si cambia la firma de `url-state.tsx`, la configuración de Vitest o la guarda antes de que entre F3, F3 toma la suya en T006 y T016.
+10. **Integración con F4 y F9:** `app.js` (`render()` y los delegados), `styles.css` (los bloques compartidos), `main.tsx` (el orden de las hojas), `legacy-views.ts` y los checks de `qa/`. El que llega después rebasa y repite la compuerta.
+
+## Complexity Tracking
+
+| Decisión | Por qué hace falta | La alternativa simple, descartada |
+| --- | --- | --- |
+| Una sesión transitoria de filtros en el adaptador, entre el corte y la URL (T013 a T018) | Los E2E de la unidad 1 pasan sin editarse en el corte, y el commit de la URL cambia una sola aserción, aprobada | Poner los filtros en la URL en el corte, que obligaría a editar un E2E en el commit del port y mezclaría el port con un cambio de comportamiento (FR-001 y FR-003) |
+| Una entrada virtual en `qa/lib/sources.ts` (`runModuleEntry`) para que `app-shell-check` tenga el `routeStore` del mismo bundle que `app.js` | Los dos escenarios que guardaban con la acción `favorite` conservan sus valores esperados, y el escenario del pie prueba el guardado de otro consumidor | Reescribir los dos escenarios con otra acción de `app.js`: cambiaría sus valores esperados (los favoritos) o desaparecería con F8 y F9 |
