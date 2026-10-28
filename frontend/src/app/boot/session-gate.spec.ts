@@ -29,6 +29,17 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
+function answerThenHang(first: SessionOutcome) {
+  let calls = 0;
+  return vi.fn(({ signal }: { readonly signal: AbortSignal }) => {
+    calls += 1;
+    if (calls === 1) return Promise.resolve(first);
+    return new Promise<SessionOutcome>((resolve) => {
+      signal.addEventListener('abort', () => resolve({ kind: 'unreachable' }));
+    });
+  });
+}
+
 function setup(
   outcomes: readonly (SessionOutcome | Promise<SessionOutcome>)[],
   overrides: Partial<SessionGateOptions> = {},
@@ -74,6 +85,7 @@ describe('the session stage', () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.useRealTimers();
   });
 
@@ -86,7 +98,8 @@ describe('the session stage', () => {
     expect(options.requestSignIn).not.toHaveBeenCalled();
   });
 
-  it('leaves no timer acting after a fast answer', async () => {
+  it('leaves no timer acting after a fast answer, even where clearTimeout cancels nothing', async () => {
+    vi.spyOn(globalThis, 'clearTimeout').mockImplementation(() => undefined);
     const { view, finished } = setup([sessionOf(ANA)]);
     await finished;
     await vi.advanceTimersByTimeAsync(30_000);
@@ -94,13 +107,16 @@ describe('the session stage', () => {
     expect(view.showFailure).not.toHaveBeenCalled();
   });
 
-  it('says it is connecting after 400 ms', async () => {
+  it('says it is connecting after 400 ms, and clears it when the session arrives', async () => {
     const pending = deferred<SessionOutcome>();
-    const { view } = setup([pending.promise]);
+    const { view, finished } = setup([pending.promise]);
     await vi.advanceTimersByTimeAsync(399);
     expect(view.showLoading).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
     expect(view.showLoading).toHaveBeenCalledOnce();
+    pending.resolve(sessionOf(ANA));
+    await finished;
+    expect(view.clear).toHaveBeenCalledOnce();
   });
 
   it('without an account asks for the sign-in as a page and then asks for the session once more', async () => {
@@ -122,15 +138,36 @@ describe('the session stage', () => {
   });
 
   it('fires no cap while a sign-in lasts longer than the cap', async () => {
-    const { view, fetchSession, signIn, finished } = setup([sessionOf(null), sessionOf(ANA)]);
+    const { options, view, fetchSession, signIn, finished, isResolved } = setup([
+      sessionOf(null),
+      sessionOf(ANA),
+    ]);
     await flush();
     await vi.advanceTimersByTimeAsync(120_000);
+    expect(isResolved()).toBe(false);
+    expect(options.onReady).not.toHaveBeenCalled();
     expect(view.showFailure).not.toHaveBeenCalled();
     expect(view.showLoading).not.toHaveBeenCalled();
     expect(fetchSession).toHaveBeenCalledOnce();
     signIn.resolve(ANA);
     await finished;
+    expect(options.onReady).toHaveBeenCalledOnce();
+  });
+
+  it('gives the request after a long sign-in its own wait and its whole cap', async () => {
+    const fetchSession = answerThenHang(sessionOf(null));
+    const { view, signIn } = setup([], { fetchSession });
+    await flush();
+    await vi.advanceTimersByTimeAsync(120_000);
+    signIn.resolve(ANA);
+    await flush();
+    expect(fetchSession).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(400);
+    expect(view.showLoading).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(19_599);
     expect(view.showFailure).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(view.showFailure).toHaveBeenCalledWith({ kind: 'unreachable' }, expect.any(Function));
   });
 
   it('with a token asks for the access even with a live session, and only once', async () => {
@@ -152,12 +189,33 @@ describe('the session stage', () => {
     expect(options.requestSignIn).toHaveBeenCalledOnce();
   });
 
+  it('keeps the token of the link through a failure and a retry', async () => {
+    const takeAccessToken = vi
+      .fn<() => AccessToken | null>()
+      .mockReturnValueOnce(INVITATION)
+      .mockReturnValue(null);
+    const { options, view } = setup([{ kind: 'unreachable' }, sessionOf(ANA)], {
+      takeAccessToken,
+    });
+    await flush();
+    const retry = view.showFailure.mock.calls[0]?.[1];
+    retry?.();
+    await flush();
+    expect(options.requestSignIn).toHaveBeenCalledWith({
+      presentation: 'page',
+      reason: 'boot',
+      token: INVITATION,
+    });
+  });
+
   it('asks for the access when the account has not accepted the current notice', async () => {
+    const pendingNotice = snapshotOf({ ...ANA, privacyAccepted: false });
     const { options, signIn, finished } = setup([
-      sessionOf({ ...ANA, privacyAccepted: false }),
+      { kind: 'session', snapshot: pendingNotice },
       sessionOf(ANA),
     ]);
     await flush();
+    expect(options.storeSession).toHaveBeenCalledWith(pendingNotice);
     expect(options.requestSignIn).toHaveBeenCalledOnce();
     signIn.resolve(ANA);
     await finished;

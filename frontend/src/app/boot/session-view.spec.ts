@@ -26,6 +26,16 @@ describe('the session markup', () => {
     });
     expect(markup).toContain('Demasiados &lt;intentos&gt;. Podés volver a intentar en 2 minutos.');
   });
+
+  it('shows the message of a rate limit without Retry-After and no time left', () => {
+    const markup = sessionFailureMarkup({
+      kind: 'rate-limited',
+      message: 'Demasiados intentos.',
+      retryAfterSeconds: null,
+    });
+    expect(markup).toContain('Demasiados intentos.');
+    expect(markup).not.toContain('Podés volver a intentar');
+  });
 });
 
 describe('the session view', () => {
@@ -53,7 +63,7 @@ describe('the session view', () => {
     expect(retry).toHaveBeenCalledOnce();
   });
 
-  it('keeps «Reintentar» disabled until Retry-After passes', () => {
+  it('keeps «Reintentar» disabled until Retry-After passes, and then focuses it', () => {
     createSessionView().showFailure(
       { kind: 'rate-limited', message: 'Demasiados intentos.', retryAfterSeconds: 2 },
       vi.fn(),
@@ -63,6 +73,14 @@ describe('the session view', () => {
     expect(retryButton().disabled).toBe(true);
     vi.advanceTimersByTime(1);
     expect(retryButton().disabled).toBe(false);
+    expect(document.activeElement).toBe(retryButton());
+  });
+
+  it('keeps the focus in its element when «Reintentar» gives way to the wait', () => {
+    const view = createSessionView();
+    view.showFailure({ kind: 'unreachable' }, vi.fn());
+    view.showLoading();
+    expect(document.activeElement).toBe(document.getElementById('session-status'));
   });
 
   it('leaves no status or alert behind when it clears', () => {
