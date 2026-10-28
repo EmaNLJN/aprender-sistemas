@@ -42,7 +42,7 @@
 
 **Sin hacer a propósito (YAGNI):** una auditoría incremental que saltee los programas ya verificados (una corrida completa tarda minutos, y la incremental es la que obliga a guardar registros); un historial de corridas; un informe HTML o un panel; avisos por correo; reintentar sola una respuesta del ejecutor que pudo haber corrido; perfiles de límites propios de la auditoría; más de una instancia de auditoría a la vez.
 
-**Actores:** quien mantiene el currículo (corre la auditoría, lee el informe y corrige `content/`), quien opera el taller (levanta la instancia propia y elige el horario), el coordinador (revisa la compuerta en cada PR), B2 (dueño del armado y la clasificación) y A4 y C4, que exponen el sandbox a los alumnos y esperan el verde.
+**Actores:** quien mantiene el currículo (corre la auditoría, lee el informe y corrige `content/`), quien opera el taller (levanta la instancia propia y elige el horario), el coordinador (revisa la compuerta en cada PR), B2 (dueño del armado y la clasificación) y A4 y C4, que exponen el sandbox a los alumnos.
 
 ## Lo que pidió el usuario
 
@@ -114,7 +114,7 @@ Cada una tiene sus opciones, la recomendada con su motivo y su costo. Los requis
 
 | Opción | Qué implica | Costo |
 | --- | --- | --- |
-| A | Es obligatoria en todo PR que toque la superficie auditada: el código, las pruebas o los `imports` de un ejercicio, un ejercicio nuevo o retirado, la plantilla, las imágenes del sandbox o sus digests, los perfiles del ejecutor y las clases que arman el programa, leen la evidencia o clasifican. El PR lleva el resumen del informe con sus sellos y el coordinador comprueba que coinciden con su commit. También antes de entregar A4 y antes de la compuerta G2 de C4 | Una corrida local de unos minutos por cada PR de esos. La comprobación la hace una persona |
+| A | Es obligatoria en todo PR que toque la superficie auditada: el código, las pruebas o los `imports` de un ejercicio, un ejercicio nuevo o retirado, la plantilla, las imágenes del sandbox o sus digests, los perfiles del ejecutor y las clases que arman el programa, leen la evidencia o clasifican. El PR lleva el resumen del informe con sus sellos, y el coordinador comprueba que el commit del informe es el último del PR y que el árbol estaba limpio | Una corrida local de unos minutos por cada PR de esos. La comprobación la hace una persona |
 | B | Bloqueo automático en la CI | Exige Q2-B o Q2-C, con su costo en cada PR |
 | C | Sólo a pedido y antes de A4 | Sin compuerta: una regresión aparece tarde, y la plantilla igual la necesita por la Q3 de B2 |
 
@@ -235,17 +235,17 @@ El informe muestra cuánto tardó cada fase de cada programa contra su límite, 
 
 ### User Story 5 - Una compuerta que se puede comprobar (Priority: P2)
 
-Un PR que cambia lo que compila lleva el resumen de la auditoría. El coordinador, o una máquina, compara los sellos del JSON con el commit del PR y sabe si el informe es de ese contenido, esa plantilla y esas imágenes.
+Un PR que cambia lo que compila lleva el resumen de la auditoría. El coordinador, o una máquina, comprueba que el informe corrió sobre el último commit del PR con el árbol limpio, y los sellos le dicen contra qué contenido, plantilla e imágenes.
 
 **Why this priority**: sin sellos, un informe viejo parece actual, y `qa/AGENTS.md` prohíbe presentar un registro viejo como comprobación del código actual.
 
-**Independent Test**: cambiar una expresión de prueba, la plantilla o una imagen, y comprobar que los sellos del informe anterior dejan de coincidir; cambiar sólo un título y comprobar que siguen coincidiendo.
+**Independent Test**: cambiar una expresión de prueba, una solución, la plantilla o una imagen, y comprobar que los sellos del informe anterior dejan de coincidir; cambiar sólo un título y comprobar que siguen coincidiendo.
 
 **Acceptance Scenarios**:
 
-1. **Dado** un informe, **cuando** se cambia la expresión de una prueba, **entonces** la huella del programa de ese ejercicio deja de coincidir.
+1. **Dado** un informe, **cuando** se cambia la expresión de una prueba o la solución de un ejercicio, **entonces** la huella del programa correspondiente deja de coincidir. La solución no entra en el `grading_hash` ni en el `starter_hash`: sólo la huella del programa la cubre.
 2. **Dado** un informe, **cuando** se cambia sólo un título o una pista, **entonces** ninguna huella de programa cambia.
-3. **Dado** un PR que toca la superficie auditada, **cuando** se revisa, **entonces** su descripción trae el resumen de una corrida completa y de registro con los sellos de su commit (Q3).
+3. **Dado** un PR que toca la superficie auditada, **cuando** se revisa, **entonces** su descripción trae el resumen de una corrida completa y de registro, hecha sobre el último commit del PR con el árbol limpio (Q3).
 
 *Cubre: FR-019 a FR-021 y FR-032; SC-004.*
 
@@ -316,7 +316,7 @@ Quien agrega a un ejercicio de Go un `import` que no está en el caché precalen
 
 - **FR-018**: La salida legible DEBE estar en español y traer una línea por hallazgo y por programa sin veredicto: el ejercicio, su lenguaje y su sección, si es la solución o el inicial, el estado y el motivo de B2, las pruebas que fallaron o faltaron con su clave y su etiqueta, y las primeras líneas del diagnóstico (del compilador o del programa), recortadas. Cierra con un resumen: cuántos programas, cuántos aprueban o fallan como corresponde, cuántos hallazgos, cuántos avisos, cuántos sin veredicto, el runtime y si es de registro.
 - **FR-019**: DEBE escribir además un JSON con un formato versionado que trae, por cada programa: el ejercicio, el lenguaje, la sección, el `kind`, si es la solución o el inicial, el estado, el motivo, la fase alcanzada, el veredicto de cada prueba por clave, el de la prueba propia si la hubo, `compileMs`, `runMs`, los límites de su fase, el margen, si se recortó la salida, si se agotó la memoria, el veredicto de la auditoría (aprueba, falla como corresponde, hallazgo o sin veredicto) y si suma un aviso.
-- **FR-020**: El JSON DEBE llevar los sellos que permiten saber contra qué corrió: el commit de origen del contenido, la huella del documento, la de la plantilla (`portions.harness`), por ejercicio su `grading_hash` y su `starter_hash`, por programa la huella del programa armado con un nonce fijo de ceros (como la vista previa), los identificadores de las dos imágenes del sandbox, el runtime, la etiqueta de la instancia, los programas simultáneos, la fecha y la duración.
+- **FR-020**: El JSON DEBE llevar los sellos que permiten saber contra qué corrió: el commit de la rama y si el árbol estaba limpio, el commit de origen del contenido, la huella del documento, la de la plantilla (`portions.harness`), por ejercicio su `grading_hash` y su `starter_hash`, por programa la huella del programa armado con un nonce fijo de ceros (como la vista previa), los identificadores de las dos imágenes del sandbox, el runtime, la etiqueta de la instancia, los programas simultáneos, la fecha y la duración. Los sellos que sólo se ven desde el host (las imágenes, el commit y el árbol limpio) los toma la entrada de `npm` y se los pasa al comando: quien corre la auditoría nunca recibe el socket de Docker, que sigue siendo sólo del ejecutor (ADR 0005 §1; spec 005, FR-045).
 - **FR-021**: El informe es salida generada: DEBE quedar fuera de Git y del contexto de Docker (`.gitignore` y `.dockerignore`), y no lleva el token ni secretos. Un informe cuyos sellos no coinciden con el contenido, la plantilla o las imágenes actuales no vale como comprobación (`qa/AGENTS.md`).
 
 **Límites**
@@ -340,7 +340,7 @@ Quien agrega a un ejercicio de Go un `import` que no está en el caché precalen
 
 **Integración**
 
-- **FR-032**: La auditoría completa y de registro DEBE ser obligatoria en todo PR que toque la superficie auditada (Q3): el código, las pruebas o los `imports` de un ejercicio; un ejercicio nuevo o retirado; la plantilla; las imágenes del sandbox, sus digests o la lista del caché de Go; los perfiles y los flags del ejecutor; y las clases que arman el programa, leen la evidencia o clasifican. El PR lleva el resumen con los sellos. También corre antes de entregar A4 y antes de la compuerta G2 de C4.
+- **FR-032**: La auditoría completa y de registro DEBE ser obligatoria en todo PR que toque la superficie auditada (Q3): el código, las pruebas o los `imports` de un ejercicio; un ejercicio nuevo o retirado; la plantilla; las imágenes del sandbox, sus digests o la lista del caché de Go; los perfiles y los flags del ejecutor; y las clases que arman el programa, leen la evidencia o clasifican. El PR lleva el resumen con los sellos, de una corrida sobre su último commit con el árbol limpio. Si la Q5 de A4 se responde con su opción A, también es condición para entregar A4.
 - **FR-033**: B3 DEBE documentar el comando, la instancia propia, la compuerta y el horario en `backend/api/AGENTS.md`, en «Verificación» del `README.md` y en «Compiladores y evidencia» de `qa/AGENTS.md`, donde reemplaza a `runtime-check` como auditoría masiva; y sumar en `backend/executor/AGENTS.md` que después de actualizar las imágenes del sandbox se corre también la auditoría. B3 no borra `runtime-check`: lo retira A4.
 - **FR-034**: Por lenguaje, la auditoría DEBE ejecutar además la solución de un ejercicio con una prueba propia que pasa y con otra que falla, y comprobar que la prueba propia se informa aparte y que el veredicto sigue en `passed` (Q5).
 
@@ -371,7 +371,7 @@ Quien agrega a un ejercicio de Go un `import` que no está en el caché precalen
 - **SC-001**: Una corrida completa con runsc, después de corregir los hallazgos de la primera, da 274 de 274 soluciones que aprueban y 274 de 274 códigos iniciales que fallan como corresponde, 0 programas sin veredicto, código de salida 0 y el informe de registro en sus dos formas.
 - **SC-002**: Con el doble del ejecutor, cada caso de «Cómo se decide cada programa» da el veredicto esperado y el código de salida esperado: una solución que falla una prueba, una que no compila, un inicial que aprueba, un inicial `completar` que no compila, un inicial `reparar` que no compila (que no es hallazgo con Q1-A), un aborto, un tiempo agotado, una evidencia inválida, una salida recortada, un `pids_limit` con runsc y un 500 del ejecutor: 11 de 11, además de una solución que aprueba y un inicial que falla como corresponde. La línea legible de cada hallazgo nombra el ejercicio, el código, el estado, el motivo y las pruebas.
 - **SC-003**: Después de una corrida completa hay 0 filas nuevas o cambiadas en `runs`, `attempts`, `attempt_tests`, `attempt_payloads`, `progress_heads`, `exercise_progress` y la tabla de la cola; el ejecutor del servicio recibe 0 pedidos de la auditoría y 0 de sus contenedores desaparecen por el barrido de la instancia de auditoría.
-- **SC-004**: Cambiar la expresión de una prueba, la plantilla o el identificador de una imagen deja sin coincidir el sello correspondiente de un informe anterior: 3 de 3. Cambiar sólo un título o una pista no cambia ninguna huella de programa: 0 cambios.
+- **SC-004**: Cambiar la expresión de una prueba, la solución de un ejercicio, la plantilla o el identificador de una imagen deja sin coincidir el sello correspondiente de un informe anterior: 4 de 4. Cambiar sólo un título o una pista no cambia ninguna huella de programa: 0 cambios.
 - **SC-005** (una medición, no un criterio de aprobación): con runsc y la cantidad de programas simultáneos que fije el plan, se informan la duración de la corrida completa; la mediana y el máximo de compilación y de ejecución por lenguaje; el menor margen contra cada límite y la cantidad de avisos. Se contrasta con la línea de base del host, con la mediana de 1,1 s por ejecución que midió B2 en reposo y con el umbral del aviso de Q4. Todavía no hay un objetivo que cumplir.
 - **SC-006**: El check del caché de Go da 0 diferencias con el contenido de hoy (26 paquetes en 49 ejercicios). Sacar un paquete de la lista o agregar un `import` nuevo a un ejercicio hace fallar `npm test` con el ejercicio y el paquete nombrados: 2 de 2.
 - **SC-007**: La muestra de la prueba propia (Q5) da 4 de 4 programas en `passed`, con la prueba propia informada como `pass` en dos y como `fail` en los otros dos.
@@ -393,7 +393,7 @@ Quien agrega a un ejercicio de Go un `import` que no está en el caché precalen
 - **B2 (spec 005, entregada e inmutable).** B3 reutiliza el armado, la lectura de la evidencia y la clasificación, que son puros (su FR-038 y la `PurityTest`), sin cambiarlos. El código de referencia y el código inicial están en la tabla `exercises` (columnas `starter` y `solution`), que el lector de B2 no selecciona hoy: B3 los lee con su propia lectura de sólo lectura, y el plan decide cómo. `api:runs:check` sigue: prueba la API, las cuotas y la cola, que B3 no toca. Por la Q3 de B2, B3 es la compuerta de la plantilla.
 - **A4 (spec 017, PR #50, sin clarify).** Su Q5 recomienda que A4 no se entregue sin B3 en verde, y su FR-034 retira `runtime-check` cuando B3 esté entregado. Las «Fases» del ADR 0005 ponen el laboratorio (3) antes de la auditoría (4); la hoja de ruta deja a los dos en la misma ola. Esta spec no ordena a A4: si el usuario elige la opción A de la Q5 de A4, B3 pasa al camino crítico de A4 y la hoja de ruta lo cablea.
 - **`runtime-check`.** Hasta A4 sigue como está, con el `buildProgram` viejo y los Playgrounds públicos, para lo que todavía los usa. Desde B3 deja de ser la auditoría masiva (FR-033): la masiva es local y no tiene la restricción de no repetir corridas contra servicios públicos. B3 no lo borra.
-- **C4 (spec 008, planificada).** C4 expone el taller en Internet. Esta spec pide B3 en verde antes de su compuerta G2 (FR-032) y, desde C4, la auditoría fuera de hora en el host de producción (FR-011). Si la auditoría lee el contenido de MySQL, necesita un usuario con sólo lectura del contenido entre los usuarios por rol de C4.
+- **C4 (spec 008, planificada).** C4 expone el taller en Internet, así que esta spec le recomienda al coordinador tener B3 en verde antes de la compuerta G2; decidirlo es de C4 y de la hoja de ruta, no de B3. Desde C4, la auditoría corre fuera de hora en el host de producción (FR-011). Como lee el contenido importado de MySQL, necesita un usuario de sólo lectura del contenido entre los usuarios por rol de C4, que hoy no figura.
 - **B1 (entregado).** El ejecutor queda como está con Q4-A. Con Q4-B o Q4-C cambia, con una enmienda del ADR 0005.
 - **D1, C5 y C3b.** B3 no escribe intentos ni progreso, así que no les cambia nada: no hay tablas nuevas para `UserData` ni datos nuevos para las estadísticas.
 - **E1.** Un catálogo nuevo entra en la auditoría sin cambiarla (FR-001).
@@ -416,6 +416,7 @@ Los agentes no las hacen.
 - **Un host.** El ejecutor de la auditoría y el del servicio comparten el host y el daemon de Docker, como prevé el ADR 0006 hasta su camino de escala.
 - **274 ejercicios hoy,** con `kind` publicado y guardado en `exercises.kind` (`completar` o `reparar`). E1 sumará un catálogo más adelante.
 - **La línea de base del host es orientativa,** no el criterio (ver «Riesgos», 1).
+- **El commit dentro de la imagen.** El `sourceCommit` del meta sólo se llena si la imagen de la API se construye con `CONTENT_SOURCE_COMMIT`; si no, es `null`. Por eso el commit y el árbol limpio los toma la entrada de `npm` en el host (FR-020), y el plan comprueba qué trae el meta.
 - **El ADR 0006 sigue en propuesta.** B3 no agrega decisiones sobre él: usa lo que B2 implementó.
 - **La Q5 de A4 está sin responder.** B3 no depende de ella.
 - **Idioma.** Los mensajes y el informe legible, en español; el código, las pruebas y las claves del JSON, en inglés (constitución, principios III y VI).
@@ -431,4 +432,4 @@ Sólo las que cambian lo que se construye. Las de Q1 a Q5 están en «Preguntas 
 | Qué ejecutor | El del servicio, fuera de hora; una instancia propia | Instancia propia: no ocupa lugares, no la alcanza el `worker-runs` y su etiqueta la separa del barrido del servicio. Fuera de hora queda como recomendación en producción (FR-011) |
 | Un programa por ejercicio o por lote | Agrupar varios ejercicios por programa, como `runtime-check`; uno por ejercicio | Uno por ejercicio. El lote no es el programa del alumno, y un inicial que no compila tumba al lote entero (por eso `runtime-check` sólo prueba un inicial por omisión) |
 | De dónde lee el contenido | De `build/` dentro de la imagen; de MySQL después del import | De lo importado, que es lo que lee B2 para los alumnos. Leer `build/` evitaría la base, pero agrega un camino que B2 no usa |
-| Sellos del informe | Sólo el commit; el `content_hash` de cada ejercicio; la huella del programa armado | La huella del programa, con el `grading_hash`, el `starter_hash`, la plantilla, las imágenes y el runtime. El `content_hash` cambia con un título, y el commit no dice qué imágenes había |
+| Sellos del informe | Sólo el commit; el `content_hash` de cada ejercicio; la huella del programa armado | La huella del programa, con el commit y el árbol limpio, el `grading_hash`, el `starter_hash`, la plantilla, las imágenes y el runtime. El `content_hash` cambia con un título, el commit solo no dice qué imágenes había y sólo la huella del programa cubre la solución |
