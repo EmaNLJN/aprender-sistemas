@@ -5,7 +5,7 @@
 ## Phase 1: Setup
 
 - [ ] T001 Línea de base sobre `master`, con la suite de `backend/api/` en verde, y reserva del bloque de migraciones `2026_10_28_1000NN` (plan, Tarea 0.1)
-- [ ] T002 Pedir al usuario el permiso para `axllent/mailpit:v1.31.4`: 16,1 MiB, MIT, Docker Hub, sólo para el perfil `dev` (plan, Tarea 0.2)
+- [ ] T002 Pedir al usuario el permiso para `axllent/mailpit:v1.31.4`: 16,1 MiB, MIT, Docker Hub, sólo para el perfil `dev`; es una acción del usuario, antes de T029 (plan, Tarea 0.2 y «Acciones del usuario»)
 
 ## Phase 2: Foundational · Unidad 1, el canal del correo (bloquea las historias)
 
@@ -44,7 +44,7 @@
 - [ ] T023 [P] [US4] `apply-grants.sh`, `10-db-grants.sh`, `db-grants.sql` en dos fases y `qa/apply-grants-check.ts`, en `docker/mysql/` (plan, Tarea 5.1)
 - [ ] T024 [P] [US4] `MAIL_DB_PASSWORD` en `backend/api/scripts/init-env.sh` y en `qa/init-env-check.ts` (plan, Tarea 5.2)
 - [ ] T025 [US4] La prueba del usuario `taller_mail` real con el worker, en `backend/api/tests/Content/MailUserPrivilegesTest.php` (plan, Tarea 5.3)
-- [ ] T026 [US4] `worker-mail`, `grants`, las redes `mail` y `egress`, y `qa/compose-mail-check.ts`, en `docker/compose.yaml` (plan, Tarea 5.4)
+- [ ] T026 [US4] `worker-mail`, `grants`, las redes `mail` y `egress`, y `qa/compose-mail-check.ts`, en `docker/compose.yaml`, integrado de a uno con F11a (`PRIVACY_VERSION`) y C4 (plan, Tarea 5.4)
 - [ ] T027 [US4] `deploy.sh` con `db-grants` y `worker-mail`, y el smoke con FR-026 y FR-030, en `backend/api/scripts/` (plan, Tarea 5.5)
 - [ ] T028 [US4] El check de punta a punta, con o sin Mailpit y con el proveedor caído, en `backend/api/scripts/check-mail.sh` (plan, Tarea 5.6)
 - [ ] T029 [US4] Mailpit en el perfil `dev`, sólo con el permiso de T002, en `docker/compose.yaml` (plan, Tarea 5.7)

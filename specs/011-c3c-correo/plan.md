@@ -32,7 +32,7 @@ C3c le da al taller el correo que C3a y C3b dejaron pendiente. Lo hace con un ú
 - **El canal.**
   - `Mailbox::queue(OutgoingMail)` es la única puerta: en modo sólo link no encola nada, y con correo encola un `SendMail` cifrado en la conexión `mail`, con `after_commit` (R1 y R7).
   - `SendMail` corre sólo en `worker-mail` y hace cuatro cosas: vuelve a mirar si hay correo, descarta un correo cuya invitación cambió de token (R6), manda un `Mailable` de texto sin vistas (R2) y marca `sent_at`.
-  - Un fallo se reintenta a 1, 5, 15 y 60 minutos hasta el plazo (el vencimiento del link o 24 horas, lo que llegue primero: decisión 1, R4). Agotado el plazo, queda en `failed_jobs` sin la dirección (R5) y marca `send_failed_at`.
+  - Un fallo se reintenta a 1, 5, 15 y 60 minutos hasta el plazo (el vencimiento del link o 24 horas, lo que llegue primero: decisión 1, aceptada el 2026-10-28; R4). Agotado el plazo, queda en `failed_jobs` sin la dirección (R5) y marca `send_failed_at`.
 - **Recuperación.**
   - `forgot-password` responde siempre 202 sin consultar la cuenta y encola un trabajo cifrado en `default`, que arma el link y encola el correo (R8).
   - La recuperación de un tercero emite el link en el pedido del admin y responde 429 si el broker todavía no deja emitir otro.
@@ -130,7 +130,7 @@ Son valores exactos, copiados de la spec, de la constitución y de los contratos
   - registro, 5 por hora por red (/48 en IPv6) y 100 por hora en total;
   - verificación, 3 correos por hora y cuenta;
   - invitaciones, 300 correos por admin cada 24 horas.
-- **Reintentos:** a los 60, 300, 900 y 3600 s, y después cada 3600 s. El plazo es el vencimiento del link o 24 horas desde que se encoló, lo que llegue primero (R4, decisión 1).
+- **Reintentos:** a los 60, 300, 900 y 3600 s, y después cada 3600 s. El plazo es el vencimiento del link o 24 horas desde que se encoló, lo que llegue primero (R4, decisión 1, aceptada el 2026-10-28 con el merge de este plan, #68). F12b toma ese plazo para el texto de su lista ([plan-f12b.md](../023-f12-administracion/plan-f12b.md), R9 de su research).
 - **Cadena de plazos:** el SMTP espera 20 s, el trabajo dura como mucho 60 s, la conexión tiene `retry_after` de 120 s y `worker-mail`, `stop_grace_period` de 150 s. Cada uno es estrictamente menor que el siguiente.
 - **El modo sólo link:** `MAIL_REQUIRED=true` y `MAIL_MAILER=log` por omisión en `docker/compose.yaml`. El 503 es `mail_unavailable`, con `Retry-After: 3600` y «El taller no puede mandar correos por ahora.».
 - **Links:**
@@ -1788,6 +1788,11 @@ final class MailGrants
 
 - **Crea:** `qa/compose-mail-check.ts`.
 - **Modifica:** `docker/compose.yaml` y `qa/run-checks.ts`, que suma `compose-mail-check.ts` a `operationChecks`.
+- **El orden de integración.** `docker/compose.yaml` lo editan tres ítems: C3c (`grants`, `mysql`, `worker-mail` y Mailpit), F11a con su T028 (`PRIVACY_VERSION` en `x-laravel-env`) y C4. Se integran de a uno:
+  - antes de editar, rebasá sobre la base vigente y mirá qué trae `x-laravel-env`;
+  - conservá lo que ya está: los `RUNS_*` de B2 y, si F11a entró antes, `PRIVACY_VERSION`, que `compose-runs-check` comprueba en `php`, `migrate`, `scheduler` y `worker-runs`;
+  - sumá lo de C3c sin reescribir el ancla;
+  - si C4 entró antes, su T014 ya trae el mecanismo de los permisos, y C3c lo adopta («Puntos de integración con otros ítems»).
 - **Entrega** (referencia; los nombres y los valores son los de [contracts/console.md](./contracts/console.md)):
 
 ```yaml
@@ -1795,7 +1800,7 @@ x-mail-db-password: &mail-db-password '${MAIL_DB_PASSWORD:?falta MAIL_DB_PASSWOR
 
 x-laravel-env: &laravel-env
   <<: *laravel-base-env
-  # … the RUNS_* of B2 stay
+  # … the RUNS_* of B2 stay, and so does PRIVACY_VERSION: '${PRIVACY_VERSION:-2026-10-dev}' once F11a's T028 is in
   MAIL_MAILER: '${MAIL_MAILER:-log}'
   MAIL_REQUIRED: '${MAIL_REQUIRED:-true}'
   MAIL_RETRY_SECONDS: '${MAIL_RETRY_SECONDS:-86400}'
@@ -1904,7 +1909,7 @@ networks:
    - **la cadena de plazos:** `mail.mailers.smtp.timeout` (20, leído de `backend/api/config/mail.php`) < el `#[Timeout(60)]` de `backend/api/app/Jobs/SendMail.php` < el `retry_after` de la conexión `mail` (120, de `config/queue.php`) < el `stop_grace_period` de `worker-mail` (150). Los valores se leen con expresiones regulares, como hace `compose-runs-check`.
 2. **Implementá** los cambios de `docker/compose.yaml`.
 3. **Corré y verificá:**
-   - `node qa/compose-mail-check.ts`, `node qa/compose-runs-check.ts` y `npm test`;
+   - `node qa/compose-mail-check.ts`, `node qa/compose-runs-check.ts` y `npm test`. Si F11a ya entró, el escenario de `PRIVACY_VERSION` de `compose-runs-check` sigue en verde, y `worker-mail` también la recibe, por el ancla;
    - `COMPOSE_PROJECT_NAME=taller-c3c docker compose config --services`: difiere de lo anotado en T001 sólo en `grants` y `worker-mail`;
    - `COMPOSE_PROJECT_NAME=taller-c3c docker compose config --format json`: el `dns` de `worker-mail` está ausente o vacío.
 
@@ -2075,6 +2080,8 @@ El lazo de DNS de C3a queda como está, con sus seis servicios. `worker-mail` no
 
 Los agentes no las hacen. Salen de la fila C3c de «Acciones del usuario» de la hoja de ruta del backend y de la spec. Ninguna bloquea las tareas T001 a T031, que se implementan y se prueban con el modo sólo link, con el mailer `log` y, si hay permiso, con Mailpit.
 
+**Antes de T029, el permiso de Mailpit.** Lo pide el coordinador en T002, y lo da o lo niega el usuario: `axllent/mailpit:v1.31.4`, de Docker Hub, 16 836 010 bytes (16,1 MiB comprimido, amd64), con licencia MIT y sólo para el perfil `dev`. Sin el permiso, T029 se cierra con su nota y FR-052 queda como verificación manual declarada.
+
 ### T032 · El dominio y la transferencia internacional
 
 - **Elegí el dominio** con el que sale el correo. Es el mismo que pide C4 en su acción 2.
@@ -2161,7 +2168,8 @@ Se planificó sin correr PHP ni el stack. Hay que medirlo al implementar, en la 
     - `deploy.sh` corre `db-grants` en cada despliegue, cosa que su plan hacía sólo en un volumen viejo.
   - **Sin cambios para C4:** la prueba de puertos de C4 corre sin el perfil `dev`, y el respaldo vuelca sólo la estructura de `mail_jobs`, como ya prevé.
 - **C3b** ([spec 010](../010-c3b-admin-ciclo-de-vida/spec.md), entregada). C3c completa sus cuatro ganchos sin cambiar su contrato salvo por dos 429 nuevos (contracts/http.md). `PurgeUserData` pasa a cifrado: `PurgeUserDataQueueTest`, que exigía lo contrario, cambia en T016.
-- **F11c y F12b** (specs 015 y 023): la tabla «Lo que toman F11c y F12b» de [contracts/http.md](./contracts/http.md) confirma sus supuestos y corrige dos, los dos 429. Se planifican con este contrato.
+- **F11a** (spec 015): su T028 suma `PRIVACY_VERSION` a `x-laravel-env` de `docker/compose.yaml`. T026 la conserva y se integra de a uno con ella y con C4 (Tarea 5.4, «El orden de integración»).
+- **F11c y F12b** (specs 015 y 023): la tabla «Lo que toman F11c y F12b» de [contracts/http.md](./contracts/http.md) confirma sus supuestos y corrige dos, los dos 429. Se planifican con este contrato. F12b toma además el plazo de 24 horas de la decisión 1.
 - **La hoja de ruta del backend:** la fila C3c pasa a «Planificado» con este plan, y la integra el coordinador.
 
 ## Complexity Tracking
