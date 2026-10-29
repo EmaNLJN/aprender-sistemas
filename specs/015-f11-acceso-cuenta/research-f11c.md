@@ -47,14 +47,14 @@ Se planificó sin tocar código de producción, sin correr nada en los worktrees
 - **Un slice propio,** `features/forgot-password`: tendría que importar `LoginForm` o que `sign-in` lo importe a él, y las dos son la misma interfaz, el acceso.
 - **Un fragmento `#recuperar`:** cambia la gramática de URL de F2b y deja una vista que `app.js` no conoce, para una pantalla que no necesita enlace.
 
-### R36. El texto del 202
+### R36. El texto del 202, decidido por el usuario
 
 **Las dos opciones:**
 
 - **(a) el texto de la spec,** «Si el email corresponde a una cuenta, te llega un enlace para elegir una contraseña nueva. Vence en 60 minutos.»;
 - **(b) el `message` del 202,** «Si hay una cuenta con ese email, te mandamos un enlace para elegir otra contraseña. Revisá tu correo en unos minutos.» El contrato de C3c dice que el front puede mostrarlo tal cual.
 
-**Decisión: (a).** El plan la implementa, y va como decisión 2 del informe.
+**Decisión: (a),** del usuario, el 2026-10-28 (spec, `## Clarifications`). El plan la implementa.
 
 **Por qué:**
 

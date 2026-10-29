@@ -18,7 +18,7 @@ Las ondas y los dueños de archivos están en «Reparto en paralelo» de [plan-f
 
 - [ ] T055 [P] [US8] E · `features` público en `qa/e2e/fixtures/api-double.ts`, con su línea en `contracts/front-interfaces.md`; `requestResetLink` en `qa/e2e/pages/access.ts`; el E2E `forgot-password.spec.ts` (FR-034, FR-060, FR-061, FR-066, FR-067 y FR-075; SC-007 y SC-010; Review Focus 3 y 4; plan 8.1)
 - [ ] T056 [P] [US8] A · Specs en rojo: `requestResetLink` en `access-endpoints.spec.ts` y `frontend/src/features/sign-in/ui/forgot-password.spec.tsx` (FR-017, FR-021, FR-025, FR-027, FR-028, FR-030, FR-034, FR-060 y FR-061; SC-010; Review Focus 1 a 5; plan 8.2)
-- [ ] T057 [US8] A · `requestResetLink`, `ForgotPasswordForm.tsx`, los textos de `access-texts.ts`, `onForgotPassword` en `LoginForm.tsx` y el estado `forgot` en `AccessScreen.tsx` (FR-060, FR-061, FR-069 y FR-071; plan 8.3)
+- [ ] T057 [US8] A · `requestResetLink`, `ForgotPasswordForm.tsx`, los textos de `access-texts.ts` (el 202 con el texto de la spec, decidido por el usuario el 2026-10-28), `onForgotPassword` en `LoginForm.tsx` y el estado `forgot` en `AccessScreen.tsx` (FR-060, FR-061, FR-069 y FR-071; plan 8.3)
 
 ## Phase 3: Polish — documentación, peso y cierre (onda 2: K)
 

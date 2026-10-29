@@ -123,6 +123,12 @@ Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumption
 - Hallazgos del clarify de A3 (spec 016, `a46c5f6`) que el coordinador pasó a F11: el tiempo que el alumno pasa en «pedir el ingreso» no cuenta para el tope de 20 s del intento de arranque de A3 (su FR-010), y al activar «computadora compartida» también se borra la copia del contenido de A3, como uno de los datos locales de la cuenta que registra cada dueño. (FR-006 y FR-062)
 - La Q2 de A3 la registra A3: sin servidor, sólo usa la copia quien no cerró su sesión, y salir la borra. Acá fija que «Salir» borre la copia desde A3 (FR-050) y que el modo compartido de F11d tampoco la guarde.
 
+### Session 2026-10-28 (planes de F11b y F11c)
+
+- Q: ¿Qué comparten F11b y F12a para confirmar la contraseña? (F11b-1) → A: Un slice nuevo, `features/confirm-password`, con `confirmPassword`, `WRONG_PASSWORD` e `isWrongPassword`. `PasswordStep` se queda en `pages/admin`. Decidió el usuario, con la recomendada. (FR-055; plan-f11b.md, R23)
+- Q: ¿Qué texto muestra el 202 de «Recuperá tu contraseña»? (F11c) → A: El de esta spec: «Si el email corresponde a una cuenta, te llega un enlace para elegir una contraseña nueva. Vence en 60 minutos.», y no el `message` del 202 de C3c. Decidió el usuario, con la recomendada. (FR-061; plan-f11c.md, R36)
+- Q: ¿Dónde va el 422 `auth_failed` de una confirmación de la contraseña? (F11b-3 y F11b-4) → A: En el campo «Tu contraseña», con `aria-invalid`, el foco y el texto propio «La contraseña no es correcta.», y no en el error general. Enmienda la letra del FR-025 para la confirmación, y F8 toma el mismo texto de `features/confirm-password`. Decidió el usuario, con la recomendada. (FR-025 y FR-055; plan-f11b.md, R24)
+
 ## Partición
 
 **La aplicó el usuario el 2026-10-28 (P1).** F11 se parte en cuatro, cada parte con su plan y sus tareas, y sigue siendo una sola spec, como D1 y F2: cada parte toma su rango de requisitos.
@@ -224,8 +230,8 @@ Esta sección fija dónde entra F11 en el arranque de A2, qué le suma A3 despu�
 | Tu cuenta (F11a) | Ninguno: usa el estado de la sesión | — | — | — | Un 401 en una de sus acciones: «pedir el ingreso» | — |
 | Salir (F11a) | `POST /api/auth/logout` | «Saliendo…» | — | Red o 5xx: «No pudimos cerrar la sesión» y «Reintentar» | 401: ya no había sesión, y recarga igual; 409: «Recargar» | 429 de Nginx |
 | Cambiar la contraseña (F11b) | `PUT /api/me/password` | «Cambiando la contraseña…» | `errors.current_password` y `errors.password`, que también trae la confirmación que no coincide | 422 `auth_failed`, en la contraseña actual; 5xx | 401, 409 y 419 | 429 (5 por minuto por usuario) |
-| Descargar mis datos (F11b) | `POST /api/auth/confirm-password` y `POST /api/me/export` | «Preparando el archivo…» | `errors.password` | 422 `auth_failed`, 423 (vuelve a pedir la contraseña), 5xx o un corte en medio de la descarga | 401, 409 y 419 | 429: 5 confirmaciones por minuto y 3 descargas por día (un `Retry-After` de horas) |
-| Borrar la cuenta (F11b) | `POST /api/auth/confirm-password` y `DELETE /api/me` | «Borrando…» | `errors.password` | 422 `auth_failed`, 423, 409 `last_admin`, 5xx | 401, 409 y 419 | 429 (5 por minuto) |
+| Descargar mis datos (F11b) | `POST /api/auth/confirm-password` y `POST /api/me/export` | «Preparando el archivo…» | `errors.password`; el 422 `auth_failed`, con «La contraseña no es correcta.» | 423 (vuelve a pedir la contraseña), 5xx o un corte en medio de la descarga | 401, 409 y 419 | 429: 5 confirmaciones por minuto y 3 descargas por día (un `Retry-After` de horas) |
+| Borrar la cuenta (F11b) | `POST /api/auth/confirm-password` y `DELETE /api/me` | «Borrando…» | `errors.password`; el 422 `auth_failed`, con «La contraseña no es correcta.» | 423, 409 `last_admin`, 5xx | 401, 409 y 419 | 429 (5 por minuto) |
 | Pedir el enlace (F11c) | `POST /api/auth/forgot-password` | «Mandando…» | `errors.email` | 503 `mail_unavailable`, 5xx | 419 | 429 (5 por minuto y 20 por hora por red) |
 | Computadora compartida, en «Tu cuenta» (F11d) | Ninguno: borra los datos locales de la cuenta (el espacio de D1c y la copia de A3) | — | — | Almacenamiento bloqueado: el aviso | — | — |
 | ¿Este progreso es tuyo? (F11d) | `POST /api/progress/import`, a través del cliente de D1c | «Sumando tu progreso…» | — | 409 `import_needs_confirmation` (vuelve a preguntar), 422 con rutas, 413 de Nginx (no es JSON), 5xx | 401, 409 y 419 | 429 |
@@ -308,7 +314,7 @@ Son propuestas, para que el usuario las corrija. «(servidor)» marca un mensaje
 
 - Título «Descargá los datos de tu cuenta».
 - «Un archivo JSON con tu cuenta, el progreso guardado en el servidor, tus intentos y tus importaciones. No es el mismo archivo que «Exportar mi progreso» y no se importa en Método. Podés descargarlo hasta 3 veces por día.».
-- Campo «Tu contraseña».
+- Campo «Tu contraseña». Con la contraseña equivocada: «La contraseña no es correcta.».
 - Botón «Descargar mis datos», que mientras espera dice «Preparando el archivo…».
 - Al terminar: «Listo: se descargó {archivo}.».
 
@@ -317,7 +323,7 @@ Son propuestas, para que el usuario las corrija. «(servidor)» marca un mensaje
 - Título «Borrar tu cuenta».
 - «Se borra tu cuenta con todo lo que guardó en el servidor: el progreso, los intentos, el código y las importaciones. No se puede deshacer. Las copias de seguridad lo conservan un tiempo: el aviso de privacidad dice cuánto.».
 - «No es «Borrar todo» de Método, que borra tu progreso en este navegador y en tu cuenta. El progreso guardado en este navegador no se borra con la cuenta.».
-- Campo «Tu contraseña».
+- Campo «Tu contraseña». Con la contraseña equivocada: «La contraseña no es correcta.».
 - Casilla «Entiendo que no se puede deshacer.».
 - Botón «Borrar mi cuenta», que mientras espera dice «Borrando…».
 - Al terminar: el mensaje del servidor («Se está borrando tu cuenta con todo lo que guardó…») y el botón «Entendido».
@@ -576,7 +582,7 @@ Los transversales (FR-066 a FR-077) valen para todas las historias. Sus criterio
 **Formularios (F11a; los usan todas las partes)**
 
 - **FR-024**: Los formularios DEBEN armarse con React Hook Form, con campos no controlados, y enviarse sólo desde su manejador de React, nunca con el envío nativo: la CSP de Nginx tiene `form-action 'none'`.
-- **FR-025**: Los errores de un 422 DEBEN volcarse con `setError` en el campo visible que nombra `errors.<campo>`: `email`, `password`, `password_confirmation`, `current_password` o `name`. Las claves sin campo visible (`token`, `privacyVersion` o cualquier otra) y las respuestas `{message, code}` (401, 403, 404, 409, 410, 419, 422 `auth_failed`, 423, 429, 503 y 5xx) DEBEN ir a `root.serverError`. *(hoja de ruta, F11)*
+- **FR-025**: Los errores de un 422 DEBEN volcarse con `setError` en el campo visible que nombra `errors.<campo>`: `email`, `password`, `password_confirmation`, `current_password` o `name`. Las claves sin campo visible (`token`, `privacyVersion` o cualquier otra) y las respuestas `{message, code}` (401, 403, 404, 409, 410, 419, 422 `auth_failed`, 423, 429, 503 y 5xx) DEBEN ir a `root.serverError`. Hay una excepción: en una confirmación de la contraseña (descargar los datos y borrar la cuenta), el 422 `auth_failed` DEBE marcar el campo «Tu contraseña» con «La contraseña no es correcta.» (clarify del 2026-10-28, planes de F11b y F11c; FR-054 hace lo mismo en el cambio de contraseña). *(hoja de ruta, F11)*
 - **FR-026**: Si un campo trae varios motivos (la contraseña puede traer hasta seis de la política), DEBE mostrarlos todos, no sólo el primero.
 - **FR-027**: Los errores DEBEN ser accesibles: el campo con error lleva `aria-invalid` y queda asociado a su mensaje, el error general sale con `role="alert"`, y el foco va al primer campo con error o, si no hay ninguno, al error general.
 - **FR-028**: El cliente DEBE validar sólo que lo obligatorio esté, que la contraseña nueva tenga de 15 a 64 caracteres y que la confirmación coincida. El resto de la política (la lista de bloqueadas, el nombre, el email y los 72 bytes) lo decide el servidor. *(hoja de ruta; C3a FR-023)*

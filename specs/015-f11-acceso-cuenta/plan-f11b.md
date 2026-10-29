@@ -129,6 +129,8 @@ Valen para toda tarea. Los valores están copiados de la spec, de la constituci�
 | **`stubDialogs` con un `showModal` que enfoca** (F11a-7) | Las specs de diálogos importan `stubDialogs` de `features/sign-in/ui/render-access.tsx` | T045 y T049 |
 | **La recarga de «Salir» y su prueba** (F11a-2) | La supresión prueba la recarga con un `vi.fn()` y mata el mutante «no recarga» | T049 |
 | **F11b-1 a F11b-5** (hallazgos) | El slice compartido; el error de `errors.password`; el texto propio del `auth_failed`, en el campo; las piezas de F11a | R23 a R25 y R31 |
+| **El slice compartido** (el usuario, 2026-10-28) | `features/confirm-password` con `confirmPassword`, `WRONG_PASSWORD` e `isWrongPassword`; `PasswordStep` queda en `pages/admin` | T039 a T041 |
+| **El 422 `auth_failed` de la confirmación, en el campo** (el usuario, 2026-10-28; enmienda FR-025) | «Tu contraseña» con `aria-invalid`, el foco y «La contraseña no es correcta.»; F8 toma el mismo texto | T042, T043, T049 y T050 |
 
 ## Project Structure
 
@@ -962,7 +964,7 @@ Cada PR lleva título en inglés, con notación de Angular, y una descripción e
    ```
 
    El primero muestra sólo imports de `features/confirm-password` y sus usos. El segundo no muestra nada.
-5. **Si el código real de F12a difiere de su plan** (otro texto u otro nombre), la regla es la misma: `features/confirm-password` es la única fuente, y ninguna otra spec de `pages/admin` se edita. La diferencia se anota en el PR. Si el texto de F12a no es «La contraseña no es correcta.», se detiene y se consulta al coordinador.
+5. **Si el código real de F12a difiere de su plan** (otro texto u otro nombre), la regla es la misma: `features/confirm-password` es la única fuente, y ninguna otra spec de `pages/admin` se edita. La diferencia se anota en el PR. Si el texto de F12a no es «La contraseña no es correcta.», pasa a serlo, porque es `WRONG_PASSWORD` (decisión del usuario del 2026-10-28), y el cambio se declara en el PR.
 6. **Correr** `npm run test:unit -- frontend/src/pages/admin frontend/src/features/confirm-password` (en verde), `npm run typecheck` y `npm run lint`.
 7. **Commit:** `refactor(front): la administración confirma la contraseña con el slice compartido`.
 

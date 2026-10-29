@@ -90,7 +90,7 @@ Se planificó sin tocar código de producción, sin correr nada en los worktrees
 
 **La alternativa,** `vi.mock('../../../shared/lib/download-file')` con `vi.hoisted`, también funciona en Vitest 5.0.3 (Context7). Se descartó porque ata la spec a la ruta del módulo, cuando la frontera es una sola función.
 
-### R23. La confirmación de la contraseña compartida (F11b-1)
+### R23. La confirmación de la contraseña compartida (F11b-1), decidida por el usuario
 
 **Decisión.** Un slice nuevo, `features/confirm-password`, con lo que comparten F11b, F12a y F8:
 
@@ -118,9 +118,9 @@ Mudar `PasswordStep` sin un segundo consumidor contradice «no agregues capas �
 
 **La tercera copia, la de F8:** F8 confirma la contraseña dentro de su `createServerReset` (plan F8:4165) y muestra en el campo el texto del servidor (plan F8:3824), que nombra un email. Es un hallazgo para F8: importar `confirmPassword` y `WRONG_PASSWORD` de este slice.
 
-Va como decisión 1 del informe.
+**Decidida por el usuario el 2026-10-28,** con esta opción (spec, `## Clarifications`).
 
-### R24. Dónde va el 422 `auth_failed` y con qué texto (F11b-3 y F11b-4)
+### R24. Dónde va el 422 `auth_failed` y con qué texto (F11b-3 y F11b-4), decidido por el usuario
 
 **Decisión:**
 
@@ -135,7 +135,7 @@ Va como decisión 1 del informe.
 
 **La diferencia que queda:** F8 muestra el texto del servidor, y F12a y F11b, el propio. Con `WRONG_PASSWORD` en el slice compartido, F8 puede tomarlo.
 
-Va como decisión 3 del informe, porque se aparta de la letra de FR-025.
+**Decidido por el usuario el 2026-10-28,** con esta opción. Enmienda la letra de FR-025 para la confirmación, que la spec ya recoge, y F8 toma `WRONG_PASSWORD` del slice compartido (spec, `## Clarifications`).
 
 ### R25. El 423: el mismo formulario vuelve a pedir la contraseña
 

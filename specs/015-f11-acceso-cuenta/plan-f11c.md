@@ -25,7 +25,7 @@
 
 - **Una unidad, U8, y un PR** (R34). Sale de `master` con F11a y C3c. No depende de F11b.
 - **Una pantalla más del acceso** (R35): `AccessScreen` suma `{kind: 'forgot', email}`, y `LoginForm` suma `onForgotPassword`. `requestResetLink` llama a `forgot-password` como un pedido anónimo.
-- **El texto del 202 es el de la spec** (R36; decisión 2 del informe): es el mismo para cualquier email, y dice cuánto dura el enlace.
+- **El texto del 202 es el de la spec** (R36; decidido por el usuario el 2026-10-28): es el mismo para cualquier email, y dice cuánto dura el enlace.
 - **Sin correo, el camino sin correo** (R37): el 503 muestra el mensaje del servidor y «Pedile el enlace a quien administra el taller.», sin bloquear el botón.
 - **El doble de la API suma `features`** (R38), una propiedad pública como `account`. Los E2E prenden el correo sin copiar la sesión.
 
@@ -94,6 +94,7 @@
 | **`stubDialogs` con un `showModal` que enfoca** (F11a-7) | Las specs del acceso lo usan, de `render-access.tsx` | T056 |
 | **El tope del HTML** | `BOOT_SIZE_LIMIT` de 1 500 000, con un subpresupuesto de +5 000 | T059 |
 | **F11c-1 a F11c-3** (hallazgos) | El 202 con `{message}`, el 422 en `errors.email`, ninguna ruta nueva, y `features` en el doble. El registro y `#verificar=` siguen fuera | R35 a R38 |
+| **El texto del 202** (el usuario, 2026-10-28) | «Si el email corresponde a una cuenta, te llega un enlace para elegir una contraseña nueva. Vence en 60 minutos.», y no el `message` de C3c | T055 a T057 |
 
 ## Project Structure
 
@@ -971,7 +972,7 @@ La corre K con quickstart-f11c.md §2, sobre la rama de F11c y contra su base: l
 
 1. **C3c puede cambiar al implementarse.** *Mitigación:* T054 comprueba la ruta, el 503 y las features en el código real; el contrato de C3c ya confirmó los supuestos.
 2. **El `AccessScreen` final de F11a puede diferir del plan.** *Mitigación:* T054 lo compara, y el cambio de F11c es un estado y un `case`.
-3. **La decisión del texto del 202** (R36). *Mitigación:* cambiarla cuesta una línea y su valor esperado.
+3. **El texto del 202** (R36) lo decidió el usuario el 2026-10-28. Si C3c cambiara su `message`, no afecta: el front no lo muestra.
 4. **El enlace real del correo.** *Mitigación:* el quickstart lo prueba con Mailpit, si hay permiso.
 
 ## Complexity Tracking
