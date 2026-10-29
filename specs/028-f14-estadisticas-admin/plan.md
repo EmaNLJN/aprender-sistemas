@@ -6080,7 +6080,7 @@ T001 corre cada detección sobre `f14a/base`, anota el resultado en research.md 
 
 **Consume:** las tres vistas; de F12a, `AdminPage`, `pageBody` (`model/admin.factory.ts`) y `render-admin.tsx`. **Produce:** `UsageSection` (`{ ownId }`).
 
-1. **`ui/usage-section.spec.tsx`.** Cubre FR-001 a FR-004, SC-009 y la Review Focus 3. Monta la página sola, sin contenedor:
+1. **`ui/usage-section.spec.tsx`.** Cubre FR-001 a FR-004, SC-009 y la Review Focus 3. Monta la página sola, sin contenedor. El orden de las vistas se fija por la primera, la segunda y la última, porque F14b suma «Alumnos» en el tercer lugar sin editar esta spec:
 
    ```tsx
    import { fireEvent, screen, within } from '@testing-library/react';
@@ -6168,11 +6168,11 @@ T001 corre cada detección sobre `f14a/base`, anota el resultado en research.md 
          'aria-pressed',
          'true',
        );
-       expect(within(views()).getAllByRole('button').map((button) => button.textContent)).toEqual([
-         'Resumen',
-         'Ejercicios',
-         'Ejecuciones',
-       ]);
+       const viewLabels = within(views())
+         .getAllByRole('button')
+         .map((button) => button.textContent);
+       expect(viewLabels.slice(0, 2)).toEqual(['Resumen', 'Ejercicios']);
+       expect(viewLabels.at(-1)).toBe('Ejecuciones');
        expect(within(views()).getByRole('button', { name: 'Resumen' })).toHaveAttribute(
          'aria-pressed',
          'true',
