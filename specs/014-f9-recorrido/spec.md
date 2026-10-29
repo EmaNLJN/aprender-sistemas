@@ -77,6 +77,16 @@ Las respuestas son del usuario (clarify con brainstorming). Las opciones que no 
 - **X1 y C2, qué adopta el comportamiento de React.** Lo que hoy existe sólo porque `innerHTML` rehace la vista lo adopta React, y los E2E fijan el comportamiento nuevo, sin `KNOWN DEFECT`. Acá son dos cosas: los módulos que el alumno abrió o cerró a mano se quedan como están mientras la página sigue montada (hoy cada redibujo los vuelve al estado por omisión), y el foco no se pierde. Esta spec lee lo segundo así: al cerrar la lección por cualquier camino, también al completar o reabrir, el foco vuelve al elemento que la abrió, porque la página ya no se reconstruye; el `restoreStepFocus` que hoy lo manda al primer botón de lección del paso compensaba esa pérdida. Si el usuario esperaba conservar ese destino, cambian FR-036 y los escenarios 5 y 6 de US2. (FR-025, FR-036)
 - **C2, las rarezas de lógica se conservan.** Elegir la duración ya elegida guarda y reinicia el temporizador, y «Volver a practicar» pasa el paso a incompleto. (FR-020, FR-028, FR-035)
 
+### Enmienda 2026-10-28 (noche): lo que fijaron F4 a F6
+
+No son decisiones nuevas de F9. Aplican las del coordinador y del usuario del 2026-10-28 (noche) sobre lo que la implementación de F4 (#77), F5 y F6 ya fijó, y cambian sólo cómo se leen estos requisitos; lo que ve, hace y guarda el alumno no cambia. El detalle y las fuentes están en el plan (research.md, R17).
+
+- **FR-004 y SC-008:** el tope de `qa/build-check` (`BOOT_SIZE_LIMIT`) es 1 500 000 desde #76, por decisión del usuario; donde dicen 1 250 000, se lee 1 500 000. La forma del dist suma una cosa medible: `import.meta` sube uno por la entrada nueva de `LEGACY_MODULES`.
+- **FR-003, FR-042 y SC-011:** la pila de componentes llegó con #67, con los proyectos `node` y `dom` (este con el entorno jsdom) y el setup `frontend/src/vitest.setup.ts`; F9 no pide permiso ni la configura. Donde la spec dice «proyecto `jsdom`», se lee `dom`. La guarda de SC-011 es el bloque de F6 (`[arguments.length=1]`), que entra con F5 o con F6, o con F9 si llega antes que los dos.
+- **FR-023 y FR-035, y la tabla de lo que sigue en `app.js`:** alternar un paso es `routeStore.toggleMark('completed', id)`, que F4 dejó en `entities/guide`; F9 no crea otra operación. F4 ya entró, así que `toggleItem` lo borra el último de F3 y F9.
+- **FR-022:** F4 ya suscribió el pie con `updateSaveLabel`; F9 cambia esa suscripción por la de `syncShell` y saca las llamadas a `updateSaveLabel()` que quedan redundantes.
+- **FR-044:** `boot-check` lee los nodos con `mountedText`, el de F4, y suma el Recorrido al conjunto `REACT_VIEWS`, sin ayudantes nuevos en `qa/lib/fake-dom.ts`.
+
 ## El Recorrido de hoy, en `f2a@2ffbbc6`
 
 Es el contrato que el port conserva. Las funciones son las de `frontend/app.js`.

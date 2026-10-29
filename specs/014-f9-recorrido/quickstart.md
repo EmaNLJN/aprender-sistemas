@@ -21,6 +21,8 @@ Sobre la base de implementación, después de `npm ci --offline --no-audit --no-
 ```sh
 git rev-parse --short HEAD
 node -e "const h=require('fs').readFileSync('dist/index.html','utf8');console.log(h.length)"
+node -e "const h=require('fs').readFileSync('dist/index.html','utf8');const s=/<script type=\"module\"[^>]*>([\s\S]*?)<\/script>/.exec(h)[1];console.log('import(', (s.match(/import\(/g)||[]).length, 'import.meta', (s.match(/import\.meta/g)||[]).length)"
+grep -n "BOOT_SIZE_LIMIT =" qa/build-check.ts
 node -e "const h=require('fs').readFileSync('dist/index.html','utf8');for (const [n,r] of [['script',/<script\b[^>]*>([\s\S]*?)<\/script>/],['style',/<style\b[^>]*>([\s\S]*?)<\/style>/]]) console.log(n, require('crypto').createHash('sha256').update(r.exec(h)[1]).digest('hex'))"
 node -e "const h=require('fs').readFileSync('dist/index.html','utf8');console.log(require('crypto').createHash('sha256').update(h.replace(/(<script\b[^>]*>)[\s\S]*?(<\/script>)/g,'\$1\$2').replace(/(<style\b[^>]*>)[\s\S]*?(<\/style>)/g,'\$1\$2')).digest('hex'))"
 sha build/curriculum.json && node tools/content/dump-globals.ts . | sha
@@ -35,7 +37,8 @@ node qa/app-shell-check.ts | grep -c '^PASS'
 Se anotan en research.md («Línea base de la implementación»):
 
 - el hash;
-- `html.length`;
+- `html.length` y `BOOT_SIZE_LIMIT` (1 500 000 desde #76);
+- la cantidad de `import(` y de `import.meta` del script del dist (la base de TR-4);
 - los hashes del script, del estilo, del marcado sin script ni estilo, de `build/curriculum.json` y de `dump-globals`;
 - los avisos de lint y la línea de `render()` y de `renderRoute`;
 - los E2E: 106 + 17, o lo que haya dejado F11a;
@@ -69,7 +72,9 @@ La corre K antes de abrir el PR, y cada dueño en lo que toca. Con una sola casi
    | Script del dist | **igual** | cambia |
    | `<style>` del dist | cambia, con el multiconjunto igual (§3.1) | igual al de T010 |
    | Marcado del dist sin script ni estilo | igual | cambia sólo por la línea de `#lesson-dialog` |
-   | `html.length` | | por debajo de 1 250 000; si crece más de 8 000 contra T001, lo revisa K |
+   | `html.length` | | por debajo de 1 500 000 (`BOOT_SIZE_LIMIT`, #76); si crece más de 8 000 contra T001, lo revisa K |
+   | `import.meta` en el script del dist | igual | T001 + 1: la entrada nueva de `LEGACY_MODULES` (`register-route`), porque Vite envuelve cada `import()` de `legacy-views.ts` con `import.meta.url` (TR-4). Otro número se informa a K antes de seguir |
+   | `import(` en el script del dist | igual | igual |
 
 3. **El marcado:** `git diff <base> -- frontend/src/index.html` muestra una sola línea borrada, la de `<dialog id="lesson-dialog" …>`.
 4. **Sin estilos en línea nuevos:** `git diff <base> -- 'frontend/*.js' 'frontend/src' | grep -E '^\+.*(style=|setAttribute\(.style.|\.cssText)'` no imprime nada.
@@ -94,12 +99,16 @@ node css-multiset.mjs ../f9-base .
 
 Esperado: `onlyBase` y `onlyUnit` en 0.
 
-**(b) El barrido de estilo computado.** Es el script de quickstart-f2b.md §3.1 (b), con cuatro cambios:
+**(b) El barrido de estilo computado.** Es el script de quickstart-f2b.md §3.1 (b), con seis cambios. Los dos últimos evitan las trampas del barrido que encontró F5 (TR-13):
 
 1. **La clave de cada elemento** sale del ancestro más cercano con `id`, y nunca de la posición en `<body>`. Así, el lugar de la lección no corre los índices de los hermanos.
 2. **`#lesson-dialog` cerrado no se mira.** Es el estático de hoy, invisible, que el port quita (FR-017).
 3. **Se suman los estados del Recorrido** que pide FR-041.
 4. **Se suman dos capturas en impresión.**
+5. **El puntero fuera.** React conserva el nodo que quedó bajo el puntero después de un clic, así que conserva su `:hover`. `await page.mouse.move(0, 0);` va después de `prepare` y antes de capturar.
+6. **Lo de adentro de un `<details>` cerrado no se compara,** salvo su `<summary>`: un `<details>` cerrado da otro tamaño computado si alguna vez se midió. Son los módulos cerrados del Recorrido.
+
+**Si aparecen diferencias sub-píxel** en `width`, `inline-size` o `*-origin` de un texto, primero se busca un texto que JSX partió en varios nodos (una expresión pegada a un texto, o un `{' '}` de Prettier) y se arma en un solo nodo, con un template literal: el kerning cambia el ancho. Nunca se aceptan con una tolerancia. El `<pre>` de la ilustración empieza con `fn` y `func`, sin salto de línea inicial, así que la trampa del primer salto que descarta el analizador de HTML no aplica.
 
 Esperado: `differences` en 0.
 
@@ -163,6 +172,7 @@ async function snapshot(browser, origin, spec, width, motion) {
   await page.goto(origin + spec.path);
   await page.waitForFunction(() => document.querySelector('#main')?.children.length > 0);
   if (spec.prepare) await spec.prepare(page);
+  await page.mouse.move(0, 0);
   if (spec.media) await page.emulateMedia({ media: spec.media });
   const result = await page.evaluate(() => {
     const keyOf = (element) => {
@@ -178,6 +188,8 @@ async function snapshot(browser, origin, spec, width, motion) {
     const out = {};
     for (const element of [document.documentElement, ...document.querySelectorAll('*')]) {
       if (element.closest('#lesson-dialog:not([open])')) continue;
+      const details = element.parentElement?.closest('details');
+      if (details && !details.open && element.closest('summary') === null) continue;
       const style = getComputedStyle(element); const props = {};
       for (let i = 0; i < style.length; i++) props[style[i]] = style.getPropertyValue(style[i]);
       out[keyOf(element)] = props;

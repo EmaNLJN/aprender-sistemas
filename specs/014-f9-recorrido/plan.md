@@ -7,7 +7,8 @@
 > **Para quien lo implementa:**
 >
 > - **Qué leer.** Leé enteras las «Restricciones globales», «Reglas para todos los agentes», «Lo compartido con F3, F4 y F8» y la sección de tu tarea. Cada tarea trae sus archivos, sus interfaces y el código completo; `tasks.md` es una línea por tarea y remite acá.
-> - **La base.** Es `master` con F2a, A2 y las cuatro unidades de F2b, la misma que se leyó en el worktree `f2b-acum` (`2b37caf4`). Las líneas que cita este plan son de esa base. Ubicá todo por texto: F3 y F4 pueden haber entrado antes y movido las líneas.
+> - **La base.** Al planificar fue `master` con F2a, A2 y las cuatro unidades de F2b, la misma que se leyó en el worktree `f2b-acum` (`2b37caf4`). Las líneas que cita este plan son de esa base, salvo las de la enmienda. La base de implementación es `master` desde `431c9d90`, que ya tiene la pila de componentes (#67), el tope de 1 500 000 (#76) y F4 (#77). Ubicá todo por texto: F3, F5 o F6 pueden haber entrado antes y movido las líneas.
+> - **La enmienda del 2026-10-28 (noche).** El plan se alineó con lo que la implementación de F4 (en `master`), F5 (`impl-f5`, `efaf39b2`) y F6 (`impl-f6`, `b20028be`) ya fijó: `routeStore.toggleMark('completed', id)` en lugar de `toggleRouteItem`, el Page Object de Método de F5, la guarda de `useStore` de F6, la pila de #67 con el proyecto `dom`, la forma canónica de `boot-check` (`REACT_VIEWS` y el `mountedText` de F4, sin ayudantes en `fake-dom.ts`), la suscripción del shell que dejó F4, la compuerta de `import.meta`, los stubs del rojo, las trampas del barrido y el tope de 1 500 000. Cada cambio, con su fuente, está en research.md (R17).
 > - **Lo que no corrió.** Nada se ejecutó al planificar: sin `npm`, sin navegador y sin Docker. Los textos esperados salen de `content/guide/`, de `qa/fixtures/progress-master-2a278ad-storage.json` y del código leído. Lo que el plan supone y no verificó está en «Riesgos y lo que quedó sin verificar».
 
 ## Summary
@@ -20,10 +21,10 @@
 - **El temporizador** es un módulo de sesión de la página con un intervalo que existe sólo mientras corre.
 - **La lección** es un `<dialog>` nativo dibujado con un portal a `body`.
 - **El shell** se entera de cada escritura por la revisión del almacén, a la que `app.js` se suscribe.
-- **Los selectores de pasos y la operación de alternar** pasan a `entities/guide`, como única fuente para la página y la barra lateral.
+- **Los selectores de pasos** pasan a `entities/guide`, como única fuente para la página y la barra lateral. **La operación de alternar** ya está ahí: `routeStore.toggleMark('completed', id)`, de F4.
 - **El CSS:** las 114 reglas del Recorrido, y dos selectores de impresión, se mudan a `route.css` en un commit propio, antes del port.
 
-**Stack.** React 19.2.8, Zustand 5.0.15 (el store de vanilla y `useStore`), Vite 8.3.2, Vitest 5.0.3 (proyecto `node` y, desde F9 o desde F3, `jsdom` con Testing Library) y Playwright 1.63.0 con `page.clock`. No entra ninguna dependencia de ejecución.
+**Stack.** React 19.2.8, Zustand 5.0.15 (el store de vanilla y `useStore`), Vite 8.3.2, Vitest 5.0.3 (los proyectos `node` y `dom`, este con jsdom y Testing Library, que llegaron con #67) y Playwright 1.63.0 con `page.clock`. No entra ninguna dependencia de ejecución.
 
 **Spec:** [spec.md](./spec.md).
 
@@ -34,13 +35,13 @@
 **Primary Dependencies**:
 
 - `react` y `react-dom` 19.2.8 y `zustand` 5.0.15, ya instalados.
-- Sólo para pruebas, y únicamente si ningún ítem anterior la trajo: la pila de DOM del ADR 0008, que es `jsdom` 30.1.2, `@testing-library/react` 16.3.3, `@testing-library/dom` 10.4.2, `@testing-library/user-event` 14.6.7 y `@testing-library/jest-dom` 7.0.1. Entra con permiso (T002).
+- Sólo para pruebas, ya instalada con #67: la pila de DOM del ADR 0008, que es `jsdom` 30.1.2, `@testing-library/react` 16.3.3, `@testing-library/dom` 10.4.2, `@testing-library/user-event` 14.6.7 y `@testing-library/jest-dom` 7.0.1. T002 sólo la verifica.
 
 **Storage**: `taller-learning-v1` por `routeStore`, sin cambiar su forma (ADR 0003). El temporizador vive en memoria y no se guarda.
 
 **Testing**:
 
-- Vitest: modelo en `node` y componentes en `jsdom`.
+- Vitest: modelo en el proyecto `node` y componentes en el proyecto `dom` (entorno jsdom, setup `frontend/src/vitest.setup.ts`).
 - Los checks de `qa/` que cargan `app.js`.
 - E2E con Playwright contra el build servido: cinco specs nuevas y la red de F1 y A2 sin editar.
 - Dos comparaciones únicas contra la base: el barrido de estilo computado con el multiconjunto, y el HTML.
@@ -55,15 +56,15 @@
 
 **Scale/Scope**:
 
-- **Producción, archivos nuevos (15):**
+- **Producción, archivos nuevos (14):**
   - la página: 7 componentes, 3 módulos de modelo, su índice y `route.css`;
   - el adaptador;
-  - en `entities/guide`, 2 módulos.
-- **Specs nuevas:** 7 de Vitest y 5 de E2E, con 2 Page Objects y un módulo de datos de E2E.
+  - en `entities/guide`, 1 módulo (`route-selectors.ts`).
+- **Specs nuevas:** 6 de Vitest y 5 de E2E, con 1 Page Object y un módulo de datos de E2E. El Page Object de Método se extiende (lo creó F5); si F9 entra antes que F5, se crea con la clase de F5.
 - **Producción, archivos que cambian (6):** `app.js`, `styles.css`, `index.html`, el índice de `entities/guide`, `main.tsx` y `legacy-views.ts`.
-- **QA, archivos que cambian (8):** `boot-check`, `app-shell-check`, `load-order-check`, `fake-dom`, los dos arneses, `app-adapters` y las fixtures de E2E.
-- **Si F9 trae la pila de componentes:** `package.json`, el lockfile, `frontend/vitest.config.ts`, `eslint.config.ts` y el setup.
-- **Documentación:** 2 documentos, y 3 si F9 trae la pila.
+- **QA, archivos que cambian (7, u 8 con `method.ts`):** `boot-check`, `app-shell-check`, `load-order-check`, los dos arneses, `app-adapters` y las fixtures de E2E. `qa/lib/fake-dom.ts` no cambia.
+- **La pila de componentes ya está (#67).** Sólo `eslint.config.ts`, si ni F5 ni F6 trajeron la guarda de `useStore`.
+- **Documentación:** 2 documentos.
 
 ## Restricciones globales
 
@@ -75,16 +76,17 @@ Los valores exactos, copiados de la spec, de la hoja de ruta y de la constituci�
   - los de X1 y Q4 (`route-kept-state.spec.ts`) fallan contra el legacy por la razón esperada, en su propio commit;
   - cada rareza de lógica lleva `KNOWN DEFECT` en el nombre; los de X1 no.
 - **El tamaño** (FR-004, SC-008):
-  - `dist/index.html` queda por debajo de 1 250 000 caracteres (`BOOT_SIZE_LIMIT` de `qa/build-check`), con el antes (T001) y el después en el PR;
+  - `dist/index.html` queda por debajo de 1 500 000 caracteres (`BOOT_SIZE_LIMIT` de `qa/build-check.ts`, desde #76; T001 lo relee del check), con el antes (T001) y el después en el PR;
   - si crece más de 8 000, el coordinador lo revisa antes de seguir;
-  - la forma de A2 no cambia: un documento con un script y un estilo en línea, y el contenido en `dist/content/curriculum.<versión>.json`.
+  - la forma de A2 no cambia: un documento con un script y un estilo en línea, y el contenido en `dist/content/curriculum.<versión>.json`;
+  - `import.meta` en el script del dist cuenta **la base de T001 más uno**, por la entrada nueva de `LEGACY_MODULES` (`register-route`), e `import(` queda como en T001 (TR-4: Vite envuelve cada `import()` de `legacy-views.ts` con `import.meta.url`). Otro número se informa al coordinador antes de seguir.
 - **Los mismos bytes** (SC-005): `build/curriculum.json`, `node tools/content/dump-globals.ts .` y los catálogos del dist (el check del bundle de A2).
 - **El marcado:** de `frontend/src/index.html` sale una sola línea, `<dialog id="lesson-dialog" aria-labelledby="lesson-title"><div class="dialog-content" id="lesson-content"></div></dialog>` (FR-017).
 - **El estilo** (FR-041, SC-005):
   - el multiconjunto de declaraciones del CSS del dist (por selector individual) da 0 diferencias contra la base;
   - el barrido de estilo computado da 0 diferencias a 1 280, 981, 850, 650, 590 y 375 px, con el movimiento reducido encendido y apagado, y en impresión para el Recorrido.
 - **Lo guardado** (FR-020, FR-021, SC-004):
-  - una sola escritura de `taller-learning-v1` por acción;
+  - una sola escritura de `taller-learning-v1` por acción; alternar un paso es `routeStore.toggleMark('completed', id)` de F4 (`entities/guide/model/route-store.ts:97`), sin una operación de alternar propia;
   - cero al montar, al contar el tiempo y al abrir o cerrar la lección sin responder;
   - las claves en el orden `version`, `language`, `completed`, `milestones`, `favorites`, `quizAnswers`, `notes` y `minutes`;
   - las tres fixtures congeladas arrancan sin escribir, sin respaldar y sin avisar.
@@ -163,21 +165,19 @@ No hay `data-model.md`: F9 no cambia ninguna forma guardada, y el estado del tem
 
 ```text
 frontend/
-├── app.js                                   (A, T018) pierde el Recorrido; suscribe el shell; sessionResets
+├── app.js                                   (A, T018) pierde el Recorrido; pasa la suscripción de F4 a syncShell; sessionResets
 ├── styles.css                               (C, T010) pierde 114 reglas y 2 selectores de impresión
-├── vitest.config.ts                         (K, T002, sólo si F9 trae la pila) dos proyectos
+├── vitest.config.ts                         sin cambios: los proyectos node y dom ya están (#67)
 └── src/
     ├── index.html                           (A, T018) sale <dialog id="lesson-dialog">
     ├── app/
     │   ├── main.tsx                         (K, T010) importa route.css después de styles.css
-    │   ├── test-setup.ts                    (K, T002, sólo si F9 trae la pila) jest-dom y cleanup
     │   ├── boot/legacy-views.ts             (A, T018; lo integra K) carga register-route antes de app.js
     │   └── legacy/register-route.tsx        (A, T018) window.TallerRoute
     ├── entities/guide/
-    │   ├── index.ts                         (M, T012) exporta los selectores y la operación de alternar
+    │   ├── index.ts                         (M, T012) exporta los selectores (routeStore.toggleMark ya está, F4)
     │   └── model/
-    │       ├── route-selectors.ts + .spec.ts      (M, T011–T012) trackSteps, countCompletedSteps, nextPendingStep
-    │       └── toggle-route-item.ts + .spec.ts    (M, T011–T012, si nadie la creó) toggleRouteItem
+    │       └── route-selectors.ts + .spec.ts      (M, T011–T012) trackSteps, countCompletedSteps, nextPendingStep
     └── pages/route/
         ├── index.ts                         (P, T016) RoutePage y focusTimer
         ├── model/
@@ -198,22 +198,21 @@ qa/
 ├── app-shell-check.ts                       (A, T018) el escenario «almacén»
 ├── load-order-check.ts                      (C, T010: las hojas; A, T018: el adaptador)
 ├── lib/
-│   ├── fake-dom.ts                          (A, T017) hasDrawn y drawnText
 │   ├── boot-harness.ts, app-shell-harness.ts (A, T018) los ids de la lección y TallerRoute
 │   └── app-adapters.ts                      (A, T018) TallerRoute
 └── e2e/
     ├── fixtures/index.ts                    (E, T003) route y method
     ├── lib/route-progress.ts                (E, T003) los pasos, los módulos y el progreso v1
-    ├── pages/route.ts, pages/method.ts      (E, T003) los Page Objects
+    ├── pages/route.ts, pages/method.ts      (E, T003) el Page Object del Recorrido; el de Método lo creó F5 y se extiende
     └── specs/route-steps, route-lesson, route-timer, route-progress, route-kept-state (.spec.ts) (E, T004–T008)
-eslint.config.ts                             (K, T002, sólo si F9 trae la pila) la guarda de useStore
-docs/architecture.md, qa/AGENTS.md           (K, T020) y docs/adr/0008-pruebas-del-front.md si F9 trae la pila
+eslint.config.ts                             (K, T002) la guarda de useStore de F6, sólo si ni F5 ni F6 la trajeron
+docs/architecture.md, qa/AGENTS.md           (K, T020)
 ```
 
 **Structure Decision:**
 
 - **`pages/route`** sigue la forma del Atlas: `ui`, `model` y un índice con una API pública chica.
-- **Lo que también necesita la barra lateral** va a `entities/guide`, cuyo índice ya posee `app.js` (research.md, R3).
+- **Lo que también necesita la barra lateral** va a `entities/guide`, cuyo índice ya posee `app.js` (research.md, R3). Alternar un paso es `routeStore.toggleMark('completed', id)`, que ya está ahí (F4).
 - **No se crean** `features`, `widgets` ni un slice nuevo de `entities`.
 
 ## Review Focus
@@ -232,7 +231,7 @@ Lo que el revisor mira primero:
   - El botón de la tarjeta no lleva `key`.
   - `onClose` devuelve el foco al abridor; si ya no está, va a la acción de la tarjeta.
 - **Una sola instancia.** La página importa `routeStore`; el adaptador, no. `boot-check` monta el Recorrido sin el error «Abrí el almacén del recorrido antes de usarlo.».
-- **El shell.** `routeStore.changes.subscribe(() => syncShell())` está en `startApp()`. Sin esa línea, el E2E de la barra lateral falla.
+- **El shell.** `routeStore.changes.subscribe(() => syncShell())` está en `startApp()`, antes del `render();` final, y la línea de F4 (`routeStore.changes.subscribe(updateSaveLabel);`, después de `routeStore.open(data);`) ya no está: `syncShell` lee `const` que se declaran después, como `stepsFor`. Las llamadas a `updateSaveLabel()` que la suscripción vuelve redundantes salieron (la de `save()` y la que sigue a `applyImport`). Sin la suscripción, el E2E de la barra lateral falla.
 - **La rama de `resetTimer`.** Hay que ver cuál se aplicó y por qué (T001), y que el orden de «Borrar todo» sea los cuatro almacenes, las simulaciones, el temporizador y después `save()`.
 
 **Lo que la spec implica y ninguna prueba de las tareas ejercitaba**, cada caso con la prueba que lo fija y su tarea dueña:
@@ -272,7 +271,7 @@ Lo que el revisor mira primero:
 
 | Onda | Quién | Qué |
 | --- | --- | --- |
-| 0 | K | T001: la línea base y la detección de ramas. T002: si F9 trae la pila de componentes, el pedido de permiso, que puede llegar mientras corre la onda 1 |
+| 0 | K | T001: la línea base y la detección de ramas. T002: la verificación de la pila de #67 y, si falta, la guarda de `useStore` de F6 |
 | 1 | E, C, M y el usuario a la vez | **E:** T003 a T008 (los E2E). **C:** T010 (el CSS), con K para la línea de `main.tsx`. **M:** T011 a T014 (el modelo). **Usuario:** T009 (el lector de pantalla sobre el legacy), apenas T001 deja el build de la base |
 | 2 | P | T015 y T016 (la página), cuando T002 y T014 están integrados |
 | 3 | A | T017 y T018 (el corte), cuando T008, T010 y T016 están integrados |
@@ -282,12 +281,12 @@ Lo que el revisor mira primero:
 
 | Dueño | Archivos que posee | Consume | Entrega |
 | --- | --- | --- | --- |
-| K · Coordinador | `package.json`, `package-lock.json`, `frontend/vitest.config.ts`, `eslint.config.ts`, `frontend/src/app/test-setup.ts`, `frontend/src/app/main.tsx`, `docs/**`, `qa/AGENTS.md`, `specs/014-f9-recorrido/**` | todo | la línea base, la pila, las compuertas, las comparaciones, la integración y el PR |
+| K · Coordinador | `eslint.config.ts`, `frontend/src/app/main.tsx`, `docs/**`, `qa/AGENTS.md`, `specs/014-f9-recorrido/**` | todo | la línea base, la verificación de la pila y la guarda, las compuertas, las comparaciones, la integración y el PR |
 | E · E2E | `qa/e2e/fixtures/index.ts`, `qa/e2e/lib/route-progress.ts`, `qa/e2e/pages/route.ts`, `qa/e2e/pages/method.ts`, `qa/e2e/specs/route-*.spec.ts` | el legacy de la base | la red del Recorrido: cuatro specs verdes y una roja |
 | C · CSS | `frontend/styles.css`, `frontend/src/pages/route/ui/route.css` y, en `qa/load-order-check.ts`, las dos restricciones de las hojas | — | las reglas mudadas, con el barrido en 0 |
-| M · Modelo | `frontend/src/entities/guide/index.ts`, `frontend/src/entities/guide/model/route-selectors*` y `toggle-route-item*`, `frontend/src/pages/route/model/**` | — | las firmas de §3.0 |
+| M · Modelo | `frontend/src/entities/guide/index.ts`, `frontend/src/entities/guide/model/route-selectors*`, `frontend/src/pages/route/model/**` | `routeStore.toggleMark` de F4 | las firmas de §3.0 |
 | P · Página | `frontend/src/pages/route/ui/*.tsx`, `frontend/src/pages/route/index.ts` | de M, §3.0 | `RoutePage` y el índice de §4.0 |
-| A · Corte | `frontend/app.js`, `frontend/src/index.html`, `frontend/src/app/legacy/register-route.tsx`, `frontend/src/app/boot/legacy-views.ts` (K lo integra), `qa/boot-check.ts`, `qa/app-shell-check.ts`, `qa/lib/fake-dom.ts`, `qa/lib/boot-harness.ts`, `qa/lib/app-shell-harness.ts`, `qa/lib/app-adapters.ts` y, en `qa/load-order-check.ts`, la fila del adaptador | de P, `RoutePage` y `focusTimer` del índice | el corte de §5 |
+| A · Corte | `frontend/app.js`, `frontend/src/index.html`, `frontend/src/app/legacy/register-route.tsx`, `frontend/src/app/boot/legacy-views.ts` (K lo integra), `qa/boot-check.ts`, `qa/app-shell-check.ts`, `qa/lib/boot-harness.ts`, `qa/lib/app-shell-harness.ts`, `qa/lib/app-adapters.ts` y, en `qa/load-order-check.ts`, la fila del adaptador | de P, `RoutePage` y `focusTimer` del índice | el corte de §5 |
 
 **Puntos de sincronización:**
 
@@ -302,20 +301,20 @@ Lo que el revisor mira primero:
 
 ## Lo compartido con F3, F4 y F8
 
-F9 se integra de a uno con F3, F4 y F8 (FR-045). T001 mira qué ya está en `master` y anota en research.md, en «Línea base de la implementación», qué rama de cada fila aplica. El código de cada tarea trae la rama «F9 primero»; la otra rama dice qué cambia.
+F9 se integra de a uno con F3, F4 y F8 (FR-045). T001 mira qué ya está en `master` y anota en research.md, en «Línea base de la implementación», qué rama de cada fila aplica. El código de cada tarea trae la rama «F9 primero»; la otra rama dice qué cambia. Con F4 y #67 en la base (`431c9d90`), las filas de la suscripción, la operación de alternar, la pila y `boot-check` ya están en la rama «después», y el código de sus tareas trae esa rama (research.md, R17).
 
 | Pieza | Si F9 entra primero | Si F9 entra después | Cómo se detecta |
 | --- | --- | --- | --- |
-| La suscripción del shell (FR-022; F3 FR-014; F4 FR-011) | T018 agrega `routeStore.changes.subscribe(() => syncShell());` antes del `render();` final de `startApp()` | Si F3, F4 u F8 ya se suscribieron con `updateSaveLabel`, T018 cambia esa función por `() => syncShell()` (la contiene); si ya es `syncShell`, no toca nada | `grep -n "routeStore.changes.subscribe" frontend/app.js` |
-| La operación de alternar (F4 FR-036) | T011 y T012 crean `toggleRouteItem` en `entities/guide`; `toggleItem` queda en `app.js` porque los favoritos y los hitos lo usan | La página usa la que exista. Si F9 es el último de F3, F4 y F9, T018 borra `toggleItem` de `app.js` | `grep -n "toggleRouteItem\|function toggleItem" frontend/app.js frontend/src/entities/guide/index.ts` |
+| La suscripción del shell (FR-022; F3 FR-014; F4 FR-011) | No aplica: F4 ya entró y se suscribió con `updateSaveLabel` (`frontend/app.js:29`) | T018 borra la línea de F4 y agrega `routeStore.changes.subscribe(() => syncShell());` antes del `render();` final de `startApp()`; si ya es `syncShell`, no toca nada. Saca las llamadas a `updateSaveLabel()` que quedan redundantes, salvo que F8 ya lo haya hecho | `grep -n "routeStore.changes.subscribe\|updateSaveLabel()" frontend/app.js` |
+| La operación de alternar (F4 FR-036) | No aplica: F4 ya entró y dejó `routeStore.toggleMark(collection, id)` en `entities/guide` | `toggleStep` llama `store.toggleMark('completed', stepId)`; F9 no crea `toggleRouteItem`. `toggleItem` de `app.js`: si F3 ya entró, T018 la borra (no le quedan llamadas); si no, la deja para la rama `favorite` y la borra F3 | `grep -n "toggleMark" frontend/src/entities/guide/model/route-store.ts` y `grep -n "toggleItem(" frontend/app.js` |
 | Los selectores de pasos | T011 y T012 los crean y T018 los usa en `app.js` | Si otro ítem ya los creó con otro nombre, se usan esos y no se duplican | `grep -n "trackSteps\|nextPendingStep" frontend/src/entities/guide/index.ts` |
 | Los bloques compartidos de CSS (X3) | T010 saca las reglas del Recorrido de los `@media` de 1550, 1150, 850 y 590 px, que conservan las demás reglas, y parte las dos reglas de impresión | T010 rebasa: ubica cada regla por su texto en el `styles.css` vigente, saca sólo las del Recorrido y quita `.focus-timer` y `.module` de las reglas de impresión que queden; los selectores de otras páginas ya pueden no estar | `git log --oneline -- frontend/styles.css` |
-| La pila de componentes (ADR 0008) | T002 pide el permiso, instala, pasa `vitest.config.ts` a dos proyectos, crea `app/test-setup.ts` y agrega la guarda de `useStore` | T002 sólo verifica: `npm ls jsdom @testing-library/react`, que `vitest.config.ts` tenga el proyecto `jsdom` y que la guarda exista. No pide nada | `test -f node_modules/jsdom/package.json` y `grep -n "jsdom" frontend/vitest.config.ts` |
-| `boot-check` (FR-044) | T017 agrega `hasDrawn` y `drawnText` a `qa/lib/fake-dom.ts` y los usa en cinco lecturas | T017 usa los ayudantes que haya dejado el otro port (o los agrega si no existen) y sólo cambia las lecturas que todavía usan `innerHTML` para el Recorrido | `grep -n "innerHTML" qa/boot-check.ts` |
+| La pila de componentes (ADR 0008) | No aplica: llegó con #67 (proyectos `node` y `dom`, setup `frontend/src/vitest.setup.ts`) | T002 sólo verifica la pila y, si ni F5 ni F6 la trajeron, agrega la guarda de `useStore` de F6. No pide nada | `grep -n "name: 'dom'" frontend/vitest.config.ts` y `grep -n "callee.name='useStore'" eslint.config.ts` |
+| `boot-check` (FR-044) | No aplica: F4 ya dejó `mountedText` y la condición `atlas \|\| proyecto` | T017 usa la forma canónica: el conjunto `REACT_VIEWS` (lo crea con `atlas`, `proyecto` y `recorrido` si encuentra la condición de F4, o le suma `recorrido` si ya está) y `mountedText` de F4 en las cinco lecturas; no agrega ayudantes a `qa/lib/fake-dom.ts` | `grep -nE "REACT_VIEWS\|function mountedText\|innerHTML" qa/boot-check.ts` |
 | El escenario «almacén» de `app-shell-check` | T018 saca la parte del paso y renombra el escenario | Si F3 y F8 ya sacaron sus partes, T018 retira el escenario entero; si sólo una, saca la del paso y deja la otra | Leer el escenario en `qa/app-shell-check.ts` |
 | El patrón `store` por prop de las specs de componente | T015 y T016 lo fijan | Lo siguen | Leer la página que entró antes |
 | `resetTimer` (F8-Q2) | Rama A: `TallerRoute` publica `resetTimer` y `sessionResets` lo llama | Rama B, si F8 ya entró: el armado de `src/app/` importa `focusTimer` y `TallerRoute` publica dos métodos | `ls frontend/src/app/*.ts` y `grep -n "sessionResets\|timer" frontend/app.js frontend/src/app/*.ts` |
-| El Page Object de Método | T003 crea `qa/e2e/pages/method.ts` con `resetAllProgress` e `importCopy` | Si F8 ya creó uno, T003 usa el suyo y no crea el archivo. Si «Borrar todo» ya pide la contraseña y el servidor (F8-Q1), T006 usa su flujo con el doble de la API de F11a | `ls qa/e2e/pages/` |
+| El Page Object de Método | Si F5 todavía no entró, T003 crea `qa/e2e/pages/method.ts` con la clase de F5 (`resetProgress()` y `confirmReset()`) más `resetAllProgress` e `importCopy` | F5 lo creó: T003 le suma `resetAllProgress` e `importCopy`. Si F8 ya lo reemplazó, T003 usa el suyo. Si «Borrar todo» ya pide la contraseña y el servidor (F8-Q1), T006 usa su flujo con el doble de la API de F11a | `ls qa/e2e/pages/` y `grep -n "confirmReset\|resetEverything" qa/e2e/pages/method.ts` |
 
 ## Reglas para todos los agentes
 
@@ -325,7 +324,7 @@ F9 se integra de a uno con F3, F4 y F8 (FR-045). T001 mira qué ya está en `mas
   - tu tarea;
   - las skills `tdd`, `clean-code`, `vitest` y, para E2E, `playwright-best-practices`.
 - **TDD, siempre:**
-  - Cada módulo nuevo empieza con su firma lanzando `throw new Error('not implemented')`, para que su spec falle por comportamiento y no por un import.
+  - Cada módulo nuevo empieza con su firma lanzando `throw new Error('not implemented')`, para que su spec falle por comportamiento y no por un import. **Los stubs del rojo van como `const` tipados** (TR-2): el prefijo `_` no silencia `no-unused-vars` en este repositorio, así que el stub no declara parámetros. Una función, `export const trackSteps: (track: GuideTrack) => GuideStep[] = () => { throw new Error('not implemented'); };`; un componente, `const RoutePage: FunctionComponent<RoutePageProps> = () => { throw new Error('not implemented'); };`, con `import type { FunctionComponent } from 'react';` y su `export default`. La implementación vuelve a la forma de la sección de la tarea (`export function …` o el componente con sus props).
   - La spec en rojo y su implementación van en commits separados. El commit rojo no pasa `npm test`; el PR entero sí.
   - Si una prueba que ya existe falla, el error está en el código nuevo: su valor esperado no se toca.
   - Los valores esperados salen de `content/guide/`, de las fixtures congeladas o de un ejemplo resuelto a mano.
@@ -354,7 +353,7 @@ F9 se integra de a uno con F3, F4 y F8 (FR-045). T001 mira qué ya está en `mas
   - `test(e2e): …`, `test(front): …` o `test(qa): …` para lo rojo y para la red;
   - `refactor(front): …` para mover;
   - `feat(front): …` para el port;
-  - `build: …` para la pila.
+  - `build(front): …` para la guarda de `useStore`, si T002 la suma.
 - **Al terminar,** informá las tareas cerradas, los comandos que corriste con su resultado real, lo que no pudiste verificar y cualquier desvío del plan.
 
 ## 0. Línea base, ramas y pila (coordinador K, onda 0)
@@ -363,13 +362,14 @@ F9 se integra de a uno con F3, F4 y F8 (FR-045). T001 mira qué ya está en `mas
 
 ### Tarea 0.1 · La línea base y las ramas (T001)
 
-- **Quién y cuándo:** K, sobre la base de implementación (`master` con F2a, A2 y F2b), antes de cualquier cambio.
+- **Quién y cuándo:** K, sobre la base de implementación (`master` desde `431c9d90`, con F2a, A2, F2b, la pila de #67, el tope de #76 y F4 de #77; y F3, F5, F6 u F8 si entraron antes), antes de cualquier cambio.
 - **Entrega:** un commit de documentación que agrega a [research.md](./research.md) la sección «Línea base de la implementación», con los valores y las ramas.
 - **Pasos:**
   1. `npm ci --offline --no-audit --no-fund`, `npm run build`, `npm test`, `npm run lint`, `npm run format:check` y `E2E_PORT=4173 npm run test:e2e`: todo en verde. Si algo falla, F9 no empieza.
   2. Anotar los valores de quickstart §1:
      - el hash de la base;
-     - `html.length` de `dist/index.html`;
+     - `html.length` de `dist/index.html`, y `BOOT_SIZE_LIMIT` de `qa/build-check.ts` (1 500 000 desde #76);
+     - la cantidad de `import(` y de `import.meta` del script del dist, que es la base de la compuerta de TR-4;
      - los hashes del script, el estilo y el marcado del dist;
      - los avisos de lint, con la complejidad de `render()` de `app.js`;
      - la cantidad de E2E y de escenarios de `boot-check` y `app-shell-check`;
@@ -382,88 +382,36 @@ F9 se integra de a uno con F3, F4 y F8 (FR-045). T001 mira qué ya está en `mas
 
 ### Tarea 0.2 · La pila de pruebas de componentes (T002)
 
-- **Rama «después»** (F3 o F4 ya la trajeron):
-  - verificar `npm ls jsdom @testing-library/react @testing-library/user-event @testing-library/jest-dom`;
-  - verificar que `frontend/vitest.config.ts` tenga un proyecto `jsdom` para `**/*.spec.tsx` con un setup que llame a `cleanup()` y cargue jest-dom;
-  - verificar que `eslint.config.ts` tenga la guarda de `useStore`.
+- **La pila ya está en la base** (#67, `7aa96018`): `jsdom` 30.1.2, `@testing-library/react` 16.3.3, `@testing-library/dom` 10.4.2, `@testing-library/user-event` 14.6.7, `@testing-library/jest-dom` 7.0.1 y `fishery` 2.4.0, en `devDependencies`; `frontend/vitest.config.ts` con los proyectos `node` (`**/*.spec.ts`) y `dom` (entorno jsdom, `**/*.spec.tsx`); y el setup `frontend/src/vitest.setup.ts`, que suma jest-dom y llama a `cleanup()`. F9 no instala nada, no pide permiso, no crea `frontend/src/app/test-setup.ts` y no toca `frontend/vitest.config.ts`. Sus specs `*.spec.tsx` corren en el proyecto `dom`.
+- **La verificación:**
+  1. `npm ls jsdom @testing-library/react @testing-library/user-event @testing-library/jest-dom` lista las versiones de arriba.
+  2. `grep -n "name: 'dom'" frontend/vitest.config.ts` y `test -f frontend/src/vitest.setup.ts` imprimen algo.
 
-  Si falta la guarda, se agrega como en el paso 5 de abajo. No hay commit si nada falta.
-- **Rama «primero»:**
-  1. **El permiso.** K pide al usuario las descargas con nombre, versión, origen, peso y licencia: `jsdom` 30.1.2, `@testing-library/react` 16.3.3, `@testing-library/dom` 10.4.2, `@testing-library/user-event` 14.6.7 y `@testing-library/jest-dom` 7.0.1.
-     - Origen: el registro de npm.
-     - Peso: 56 paquetes, unos 26,3 MB desempaquetados y 5,0 MB comprimidos (estimación del ADR 0008); los directos, en research.md.
-     - Licencia: MIT.
-     - Son sólo `devDependencies`, y las imágenes de Docker que corren `npm ci` también las instalan.
+  Si falta algo, es un hallazgo: K lo informa al coordinador y no lo instala por su cuenta.
+- **La guarda de `useStore`** (SC-011) es el bloque canónico de F6 (`impl-f6`, `b20028be`, `eslint.config.ts:43-54`, commit `e30ad0bf`), que F5 copió igual (`impl-f5`, `efaf39b2`, commit `c6e7ebda`). F4 usa `useStore` y no la trajo: entra con F5 o con F6, el que llegue primero.
+  - **Si T001 la encontró:** no se cambia nada; se corre sólo la verificación del paso 2 de abajo.
+  - **Si falta:**
+    1. K suma este bloque exacto en `eslint.config.ts`, **inmediatamente antes del bloque de `complexity`**, con el mismo selector y el mismo mensaje, sin variantes:
 
-     Sin permiso, T015 y T016 no empiezan, y el resto del plan sigue.
-  2. **La instalación,** con `npm install --save-dev --save-exact jsdom@30.1.2 @testing-library/react@16.3.3 @testing-library/dom@10.4.2 @testing-library/user-event@14.6.7 @testing-library/jest-dom@7.0.1` y el lockfile sincronizado.
-  3. **`frontend/vitest.config.ts`.** La raíz conserva `cacheDir` y su comentario; `name`, `environment` e `include` pasan a cada proyecto, porque los proyectos en línea heredan la raíz y concatenan los arreglos:
-
-     ```ts
-     import { resolve } from 'node:path';
-     import { defineConfig, mergeConfig } from 'vitest/config';
-     import viteConfig from './vite.config.ts';
-
-     export default mergeConfig(
-       viteConfig,
-       defineConfig({
-         // Vite's root is frontend/src: without this the cache would land in frontend/src/node_modules.
-         cacheDir: resolve(import.meta.dirname, '../node_modules/.vite'),
-         test: {
-           projects: [
-             { test: { name: 'node', environment: 'node', include: ['**/*.spec.ts'] } },
+       ```ts
+       {
+         files: ['frontend/src/**/*.{ts,tsx}'],
+         rules: {
+           'no-restricted-syntax': [
+             'error',
              {
-               test: {
-                 name: 'jsdom',
-                 environment: 'jsdom',
-                 include: ['**/*.spec.tsx'],
-                 setupFiles: [resolve(import.meta.dirname, 'src/app/test-setup.ts')],
-               },
+               selector: "CallExpression[callee.name='useStore'][arguments.length=1]",
+               message: 'useStore needs a selector: without one it subscribes to the whole store.',
              },
            ],
          },
-       }),
-     );
-     ```
-
-  4. **`frontend/src/app/test-setup.ts`:**
-
-     ```ts
-     import '@testing-library/jest-dom/vitest';
-     import { cleanup } from '@testing-library/react';
-     import { afterEach } from 'vitest';
-
-     afterEach(() => {
-       cleanup();
-     });
-     ```
-
-  5. **La guarda de `useStore`** (SC-011): un bloque nuevo en `eslint.config.ts`, antes del de `complexity`:
-
-     ```ts
-     {
-       files: ['frontend/src/**/*.{ts,tsx}'],
-       rules: {
-         'no-restricted-syntax': [
-           'error',
-           {
-             selector: "CallExpression[callee.name='useStore'][arguments.length<2]",
-             message: 'useStore needs a small selector: never subscribe to the whole store.',
-           },
-         ],
        },
-     },
-     ```
+       ```
 
-  6. **La verificación de la guarda.** Escribir un archivo descartable `frontend/src/lint-probe.ts` con `import { useStore } from 'zustand'; import { createStore } from 'zustand/vanilla'; export const probe = () => useStore(createStore(() => ({ a: 1 })));`.
-     - `npx eslint frontend/src/lint-probe.ts` tiene que dar el error.
-     - Si el selector no funciona en la versión de `esquery` de ESLint 10.12.0, se usa `"CallExpression[callee.name='useStore']:not([arguments.1])"` y se repite.
-     - Al final, borrar el archivo.
-  7. **Los checks:** `npm run test:unit`, `npm run typecheck` y `npm run lint`.
-     - El proyecto `node` tiene que correr la misma cantidad de pruebas que en T001.
-     - Si Vitest falla porque el proyecto `jsdom` todavía no tiene archivos, se agrega `passWithNoTests: true` a ese proyecto y se informa. Lo saca T015, cuando llegan sus specs.
-  8. **El commit:** `build: la pila de pruebas de componentes (jsdom y Testing Library) con su proyecto de Vitest`.
-- **Vuelta atrás:** revertí el commit; el lockfile vuelve.
+    2. **La verificación de la guarda.** Escribir un archivo descartable `frontend/src/lint-probe.ts` con `import { useStore } from 'zustand'; import { createStore } from 'zustand/vanilla'; export const probe = () => useStore(createStore(() => ({ a: 1 })));`. `npx eslint frontend/src/lint-probe.ts` tiene que dar el error con el mensaje de arriba. Al final, borrar el archivo.
+    3. **Los checks:** `npm run test:unit` (los dos proyectos, con la misma cantidad de pruebas que en T001), `npm run typecheck` y `npm run lint`.
+    4. **El commit:** `build(front): la guarda de useStore sin selector, el bloque de F6`.
+- **Vuelta atrás:** revertí el commit, si lo hubo.
 
 ## 1. La red del Recorrido contra el legacy (dueño E, onda 1)
 
@@ -697,20 +645,31 @@ export class RoutePage {
 }
 ```
 
-**Crea** `qa/e2e/pages/method.ts`, salvo que F8 ya haya creado uno: en ese caso T006 usa los métodos equivalentes del suyo.
+**`qa/e2e/pages/method.ts` ya existe: lo creó F5** (`impl-f5`, commit `d7944d81`, en `efaf39b2`), con la clase `MethodPage`, dos localizadores, `resetProgress()` y `confirmReset()`, y la fixture `method` en `qa/e2e/fixtures/index.ts`; `systems.spec.ts` los usa. F9 **lo extiende**: suma `resetAllProgress()` e `importCopy()` a esa clase, sin recrear el archivo y sin cambiar los dos métodos de F5. `resetAllProgress()` reusa los localizadores de F5.
+
+- **Si el archivo está** (F5 entró antes): después de `confirmReset()` se suman los dos métodos de abajo, y nada más.
+- **Si F9 entra antes que F5:** se crea el archivo entero de abajo, que es la clase de F5 tal cual más los dos métodos, para que el rebase de F5 encuentre lo mismo.
+- **Si F8 ya entró:** su B4 reemplaza el Page Object y lleva los E2E a `method.resetEverything()`; T006 usa los métodos equivalentes del suyo.
 
 ```ts
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 
 export class MethodPage {
   constructor(readonly page: Page) {}
 
-  async resetAllProgress(): Promise<void> {
-    await this.page.getByRole('button', { name: 'Borrar mi progreso' }).click();
-    await this.page
+  resetProgress(): Locator {
+    return this.page.getByRole('button', { name: 'Borrar mi progreso' });
+  }
+
+  confirmReset(): Locator {
+    return this.page
       .getByRole('dialog', { name: '¿Borrar tu progreso?' })
-      .getByRole('button', { name: 'Borrar todo' })
-      .click();
+      .getByRole('button', { name: 'Borrar todo' });
+  }
+
+  async resetAllProgress(): Promise<void> {
+    await this.resetProgress().click();
+    await this.confirmReset().click();
   }
 
   async importCopy(text: string): Promise<void> {
@@ -725,15 +684,14 @@ export class MethodPage {
 
 **Cambia** `qa/e2e/fixtures/index.ts`:
 
-- importa `MethodPage` de `'../pages/method'` y `RoutePage` de `'../pages/route'`;
-- suma `route: RoutePage;` y `method: MethodPage;` a `Fixtures`;
-- en `base.extend`, después de `atlas`, suma:
+- importa `RoutePage` de `'../pages/route'` y, si F5 no lo hizo, `MethodPage` de `'../pages/method'`;
+- suma `route: RoutePage;` a `Fixtures` y, si F5 no lo hizo, `method: MethodPage;`;
+- en `base.extend`, después de `atlas`, suma la fixture `route` y, si F5 no la sumó, la de `method`:
 
 ```ts
   route: async ({ page }, use) => use(new RoutePage(page)),
   method: async ({ page }, use) => use(new MethodPage(page)),
 ```
-
 **Pasos:**
 
 1. `npm run typecheck`.
@@ -1734,7 +1692,7 @@ Es la comprobación de X2 antes del port. K la anota en research.md.
    - el multiconjunto da 0 diferencias;
    - el barrido da 0 diferencias en las 14 páginas de F2b, más los estados del Recorrido y la impresión.
 
-   Si el barrido da diferencias, se busca qué regla cambió de lugar con las propiedades que difieren. Nunca se edita una declaración.
+   Si el barrido da diferencias, se busca qué regla cambió de lugar con las propiedades que difieren. Nunca se edita una declaración. El script ya mueve el puntero fuera y salta lo de adentro de los `<details>` cerrados (quickstart §3.1, cambios 5 y 6). Los conteos del multiconjunto salen de T001, nunca de un número de este plan (TR-15): F4 ya partió la regla de impresión, que en la base queda `.resource-card, .module`.
 9. **El control negativo** (quickstart §3.2), en una copia descartable: el import de `route.css` antes del de `styles.css`. El barrido tiene que dar diferencias en el botón «↺», porque `.text-button` le gana a `.timer-reset` en `text-decoration`. Si da 0, el barrido no mira lo que tiene que mirar: se para y se informa.
 10. `E2E_PORT=4192 npm run test:e2e`: la red entera, con `css-contract`, y los E2E de T004 a T007.
 11. Un commit: `refactor(front): las reglas del Recorrido viven en route.css`.
@@ -1755,8 +1713,8 @@ export function trackSteps(track: GuideTrack): GuideStep[];
 export function countCompletedSteps(steps: readonly GuideStep[], completed: readonly string[]): number;
 export function nextPendingStep(steps: readonly GuideStep[], completed: readonly string[]): GuideStep | undefined;
 
-// frontend/src/entities/guide/model/toggle-route-item.ts
-export function toggleRouteItem(collection: string[], id: string): void;
+// frontend/src/entities/guide/model/route-store.ts, from F4 (master): used as is
+toggleMark(collection: RouteMarkCollection, id: string): boolean;
 
 // frontend/src/pages/route/model/focus-timer.ts
 export const FOCUS_TICK_MS = 500;
@@ -1791,11 +1749,11 @@ export function lessonResources(step: GuideStep, resources: readonly GuideResour
 export function quizFeedback(step: GuideStep, answer: number | undefined): QuizFeedback | undefined;
 ```
 
-**Si F3 o F4 ya crearon la operación de alternar** con otro nombre, `toggle-route-item.*` no se crea y `route-actions.ts` usa la que exista. Si ya existen selectores equivalentes, se usan.
+**La operación de alternar es la de F4:** `routeStore.toggleMark(collection, id)` (`frontend/src/entities/guide/model/route-store.ts`: el tipo `RouteMarkCollection` en `:21`, la firma en `:27` y la implementación en `:97`). Agrega el id al final o lo quita, escribe una vez y avisa una vez, y `route-store.spec.ts` ya la prueba con `completed`. F9 no crea `toggleRouteItem` ni otra operación propia: `toggleStep` la llama. Si ya existen selectores equivalentes, se usan.
 
 ### Tarea 3.1 · Las specs de `entities/guide`, en rojo (T011)
 
-**Crea** `frontend/src/entities/guide/model/route-selectors.ts` y `toggle-route-item.ts`, con las firmas de §3.0 lanzando `throw new Error('not implemented')`. **Crea** también sus specs:
+**Crea** `frontend/src/entities/guide/model/route-selectors.ts`, con las firmas de §3.0 como stubs `const` tipados (Reglas): `export const trackSteps: (track: GuideTrack) => GuideStep[] = () => { throw new Error('not implemented'); };`, `export const countCompletedSteps: (steps: readonly GuideStep[], completed: readonly string[]) => number = () => { throw new Error('not implemented'); };` y `export const nextPendingStep: (steps: readonly GuideStep[], completed: readonly string[]) => GuideStep | undefined = () => { throw new Error('not implemented'); };`, con `import type { GuideStep, GuideTrack } from './types';`. **Crea** también su spec:
 
 ```ts
 // frontend/src/entities/guide/model/route-selectors.spec.ts
@@ -1857,34 +1815,16 @@ describe('nextPendingStep', () => {
 });
 ```
 
-```ts
-// frontend/src/entities/guide/model/toggle-route-item.spec.ts
-import { describe, expect, it } from 'vitest';
-import { toggleRouteItem } from './toggle-route-item';
-
-describe('toggleRouteItem', () => {
-  it('appends an absent id at the end of the same array', () => {
-    const favorites = ['rust-100', 'go-tour'];
-    toggleRouteItem(favorites, 'rustlings');
-    expect(favorites).toEqual(['rust-100', 'go-tour', 'rustlings']);
-  });
-
-  it('removes a present id and keeps the order of the rest', () => {
-    const completed = ['rust-first-session', 'rust-ownership', 'rust-errors'];
-    toggleRouteItem(completed, 'rust-ownership');
-    expect(completed).toEqual(['rust-first-session', 'rust-errors']);
-  });
-});
-```
+No hay spec de una operación de alternar: es `routeStore.toggleMark` de F4, ya probada en `route-store.spec.ts` («toggling a mark of the route»).
 
 **Pasos:**
 
-1. `npm run test:unit -- frontend/src/entities/guide`: las specs nuevas fallan con `not implemented` y las de siempre pasan.
-2. Un commit: `test(front): los selectores de pasos y la operación de alternar (rojas)`.
+1. `npm run test:unit -- frontend/src/entities/guide`: la spec nueva falla con `not implemented`, las de siempre pasan y `npm run lint` no da `no-unused-vars`.
+2. Un commit: `test(front): los selectores de pasos (rojos)`.
 
 ### Tarea 3.2 · `entities/guide` (T012)
 
-**Cambia** los dos módulos de T011 y el índice:
+**Cambia** el módulo de T011 y el índice:
 
 ```ts
 // frontend/src/entities/guide/model/route-selectors.ts
@@ -1909,33 +1849,23 @@ export function nextPendingStep(
 }
 ```
 
-```ts
-// frontend/src/entities/guide/model/toggle-route-item.ts
-export function toggleRouteItem(collection: string[], id: string): void {
-  const index = collection.indexOf(id);
-  if (index === -1) collection.push(id);
-  else collection.splice(index, 1);
-}
-```
-
 En `frontend/src/entities/guide/index.ts`, después de la línea de `MILESTONE_IDS`:
 
 ```ts
 export { countCompletedSteps, nextPendingStep, trackSteps } from './model/route-selectors';
-export { toggleRouteItem } from './model/toggle-route-item';
 ```
 
 **Pasos:**
 
 1. Las specs de T011 pasan.
 2. `node qa/seams-guard-check.ts`, `npm run typecheck` y `npm run lint`.
-3. Un commit: `refactor(front): los selectores de pasos y la operación de alternar viven en entities/guide`.
+3. Un commit: `refactor(front): los selectores de pasos viven en entities/guide`.
 
 ### Tarea 3.3 · Las specs del modelo de la página, en rojo (T013)
 
-**Crea** los tres módulos de `frontend/src/pages/route/model/` con las firmas de §3.0 lanzando `not implemented`. Las constantes de texto llevan ya su valor.
+**Crea** los tres módulos de `frontend/src/pages/route/model/` con las firmas de §3.0 lanzando `not implemented`, cada función como un stub `const` tipado sin parámetros (Reglas; por ejemplo, `export const toggleStep: (store: RouteStore, stepId: string) => void = () => { throw new Error('not implemented'); };`). Las constantes de texto llevan ya su valor.
 
-**El temporizador en rojo:** `createFocusTimer()` devuelve `{ state: createStore<FocusTimerState>(() => IDLE), toggle() { throw new Error('not implemented'); }, reset() { throw new Error('not implemented'); } }`, y `focusTimer` es `createFocusTimer()`. Así, evaluar el módulo no lanza y las specs fallan por comportamiento, no por el import. Las tres funciones puras lanzan.
+**El temporizador en rojo:** `createFocusTimer()` devuelve `{ state: createStore<FocusTimerState>(() => IDLE), toggle() { throw new Error('not implemented'); }, reset() { throw new Error('not implemented'); } }`, y `focusTimer` es `createFocusTimer()`. Así, evaluar el módulo no lanza y las specs fallan por comportamiento, no por el import. Las tres funciones puras lanzan, como stubs `const` tipados.
 
 **Crea** también sus specs:
 
@@ -2412,11 +2342,10 @@ export const focusTimer: FocusTimer = createFocusTimer();
 
 ```ts
 // frontend/src/pages/route/model/route-actions.ts
-import { toggleRouteItem, type RouteStore } from '../../../entities/guide';
+import type { RouteStore } from '../../../entities/guide';
 
 export function toggleStep(store: RouteStore, stepId: string): void {
-  toggleRouteItem(store.getProgress().completed, stepId);
-  store.save();
+  store.toggleMark('completed', stepId);
 }
 
 export function answerQuiz(store: RouteStore, stepId: string, answer: number): void {
@@ -2507,7 +2436,7 @@ export function quizFeedback(step: GuideStep, answer: number | undefined): QuizF
 
 **Cubre:** FR-007 a FR-010, FR-016, FR-017, FR-019, FR-023 a FR-025, FR-033 a FR-038, FR-040 y FR-042; US1 a US3.
 
-**Parte de:** S1. P necesita el modelo de T014 y el proyecto `jsdom` de T002.
+**Parte de:** S1. P necesita el modelo de T014 y el proyecto `dom` de #67, que T002 verificó.
 
 ### 4.0 Contratos
 
@@ -2542,7 +2471,7 @@ interface LessonDialogProps {
 
 ### Tarea 4.1 · Las specs de componente, en rojo (T015)
 
-**Crea** `frontend/src/pages/route/ui/RoutePage.tsx` y `LessonDialog.tsx`, cada uno como un componente que lanza `not implemented` con su `export default`. **Crea** también las dos specs:
+**Crea** `frontend/src/pages/route/ui/RoutePage.tsx` y `LessonDialog.tsx`, cada uno como un componente que lanza `not implemented` con su `export default`, como stub `const` tipado sin parámetros (Reglas): `const RoutePage: FunctionComponent<RoutePageProps> = () => { throw new Error('not implemented'); };` y lo mismo con `LessonDialog` y `LessonDialogProps`, con las interfaces de §4.0 y `import type { FunctionComponent } from 'react';`. **Crea** también las dos specs:
 
 ```tsx
 // frontend/src/pages/route/ui/RoutePage.spec.tsx
@@ -2973,7 +2902,7 @@ describe('LessonDialog', () => {
 **Pasos:**
 
 1. `npm run test:unit -- frontend/src/pages/route/ui`: las dos specs fallan por `not implemented`.
-2. Si T002 agregó `passWithNoTests` al proyecto `jsdom`, K lo saca en este commit.
+2. Las specs corren en el proyecto `dom` de #67, que ya tiene archivos: no hay `passWithNoTests` que sacar.
 3. Un commit: `test(front): la página y la lección del Recorrido (rojas)`.
 
 ### Tarea 4.2 · La página (T016)
@@ -2984,7 +2913,7 @@ describe('LessonDialog', () => {
 
 - **Los espacios.** Los textos con espacios contra un elemento van en la misma línea o en una plantilla: « TU TALLER DE RUST», «Empezar esta sesión ↗», «… practicar ✓» y el enlace «Explorá la biblioteca».
 - **El código de la ilustración** va por segmentos, sin saltos de JSX dentro de `<pre>`.
-- **Prettier** puede partir líneas largas de texto: conserva los espacios con `{' '}` cuando hacen falta.
+- **Un texto, un nodo** (TR-13). JSX parte en varios nodos de texto un texto con una expresión o con un `{' '}`, y el kerning cambia el ancho que mide el barrido aunque la comparación del DOM, que une los textos, no lo vea. Cada texto que hoy es un solo nodo va en una sola expresión, con un template literal, como los de abajo. Si Prettier parte una línea larga de texto y mete un `{' '}`, el texto se arma en una plantilla en lugar de aceptar el nodo extra.
 
 ```tsx
 // frontend/src/pages/route/ui/RouteHero.tsx
@@ -3585,50 +3514,36 @@ export type { FocusTimer, FocusTimerPhase, FocusTimerState } from './model/focus
 
 ### Tarea 5.1 · `boot-check` lee los nodos y exige 0 intervalos (T017, rojo)
 
-**Cambia** `qa/lib/fake-dom.ts` y `qa/boot-check.ts`. Si otro port ya agregó ayudantes equivalentes, se usan esos: ver «Lo compartido».
+**Cambia** `qa/boot-check.ts`, y nada más: `qa/lib/fake-dom.ts` no cambia. La forma canónica, decidida el 2026-10-28 (noche), es el conjunto `REACT_VIEWS` con la rama que mira los nodos montados y `mountedText`, el de F4 (`master`, `qa/boot-check.ts:85-87`), que también lee el `textContent` del elemento porque React lo usa cuando el único hijo es un texto. F9 no trae ayudantes propios (ni `hasDrawn` ni `drawnText`) y no cambia `mountedText`.
 
-Al final de `qa/lib/fake-dom.ts`:
+El Recorrido es la vista por omisión: con React, `#main.innerHTML` queda vacío, y cuatro escenarios lo usan como señal de que se dibujó. Esas cuatro lecturas pasan a mirar `innerHTML` **y** los nodos, con `main.innerHTML + mountedText(main)`. Sirven antes y después del port, así que no cambia ningún valor esperado. La rama de «navegación» pasa al conjunto en el corte (T018), como hace cada port con su vista.
 
-```ts
-export function hasDrawn(element: FakeElement): boolean {
-  return element.innerHTML !== '' || element.childNodes.length > 0;
-}
-
-function nodeText(node: FakeNode): string {
-  if (node instanceof FakeText) return node.nodeValue;
-  return node.textContent + node.childNodes.map(nodeText).join('');
-}
-
-export function drawnText(element: FakeElement): string {
-  return element.innerHTML + nodeText(element);
-}
-```
-
-**En `qa/boot-check.ts`:**
-
-- El import de `./lib/fake-dom.ts` suma `drawnText` y `hasDrawn` como valores.
 - **«arranque: main.tsx se evalúa sin excepciones y #main queda con contenido»:** `assert.notEqual(elements['main']?.innerHTML, '');` pasa a:
 
   ```ts
   const main = elements['main'];
-  assert.ok(main && hasDrawn(main), '#main quedó vacío');
+  assert.notEqual(main ? main.innerHTML + mountedText(main) : '', '');
   ```
 
-- **«navegación: cada vista se renderiza por hash sin lanzar»:** el `else` pasa a `assert.ok(drawnText(main).includes(VIEW_HEADINGS[view]), \`#${view} no mostró su encabezado\`);`.
 - **En `recordInitializations`:** `const mainWasEmpty = harness.elements['main']?.innerHTML === '';` pasa a:
 
   ```ts
   const main = harness.elements['main'];
-  const mainWasEmpty = main === undefined || !hasDrawn(main);
+  const mainWasEmpty = main !== undefined && main.innerHTML + mountedText(main) === '';
   ```
 
-- **«startApp initializes in order and draws the first view»:** la última línea pasa a `assert.ok(hasDrawn(harness.elements['main']!), '#main quedó vacío');`.
-- **«a retry that succeeds starts the views without a second boot»:** las tres líneas de `markup` pasan a:
+- **«startApp initializes in order and draws the first view»:** la última línea pasa a:
 
   ```ts
   const main = harness.elements['main'];
-  assert.ok(main && hasDrawn(main), 'the views did not draw');
-  assert.equal(drawnText(main).includes('No se pudo cargar el contenido'), false);
+  assert.notEqual(main ? main.innerHTML + mountedText(main) : '', '');
+  ```
+
+- **«a retry that succeeds starts the views without a second boot»:** la primera de sus tres líneas de `markup` pasa a las dos de abajo, y las otras dos quedan igual:
+
+  ```ts
+  const main = harness.elements['main'];
+  const markup = main ? main.innerHTML + mountedText(main) : '';
   ```
 
 - **Un escenario nuevo,** después de «a second startApp call fails»:
@@ -3640,6 +3555,8 @@ export function drawnText(element: FakeElement): string {
     assert.equal(harness.intervals, 0);
   });
   ```
+
+`mountedText` es una declaración de función del módulo, así que el escenario «arranque», que va antes en el archivo, ya la puede usar. El import de `./lib/fake-dom.ts` no cambia.
 
 **Pasos:**
 
@@ -3711,11 +3628,11 @@ window.TallerRoute = Object.freeze({ mount, unmount, resetTimer });
 - `startApp()` deja de registrar el cierre del temporizador;
 - `app-adapters.ts` lista sólo `['mount', 'unmount']`.
 
-**Cambia** `frontend/src/app/boot/legacy-views.ts` (lo integra K): agregar `() => import('../legacy/register-route'),` en la línea siguiente a `() => import('../legacy/register-atlas'),`.
+**Cambia** `frontend/src/app/boot/legacy-views.ts` (lo integra K): agregar `() => import('../legacy/register-route'),` en la línea siguiente a `() => import('../legacy/register-atlas'),`. Es la única entrada nueva de `LEGACY_MODULES`: `import.meta` del dist sube uno (TR-4).
 
 **Cambia `frontend/app.js`,** ubicando cada fragmento por su texto:
 
-1. **El import** de la línea 1 pasa a `import { countCompletedSteps, routeStore, trackSteps } from './src/entities/guide';`. Si F9 es el último de F3, F4 y F9, también suma `toggleRouteItem` y se borra `toggleItem` (paso 6).
+1. **El import** de la línea 1 pasa a `import { countCompletedSteps, routeStore, trackSteps } from './src/entities/guide';`. No suma ninguna operación de alternar: las páginas usan `routeStore.toggleMark` (paso 6).
 2. **Las declaraciones que se borran:**
    - las tres líneas de `const allSteps = …`;
    - `let currentStepId = null;` y `let lessonOpener = null;`;
@@ -3740,20 +3657,23 @@ window.TallerRoute = Object.freeze({ mount, unmount, resetTimer });
 
    - borrar la llamada final `updateTimer();`.
 5. **Las funciones que se borran:** `routeCode`, `renderRoute`, `timerMarkup` y `updateTimer`, con la línea `setInterval(updateTimer, 500);`.
-6. **`toggleItem`:**
-   - si F9 no es el último de F3, F4 y F9, queda como está;
-   - si es el último, se borra la función, y las llamadas que queden pasan a `toggleRouteItem` (no debería quedar ninguna).
+6. **`toggleItem`,** la función local de `startApp`. F4 ya entró, así que sólo queda F3:
+   - si F3 ya entró, después de este corte no le queda ninguna llamada y se borra (`grep -n "toggleItem(" frontend/app.js` no imprime nada);
+   - si F3 no entró, queda como está, para la rama `favorite`, y la borra el corte de F3.
+
+   Ninguna llamada pasa a otra operación: no hay `toggleRouteItem`.
 7. **En `createProgressBackup`,** el segundo elemento de `sessionResets`, el cierre de cuatro líneas sobre `timer`, pasa a `() => window.TallerRoute?.resetTimer(),`. Es la rama A; en la rama B, ver arriba.
 8. **Lo de la lección que se borra:** `openLesson`, `showQuizFeedback` y los dos oyentes de `$('#lesson-dialog')`, el de `click` y el de `close`.
 9. **En el delegado de `click` de `#main`,** se borran las líneas de `action === 'lesson'`, `'duration'`, `'timer'` y `'timer-reset'`.
 10. **En el delegado de `change`,** se borra el bloque `if (target.dataset.stepCheck) { … }`.
-11. **La suscripción del shell,** antes del `render();` final de `startApp()`:
+11. **La suscripción del shell.** F4 dejó `routeStore.changes.subscribe(updateSaveLabel);` inmediatamente después de `routeStore.open(data);` (`frontend/app.js:29`). Esa línea se borra, y antes del `render();` final de `startApp()` va:
 
     ```js
     routeStore.changes.subscribe(() => syncShell());
     ```
 
-    Si otro port ya se suscribió con `updateSaveLabel`, esa línea se cambia por esta.
+    No se cambia en su lugar: `syncShell` usa `const` que `startApp()` declara después (`stepsFor`, `completedCount` y `languageName`) y `currentView`, que estarían en su zona muerta si algo avisara antes. Si la línea ya es `() => syncShell()` (F3 u F8 la ampliaron), no se toca.
+12. **Las llamadas a `updateSaveLabel()` que la suscripción vuelve redundantes** salen, salvo que F8 ya las haya sacado: la de `save()` (que queda `function save() { return routeStore.save(); }`) y la que sigue a `progressBackup.applyImport(plan)` en el oyente de `#import-file`. Cada escritura del almacén avisa, y el oyente llama a `syncShell`, que llama a `updateSaveLabel`. La llamada dentro de `syncShell` se queda.
 
 **Cambia el resto:**
 
@@ -3764,6 +3684,29 @@ window.TallerRoute = Object.freeze({ mount, unmount, resetTimer });
 - **`qa/load-order-check.ts`:**
   - se agrega `const ROUTE = 'frontend/src/app/legacy/register-route.tsx';` junto a `ATLAS`;
   - en `BEFORE_APP_REASONS` se agrega `[ROUTE]: 'render() de app.js llama a window.TallerRoute.mount() sin guarda opcional en la vista recorrido, que es la vista por omisión',`.
+- **`qa/boot-check.ts`, en «navegación: cada vista se renderiza por hash sin lanzar»:** el Recorrido pasa a la rama de las vistas de React, con la forma canónica y sin otro ayudante (TR-3).
+  - **Si T001 encontró `REACT_VIEWS`** (F3 o F5 entraron antes): sólo se suma `'recorrido'` al conjunto.
+  - **Si encontró la condición de F4** (`if (view === 'atlas' || view === 'proyecto') {`): pasa al conjunto, con la forma de F5 (`impl-f5`, `efaf39b2`, `qa/boot-check.ts:85`). La constante va inmediatamente antes de `function mountedText`, que queda igual:
+
+    ```ts
+    const REACT_VIEWS: ReadonlySet<string> = new Set(['atlas', 'proyecto', 'recorrido']);
+    ```
+
+    y la rama pasa a:
+
+    ```ts
+    if (REACT_VIEWS.has(view)) {
+      assert.ok(main.childNodes.length > 0, `#${view} no montó nodos en #main`);
+      assert.ok(
+        mountedText(main).includes(VIEW_HEADINGS[view]),
+        `#${view} no mostró su encabezado`,
+      );
+    } else {
+      assert.ok(main.innerHTML.includes(VIEW_HEADINGS[view]), `#${view} no mostró su encabezado`);
+    }
+    ```
+
+    Sale el comentario que F4 dejó dentro de la rama, como en F5. El encabezado esperado sigue siendo «TU TALLER DE RUST».
 - **`qa/boot-check.ts`, en «borrar todo: confirm-reset reinicia cada adaptador y deja el recorrido en blanco»:**
   - `RESET_METHODS` suma `['TallerRoute', 'resetTimer'],` al final. En la rama B, no.
   - **El espía cambia cómo observa.** `window.TallerRoute` está congelado, como los demás adaptadores de `app/legacy/`, y el check corre en modo estricto: asignarle un método lanza un `TypeError`. Para un adaptador congelado, el espía reemplaza el global por una copia congelada con el método envuelto. `app.js` lee `window.TallerRoute?.resetTimer()` al llamarlo, así que ve la copia. Para los demás, envuelve el método como hoy. El bloque del bucle pasa a:
@@ -3798,7 +3741,7 @@ window.TallerRoute = Object.freeze({ mount, unmount, resetTimer });
    - `app-shell-check`, `load-order-check`, `seams-guard-check`, `route-progress-check`, `versioned-storage-check` y `curriculum-ids-check`;
    - y Vitest.
 
-   **Si el DOM falso no alcanza para montar la página** (`details`, la casilla o el portal), se agrega a `qa/lib/fake-dom.ts` lo mínimo que React pida, en este commit, y se lista en el PR. No se saca el Recorrido del recorrido de `boot-check`.
+   **Si el DOM falso no alcanza para montar la página** (`details`, la casilla o el portal), se agrega a `qa/lib/fake-dom.ts` lo mínimo que React pida, en este commit, y se lista en el PR. Es soporte del DOM, no un ayudante de lectura: las lecturas siguen con `mountedText`. No se saca el Recorrido del recorrido de `boot-check`.
 3. **El resto de los checks:** `npm run typecheck`, `npm run lint` (con la cuenta de avisos y la complejidad de `render()` antes y después) y `npm run format:check`.
 4. **La red:** `npm run build` y `E2E_PORT=4194 npm run test:e2e`, con la de F1 y A2 sin editar, T004 a T007 y T008, que ahora pasa: los 46 E2E del Recorrido en verde.
 5. **Las mutaciones descartadas:**
@@ -3817,7 +3760,7 @@ window.TallerRoute = Object.freeze({ mount, unmount, resetTimer });
 **Qué corre** (quickstart §3 y §4), con el worktree de la base de T001 y el de la rama con T018:
 
 1. **El multiconjunto de declaraciones del CSS del dist:** 0 diferencias.
-2. **El barrido de estilo computado, de la base contra el port:** 0 diferencias en las 14 páginas de F2b, los estados del Recorrido (pasos completos, módulos abiertos a mano, el aviso de recorrido completo y la lección abierta con una respuesta correcta y otra incorrecta) y la impresión.
+2. **El barrido de estilo computado, de la base contra el port:** 0 diferencias en las 14 páginas de F2b, los estados del Recorrido (pasos completos, módulos abiertos a mano, el aviso de recorrido completo y la lección abierta con una respuesta correcta y otra incorrecta) y la impresión. El barrido evita las trampas de TR-13 (quickstart §3.1, cambios 5 y 6): mueve el puntero fuera antes de capturar, porque React conserva el nodo bajo el puntero y su `:hover`, y no compara lo de adentro de un `<details>` cerrado. Si aparece una diferencia sub-píxel en el ancho de un texto, primero se busca un texto que JSX partió en varios nodos y se arma en uno (T016, «Un texto, un nodo»); nunca se acepta con una tolerancia.
 3. **La comparación única del HTML (SC-003):** 0 diferencias después de normalizar lo listado en quickstart §4.
    - **Las páginas:** 72 estados, que son los dos lenguajes por ningún paso, cinco y todos completos, por las tres duraciones y por los cuatro estados del temporizador.
    - **Las lecciones:** 192 aperturas, que son los 24 pasos por las cuatro respuestas (ninguna, A, B y C) y por completo y sin completar.
@@ -3831,11 +3774,11 @@ En el PR, integrada por K (FR-046):
 - **`docs/architecture.md`:**
   - en el mapa, la fila «Navegación, recorrido y progreso general» deja de decir que `app.js` dibuja el recorrido;
   - una fila nueva: «Recorrido migrado a React/TypeScript: `frontend/src/pages/route/` (`ui`, `model`), con el temporizador como módulo de sesión (`model/focus-timer.ts`), y el adaptador `frontend/src/app/legacy/register-route.tsx`, que lee `getContent().guide` al montar»;
-  - en «Feature-Sliced Design incremental», el estado actual suma `pages/route`, y `entities/guide` suma los selectores de pasos y `toggleRouteItem`.
+  - en «Feature-Sliced Design incremental», el estado actual suma `pages/route`, y `entities/guide` suma los selectores de pasos.
 - **`qa/AGENTS.md`:**
   - la fila «Recorrido, biblioteca o respaldo global» suma las specs de `pages/route` y los cinco E2E `route-*.spec.ts`;
-  - si F9 trajo la pila, «Pruebas del front» dice que el proyecto `jsdom` corre `*.spec.tsx` con `frontend/src/app/test-setup.ts`.
-- **`docs/adr/0008-pruebas-del-front.md`,** sólo si F9 trajo la pila: una enmienda corta con los dos proyectos, el setup y la guarda de `useStore`, que el ADR dejó para la primera spec de componente.
+  - «Pruebas del front» ya nombra el proyecto `dom` y el setup `frontend/src/vitest.setup.ts` (#67): no se toca. Si T002 sumó la guarda de `useStore`, la fila de «Almacenes, motores…» la nombra en `npm run lint`.
+- **`docs/adr/0008-pruebas-del-front.md`** no cambia: la pila, los proyectos y el setup ya los registró la enmienda de F4.
 - **Verificación:** las rutas, los comandos y los enlaces locales, y `git diff --check`.
 - Un commit: `docs: el Recorrido en React, su temporizador y sus pruebas`.
 
@@ -3861,7 +3804,7 @@ En el PR, integrada por K (FR-046):
 - las comparaciones y sus cantidades;
 - el tamaño antes y después;
 - los avisos de complejidad;
-- lo que queda: F10 retira `mount`, `unmount` y `#quiz-feedback`; F8 retira `resetTimer` en la rama A; y el último de F3 y F4 borra `toggleItem`, si F9 no lo hizo.
+- lo que queda: F10 retira `mount`, `unmount` y `#quiz-feedback`; F8 retira `resetTimer` en la rama A; y F3 borra `toggleItem` de `app.js`, si F9 no lo hizo porque F3 todavía no había entrado.
 
 **Al final,** se le avisa al coordinador lo que toca a las hojas de ruta y a las specs de F3, F4 y F8 (el informe).
 
@@ -3873,8 +3816,8 @@ En el PR, integrada por K (FR-046):
 
 | Check | Escenario | Qué le pasa | Cubierto por |
 | --- | --- | --- | --- |
-| `boot-check` | «arranque: main.tsx se evalúa sin excepciones y #main queda con contenido» | Lee los nodos (`hasDrawn`) | El mismo escenario |
-| `boot-check` | «navegación: cada vista se renderiza por hash sin lanzar», el Recorrido | Lee los nodos (`drawnText`) con el mismo texto, «TU TALLER DE RUST» | El mismo escenario; además, `views.spec.ts` de F1 |
+| `boot-check` | «arranque: main.tsx se evalúa sin excepciones y #main queda con contenido» | Lee `innerHTML` y los nodos (`main.innerHTML + mountedText(main)`) | El mismo escenario |
+| `boot-check` | «navegación: cada vista se renderiza por hash sin lanzar», el Recorrido | Pasa a `REACT_VIEWS` y lee los nodos con `mountedText` (F4), con el mismo texto, «TU TALLER DE RUST» | El mismo escenario; además, `views.spec.ts` de F1 |
 | `boot-check` | «startApp initializes in order and draws the first view» | La bandera «after drawing» y la última aserción leen los nodos | El mismo escenario |
 | `boot-check` | «a retry that succeeds starts the views without a second boot» | Lee los nodos | El mismo escenario |
 | `boot-check` | «borrar todo: confirm-reset reinicia cada adaptador y deja el recorrido en blanco» | Suma `TallerRoute.resetTimer` al final del orden (rama A); el espía reemplaza el global de un adaptador congelado en lugar de asignarle el método | El mismo escenario; `route-timer.spec.ts` (««Borrar todo» stops it…») |
@@ -3947,8 +3890,8 @@ Ningún check se retira.
 
 ## Descargas y permisos
 
-- **Si F9 es el primero con specs de componente:** el permiso de T002, con `jsdom` 30.1.2 y Testing Library. Los datos están en research.md y en T002.
-- **fishery no se pide** (research.md, R13).
+- **La pila de componentes no se pide:** llegó con #67 (research.md, R13 y R17).
+- **fishery no se pide** (research.md, R13); también llegó con #67, y F9 no la usa.
 - **Ninguna otra descarga:** el navegador de Playwright ya está desde F1.
 - **`docker compose build taller`** lo corre K, con permiso.
 
@@ -3957,14 +3900,14 @@ Ningún check se retira.
 1. **Nada corrió al planificar.** Los textos esperados salen de `content/guide/` y del código leído, y los E2E de T004 a T007 se escribieron contra lo que se leyó en `app.js`. Su primera corrida contra el legacy es la verificación: si un valor no coincide, se informa antes de seguir.
 2. **El foco del `<dialog>`.** Que el foco caiga en «×» al abrir, que Tab no salga del diálogo y el orden del evento `close` contra el redibujo de React se infirieron de la especificación de HTML. Los fijan T005 y T008 en el primer contacto con un navegador.
 3. **El DOM falso de `boot-check`** con `details`, casillas controladas y `flushSync` no se probó. T018 suma lo mínimo si hace falta (paso 2).
-4. **La guarda de `useStore`.** El selector `[arguments.length<2]` depende de `esquery`. T002 lo verifica y trae el de respaldo.
+4. **La guarda de `useStore`.** Es el bloque de F6, con `[arguments.length=1]`, que ya corre en las ramas de F5 y F6 (`impl-f6`, `e30ad0bf`). T002 la verifica con un archivo descartable, o la suma tal cual si ni F5 ni F6 entraron.
 5. **Las reglas de React Compiler en `eslint-plugin-react-hooks` 7.1.1.** La regla `refs` puede marcar el callback `keepAction` de `RoutePage`, que escribe `cardAction.current` y se pasa a un componente propio, no a un `ref` de un elemento.
    - **Dónde aparece:** en el paso de lint de T016.
    - **El respaldo:** `FocusCard` recibe `actionRef: RefObject<HTMLElement | null>` y la asigna en el `ref` de su propio botón o enlace, con un callback (`ref={(element) => { actionRef.current = element; }}`). `RoutePage` le pasa `cardAction`.
    - **El efecto:** el comportamiento no cambia, y la mutación del botón con `key` sigue fallando.
 6. **La exportación de un navegador vacío.** Que traiga `lab`, `campaign` y `systems` se supuso de US4-4. T007 lo fija contra el legacy.
 7. **El tamaño.** No se midió: T001 y T021.
-8. **Las otras ramas.** F3, F4 y F8 no tienen plan escrito al planificar F9. Lo que hagan con la suscripción, los ayudantes de `boot-check` o los bloques de CSS puede tener otros nombres; «Lo compartido» dice cómo detectarlo.
+8. **Las otras ramas.** Al planificar F9, F3, F4 y F8 no tenían plan escrito. F4 ya entró (la suscripción con `updateSaveLabel`, `toggleMark`, `mountedText` y los bloques de CSS que partió), y el plan se alineó en la enmienda del 2026-10-28 (research.md, R17). Lo que hagan F3 y F8 puede tener otros nombres; «Lo compartido» dice cómo detectarlo.
 9. **macOS, Firefox, WebKit, Docker y la CI** no corrieron.
 
 ## Complexity Tracking
