@@ -195,15 +195,25 @@ Las de [plan-f11b.md](./plan-f11b.md), «Reglas para todos los agentes», valen 
    grep -n "REQUIRED\|PASSWORD_CHANGED" frontend/src/features/sign-in/ui/access-texts.ts
    grep -n "FEATURES\|features" qa/e2e/fixtures/api-double.ts
    grep -n "layer()\|requestResetLink" qa/e2e/pages/access.ts
+   grep -rn "<LoginForm" frontend/src
+   git diff a7b3c71d -- qa/e2e/fixtures/api-double.ts frontend/src/features/sign-in/ui/LoginForm.tsx
    ```
 
-   **Lo que se espera:** `LoginForm` recibe `passwordResetByMail` y dibuja la nota sin correo; `AccessScreen` es el final de T032 de F11a; `access-texts.ts` exporta `REQUIRED`; el doble tiene la constante `FEATURES`; `AccessPage` tiene `layer()`. Si una firma difiere, se anota, y la tarea que la usa sigue la real.
+   **Lo que se espera:**
+
+   - `LoginForm` recibe `passwordResetByMail` y dibuja la nota sin correo;
+   - `AccessScreen` es el final de T032 de F11a, y es el único que dibuja `<LoginForm`. Si el `grep` encuentra otro, T057 le pasa también `onForgotPassword`, que es obligatoria;
+   - `access-texts.ts` exporta `REQUIRED`;
+   - el doble tiene la constante `FEATURES`, y `AccessPage` tiene `layer()`;
+   - el `git diff` muestra lo que cambió en el doble y en `LoginForm` después de F11a U2. T055 y T057 aplican sus cambios como diferencia sobre esa versión, nunca pegando un archivo entero.
+
+   Si una firma difiere, se anota, y la tarea que la usa sigue la real.
 3. **Las medidas,** con quickstart-f11c.md §1: `html.length`, los checks, Vitest, los avisos de lint y los E2E.
 4. **Commit:** `docs(specs): línea base de F11c`.
 
 ### 0.2 · La compuerta de U8
 
-La de [plan-f11b.md](./plan-f11b.md), 0.2, sobre la rama de F11c y contra su base, con quickstart-f11c.md §2. La lista de archivos de `qa/` trae sólo `api-double.ts`, `pages/access.ts` y `forgot-password.spec.ts`.
+La corre K con quickstart-f11c.md §2, sobre la rama de F11c y contra su base: los checks en verde, la red tres veces seguidas, el `grep` de estilos sin salida, los avisos de lint sin subir y el tamaño en la descripción del PR. La lista de archivos de `qa/` trae sólo `api-double.ts`, `pages/access.ts` y `forgot-password.spec.ts`.
 
 ## 8. U8 · Pedir el enlace por correo (onda 1: A y E; onda 2: K)
 

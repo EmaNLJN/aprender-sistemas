@@ -18,7 +18,20 @@ Se anotan en research-f11c.md («Línea base de la implementación»): el hash, 
 
 ## 2. La compuerta de U8
 
-Los comandos de [quickstart-f11b.md](./quickstart-f11b.md) §2, contra la base de F11c en lugar de `f11b/base`.
+Sobre la rama de F11c, con `BASE` en el commit del que salió (T054):
+
+```sh
+npm run build
+npm test
+npm run lint
+npm run format:check
+git diff --check
+E2E_PORT=4173 npm run test:e2e -- --repeat-each=3 --retries=0
+git diff --name-only "$BASE" -- qa
+git diff "$BASE" -- frontend | grep -E '^\+.*(style=|style=\{|setAttribute\(.style.|\.cssText)'
+node -e "console.log(require('fs').readFileSync('dist/index.html','utf8').length)"
+npm run lint 2>&1 | grep -c warning
+```
 
 **Lo que se espera:**
 

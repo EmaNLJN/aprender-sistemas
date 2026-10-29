@@ -342,13 +342,15 @@ C, W, M y E son delegables al subagente `implementador` (`AGENTS.md`, «Trabajo 
    test -d frontend/src/pages/admin && grep -rn "confirmPassword\|WRONG_PASSWORD\|isWrongPassword" frontend/src/pages/admin
    grep -n "confirm-password\|me/export\|me/password\|DELETE /api/me" qa/e2e/fixtures/api-double.ts
    git grep -n -E "ApiClient = \{|as ApiClient|satisfies ApiClient" -- frontend/src qa
+   git diff a7b3c71d -- frontend/src/shared/api/http/api-client.ts frontend/src/shared/api/http/fake-fetch.ts
    ```
 
    **Se anota:**
 
    - si F12a está y dónde viven sus copias (decide T041);
    - si F8 sumó `confirm-password` a las rutas por omisión del doble. No cambia nada, porque F11b registra sus rutas, pero se anota;
-   - la lista de los clientes armados a mano. La de la planificación es una sola, `fetch-session.spec.ts:8`, y si hay más, T037 las suma.
+   - la lista de los clientes armados a mano. La de la planificación es una sola, `fetch-session.spec.ts:8`, y si hay más, T037 las suma;
+   - si `api-client.ts` o `fake-fetch.ts` cambiaron desde `a7b3c71d`, que es la versión que este plan copia entera. Si cambiaron, T037 y T038 aplican sus cambios como diferencia (paso 2 de T038).
 4. **Las medidas,** con quickstart-f11b.md §1:
    - `html.length`;
    - los checks de `npm test` y las pruebas de Vitest;
@@ -413,7 +415,7 @@ Cada PR lleva título en inglés, con notación de Angular, y una descripción e
    };
    ```
 
-4. **`fake-fetch.ts`.** `FakeReply` suma `readonly body?: ReadableStream<Uint8Array>;`, después de `text`. `responseOf` lo usa primero, y el archivo suma `cutBody`:
+4. **`fake-fetch.ts`.** `FakeReply` suma `readonly body?: ReadableStream<Uint8Array>;`, después de `text`. `responseOf` lo usa primero, y el archivo suma `cutBody`. El `responseOf` de abajo es el de `a7b3c71d` con la rama nueva al principio; si T036 anotó cambios, sólo se suma esa rama:
 
    ```ts
    function responseOf(reply: FakeReply): Response {
@@ -599,7 +601,10 @@ Cada PR lleva título en inglés, con notación de Angular, y una descripción e
    }
    ```
 
-2. **`api-client.ts`,** entero. `perform`, `parseBody`, `fieldErrorsOf`, `retryAfterOf`, `failureOf` y `sessionAccountOf` no cambian. La renovación del 419 pasa a `renewingCsrf`, que comparten `send` y `download`:
+2. **`api-client.ts`,** entero, sobre la versión de `a7b3c71d`. `perform`, `parseBody`, `fieldErrorsOf`, `retryAfterOf`, `failureOf` y `sessionAccountOf` no cambian. La renovación del 419 pasa a `renewingCsrf`, que comparten `send` y `download`.
+
+   **Si T036 anotó que el archivo cambió desde `a7b3c71d`,** no se pega entero: se aplica como diferencia sobre el real. Se extrae `renewingCsrf` de `send`, se suman `Failed`, `Outcome`, `NETWORK`, `initFor`, `fetchFile` y la entrada `download`, y todo lo demás queda como esté.
+
 
    ```ts
    import { isPlainObject } from '../../lib/is-plain-object';
