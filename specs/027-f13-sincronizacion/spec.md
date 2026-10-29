@@ -37,7 +37,7 @@ Es para el alumno, en su casa y en un aula; para quien opera el taller, que reci
 2. Ningún camino descarta lo que no se envió sin decir antes qué se pierde o sin dejar una copia para descargar (ADR 0003, decisión 3; D1, FR-071): ni «Salir», ni cerrar la pestaña, ni recargar por una cuenta distinta o por una pestaña vieja, ni el cambio de época.
 3. Una pestaña que quedó con otra cuenta no deja tocar nada hasta recargar, y no muestra datos de ninguna de las dos cuentas.
 4. Cada aviso dice qué pasó y qué puede hacer el alumno, y se va solo cuando el problema se resuelve.
-5. Los avisos no interrumpen: ninguno roba el foco, salvo el de cuenta distinta y la pregunta al salir, que son diálogos. Un lector de pantalla oye cada cambio de estado una sola vez, no en cada tecla.
+5. Los avisos no interrumpen: ninguno roba el foco, salvo los diálogos: el de cuenta distinta, «Cambiaste de cuenta» y la pregunta al salir. Un lector de pantalla oye cada cambio de estado una sola vez, no en cada tecla.
 6. La red E2E que existe al empezar F13 pasa sin editarse, y cada superficie tiene sus E2E con el doble de `/api/sync` y `/api/progress`.
 7. Todo se completa con el teclado y en un celular de 320 px, y nada depende de una animación.
 
@@ -135,7 +135,7 @@ Son cinco, cada una con sus opciones, una recomendada, su motivo y su costo. Se 
 
 ### Q3. Cuándo pide confirmación el navegador al cerrar la pestaña
 
-**Contexto.** El aviso de `beforeunload` es el del navegador: no lleva un texto propio, no ofrece opciones y Chromium sólo lo muestra si el alumno ya interactuó con la página. Por eso «conservar o descartar» sólo es posible en «Salir». En modo normal, la cola vive en el espacio de la cuenta y sobrevive a cerrar la pestaña: se envía cuando esa cuenta vuelva a ese navegador, o vence a los 30 días (D1, FR-069). En modo compartido o con el almacenamiento bloqueado, la cola vive en memoria y cerrar la pestaña la pierde (D1, FR-070). El taller tiene además 11 enlaces internos que recargan el documento, porque cambian la query (F1), y un oyente de `beforeunload` también los ataja. (FR-036)
+**Contexto.** El aviso de `beforeunload` es el del navegador: no lleva un texto propio, no ofrece opciones y, según se sabe y el plan confirma, Chromium sólo lo muestra si el alumno ya interactuó con la página. Por eso «conservar o descartar» sólo es posible en «Salir». En modo normal, la cola vive en el espacio de la cuenta y sobrevive a cerrar la pestaña: se envía cuando esa cuenta vuelva a ese navegador, o vence a los 30 días (D1, FR-069). En modo compartido o con el almacenamiento bloqueado, la cola vive en memoria y cerrar la pestaña la pierde (D1, FR-070). El taller tiene además 11 enlaces internos que recargan el documento, porque cambian la query (F1), y un oyente de `beforeunload` también los ataja. (FR-036)
 
 | Opción | Respuesta | Implicancias |
 | --- | --- | --- |
@@ -216,7 +216,7 @@ D1c no tiene plan. Lo que F13 necesita de su interfaz pública va en esta tabla,
 | Una acción «enviar ahora» para «Salir», que termina con «enviado» o con lo que quedó y su motivo (sin conexión, el taller no responde o la sesión venció) | La pregunta al salir no sabe si hace falta ni qué decir |
 | Dos acciones que se aplican después del cierre de la sesión: conservar lo no enviado en el espacio o descartarlo | Lo no enviado se descarta antes de saber si la sesión se cerró (FR-033) |
 | Una acción «descargar lo que no se envió» cuando la cola vive en memoria | El diálogo de cuenta distinta, la pestaña vieja y la pregunta al salir no pueden ofrecer la copia |
-| Respuestas por omisión para `POST /api/sync` y `GET /api/progress` en el doble de la API de los E2E, con una cuenta al día | Desde que D1c sincroniza al arrancar, cada E2E existente falla en el `assertAllHandled` del doble |
+| Respuestas por omisión para `POST /api/sync` y `GET /api/progress` en el doble de la API de los E2E, con una cuenta al día y un `serverTime` que sigue el reloj de la página: en la sincronización, por ejemplo, el `sentAt` del lote; en la lectura, lo decide el plan | Desde que D1c sincroniza al arrancar, cada E2E existente falla en el `assertAllHandled` del doble. Y con un `serverTime` tomado del reloj de Node, los E2E que corren con `page.clock` (el temporizador y el repaso) ven un desfase de días: aparece el aviso del reloj, contra SC-002, y la franja ocupa lugar donde `css-contract.spec.ts` mide |
 
 ## Los estados de la cuenta
 
@@ -247,7 +247,7 @@ Un 403 `account_disabled` no es un estado de la cuenta: vuelve al acceso, como d
 
 Ningún aviso mueve el foco: el alumno sigue donde estaba.
 
-**El diálogo de cuenta distinta.** Modal, con el rol de un diálogo de alerta. No se cierra con Esc, y la página queda inerte detrás hasta recargar (Q4). Si recargar pierde cambios, ofrece antes una copia.
+**El diálogo de cuenta distinta.** Modal, con el rol de un diálogo de alerta. No se cierra con Esc, y la página queda inerte detrás hasta recargar (Q4). Si recargar pierde cambios, ofrece antes una copia. Es para una sesión que cambió de cuenta en otra pestaña; cuando el alumno ingresa con otra cuenta en esta misma pestaña, el cambio es a propósito y sólo aparece «Cambiaste de cuenta», un diálogo modal, si recargar pierde cambios en memoria (FR-016).
 
 **La pregunta al salir.** Un diálogo modal que sale de «Salir», en «Tu cuenta», sólo si el envío de la cola dejó cambios sin enviar. Esc equivale a «Volver al taller».
 
@@ -299,6 +299,12 @@ Son propuestas, para que el usuario las corrija. «(servidor)» marca un mensaje
 - En modo normal: «Lo que esta pestaña no llegó a enviar queda en este navegador para la cuenta anterior: se envía cuando esa cuenta vuelva a ingresar acá, o vence en 30 días.»
 - En memoria, con cambios sin enviar: «Esta pestaña tiene {n} cambios que no llegaron a enviarse, y se pierden al recargar. Si los querés, descargá una copia antes.»
 - Botones: «Descargar lo que no se envió» (sólo en memoria y con cambios sin enviar) y «Recargar».
+
+**«Cambiaste de cuenta»** (sólo en memoria y con cambios sin enviar)
+
+- Título: «Cambiaste de cuenta».
+- «La cuenta anterior tiene {n} cambios en esta pestaña que no llegaron a enviarse, y se pierden al recargar. Si los querés, descargá una copia antes.»
+- Botones: «Descargar lo que no se envió» y «Seguir».
 
 **«Salir» y la pregunta**
 
@@ -379,7 +385,7 @@ En el aula, Ana deja una pestaña abierta. Beto abre otra pestaña e ingresa con
 
 **Why this priority**: equivocarse acá es que el progreso de una persona termine en la cuenta de otra, el riesgo que D1 marca como crítico (US3; SC-004).
 
-**Independent Test**: con el doble, responder 409 `account_mismatch` a `POST /api/sync`; responder un 419 y después `GET /api/session` con otra cuenta; responder `GET /api/progress` con otro `userId`; ingresar con otra cuenta desde «Ingresar» de la franja. Repetir con el almacenamiento bloqueado.
+**Independent Test**: con el doble, responder 409 `account_mismatch` a `POST /api/sync`; responder un 419 y después `GET /api/session` con otra cuenta; responder `GET /api/progress` con otro `userId`. Repetir con el almacenamiento bloqueado.
 
 **Acceptance Scenarios**:
 
@@ -446,7 +452,7 @@ Un alumno vuelve a la pestaña después del almuerzo. La franja le dice que la s
 
 1. **Dado** un 401 en `POST /api/sync`, **cuando** D1c lo informa, **entonces** la línea dice «Sesión vencida» y la franja muestra la sesión vencida con «Ingresar»; el acceso no se abre solo, y el alumno puede seguir marcando pasos.
 2. **Dado** lo anterior, **cuando** usa «Ingresar» y entra la misma cuenta, **entonces** el aviso se va, D1c envía la cola y sale el toast de la vuelta.
-3. **Dado** lo mismo, **cuando** entra otra cuenta, **entonces** se sigue el camino de cuenta distinta antes de que F11a recargue.
+3. **Dado** lo mismo, **cuando** entra otra cuenta, **entonces** F11a recarga el documento sin la confirmación del navegador y sin el diálogo de cuenta distinta, porque el cambio fue a propósito. Con el almacenamiento bloqueado y 2 cambios sin enviar, antes de recargar se ve «Cambiaste de cuenta», con «Descargar lo que no se envió» y «Seguir».
 4. **Dado** un 409 `client_outdated`, **cuando** D1c lo informa, **entonces** la franja muestra el mensaje del servidor con «Recargar».
 5. **Dado** un lote con 1 operación `rejected`, **cuando** llega, **entonces** la franja dice «1 cambio no se pudo guardar en tu cuenta…», con «Entendido».
 6. **Dados** varios avisos a la vez, **cuando** se ve la franja, **entonces** salen todos, en el orden de «Las superficies», y a 320 px no hay desplazamiento horizontal.
@@ -461,7 +467,7 @@ Una alumna tiene la computadora con la hora atrasada. La franja le dice cuántos
 
 **Why this priority**: un reloj muy atrasado pierde las fusiones, y lo único que el sistema puede hacer es avisarlo (D1, Riesgo 4). Es raro, por eso es P3.
 
-**Independent Test**: con el doble, responder `POST /api/sync` con un `serverTime` desplazado 2 minutos, 2 minutos y 30 segundos, y 5 minutos respecto del reloj del navegador, en los dos sentidos, sin tocar `page.clock`.
+**Independent Test**: con el doble, responder `POST /api/sync` con un `serverTime` desplazado 2 minutos, 2 minutos y 30 segundos, y 5 minutos respecto del `sentAt` del lote, en los dos sentidos, sin tocar `page.clock`.
 
 **Acceptance Scenarios**:
 
@@ -496,7 +502,7 @@ Los transversales (FR-038 a FR-047) valen para todas las historias. Sus criterio
 
 ### Functional Requirements
 
-Entre paréntesis, después del número, van los ítems de los que depende cada requisito; al final, su fuente. Los transversales (FR-038 a FR-043) dependen de lo mismo que la superficie a la que se aplican.
+Entre paréntesis, después del número, van los ítems de los que depende cada requisito; al final, su fuente.
 
 **El estado que F13 lee**
 
@@ -527,20 +533,19 @@ Entre paréntesis, después del número, van los ítems de los que depende cada 
 **La sesión vencida y la pestaña vieja**
 
 - **FR-015** *(D1c, F11a)*: Con «requiere ingreso», la franja DEBE mostrar el aviso de la sesión vencida, según el modo, con «Ingresar», que llama a «pedir el ingreso» de F11a. El acceso NO DEBE abrirse solo, y el alumno sigue estudiando. **[NEEDS CLARIFICATION: Q5, la sesión que vence en segundo plano]** *(D1, FR-076; F11, FR-006)*
-- **FR-016** *(D1c, F11a)*: Si «pedir el ingreso» termina con la misma cuenta, el aviso DEBE irse y D1c sigue. Si termina con otra, DEBE seguirse el camino de cuenta distinta (FR-019 a FR-021) antes de la recarga que hace F11a. *(F11, FR-020; D1, FR-065)*
+- **FR-016** *(D1c, F11a)*: Si «pedir el ingreso» termina con la misma cuenta, el aviso DEBE irse y D1c sigue. Si termina con otra, el cambio es a propósito y F11a recarga el documento (FR-020 de F11), sin el diálogo de cuenta distinta. Sólo si la cola vive en memoria y quedan cambios sin enviar, antes de esa recarga DEBE abrirse «Cambiaste de cuenta», que dice cuántos se pierden y ofrece «Descargar lo que no se envió» y «Seguir», que recarga. En modo normal no hay aviso: lo no enviado queda en el espacio de la cuenta anterior. *(F11, FR-020; D1, FR-065 y FR-071)*
 - **FR-017** *(D1c)*: Con «pestaña vieja», la franja DEBE mostrar el mensaje del servidor con «Recargar». *(D1, FR-076)*
 - **FR-018** *(D1c)*: Si recargar pierde cambios, porque la cola vive en memoria, el aviso de la pestaña vieja DEBE decir cuántos y ofrecer «Descargar lo que no se envió» antes de «Recargar». *(D1, FR-071)*
 
 **La cuenta distinta**
 
 - **FR-019** *(D1c, F10b)*: Cuando D1c informa una cuenta distinta, DEBE abrirse el diálogo de cuenta distinta: modal, con el rol de un diálogo de alerta, que NO se cierra con Esc y deja la página inerte detrás hasta recargar. **[NEEDS CLARIFICATION: Q4, la forma de los avisos]** *(D1, US3; SC-004)*
-- **FR-020** *(D1c, F11a)*: El diálogo DEBE abrirse por las cuatro causas que detecta D1c:
-  - un 409 `account_mismatch` en un pedido del cliente;
+- **FR-020** *(D1c, F11a)*: El diálogo DEBE abrirse por las tres causas que detecta D1c, todas de una sesión que cambió de cuenta en otra pestaña:
+  - un 409 `account_mismatch` en un pedido del cliente de D1c;
   - un 419 o un 401 después del cual `GET /api/session` trae otra cuenta;
-  - una foto o un delta con otro `userId`;
-  - el ingreso de otra cuenta desde «pedir el ingreso».
+  - una foto o un delta con otro `userId`.
 
-  Con el diálogo abierto, ninguna otra superficie de F13 ni de F11a DEBE abrir otro aviso de cuenta distinta. *(D1, FR-065 y FR-066; F11, FR-018 a FR-020)*
+  El ingreso de otra cuenta en esta misma pestaña, desde «pedir el ingreso», no es una de ellas: lo cubre FR-016. Con el diálogo abierto, ninguna otra superficie de F13 ni de F11a DEBE abrir otro aviso de cuenta distinta. *(D1, FR-065 y FR-066; F11, FR-018 y FR-019)*
 - **FR-021** *(D1c)*: El diálogo DEBE decir qué pasa con lo que no se envió, según el modo. En modo normal, que queda en el navegador para la cuenta anterior y vence a los 30 días. En memoria y con cambios sin enviar, cuántos se pierden al recargar, con «Descargar lo que no se envió» antes de «Recargar». *(D1, FR-067, FR-069 y FR-071)*
 - **FR-022** *(D1c)*: El diálogo NO DEBE mostrar el nombre, el email ni el id de ninguna de las dos cuentas.
 
@@ -576,17 +581,17 @@ Entre paréntesis, después del número, van los ítems de los que depende cada 
 
 **Teclado, foco, celular y movimiento reducido**
 
-- **FR-038**: Cada superficie DEBE poder usarse sólo con el teclado: los botones de la franja y de los diálogos están en el orden del documento, con el foco visible, y se activan con Enter y con Espacio. La franja va después de la barra superior y antes de `#main`; «Ir al contenido» la salta, como salta la barra superior.
-- **FR-039**: Al abrirse, cada diálogo DEBE poner el foco en la opción que no pierde nada: «Volver al taller» en la pregunta al salir; «Descargar lo que no se envió», si está, o si no «Recargar», en el de cuenta distinta. El foco queda dentro del diálogo mientras está abierto, y al cerrar la pregunta al salir vuelve a «Salir».
-- **FR-040**: Cada superficie DEBE funcionar desde 320 px de ancho sin desplazamiento horizontal: los botones de la franja y de los diálogos bajan de línea, y los diálogos ocupan la pantalla en el celular, como «Tu cuenta» (F11, FR-067).
-- **FR-041**: Ningún estado DEBE depender de una animación: «Enviando a tu cuenta…» no usa como única señal un indicador que gira, y con movimiento reducido no hay transiciones, por la regla global de `styles.css` y sin librería de animación.
-- **FR-042**: Los estilos DEBEN ser clases de las hojas del taller, con sus tokens, sus botones y sus diálogos. NO DEBE haber ningún `style=` nuevo, ni `style={…}` de React, ni `setAttribute('style', …)`, ni `.cssText`. *(C4)*
-- **FR-043**: Cada anuncio DEBE salir una sola vez por cambio de estado o por aviso nuevo: ni la franja ni `#toast` repiten un aviso que ya está a la vista. *(X2)*
+- **FR-038** *(F10b, F11a)*: Cada superficie DEBE poder usarse sólo con el teclado: los botones de la franja y de los diálogos están en el orden del documento, con el foco visible, y se activan con Enter y con Espacio. La franja va después de la barra superior y antes de `#main`; «Ir al contenido» la salta, como salta la barra superior.
+- **FR-039** *(F10b, F11a)*: Al abrirse, cada diálogo DEBE poner el foco en la opción que no pierde nada: «Volver al taller» en la pregunta al salir; «Descargar lo que no se envió», si está, o si no «Recargar», en el de cuenta distinta; «Descargar lo que no se envió» en «Cambiaste de cuenta». El foco queda dentro del diálogo mientras está abierto, y al cerrar la pregunta al salir vuelve a «Salir».
+- **FR-040** *(F10b, F11a)*: Cada superficie DEBE funcionar desde 320 px de ancho sin desplazamiento horizontal: los botones de la franja y de los diálogos bajan de línea, y los diálogos ocupan la pantalla en el celular, como «Tu cuenta» (F11, FR-067).
+- **FR-041** *(F10b)*: Ningún estado DEBE depender de una animación: «Enviando a tu cuenta…» no usa como única señal un indicador que gira, y con movimiento reducido no hay transiciones, por la regla global de `styles.css` y sin librería de animación.
+- **FR-042** *(F10b, F11a)*: Los estilos DEBEN ser clases de las hojas del taller, con sus tokens, sus botones y sus diálogos. NO DEBE haber ningún `style=` nuevo, ni `style={…}` de React, ni `setAttribute('style', …)`, ni `.cssText`. *(C4)*
+- **FR-043** *(D1c, F10b)*: Cada anuncio DEBE salir una sola vez por cambio de estado o por aviso nuevo: ni la franja ni `#toast` repiten un aviso que ya está a la vista. *(X2)*
 
 **Verificación**
 
 - **FR-044** *(F11a, D1c)*: Los E2E DEBEN usar Page Objects con localizadores por rol y nombre accesible (el del shell y el de «Tu cuenta», ampliados) y el doble de la API de F11a, con respuestas de `POST /api/sync` y `GET /api/progress` tomadas del contrato de D1a:
-  - el 200 al día, uno demorado y uno con `serverTime` desplazado;
+  - el 200 al día, uno demorado y uno con `serverTime` desplazado respecto del `sentAt` del lote;
   - los 409 `account_mismatch`, `epoch_mismatch` con `{epoch, revision}` y `client_outdated`;
   - el 401, el 419, el 429 con `Retry-After` y el 500;
   - un lote con `rejected`;
@@ -596,7 +601,7 @@ Entre paréntesis, después del número, van los ítems de los que depende cada 
   Sin servicios externos ni el stack de Docker. Cada error de consola que provoca una respuesta simulada se declara con `expectIssue` y su motivo. La confirmación del navegador se prueba con `page.close({ runBeforeUnload: true })` después de una interacción, con un manejador que comprueba que el diálogo es de tipo `beforeunload`. *(ADR 0008; `qa/AGENTS.md`)*
 - **FR-045** *(D1c)*: Cada comportamiento DEBE empezar con una prueba que falla. Vitest con Testing Library prueba la tabla de estados, el orden de la franja, las opciones de cada diálogo según el modo y la condición de la confirmación, con la interfaz de D1c simulada y sus estados armados con fishery. Los valores esperados se copian a mano de las tablas de esta spec, nunca de la misma factory ni del código que se prueba. *(Constitución, principio II; ADR 0008)*
 - **FR-046** *(F10b, D1c)*: La red E2E vigente al empezar F13 (los 106 de F1, los 17 de A2 y los de F3 a F12a, F10 y D1c) DEBE seguir en verde sin editar sus escenarios, salvo lo que decida Q2. Toda edición de un E2E existente va en su propio commit, con TDD y con la aprobación del usuario.
-- **FR-047**: F13 DEBE cerrar con `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `npm run test:e2e` y `git diff --check` en verde, sin dependencias nuevas, con `dist/index.html` bajo `BOOT_SIZE_LIMIT` (1 500 000 caracteres) y su tamaño antes y después en el PR. DEBE actualizar `docs/architecture.md` y `qa/AGENTS.md` con lo que agrega.
+- **FR-047** *(D1c, F10b, F11a)*: F13 DEBE cerrar con `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `npm run test:e2e` y `git diff --check` en verde, sin dependencias nuevas, con `dist/index.html` bajo `BOOT_SIZE_LIMIT` (1 500 000 caracteres) y su tamaño antes y después en el PR. DEBE actualizar `docs/architecture.md` y `qa/AGENTS.md` con lo que agrega.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -616,7 +621,7 @@ Entre paréntesis, después del número, van los ítems de los que depende cada 
 
 - **SC-001**: Cada fila de «Los estados de la cuenta» tiene al menos una prueba, de Vitest o E2E, que comprueba su línea, su familia de punto, su franja y su toast con el texto escrito a mano: 6 de 6 estados, con 0 textos distintos de la tabla.
 - **SC-002**: Con el doble al día, cada E2E de la red existente termina con 0 avisos en la franja, 0 toasts de F13 y 0 diálogos de F13. Con cada respuesta problemática de FR-044, aparece exactamente el aviso, el toast o el diálogo que le corresponde, y un reintento que falla igual suma 0 anuncios.
-- **SC-003**: Con el diálogo de cuenta distinta abierto, salen 0 pedidos que modifican, el teclado y el mouse provocan 0 escrituras del almacenamiento, Esc lo deja abierto y su texto tiene 0 nombres, emails o ids de cuenta. Con la cola en memoria, el archivo se descarga antes de recargar.
+- **SC-003**: Con el diálogo de cuenta distinta abierto, salen 0 pedidos que modifican, el teclado y el mouse provocan 0 escrituras del almacenamiento, Esc lo deja abierto y su texto tiene 0 nombres, emails o ids de cuenta. Con la cola en memoria, el archivo se descarga antes de recargar. Un ingreso con otra cuenta en la misma pestaña abre 0 diálogos de cuenta distinta, y 1 «Cambiaste de cuenta» sólo con cambios en memoria.
 - **SC-004**: En los cinco caminos de «Salir», el espacio queda como dicen FR-030 a FR-033: enviado, limpio; conservar, con los cambios; descartar, limpio; en memoria, salir sin enviarlos, sin claves de progreso; y volver, sin cambios. «Volver» hace 0 pedidos de cierre, y un cierre que falla descarta 0 cambios.
 - **SC-005**: Con la cola en memoria y cambios sin enviar, cerrar la pestaña produce 1 diálogo `beforeunload`. Sin cambios, en modo normal (con la opción A de Q3) y en las recargas de FR-037, produce 0.
 - **SC-006**: Con un `epoch_mismatch` y cambios pendientes, la descarga baja 1 archivo y el aviso sigue; descartar pide 1 confirmación y deja 0 avisos de época. Después del «Borrar todo» de la misma pestaña, hay 0 avisos de época.
@@ -661,7 +666,7 @@ Entre paréntesis, después del número, van los ítems de los que depende cada 
 - F13 usa de F11a «Tu cuenta», «Salir», «pedir el ingreso», el cliente de la API y el doble de la API de los E2E, sin cambiarlos.
 - La nota junto a «Salir» («Tu progreso se guarda en este navegador, no en tu cuenta…», FR-052) vale hasta D1c; desde D1c la reemplaza la de F13 (FR-034).
 - El envío de la cola antes del cierre, que la spec de F11 dejaba para «F11d o D1c»: el envío es de D1c, y la parte visible, de F13 (L7).
-- La recarga de F11a ante un cambio de cuenta (FR-019 y FR-020 de F11) pasa antes por el diálogo de F13 cuando hay cambios que se perderían (FR-016 y FR-021).
+- Cuando «pedir el ingreso» termina con otra cuenta, F11a recarga (FR-020 de F11) sin el diálogo de cuenta distinta, porque el cambio fue a propósito; sólo con la cola en memoria y cambios sin enviar, F13 ofrece antes la copia con «Cambiaste de cuenta» (FR-016). El diálogo de cuenta distinta es para una sesión que cambió en otra pestaña (FR-020).
 - F11d sigue con sus dos superficies. Su tabla de estados no nombra el `epoch_mismatch` de la importación: su diálogo lo resuelve, y F13 lo avisa en la franja.
 - El aviso del almacenamiento bloqueado en «Tu cuenta» (F11, FR-063) es de F11d; la línea «Tu progreso» de F13 va en el mismo diálogo, sin repetirlo.
 
@@ -696,7 +701,7 @@ Entre paréntesis, después del número, van los ítems de los que depende cada 
 - **F10b entregado:** el shell es de React y hay una sola raíz. **F11a entregado:** «Tu cuenta», «Salir», «pedir el ingreso» y el doble de la API. El modo compartido se prueba con el almacenamiento bloqueado, que no necesita F11d; con F11d, también con la opción de «Tu cuenta».
 - **El doble de la API** es el de F11a (`qa/e2e/fixtures/api-double.ts` en `impl-f11a`, `a7b3c71d`): `on` registra un manejador, `reply` una secuencia de respuestas, `callsTo` cuenta pedidos y `assertAllHandled` falla ante un pedido sin respuesta. D1c le suma las respuestas por omisión de la sincronización.
 - **Sin conexión en los E2E:** un pedido abortado en el doble o el contexto sin red (`context.setOffline`). Cuál de los dos, y si las rutas simuladas siguen respondiendo sin red, lo confirma el plan.
-- **El reloj en los E2E** se desplaza con el `serverTime` del doble, sin tocar `page.clock`, que usan los E2E del temporizador.
+- **El reloj en los E2E** se desplaza con el `serverTime` del doble, relativo al `sentAt` del lote, sin tocar `page.clock`. Las respuestas por omisión siguen el reloj de la página, para que los E2E del temporizador y del repaso, que corren con `page.clock`, no vean un desfase («Lo que F13 supone de D1c»).
 - **`beforeunload`:** el navegador muestra su propio texto, Chromium sólo después de una interacción, y Safari en iOS no lo dispara. Es la única confirmación posible al cerrar.
 - **Los mensajes del servidor** son los de `backend/api/lang/es/api.php` en `24ba9d3d`, y el de `client_outdated` se muestra tal cual. Para `account_mismatch` y `epoch_mismatch`, F13 usa sus propios textos, porque los del servidor no dicen qué pasa con lo no enviado, como hizo F8 con su L5.
 - **Las sesiones** duran 30 minutos de inactividad y 8 horas como máximo (C3a, Q5).
@@ -739,7 +744,7 @@ Los agentes no las hacen.
 | --- | --- |
 | Ahora | Responder el clarify (Q1 a Q5) y corregir, si hace falta, las lecturas L1 a L8 y los textos propuestos |
 | Plan de D1c | Contrastar «Lo que F13 supone de D1c» con su interfaz |
-| F13, antes y después de la franja | La comprobación manual con lector de pantalla de la franja, de los toasts y de los dos diálogos (X2) |
+| F13, antes y después de la franja | La comprobación manual con lector de pantalla de la franja, de los toasts y de los diálogos (X2) |
 | F13, sólo con la opción B o C de Q2 | Aprobar la edición de los E2E de F1 y de F10 que fijan los textos del pie |
 
 ## Descargas previstas

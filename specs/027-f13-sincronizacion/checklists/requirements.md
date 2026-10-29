@@ -55,7 +55,7 @@
 
 - **47 requisitos y 10 criterios,** contra los 52 de C3a, la mayor del épico. No se propone partir: el corte natural (F13a, la línea, el toast y la franja; F13b, la cuenta distinta, «Salir» y la confirmación al cerrar) comparte la franja, el modo y la copia de D1c, y ninguna de las dos partes destraba nada.
 - **La cobertura.** Los 37 requisitos que no son transversales (FR-001 a FR-037) están en el «Cubre» de alguna historia; lo comprobó un script. Los transversales (FR-038 a FR-047) valen para todas.
-- **Las dependencias.** Cada requisito lleva entre paréntesis los ítems de los que depende (D1c, F10b, F11a, F11b, F8 o A3); los transversales dependen de lo mismo que la superficie a la que se aplican.
+- **Las dependencias.** Cada requisito, también los transversales, lleva entre paréntesis los ítems de los que depende (D1c, F10b, F11a, F11b, F8 o A3).
 
 **Qué se midió, sin ejecutar nada**
 
