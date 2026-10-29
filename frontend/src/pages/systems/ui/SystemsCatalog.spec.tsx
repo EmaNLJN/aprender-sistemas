@@ -55,6 +55,23 @@ describe('SystemsCatalog', () => {
     pills.forEach((pill) => expect(pill.childNodes).toHaveLength(1));
   });
 
+  it('writes the card and progress texts as single text nodes', () => {
+    const { container } = render(
+      <SystemsCatalog
+        language="rust"
+        workshops={seedCatalog()}
+        returnFocusTo={null}
+        onOpen={vi.fn()}
+      />,
+    );
+
+    const texts = container.querySelectorAll(
+      '.sys-card-top span:not(.sys-card-symbol), .sys-overview-progress strong, .sys-overview-progress span',
+    );
+    expect(texts).toHaveLength(4);
+    texts.forEach((text) => expect(text.childNodes).toHaveLength(1));
+  });
+
   it('filters by family with aria-pressed, keeps the focus and keeps the counter node', async () => {
     const user = userEvent.setup();
     render(

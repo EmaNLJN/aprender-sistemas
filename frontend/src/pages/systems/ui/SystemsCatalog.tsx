@@ -95,10 +95,8 @@ const SystemsCatalog = ({ language, workshops, returnFocusTo, onOpen }: SystemsC
       </section>
       <div className="sys-overview-progress">
         <div>
-          <strong>
-            {done} / {workshops.length}
-          </strong>
-          <span>talleres con sus tres sellos en {languageName}</span>
+          <strong>{`${done} / ${workshops.length}`}</strong>
+          <span>{`talleres con sus tres sellos en ${languageName}`}</span>
         </div>
         <progress
           value={done}

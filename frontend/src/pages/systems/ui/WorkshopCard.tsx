@@ -15,9 +15,7 @@ const WorkshopCard = ({ workshop, openRef, onOpen }: WorkshopCardProps) => (
       <span className="sys-card-symbol" aria-hidden="true">
         {FAMILY_SYMBOLS[workshop.category]}
       </span>
-      <span>
-        {LEVEL_LABELS[workshop.level]} · {workshop.minutes} min orientativos
-      </span>
+      <span>{`${LEVEL_LABELS[workshop.level]} · ${workshop.minutes} min orientativos`}</span>
     </div>
     <span className="small-label">{FAMILY_LABELS[workshop.category]}</span>
     <h2>{workshop.title}</h2>

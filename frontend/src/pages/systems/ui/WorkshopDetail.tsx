@@ -40,9 +40,7 @@ const WorkshopDetail = ({
     <>
       <div className="sys-breadcrumb">
         <button onClick={onBack}>← Todos los talleres</button>
-        <span>
-          {FAMILY_LABELS[workshop.category]} / {LEVEL_LABELS[workshop.level]}
-        </span>
+        <span>{`${FAMILY_LABELS[workshop.category]} / ${LEVEL_LABELS[workshop.level]}`}</span>
       </div>
       <header className="sys-detail-heading">
         <div className="eyebrow">

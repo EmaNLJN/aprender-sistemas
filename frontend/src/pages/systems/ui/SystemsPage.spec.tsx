@@ -44,6 +44,13 @@ describe('SystemsPage', () => {
     expect(screen.queryByRole('button', { name: '← Todos los talleres' })).toBeNull();
   });
 
+  it('writes the breadcrumb label as a single text node', () => {
+    renderPage('?lenguaje=rust&taller=probe&parte=explore');
+
+    const label = document.querySelector('.sys-breadcrumb span');
+    expect(label?.childNodes).toHaveLength(1);
+  });
+
   it('opens the workshop of the query at the part of the query, and Explorar for an unknown part', () => {
     renderPage('?lenguaje=rust&taller=probe&parte=inventada');
 
