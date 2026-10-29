@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-28
 
-**Status**: Clarificada (sesión del 2026-10-28); lista para el plan
+**Status**: Clarificada (sesión del 2026-10-28) y planificada (plan, tareas y análisis); falta implementarla
 
 **Input**: Ítem **C5** de la hoja de ruta [`specs/backend-multiusuario/roadmap.md`](../backend-multiusuario/roadmap.md), «Estadísticas del admin»: dar al admin métricas de uso sin exponer nunca el código ni los textos del alumno. Depende de D1 y de B2, y trae abierta la pregunta 6 del ADR 0006, «Qué ve el admin». Lee lo que dejaron B2 ([spec 005](../005-b2-api-ejecuciones/spec.md), PR #31), D1a y D1b ([spec 007](../007-d1-progreso-sincronizacion/spec.md), PR #36 y #39), C3a ([spec 004](../004-c3-identidad-acceso/spec.md), PR #24) y C3b ([spec 010](../010-c3b-admin-ciclo-de-vida/spec.md), PR #37), todos entregados. Fuente técnica: el [ADR 0006](../../docs/adr/0006-modelo-de-datos-y-api-multiusuario.md) (**propuesta**: el usuario todavía no lo aprobó), en D06, D20, D31, D33, D35, D38, S5, S6, §4.5, §7, §9, §10, §12 y la pregunta 6 de §13; y el [ADR 0005](../../docs/adr/0005-ejecucion-en-sandbox-propio.md) §5, por la evidencia autodeclarada. Pedido del coordinador del 2026-10-28 (ver «Lo que pidió el usuario»).
 
@@ -478,7 +478,7 @@ C5 no crea tablas. Estos son los conceptos que expone, todos derivados de las ta
 - **Sin interruptor para los admins.** S5 los excluye «por defecto»; con la cuenta de admin separada que recomienda el ADR, el caso de sumarlos no aparece. Si aparece, es Q5-C.
 - **La caché** es la del store `database` que ya usa el taller, sin Redis (ADR 0006 §9). Sus claves no llevan datos de una cuenta, porque las rutas por cuenta no usan caché.
 - **El tope de tiempo** arranca en unos pocos segundos (el plan lo fija con la medición) y es configuración.
-- **La población sintética** se genera con un comando o un script que diseña el plan, en una base aparte (por ejemplo, la de pruebas con otro nombre de proyecto de Compose). Dos años de intentos con la estimación de D38 son unos 22 millones de filas en `attempts` y unos 66 millones en `attempt_tests`: si generarlas no es práctico, el plan propone una escala menor, la extrapola y lo dice.
+- **La población sintética** se genera con un comando o un script que diseña el plan, en una base aparte (por ejemplo, la de pruebas con otro nombre de proyecto de Compose). Dos años de intentos con la estimación de D38 son unos 22 millones de filas en `attempts` y hasta 66 millones en `attempt_tests` (unos 46 millones con el reparto del sintetizador del plan, que deja sin veredictos los errores de compilación y de operación): si generarlas no es práctico, el plan propone una escala menor, la extrapola y lo dice.
 - **El texto de los ejercicios** (títulos, consignas) es contenido y puede salir; la pantalla igual puede tomarlo del contenido que ya cargó.
 - **Nginx no guarda la query string** en `/api/` (ADR 0006 D20), así que una búsqueda por nombre o email en la lista no queda en sus logs.
 - **Los IDs de los requisitos** empiezan en FR-001: C5 no hereda requisitos de otra spec.
