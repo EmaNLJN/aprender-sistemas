@@ -35,43 +35,46 @@ El certificado se pide al puerto 443 del host con el nombre configurado (`openss
 
 ## `deploy.sh` con los roles (K)
 
-El script de C3a conserva su forma; suma los pasos de los usuarios de MySQL. Es el mismo en los dos modos, y el modo público lo invoca por `public.sh deploy`.
+El script de C3a y C3c conserva su forma (C3c ya corre `db-grants` en cada despliegue); C4 suma la fase de los usuarios antes de migrar y el retiro de `taller`. Es el mismo en los dos modos, y el modo público lo invoca por `public.sh deploy`.
 
 ```sh
 docker compose build
 docker compose up -d --wait mysql
-# si falta `taller_migrate` (un volumen anterior a C4): docker compose --profile ops run --rm db-grants
-docker compose run --rm migrate
-docker compose run --rm --no-deps grants                 # los permisos de lo que migró
-docker compose up -d --wait --no-deps mysql php taller scheduler   # más lo que sumen B2 y C3c
-# si `taller` todavía existe: docker compose --profile ops run --rm db-grants   (lo borra si ya no tiene sesiones)
+docker compose run --rm --no-deps grants-users           # las cuentas y sus contraseñas, antes de migrar (C4)
+docker compose run --rm --no-deps migrate
+docker compose --profile ops run --rm --no-deps db-grants  # las dos fases, en cada despliegue (C3c)
+docker compose up -d --wait --no-deps mysql php taller scheduler executor worker-runs worker-mail
+# si `taller` todavía existe: docker compose --profile ops run --rm --no-deps db-grants   (lo borra si ya no tiene sesiones)
 ```
 
-Los dos pasos de `db-grants` son condicionales: un despliegue normal no toca ninguna tabla de `taller` antes de migrar, y el escenario 3 de `deploy-check.sh` sigue viendo que es `migrate` el que se rinde ante el bloqueo. En un volumen nuevo, `taller_migrate` ya existe (lo creó el inicio de MySQL) y `taller` no.
+`grants-users` sólo crea cuentas, fija contraseñas y concede privilegios de base: no toca ninguna tabla de `taller`, así que el escenario 3 de `deploy-check.sh` sigue viendo que es `migrate` el que se rinde ante el bloqueo. El paso de `taller` es condicional: en un volumen nuevo no existe. Los pasos van con `--no-deps` porque `deploy.sh` ya levantó lo que hace falta, y no se apoya en que `docker compose run` espere `service_completed_successfully` (research.md, R27).
 
 ## `grants` y `db-grants`
 
-| | `grants` | `db-grants` |
-| --- | --- | --- |
-| Perfil | ninguno: está en la cadena de arranque | `ops` |
-| Imagen | `mysql:9.7`, la que ya fija Compose | la misma |
-| Qué corre | `apply-grants.sh --phase tables --host mysql` | `apply-grants.sh --phase all --host mysql` |
-| `depends_on` | `mysql` sano y `migrate` terminado | `mysql` sano |
-| Quién depende de él | `php`, `scheduler`, `worker-runs`, `worker-mail` | nadie |
-| Entorno | `MYSQL_ROOT_PASSWORD` y las cinco contraseñas de rol | el mismo |
-| Archivos | `docker/mysql/db-grants.sql` y `docker/mysql/apply-grants.sh`, de sólo lectura | los mismos |
-| Redes | `app`, con `dns: ['127.0.0.1']` | las mismas |
+Los tres servicios comparten el ancla `x-grants` que trajo C3c, con `entrypoint: ['sh', '/usr/local/bin/apply-grants.sh']`; cada uno pone su `command`.
+
+| | `grants-users` (nuevo) | `grants` (de C3c) | `db-grants` |
+| --- | --- | --- | --- |
+| Perfil | ninguno: está en la cadena de arranque | ninguno | `ops` |
+| Imagen | `mysql:9.7`, la que ya fija Compose | la misma | la misma |
+| `command` | `['--phase', 'users', '--host', 'mysql']` | `['--phase', 'tables', '--host', 'mysql']` (C3c corría `all`) | `['--phase', 'all', '--host', 'mysql']` |
+| `depends_on` | `mysql` sano | `mysql` sano y `migrate` terminado | `mysql` sano |
+| Quién depende de él | `migrate` | `php`, `scheduler`, `worker-runs`, `worker-mail` y `audit` | nadie |
+| Entorno | `MYSQL_ROOT_PASSWORD` y las seis contraseñas de rol | el mismo | el mismo |
+| Archivos | `docker/mysql/db-grants.sql` y `docker/mysql/apply-grants.sh`, de sólo lectura | los mismos | los mismos |
+| Redes | `app`, con `dns: ['127.0.0.1']` | las mismas | las mismas |
 
 ### `docker/mysql/apply-grants.sh [--phase users|tables|all] [--host <nombre>]`
 
-- Lee `docker/mysql/db-grants.sql`, que tiene dos secciones marcadas con las líneas `-- @phase users` y `-- @phase tables`, y marcadores de la forma `@@APP_DB_PASSWORD@@`, `@@RUNS_DB_PASSWORD@@`, `@@MAIL_DB_PASSWORD@@`, `@@MIGRATE_DB_PASSWORD@@` y `@@BACKUP_DB_PASSWORD@@`.
-- Valida que cada contraseña cumpla `[A-Za-z0-9._~-]{24,128}` (las que genera `init-env.sh` cumplen), sustituye los marcadores de la fase pedida, antepone `SET SESSION sql_log_bin = 0;` y `SET SESSION lock_wait_timeout = 5;`, y entrega el SQL a `mysql -uroot` por la entrada estándar. Sin `--host`, usa el socket de la imagen (el inicio de un volumen nuevo).
+El script es el de C3c; C4 suma sus cinco roles.
+
+- Lee `docker/mysql/db-grants.sql`, que tiene dos secciones marcadas con las líneas `-- @phase users` y `-- @phase tables`, y marcadores de la forma `@@APP_DB_PASSWORD@@`, `@@RUNS_DB_PASSWORD@@`, `@@MAIL_DB_PASSWORD@@`, `@@MIGRATE_DB_PASSWORD@@`, `@@BACKUP_DB_PASSWORD@@` y `@@AUDIT_DB_PASSWORD@@`.
+- Valida que cada contraseña cumpla `[A-Za-z0-9._~-]{24,128}` (las que genera `init-env.sh` cumplen), sustituye los marcadores de la fase pedida, antepone `SET SESSION sql_log_bin = 0;` y `SET SESSION lock_wait_timeout = 5;`, y entrega el SQL a `mysql --defaults-extra-file=<archivo temporal> -uroot` por la entrada estándar. La contraseña de root va en ese archivo de opciones (`umask 077`, borrado al salir), nunca en `-p` ni en `MYSQL_PWD`. Sin `--host`, usa el socket de la imagen (el inicio de un volumen nuevo).
 - Sale con el estado de `mysql`; ante el primer error de SQL se detiene.
-- `docker/mysql/10-db-grants.sh` (el que monta `mysql` en `/docker-entrypoint-initdb.d/`) corre `apply-grants.sh --phase users`.
-- **La fase `users`:** `CREATE USER IF NOT EXISTS` y `ALTER USER … IDENTIFIED BY` de las cinco cuentas; los privilegios de base de `taller_migrate`; los globales y de base de `taller_backup`; el `SELECT` sobre `performance_schema.events_transactions_current` de `taller_migrate`.
-- **La fase `tables`:** los permisos por tabla y por columna de la matriz para `taller_app`, `taller_runs` y `taller_mail`, y el retiro de `taller`: una sentencia preparada hace `DROP USER` sólo si existe y ninguna sesión suya sigue conectada.
+- `docker/mysql/10-db-grants.sh` (el que monta `mysql` en `/docker-entrypoint-initdb.d/`) corre `sh /usr/local/bin/apply-grants.sh --phase users`, sin `exec`: el inicio de MySQL lo sourcea.
+- **La fase `users`:** `CREATE USER IF NOT EXISTS` y `ALTER USER … IDENTIFIED BY` de las seis cuentas; los privilegios de base de `taller_migrate`; los globales y de base de `taller_backup`; el `SELECT` sobre `performance_schema.events_transactions_current` de `taller_migrate`, que deja de ser de `taller`.
+- **La fase `tables`:** los permisos por tabla y por columna de la matriz para `taller_app`, `taller_runs`, `taller_mail` y `taller_audit`, y el retiro de `taller`: una sentencia preparada hace `DROP USER` sólo si existe y ninguna sesión suya sigue conectada.
 - **Idempotente.** Se puede correr cuantas veces haga falta; sólo suma privilegios. Lo que se quite de la matriz se revoca con una línea explícita en el mismo cambio.
-- **C3b y C3c** suman su usuario `taller_mail` y sus permisos a este mismo archivo con este mismo mecanismo.
 
 ## El entrypoint de `taller` en modo público
 
@@ -133,12 +136,15 @@ Con la credencial del host, y sin tocar nada existente, escribe `probe/<al azar>
 | `node qa/nginx-headers-check.ts` | Toda ubicación de `docker/nginx/` con una `add_header` incluye `headers.conf`, y el archivo lleva las seis cabeceras con los valores de FR-013 | no | sí |
 | `node qa/csp-guard-check.ts` | `dist/index.html` y el código propio de las vistas sin lo que la política bloquea (FR-017, FR-019) | no | sí |
 | `node qa/nginx-public-check.ts` | Las plantillas públicas de Nginx renderizadas con valores de ejemplo y `validate.sh` (R3, R6) | no | sí |
-| `node qa/apply-grants-check.ts` | `apply-grants.sh` con un `mysql` falso: fases, sustitución, validación y el SQL que recibe | no | sí |
+| `node qa/apply-grants-check.ts` (de C3c, ampliado) | `apply-grants.sh` con un `mysql` falso: fases, sustitución de los seis marcadores, validación, el archivo de opciones y el SQL que recibe | no | sí |
+| `node qa/compose-mail-check.ts` (de C3c, editado) | Que `grants` corre la fase `tables` y depende de `migrate`, y que `grants-users` corre la fase `users` y `migrate` depende de él | no | sí |
 | `node qa/public-script-check.ts` | `public.sh` con un `docker` falso: validación, proyecto, `deploy`, `down` y `status` | no | sí |
 | `sh backend/api/scripts/compose-check.sh` | La configuración efectiva de Compose en los dos modos (puertos, roles, `grants`, logging, proyecto); la corre `public:check` | sí | no |
 | `node qa/build-check.ts` | El contrato del build en varios archivos (FR-020) | no | sí |
 | `npm run api:grants:check` | La matriz de MySQL con los usuarios reales (FR-033) | sí | no |
-| `npm run public:check` | Puertos, cabeceras por clase, redirección, nombre único, cookies, cierre por CSRF, IP real, límites y TLS contra el stack público con un certificado de prueba (FR-043) | sí | no |
+| `npm run public:check` | Puertos, cabeceras por clase, redirección, nombre único, cookies, cierre por CSRF, IP real, límites, el arranque de un aula por HTTP/2 sin ningún 429 (R26) y TLS contra el stack público con un certificado de prueba (FR-043) | sí | no |
+| `node qa/classroom-boot-check.ts` (de A3, ampliado con `CLASSROOM_BASE_URL` y `CLASSROOM_COOKIE`) | Los 40 arranques de un aula desde una IP, con copia y sin copia, contra el stack local (HTTP/1.1) y contra el público de prueba (HTTP/2) | sí | no |
+| `npx playwright test --config qa/e2e/stack.config.ts` | El recorrido de la CSP contra un stack levantado, con las pantallas de cuenta y de administración, y el cierre por CSRF en un navegador (R29) | sí | no |
 | `npm run public:acme-check` | La emisión y la renovación con Pebble, con los dos desafíos (FR-008, FR-010) | sí | no |
 | `npm run public:backup-check` | El respaldo de punta a punta contra un S3 local, la restauración (a), el simulacro (b) y la exclusión con el despliegue en los dos órdenes (FR-034 a FR-042) | sí | no |
 
