@@ -143,6 +143,7 @@ Aplican decisiones del usuario posteriores al clarify (`.coordinador/clarify-dec
 
 - **El tope del HTML es 1 500 000 caracteres** (PR #76, `BOOT_SIZE_LIMIT` en `qa/build-check.ts`). Cambian el punto 8 de «Cómo sabremos que salió bien», la fila «El tamaño» de «Qué cambia en `dist/index.html`», FR-004 y SC-008. La fila de A2 en «Qué hereda» y el margen de los supuestos quedan como historia. **El ejemplo de Q1 cambia:** con la medida de F2b (1 141 337), el margen es 358 663 y un cuarto son 89 665. La cota de bundlephobia de React Router (206 775) lo supera, y la de TanStack Router (90 893) lo supera por poco, así que «ya lo superan» deja de ser concluyente para TanStack: el spike mide el aumento real sobre la base de F10, y el margen se recalcula en la línea base de F10a.
 - **nuqs escribe la URL con al menos 50 ms de demora** (throttle; no hay escritura síncrona), y el usuario aceptó la diferencia. C3 y C5 la tienen en cuenta: después de un cambio de estado con nuqs, una prueba espera la URL (`waitForURL`) antes de recargar o de contar montajes.
+- **Los globales de los adaptadores de página siguen la forma `Taller<Página>Page`** (coordinador, 2026-10-28), para no confundirlos con `TallerProjectKit` y otros: `TallerProjectPage` (F4, en `master`) y `TallerMethodPage` (F8), no el `TallerMethod` provisional de la spec 022. Cambian las tablas «Lo que queda en `window`» y «Qué hereda de cada ítem». Los adaptadores de F3 y F9 entran con el nombre que tengan en la base; el inventario de FR-048 los toma de ahí.
 - **El menú no tiene ningún `KNOWN DEFECT`.** Sólo «Laboratorio» es `?#laboratorio`, y recarga sólo si cambia lo que va antes del hash (L1 y L2 de F1); las otras siete entradas son `#…`. Esta spec no depende de ningún defecto del menú.
 
 ## El contrato de URL que se conserva
@@ -241,7 +242,7 @@ Es lo que dicen las specs de F3 a F9 que queda en `app.js` y en `window.Taller*`
 | `TallerCampaign`: `mount`, `unmount`, `refresh` y, si L11 no lo retiró, `sync` | `app.js` y el armado de `progress-backup` | Specs 019 y 022 |
 | `TallerSystems`: `init`, `mount`, `unmount` y, si L11 no lo retiró, `sync` | `app.js` y el armado | Specs 018 y 022 |
 | `TallerAtlas`: `mount` y `unmount` (con las sesiones de cada idioma en el módulo del adaptador) | `app.js` | `register-atlas.tsx` |
-| `TallerLibrary` (F3), el adaptador de Proyecto (F4), `TallerRoute` (F9) y `TallerMethod` (F8): `mount` y `unmount` | `app.js` | Specs 012, 013, 014 y 022 |
+| `TallerLibrary` (F3), `TallerProjectPage` (F4), `TallerRoute` (F9) y `TallerMethodPage` (F8): `mount` y `unmount` | `app.js` | Specs 012, 013, 014 y 022 |
 | `TallerCampaignEngine` y `TallerSystemsEngine` | Los lectores legacy que queden, o nadie (L10 de F8) | Specs 019 y 022 |
 | `TallerProjectKit` | El adaptador de Sistemas | Spec 018 |
 | `GUIDE_DATA`, `RUST_*`, `GO_*`, `SYSTEMS_*` y `SYSTEMS_*_LABS` | `app.js` (los tres primeros) y `qa/` (los oráculos `dump-globals` y `dist-content-check`, y unos diez checks por `qa/lib/legacy-sources.ts`) | Se retiran (F10-Q3) |
@@ -260,7 +261,7 @@ Ya no deberían estar `TallerRunner` (F7a), `TallerEditor`, `TallerExplorers` y 
 | F5 | Sistemas, `TallerSystems`, `TallerProjectKit`, la sesión de simulaciones en `pages/systems/model` y nuqs (o lo hereda de F3) | Inyecta la descarga del kit; retira los dos globals | **Sí** |
 | F6 | La campaña, `TallerCampaign` y el motor inicializado dentro de `startApp()` | Inicializa el motor en la raíz; conserva el efecto de `refresh` | **Sí** |
 | F7a y F7b | `features/run-exercise`, el laboratorio y `TallerLab` | Abre el almacén del laboratorio en la raíz; retira el global | **Sí** (F7b) |
-| F8 | Método, `TallerMethod`, el armado de `progress-backup` en `src/app/`, `startApp(progressBackup)`, y `#export-progress` y el toast en `app.js` | Usa el armado; mueve la exportación y el toast al shell | **Sí** |
+| F8 | Método, `TallerMethodPage`, el armado de `progress-backup` en `src/app/`, `startApp(progressBackup)`, y `#export-progress` y el toast en `app.js` | Usa el armado; mueve la exportación y el toast al shell | **Sí** |
 | F9 | El Recorrido, `TallerRoute`, el módulo del temporizador y `#quiz-feedback`, que se recrea | Monta `#quiz-feedback` (FR-045); retira el adaptador | **Sí** |
 | F11a | Las etapas de los tokens y de la sesión, la raíz de la cuenta, «Tu cuenta», «pedir el ingreso», el doble de la API en los E2E y el proxy de `/api/` | Conserva las etapas; integra la raíz de la cuenta a la raíz única (F10-Q2) | Sí, por F8 |
 | F12a | La página de la administración separada del diálogo, la condición de admin en un solo lugar y un único método de apertura en el Page Object | La monta como ruta, `#administracion` (F10-Q4) | No hace falta (FR-044) |

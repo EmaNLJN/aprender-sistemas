@@ -82,7 +82,12 @@ Los valores son exactos y valen para toda tarea.
 
   `blockWrites()` va después de `seed()` y no se combina con `watchWrites()`. Ninguna E2E suma su propia marca en `window` para detectar recargas.
 - **El doble de la API** es el de F11a, con la ruta antes del CSRF y `ApiCall.search` (TR-11). Para arrancar sin sesión: `test.use({ sessionAccount: null })`.
-- **Las listas blancas de error** usan `/status of NNN/` con el código exacto, nunca `/Failed to load resource/` (TR-11).
+- **Las listas blancas de error:**
+  - un error HTTP usa `/status of NNN/`, con el código exacto;
+  - un pedido abortado con `route.abort()` no tiene código, y usa `/net::ERR_FAILED/`, como `qa/e2e/specs/cycle.spec.ts:71`;
+  - nunca `/Failed to load resource/` a secas (TR-11).
+
+  Las E2E de F10a no abortan pedidos: retienen el del contenido y lo dejan seguir con `route.continue()`.
 - **Las descargas:** ninguna en el repositorio. En la copia del spike, sólo lo que el usuario permita en T002.
 - **Estilo:**
   - código y nombres de test en inglés, sin comentarios;
