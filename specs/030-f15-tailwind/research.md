@@ -215,6 +215,7 @@ Una utilidad es segura si escribe la propiedad de hoy con el valor de hoy y, com
 | `transition`, `duration-*`, `ease-*` | Usan `--default-transition-*`, que el theme borra | `[transition:…]` con el literal de hoy |
 | `grid-cols-2` | `repeat(2, minmax(0, 1fr))` | `grid-cols-[1fr_1fr]` si hoy es `1fr 1fr` |
 | `rounded-full` | `calc(infinity * 1px)` | `rounded-[50%]` si hoy es `50%` |
+| `border-line` con un borde de un solo lado | Fija el color de los cuatro lados, y el barrido ve `border-left-color` | `border-t-line` (el color del lado que tiene borde) |
 | Un color con `/50` | `color-mix()` | El hexadecimal de hoy con su alfa (`bg-[#0002]`) |
 | `max-*`, `min-*`, `sm:` y demás anchos | Otras condiciones | Las variantes `upto-*` y `from-*` (R7) |
 | Dos utilidades de la misma propiedad en un elemento | Gana la que Tailwind emite después, no la que va última en la clase | Una sola por propiedad; las variantes de un componente son mapas de cadenas completas (FR-021) |
