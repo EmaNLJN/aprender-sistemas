@@ -10,6 +10,8 @@ Decisiones técnicas del plan, con sus alternativas, la tabla de Context7 y lo q
 
 **Alternativas.** Una carpeta `content/essentials/`: pide un cargador nuevo, y `expectOnlyEntries` y `qa/content-tools-check.ts` la rechazan hoy. Las primeras etapas de `lab`: corren las 274 etapas y cambian sus `content_hash`.
 
+**La consecuencia, más adelante.** Una etapa nueva en `lab`, `quests` o `systems` correría las de Esenciales, que cambiarían su `stage` y su `content_hash`, pero no su ID, su `grading_hash` ni lo que ve el alumno. El ADR 0009 fija la regla: una etapa nueva va al final de su sección, y sumarla fuera de `essentials` es un ítem propio (plan, T018).
+
 ## R2. El nivel lo fija la sección, y sólo los ejercicios lo tienen
 
 **Decisión.**

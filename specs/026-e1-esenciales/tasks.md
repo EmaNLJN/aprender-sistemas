@@ -13,7 +13,7 @@ Las ondas, los dueños, las interfaces y las compuertas están en «Reparto en p
 - [ ] T002 [US2] Las pruebas del generador en rojo y la guarda `qa/content-baseline-check.ts`: `qa/content-exercises-check.ts` y `qa/curriculum-meta-check.ts` (FR-002 a FR-009, FR-012, FR-039; SC-001; plan 1.1)
 - [ ] T003 [US2] El generador: `tools/content/{catalogs,exercises,load-curriculum,meta}.ts` y `frontend/src/shared/config/levels.ts` (FR-001 a FR-008, FR-012, FR-043; plan 1.2)
 - [ ] T004 [US4] La etapa piloto, redactada por el agente C: la sección `essentials` de `content/{rust,go}/manifest.yaml` y `content/{rust,go}/exercises/{lenguaje}-138…142/` (FR-005, FR-043, FR-044; plan 1.3)
-- [ ] T005 [US4] La revisión pedagógica del usuario, compuerta antes de T019 (FR-044; plan 1.4)
+- [ ] T005 [US4] La revisión pedagógica del usuario, compuerta antes de la auditoría (T017) y del PR (T019) (FR-044; plan 1.4)
 
 ## Phase 3: User Story 3 - La API sirve Esenciales (Priority: P1) — onda 2, A
 
@@ -32,7 +32,7 @@ Las ondas, los dueños, las interfaces y las compuertas están en «Reparto en p
 - [ ] T012 [US1] Las specs de componentes en rojo: `LevelTabs.spec.tsx` y `TopicGrid.spec.tsx` (FR-026, FR-029; plan 2.7)
 - [ ] T013 [US1] Los componentes, la lectura del catálogo sin globales, `dist-content-check` y el menú si F10 no entró (FR-025, FR-026, FR-029, FR-031, FR-032; plan 2.8)
 - [ ] T014 [P] [US1] Las dos E2E de F1 que esperan `rust-01`, en rojo y en un commit propio (FR-040; SC-006; plan 2.9)
-- [ ] T015 [US1] `lab-essentials.spec.ts` y los conteos de `lab-map.spec.ts` (FR-019, FR-027, FR-028, FR-031, FR-040; SC-004; plan 2.10)
+- [ ] T015 [US1] `lab-essentials.spec.ts` y `qa/e2e/lib/built-curriculum.ts`, y los conteos de `lab-map.spec.ts` leídos del documento construido, sin conteos ni IDs que E2 vaya a cambiar (FR-019, FR-027, FR-028, FR-031, FR-040; SC-004; plan 2.10)
 
 ## Phase 6: User Story 2 - Nada de lo que ya tenía cambia (Priority: P1) — S2, K
 
@@ -40,6 +40,6 @@ Las ondas, los dueños, las interfaces y las compuertas están en «Reparto en p
 
 ## Phase 7: Polish — La auditoría, la documentación y el cierre (onda 3, K y U)
 
-- [ ] T017 [US4] La auditoría de B3 con runsc sobre el último commit y su resumen (FR-017, FR-022, FR-023; SC-003; plan 4.1)
-- [ ] T018 La documentación: `README.md`, `backend/api/AGENTS.md` y `docs/adr/0009-esenciales-ids-y-etapas.md` (FR-010, FR-036; plan 4.2)
+- [ ] T017 [US4] La auditoría de B3 con runsc, después de T005, sobre la versión aprobada y el último commit, y su resumen; un cambio posterior la repite (FR-017, FR-022, FR-023, FR-044; SC-003; plan 4.1)
+- [ ] T018 La documentación: `README.md`, `backend/api/AGENTS.md` y `docs/adr/0009-esenciales-ids-y-etapas.md`, con la regla de una etapa nueva en otra sección (FR-010, FR-036; plan 4.2)
 - [ ] T019 El cierre: T005 aprobada, la compuerta final y el PR de `e1/base` a `master` (FR-042; plan 4.3)

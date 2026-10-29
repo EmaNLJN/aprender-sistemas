@@ -128,6 +128,7 @@ qa/
 ├── systems-check.ts, campaign-content-check.ts, project-kit-check.ts, api-sync-check.ts, api-import-check.ts   (Q)
 ├── dist-content-check.ts            (F)
 ├── run-checks.ts                    (K) suma content-baseline-check
+├── e2e/lib/built-curriculum.ts      (E) nuevo: los conteos y los IDs de Esenciales leídos del documento construido
 └── e2e/specs/views.spec.ts, reload.spec.ts, lab-essentials.spec.ts, lab-map.spec.ts   (E)
 README.md, backend/api/AGENTS.md, docs/adr/0009-esenciales-ids-y-etapas.md   (K)
 ```
@@ -158,10 +159,10 @@ Lo que el revisor mira primero:
 | Onda | Quién | Qué | Compuerta al cerrar |
 | --- | --- | --- | --- |
 | 0 | K | T001: precondiciones, rama `e1/base` y base congelada | `npm test` verde en la base |
-| 1 | G y después C; U en paralelo desde T004 | T002 y T003 (el generador); T004 (la etapa piloto); T005 (la revisión, compuerta antes del PR) | Parcial: los checks de G con fixtures. Después de T004, `npm run curriculum`, `content-baseline-check` y `curriculum-meta-check`. El resto de `npm test` queda en rojo a propósito hasta S2, como en B2 (sus T005 a T009): `e1/base` no va sola a `master` |
+| 1 | G y después C; U en paralelo desde T004 | T002 y T003 (el generador); T004 (la etapa piloto); T005 (la revisión, compuerta antes de la auditoría y del PR) | Parcial: los checks de G con fixtures. Después de T004, `npm run curriculum`, `content-baseline-check` y `curriculum-meta-check`. El resto de `npm test` queda en rojo a propósito hasta S2, como en B2 (sus T005 a T009): `e1/base` no va sola a `master` |
 | 2 | A, Q, F y E a la vez (S1 = T004 integrada) | A: T006 a T008. Q: T009. F: T010 a T013. E: T014 y T015 | Cada tarea, sus checks |
 | S2 | K | T016: integración y compuerta completa | Todo verde (quickstart, §1 a §4) |
-| 3 | K y U | T017 (B3), T018 (documentación y ADR) y T019 (cierre y PR, después de T005) | Final |
+| 3 | K y U | T018 (documentación y ADR); T017 (B3), después de T005 y sobre la versión aprobada; T019 (cierre y PR), después de T017 | Final |
 
 **Archivos e interfaces por dueño:**
 
@@ -173,7 +174,7 @@ Lo que el revisor mira primero:
 | A | `backend/api/app/**`, `backend/api/database/migrations/**` y `backend/api/tests/**` | el `build/` con la etapa piloto | las porciones, la sesión y la migración |
 | Q | `qa/lib/content-document.ts`, `qa/content-check.ts`, `qa/curriculum-ids-check.ts`, `qa/fixtures/curriculum-ids.json`, `qa/systems-check.ts`, `qa/campaign-content-check.ts`, `qa/project-kit-check.ts`, `qa/api-sync-check.ts` y `qa/api-import-check.ts` | el `build/` con la etapa piloto | los contratos de conteo |
 | F | `frontend/src/**` (salvo `levels.ts`), `frontend/src/index.html`, `qa/dist-content-check.ts` y, si A3 entró, `qa/lib/content-server.ts` y `qa/e2e/lib/content-portions.ts` | G y el `build/` con la etapa piloto | el front |
-| E | `qa/e2e/specs/views.spec.ts`, `reload.spec.ts`, `lab-essentials.spec.ts` y `lab-map.spec.ts` | el build de F | la red E2E |
+| E | `qa/e2e/specs/views.spec.ts`, `reload.spec.ts`, `lab-essentials.spec.ts` y `lab-map.spec.ts`, y `qa/e2e/lib/built-curriculum.ts` (nuevo) | el build de F | la red E2E |
 
 **Puertos de los E2E:** K usa `E2E_PORT=4173` y E usa `4286`.
 
@@ -591,7 +592,11 @@ El usuario lee los diez ejercicios:
 - pruebas, pistas, revisión, transferencia y predicción;
 - inicial y solución.
 
-Para cada uno, aprueba o pide cambios. Un cambio vuelve a T004 (C corrige, corre sus checks y hace un commit `fix(content): …`), y si toca código o pruebas, T017 se repite. Es la compuerta antes de T019: el PR no se abre sin la aprobación de los diez. Puede correr a la vez que la onda 2, porque las tareas de la onda 2 dependen de la forma del contenido y no de su texto. Si cambia un título, cambia la entrada de `curriculum-ids.json` (T009) en el mismo commit de `fix(content)`.
+Para cada uno, aprueba o pide cambios. Un cambio vuelve a T004: C corrige, corre sus checks y hace un commit `fix(content): …`. Si cambia un título, la entrada de `curriculum-ids.json` (T009) cambia en el mismo commit.
+
+Es la compuerta antes de la auditoría (T017) y del PR (T019): la auditoría corre sobre la versión aprobada. Va en ese orden porque la CI recalcula la huella del documento desde la cabeza del PR (FR-038 de B3), así que cualquier cambio de texto posterior a la auditoría deja su resumen inválido.
+
+Puede correr a la vez que la onda 2, porque las tareas de la onda 2 dependen de la forma del contenido y no de su texto.
 
 ---
 
@@ -1163,33 +1168,84 @@ S1: `e1/base` con T001 a T004 integradas. `npm run curriculum` en verde.
 
 ### Tarea 2.10 · Las E2E de Esenciales y los conteos de F7a (T015, E)
 
-**Archivos:** `qa/e2e/specs/lab-essentials.spec.ts` (nuevo) y `qa/e2e/specs/lab-map.spec.ts` (F7a).
+**Archivos:** `qa/e2e/lib/built-curriculum.ts` (nuevo), `qa/e2e/specs/lab-essentials.spec.ts` (nuevo) y `qa/e2e/specs/lab-map.spec.ts` (F7a).
 
-1. **`lab-essentials.spec.ts`:**
+**La regla:** estas E2E fijan el comportamiento: Esenciales primero, la sugerencia y la numeración relativa. No fijan cuántos ejercicios tiene Esenciales, ni su último ID, ni los totales de un lenguaje: los leen del documento construido (`build/curriculum.json`), para que cada PR de E2 no las edite. Los totales como contrato siguen en `qa/` y en Pest (FR-036).
+
+1. **`qa/e2e/lib/built-curriculum.ts`:**
+
+   ```ts
+   import { readFileSync } from 'node:fs';
+   import { resolve } from 'node:path';
+   import type { Language } from './curriculum';
+
+   interface BuiltExercise {
+     id: string;
+     language: Language;
+     topicId: string;
+   }
+
+   type BuiltLists = Record<string, Record<string, BuiltExercise[]>>;
+
+   const built = JSON.parse(
+     readFileSync(resolve(import.meta.dirname, '../../../build/curriculum.json'), 'utf8'),
+   ) as BuiltLists;
+
+   function exercisesOf(language: Language): BuiltExercise[] {
+     const cores = Object.values(built.cores).flat();
+     return [
+       ...built.essentials[language],
+       ...built.lab[language],
+       ...built.quests[language],
+       ...cores.filter((exercise) => exercise.language === language),
+     ];
+   }
+
+   export function essentialsIds(language: Language): string[] {
+     return built.essentials[language].map((exercise) => exercise.id);
+   }
+
+   export function exerciseCount(language: Language): number {
+     return exercisesOf(language).length;
+   }
+
+   export function topicCount(language: Language): number {
+     return new Set(exercisesOf(language).map((exercise) => exercise.topicId)).size;
+   }
+   ```
+
+   No es tautológico: la página cuenta desde el catálogo del front, y esto cuenta desde el documento, por otro camino.
+2. **`lab-essentials.spec.ts`:**
 
    ```ts
    import { expect, test } from '../fixtures';
+   import { essentialsIds } from '../lib/built-curriculum';
    import type { ExerciseUnderTest } from '../lib/compiler-results';
-   import { curriculumIds } from '../lib/curriculum';
+   import { curriculumIds, type Language } from '../lib/curriculum';
    import { LAB_KEY } from '../lib/lab-storage';
    import { urls } from '../lib/urls';
 
-   const RUST_138: ExerciseUnderTest = { id: 'rust-138', language: 'rust', testIds: ['t1', 't2', 't3'] };
-   const GO_138: ExerciseUnderTest = { id: 'go-138', language: 'go', testIds: ['t1', 't2', 't3'] };
    const title = (id: string) => curriculumIds.exercises[id].title;
+   const firstOf = (language: Language): ExerciseUnderTest => ({
+     id: essentialsIds(language)[0],
+     language,
+     testIds: ['t1', 't2', 't3'],
+   });
+   const lastOf = (language: Language) => essentialsIds(language).at(-1) as string;
 
    test.describe('Essentials in the lab', () => {
-     test('Essentials is a level of its own and its first topic is numbered 01', async ({
+     test('Essentials is a level of its own, with every Essentials exercise, and its first topic is numbered 01', async ({
        shell,
        lab,
        page,
      }) => {
+       const count = essentialsIds('rust').length;
        await shell.goto(urls.view('laboratorio'));
 
        await lab.levelButton('Esenciales').click();
        await expect(lab.levelButton('Esenciales')).toHaveAttribute('aria-pressed', 'true');
-       await expect(lab.filterStatus()).toHaveText('5 desafíos visibles.');
-       await expect(lab.exerciseNodes()).toHaveCount(5);
+       await expect(lab.filterStatus()).toHaveText(`${count} desafíos visibles.`);
+       await expect(lab.exerciseNodes()).toHaveCount(count);
        await expect(page.locator('.topic-index').first()).toHaveText('01');
      });
 
@@ -1199,10 +1255,11 @@ S1: `e1/base` con T001 a T004 integradas. `npm run curriculum` en verde.
        compiler,
        page,
      }) => {
-       await compiler.answer(RUST_138, 'passed');
+       const first = firstOf('rust');
+       await compiler.answer(first, 'passed');
        await shell.goto(urls.view('laboratorio'));
        await lab.startButton().click();
-       await expect(lab.exerciseTitle()).toHaveText(title('rust-138'));
+       await expect(lab.exerciseTitle()).toHaveText(title(first.id));
 
        await lab.tab('code').click();
        await lab.runCode();
@@ -1210,26 +1267,27 @@ S1: `e1/base` con T001 a T004 integradas. `npm run curriculum` en verde.
 
        await page.reload();
        await shell.goto(urls.view('laboratorio'));
-       await expect(lab.exerciseNode(`Resuelto. ${title('rust-138')}`)).toHaveText('✓');
+       await expect(lab.exerciseNode(`Resuelto. ${title(first.id)}`)).toHaveText('✓');
      });
 
-     for (const exercise of [RUST_138, GO_138]) {
-       test(`${exercise.id} keeps its solved record after a reload`, async ({
+     for (const language of ['rust', 'go'] as const) {
+       test(`the first Essentials exercise of ${language} keeps its solved record after a reload`, async ({
          shell,
          lab,
          compiler,
          page,
          storage,
        }) => {
-         await compiler.answer(exercise, 'passed');
-         await shell.goto(urls.exercise(exercise.id, 'code'));
+         const first = firstOf(language);
+         await compiler.answer(first, 'passed');
+         await shell.goto(urls.exercise(first.id, 'code'));
          await lab.runCode();
          await expect(lab.reviewHeading()).toHaveText('La idea funciona en estos casos.');
 
          await page.reload();
 
          const stored = JSON.parse((await storage.snapshot())[LAB_KEY]);
-         expect(stored.records[exercise.id].solvedAt).toEqual(expect.any(Number));
+         expect(stored.records[first.id].solvedAt).toEqual(expect.any(Number));
        });
      }
 
@@ -1238,21 +1296,21 @@ S1: `e1/base` con T001 a T004 integradas. `npm run curriculum` en verde.
 
        await expect(lab.previousButton()).toBeEnabled();
        await lab.previousButton().click();
-       await expect(lab.exerciseTitle()).toHaveText(title('rust-142'));
+       await expect(lab.exerciseTitle()).toHaveText(title(lastOf('rust')));
      });
    });
    ```
 
-   La forma de esperar la revisión aprobada es la de `lab-run.spec.ts` («passed»), y el orden de la pestaña lo fija `LevelTabs.spec.tsx` (T012). Los esperados salen del contrato: cinco ejercicios por lenguaje (Q5), `rust-142` es el último de Esenciales (Q4) y `curriculum-ids.json` tiene los títulos.
-2. **`lab-map.spec.ts` (F7a),** las aserciones que cuentan el catálogo real, con los deltas de T001:
-   - «137» → «142»;
-   - «8/137 resueltos» → «8/142 resueltos»;
-   - «49 temas» → «50 temas»;
-   - «137 desafíos visibles.» → «142 desafíos visibles.».
+   La forma de esperar la revisión aprobada es la de `lab-run.spec.ts` («passed»), y el orden de la pestaña lo fija `LevelTabs.spec.tsx` (T012). Las claves `t1`, `t2` y `t3` del primer ejercicio son regla de T004, y los títulos salen de `curriculum-ids.json`, que E2 amplía como contrato.
+3. **`lab-map.spec.ts` (F7a):** las aserciones que cuentan el catálogo real pasan a leer el documento construido, con `exerciseCount('rust')` y `topicCount('rust')` de `built-curriculum.ts`:
+   - `toContainText('137')` del sello → `toContainText(String(exerciseCount('rust')))`;
+   - `'8/137 resueltos'` → `` `8/${exerciseCount('rust')} resueltos` ``;
+   - `'49 temas'` → `` `${topicCount('rust')} temas` ``;
+   - `'137 desafíos visibles.'` → `` `${exerciseCount('rust')} desafíos visibles.` ``.
 
-   «29 desafíos visibles.» de Inicial y «La energía del reactor» como desafío del día no cambian: la prueba siembra progreso fuera de Esenciales (R4). Si F7b ya hizo que esas E2E lean el catálogo, no se edita nada.
-3. **Correr:** contra el build con T011 y T013, `E2E_PORT=4286 npx playwright test lab-essentials.spec.ts lab-map.spec.ts`, y antes contra el build sin ellas, para ver el rojo de los casos nuevos (sin T011, `go-138` y `rust-138` no están en el catálogo del front y la vista no los abre).
-4. **El commit:** `test(e2e): cover Essentials in the lab and its counts`.
+   «29 desafíos visibles.» de Inicial, «25 desafíos visibles · ampliación Clásicos y sistemas.» y «La energía del reactor» como desafío del día no cambian: no cuentan Esenciales, y la prueba siembra progreso fuera de Esenciales (R4). Si F7b ya hizo que esas E2E lean el catálogo, no se edita nada.
+4. **Correr:** contra el build con T011 y T013, `E2E_PORT=4286 npx playwright test lab-essentials.spec.ts lab-map.spec.ts`. Antes, contra el build sin ellas, para ver el rojo de los casos nuevos: sin T011, el catálogo del front no tiene los ejercicios de Esenciales y la vista no los abre.
+5. **El commit:** `test(e2e): cover Essentials in the lab and read its counts from the built content`.
 
 ---
 
@@ -1269,7 +1327,7 @@ S1: `e1/base` con T001 a T004 integradas. `npm run curriculum` en verde.
    - los checks de `npm test` suben en uno, `content-baseline-check` (la parte permanente);
    - `node qa/content-baseline-check.ts --full` en verde: SC-001;
    - Vitest suma los casos de T010 y T012;
-   - la red E2E suma los cinco de `lab-essentials.spec.ts`;
+   - la red E2E suma los cinco de `lab-essentials.spec.ts`, que no fijan conteos ni IDs que E2 vaya a cambiar;
    - `html.length` crece unos cientos de caracteres y queda bajo `BOOT_SIZE_LIMIT`.
 4. **El barrido de conteos:** `git grep -nE "\b(274|137|17 porciones|18 porciones)\b" -- README.md AGENTS.md docs backend/api/AGENTS.md qa frontend/src backend/api/tests`. Lo que cuente el contenido es de T018 (la documentación) o vuelve a su dueño.
 5. **La evidencia,** en `tasks.md`: el commit de la integración y una línea por compuerta.
@@ -1280,13 +1338,15 @@ S1: `e1/base` con T001 a T004 integradas. `npm run curriculum` en verde.
 
 ### Tarea 4.1 · La auditoría de B3 (T017, K)
 
+**Cuándo:** después de T005 (los diez ejercicios aprobados) y de T016, sobre la versión aprobada. Cualquier cambio posterior a la superficie auditada (`content/rust`, `content/go`, `content/harness`, `tools/content/exercises.ts` y `tools/content/harness.ts`, hallazgo E1-3) repite esta tarea. Un cambio de texto también, porque cambia la huella del documento que la CI recalcula.
+
 1. **Levantar la instancia de auditoría** como dice `specs/020-b3-auditoria-curriculo/quickstart.md`, sobre el último commit de `e1/base` con el árbol limpio, con runsc.
 2. **Correr la auditoría completa:**
    - 284 soluciones aprueban y 284 iniciales fallan como corresponde;
    - 0 programas sin veredicto (SC-003);
    - el informe pone Esenciales primero en cada lenguaje (FR-022).
-3. **Un hallazgo en un ejercicio piloto** vuelve a T004: C corrige, T005 revisa y la auditoría se repite.
-4. **El resumen** de la corrida va en la descripción del PR (B3-Q3 y FR-038 de la spec 020).
+3. **Un hallazgo en un ejercicio piloto** vuelve a T004: C corrige, T005 revisa el cambio y la auditoría se repite.
+4. **El resumen** de la corrida sobre la versión aprobada va en la descripción del PR (B3-Q3 y FR-038 de la spec 020).
 
 ### Tarea 4.2 · La documentación y el ADR (T018, K)
 
@@ -1308,7 +1368,15 @@ S1: `e1/base` con T001 a T004 integradas. `npm run curriculum` en verde.
    - las porciones después de `guide`;
    - sin globales;
    - Esenciales primero en el catálogo de ejercicios y en la auditoría;
-   - volver atrás retirando el catálogo.
+   - volver atrás retirando el catálogo;
+   - **qué pasa si aparece una etapa nueva en otra sección.** El generador numera por posición, así que una etapa nueva en `lab`, `quests` o `systems` corre una posición todas las que la siguen, también las de Esenciales.
+     - **A los ejercicios corridos** les cambian `stage` y `content_hash`. Nunca les cambian el ID, el `grading_hash` ni el progreso.
+     - **En Esenciales** no cambia lo que ve el alumno: el número de la tarjeta es relativo (`topicNumber`) y el nivel es explícito.
+     - **En las otras secciones** sí puede cambiar: el número de la tarjeta es la etapa, y el nivel de un ejercicio sin `level` sale de ella.
+     - **La regla.** Una etapa nueva va siempre al final de su sección. En `essentials` eso no corre ninguna etapa publicada. En `lab`, `quests` o `systems` sí, y sumarla es un ítem propio con su ADR. Ese ítem decide cómo numerar (por ejemplo, con la etapa explícita en el manifiesto) y actualiza la fórmula de `content-check` y la base congelada. Ninguno de los ítems planificados lo hace.
+     - **Lo que lo detecta:**
+       - `content-check`, con la fórmula de Esenciales (`50 + floor(index / 5)`) y la de las otras secciones;
+       - la parte permanente de `content-baseline-check`, que fija la etapa de los 274.
 
    El usuario lo aprueba (spec, «Acciones del usuario»).
 4. **Correr:** `npx prettier --check` sobre los archivos que formatea, `git diff --check` y los enlaces relativos.
@@ -1316,7 +1384,7 @@ S1: `e1/base` con T001 a T004 integradas. `npm run curriculum` en verde.
 
 ### Tarea 4.3 · El cierre y el PR (T019, K)
 
-1. **T005 aprobada:** los diez ejercicios, con la evidencia en `tasks.md`.
+1. **T005 aprobada y T017 sobre el último commit:** los diez ejercicios aprobados, y la auditoría corrida después, sobre el mismo commit que va al PR. Las dos evidencias van en `tasks.md`.
 2. **La compuerta completa otra vez,** si algo cambió después de T016, con `node qa/content-baseline-check.ts --full`.
 3. **El PR,** de `e1/base` a `master`:
    - el título: `feat(content): add Essentials as the first catalog of the chain`;
@@ -1403,7 +1471,7 @@ Ninguna descarga. E1 no suma dependencias de npm ni de Composer. La auditoría (
 - **F7b y F10 pueden cambiar archivos que este plan nombra.** T001 fija la variante, y cada tarea dice qué hacer si el archivo difiere.
 - **El `down()` de la migración** falla con filas de Esenciales: es la vuelta atrás hacia adelante del ADR. Se aceptó.
 - **Entre T003 y S2, `npm test` de `e1/base` está en rojo a propósito.** `e1/base` no va sola a `master`, como en B2.
-- **El texto de la etapa piloto** es de C y de U. Si la revisión se demora, el PR espera (T019), pero la onda 2 no.
+- **El texto de la etapa piloto** es de C y de U. Si la revisión se demora, esperan la auditoría (T017) y el PR (T019), pero la onda 2 no.
 
 ## Complexity Tracking
 

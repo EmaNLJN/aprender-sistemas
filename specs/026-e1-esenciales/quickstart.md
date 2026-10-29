@@ -84,7 +84,7 @@ Esperado:
 
 ## 5. La auditoría (T017)
 
-Como dice `specs/020-b3-auditoria-curriculo/quickstart.md`, con runsc y la instancia propia del ejecutor, sobre el último commit con el árbol limpio.
+Como dice `specs/020-b3-auditoria-curriculo/quickstart.md`, con runsc y la instancia propia del ejecutor, sobre el último commit con el árbol limpio. Corre después de que el usuario aprobó los diez ejercicios (T005): cualquier cambio posterior, también de texto, la repite.
 
 Esperado:
 - 284 soluciones aprueban y 284 iniciales fallan como corresponde, con 0 programas sin veredicto;

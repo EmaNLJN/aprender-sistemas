@@ -70,13 +70,15 @@
 | Etapa | Rust | Go | Se superpone con |
 | --- | --- | --- | --- |
 | 1. Leer un ejercicio | La consigna, la firma y una prueba; devolver un valor con la última expresión | La consigna, la firma y una prueba; devolver un valor con `return` | La primera etapa de Inicial: `rust-basics` («Expresiones y mutabilidad») y `go-basics` («Tipos y primeros pasos») |
-| 2. Valores y tipos | Enteros, decimales, booleanos y texto; `let` y `let mut`; conversiones explícitas | Enteros, decimales, booleanos y `string`; `var` y `:=`; conversiones explícitas | `rust-basics` y `go-basics` |
-| 3. Decidir | Comparaciones, `if` y `else` como expresión, un `match` simple | Comparaciones, `if` y `else`, un `switch` simple | La segunda: `rust-control` y `go-flow` («Funciones y decisiones») |
-| 4. Repetir | `for` sobre un rango, `while`, contar y acumular | `for` con rango, con condición y contador | Ninguna directa |
+| 2. Valores y tipos | Enteros, decimales y texto; `let` y `let mut`; conversiones explícitas | Enteros, decimales y `string`; `var` y `:=`; conversiones explícitas | `rust-basics` y `go-basics` |
+| 3. Decidir | `bool` y las comparaciones, `if` y `else` como expresión, un `match` simple | `bool` y las comparaciones, `if` y `else`, un `switch` simple | La segunda: `rust-control` y `go-flow` («Funciones y decisiones») |
+| 4. Repetir | `for` sobre un rango, `while`, contar y acumular | `for` con rango, con condición y contador | También la segunda: `rust-08` (`for` sobre `1..=n` con un acumulador), `rust-09` (`loop` con `break` y un valor) y `go-07` (`range` con un acumulador) |
 
-En cada etapa, uno o dos ejercicios `reparar` enseñan a leer un error del compilador. En Rust: tipos que no coinciden y una variable inmutable. En Go: una variable sin usar y tipos mezclados. Así se usa lo que B3-Q1 ya admite: un inicial `reparar` puede fallar al compilar.
+`bool` va en la etapa 3 y no en la 2: aparece con las comparaciones, que lo producen, y la etapa 2 queda con un concepto por ejercicio. Lo decidió el usuario en el clarify de E2 (su Q1-B, en `specs/029-e2-contenido-esenciales/`, que entra con su propio PR).
 
-**La superposición con Inicial** es real en las etapas 1 a 3. Esenciales se queda un escalón abajo con tres reglas: un concepto por ejercicio, la firma siempre dada y el porqué de cada línea en la consigna. Inicial no cambia.
+En cada etapa, uno o dos ejercicios `reparar` enseñan a leer un error del compilador, y cada etapa usa errores distintos. La piloto usa los primeros: en Rust, tipos que no coinciden o una variable inmutable; en Go, una variable sin usar o tipos mezclados. Las otras tres etapas reparten los suyos en la spec de E2. Así se usa lo que B3-Q1 ya admite: un inicial `reparar` puede fallar al compilar.
+
+**La superposición con Inicial** es real en las cuatro etapas. Esenciales se queda un escalón abajo con tres reglas: un concepto por ejercicio, la firma siempre dada y el porqué de cada línea en la consigna. Además, presenta cada construcción en su forma más simple y deja para Inicial su aplicación. Por ejemplo, la etapa 4 enseña `for` sobre un rango que excluye su final, `while` y acumular en una variable `mut`. En Rust deja para Inicial el rango que incluye su final y su reparación (`rust-08`), `loop` con `break` y un valor (`rust-09`) y los iteradores. En Go enseña el `for` de tres partes, el `for` sólo con condición y `for i := range n` sobre un entero, y deja `range` sobre un slice (`go-07`). Que un concepto se presente en Esenciales y se aplique en Inicial es el escalón que se busca. Lo que no se hace es repetir la situación, la función o las pruebas de un ejercicio de Inicial. La spec de E2 baja esto a una columna «Deja para Inicial» por etapa. Inicial no cambia.
 
 **Lo que el formato no permite.** El revisor corrige con expresiones booleanas sobre funciones, porque la plantilla del harness agrega la función de entrada. Un ejercicio de Esenciales no puede corregir lo que un programa imprime: «imprimir» se enseña en la consigna o en la revisión, no en las pruebas.
 
@@ -216,7 +218,7 @@ Con Q3-A, sólo cambian los conteos del laboratorio. *N* es la cantidad de ejerc
 | README: el encabezado (274, 137 y 137), «Aprender en el taller» (la lista de niveles), «Cobertura» (una fila para Esenciales), «Campaña» («forman parte de los 274») y «Desarrollo» («137 ejercicios por lenguaje») | Esos | Con Esenciales | — | E1, en el mismo commit que el contenido; después, cada PR de etapa (Q5) |
 | `qa/`: la estructura por lenguaje de `content-check`, los totales de `systems-check`, `campaign-content-check`, `project-kit-check`, `api-sync-check` y `api-import-check`, las 17 porciones de `dist-content-check` y `curriculum-ids.json` | 274, 137 y 17 | Con Esenciales; el fixture sólo crece | — | Ídem |
 | Pest: los 274 ejercicios, los 3 catálogos, las 17 o 18 porciones y las pruebas y pistas sembradas | Esos | Con Esenciales | — | Ídem |
-| Las E2E del laboratorio que dejó F7a (`lab-map.spec.ts`: «137», «8/137 resueltos», «49 temas», «137 desafíos visibles.») | 137 y 49 | 137 + *N* y 49 más los temas de Esenciales | — | Ídem, salvo que F7b las haga leer el catálogo (hallazgo). Con Q2-A, «29 desafíos visibles» de Inicial no cambia, y con Q3-A tampoco «Un desafío para hoy» de esa prueba, que siembra progreso fuera de Esenciales |
+| Las E2E del laboratorio que dejó F7a (`lab-map.spec.ts`: «137», «8/137 resueltos», «49 temas», «137 desafíos visibles.») | 137 y 49 | 137 + *N* y 49 más los temas de Esenciales | E1 las pasa a leer del documento construido, igual que sus E2E nuevas, para que E2 no las edite | — (si F7b ya las derivó, no se tocan). Con Q2-A, «29 desafíos visibles» de Inicial no cambia, y con Q3-A tampoco «Un desafío para hoy» de esa prueba, que siembra progreso fuera de Esenciales |
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -275,7 +277,7 @@ Quien opera el taller despliega la imagen nueva. El import suma el catálogo y s
 
 ### User Story 4 - Escribir y revisar un ejercicio de Esenciales (Priority: P2)
 
-Quien escribe contenido agrega un ejercicio a una etapa de Esenciales en `content/rust/`. `npm run curriculum` lo valida y nombra lo que falta. `npm test` le pide actualizar los contratos de conteo, y la auditoría de B3 confirma que la solución aprueba y el inicial falla. El usuario revisa la pedagogía, y el PR lleva el resumen de la auditoría.
+Quien escribe contenido agrega un ejercicio a una etapa de Esenciales en `content/rust/`. `npm run curriculum` lo valida y nombra lo que falta, y `npm test` le pide actualizar los contratos de conteo. El usuario revisa la pedagogía. Sobre la versión que aprobó, la auditoría de B3 confirma que la solución aprueba y el inicial falla, y el PR lleva ese resumen.
 
 **Why this priority**: es el circuito por el que entra todo el contenido (Q5). No es lo que ve el alumno, pero sin él no hay nada que ver.
 
@@ -335,7 +337,7 @@ Después de E1, cada número que cuenta ejercicios coincide con el catálogo: el
 - **FR-007**: `curriculum.json` DEBE sumar Esenciales como una clave nueva, después de las siete de hoy, con un arreglo por lenguaje. Cada ejercicio tiene la forma publicada y el orden de claves de uno del laboratorio, con el nivel siempre presente.
 - **FR-008**: El meta DEBE sumar el catálogo con su `sliceBy` y su posición, la huella de las dos porciones nuevas y las tres huellas de cada ejercicio nuevo, calculadas sólo en el generador. *(spec 001, FR-028 y FR-031)*
 - **FR-009**: Nada más DEBE cambiar en lo generado. Las 17 porciones de hoy conservan sus bytes y sus huellas. Los 274 ejercicios conservan su `stage`, su `content_hash`, su `grading_hash` y su `starter_hash`. `qa/fixtures/curriculum-ids.json` conserva cada entrada existente y sólo crece, y `qa/fixtures/workshop-steps-v1.json` no cambia. `Content-Version` sí cambia, porque cambia el documento. `build/curriculum.json` y el volcado de `dump-globals` (mientras F10 no lo retire) cambian sólo por lo nuevo de Esenciales; la diferencia no es una regresión, y su huella nueva reemplaza a la de la línea base. *(como la spec 007, FR-047)*
-- **FR-010**: Las decisiones de IDs (Q4) y de numeración de etapas (FR-003) DEBEN quedar en un ADR nuevo, que E1 entrega con su implementación. El ADR también registra el código (Q2) y por qué la etapa no es el número que ve el alumno. *(Hoja de ruta, E1; ADR 0006 §10)*
+- **FR-010**: Las decisiones de IDs (Q4) y de numeración de etapas (FR-003) DEBEN quedar en un ADR nuevo, que E1 entrega con su implementación. El ADR también registra el código (Q2), por qué la etapa no es el número que ve el alumno, y qué pasa con la numeración si aparece una etapa nueva en `lab`, `quests` o `systems`, que corre las de Esenciales. *(Hoja de ruta, E1; ADR 0006 §10)*
 
 **Base y API**
 
@@ -390,7 +392,7 @@ Después de E1, cada número que cuenta ejercicios coincide con el catálogo: el
 
   *(Constitución, principio II; spec 001, FR-038 a FR-042)*
 - **FR-039**: Un check DEBE comparar el contenido con una línea de base tomada de `master` antes del cambio, en dos niveles. Siempre, dentro de `npm test`: cada uno de los 274 ejercicios sigue y conserva su etapa (ADR 0006 D13). Como compuerta de E1, con `--full` y fuera de `npm test`: los bytes y las huellas de las 17 porciones y las tres huellas de los 274, con la primera diferencia nombrada (SC-001). La comparación completa no corre siempre para no congelar el mantenimiento del contenido: corregir un texto o una pista, o los bugs de `rust-63` y `rust-71`, cambia huellas a propósito.
-- **FR-040**: La red de F1 DEBE pasar sin editarse, salvo las dos pruebas que abren el primer ejercicio desde el mapa (`views.spec.ts` y `reload.spec.ts`, que hoy esperan `rust-01`). Esas cambian en un commit propio, con TDD: el usuario lo aprobó en el clarify (Q3). Las E2E nuevas cubren abrir, resolver y recargar un ejercicio de Esenciales con el compilador simulado, la pestaña Esenciales, la sugerencia para quien ya avanzó y el orden del recorrido libre (el anterior de `rust-01`).
+- **FR-040**: La red de F1 DEBE pasar sin editarse, salvo las dos pruebas que abren el primer ejercicio desde el mapa (`views.spec.ts` y `reload.spec.ts`, que hoy esperan `rust-01`). Esas cambian en un commit propio, con TDD: el usuario lo aprobó en el clarify (Q3). Las E2E nuevas cubren abrir, resolver y recargar un ejercicio de Esenciales con el compilador simulado, la pestaña Esenciales, la sugerencia para quien ya avanzó y el orden del recorrido libre (el anterior de `rust-01`). Fijan el comportamiento: Esenciales primero, la sugerencia y la numeración relativa. No fijan cuántos ejercicios tiene Esenciales ni su último ID: los leen del documento construido, para que E2 no las edite.
 - **FR-041**: `npm run api:content:check` DEBE cubrir las 19 porciones a través de Nginx, con y sin compresión. *(spec 001, FR-047)*
 - **FR-042**: E1 DEBE cerrar con `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `git diff --check` y `npm run test:e2e` en verde. También con Pest, Pint y PHPStan nivel 9, y con el resumen de una corrida de B3 en verde sobre el último commit. *(Hoja de ruta, «Criterios de aceptación globales»; B3-Q3)*
 
@@ -400,10 +402,10 @@ Después de E1, cada número que cuenta ejercicios coincide con el catálogo: el
 - **FR-044**: Antes de integrarse, cada ejercicio de Esenciales DEBE pasar por estos pasos:
   1. un borrador escrito desde fuentes oficiales y enlazado en `sources`. En Rust: The Rust Book, Rust by Example y la referencia de la biblioteca estándar. En Go: A Tour of Go, Effective Go, la especificación y la documentación de los paquetes;
   2. `npm run curriculum` y `npm test`;
-  3. la auditoría de B3;
-  4. la revisión pedagógica del usuario, que aprueba el texto, las pruebas y las pistas.
+  3. la revisión pedagógica del usuario, que aprueba el texto, las pruebas y las pistas;
+  4. la auditoría de B3, sobre la versión aprobada.
 
-  El borrador lo escribe un agente, y la revisión del usuario es la compuerta antes del PR. *(Q5; constitución, principio IV)*
+  El borrador lo escribe un agente, y la revisión del usuario es la compuerta antes de la auditoría. La auditoría va al final porque la CI recalcula la huella del documento desde la cabeza del PR (FR-038 de B3): un cambio de texto posterior deja el resumen inválido. Cualquier cambio después de la auditoría la repite. *(Q5; constitución, principio IV)*
 
 ### Key Entities *(include if feature involves data)*
 
