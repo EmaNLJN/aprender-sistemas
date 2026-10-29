@@ -44,9 +44,9 @@ sha() { node -e 'const h=require("node:crypto").createHash("sha256");process.std
    (cd "$TMPDIR/f10c-base" && npm run build)
    ```
 
-4. **Los scripts,** en `$TMPDIR/f10c-compare/`: `css-multiset.mjs` (quickstart-f2b.md §3.1 a, sin cambios), y `grid.mjs`, `style-sweep.mjs` y `rule-evidence.mjs` de §3. Resuelven `postcss` y `@playwright/test` desde el `node_modules` de la raíz que reciben.
+4. **Los scripts,** en `$TMPDIR/f10c-compare/`: `css-multiset.mjs` (quickstart-f2b.md §3.1 a, sin cambios), y `grid.mjs`, `style-sweep.mjs`, `rule-evidence.mjs`, `tokenize.mjs` y `resolved-multiset.mjs` de §3. Resuelven `postcss` y `@playwright/test` desde el `node_modules` de la raíz que reciben.
 5. **El control de determinismo** (§3.5 a) y **la evidencia de la base** (§3.4), con las verificaciones del plan, T036, pasos 4 a 8.
-6. **Al cerrar (T043),** cada copia descartable se borra sin tocar el `node_modules` real al que apunta su enlace: primero el enlace, después el worktree.
+6. **Al cerrar (T044),** cada copia descartable se borra sin tocar el `node_modules` real al que apunta su enlace: primero el enlace, después el worktree.
 
    ```sh
    rm "$TMPDIR/f10c-base/node_modules"
@@ -61,13 +61,14 @@ sha() { node -e 'const h=require("node:crypto").createHash("sha256");process.std
 
 Con el build hecho, contra la copia de la base:
 
-| Salida | T037 y T038 | T039 y T040 | T041 |
-| --- | --- | --- | --- |
-| `script` y `markup` del dist | iguales | iguales | iguales |
-| `style` | igual | distinto | distinto si se borró algo |
-| El multiconjunto (§3.1) | — | `onlyBase` 0 y `onlyUnit` 0 | `onlyBase` igual a las tuplas borradas, `onlyUnit` 0 |
-| El barrido (§3.3) | — | 0 diferencias, `unhandled` vacío | 0 diferencias, `unhandled` vacío |
-| `chars` | — | como mucho T036 + 1 000 | ← |
+| Salida | T037 y T038 | T039 y T040 | T041 | T042 |
+| --- | --- | --- | --- | --- |
+| `script` y `markup` del dist | iguales | iguales | iguales | iguales |
+| `style` | igual | distinto | distinto si se borró algo | distinto |
+| El multiconjunto (§3.1) | — | `onlyBase` 0 y `onlyUnit` 0 | `onlyBase` igual a las tuplas borradas, `onlyUnit` 0 | cambia a propósito: no se usa |
+| El multiconjunto resuelto (§3.7) | — | — | — | igual al de T041: `onlyBase` 0 y `onlyUnit` 0 |
+| El barrido (§3.3) | — | 0 diferencias, `unhandled` vacío, `newTokens` 0 | ← | 0 diferencias, `unhandled` vacío, `newTokens` 61 |
+| `chars` | — | como mucho T036 + 1 000 | ← | como mucho T036 + 5 000 |
 
 Y los comandos:
 
@@ -314,7 +315,7 @@ export async function open(browser, origin, root, state, capture, unhandled, bef
 
 ### 3.3 El barrido de estilo computado (`style-sweep.mjs`)
 
-Sirve cada `dist/` con su `vite preview`, abre cada estado en cada captura en un contexto nuevo y compara cada propiedad computada de cada elemento. La clave de un elemento sale del ancestro más cercano con `id` (F9). Esperado: `{"snapshots":525,…,"differences":0,"byState":{},"unhandled":[]}`. Tarda entre 25 y 30 minutos (el prototipo comparó 405 capturas en unos 20): no está colgado.
+Sirve cada `dist/` con su `vite preview`, abre cada estado en cada captura en un contexto nuevo y compara cada propiedad computada de cada elemento. La clave de un elemento sale del ancestro más cercano con `id` (F9), y lo de adentro de un `<details>` cerrado no se compara (TR-13: su tamaño depende de si alguna vez se midió). Esperado: `{"snapshots":525,…,"differences":0,"byState":{},"newTokens":0,"unhandled":[]}` hasta T041, y `"newTokens":61` desde T042. Chromium enumera las propiedades personalizadas en el estilo computado: una propiedad `--*` que la base no tiene es un token nuevo y se cuenta aparte; cualquier otra diferencia, también la de un token que ya existía, cuenta. Tarda entre 25 y 30 minutos (el prototipo comparó 405 capturas en unos 20): no está colgado.
 
 ```js
 // $TMPDIR/f10c-compare/style-sweep.mjs
@@ -342,7 +343,14 @@ function readStyles() {
     return parts.join('/');
   };
   const out = {};
+  const insideClosedDetails = (element) => {
+    const closed = element.parentElement?.closest('details:not([open])');
+    if (!closed) return false;
+    const summary = closed.querySelector(':scope > summary');
+    return !summary?.contains(element);
+  };
   for (const element of [document.documentElement, ...document.querySelectorAll('*')]) {
+    if (insideClosedDetails(element)) continue;
     const style = getComputedStyle(element);
     const properties = {};
     for (let index = 0; index < style.length; index++) properties[style[index]] = style.getPropertyValue(style[index]);
@@ -361,6 +369,7 @@ try {
   let snapshots = 0;
   let elements = 0;
   let differences = 0;
+  const newTokens = new Set();
   const byState = {};
   const samples = [];
   for (const state of STATES)
@@ -378,6 +387,10 @@ try {
         const second = after[key] ?? {};
         for (const property of new Set([...Object.keys(first), ...Object.keys(second)])) {
           if (first[property] === second[property]) continue;
+          if (property.startsWith('--') && !(property in first)) {
+            newTokens.add(property);
+            continue;
+          }
           differences++;
           byState[state.name] = (byState[state.name] ?? 0) + 1;
           if (samples.length < 20)
@@ -386,7 +399,7 @@ try {
       }
     }
   await browser.close();
-  console.log(JSON.stringify({ snapshots, elements, differences, byState, unhandled: [...unhandled] }));
+  console.log(JSON.stringify({ snapshots, elements, differences, byState, newTokens: newTokens.size, unhandled: [...unhandled] }));
   for (const sample of samples) console.log(sample);
 } finally {
   baseServer.kill();
@@ -608,12 +621,282 @@ PAGES=toast,recorrido-rust WIDTHS=1280 node "$TMPDIR/f10c-compare/style-sweep.mj
 
 Esperado: diferencias sólo en el estado `toast` (`opacity` `1` → `0` y el `transform` del toast), y en la evidencia de la rama, `#toast.visible` usada sólo en ese estado (`states` en 15, sus 15 capturas). Demuestra que la grilla tiene el estado y que el barrido lo ve.
 
-## 4. Lo que va en el PR (T043)
+**(d) Los alias en Go** (T042, una vez, en una copia descartable de la rama): se sacan del bloque `body[data-language='go']` de `styles.css` las tres líneas `--accent: var(--color-accent);`, `--accent-dark: var(--color-accent-dark);` y `--accent-soft: var(--color-accent-soft);`. Después, `npm run build` en la copia y:
+
+```sh
+node "$TMPDIR/f10c-compare/resolved-multiset.mjs" . <copia>
+PAGES=campana-go,campana-rust WIDTHS=1280 node "$TMPDIR/f10c-compare/style-sweep.mjs" . <copia>
+```
+
+Esperado: el multiconjunto resuelto en 0 y 0, porque resuelve con `:root`; el barrido con diferencias sólo en `campana-go`, en los colores que la hoja de la campaña toma de `var(--accent)`: en Go vuelven al tono de Rust. Demuestra que el barrido ve lo que el multiconjunto resuelto no.
+
+### 3.6 Los tokens (`tokenize.mjs`, T042)
+
+El codemod de T042: reemplaza el `:root` y el bloque de Go por los de research-f10c.md, R12, y reescribe las declaraciones de las dos hojas con los tokens. Falla si una entrada de `LAYOUT` no se aplica exactamente una vez. Después, `npx prettier --write` de las dos hojas.
+
+```js
+// $TMPDIR/f10c-compare/tokenize.mjs
+// node tokenize.mjs <root> frontend/styles.css <shell sheet>
+// Rewrites the token blocks of styles.css and makes both sheets use the tokens (T042).
+import fs from 'node:fs';
+import path from 'node:path';
+import { createRequire } from 'node:module';
+
+const [root, stylesFile, shellFile] = process.argv.slice(2);
+const postcss = createRequire(root + '/package.json')('postcss');
+
+const ROOT_BLOCK = `:root {
+  --color-paper: #f6f3ed;
+  --color-surface: #fffdf8;
+  --color-ink: #272c28;
+  --color-muted: #656b60;
+  --color-line: #dddcd2;
+  --color-accent: #ac4829;
+  --color-accent-dark: #86341d;
+  --color-accent-soft: #f1e3d8;
+  --color-sage: #e8ecdf;
+  --color-green: #38614a;
+  --color-white: white;
+  --color-sidebar: #eeeee5;
+  --color-nav-hover: #e4e6dc;
+  --color-switch-line: #cccfc2;
+  --color-recommended: #e69a70;
+  --color-count-ink: #fff9ef;
+  --color-count-current: #d4a280;
+  --color-count-current-ink: #222b23;
+  --color-track: #d7dace;
+  --color-line-strong: #bdc4b3;
+  --color-check-line: #b9bfae;
+  --color-backdrop: #20282088;
+  --font-serif: Georgia, 'Times New Roman', serif;
+  --font-sans: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  --text-8: 8px;
+  --text-9: 9px;
+  --text-10: 10px;
+  --text-11: 11px;
+  --text-12: 12px;
+  --text-13: 13px;
+  --text-14: 14px;
+  --text-15: 15px;
+  --text-16: 16px;
+  --text-20: 20px;
+  --text-21: 21px;
+  --text-22: 22px;
+  --text-23: 23px;
+  --text-24: 24px;
+  --text-26: 26px;
+  --text-29: 29px;
+  --text-30: 30px;
+  --text-31: 31px;
+  --text-35: 35px;
+  --text-40: 40px;
+  --text-48: 48px;
+  --font-weight-400: 400;
+  --font-weight-500: 500;
+  --font-weight-550: 550;
+  --font-weight-650: 650;
+  --container-main: 1330px;
+  --spacing-sidebar: 240px;
+  --spacing-sidebar-compact: 205px;
+  --spacing-topbar: 88px;
+  --spacing-topbar-compact: 68px;
+  --spacing-topbar-phone: 61px;
+  --spacing-gutter: 52px;
+  --spacing-gutter-compact: 32px;
+  --spacing-gutter-phone: 20px;
+  --shadow-dialog: 0 20px 90px #20282033;
+  --shadow-toast: 0 5px 25px #0002;
+  --paper: var(--color-paper);
+  --surface: var(--color-surface);
+  --ink: var(--color-ink);
+  --muted: var(--color-muted);
+  --line: var(--color-line);
+  --accent: var(--color-accent);
+  --accent-dark: var(--color-accent-dark);
+  --accent-soft: var(--color-accent-soft);
+  --sage: var(--color-sage);
+  --green: var(--color-green);
+  --serif: var(--font-serif);
+  --sans: var(--font-sans);
+  --mono: var(--font-mono);
+}`;
+const GO_BLOCK = `body[data-language='go'] {
+  --color-accent: #22626b;
+  --color-accent-dark: #174a52;
+  --color-accent-soft: #e1ebea;
+  --accent: var(--color-accent);
+  --accent-dark: var(--color-accent-dark);
+  --accent-soft: var(--color-accent-soft);
+}`;
+
+const RENAMED = ['paper', 'surface', 'ink', 'muted', 'line', 'accent-dark', 'accent-soft', 'accent', 'sage', 'green'];
+const COLORS = [
+  ['#fffdf8', 'var(--color-surface)'],
+  ['#eeeee5', 'var(--color-sidebar)'],
+  ['#e4e6dc', 'var(--color-nav-hover)'],
+  ['#cccfc2', 'var(--color-switch-line)'],
+  ['#e69a70', 'var(--color-recommended)'],
+  ['#fff9ef', 'var(--color-count-ink)'],
+  ['#d4a280', 'var(--color-count-current)'],
+  ['#222b23', 'var(--color-count-current-ink)'],
+  ['#d7dace', 'var(--color-track)'],
+  ['#bdc4b3', 'var(--color-line-strong)'],
+  ['#b9bfae', 'var(--color-check-line)'],
+  ['#20282088', 'var(--color-backdrop)'],
+];
+const SHADOWS = [
+  ['0 20px 90px #20282033', 'var(--shadow-dialog)'],
+  ['0 5px 25px #0002', 'var(--shadow-toast)'],
+];
+const SIZES = new Set([8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21, 22, 23, 24, 26, 29, 30, 31, 35, 40, 48]);
+const WEIGHTS = new Set(['400', '500', '550', '650']);
+// [media, selector, property, before, after]: the layout of the shell, one entry per declaration.
+const LAYOUT = [
+  ['', '.app-shell', 'grid-template-columns', '240px minmax(0, 1fr)', 'var(--spacing-sidebar) minmax(0, 1fr)'],
+  ['', '.topbar', 'height', '88px', 'var(--spacing-topbar)'],
+  ['', '.topbar', 'padding', '0 52px', '0 var(--spacing-gutter)'],
+  ['', 'main', 'max-width', '1330px', 'var(--container-main)'],
+  ['', 'main', 'padding', '44px 52px 52px', '44px var(--spacing-gutter) 52px'],
+  ['', '.main-footer', 'max-width', '1330px', 'var(--container-main)'],
+  ['', '.main-footer', 'padding', '20px 52px 26px', '20px var(--spacing-gutter) 26px'],
+  ['', '.session-status', 'max-width', '1330px', 'var(--container-main)'],
+  ['', '.session-status', 'padding', '44px 52px 0', '44px var(--spacing-gutter) 0'],
+  ['(max-width: 1150px)', '.app-shell', 'grid-template-columns', '205px minmax(0, 1fr)', 'var(--spacing-sidebar-compact) minmax(0, 1fr)'],
+  ['(max-width: 1150px)', '.topbar', 'padding', '0 32px', '0 var(--spacing-gutter-compact)'],
+  ['(max-width: 1150px)', 'main', 'padding', '34px 32px', '34px var(--spacing-gutter-compact)'],
+  ['(max-width: 1150px)', '.main-footer', 'padding-left', '32px', 'var(--spacing-gutter-compact)'],
+  ['(max-width: 1150px)', '.main-footer', 'padding-right', '32px', 'var(--spacing-gutter-compact)'],
+  ['(max-width: 1150px)', '.session-status', 'padding', '34px 32px 0', '34px var(--spacing-gutter-compact) 0'],
+  ['(max-width: 850px)', '.topbar', 'height', '68px', 'var(--spacing-topbar-compact)'],
+  ['(max-width: 590px)', '.topbar', 'padding', '0 20px', '0 var(--spacing-gutter-phone)'],
+  ['(max-width: 590px)', '.topbar', 'height', '61px', 'var(--spacing-topbar-phone)'],
+  ['(max-width: 590px)', 'main', 'padding', '29px 20px 35px', '29px var(--spacing-gutter-phone) 35px'],
+  ['(max-width: 590px)', '.main-footer', 'padding', '19px 20px', '19px var(--spacing-gutter-phone)'],
+  ['(max-width: 590px)', '.session-status', 'padding', '29px 20px 0', '29px var(--spacing-gutter-phone) 0'],
+];
+
+const TOKEN_RULES = new Set([':root', "body[data-language='go']"]);
+const applied = new Map(LAYOUT.map((entry) => [entry.join('¦'), 0]));
+
+function rewrite(decl) {
+  const rule = decl.parent;
+  const media = rule.parent.type === 'atrule' ? rule.parent.params : '';
+  for (const entry of LAYOUT) {
+    const [m, selector, property, before, after] = entry;
+    if (m === media && rule.selector === selector && decl.prop === property && decl.value === before) {
+      decl.value = after;
+      applied.set(entry.join('¦'), applied.get(entry.join('¦')) + 1);
+    }
+  }
+  let value = decl.value;
+  for (const name of RENAMED) value = value.split(`var(--${name})`).join(`var(--color-${name})`);
+  for (const name of ['serif', 'sans', 'mono']) value = value.split(`var(--${name})`).join(`var(--font-${name})`);
+  for (const [literal, token] of SHADOWS) if (value === literal) value = token;
+  for (const [literal, token] of COLORS) value = value.replace(new RegExp(literal + '\\b', 'gi'), token);
+  value = value.replace(/(^|[\s(,])white\b/g, '$1var(--color-white)');
+  if (decl.prop === 'font-size') {
+    const size = /^(\d+)px$/.exec(value);
+    if (size && SIZES.has(Number(size[1]))) value = `var(--text-${size[1]})`;
+  }
+  if (decl.prop === 'font-weight' && WEIGHTS.has(value)) value = `var(--font-weight-${value})`;
+  decl.value = value;
+}
+
+for (const file of [stylesFile, shellFile]) {
+  const full = path.join(root, file);
+  const sheet = postcss.parse(fs.readFileSync(full, 'utf8'));
+  sheet.walkRules((rule) => {
+    if (rule.selector === ':root') return rule.replaceWith(postcss.parse(ROOT_BLOCK).first);
+    if (rule.selector === "body[data-language='go']") return rule.replaceWith(postcss.parse(GO_BLOCK).first);
+    if (TOKEN_RULES.has(rule.selector)) return;
+    rule.walkDecls((decl) => {
+      if (!decl.prop.startsWith('--')) rewrite(decl);
+    });
+  });
+  fs.writeFileSync(full, sheet.toString());
+}
+const missing = [...applied].filter(([, count]) => count !== 1).map(([key, count]) => `${key} → ${count}`);
+if (missing.length) {
+  console.error('layout entries not applied exactly once:\n' + missing.join('\n'));
+  process.exitCode = 1;
+}
+```
+
+### 3.7 El multiconjunto resuelto (`resolved-multiset.mjs`, T042 y T044)
+
+El de §3.1, con cada `var()` resuelto por los tokens de `:root` del dist y cada valor normalizado por Lightning CSS, sin las propiedades personalizadas. Así, `font-size:var(--text-12)` y `font-size:12px` son la misma tupla.
+
+```sh
+node "$TMPDIR/f10c-compare/resolved-multiset.mjs" "$TMPDIR/f10c-base" .
+```
+
+```js
+// $TMPDIR/f10c-compare/resolved-multiset.mjs
+// node resolved-multiset.mjs <base root> <compared root>
+// The multiset of css-multiset.mjs with every var() resolved by the custom properties of :root, and each
+// value normalized by Lightning CSS. Custom properties themselves are left out: they are the tokens.
+import fs from 'node:fs';
+import { createRequire } from 'node:module';
+
+function tuples(root) {
+  const require = createRequire(root + '/package.json');
+  const postcss = require('postcss');
+  const { transform } = require('lightningcss');
+  const html = fs.readFileSync(root + '/dist/index.html', 'utf8');
+  const css = /<style\b[^>]*>([\s\S]*?)<\/style>/.exec(html)[1];
+  const parsed = postcss.parse(css);
+  const tokens = new Map();
+  parsed.walkRules((rule) => {
+    if (rule.parent.type !== 'root' || !rule.selectors.includes(':root')) return;
+    for (const decl of rule.nodes) if (decl.type === 'decl' && decl.prop.startsWith('--')) tokens.set(decl.prop, decl.value.trim());
+  });
+  const resolve = (value, depth = 0) => {
+    if (depth > 20) throw new Error('var() cycle in ' + value);
+    return value.replace(/var\(\s*(--[\w-]+)\s*(?:,\s*([^()]*(?:\([^()]*\)[^()]*)*))?\)/g, (whole, name, fallback) => {
+      if (tokens.has(name)) return resolve(tokens.get(name), depth + 1);
+      if (fallback !== undefined) return resolve(fallback, depth + 1);
+      throw new Error('undefined token ' + name);
+    });
+  };
+  const normalize = (prop, value) =>
+    transform({ filename: 'value.css', code: Buffer.from(`a{${prop}:${value}}`), minify: true })
+      .code.toString()
+      .replace(/^a\{/, '')
+      .replace(/\}$/, '');
+  const out = [];
+  parsed.walkRules((rule) => {
+    const context = [];
+    for (let parent = rule.parent; parent && parent.type !== 'root'; parent = parent.parent)
+      if (parent.type === 'atrule') context.unshift('@' + parent.name + ' ' + parent.params);
+    for (const decl of rule.nodes.filter((node) => node.type === 'decl' && !node.prop.startsWith('--'))) {
+      const value = normalize(decl.prop, resolve(decl.value));
+      for (const selector of rule.selectors)
+        out.push([context.join(' | '), selector, value, decl.important ? '!important' : ''].join(' ¦ '));
+    }
+  });
+  return out;
+}
+
+const count = (list) => list.reduce((map, tuple) => map.set(tuple, (map.get(tuple) ?? 0) + 1), new Map());
+const [a, b] = [tuples(process.argv[2]), tuples(process.argv[3])];
+const [ca, cb] = [count(a), count(b)];
+const onlyA = [];
+const onlyB = [];
+for (const [tuple, n] of ca) if ((cb.get(tuple) ?? 0) < n) onlyA.push(tuple + ' ×' + (n - (cb.get(tuple) ?? 0)));
+for (const [tuple, n] of cb) if ((ca.get(tuple) ?? 0) < n) onlyB.push(tuple + ' ×' + (n - (ca.get(tuple) ?? 0)));
+console.log(JSON.stringify({ base: a.length, unit: b.length, onlyBase: onlyA.length, onlyUnit: onlyB.length }));
+for (const tuple of onlyA.slice(0, 20)) console.log('- ' + tuple);
+for (const tuple of onlyB.slice(0, 20)) console.log('+ ' + tuple);
+```
+
+## 4. Lo que va en el PR (T044)
 
 En inglés, con el problema completo:
 
 - **El contexto:** qué dejaron los ports en `styles.css` y qué pide FR-054.
 - **Qué se mudó:** el conteo de la evidencia por clase (`token`, `global`, `base`, `shell`, `single:*` y `orphan`), la ruta de la hoja del shell y su lugar en `main.tsx`, y la partición de `.small-label, .eyebrow, .topbar-label`.
+- **Los tokens:** la tabla de research-f10c.md, R12, los alias que quedan para F15 y el multiconjunto resuelto.
 - **FR-055:** la lista de reglas borradas, cada una con su evidencia, o «0 rules», con el conteo de la evidencia y los centinelas.
 - **Las comparaciones:** el multiconjunto, el barrido (capturas y diferencias), el control de determinismo y los dos controles negativos con sus diferencias.
 - **El tamaño:** `chars` antes y después y su diferencia; el aumento del router es 0.

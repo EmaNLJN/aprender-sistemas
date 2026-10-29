@@ -14,13 +14,16 @@ Quién es dueño de cada regla de CSS y en qué orden entran las hojas al `<styl
 
 | Hoja | Guarda | No guarda |
 | --- | --- | --- |
-| `frontend/styles.css` | Los tokens: las 13 propiedades de `:root` y las tres de `body[data-language='go']`. Las reglas globales: las que no nombran una clase ni un id (el documento, la tipografía, los controles, `[hidden]`, `progress`, `dialog`, la regla de casillas, el `touch-action` y el movimiento reducido). Las clases base: las que usan dos o más páginas, o el shell y una página | Una regla que usa sólo el shell o sólo una página |
+| `frontend/styles.css` | Los tokens, con los nombres del `@theme` de Tailwind v4 (research-f10c.md, R12): 61 en `:root` (`--color-*`, `--font-*`, `--text-*`, `--font-weight-*`, `--container-*`, `--spacing-*` y `--shadow-*`), los 13 nombres de antes de F10c como alias hasta F15, y en `body[data-language='go']` los tres colores de acento y sus tres alias. Las reglas globales: las que no nombran una clase ni un id (el documento, la tipografía, los controles, `[hidden]`, `progress`, `dialog`, la regla de casillas, el `touch-action` y el movimiento reducido). Las clases base: las que usan dos o más páginas, o el shell y una página | Una regla que usa sólo el shell o sólo una página |
 | La hoja del shell | Las reglas que sólo dibuja el shell: la barra lateral, el menú, la barra superior, el pie, el salto al contenido, `#toast`, el aviso de `noscript`, `main` (el contenedor de la página) y lo que la raíz dibuja fuera de las páginas («Tu cuenta», el estado de la sesión) | Una clase que también usa una página |
 | La hoja de cada página | Lo que sólo usa esa página (X3) | — |
 
 «Usar» se mide en el DOM: una regla la usa el dueño del elemento que su selector encuentra en algún estado de la grilla de F10c. El elemento dentro de `#main` es de la página de ese estado; el que está dentro de un diálogo que la página lleva a `<body>`, también; el resto, del shell (quickstart-f10c.md §3.4).
 
 ## Para quien llega después
+
+- **Un valor nuevo de color, tipografía o armado** usa un token de `styles.css` (`var(--color-…)`, `var(--text-…)`), o suma uno con el mismo espacio de nombres; una hoja nueva no usa los alias viejos, que se van con F15.
+- **El tono de Go** cambia `--color-accent`, `--color-accent-dark` y `--color-accent-soft`, y vuelve a declarar sus alias en el mismo bloque: un alias se resuelve en `:root` y no seguiría al idioma.
 
 - **Una regla nueva del shell** (F13, F11b) va a la hoja del shell, al final de su bloque, y no a `styles.css`.
 - **Una clase que pasa a usar una segunda página** se muda de la hoja de su dueño a `styles.css` en su propio commit, con el multiconjunto y el barrido de estilo computado en 0, como en X3.

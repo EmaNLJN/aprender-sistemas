@@ -9,6 +9,7 @@ Todo corrió fuera del repositorio, sin descargar nada, desde scripts en el scra
 - **Las copias:** tres worktrees descartables de `master` en `431c9d90` (F2a, F2b, A2, #67, #76 y F4), con un enlace al `node_modules` de otra copia del mismo `package-lock.json` (las 31 dependencias con la versión exacta del lockfile) y el Chrome Headless Shell de F1. Una es la base, otra el prototipo y la tercera, la de los dos controles negativos. Se borraron al terminar.
 - **El prototipo de la mudanza sobre `master`:** las mismas reglas del shell que el plan muda, cortadas de `styles.css` de `master` con el mismo criterio y pegadas en `frontend/src/app/shell/shell.css`, importada justo después de `styles.css`.
 - **Lo que corrió sobre las dos copias:** el build, las medidas del dist, el multiconjunto de F2b, el barrido de quickstart-f10c.md §3.3 en la grilla que `master` tiene, el control de determinismo, el control negativo del orden, la evidencia de quickstart-f10c.md §3.4, el control de borrado y los siete E2E de T037.
+- **Los tokens (T042):** el codemod de quickstart-f10c.md §3.6 sobre el prototipo, con el multiconjunto resuelto, el barrido y el control negativo de los alias, y sobre la proyección de la base, para comprobar que las 21 entradas del armado se aplican una vez cada una. La trampa de los alias se midió antes en Chromium con una página mínima.
 - **La proyección de la base de F10c:** `styles.css` de `master` menos lo que sacan los planes mergeados de F3 (43 selectores), F9 (116) y F8 (25), más las cuatro reglas que F11a suma al final (`impl-f11a`, `a7b3c71d`), medida con `postcss` 8.5.28 y minificada con `lightningcss` 1.33.0, los dos de `node_modules`.
 - **Lo que no corrió:** la base real de F10c (F3, F5 a F9, F11a completo, F12a, F10a y F10b no están en `master`); los estados de «Tu cuenta», la administración, el ingreso y el error de la sesión, que en `master` no existen; Docker, la CI y macOS.
 
@@ -31,7 +32,7 @@ La escribe T036 con los valores de quickstart-f10c.md §1 y la evidencia de §3.
 
 ## R1. Dónde viven los archivos de F10c y cómo se numeran sus tareas
 
-- **Decisión:** `plan-f10c.md`, `research-f10c.md`, `quickstart-f10c.md`, `tasks-f10c.md` y `contracts/stylesheets-f10c.md`, en `specs/024-f10-shell/`. Las tareas van de T036 a T043.
+- **Decisión:** `plan-f10c.md`, `research-f10c.md`, `quickstart-f10c.md`, `tasks-f10c.md` y `contracts/stylesheets-f10c.md`, en `specs/024-f10-shell/`. Las tareas van de T036 a T044.
 - **Por qué:** F10 se partió en tres (P4), y los tres planes viven en la misma carpeta. F10a numera T001 a T014 y F10b, T015 a T035 (dato del coordinador, 2026-10-28). Seguir desde T036 evita que un commit que nombra una tarea sea ambiguo en la carpeta, como hizo F2b al seguir la numeración de F2a.
 
 ## R2. Qué es cada regla y cómo se decide
@@ -143,7 +144,7 @@ Cada dueño de las dos tablas es un supuesto con su verificación en R11.
 - los tres bloques de 590 px del shell no quedan contiguos (los separan `main:focus` y la impresión, las reglas de `.lab-nav-count` y el segundo bloque de 850 px), y Lightning CSS no los junta;
 - `.topbar-label` partida va donde estaba la regla compartida, antes de `.progress-caption`, y no queda contigua a la otra regla de `.topbar-label`.
 
-**La regla partida.** `.small-label, .eyebrow, .topbar-label` es la única regla de la proyección con selectores de dos clases: `.topbar-label` es del shell y las otras dos, base. FR-054 pide mudar las reglas del shell «enteras»; se lee como cada selector con todas sus declaraciones, que es lo que hicieron F3, F4 y F9 con las reglas de impresión compartidas. El multiconjunto cuenta por selector, así que la partición no da diferencias. La alternativa, dejar la regla entera en `styles.css`, deja un selector del shell en la hoja de la base, contra FR-054. Es la decisión 1 del informe.
+**La regla partida.** `.small-label, .eyebrow, .topbar-label` es la única regla de la proyección con selectores de dos clases: `.topbar-label` es del shell y las otras dos, base. FR-054 pide mudar las reglas del shell «enteras»; se lee como cada selector con todas sus declaraciones, que es lo que hicieron F3, F4 y F9 con las reglas de impresión compartidas. El multiconjunto cuenta por selector, así que la partición no da diferencias. La alternativa, dejar la regla entera en `styles.css`, deja un selector del shell en la hoja de la base, contra FR-054. **Decidido:** el usuario eligió partirla el 2026-10-28 (spec, `## Clarifications`, «Session 2026-10-28 (F10c, al planificar)»).
 
 **Lightning CSS** (Context7): junta reglas contiguas con el mismo selector o las mismas declaraciones, y bloques `@media` contiguos con la misma condición; nunca junta lo que no es contiguo. Al juntar dos reglas con el mismo selector, descarta la declaración que la otra pisa, y el multiconjunto la pierde aunque el estilo computado no cambie (lo encontró F3 con `.favorite-button`).
 
@@ -174,7 +175,7 @@ Cada dueño de las dos tablas es un supuesto con su verificación en R11.
    - **Los nodos de texto partidos** no aparecen: el DOM de la base y el de la rama es el mismo, porque F10c sólo mueve CSS.
    - **El `:hover`:** después de cada preparación, `page.mouse.move(0, 0)`.
    - **El primer salto de línea de `<pre>` y `<textarea>`** no aplica, por lo mismo que los nodos partidos.
-   - **Los `<details>`:** ningún estado abre ni cierra uno.
+   - **Los `<details>`:** el barrido no compara lo de adentro de un `<details>` cerrado, salvo su `<summary>`: su tamaño computado depende de si alguna vez se midió. El prototipo lo encontró en el estado `lesson`, con 6 diferencias de `block-size` (0 contra 204,562 px, en un sentido a 1 600 px y en el otro a 981 px) en una corrida y ninguna en otra; con el salto, 0.
 2. **El doble de la API.** El barrido corre fuera de los fixtures de Playwright, así que instala su propio `context.route('**/api/**')` con las respuestas por omisión del doble de F11a (`installDefaults()`): la sesión con `STUDENT`, o con `ADMIN`, o sin cuenta, o con un 503, según el estado, y la lista de cuentas del E2E de F12a para la administración. Cada pedido sin respuesta se cuenta en `unhandled`, que tiene que quedar vacío.
 3. **La grilla:** 35 estados.
    - **Las ocho vistas en Rust y en Go** (16), con el idioma sembrado en `taller-learning-v1`;
@@ -216,13 +217,15 @@ Cada dueño de las dos tablas es un supuesto con su verificación en R11.
 
 - **El tope:** `BOOT_SIZE_LIMIT`, 1 500 000 en `qa/build-check.ts` (decisión del 2026-10-28, noche). FR-004 y SC-008 todavía dicen 1 250 000: es un hallazgo para el coordinador.
 - **Lo que suma F10c:** los envoltorios de los bloques `@media` repetidos y la regla partida, menos los bloques que quedan vacíos en `styles.css`. La proyección minificada da **+137** caracteres, y el prototipo sobre `master`, +161 (incluye las dos declaraciones que Lightning CSS juntó, R4).
-- **El subpresupuesto:** como mucho +1 000 sobre T036. El script y el marcado del dist no cambian.
+- **Lo que suman los tokens** (T042): el `:root` con 61 tokens y 13 alias, y cada `var(--…)` en lugar de un valor corto. La proyección minificada da **+3 349**; el prototipo sobre `master`, +4 525, porque ahí el codemod también reescribe los tamaños de letra de las reglas que los ports todavía no se llevaron.
+- **El subpresupuesto:** como mucho +1 000 sobre T036 después de la mudanza (T039) y +5 000 al cerrar (T044). El script y el marcado del dist no cambian.
 
 ## R10. Lo que no se hace (YAGNI)
 
-- Renombrar clases, cambiar tokens o reescribir declaraciones.
+- Renombrar clases o reescribir declaraciones más allá de los tokens de R12.
+- Instalar Tailwind o escribir un `@theme`: es F15, con su ADR (el usuario, 2026-10-28).
 - Borrar las reglas sin efecto de `.navigation a:last-child` (R5) o las de las hojas de página.
-- Mudar a la hoja del shell las reglas de «Tu cuenta» que viven en `pages/account/ui/account.css` (`.topbar-actions` y `.account-entry*`): esa hoja es la de su slice (X3), y F10c limpia `styles.css`.
+- Mudar a la hoja del shell las reglas de «Tu cuenta» que viven en `pages/account/ui/account.css` (`.topbar-actions` y `.account-entry*`): esa hoja es la de su slice (X3). **Decidido:** el usuario eligió dejarlas en su hoja el 2026-10-28.
 - Dejar el barrido o la evidencia como checks permanentes: las pruebas permanentes son los E2E y la spec del orden.
 - Partir `styles.css` en más hojas (tokens aparte, por ejemplo).
 
@@ -260,6 +263,58 @@ Lo que este plan supone de la base, con lo que lo confirma en T036 (paso entre p
 - **Las E2E de F10a** que tocan lo mismo fijan comportamiento, no CSS: el salto al contenido mueve el foco a `#main` (`shell-navigation.spec.ts`) y el toast muestra su texto y la clase `visible` (`shell-sidebar.spec.ts`). Las siete de T037 fijan valores de las reglas: no se duplican.
 - **La numeración:** F10a usa T001 a T014 y F10b, T015 a T035.
 
+## R12. Los tokens para el `@theme` de Tailwind v4
+
+**La decisión** (el usuario, 2026-10-28): Tailwind es un ítem propio, F15, después de F10 y con su ADR. F10c termina la limpieza en CSS común y sin cambio visible, y deja los colores, la tipografía y los espacios del shell y de la base como variables CSS con los nombres que espera el `@theme` de v4. Extiende las variables de `:root` en lugar de inventar otras, y la paridad sigue en 0.
+
+**Lo que dice Tailwind v4** (Context7, `/tailwindlabs/tailwindcss.com`):
+
+- un token es una variable de un espacio de nombres del `@theme`, y cada espacio genera utilidades: `--color-*` (`bg-*`, `text-*`), `--font-*` (`font-sans`), `--text-*` (`text-xl`), `--font-weight-*`, `--tracking-*`, `--leading-*`, `--breakpoint-*`, `--container-*` (`max-w-*`), `--spacing-*` y la base `--spacing`, `--radius-*`, `--shadow-*` y otros;
+- los nombres dentro de cada espacio son libres;
+- el `@theme` va en el nivel superior, nunca dentro de un selector ni de un `@media`; para cambiar un valor en tiempo de ejecución (el tono de Go) se redefine la variable con CSS común, y las utilidades la siguen, porque usan `var(--color-accent)`;
+- un `text-*` también fija el interlineado con `--text-*--line-height`.
+
+**Los tokens,** en el `:root` de `styles.css` (el bloque entero está en el plan, T042):
+
+| Espacio | Tokens | De dónde salen |
+| --- | --- | --- |
+| `--color-*` (22) | `paper`, `surface`, `ink`, `muted`, `line`, `accent`, `accent-dark`, `accent-soft`, `sage` y `green` | Los diez colores de hoy, renombrados |
+| | `white` (`white`), `sidebar` (`#eeeee5`), `nav-hover` (`#e4e6dc`), `switch-line` (`#cccfc2`), `recommended` (`#e69a70`), `count-ink` (`#fff9ef`), `count-current` (`#d4a280`), `count-current-ink` (`#222b23`), `track` (`#d7dace`), `line-strong` (`#bdc4b3`), `check-line` (`#b9bfae`) y `backdrop` (`#20282088`) | Los colores literales del shell y de la base. `#fffdf8`, el color del texto de `.button`, es el valor de `surface` y usa ese token: el tono de Go no lo cambia |
+| `--font-*` (3) | `serif`, `sans` y `mono` | Las tres familias de hoy, renombradas |
+| `--text-*` (21) | `8`, `9`, `10`, `11`, `12`, `13`, `14`, `15`, `16`, `20`, `21`, `22`, `23`, `24`, `26`, `29`, `30`, `31`, `35`, `40` y `48`, en px | Cada `font-size` del shell y de la base |
+| `--font-weight-*` (4) | `400`, `500`, `550` y `650` | Cada `font-weight` del shell y de la base |
+| `--container-*` (1) | `main`: 1 330 px | El ancho máximo de `main`, del pie y del estado de la sesión |
+| `--spacing-*` (8) | `sidebar` (240 px) y `sidebar-compact` (205 px); `topbar` (88), `topbar-compact` (68) y `topbar-phone` (61); `gutter` (52), `gutter-compact` (32) y `gutter-phone` (20) | Las medidas del armado del shell en cada ancho: las columnas, los altos de la barra superior y los márgenes laterales de la barra superior, `main`, el pie y el estado de la sesión |
+| `--shadow-*` (2) | `dialog` y `toast` | Las dos sombras, que llevan color |
+
+Son 61 tokens: 13 renombrados y 48 nuevos. Los nombres por medida (`--text-12`, `--font-weight-550`) no inventan una escala que el diseño de hoy no tiene: hay 21 tamaños sueltos, y la escala es decisión de F15.
+
+**Lo que queda literal,** para F15: los demás rellenos y márgenes (43 valores distintos, casi ninguno múltiplo de 4), los radios, el interletrado, el interlineado y las medidas sueltas. Llevarlos a tokens ahora obligaría a elegir una escala o nombres con decimales y negativos (`--tracking-1.4px` no es un nombre válido sin escaparlo).
+
+**Los alias.** Las hojas de página usan `var(--accent)`, `var(--ink)` y los demás nombres de hoy, y renombrarlos es trabajo de F15. Por eso los trece nombres de hoy quedan en `:root` como alias (`--accent: var(--color-accent)`), y sólo `styles.css` y la hoja del shell usan los nuevos.
+
+**La trampa de los alias, medida en Chromium al planificar:** un alias declarado en `:root` se resuelve en `:root` y se hereda ya resuelto. Con `body[data-language='go'] { --color-accent: #22626b }` solamente, `--accent` sigue en `#ac4829` dentro de `<body>`, y todo lo que lo usa queda en el tono de Rust. Por eso el bloque de Go vuelve a declarar los tres alias de color. El multiconjunto resuelto no lo ve (resuelve con `:root`); el barrido sí, y su control negativo lo prueba (quickstart-f10c.md §3.5 d).
+
+**Las pruebas:**
+
+- **el multiconjunto resuelto** (quickstart-f10c.md §3.7): cada `var()` resuelto con los tokens de `:root` del dist y cada valor normalizado por Lightning CSS, sin las propiedades personalizadas. Tiene que dar lo mismo antes y después;
+- **el barrido:** Chromium enumera las propiedades personalizadas en el estilo computado, así que cada token nuevo aparece en cada elemento. El barrido cuenta aparte las propiedades `--*` que la base no tiene (`newTokens`, 61) y compara todo lo demás, también los alias;
+- **la búsqueda de T042:** ningún color literal ni nombre viejo en las declaraciones de las dos hojas, fuera de los bloques de tokens.
+
+**El prototipo sobre `master`** (el codemod sobre la mudanza): el multiconjunto resuelto da las mismas 4 301 tuplas que la base, salvo las dos de `.favorite-button` que Lightning CSS juntó con la mudanza (R4). El codemod sobre la proyección de la base aplica las 21 entradas del armado exactamente una vez. El barrido está en «Mediciones de sólo lectura».
+
+**Qué toma F15 de acá:**
+
+1. **El bloque de tokens** pasa del `:root` al `@theme`, tal cual: los nombres ya son de v4. Lo que no tiene que generar utilidades, si lo hay, queda en `:root`.
+2. **El tono de Go** queda como CSS común sobre `body[data-language='go']`, redefiniendo `--color-accent`, `--color-accent-dark` y `--color-accent-soft`; las utilidades lo siguen solas.
+3. **Los alias** se borran cuando las hojas de página usen los nombres nuevos.
+4. **Los tamaños:** `text-12` también fija el interlineado con `--text-12--line-height`. Hoy las reglas fijan el tamaño solo, así que F15 define esos interlineados o usa `text-[length:var(--text-12)]` para no cambiar el aspecto.
+5. **Los espacios:** elige la base (`--spacing: 1px` reproduce los píxeles de hoy con `p-34`) o una escala; los nombres del armado (`gutter`, `topbar`, `sidebar`) ya están.
+6. **Los anchos:** el CSS de hoy es de escritorio primero (`max-width`: 1 150, 850, 650 y 590 px) con dos de `min-width` (981 y 1 550 px). Los `--breakpoint-*` de v4 son de móvil primero, así que F15 decide cómo los traduce (las variantes `max-*` o la inversión).
+7. **`--color-white`:** vale `white`, el mismo color que el `#fff` del tema por omisión de v4.
+8. **Lo literal:** los radios, el interletrado, el interlineado y los demás espacios.
+9. **El preflight de Tailwind** cambia los estilos base del documento: es parte del ADR de F15, con su propio barrido.
+
 ## Context7
 
 El servidor `mcp__context7__*` agotó la cuota del mes; se usó el segundo (`mcp__44441c24-…`), el 2026-10-28.
@@ -274,7 +329,10 @@ El servidor `mcp__context7__*` agotó la cuota del mes; se usó el segundo (`mcp
 | Vitest | 5.0.3 | `/vitest-dev/vitest/v5.0.3` | Correr un proyecto con `--project` | `--project <nombre>` filtra los proyectos de `test.projects` | No: la spec del orden corre en el proyecto `node` de `frontend/vitest.config.ts` |
 | PostCSS | 8.5.28 | `/postcss/postcss` (8.5.31, la única que tiene) | `walkRules`, `rule.selectors` y las posiciones | `walkRules` recorre las reglas anidadas; cada nodo tiene `source.start` y `source.end` con `offset` | No; la diferencia de versión es de parche y no cambia esas API |
 
-No aplican, porque F10c no los usa: React 19, Testing Library, jsdom, fishery, Zustand, nuqs y React Hook Form.
+| Tailwind CSS | v4 (no está instalado: lo instala F15) | `/tailwindlabs/tailwindcss.com` | Los espacios de nombres del `@theme` | `--color-*`, `--font-*`, `--text-*`, `--font-weight-*`, `--tracking-*`, `--leading-*`, `--breakpoint-*`, `--container-*`, `--spacing-*` (y la base `--spacing`), `--radius-*`, `--shadow-*` y otros; los nombres dentro de cada uno son libres | Sí: los nombres de los tokens de T042 (R12) |
+| Tailwind CSS | v4 | `/tailwindlabs/tailwindcss.com` | `@theme` contra `:root`, `@theme inline` y `--text-*--line-height` | El `@theme` va en el nivel superior y no se anida; un valor que cambia en tiempo de ejecución se redefine con CSS común; `text-*` fija también el interlineado | Sí: el bloque de Go queda como CSS común, y las notas para F15 (R12) |
+
+También se leyó `.agents/skills/tailwind-design-system/SKILL.md` (la jerarquía de tokens y la configuración en CSS de v4). No aplican, porque F10c no los usa: React 19, Testing Library, jsdom, fishery, Zustand, nuqs y React Hook Form.
 
 ## Mediciones de sólo lectura
 
@@ -297,6 +355,8 @@ Sobre las copias descartables de `431c9d90`:
 | El control negativo del orden (§3.5 b) | El multiconjunto en 0 y 0. El barrido, 342 diferencias a 590 y 375 px y 0 a 850 px: `.sidebar` pasa de `display: flex` a `grid` (y de 204 a 163 px de alto) y la barra superior, de 61 a 68 px |
 | El control de borrado (§3.5 c) | 5 diferencias, todas en el estado `toast`: `opacity` 1 → 0 y el `transform`, en pantalla y en impresión. La evidencia da `#toast.visible` usada en las 15 capturas de ese estado y en ninguna otra |
 | Los siete E2E de T037 | 7 de 7 en verde contra la base y contra el prototipo; 7 de 7 en rojo sin el import de `styles.css` |
+| Los tokens (T042, el codemod sobre la mudanza) | El multiconjunto resuelto: 4 303 tuplas en la base y 4 301 en el prototipo, con las mismas dos de `.favorite-button` de R4 como única diferencia. El barrido: 403 capturas (31 estados, seis anchos y la impresión), `newTokens` 61 y 6 diferencias, todas de lo de adentro de los `<details>` cerrados del estado `lesson`; con el salto de R6, 0. El HTML sube 4 525 caracteres más (R9) |
+| El control negativo de los alias (§3.5 d) | El multiconjunto resuelto en 0 y 0; el barrido, 3 198 diferencias, todas en `campana-go`: `--accent` vuelve a `#ac4829` y lo que la hoja de la campaña pinta con él, al tono de Rust |
 | La cobertura de Chromium | Una entrada, con el texto exacto del `<style>` del dist (`coverageMatchesStyle: true`) |
 
 **La evidencia sobre el prototipo** (369 selectores de las dos hojas): en la hoja del shell, 85 `shell` y `.button.dark` como `orphan`, porque en `master` no la usa nadie (S3). En `styles.css`, 2 `token`, 48 `global`, 47 `base`, 42 `single:library`, 27 `single:method`, 112 `single:route` y 5 `orphan`. Las cuentas cierran con los planes de los ports:
