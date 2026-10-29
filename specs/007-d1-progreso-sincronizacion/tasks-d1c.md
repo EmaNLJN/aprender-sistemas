@@ -23,7 +23,7 @@
 ## Phase 3: User Story 2 - Trabajo en dos dispositivos y todo converge (Priority: P1)
 
 - [ ] T013 [P] [US2] La vinculación del almacenamiento (`shared/lib/progress-storage.ts`, `versioned-storage.ts`)
-- [ ] T014 [P] [US2] Las entidades exportan su clave y su parser; la guarda R4 admite el armado
+- [ ] T014 [US2] Las entidades exportan su clave y su parser; la guarda R4 admite el armado
 - [ ] T015 [US2] La versión publicada, el contexto real y los adaptadores (`frontend/src/app/progress-sync/`)
 - [ ] T016 [US2] El motor único y la etapa `progressStage`
 - [ ] T017 [US2] La etapa en `main.tsx` y `load-order-check`, `afterPublish` y `boot-check`

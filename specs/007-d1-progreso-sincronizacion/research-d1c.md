@@ -160,7 +160,7 @@ Cada decisión dice qué se eligió, por qué, qué se descartó y cómo se veri
 ## R23. D1c entra en servicio con F11d
 
 - **El problema.** Con la costura vinculada, el progreso de un alumno que hoy está en las claves v1 deja de verse hasta que lo importa, y la pregunta la dibuja F11d.
-- **Decisión (decisión del usuario 2, con recomendación).** Las unidades 1, 2 y 4 se pueden integrar antes: no cambian lo que el alumno ve. La unidad 3 (la etapa y la vinculación) y la 5 se integran en la misma entrega que F11d, como PR apilados que se mergean seguidos.
+- **Decisión (decisión del usuario 2, con recomendación).** Las unidades 1 y 2 se pueden integrar antes: no cambian lo que el alumno ve. La 3 (la etapa y la vinculación), la 4 (que importa el motor único de la 3) y la 5 se integran en la misma entrega que F11d, como PR apilados que se mergean seguidos. El envoltorio de la 4 conserva lo que hace F8 mientras el motor no arrancó (`isRunning()`): si la etapa falla, Método sigue como hoy.
 
 ## R24. Las enmiendas de la spec
 

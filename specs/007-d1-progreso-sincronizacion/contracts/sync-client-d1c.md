@@ -236,7 +236,7 @@ export function useSignOutProgress(): SignOutProgress | null;
 | `applyImport(plan)` | La fusión local | `POST /api/progress/import` con `source: 'export'`, bajo la guarda. Resuelve `{notice}` con uno de los textos de la sección 8 |
 | `resetAll(confirmation)` | El paso del servidor de F8 y el borrado local | Lo mismo, bajo la guarda y sin encolar nada: limpia el espacio de la cuenta (nunca las claves v1, FR-074 enmendado), descarta la cola, carga la foto de la época nueva y deja `epochChange` en `null` |
 
-Con la guarda ocupada, `applyImport` resuelve `{notice: BUSY}` y `resetAll`, `{refusal}` con `generalMessages: [BUSY]`.
+Con la guarda ocupada, `applyImport` resuelve `{notice: BUSY}` y `resetAll`, `{refusal}` con `generalMessages: [BUSY]`. Mientras el motor no arrancó (`isRunning()` en `false`: antes de la etapa, sin cuenta o si la etapa falló), los dos hacen lo de F8, sin cambios.
 
 ## 7. El archivo de lo no enviado
 

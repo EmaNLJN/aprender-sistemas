@@ -14,7 +14,7 @@
 >
 > - **Qué leer.** Leé completas las «Restricciones globales», las «Reglas para todos los agentes», la sección 0 y la sección de tu unidad. `tasks-d1c.md` tiene una línea por tarea (T001 a T028) y remite acá.
 > - **Dónde están los archivos.** El coordinador pidió los archivos de D1c en `specs/007-d1-progreso-sincronizacion/`, con `d1c` en el nombre; los de D1a y D1b quedan como están (research-d1b.md, R23, explica por qué los scripts de Spec Kit no sirven con nombres sufijados).
-> - **El código ya corrió, en parte.** Los módulos de las unidades 1 y 2, `progress-storage`, el cambio de `versioned-storage`, el puerto de `signOut` y el envoltorio de `app/progress-backup` corrieron en una copia descartable del árbol, con TypeScript 6.0.2, Vitest 5.0.3, Zustand 5.0.15, fishery 2.4.0, el ESLint y el Prettier del repositorio: 114 pruebas en verde, `tsc` y ESLint sin avisos, y `sha256Hex` igual a los 274 `starterHash` de `build/curriculum.meta.json`. La capa `app/progress-sync` pasó `tsc` contra tipos de reemplazo de las entidades. **No corrieron:** los cambios en las entidades, `boot-check`, los E2E, la integración con `main.tsx` y nada contra la base real (F11a completa, A3, A4 y F8 no están en `master`). T001 contrasta cada firma con la base.
+> - **El código ya corrió, en parte.** Los módulos de las unidades 1 y 2, `progress-storage`, el cambio de `versioned-storage`, el puerto de `signOut` y el envoltorio de `app/progress-backup` corrieron en una copia descartable del árbol, con TypeScript 6.0.2, Vitest 5.0.3, Zustand 5.0.15, fishery 2.4.0, el ESLint y el Prettier del repositorio: 115 pruebas en verde, `tsc` y ESLint sin avisos, y `sha256Hex` igual a los 274 `starterHash` de `build/curriculum.meta.json`. La capa `app/progress-sync` pasó `tsc` contra tipos de reemplazo de las entidades. **No corrieron:** los cambios en las entidades, `boot-check`, los E2E, la integración con `main.tsx` y nada contra la base real (F11a completa, A3, A4 y F8 no están en `master`). T001 contrasta cada firma con la base.
 
 ## Summary
 
@@ -209,7 +209,7 @@ Cinco entradas o fallas que la spec implica y que ninguna prueba de una tarea ej
 
 **Paralelismo.** T013 y T014 (S) pueden correr a la vez que T010 y T011 (E): tocan archivos disjuntos. `main.tsx`, `package.json`, las configuraciones y la documentación los integra K.
 
-**La entrada en servicio (decisión del usuario 2).** U1, U2 y U4 no cambian lo que el alumno ve mientras U3 no vincule el espacio. U3 y U5 se integran en la misma entrega que F11d (research-d1c.md, R23).
+**La entrada en servicio (decisión del usuario 2).** U1 y U2 no cambian lo que el alumno ve y se pueden integrar antes. U3 (que vincula el espacio), U4 (que importa `appProgressSync` de U3) y U5 se integran en la misma entrega que F11d (research-d1c.md, R23). Aun así, el envoltorio de U4 conserva lo que hace F8 mientras el motor no arrancó (`isRunning()`), así que una falla de la etapa no rompe Método.
 
 ## Reglas para todos los agentes
 
@@ -4423,6 +4423,7 @@ export type ProgressStores = { readonly [A in ProgressAreaName]: AreaStore<Progr
 export interface Scheduler { now(): number; setTimeout(run: () => void, delayMs: number): unknown; clearTimeout(handle: unknown): void }
 export interface BootOptions { /* create-progress-sync.ts */ }
 export interface ProgressSyncEngine extends ProgressSync {
+  isRunning(): boolean;
   boot(options: BootOptions): Promise<void>;
   start(): void;
   resume(): void;
@@ -5485,6 +5486,7 @@ export interface ProgressSyncDependencies {
 }
 
 export interface ProgressSyncEngine extends ProgressSync {
+  isRunning(): boolean;
   boot(options: BootOptions): Promise<void>;
   start(): void;
   resume(): void;
@@ -6120,6 +6122,7 @@ export function createProgressSync(dependencies: ProgressSyncDependencies): Prog
 
   return {
     state,
+    isRunning: () => session !== null,
     boot,
     start,
     flushNow,
@@ -6625,14 +6628,14 @@ export const SYSTEMS_PROGRESS_KEY = 'taller-systems-v1';
 
 **Archivos:** `frontend/src/app/progress-sync/content-version.ts`, `progress-context.ts` (+ `progress-context.spec.ts`) y `store-adapters.ts` (+ `store-adapters.spec.ts`).
 
-**Consume:** `getContent()` y `Content` (`app/content/content.ts`); `MILESTONE_IDS`, `blankRouteProgress` y `routeStore` (`entities/guide`); `blankLabState` y `labStore` (`entities/exercise`); `campaignEngine`; `systemsEngine`; las constantes de T014; `sha256Hex` (T002); `blankSnapshot` y los tipos de `features/progress-sync`.
+**Consume:** `getContent()` y `Content` (`app/content/content.ts`); `routeStore` (`entities/guide`) y `labStore` (`entities/exercise`), sólo en `store-adapters.ts`; `campaignEngine`; `systemsEngine`; las constantes de T014; `sha256Hex` (T002); `blankSnapshot` y los tipos de `features/progress-sync`.
 
 **Produce:**
 
 ```ts
 export function rememberPublishedVersion(version: string): void;
 export function publishedVersion(): string | null;
-export function createProgressContext(content: Content, contentVersion: string, blankSnapshot: () => ProgressSnapshot): ProgressContext;
+export function createProgressContext(content: Content, contentVersion: string, blankSnapshot: () => ProgressSnapshot, milestoneIds: readonly string[]): ProgressContext;
 export interface OpenableArea<S> { readonly key: string; readOpen(): S; applyOpen(state: S): void; subscribe(listener: () => void): () => void }
 export function areaStore<S>(area: OpenableArea<S>, space: StorageLike, blank: () => S): AreaStore<S>;
 export function progressStores(space: StorageLike, blank: () => ProgressSnapshot): ProgressStores;
@@ -6645,8 +6648,6 @@ export function progressStores(space: StorageLike, blank: () => ProgressSnapshot
    ```ts
    // frontend/src/app/progress-sync/progress-context.spec.ts
    import { describe, expect, it } from 'vitest';
-   import { blankRouteProgress } from '../../entities/guide';
-   import { blankLabState } from '../../entities/exercise';
    import { blankSnapshot } from '../../features/progress-sync';
    import type { Content } from '../content/content';
    import { createProgressContext } from './progress-context';
@@ -6678,7 +6679,7 @@ export function progressStores(space: StorageLike, blank: () => ProgressSnapshot
    } as unknown as Content;
 
    describe('createProgressContext', () => {
-     const context = createProgressContext(content, 'v', blankSnapshot);
+     const context = createProgressContext(content, 'v', blankSnapshot, ['rust-memory']);
 
      it('knows the published references and translates step keys both ways', () => {
        expect([context.knowsExercise('rust-01'), context.knowsExercise('rust-99')]).toEqual([true, false]);
@@ -6686,6 +6687,7 @@ export function progressStores(space: StorageLike, blank: () => ProgressSnapshot
        expect([context.knowsGuideStep('rust-1-1'), context.knowsGuideResource('book')]).toEqual([true, true]);
        expect([context.stepKeyAt('ws-cache', 'go', 1), context.stepPositionOf('ws-cache', 'rust', 'e2')]).toEqual(['e2', 1]);
        expect(context.knowsObjective('ws-cache', 'rust', 'hit')).toBe(true);
+       expect([context.knowsMilestone('rust-memory'), context.knowsMilestone('memory')]).toEqual([true, false]);
      });
 
      it('hashes the starter as tools/content does, and grades with the published answers', () => {
@@ -6693,10 +6695,24 @@ export function progressStores(space: StorageLike, blank: () => ProgressSnapshot
        expect(context.starterHashOf('rust-01')).toBe('e287c4962f0fd1c2228c1cdc51085f5a8b526e148fd22a5a5dd8683d11f0a13d');
        expect([context.predictionAnswerOf('rust-01'), context.checkpointAnswerOf('rust-world-1'), context.workshopAnswerOf('ws-cache', 'go')]).toEqual([2, 1, 0]);
      });
+   });
+   ```
 
+   El estado en blanco del motor tiene que ser el de los almacenes. Esa comparación importa valores de dos índices de entidades, que R4 sólo admite en los dos archivos del armado; por eso va en una spec de la feature, que la guarda no limita:
+
+   ```ts
+   // frontend/src/features/progress-sync/model/blank-snapshot.spec.ts
+   import { describe, expect, it } from 'vitest';
+   import { blankLabState } from '../../../entities/exercise';
+   import { blankRouteProgress } from '../../../entities/guide';
+   import { blankSnapshot } from './progress-snapshot';
+
+   describe('blankSnapshot', () => {
      it('starts from the same blank state as the stores', () => {
        expect(blankSnapshot().route).toEqual(blankRouteProgress());
        expect(blankSnapshot().lab).toEqual(blankLabState());
+       expect(blankSnapshot().campaign).toEqual({ version: 1, seals: {}, checkpoints: {} });
+       expect(blankSnapshot().systems).toEqual({ version: 1, records: {} });
      });
    });
    ```
@@ -6781,7 +6797,6 @@ export function publishedVersion(): string | null {
 `frontend/src/app/progress-sync/progress-context.ts`:
 
 ```ts
-import { MILESTONE_IDS } from '../../entities/guide';
 import type { Language, ProgressContext, ProgressSnapshot } from '../../features/progress-sync';
 import { sha256Hex } from '../../shared/lib/sha256-hex';
 import type { Content } from '../content/content';
@@ -6794,6 +6809,7 @@ export function createProgressContext(
   content: Content,
   contentVersion: string,
   blankSnapshot: () => ProgressSnapshot,
+  milestoneIds: readonly string[],
 ): ProgressContext {
   const exercises = new Map(
     [
@@ -6844,7 +6860,7 @@ export function createProgressContext(
     knowsWorld: (worldId) => worlds.has(worldId),
     knowsGuideStep: (stepId) => guideSteps.has(stepId),
     knowsGuideResource: (resourceId) => resources.has(resourceId),
-    knowsMilestone: (itemKey) => MILESTONE_IDS.includes(itemKey),
+    knowsMilestone: (itemKey) => milestoneIds.includes(itemKey),
     knowsWorkshop,
     knowsObjective: (workshopId, language, objectiveKey) =>
       knowsWorkshop(workshopId, language) &&
@@ -7005,7 +7021,7 @@ export function progressStores(space: StorageLike, blank: () => ProgressSnapshot
 }
 ```
 
-4. Verde: 3 y 3 pruebas. Checks, y `node qa/seams-guard-check.ts` con los dos archivos del armado. Commit: `feat(progress-sync): the published content and the four stores as the engine sees them`.
+4. Verde: 2, 1 y 3 pruebas. Checks, y `node qa/seams-guard-check.ts` con los dos archivos del armado (`progress-context.ts` no importa valores de las entidades: recibe los hitos). Commit: `feat(progress-sync): the published content and the four stores as the engine sees them`.
 
 ### Tarea T016 · El motor único y la etapa de arranque (S)
 
@@ -7055,7 +7071,7 @@ export const progressStage: BootStage; // name: 'progressStage'
 ```ts
 import { campaignEngine, CAMPAIGN_PROGRESS_KEY } from '../../entities/campaign';
 import { exerciseCatalog, LAB_PROGRESS_KEY, parseSavedLab } from '../../entities/exercise';
-import { parseRouteProgress, ROUTE_PROGRESS_KEY } from '../../entities/guide';
+import { MILESTONE_IDS, parseRouteProgress, ROUTE_PROGRESS_KEY } from '../../entities/guide';
 import { sessionStore } from '../../entities/session';
 import { SYSTEMS_PROGRESS_KEY, systemsEngine } from '../../entities/systems-workshop';
 import {
@@ -7178,7 +7194,7 @@ export async function bootProgressSync(
     userId,
     mode,
     space,
-    context: createProgressContext(getContent(), contentVersion, blankSnapshot),
+    context: createProgressContext(getContent(), contentVersion, blankSnapshot, MILESTONE_IDS),
     v1: {
       candidate: local === null ? null : readV1Candidate(local, V1_KEYS),
       keys: V1_KEYS,
@@ -7295,7 +7311,7 @@ export const progressStage: BootStage = {
    ```
 
    `CONTENT_VERSION` es la del meta, como en el doble de F11a; el `fetch` del servidor pasa el cuerpo parseado a cada respuesta (`PROGRESS_API[route](init?.body ? JSON.parse(String(init.body)) : undefined)`). Si F8 usaba `respond(…)` de A3, se mantiene esa forma y sólo cambia el cuerpo.
-   En `qa/lib/boot-harness.ts`, `bootApp(storage?, options?)` suma `options.rawStorage`: sin él, cada clave de `storage` que empieza con `taller-` y no con `taller-v2` se siembra como `taller-v2:41:<clave>`, y `harness.storage` se lee igual (un `Map` con las claves reales). Suma `harness.progressKey(key)` → `taller-v2:41:${key}`, para los escenarios que leen una clave de un almacén.
+   En `qa/lib/boot-harness.ts`, `bootApp(storage?, options?)` suma `options.rawStorage`: sin él, cada una de las cuatro claves v1 y de sus ranuras de respaldo (`<clave>`, `<clave>:respaldo` y `<clave>:respaldo-2` a `-5`, con `backupKeysFor`) se siembra como `taller-v2:41:<clave>`, y cualquier otra clave (por ejemplo `taller-v1-importado:*`) tal cual, y `harness.storage` se lee igual (un `Map` con las claves reales). Suma `harness.progressKey(key)` → `taller-v2:41:${key}`, para los escenarios que leen una clave de un almacén.
 5. **Los escenarios que leen o siembran claves v1** (la lista de T001). Cada uno pasa a leer `harness.progressKey(KEY)` donde leía `KEY`; la siembra no cambia, porque `bootApp` traduce. `assertQuietBoot` sigue igual: compara `harness.storage` con lo sembrado, ya traducido. Si un escenario espera las claves v1 borradas después de «Borrar todo» (el de F8), ahora espera las claves del espacio borradas y las v1 intactas: es el cambio del FR-074 enmendado, y va en la lista que aprueba el usuario.
 6. Verde: `node qa/boot-check.ts`, `node qa/load-order-check.ts`, `npm run build` y el tamaño de `dist/index.html` bajo 1 500 000. Checks. Commits: `feat(app): the progress stage runs between the content gate and the views` (pasos 2 y 3) y `test(qa): boot-check boots with the account space and keeps the v1 keys untouched` (pasos 1, 4 y 5).
 
@@ -7311,7 +7327,7 @@ La compuerta de la sección 0, con `npm run build` y el tamaño. Además, `npm r
 
 **Consume:** `ProgressBackup`, `ProgressImportPlan`, `ResetOutcome` y `ResetRefusal` de `features/progress-backup` (F8, `amend-cuenta` `191e5974`, contracts/method-interfaces.md §1); `BUSY` y `ProgressSyncEngine` de `features/progress-sync`.
 
-**Produce:** `withProgressSync(backup: ProgressBackup, sync: Pick<ProgressSyncEngine, 'exclusive' | 'withoutEnqueuing' | 'importFile' | 'afterOwnReset'>): ProgressBackup` (contracts/sync-client-d1c.md §6).
+**Produce:** `withProgressSync(backup: ProgressBackup, sync: Pick<ProgressSyncEngine, 'isRunning' | 'exclusive' | 'withoutEnqueuing' | 'importFile' | 'afterOwnReset'>): ProgressBackup` (contracts/sync-client-d1c.md §6). Mientras el motor no arrancó (antes de U3, sin cuenta o si la etapa falló), el envoltorio hace lo de F8, sin cambios.
 
 **Pasos:**
 
@@ -7342,8 +7358,9 @@ function fakeBackup(events: string[]): ProgressBackup {
   };
 }
 
-function fakeSync(events: string[], busy = false) {
+function fakeSync(events: string[], busy = false, running = true) {
   return {
+    isRunning: () => running,
     exclusive: async <T>(
       kind: 'import' | 'reset',
       task: () => Promise<T>,
@@ -7399,6 +7416,14 @@ describe('withProgressSync', () => {
     expect(outcome).toEqual({ refusal: expect.objectContaining({ generalMessages: [BUSY] }) });
     expect(events).toEqual(['exclusive reset']);
   });
+
+  it('keeps what F8 does while the engine has not booted', async () => {
+    const events: string[] = [];
+    const backup = withProgressSync(fakeBackup(events), fakeSync(events, false, false));
+    await backup.applyImport(backup.planImport('{"version":1}'));
+    await backup.resetAll({ password: 'secreta' });
+    expect(events).toEqual(['local import', 'reset secreta']);
+  });
 });
 ```
 
@@ -7426,11 +7451,12 @@ const BUSY_REFUSAL: ResetRefusal = {
 
 type SyncForBackup = Pick<
   ProgressSyncEngine,
-  'exclusive' | 'withoutEnqueuing' | 'importFile' | 'afterOwnReset'
+  'isRunning' | 'exclusive' | 'withoutEnqueuing' | 'importFile' | 'afterOwnReset'
 >;
 
 // D1c reimplements the import and «Borrar todo» of the feature without touching Método (F8):
-// the import goes to the server, and the reset enqueues nothing and loads the new epoch.
+// the import goes to the server, and the reset enqueues nothing and loads the new epoch. While
+// the engine has not booted, Método keeps what F8 does.
 export function withProgressSync(backup: ProgressBackup, sync: SyncForBackup): ProgressBackup {
   const texts = new WeakMap<ProgressImportPlan, string>();
   return {
@@ -7442,10 +7468,11 @@ export function withProgressSync(backup: ProgressBackup, sync: SyncForBackup): P
     },
     async applyImport(plan) {
       const text = texts.get(plan);
-      if (text === undefined) return backup.applyImport(plan);
+      if (text === undefined || !sync.isRunning()) return backup.applyImport(plan);
       return { notice: await sync.importFile(text) };
     },
     resetAll(confirmation) {
+      if (!sync.isRunning()) return backup.resetAll(confirmation);
       return sync.exclusive<ResetOutcome>(
         'reset',
         async () => {
@@ -7473,7 +7500,7 @@ export function withProgressSync(backup: ProgressBackup, sync: SyncForBackup): P
    ```
 
    con `import { appProgressSync } from '../progress-sync/app-progress-sync';` y `import { withProgressSync } from './with-progress-sync';`. Si F9 ya retiró `registerSessionReset` (F8, plan :367-399), el `return` es `withProgressSync(backup, appProgressSync())`.
-5. Verde: 3 pruebas; `node qa/app-shell-check.ts` sigue en verde (construye su propia instancia con áreas falsas); `node qa/seams-guard-check.ts`. Checks. Commit: `feat(progress-backup): import through the API and reset without touching the v1 keys`.
+5. Verde: 4 pruebas; `node qa/app-shell-check.ts` sigue en verde (construye su propia instancia con áreas falsas); `node qa/seams-guard-check.ts`. Checks. Commit: `feat(progress-backup): import through the API and reset without touching the v1 keys`.
 
 ### Tarea T020 · El puerto de «Salir»
 
