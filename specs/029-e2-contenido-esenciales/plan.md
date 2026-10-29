@@ -117,7 +117,7 @@ Lo que el revisor mira primero, en cada PR:
 - el bloque de B3 del cuerpo, con `startedAt` posterior a la fecha de aprobación del usuario;
 - `git diff origin/master...HEAD -- qa/e2e`.
 
-**Lo que la spec implica y ninguna prueba del proyecto ejercita**, con el procedimiento que lo fija y la tarea dueña. Cada procedimiento se corre una vez en rojo en la etapa 2 (T003), con un cambio temporal que se deshace, para saber que su verde significa algo:
+**Lo que la spec implica y ninguna prueba del proyecto ejercita**, con el procedimiento que lo fija y la tarea dueña. Cada procedimiento se corre una vez en rojo en la etapa 2 (T003, paso 8), en una rama descartable, para saber que su verde significa algo:
 
 1. **Un ejercicio publicado editado en un PR de etapa** (FR-010 y Q5). Un cambio de texto en una pista de la piloto pasa `npm test`, porque `content-check` mira la forma y no el texto. Lo fija `quickstart.md` §3. Su rojo, en T003: cambiar una palabra de una pista de `rust-138`, correr §3 y ver `rust-138: cambiaron sus huellas`.
 2. **Una entrada existente de `curriculum-ids.json` cambiada** (FR-015). Si el título cambia en el ejercicio y en el fixture a la vez, `curriculum-ids-check` pasa. Lo fija la tercera comprobación de `quickstart.md` §2. Su rojo, en T003: cambiar el título de `rust-138` en los dos lugares y ver la línea quitada.
@@ -288,12 +288,15 @@ Las cantidades «antes» de la etapa 2 son las que deja E1 según su plan (`data
 5. **Los `reparar`:** `quickstart.md` §4, contra la fila 2 de la spec y los errores de la piloto.
 6. **La superposición:** `quickstart.md` §5. Las líneas «A revisar» van al paquete de revisión.
 7. **E2E y Pest:** `quickstart.md` §6, con `E2E_PORT=4302` y `COMPOSE_PROJECT_NAME=e2-etapa-2`.
-8. **El rojo de los procedimientos** (Review Focus 1, 2 y 4). Cada uno con un cambio temporal, sin commit, que se deshace con `git restore` o `git stash drop`:
-   - cambiá una palabra de una pista de `rust-138` y corré §3: falla con `rust-138: cambiaron sus huellas`;
-   - cambiá el título de `rust-138` en su `exercise.yaml` y en el fixture, y corré la tercera comprobación de §2: aparece la línea quitada;
-   - renombrá la función del inicial y de la solución de un `completar` nuevo de Rust a `energia` (y sus pruebas) y corré §5: falla con `rust · función energia: rust-01, <el ID>`.
+8. **El rojo de los procedimientos** (Review Focus 1, 2 y 4). Va en una rama descartable, porque §2 y §3 comparan commits y §5 lee el `build/` generado: un cambio sin commit no se vería.
+   1. `git switch -c e2/rojo-tmp`.
+   2. Cambiá una palabra de una pista de `rust-138` y su título, en su `exercise.yaml` y en `qa/fixtures/curriculum-ids.json`, y hacé un commit: `git commit -am "chore: red demo"`.
+   3. Corré §3: falla, y entre sus líneas está `rust-138: cambiaron sus huellas`.
+   4. Corré la tercera comprobación de §2: aparece la línea quitada con el título viejo.
+   5. Renombrá a `energia` la función del inicial y de la solución de un `completar` nuevo de Rust, y sus pruebas. Hacé un commit, corré `npm run curriculum` y después §5: falla con `rust · función energia: rust-01, <el ID>`.
+   6. Descartá la rama: `git switch e2/etapa-2 && git branch -D e2/rojo-tmp`, y corré `npm run curriculum`.
+   7. §2, §3 y §5 vuelven a verde.
 
-   Después de deshacerlos, §2, §3 y §5 vuelven a verde.
 9. **El paquete de revisión,** para U. Por ejercicio:
    - el `exercise.yaml`, el inicial y la solución;
    - si es `reparar`, el error de §4;

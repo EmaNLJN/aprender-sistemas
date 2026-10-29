@@ -51,4 +51,4 @@
 
   No se ejecutó ninguna prueba del proyecto: la spec no cambia código.
 - **Enlaces:** los de `../026-e1-esenciales/` resuelven cuando se integre el PR #81. El resto se comprobó en este árbol.
-- `/speckit-analyze` corre con `plan.md` y `tasks.md`, que todavía no existen.
+- **El analyze** sobre spec, plan y tasks se pasó al escribir el plan. Su resultado (la cobertura, la contradicción de la prueba previa que se corrigió y la cobertura parcial de SC-008) está en el informe del coordinador, `.coordinador/spec-e2-report.md`.

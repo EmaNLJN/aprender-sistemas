@@ -41,10 +41,11 @@ Todo en verde. `npm test` incluye:
 
 ## 2. Lo que toca el PR y los conteos
 
-**Los archivos permitidos** (FR-017). La salida tiene que quedar vacía:
+**Los archivos permitidos** (FR-017). Las dos salidas tienen que quedar vacías: la segunda cuida la línea base de E1, que la lista de `qa/*-check.ts` admitiría (FR-015).
 
 ```sh
 git diff --name-only origin/master...HEAD | grep -vE '^(content/(rust|go)/manifest\.yaml|content/(rust|go)/exercises/(rust|go)-[0-9]+/(exercise\.yaml|starter\.(rs|go)|solution\.(rs|go))|qa/fixtures/curriculum-ids\.json|qa/[a-z-]+-check\.ts|qa/e2e/specs/lab-(map|essentials)\.spec\.ts|backend/api/tests/.+\.php|README\.md|frontend/src/index\.html)$'
+git diff --name-only origin/master...HEAD -- qa/content-baseline-check.ts qa/fixtures/content-baseline-e1.json
 ```
 
 **Sólo carpetas de ejercicio nuevas, y son las de la etapa.** La primera salida tiene que quedar vacía, y la segunda tiene que ser `E2_NEW_IDS`, ordenada:
