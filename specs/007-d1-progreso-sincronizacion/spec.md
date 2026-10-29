@@ -127,7 +127,7 @@ Las decisiones del 2026-10-28 sobre F11, F8 y F13 enmiendan tres requisitos de D
 
 - Q: ¿Dónde se elige «computadora compartida»? → A: En «Tu cuenta», no en el ingreso (F11-Q5, del usuario; no era la recomendada). Al activarla, el cliente borra en ese momento el espacio local de la cuenta. Enmienda el FR-070. (FR-070)
 - Q: ¿Desde cuándo rige la cláusula de las claves v1 de «Borrar todo»? → A: Desde D1c, que la enmienda; hasta entonces, F8 borra las claves v1 como hoy (F8-L7, confirmada por el usuario). (FR-074)
-- Q: ¿De quién es el FR-068? → A: D1c se queda con la mecánica y el pedido a la API; F11d, con la pantalla (decisión del usuario del 2026-10-28, noche). (FR-068)
+- Q: ¿De quién es el FR-068? → A: D1c envía la cola al salir, limpia el espacio y expone el estado y las acciones que consume la pantalla; F13 dibuja todo lo que se ve (la espera, la pregunta y la nota), por su lectura L7, que el usuario aceptó al mergear la spec de F13 (PR #79). Reemplaza la decisión anterior de la noche del 2026-10-28, que le daba la pantalla a F11d. (FR-068)
 - Q: ¿Qué expone el cliente? → A: El estado, los avisos y las acciones de [contracts/sync-client-d1c.md](./contracts/sync-client-d1c.md), que contrasta la tabla «Lo que F13 supone de D1c» de la spec de F13 (clarify del 2026-10-28, todas las recomendadas). Amplía el FR-077 con el estado de error y la pestaña vieja, la cantidad de cambios, el modo, los avisos y las acciones de «Salir». (FR-077)
 
 ### Las transversales que tocan a D1

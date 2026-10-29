@@ -16,7 +16,7 @@ D1c es la mecánica: la copia local con su cola, el espacio por cuenta, la sincr
 | --- | --- | --- |
 | «Computadora compartida» en «Tu cuenta» y su aviso del almacenamiento bloqueado | F11d (F11 FR-062 y FR-063) | `mode`, `enterSharedMode()`, `leaveSharedMode()` |
 | «¿Este progreso es tuyo?», su resumen, la repregunta del 409 y el informe | F11d (F11 FR-064 y FR-065) | `importQuestion`, `answerImport(yes)`, `lastImport` |
-| La pregunta al salir con la cola sin enviar | F11d por la decisión del 2026-10-28 (noche) o F13 por su L7: ver research-d1c.md, R14 | `flushNow()` y `afterSignOut(choice)`, a través del puerto de `signOut` (sección 5) |
+| «Salir» con la cola sin enviar: la espera, la pregunta (conservar, descartar o descargar) y la nota junto al botón | F13 (su L7, aceptada con el merge de su spec, PR #79; reemplaza la línea de la noche que se lo daba a F11d) | El puerto de `signOut` (sección 5): `onPhase` para la espera, `choose` para la pregunta; `downloadUnsent()` para «Descargar una copia»; `mode` para elegir las opciones |
 | El estado de la cuenta, la franja, el diálogo de cuenta distinta y la confirmación al cerrar | F13 | todo el estado y `downloadUnsent()`, `downloadEpochCopy()`, `discardEpochCopy()`, `dismissEpochChange()` y `acknowledgeRejected()` |
 | «Borrar todo» y «Importar» de Método | F8, con el armado de `app/progress-backup` que D1c envuelve (sección 6) | nada directo: la página sigue llamando a `ProgressBackup` |
 | La línea de intentos de la revisión del laboratorio | la vista vigente del laboratorio (D1c-6) | `currentProgressSync()?.exerciseSummary(exerciseId)`: las vistas que no viven bajo `AccountRoot` leen el motor por este acceso de `features/progress-sync` |
@@ -195,13 +195,15 @@ export interface SignOutProgress {
 
 export type SignOutLeftover = { readonly count: number; readonly reason: string };
 export type ChooseAfterLeftover = (left: SignOutLeftover) => Promise<'keep' | 'discard' | 'stay'>;
+export type SignOutPhase = 'sending' | 'leaving';
 
 export interface SignOutDependencies {
   readonly client: ApiClient;
   readonly userId: number;
   readonly forgetContentCopy: () => Promise<void>; // de A3
   readonly progress?: SignOutProgress; // de D1c
-  readonly choose?: ChooseAfterLeftover; // la pantalla de F11d o F13; sin ella, 'keep'
+  readonly choose?: ChooseAfterLeftover; // la pregunta de F13; sin ella, 'keep'
+  readonly onPhase?: (phase: SignOutPhase) => void; // la espera de F13: 'sending' y después 'leaving'
 }
 
 export type SignOutOutcome =
@@ -216,12 +218,12 @@ export function useSignOutProgress(): SignOutProgress | null;
 
 **El orden** (el de F13, «El orden de "Salir"»):
 
-1. con `progress`, `await progress.flushNow()`;
+1. con `progress`, `onPhase?.('sending')` (F13: «Enviando tus cambios…») y `await progress.flushNow()`;
 2. si quedó algo: con `choose`, su respuesta (`stay` termina en `{kind: 'stayed'}` sin cerrar nada); sin `choose`, `keep`. Si no quedó nada, `discard` (FR-068: «si la envió, limpia el espacio»);
-3. `POST /api/auth/logout`; si falla, `{kind: 'failed'}` y nada se descartó;
+3. `onPhase?.('leaving')` (F13: «Saliendo…») y `POST /api/auth/logout`; si falla, `{kind: 'failed'}` y nada se descartó;
 4. con el 204, el 401 o el 403 `account_disabled`: `progress.afterSignOut(choice)`, después `forgetContentCopy()`, y `{kind: 'signed-out'}`.
 
-`SignOutSection` y `PrivacyReacceptance` leen el puerto con `useSignOutProgress()` y lo pasan. `AccountRoot` lo provee con el motor de D1c.
+`SignOutSection` y `PrivacyReacceptance` leen el puerto con `useSignOutProgress()` y lo pasan. `AccountRoot` lo provee con el motor de D1c. D1c no pasa `choose` ni `onPhase` y no cambia ningún texto de «Salir»: los pasa F13 cuando dibuja la espera, la pregunta y su nota (F13 FR-030 a FR-034). En memoria, la opción «Descargar una copia» de F13 llama a `downloadUnsent()` del motor y después responde `discard` a `choose`.
 
 ## 6. El armado de `app/progress-backup` con D1c
 

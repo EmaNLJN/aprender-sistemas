@@ -107,9 +107,9 @@ Cada decisión dice qué se eligió, por qué, qué se descartó y cómo se veri
 
 ## R14. «Salir»: un puerto en `signOut`, y la pantalla no es de D1c
 
-- **Decisión.** `signOut` recibe `progress` (`flushNow` y `afterSignOut`) y `choose` (la pregunta), los dos opcionales. Sin `choose`, si queda algo, conserva (`keep`): es el camino que no pierde nada (ADR 0003). `SignOutSection` y `PrivacyReacceptance` lo leen de un contexto de `features/sign-in` que provee `AccountRoot`.
-- **Por qué.** La decisión del 2026-10-28 (noche) cierra el FR-068: «D1c se queda con la mecánica y el pedido a la API; F11d, con la pantalla». A3 ya sumó una dependencia a `signOut` (`forgetContentCopy`, `amend-cuenta` `specs/016-a3-contenido-api/plan.md:3805-3835`), y D1c sigue esa forma.
-- **Una discrepancia que no decide D1c.** La spec de F13 (`spec-f13` `c0ac6672`, L7) dice que F13 toma la parte visible de «Salir» (la espera, la pregunta y la nota). La decisión de la noche dice F11d. D1c no depende de cuál: el puerto es el mismo. Va como hallazgo.
+- **Decisión.** `signOut` recibe `progress` (`flushNow` y `afterSignOut`), `choose` (la pregunta) y `onPhase` (la espera), los tres opcionales. Sin `choose`, si queda algo, conserva (`keep`): es el camino que no pierde nada (ADR 0003). `SignOutSection` y `PrivacyReacceptance` lo leen de un contexto de `features/sign-in` que provee `AccountRoot`.
+- **Por qué.** El reparto del FR-068 lo fija la L7 de la spec de F13 (`specs/027-f13-sincronizacion/`, PR #79), aceptada con su merge: D1c envía la cola al salir, limpia el espacio y expone lo que F13 consume; F13 dibuja la espera, la pregunta y la nota. Esa lectura reemplaza la línea de `.coordinador/clarify-decisiones.md` que le daba la pantalla a F11d, anterior a que el usuario aceptara F13 (aclaración del coordinador, 2026-10-29). A3 ya sumó una dependencia a `signOut` (`forgetContentCopy`, `amend-cuenta` `specs/016-a3-contenido-api/plan.md:3805-3835`), y D1c sigue esa forma.
+- **Lo que D1c no hace.** No dibuja la espera ni la pregunta, no cambia la nota de FR-052 y no pasa `choose` ni `onPhase`: deja la interfaz con sus firmas (contracts/sync-client-d1c.md §5).
 
 ## R15. «Computadora compartida»: la elección vive fuera del espacio, y no hay registro
 

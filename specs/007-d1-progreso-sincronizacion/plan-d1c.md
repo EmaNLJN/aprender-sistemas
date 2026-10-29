@@ -14,7 +14,7 @@
 >
 > - **Qué leer.** Leé completas las «Restricciones globales», las «Reglas para todos los agentes», la sección 0 y la sección de tu unidad. `tasks-d1c.md` tiene una línea por tarea (T001 a T028) y remite acá.
 > - **Dónde están los archivos.** El coordinador pidió los archivos de D1c en `specs/007-d1-progreso-sincronizacion/`, con `d1c` en el nombre; los de D1a y D1b quedan como están (research-d1b.md, R23, explica por qué los scripts de Spec Kit no sirven con nombres sufijados).
-> - **El código ya corrió, en parte.** Los módulos de las unidades 1 y 2, `progress-storage`, el cambio de `versioned-storage`, el puerto de `signOut` y el envoltorio de `app/progress-backup` corrieron en una copia descartable del árbol, con TypeScript 6.0.2, Vitest 5.0.3, Zustand 5.0.15, fishery 2.4.0, el ESLint y el Prettier del repositorio: 113 pruebas en verde, `tsc` y ESLint sin avisos, y `sha256Hex` igual a los 274 `starterHash` de `build/curriculum.meta.json`. La capa `app/progress-sync` pasó `tsc` contra tipos de reemplazo de las entidades. **No corrieron:** los cambios en las entidades, `boot-check`, los E2E, la integración con `main.tsx` y nada contra la base real (F11a completa, A3, A4 y F8 no están en `master`). T001 contrasta cada firma con la base.
+> - **El código ya corrió, en parte.** Los módulos de las unidades 1 y 2, `progress-storage`, el cambio de `versioned-storage`, el puerto de `signOut` y el envoltorio de `app/progress-backup` corrieron en una copia descartable del árbol, con TypeScript 6.0.2, Vitest 5.0.3, Zustand 5.0.15, fishery 2.4.0, el ESLint y el Prettier del repositorio: 114 pruebas en verde, `tsc` y ESLint sin avisos, y `sha256Hex` igual a los 274 `starterHash` de `build/curriculum.meta.json`. La capa `app/progress-sync` pasó `tsc` contra tipos de reemplazo de las entidades. **No corrieron:** los cambios en las entidades, `boot-check`, los E2E, la integración con `main.tsx` y nada contra la base real (F11a completa, A3, A4 y F8 no están en `master`). T001 contrasta cada firma con la base.
 
 ## Summary
 
@@ -26,7 +26,7 @@ D1c es la tercera parte de D1: la mecánica del cliente. El enfoque, con sus raz
 - **Las filas vuelven a la forma v1 campo por campo (R6).** Una fila ausente no borra nada; un cambio pendiente gana salvo que la fila sea más nueva; lo que el contenido publicado no conoce queda en la copia (riesgo 7 de A3).
 - **Cada respuesta tiene su camino (R10).** Sin red, se reintenta; con 401, se espera el ingreso; con `account_mismatch`, se detiene; con `epoch_mismatch`, la cola pasa a una copia descargable y se carga la época nueva; con `client_outdated`, se conserva y se detiene.
 - **Importar y «Borrar todo» pasan por la API (R12, R13 y R16).** El v1 del navegador se ofrece con su resumen y se importa con un sí; «Importar» de Método va al servidor con `source: 'export'`; «Borrar todo» usa el paso del servidor de F8, no encola nada y nunca toca las claves v1 que la cuenta no importó (FR-074 enmendado). Una guarda impide el solape (F8-Q3).
-- **«Salir» y el modo compartido son mecánica (R14 y R15).** `signOut` recibe un puerto que envía la cola antes del cierre y aplica conservar o descartar después; sin pantalla, conserva. «Computadora compartida» borra el espacio en ese momento y sigue en memoria.
+- **«Salir» y el modo compartido son mecánica (R14 y R15).** `signOut` recibe un puerto que envía la cola antes del cierre, avisa cada fase a la pantalla y aplica conservar o descartar después del cierre; sin la pregunta de F13, conserva. D1c no dibuja nada de «Salir». «Computadora compartida» borra el espacio en ese momento y sigue en memoria.
 
 ## Technical Context
 
@@ -97,7 +97,7 @@ Valores exactos; ninguna tarea los cambia.
 | D1, Q3: al salir se envía la cola; si no salió, se pregunta; el modo compartido; los espacios vencen a los 30 días | T011, T020 |
 | D1, Q4: D1c entra en servicio después de A4 | T001 (compuerta) |
 | F11-Q5: «computadora compartida» se elige en «Tu cuenta» y borra el espacio en ese momento (enmienda el FR-070) | T011 (`enterSharedMode`), la enmienda de la spec |
-| FR-068 de D1 (decisión del 2026-10-28, noche): D1c se queda con la mecánica y el pedido a la API; F11d, con la pantalla | T020 |
+| FR-068 de D1: D1c se queda con el envío de la cola al salir, la limpieza del espacio y la interfaz que consume la pantalla; F13 dibuja todo lo que se ve (la espera, la pregunta, la nota, la línea, la franja y los diálogos), por su L7, aceptada con el merge de su spec (PR #79), que reemplaza la línea de la noche que se lo daba a F11d | T011, T020 |
 | F8-L7: la cláusula de las claves v1 del FR-074 rige desde D1c | T013, T019, T025 |
 | F8-Q3: la guarda contra el solape es de D1c | T011 (`exclusive`), T019 |
 | El doble de la API canónico, la lista blanca angosta y los stubs tipados | «Restricciones globales» |
@@ -7481,11 +7481,11 @@ export function withProgressSync(backup: ProgressBackup, sync: SyncForBackup): P
 
 **Consume:** la firma de `signOut` de A3, con `forgetContentCopy` (B3; `amend-cuenta` `specs/016-a3-contenido-api/plan.md:3805-3835`).
 
-**Produce:** contracts/sync-client-d1c.md §5: `SignOutProgress`, `SignOutChoice`, `SignOutLeftover`, `ChooseAfterLeftover`, `SignOutOutcome` con `stayed`, `SignOutProgressContext` y `useSignOutProgress()`.
+**Produce:** contracts/sync-client-d1c.md §5: `SignOutProgress`, `SignOutChoice`, `SignOutLeftover`, `ChooseAfterLeftover`, `SignOutPhase`, `SignOutOutcome` con `stayed`, `SignOutProgressContext` y `useSignOutProgress()`. Es la interfaz que consume F13 (la espera con `onPhase`, la pregunta con `choose` y «Descargar una copia» con `downloadUnsent()` del motor); D1c no dibuja ninguna de esas piezas.
 
 **Pasos:**
 
-1. Reemplazá la spec de `sign-out.ts` por esta, que conserva los casos de F11a y A3 en el último bloque y suma los de D1c (si la spec de la base tiene más casos, se quedan; estos se agregan):
+1. Sumá a la spec de `sign-out.ts` estos casos de D1c (los de F11a y A3 que ya tiene se quedan):
 
 `frontend/src/features/sign-in/model/sign-out.spec.ts`:
 
@@ -7551,6 +7551,14 @@ describe('signOut with the progress of D1c', () => {
     expect(events).toEqual(['flush']);
   });
 
+  it('tells the screen when it sends the queue and when it signs out (F13 FR-030)', async () => {
+    const { client } = clientWith([{ status: 204 }]);
+    const { progress, events } = progressThat(0);
+    const onPhase = (phase: string) => events.push(`phase ${phase}`);
+    await signOut({ client, userId: 41, forgetContentCopy: forget, progress, onPhase });
+    expect(events).toEqual(['phase sending', 'flush', 'phase leaving', 'after discard']);
+  });
+
   it('discards nothing when the sign-out fails', async () => {
     const { client } = clientWith(['network-error']);
     const { progress, events } = progressThat(0);
@@ -7561,7 +7569,7 @@ describe('signOut with the progress of D1c', () => {
 });
 ```
 
-2. Corré la spec: los tres primeros casos fallan (la firma no tiene `progress`).
+2. Corré la spec: los casos nuevos fallan (la firma no tiene `progress`, `choose` ni `onPhase`).
 3. Implementá el puerto y el contexto:
 
 `frontend/src/features/sign-in/model/sign-out.ts`:
@@ -7583,12 +7591,15 @@ export interface SignOutProgress {
 
 export type ChooseAfterLeftover = (left: SignOutLeftover) => Promise<SignOutChoice | 'stay'>;
 
+export type SignOutPhase = 'sending' | 'leaving';
+
 export interface SignOutDependencies {
   readonly client: ApiClient;
   readonly userId: number;
   readonly forgetContentCopy: () => Promise<void>;
   readonly progress?: SignOutProgress;
   readonly choose?: ChooseAfterLeftover;
+  readonly onPhase?: (phase: SignOutPhase) => void;
 }
 
 export type SignOutOutcome =
@@ -7608,6 +7619,7 @@ function alreadySignedOut(failure: ApiFailure): boolean {
 // FR-068 of D1: the queue goes before the sign-out; what stays is kept unless a screen asks.
 async function choiceOf(dependencies: SignOutDependencies): Promise<SignOutChoice | 'stay' | null> {
   if (dependencies.progress === undefined) return null;
+  dependencies.onPhase?.('sending');
   const flushed = await dependencies.progress.flushNow();
   if (flushed.kind === 'sent') return 'discard';
   if (dependencies.choose === undefined) return 'keep';
@@ -7618,6 +7630,7 @@ export async function signOut(dependencies: SignOutDependencies): Promise<SignOu
   const { client, userId, forgetContentCopy, progress } = dependencies;
   const choice = await choiceOf(dependencies);
   if (choice === 'stay') return { kind: 'stayed' };
+  dependencies.onPhase?.('leaving');
   const result = await client.send('POST', '/api/auth/logout', undefined, { asUser: userId });
   if (!result.ok && !alreadySignedOut(result.failure)) {
     return { kind: 'failed', failure: result.failure };
@@ -7649,14 +7662,15 @@ export function useSignOutProgress(): SignOutProgress | null {
      ChooseAfterLeftover,
      SignOutChoice,
      SignOutLeftover,
+     SignOutPhase,
      SignOutProgress,
    } from './model/sign-out';
    ```
 4. **Los dos que llaman a `signOut`.** En `SignOutSection.tsx` y en `PrivacyReacceptance.tsx`:
    - leen el puerto: `const progress = useSignOutProgress();`
    - lo pasan: `signOut({ client, userId, forgetContentCopy, progress: progress ?? undefined })` (en la reaceptación, `userId: account.id`);
-   - y, antes de mirar `failed`, tratan el nuevo resultado: `if (outcome.kind === 'stayed') { setPending(false); return; }`. Sin pantalla que pregunte, `stayed` no llega nunca; queda listo para F11d o F13.
-   La nota de FR-052 («Tu progreso se guarda en este navegador, no en tu cuenta: queda acá aunque salgas.») **no cambia en D1c**: la reemplaza la pantalla de F11d o F13 (F13 FR-034), que es quien la dibuja. Es un hallazgo: desde D1c la nota dice algo que ya no es cierto, y conviene que la pantalla entre en la misma entrega (decisión del usuario 2).
+   - y, antes de mirar `failed`, tratan el nuevo resultado: `if (outcome.kind === 'stayed') { setPending(false); return; }`. Sin la pregunta de F13, `stayed` no llega nunca. D1c no pasa `choose` ni `onPhase`: los pasa F13 cuando dibuje la espera y la pregunta.
+   La nota de FR-052 («Tu progreso se guarda en este navegador, no en tu cuenta: queda acá aunque salgas.») **no cambia en D1c**: la reemplaza F13 (su FR-034), que es quien la dibuja. Es un hallazgo: desde que U3 vincula el espacio, la nota dice algo que ya no es cierto hasta que entre F13.
 5. **El proveedor.** En `AccountRoot.tsx`, lo que dibuja queda envuelto:
 
    ```tsx
@@ -8043,7 +8057,8 @@ Ninguna descarga: D1c no suma paquetes de npm ni de Composer. Los permisos que p
 
 Van con su detalle en el informe del coordinador:
 
-- **F11d y F13:** la pantalla del FR-068 (F11d por la decisión de la noche, F13 por su L7); la nota de FR-052 deja de ser cierta con D1c; el «registro» de los datos locales de la cuenta no existe (F11d llama a `enterSharedMode()` y a `forgetContentCopy()`); `afterPublish` de A3 no debe escribir la copia en el modo compartido (F11d-1).
+- **F13:** dibuja «Salir» con la interfaz de T020 (`onPhase`, `choose`, `downloadUnsent()`); la nota de FR-052 deja de ser cierta desde U3 hasta que F13 la reemplace.
+- **F11d:** el «registro» de los datos locales de la cuenta no existe (F11d llama a `enterSharedMode()` y a `forgetContentCopy()`); `afterPublish` de A3 no debe escribir la copia en el modo compartido (F11d-1).
 - **F8:** la importación de Método ya no es local y no muestra espera; `busy` está para quien la dibuje.
 - **F13:** `clockSkewMs` sale sólo de la sincronización; `flushNow` suma dos motivos (`outdated` y `account-changed`); `ownReset` siempre llega con `copy: null`.
 - **A4:** el hallazgo 7 no necesita código en D1c (R21).
