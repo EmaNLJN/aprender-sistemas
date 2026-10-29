@@ -58,7 +58,7 @@ echo "== 2. Otro cliente retiene un bloqueo sobre exercises: el import de migrat
 # Built before taking the lock so the 180 s cover migrate's 3 attempts however slow the build is.
 CONTENT_SOURCE_COMMIT=$new_commit docker compose build php migrate || abort "no se pudo construir la imagen nueva"
 sql 'LOCK TABLES exercises WRITE; SELECT SLEEP(180)' >/dev/null 2>&1 &
-for i in 1 2 3 4 5 6 7 8 9 10; do
+for _ in 1 2 3 4 5 6 7 8 9 10; do
   holder_id=$(sql 'show processlist' | awk -F '\t' '$8 ~ /^SELECT SLEEP\(180\)/ { print $1 }')
   [ -n "$holder_id" ] && break
   sleep 1
@@ -91,7 +91,7 @@ check "$(guide)" "$guide_before" "con otra imagen y el mismo contenido, el ETag 
 echo "== 5. Una transacción abierta hace más de 30 s detiene migrate antes de migrar"
 migrations_before=$(sql 'SELECT COUNT(*) FROM migrations')
 sql 'START TRANSACTION; SELECT COUNT(*) FROM users; SELECT SLEEP(40)' >/dev/null 2>&1 &
-for i in 1 2 3 4 5 6 7 8 9 10; do
+for _ in 1 2 3 4 5 6 7 8 9 10; do
   holder_id=$(sql 'show processlist' | awk -F '\t' '$8 ~ /^SELECT SLEEP\(40\)/ { print $1 }')
   [ -n "$holder_id" ] && break
   sleep 1
