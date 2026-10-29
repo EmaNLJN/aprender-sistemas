@@ -8,7 +8,7 @@ Se planificó sin tocar código de producción, sin correr nada en los worktrees
 
 - **La spec,** con su clarify del 2026-10-28: FR-062 a FR-065, los transversales FR-066 a FR-077, SC-010 (la parte de F11d), la historia 9, las filas de F11d de «Pantallas, endpoints y estados» y los textos de «Lo de D1 (F11d)».
 - **D1c, el plan del que depende:** PR #93, `plan/d1c-cliente-v2` en `2e743c00`, leído en el worktree `plan-d1c` sin cambiar nada:
-  - [`contracts/sync-client-d1c.md`](../007-d1-progreso-sincronizacion/contracts/sync-client-d1c.md), que llega a `master` con ese PR: el estado, los avisos, las acciones y la tabla de superficies;
+  - `specs/007-d1-progreso-sincronizacion/contracts/sync-client-d1c.md`, sin enlace hasta que el PR #93 lo lleve a `master`: el estado, los avisos, las acciones y la tabla de superficies;
   - `plan-d1c.md`: «Decisiones ya tomadas», «Unidades, dueños y orden», T011 (el motor, con `boot`, `answerImport`, `enterSharedMode` y `leaveSharedMode`), T016 (`chooseMode`, `browserEnvironment`, `appProgressSync` y la etapa), T017 (`rememberPublishedVersion` en `afterPublish`), T020 (los contextos en `AccountRoot`), T023 (`seedRaw`, `rawSnapshot` y `rawWrites`), T025 (sus E2E) y «Hallazgos para otros ítems»;
   - `data-model-d1c.md` y `research-d1c.md` (R12, R13, R15, R19 y R23);
   - `.coordinador/plan-d1c-report.md`, sobre todo la decisión 2.
