@@ -288,3 +288,22 @@ Markdown, sin scripts ni instrucciones de red.
 - **Instalación:** `npx skills add jeffallan/claude-skills --skill php-pro -a codex -y`, con su
   enlace en `.claude/skills/` y su hash en `skills-lock.json`. El total actual es de treinta y
   cuatro skills locales.
+
+## Makefile y Docker Compose (2026-10-28)
+
+Para el `Makefile` de la raíz se buscó con `find-skills` («makefile», «docker compose» y «make
+targets»). Se verificaron instalaciones, estrellas, licencia y contenido antes de exponerlas.
+
+| Skill | Fuente | Señales consultadas | Uso en este proyecto |
+| --- | --- | --- | --- |
+| [makefile-generator](../.agents/skills/makefile-generator/SKILL.md) | [akin-ozer/cc-devops-skills](https://skills.sh/akin-ozer/cc-devops-skills/makefile-generator) | ★329; Apache-2.0 | Estructura del `Makefile`: `.PHONY`, el target `help`, las variables y la guía de seguridad. |
+| [docker-patterns](../.agents/skills/docker-patterns/SKILL.md) | [affaan-m/ECC](https://skills.sh/affaan-m/ecc/docker-patterns) | 14,6 mil instalaciones; ★291 mil; MIT | Patrones de Compose, redes, volúmenes y seguridad de contenedores. |
+
+- **Scripts:** `makefile-generator` trae dos scripts bash que generan plantillas, sin red. Su
+  validación prefiere `makefile-validator`, que no se instaló porque baja `mbake` con pip; vale su
+  alternativa local, `make -n` sobre cada target.
+- **Descartadas:** `mohitmishra786/low-level-dev-skills@make`, que apunta a C y a sistemas embebidos,
+  y `fandhe-ai/agent-reference-skills@make`, con 4 estrellas y sin licencia.
+- **Instalación:** `npx skills add <repo> --skill <nombre> -a codex -y`, con su enlace en
+  `.claude/skills/` y su hash en `skills-lock.json`. La licencia de `makefile-generator` se copió a
+  `LICENSE.txt`. El total actual es de treinta y seis skills locales.
