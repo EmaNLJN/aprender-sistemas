@@ -53,6 +53,7 @@ const ExplorePart = ({ workshop, language, model, notify, onPartChange }: Explor
     setSimulation(next);
     announceObservation(
       before,
+      // react-doctor-disable-next-line react-doctor/effect-needs-cleanup -- observe records progress, it does not subscribe
       systemsEngine.observe(workshop.id, language, model.achieved(next, before)),
       notify,
     );
