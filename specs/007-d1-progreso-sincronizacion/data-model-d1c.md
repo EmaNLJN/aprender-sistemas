@@ -14,7 +14,7 @@
 | `taller-v2:<id>:taller-laboratorio-v1` (y respaldos) | El laboratorio en su forma v1 | `labStore`; la etapa, sólo la proyección |
 | `taller-v2:<id>:taller-campaign-v1` (y respaldos) | La campaña en su forma v1 | `campaignEngine`; la etapa, sólo la proyección |
 | `taller-v2:<id>:taller-systems-v1` (y respaldos) | Sistemas en su forma v1 | `systemsEngine`; la etapa, sólo la proyección |
-| `taller-v2:<id>:copia` | `CopyRecord`: la copia del servidor, con el reloj de cada campo y sus lápidas, y lo último que supo de él | El motor de D1c, al recibir una foto o un delta |
+| `taller-v2:<id>:copia` | `CopyRecord`: la copia del servidor, con el reloj de cada campo y sus lápidas, y lo último que supo de él | El motor de D1c, al recibir una foto o un delta. Una cuenta nueva con la foto vacía (revisión 0, sin filas) no la escribe: un arranque sin progreso no escribe nada (FR-072) |
 | `taller-v2:<id>:cola` | `QueueRecord`: la cola y las respuestas viejas que falta volver a evaluar | El motor, en cada cambio y en cada respuesta |
 | `taller-v2:<id>:copia-epoca` | `EpochCopyRecord`: lo que no se envió antes de un «Borrar todo» de otro dispositivo | El motor, ante un `epoch_mismatch` |
 | `taller-v2-compartida:<id>` | `'1'` si la cuenta eligió «computadora compartida». No es progreso: es una preferencia del dispositivo, fuera del espacio para que la limpieza de FR-069 no la borre | `enterSharedMode()`; la borra `leaveSharedMode()` |

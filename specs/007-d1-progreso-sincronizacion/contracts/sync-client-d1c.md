@@ -19,7 +19,7 @@ D1c es la mecánica: la copia local con su cola, el espacio por cuenta, la sincr
 | La pregunta al salir con la cola sin enviar | F11d por la decisión del 2026-10-28 (noche) o F13 por su L7: ver research-d1c.md, R14 | `flushNow()` y `afterSignOut(choice)`, a través del puerto de `signOut` (sección 5) |
 | El estado de la cuenta, la franja, el diálogo de cuenta distinta y la confirmación al cerrar | F13 | todo el estado y `downloadUnsent()`, `downloadEpochCopy()`, `discardEpochCopy()`, `dismissEpochChange()` y `acknowledgeRejected()` |
 | «Borrar todo» y «Importar» de Método | F8, con el armado de `app/progress-backup` que D1c envuelve (sección 6) | nada directo: la página sigue llamando a `ProgressBackup` |
-| La línea de intentos de la revisión del laboratorio | la vista vigente del laboratorio (D1c-6) | `exerciseSummary(exerciseId)` |
+| La línea de intentos de la revisión del laboratorio | la vista vigente del laboratorio (D1c-6) | `currentProgressSync()?.exerciseSummary(exerciseId)`: las vistas que no viven bajo `AccountRoot` leen el motor por este acceso de `features/progress-sync` |
 
 ## 2. El estado
 
@@ -84,6 +84,7 @@ export interface ProgressSyncState {
   readonly epochChange: EpochChange | null;
   readonly importQuestion: ImportQuestion | null;
   readonly lastImport: ImportReport | null;
+  readonly importNotice: string | null; // el aviso de la última importación (sección 8)
   readonly busy: 'import' | 'reset' | null; // la guarda contra el solape (F8-Q3)
 }
 ```
@@ -147,7 +148,7 @@ export interface ProgressSync {
 | --- | --- | --- |
 | `flushNow()` | Envía toda la cola en lotes, sin esperar el temporizador, y termina con `sent` o con lo que quedó y su motivo | No cierra la sesión ni toca el espacio |
 | `afterSignOut('keep')` | Deja la cola y la copia en el espacio, con `touchedAt` de ahora (FR-068: vence a los 30 días) | Se llama sólo después del 204 o del 401 del cierre |
-| `afterSignOut('discard')` | Borra el espacio de la cuenta entero (la copia, la cola, la copia de la época y las claves de los almacenes con sus respaldos), o la memoria en los modos `shared` y `blocked` | No toca las claves v1, el archivo `taller-v1-importado:<id>` ni el espacio de otra cuenta |
+| `afterSignOut('discard')` | Borra el espacio de la cuenta (la copia, la cola y las claves de los almacenes con sus respaldos), o la memoria en los modos `shared` y `blocked`. En `browser`, la copia de la época queda: tiene su propio descarte (F13 FR-026) | No toca las claves v1, el archivo `taller-v1-importado:<id>` ni el espacio de otra cuenta |
 | `downloadUnsent()` | Devuelve el archivo con la cola y la copia de la época (sección 7), o `null` si no hay nada | No vacía la cola |
 | `downloadEpochCopy()` | Devuelve el archivo con la copia de la época, o `null` | No la borra |
 | `discardEpochCopy()` | Borra la copia de la época y pasa `epochChange.copy` a `null` | No pide confirmación: la pide la pantalla (F13 FR-026) |
