@@ -94,7 +94,7 @@ Están en `## Clarifications` de la [spec](./spec.md) y en `.coordinador/clarify
 | **F15, Tailwind con su ADR** (el usuario, 2026-10-28): F10c deja los tokens listos para el `@theme` de v4 y la paridad sigue en 0 | T042: el codemod de los tokens, el multiconjunto resuelto y el barrido con los tokens nuevos contados aparte | §3 y research-f10c.md, R12 |
 | **Se parte `.small-label, .eyebrow, .topbar-label`** (el usuario, 2026-10-28) | `.topbar-label` se va a la hoja del shell con sus cuatro declaraciones | T039 |
 | **Las reglas de `pages/account/ui/account.css` se quedan en su hoja** (el usuario, 2026-10-28) | F10c no las toca | R10 |
-| **El barrido de F5** encontró diferencias por nodos de texto partidos y por el `:hover` que React conserva (TR-13) | El DOM de las dos raíces es el mismo, así que no hay nodos partidos; el barrido mueve el puntero a `(0, 0)` después de cada preparación, y el control de determinismo lo prueba | §0 y quickstart-f10c.md §3 |
+| **El barrido de F5** encontró diferencias por nodos de texto partidos y por el `:hover` que React conserva (TR-13) | El DOM de las dos raíces es el mismo, así que no hay nodos partidos; el barrido mueve el puntero fuera de la página, a `(-1, -1)`, después de cada preparación, y el control de determinismo lo prueba | §0 y quickstart-f10c.md §3 |
 
 ## Project Structure
 
@@ -156,7 +156,7 @@ Lo que el revisor mira primero:
 2. **Un bloque `@media` de la hoja del shell en otro orden**, por ejemplo el de 590 px antes que el de 850 px: el multiconjunto da 0. Lo detecta el barrido, y su control negativo lo demuestra: `.sidebar` pasa de `flex` a `grid` y la barra superior, de 61 a 68 px a 590 y 375 px (T039; quickstart-f10c.md §3.5 b).
 3. **Una regla borrada porque la grilla no tenía el estado que la usa** (`#toast.visible`, `.noscript`, el `main` de 1 550 px o la impresión): la guarda de las fuentes la conserva, los centinelas de `rule-evidence.mjs` fallan si esos estados no están, y el control de borrado demuestra que el barrido los ve (T041; quickstart-f10c.md §3.5 c).
 4. **El tono de Go sobre el shell y los alias de los tokens:** `body[data-language='go']` queda en `styles.css` y las reglas que lo usan pasan a otra hoja; además, desde T042 los nombres viejos (`--accent`) son alias que se resuelven en `:root`, así que en Go seguirían en el tono de Rust si el bloque de Go no los vuelve a declarar. El multiconjunto resuelto no lo ve, porque resuelve con `:root`. Lo fijan el E2E «the brand mark takes the accent of each language» (T037), los estados en Go del barrido y el control negativo de T042, que quita los alias del bloque de Go y tiene que dar diferencias en esos estados (quickstart-f10c.md §3.5 d).
-5. **El `:hover` y la transición del toast en el barrido:** un clic deja el puntero sobre un botón, y el toast tarda 0,2 s en aparecer. El barrido mueve el puntero a `(0, 0)` y espera 400 ms después de que el toast tiene `.visible`, y el control de determinismo (la base contra sí misma, en 0) prueba que no queda ruido antes de comparar (T036).
+5. **El `:hover` y la transición del toast en el barrido:** un clic deja el puntero sobre un botón, y el toast tarda 0,2 s en aparecer. El barrido mueve el puntero fuera de la página, a `(-1, -1)`, y espera 400 ms después de que el toast tiene `.visible`, y el control de determinismo (la base contra sí misma, en 0) prueba que no queda ruido antes de comparar (T036).
 
 ## Unidades y orden
 

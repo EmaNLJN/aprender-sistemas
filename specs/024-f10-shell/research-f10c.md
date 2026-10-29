@@ -173,7 +173,7 @@ Cada dueño de las dos tablas es un supuesto con su verificación en R11.
 
 1. **Las trampas de TR-13.**
    - **Los nodos de texto partidos** no aparecen: el DOM de la base y el de la rama es el mismo, porque F10c sólo mueve CSS.
-   - **El `:hover`:** después de cada preparación, `page.mouse.move(0, 0)`.
+   - **El `:hover`:** después de cada preparación, `page.mouse.move(-1, -1)`, fuera de la página, como en todos los barridos: en `(0, 0)` el puntero puede quedar sobre un elemento con `:hover` del borde (medido en Chromium con una página mínima: en `(0, 0)` el `:hover` aplica y en `(-1, -1)` no). El prototipo corrió con `(0, 0)`, que en el taller cae sobre el relleno de la barra lateral, sin regla de `:hover`: sus números no cambian.
    - **El primer salto de línea de `<pre>` y `<textarea>`** no aplica, por lo mismo que los nodos partidos.
    - **Los `<details>`:** el barrido no compara lo de adentro de un `<details>` cerrado, salvo su `<summary>`: su tamaño computado depende de si alguna vez se midió. El prototipo lo encontró en el estado `lesson`, con 6 diferencias de `block-size` (0 contra 204,562 px, en un sentido a 1 600 px y en el otro a 981 px) en una corrida y ninguna en otra; con el salto, 0.
 2. **El doble de la API.** El barrido corre fuera de los fixtures de Playwright, así que instala su propio `context.route('**/api/**')` con las respuestas por omisión del doble de F11a (`installDefaults()`): la sesión con `STUDENT`, o con `ADMIN`, o sin cuenta, o con un 503, según el estado, y la lista de cuentas del E2E de F12a para la administración. Cada pedido sin respuesta se cuenta en `unhandled`, que tiene que quedar vacío.

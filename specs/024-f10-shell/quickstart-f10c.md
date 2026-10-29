@@ -305,7 +305,7 @@ export async function open(browser, origin, root, state, capture, unhandled, bef
   await page.goto(origin + state.path);
   await page.waitForFunction(state.ready ?? mainReady);
   if (state.setup) await state.setup(page);
-  await page.mouse.move(0, 0);
+  await page.mouse.move(-1, -1);
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(100);
   if (capture.media === 'print') await page.emulateMedia({ media: 'print' });
