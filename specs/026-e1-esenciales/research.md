@@ -73,9 +73,9 @@ Decisiones técnicas del plan, con sus alternativas, la tabla de Context7 y lo q
 
 ## R10. La línea base congelada
 
-**Decisión.** T001 escribe `qa/fixtures/content-baseline-e1.json` desde el `build/` de la base: las huellas de las 17 porciones, y la etapa y las tres huellas de los 274 ejercicios. `qa/content-baseline-check.ts`, dentro de `npm test`, compara el `build/` actual con ese archivo (FR-039, SC-001).
+**Decisión.** T001 escribe `qa/fixtures/content-baseline-e1.json` desde el `build/` de la base: las huellas de las 17 porciones, y la etapa y las tres huellas de los 274 ejercicios. `qa/content-baseline-check.ts` lo compara en dos niveles (FR-039): dentro de `npm test`, que los 274 siguen y conservan su etapa; con `--full`, como compuerta de E1 (T016 y T019), los bytes y las huellas de todo (SC-001).
 
-**Por qué.** SC-001 pide 0 diferencias contra la base, y E2 va a seguir sumando ejercicios: el contrato tiene que estar escrito, no recalculado.
+**Por qué.** SC-001 pide 0 diferencias contra la base, y el contrato tiene que estar escrito, no recalculado. Pero la comparación completa en `npm test` congelaría el mantenimiento del contenido: corregir un texto, una pista o los bugs de `rust-63` y `rust-71` cambia huellas a propósito. La etapa sí es un invariante permanente (D13).
 
 ## R11. La auditoría ordena Esenciales primero
 

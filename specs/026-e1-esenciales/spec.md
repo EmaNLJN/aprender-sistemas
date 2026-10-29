@@ -389,7 +389,7 @@ Después de E1, cada número que cuenta ejercicios coincide con el catálogo: el
   - el 422 de un catálogo desconocido.
 
   *(Constitución, principio II; spec 001, FR-038 a FR-042)*
-- **FR-039**: Un check de `npm test` DEBE comparar las 17 porciones, y la etapa y las tres huellas de los 274 ejercicios, con una línea de base tomada de `master` antes del cambio, y fallar con la primera diferencia (SC-001).
+- **FR-039**: Un check DEBE comparar el contenido con una línea de base tomada de `master` antes del cambio, en dos niveles. Siempre, dentro de `npm test`: cada uno de los 274 ejercicios sigue y conserva su etapa (ADR 0006 D13). Como compuerta de E1, con `--full` y fuera de `npm test`: los bytes y las huellas de las 17 porciones y las tres huellas de los 274, con la primera diferencia nombrada (SC-001). La comparación completa no corre siempre para no congelar el mantenimiento del contenido: corregir un texto o una pista, o los bugs de `rust-63` y `rust-71`, cambia huellas a propósito.
 - **FR-040**: La red de F1 DEBE pasar sin editarse, salvo las dos pruebas que abren el primer ejercicio desde el mapa (`views.spec.ts` y `reload.spec.ts`, que hoy esperan `rust-01`). Esas cambian en un commit propio, con TDD: el usuario lo aprobó en el clarify (Q3). Las E2E nuevas cubren abrir, resolver y recargar un ejercicio de Esenciales con el compilador simulado, la pestaña Esenciales, la sugerencia para quien ya avanzó y el orden del recorrido libre (el anterior de `rust-01`).
 - **FR-041**: `npm run api:content:check` DEBE cubrir las 19 porciones a través de Nginx, con y sin compresión. *(spec 001, FR-047)*
 - **FR-042**: E1 DEBE cerrar con `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `git diff --check` y `npm run test:e2e` en verde. También con Pest, Pint y PHPStan nivel 9, y con el resumen de una corrida de B3 en verde sobre el último commit. *(Hoja de ruta, «Criterios de aceptación globales»; B3-Q3)*
@@ -420,7 +420,7 @@ Después de E1, cada número que cuenta ejercicios coincide con el catálogo: el
 
 ### Measurable Outcomes
 
-- **SC-001**: Entre el contenido generado en `master` antes de E1 y después hay 0 diferencias en los bytes y las huellas de las 17 porciones de hoy, y en el `stage`, el `content_hash`, el `grading_hash` y el `starter_hash` de los 274 ejercicios. `curriculum-ids.json` conserva sus 274 entradas.
+- **SC-001**: Al cerrar E1, entre el contenido generado en `master` antes de E1 y después hay 0 diferencias en los bytes y las huellas de las 17 porciones de hoy, y en el `stage`, el `content_hash`, el `grading_hash` y el `starter_hash` de los 274 ejercicios (la comparación completa de FR-039). `curriculum-ids.json` conserva sus 274 entradas.
 - **SC-002**: Las 19 porciones y cada ejercicio de Esenciales que sirve la API tienen la huella que escribe el generador, a través de Nginx, con y sin compresión.
 - **SC-003**: Una corrida de B3 con runsc da 274 + 2*N* soluciones que aprueban y 274 + 2*N* iniciales que fallan como corresponde, con 0 programas sin veredicto.
 - **SC-004**: Con el progreso vacío, una E2E abre el laboratorio, entra a Esenciales desde «Un desafío para hoy» y resuelve el ejercicio con el compilador simulado. Después de recargar, y después de exportar e importar, el logro sigue, en Rust y en Go.

@@ -69,8 +69,8 @@ E1 no crea tablas (ADR 0006 §10). Cambian una columna, una fila de `catalogs`, 
 ```
 
 - La escribe T001 desde el `build/` de la base.
-- No se regenera: un cambio es una regresión de SC-001.
-- La compara `qa/content-baseline-check.ts`.
+- No se regenera.
+- La compara `qa/content-baseline-check.ts`: siempre, la etapa de los 274; con `--full`, como compuerta de E1, las huellas de las 17 porciones y de los 274 (FR-039 y SC-001).
 
 ## 6. El progreso
 

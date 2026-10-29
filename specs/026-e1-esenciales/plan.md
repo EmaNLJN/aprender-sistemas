@@ -47,7 +47,7 @@
   - `qa/fixtures/curriculum-ids.json` sólo crece;
   - `qa/fixtures/workshop-steps-v1.json` no cambia.
 
-  Lo comprueba `qa/content-baseline-check.ts` contra `qa/fixtures/content-baseline-e1.json`, que escribe T001 y nunca se regenera.
+  Lo comprueba `qa/content-baseline-check.ts` contra `qa/fixtures/content-baseline-e1.json`, que escribe T001 y nunca se regenera. En `npm test` corre la parte permanente (los 274 siguen y conservan su etapa); la comparación completa (`--full`) es la compuerta de E1, en T016 y T019 (FR-039).
 - **Los valores fijos:**
   - el código `essentials`, para el catálogo y para el nivel;
   - la etiqueta «Esenciales» y el subtítulo «Tus primeros pasos»;
@@ -394,7 +394,7 @@ export const expectEssentials: (exercises: LanguageExercises, language: Language
      ```
 
    Este archivo lee el `build/` real: queda en rojo hasta T004.
-4. **`qa/content-baseline-check.ts`,** entero (FR-039). Es una guarda: pasa en la base y falla si un byte de lo existente cambia:
+4. **`qa/content-baseline-check.ts`,** entero (FR-039). Es una guarda en dos niveles: siempre comprueba que los 274 siguen con su etapa, y con `--full` compara además los bytes de las 17 porciones y las tres huellas de los 274. Pasa en la base en los dos niveles:
 
    ```ts
    import assert from 'node:assert/strict';
@@ -428,22 +428,34 @@ export const expectEssentials: (exercises: LanguageExercises, language: Language
        .map((exercise) => [exercise.id, exercise.stage]),
    );
 
-   for (const [name, hash] of Object.entries(baseline.portions)) {
-     assert.equal(meta.portions[name], hash, `portion ${name} changed (SC-001)`);
-   }
+   const full = process.argv.includes('--full');
+
    for (const [id, frozen] of Object.entries(baseline.exercises)) {
-     const { stage, ...hashes } = frozen;
-     assert.equal(stages.get(id), stage, `${id}: stage changed (SC-001)`);
-     assert.deepEqual(meta.exercises[id], hashes, `${id}: fingerprints changed (SC-001)`);
+     assert.equal(stages.get(id), frozen.stage, `${id}: missing or its stage changed (ADR 0006 D13)`);
+     if (full) {
+       const hashes = {
+         contentHash: frozen.contentHash,
+         gradingHash: frozen.gradingHash,
+         starterHash: frozen.starterHash,
+       };
+       assert.deepEqual(meta.exercises[id], hashes, `${id}: fingerprints changed (SC-001)`);
+     }
+   }
+   if (full) {
+     for (const [name, hash] of Object.entries(baseline.portions)) {
+       assert.equal(meta.portions[name], hash, `portion ${name} changed (SC-001)`);
+     }
    }
    console.log(
-     `${Object.keys(baseline.portions).length} portions and ${Object.keys(baseline.exercises).length} exercises equal the frozen baseline PASS.`,
+     full
+       ? `${Object.keys(baseline.portions).length} portions and ${Object.keys(baseline.exercises).length} exercises equal the frozen baseline PASS.`
+       : `${Object.keys(baseline.exercises).length} exercises keep their stage PASS (run with --full for SC-001).`,
    );
    ```
 
 5. **Correr y ver los fallos esperados:**
    - `node qa/content-exercises-check.ts` falla en los casos nuevos (sin `essentials` en el resultado; `expectEssentials` lanza `not implemented`);
-   - `node qa/content-baseline-check.ts` pasa en la base: lo que prueba es que T003 y T004 no rompen nada.
+   - `node qa/content-baseline-check.ts` y `node qa/content-baseline-check.ts --full` pasan en la base: lo que prueban es que T003 y T004 no rompen nada.
 6. **El commit:** `test(content): red specs for the Essentials section and the frozen baseline`.
 
 ### Tarea 1.2 · El generador (T003, G)
@@ -567,7 +579,7 @@ export const expectEssentials: (exercises: LanguageExercises, language: Language
    - los `.go` empiezan con `package main` y una línea en blanco; finales de línea LF.
 3. **Correr:**
    - `npm run curriculum` en verde;
-   - `node qa/content-baseline-check.ts` y `node qa/curriculum-meta-check.ts` en verde;
+   - `node qa/content-baseline-check.ts --full` y `node qa/curriculum-meta-check.ts` en verde;
    - `node qa/content-exercises-check.ts` en verde.
 4. **La prueba previa en el host,** si tiene `rustc` y `go` (como midió B3; no reemplaza la auditoría de T017): armar con la plantilla de `content/harness/` el programa de cada solución y de cada inicial y comprobar que las diez soluciones aprueban y los diez iniciales fallan como corresponde. Lo que no se pueda correr en el host, se dice en el informe de la tarea.
 5. **El commit:** `feat(content): add the first Essentials stage for Rust and Go`, sólo con `content/`.
@@ -686,6 +698,9 @@ S1: `e1/base` con T001 a T004 integradas. `npm run curriculum` en verde.
    - `ContentRoundTripTest.php:55`: ídem;
    - `ContentSourceTest.php:19`, `ContentMetaTest.php:27-31`, `ExerciseRecordsTest.php:88-91` y `ContentAccessTest.php:76-87`: 274 pasa a 284, también en el nombre del caso;
    - los recorridos `['lab', 'quests', 'cores']` de `tests/Support/ContentFixture.php` (`:57` y `:180`), `ExerciseRecordsTest.php:17` y `WorkshopRecordsTest.php:78` suman `'essentials'`.
+
+   - `tests/Feature/ContentSchemaTest.php` («B: ENUM columns list their values in the ADR order»): `'exercises.level'` pasa a `"enum('beginner','medium','advanced','expert','essentials')"`. `workshops.level`, `worlds.level` y `atlas_concepts.level` siguen con `$levels`: es la prueba de FR-012 sobre el esquema;
+   - el barrido: `git grep -n "'beginner','medium','advanced','expert'" backend/api/tests`, y cada aparición que fije la columna de los ejercicios cambia en este commit.
 
    El 274 de `tests/Feature/Progress/Import/ImportContentTest.php:140` no cuenta el contenido: es la cantidad de nombres sintéticos de esa prueba, y no se toca.
 7. **Correr y ver el rojo:**
@@ -1020,7 +1035,7 @@ S1: `e1/base` con T001 a T004 integradas. `npm run curriculum` en verde.
    - `COPY_FORMAT = 2`;
    - en `qa/lib/content-server.ts` y en `qa/e2e/lib/content-portions.ts`, las tablas de rutas de cada porción (`PORTION_URLS` y `PORTION_PATHS`, o el nombre que tengan en `master`) suman las mismas dos entradas;
    - si alguna prueba de A3 cuenta 17 porciones o 18 pedidos por ronda, pasa a 19 y 20 en este commit.
-8. **Los usos de `levelOf` y de `LEVEL_LABELS` con un ejercicio:** `git grep -n "LEVEL_LABELS\[levelOf\|LEVEL_LABELS\[exercise\|LevelId" frontend/src/pages/lab frontend/src/entities/exercise`. Cada uno que reciba el nivel de un ejercicio pasa a `EXERCISE_LEVEL_LABELS` o a `ExerciseLevelId`. Los de los componentes son de T013.
+8. **Los usos de `levelOf`, de `LEVEL_LABELS` y de `LevelId` con un ejercicio:** `git grep -n "levelOf\|LEVEL_LABELS\|LevelId" frontend/src qa`, sobre todo el front y los checks, no sólo el laboratorio. Cada uno que reciba el nivel de un ejercicio pasa a `EXERCISE_LEVEL_LABELS` o a `ExerciseLevelId`. Los que reciben el de un mundo, un taller o un concepto del Atlas (por ejemplo `CampaignWorldDefinition.level` en `entities/campaign/model/types.ts`) se quedan con `LevelId`. El motor de la campaña recibe todos los ejercicios: si `CampaignExercise` tipa `level`, pasa a `ExerciseLevelId`; `npm run typecheck` lo dice. Los de los componentes son de T013.
 9. **Correr:** las specs de T010 en verde, `npm run typecheck` y `npx eslint` sobre los archivos.
 10. **El commit:** `feat(front): read Essentials first in the exercise catalog and the content`.
 
@@ -1141,7 +1156,7 @@ S1: `e1/base` con T001 a T004 integradas. `npm run curriculum` en verde.
 
 **Archivos:** `qa/e2e/specs/views.spec.ts` y `qa/e2e/specs/reload.spec.ts`. Aprobado por el usuario en el clarify (Q3); van en un commit propio.
 
-1. **El cambio:** `views.spec.ts:82` y `reload.spec.ts:152` pasan de `/\?ejercicio=rust-01&paso=learn#laboratorio$/` a `/\?ejercicio=rust-138&paso=learn#laboratorio$/`. Los nombres de las pruebas no cambian.
+1. **El cambio.** Las dos pruebas arrancan con el almacenamiento vacío (ninguna llama a `storage.seed`, y el fixture `storage` no siembra), así que con la regla de R4 el botón abre el primer ejercicio de Esenciales. `views.spec.ts:82` y `reload.spec.ts:152` pasan de `/\?ejercicio=rust-01&paso=learn#laboratorio$/` a `/\?ejercicio=rust-138&paso=learn#laboratorio$/`. Los nombres de las pruebas no cambian.
 2. **Correr contra el build sin T011 y T013** (la etapa piloto ya está): `npm run build && E2E_PORT=4286 npx playwright test views.spec.ts reload.spec.ts`. Las dos fallan: el botón abre `rust-01`.
 3. **El commit:** `test(e2e): the lab starts at the first Essentials exercise`. El cuerpo nombra la aprobación del clarify (Q3).
 4. **Después de T011 y T013:** las dos en verde, sin otra edición.
@@ -1251,7 +1266,8 @@ S1: `e1/base` con T001 a T004 integradas. `npm run curriculum` en verde.
    - Pest, PHPStan y Pint;
    - el stack con `npm run api:content:check` (las 19 porciones, con y sin compresión).
 3. Comparar con los conteos de T001:
-   - los checks de `npm test` suben en uno, `content-baseline-check`;
+   - los checks de `npm test` suben en uno, `content-baseline-check` (la parte permanente);
+   - `node qa/content-baseline-check.ts --full` en verde: SC-001;
    - Vitest suma los casos de T010 y T012;
    - la red E2E suma los cinco de `lab-essentials.spec.ts`;
    - `html.length` crece unos cientos de caracteres y queda bajo `BOOT_SIZE_LIMIT`.
@@ -1301,7 +1317,7 @@ S1: `e1/base` con T001 a T004 integradas. `npm run curriculum` en verde.
 ### Tarea 4.3 · El cierre y el PR (T019, K)
 
 1. **T005 aprobada:** los diez ejercicios, con la evidencia en `tasks.md`.
-2. **La compuerta completa otra vez,** si algo cambió después de T016.
+2. **La compuerta completa otra vez,** si algo cambió después de T016, con `node qa/content-baseline-check.ts --full`.
 3. **El PR,** de `e1/base` a `master`:
    - el título: `feat(content): add Essentials as the first catalog of the chain`;
    - la descripción, en inglés:
@@ -1357,13 +1373,13 @@ S1: `e1/base` con T001 a T004 integradas. `npm run curriculum` en verde.
 | FR-036 | T006 (paso 6), T009, T015, T018 |
 | FR-037 | T016 (la spec de coherencia de F6 sin editar) |
 | FR-038 | T006, T007, T008 |
-| FR-039 | T001, T002 |
+| FR-039 | T001, T002 (los dos niveles), T016 y T019 (`--full`) |
 | FR-040 | T014, T015 |
 | FR-041 | T016 |
 | FR-042 | T016, T019 |
 | FR-043 | T003 (`expectEssentials`), T004 |
 | FR-044 | T004, T005, T017 |
-| SC-001 | T002 (`content-baseline-check`) |
+| SC-001 | T002 (`content-baseline-check --full`), T016 y T019 |
 | SC-002 | T006, T016 (`api:content:check`) |
 | SC-003 | T017 |
 | SC-004 | T015 (la sugerencia, resolver y recargar en Rust y en Go), T010 (exportar e importar: `planImport` y `applyImport`) |

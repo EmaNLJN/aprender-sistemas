@@ -7,7 +7,7 @@ Comandos para verificar la entrega, desde la raíz de `e1/base` con el árbol li
 ```sh
 npm ci
 npm run curriculum
-node qa/content-baseline-check.ts      # 17 portions and 274 exercises equal the frozen baseline PASS
+node qa/content-baseline-check.ts --full   # 17 portions and 274 exercises equal the frozen baseline PASS
 node qa/curriculum-meta-check.ts       # las 19 porciones y el harness, y Esenciales primero en la cadena
 node qa/content-exercises-check.ts
 node qa/content-check.ts
@@ -15,7 +15,7 @@ node qa/curriculum-ids-check.ts
 ```
 
 Esperado:
-- `content-baseline-check` pasa: SC-001.
+- `content-baseline-check --full` pasa: SC-001. Sin `--full`, la parte permanente es la que corre dentro de `npm test`.
 - En `build/curriculum.meta.json`, `catalogs[0]` es `{"code":"essentials","sliceBy":"language","chainPosition":1}` y `portions` tiene 20 claves.
 - En `build/curriculum.json`, `essentials.rust` y `essentials.go` tienen cinco ejercicios cada uno, de `rust-138` a `rust-142` y de `go-138` a `go-142`, con la etapa 50 y `level: essentials`.
 
