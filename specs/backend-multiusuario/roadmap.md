@@ -8,7 +8,7 @@
 
 ## Convenciones
 
-- **IDs estables:** B1…E1, C5 y C6 no se renumeran ni se reutilizan. Un ítem nuevo recibe un ID nuevo.
+- **IDs estables:** B1…E1, C5, C6 y E2 no se renumeran ni se reutilizan. Un ítem nuevo recibe un ID nuevo. Un ítem partido conserva su ID, y cada parte lo lleva con una letra: C3a a C3c y D1a a D1c.
 - **Una spec por ítem,** en `specs/NNN-<id>-<nombre>/` (`NNN` es el orden de creación de Spec Kit). La línea `Input` de cada spec nombra el ID de su ítem; esta tabla enlaza la spec de vuelta.
 - **Estados:** `Pendiente` (sin spec), `En especificación` (spec redactada, con preguntas abiertas o sin plan), `Planificado` (plan, tareas y análisis hechos), `En curso`, `Entregado`.
 - **Entregado** exige la implementación integrada y la evidencia de QA: PR, commit y qué se ejecutó. Si algo quedó sin verificar, se escribe.
@@ -25,18 +25,19 @@
 | C2 | Contenido en MySQL | Pasar el currículo de un documento embebido a tablas y servirlo por recurso, idéntico al oráculo, para que el progreso apunte a filas estables | A1, C1 | Entregado | [001-c2-contenido-mysql](../001-c2-contenido-mysql/spec.md); la extiende [002-c6-registros-tipados](../002-c6-registros-tipados/spec.md) (C6) |
 | C3 | Identidad y acceso | Cuentas para muchos usuarios: alta por invitación, sesión, recuperación por email, roles y límites por cuenta | C1 | Entregado (la parte C3a, PR #24) | [004-c3-identidad-acceso](../004-c3-identidad-acceso/spec.md), la parte C3a, con su [plan](../004-c3-identidad-acceso/plan.md) y sus [tareas](../004-c3-identidad-acceso/tasks.md); el resto es C3b |
 | C3b | Administración y ciclo de vida de la cuenta | Administrar usuarios e invitaciones, y exportar y suprimir la cuenta, sin correo | C3 (C3a), B2 | Entregado (PR #37) | [010-c3b-admin-ciclo-de-vida](../010-c3b-admin-ciclo-de-vida/spec.md), con su [plan](../010-c3b-admin-ciclo-de-vida/plan.md) y sus [tareas](../010-c3b-admin-ciclo-de-vida/tasks.md) |
-| C3c | Correo | Mandar correo con un worker aislado: la recuperación por email, la invitación por correo y los avisos | C3b y el dominio | En especificación | [011-c3c-correo](../011-c3c-correo/spec.md), sin plan: espera el dominio |
+| C3c | Correo | Mandar correo con un worker aislado: la recuperación por email, la invitación por correo y los avisos | C3b; el dominio, sólo para el correo real (T032 a T037 de su plan) | Planificado | [011-c3c-correo](../011-c3c-correo/spec.md), con su [plan](../011-c3c-correo/plan.md) y sus [tareas](../011-c3c-correo/tasks.md) |
 | B2 | API de ejecuciones | Ejecutar el código del alumno en el sandbox propio, de forma asincrónica y con cuotas por usuario, y dejar un intento liviano por ejecución | B1, C2, C3 (la parte C3a, spec 004), C6 | Entregado (PR #31) | [005-b2-api-ejecuciones](../005-b2-api-ejecuciones/spec.md) |
 | D1a | Sincronización del servidor | Guardar el progreso en tablas y fusionar por campo lo que llega de cada dispositivo: `POST /api/sync`, `GET /api/progress` y diez de las doce tablas | C2, C3 (C3a), B2 | Entregado (PR #36) | [007-d1-progreso-sincronizacion](../007-d1-progreso-sincronizacion/spec.md), la parte D1a, con su [plan](../007-d1-progreso-sincronizacion/plan.md) y sus [tareas](../007-d1-progreso-sincronizacion/tasks.md) |
 | D1b | Importación y reset del progreso | Traer el progreso v1 a la cuenta sin pérdida y «Borrar todo» que se propaga: `POST /api/progress/import` y `POST /api/progress/reset` | D1a | Entregado (PR #39) | spec 007, con el [plan](../007-d1-progreso-sincronizacion/plan-d1b.md) y las [tareas](../007-d1-progreso-sincronizacion/tasks-d1b.md) de D1b |
 | D1c | Cliente v2 del progreso | La copia local con su cola, un espacio por cuenta y la sincronización desde el navegador | D1a, D1b, A4 | En especificación | spec 007, sin plan: espera a A4 (Q4 de su clarify) |
-| C5 | Estadísticas del admin | Dar al admin métricas de uso sin exponer nunca el código ni los textos del alumno | D1, B2 | Pendiente | — |
-| E1 | Sesión Esenciales | Sumar Esenciales como catálogo nuevo, primero de la cadena | A1, D1 | Pendiente | — |
+| C5 | Estadísticas del admin | Dar al admin métricas de uso sin exponer nunca el código ni los textos del alumno | D1a, D1b, B2, C3b; lo esperan [F14a y F14b](../front-react/roadmap.md) | Planificado | [025-c5-estadisticas](../025-c5-estadisticas/spec.md), con su [plan](../025-c5-estadisticas/plan.md) y sus [tareas](../025-c5-estadisticas/tasks.md) |
+| E1 | Sesión Esenciales | Sumar Esenciales como catálogo nuevo, primero de la cadena | A1, D1a, B3, [F7a y F7b](../front-react/roadmap.md) | Planificado | [026-e1-esenciales](../026-e1-esenciales/spec.md), con su [plan](../026-e1-esenciales/plan.md) y sus [tareas](../026-e1-esenciales/tasks.md) |
+| E2 | Contenido de Esenciales | Completar Esenciales con las etapas 2 a 4 de cada lenguaje (valores y tipos, decidir y repetir): tres PR de contenido en orden, uno por etapa, con la auditoría de B3 y la revisión pedagógica del usuario | E1, B3 | Planificado | [029-e2-contenido-esenciales](../029-e2-contenido-esenciales/spec.md), que extiende a la 026, con su [plan](../029-e2-contenido-esenciales/plan.md) y sus [tareas](../029-e2-contenido-esenciales/tasks.md) |
 | A2 | Compuerta de arranque | Que el front espere el contenido antes de evaluar las vistas legacy y que el HTML deje de embeberlo | A1, [F1 y F2 (unidades 1 a 4)](../front-react/roadmap.md) | Entregado (PR #38; a `master` con el PR #40) | [006-a2-compuerta-arranque](../006-a2-compuerta-arranque/spec.md) |
-| A3 | El front lee el contenido de la API | Que el front lea las 17 porciones con el protocolo de arranque, guarde la última copia y avise si el backend no responde | A2, C2, C3, [F11a](../front-react/roadmap.md#pantallas-de-acceso-a3-y-c3) | En especificación | [016-a3-contenido-api](../016-a3-contenido-api/spec.md), clarify del 2026-10-28, sin plan |
-| C4 | Exposición | Exponer el taller en Internet con certificado propio, cabeceras estrictas y mínimo privilegio | A3, C3 (C3a, C3b y C3c), [F12a](../front-react/roadmap.md) | Planificado | [008-c4-exposicion](../008-c4-exposicion/spec.md), con su [plan](../008-c4-exposicion/plan.md) y sus [tareas](../008-c4-exposicion/tasks.md) |
-| A4 | Laboratorio con el sandbox propio | Que el laboratorio use `/api/runs` en lugar de los Playgrounds públicos | B2, A3, B3, [F7a](../front-react/roadmap.md) | En especificación | [017-a4-laboratorio-sandbox](../017-a4-laboratorio-sandbox/spec.md), que extiende a la [005](../005-b2-api-ejecuciones/spec.md) con `attemptId`; clarify del 2026-10-28, sin plan |
-| B3 | Auditoría local del currículo | Probar en el ejecutor local que todas las soluciones aprueban y todos los códigos iniciales fallan | B2 | En especificación | [020-b3-auditoria-curriculo](../020-b3-auditoria-curriculo/spec.md), clarify del 2026-10-28, sin plan |
+| A3 | El front lee el contenido de la API | Que el front lea las 17 porciones con el protocolo de arranque, guarde la última copia y avise si el backend no responde | A2, C2, C3, [F11a](../front-react/roadmap.md#pantallas-de-acceso-a3-y-c3) | Planificado | [016-a3-contenido-api](../016-a3-contenido-api/spec.md), con su [plan](../016-a3-contenido-api/plan.md) y sus [tareas](../016-a3-contenido-api/tasks.md) |
+| C4 | Exposición | Exponer el taller en Internet con certificado propio, cabeceras estrictas y mínimo privilegio | A3, C3 (C3a, C3b y C3c), [F12a y F11b](../front-react/roadmap.md) | Planificado | [008-c4-exposicion](../008-c4-exposicion/spec.md), con su [plan](../008-c4-exposicion/plan.md) y sus [tareas](../008-c4-exposicion/tasks.md) |
+| A4 | Laboratorio con el sandbox propio | Que el laboratorio use `/api/runs` en lugar de los Playgrounds públicos | B2, A3, B3, [F7a](../front-react/roadmap.md) | Planificado | [017-a4-laboratorio-sandbox](../017-a4-laboratorio-sandbox/spec.md), que extiende a la [005](../005-b2-api-ejecuciones/spec.md) con `attemptId`, con su [plan](../017-a4-laboratorio-sandbox/plan.md) y sus [tareas](../017-a4-laboratorio-sandbox/tasks.md) |
+| B3 | Auditoría local del currículo | Probar en el ejecutor local que todas las soluciones aprueban y todos los códigos iniciales fallan | B2; lo esperan A4, E1 y E2 | Planificado | [020-b3-auditoria-curriculo](../020-b3-auditoria-curriculo/spec.md), con su [plan](../020-b3-auditoria-curriculo/plan.md) y sus [tareas](../020-b3-auditoria-curriculo/tasks.md) |
 | C6 | Registros tipados del contenido | Que los registros del contenido viajen por la API como objetos tipados e inmutables, sin cambiar un byte publicado ni una fila, y que el análisis estático suba de nivel | C2 | Planificado | [002-c6-registros-tipados](../002-c6-registros-tipados/spec.md), que extiende a la 001 |
 
 ## Alcance por ítem
@@ -56,7 +57,7 @@ Cada línea nombra lo que entra y lo que queda fuera. Los detalles están en el 
   - Depende de C3a y de B2 (reutiliza `AccountLock`, `ActiveRuns` y la suite `Concurrency`), y conviene entregarlo antes de C4: no se expone el taller sin poder administrar y suprimir cuentas.
 - **C3c** (spec 011, correo):
   - Entra: `worker-mail` aislado con su red y su usuario de MySQL, `mail_jobs`, las notificaciones, el modo sólo link y Mailpit en `dev`, `forgot-password` y los avisos por email (FR-057: la invitación por correo, la recuperación pedida por un admin, el aviso de rol de admin y el de cuenta borrada). El proveedor es Brevo por SMTP (Q1 de su spec).
-  - Depende de C3b y del dominio con DNS editable, una acción del usuario que también pide C4: su plan espera ese dominio.
+  - Depende de C3b. Su plan (PR #68, actualizado en #85) se implementa y se prueba sin el dominio hasta T031, con el modo sólo link, el mailer `log` y, con permiso, Mailpit. El dominio con DNS editable, una acción del usuario que también pide C4, hace falta sólo para el correo real (T032 a T037). El plazo de los reintentos es el vencimiento del link o 24 horas, lo que llegue primero (su decisión 1, aceptada con el merge de #68), y F12b lo toma.
 - **B2:**
   - Entra: `progress_heads` y `exercise_progress` completas, `attempts`, `attempt_tests`, `attempt_payloads` y `runs`; `/api/runs` con cola propia, cuotas por usuario y tope global; `executor` y `worker-runs`; la plantilla del harness como recurso. Precondición: `test_key` único e inmutable (el generador deja de exigir `t{índice+1}`).
   - Fuera: sincronización del progreso (D1) y la vista del laboratorio (A4).
@@ -68,25 +69,47 @@ Cada línea nombra lo que entra y lo que queda fuera. Los detalles están en el 
   - D1c enmienda dos requisitos de D1 (clarify del 2026-10-28):
     - el FR-070, por F11-Q5: la «computadora compartida» se elige en «Tu cuenta» (F11d) y no antes de guardar, y al activarla el cliente borra el espacio local de la cuenta, incluida la copia del contenido de A3;
     - la cláusula de las claves v1 del FR-074, por F8-L7: rige desde D1c. Hasta entonces, «Borrar todo» de F8, que ya usa el reset de D1b con la contraseña (F8-Q1), borra las claves v1 como hoy.
-- **C5:**
-  - Entra: `/api/admin/stats/*`, `GET /api/admin/runs` y `GET /api/admin/queue`, resumen en la ficha de usuario y caché de 10 minutos. Los índices llegan después de medir con 5.000 alumnos sintéticos.
-  - Fuera: rollups diarios (camino de escala, §9) y cualquier exportación de admin.
-- **E1:**
-  - Entra: una fila en `catalogs`, el contenido nuevo y un ADR de IDs y numeración de etapas (al final de la cadena, para no cambiar los 274 `stage` actuales).
-  - Fuera: tablas nuevas.
+- **C5** ([spec 025](../025-c5-estadisticas/spec.md), clarify del 2026-10-28, todas con la opción recomendada):
+  - Entra: `/api/admin/stats/*` (el resumen, los ejercicios, los alumnos paginados y el detalle de una cuenta; Q2-A), `GET /api/admin/runs` y `GET /api/admin/queue`, el resumen `usage` en la ficha de usuario y caché de 10 minutos. Las métricas son también por cuenta, sin textos, huellas ni la opción elegida, y sin umbral (Q1-A). Cada consulta de una cuenta deja una línea de log (Q3-A). Los agregados cuentan las cuentas `student` activas y deshabilitadas, sin admins ni las que están en `deleting` (Q5-A). Los índices llegan después de medir con 5.000 alumnos sintéticos (T017).
+  - Fuera: las pantallas, que son F14a y F14b del front (Q4-A); rollups diarios (camino de escala, §9) y cualquier exportación de admin.
+  - Sus dependencias ya están entregadas (D1a, D1b, B2, C3a y C3b), así que puede implementarse antes de la ola 5. Sus números describen el taller recién con A4 y D1c (hallazgo 2 de su spec).
+  - Las decisiones de su plan, con la recomendada: la medición a escala completa si el disco lo permite y, si no, con `--per-day=7500`, extrapolando; los comandos de la medición quedan en la imagen; la ficha de una cuenta en supresión devuelve `usage: null`.
+- **E1** ([spec 026](../026-e1-esenciales/spec.md), clarify del 2026-10-28, todas con la opción recomendada):
+  - Entra: una fila en `catalogs`, la plataforma y una etapa real por lenguaje, la piloto (Q5-A), y el ADR 0009 de IDs y numeración de etapas. Esenciales es un quinto nivel antes de Inicial, con el código `essentials` (Q2-A), para quien nunca programó, con cuatro etapas de cinco ejercicios por lenguaje (Q1-A). Sus IDs siguen la serie correlativa: `rust-138…` y `go-138…` (Q4-A). Se ve sólo en el laboratorio, primero en el mapa y en el recorrido libre (Q3-A).
+  - Fuera: tablas nuevas; las otras tres etapas, que son E2.
+  - Espera a B3 y a F7a y F7b del front: el cambio del laboratorio va en la página de React (FR-035).
+- **E2** ([spec 029](../029-e2-contenido-esenciales/spec.md), que extiende a la 026; clarify del 2026-10-28, Q1-B y el resto con la recomendada):
+  - Entra: las etapas 2 a 4 de Esenciales, de cinco ejercicios por lenguaje (`rust-143` a `rust-157` y `go-143` a `go-157`, etapas 51 a 53), con la tabla de E1 y `bool` en la etapa 3 (Q1-B). Va un PR por etapa, con los dos lenguajes (Q2-A), en orden (FR-006). Las etapas se redactan en cadena: la siguiente, mientras el usuario revisa la anterior (Q4-A). Cada PR trae los contratos de conteo que E1 dejó a mano, el resumen de B3 y la aprobación del usuario.
+  - Fuera: el código (el generador, la plantilla del harness, la API, el front, el ejecutor y la auditoría): si hace falta, es un bug o un ítem nuevo. Un arreglo a un ejercicio publicado va en su propio PR `fix(content)` (Q5-A). Una etapa que no aprueba la revisión se corrige en la misma rama (Q3-A).
 - **A2:**
   - Entra: la compuerta con su spike previo; el diseño admite el protocolo por porciones (§7).
   - Fuera: la lectura real de la API (A3).
 - **A3:**
   - Entra: el protocolo de arranque completo (validador por porción, comparación de `Content-Version`, reintento con tope), como extensión de la etapa de sesión que introduce F11a (ruling C1): usa la `Content-Version` de la sesión para las porciones y, ante un 401 en una porción, llama a «pedir el ingreso» de F11a; la última copia en IndexedDB (A3-Q4), que sólo usa quien no cerró su sesión en ese navegador, con un aviso, y que salir borra (A3-Q2); el aviso sin backend; y el retiro del archivo estático del contenido, también de la imagen web.
   - Fuera: la etapa de sesión, el doble de la API de los E2E y el proxy de `/api/` de la vista previa y de `npm run dev`, que llegan con F11a (C1 y A3-Q3); la plantilla del harness, que pide A4.
+  - Su plan (PR #71, alineado con F11a en #84): las decisiones D1-(a) y D2-(a), aceptadas con el merge. Sin copia, una sesión que falla muestra la vista de error de A2, y IndexedDB se prueba con un doble propio. La enmienda de #84 guarda el token del enlace hasta que una sesión responde, también al «Reintentar» (FR-005 de F11).
 - **C4:**
   - Entra: TLS propio con renovación, HSTS, cookies `__Host-` y `Secure`, CSP sin `'unsafe-inline'`, retiro de `vite-plugin-singlefile`, IP real del cliente para los límites, usuarios de MySQL con mínimo privilegio y respaldos fuera del host.
   - Clarify del 2026-10-06 (spec 008, Q1 a Q5 con la opción recomendada): el certificado con el módulo ACME del Nginx que ya hay; los respaldos cifrados en almacenamiento de objetos con una credencial que sólo agrega; `style-src` con nonce y `style-src-attr 'unsafe-inline'`, porque CodeMirror asigna `style.cssText`; un comando de estado y un monitor externo; un usuario de MySQL por rol. La compuerta se parte en G1 (local, con Pebble) y G2 (abre el router).
-  - Con `style-src-attr 'unsafe-inline'`, C4 no espera a los ports del front por sus `style=`. Espera, en cambio, a F12a: su compuerta G1 suma «las pantallas de administración integradas» (F12-Q2), y no espera a F12b. Recomendación de B3: B3 en verde antes de G2. Las specs de A3, B3 y F12 le dejan hallazgos (ver «Enmiendas pendientes»).
+  - Con `style-src-attr 'unsafe-inline'`, C4 no espera a los ports del front por sus `style=`. Espera, en cambio, a F12a y a F11b: su compuerta G1 suma «las pantallas de administración integradas» (F12-Q2) y F11b entregada (decisión del usuario del 2026-10-28), y no espera a F12b. La corrida de registro de B3 en verde sobre el contenido que se despliega es parte de G1.
+  - La actualización del plan (PR #83, 2026-10-28) incorpora lo que dejaron las specs y los planes vecinos:
+    - el recorrido de la CSP suma las pantallas de F11a, F11b y F12a;
+    - un sexto rol de MySQL, `taller_audit`, para la auditoría de B3, y la matriz de `taller_mail` que trae C3c;
+    - el arranque de un aula detrás de un NAT, que C4 mide para ajustar los límites de la zona `api`.
+
+    Trae también tres decisiones del usuario, con la recomendada:
+    - un dominio propio con DNS editable, que sirve a C3c y a C4;
+    - G2 no espera a A4: hasta que A4 entre, la CSP lleva los Playgrounds, y A4 los quita;
+    - el techo del aula: 1 200 pedidos y 1 600 conexiones simultáneas por IP.
 - **A4:**
   - Entra: el laboratorio sobre `/api/runs` con el puerto de `features/run-exercise` que deja F7a, la vista previa con la plantilla del servidor y el retiro del cliente de Playgrounds. No es sólo un cambio del adaptador: la [spec 017](../017-a4-laboratorio-sandbox/spec.md) y su tabla F7-S1 a F7-S9 dicen qué toma de F7. Su clarify (2026-10-28): suma `attemptId` a la ejecución de la API, aditivo y con Pest (A4-Q1); retira los Playgrounds del todo, así que la CSP de C4 queda estricta y con el sandbox caído no se ejecuta (A4-Q2); espera con la fila visible, un aviso de demora a los 15 s y una espera de turno automática ante `active` y `queue_full`, con el mismo `clientRunId`, bajo 30 envíos por minuto y hasta 2 min (A4-Q3); oculta el número de intentos hasta que D1c lo traiga del servidor (A4-Q4); y la auditoría de B3 en verde es su condición (A4-Q5). Un 401 llama a «pedir el ingreso» de F11a, y `runtime-check` se retira con A4. Guarda el id del intento del servidor en el `result` v1 y deja de sumar `attempts` por las ejecuciones del servidor.
   - Sus estados y sus textos los dibuja la vista vigente cuando entra (ruling C4): la revisión de `lab.js` si F7b todavía no entró, y entonces F7b los porta con sus E2E, o la página React si ya entró.
+  - Las decisiones de su plan (PR #89, 2026-10-28), con la recomendada:
+    - D1: la plantilla del arnés va como porción opcional de la copia de A3, y el `afterPublish` de A3 la arrastra;
+    - D2: se aprueban las 20 E2E editadas, 9 de F1 y 11 de F7a, y «quirk 8» deja de ser `KNOWN DEFECT`;
+    - D3: la verificación contra el stack es manual y declarada (FR-047).
+
+    Además unifica las tres formas del resultado en `LabResultV1` (T004 y T024), y F7b consume esa forma.
 - **B3:**
   - Entra: un comando dentro de la imagen de la API que corre los 548 programas (la solución y el inicial de cada uno de los 274 ejercicios) contra su propia instancia del ejecutor con runsc (desde C4, fuera de hora en producción), con el armado y la clasificación de B2 y sin escribir `runs` ni `attempts`; un informe legible y en JSON, con sellos, fuera de Git y de Docker; el check estático del caché de Go en `npm test`. Su clarify (2026-10-28): un inicial falla por sus pruebas, salvo `kind: reparar`, que también puede no compilar (B3-Q1); corre en local, con runsc y su instancia del ejecutor, y la CI no la repite: en los PR que tocan lo auditado, un check lee el resumen de la corrida en la descripción del PR y comprueba su formato, que la corrida sea de registro con runsc, el veredicto en verde y las huellas del documento y de la plantilla recalculadas desde la cabeza del PR; las imágenes, el commit y el árbol limpio quedan para una persona (B3-Q2, FR-038 y SC-009); es obligatoria en los PR que tocan lo auditado (contenido, plantilla e imágenes), con el resumen de una corrida sobre el último commit con el árbol limpio, y es condición de A4 (B3-Q3); informa el tiempo de cada programa contra su límite, con un aviso cerca, y la memoria sólo como OOM, sin cambiar B1 ni B2 (B3-Q4); y verifica la prueba propia con una muestra de 4 programas (B3-Q5).
   - Un ejercicio que falla es un bug de contenido: se corrige en `content/`, nunca en `build/`. Los dos primeros probables, `rust-63` y `rust-71`, están en «Enmiendas pendientes».
@@ -100,17 +123,20 @@ Cada línea nombra lo que entra y lo que queda fuera. Los detalles están en el 
 - **El resto:**
   - **A2** depende de A1 y de F1 y F2 del [épico del front](../front-react/roadmap.md): la red de pruebas y los seams que vuelven explícito el arranque. Corre después de ellos, en paralelo con C3 y C6.
   - **A3** espera a A2, C2, C3 y F11a, el acceso de F11 (ingreso, alta por invitación, restablecer la contraseña con el enlace, el aviso de privacidad, «Tu cuenta» y «Salir»): el clarify del 2026-10-28 partió F11 en F11a a F11d, y A3 espera sólo a F11a (P1 y A3-Q1). Así desaparece el ciclo A3 → F11 → D1c → A4 → A3. La ubicación de las pantallas, una raíz previa al shell, sigue siendo una propuesta pendiente del usuario.
-  - **C4** espera a A3, a las tres partes de C3 (C3a, C3b y C3c) y a F12a, la administración sin correo del front (F12-Q2), que su compuerta G1 suma como «las pantallas de administración integradas». Recomendación de B3: B3 en verde antes de la compuerta G2.
+  - **C4** espera a A3, a las tres partes de C3 (C3a, C3b y C3c), a F12a, la administración sin correo del front (F12-Q2), y a F11b, la cuenta (decisión del usuario del 2026-10-28). Su compuerta G1 suma «las pantallas de administración integradas», F11b entregada y la corrida de registro de B3 en verde. G2 no espera a A4.
   - **A4** espera a B2, A3, F7a y B3, no a F7b (ruling C4 y A4-Q5): toma el puerto de `features/run-exercise` que deja F7a.
-  - **B3** espera a B2 y va antes que A4 (ADR 0005 §8), en paralelo con F5, F6 y F7 del front.
-  - **D1c** sigue esperando a A4 (Q4 de su clarify) y enmienda el FR-070 de D1 (F11-Q5; ver «Alcance por ítem», D1).
+  - **B3** espera a B2 y va antes que A4 (ADR 0005 §8), en paralelo con F5, F6 y F7 del front. También la esperan E1 y E2.
+  - **D1c** sigue esperando a A4 (Q4 de su clarify) y enmienda el FR-070 de D1 (F11-Q5; ver «Alcance por ítem», D1). Los planes de F11d y de F13 del front van después del suyo.
+  - **C5** depende de lo entregado (D1a, D1b, B2, C3a y C3b), así que puede implementarse antes de la ola 5 (hallazgo 2 de su spec). Sus pantallas, F14a y F14b del front, esperan a C5 implementado.
+  - **E1** espera a B3 y a F7a y F7b del front (FR-035 de la spec 026), además de A1 y D1a.
+  - **E2** espera a E1 y a B3: tres PR de contenido en orden, uno por etapa (FR-006).
 - **C6** (decidido en su clarify, Q5): depende sólo de C2, corre en paralelo con C3, en la ola 2, y se entrega antes de B2, que cambia las pruebas de ejercicio y el generador y por eso depende de C6. Con C3 comparte `phpstan.neon`, `config/` y la documentación, que integra el agente principal; los puntos de integración están en su plan. Desde que C6 sube el análisis al nivel 9, el código de C3 tiene que pasarlo.
 - **Olas** (un paso puede arrancar cuando terminó el anterior; los de una misma ola corren en paralelo sólo con archivos disjuntos):
   1. C2.
   2. C3 y C6. A2 entra en cuanto el front entregue F1 y F2.
   3. B2 y A3.
   4. D1, C4, A4 y B3: B3 va antes que A4, en paralelo con F5, F6 y F7 del front, y D1c entra después de A4.
-  5. C5 y E1.
+  5. C5, E1 y E2: C5 puede adelantarse, porque sus dependencias ya están entregadas; E2 va después de E1.
 
 ## Estado y evidencia
 
@@ -136,6 +162,10 @@ Cada línea nombra lo que entra y lo que queda fuera. Los detalles están en el 
 - **C3b y C3c** (2026-10-06): clarify de C3b, que parte otra vez el resto de C3: C3b, la administración y el ciclo de vida de la cuenta (spec 010, renombrada desde `010-c3b-correo-admin`), y C3c, el correo (spec 011, sólo especificada). Plan de C3b, con investigación, modelo de datos, contratos HTTP y de consola, guía de validación y 25 tareas en cuatro ondas, con dueños de archivos disjuntos; la única tabla nueva es `account_deletions`. El análisis cubrió 32 requisitos y criterios con sus 25 tareas, sin hallazgos críticos. Sin implementar: el código del plan es de referencia.
 - **C4** (2026-10-06): clarify (Q1 a Q5 con la opción recomendada), investigación, modelo de datos, contratos HTTP y de consola, guía de validación, plan y 27 tareas en cinco ondas, con los spikes V1 a V5 antes de construir. El análisis cruzado (47 requisitos y 13 criterios con tarea, dueños sin archivos compartidos, sin ciclos) dejó hallazgos que se corrigieron. Sin implementar: ningún código, script ni SQL del plan se ejecutó.
 - **A3, A4 y B3** (2026-10-28): specs redactadas en paralelo con nueve del front y clarificadas por el usuario el 2026-10-28; ninguna tiene plan. A3 (spec 016, PR #49): 43 requisitos y 10 criterios, Q1 a Q4 con la opción recomendada. A4 (spec 017, PR #50): 48 requisitos y 10 criterios, Q1 a Q5 con la opción recomendada. B3 (spec 020, PR #54): 38 requisitos y 9 criterios, Q1 a Q5 con la opción recomendada; la Q2 la completó el usuario después, con el check del resumen en la CI (FR-038 y SC-009, commit `2d015b47` de la rama de la spec). Sin Docker ni descargas, B3 midió en el host, con `rustc` 1.97.1 y `go` 1.27.2, sin gVisor ni límites: las 274 soluciones aprueban, los 137 iniciales de Go fallan por sus pruebas, `rust-63` no compila y `rust-71` aborta, y la compilación más lenta fue la de `go-69`, 8,0 s contra un límite de 15. Las decisiones del clarify y los rulings del coordinador están en la entrada del 2026-10-28 de la [hoja de ruta del front](../front-react/roadmap.md).
+- **Los planes del 2026-10-28.** Los mergeó el usuario, y mergear un plan acepta sus decisiones recomendadas (indicación del usuario del 2026-10-28). Ninguno está implementado en `master`.
+  - **Los planes:** B3 (#62, 18 tareas), C3c (#68, 37 tareas, de las que T032 a T037 son acciones del usuario), A3 (#71, 16) y A4 (#89, 29).
+  - **Especificados y planificados en el mismo PR:** E1 (spec 026, #81, 19 tareas), C5 (spec 025, #86, 18) y E2 (spec 029, #90, 14). E2 lo creó el clarify de E1 (Q5-A).
+  - **Las actualizaciones:** el plan de C4, a las dependencias de hoy (#83, sigue con 27 tareas); el de A3, alineado con F11a y sin la pérdida del token del enlace (#84); el de C3c, con el orden de integración de `docker/compose.yaml` y el permiso de Mailpit (#85).
 
 Las evidencias salen de los mensajes de los commits y de la hoja de ruta anterior.
 
@@ -150,6 +180,8 @@ Las evidencias salen de los mensajes de los commits y de la hoja de ruta anterio
 | C3b | El aviso de privacidad dice que la supresión borra todo y que persiste 35 días en los respaldos y 7 en el binlog; guardar la copia del libro de supresiones junto a cada respaldo y correr `taller:reapply-deletions` al restaurar. |
 | C3c | El dominio con DNS editable (el de C4); en Brevo, la vía de transferencia internacional, la cuenta, SPF, DKIM y DMARC, y la credencial SMTP en `.env`; un `APP_URL` público; un aviso de privacidad que nombre a Brevo y la lista de dominios del registro; un envío real a tres buzones; `axllent/mailpit` v1.31.4 sólo con permiso, en el perfil `dev`. |
 | C4 | Antes de empezar, comprobar que la conexión admite los puertos 80 y 443 (sin CGNAT). Antes de G1, el dominio, la cuenta del destino de los respaldos y el par de claves `age`. En G2, el DNS (registro A, sin AAAA), el reenvío de 80 y 443 en el router y el monitor externo. Los permisos de descarga por lote (spec 008, «Descargas previstas»). |
+| C5 (T017) | Antes de cargar la población sintética, el permiso de disco y de tiempo para la medición. El coordinador informa antes el espacio libre (`df -h /var/lib/docker`) y la escala que corresponde: la completa (5 000 alumnos, 730 días y 30 000 intentos por día, varias decenas de GB y horas de carga) si el disco lo permite, o `--per-day=7500`, extrapolando. Sin el permiso no se carga nada. |
+| E2 | La revisión pedagógica de cada etapa, ejercicio por ejercicio, antes de la corrida de registro de B3 y del PR (FR-011). Una etapa que no aprueba se corrige en la misma rama (Q3-A). |
 
 ## Criterios de aceptación globales
 
@@ -169,11 +201,12 @@ Se cierran en el paso clarify de la spec de cada ítem.
 | C3 | Cerradas en el clarify de C3a (2026-10-05): 2 (sesión sin Sanctum), 4 (contraseñas de 15 a 64 caracteres con lista local de bloqueadas), 5 (30 minutos de inactividad, 8 horas, «recordarme» de 30 días sólo para estudiantes y cookie de dispositivo de 180 días), 7 (la cuenta de admin separada se recomienda, no se exige) y 8 (invitaciones de un solo uso, una por email). Quedan 3 (correo), 9 (cambio de email) y 20 (registro abierto), de C3b |
 | B2 | Cerradas en su clarify (2026-10-05): 16 (cuotas de ejecución: las del ADR, configurables), 18 (sin fase en vivo: `running` sin subfase) y, de la 12 y la 13, la parte de B2: el `grading_hash` suma los `imports` de Go y no la plantilla, y la retención es de 14 días para las ejecuciones y de 90 para los payloads, salvo el de la última aprobación y el del último intento. La 15 (carga esperada) sigue con los supuestos del ADR (S2). Sin dueño: los endpoints de historial de intentos (`GET /api/attempts*`), que su Q4 deja afuera |
 | D1 | Cerrada en su clarify (2026-10-06): 17 (progreso), en sus tres partes: la importación por navegador, combinable y con confirmación; «Borrar todo» sólo borra el estado; y el espacio de la cuenta al salir |
-| C5 | 6 (qué ve el admin) |
-| E1 | 1 (resto: Esenciales antes de Inicial o en su lugar, y su código) |
+| C5 | Cerradas en su clarify (2026-10-28), todas con la opción recomendada: 6 (qué ve el admin), con Q1, métricas por cuenta sin textos ni huellas y sin umbral; Q2, la lista paginada de alumnos; Q3, una línea de log por consulta de una cuenta; Q4, las pantallas son F14 del front; Q5, qué cuentas suman los agregados. Las tres de su plan, también con la recomendada |
+| E1 | Cerradas en su clarify (2026-10-28), todas con la opción recomendada: 1, con Q2, un quinto nivel antes de Inicial con el código `essentials`; Q1, para quien nunca programó; Q3, sólo en el laboratorio y primero en el mapa; Q4, IDs correlativos; Q5, la plataforma y una etapa por lenguaje, y el resto en E2 |
+| E2 | Cerradas en su clarify (2026-10-28): Q1-B, la tabla de E1 con `bool` en la etapa 3; Q2-A, un PR por etapa con los dos lenguajes; Q3-A, una etapa que no aprueba se corrige en la misma rama; Q4-A, las etapas en cadena; Q5-A, los arreglos a lo publicado en su propio PR |
 | C6 | Cerradas en su clarify (2026-10-05): Q1 a Q5 de su spec, que no vienen del ADR 0006. También la del plan, decidida por el usuario el 2026-10-05: una fila que el import no pudo escribir responde 500 (research.md, R10) |
 | A3 | Cerradas en su clarify (2026-10-28): Q1, espera sólo a F11a; Q2, la copia sin servidor sólo para quien no cerró su sesión, y salir la borra; Q3, la vista previa pasa `/api/` al stack, desde F11a; Q4, la copia vive en IndexedDB |
-| A4 | Cerradas en su clarify (2026-10-28): Q1, A4 suma `attemptId` a la ejecución; Q2, los Playgrounds se retiran del todo y la CSP de C4 queda estricta; Q3, la fila visible, el aviso a los 15 s y la espera de turno automática; Q4, el número de intentos se oculta hasta D1c; Q5, A4 espera a B3 |
+| A4 | Cerradas en su clarify (2026-10-28): Q1, A4 suma `attemptId` a la ejecución; Q2, los Playgrounds se retiran del todo y la CSP de C4 queda estricta; Q3, la fila visible, el aviso a los 15 s y la espera de turno automática; Q4, el número de intentos se oculta hasta D1c; Q5, A4 espera a B3. También D1 a D3 de su plan, con la recomendada |
 | B3 | Cerradas en su clarify (2026-10-28): Q1, un inicial falla por sus pruebas, salvo `kind: reparar`; Q2, en local con runsc y su instancia del ejecutor, y la CI comprueba el resumen de la corrida en los PR que tocan lo auditado (el usuario la completó al resolver una discrepancia de redacción: FR-038 y SC-009); Q3, obligatoria en los PR que tocan lo auditado y condición de A4; Q4, el tiempo con aviso y la memoria sólo como OOM; Q5, una muestra de 4 programas con prueba propia |
 | Transversales | 13 (retenciones), 14 (Ley 25.326), 15 (carga esperada), 19 (imágenes nuevas) |
 
@@ -193,13 +226,18 @@ Cuando el usuario apruebe el ADR 0006, hay que registrar en los ADR anteriores l
 Aparte de la aprobación del ADR 0006, las specs del 2026-10-28 dejan estos pendientes:
 
 - **ADR 0005:** sus «Fases» ponen el laboratorio (3) antes que la auditoría (4), al revés de A4-Q5, que pone B3 antes que A4 como pide su §8; y su §8 dice que «hoy hay uno» uso de `time.Sleep`, cuando ya no queda ninguno (specs de A4 y B3).
-- **C4:**
-  - su compuerta G1 (FR-044 de la spec 008) suma F12a, «las pantallas de administración integradas» (F12-Q2): la enmienda de la spec de C4 la integra el coordinador;
-  - su recorrido de la CSP (SC-004: las ocho vistas, cinco enlaces, el editor y la celebración) no incluye las pantallas de F11 ni las de F12 (spec de F12);
-  - la pregunta de F12-Q2, «¿C4 espera?», vale también para F11b, que descarga y borra la propia cuenta, y nadie la respondió (specs de F11 y F12);
-  - la zona `api` de Nginx admite una ráfaga de 400 con `nodelay` por IP, así que una clase de 40 detrás de un NAT que arranca junta (40 × 18 pedidos, unos 720) recibe 429 inmediatos por el exceso. A3 respeta `Retry-After` y su copia baja cada arranque siguiente a un pedido, pero C4 debería afinar los límites para ese arranque (spec de A3);
-  - la auditoría de B3 lee el contenido importado de MySQL, así que necesita un usuario de sólo lectura del contenido entre los usuarios por rol de C4, que hoy no figura (spec de B3).
 - **El contenido:** `rust-63` (no compila) y `rust-71` (aborta antes de mostrar una prueba), los dos de `completar`, son los dos primeros bugs probables. Se corrigen en `content/` cuando B3 los confirme (B3-Q1).
-- **B2:** A4 le suma `attemptId` a la ejecución (A4-Q1): `RunPresenter` no lo expone, aunque `RunRow` lo tiene, y D1b espera `result.attemptId`. Es aditivo, con Pest, y la spec 017 extiende a la 005.
+- **B2:** A4 le suma `attemptId` a la ejecución (A4-Q1): `RunPresenter` no lo expone, aunque `RunRow` lo tiene, y D1b espera `result.attemptId`. Es aditivo, con Pest, y la spec 017 extiende a la 005. Su plan (#89) lo trae en [contracts/runs-api-attempt-id.md](../017-a4-laboratorio-sandbox/contracts/runs-api-attempt-id.md); queda pendiente hasta que A4 se implemente.
 - **C3b:** no tiene un comando de consola para gestionar cuentas (listar, cambiar un rol o un estado, revocar invitaciones ni borrar otra cuenta); sin F12a, eso queda para `curl` o para `tinker`, que se saltea la guardia del último admin (spec de F12).
-- **C5:** sus pantallas (las estadísticas, las ejecuciones, la cola y el resumen en la ficha de usuario) no tienen dueño en ninguna de las dos hojas de ruta (spec de F12).
+- **C5 y E1:** el filtro `level` del contrato de C5 acepta `beginner`, `medium`, `advanced` y `expert`, y E1 suma el nivel `essentials` (Q2-A). El que se implemente segundo lo suma a la validación (spec de F14, todavía fuera de `master`).
+- **C4:** su recorrido de la CSP no incluye las pantallas de F14, y uPlot escribe estilos con el CSSOM sobre sus propios nodos, que C4 tiene que contrastar con su `style-src` (spec de F14, todavía fuera de `master`).
+
+Resueltas, con el PR que las resolvió:
+
+- **C4, por la actualización de su plan (#83):**
+  - su compuerta G1 (FR-044) suma F12a y F11b;
+  - su recorrido de la CSP (SC-004) suma las pantallas de F11a, F11b y F12a;
+  - la pregunta de si C4 espera a F11b la respondió el usuario: espera;
+  - C4 mide el arranque de un aula detrás de un NAT y ajusta los límites de la zona `api` (FR-028);
+  - la auditoría de B3 tiene su rol de sólo lectura, `taller_audit` (FR-031).
+- **C5, por su spec (#86):** sus pantallas (las estadísticas, las ejecuciones, la cola y el resumen en la ficha de usuario) son F14a y F14b del front (Q4-A de C5).
