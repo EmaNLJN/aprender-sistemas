@@ -307,3 +307,25 @@ targets»). Se verificaron instalaciones, estrellas, licencia y contenido antes 
 - **Instalación:** `npx skills add <repo> --skill <nombre> -a codex -y`, con su enlace en
   `.claude/skills/` y su hash en `skills-lock.json`. La licencia de `makefile-generator` se copió a
   `LICENSE.txt`. El total actual es de treinta y seis skills locales.
+
+## Lint de la CI (2026-10-29)
+
+Para el lint de infraestructura (`tools/quality/lint-infra.sh`) se buscó con `find-skills`
+(«actionlint», «shellcheck», «hadolint», «github actions security» y «golangci-lint»). Se verificaron
+instalaciones, estrellas, licencia y contenido antes de exponerlas.
+
+| Skill | Fuente | Señales consultadas | Uso en este proyecto |
+| --- | --- | --- | --- |
+| [golang-lint](../.agents/skills/golang-lint/SKILL.md) | [samber/cc-skills-golang](https://skills.sh/samber/cc-skills-golang/golang-lint) | 40,7 mil instalaciones; ★3,7 mil; MIT | Lint del ejecutor Go: linters, `.golangci.yml` y directivas `nolint`. |
+| [github-actions-hardening](../.agents/skills/github-actions-hardening/SKILL.md) | [github/awesome-copilot](https://skills.sh/github/awesome-copilot/github-actions-hardening) | Org oficial de GitHub; ★40 mil; MIT | Revisión de seguridad de `ci.yml`: inyección, permisos, acciones fijadas y disparadores. |
+| [shellcheck-configuration](../.agents/skills/shellcheck-configuration/SKILL.md) | [wshobson/agents](https://skills.sh/wshobson/agents/shellcheck-configuration) | 11,7 mil instalaciones; ★42 mil; MIT | Configuración de ShellCheck y sus códigos de aviso para los `.sh` del repo. |
+
+- **Scripts:** ninguna trae scripts ni pide red para usarse. `golang-lint` incluye una plantilla
+  `.golangci.yml` y evals en JSON; las otras dos son Markdown. `golang-lint` y `shellcheck-configuration`
+  mencionan instalar herramientas (`go install`, `apt-get`), que acá no corresponde: los linters
+  corren en las imágenes fijadas de `lint-infra.sh`.
+- **Descartadas:** la skill oficial de PHPStan (`phpstan/phpstan@analyse-with-phpstan`), porque
+  manda el código a `api.phpstan.org`; y las de Laravel, ESLint y hadolint, con menos de 200
+  instalaciones.
+- **Instalación:** `npx skills add <repo> --skill <nombre> -a codex -y`, con su enlace en
+  `.claude/skills/` y su hash en `skills-lock.json`. El total actual es de treinta y nueve skills locales.

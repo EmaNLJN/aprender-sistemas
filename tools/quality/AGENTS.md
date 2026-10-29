@@ -112,3 +112,36 @@ el `.env` local.
 `.desloppify/`, `.venv/`, `bin/` y `node_modules/` están ignorados; `.dockerignore` excluye
 este directorio y el estado del scanner del build web. Los resultados de estas
 herramientas complementan TDD y los checks del taller, sin reemplazarlos.
+
+## Lint de infraestructura
+
+`lint-infra.sh` corre cuatro linters en Docker, con la imagen fijada por digest y el repo montado
+de sólo lectura. Corre igual en local y en la CI (job `infra`) y ejecuta los cuatro antes de salir:
+falla si cualquiera falla.
+
+| Herramienta | Versión | Imagen (digest) |
+| --- | --- | --- |
+| actionlint | 1.7.12 | `rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667` |
+| zizmor | 1.31.1 | `ghcr.io/zizmorcore/zizmor@sha256:42d409dbb851d4c5d35a058cf042b828bea1e3f2884378c526eb0974780e18d9` |
+| hadolint | 2.15.1 | `hadolint/hadolint@sha256:32dac94127fd60b7b7e3fbfc65e1383b9b5e25c9bfd7b8536de7a539fe68a12d` |
+| shellcheck | 0.11.0 | `koalaman/shellcheck@sha256:61862eba1fcf09a484ebcc6feea46f1782532571a34ed51fedf90dd25f925a8d` |
+
+```sh
+npm run lint:infra
+make lint-infra
+```
+
+- **actionlint:** sintaxis, expresiones y `shellcheck` embebido de los workflows. Sin argumentos revisa
+  `.github/workflows/`; sin red.
+- **zizmor:** seguridad de los workflows (`.github/workflows`), como credenciales persistidas o
+  inyección por plantillas. Con `GH_TOKEN` definido corre con red y suma las auditorías online; sin
+  él, con `--network=none --offline`. La CI pasa `github.token`.
+- **hadolint:** los Dockerfiles que lista `git ls-files`, con `.hadolint.yaml` (umbral `warning`). Ignora
+  dos reglas: **DL3018**, porque las imágenes base ya están fijadas por digest y Alpine borra las
+  versiones viejas de sus paquetes, así que fijar `apk add` rompe los rebuilds; y **DL3022**,
+  porque `COPY --from=repo` es el contexto con nombre que define Compose (`additional_contexts`), no
+  un alias de `FROM`.
+- **shellcheck:** `-S warning` sobre los `.sh` versionados, sin `.specify/` ni `.agents/`, que son
+  scripts importados. Los avisos `info` y `style` no cortan.
+
+Para cambiar una versión, editá la imagen y su digest en el script y en esta tabla.

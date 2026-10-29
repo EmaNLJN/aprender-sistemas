@@ -18,7 +18,8 @@ Atlas es la primera vista migrada; el resto conserva adaptadores legacy temporal
   leé `docs/architecture.md`: mapa de fuentes y reglas de React/clean code.
 - Para elegir checks, agregar pruebas o trabajar con TDD, leé `qa/AGENTS.md`.
 - Para activar, instalar o actualizar skills, leé `docs/agent-skills.md`.
-- Para usar o reinstalar React Doctor, Desloppify o gitleaks, leé `tools/quality/AGENTS.md`.
+- Para usar o reinstalar React Doctor, Desloppify, gitleaks o los linters de infraestructura
+  (actionlint, zizmor, hadolint y shellcheck), leé `tools/quality/AGENTS.md`.
 - Para continuar el refactor en curso, leé `docs/refactor-roadmap.md`.
 - Para planificar o especificar trabajo del backend o del port del front (hoja de ruta, specs,
   planes, tareas o bugs), leé `.specify/memory/constitution.md` y la hoja de ruta del épico:
@@ -292,10 +293,11 @@ capacidades, verificando fuente y alcance además de popularidad.
 Antes de cerrar un cambio, ejecutá los checks aplicables de `qa/AGENTS.md` y
 `git diff --check`. Informá resultados y limitaciones. En cada PR, `.github/workflows/ci.yml`
 corre los checks del front, de la API (Pint, PHPStan y Pest) y del ejecutor, gitleaks sobre
-sus commits y React Doctor: un PR se mergea con todos en verde. Un PR que sólo cambia Markdown
-fuera de `content/` saltea los tres primeros, y GitHub los cuenta en verde
-(`.github/scripts/needs-full-ci.sh`); gitleaks corre siempre. React Doctor corre sólo si el PR
-toca React (`.github/scripts/touches-react.sh`) y falla por un error nuevo, no por avisos. Para documentación,
+sus commits, React Doctor y el lint de infraestructura (job `infra`): un PR se mergea con todos en
+verde. Un PR que sólo cambia Markdown fuera de `content/` saltea los tres primeros, y GitHub los
+cuenta en verde (`.github/scripts/needs-full-ci.sh`); gitleaks e `infra` corren siempre. React
+Doctor corre sólo si el PR toca React (`.github/scripts/touches-react.sh`) y falla por un error
+nuevo, no por avisos. Para documentación,
 comprobá rutas, comandos y enlaces locales; para UI, revisá también el navegador.
 
 Actualizá esta guía cuando cambien comandos, arquitectura o convenciones.
