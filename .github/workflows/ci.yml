@@ -35,6 +35,28 @@ jobs:
           fi
           echo "code=$code" >> "$GITHUB_OUTPUT"
 
+  secrets:
+    name: secrets
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - run: sh tools/quality/install-gitleaks.sh
+      - env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          if [ "$EVENT" = pull_request ]; then
+            range="$BASE..$HEAD"
+          else
+            range="$BEFORE..$AFTER"
+          fi
+          tools/quality/bin/gitleaks git --redact --no-banner --log-opts="$range" .
+
   front:
     name: front
     needs: changes

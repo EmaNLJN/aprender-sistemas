@@ -258,7 +258,7 @@ npm run build
 npm test
 ```
 
-`make check` corre lo mismo que el job del front de la CI (sin los E2E), y además `git diff --check`; `make e2e` construye y corre Playwright.
+`make check` corre lo mismo que el job del front de la CI (sin los E2E), y además `git diff --check`; `make e2e` construye y corre Playwright. `make secrets` busca secretos con gitleaks en toda la historia de Git, como el job `secrets` de la CI sobre los commits de cada PR (`tools/quality/AGENTS.md`).
 
 `npm test` ejecuta, en el orden de `qa/run-checks.ts`, todos los checks locales en TypeScript; cada uno corre también por separado con `node qa/<check>.ts`. Comprueban el documento y su contenido, el orden de arranque, contrato de IDs del currículo, contenido, transporte sin red, respaldo del recorrido, reglas de campaña, contexto de campaña y Sistemas dentro del laboratorio y los modelos de robot/paquetes. `systems-check` cubre el catálogo y el motor de sellos; los cuatro checks de dominio prueban reglas de sus simulaciones. El check de kits crea ZIP, los vuelve a leer con un decodificador independiente y compara archivos, CRC y contenido del borrador. Estos comandos son comprobaciones locales; por sí solos no demuestran que un programa haya compilado.
 

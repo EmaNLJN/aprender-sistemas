@@ -120,3 +120,37 @@ api-down: ## Baja los servicios de prueba de la API
 .PHONY: executor-test
 executor-test: ## Pruebas del ejecutor Go
 	npm run test:executor
+
+GITLEAKS := tools/quality/bin/gitleaks
+DESLOPPIFY := tools/quality/.venv/bin/desloppify
+
+.PHONY: secrets-install
+secrets-install: ## Instala gitleaks, fijado y con su sha256, en tools/quality/bin
+	sh tools/quality/install-gitleaks.sh
+
+.PHONY: secrets
+secrets: secrets-install ## Busca secretos en toda la historia de Git
+	$(GITLEAKS) git --redact --no-banner .
+
+.PHONY: secrets-staged
+secrets-staged: secrets-install ## Busca secretos en lo que está en stage
+	$(GITLEAKS) git --pre-commit --staged --redact --no-banner .
+
+.PHONY: hooks
+hooks: secrets-install ## Instala el hook de pre-commit que corre secrets-staged
+	hook="$$(git rev-parse --git-path hooks)/pre-commit"
+	if [ -e "$$hook" ]; then echo "Ya hay un pre-commit en $$hook; no lo piso." >&2; exit 1; fi
+	printf '#!/bin/sh\nexec make --no-print-directory secrets-staged\n' > "$$hook"
+	chmod +x "$$hook"
+	echo "Hook instalado en $$hook"
+
+.PHONY: desloppify-config
+desloppify-config: ## Aplica las exclusiones de tools/quality/desloppify-excludes.txt
+	while IFS= read -r pattern; do
+	  if [ -n "$$pattern" ]; then $(DESLOPPIFY) exclude "$$pattern" > /dev/null 2>&1; fi
+	done < tools/quality/desloppify-excludes.txt
+	$(DESLOPPIFY) config show | grep -E '^ +exclude '
+
+.PHONY: desloppify
+desloppify: desloppify-config ## Escanea el repo con Desloppify (estado local en .desloppify/)
+	$(DESLOPPIFY) scan --path .

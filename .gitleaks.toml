@@ -1,0 +1,31 @@
+title = "Taller Rust y Go"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-api-key"
+
+  [[rules.allowlists]]
+  description = "Fixtures de prueba: contraseñas y tokens inventados para los tests de la API, el ejecutor, Vitest y las E2E"
+  paths = [
+    '''(^|/)backend/api/tests/''',
+    '''(^|/)(backend/)?executor/.*_test\.go$''',
+    '''(^|/)(frontend/)?src/.*\.spec\.tsx?$''',
+    '''^qa/''',
+  ]
+
+  [[rules.allowlists]]
+  description = "Documentación y skills importadas: specs, planes y ejemplos que copian esos fixtures"
+  paths = [
+    '''^specs/''',
+    '''^docs/plans/''',
+    '''^\.agents/skills/''',
+  ]
+
+  [[rules.allowlists]]
+  description = "Claves de localStorage del taller, como taller-campaign-v1"
+  regexTarget = "secret"
+  regexes = [
+    '''^taller-[a-z0-9-]+$''',
+  ]

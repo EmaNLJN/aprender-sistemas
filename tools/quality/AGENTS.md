@@ -66,12 +66,41 @@ tools/quality/.venv/bin/desloppify --help
 tools/quality/.venv/bin/desloppify scan --help
 ```
 
-Para una auditoría solicitada, elegí el proyecto coherente a analizar y excluí
-dependencias, fuentes importadas de skills y artefactos generados. Consultá
-`exclude --help` y `scan --help` antes de configurarlo; después del scan seguí el
-flujo de la skill y sus comandos `status` y `next`. La instalación no realiza
-un scan ni inicia correcciones de la aplicación.
+Las exclusiones viven en `.desloppify/config.json`, que es estado local, así que la lista
+versionada es `desloppify-excludes.txt`: dependencias, salidas generadas, skills importadas,
+specs y docs, y `content/`, porque sus códigos iniciales tienen errores a propósito.
+`make desloppify-config` la aplica (`desloppify exclude` es idempotente) y `make desloppify`
+escanea. Para sumar o sacar una exclusión, editá la lista y volvé a aplicarla. Después del scan
+seguí el flujo de la skill con `status` y `next`. La instalación no realiza un scan ni inicia
+correcciones de la aplicación.
 
-`.desloppify/`, `.venv/` y `node_modules/` están ignorados; `.dockerignore` excluye
+La skill de `.agents/skills/desloppify/` es la que distribuye Desloppify 1.0 (versión 7 de la
+skill): para actualizarla, compará con `desloppify/data/global/` del paquete instalado. Una
+búsqueda con `find-skills` del 2026-10-29 sólo encontró copias de terceros con una instalación.
+
+## Gitleaks
+
+Versión fijada: **8.30.1** (MIT). Fuente: [gitleaks/gitleaks](https://github.com/gitleaks/gitleaks).
+`install-gitleaks.sh` baja el binario de la release oficial para Linux o macOS (x64 o arm64),
+comprueba su sha256 contra el archivo de checksums de la misma release y lo deja en
+`tools/quality/bin/`, ignorado por Git. Para cambiar de versión, editá `version` en el script.
+
+```sh
+make secrets          # toda la historia de Git
+make secrets-staged   # lo que está en stage
+make hooks            # instala el pre-commit que corre secrets-staged, si no hay otro
+```
+
+`.gitleaks.toml`, en la raíz, extiende las reglas por omisión. Sus excepciones aplican sólo a
+`generic-api-key`, la regla genérica que marca fixtures: las pruebas de la API, del ejecutor,
+de Vitest y `qa/`; `specs/`, `docs/plans/` y las skills importadas; y las claves de
+`localStorage` `taller-…`. Las reglas específicas (AWS, GitHub, claves privadas y demás)
+siguen activas en todo el repositorio. Una excepción nueva va con su `description` y, si
+alcanza, como regex del secreto antes que como ruta. Los escaneos usan `--redact`: nunca
+imprimen el secreto. La CI corre gitleaks sobre los commits de cada PR y de cada push a
+`master` (job `secrets`). Los escaneos son de Git, no de carpetas: `gitleaks dir .` leería
+el `.env` local.
+
+`.desloppify/`, `.venv/`, `bin/` y `node_modules/` están ignorados; `.dockerignore` excluye
 este directorio y el estado del scanner del build web. Los resultados de estas
 herramientas complementan TDD y los checks del taller, sin reemplazarlos.
