@@ -7,7 +7,7 @@
 - Validación: [quickstart.md](./quickstart.md).
 - Tareas: [tasks.md](./tasks.md).
 - Correspondencia de los checks: [contracts/f10a-check-correspondence.md](./contracts/f10a-check-correspondence.md).
-- F10b tiene su plan en `plan-f10b.md`, y F10c tiene el suyo.
+- F10b tiene su plan en [plan-f10b.md](./plan-f10b.md), y F10c tiene el suyo.
 
 **Objetivo:** decidir con datos qué router usa F10b y dejar en verde, contra la base sin tocar, la red de E2E del shell y del arranque que F10b no puede romper.
 

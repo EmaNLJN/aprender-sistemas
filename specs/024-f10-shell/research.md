@@ -2,7 +2,7 @@
 
 **Spec:** [spec.md](./spec.md) (FR-001 a FR-011, FR-056, FR-057 y FR-059; SC-001, SC-002, SC-006, SC-007, SC-008, SC-010 y SC-012). **Plan:** [plan.md](./plan.md). **Validación:** [quickstart.md](./quickstart.md). **Tabla de correspondencia:** [contracts/f10a-check-correspondence.md](./contracts/f10a-check-correspondence.md).
 
-Este documento junta las decisiones técnicas de F10a, sus alternativas y las mediciones de sólo lectura que se hicieron al planificar (2026-10-28). F10b tiene su propia investigación en `research-f10b.md`.
+Este documento junta las decisiones técnicas de F10a, sus alternativas y las mediciones de sólo lectura que se hicieron al planificar (2026-10-28). F10b tiene su propia investigación en [research-f10b.md](./research-f10b.md).
 
 ## Cómo se planificó
 
