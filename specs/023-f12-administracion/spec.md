@@ -93,6 +93,7 @@ Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumption
 | TDD; código y pruebas en inglés; interfaz en español rioplatense; teclado, celular y movimiento reducido | `AGENTS.md`; constitución, principios II, III y VI |
 | Zustand y nuqs entran sólo con su primer caso real | `AGENTS.md` |
 | La spec, en español y sin código: como mucho cinco preguntas para el clarify, y un corte propuesto, sin aplicar, si pasa de 52 requisitos | Coordinador, 2026-10-28 |
+| F12b arranca con la implementación de C3c en `master`, sin esperar el dominio; «Reenviar por correo» y «Pasar a enlace» son dos botones de la fila, cada uno con su confirmación; el texto de `rate_limited` es el de la ventana de 24 horas, y se aceptan los textos que agrega el plan de F12b | Usuario, 2026-10-28, al revisar el plan de F12b (F12b-D1 a F12b-D3) |
 
 ## Clarifications
 
@@ -105,6 +106,14 @@ El usuario respondió las tres preguntas y la partición de esta spec junto con 
 - Q: **Q3**, ¿cómo se pide la contraseña reconfirmada? → A: A pedido (opción A, F12-Q3): ante un 423 se pide, se confirma y la acción se repite una sola vez. Descartadas: pedirla siempre antes, como F11b (B), y consultar `confirmed-password-status` antes de cada acción (C). Decidió el usuario. (FR-005 y FR-036 a FR-038)
 - Q: **P3**, ¿se parte F12? → A: Sí, en F12a (sin correo) y F12b (con correo, que espera a C3c, como F11c), la partición recomendada. Descartadas: tres partes (cuentas, invitaciones y correo) y no partir. Decidió el usuario. («La partición en F12a y F12b»)
 
+### Session 2026-10-28 (F12b)
+
+El usuario respondió las tres decisiones del plan de F12b ([plan-f12b.md](./plan-f12b.md) y [research-f12b.md](./research-f12b.md)), con las recomendadas. Los requisitos, la partición, las dependencias, los textos y las acciones del usuario ya las aplican.
+
+- Q: **F12b-D1**, ¿F12b espera el dominio de C3c? → A: No. F12b arranca con la implementación de C3c en `master`: las pruebas usan el doble de la API, y la verificación a mano usa el modo con correo sin proveedor (`MAIL_REQUIRED=false` con el mailer `log`). El dominio sólo hace falta para el correo real (T037 de C3c). Descartada: esperar el dominio. Decidió el usuario. («La partición en F12a y F12b», «Dependencias reales» y «Acciones del usuario»)
+- Q: **F12b-D2**, ¿cómo se ofrecen «Reenviar por correo» y «Pasar a enlace»? → A: Como dos botones de la fila, cada uno con su confirmación. Así el diálogo de acción de F12a no cambia de forma, y la espera del tope de 300 correos, que puede durar horas, deshabilita sólo el reenvío por correo. Descartada: una confirmación con dos botones. Decidió el usuario. (FR-047)
+- Q: **F12b-D3**, ¿qué texto lleva `rate_limited`, y se aceptan los textos que agrega el plan? → A: «No salió: llegaste al tope de 300 correos en 24 horas. Probá más tarde o usá un enlace.», porque el tope cuenta 24 horas desde el primer correo y no el día del calendario, así que «Probá mañana» podía ser falso. Se aceptan los textos que agrega el plan (research-f12b.md, «Textos que agrega el plan»): el estado de una invitación por correo en camino, el campo «Entrega» con «Por correo» por omisión y las confirmaciones de los dos reenvíos y de la recuperación. Decidió el usuario. (FR-045 y «Textos que lee quien administra»)
+
 ## La partición en F12a y F12b
 
 Decidida en el clarify (P3). Cada parte tiene su plan, sus tareas y su PR, como F11 y F7. Siguiendo el precedente de F2 y F7, el plan de F12a iría en `plan.md` y el de F12b en `plan-f12b.md`, porque los scripts de Spec Kit buscan `plan.md` por nombre; lo confirma el coordinador.
@@ -112,7 +121,7 @@ Decidida en el clarify (P3). Cada parte tiene su plan, sus tareas y su PR, como 
 | Parte | Qué entra | Depende de | La esperan |
 | --- | --- | --- | --- |
 | **F12a · Sin correo** | La entrada en «Tu cuenta» y el diálogo a pantalla entera; las cuentas (la lista, la búsqueda, los filtros, deshabilitar, rehabilitar, hacer y quitar admin, y borrar); las invitaciones por enlace (la lista, invitar en lote, copiar, reenviar y revocar); la contraseña reconfirmada a pedido; los errores comunes; la página lista para que F10 la mude a una ruta; sus specs y sus E2E | F11a; C3b (entregada) | C4 (F12-Q2) y F12b. F10 no la espera, pero la muda a una ruta si ya está integrada («El compromiso con F10») |
-| **F12b · Con correo** | Invitar y reenviar por correo, el estado del envío (`sentAt` y `sendFailedAt`), pasar a enlace, la recuperación de un tercero y el 503 `mail_unavailable` | F12a y C3c, que espera el dominio | Nadie |
+| **F12b · Con correo** | Invitar y reenviar por correo, el estado del envío (`sentAt` y `sendFailedAt`), pasar a enlace, la recuperación de un tercero y el 503 `mail_unavailable` | F12a y la implementación de C3c en `master`, sin esperar el dominio (F12b-D1) | Nadie |
 
 **Los requisitos de cada parte** (cada uno lleva su marca en «Functional Requirements»):
 
@@ -124,7 +133,7 @@ Decidida en el clarify (P3). Cada parte tiene su plan, sus tareas y su PR, como 
 
 F12a suma 57 requisitos con los transversales y F12b, 18. En total, la spec tiene 63, contra los 52 de C3a. F12a queda por encima de ese tope y por debajo de los 64 de F11a, que el usuario aceptó.
 
-- **Qué gana:** F12a no espera ninguna decisión externa, y C4 la espera sólo a ella. F12b se planifica con C3c, cuando haya dominio.
+- **Qué gana:** F12a no espera ninguna decisión externa, y C4 la espera sólo a ella. F12b se planifica con el plan de C3c y se implementa con C3c en `master`, sin esperar el dominio (F12b-D1).
 - **Qué cuesta:** un segundo ciclo de plan y tareas, y F12b toca las mismas pantallas después de F12a. F12a es la segunda parte más grande del épico.
 - **Descartadas:** tres partes (cuentas, invitaciones y correo, con 40, 27 y 18 requisitos con los transversales), que sumaba un ciclo para quince requisitos que comparten el diálogo, la contraseña y los errores; y no partir, que dejaba la parte del correo sin poder cerrarse hasta C3c.
 
@@ -144,7 +153,7 @@ F12a suma 57 requisitos con los transversales y F12b, 18. En total, la spec tien
 - **F11b:** no hace falta. Comparte con F12 el pedido de la contraseña: F11 dice que conviene moverlo a un lugar compartido cuando aparezca el segundo uso, así que **el que llegue segundo entre F11b y F12a lo mueve**.
 - **F11c:** no le cambia nada a F12. Pedir el enlace por correo es de la propia cuenta.
 - **F11d:** no le cambia nada.
-- **C3c:** le cambia a F12b lo que hace con `features.passwordReset: true` («Las invitaciones antes y después de C3c»).
+- **C3c:** le cambia a F12b lo que hace con `features.passwordReset: true` («Las invitaciones antes y después de C3c»). F12b arranca con la implementación de C3c en `master`; el dominio sólo hace falta para el correo real (F12b-D1).
 - **C4 espera a F12a** (F12-Q2): su compuerta G1 suma «las pantallas de administración integradas». F12 deja de ser un ítem que no bloquea a nadie. C4 no espera a F12b.
 - **F10:** no es una dependencia de F12. Asume el compromiso de mudar la administración a una ruta enlazable (F12-Q1), sobre lo que F12a deja listo («El compromiso con F10»).
 
@@ -196,9 +205,9 @@ El clarify (F12-Q1) decidió que F12a entre como un diálogo y que **F10 lo conv
 **Con C3c (F12b; lo que se toma de C3c es un supuesto hasta que tenga plan):**
 
 - Con `features.passwordReset: true`, «Invitar» ofrece elegir la entrega: por correo o con enlace.
-- **Por correo,** la respuesta no trae el enlace: `created` y `renewed` dicen que el correo sale. Un admin manda como mucho 300 correos por día, y pasado el tope, cada email recibe `rate_limited` (C3c FR-057 (a)).
+- **Por correo,** la respuesta no trae el enlace: `created` y `renewed` dicen que el correo sale. Un admin manda como mucho 300 correos cada 24 horas, contadas desde el primero, y pasado el tope, cada email recibe `rate_limited` (C3c FR-057 (a)).
 - **La lista** muestra si una invitación por correo salió (`sentAt`, «entregada al proveedor») o no salió (`sendFailedAt`) (C3c FR-007).
-- **«Reenviar»** ofrece «Reenviar por correo» o «Pasar a enlace». Esta última es la que ya funciona desde C3b.
+- **«Reenviar»** ofrece «Reenviar por correo» o «Pasar a enlace», como dos botones de la fila, cada uno con su confirmación (F12b-D2). Esta última es la que ya funciona desde C3b.
 - **Las cuentas de alumnos activos** ofrecen «Mandarle un enlace para elegir contraseña», que responde 202 sin devolver el enlace (C3b FR-036, C3c FR-057 (b)). A un admin no se le ofrece, porque su recuperación es sólo por consola (Q5 de C3c).
 - **Un 503 `mail_unavailable`** igual puede llegar, por ejemplo si la configuración cambió. Se muestra el mensaje del servidor con el camino del enlace.
 
@@ -346,7 +355,7 @@ Son propuestas, para que el usuario las corrija. «(servidor)» marca un mensaje
 
 - La entrega: «Por correo» o «Enlace para copiar».
 - Una invitación por correo: «Le llega por correo.».
-- `rate_limited`: «No salió: llegaste al tope de 300 correos por día. Probá mañana o usá un enlace.».
+- `rate_limited`: «No salió: llegaste al tope de 300 correos en 24 horas. Probá más tarde o usá un enlace.» (F12b-D3).
 - En la lista:
   - «Entregada al proveedor el {fecha}.»;
   - «No salió: reenviala o pasala a enlace.».
@@ -485,7 +494,7 @@ Quien administra encadena varios cambios. La primera acción sensible le pide la
 
 Cuando el taller manda correo, las invitaciones pueden salir por correo, la lista dice cuáles no salieron y quien administra le manda a un alumno un enlace para elegir otra contraseña.
 
-**Why this priority**: espera a C3c, y C3c espera el dominio. Hasta entonces, los enlaces y la consola cubren lo mismo.
+**Why this priority**: espera la implementación de C3c (no el dominio, F12b-D1). Hasta entonces, los enlaces y la consola cubren lo mismo.
 
 **Independent Test**: con el doble y `features.passwordReset` en `false` y en `true`, recorrer los cuatro caminos de correo y el 503.
 
@@ -592,9 +601,9 @@ Cada requisito lleva entre paréntesis la parte que lo entrega (P3): *(F12a)*, *
 **Con correo (F12b; espera a C3c)**
 
 - **FR-044** *(F12b)*: Con `features.passwordReset: true`, «Invitar» DEBE ofrecer elegir la entrega, por correo o con enlace. *(C3c FR-008 y FR-057 (a))*
-- **FR-045** *(F12b)*: Con la entrega por correo, `created` y `renewed` DEBEN decir que el correo sale, sin enlace, y `rate_limited`, que se llegó al tope de 300 correos por día. *(C3c FR-057 (a))*
+- **FR-045** *(F12b)*: Con la entrega por correo, `created` y `renewed` DEBEN decir que el correo sale, sin enlace, y `rate_limited`, que se llegó al tope de 300 correos en 24 horas, con el texto de F12b-D3. *(C3c FR-057 (a); F12b-D3)*
 - **FR-046** *(F12b)*: La lista DEBE mostrar si una invitación por correo salió (`sentAt`) o no salió (`sendFailedAt`). *(C3c FR-007)*
-- **FR-047** *(F12b)*: «Reenviar» DEBE ofrecer «Reenviar por correo» y «Pasar a enlace», con la confirmación de FR-032. *(C3c FR-057 (a))*
+- **FR-047** *(F12b)*: «Reenviar» DEBE ofrecer «Reenviar por correo» y «Pasar a enlace», como dos botones de la fila, cada uno con su confirmación, como la de FR-032. *(C3c FR-057 (a); F12b-D2)*
 - **FR-048** *(F12b)*: Las cuentas de alumnos activos DEBEN ofrecer «Mandarle un enlace para elegir contraseña», con confirmación, que llama a `POST /api/admin/users/{id}/password-reset`. Con un 202, DEBE decir que el enlace salió y vence en 60 minutos. A un admin o a una cuenta que no está activa NO DEBE ofrecérsele. *(C3b FR-036; C3c FR-057 (b))*
 - **FR-049** *(F12b)*: Ante un 503 `mail_unavailable`, DEBE mostrar el mensaje del servidor y ofrecer el camino del enlace, sin dar por creada ninguna invitación. *(C3b FR-056)*
 
@@ -657,7 +666,7 @@ Cada requisito lleva entre paréntesis la parte que lo entrega (P3): *(F12a)*, *
 - **F11a está integrada antes de planificar F12a** (ver «Dependencias reales»). Los nombres que usa esta spec (el cliente de `shared/api`, la sesión de `entities/session`, «pedir el ingreso», la raíz de la cuenta, el doble de la API) son los provisionales de la spec de F11. Si su plan los cambia, esta spec se ajusta.
 - **El doble de la API de F11a** responde una sesión con cuenta por omisión, y F11 no dice con qué rol. F12 supone que el rol se puede elegir por escenario y que por omisión es `student`. Con el montaje de F12-Q1, el rol por omisión no cambia lo que mide la red, porque la entrada vive dentro de «Tu cuenta». F12 suma la variante de admin y las rutas de `/api/admin`.
 - **Los contratos de C3b** son los entregados y se contrastaron con el código de `e87772d` (las rutas, los controladores, los `FormRequest`, los presentadores, `lang/es/` y las pruebas de Pest de la administración). Si C3b cambia por flow-forward, esta spec se ajusta.
-- **C3c está sólo especificada,** y su plan espera el dominio. Lo que F12b toma de ella (`rate_limited`, `sentAt` y `sendFailedAt`, el 202 de la recuperación y la bandera) es un supuesto hasta que tenga plan.
+- **C3c tiene plan** ([spec 011](../011-c3c-correo/spec.md) y su contrato HTTP), que confirma lo que F12b toma de ella (`rate_limited`, `sentAt` y `sendFailedAt`, el 202 de la recuperación y la bandera) y le suma dos 429. F12b arranca con su implementación en `master`, sin esperar el dominio (F12b-D1).
 - **F12a llega antes que F10.** F12a sólo espera a F11a, y F10 es el final del tronco del front. Si F10 llegara primero, la administración nace como una ruta de la raíz única y el plan de F12a lo consulta con el usuario («El compromiso con F10»).
 - **C4 toma la compuerta.** La spec de C4 (008, planificada y sin implementar) suma F12a a su compuerta G1 cuando el coordinador integre este clarify (F12-Q2). Esta spec no la edita.
 - **La pila de DOM de Vitest** llega con F3 o con F11a, con permiso. F12 no baja nada.
@@ -771,9 +780,9 @@ Los agentes no las hacen. Las descargas piden permiso con nombre, origen y tama�
 
 | Cuándo | Acción |
 | --- | --- |
-| Hecho el 2026-10-28 | Respondió Q1 a Q3 y aceptó la partición (ver «Clarifications»). |
+| Hecho el 2026-10-28 | Respondió Q1 a Q3 y aceptó la partición, y después las tres decisiones del plan de F12b (ver «Clarifications»). |
 | Antes de integrar F12a | Nada nuevo: F12 no baja paquetes. Con el stack levantado, crear el primer admin por consola (`taller:invite --role=admin`) para probarla a mano. |
-| Antes de F12b | El dominio de C3c y C4. |
+| Antes de F12b | La implementación de C3c en `master` (F12b-D1). El dominio de C3c y C4 hace falta sólo para el correo real, no para F12b. |
 
 ## Descargas previstas
 

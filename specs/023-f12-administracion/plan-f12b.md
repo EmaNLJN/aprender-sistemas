@@ -93,7 +93,7 @@ Valen para toda tarea. Los valores están copiados de la spec, de la constituci�
   - el 503 es `mail_unavailable`, con `Retry-After: 3600` y «El taller no puede mandar correos por ahora.»;
   - el tope es de 300 correos por admin cada 24 horas, y el plazo de los reintentos, de 24 horas (C3c-1, aceptada).
   - Todo lo que modifica lleva `X-Taller-User` con el id de la cuenta en memoria.
-- **Los textos:** los de la spec, «Con correo (F12b)», tal cual. Los del servidor se muestran como llegan. Los que agrega el plan están en research-f12b.md, «Textos que agrega el plan».
+- **Los textos:** los de la spec, «Con correo (F12b)», tal cual, con el de `rate_limited` que eligió el usuario el 2026-10-28: «No salió: llegaste al tope de 300 correos en 24 horas. Probá más tarde o usá un enlace.». Los del servidor se muestran como llegan. Los que agrega el plan, que el usuario aceptó ese día, están en research-f12b.md, «Textos que agrega el plan».
 - **El estilo:** ningún `style=`, `style={…}`, `setAttribute('style', …)` ni `.cssText` (FR-054), y ninguna regla de CSS nueva: las marcas usan `.admin-mark` de F12a.
 - **La seguridad** (FR-008): ningún nombre, email ni enlace en `localStorage`, `sessionStorage`, una cookie propia, la URL, el historial, un store compartido ni la consola.
 - **Los formularios** se envían sólo por `handleSubmit`, con `noValidate` y sin `action` (FR-055).
@@ -126,7 +126,10 @@ Valen para toda tarea. Los valores están copiados de la spec, de la constituci�
 
 | Fuente | Qué dice | Cómo lo aplica este plan |
 | --- | --- | --- |
-| **P3** (clarify del 2026-10-28) | F12b, con correo, espera a C3c | Este plan cubre FR-044 a FR-049. La base lleva C3c implementada; el dominio no hace falta (R1, decisión 1 del informe) |
+| **P3** (clarify del 2026-10-28) | F12b, con correo, espera a C3c | Este plan cubre FR-044 a FR-049 |
+| **F12b-D1** (usuario, 2026-10-28) | F12b arranca con la implementación de C3c en `master`, sin esperar el dominio | La base lleva C3c implementada; el dominio sólo hace falta para el correo real (R1; T027 y T041) |
+| **F12b-D2** (usuario, 2026-10-28) | «Reenviar por correo» y «Pasar a enlace» son dos botones de la fila, cada uno con su confirmación | `invitationActionsFor` y las confirmaciones de `invitationTexts`; `ActionDialog` no cambia de forma (R3; T029, T035 y T038) |
+| **F12b-D3** (usuario, 2026-10-28) | El texto nuevo de `rate_limited` y los textos que agrega el plan | `RESULT_TEXTS` de `link-texts.ts` y sus tres esperados (R4; T029, T034 y T038); research-f12b.md, «Textos que agrega el plan» |
 | **F12-Q3** | La contraseña, a pedido ante un 423 | Los caminos nuevos usan el mismo `ActionDialog`: invitar por correo un admin, reenviar por correo una invitación de admin y la recuperación de un tercero (T038) |
 | **C3c-1** (noche del 2026-10-28) | Las 24 horas de los reintentos, aceptadas con #68 | El estado intermedio de la lista las promete (R9) |
 | **El doble canónico** | Ruta antes del CSRF y `ApiCall.search`; sin `query` ni `replyTo` propios | F12b suma sólo el campo `features` (T032; R11) |
@@ -614,7 +617,7 @@ K la corre antes de integrar cada unidad en `f12b/base` (T033, T039 y T041). Cad
          /^Tenía una invitación vencida: la renovamos\. Le llega por correo\. Vence el .+ de octubre de 2026 a las .+\.$/,
        );
        expect(entryText({ email: 'ana@x.com', result: 'rate_limited', link: null })).toBe(
-         'No salió: llegaste al tope de 300 correos por día. Probá mañana o usá un enlace.',
+         'No salió: llegaste al tope de 300 correos en 24 horas. Probá más tarde o usá un enlace.',
        );
      });
 
@@ -894,11 +897,12 @@ K la corre antes de integrar cada unidad en `f12b/base` (T033, T039 y T041). Cad
    diff --git a/frontend/src/pages/admin/model/link-texts.ts b/frontend/src/pages/admin/model/link-texts.ts
    --- a/frontend/src/pages/admin/model/link-texts.ts
    +++ b/frontend/src/pages/admin/model/link-texts.ts
-   @@ -12,11 +12,16 @@ const RESULT_TEXTS: Readonly<Record<EntryResult, string>> = {
+   @@ -12,11 +12,17 @@ const RESULT_TEXTS: Readonly<Record<EntryResult, string>> = {
       user_exists: 'Ya tiene una cuenta.',
       invitation_pending:
         'Ya tiene una invitación vigente. Si perdió el enlace, generá otro con «Reenviar».',
-   +  rate_limited: 'No salió: llegaste al tope de 300 correos por día. Probá mañana o usá un enlace.',
+   +  rate_limited:
+   +    'No salió: llegaste al tope de 300 correos en 24 horas. Probá más tarde o usá un enlace.',
     };
 
    -export function entryText({ result, link }: InviteEntry): string {
@@ -1542,7 +1546,7 @@ K la corre antes de integrar cada unidad en `f12b/base` (T033, T039 y T041). Cad
          'beto@x.com · Invitación creada. Le llega por correo. Vence el',
        );
        expect(result).toHaveTextContent(
-         'ana@x.com · No salió: llegaste al tope de 300 correos por día. Probá mañana o usá un enlace.',
+         'ana@x.com · No salió: llegaste al tope de 300 correos en 24 horas. Probá más tarde o usá un enlace.',
        );
        expect(within(result).queryByRole('textbox')).toBeNull();
        expect(result).not.toHaveTextContent('Copiá los enlaces ahora');
@@ -2529,7 +2533,7 @@ K la corre antes de integrar cada unidad en `f12b/base` (T033, T039 y T041). Cad
          'Tenía una invitación vencida: la renovamos. Le llega por correo.',
        );
        await expect(items.nth(2)).toHaveText(
-         'ana@x.com · No salió: llegaste al tope de 300 correos por día. Probá mañana o usá un enlace.',
+         'ana@x.com · No salió: llegaste al tope de 300 correos en 24 horas. Probá más tarde o usá un enlace.',
        );
        await expect(result.getByRole('textbox')).toHaveCount(0);
        await result.getByRole('button', { name: 'Listo' }).click();
@@ -2809,7 +2813,7 @@ Cambia en el mismo PR que U3 (FR-061):
    - `git diff master -- package.json package-lock.json`, vacío (FR-056);
    - `docker compose build taller`, con permiso;
    - la verificación a mano contra el stack con correo (quickstart-f12b.md §4).
-3. **Lo que tiene que haber hecho el usuario antes del PR a `master`:** dar permiso para Docker. El dominio no hace falta (decisión 1 del informe).
+3. **Lo que tiene que haber hecho el usuario antes del PR a `master`:** dar permiso para Docker. El dominio no hace falta (F12b-D1).
 4. **El PR** de `f12b/base` a `master`: `feat(front): administration screens with mail (F12b)`. La descripción en inglés lleva:
    - la reversión por unidad;
    - el peso, contra T027;
@@ -2875,8 +2879,7 @@ Ninguna descarga: F12b no suma paquetes ni navegadores (FR-056). Docker corre s�
 1. **F12a puede llegar distinta de su plan.** Los diffs se escribieron sobre el código de su plan. *Mitigación:* T027 los prueba con `git apply --check`, y las reglas piden hacer el mismo cambio a mano si no aplican.
 2. **C3c puede llegar distinta de su contrato.** *Mitigación:* T027 comprueba la base, y la verificación a mano de T041 contrasta las formas con el stack.
 3. **El E2E no corrió al planificar.** Necesita F11a y F12a cableadas. *Mitigación:* tipa contra el doble y el Page Object de los planes; el comportamiento se verificó en Vitest; T039 corre la red tres veces, y T041, cinco.
-4. **El texto «Probá mañana» de `rate_limited`** puede no ser exacto con la ventana de 24 horas (research-f12b.md, R4). *Mitigación:* la decisión 3 del informe; cambiarlo es una constante y tres esperados.
-5. **El estado intermedio promete 24 horas.** Si C3c cambia el plazo, el texto miente. *Mitigación:* C3c-1 está aceptada, y su plan la fija en `MailDeadline` y `taller.mail.retry_seconds`.
+4. **El estado intermedio promete 24 horas.** Si C3c cambia el plazo, el texto miente. *Mitigación:* C3c-1 está aceptada, y su plan la fija en `MailDeadline` y `taller.mail.retry_seconds`.
 
 ## Complexity Tracking
 

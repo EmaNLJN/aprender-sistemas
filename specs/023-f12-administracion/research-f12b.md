@@ -19,12 +19,12 @@ Rigen también los hallazgos de `.coordinador/hallazgos-para-planes.md` (seccion
 - **La base.** `f12b/base` sale de `master` con F12a integrada (y, por lo tanto, con F11a: TR-12) y con la implementación de C3c (su PR de T031).
 - **Las unidades.** U0 a U3 son PR contra `f12b/base`, y F12b llega a `master` en un solo PR, en T041. Es la forma de F12a (su R1).
 
-**Por qué no espera el dominio.** La hoja de ruta y la spec dicen que F12b espera a «C3c con el dominio». Pero F12b no necesita correo real:
+**Por qué no espera el dominio.** La hoja de ruta y la versión de la spec anterior al 2026-10-28 decían que F12b esperaba a «C3c con el dominio». Pero F12b no necesita correo real:
 
 - las pruebas usan el doble de la API, que prende `features.passwordReset`;
 - la verificación a mano contra el stack puede usar el modo con correo sin proveedor: según el contrato de C3c («Cuándo hay correo»), con `MAIL_REQUIRED=false` y el mailer `log`, el taller tiene correo, `features.passwordReset` vale `true` y `worker-mail` completa `sentAt`.
 
-El dominio sólo hace falta para mandar correo de verdad (T037 de C3c). Es la decisión 1 del informe.
+El dominio sólo hace falta para mandar correo de verdad (T037 de C3c). **Lo decidió el usuario el 2026-10-28 (F12b-D1):** F12b arranca con la implementación de C3c en `master`, sin esperar el dominio.
 
 **Alternativa: unidades directas a `master`.** Nadie ve lo nuevo sin correo, porque toda la superficie depende de `features.passwordReset`. Pero un solo PR deja una sola reversión, como en F12a.
 
@@ -55,7 +55,7 @@ El dominio sólo hace falta para mandar correo de verdad (T037 de C3c). Es la de
 - **FR-047:** «Reenviar» ofrece las dos entregas, «con la confirmación de FR-032». Cada una tiene su confirmación, con el texto que dice qué cambia.
 - **FR-051:** los nombres de los botones de la fila incluyen el email. Los textos de la spec, «Reenviar por correo» y «Pasar a enlace», quedan exactos en los botones de las confirmaciones.
 
-**Alternativa: una confirmación con dos botones.** Es lo que pronosticaba el contrato de F12a («en la confirmación del reenvío»). Ahorra un botón por fila, pero cambia `ActionDialog`, `ConfirmStep` y la repetición después del 423. Es la decisión 2 del informe. Si el usuario la elige, cambian T031, T035 y T038.
+**Alternativa descartada: una confirmación con dos botones.** Es lo que pronosticaba el contrato de F12a («en la confirmación del reenvío»). Ahorra un botón por fila, pero cambia `ActionDialog`, `ConfirmStep` y la repetición después del 423. **El usuario eligió los dos botones en la fila el 2026-10-28 (F12b-D2),** y T040 corrige el pronóstico del contrato.
 
 **«Pasar a enlace» sobre una invitación que ya es por enlace.** Genera un enlace nuevo, como «Reenviar» en F12a. La spec lo dice así: «Esta última es la que ya funciona desde C3b».
 
@@ -66,7 +66,7 @@ El dominio sólo hace falta para mandar correo de verdad (T037 de C3c). Es la de
 - `InviteResult` suma `rate_limited`.
 - `InviteEntry` suma una propiedad **opcional**, `mailed?: MailedInvitation` (`{email, expiresAt}`). La completa el parser cuando una entrada trae `expiresAt` y no trae `url`, que es la forma de `created` y `renewed` por correo (contrato de C3c).
 - `entryText` dice «Le llega por correo.» antes del vencimiento: «Invitación creada. Le llega por correo. Vence el {fecha}.».
-- `rate_limited` usa el texto de la spec. Sin enlaces, el resultado no muestra el aviso de copiarlos, y «Listo» cierra sin preguntar (F12a, FR-031).
+- `rate_limited` usa el texto que eligió el usuario (F12b-D3, abajo). Sin enlaces, el resultado no muestra el aviso de copiarlos, y «Listo» cierra sin preguntar (F12a, FR-031).
 
 **Por qué opcional.** Las specs de F12a construyen `InviteEntry` sin esa propiedad y comparan con `toEqual`, que ignora las propiedades `undefined` (Context7, Vitest 5.0.3). Una propiedad obligatoria las rompería, y F12b no edita las specs de F12a (R11).
 
@@ -78,7 +78,7 @@ El dominio sólo hace falta para mandar correo de verdad (T037 de C3c). Es la de
 **`rate_limited` y la ventana de 24 horas (F12b-2).** El tope cuenta 300 correos por cada 24 horas desde el primero, no por día del calendario. Desde que se agota, gana sobre `user_exists` e `invitation_pending` y no crea nada. Para el front eso quiere decir dos cosas:
 
 - un lote puede traer `created` y después `rate_limited` para un email que ya tenía cuenta. La pantalla muestra cada resultado tal como llega, y el E2E lo fija con `ana@x.com`, que tiene cuenta;
-- el texto de la spec, «Probá mañana», puede no ser exacto. Si el primer correo salió a las 10 y el tope se agotó a las 9 del día siguiente, se libera a las 10 del mismo día. La respuesta de invitar es un 200, sin `Retry-After`, así que el front no sabe cuándo. El plan conserva el texto aprobado. Es la decisión 3 del informe, con una propuesta.
+- el texto original de la spec, «llegaste al tope de 300 correos por día. Probá mañana», no era exacto. Si el primer correo salió a las 10 y el tope se agotó a las 9 del día siguiente, se libera a las 10 del mismo día. La respuesta de invitar es un 200, sin `Retry-After`, así que el front no sabe cuándo. **El usuario eligió el 2026-10-28 (F12b-D3)** el texto «No salió: llegaste al tope de 300 correos en 24 horas. Probá más tarde o usá un enlace.», que la spec ya registra en FR-045 y en sus textos.
 
 ### R5. El reenvío por correo tiene su propio pedido y su propio parser
 
@@ -136,13 +136,13 @@ En ningún caso se anuncia el envío: la sección escribe el aviso («Reenviamos
 | `link` | — | — | Ninguna |
 | `email` | — | instante | «No salió: reenviala o pasala a enlace.» (spec) |
 | `email` | instante | `null` | «Entregada al proveedor el {fecha}.» (spec) |
-| `email` | `null` | `null` | «Por correo, en camino. Si no sale en 24 horas, lo vas a ver acá.» (propuesta del plan) |
+| `email` | `null` | `null` | «Por correo, en camino. Si no sale en 24 horas, lo vas a ver acá.» (del plan, aceptado por el usuario el 2026-10-28) |
 
 **Las 24 horas.** El plazo de los reintentos de una invitación por correo es el vencimiento del enlace o 24 horas desde que se encoló, lo que llegue primero. Lo decidió el plan de C3c (su decisión 1), y quedó aceptado con el merge de #68 (`.coordinador/clarify-decisiones.md`, «Decisiones del 2026-10-28 (noche)»: «F12b toma las 24 horas»). Como una invitación vence a las 48 horas o a los 7 días, y reenviar renueva el vencimiento, el plazo es siempre de 24 horas. Por eso el texto del estado intermedio puede prometerlo.
 
 **Por qué una marca y no una columna.** Una columna «Entrega» cambia el encabezado de la tabla de F12a (FR-021). La marca va en la celda del email, como «Sin verificar» en «Cuentas», y no cambia el ancho mínimo de la tabla (720 px), que se desplaza en su región a 320 px (FR-052). El E2E de 320 px lo comprueba con correo.
 
-**El estado intermedio no lo pide la spec.** Sin él, una invitación por correo en camino se ve igual que una por enlace. Es parte de la decisión 3 del informe.
+**El estado intermedio no lo pedía la spec.** Sin él, una invitación por correo en camino se ve igual que una por enlace. El usuario aceptó su texto el 2026-10-28 (F12b-D3).
 
 ### R10. La entrega al invitar
 
@@ -152,7 +152,7 @@ En ningún caso se anuncia el envío: la sección escribe el aviso («Reenviamos
 - **Los valores por omisión** se calculan al montar: `delivery: mailAvailable ? 'email' : 'link'`. React Hook Form cachea `defaultValues` y los incluye en el envío aunque el campo no esté montado (Context7), así que sin correo el cuerpo lleva `delivery: "link"` sin un campo oculto.
 - **Los textos de «sin correo»** («El taller todavía no manda correos…» y el de la consola) se muestran sólo sin correo (historia 7, escenario 1).
 
-**Por qué «Por correo» por omisión.** Es la razón de tener correo: el alumno recibe la invitación sin que nadie copie un enlace. Si el admin prefiere el enlace, lo elige. Es parte de la decisión 3 del informe.
+**Por qué «Por correo» por omisión.** Es la razón de tener correo: el alumno recibe la invitación sin que nadie copie un enlace. Si el admin prefiere el enlace, lo elige. El usuario lo aceptó el 2026-10-28 (F12b-D3).
 
 **Alternativa: dos `radio`.** Son dos controles más en el orden del teclado, y el campo «Rol» de F12a ya es un `<select>`.
 
@@ -239,7 +239,7 @@ Todo corrió en el scratchpad de la sesión, en un arnés armado así:
 
 ## Textos que agrega el plan
 
-La spec no los fija. Van como propuesta, para que el usuario los corrija (decisión 3 del informe).
+La spec no los fijaba. El usuario los aceptó el 2026-10-28 (F12b-D3), y la spec registra la decisión en `## Clarifications`.
 
 | Dónde | Texto |
 | --- | --- |
