@@ -302,7 +302,10 @@ La corre el agente principal antes del PR (T035).
 4. **La complejidad:** el total de `npm run lint` no sube respecto de T015, y no queda ningún aviso de `app.js` (FR-005; SC-009).
 5. **Las comparaciones únicas** (T033): el DOM del shell con las diferencias listadas (SC-004), y el barrido de estilo computado y el multiconjunto con 0 diferencias (SC-005).
 6. **`seams-guard-check`** en 0 violaciones (FR-053).
-7. **Los dos archivos que no cambian:** `git diff --stat <base> -- frontend/src/app/boot/content-gate.ts frontend/src/app/boot/session-gate.ts` vacío (FR-038).
+7. **Lo que no cambia ni se suma:**
+   - `git diff --stat <base> -- frontend/src/app/boot/content-gate.ts frontend/src/app/boot/session-gate.ts docker/nginx/nginx.conf` vacío (FR-038 y FR-014);
+   - ningún estilo en línea nuevo: `git diff <base> -- frontend/src | grep -E '^\+.*(style=|setAttribute\(.style.|\.cssText)'` no imprime nada (FR-003);
+   - un solo adaptador de nuqs: `grep -rn "<NuqsAdapter" frontend/src --include=*.tsx | grep -v "\.spec\."` imprime una línea, la de `app/root/url-state.tsx`, y `grep -rn "enableHistorySync()" frontend/src | grep -v "\.spec\."` imprime una, la de `startUrlStateSync` (FR-020).
 8. **Docker,** con permiso: `docker compose build taller`.
 9. **El PR,** con título y descripción en inglés: `feat(front): F10b, one React root with the shell and the router`. Lleva:
    - el contexto y qué cambia;
