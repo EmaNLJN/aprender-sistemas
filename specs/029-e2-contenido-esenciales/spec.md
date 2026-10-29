@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-28
 
-**Status**: Draft (el clarify espera Q1 a Q5)
+**Status**: Clarificada (sesión del 2026-10-28)
 
 **Input**: Ítem **E2**, «Contenido de Esenciales», del épico backend. Lo creó el clarify de E1 el 2026-10-28 (Q5-A), y la [hoja de ruta](../backend-multiusuario/roadmap.md) todavía no tiene su fila: la cablea el coordinador, con la propuesta de `.coordinador/spec-e1-report.md` («Propuesta de alcance para la fila E2»). **Extiende a** [`specs/026-e1-esenciales/`](../026-e1-esenciales/spec.md), que todavía no está en `master` (PR #81): los enlaces a esa carpeta resuelven cuando se integre. De E1 toma «Qué es Esenciales para el alumno», la tabla de etapas, Q1, Q4 y Q5, FR-036, FR-039, FR-043 y FR-044, y las reglas de la etapa piloto de su plan (T004 y T005). Usa como compuerta la auditoría de B3 ([spec 020](../020-b3-auditoria-curriculo/spec.md): FR-029, FR-032 y FR-038, y su [contrato del resumen](../020-b3-auditoria-curriculo/contracts/audit-summary.md)). También se apoya en la [constitución](../../.specify/memory/constitution.md) (principio IV y «Disciplina de contenido») y en «Contenido del currículo» del [README](../../README.md). El [ADR 0006](../../docs/adr/0006-modelo-de-datos-y-api-multiusuario.md) sigue en **propuesta**: E1 lo usa como base, y E2 no toca nada de lo que decide. Encargo del coordinador del 2026-10-28.
 
@@ -76,12 +76,23 @@ Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumption
 | Los IDs son inmutables y nunca se reutilizan; el contenido se edita en `content/`, nunca en `build/`; lo que se retira no se borra | Constitución, principio IV; `README.md`, «Contenido del currículo» |
 | Un ejercicio nuevo actualiza en el mismo commit `curriculum-ids.json`, los asserts de `content-check` y de `systems-check` y las cantidades del README | `README.md`, «Contenido del currículo»; spec de E1, FR-036 |
 | La spec deja claro el contenido de cada etapa y cómo encadena, el flujo de una etapa, qué nunca cambia y los criterios de calidad, y trae como mucho 5 preguntas | Encargo del coordinador |
+| Q1 a Q5 con la opción recomendada | Usuario, clarify del 2026-10-28 |
+| «El texto exacto de la plantilla» es el bloque `taller-audit-summary-1` de B3, pegado entero en el PR, con la plantilla del harness sin tocar | Usuario, por el coordinador, 2026-10-28 |
 
 ## Clarifications
 
-Pendiente: el usuario todavía no respondió Q1 a Q5. Los requisitos que dependen de una pregunta llevan «(Q*n*)» y están escritos con la opción recomendada.
+### Session 2026-10-28
+
+- Q: **Q1**, ¿se mantienen el orden y el reparto de temas de la tabla de E1? → A: La tabla de E1, con `bool` en la etapa 3, donde aparece con las comparaciones. La etapa 2 queda con cinco conceptos, uno por ejercicio. Opción B. Decidió el usuario. («El contenido de cada etapa»; FR-001 y FR-002)
+- Q: **Q2**, ¿Rust y Go van juntos o separados? → A: Un PR por etapa, con los dos lenguajes: 3 PRs de 10 ejercicios. Opción A. Decidió el usuario. (FR-013; SC-001)
+- Q: **Q3**, ¿qué pasa si una etapa no aprueba la revisión? → A: Se corrige en la misma rama, sin merges parciales. Después de dos rondas sin aprobar, el agente propone reemplazar el ejercicio con el mismo ID. Si falla el tema de la etapa, la etapa se para y decide el usuario. Opción A. Decidió el usuario. (FR-011 y FR-014)
+- Q: **Q4**, ¿las etapas se redactan en serie o solapadas? → A: En cadena: el agente redacta la etapa siguiente sobre la rama de la anterior mientras el usuario revisa la anterior, y la rebasa sobre ella ya integrada antes de su propia revisión. Opción A. Decidió el usuario. («El recorrido de una etapa», paso 1; FR-008)
+- Q: **Q5**, ¿un PR de etapa puede corregir un ejercicio ya publicado? → A: No. Un PR de etapa sólo agrega, y cada arreglo va en su propio PR `fix(content)`. Opción A. Decidió el usuario. (FR-010, FR-015 y FR-017)
+- **Lo confirmado al registrar el clarify:** «el texto exacto de la plantilla» es el bloque `taller-audit-summary-1` que imprime `npm run api:audit`, pegado entero en la descripción del PR, y la plantilla de `content/harness/` queda sin tocar (FR-013).
 
 ## Preguntas del clarify
+
+Quedan como registro de las alternativas. El usuario eligió la opción recomendada en las cinco el 2026-10-28 (ver «Clarifications»).
 
 **Q1. ¿Se mantienen el orden y el reparto de temas de la tabla de E1?** *(«El contenido de cada etapa»; FR-001 y FR-002)* La tabla de E1 es la guía de quien redacta, y el usuario aprueba el texto. Al bajarla a cinco ejercicios aparecen dos cosas. La etapa 2 tiene seis conceptos para cinco ejercicios (enteros, decimales, booleanos, texto, `let mut` y conversiones), contra la regla de un concepto por ejercicio. Y un booleano sin comparaciones todavía no tiene nada que decidir.
 
@@ -137,7 +148,7 @@ Pendiente: el usuario todavía no respondió Q1 a Q5. Los requisitos que depende
 
 ## El contenido de cada etapa
 
-La tabla de E1 es la guía. Estas tablas la bajan a límites que se pueden revisar: qué introduce cada etapa, qué supone, qué deja para Inicial y qué errores enseñan sus `reparar`. Están escritas con Q1-B: `bool` va en la etapa 3. Con Q1-A, `bool` vuelve a la etapa 2. Son la guía de quien redacta, y el texto final lo aprueba el usuario (FR-011).
+La tabla de E1 es la guía. Estas tablas la bajan a límites que se pueden revisar: qué introduce cada etapa, qué supone, qué deja para Inicial y qué errores enseñan sus `reparar`. Siguen Q1-B, que decidió el usuario: `bool` va en la etapa 3, con las comparaciones. Son la guía de quien redacta, y el texto final lo aprueba el usuario (FR-011).
 
 **Para todas las etapas:**
 - **Lo que ninguna usa:** colecciones (arrays, slices, vectores o maps), structs, métodos propios, `Option` o `Result`, errores como valores, punteros, préstamos, closures, genéricos ni concurrencia.
@@ -360,7 +371,7 @@ El usuario recibe los diez ejercicios de la etapa 2 con los mensajes del compila
 - **FR-008**: El borrador DEBE escribirlo un agente desde fuentes oficiales, después de leer la fila de su etapa, los ejercicios de Esenciales publicados (y el borrador de la etapa anterior, si sigue en revisión: Q4), los de Inicial que nombra su fila y «Contenido del currículo» del README. Antes de su revisión, la etapa DEBE estar rebasada sobre la anterior ya integrada y comprobada contra el texto final de esa anterior. Su informe DEBE traer el mensaje del compilador de cada `reparar` y el resultado de la prueba previa en el host, o decir que no se pudo correr. *(FR-044 de E1; plan de E1, T004)*
 - **FR-009**: Antes de la revisión, cada etapa DEBE pasar en verde `npm run curriculum`, `npm test`, `npm run lint`, `npm run format:check`, `git diff --check`, `npm run build` seguido de `npm run test:e2e`, y las pruebas de Pest de la API. *(FR-044 de E1; `qa/AGENTS.md`)*
 - **FR-010**: Cada PR DEBE mostrar que, entre el contenido generado en su base y en su cabeza, sólo cambian las dos porciones de Esenciales, el meta de los ejercicios nuevos, la huella del documento (y con ella `Content-Version`) y el commit de origen del meta. Las 17 porciones de antes de E1, la plantilla, y la etapa y las tres huellas de cada ejercicio ya publicado (los 274 y los de Esenciales) DEBEN ser idénticas. La comparación usa el meta que ya escribe `tools/content`, sin herramienta nueva, y el plan fija el procedimiento. *(FR-009 y FR-039 de E1; Q5)*
-- **FR-011**: La revisión pedagógica del usuario DEBE ser una compuerta. El usuario aprueba de forma explícita cada ejercicio con los criterios de «Criterios de la revisión pedagógica», antes de la corrida de B3 y antes del PR. Un pedido de cambio vuelve al borrador, y el agente corrige, vuelve a correr FR-009 y FR-010 y presenta sólo lo que cambió. Sin la aprobación de todos los ejercicios de la etapa no hay merge, ni parcial. *(FR-044 de E1; Q3)*
+- **FR-011**: La revisión pedagógica del usuario DEBE ser una compuerta. El usuario aprueba de forma explícita cada ejercicio con los criterios de «Criterios de la revisión pedagógica», antes de la corrida de B3 y antes del PR. Un pedido de cambio vuelve al borrador, y el agente corrige, vuelve a correr FR-009 y FR-010 y presenta sólo lo que cambió. Si un ejercicio sigue sin aprobarse después de dos rondas, el agente propone reemplazarlo por otro con el mismo ID y la misma posición. Si lo que falla es el tema de la etapa, la etapa se para y el cambio de tema lo decide el usuario. Sin la aprobación de todos los ejercicios de la etapa no hay merge, ni parcial. *(FR-044 de E1; Q3)*
 - **FR-012**: La auditoría de B3 DEBE correr después de la aprobación, sobre el último commit y con el árbol limpio, en una corrida de registro: completa, con runsc, sin hallazgos ni programas sin veredicto. Cualquier cambio posterior, aunque sea de texto, invalida el resumen y pide otra corrida. *(Spec 020, FR-032 y FR-038)*
 - **FR-013**: Cada etapa DEBE entrar en un PR propio, con los dos lenguajes (Q2). El título y la descripción van en inglés, con la notación de Angular. La descripción lleva el problema completo, el bloque del resumen de B3 pegado entero con el texto exacto que imprime el comando (formato `taller-audit-summary-1`), la aprobación del usuario con la fecha y los IDs, los conteos que cambiaron y lo que no se verificó. La CI comprueba el bloque, y el merge lo hace el usuario. *(`AGENTS.md`; spec 020, FR-038; Q2)*
 - **FR-014**: Un hallazgo de B3 en una etapa sin integrar DEBE corregirse en `content/`, en la misma rama, sin cambiar IDs ni claves, y repetir las compuertas desde FR-009. Si el arreglo toca algo que el usuario aprobó, también se repite la revisión. Un hallazgo de un ejercicio ya publicado, o de la plantilla o el sandbox, es un bug con la extensión `bug`, fuera del PR de etapa. *(Spec 020, FR-029; Q3 y Q5)*
@@ -435,7 +446,8 @@ El usuario recibe los diez ejercicios de la etapa 2 con los mensajes del compila
 
 | Cuándo | Acción |
 | --- | --- |
-| Ahora | Responder Q1 a Q5 y corregir los criterios de la revisión (R1 a R17) y las tablas de etapas, si hace falta. |
+| Hecho (2026-10-28) | Respondió Q1 a Q5 con las recomendadas y confirmó la lectura de «el texto exacto de la plantilla». |
+| Antes de la primera revisión | Corregir los criterios de la revisión (R1 a R17) y las tablas de etapas, si hace falta. |
 | En cada etapa | Revisar los ejercicios con los criterios, aprobar o pedir cambios por ejercicio, y mergear el PR. |
 | Siempre | Ninguna descarga ni dependencia nueva: la auditoría usa las imágenes del sandbox que ya construyó B2. |
 

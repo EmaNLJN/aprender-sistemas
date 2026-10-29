@@ -15,7 +15,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -33,13 +33,7 @@
 
 ## Notes
 
-- **El clarify está pendiente.** La spec no usa marcadores `[NEEDS CLARIFICATION]`: las cinco dudas son Q1 a Q5 de «Preguntas del clarify». Cada una trae opciones, la recomendada, su motivo y su costo. Los requisitos que dependen de una pregunta llevan «(Q*n*)» y están escritos con la opción recomendada. Por eso queda sin marcar «No [NEEDS CLARIFICATION] markers remain», hasta que el usuario responda.
-- **Qué cambia según la respuesta:**
-  - Q1 cambia las tablas de «El contenido de cada etapa» (dónde va `bool`, o el tema de la etapa 4), FR-001 y FR-002;
-  - Q2 cambia FR-013, la cantidad de PRs de SC-001 y la tabla de conteos (con B, los conteos avanzan de a un lenguaje);
-  - Q3 cambia FR-011 y FR-014;
-  - Q4 cambia el paso 1 de «El recorrido de una etapa» y FR-008, no FR-006: el merge va en orden con cualquier respuesta;
-  - Q5 cambia FR-010, FR-015 y FR-017 (con B, la comparación necesita excepciones declaradas).
+- **El clarify se cerró el 2026-10-28.** El usuario eligió la opción recomendada en Q1 a Q5, y la spec las registra en «Clarifications». Los requisitos ya estaban escritos con esas opciones. Al registrarlas, FR-011 suma la regla de las dos rondas de Q3-A, la tabla de etapas deja fija la ubicación de `bool` (Q1-B) y «Lo que pidió el usuario» suma la lectura confirmada de «el texto exacto de la plantilla».
 - **E2 es contenido, no código.** Por eso casi todos los requisitos describen un proceso con compuertas comprobables (comandos del proyecto, la comparación del meta, el resumen de B3 y la aprobación registrada) en lugar de un comportamiento nuevo del sistema. El comportamiento del alumno ya lo fija E1; las historias 1 y 2 lo comprueban con el contenido completo.
 - **Excepciones deliberadas en «implementation details».** Los requisitos nombran archivos de `content/`, comandos, checks y el formato del resumen de B3, porque son los contratos que E1 y B3 ya fijaron y los que un PR de etapa tiene que respetar. No nombran clases ni funciones nuevas: E2 no trae código.
 - **«Non-technical stakeholders»:** el lector es el dueño del taller, que decide la pedagogía. «El contenido de cada etapa» y «Criterios de la revisión pedagógica» están escritos para esa decisión y para que el usuario los corrija.
