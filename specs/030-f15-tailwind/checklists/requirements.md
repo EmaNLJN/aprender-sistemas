@@ -15,8 +15,8 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
-- [ ] Requirements are testable and unambiguous
+- [x] No [NEEDS CLARIFICATION] markers remain
+- [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
 - [x] All acceptance scenarios are defined
@@ -33,18 +33,19 @@
 
 ## Notes
 
-**Lo que falta para el plan**
+**El clarify del 2026-10-28**
 
-- **Los marcadores.** Quedan ocho `[NEEDS CLARIFICATION]`, de cinco preguntas:
-  - Q1: el alcance, en la User Story 4 y FR-027;
-  - Q2: si el preflight entra alguna vez, en FR-014;
-  - Q3: la forma de los valores que no son tokens, en la User Story 4 y FR-031;
-  - Q4: el prefijo o las colisiones una por una, en FR-018;
-  - Q5: la regla para lo nuevo, en la User Story 3 y FR-025.
+- **Los marcadores.** Los ocho `[NEEDS CLARIFICATION]` de las cinco preguntas se resolvieron en el clarify del 2026-10-28 y ya no están en la spec:
+  - Q1-A, el alcance: la User Story 4 y FR-027;
+  - Q2-B, el preflight al cerrar, compensado, que no era la recomendada: FR-014 y el FR-039 nuevo;
+  - Q3-A, `--spacing: 4px` y arbitrarios: la User Story 4, FR-015 y FR-031;
+  - Q4-A, sin prefijo: FR-018;
+  - Q5-A, utilidades desde F15a: la User Story 3 y FR-025.
 
-  Cada pregunta tiene sus opciones, la recomendada, su motivo y su costo, en «Preguntas para el clarify».
-- **«Requirements are testable and unambiguous»** queda sin marcar hasta el clarify: FR-014, FR-018, FR-025, FR-027 y FR-031 dependen de una respuesta.
-- **La partición (P5)** se propone sin aplicar. Cada requisito lleva ya la marca de la parte que le tocaría, para que el clarify la confirme o la borre.
+  Las respuestas figuran en `## Clarifications`, y las opciones que no se eligieron, en «Preguntas del clarify» y en «Alternativas consideradas».
+- **Lo que fijó el coordinador:** el ADR es el 0010, a confirmar al escribirlo. Los tokens van en `@theme static`, consultado con Context7, y lo prueba primero el FR-038 nuevo.
+- **«Requirements are testable and unambiguous»** se marcó al responder el clarify: los cinco requisitos que dependían de una respuesta ya la tienen.
+- **La partición (P5-A).** El usuario aceptó F15a, F15b y F15c. Cada historia, cada requisito y cada criterio llevan la marca de su parte, y «La partición en F15a, F15b y F15c» tiene las tablas. Los planes serán `plan.md`, `plan-f15b.md` y `plan-f15c.md`.
 
 **Excepciones deliberadas**
 
@@ -54,15 +55,15 @@
 
   Son lo que se decide, lo que se prueba o una trampa medida con Context7, no un diseño de esta spec. Los nombres de la entrada, de la capa heredada y de los checks son provisionales, y no hay código de producción.
 - **«Non-technical stakeholders».** El lector es el dueño del taller, que decidió la herramienta y conoce las hojas del épico. Para el alumno, el resultado es que nada cambia, y la spec lo dice en su intención.
-- **«Technology-agnostic».** SC-003, SC-005, SC-008 y SC-009 nombran comandos, capas y dependencias, porque son lo que se mide o se revisa. Los demás criterios hablan de pruebas, diferencias, hojas y tamaños.
+- **«Technology-agnostic».** SC-003, SC-005, SC-008, SC-009 y SC-011 nombran comandos, capas y dependencias, porque son lo que se mide o se revisa. Los demás criterios hablan de pruebas, diferencias, hojas y tamaños.
 
 **El tamaño**
 
-- **37 requisitos y 10 criterios,** bajo los 52 de C3a. La partición se propone por la forma del trabajo, no por el tamaño:
-  - F15a: 27 (14 propios);
-  - F15b: 20 (7 propios);
-  - F15c: 17 (3 propios y FR-033, que comparte con F15b).
-- **La cobertura.** Los 35 requisitos que no son transversales están en el «Cubre» de alguna historia, y también los 10 criterios. Lo comprobó un script. FR-006 (reversibilidad) y FR-007 (integración de a uno) valen para todos los PR y no tienen una historia propia.
+- **39 requisitos y 11 criterios,** bajo los 52 de C3a. El clarify sumó FR-038 (los tokens en `@theme static`), FR-039 (el preflight de F15c) y SC-011. La partición responde a la forma del trabajo, no al tamaño:
+  - F15a: 28 requisitos (15 propios, FR-014 compartido con F15b y 12 transversales);
+  - F15b: 20 (6 propios, FR-014 y FR-033 compartidos y 12 transversales);
+  - F15c: 17 (4 propios, FR-033 compartido con F15b y 12 transversales).
+- **La cobertura.** Los 37 requisitos que no son transversales a todos los PR están en el «Cubre» de alguna historia, y también los 11 criterios. Cada requisito y cada criterio tiene la marca de su parte. Lo comprobó un script. FR-006 (reversibilidad) y FR-007 (integración de a uno) valen para todos los PR y no tienen una historia propia.
 
 **Qué se midió, sin ejecutar el proyecto**
 
@@ -70,4 +71,4 @@
 - **Los conteos** de colores, tamaños, espaciados, condiciones de `@media`, `!important` y `:hover` salen de las siete hojas de `master` (`bb480677`), con `grep`.
 - **Las colisiones** (`sr-only` y `visible`) salen de cruzar las 481 clases de esas hojas con los nombres de utilidades de Tailwind. F15a las confirma con la salida real.
 - **Lo que deja F10** sale de su spec y del plan de F10c (rama `plan/f10c-estilos`, `1150db65`, PR #91), que todavía no está en `master`. De ahí salen los 61 tokens con nombres de v4, sus alias y la lista de «Qué toma F15» (R12).
-- **La documentación de Tailwind** se consultó con la segunda instancia de Context7 (`/tailwindlabs/tailwindcss.com`), que es la del sitio y no está fijada a 4.3.3.
+- **La documentación de Tailwind** se consultó con la segunda instancia de Context7 (`/tailwindlabs/tailwindcss.com`), que es la del sitio y no está fijada a 4.3.3. En el clarify sumé una consulta: qué variables del theme se emiten y cuándo usar `@theme static`.
