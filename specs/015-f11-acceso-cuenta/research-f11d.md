@@ -173,7 +173,7 @@ export interface SharedComputer {
   - si `lastImport` es otro objeto que antes del sí, se muestra el informe con `role="status"`;
   - si no, se muestra `importNotice` con `role="alert"`, seguido de «Te lo volvemos a preguntar la próxima vez que abras el taller.»;
   - si no hay aviso, se muestra el mensaje común de respuesta inesperada (`UNEXPECTED_MESSAGE` de `shared/ui/form`).
-- **El informe** dice lo escrito por área, sin los ceros, y después lo omitido, lo reemplazado y los conflictos, cada uno con su ruta y su motivo en palabras («Textos que agrega el plan»).
+- **El informe** dice lo escrito por área, sin los ceros, y después lo omitido, lo reemplazado y los conflictos, cada uno con su ruta y su motivo en palabras («Textos que agrega el plan»). Una lista vacía no se dibuja: el FR-065 pide mostrar las cuatro partes del informe, y lo que no trae ninguna entrada no tiene nada que mostrar. Si nada se escribió, lo dice una frase propia.
 - **Con «No es mío» en la repregunta,** el diálogo se cierra sin aviso: la pregunta vuelve en el próximo documento.
 - **«Entendido» después del informe recarga el documento** (decisión 2 del usuario, con recomendación). Después de una falla, sólo cierra.
 
