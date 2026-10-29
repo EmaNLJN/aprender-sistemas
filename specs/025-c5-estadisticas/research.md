@@ -4,6 +4,16 @@
 
 Las decisiones técnicas del plan, con sus alternativas, la tabla de Context7 y lo que se leyó del código. Se planificó sobre `master` en `24ba9d3d` (la base del worktree), no sobre `431c9d90`: C5 es sólo backend, y F4 y el tope del HTML (#76 y #77) no lo tocan. Todo el PHP y el SQL del plan son **referencia sin ejecutar**: esta tarea no tuvo PHP, MySQL ni Docker.
 
+## Decisiones del usuario (2026-10-28)
+
+El usuario respondió las tres decisiones del plan con la opción recomendada:
+
+| # | Decisión | Dónde |
+| --- | --- | --- |
+| D1 | **La escala de la medición.** Completa (5 000 alumnos, 730 días y 30 000 intentos por día) si el disco lo permite; si no, `--per-day=7500`, extrapolando. En los dos casos, el usuario da el permiso de disco y de tiempo antes de cargar | R8; plan T017 |
+| D2 | **`stats:synthesize` y `stats:measure` quedan en la imagen,** con la guarda de la conexión efectiva (`BenchDatabase::ensure()`) | R8; plan T015 y T016 |
+| D3 | **La ficha de una cuenta en supresión devuelve `usage: null`,** como el resto de la ficha de C3b, y no un 404 | R5; plan T010 |
+
 ## Decisiones
 
 ### R1. Un solo portón a la base: `StatsRows`, con la pista `MAX_EXECUTION_TIME`
@@ -40,7 +50,7 @@ Las decisiones técnicas del plan, con sus alternativas, la tabla de Context7 y 
 ### R5. Los datos de la ficha de C3b se conservan; `usage` es aditivo
 
 - **Decisión:** `GET /api/admin/users/{user}` agrega la clave `usage` al final de `AdminUser` y responde como hoy para una cuenta en `deleting`, con `usage: null`. Cada respuesta con éxito deja la línea `admin.student_viewed` con `view: summary`.
-- **Por qué:** C3b ya entregó ese comportamiento, y `UsersListTest` filtra por `deleting`. Cambiarlo a 404 rompería un contrato que nadie pidió cambiar. La spec se corrigió en FR-017, FR-031 y SC-004 (commit `968ad612`).
+- **Por qué:** C3b ya entregó ese comportamiento, y `UsersListTest` filtra por `deleting`. Cambiarlo a 404 rompería un contrato que nadie pidió cambiar. La spec se corrigió en FR-017, FR-031 y SC-004 (commit `968ad612`), y el usuario lo confirmó el 2026-10-28 (D3).
 - **Lo que cambia en las pruebas de C3b:** `UserShowTest` («exactly the nine AdminUser keys») pasa a diez claves.
 
 ### R6. El límite de privacidad se prueba en tres capas
@@ -75,7 +85,7 @@ Las decisiones técnicas del plan, con sus alternativas, la tabla de Context7 y 
   - `stats:measure`: el tiempo en frío de cada lector y el `EXPLAIN` de cada consulta.
 
   Los dos se niegan a correr si la conexión efectiva no es `mysql-bench/taller_stats_bench`, con la misma comprobación que `TestCase::ensureTestDatabase`.
-- **Por qué:** `mysql-test` es un tmpfs de 1 GB, y la escala del ADR (unos 22 millones de intentos y 46 millones de veredictos, con el reparto del sintetizador) pesa decenas de GB. Que la escala completa o una menor con extrapolación es decisión del usuario (informe, decisión 1).
+- **Por qué:** `mysql-test` es un tmpfs de 1 GB, y la escala del ADR (unos 22 millones de intentos y 46 millones de veredictos, con el reparto del sintetizador) pesa decenas de GB. La escala la decidió el usuario el 2026-10-28 (D1): la completa si el disco lo permite y, si no, `--per-day=7500` con extrapolación, siempre con su permiso de disco y de tiempo antes de cargar. Los dos comandos viajan en la imagen con su guarda (D2).
 - **El criterio de los índices (FR-039),** sobre el informe de la medición:
   - un lector que tarda más de 2 000 ms en frío;
   - y, en el `EXPLAIN` de una de sus consultas, la tabla `a` (`attempts`) con `type` `ALL` o `index` y más de 100 000 filas estimadas.

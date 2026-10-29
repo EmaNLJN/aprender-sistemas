@@ -81,6 +81,18 @@ Los valores exactos que cada tarea respeta, copiados de la spec, del contrato y 
 - **Los comandos de Docker** van con `COMPOSE_PROJECT_NAME=<nombre-del-worktree>` en la misma línea (`backend/api/AGENTS.md`).
 - **Todo el PHP y el SQL de este plan es referencia sin ejecutar:** se planificó sin PHP, MySQL ni Docker. La primera corrida de cada prueba es la que lo confirma.
 
+## Decisiones del usuario (2026-10-28)
+
+El usuario respondió las tres decisiones del plan con la opción recomendada ([research.md](./research.md), «Decisiones del usuario»):
+
+- **D1, la escala de la medición (T017):**
+  - completa (5 000 alumnos, 730 días, 30 000 intentos por día) si el disco lo permite;
+  - si no, `--per-day=7500`, extrapolando.
+
+  En los dos casos, el usuario da el permiso de disco y de tiempo antes de cargar: es una acción suya, no del coordinador ni de un agente.
+- **D2, los comandos de la medición (T015 y T016):** `stats:synthesize` y `stats:measure` quedan en la imagen, con la guarda de la conexión efectiva (`BenchDatabase::ensure()`).
+- **D3, la ficha de una cuenta en supresión (T010):** responde como en C3b, con `usage: null`.
+
 ## Constitution Check
 
 | Principio | ¿Cumple? | Cómo |
@@ -220,7 +232,7 @@ Las tareas son **secuenciales**:
 - **T001**, la línea de base;
 - **T014**, `AGENTS.md`;
 - las líneas de **`docker/compose.yaml`** y **`package.json`** de T012 y T016;
-- **T017**, la medición, que pide permiso por el disco;
+- **T017**, la medición, después del permiso de disco y de tiempo que da el usuario (D1);
 - **T018**, la compuerta final.
 
 Ninguna tarea toca `app/Runs/Execution/*`, `Program/`, `Evidence/`, `content/` ni las imágenes del ejecutor, así que el PR no lleva el resumen de la auditoría de B3 (hallazgo C5-4).
@@ -3590,6 +3602,8 @@ En `routes/api/admin-stats.php` va `Route::get('/stats/students/{user}', [StatsC
 
 #### T010 · El resumen de uso en la ficha
 
+**Decidido por el usuario el 2026-10-28 (D3):** la ficha de una cuenta en supresión responde como en C3b, con `usage: null`.
+
 **Archivos:**
 - se crean `app/Stats/Accounts/UsageSummary.php` y `tests/Feature/Stats/UsageSummaryTest.php`;
 - se modifican `app/Http/Controllers/Admin/UserController.php` y `tests/Feature/Admin/UserShowTest.php`.
@@ -4421,8 +4435,8 @@ it('writes nothing but the session and the cache and takes no lock on any route 
   - Mirar una cuenta (el detalle, la ficha o las ejecuciones filtradas por ella) deja `admin.student_viewed` en el log.
   - Una ruta nueva de `/api/admin` suma su escenario a `NoStudentTextsTest` y su línea a `AdminAccessMatrixTest`. Una
     columna nueva con texto del alumno se suma a las claves prohibidas de esa matriz y a `STATS_FORBIDDEN_WORDS`.
-  - `stats:synthesize` y `stats:measure` corren sólo contra `mysql-bench/taller_stats_bench`:
-    `sh backend/api/scripts/stats-bench.sh` (perfil `stats-bench`), que pide permiso por el disco.
+  - `stats:synthesize` y `stats:measure` viajan en la imagen y corren sólo contra `mysql-bench/taller_stats_bench`:
+    `sh backend/api/scripts/stats-bench.sh` (perfil `stats-bench`), con el permiso de disco y de tiempo del usuario.
 ```
 
 2. **En «Comandos»,** después de `api:import:check`:
@@ -4434,6 +4448,8 @@ it('writes nothing but the session and the cache and takes no lock on any route 
 ### U6 · La medición
 
 #### T015 · La guarda y la población sintética
+
+**Decidido por el usuario el 2026-10-28 (D2):** `stats:synthesize` y `stats:measure` quedan en la imagen, con la guarda de la conexión efectiva.
 
 **Archivos:**
 - se crean `app/Console/Bench/BenchDatabase.php`, `SyntheticPopulation.php` y `app/Console/Commands/SynthesizeStats.php`;
@@ -5021,11 +5037,11 @@ Ninguna salida nueva entra en Git: el informe sale por la salida estándar, y el
 - se crean, sólo si el criterio los pide, `database/migrations/2026_10_29_500001_add_attempts_attempted_at_outcome_index.php` y `…_500002_add_attempts_attempted_at_user_outcome_index.php`;
 - si entra un índice, se modifica `tests/Feature/Runs/SchemaTest.php`.
 
-1. **El permiso del usuario.** La escala completa (5 000 alumnos, 730 días, 30 000 intentos por día) pesa varias decenas de GB y tarda horas. El coordinador:
-   - informa el espacio libre de `df -h /var/lib/docker`;
-   - le pide al usuario la escala: la completa, o `--per-day=7500` y extrapolar (decisión 1 del informe).
+1. **El permiso del usuario (acción del usuario, D1).** La escala la decidió el usuario el 2026-10-28: completa (5 000 alumnos, 730 días, 30 000 intentos por día) si el disco lo permite y, si no, `--per-day=7500`, extrapolando. La completa pesa varias decenas de GB y tarda horas.
+   - El coordinador informa el espacio libre de `df -h /var/lib/docker` y la escala que corresponde según la regla de D1.
+   - El usuario da el permiso de disco y de tiempo. Sin ese permiso no se carga nada.
 2. **Correr:**
-   - la medición: `COMPOSE_PROJECT_NAME=<wt> sh backend/api/scripts/stats-bench.sh --students=5000 --days=730 --per-day=<la elegida>`;
+   - la medición: `COMPOSE_PROJECT_NAME=<wt> sh backend/api/scripts/stats-bench.sh --students=5000 --days=730 --per-day=<30000 o 7500, según D1>`;
    - guardar el informe en la descripción del PR;
    - al terminar, `COMPOSE_PROJECT_NAME=<wt> docker compose --profile stats-bench down -v`.
 3. **El criterio** (research, R8). Se aplica a cada lector que supera los 2 000 ms:
@@ -5144,7 +5160,7 @@ Esta tarea no tuvo PHP, MySQL ni Docker: todo el código del plan es referencia 
 - **Los tipos de PHPStan nivel 9:** `config()->array()` en `BenchDatabase` y los `list<…>` de los arreglos armados en bucles. El tipo de `Cache::store()->remember()` y el `WeekDay::Monday` de Carbon ya se confirmaron (research, Context7).
 - **La fábrica de `User`:** que `created_at` y `updated_at` como `CarbonImmutable` se conserven en la fábrica (Eloquent no pisa un `created_at` sucio).
 - **El borde de la medianoche:** que el `compile_error` de las 02:30Z caiga en el intervalo del 5 de octubre se comprueba sólo con MySQL real.
-- **La medición:** el tiempo que tarda el sintetizador con la escala completa y el espacio que ocupa son estimaciones. La medición los informa, y la escala la decide el usuario.
+- **La medición:** el tiempo que tarda el sintetizador con la escala completa y el espacio que ocupa son estimaciones. La medición los informa; la escala sigue la regla que decidió el usuario (D1).
 - **`RunWorld::run`:** que acepte un `created_at` como cadena y los `id` fijos. El código de `RunWorld` lo admite, porque los reemplazos se esparcen sobre la fila (`...$overrides`).
 
 ## Complexity Tracking

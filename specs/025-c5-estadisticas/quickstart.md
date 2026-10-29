@@ -46,7 +46,7 @@ Hasta que entren A4 y D1c, las cifras casi no tienen datos (spec, «De dónde sa
 
 ## 3. La medición (SC-008, T017)
 
-Pide permiso, porque escribe un volumen grande. La escala completa del ADR son 5 000 alumnos, 730 días y 30 000 intentos por día: unos 22 millones de intentos y unos 46 millones de veredictos, varias decenas de GB y horas de carga. La escala la decide el usuario (informe del plan, decisión 1).
+Antes de cargar hace falta el permiso de disco y de tiempo del usuario, porque escribe un volumen grande. La escala completa del ADR son 5 000 alumnos, 730 días y 30 000 intentos por día: unos 22 millones de intentos y unos 46 millones de veredictos, varias decenas de GB y horas de carga. El usuario decidió el 2026-10-28 (D1): la completa si el disco lo permite y, si no, `--per-day=7500`, extrapolando.
 
 ```sh
 df -h /var/lib/docker

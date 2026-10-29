@@ -2,7 +2,7 @@
 
 **Input**: `specs/025-c5-estadisticas/` (`spec.md`, `plan.md`, `research.md`, `data-model.md`, `contracts/http.md` y `quickstart.md`)
 
-Las tareas son secuenciales: comparten las rutas, los controladores y cuatro pruebas de C3b que fijan conteos (plan, «Unidades, orden y modo de ejecución»). Cada línea remite a su tarea del plan, con sus archivos, sus interfaces y su código de referencia sin ejecutar. T001, T014, T017, T018 y las líneas de `docker/compose.yaml` y `package.json` de T012 y T016 son del coordinador.
+Las tareas son secuenciales: comparten las rutas, los controladores y cuatro pruebas de C3b que fijan conteos (plan, «Unidades, orden y modo de ejecución»). Cada línea remite a su tarea del plan, con sus archivos, sus interfaces y su código de referencia sin ejecutar. T001, T014, T017, T018 y las líneas de `docker/compose.yaml` y `package.json` de T012 y T016 son del coordinador. Las tres decisiones del plan las tomó el usuario el 2026-10-28 (plan, «Decisiones del usuario»): D1, la escala de T017; D2, los comandos en la imagen; D3, `usage: null` en la ficha de una cuenta en supresión.
 
 ## Phase 1: Setup — La base (U1)
 
@@ -21,7 +21,7 @@ Las tareas son secuenciales: comparten las rutas, los controladores y cuatro pru
 
 - [ ] T008 [US4] `StudentFilters`, `StudentDirectory`, `ListStudentsRequest` y la ruta `stats/students` (FR-029, FR-037; SC-001; plan T008)
 - [ ] T009 [US4] `StudentDetailReader`, `StudentAccessLog`, la ruta `stats/students/{user}` y su escenario en la matriz (FR-009, FR-015, FR-017, FR-030, FR-035; SC-004, SC-005; plan T009)
-- [ ] T010 [US4] `UsageSummary` y `usage` en `UserController::show`, con `UserShowTest` (FR-015, FR-017, FR-031; SC-004, SC-005; plan T010)
+- [ ] T010 [US4] `UsageSummary` y `usage` en `UserController::show`, nulo para una cuenta en supresión (D3), con `UserShowTest` (FR-015, FR-017, FR-031; SC-004, SC-005; plan T010)
 
 ## Phase 4: User Story 5 - La operación (Priority: P2) (U4)
 
@@ -35,9 +35,9 @@ Las tareas son secuenciales: comparten las rutas, los controladores y cuatro pru
 
 ## Phase 6: User Story 6 - La medición (Priority: P3) (U6)
 
-- [ ] T015 [US6] `BenchDatabase`, `SyntheticPopulation` y `stats:synthesize`, con su guarda (FR-038; plan T015)
+- [ ] T015 [US6] `BenchDatabase`, `SyntheticPopulation` y `stats:synthesize`, en la imagen y con su guarda (D2) (FR-038; plan T015)
 - [ ] T016 [US6] `stats:measure`, `backend/api/scripts/stats-bench.sh`, el perfil `stats-bench` de Compose y `api:stats:bench` (FR-038; plan T016)
-- [ ] T017 [US6] Correr la medición con el permiso del usuario y, si el criterio lo pide, los índices de `attempts` con `SchemaTest` (FR-005, FR-039, FR-040; SC-008; plan T017)
+- [ ] T017 [US6] Correr la medición a escala completa si el disco lo permite, o con `--per-day=7500` extrapolando (D1), después del permiso de disco y de tiempo del usuario; y, si el criterio lo pide, los índices de `attempts` con `SchemaTest` (FR-005, FR-039, FR-040; SC-008; plan T017)
 
 ## Phase 7: Polish
 
