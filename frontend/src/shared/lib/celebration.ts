@@ -37,7 +37,7 @@ export function celebrate(): void {
       disableForReducedMotion: true,
     });
   }
-  fire({
+  void fire({
     particleCount: 75,
     spread: 75,
     startVelocity: 32,
