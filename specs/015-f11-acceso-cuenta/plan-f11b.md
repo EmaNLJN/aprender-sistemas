@@ -2473,3 +2473,1238 @@ La compuerta de 0.2, con:
 - el PR `feat(front): change the password from «Tu cuenta» (F11b U6)`, contra `f11b/base`.
 
 **Reversión de U6:** se revierten T047, T046 y T045, en ese orden.
+
+## 7. U7 · Descargar los datos y borrar la cuenta (onda 6: M, E y K; onda 7: K)
+
+**Cubre:** FR-055 a FR-059; en las dos pantallas, FR-019 a FR-021, FR-023, FR-025 a FR-027 y FR-030; los transversales FR-066 a FR-071 con sus E2E, y FR-073, FR-076 y FR-077; SC-004 (las filas de F11b), SC-005, SC-007 a SC-009 y SC-011; la historia 7.
+
+### Tarea 7.1 · Las specs de la descarga y de la supresión, en rojo (T049, M)
+
+**Archivos:** en `frontend/src/pages/account/ui/`:
+
+- los stubs de `use-still-mounted.ts`, `IrreversibleField.tsx`, `DownloadDataForm.tsx`, `DownloadDataDialog.tsx`, `DeleteAccountForm.tsx` y `DeleteAccountDialog.tsx`, con la forma de TR-2 y las props del contrato;
+- `download-data.spec.tsx` y `delete-account.spec.tsx`, nuevas;
+- `account-actions.spec.tsx`, que suma una prueba.
+
+`use-still-mounted.ts` es, en rojo:
+
+```ts
+const useStillMounted: () => () => boolean = () => {
+  throw new Error('not implemented');
+};
+
+export default useStillMounted;
+```
+
+1. **`download-data.spec.tsx`:**
+
+   ```tsx
+   import { act, screen, waitFor } from '@testing-library/react';
+   import { useState } from 'react';
+   import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+   import { resetSession, stubDialogs } from '../../../features/sign-in/ui/render-access';
+   import { cutBody, type FakeReply } from '../../../shared/api/http/fake-fetch';
+   import DownloadDataDialog from './DownloadDataDialog';
+   import {
+     ANA,
+     errorReply,
+     holdFirstReply,
+     renderWithFetch,
+     renderWithReplies,
+     typeInto,
+     type AccountUser,
+   } from './render-account';
+
+   type Save = (blob: Blob, filename: string) => void;
+
+   interface ClosableDownloadProps {
+     readonly save: Save;
+   }
+
+   const PASSWORD = 'una frase larga para el taller';
+   const FILE = '{\n  "format": "taller-export-2",\n  "account": {"name": "Ana Pérez"}\n}\n';
+   const ATTACHMENT = {
+     'Content-Type': 'application/json',
+     'Content-Disposition': 'attachment; filename="taller-41-20261028.json"',
+   };
+   const CONFIRMED: FakeReply = { status: 201, json: {} };
+   const EXPORTED: FakeReply = { status: 200, text: FILE, headers: ATTACHMENT };
+   const EXPIRED = errorReply(423, 'password_confirmation_required', 'Confirmá tu contraseña para continuar.');
+   const TOO_MANY = 'Demasiados intentos. Esperá un momento antes de volver a probar.';
+
+   const ClosableDownload = ({ save }: ClosableDownloadProps) => {
+     const [open, setOpen] = useState(true);
+     return open ? <DownloadDataDialog save={save} onClose={() => setOpen(false)} /> : null;
+   };
+
+   beforeAll(stubDialogs);
+
+   beforeEach(() => {
+     resetSession(ANA);
+   });
+
+   function renderDownload(replies: readonly FakeReply[]) {
+     const save = vi.fn<Save>();
+     const rendered = renderWithReplies(<DownloadDataDialog save={save} onClose={vi.fn()} />, replies);
+     return { ...rendered, save };
+   }
+
+   async function download(user: AccountUser): Promise<void> {
+     await typeInto(user, 'Tu contraseña', PASSWORD);
+     await user.click(screen.getByRole('button', { name: 'Descargar mis datos' }));
+   }
+
+   describe('downloading the data of the account', () => {
+     it('tells it apart from «Exportar mi progreso» and starts on the password', async () => {
+       renderDownload([]);
+       const dialog = screen.getByRole('dialog', { name: 'Descargá los datos de tu cuenta' });
+       expect(dialog).toHaveTextContent(
+         'No es el mismo archivo que «Exportar mi progreso» y no se importa en Método.',
+       );
+       expect(dialog).toHaveTextContent('Podés descargarlo hasta 3 veces por día.');
+       await waitFor(() => expect(screen.getByLabelText('Tu contraseña')).toHaveFocus());
+     });
+
+     it('confirms the password and then saves the file with the name and the bytes of the server', async () => {
+       const { user, calls, save } = renderDownload([CONFIRMED, EXPORTED]);
+       await download(user);
+       const result = await screen.findByRole('status');
+       expect(result).toHaveTextContent('Listo: se descargó taller-41-20261028.json.');
+       expect(result).toHaveFocus();
+       expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual([
+         'POST /api/auth/confirm-password',
+         'POST /api/me/export',
+       ]);
+       expect(calls[0]?.body).toEqual({ password: PASSWORD });
+       expect(calls.map((call) => call.headers['x-taller-user'])).toEqual(['41', '41']);
+       expect(save).toHaveBeenCalledOnce();
+       const [blob, filename] = save.mock.calls[0]!;
+       expect(filename).toBe('taller-41-20261028.json');
+       expect(await blob.text()).toBe(FILE);
+     });
+
+     it('marks the password with its own text when it is wrong, and asks nothing else', async () => {
+       const { user, calls, save } = renderDownload([
+         errorReply(422, 'auth_failed', 'El email o la contraseña no son correctos.'),
+       ]);
+       await download(user);
+       const field = screen.getByLabelText('Tu contraseña');
+       await waitFor(() => expect(field).toHaveAttribute('aria-invalid', 'true'));
+       expect(field).toHaveAccessibleDescription('La contraseña no es correcta.');
+       expect(field).toHaveFocus();
+       expect(screen.queryByText('El email o la contraseña no son correctos.')).toBeNull();
+       expect(calls).toHaveLength(1);
+       expect(save).not.toHaveBeenCalled();
+     });
+
+     it('asks for the password again when the confirmation expired before the export', async () => {
+       const { user, calls, save } = renderDownload([CONFIRMED, EXPIRED, CONFIRMED, EXPORTED]);
+       await download(user);
+       const field = screen.getByLabelText('Tu contraseña');
+       await waitFor(() =>
+         expect(field).toHaveAccessibleDescription('Confirmá tu contraseña para continuar.'),
+       );
+       expect(field).toHaveFocus();
+       expect(save).not.toHaveBeenCalled();
+       await user.click(screen.getByRole('button', { name: 'Descargar mis datos' }));
+       await screen.findByRole('status');
+       expect(calls.map((call) => call.path)).toEqual([
+         '/api/auth/confirm-password',
+         '/api/me/export',
+         '/api/auth/confirm-password',
+         '/api/me/export',
+       ]);
+       expect(save).toHaveBeenCalledOnce();
+     });
+
+     it('says in hours and minutes how long to wait after the third download of the day', async () => {
+       const { user } = renderDownload([
+         CONFIRMED,
+         errorReply(429, 'too_many_requests', TOO_MANY, { headers: { 'Retry-After': '30000' } }),
+       ]);
+       await download(user);
+       expect(await screen.findByRole('alert')).toHaveTextContent(
+         'Podés volver a intentar en 8 horas y 20 minutos.',
+       );
+       expect(screen.getByRole('button', { name: 'Descargar mis datos' })).toBeDisabled();
+     });
+
+     it('offers to reload when the session belongs to another account', async () => {
+       const { user, reloadDocument } = renderDownload([
+         CONFIRMED,
+         errorReply(409, 'account_mismatch', 'La sesión cambió de cuenta: recargá la página.'),
+       ]);
+       await download(user);
+       expect(await screen.findByRole('alert')).toHaveTextContent(
+         'La sesión cambió de cuenta: recargá la página.',
+       );
+       await user.click(screen.getByRole('button', { name: 'Recargar' }));
+       expect(reloadDocument).toHaveBeenCalledOnce();
+     });
+
+     it('saves nothing when the download is cut halfway', async () => {
+       const { user, save } = renderDownload([
+         CONFIRMED,
+         { status: 200, headers: ATTACHMENT, body: cutBody('{\n  "format"') },
+       ]);
+       await download(user);
+       expect(await screen.findByRole('alert')).toHaveTextContent(
+         'No pudimos conectar con el taller. Revisá tu conexión y probá de nuevo.',
+       );
+       expect(save).not.toHaveBeenCalled();
+     });
+
+     it('does not export when the dialog closed while the password was being confirmed', async () => {
+       const held = holdFirstReply([CONFIRMED, EXPORTED]);
+       const save = vi.fn<Save>();
+       const { user } = renderWithFetch(<ClosableDownload save={save} />, held.fetch, held.calls);
+       await download(user);
+       expect(await screen.findByRole('button', { name: 'Preparando el archivo…' })).toBeDisabled();
+       await user.click(screen.getByRole('button', { name: 'Cerrar' }));
+       expect(screen.queryByRole('dialog', { name: 'Descargá los datos de tu cuenta' })).toBeNull();
+       await act(async () => {
+         held.release();
+         await new Promise((resolve) => setTimeout(resolve, 20));
+       });
+       expect(held.calls.map((call) => call.path)).toEqual(['/api/auth/confirm-password']);
+       expect(save).not.toHaveBeenCalled();
+     });
+   });
+   ```
+
+2. **`delete-account.spec.tsx`.** La prueba de «Entendido» mata el mutante «no recarga» (F11a-2):
+
+   ```tsx
+   import { act, screen, waitFor } from '@testing-library/react';
+   import { useState } from 'react';
+   import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+   import { resetSession, stubDialogs } from '../../../features/sign-in/ui/render-access';
+   import type { FakeReply } from '../../../shared/api/http/fake-fetch';
+   import DeleteAccountDialog from './DeleteAccountDialog';
+   import {
+     ANA,
+     errorReply,
+     holdFirstReply,
+     renderWithFetch,
+     renderWithReplies,
+     typeInto,
+     type AccountUser,
+   } from './render-account';
+
+   const PASSWORD = 'una frase larga para el taller';
+   const DELETION =
+     'Se está borrando tu cuenta con todo lo que guardó: el progreso, los intentos, el código y las importaciones. No se puede deshacer.';
+   const CONFIRMED: FakeReply = { status: 201, json: {} };
+   const DELETED: FakeReply = { status: 202, json: { data: { status: 'deleting' }, message: DELETION } };
+   const TOO_MANY = 'Demasiados intentos. Esperá un momento antes de volver a probar.';
+
+   const ClosableDeletion = () => {
+     const [open, setOpen] = useState(true);
+     return open ? <DeleteAccountDialog onClose={() => setOpen(false)} /> : null;
+   };
+
+   beforeAll(stubDialogs);
+
+   beforeEach(() => {
+     resetSession(ANA);
+   });
+
+   function renderDeletion(replies: readonly FakeReply[]) {
+     return renderWithReplies(<DeleteAccountDialog onClose={vi.fn()} />, replies);
+   }
+
+   async function deleteWith(user: AccountUser): Promise<void> {
+     await typeInto(user, 'Tu contraseña', PASSWORD);
+     await user.click(screen.getByRole('checkbox', { name: 'Entiendo que no se puede deshacer.' }));
+     await user.click(screen.getByRole('button', { name: 'Borrar mi cuenta' }));
+   }
+
+   describe('deleting the account', () => {
+     it('says what is deleted, that it cannot be undone and that it is not «Borrar todo»', () => {
+       renderDeletion([]);
+       const dialog = screen.getByRole('dialog', { name: 'Borrar tu cuenta' });
+       expect(dialog).toHaveTextContent(
+         'Se borra tu cuenta con todo lo que guardó en el servidor: el progreso, los intentos, el código y las importaciones. No se puede deshacer.',
+       );
+       expect(dialog).toHaveTextContent(
+         'No es «Borrar todo» de Método, que borra tu progreso en este navegador y en tu cuenta.',
+       );
+       expect(dialog).toHaveTextContent('El progreso guardado en este navegador no se borra con la cuenta.');
+       expect(screen.getByRole('checkbox', { name: 'Entiendo que no se puede deshacer.' })).not.toBeChecked();
+     });
+
+     it('sends nothing without the password and the box', async () => {
+       const { user, calls } = renderDeletion([CONFIRMED, DELETED]);
+       await user.click(screen.getByRole('button', { name: 'Borrar mi cuenta' }));
+       expect(await screen.findByText('Completá este campo.')).toBeInTheDocument();
+       expect(screen.getByText('Marcá la casilla para confirmar.')).toBeInTheDocument();
+       expect(screen.getByRole('checkbox', { name: 'Entiendo que no se puede deshacer.' })).toHaveAttribute(
+         'aria-invalid',
+         'true',
+       );
+       expect(calls).toHaveLength(0);
+     });
+
+     it('confirms, deletes with X-Taller-User, shows the message of the server, and «Entendido» reloads', async () => {
+       const { user, calls, reloadDocument } = renderDeletion([CONFIRMED, DELETED]);
+       await deleteWith(user);
+       const result = await screen.findByRole('status');
+       expect(result).toHaveTextContent(DELETION);
+       expect(result).toHaveFocus();
+       expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual([
+         'POST /api/auth/confirm-password',
+         'DELETE /api/me',
+       ]);
+       expect(calls[1]?.headers['x-taller-user']).toBe('41');
+       expect(reloadDocument).not.toHaveBeenCalled();
+       await user.click(screen.getByRole('button', { name: 'Entendido' }));
+       expect(reloadDocument).toHaveBeenCalledOnce();
+     });
+
+     it('says the same in its own words when the 202 brings no message', async () => {
+       const { user } = renderDeletion([CONFIRMED, { status: 202, json: { data: { status: 'deleting' } } }]);
+       await deleteWith(user);
+       expect(await screen.findByRole('status')).toHaveTextContent(DELETION);
+     });
+
+     it('reloads too when the dialog is closed after the deletion', async () => {
+       const { user, reloadDocument } = renderDeletion([CONFIRMED, DELETED]);
+       await deleteWith(user);
+       await screen.findByRole('status');
+       await user.click(screen.getByRole('button', { name: 'Cerrar' }));
+       expect(reloadDocument).toHaveBeenCalledOnce();
+     });
+
+     it('keeps the session of the only admin', async () => {
+       const { user, reloadDocument } = renderDeletion([
+         CONFIRMED,
+         errorReply(409, 'last_admin', 'Tiene que quedar al menos un admin activo.'),
+       ]);
+       await deleteWith(user);
+       expect(await screen.findByRole('alert')).toHaveTextContent('Tiene que quedar al menos un admin activo.');
+       expect(screen.queryByRole('button', { name: 'Recargar' })).toBeNull();
+       expect(screen.getByRole('button', { name: 'Borrar mi cuenta' })).toBeEnabled();
+       expect(reloadDocument).not.toHaveBeenCalled();
+     });
+
+     it('waits for Retry-After after too many confirmations', async () => {
+       const { user, calls } = renderDeletion([
+         errorReply(429, 'too_many_requests', TOO_MANY, { headers: { 'Retry-After': '60' } }),
+       ]);
+       await deleteWith(user);
+       expect(await screen.findByRole('alert')).toHaveTextContent('Podés volver a intentar en 1 minuto.');
+       expect(screen.getByRole('button', { name: 'Borrar mi cuenta' })).toBeDisabled();
+       expect(calls).toHaveLength(1);
+     });
+
+     it('asks for the password again when the confirmation expired before the deletion', async () => {
+       const { user, calls } = renderDeletion([
+         CONFIRMED,
+         errorReply(423, 'password_confirmation_required', 'Confirmá tu contraseña para continuar.'),
+       ]);
+       await deleteWith(user);
+       const field = screen.getByLabelText('Tu contraseña');
+       await waitFor(() =>
+         expect(field).toHaveAccessibleDescription('Confirmá tu contraseña para continuar.'),
+       );
+       expect(field).toHaveFocus();
+       expect(calls).toHaveLength(2);
+     });
+
+     it('offers to reload when the page expired and the session is now another account', async () => {
+       const { user, calls, reloadDocument } = renderDeletion([
+         CONFIRMED,
+         errorReply(419, 'csrf_token_mismatch', 'La página venció: recargala e intentá de nuevo.'),
+         {
+           status: 200,
+           json: {
+             user: { ...ANA, id: 7 },
+             features: { passwordReset: false, registration: false },
+             contentVersion: null,
+             catalogs: [],
+           },
+         },
+       ]);
+       await deleteWith(user);
+       expect(await screen.findByRole('alert')).toHaveTextContent(
+         'La página venció: recargala e intentá de nuevo.',
+       );
+       expect(calls.map((call) => call.path)).toEqual([
+         '/api/auth/confirm-password',
+         '/api/me',
+         '/api/session',
+       ]);
+       await user.click(screen.getByRole('button', { name: 'Recargar' }));
+       expect(reloadDocument).toHaveBeenCalledOnce();
+     });
+
+     it('does not delete the account when the dialog closed while the password was being confirmed', async () => {
+       const held = holdFirstReply([CONFIRMED, DELETED]);
+       const { user } = renderWithFetch(<ClosableDeletion />, held.fetch, held.calls);
+       await deleteWith(user);
+       expect(await screen.findByRole('button', { name: 'Borrando…' })).toBeDisabled();
+       await user.click(screen.getByRole('button', { name: 'Cerrar' }));
+       expect(screen.queryByRole('dialog', { name: 'Borrar tu cuenta' })).toBeNull();
+       await act(async () => {
+         held.release();
+         await new Promise((resolve) => setTimeout(resolve, 20));
+       });
+       expect(held.calls.map((call) => call.path)).toEqual(['/api/auth/confirm-password']);
+     });
+   });
+   ```
+
+3. **`account-actions.spec.tsx`** suma, dentro de su `describe`:
+
+   ```tsx
+   it('offers the three actions in order, after the privacy notice and before «Salir»', async () => {
+     const { account } = await openAccount();
+     const names = buttonNames(account);
+     const positions = [
+       'Aviso de privacidad',
+       'Cambiar la contraseña',
+       'Descargar mis datos',
+       'Borrar mi cuenta',
+       'Salir',
+     ].map((name) => names.indexOf(name));
+     expect(positions).not.toContain(-1);
+     expect([...positions].sort((left, right) => left - right)).toEqual(positions);
+   });
+   ```
+
+4. **Correr** `npm run typecheck` y `npm run test:unit -- frontend/src/pages/account`: en rojo las dos specs nuevas y la prueba nueva, y en verde las de U5, U6 y F11a.
+5. **Commit:** `test(front): specs de la descarga de los datos y de la supresión, en rojo`.
+
+### Tarea 7.2 · La descarga y la supresión (T050, M)
+
+**Archivos:** en `frontend/src/pages/account/ui/`, `account-texts.ts`, `use-still-mounted.ts`, `IrreversibleField.tsx`, `DownloadDataForm.tsx`, `DownloadDataDialog.tsx`, `DeleteAccountForm.tsx`, `DeleteAccountDialog.tsx` y `AccountActions.tsx`.
+
+1. **`account-texts.ts`,** la versión final:
+
+   ```ts
+   export const PASSWORD_TITLE = 'Cambiar la contraseña';
+   export const PASSWORD_CHANGED = 'Tu contraseña cambió. Cerramos tus otras sesiones; esta sigue abierta.';
+   export const CURRENT_PASSWORD_WRONG = 'La contraseña actual no es correcta.';
+   export const DATA_TITLE = 'Descargá los datos de tu cuenta';
+   export const DATA_DESCRIPTION =
+     'Un archivo JSON con tu cuenta, el progreso guardado en el servidor, tus intentos y tus importaciones. No es el mismo archivo que «Exportar mi progreso» y no se importa en Método. Podés descargarlo hasta 3 veces por día.';
+   export const DELETION_TITLE = 'Borrar tu cuenta';
+   export const DELETION_WARNING =
+     'Se borra tu cuenta con todo lo que guardó en el servidor: el progreso, los intentos, el código y las importaciones. No se puede deshacer. Las copias de seguridad lo conservan un tiempo: el aviso de privacidad dice cuánto.';
+   export const DELETION_NOT_RESET =
+     'No es «Borrar todo» de Método, que borra tu progreso en este navegador y en tu cuenta. El progreso guardado en este navegador no se borra con la cuenta.';
+   export const DELETION_STARTED =
+     'Se está borrando tu cuenta con todo lo que guardó: el progreso, los intentos, el código y las importaciones. No se puede deshacer.';
+   export const UNDERSTOOD_REQUIRED = 'Marcá la casilla para confirmar.';
+
+   export function dataSaved(filename: string): string {
+     return `Listo: se descargó ${filename}.`;
+   }
+   ```
+
+   `dataSaved` arma el texto en un solo nodo (TR-13).
+2. **`use-still-mounted.ts`** (R28). El efecto vuelve a marcar el montaje, así el doble efecto del modo estricto no lo deja en falso:
+
+   ```ts
+   import { useCallback, useEffect, useRef } from 'react';
+
+   const useStillMounted = () => {
+     const mounted = useRef(false);
+     useEffect(() => {
+       mounted.current = true;
+       return () => {
+         mounted.current = false;
+       };
+     }, []);
+     return useCallback(() => mounted.current, []);
+   };
+
+   export default useStillMounted;
+   ```
+
+3. **`IrreversibleField.tsx`:**
+
+   ```tsx
+   import { useId } from 'react';
+   import type { UseFormRegisterReturn } from 'react-hook-form';
+
+   interface IrreversibleFieldProps {
+     readonly registration: UseFormRegisterReturn;
+     readonly messages: readonly string[];
+   }
+
+   const IrreversibleField = ({ registration, messages }: IrreversibleFieldProps) => {
+     const id = useId();
+     const invalid = messages.length > 0;
+     return (
+       <div className="form-field">
+         <div className="form-check">
+           <input
+             id={id}
+             type="checkbox"
+             aria-invalid={invalid || undefined}
+             aria-describedby={invalid ? `${id}-errors` : undefined}
+             {...registration}
+           />
+           <label htmlFor={id}>Entiendo que no se puede deshacer.</label>
+         </div>
+         {invalid ? (
+           <ul id={`${id}-errors`} className="form-errors">
+             {messages.map((message) => (
+               <li key={message}>{message}</li>
+             ))}
+           </ul>
+         ) : null}
+       </div>
+     );
+   };
+
+   export default IrreversibleField;
+   ```
+
+4. **`DownloadDataForm.tsx`.** Confirma siempre antes de pedir el archivo («Pedirla siempre»), y no lo pide si el diálogo se cerró en el medio (R28):
+
+   ```tsx
+   import { useEffect } from 'react';
+   import { useForm } from 'react-hook-form';
+   import { WRONG_PASSWORD, confirmPassword } from '../../../features/confirm-password';
+   import { useApiClient } from '../../../shared/api/http';
+   import { PasswordField, REQUIRED, messagesOf, useGuardedSubmit } from '../../../shared/ui/form';
+   import { exportAccountData } from '../api/account-endpoints';
+   import { useAccountContext } from '../model/account-context';
+   import AccountFailureNotice from './AccountFailureNotice';
+   import useAccountFailure from './use-account-failure';
+   import useStillMounted from './use-still-mounted';
+
+   interface DownloadValues {
+     password: string;
+   }
+
+   interface DownloadDataFormProps {
+     save(blob: Blob, filename: string): void;
+     onSaved(filename: string): void;
+   }
+
+   const VISIBLE_FIELDS = ['password'] as const;
+   const PASSWORD_RULE = { field: 'password', wrongMessage: WRONG_PASSWORD } as const;
+
+   const DownloadDataForm = ({ save, onSaved }: DownloadDataFormProps) => {
+     const client = useApiClient();
+     const { account } = useAccountContext();
+     const stillMounted = useStillMounted();
+     const {
+       register,
+       handleSubmit,
+       setError,
+       setFocus,
+       formState: { errors, isSubmitting },
+     } = useForm<DownloadValues>({ criteriaMode: 'all', defaultValues: { password: '' } });
+     const failure = useAccountFailure(setError, VISIBLE_FIELDS, PASSWORD_RULE);
+
+     useEffect(() => {
+       setFocus('password');
+     }, [setFocus]);
+
+     const submit = useGuardedSubmit(async ({ password }: DownloadValues) => {
+       const confirmed = await confirmPassword(client, account.id, password);
+       if (!confirmed.ok) {
+         failure.handle(confirmed.failure);
+         return;
+       }
+       if (!stillMounted()) return;
+       const file = await exportAccountData(client, account.id);
+       if (!file.ok) {
+         failure.handle(file.failure);
+         return;
+       }
+       save(file.value.blob, file.value.filename);
+       onSaved(file.value.filename);
+     });
+
+     return (
+       <form className="form-stack" noValidate onSubmit={handleSubmit(submit)}>
+         <AccountFailureNotice
+           messages={messagesOf(errors.root?.serverError)}
+           takeFocus={errors.password === undefined}
+           offerReload={failure.offerReload}
+           onReload={failure.reloadDocument}
+         />
+         <PasswordField
+           label="Tu contraseña"
+           autoComplete="current-password"
+           registration={register('password', { required: REQUIRED })}
+           messages={messagesOf(errors.password)}
+         />
+         <div className="form-actions">
+           <button className="button" type="submit" disabled={isSubmitting || failure.waiting}>
+             {isSubmitting ? 'Preparando el archivo…' : 'Descargar mis datos'}
+           </button>
+         </div>
+       </form>
+     );
+   };
+
+   export default DownloadDataForm;
+   ```
+
+5. **`DownloadDataDialog.tsx`:**
+
+   ```tsx
+   import { useState } from 'react';
+   import AccountResult from './AccountResult';
+   import AccountSubdialog from './AccountSubdialog';
+   import { DATA_DESCRIPTION, DATA_TITLE, dataSaved } from './account-texts';
+   import DownloadDataForm from './DownloadDataForm';
+
+   interface DownloadDataDialogProps {
+     save(blob: Blob, filename: string): void;
+     onClose(): void;
+   }
+
+   const DownloadDataDialog = ({ save, onClose }: DownloadDataDialogProps) => {
+     const [savedAs, setSavedAs] = useState<string | null>(null);
+     return (
+       <AccountSubdialog title={DATA_TITLE} onClose={onClose}>
+         {savedAs === null ? (
+           <>
+             <p>{DATA_DESCRIPTION}</p>
+             <DownloadDataForm save={save} onSaved={setSavedAs} />
+           </>
+         ) : (
+           <AccountResult message={dataSaved(savedAs)} actionLabel="Volver" onAction={onClose} />
+         )}
+       </AccountSubdialog>
+     );
+   };
+
+   export default DownloadDataDialog;
+   ```
+
+6. **`DeleteAccountForm.tsx`.** Pide la contraseña y la casilla antes de cualquier pedido (FR-058):
+
+   ```tsx
+   import { useEffect } from 'react';
+   import { useForm } from 'react-hook-form';
+   import { WRONG_PASSWORD, confirmPassword } from '../../../features/confirm-password';
+   import { useApiClient } from '../../../shared/api/http';
+   import { PasswordField, REQUIRED, messagesOf, useGuardedSubmit } from '../../../shared/ui/form';
+   import { deleteAccount } from '../api/account-endpoints';
+   import { useAccountContext } from '../model/account-context';
+   import AccountFailureNotice from './AccountFailureNotice';
+   import { UNDERSTOOD_REQUIRED } from './account-texts';
+   import IrreversibleField from './IrreversibleField';
+   import useAccountFailure from './use-account-failure';
+   import useStillMounted from './use-still-mounted';
+
+   interface DeleteValues {
+     password: string;
+     understood: boolean;
+   }
+
+   interface DeleteAccountFormProps {
+     onDeleted(message: string | null): void;
+   }
+
+   const VISIBLE_FIELDS = ['password'] as const;
+   const PASSWORD_RULE = { field: 'password', wrongMessage: WRONG_PASSWORD } as const;
+
+   const DeleteAccountForm = ({ onDeleted }: DeleteAccountFormProps) => {
+     const client = useApiClient();
+     const { account } = useAccountContext();
+     const stillMounted = useStillMounted();
+     const {
+       register,
+       handleSubmit,
+       setError,
+       setFocus,
+       formState: { errors, isSubmitting },
+     } = useForm<DeleteValues>({
+       criteriaMode: 'all',
+       defaultValues: { password: '', understood: false },
+     });
+     const failure = useAccountFailure(setError, VISIBLE_FIELDS, PASSWORD_RULE);
+
+     useEffect(() => {
+       setFocus('password');
+     }, [setFocus]);
+
+     const submit = useGuardedSubmit(async ({ password }: DeleteValues) => {
+       const confirmed = await confirmPassword(client, account.id, password);
+       if (!confirmed.ok) {
+         failure.handle(confirmed.failure);
+         return;
+       }
+       if (!stillMounted()) return;
+       const deleted = await deleteAccount(client, account.id);
+       if (!deleted.ok) {
+         failure.handle(deleted.failure);
+         return;
+       }
+       onDeleted(deleted.value);
+     });
+
+     const fieldHasError = errors.password !== undefined || errors.understood !== undefined;
+     return (
+       <form className="form-stack" noValidate onSubmit={handleSubmit(submit)}>
+         <AccountFailureNotice
+           messages={messagesOf(errors.root?.serverError)}
+           takeFocus={!fieldHasError}
+           offerReload={failure.offerReload}
+           onReload={failure.reloadDocument}
+         />
+         <PasswordField
+           label="Tu contraseña"
+           autoComplete="current-password"
+           registration={register('password', { required: REQUIRED })}
+           messages={messagesOf(errors.password)}
+         />
+         <IrreversibleField
+           registration={register('understood', { required: UNDERSTOOD_REQUIRED })}
+           messages={messagesOf(errors.understood)}
+         />
+         <div className="form-actions">
+           <button className="button" type="submit" disabled={isSubmitting || failure.waiting}>
+             {isSubmitting ? 'Borrando…' : 'Borrar mi cuenta'}
+           </button>
+         </div>
+       </form>
+     );
+   };
+
+   export default DeleteAccountForm;
+   ```
+
+7. **`DeleteAccountDialog.tsx`.** Después del 202 la sesión ya terminó: «Entendido» recarga, y cerrar el diálogo también (FR-059; R30):
+
+   ```tsx
+   import { useState } from 'react';
+   import { useAccountContext } from '../model/account-context';
+   import AccountResult from './AccountResult';
+   import AccountSubdialog from './AccountSubdialog';
+   import { DELETION_NOT_RESET, DELETION_STARTED, DELETION_TITLE, DELETION_WARNING } from './account-texts';
+   import DeleteAccountForm from './DeleteAccountForm';
+
+   interface DeleteAccountDialogProps {
+     onClose(): void;
+   }
+
+   const DeleteAccountDialog = ({ onClose }: DeleteAccountDialogProps) => {
+     const { reloadDocument } = useAccountContext();
+     const [deletedMessage, setDeletedMessage] = useState<string | null>(null);
+     if (deletedMessage !== null) {
+       return (
+         <AccountSubdialog title={DELETION_TITLE} onClose={reloadDocument}>
+           <AccountResult message={deletedMessage} actionLabel="Entendido" onAction={reloadDocument} />
+         </AccountSubdialog>
+       );
+     }
+     return (
+       <AccountSubdialog title={DELETION_TITLE} onClose={onClose}>
+         <p>{DELETION_WARNING}</p>
+         <p>{DELETION_NOT_RESET}</p>
+         <DeleteAccountForm onDeleted={(message) => setDeletedMessage(message ?? DELETION_STARTED)} />
+       </AccountSubdialog>
+     );
+   };
+
+   export default DeleteAccountDialog;
+   ```
+
+   Las dos ramas devuelven el mismo componente en la misma posición, así que React conserva el `<dialog>` abierto y sólo cambian su contenido y su `onClose`.
+8. **`AccountActions.tsx`,** la versión final. `downloadBlob` se inyecta como `save` (R22):
+
+   ```tsx
+   import { useState } from 'react';
+   import { createPortal } from 'react-dom';
+   import { downloadBlob } from '../../../shared/lib/download-file';
+   import ChangePasswordDialog from './ChangePasswordDialog';
+   import DeleteAccountDialog from './DeleteAccountDialog';
+   import DownloadDataDialog from './DownloadDataDialog';
+
+   type AccountAction = 'password' | 'data' | 'deletion';
+
+   const AccountActions = () => {
+     const [open, setOpen] = useState<AccountAction | null>(null);
+     const close = (): void => setOpen(null);
+     return (
+       <div className="account-actions">
+         <button type="button" className="text-button" onClick={() => setOpen('password')}>
+           Cambiar la contraseña
+         </button>
+         <button type="button" className="text-button" onClick={() => setOpen('data')}>
+           Descargar mis datos
+         </button>
+         <button type="button" className="text-button" onClick={() => setOpen('deletion')}>
+           Borrar mi cuenta
+         </button>
+         {open === 'password' ? createPortal(<ChangePasswordDialog onClose={close} />, document.body) : null}
+         {open === 'data'
+           ? createPortal(<DownloadDataDialog save={downloadBlob} onClose={close} />, document.body)
+           : null}
+         {open === 'deletion' ? createPortal(<DeleteAccountDialog onClose={close} />, document.body) : null}
+       </div>
+     );
+   };
+
+   export default AccountActions;
+   ```
+
+9. **Correr** `npm run test:unit -- frontend/src/pages/account` (todo en verde), `npm run typecheck` y `npm run lint`. La complejidad de los dos `submit` es 4.
+10. **Commit:** `feat(front): descargar los datos y borrar la cuenta desde «Tu cuenta»`.
+
+### Tarea 7.3 · Los E2E de la descarga, de la supresión y de la higiene (T051, E)
+
+**Archivos:** `qa/e2e/lib/account-contract.ts` (suma tres funciones), `qa/e2e/specs/account-data.spec.ts` y `qa/e2e/specs/account-hygiene.spec.ts` (nuevos).
+
+1. **`account-contract.ts`** suma, con `import type { ApiDouble } from '../fixtures/api-double';` arriba:
+
+   ```ts
+   export function answerConfirmation(api: ApiDouble): void {
+     api.on('POST /api/auth/confirm-password', () => ({ status: 201, json: {} }));
+   }
+
+   export function answerExport(api: ApiDouble): void {
+     api.on('POST /api/me/export', () => ({
+       status: 200,
+       contentType: 'application/json',
+       headers: {
+         'Content-Disposition': `attachment; filename="${EXPORT_FILE.name}"`,
+         'Cache-Control': 'no-store',
+       },
+       body: EXPORT_FILE.text,
+     }));
+   }
+
+   export function answerDeletion(api: ApiDouble): void {
+     api.on('DELETE /api/me', () => {
+       api.account = null;
+       return { status: 202, json: { data: { status: 'deleting' }, message: DELETION_MESSAGE } };
+     });
+   }
+   ```
+
+   Son rutas explícitas con `api.on`, sin depender de las que F8 sume por omisión (R32).
+2. **`account-data.spec.ts`.** Cubre la historia 7, SC-009 y FR-055 a FR-059:
+
+   ```ts
+   import { readFile } from 'node:fs/promises';
+   import { expect, test } from '../fixtures';
+   import {
+     ACCOUNT_MESSAGES,
+     DELETION_MESSAGE,
+     EXPORT_FILE,
+     accountError,
+     answerConfirmation,
+     answerDeletion,
+     answerExport,
+   } from '../lib/account-contract';
+   import { ADMIN, STUDENT, errorBody } from '../lib/api-contract';
+   import { frozenProgress, type StorageKey } from '../lib/curriculum';
+   import { observeReload } from '../lib/document-marker';
+   import { urls } from '../lib/urls';
+
+   const PASSWORD = 'una frase larga para el taller';
+
+   test.describe('downloading the data of the account', () => {
+     test('saves the file of the server with its name and its bytes, and keeps no copy in the browser', async ({
+       account,
+       api,
+       shell,
+       page,
+     }) => {
+       answerConfirmation(api);
+       answerExport(api);
+       await shell.goto(urls.view('recorrido'));
+       await account.open();
+       const dialog = await account.openAction('Descargar mis datos');
+       const downloading = page.waitForEvent('download');
+       await account.confirmWithPassword('Descargar mis datos', PASSWORD);
+       const download = await downloading;
+       expect(download.suggestedFilename()).toBe(EXPORT_FILE.name);
+       expect(await readFile(await download.path())).toEqual(Buffer.from(EXPORT_FILE.text, 'utf8'));
+       await expect(dialog.getByRole('status')).toHaveText(`Listo: se descargó ${EXPORT_FILE.name}.`);
+       const modifying = api.calls.filter((call) => call.method !== 'GET');
+       expect(modifying.map((call) => call.path)).toEqual(['/api/auth/confirm-password', '/api/me/export']);
+       expect(modifying[0]?.body).toEqual({ password: PASSWORD });
+       expect(modifying.map((call) => call.user)).toEqual([String(STUDENT.id), String(STUDENT.id)]);
+       const stored = await page.evaluate(() =>
+         [...Object.values(localStorage), ...Object.values(sessionStorage)].join('\n'),
+       );
+       expect(stored).not.toContain('taller-export-2');
+     });
+
+     test('says in hours and minutes when the downloads of the day ran out', async ({
+       account,
+       api,
+       pageIssues,
+       shell,
+     }) => {
+       pageIssues.expectIssue(/status of 429/, 'the 429 of the fourth download of the day');
+       answerConfirmation(api);
+       api.on('POST /api/me/export', () => ({
+         status: 429,
+         headers: { 'Retry-After': '30000' },
+         json: errorBody('too_many_requests'),
+       }));
+       await shell.goto(urls.view('recorrido'));
+       await account.open();
+       const dialog = await account.openAction('Descargar mis datos');
+       await account.confirmWithPassword('Descargar mis datos', PASSWORD);
+       await expect(dialog.getByRole('alert')).toContainText('Podés volver a intentar en 8 horas y 20 minutos.');
+       await expect(dialog.getByRole('button', { name: 'Descargar mis datos', exact: true })).toBeDisabled();
+     });
+
+     test('asks for the password again when the confirmation expired before the export', async ({
+       account,
+       api,
+       pageIssues,
+       shell,
+     }) => {
+       pageIssues.expectIssue(/status of 423/, 'the 423 of an expired confirmation');
+       answerConfirmation(api);
+       api.reply('POST /api/me/export', { status: 423, json: accountError('password_confirmation_required') });
+       answerExport(api);
+       await shell.goto(urls.view('recorrido'));
+       await account.open();
+       const dialog = await account.openAction('Descargar mis datos');
+       await account.confirmWithPassword('Descargar mis datos', PASSWORD);
+       const field = dialog.getByLabel('Tu contraseña', { exact: true });
+       await expect(field).toHaveAttribute('aria-invalid', 'true');
+       await expect(dialog.getByText(ACCOUNT_MESSAGES.password_confirmation_required)).toBeVisible();
+     });
+   });
+
+   test.describe('deleting the account', () => {
+     test('deletes with X-Taller-User, shows the message of the server and reloads, and the progress of the browser stays', async ({
+       access,
+       account,
+       api,
+       shell,
+       storage,
+       page,
+     }) => {
+       await storage.seed(frozenProgress);
+       answerConfirmation(api);
+       answerDeletion(api);
+       await shell.goto(urls.view('recorrido'));
+       await account.open();
+       const dialog = await account.openAction('Borrar mi cuenta');
+       await account.confirmWithPassword('Borrar mi cuenta', PASSWORD);
+       await expect(dialog.getByRole('status')).toHaveText(DELETION_MESSAGE);
+       const [call] = api.callsTo('DELETE /api/me');
+       expect(call?.user).toBe(String(STUDENT.id));
+       expect(call?.xsrf).toBe(api.xsrfValue());
+       expect(
+         await observeReload(page, () => dialog.getByRole('button', { name: 'Entendido', exact: true }).click()),
+       ).toBe(true);
+       await expect(access.heading('Ingresá al taller')).toBeVisible();
+       const stored = await storage.snapshot();
+       for (const key of Object.keys(frozenProgress) as StorageKey[]) {
+         expect(stored[key]).toBe(frozenProgress[key]);
+       }
+     });
+
+     test.describe('as the only admin', () => {
+       test.use({ sessionAccount: ADMIN });
+
+       test('keeps the session and says why', async ({ account, api, pageIssues, shell, page }) => {
+         pageIssues.expectIssue(/status of 409/, 'the 409 last_admin of the deletion');
+         answerConfirmation(api);
+         api.on('DELETE /api/me', () => ({ status: 409, json: accountError('last_admin') }));
+         await shell.goto(urls.view('recorrido'));
+         await account.open();
+         const dialog = await account.openAction('Borrar mi cuenta');
+         await account.confirmWithPassword('Borrar mi cuenta', PASSWORD);
+         await expect(dialog.getByRole('alert')).toHaveText(ACCOUNT_MESSAGES.last_admin);
+         await page.keyboard.press('Escape');
+         await expect(dialog).toBeHidden();
+         await expect(account.dialog).toContainText(`${ADMIN.name} · ${ADMIN.email}`);
+       });
+     });
+   });
+   ```
+
+   El escenario del 423 encola la respuesta con `api.reply` antes del manejador de `answerExport`, que queda para el envío siguiente.
+3. **`account-hygiene.spec.ts`.** Cubre SC-005 y SC-007 en las pantallas de F11b, y FR-066 a FR-068 y FR-070:
+
+   ```ts
+   import type { Locator, Page } from '@playwright/test';
+   import { expect, test } from '../fixtures';
+   import {
+     DELETION_MESSAGE,
+     answerConfirmation,
+     answerDeletion,
+     answerExport,
+   } from '../lib/account-contract';
+   import { STUDENT } from '../lib/api-contract';
+   import { observeReload } from '../lib/document-marker';
+   import { urls } from '../lib/urls';
+
+   const CURRENT = 'una frase larga para el taller';
+   const NEW_PASSWORD = 'otra frase larga para cambiar';
+   const ACTIONS = ['Cambiar la contraseña', 'Descargar mis datos', 'Borrar mi cuenta'] as const;
+
+   function leftoversOf(page: Page): Promise<string> {
+     return page.evaluate(() =>
+       [
+         ...Object.keys(localStorage).map((key) => `${key}=${localStorage.getItem(key) ?? ''}`),
+         ...Object.keys(sessionStorage).map((key) => `${key}=${sessionStorage.getItem(key) ?? ''}`),
+         document.cookie,
+         location.href,
+       ].join('\n'),
+     );
+   }
+
+   async function tabTo(page: Page, target: Locator): Promise<void> {
+     for (let step = 0; step < 12; step += 1) {
+       if (await target.evaluate((element) => element === document.activeElement)) return;
+       await page.keyboard.press('Tab');
+     }
+     await expect(target).toBeFocused();
+   }
+
+   test.describe('nothing secret is left behind by the account actions', () => {
+     test('after changing the password, downloading the data and deleting the account', async ({
+       account,
+       api,
+       shell,
+       page,
+     }) => {
+       const consoleTexts: string[] = [];
+       page.on('console', (message) => consoleTexts.push(message.text()));
+       api.on('PUT /api/me/password', () => ({ status: 200, json: { data: STUDENT } }));
+       answerConfirmation(api);
+       answerExport(api);
+       answerDeletion(api);
+       await shell.goto(urls.view('recorrido'));
+       await account.open();
+       const change = await account.openAction('Cambiar la contraseña');
+       await account.changePassword(CURRENT, NEW_PASSWORD);
+       await change.getByRole('button', { name: 'Listo', exact: true }).click();
+       const data = await account.openAction('Descargar mis datos');
+       const downloading = page.waitForEvent('download');
+       await account.confirmWithPassword('Descargar mis datos', NEW_PASSWORD);
+       await downloading;
+       await data.getByRole('button', { name: 'Volver', exact: true }).click();
+       const deletion = await account.openAction('Borrar mi cuenta');
+       await account.confirmWithPassword('Borrar mi cuenta', NEW_PASSWORD);
+       await expect(deletion.getByRole('status')).toHaveText(DELETION_MESSAGE);
+       const beforeReload = await leftoversOf(page);
+       await observeReload(page, () => deletion.getByRole('button', { name: 'Entendido', exact: true }).click());
+       const afterReload = await leftoversOf(page);
+       for (const secret of [CURRENT, NEW_PASSWORD]) {
+         expect(beforeReload).not.toContain(secret);
+         expect(afterReload).not.toContain(secret);
+         expect(consoleTexts.join('\n')).not.toContain(secret);
+       }
+     });
+   });
+
+   test.describe('the keyboard alone', () => {
+     test('changes the password and goes back to «Tu cuenta»', async ({ account, api, shell, page }) => {
+       api.on('PUT /api/me/password', () => ({ status: 200, json: { data: STUDENT } }));
+       await shell.goto(urls.view('recorrido'));
+       await account.entry.focus();
+       await page.keyboard.press('Enter');
+       await expect(account.dialog).toBeVisible();
+       const opener = account.button('Cambiar la contraseña');
+       await tabTo(page, opener);
+       await page.keyboard.press('Enter');
+       const dialog = account.actionDialog('Cambiar la contraseña');
+       await expect(dialog.getByLabel('Contraseña actual', { exact: true })).toBeFocused();
+       await page.keyboard.type(CURRENT);
+       await tabTo(page, dialog.getByLabel('Contraseña nueva', { exact: true }));
+       await page.keyboard.type(NEW_PASSWORD);
+       await tabTo(page, dialog.getByLabel('Repetí la contraseña nueva', { exact: true }));
+       await page.keyboard.type(NEW_PASSWORD);
+       await page.keyboard.press('Enter');
+       await expect(dialog.getByRole('status')).toBeFocused();
+       await page.keyboard.press('Escape');
+       await expect(dialog).toBeHidden();
+       await expect(opener).toBeFocused();
+     });
+   });
+
+   for (const width of [320, 390]) {
+     test.describe(`at ${width} px`, () => {
+       test.use({ viewport: { width, height: 760 } });
+
+       test('each action takes the whole screen, without sideways scrolling and with fields of 16 px', async ({
+         account,
+         shell,
+         page,
+       }) => {
+         await shell.goto(urls.view('recorrido'));
+         await account.open();
+         for (const action of ACTIONS) {
+           const dialog = await account.openAction(action);
+           const viewportWidth = await page.evaluate(() => document.documentElement.clientWidth);
+           expect((await dialog.boundingBox())?.width).toBe(viewportWidth);
+           expect(await dialog.evaluate((element) => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(0);
+           const fontSize = await dialog
+             .locator('input')
+             .first()
+             .evaluate((element) => parseFloat(getComputedStyle(element).fontSize));
+           expect(fontSize).toBeGreaterThanOrEqual(16);
+           await page.keyboard.press('Escape');
+           await expect(dialog).toBeHidden();
+         }
+       });
+     });
+   }
+
+   test.describe('with reduced motion', () => {
+     test.use({ reducedMotion: 'reduce' });
+
+     test('the buttons of the actions have no transition', async ({ account, shell }) => {
+       await shell.goto(urls.view('recorrido'));
+       await account.open();
+       const dialog = await account.openAction('Borrar mi cuenta');
+       const transition = await dialog
+         .getByRole('button', { name: 'Borrar mi cuenta', exact: true })
+         .evaluate((element) => getComputedStyle(element).transitionProperty);
+       expect(transition).toBe('none');
+     });
+   });
+   ```
+
+4. **Correr** `npm run build && E2E_PORT=4191 npm run test:e2e -- specs/account-data.spec.ts specs/account-hygiene.spec.ts`. Antes de T050, fallan por la razón esperada: no hay «Descargar mis datos» ni «Borrar mi cuenta». Después, en verde.
+   - **Si Chromium no emite `download` para el enlace `blob:`** (research-f11b.md, «Lo que no se verificó»), el E2E lo informa con el error real y se consulta al coordinador. El diseño no cambia.
+   - **Si un diálogo se desborda a 320 px,** la corrección va en `account.css` y se informa en el PR.
+5. **Commit:** `test(qa): E2E de la descarga, de la supresión y de la higiene de «Tu cuenta»`.
+
+### Tarea 7.4 · La documentación (T052, K)
+
+Cambia en el mismo PR que U7 (FR-077):
+
+- **`docs/architecture.md`:**
+  - el «Mapa de archivos» suma la fila «Confirmación de la contraseña» (`features/confirm-password`), y la de «Tu cuenta y la raíz de la cuenta» suma las tres acciones de F11b;
+  - el «Estado actual» de Feature-Sliced Design suma `features/confirm-password`, con sus dos consumidores (F11b y F12a).
+- **`qa/AGENTS.md`:**
+  - la fila «Acceso, sesión y Tu cuenta» suma las specs de `features/confirm-password` y las nuevas de `pages/account`, y los tres E2E de F11b;
+  - en «Pruebas del front»:
+    - `FakeReply.body` con `cutBody` simula un cuerpo que se corta;
+    - `holdFirstReply` (en `pages/account/ui/render-account.tsx`) retiene un pedido;
+    - las descargas de los E2E se esperan con `page.waitForEvent('download')`;
+    - las rutas de la cuenta se registran con `answerConfirmation`, `answerExport` y `answerDeletion`.
+- **`specs/015-f11-acceso-cuenta/contracts/front-interfaces.md`,** en «`pages/account`»:
+  - «F11b suma sus tres secciones (contraseña, datos y supresión) antes de «Salir».» pasa a remitir a [account-f11b.md](./contracts/account-f11b.md), con el orden de las secciones;
+  - la lista de slices suma `features/confirm-password`.
+
+**Comprobar** las rutas, los comandos y los enlaces locales de cada pasaje, y `git diff --check`. Commit: `docs: las acciones de la cuenta de F11b en la arquitectura y en qa`.
+
+### Tarea 7.5 · El peso, la compuerta final y el PR a `master` (T053, K)
+
+1. **El peso** (SC-008 y FR-073). Con `npm run build`, `html.length` de `dist/index.html` contra T036 (quickstart-f11b.md §3).
+
+   **La condición de corte:** si la diferencia pasa de +15 000 caracteres o el total llega a `BOOT_SIZE_LIMIT` (1 500 000), F11b no cierra. Se informa la medida y decide el usuario. F11b no trae librerías, así que no hay nada que separar: toda la diferencia es código propio.
+2. **La compuerta de 0.2,** sobre `f11b/base` con U5 a U7, con:
+   - la red completa cinco veces seguidas (`--repeat-each=5 --retries=0`);
+   - `docker compose build taller`, con permiso;
+   - la verificación a mano contra el stack (quickstart-f11b.md §4).
+3. **Lo que tiene que haber pasado antes del PR a `master`:** F11a, en `master` (TR-12).
+4. **El PR** `feat(front): change the password, download the data and delete the account (F11b)`, de `f11b/base` a `master`. Su descripción, en inglés, cuenta:
+   - el problema y lo que cambia;
+   - el peso, con la diferencia contra T036;
+   - la verificación a mano;
+   - que C4 lo esperaba (su compuerta G1);
+   - lo que queda: el hallazgo de F8 sobre `WRONG_PASSWORD` y, si F12a no estaba, que F12a toma el slice.
+
+**Reversión de U7:** se revierten T053, T052, T051, T050 y T049, en ese orden.
+
+## 8. Documentación que cambia con cada unidad
+
+| Unidad | Documentación |
+| --- | --- |
+| U5 | `contracts/front-interfaces.md`: `download`, `ApiDownload` y `readAttachmentName` (T037) |
+| U6 | Ninguna fuera del código |
+| U7 | `docs/architecture.md`, `qa/AGENTS.md` y `contracts/front-interfaces.md`, «`pages/account`» (T052) |
+
+## Lo que otros ítems toman de F11b
+
+- **F12a:**
+  - importa `confirmPassword`, `WRONG_PASSWORD` e `isWrongPassword` de `features/confirm-password`, en lugar de crearlos (si F12a llega antes, T041 los muda);
+  - pone «Administrar el taller» justo después del aviso, y no antes de «Salir», para no pisar la inserción de F11b;
+  - `PasswordStep` sigue en `pages/admin`.
+- **F8:** puede usar `confirmPassword` y mostrar `WRONG_PASSWORD` en el campo, en lugar del texto del servidor, que nombra un email.
+- **F11d:** pone «Estoy en una computadora compartida» después de `<SignOutSection`, y puede leer `useAccountContext()`.
+- **C4:** la compuerta G1 suma F11b integrada, y el recorrido de la CSP suma los tres diálogos de «Tu cuenta».
+- **D1c:** el cliente ya tiene `download`, por si una importación o una copia lo necesitan.
+
+## Cobertura de requisitos
+
+| Requisito | Dónde | Prueba |
+| --- | --- | --- |
+| FR-053 | T043 y T046 | `account-endpoints.spec.ts`, `change-password.spec.tsx` y `account-password.spec.ts` |
+| FR-054 | T042, T043 y T046 | `account-failure.spec.ts`, «marks the current password…» y «puts on the new password…» (Vitest y E2E) |
+| FR-055 | T040 y T050 | `confirm-password.spec.ts`; las dos specs de U7 confirman antes de la acción y vuelven a pedir ante un 423; el 423 del E2E |
+| FR-056 | T038, T043 y T050 | `api-client.spec.ts` (`download`), `account-endpoints.spec.ts`, `download-data.spec.tsx` y `account-data.spec.ts` |
+| FR-057 | T050 | «tells it apart from «Exportar mi progreso»…» |
+| FR-058 | T050 | «says what is deleted…», «sends nothing without the password and the box» y las claves v1 del E2E |
+| FR-059 | T050 | ««Entendido» reloads», «reloads too when the dialog is closed…», «keeps the session of the only admin» y sus E2E |
+| FR-019 a FR-021 y FR-023, en F11b | T046 | Las pruebas del 409, del 403, del 401 con la misma cuenta y con otra, y del 429, en `change-password.spec.tsx`; el 419 con otra cuenta, en `delete-account.spec.tsx` |
+| FR-024 a FR-031, en F11b | T046 y T050 | Los formularios con `noValidate` y `handleSubmit`; los motivos de la política; la «á» descompuesta; el doble clic; `autocomplete` y «Mostrar» de `PasswordField` |
+| FR-066 | T046, T050 y T051 | El foco en el primer campo (Vitest) y «the keyboard alone» (E2E) |
+| FR-067 | T046 y T051 | `account.css` y «at 320 px» y «at 390 px» |
+| FR-068 | T051 | «with reduced motion» |
+| FR-069 | T044, T048 y T053 | El `grep` de la compuerta |
+| FR-070 | T051 | «nothing secret is left behind by the account actions» |
+| FR-071 | T046 y T050 | Una contraseña equivocada da siempre el mismo texto propio |
+| FR-072 | — | F11b no instala nada |
+| FR-073 | T053 | La medida contra T036 |
+| FR-074 | Todas las tareas de specs | Rojo, después verde, con valores escritos a mano |
+| FR-075 | T047 y T051 | Page Objects con localizadores accesibles y el doble de la API |
+| FR-076 | T044, T048 y T053 | La red sin editar y la lista de archivos de `qa/` |
+| FR-077 | T052 y T053 | La documentación y la compuerta final |
+| SC-004 | T045, T049, T047 y T051 | La tabla de estados de abajo |
+| SC-005 | T051 | La higiene |
+| SC-007 | T051 | El teclado, los dos anchos y el movimiento reducido |
+| SC-008 | T053 | El peso bajo 1 500 000 |
+| SC-009 | T037, T050 y T051 | Los bytes y el nombre (Vitest y E2E), ninguna copia en el almacenamiento y las claves v1 después de la recarga |
+| SC-011 | T053 | La compuerta final y el `grep` de estilos |
+
+## Los estados de SC-004 (las filas de F11b)
+
+| Pantalla | Estado | Prueba |
+| --- | --- | --- |
+| Cambiar la contraseña | Cargando | «keeps the button busy while the server answers and sends once» |
+| | Error de campo | «marks the current password…», «puts on the new password…», «shows every reason…» y «sends nothing with a short new password…» |
+| | Error del servidor | «marks the current password…» (`auth_failed`); un 5xx, por `describeFailure` de F11a, con sus specs |
+| | Sesión | 401 con la misma cuenta y con otra; 409 `account_mismatch`; 403 `account_disabled`; el 419 lo resuelve el cliente (sus specs de F11a) |
+| | Límite | «waits for Retry-After…» (Vitest y E2E) |
+| Descargar mis datos | Cargando | «does not export when the dialog closed…», que espera «Preparando el archivo…» deshabilitado |
+| | Error de campo | «marks the password with its own text…» |
+| | Error del servidor | 423 («asks for the password again…»), el corte («saves nothing…») y el 422 `auth_failed` |
+| | Sesión | «offers to reload when the session belongs to another account»; el 419 de `download`, en `api-client.spec.ts` |
+| | Límite | «says in hours and minutes…» (Vitest y E2E) |
+| Borrar la cuenta | Cargando | «does not delete the account when the dialog closed…», que espera «Borrando…» deshabilitado |
+| | Error de campo | «sends nothing without the password and the box» |
+| | Error del servidor | 423, 409 `last_admin` y el 422 `auth_failed` por `useAccountFailure` |
+| | Sesión | «offers to reload when the page expired and the session is now another account» |
+| | Límite | «waits for Retry-After after too many confirmations» |
+
+Cada estado muestra un mensaje que dice qué hacer: el del servidor, el propio de la contraseña, el de la red de F11a o «Recargar».
+
+## Descargas y permisos
+
+- **Ninguna descarga.** F11b no instala dependencias.
+- **Docker,** con permiso, sólo en T053: `docker compose build taller` y el stack de la verificación a mano.
+
+## Riesgos y lo que quedó sin verificar
+
+1. **«Tu cuenta» de F11a todavía no existe** (T022 a T025). *Mitigación:* T036 lo comprueba antes de empezar, y la inserción de F11b es «justo antes de `<SignOutSection`», que sobrevive a diferencias de forma.
+2. **El orden con F12a.** *Mitigación:* T041 tiene las dos ramas, y el contrato fija dónde inserta cada uno.
+3. **La propagación de `close` a través del portal.** Sale de la documentación de React y del caso de F11a, no de una corrida. *Mitigación:* la spec de T045 falla sin el corte, y el E2E de Esc lo prueba en Chromium.
+4. **`download` de Playwright con un enlace `blob:`.** *Mitigación:* el E2E de T051 lo fija; si falla, se informa con el error real.
+5. **`ReadableStream` y `TextEncoder` en el proyecto `dom` de Vitest.** `cutBody` los usa, y la spec de la descarga corre en jsdom. Node 24 los define como globales, y Vitest los conserva en su entorno jsdom. *Mitigación:* si faltaran, la prueba del corte queda en `api-client.spec.ts` (proyecto `node`), que ya la tiene, y la de la pantalla se informa.
+6. **El singleton `accessRequests` en las specs.** Un ingreso que una prueba deja abierto aparece en la siguiente. *Mitigación:* cada spec que lleva al ingreso lo termina.
+7. **El peso.** Es una estimación (R33). *Mitigación:* la condición de corte de T053.
+8. **La cookie real, `SameSite` y el CSRF real** de los tres pedidos, y el streaming real de la exportación. *Mitigación:* la verificación a mano de quickstart-f11b.md §4.
+
+## Complexity Tracking
+
+| Decisión | Por qué hace falta | La alternativa más simple, y por qué no |
+| --- | --- | --- |
+| `download` y `renewingCsrf` en el cliente | SC-009 pide los mismos bytes, y la exportación necesita el 419 y `X-Taller-User` como cualquier pedido que modifica | `send` y volver a serializar: rompe los bytes y pierde el nombre |
+| El portal y el corte de `close` y `cancel` en `AccountSubdialog` | React propaga esos eventos por su árbol, y los localizadores necesitan los diálogos fuera de «Tu cuenta» | Montarlos como hermanos, como el aviso: obliga a subir el estado a `AccountDialog` de F11a |
+| `useAccountFailure`, un hook genérico | Una sola traducción de las fallas para tres formularios, con la contraseña, la sesión, la recarga y la espera | Una copia en cada formulario: tres versiones del mismo orden de decisiones |
