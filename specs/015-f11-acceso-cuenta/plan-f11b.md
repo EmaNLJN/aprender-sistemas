@@ -119,7 +119,7 @@ Valen para toda tarea. Los valores están copiados de la spec, de la constituci�
 | **P1:** la partición de F11 | Este plan es F11b; usa el diálogo «Tu cuenta» y `reauthenticate` de F11a | Todo el plan |
 | **Q3:** «Tu cuenta» es un diálogo modal | Cada acción abre otro diálogo modal desde «Tu cuenta» | T046 y T050 |
 | **Q4:** salir y borrar no tocan el progreso local antes de D1c | La supresión recarga sin leer ni escribir el almacenamiento, y su texto lo dice | T050 y T051 |
-| **«Pedirla siempre»** (spec, «Alternativas consideradas») | Descargar y borrar confirman la contraseña antes de cada acción | T043 y T050 |
+| **«Pedirla siempre»** (spec, «Alternativas consideradas») | Descargar y borrar confirman la contraseña antes de cada acción | T050 |
 | **C4 espera a F11b** (2026-10-28, noche) | F11b llega a `master` entera, en T053 | R19 |
 | **El tope del HTML** (2026-10-28, noche) | `BOOT_SIZE_LIMIT` de 1 500 000, con un subpresupuesto de +15 000 | T053 |
 | **El doble de la API canónico** (2026-10-28, noche) | Las rutas de F11b se registran con `api.on` en cada escenario, sin otro `replyTo` ni otra propiedad | T047 y T051 |
@@ -3700,6 +3700,7 @@ Cada estado muestra un mensaje que dice qué hacer: el del servidor, el propio d
 6. **El singleton `accessRequests` en las specs.** Un ingreso que una prueba deja abierto aparece en la siguiente. *Mitigación:* cada spec que lleva al ingreso lo termina.
 7. **El peso.** Es una estimación (R33). *Mitigación:* la condición de corte de T053.
 8. **La cookie real, `SameSite` y el CSRF real** de los tres pedidos, y el streaming real de la exportación. *Mitigación:* la verificación a mano de quickstart-f11b.md §4.
+9. **«Las dos pantallas lo dicen»** (spec, «Edge Cases»: «Exportar mi progreso» y «Descargar mis datos»). La de «Exportar mi progreso» es de Método, que sigue en `app.js` hasta F8, y F11 no toca `app.js` («Queda fuera»). *Qué hace el plan:* F11b cubre su pantalla (FR-057), y el texto de Método va como hallazgo para F8.
 
 ## Complexity Tracking
 
