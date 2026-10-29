@@ -88,7 +88,7 @@ cambies y evitá reformatear las skills importadas o las salidas generadas.
 | Generación de proyectos o ZIP | `node qa/project-kit-check.ts` (usa la fábrica pura del catálogo) |
 | Ejecutor Go (`backend/executor/`) | `npm run test:executor`; con Docker real, `npm run test:executor:integration` (no forman parte de `npm test`) |
 | API Laravel (`backend/api/`) | `npm run api:test`, `npm run api:format:check` y `npm run api:analyse`; con el stack levantado, `npm run api:smoke`, `npm run api:content:check` (las 18 porciones a través de Nginx) `npm run api:runs:check` (ejecuciones reales en el sandbox, cuotas, cola y log) `npm run api:sync:check` (la sincronización del progreso de punta a punta y la medición de SC-010) y `npm run api:import:check` (la importación del progreso v1, «Borrar todo», el tope de 24 MiB y la medición de la importación más grande); no forman parte de `npm test` |
-| Fusión del progreso o hitos del recorrido (D1a) | `node qa/merge-fixture-check.ts` (el fixture compartido `qa/fixtures/shared/merge-cases.json` contra el módulo de TypeScript; no se regenera) y `node qa/route-milestones-check.ts`; los dos corren en `npm test` |
+| Fusión del progreso o hitos del recorrido (D1a) | `node qa/merge-fixture-check.ts` (el fixture compartido `qa/fixtures/shared/merge-cases.json` contra el módulo de TypeScript; no se regenera) y `node qa/route-milestones-check.ts` (el fixture `qa/fixtures/shared/route-milestones.json` contra el catálogo de hitos de `entities/guide` y `MILESTONE_IDS`, importados); los dos corren en `npm test` |
 | Importación del progreso v1 (D1b) | `node qa/import-cases-check.ts` (el fixture compartido `qa/fixtures/shared/import-cases.json`: el crudo de cada copia, el normalizado que sale de los parsers del front, sin pérdida por sección, y los conteos; no se regenera); corre en `npm test` |
 | Plantilla del harness (`content/harness/`) | `node qa/content-harness-check.ts` (sus casos en `qa/fixtures/shared/harness-cases.json`, que también corre Pest) |
 | Compose, Nginx o `init-env.sh` de las ejecuciones | `node qa/compose-runs-check.ts`, `node qa/nginx-api-blocks-check.ts` (las ubicaciones de `/api/runs` y `/api/sync` repiten las directivas de `/api/`) y `node qa/init-env-check.ts`; los tres corren en `npm test` |
@@ -111,8 +111,8 @@ Se corren así: `npm run build && npm run test:e2e` para toda la red, y una sola
 sin chocar en el puerto, y `npm run test:e2e:install` baja el navegador una vez por máquina. Los
 checks de dominio de arriba siguen como están; no se migran en bloque.
 
-- **Vitest** corre las specs junto al módulo (`frontend/src/**/*.spec.ts`), en `node`. La pila de DOM
-  (`jsdom` y Testing Library) llega con la primera spec de componente. Sin `globals`: cada spec
+- **Vitest** corre las specs junto al módulo (`frontend/src/**/*.spec.ts`), en `node`. Los `*.spec.tsx` corren
+  en el proyecto `dom` (`jsdom` y Testing Library, con el setup `frontend/src/vitest.setup.ts`). Sin `globals`: cada spec
   importa `describe`, `it` y `expect` de `vitest`.
 - **Playwright** corre en `qa/e2e/` contra el `dist/index.html` que sirve `vite preview`, sin Nginx y
   sin API, en el Chrome Headless Shell. `npm run test:e2e` no construye: antes, `npm run build`.

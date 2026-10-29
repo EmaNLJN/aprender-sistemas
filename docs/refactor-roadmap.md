@@ -106,7 +106,7 @@ almacenamiento bloqueado y la copia ilegible se distinguen.
 - Exports sin consumidores (`TallerRunner.endpoints/timeoutMs`, `TallerEditor.name`, `view`
   del editor), campos que sólo se escriben en modelos de Sistemas y en el motor de campaña,
   la rama `AbortError` de `lab.js`, el fallback de textarea del editor (confirmar en
-  navegador), `data-project-library`, comentarios obsoletos (`.gitignore` menciona
+  navegador), comentarios obsoletos (`.gitignore` menciona
   `build.mjs`/`build.py`).
 
 ### Atlas frente a las convenciones

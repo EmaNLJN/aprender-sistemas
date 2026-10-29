@@ -13,6 +13,7 @@ const LEGACY_MODULES: readonly (() => Promise<unknown>)[] = [
   () => import('../legacy/register-systems-pc'),
   () => import('../../../lab.js'),
   () => import('../legacy/register-atlas'),
+  () => import('../legacy/register-project-page'),
   () => import('../legacy/register-campaign-engine'),
   () => import('../legacy/register-effects'),
   () => import('../../../campaign.js'),

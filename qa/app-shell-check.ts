@@ -18,7 +18,6 @@ import {
   clickAction,
   createHarness,
   exportedProgress,
-  type Harness,
   importFile,
   labExport,
   systemsExport,
@@ -741,39 +740,6 @@ await test('accesibilidad: aria-pressed marca el idioma activo y aria-current la
     go.viewLinks.map((link) => link.getAttribute('aria-current')),
     ['page', null],
   );
-});
-
-const milestoneSuffixes = ['memory', 'commands', 'files', 'measure', 'network'];
-
-function renderedMilestones(harness: Harness): string[] {
-  const html = harness.elements['main']?.innerHTML ?? '';
-  return [...html.matchAll(/data-milestone="([^"]+)"/g)].map((match) => match[1] ?? '');
-}
-
-await test('g) hitos: #proyecto muestra los 5 hitos del lenguaje activo (rust)', () => {
-  const harness = buildHarness({ hash: '#proyecto' });
-  assert.deepEqual(
-    renderedMilestones(harness),
-    milestoneSuffixes.map((suffix) => `rust-${suffix}`),
-  );
-  const html = harness.elements['main']?.innerHTML ?? '';
-  assert.match(html, /PROYECTO PERSONAL · 0 \/ 5 HITOS/);
-  assert.match(html, /Un pequeño almacén clave-valor en Rust\./);
-});
-
-await test('g) hitos: con Go activo aparecen go-* y el avance marca los completados', () => {
-  const harness = buildHarness({
-    hash: '#proyecto',
-    stored: { ...localProgress, milestones: ['go-memory', 'rust-files'] },
-  });
-  assert.deepEqual(
-    renderedMilestones(harness),
-    milestoneSuffixes.map((suffix) => `go-${suffix}`),
-  );
-  const html = harness.elements['main']?.innerHTML ?? '';
-  assert.match(html, /PROYECTO PERSONAL · 1 \/ 5 HITOS/);
-  assert.match(html, /data-milestone="go-memory"[^>]* checked>/);
-  assert.doesNotMatch(html, /data-milestone="go-files"[^>]* checked>/);
 });
 
 await test('shell: al cargar se inicializan campaña y Sistemas y se sincroniza la barra lateral', () => {

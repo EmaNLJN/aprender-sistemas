@@ -1,0 +1,97 @@
+.project-hero {
+  background: var(--ink);
+  color: var(--surface);
+  border-radius: 7px;
+  padding: 30px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-bottom: 30px;
+}
+.project-hero p {
+  font-size: 13px;
+  color: #c2cabc;
+}
+.project-hero h2 {
+  font-size: 28px;
+  margin-bottom: 14px;
+}
+.project-hero .small-label {
+  color: #c2cabc;
+  margin-bottom: 15px;
+  display: block;
+}
+.terminal {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: #1d241f;
+  padding: 20px;
+  border-radius: 5px;
+  color: #c9d5c0;
+  line-height: 2;
+  white-space: pre-wrap;
+  margin: 0;
+  align-self: center;
+}
+.terminal .prompt {
+  color: #e5b07d;
+}
+.milestones {
+  display: grid;
+  gap: 12px;
+}
+.milestone {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 22px;
+}
+.milestone-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.milestone-head h2 {
+  font-size: 19px;
+  letter-spacing: -0.5px;
+  margin: 0;
+}
+.milestone p {
+  font-size: 12px;
+  margin: 10px 0 0 32px;
+}
+.milestone details {
+  margin: 12px 0 0 32px;
+  font-size: 12px;
+}
+.milestone summary {
+  cursor: pointer;
+  color: var(--accent);
+}
+.milestone details p {
+  margin-left: 0;
+}
+@media (max-width: 590px) {
+  .project-hero {
+    grid-template-columns: 1fr;
+    gap: 5px;
+    padding: 24px;
+  }
+  .project-hero h2 {
+    font-size: 25px;
+  }
+  .terminal {
+    font-size: 11px;
+  }
+  .milestone {
+    padding: 19px;
+  }
+  .milestone-head h2 {
+    font-size: 17px;
+  }
+}
+@media print {
+  .milestone {
+    break-inside: avoid;
+  }
+}

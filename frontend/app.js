@@ -24,45 +24,9 @@ export function startApp() {
   const allSteps = Object.values(data.tracks).flatMap((track) =>
     track.modules.flatMap((module) => module.steps),
   );
-  const milestones = [
-    {
-      id: 'memory',
-      title: 'Un lugar para guardar cosas',
-      task: 'Implementá SET, GET y DELETE sobre un almacén en memoria. Empezá llamando funciones desde un test; todavía no necesitás una terminal interactiva.',
-      done: 'Podés guardar una clave, leerla, reemplazar su valor y borrarla. Un test comprueba qué ocurre si la clave no existe.',
-      hint: 'Definí primero el comportamiento esperado. Usá un mapa con claves y valores de texto. En Rust podés empezar con datos propios (String); explicá cada copia que hagas.',
-    },
-    {
-      id: 'commands',
-      title: 'Tu programa entiende comandos',
-      task: 'Leé comandos desde la entrada estándar. Separá el texto recibido de la operación que ejecuta el almacén y devolvé errores claros.',
-      done: 'SET nombre Ana y GET nombre funcionan. Un comando desconocido o incompleto muestra un error sin terminar el programa.',
-      hint: 'Convertí el texto en una operación antes de cambiar datos. Definí una gramática pequeña: por ejemplo, claves sin espacios y el resto de la línea como valor. Probá líneas vacías y argumentos faltantes.',
-    },
-    {
-      id: 'files',
-      title: 'Los datos sobreviven al reinicio',
-      task: 'Agregá una forma de guardar y cargar el contenido en un archivo. Decidí un formato sencillo y explicá sus límites.',
-      done: 'Cerrás el proceso, lo volvés a abrir y recuperás los datos. Tenés tests para un archivo vacío y uno inválido.',
-      hint: 'Primero separá serializar de escribir un archivo. Probá el recorrido guardar → cargar con datos conocidos. Para este prototipo, documentá qué pasaría si el proceso se corta durante la escritura.',
-    },
-    {
-      id: 'measure',
-      title: 'Medir antes de optimizar',
-      task: 'Elegí una operación, un conjunto fijo de datos y una pregunta. Medí una versión de referencia y después una modificación pequeña.',
-      done: 'Anotaste entorno, tamaño de entrada y varias mediciones comparables. Podés explicar si la modificación ayudó y por qué.',
-      hint: 'Verificá primero que ambas versiones devuelven el mismo resultado. Evitá mezclar el tiempo de imprimir o generar datos con la operación que querés comparar. Una sola medición no alcanza.',
-    },
-    {
-      id: 'network',
-      title: 'Una conversación por TCP',
-      task: 'Cuando la base esté clara, aceptá los mismos comandos desde una conexión TCP. Empezá con un cliente y mensajes delimitados por salto de línea.',
-      done: 'Un cliente guarda y consulta un valor. El servidor responde bien aunque un comando llegue en varios fragmentos.',
-      hint: 'TCP transporta un flujo de bytes: cada lectura no equivale a un comando completo. Acumulá bytes hasta el delimitador. Después podés investigar varios clientes y acceso compartido a los datos.',
-    },
-  ];
   // Nunca escribe al cargar: la primera escritura es una acción del alumno.
   routeStore.open(data);
+  routeStore.changes.subscribe(updateSaveLabel);
   const routeState = () => routeStore.getProgress();
   const filters = { query: '', language: 'all', category: 'all', cost: 'all', favorites: false };
   const campaignInit = window.TallerCampaign?.init();
@@ -158,6 +122,7 @@ export function startApp() {
     window.TallerAtlas?.unmount();
     window.TallerCampaign?.unmount();
     window.TallerSystems?.unmount();
+    window.TallerProjectPage.unmount();
     window.TallerCampaign?.refresh();
     syncShell();
     const renderers = {
@@ -167,7 +132,7 @@ export function startApp() {
       atlas: () => '',
       laboratorio: () => '',
       biblioteca: renderLibrary,
-      proyecto: renderProject,
+      proyecto: () => '',
       metodo: renderMethod,
     };
     $('#main').innerHTML = renderers[currentView]();
@@ -176,6 +141,8 @@ export function startApp() {
     if (currentView === 'sistemas')
       window.TallerSystems.mount($('#main'), routeState().language, toast);
     if (currentView === 'atlas') window.TallerAtlas.mount($('#main'), routeState().language);
+    if (currentView === 'proyecto')
+      window.TallerProjectPage.mount($('#main'), routeState().language);
     if (currentView === 'laboratorio')
       window.TallerLab.mount($('#main'), routeState().language, toast);
     if (currentView === 'biblioteca') renderResourceResults();
@@ -273,12 +240,6 @@ export function startApp() {
           )
           .join('')
       : '<div class="empty-state"><h2>Ningún recurso con esos filtros.</h2><p>Probá otro término o volvé a ver la biblioteca completa.</p><button class="button secondary" data-action="clear-filters">Limpiar filtros</button></div>';
-  }
-  function renderProject() {
-    const done = milestones.filter((item) =>
-      routeState().milestones.includes(routeState().language + '-' + item.id),
-    ).length;
-    return `<div class="page-heading"><div class="eyebrow"><span class="eyebrow-line"></span> UNA IDEA QUE CRECE CON VOS</div><h1>De una función<br>a <em>tu propio sistema.</em></h1><p>Un pequeño almacén clave-valor en ${languageName()}. Cada capacidad te da una razón para aprender el siguiente concepto. El proyecto tiene su propio avance: los ejercicios del recorrido lo preparan.</p></div><div class="project-hero"><div><span class="small-label">PROYECTO PERSONAL · ${done} / ${milestones.length} HITOS</span><h2>Tu primer taller de datos.</h2><p>Empezá en memoria. Sumá comandos, archivos, mediciones y, cuando estés listo, una conexión por red.</p></div><pre class="terminal"><span class="prompt">&gt;</span> SET curiosidad encendida\nOK\n<span class="prompt">&gt;</span> GET curiosidad\nencendida\n<span class="prompt">&gt;</span> _</pre></div><div class="milestones">${milestones.map((item, index) => `<article class="milestone"><div class="milestone-head"><input class="step-check" type="checkbox" data-milestone="${routeState().language}-${item.id}" aria-label="Completar hito: ${escapeHtml(item.title)}" ${routeState().milestones.includes(routeState().language + '-' + item.id) ? 'checked' : ''}><h2>${String(index + 1).padStart(2, '0')}. ${escapeHtml(item.title)}</h2></div><p>${escapeHtml(item.task)}</p><p><strong>Está listo cuando:</strong> ${escapeHtml(item.done)}</p><details><summary>Necesito una pista</summary><p>${escapeHtml(item.hint)}</p></details></article>`).join('')}</div><div class="recommendation-strip"><span class="strip-icon" aria-hidden="true">↗</span><p><strong>¿Preferís un reto con tests externos?</strong><br>CodeCrafters propone construir una shell o un servidor HTTP. Protohackers prueba tus servidores de protocolos. <a href="#biblioteca" data-project-library>Encontralos en la biblioteca</a>.</p></div>`;
   }
   function tutorPrompt() {
     return `Estoy aprendiendo ${languageName()} y ya sé programar. Me interesan los sistemas y el rendimiento. Tengo ${routeState().minutes} minutos. Trabajemos un concepto con un ejercicio pequeño relacionado con archivos, memoria o redes.\n\nPrimero pedime predecir qué va a pasar y justificarlo. Esperá mi intento. Después dame una pista por vez, sin escribir ni modificar mi solución.\n\nCuando aparezca una duda de API, consultá Context7 o documentación oficial y enlazá la fuente. Si no tenés acceso, decímelo. Al terminar, pedime resolver una variante y explicar qué aprendí.\n\nMi próximo paso: ${routeState().notes[routeState().language].next || 'elegir un desafío pequeño del recorrido.'}`;
@@ -512,12 +473,6 @@ export function startApp() {
       save();
       render();
       restoreStepFocus(target.dataset.stepCheck, true);
-    }
-    if (target.dataset.milestone) {
-      toggleItem(routeState().milestones, target.dataset.milestone);
-      save();
-      render();
-      $(`[data-milestone="${target.dataset.milestone}"]`)?.focus({ preventScroll: true });
     }
     if (target.id === 'filter-language') {
       filters.language = target.value;

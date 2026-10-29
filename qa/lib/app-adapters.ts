@@ -17,6 +17,7 @@ export const APP_ADAPTER_METHODS = {
     'backups',
   ],
   TallerAtlas: ['mount', 'unmount'],
+  TallerProjectPage: ['mount', 'unmount'],
   TallerCampaign: ['init', 'refresh', 'sync', 'mount', 'unmount'],
   TallerSystems: ['init', 'sync', 'mount', 'unmount', 'resetSimulations'],
   TallerCampaignEngine: ['exportState', 'planImport', 'applyImport', 'reset', 'backups'],

@@ -29,7 +29,7 @@ import {
   type ContentServer,
 } from './lib/content-server.ts';
 import { contentVersion, curriculumDocument } from './lib/content-document.ts';
-import type { FakeElement } from './lib/fake-dom.ts';
+import { FakeText, type FakeElement, type FakeNode } from './lib/fake-dom.ts';
 import { loadAppShell, type AppShellModule } from './lib/legacy-sources.ts';
 import { bundleApp, runSource } from './lib/sources.ts';
 
@@ -82,6 +82,11 @@ await test('adaptadores: cada window.Taller* real publica los métodos que consu
   assert.deepEqual(missingAdapterMethods(context), []);
 });
 
+function mountedText(node: FakeNode): string {
+  if (node instanceof FakeText) return node.nodeValue;
+  return node.textContent + node.childNodes.map(mountedText).join('');
+}
+
 // Texto del encabezado que cada vista escribe en #main; es la señal de que renderizó.
 const VIEW_HEADINGS: Record<(typeof VIEWS)[number], string> = {
   recorrido: 'TU TALLER DE RUST',
@@ -103,9 +108,13 @@ await test('navegación: cada vista se renderiza por hash sin lanzar', async () 
     harness.navigate(view);
     await harness.flush();
     assert.deepEqual(harness.errors, [], `errores al navegar a #${view}`);
-    if (view === 'atlas') {
-      // El Atlas es React: monta nodos reales en #main en lugar de escribir innerHTML.
-      assert.ok(main.childNodes.length > 0, 'el Atlas no montó nodos en #main');
+    if (view === 'atlas' || view === 'proyecto') {
+      // El Atlas y Proyecto son React: montan nodos reales en #main en lugar de escribir innerHTML.
+      assert.ok(main.childNodes.length > 0, `#${view} no montó nodos en #main`);
+      assert.ok(
+        mountedText(main).includes(VIEW_HEADINGS[view]),
+        `#${view} no mostró su encabezado`,
+      );
     } else {
       assert.ok(main.innerHTML.includes(VIEW_HEADINGS[view]), `#${view} no mostró su encabezado`);
     }

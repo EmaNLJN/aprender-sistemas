@@ -172,7 +172,7 @@ El PR abre con los E2E, como pide la hoja de ruta. Los dos commits que se suman 
 ### R14. El texto de la pista de Go (Q4: decisión del usuario)
 
 - **Hoy, en los dos idiomas:** «Definí primero el comportamiento esperado. Usá un mapa con claves y valores de texto. En Rust podés empezar con datos propios (String); explicá cada copia que hagas.»
-- **Propuesta para Go:** se conservan las dos primeras oraciones y se reemplaza sólo la de Rust:
+- **Texto aprobado para Go (el usuario, el 2026-10-28, al aprobar el plan #66, que traía este texto):** se conservan las dos primeras oraciones y se reemplaza sólo la de Rust:
 
   > Definí primero el comportamiento esperado. Usá un mapa con claves y valores de texto. En Go podés empezar con un map[string]string creado con make; leé con valor, ok := datos[clave] para distinguir una clave que no existe de un valor vacío.
 
@@ -271,4 +271,14 @@ Todas sobre `f2b-acum` (`2b37caf4`), salvo las del registro de npm.
 
 ## Línea base de la implementación
 
-T010 completa esta sección con los valores de T001 (quickstart §1), medidos sobre la base real.
+Medida por T001 sobre `24ba9d3d` (`master` con F2a, A2 y F2b):
+
+- **Suite:** 39 checks, 719 pruebas de Vitest en 29 archivos (todos del proyecto `node`; el `dom` existía y no tenía archivos), 123 E2E y 35 avisos de `complexity`.
+- **Oráculos:** `build/curriculum.json` y `dist/content/curriculum.4555e8500e6ef5bd38cdaf46010d3f14.json` con sha256 `4555e850…fbb6`; `dump-globals` `859771e2…6fa1`; `frontend/src/index.html` `6c3b7e6a…2179`; `route-milestones.json` `f955c92b…1054`; `dist-content-check` en verde.
+- **Dist:** `chars` 1 141 337 (tope de F4: 1 151 337), `dynamicImports` 0, `importMeta` 22; `script` `a0d182f0…9be94`, `style` `ae2971b0…7b79` y `markup` `562c5364…81d0`.
+- **CSS:** 4319 reglas (4315 distintas) en el multiconjunto.
+- **Complejidad:** `render()` de `app.js` vale 11.
+- **Checks:** `app-shell-check` 58 escenarios, `boot-check` 25 y `load-order-check` con 24 imports y 16 restricciones de orden.
+- **Lo compartido con F3 y F9:** nada estaba en `master` salvo `jsdom` 30.1.2 con los dos proyectos de Vitest; T004 no corrió.
+
+Medida sobre el port: `chars` 1 144 143 en `f5f4602b` (+2 806) y 1 144 218 en `bd895dd1` y en HEAD, con la pista de Go (+2 881); los dos bajo el tope de 1 151 337. `importMeta` 23 (Vite suma un `import.meta.url` por cada `import()` de `legacy-views.ts`), `script` y `style` cambiados, `markup` igual, 35 avisos, `render()` en 12, 746 pruebas de Vitest, 141 E2E.

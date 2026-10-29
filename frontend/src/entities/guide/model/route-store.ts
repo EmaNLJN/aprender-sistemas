@@ -18,10 +18,13 @@ export interface RouteImportPlan {
   lossy: boolean;
 }
 
+export type RouteMarkCollection = 'completed' | 'milestones' | 'favorites';
+
 export interface RouteStore {
   open(guide: GuideData, options?: { storage?: StorageLike }): void;
   getProgress(): RouteProgressV1;
   save(): boolean;
+  toggleMark(collection: RouteMarkCollection, id: string): boolean;
   applyImport(plan: RouteImportPlan): boolean;
   reset(): boolean;
   backups(): BackupEntry[];
@@ -88,6 +91,16 @@ export function createRouteStore(): RouteStore {
     getProgress: () => opened().state,
     save() {
       const saved = write(opened());
+      notify();
+      return saved;
+    },
+    toggleMark(collection, id) {
+      const current = opened();
+      const marks = current.state[collection];
+      const index = marks.indexOf(id);
+      if (index === -1) marks.push(id);
+      else marks.splice(index, 1);
+      const saved = write(current);
       notify();
       return saved;
     },

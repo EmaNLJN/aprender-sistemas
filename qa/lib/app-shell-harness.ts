@@ -139,6 +139,7 @@ function fakeAdapters(
       getExercises: () => [],
     },
     TallerAtlas: {},
+    TallerProjectPage: {},
     TallerCampaign: {
       init: () => ({ loadWarning: options.warnings?.campaign ?? '' }),
       sync: syncBehavior,

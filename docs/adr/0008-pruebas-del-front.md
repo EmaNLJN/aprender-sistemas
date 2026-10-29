@@ -215,6 +215,8 @@ detalles que el ADR no fijaba o que no se sostenían tal cual al probarlos contr
   de `frontend/src/`; la implementación tiene un solo proyecto `node`, sin setup. `jsdom` y Testing
   Library llegan con la primera spec de componente (ADR, «Instalación por primer uso»): F3 pasa la
   config a `projects`.
+  - **Enmienda (2026-10, F4):** la pila de DOM llegó con #67, con los proyectos `node` y `dom` y el
+    setup `frontend/src/vitest.setup.ts`; F4 trae la primera `.spec.tsx`.
 - **Imports de `qa/e2e`.** El ADR indicaba que los checks de `qa/` usan `.ts` explícito; `qa/e2e`
   usa imports sin extensión, con su propio `tsconfig.json` (`Bundler`), y `tsconfig.qa.json` excluye
   `qa/e2e`. Bajo `tsconfig.qa.json` los archivos dan TS2835 y TS1294 (propiedades de parámetro); el
