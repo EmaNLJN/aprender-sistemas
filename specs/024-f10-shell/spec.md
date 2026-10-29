@@ -42,7 +42,7 @@ Es para quien mantiene el front y para quien revisa los PR; para el alumno, nada
 5. El DOM del shell es el de hoy, y el barrido de estilo computado da 0 diferencias. `styles.css` queda con los tokens, las reglas globales y las clases base.
 6. Con las fixtures congeladas, el arranque no escribe, no respalda ni avisa. El orden en que se abren los almacenes y los avisos de carga es el de hoy.
 7. `boot-check`, `load-order-check` y `app-shell-check` se retiran. Cada escenario queda cubierto por un E2E o por una spec, o descartado con su motivo.
-8. `dist/index.html` queda bajo el tope de `qa/build-check.ts` (1 250 000 caracteres), con su tamaño antes y después.
+8. `dist/index.html` queda bajo el tope de `qa/build-check.ts` (1 500 000 caracteres, enmienda del 2026-10-28), con su tamaño antes y después.
 
 **Entra:**
 
@@ -123,7 +123,7 @@ Lo que sigue ya está decidido. Las decisiones del clarify de esta spec están e
 
 El usuario respondió las cinco preguntas de esta spec, todas con la opción recomendada, aceptó la partición que proponía y aprobó editar una prueba de F1. Los requisitos, los criterios, los riesgos, los supuestos y la partición ya las aplican. Las opciones que no se eligieron, con su costo, están en «Alternativas consideradas».
 
-- Q: **Q1**, ¿cuándo entra un router, y vale «ninguno» como resultado? → A: Ninguno por omisión (opción A, F10-Q1). El spike mide un router propio sobre `url-grammar`, React Router con `createHashRouter` y TanStack Router con historia por hash o propia. Una librería entra sólo si pasa los ocho criterios del contrato (C1 a C8), resuelve algo nombrado que F10 necesita y el propio no, y suma, por encima de la variante con el router propio, como mucho un cuarto del margen que quede bajo el tope al empezar F10. Con el margen de F2b (108 663 caracteres), un cuarto son 27 165, y las cotas de bundlephobia del paquete entero (206 775 bytes React Router y 90 893 TanStack Router) ya lo superan. Decidió el usuario. (FR-007 a FR-011)
+- Q: **Q1**, ¿cuándo entra un router, y vale «ninguno» como resultado? → A: Ninguno por omisión (opción A, F10-Q1). El spike mide un router propio sobre `url-grammar`, React Router con `createHashRouter` y TanStack Router con historia por hash o propia. Una librería entra sólo si pasa los ocho criterios del contrato (C1 a C8), resuelve algo nombrado que F10 necesita y el propio no, y suma, por encima de la variante con el router propio, como mucho un cuarto del margen que quede bajo el tope al empezar F10. Con el margen de F2b (108 663 caracteres), un cuarto son 27 165, y las cotas de bundlephobia del paquete entero (206 775 bytes React Router y 90 893 TanStack Router) ya lo superan (con el tope de 1 500 000, el ejemplo cambia: ver «Enmiendas del 2026-10-28 (noche)»). Decidió el usuario. (FR-007 a FR-011)
 - Q: **Q2**, ¿el acceso de F11a y la compuerta de A2 se dibujan dentro de la raíz única? → A: Sí, una sola raíz desde el primer cuadro (opción A, F10-Q2). `main.tsx` crea la raíz antes de las etapas. Las etapas de `runBoot` conservan su lógica y su orden, y lo que muestran lo dibuja la raíz: el acceso, la carga y el error de la compuerta con su DOM de hoy dentro de `#main`, y el acceso de «pedir el ingreso» ante un 401. El shell sale de `index.html`, que queda con el contenedor, el `noscript` y el script. Costo aceptado: `gate-view.ts` pasa a ser un componente con el mismo DOM, la raíz de la cuenta se integra a la raíz única sin cambiar su lógica, y el primer cuadro pierde el shell estático. Decidió el usuario. (FR-034, FR-038 y FR-039)
 - Q: **Q3**, ¿se retiran los globals de catálogos con los `register-*`? → A: Sí (opción A, F10-Q3). `GUIDE_DATA`, `RUST_*`, `GO_*`, `SYSTEMS_*` y `SYSTEMS_*_LABS` salen con sus cinco adaptadores, y la raíz pasa el contenido a cada página desde `getContent()`. Los unos diez checks de `qa/` que los usaban como cargador pasan a leer el módulo de contenido, sin cambiar sus valores esperados. `tools/content/dump-globals.ts` y la prueba de globals de `qa/dist-content-check.ts` se retiran; la equivalencia del contenido la siguen probando `build-check` y el resto de `dist-content-check`. Decidió el usuario. (FR-049 y FR-052)
 - Q: **Q4**, ¿qué forma tiene la ruta de administración y qué ve quien no es admin? → A: `#administracion` (opción A, F10-Q4): una vista más en el hash, fuera del menú de ocho, dibujada en `#main` dentro del shell, con la sección fuera de la URL (abre en «Cuentas»). Quien no tiene el rol admin ve el Recorrido, como con un hash desconocido, sin reescribir la URL ni pedir nada a `/api/admin`. Costo aceptado: la administración deja la pantalla entera, y un enlace equivocado muestra el Recorrido sin explicación. Decidió el usuario. (FR-041 a FR-043)
@@ -136,6 +136,22 @@ El usuario respondió las cinco preguntas de esta spec, todas con la opción rec
 - **Qué cuenta cada número del menú** (FR-032): Campaña, los mundos del idioma activo; Sistemas, los talleres; Laboratorio, los ejercicios de los dos idiomas (274, aunque el laboratorio muestre 137 por idioma); Biblioteca, los recursos.
 - **Los remontajes de hoy se conservan** (FR-030): en cada navegación y en cada cambio de idioma; importar y «Borrar todo», como los dejó F8.
 - **«Cerrar» la administración** vuelve a la vista de la que vino, o a `#recorrido` si se entró por enlace, y el foco va a `#main`, como en toda navegación (FR-043).
+
+### Enmiendas del 2026-10-28 (noche), declaradas con los planes de F10a y F10b
+
+Aplican decisiones del usuario posteriores al clarify (`.coordinador/clarify-decisiones.md`, «Decisiones del 2026-10-28 (noche)»). No son preguntas nuevas.
+
+- **El tope del HTML es 1 500 000 caracteres** (PR #76, `BOOT_SIZE_LIMIT` en `qa/build-check.ts`). Cambian el punto 8 de «Cómo sabremos que salió bien», la fila «El tamaño» de «Qué cambia en `dist/index.html`», FR-004 y SC-008. La fila de A2 en «Qué hereda» y el margen de los supuestos quedan como historia. **El ejemplo de Q1 cambia:** con la medida de F2b (1 141 337), el margen es 358 663 y un cuarto son 89 665. La cota de bundlephobia de React Router (206 775) lo supera, y la de TanStack Router (90 893) lo supera por poco, así que «ya lo superan» deja de ser concluyente para TanStack: el spike mide el aumento real sobre la base de F10, y el margen se recalcula en la línea base de F10a.
+- **nuqs escribe la URL con al menos 50 ms de demora** (throttle; no hay escritura síncrona), y el usuario aceptó la diferencia. C3 y C5 la tienen en cuenta: después de un cambio de estado con nuqs, una prueba espera la URL (`waitForURL`) antes de recargar o de contar montajes.
+- **Los globales de los adaptadores de página siguen la forma `Taller<Página>Page`** (coordinador, 2026-10-28), para no confundirlos con `TallerProjectKit` y otros: `TallerProjectPage` (F4, en `master`) y `TallerMethodPage` (F8), no el `TallerMethod` provisional de la spec 022. Cambian las tablas «Lo que queda en `window`» y «Qué hereda de cada ítem». Los adaptadores de F3 y F9 entran con el nombre que tengan en la base; el inventario de FR-048 los toma de ahí.
+- **El menú no tiene ningún `KNOWN DEFECT`.** Sólo «Laboratorio» es `?#laboratorio`, y recarga sólo si cambia lo que va antes del hash (L1 y L2 de F1); las otras siete entradas son `#…`. Esta spec no depende de ningún defecto del menú.
+### Decisiones del 2026-10-28, con el plan de F10b
+
+El usuario respondió el 2026-10-28 las tres preguntas que dejó el plan de F10b, todas con la opción recomendada.
+
+- Q: Con una ruta por hash, ¿se reescriben los cinco escenarios de F12a que dependen del diálogo, o sólo los dos que nombra el plan de F12a? → A: Se reescriben los cinco, en el commit rojo de T029 de F10b, con la tabla de su §6.1: «opens … without changing the URL or the history», «closes with Esc…», «closes with «Cerrar» too», el camino de teclado hasta «Administrar el taller» y el que comprueba `history.length`. Decidió el usuario. (FR-043)
+- Q: `dist-content-check` evalúa el `dist` con `boot-harness.ts` y `fake-dom.ts`, que FR-052 retira. ¿Qué cubre después de F10b? → A: Sólo las pruebas sobre el archivo servido: los bytes (`documentHash`) y las 17 porciones. Que el `dist` arranca sin errores y pide el contenido una vez lo prueban los E2E de A2, contra el mismo `dist`, en un navegador. La prueba de globals sale por F10-Q3. Decidió el usuario. (FR-052)
+- Q: ¿Se acepta que el salto al contenido funcione durante la carga? Hoy el enlace no tiene oyente hasta `startApp()`, así que la URL pasa a `#main`; con la raíz única, el foco va a `#main` y la URL no cambia. → A: Sí, como parte de F10-Q2. Va con su E2E en el commit rojo de T026 de F10b y se declara en el PR. Decidió el usuario. («Lo que cambia a propósito»)
 
 ## El contrato de URL que se conserva
 
@@ -233,7 +249,7 @@ Es lo que dicen las specs de F3 a F9 que queda en `app.js` y en `window.Taller*`
 | `TallerCampaign`: `mount`, `unmount`, `refresh` y, si L11 no lo retiró, `sync` | `app.js` y el armado de `progress-backup` | Specs 019 y 022 |
 | `TallerSystems`: `init`, `mount`, `unmount` y, si L11 no lo retiró, `sync` | `app.js` y el armado | Specs 018 y 022 |
 | `TallerAtlas`: `mount` y `unmount` (con las sesiones de cada idioma en el módulo del adaptador) | `app.js` | `register-atlas.tsx` |
-| `TallerLibrary` (F3), el adaptador de Proyecto (F4), `TallerRoute` (F9) y `TallerMethod` (F8): `mount` y `unmount` | `app.js` | Specs 012, 013, 014 y 022 |
+| `TallerLibrary` (F3), `TallerProjectPage` (F4), `TallerRoute` (F9) y `TallerMethodPage` (F8): `mount` y `unmount` | `app.js` | Specs 012, 013, 014 y 022 |
 | `TallerCampaignEngine` y `TallerSystemsEngine` | Los lectores legacy que queden, o nadie (L10 de F8) | Specs 019 y 022 |
 | `TallerProjectKit` | El adaptador de Sistemas | Spec 018 |
 | `GUIDE_DATA`, `RUST_*`, `GO_*`, `SYSTEMS_*` y `SYSTEMS_*_LABS` | `app.js` (los tres primeros) y `qa/` (los oráculos `dump-globals` y `dist-content-check`, y unos diez checks por `qa/lib/legacy-sources.ts`) | Se retiran (F10-Q3) |
@@ -252,7 +268,7 @@ Ya no deberían estar `TallerRunner` (F7a), `TallerEditor`, `TallerExplorers` y 
 | F5 | Sistemas, `TallerSystems`, `TallerProjectKit`, la sesión de simulaciones en `pages/systems/model` y nuqs (o lo hereda de F3) | Inyecta la descarga del kit; retira los dos globals | **Sí** |
 | F6 | La campaña, `TallerCampaign` y el motor inicializado dentro de `startApp()` | Inicializa el motor en la raíz; conserva el efecto de `refresh` | **Sí** |
 | F7a y F7b | `features/run-exercise`, el laboratorio y `TallerLab` | Abre el almacén del laboratorio en la raíz; retira el global | **Sí** (F7b) |
-| F8 | Método, `TallerMethod`, el armado de `progress-backup` en `src/app/`, `startApp(progressBackup)`, y `#export-progress` y el toast en `app.js` | Usa el armado; mueve la exportación y el toast al shell | **Sí** |
+| F8 | Método, `TallerMethodPage`, el armado de `progress-backup` en `src/app/`, `startApp(progressBackup)`, y `#export-progress` y el toast en `app.js` | Usa el armado; mueve la exportación y el toast al shell | **Sí** |
 | F9 | El Recorrido, `TallerRoute`, el módulo del temporizador y `#quiz-feedback`, que se recrea | Monta `#quiz-feedback` (FR-045); retira el adaptador | **Sí** |
 | F11a | Las etapas de los tokens y de la sesión, la raíz de la cuenta, «Tu cuenta», «pedir el ingreso», el doble de la API en los E2E y el proxy de `/api/` | Conserva las etapas; integra la raíz de la cuenta a la raíz única (F10-Q2) | Sí, por F8 |
 | F12a | La página de la administración separada del diálogo, la condición de admin en un solo lugar y un único método de apertura en el Page Object | La monta como ruta, `#administracion` (F10-Q4) | No hace falta (FR-044) |
@@ -285,10 +301,11 @@ Cada fila va en su propio commit, con TDD: primero la prueba que falla contra la
 
 | Cambio | Decisión | Qué prueba cambia | Aprobación |
 | --- | --- | --- | --- |
-| La administración pasa de diálogo a ruta (`#administracion`) | F12-Q1; la forma, F10-Q4 | Los E2E de F12a que la abren y la cierran (historia 5, escenarios 2 y 3), a través del único método del Page Object; uno nuevo por enlace y por recarga | Usuario (F12-Q1 y F10-Q4) |
+| La administración pasa de diálogo a ruta (`#administracion`) | F12-Q1; la forma, F10-Q4 | Los cinco E2E de F12a que dependen del diálogo (historia 5, escenarios 2 y 3, el camino de teclado y el de `history.length`), con el único método del Page Object; uno nuevo por enlace y por recarga | Usuario (F12-Q1 y F10-Q4; los cinco, 2026-10-28) |
 | `#quiz-feedback` queda montada, vacía hasta que hay respuesta, con su regla `:empty` | X2 | Un E2E nuevo: la región existe antes de responder y su texto cambia en el lugar. Los de F9 que miran la devolución se revisan en el commit en rojo | Usuario (X2) |
 | `<body>` deja de llevar `aria-pressed` | F1 lo fijó como defecto, y la spec de F9 lo deja a «quien porte el shell» | `views.spec.ts`, «KNOWN DEFECT (new, found by F1): <body> carries aria-pressed…», que pasa a fijar que `<body>` no lo lleva | Usuario (F10-A1) |
 | Los conteos del menú salen del catálogo y aparecen con el contenido | Hoja de ruta; F10-Q5 | Ninguna de hoy; uno nuevo con los cuatro valores | Hoja de ruta; usuario (F10-Q5) |
+| El salto al contenido funciona durante la carga: el foco va a `#main` y la URL no cambia | F10-Q2 y «Edge Cases» | Un E2E nuevo, en el commit rojo de T026 de F10b | Usuario (2026-10-28) |
 | `index.html` pierde el marcado del shell, que dibuja la raíz | F10-Q2 | Ninguno: los E2E ubican el shell por roles e ids | Usuario (F10-Q2) |
 | Se retiran `boot-check`, `load-order-check` y `app-shell-check`, y los globals de catálogos con su oráculo | Hoja de ruta; F10-Q3 | Cada escenario, en la tabla de correspondencia (FR-052) | Hoja de ruta; usuario (F10-Q3) |
 
@@ -300,7 +317,7 @@ Cada fila va en su propio commit, con TDD: primero la prueba que falla contra la
 | El marcado de `frontend/src/index.html` | Sí (F10-Q2) | Sale el shell estático, que dibuja la raíz; queda el contenedor, el `noscript` y el script. El DOM después de arrancar es el de hoy, salvo lo listado (FR-024) |
 | `<style>` | Sí | Las reglas del shell pasan a su hoja (cambia el orden) y las que ya nadie usa salen (FR-054 y FR-055) |
 | `<script type="module">` | Sí | Salen `app.js`, los adaptadores, `legacyViews` y los `register-*`; entran la raíz, el shell, el router y, si el spike lo elige, una librería |
-| El tamaño | Se informa | Antes y después, con el aumento del router aparte; bajo 1 250 000 |
+| El tamaño | Se informa | Antes y después, con el aumento del router aparte; bajo 1 500 000 (enmienda del 2026-10-28) |
 | Los avisos de licencia | Sólo si entra un router | Su aviso en `frontend/THIRD-PARTY-NOTICES.txt` |
 
 ## Cómo se demuestra que nada cambió
@@ -506,7 +523,7 @@ Quien planifica F10 sabe, antes de escribir el shell, qué router entra o por qu
 - **FR-001** *(F10a, F10b y F10c)*: Cada parte DEBE abrir con sus E2E de comportamiento, escritos con el Page Object del shell (`qa/e2e/pages/shell.ts`, ampliado) contra la base de F10 y en verde antes de cambiar el código, y esos E2E DEBEN pasar sin editarse después. Los de «Lo que cambia a propósito» se escriben con el comportamiento nuevo, fallan contra la base por esa razón y van en su propio commit, con TDD. *(Hoja de ruta, «E2E primero»; ADR 0008)*
 - **FR-002** *(F10a, F10b y F10c)*: Todos los E2E de la base de F10 DEBEN pasar sin editarse con el build de F10: los 106 de F1, los 17 de A2 y los de F3 a F9, F11a y F12a. Las únicas excepciones son las de «Lo que cambia a propósito». Editar cualquier otro es un cambio de comportamiento: va en su commit, con TDD y con la aprobación del usuario.
 - **FR-003** *(F10a, F10b y F10c)*: F10 NO DEBE agregar estilos en línea (`style=`, `setAttribute('style', …)` ni `style.cssText`) ni dependencias de ejecución, salvo la que elija el spike, con permiso. *(`AGENTS.md`; C4)*
-- **FR-004** *(F10a, F10b y F10c)*: `dist/index.html` DEBE conservar la forma de A2 (un documento con un script y un estilo en línea, y el contenido en su propio archivo) y quedar bajo el tope de `qa/build-check.ts` (`BOOT_SIZE_LIMIT`, 1 250 000 caracteres). El PR DEBE informar su tamaño antes y después, con el aumento del router aparte. *(Hoja de ruta, criterios globales)*
+- **FR-004** *(F10a, F10b y F10c)*: `dist/index.html` DEBE conservar la forma de A2 (un documento con un script y un estilo en línea, y el contenido en su propio archivo) y quedar bajo el tope de `qa/build-check.ts` (`BOOT_SIZE_LIMIT`, 1 500 000 caracteres desde el PR #76; enmienda del 2026-10-28). El PR DEBE informar su tamaño antes y después, con el aumento del router aparte. *(Hoja de ruta, criterios globales)*
 - **FR-005** *(F10a, F10b y F10c)*: Los avisos de complejidad que queden en `app.js` DEBEN desaparecer con él, y ninguna función nueva DEBE pasar de 10 sin justificarlo en la revisión. El total de `npm run lint` no sube, y de los 29 avisos de las seis vistas no queda ninguno. *(Hoja de ruta; `docs/architecture.md`)*
 - **FR-006** *(F10a, F10b y F10c)*: Cada parte DEBE entregarse como un PR que se puede revertir entero, con la red en verde. Cada cambio de comportamiento DEBE empezar con una prueba que falla por la razón esperada. *(Constitución, principio II)*
 
@@ -572,7 +589,7 @@ Quien planifica F10 sabe, antes de escribir el shell, qué router entra o por qu
 
 - **FR-041** *(F10b)*: Con F12a entregada, la administración DEBE ser una ruta enlazable: `#administracion`, dibujada en `#main` dentro del shell, fuera del menú de ocho vistas, con la sección fuera de la URL. La URL NUNCA lleva un nombre, un email, un filtro con datos de una persona ni un enlace. *(Clarifications, F10-Q4)*
 - **FR-042** *(F10b)*: Una cuenta sin el rol admin que abre la ruta DEBE ver el Recorrido, sin reescribir la URL y sin pedir nada a `/api/admin`. La condición de admin es la de F12a, en un solo lugar. El servidor sigue siendo la autoridad. *(Clarifications, F10-Q4)*
-- **FR-043** *(F10b)*: «Administrar el taller», en «Tu cuenta», DEBE pasar a ser un enlace a la ruta, y «Cerrar» DEBE volver a la vista de la que vino, o a `#recorrido` si se entró por enlace. El contenedor de diálogo de F12a se retira y la página no cambia. Los E2E que abren y cierran el diálogo se reescriben, con TDD y en su propio commit, cambiando sólo el método de apertura del Page Object, y se suman los de enlace y recarga. Volver a la vista de la que vino es una lectura de esta spec («Clarifications», «Lecturas»).
+- **FR-043** *(F10b)*: «Administrar el taller», en «Tu cuenta», DEBE pasar a ser un enlace a la ruta, y «Cerrar» DEBE volver a la vista de la que vino, o a `#recorrido` si se entró por enlace. El contenedor de diálogo de F12a se retira y la página no cambia. Los cinco E2E de F12a que dependen del diálogo se reescriben, con TDD y en su propio commit, a través del único método de apertura del Page Object, y se suman los de enlace y recarga (decisión del usuario del 2026-10-28). Volver a la vista de la que vino es una lectura de esta spec («Clarifications», «Lecturas»).
 - **FR-044** *(F10b)*: Si F12a no está entregada al empezar F10b, F10b NO DEBE construir la ruta. La administración nace como ruta cuando llegue, y el plan de F12a lo consulta con el usuario (spec 023).
 
 **Lo que cambia a propósito**
@@ -587,7 +604,7 @@ Quien planifica F10 sabe, antes de escribir el shell, qué router entra o por qu
 - **FR-049** *(F10b)*: Los globals de catálogos (`GUIDE_DATA`, `RUST_*`, `GO_*`, `SYSTEMS_*` y `SYSTEMS_*_LABS`) y sus cinco adaptadores DEBEN retirarse. Los checks de `qa/` que los usan como cargador pasan a leer el contenido con el módulo de contenido, sin cambiar sus valores esperados. `tools/content/dump-globals.ts` y la prueba de globals de `qa/dist-content-check.ts` se retiran, con su motivo en la tabla de correspondencia. *(Clarifications, F10-Q3)*
 - **FR-050** *(F10b)*: El estado de módulo que hoy guardan los adaptadores DEBE pasar a un módulo de la página o de `app/`, con la misma vida: sobrevive a la navegación por hash y se pierde al recargar. Por ejemplo, las sesiones del Atlas por idioma de `register-atlas.tsx`.
 - **FR-051** *(F10b)*: Lo que inyectaban los adaptadores DEBE inyectarlo la raíz, sin prop drilling: el contenido de cada página desde `getContent()`, el toast, la descarga del kit de proyecto y la instancia de `progress-backup`. Las páginas siguen sin leer `window` ni `getContent()` (regla R5).
-- **FR-052** *(F10b)*: Se DEBEN retirar `qa/boot-check.ts`, `qa/load-order-check.ts`, `qa/app-shell-check.ts` y lo que sólo ellos usan: `qa/lib/app-adapters.ts`, `boot-harness.ts`, `app-shell-harness.ts`, `fake-dom.ts` y, por F10-Q3, `legacy-sources.ts`. El PR DEBE traer la tabla que F10a dejó armada, con cada escenario: el E2E o la spec que lo cubre, con su nombre, o el motivo del descarte (por ejemplo, «each legacy source evaluated alone», porque ya no hay fuentes legacy). Dos restricciones siguen con una prueba propia: el orden de las etapas y que `styles.css` sea la primera hoja.
+- **FR-052** *(F10b)*: Se DEBEN retirar `qa/boot-check.ts`, `qa/load-order-check.ts`, `qa/app-shell-check.ts` y lo que sólo ellos usan: `qa/lib/app-adapters.ts`, `boot-harness.ts`, `app-shell-harness.ts`, `fake-dom.ts` y, por F10-Q3, `legacy-sources.ts`. El PR DEBE traer la tabla que F10a dejó armada, con cada escenario: el E2E o la spec que lo cubre, con su nombre, o el motivo del descarte (por ejemplo, «each legacy source evaluated alone», porque ya no hay fuentes legacy). Dos restricciones siguen con una prueba propia: el orden de las etapas y que `styles.css` sea la primera hoja. `qa/dist-content-check.ts`, que también usaba `boot-harness.ts`, queda con las pruebas sobre el archivo servido: los bytes y las 17 porciones (decisión del usuario del 2026-10-28). Sus pruebas que evaluaban el `dist` salen con su motivo en la tabla: las cubren los E2E de A2.
 - **FR-053** *(F10b)*: `seams-guard-check` DEBE conservar sus invariantes con 0 violaciones, apuntando sus reglas a la raíz donde hoy nombran fuentes legacy y adaptadores: una sola instancia por clave, `openVersionedStore` sólo en los cuatro dueños, ningún import de fábricas, el arranque como único lugar que abre los almacenes, `getContent()` sólo en `app/` y los imports por el índice de cada slice.
 
 **El CSS**
@@ -638,7 +655,7 @@ Quien planifica F10 sabe, antes de escribir el shell, qué router entra o por qu
 - **SC-005** *(F10b y F10c)*: El barrido de estilo computado da 0 diferencias, y el multiconjunto de declaraciones es el de la base menos las reglas borradas, cada una listada con su evidencia.
 - **SC-006** *(F10a y F10b)*: Con las fixtures congeladas hay 0 escrituras, 0 claves `:respaldo` y 0 avisos. Los almacenes se abren en el orden de hoy, y `engine-init-order.spec.ts` falla si el motor de campaña se usa antes de inicializarlo.
 - **SC-007** *(F10a y F10b)*: El 100 % de los escenarios de `boot-check`, `load-order-check` y `app-shell-check` figura en la tabla de correspondencia.
-- **SC-008** *(F10a, F10b y F10c)*: `dist/index.html` queda bajo 1 250 000 caracteres, con su tamaño antes, después y el aumento del router informados.
+- **SC-008** *(F10a, F10b y F10c)*: `dist/index.html` queda bajo 1 500 000 caracteres (enmienda del 2026-10-28), con su tamaño antes, después y el aumento del router informados.
 - **SC-009** *(F10b)*: El total de avisos de complejidad no sube, y 0 avisos quedan en código legacy.
 - **SC-010** *(F10a y F10b)*: Cada navegación produce 1 montaje de la página, contado en un E2E sin ganchos en producción (FR-056).
 - **SC-011** *(F10b)*: Con F12a entregada, el enlace a la administración la abre, la recarga la conserva y una cuenta de alumno ve el Recorrido, con 0 pedidos a `/api/admin`.
@@ -759,12 +776,14 @@ Los agentes no las hacen.
 
 | Cuándo | Acción |
 | --- | --- |
+| F10a, antes de medir los candidatos del spike (T002) | Permiso de descarga para instalar React Router y TanStack Router, con sus dependencias, en una copia descartable, sin tocar `package.json` ni el lockfile. Va con el nombre, la versión exacta, el origen, la licencia y el tamaño de cada paquete. Sin el permiso, el candidato queda sin medir y entra el router propio |
 | Entre F10a y F10b, sólo si el spike elige una librería | Permiso para instalarla, con su nombre, su versión exacta, su origen (el registro de npm) y su peso medido |
 | F10b, antes y después de montar `#quiz-feedback` | La comprobación manual con lector de pantalla, primero sobre la base y después sobre F10 (X2) |
 
 ## Descargas previstas
 
-- **Si el spike elige el router propio:** ninguna.
+- **Para medir el spike (F10a, T002):** los candidatos y sus dependencias, con permiso, sólo en una copia descartable que se borra al terminar.
+- **Si el spike elige el router propio:** ninguna en el repositorio.
 - **Si elige una librería:** esa librería y sus dependencias, con permiso. Las de referencia, del 2026-10-28:
   - `react-router` 8.5.1 (MIT, 2 dependencias, 3 010 360 bytes desempaquetados);
   - `@tanstack/react-router` 1.170.46 (MIT, 4 dependencias, 1 073 323 bytes desempaquetados).
