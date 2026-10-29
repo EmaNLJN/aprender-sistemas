@@ -578,7 +578,7 @@ Cada PR lleva título en inglés, con notación de Angular, y una descripción e
    - `ApiClient` suma la línea `download(…)`;
    - `api-failure.ts` suma `ApiDownload`;
    - `read-xsrf-token.ts` va seguido de `attachment-name.ts` con `readAttachmentName`;
-   - el párrafo «F11b descarga los datos con `send`…» pasa a «F11b descarga con `download`, que conserva los bytes y lee el nombre del adjunto ([account-f11b.md](./account-f11b.md))».
+   - el párrafo «F11b descarga los datos con `send`…» pasa a «F11b descarga con `download`, que conserva los bytes y lee el nombre del adjunto», con un enlace a `account-f11b.md`, que está en la misma carpeta.
 10. **Correr** `npm run typecheck` (en verde, porque los stubs tipan) y `npm run test:unit -- frontend/src/shared/api/http`: en rojo las tres de `readAttachmentName` y las seis de `download`, por `not implemented`. Las de F11a, en verde.
 11. **Commit:** `test(front): specs de la descarga del cliente, en rojo`.
 
