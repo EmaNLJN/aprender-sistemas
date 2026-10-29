@@ -60,7 +60,7 @@ Si al empezar alguno de estos nombres difiere, T001 lo anota y la tarea que lo u
 
 **Las mediciones de B2** (SC-012 de la spec 005; spec de A4, «Riesgos», 3): mediana de 1,1 s en reposo y 9,5 s para el último de 30 cuentas a la vez. El aviso de 15 s queda por encima del peor caso medido, así que en un aula normal no aparece. El primer valor del calendario (300 ms) es el que usa el check de B2 en reposo.
 
-**La cuota de 30 pedidos por minuto** (`RunLimiters::register`, `throttle:runs-submit`, sólo en `POST /api/runs`; la cancelación y la consulta no la gastan: `routes/api/runs.php`). Con `active` (`Retry-After: 3`, el peor caso), las esperas son 3, 4,5, 6,75, 10,1, 15,2, 22,8 y 34,2 s (más hasta 1 s de azar). Los envíos caen en los segundos 0, 3, 7,5, 14,3, 24,4, 39,6, 62,4 y 96,6: son 8 en dos minutos y, en cualquier ventana de 60 s, 6 como mucho. Con `queue_full` (`Retry-After: 10`): 10, 15, 22,5 y 33,75 s, son 5 envíos. Una espera fija de 3 s llegaba a 40 envíos en dos minutos, por encima del límite: por eso la espera crece.
+**La cuota de 30 pedidos por minuto** (`RunLimiters::register`, `throttle:runs-submit`, sólo en `POST /api/runs`; la cancelación y la consulta no la gastan: `routes/api/runs.php`). Con `active` (`Retry-After: 3`, el peor caso), las esperas son 3, 4,5, 6,75, 10,1, 15,2, 22,8 y 34,2 s (más hasta 1 s de azar). Sin el azar, los envíos caen en los segundos 0, 3, 7,5, 14,3, 24,4, 39,6, 62,3 y 96,5: son 8 en dos minutos y, en cualquier ventana de 60 s, 6 como mucho. Con `queue_full` (`Retry-After: 10`): 10, 15, 22,5 y 33,75 s, son 5 envíos. Una espera fija de 3 s llegaba a 40 envíos en dos minutos, por encima del límite: por eso la espera crece.
 
 - **El azar se inyecta** (`RunClock.random`), así que las specs son deterministas.
 - **Alternativa descartada:** temporizadores falsos de Vitest (`vi.useFakeTimers` con `advanceTimersByTimeAsync`, Context7). El adaptador recibe un reloj (`now`, `wait` y `random`), como el cliente de F11a recibe `fetch`: la spec registra cada espera pedida y comprueba el calendario sin correr el tiempo.
@@ -322,3 +322,23 @@ Servidor `mcp__44441c24-…` (el primero agotó la cuota del mes). Versiones con
 - **Los hosts públicos** en `master`: `git grep -ln "play.rust-lang\|play.golang\|go.dev/play"` da `README.md`, `docker/nginx/nginx.conf`, ADR 0005, ADR 0008, `frontend/lab.js`, `frontend/src/shared/api/playground/protocol.ts`, `qa/e2e/lib/compiler-results.ts`, `qa/runner-check.ts` y `qa/runtime-check.ts`. Los ADR quedan (son historia), salvo la nota que pide FR-045 en el 0008.
 - **El tope del HTML:** `BOOT_SIZE_LIMIT = 1500000` en `qa/build-check.ts:11` (#76). A4 suma el renderizador, el adaptador y la plantilla, del orden de 10 KB sin comprimir, y quita el cliente de los Playgrounds. T001 mide `bootSize` y T029 lo vuelve a medir.
 - **`import.meta` (TR-4):** A4 no suma entradas a `LEGACY_MODULES`. El conteo de la base (después del retiro de `register-runner` en F7a T015) no cambia.
+
+## El prototipo de sólo lectura
+
+En el scratchpad, con Node 24 y el código de los bloques del plan copiado tal cual (sin tocar los worktrees):
+
+| Qué | Resultado |
+| --- | --- |
+| `renderHarness` contra `qa/fixtures/shared/harness-cases.json` y las plantillas reales | 11 de 11 casos iguales, línea por línea |
+| `renderHarness` con `$&$1$$` en el código | Sale tal cual |
+| `createServerProgramBuilder`, los dos casos de su spec (Rust con ceros; Go con `imports` y prueba propia) | Iguales a lo esperado |
+| `withoutEvidence`, los cinco casos de las specs | Los cinco dan lo esperado |
+| `pollDelayMs(0…6, 20)` | 300, 450, 675, 1013, 1519, 2000, 2000, 2000 |
+| `turnDelayMs` | 3000, 4500, 6750, 3500 y 10 999 |
+| La cola llena (`Retry-After: 10`, sin azar) | Envíos en 0, 10 000, 25 000, 47 500 y 81 250 ms |
+| `active` con el azar al máximo | Envíos en 0, 3 999, 9 498, 17 247, 28 371, 44 558, 68 338 y 103 509 ms; 6 en el minuto más cargado |
+| `retryHint` con los ocho valores de la spec | Los textos esperados |
+| Los bytes de `'€'` × 21 845 y × 21 846 | 65 535 y 65 538 |
+| La traza de la demora | El aviso a los 15 000 ms; las consultas en 300, 750, 1425, 2438, 3957, 5957, 7957, 9957, 11 957, 13 957, 15 957, 17 957 y 19 957 ms |
+
+No corrieron, porque necesitan F7a, F11a y A3 integrados: el adaptador con sus 20 pruebas, `decideSubmit` y `decidePoll`, la copia en IndexedDB, `lab.js` y las E2E. Sus valores esperados salen de los contratos y de la traza de arriba.

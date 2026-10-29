@@ -3475,9 +3475,12 @@ describe('update of the copy store, read and write in one transaction (A4 FR-029
     const handlers: FakeTransaction = { oncomplete: null, onabort: null };
     let pending = 0;
     let aborted = false;
+    let completed = false;
     const completeWhenIdle = () =>
       queueMicrotask(() => {
-        if (pending === 0 && !aborted) handlers.oncomplete?.();
+        if (pending !== 0 || aborted || completed) return;
+        completed = true;
+        handlers.oncomplete?.();
       });
     const request = (run: () => unknown) => {
       const issued: { result: unknown; onsuccess: (() => void) | null } = {
@@ -3515,6 +3518,8 @@ describe('update of the copy store, read and write in one transaction (A4 FR-029
     return Object.assign(handlers, { objectStore });
   }
 ```
+
+`completed` evita el doble `complete`: cuando el `onsuccess` del `get` pide el `put`, quedan dos chequeos encolados y sólo el primero que ve la transacción sin pedidos la completa.
 
 Corré `npm run test:unit -- src/shared/api/content`: las specs de A3 siguen en verde con el doble nuevo. Si alguna falla, pará y avisá: el doble cambió el orden de un evento que A3 fija.
 
@@ -5081,3 +5086,654 @@ Si `qa/e2e/lib/urls` no exporta `exercise(id, phase)` con esa firma, usá la que
 Anotá el conteo en el informe de la tarea.
 
 **Paso 7.** Commit, con la aprobación del usuario: `test(e2e): el laboratorio contra /api/runs: 20 E2E editadas con su aprobación y las de A4 (rojas, A4 FR-042)`. El cuerpo lista las 20 E2E editadas, archivo por archivo, y el motivo de cada grupo (research R14).
+
+## 5. Unidad 5 · `lab.js`, la vista vigente (dueño W, onda 3)
+
+Cubre FR-002, FR-007 a FR-009, FR-029, FR-030, FR-033, FR-036, FR-038 y FR-039 en la vista. Parte de las unidades 3 y 4 integradas. La vista es la revisión de `lab.js` que deja F7a (ruling C4); si F7b ya entró, se aplica el delta de research R18.
+
+`lab.js` es JavaScript: los cambios se describen como reemplazos de funciones o de líneas exactas del `lab.js` que deja T014 de F7a (plan de F7a, `specs/021-f7-laboratorio/plan.md:5005-5361`).
+
+### Tarea 5.1 · `lab.js` compone el adaptador, la plantilla y la guarda (T020, W)
+
+- **Consume:** `labTransport`, `labHarness` y `labProgramBuilder` (T017); `CODE_TOO_LONG_NOTICE` y `exceedsCodeLimit` (T014).
+- **Produce:**
+  - la raíz de composición con las dos líneas de A4;
+  - la vista previa con la plantilla o su aviso;
+  - la copia del programa;
+  - la guarda de 64 KiB (research R12);
+  - la revalidación de la plantilla en cada `mount`.
+- **Archivos:** `frontend/lab.js` y `qa/lab-state-check.ts`.
+
+**Paso 1, la prueba que falla.** En `qa/lab-state-check.ts`:
+
+- `TabOptions.fetch` pasa a `fetch?: (url: string) => Promise<unknown>;`;
+- en el contexto de `openTab`:
+  - `document` suma `cookie: ''`: el cliente de la API lee la cookie del CSRF;
+  - el contexto suma `crypto: globalThis.crypto` (la clave de cada envío sale de `crypto.randomUUID()`) y `DOMException: globalThis.DOMException` (el adaptador lanza un `AbortError`; un contexto de `vm` sólo trae lo de ECMAScript);
+  - después del bloque de `options.campaignSync`, suma `if (options.fetch) window.fetch = options.fetch;`, porque el cliente de la API usa `window.fetch`;
+- junto a las ayudas del archivo, dos respuestas del servidor. Son objetos chicos, sin `Response`, para que todo se resuelva en microtareas:
+
+```ts
+// The answers of /api/runs for the lab (A4): a 422 ends the run at once, without retries.
+function rejectedRun() {
+  return {
+    ok: false,
+    status: 422,
+    headers: new Headers(),
+    text: async () =>
+      JSON.stringify({ message: 'Hay datos que corregir.', code: 'validation_failed', errors: {} }),
+  };
+}
+
+function acceptedRun() {
+  return {
+    ok: true,
+    status: 202,
+    headers: new Headers(),
+    text: async () =>
+      JSON.stringify({
+        data: {
+          id: '0199f4a2-0000-7000-8000-000000000001',
+          status: 'queued',
+          reason: null,
+          queuePosition: 1,
+          stdout: null,
+          stderr: null,
+          tests: [],
+          customTest: null,
+          attemptId: null,
+        },
+      }),
+  };
+}
+```
+
+- y los dos escenarios que ejecutan, reemplazados enteros:
+
+```ts
+await testAsync(
+  'Two tabs: a run keeps writing its held record after the save that merged the other tab',
+  async () => {
+    const saved = new Map<string, string>();
+    const tabA = openTab(saved);
+    const tabB = openTab(saved, {
+      fetch: (url) =>
+        url === '/api/runs' ? Promise.resolve(rejectedRun()) : Promise.reject(new TypeError('sin red')),
+    });
+    tabB.click('open', { id: 'rust-02' });
+    const { lab } = tabA;
+    lab.applyImport(
+      lab.planImport({ version: 1, records: { 'rust-01': fullProof(lab, 'rust-01') } }),
+    );
+    tabB.click('run');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const records = storedRecords(saved);
+    assert.equal(records['rust-01'].solvedAt, 100);
+    assert.equal(records['rust-02'].attempts, undefined);
+    assert.equal((records['rust-02'].result as { transportError?: boolean }).transportError, true);
+  },
+);
+
+// «Borrar todo» while a run waits: TallerLab.reset aborts it, the late acceptance only asks to
+// cancel, and nothing is written (spec 021, FR-050; A4 FR-008).
+await testAsync('Reset during a run aborts it and the late answer writes nothing', async () => {
+  const saved = new Map<string, string>();
+  let answer: (value: unknown) => void = () => undefined;
+  const tab = openTab(saved, {
+    fetch: (url) =>
+      url === '/api/runs'
+        ? new Promise((resolve) => {
+            answer = resolve;
+          })
+        : Promise.reject(new TypeError('sin red')),
+  });
+  tab.click('open', { id: 'rust-02' });
+  tab.click('run');
+  assert.equal(storedRecords(saved)['rust-02']?.attempts, undefined);
+
+  assert.equal(tab.lab.reset(), true);
+  answer(acceptedRun());
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.deepEqual(storedRecords(saved), {});
+  assert.deepEqual(tab.notices, []);
+});
+```
+
+**Paso 2.** `node qa/lab-state-check.ts`:
+
+- «Two tabs…» falla porque `lab.js` todavía usa el adaptador de los Playgrounds: `attempts` vale 1;
+- «Reset during a run…» falla por la misma razón.
+
+**Paso 3.** En `frontend/lab.js`:
+
+- **El import de la feature** queda así, y entra el de la composición:
+
+  ```js
+  import {
+    CODE_TOO_LONG_NOTICE,
+    createExerciseRunner,
+    exceedsCodeLimit,
+  } from './src/features/run-exercise';
+  import { labHarness, labProgramBuilder, labTransport } from './src/app/lab/server-execution';
+  ```
+
+- **Las dos líneas de la raíz** (contrato de F7a, §6):
+  - `transport: createPlaygroundTransport(),` pasa a `transport: labTransport,`;
+  - `const programBuilder = buildPlaygroundProgram;` pasa a `const programBuilder = labProgramBuilder;`.
+- **La plantilla:**
+  - después de `runner.state.subscribe(() => updateRunUI());` va `labHarness.subscribe(() => updateProgramPreview());`;
+  - en `mount`, antes de `render();`, va `void labHarness.refresh();`.
+- **Las tres constantes,** después de la declaración `let mode = 'map', …;` del principio de la IIFE:
+
+  ```js
+  const PROGRAM_NOTE =
+    'Este es el programa que el taller arma con tu borrador al ejecutar. Incluye la entrada del programa y las comprobaciones. Los números de línea del compilador corresponden a este programa completo. Al ejecutar, cada marca de prueba lleva un código propio de esa ejecución, que acá se muestra con ceros. Podés copiarlo y explorar cómo cada condición produce un resultado.';
+  const PROGRAM_UNAVAILABLE =
+    'La vista previa no está disponible ahora: el taller todavía no mandó la plantilla del programa. Ejecutar y revisar sigue funcionando.';
+  const COPY_UNAVAILABLE =
+    'Todavía no se puede copiar el programa completo: falta la plantilla del taller.';
+  ```
+
+- **`programPreviewHTML` y `updateProgramPreview`,** reemplazadas:
+
+  ```js
+  function programPreviewHTML(item) {
+    const program = programFor(item);
+    return `<details class="lab-program-preview"><summary>Ver el programa completo y sus pruebas</summary><p id="lab-program-note">${program === null ? PROGRAM_UNAVAILABLE : PROGRAM_NOTE}</p><pre id="lab-program-source" tabindex="0" aria-label="Programa completo con pruebas" translate="no"${program === null ? ' hidden' : ''}>${escapeHtml(program ?? '')}</pre></details>`;
+  }
+  function updateProgramPreview() {
+    const preview = $('#lab-program-source');
+    if (!preview) return;
+    const program = programFor(current());
+    preview.textContent = program ?? '';
+    preview.hidden = program === null;
+    const note = $('#lab-program-note');
+    if (note) note.textContent = program === null ? PROGRAM_UNAVAILABLE : PROGRAM_NOTE;
+  }
+  function copyProgram() {
+    const program = programFor(current());
+    if (program === null) notify(COPY_UNAVAILABLE);
+    else copyText(program);
+  }
+  ```
+
+- **En `onClick`,** `if (action === 'copy-code') copyText(programFor(current()));` pasa a `if (action === 'copy-code') copyProgram();`.
+- **`runExercise`,** reemplazada:
+
+  ```js
+  function runExercise() {
+    if (isRunning()) return undefined;
+    const item = current();
+    if (exceedsCodeLimit(draftFor(item))) {
+      notify(CODE_TOO_LONG_NOTICE);
+      return undefined;
+    }
+    return runner.run(item);
+  }
+  ```
+
+`[hidden]` ya oculta con `display: none !important` (`frontend/styles.css:69`), así que la vista previa sin plantilla no necesita CSS nuevo.
+
+**Paso 4.** `node qa/lab-state-check.ts` en verde. Mutación, descartada después: cambiá `labTransport` por `createPlaygroundTransport()` (con su import) y corré el check; los dos escenarios vuelven a fallar.
+
+**Paso 5.** `node qa/boot-check.ts`. Si un escenario falla sólo porque la lista completa de pedidos (`order`) suma `/api/harness` al montar el laboratorio (T001, paso 7), sumá `'/api/harness'` al esperado de ese escenario. El motivo va en el commit: A4 pide la plantilla al abrir el laboratorio (FR-029). Cualquier otra falla es un defecto: pará y avisá.
+
+**Paso 6.** `npm test`, `npm run lint` (los avisos de `lab.js` no suben de los que dejó F7a; anotalos) y `npm run build && E2E_PORT=4300 npm run test:e2e`:
+
+- pasan las de `cycle.spec.ts`, «transportError», «changing the phase», «next and previous», «goes stale», «your own case» y «leaving the lab», y las de `lab-sandbox.spec.ts` que sólo miran el resultado: «a timeout…», «evidence_invalid…», «infra_error…», «a draft over 64 KiB…» y las de la vista previa;
+- las que miran los textos (T021) o la línea de la espera (T022) siguen en rojo.
+
+Anotá el conteo.
+
+**Paso 7.** Commit: `feat(front): el laboratorio ejecuta en el sandbox del taller, con la plantilla del servidor (A4)`.
+
+### Tarea 5.2 · Los textos sin el Playground y la línea de intentos (T021, W)
+
+- **Consume:** los textos de la spec (data-model.md §7).
+- **Produce:** FR-033 y FR-038 en `lab.js`.
+- **Archivos:** `frontend/lab.js`.
+
+**Paso 1.** La prueba ya está: `lab-sandbox.spec.ts` («the guide, the notice under the button…» y «a quota with a window…», que mira el aviso del fallo) y las de `lab-run.spec.ts` con `ATTEMPTS_LINE` están en rojo desde T019. Corré `E2E_PORT=4300 npm run test:e2e -- specs/lab-run.spec.ts specs/lab-sandbox.spec.ts` y comprobá que fallan por los textos.
+
+**Paso 2.** En `lab.js`, cuatro reemplazos de texto exactos:
+
+- **`executionGuideHTML`:** `El Playground oficial compila tu programa y ejecuta los tres casos.` pasa a `El taller compila tu programa en su propio entorno aislado y ejecuta los tres casos.`;
+- **`codeHTML`:** el párrafo del aviso queda sin enlace:
+
+  ```js
+  `<p class="lab-run-disclosure">Al ejecutar, tu código viaja al servidor del taller, que lo compila y lo ejecuta en un entorno aislado. Necesita conexión. El taller agrega la entrada del programa y las pruebas; editá las funciones del ejercicio.</p>`
+  ```
+
+  en lugar de `<p class="lab-run-disclosure">Al ejecutar, se envía este código al <a href="${language === 'rust' ? 'https://play.rust-lang.org/' : 'https://go.dev/play/'}" target="_blank" rel="noopener noreferrer">Playground oficial de ${langName()}</a>. Necesita conexión. El taller agrega la entrada del programa y las pruebas; editá las funciones del ejercicio.</p>`;
+- **`reviewHTML`, la rama `transport-failure`:** `Podés seguir con las pistas o copiar el programa para probarlo en el Playground.` pasa a `Podés seguir con las pistas y volver a ejecutar en un rato.`;
+- **`finishedReviewHTML`:** `${record.attempts || 0} intento${record.attempts === 1 ? '' : 's'}. Revisar es parte de aprender.` pasa a `Revisar es parte de aprender.`.
+
+**Paso 3.** `git grep -n "Playground\|play.rust-lang\|go.dev/play\|intento\${" -- frontend/lab.js` no da nada.
+
+**Paso 4.** `npm test`, `npm run lint`, `npm run build && E2E_PORT=4300 npm run test:e2e -- specs/lab-run.spec.ts specs/lab-sandbox.spec.ts specs/cycle.spec.ts`. Las de los textos pasan; las de la línea de la espera siguen en rojo hasta T022.
+
+**Paso 5.** Commit: `feat(front): el laboratorio habla del taller y no del Playground, y oculta el número de intentos (A4 FR-033 y FR-038)`.
+
+### Tarea 5.3 · La revisión en curso: la línea, el anuncio, la demora y el foco (T022, W)
+
+- **Consume:** `describeRunProgress` (T010); `runner.state` (`StoreApi<RunState<ApiRunProgress>>`, F7a).
+- **Produce:** la revisión en curso con tres nodos estables y el repintado parcial (research R6, A4-10).
+- **Archivos:** `frontend/lab.js`.
+
+**Paso 1.** La prueba ya está en rojo desde T019:
+
+- en `lab-sandbox.spec.ts`: «the queue place changes…», «after 15 s…», «cancelling in the queue…», «runs, cancels and runs again with the keyboard…», «with the active quota…», «an expired session…» y «at 590 px…»;
+- las de `lab-run.spec.ts` que esperan «Ejecutando código real…» antes de cancelar.
+
+Corré `E2E_PORT=4300 npm run test:e2e -- specs/lab-sandbox.spec.ts` y comprobá que fallan porque no existen `#lab-run-line`, `#lab-run-announcement` ni `#lab-run-delay`.
+
+**Paso 2.** En `lab.js`:
+
+- **El import de la feature** suma `describeRunProgress`.
+- **La suscripción** `runner.state.subscribe(() => updateRunUI());` pasa a:
+
+  ```js
+  runner.state.subscribe((state, previous) => {
+    if (
+      state.status === 'running' &&
+      previous.status === 'running' &&
+      state.exerciseId === previous.exerciseId
+    )
+      paintRunProgress();
+    else updateRunUI();
+  });
+  ```
+
+- **Las funciones nuevas,** junto a `updateRunUI`:
+
+  ```js
+  function runProgress() {
+    const run = runner.state.getState();
+    return run.status === 'running' ? run.progress : null;
+  }
+  function writeText(node, text) {
+    if (node && node.textContent !== text) node.textContent = text;
+  }
+  function runningReviewHTML(copy) {
+    return `<h3>Probemos tu hipótesis.</h3><p>El compilador está revisando el programa. Después ejecutamos los casos del ejercicio y conectamos cada resultado con el concepto.</p><p class="runner-status busy"><span class="lab-spinner" aria-hidden="true"></span> <span id="lab-run-line" aria-live="off">${escapeHtml(copy.line)}</span></p><p id="lab-run-announcement" class="sr-only">${escapeHtml(copy.announcement)}</p><p id="lab-run-delay" class="coach-callout"${copy.delayNotice === null ? ' hidden' : ''}>${escapeHtml(copy.delayNotice ?? '')}</p><button class="text-button" data-lab-action="cancel-run">Cancelar ejecución</button>`;
+  }
+  function paintRunProgress() {
+    if (!host || mode !== 'exercise' || phase !== 'code' || !isRunningExercise(selectedId)) return;
+    const copy = describeRunProgress(runProgress());
+    writeText($('#lab-run-line'), copy.line);
+    writeText($('#lab-run-announcement'), copy.announcement);
+    const delay = $('#lab-run-delay');
+    if (!delay) return;
+    writeText(delay, copy.delayNotice ?? '');
+    delay.hidden = copy.delayNotice === null;
+  }
+  ```
+
+- **En `reviewHTML`,** la rama `running` pasa a `if (review.kind === 'running') return runningReviewHTML(describeRunProgress(runProgress()));`.
+
+**Por qué así:**
+
+- el anuncio cambia sólo cuando cambia el tipo de estado, y `writeText` no toca un nodo cuyo texto no cambió, así que no hay anuncios repetidos (FR-039);
+- la línea visible tiene `aria-live="off"`, así que el lugar en la fila no se anuncia (US4-7);
+- mientras la ejecución sigue en curso, nada reemplaza el botón «Cancelar ejecución», y el foco se queda (A4-10);
+- no hay animaciones nuevas: el indicador es el de hoy.
+
+**Paso 3.** `npm test`, `npm run lint` y `npm run build && E2E_PORT=4300 npm run test:e2e`: **toda la red en verde**, con los totales de T001 más las E2E nuevas de `lab-sandbox.spec.ts` y la guarda nueva de `guards.spec.ts`.
+
+**Paso 4.** Mutación, descartada después: en la suscripción, reemplazá `paintRunProgress();` por `updateRunUI();`. «the queue place changes…» falla por el foco o por el nodo del botón. Volvé a ponerlo.
+
+**Paso 5.** La comprobación manual con lector de pantalla (X2; quickstart §5): Orca o NVDA en Chromium anuncian «En la fila del taller.» una vez y «Ejecutando código real…» una vez, no cada lugar. El resultado va al informe de la tarea.
+
+**Paso 6.** Commit: `feat(front): la revisión muestra la fila, la espera de turno y la demora sin perder el foco (A4 FR-036 y FR-039)`.
+
+## 6. Unidad 6 · El retiro, la CSP, la medición y el cierre
+
+### Tarea 6.1 · `buildRunResult` sin `interpretRun` en su spec (T023, R)
+
+- **Qué es:** la spec de F7a compara con `interpretRun`, que se retira en T024. Pasa a valores escritos, los que `interpretRun` guardaba (el `result` v1 de F1).
+- **Archivos:** `frontend/src/features/run-exercise/model/build-run-result.spec.ts`.
+
+**Paso 1.** Borrá el import de `interpretRun` y reemplazá la prueba «gives, for the four results of F1, the same result as interpretRun did» por:
+
+```ts
+  it('builds, for the results of F1, the v1 result that the lab kept before A4', () => {
+    const markers = '__TALLER_TEST__t1:PASS\n__TALLER_TEST__t2:FAIL\n__TALLER_TEST__t3:PASS\n';
+    const kept = { code: 'fn energia() {}', time: 1700, customTest: 'energia(1) == 7', customPassed: false };
+
+    expect(
+      buildRunResult(
+        EXERCISE,
+        {
+          kind: 'executed',
+          success: true,
+          stdout: markers,
+          stderr: '',
+          tests: new Map([
+            ['t1', true],
+            ['t2', false],
+            ['t3', true],
+          ]),
+          customPassed: false,
+        },
+        CONTEXT,
+      ),
+    ).toEqual({
+      ...kept,
+      success: true,
+      stdout: markers,
+      stderr: '',
+      transportError: false,
+      tests: [
+        { id: 't1', passed: true },
+        { id: 't2', passed: false },
+        { id: 't3', passed: true },
+      ],
+    });
+    expect(
+      buildRunResult(
+        EXERCISE,
+        { kind: 'executed', success: false, stdout: '', stderr: 'error[E0384]', tests: new Map(), customPassed: false },
+        CONTEXT,
+      ),
+    ).toEqual({
+      ...kept,
+      success: false,
+      stdout: '',
+      stderr: 'error[E0384]',
+      transportError: false,
+      tests: [
+        { id: 't1', passed: false },
+        { id: 't2', passed: false },
+        { id: 't3', passed: false },
+      ],
+    });
+    expect(buildRunResult(EXERCISE, { kind: 'transport-failure', message: 'Sin red.' }, CONTEXT)).toEqual({
+      ...kept,
+      success: false,
+      stdout: '',
+      stderr: 'Sin red.',
+      transportError: true,
+      tests: [
+        { id: 't1', passed: false },
+        { id: 't2', passed: false },
+        { id: 't3', passed: false },
+      ],
+    });
+  });
+```
+
+**Paso 2.** `npm run test:unit -- src/features/run-exercise/model/build-run-result.spec.ts` en verde: es un cambio de prueba sin cambio de código, y los valores son los de `interpretRun` en `fc88d450`. Mutación, descartada después: en `build-run-result.ts`, `transportError: !executed` pasa a `transportError: false`; la prueba falla. Volvé a ponerlo.
+
+**Paso 3.** Commit: `test(front): buildRunResult se prueba con valores escritos, sin interpretRun (A4)`.
+
+### Tarea 6.2 · El retiro del cliente de los Playgrounds y de lo que sólo él usaba (T024, F)
+
+- **Qué hace:** cubre FR-031, FR-034 y FR-044 y cierra la unificación de las formas (research R1 y R17).
+- **Archivos que se borran:**
+  - `frontend/src/shared/api/playground/index.ts`, `protocol.ts` y `run-code.ts`;
+  - `frontend/src/features/run-exercise/api/playground-transport.ts` y `playground-transport.spec.ts`;
+  - `frontend/src/entities/exercise/model/build-program.ts` y `build-program.spec.ts`;
+  - `frontend/src/entities/exercise/model/run-outcome.ts` y `run-outcome.spec.ts`;
+  - `qa/runner-check.ts` y `qa/runtime-check.ts`.
+- **Archivos que cambian:**
+  - `frontend/src/features/run-exercise/index.ts`;
+  - `frontend/src/entities/exercise/index.ts`;
+  - `qa/exercise-evidence-check.ts`;
+  - `qa/run-checks.ts`;
+  - `package.json`.
+
+**Paso 1.** `git grep -n "createPlaygroundTransport\|buildPlaygroundProgram\|shared/api/playground\|interpretRun\|readTestMarkers\|RunOutcome\|buildProgram\b" -- frontend qa`. Sólo pueden aparecer:
+- los archivos que se borran;
+- los dos índices;
+- `qa/exercise-evidence-check.ts`.
+
+Si aparece otro, pará y avisá.
+
+**Paso 2.** Borrá los archivos de la lista con `git rm`.
+
+**Paso 3.** Los cambios:
+
+- **`features/run-exercise/index.ts`:** salen `export { createPlaygroundTransport, buildPlaygroundProgram } from './api/playground-transport';` y `export type { RunCode } from './api/playground-transport';`;
+- **`entities/exercise/index.ts`:** salen `export { interpretRun, readTestMarkers } from './model/run-outcome';` y `export { buildProgram } from './model/build-program';`;
+- **`qa/exercise-evidence-check.ts`:**
+  - sale `interpretRun` de la interfaz `ExerciseApi` y de la desestructuración de `importModule`;
+  - se borra desde `const exercise = { tests: [{ id: 't1' }, { id: 't2' }] };` hasta el cierre del escenario «interpretRun: success other than true is stored as false», inclusive. Son los 13 escenarios de `interpretRun` (research R17);
+- **`qa/run-checks.ts`:** sale `'runner-check.ts',`;
+- **`package.json`:** sale `"check:runner": "node qa/runner-check.ts",`. `package-lock.json` no cambia, porque no hay dependencias.
+
+**Paso 4.** Los checks:
+- `npm run typecheck`, `npm test` (con un check menos), `npm run test:unit`, `npm run lint` y `npm run format:check`;
+- `npm run build && E2E_PORT=4300 npm run test:e2e`: toda la red en verde;
+- `git grep -n "play.rust-lang\|play.golang\|go.dev/play" -- frontend qa` no da nada.
+
+**Paso 5.** Commit: `refactor(front): se retiran el cliente de los Playgrounds, buildProgram, interpretRun, runner-check y runtime-check (A4 FR-031, FR-034 y FR-044)`. El cuerpo nombra el reemplazo de cada escenario de `runner-check` (research R17).
+
+### Tarea 6.3 · La CSP y la guarda de los hosts (T025, K)
+
+- **Cubre:** FR-032 y SC-003.
+- **Archivos:** `docker/nginx/nginx.conf` (o `docker/nginx/headers.conf`, si C4 ya movió la CSP), `qa/nginx-api-blocks-check.ts` y `qa/build-check.ts`.
+
+**Paso 1, la prueba que falla.** Al final de los escenarios de `qa/nginx-api-blocks-check.ts`, antes de `done()`:
+
+```ts
+test('the CSP lets the page connect only to its own origin (A4 FR-032)', () => {
+  const policy = config.match(/\$content_security_policy \{ default "([^"]+)"; \}/)?.[1] ?? '';
+  const connect = policy
+    .split(';')
+    .map((directive) => directive.trim())
+    .find((directive) => directive.startsWith('connect-src'));
+  assert.equal(connect, "connect-src 'self'");
+});
+```
+
+Si C4 movió la CSP a `headers.conf` (`test -e docker/nginx/headers.conf`), el escenario lee ese archivo con la expresión que use C4. El valor esperado no cambia.
+
+`node qa/nginx-api-blocks-check.ts` falla: hoy `connect-src` nombra los dos Playgrounds.
+
+**Paso 2.** En `docker/nginx/nginx.conf:16`, `connect-src 'self' https://play.rust-lang.org https://play.golang.org;` pasa a `connect-src 'self';`. El resto de la directiva no cambia. `node qa/nginx-api-blocks-check.ts` en verde.
+
+**Paso 3, la guarda del build.** Al final de `assertSinglefileDocument` en `qa/build-check.ts`:
+
+```ts
+  assert(
+    !/play\.rust-lang\.org|play\.golang\.org|go\.dev\/play/.test(page.html),
+    'the page names no public Playground (A4 SC-003)',
+  );
+```
+
+`npm run build && node qa/build-check.ts` en verde. Mutación, descartada después: sumá `https://go.dev/play/` a un texto de `lab.js`, reconstruí y corré el check; falla con ese mensaje. Revertí.
+
+**Paso 4.** `npm test`, `node qa/compose-runs-check.ts`. Si el stack está levantado, `curl -sI http://localhost:8080/ | grep -i content-security-policy` muestra `connect-src 'self'`.
+
+**Paso 5.** Commit: `build(nginx): la CSP deja de nombrar los Playgrounds (A4 FR-032)`.
+
+### Tarea 6.4 · La medición de SC-007 (T026, K)
+
+- **Qué es:** una medición sin objetivo previo: con 30 cuentas a la vez y el calendario del laboratorio, los 429 de Nginx en las consultas y el tiempo del último.
+- **Consume:** `qa/api-runs-check.ts` de B2 (`call`, `submit`, `Session`, `Run`, `TERMINAL_STATUSES`, `FINAL_STATE_TIMEOUT_MS`, `sleep`, `percentile` y el bloque «SC-012: measurement»); `pollDelayMs` (T010) por `importModule` (`qa/lib/sources.ts`).
+- **Archivos:** `qa/api-runs-check.ts`.
+
+**Paso 1.** Arriba, junto a los otros imports, `import { importModule } from './lib/sources.ts';` (si ya está, no lo repitas). Después de las constantes:
+
+```ts
+const { pollDelayMs } = await importModule<{ pollDelayMs: (poll: number) => number }>(
+  'frontend/src/features/run-exercise/api/run-schedule.ts',
+);
+```
+
+**Paso 2.** Junto a `measureClassroom`:
+
+```ts
+interface LabTiming {
+  seconds: number;
+  rejected: boolean;
+  nginx429: number;
+}
+
+async function waitWithLabSchedule(
+  base: string,
+  session: Session,
+  runId: string,
+): Promise<{ run: Run; nginx429: number }> {
+  const deadline = Date.now() + FINAL_STATE_TIMEOUT_MS;
+  let nginx429 = 0;
+  for (let poll = 0; Date.now() < deadline; poll += 1) {
+    await sleep(pollDelayMs(poll));
+    const reply = await call(base, 'GET', `/api/runs/${runId}`, { cookie: session.account.cookie });
+    if (reply.status === 429) {
+      nginx429 += 1;
+      continue;
+    }
+    assert.equal(reply.status, 200, `GET /api/runs/${runId} replied ${reply.status}`);
+    const run = reply.body.data as Run;
+    if (TERMINAL_STATUSES.has(run.status)) return { run, nginx429 };
+  }
+  throw new Error(`run ${runId} did not reach a final state in ${FINAL_STATE_TIMEOUT_MS / 1000} s`);
+}
+
+async function timeLabRun(base: string, session: Session, exercise: Exercise): Promise<LabTiming> {
+  const startedAt = Date.now();
+  const reply = await submit(base, session, exercise.id, exercise.solution);
+  if (reply.status === 503) return { seconds: 0, rejected: true, nginx429: 0 };
+  assert.equal(reply.status, 202, `measured run replied ${reply.status}`);
+  const { run, nginx429 } = await waitWithLabSchedule(base, session, (reply.body.data as Run).id);
+  assert.equal(run.status, 'passed', `measured run: ${describeRun(run)}`);
+  return { seconds: (Date.now() - startedAt) / 1000, rejected: false, nginx429 };
+}
+
+async function measureLabClassroom(base: string, pool: Session[], exercise: Exercise): Promise<void> {
+  const students = pool.slice(0, CLASSROOM_SIZE);
+  const timings = await Promise.all(students.map((session) => timeLabRun(base, session, exercise)));
+  const finished = timings
+    .filter((timing) => !timing.rejected)
+    .map((timing) => timing.seconds)
+    .sort((left, right) => left - right);
+  let nginx429 = 0;
+  for (const timing of timings) nginx429 += timing.nginx429;
+  const rejected = timings.length - finished.length;
+  console.log(
+    `  SC-007 (A4) classroom of ${students.length} with the schedule of the lab: median ${percentile(finished, 0.5).toFixed(1)} s, last ${(finished[finished.length - 1] ?? Number.NaN).toFixed(1)} s, Nginx 429 on polls: ${nginx429}, 503: ${rejected}`,
+  );
+}
+```
+
+**Paso 3.** En el bloque de la medición, después de `await measureClassroom(base, pool, rustExercise);`, va `await measureLabClassroom(base, pool, rustExercise);`.
+
+**Paso 4.** `npm run typecheck` y `npm run format:check`. La corrida es de T028, con el stack levantado: `npm run api:runs:check` imprime la línea de SC-007.
+
+**Paso 5.** Commit: `test(qa): la medición del aula con el calendario del laboratorio (A4 SC-007)`.
+
+### Tarea 6.5 · La documentación (T027, K)
+
+- **Qué hace:** cubre FR-045. La integra el coordinador, en un commit propio.
+
+| Archivo | Lugar | Cambio |
+| --- | --- | --- |
+| `AGENTS.md` | «Proyecto», `Los compiladores son los Playgrounds oficiales.` | `El código del alumno se compila y se ejecuta en el sandbox propio, por \`/api/runs\` (ADR 0005; A4).` |
+| `README.md` | «Qué se ejecuta y dónde» (`:144` a `:151`) | Al pulsar **Ejecutar y revisar**, el navegador manda el ejercicio, el borrador y la prueba propia a `/api/runs`. El servidor arma el programa con la plantilla del arnés y lo ejecuta en el sandbox (gVisor). La revisión muestra la fila, la espera de turno y las cuotas. Nunca aprueba una prueba que el servidor no ejecutó. Sin el servidor del taller no se ejecuta |
+| `README.md` | Mapa de archivos (`:208`) | `frontend/src/shared/` deja de nombrar «transporte a los Playgrounds en `api/playground`»; `frontend/src/features/run-exercise/` es «la ejecución contra `/api/runs`» |
+| `README.md` | «Verificación», los comandos de `runtime-check` (`:264` a `:272`) y el párrafo de B3 que dice que queda hasta A4 | Salen. La auditoría masiva es `npm run api:audit` (B3) |
+| `qa/AGENTS.md` | La fila «Ejercicios o contratos de revisión» | `node qa/content-check.ts` y, con `npm run test:unit`, las specs de `features/run-exercise` (sin `runner-check`) |
+| `qa/AGENTS.md` | «Pruebas del front», viñeta «Ninguna prueba toca un servicio público» | `/api/runs` se simula sobre el doble de la API (`qa/e2e/fixtures/compiler-double.ts`); un pedido fuera del servidor de pruebas, o a `/api/` sin respuesta en el doble, hace fallar el test |
+| `qa/AGENTS.md` | «Compiladores y evidencia», las viñetas de `runtime-check` | Salen; queda la de `npm run api:audit` que suma B3 |
+| `docs/architecture.md` | La fila «Transporte a los Playgrounds oficiales» (`:25`) | «Ejecución contra `/api/runs`»: `frontend/src/features/run-exercise/` (el adaptador `api/api-runs-transport.ts` y la vista previa `api/server-program.ts`), la composición `frontend/src/app/lab/server-execution.ts` y la plantilla `frontend/src/shared/api/content/harness-holder.ts` |
+| `docs/adr/0008-pruebas-del-front.md` | Al final, antes de «Fuentes», una nota | «Nota (A4): los Playgrounds ya no existen en el front. Las E2E simulan `/api/runs` con el doble de la API (`compiler-double.ts` sobre `api-double.ts`), y la red estricta sigue abortando todo pedido fuera del servidor de pruebas.» |
+| `specs/backend-multiusuario/roadmap.md` | La fila de A4 | La pasa a «Planificado» (al mergear el plan) y a «Entregado» con la evidencia (al mergear la implementación). La hace el coordinador |
+
+- **Checks:** `git diff --check`, las rutas y los enlaces locales de cada archivo tocado, y `npm run format:check`. Prettier excluye el Markdown. La fecha de la nota del ADR es la del commit que la integra.
+- **Commit:** `docs: la ejecución pasa al sandbox propio y los Playgrounds salen de la guía (A4 FR-045)`.
+
+### Tarea 6.6 · La verificación contra el stack (T028, K con el usuario)
+
+- **Qué es:** cubre FR-047, SC-004 (la parte del stack), SC-006 y la corrida de SC-007. Es la verificación manual declarada de research R15.
+- **Antes:**
+  - el usuario levanta el stack con gVisor y las imágenes del sandbox, o autoriza al coordinador a hacerlo (Acciones del usuario de la spec);
+  - la corrida de registro de B3 está en verde (Q5).
+- **Pasos:** los de [quickstart.md](./quickstart.md) §6, con el resultado de cada uno en el informe del PR: qué se vio, la hora y el commit.
+- **Commit:** ninguno; el resultado va al PR.
+
+### Tarea 6.7 · La compuerta final y el PR (T029, K)
+
+- **Pasos:** los de [quickstart.md](./quickstart.md) §7.
+  - `bootSize` contra 1 500 000 y contra el de T001;
+  - el conteo de la red contra el de T001.
+- **El PR:** título en inglés con Angular (`feat(lab): run the lab in the workshop sandbox through /api/runs`), y la descripción con el problema completo (`AGENTS.md`):
+  - el contexto y qué cambia;
+  - las 20 E2E editadas con la aprobación del usuario;
+  - lo que se retira y su reemplazo (research R17);
+  - el resultado de T028;
+  - el delta para F7b (research R18);
+  - lo pendiente.
+
+## Cobertura de requisitos
+
+| Requisito | Tareas | Cómo se comprueba |
+| --- | --- | --- |
+| FR-001 | T012, T013 | El cuerpo exacto del envío, sin señal; un `clientRunId` por clic |
+| FR-002 | T014, T020 | `exceedsCodeLimit` en bytes; la E2E de 64 KiB; el borrador en blanco sigue en la feature de F7a |
+| FR-003 | T011, T012, T013 | Tres envíos con la misma clave; «not available» después de los 5xx |
+| FR-004 | T010, T012 | El calendario de 0,3 a 2 s y una consulta en vuelo |
+| FR-005 | T011, T012 | 30 s de fallas; `Retry-After` de un 429 |
+| FR-006 | T010, T012, T019 | Sin tope propio; la demora a los 15 s; la red de seguridad a los 12 min |
+| FR-007, FR-008 | T012, T019, T020 | La cancelación en la fila y con el envío en vuelo; volver al mapa, salir, el anterior y el siguiente; «Borrar todo» en `lab-state-check` |
+| FR-009 | T019 | Ctrl/⌘ + Enter dos veces da un envío (`lab-run.spec.ts`) |
+| FR-010 | T011, T012, T019 | La espera de turno, su texto, el tope de 2 min y menos de 30 envíos por minuto |
+| FR-011 | T010, T011, T012, T019 | `retryHint`; la cuota de un minuto en Vitest y en E2E |
+| FR-012 | T011, T012, T017, T019 | El 401 pide el ingreso con la cuenta; el 409; el 419 lo resuelve el cliente de F11a |
+| FR-013 | T011, T012 | El 401, el 403 y el 404 de una consulta cortan la espera |
+| FR-014 a FR-017 | T009 | La tabla de `verdictOfRun`, la batería de SC-002 y `withoutEvidence` |
+| FR-018 | T007, T009, T019 | La explicación primero en `stderr`, `diagnose` y las E2E del tiempo límite y de la evidencia inválida |
+| FR-019, FR-020 | T009, T019 | `attemptId` en el veredicto y en el `result`; `buildRunResult` de F7a |
+| FR-021 | T013, T019 | `countsLocalAttempts: false`; `attempts` sigue en 4 |
+| FR-022, FR-023 | T019 | La primera aprobación, los avisos, la campaña y Sistemas (`cycle.spec.ts`), y `solvedAt` que no se borra |
+| FR-024, FR-025 | T002, T003 | Pest contra MySQL; el contrato ampliado |
+| FR-026 a FR-028 | T006, T014, T019 | Los 11 casos del fixture; la vista previa con ceros |
+| FR-029, FR-030 | T015, T016, T017, T019, T020 | La plantilla en la copia, `If-None-Match` después de recargar, la vista previa sin plantilla y la copia |
+| FR-031 | T024 | El retiro; `git grep` de los hosts |
+| FR-032 | T025 | `connect-src 'self'` con su escenario |
+| FR-033 | T021, T019 | Los cuatro textos |
+| FR-034 | T024 | El retiro de `buildProgram`, `interpretRun` y `runtime-check` |
+| FR-035 | T021, T022 | «Pruebas reales al ejecutar», «COMPILADOR + CASOS EXPLICADOS» y «Ejecutando código real…» no cambian; ningún texto nuevo dice «verificado» |
+| FR-036 | T010, T022 | La línea de cada estado y el aviso de demora |
+| FR-037 | T011 | El mensaje de la API tal como llega, con cuándo volver |
+| FR-038 | T021 | La línea sin el número |
+| FR-039 | T022, T019 | El anuncio una vez, el foco, el teclado y los 590 px |
+| FR-040, FR-041 | T005, T002 | `sanitizeResult`; el `attemptId` publicado; la reutilización de D1b (research R16) |
+| FR-042, FR-043 | T018, T019 | Las 20 E2E en un commit aprobado; la guarda de `/api/` |
+| FR-044 | T024 | `runner-check` y los escenarios de `interpretRun` salen con su reemplazo |
+| FR-045 | T027 | La documentación |
+| FR-046 | T009 a T016, T019 | Las specs con dobles y reloj, y las E2E de A4 |
+| FR-047 | T028 | La verificación manual contra el stack |
+| FR-048 | T029 | Sin dependencias, sin `style=` nuevos y el tope del HTML |
+| SC-001 | T019 | `cycle.spec.ts`: 6 de 8 iguales y 2 con el detalle nuevo |
+| SC-002 | T009 | La batería |
+| SC-003 | T019, T024, T025 | La red estricta, `build-check` y la CSP |
+| SC-004 | T005, T019, T002, T028 | Las fixtures sin escribir; el `attemptId` al recargar; la importación |
+| SC-005 | T006 | Los 11 casos |
+| SC-006 | T028 | Rust y Go en el stack |
+| SC-007 | T012, T026, T028 | El calendario en Vitest y la medición del aula |
+| SC-008 | T012 | Un envío con tres pedidos de la misma clave |
+| SC-009 | T019, T022 | Teclado, anuncio, movimiento reducido y 590 px |
+| SC-010 | T029 | La compuerta final |
+
+## Descargas y permisos
+
+- **Dependencias nuevas:** ninguna. `fishery`, Vitest y Playwright ya están en `package.json`.
+- **Descargas:** ninguna; A4 usa las imágenes del sandbox que B2 ya construye.
+- **Lo que hace el usuario:**
+  - aprobar el commit de las 20 E2E editadas (T019);
+  - levantar el stack con gVisor para T028, o autorizarlo;
+  - revisar los textos propuestos (data-model.md §7) en el PR del plan.
+
+## Riesgos y lo que quedó sin verificar
+
+1. **A3 no está implementada.** Las firmas de `wait`, `contentCopies`, `copyOf`, `afterPublish` y el doble de IndexedDB salen de su plan. *Mitigación:* T001 las verifica, y la regla de «Reglas para todos los agentes» manda usar las de la base sin cambiar la conducta.
+2. **El orden de las transacciones de IndexedDB** entre el arranque de A3 y la plantilla del laboratorio depende de que dos `readwrite` sobre el mismo almacén se serialicen, como pide la especificación de IndexedDB. *Mitigación:* las dos escrituras son `update` (lectura y escritura en una transacción), y la E2E de la revalidación lo fija con Chromium real.
+3. **Un `POST` que nunca vuelve** (la red se cuelga sin cortar) deja la ejecución en curso hasta que el alumno cancela: el cliente de F11a no tiene tope de tiempo. *Mitigación:* el botón «Cancelar ejecución» está siempre; queda anotado para C4, que mide la exposición real.
+4. **Los conteos de pedidos de las E2E de A3** podrían sumar `GET /api/harness` en las que abren el laboratorio. *Mitigación:* T001, paso 6, y T020, paso 5, los buscan; la plantilla es un recurso aparte de las 17 porciones.
+5. **El lector de pantalla** sólo se comprueba a mano (X2). *Mitigación:* la E2E fija el DOM (un anuncio por tipo de estado), y T022 pide la comprobación manual.
+
+## Complexity Tracking
+
+Sin violaciones de la constitución que justificar.
