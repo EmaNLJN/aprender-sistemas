@@ -54,7 +54,9 @@
   - que la admisión de `/api/runs` lee el ejercicio por ID sin mirar el catálogo;
   - que `Portion` de la API fija hoy 18 casos y tres catálogos;
   - las cuatro columnas `level` de la base;
-  - las E2E de F1 que esperan `rust-01` y las de `impl-f7a` que fijan 137.
+  - las E2E de F1 que esperan `rust-01` y las de `impl-f7a` que fijan 137 y 49 temas;
+  - que el recorrido libre sigue el mismo orden que el mapa (`navigationList()`): las E2E que usan «anterior» y «siguiente» lo hacen dentro de un mundo o de un taller, o vuelven al mismo ejercicio, y la de F7a sobre el último ejercicio (`rust-137`) sólo sigue en verde si Esenciales va primero;
+  - que las 17 E2E de A2 (`content-gate.spec.ts`) alteran el documento construido y no fijan cuántas porciones tiene.
 
   No se ejecutó ninguna prueba del proyecto: la spec no cambia código.
 - `/speckit-analyze` corre con `plan.md` y `tasks.md`, que todavía no existen.

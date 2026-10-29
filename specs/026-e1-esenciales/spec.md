@@ -135,11 +135,11 @@ Sin sesión todavía. El clarify espera las respuestas del usuario a Q1 a Q5. Lo
 
 | Opción | Qué implica | Costo |
 | --- | --- | --- |
-| A | Sólo en el laboratorio, primero en el mapa. Con «Todos los niveles», «Un desafío para hoy» sugiere el primer Esenciales sin resolver a quien no resolvió nada de ese lenguaje fuera de Esenciales; a los demás, lo de hoy. Las tarjetas de sus temas se numeran 01, 02… | Las dos pruebas de F1 cambian, en un commit propio, con TDD y tu aprobación. Hacen falta dos reglas nuevas: la sugerencia y el número de la tarjeta |
-| B | Sólo en el laboratorio, al final del mapa, como un catálogo más. El alumno nuevo sigue empezando por `rust-01` y llega a Esenciales por su nivel | Ninguna prueba de F1 cambia. Las tarjetas muestran su etapa real (50, 51…), como hoy los núcleos muestran 25 a 49. Pero quien recién empieza aterriza en Inicial, que es lo que Esenciales viene a anteceder |
+| A | Sólo en el laboratorio, primero en el mapa y en el recorrido libre («anterior», «siguiente» y la posición «X / Y»). Con «Todos los niveles», «Un desafío para hoy» sugiere el primer Esenciales sin resolver a quien no resolvió nada de ese lenguaje fuera de Esenciales; a los demás, lo de hoy. Las tarjetas de sus temas se numeran 01, 02… | Las dos pruebas de F1 cambian, en un commit propio, con TDD y tu aprobación. En el recorrido libre, cada ejercicio de hoy se corre *N* lugares (con *N* = 20, `rust-01` pasa de «1 / 137» a «21 / 157»), y `rust-01` y `go-01` pasan a tener un anterior. Ninguna E2E de F1 ni de F7a fija eso, y `rust-137` sigue siendo el último. Hacen falta dos reglas nuevas: la sugerencia y el número de la tarjeta |
+| B | Sólo en el laboratorio, al final del mapa y del recorrido libre, como un catálogo más. El alumno nuevo sigue empezando por `rust-01` y llega a Esenciales por su nivel | Ninguna prueba de F1 cambia, pero sí una de F7a: «the last exercise of the language goes back to the map» (`lab-exercise.spec.ts`), porque `rust-137` deja de ser el último. Las tarjetas muestran su etapa real (50, 51…), como hoy los núcleos muestran 25 a 49. Pero quien recién empieza aterriza en Inicial, que es lo que Esenciales viene a anteceder |
 | C | Lo de A más un mundo de campaña por lenguaje, antes del primero | Se activa el riesgo 8 de F6: la lista de rangos y la de símbolos, «MUNDO 0N» y `WORLD_MAX_SCORE`. Además, cada mundo se abre al completar el anterior: un mundo nuevo delante del primero cierra el mundo 1 a quien ya lo tenía, salvo una regla de compatibilidad con el progreso guardado. Cambian el «4» del menú, «24 misiones», los sellos y el texto editorial de F6. Suma 6 misiones por lenguaje, 3 de ellas desafíos nuevos |
 
-**Recomendada: A.** Hace visible lo que la cadena dice, sin empujar a quien ya avanzó hacia un ejercicio básico. Además deja fuera de E1 la campaña, el Atlas, Sistemas, la Biblioteca y el Recorrido, así que el «4», el «25», «24 misiones» y «/180» no cambian, y el riesgo 8 de F6 deja de aplicar. **Costo:** las dos ediciones de F1, que piden tu aprobación, y las dos reglas.
+**Recomendada: A.** Hace visible lo que la cadena dice, sin empujar a quien ya avanzó hacia un ejercicio básico. Además deja fuera de E1 la campaña, el Atlas, Sistemas, la Biblioteca y el Recorrido, así que el «4», el «25», «24 misiones» y «/180» no cambian, y el riesgo 8 de F6 deja de aplicar. **Costo:** las dos ediciones de F1, que piden tu aprobación; las dos reglas; y la posición de cada ejercicio de hoy en el recorrido libre, que se corre *N* lugares.
 
 **Q4. ¿Qué forma tienen los IDs de Esenciales?** *(FR-005, FR-021 y FR-029)* Los IDs indexan el progreso para siempre. Todo el catálogo del laboratorio pasa por el validador de la campaña, que exige `^(rust|go)-\d+$` y rechaza la configuración entera si un ID no cumple: hoy la campaña dejaría de funcionar. `qa/content-check.ts` ata cada ID a su posición, y el fixture de IDs sólo crece.
 
@@ -195,13 +195,14 @@ Con la opción recomendada de Q3, sólo cambian los conteos del laboratorio. *N*
 | Laboratorio: el sello, «x/N resueltos», los temas, las pestañas de nivel, «N desafíos visibles.» y la nota «274 desafíos originales: 137 de Rust y 137 de Go» | 137 por lenguaje | 137 + *N* | Hoy `lab.js`, y F7b (su FR-022) | — |
 | Laboratorio, la pestaña Esenciales | No existe | *N* | El mismo cálculo que las otras pestañas | — |
 | Laboratorio, «Clásicos y sistemas · 25» | 25 | 25 (FR-030) | Hoy `lab.js` y F7b | — |
+| Laboratorio, la posición «X / Y» del recorrido libre | «1 / 137» en `rust-01` | «*N* + 1 / 137 + *N*» en `rust-01` (FR-028) | Hoy `lab.js` y F7b | — |
 | Campaña: «4 mundos», «24 misiones», «12 desafíos nuevos», «/180» y «de 4 insignias» | Esos | Igual | F6 | — |
 | Campaña, las palabras «seis misiones» y «los cuatro mundos» | Esas | Igual: la spec de coherencia de F6 sigue en verde (FR-037) | Texto editorial (F6-Q1) | — |
 | Sistemas, «N talleres» y «2N núcleos» | 25 y 50 | Igual | F5 | — |
 | README: el encabezado (274, 137 y 137), «Aprender en el taller» (la lista de niveles), «Cobertura» (una fila para Esenciales), «Campaña» («forman parte de los 274») y «Desarrollo» («137 ejercicios por lenguaje») | Esos | Con Esenciales | — | E1, en el mismo commit que el contenido; después, cada PR de etapa (Q5) |
 | `qa/`: la estructura por lenguaje de `content-check`, los totales de `systems-check`, `campaign-content-check`, `project-kit-check`, `api-sync-check` y `api-import-check`, las 17 porciones de `dist-content-check` y `curriculum-ids.json` | 274, 137 y 17 | Con Esenciales; el fixture sólo crece | — | Ídem |
 | Pest: los 274 ejercicios, los 3 catálogos, las 17 o 18 porciones y las pruebas y pistas sembradas | Esos | Con Esenciales | — | Ídem |
-| Las E2E del laboratorio que dejó F7a (`lab-map.spec.ts`: «137», «8/137 resueltos», «137 desafíos visibles.») | 137 | 137 + *N* | — | Ídem, salvo que F7b las haga leer el catálogo (hallazgo) |
+| Las E2E del laboratorio que dejó F7a (`lab-map.spec.ts`: «137», «8/137 resueltos», «49 temas», «137 desafíos visibles.») | 137 y 49 | 137 + *N* y 49 más los temas de Esenciales | — | Ídem, salvo que F7b las haga leer el catálogo (hallazgo). Con Q2-A, «29 desafíos visibles» de Inicial no cambia, y con Q3-A tampoco «Un desafío para hoy» de esa prueba, que siembra progreso fuera de Esenciales |
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -319,7 +320,7 @@ Después de E1, cada número que cuenta ejercicios coincide con el catálogo: el
 - **FR-006**: El generador DEBE validar los ejercicios de Esenciales con las reglas de los del laboratorio: los tres archivos, las claves de prueba estables, tres pistas, la revisión, la predicción, las fuentes, `kind`, `visual` y el encabezado de Go. Cada error nombra el archivo y el campo. *(`README.md`, «Contenido del currículo»)*
 - **FR-007**: `curriculum.json` DEBE sumar Esenciales como una clave nueva, después de las siete de hoy, con un arreglo por lenguaje. Cada ejercicio tiene la forma publicada y el orden de claves de uno del laboratorio, con el nivel siempre presente.
 - **FR-008**: El meta DEBE sumar el catálogo con su `sliceBy` y su posición, la huella de las dos porciones nuevas y las tres huellas de cada ejercicio nuevo, calculadas sólo en el generador. *(spec 001, FR-028 y FR-031)*
-- **FR-009**: Nada más DEBE cambiar en lo generado. Las 17 porciones de hoy conservan sus bytes y sus huellas. Los 274 ejercicios conservan su `stage`, su `content_hash`, su `grading_hash` y su `starter_hash`. `qa/fixtures/curriculum-ids.json` conserva cada entrada existente y sólo crece, y `qa/fixtures/workshop-steps-v1.json` no cambia. `Content-Version` sí cambia, porque cambia el documento. *(como la spec 007, FR-047)*
+- **FR-009**: Nada más DEBE cambiar en lo generado. Las 17 porciones de hoy conservan sus bytes y sus huellas. Los 274 ejercicios conservan su `stage`, su `content_hash`, su `grading_hash` y su `starter_hash`. `qa/fixtures/curriculum-ids.json` conserva cada entrada existente y sólo crece, y `qa/fixtures/workshop-steps-v1.json` no cambia. `Content-Version` sí cambia, porque cambia el documento. `build/curriculum.json` y el volcado de `dump-globals` (mientras F10 no lo retire) cambian sólo por lo nuevo de Esenciales; la diferencia no es una regresión, y su huella nueva reemplaza a la de la línea base. *(como la spec 007, FR-047)*
 - **FR-010**: Las decisiones de IDs (Q4) y de numeración de etapas (FR-003) DEBEN quedar en un ADR nuevo, que E1 entrega con su implementación. El ADR también registra el código (Q2) y por qué la etapa no es el número que ve el alumno. *(Hoja de ruta, E1; ADR 0006 §10)*
 
 **Base y API**
@@ -350,7 +351,7 @@ Después de E1, cada número que cuenta ejercicios coincide con el catálogo: el
 - **FR-025**: El catálogo de ejercicios del front DEBE incluir los de Esenciales. Los lee del módulo de contenido si F10 ya retiró los globales de catálogos, y de un global por lenguaje si no. *(F10-Q3)*
 - **FR-026**: El laboratorio DEBE ofrecer Esenciales como el primer nivel, antes de Inicial, con su nombre, su conteo y un subtítulo (propuesta: «Tus primeros pasos»). Los otros cuatro niveles conservan su orden, sus textos y sus conteos. *(Q2)*
 - **FR-027**: Un ejercicio de Esenciales DEBE abrirse, ejecutarse, revisarse, ofrecer pistas, predicción, explicación, variante y repaso, y descargarse como kit, igual que los demás y en las mismas fases. *(`README.md`, «Aprender en el taller»)*
-- **FR-028**: Con «Todos los niveles», el mapa DEBE mostrar primero los temas de Esenciales. «Un desafío para hoy» DEBE sugerir el primer ejercicio de Esenciales sin resolver sólo a quien no resolvió ningún ejercicio de ese lenguaje fuera de Esenciales; a los demás, lo que sugería antes de E1. Con un nivel elegido, rige la regla de hoy dentro de ese nivel. *(Q3)*
+- **FR-028**: Con «Todos los niveles», el mapa DEBE mostrar primero los temas de Esenciales. El recorrido libre («anterior», «siguiente», la posición «X / Y» y el botón del pie) DEBE seguir el mismo orden: Esenciales y después el de hoy, así que `rust-137` y `go-137` siguen siendo los últimos. «Un desafío para hoy» DEBE sugerir el primer ejercicio de Esenciales sin resolver sólo a quien no resolvió ningún ejercicio de ese lenguaje fuera de Esenciales; a los demás, lo que sugería antes de E1. Con un nivel elegido, rige la regla de hoy dentro de ese nivel. *(Q3)*
 - **FR-029**: La tarjeta de un tema de Esenciales DEBE mostrar su número dentro de Esenciales, con dos cifras (01, 02…). Las de los 274 conservan su etapa. Los nodos siguen mostrando la última parte del ID. *(Q3 y Q4)*
 - **FR-030**: «Clásicos y sistemas» NO DEBE incluir Esenciales: su conteo sigue en 25 por lenguaje. La búsqueda, «Sorprendeme ↗» y «Repasar pendientes» lo incluyen como a cualquier ejercicio.
 - **FR-031**: Los conteos del laboratorio DEBEN incluir Esenciales, derivados del catálogo: el sello del lenguaje, los resueltos, los temas, las pestañas de nivel, los visibles y la nota de respaldo. *(spec 021, FR-022)*
@@ -375,13 +376,13 @@ Después de E1, cada número que cuenta ejercicios coincide con el catálogo: el
 
   *(Constitución, principio II; spec 001, FR-038 a FR-042)*
 - **FR-039**: Un check de `npm test` DEBE comparar las 17 porciones, y la etapa y las tres huellas de los 274 ejercicios, con una línea de base tomada de `master` antes del cambio, y fallar con la primera diferencia (SC-001).
-- **FR-040**: La red de F1 DEBE pasar sin editarse, salvo las dos pruebas que abren el primer ejercicio desde el mapa (`views.spec.ts` y `reload.spec.ts`, que hoy esperan `rust-01`). Esas cambian en un commit propio, con TDD y la aprobación del usuario (Q3). Las E2E nuevas cubren abrir, resolver y recargar un ejercicio de Esenciales con el compilador simulado, la pestaña Esenciales y la sugerencia para quien ya avanzó.
+- **FR-040**: La red de F1 DEBE pasar sin editarse, salvo las dos pruebas que abren el primer ejercicio desde el mapa (`views.spec.ts` y `reload.spec.ts`, que hoy esperan `rust-01`). Esas cambian en un commit propio, con TDD y la aprobación del usuario (Q3). Las E2E nuevas cubren abrir, resolver y recargar un ejercicio de Esenciales con el compilador simulado, la pestaña Esenciales, la sugerencia para quien ya avanzó y el orden del recorrido libre (el anterior de `rust-01`).
 - **FR-041**: `npm run api:content:check` DEBE cubrir las 19 porciones a través de Nginx, con y sin compresión. *(spec 001, FR-047)*
 - **FR-042**: E1 DEBE cerrar con `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `git diff --check` y `npm run test:e2e` en verde. También con Pest, Pint y PHPStan nivel 9, y con el resumen de una corrida de B3 en verde sobre el último commit. *(Hoja de ruta, «Criterios de aceptación globales»; B3-Q3)*
 
 **Contenido**
 
-- **FR-043**: E1 DEBE entregar al menos una etapa real de Esenciales por lenguaje, porque el front no admite una porción vacía y el generador exige una etapa por sección. El resto del contenido va donde decida Q5. *(Q1 y Q5)*
+- **FR-043**: E1 DEBE entregar al menos una etapa real de Esenciales por lenguaje, porque el front no admite una porción vacía. La sección de Esenciales DEBE ser obligatoria en los manifiestos de los dos lenguajes (hoy `quests` y `systems` son opcionales), y el generador exige al menos una etapa en ella. El resto del contenido va donde decida Q5. *(Q1 y Q5)*
 - **FR-044**: Antes de integrarse, cada ejercicio de Esenciales DEBE pasar por estos pasos:
   1. un borrador escrito desde fuentes oficiales y enlazado en `sources`. En Rust: The Rust Book, Rust by Example y la referencia de la biblioteca estándar. En Go: A Tour of Go, Effective Go, la especificación y la documentación de los paquetes;
   2. `npm run curriculum` y `npm test`;
@@ -410,7 +411,7 @@ Después de E1, cada número que cuenta ejercicios coincide con el catálogo: el
 - **SC-003**: Una corrida de B3 con runsc da 274 + 2*N* soluciones que aprueban y 274 + 2*N* iniciales que fallan como corresponde, con 0 programas sin veredicto.
 - **SC-004**: Con el progreso vacío, una E2E abre el laboratorio, entra a Esenciales desde «Un desafío para hoy» y resuelve el ejercicio con el compilador simulado. Después de recargar, y después de exportar e importar, el logro sigue, en Rust y en Go.
 - **SC-005**: Las tres fixtures de progreso congeladas arrancan con E1 sin escribir, sin respaldar y sin avisar.
-- **SC-006**: La red de F1 pasa con sólo las dos ediciones aprobadas de FR-040. Las E2E y las specs del Atlas, la campaña (incluida la de coherencia de F6), Sistemas y la Biblioteca pasan sin editarse.
+- **SC-006**: La red de F1 pasa con sólo las dos ediciones aprobadas de FR-040. Las 17 E2E de A2 (`content-gate.spec.ts`) pasan sin editarse: alteran porciones del documento construido y no fijan cuántas hay. Las E2E y las specs del Atlas, la campaña (incluida la de coherencia de F6), Sistemas y la Biblioteca pasan sin editarse. De las E2E del laboratorio de F7a sólo cambian las que fijan conteos (FR-036).
 - **SC-007**: `GET /api/session` lista cuatro catálogos activos: Esenciales primero, con posición 1, y los otros tres sin posición.
 - **SC-008**: Cada conteo de la tabla «Los conteos visibles» coincide con el catálogo generado. Ningún número que cuente Esenciales queda con el valor de antes.
 - **SC-009** (una medición, no un criterio de aprobación): se informan el tamaño de las dos porciones nuevas, el del documento antes y después, y el de la foto de progreso de una cuenta con todos los ejercicios con intento, contra la medición de SC-010 de la spec 007.
@@ -425,8 +426,9 @@ Después de E1, cada número que cuenta ejercicios coincide con el catálogo: el
 6. **La revisión pedagógica es el cuello de botella** (Q5). *Mitigación:* una etapa por PR.
 7. **Cada PR de contenido necesita la auditoría local de B3**, con runsc y la instancia propia. *Mitigación:* es la regla de B3-Q3 para todo el contenido, no una carga nueva de E1.
 8. **El número de la tarjeta (01…) y el del nodo (138…) no coinciden** con Q4-A. *Mitigación:* ya pasa con los desafíos (tema 21, nodos 101 a 103). Q4-B lo resuelve, con su costo.
-9. **El COPY de las columnas `level`.** *Mitigación:* son tablas de cientos de filas, con la espera acotada (D35).
-10. **Nada de esto se ejecutó.** La spec sale de leer el código de `master` (24ba9d3d) y de `impl-f7a` (fc88d450). Las cifras de conteo son de ese código, y los números finales los fija el contenido.
+9. **El recorrido libre se corre para todos** con Q3-A: la posición «X / Y» de cada ejercicio de hoy suma *N*, y `rust-01` y `go-01` pasan a tener un anterior. *Mitigación:* es la consecuencia visible de poner Esenciales primero, y la prueba una E2E nueva (FR-040). Ninguna E2E de hoy la fija.
+10. **El COPY de las columnas `level`.** *Mitigación:* son tablas de cientos de filas, con la espera acotada (D35).
+11. **Nada de esto se ejecutó.** La spec sale de leer el código de `master` (24ba9d3d) y de `impl-f7a` (fc88d450). Las cifras de conteo son de ese código, y los números finales los fija el contenido.
 
 ## Relación con otras specs
 
