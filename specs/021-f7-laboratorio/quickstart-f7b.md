@@ -7,14 +7,19 @@ Los comandos corren desde la raíz del worktree, en Linux o macOS. Los scripts d
 ## 1. La línea base (T018)
 
 ```sh
-git log --oneline -15                          # F7a, F5 y F6 en master
-node -e "require.resolve('jsdom')" && grep -n "jsdom" frontend/vitest.config.ts   # el arnés
-grep -c "createPlaygroundTransport\|buildPlaygroundProgram" frontend/lab.js        # 2: rama A; 0: rama B
+git log --oneline -15                          # F7a, F5 y F6 en master, sobre 431c9d90 (F4, #67 y #76)
+node -e "require.resolve('jsdom')" && grep -n "name: 'dom'" frontend/vitest.config.ts && test -f frontend/src/vitest.setup.ts   # el arnés de #67
+grep -c "createPlaygroundTransport(" frontend/lab.js                              # 1 o más: rama A; 0: rama B
 grep -n "exerciseContextHTML\|missionIDs\|returnURL" frontend/src/app/legacy/register-systems.tsx frontend/src/app/legacy/campaign-bridges.ts
+grep -n "REACT_VIEWS" qa/boot-check.ts                                            # el conjunto de la base (TR-3)
+grep -n "useStore needs a selector" eslint.config.ts                              # la guarda de F5 o F6 (TR-5)
+grep -c "quest-direct-lock" frontend/lab.css                                      # 5: las reglas que mudó F6 (F7b-9)
+grep -n "result: LabResultV1" frontend/src/entities/exercise/model/run-outcome.ts # con salida: A4 unificó las formas (F7b-4)
+grep -n "BOOT_SIZE_LIMIT =" qa/build-check.ts                                     # 1500000
 npm ci --offline --no-audit --no-fund
 npm run build && npm test && npm run lint && npm run format:check
 E2E_PORT=4173 npm run test:e2e
-node -e "console.log(require('fs').readFileSync('dist/index.html','utf8').length)"
+node -e "const html=require('fs').readFileSync('dist/index.html','utf8'); console.log(JSON.stringify({chars:html.length,dynamicImports:(html.match(/\bimport\(/g)||[]).length,importMeta:(html.match(/import\.meta/g)||[]).length}))"
 npx eslint frontend/lab.js frontend/lab-explorers.js frontend/quest-explorers.js | grep -c complexity
 node qa/lab-state-check.ts | tail -1
 ```
@@ -24,10 +29,13 @@ Lo que se anota, con lo que midió el prototipo:
 | Qué | En la base del prototipo (F7a) | Después de F7b |
 | --- | --- | --- |
 | Avisos de `npm run lint` | 32 (13 de los tres archivos) | 19 |
-| E2E | 184 | 193 |
+| E2E | 184 (61 de F7a, según su plan) | 193 |
 | Checks y Vitest | 39 checks; 40 archivos y 843 pruebas | 37 checks; 45 archivos y 878 pruebas (más las 9 specs de componente, que no corrieron) |
 | `lab-state-check` | 39 | 33 |
 | `html.length` | 1 144 712 | 1 160 218 |
+| `importMeta` y `dynamicImports` | no se midieron | el de T018 menos 3, y 0 |
+
+**En la base real** (R17), cada conteo se anota en T018 y se espera como delta: los E2E son 185 de F1, A2 y F7a (106, 17 y 62), más los de F4 (`project.spec.ts`), F5 y F6; después de F7b, N + 9. Los checks bajan 2, los escenarios de `lab-state-check` bajan 6 y los avisos, los 13 de los tres archivos.
 
 **El aporte de cada parte al paquete** (R12), con el script de §3.2 sobre cada raíz.
 
@@ -43,7 +51,10 @@ git grep -nE "exerciseContextHTML|lockedExerciseHTML|missionIDs" -- frontend qa
 git grep -nE "campaign-bridges|lab-bridge-check|quest-explorers-check" -- frontend qa
 git diff <base> -- frontend/src qa | grep -E "^\+.*(style=|setAttribute\(.style.|\.cssText|style=\{)"
 git diff <base> --stat -- qa/e2e/specs qa/e2e/fixtures qa/e2e/lib   # sólo los dos archivos nuevos
+git grep -n "quest-direct-lock" -- ':(glob)frontend/*.css' frontend/src/pages/campaign   # las reglas del bloqueo viajaron con lab.css (F7b-9)
 ```
+
+Y `grep -c "quest-direct-lock" frontend/src/pages/lab/ui/lab.css` da lo que anotó T018 en `frontend/lab.css` (5).
 
 Y `window.TallerLab` publica diez métodos: lo verifica `boot-check` («adaptadores: cada window.Taller* real publica los métodos que consume app.js») contra `qa/lib/app-adapters.ts`.
 
@@ -69,13 +80,14 @@ node lab-parity.mjs ../f7b-base . exports      # 3 fixtures; esperado: 0 escritu
 **Qué normaliza, y por qué** (la lista de FR-064):
 
 - **En el legacy:** saca `#lab-line-numbers` y `#lab-code` (D2) antes de medir.
+- **En los dos lados:** después de las acciones, lleva el puntero fuera de la página (`page.mouse.move(-1, -1)`). React conserva el nodo bajo el puntero y su `:hover` persiste después de un clic, mientras que el legacy lo reemplazaba (TR-13 y R17).
 - **En el DOM:**
   - ignora los atributos `data-*`, `style`, `value` y `selected`;
   - compara las clases como un conjunto, sin `lab-reasoning`;
   - une los nodos de texto vecinos y colapsa los espacios;
   - el editor cuenta como un solo nodo.
 - **En el estilo:** compara cada propiedad computada y la caja de cada elemento, con dos excepciones:
-  - el tamaño de lo que está dentro de un `details` cerrado: no se dibuja, y Chrome devuelve un tamaño que depende de si alguna vez se midió;
+  - lo que está dentro de un `details` cerrado, salvo su `summary`, no se compara: no se dibuja, y Chrome devuelve un tamaño computado que depende de si alguna vez se midió (TR-13). Es la mitigación que suman F3 y F9 a sus copias del barrido de F2b (`quickstart-f2b.md` §3.1 (b)) en la rama `plan/amend-f3-f9`; el prototipo sólo sacaba las seis propiedades de tamaño, y ahora se salta el elemento entero;
   - el `transform` y la caja de un elemento con una animación en curso, porque su fase depende del momento de la captura. Con movimiento reducido no hay animación, y se compara todo.
 - **En los exploradores:** recorre los 274 ejercicios y anota cuál se dibuja (o ninguno). Compara el texto dibujado (`innerText`), la región viva y el elemento con el foco.
 - **En las escrituras y la exportación:** reloj fijo (2026-10-06 12:00 UTC), `Math.random` fijo y el doble del compilador de `qa/e2e/lib/compiler-results.ts`. Envuelve `localStorage.setItem` y guarda cada escritura de la clave del laboratorio.
@@ -278,20 +290,10 @@ function styleSnapshot() {
   };
   for (const el of [document.documentElement, ...document.querySelectorAll('*')]) {
     if (el.closest('.cm-editor') && !el.classList.contains('cm-editor')) continue;
+    if (el.closest('details:not([open]) > :not(summary)')) continue;
     const cs = getComputedStyle(el);
     const props = {};
     for (let i = 0; i < cs.length; i++) props[cs[i]] = cs.getPropertyValue(cs[i]);
-    if (el.closest('details:not([open]) > :not(summary)')) {
-      for (const name of [
-        'block-size',
-        'height',
-        'inline-size',
-        'width',
-        'perspective-origin',
-        'transform-origin',
-      ])
-        delete props[name];
-    }
     const animated = el.getAnimations().some((animation) => animation.playState === 'running');
     if (animated) delete props.transform;
     const r = el.getBoundingClientRect();
@@ -350,6 +352,7 @@ async function open(browser, origin, [, path, actions, , seed], width, motion, l
   await page.goto(origin + path);
   await page.waitForFunction(() => document.querySelector('#main')?.children.length > 0);
   for (const action of actions ?? []) await act(page, action);
+  await page.mouse.move(-1, -1);
   await page.waitForTimeout(50);
   if (legacy) await page.evaluate(normalizeLegacy);
   return { context, page };
@@ -803,7 +806,7 @@ npm run lint                  # 0 errores; el total de T018 menos 13
 npm run format:check
 git diff --check
 E2E_PORT=4173 npm run test:e2e   # todos, sin editar los de hoy
-node -e "console.log(require('fs').readFileSync('dist/index.html','utf8').length)"   # < 1 250 000 y ≤ T018 + 17 000
+node -e "const html=require('fs').readFileSync('dist/index.html','utf8'); console.log(JSON.stringify({chars:html.length,dynamicImports:(html.match(/\bimport\(/g)||[]).length,importMeta:(html.match(/import\.meta/g)||[]).length}))"   # chars < 1 500 000 y ≤ T018 + 17 000; importMeta = T018 − 3; dynamicImports 0
 ```
 
 Más los `grep` de §2, las comparaciones de §3 y, con permiso, `docker compose build taller`. La comprobación con lector de pantalla (X2) la hace el usuario en la revisión del PR.

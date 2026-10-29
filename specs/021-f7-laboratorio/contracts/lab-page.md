@@ -1,6 +1,6 @@
 # Contrato · La página del laboratorio y su adaptador (F7b)
 
-**Spec**: [spec 021](../spec.md), FR-007 a FR-042 · **Plan**: [plan-f7b.md](../plan-f7b.md), secciones 2 y 3 · **Decisiones**: [research-f7b.md](../research-f7b.md), R1 a R11
+**Spec**: [spec 021](../spec.md), FR-007 a FR-042 · **Plan**: [plan-f7b.md](../plan-f7b.md), secciones 2 y 3 · **Decisiones**: [research-f7b.md](../research-f7b.md), R1 a R11 y R17
 
 Son las interfaces que F7b deja a los demás ítems:
 
@@ -70,6 +70,8 @@ export type { LabSession } from './model/lab-session';
 export { campaignLock } from './model/mission-bridges';
 ```
 
+**Hasta el corte,** el índice conserva lo que dejó F7a: `isExtraChallenge`, `matchesMapFilters`, `surprisePool`, `todayChallenge` y sus tipos, que `lab.js` importa de `./src/pages/lab` (unidad 4 de F7a). T027 lo reemplaza por el de arriba en el mismo commit que borra `lab.js`.
+
 ```ts
 interface LabPageProps {
   language: ExerciseLanguage;
@@ -109,6 +111,8 @@ function enterLab(
   - en `taller-laboratorio-v1`, sólo en los manejadores, con `saveLab()`, que además refresca los motores en memoria;
   - la URL, con `withLabQuery` y `history.replaceState`, en un efecto atado al modo, al ejercicio y a la fase.
 - **`enterLab`** es la única función con efectos que corre antes del primer dibujo: refresca los motores y crea el registro vacío del ejercicio que se muestra, si no hay bloqueo (D1).
+- **El registro que llega a `draftOf`** salió de `ensureRecord`, como pide F7a (`ledger impl-f7a:56`): `showExercise` lo crea antes del dibujo, desde `enterLab` y desde `openExercise`, y el dibujo no escribe (FR-017). Con el bloqueo no se crea, y la página dibuja `CampaignLock`, que no llama a `draftOf`.
+- **El resultado guardado** se lee sólo con `reviewStateOf`, `isReflectionSolved` y el tipo `LabResultV1` de `entities/exercise`; la página no usa `RunOutcome` ni `StoredResult`. Cuando A4 unifique las formas (`RunOutcome.result: LabResultV1`), la página no cambia. Con un `stderr` vacío, la falla de transporte muestra «No llegó una respuesta del compilador. Revisá la conexión y probá de nuevo.», porque `reviewStateOf` devuelve el `stderr` crudo.
 - **Los talleres llegan por props:** `systemsEngine.list()` crea registros en memoria (R5). El adaptador los arma desde `getContent().workshops`.
 - **El diálogo de confirmación** cuelga de `<body>` con un portal, vive dentro de `CodePhase` y se desmonta al cerrarse o al salir.
 

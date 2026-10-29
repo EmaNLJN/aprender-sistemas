@@ -15,14 +15,16 @@
 - **Lo que guarda** lo escribe en los manejadores, nunca al dibujar.
 - **El editor** es un hook sobre CodeMirror 6, con un callback de cambio.
 
-**Stack.** TypeScript y React 19.2.8 sobre Vite 8.3.2, Zustand 5.0.15 (`useStore`), CodeMirror 6 (`@codemirror/view` 6.43.13 y `@codemirror/state` 6.7.6), Vitest 5.0.3 con los proyectos `node` y `jsdom` y Testing Library (el arnés que traen F3, F5 o F6), y `@playwright/test` 1.63.0. Ninguna dependencia nueva.
+**Stack.** TypeScript y React 19.2.8 sobre Vite 8.3.2, Zustand 5.0.15 (`useStore`), CodeMirror 6 (`@codemirror/view` 6.43.13 y `@codemirror/state` 6.7.6), Vitest 5.0.3 con los proyectos `node` y `dom` y Testing Library (el arnés que ya está en `master` desde #67: `frontend/vitest.config.ts` y `frontend/src/vitest.setup.ts`), y `@playwright/test` 1.63.0. Ninguna dependencia nueva.
 
 > **Para quien lo implementa.**
 >
 > - **Qué leer.** Las «Reglas para todos los agentes», la sección 0 («Línea base y compuerta») y la sección de tu dueño. `tasks-f7b.md` tiene una línea por tarea (T018 a T030) y remite acá. La numeración sigue la de F7a (T001 a T017).
-> - **El código del plan corrió.** Todo lo que trae este plan corrió en un prototipo (research-f7b.md, «Cómo se verificó»): la página, el adaptador, los checks, los 193 E2E (los 184 de hoy sin editar y 9 nuevos), las cinco comparaciones únicas y `npm test`. Los 11 diffs se aplican con `git apply`, en orden, sobre la base de F7a. **No corrieron** las specs de componente (el arnés no estaba instalado), los diffs sobre los archivos de F5 y F6 (no existen todavía) ni la rama B de C4.
+> - **El código del plan corrió.** Todo lo que trae este plan corrió en un prototipo (research-f7b.md, «Cómo se verificó»): la página, el adaptador, los checks, los 193 E2E (los 184 de hoy sin editar y 9 nuevos, con los 61 que el plan de F7a preveía; la implementación de F7a tiene 62), las cinco comparaciones únicas y `npm test`. Los 11 diffs se aplican con `git apply`, en orden, sobre la base de F7a del prototipo. Sobre `master` (431c9d90, con F4) cambia el contexto de los de `legacy-views.ts`, `main.tsx`, `boot-check.ts` y `load-order-check.ts`, y T018 los vuelve a derivar junto con los que tocan archivos de F5 y F6 (research-f7b.md, R17). **No corrieron** las specs de componente (el arnés no estaba instalado), los diffs sobre los archivos de F5 y F6 (no existen todavía) ni la rama B de C4.
 > - **Los valores esperados salen del contrato:** los textos de hoy, el contenido de `content/` y las fixtures congeladas. Si un E2E de hoy falla con la página, el error está en la página: no se edita el E2E.
-> - **La base de implementación** es `master` con F7a, F5 y F6 integradas. Si algún número de esta sección difiere en la base, T018 lo vuelve a medir y manda lo medido.
+> - **La base de implementación** es `master` con F7a, F5 y F6 integradas, sobre lo que `master` ya trae en 431c9d90: F4 (#77), el arnés de componentes (#67) y el tope de 1 500 000 (#76). Si algún número de esta sección difiere en la base, T018 lo vuelve a medir y manda lo medido.
+> - **Los conteos se esperan como delta sobre T018** (TR-15): los E2E, los checks, las pruebas de Vitest, los avisos de `npm run lint`, los escenarios de `lab-state-check`, `html.length` e `importMeta`. Los números absolutos de este plan son del prototipo, y las reglas de CSS se buscan por selector, nunca por línea.
+> - **Lo que fijó F7a al implementarse** (`impl-f7a`, fc88d450) está en research-f7b.md, R17, y en la sección «Alineación con F7a implementado» de este plan.
 
 ## Summary
 
@@ -40,21 +42,21 @@ El enfoque:
 - **X1 sale por construcción** (R6): React conserva los nodos que no cambian, así que los paneles quedan como los dejó el alumno y el foco se queda en el botón pulsado. La página no reproduce ningún redibujo completo.
 - **Un nodo de texto donde hoy hay uno** (R7): JSX parte el texto en cada expresión y el navegador pierde el kerning entre los nodos. La página arma plantillas, y el barrido lo vigila.
 - **El laboratorio no lee `window`** salvo en su raíz. Los adaptadores de campaña y de Sistemas dejan de armar HTML para él: `campaign-bridges.ts` se retira y `window.TallerSystems` queda con cinco métodos (R11).
-- **Lo que no cambia:** ningún texto, ningún ID, ninguna URL, ninguna escritura (cuántas y qué) y ningún estilo computado. Los 184 E2E de hoy pasan sin editarse.
+- **Lo que no cambia:** ningún texto, ningún ID, ninguna URL, ninguna escritura (cuántas y qué) y ningún estilo computado. Los E2E de la base pasan sin editarse: los 185 de F1, A2 y F7a (106, 17 y 62) y los que sumaron F4, F5 y F6.
 
 ## Technical Context
 
 **Language/Version**: TypeScript como ES modules en `frontend/src/` y `qa/`. Node 24.21.0, Vite 8.3.2, React 19.2.8, Zustand 5.0.15, Vitest 5.0.3 y `@playwright/test` 1.63.0.
 
-**Primary Dependencies**: ninguna nueva (FR-003). Las specs de componente usan el arnés que trae el primero de F3, F5 o F6 en llegar (jsdom 30.1.2, `@testing-library/react` 16.3.3, `@testing-library/user-event` 14.6.7 y `@testing-library/jest-dom` 7.0.1, según el plan de F6, T002). Si no está, F7b pide el permiso con esa misma tabla (T018).
+**Primary Dependencies**: ninguna nueva (FR-003). Las specs de componente usan el arnés que ya está en `master` desde #67 (TR-6): jsdom 30.1.2, `@testing-library/react` 16.3.3, `@testing-library/user-event` 14.6.7, `@testing-library/jest-dom` 7.0.1 y `@testing-library/dom` 10.4.2, con el proyecto `dom` de Vitest (`*.spec.tsx`) y el setup `frontend/src/vitest.setup.ts` (jest-dom y `cleanup`). No se pide ningún permiso.
 
 **Storage**: `taller-laboratorio-v1`, sin cambios de formato. Cada acción escribe lo mismo y la misma cantidad de veces que hoy (FR-016).
 
 **Testing**:
 
 - **Vitest, proyecto `node`:** las specs del modelo de la página (sesión, puentes, estado del filtro, entrada al laboratorio y el `<pre>`);
-- **Vitest, proyecto `jsdom`:** las specs de componente con Testing Library (las regiones vivas, el diálogo, los escenarios que salen de `lab-state-check` y el escape);
-- **Playwright:** los 184 E2E de hoy sin editar y 9 nuevos;
+- **Vitest, proyecto `dom`** (entorno jsdom): las specs de componente con Testing Library (las regiones vivas, el diálogo, los escenarios que salen de `lab-state-check` y el escape);
+- **Playwright:** los E2E de la base sin editar (T018 los cuenta) y 9 nuevos;
 - **los checks de `qa/`;**
 - **las comparaciones únicas** de quickstart-f7b.md §3.
 
@@ -87,14 +89,18 @@ Valores exactos, de la spec, de la constitución y de la base:
 
 - **La red sin editar:**
   - los 106 E2E de F1 y los 17 de A2 (FR-002);
-  - los 61 de F7a (FR-001): `git diff <base> -- qa/e2e/specs/` sólo muestra los dos archivos nuevos;
+  - los 62 de F7a (FR-001; `lab-run.spec.ts` tiene 14): `git diff <base> -- qa/e2e/specs/` sólo muestra los dos archivos nuevos;
   - el Page Object y los dobles sólo suman métodos, y `.quest-lab-context` sigue siendo la clase del bloque de contexto.
 - **Las clases y los ids que usan esos E2E** se conservan: `.lab-metrics`, `.lab-stamp`, `.lab-intro .eyebrow`, `.lab-continue`, `#lab-filter-status`, `.challenge-node`, `.lab-empty h2`, `.lab-storage-warning`, `#lab-prediction-feedback`, `#lab-editor-status`, `#lab-live-hint`, `.hint-item`, `.test-case summary`, `#lab-reflect-status`, `#lab-reflection-status`, `.lab-explorer`, `details.qx-history`, `.qx-verdict`, `.quest-lab-context`, `.quest-direct-lock`, `.lab-spinner`, `.quest-banner` y `#lab-confirm-dialog`. Los nombres accesibles también: «Editor de código Rust» y «Go», «Revisión del ejercicio» y «Explorador conceptual interactivo».
-- **El HTML:** `dist/index.html` queda bajo `BOOT_SIZE_LIMIT` de `qa/build-check`, **1 250 000 caracteres**, con la forma de A2. El aumento sobre T018 no pasa de **+17 000** (el prototipo midió +15 581). El tamaño antes y después va en el PR (FR-004, R12).
+- **El HTML:** `dist/index.html` queda bajo `BOOT_SIZE_LIMIT` de `qa/build-check.ts` (línea 11), **1 500 000 caracteres** desde #76, con la forma de A2. El aumento sobre T018 no pasa de **+17 000** (el prototipo midió +15 581). El tamaño antes y después va en el PR (FR-004, R12).
 - **Nada nuevo:**
   - ninguna dependencia de ejecución;
   - ningún `style=`, `setAttribute('style', …)`, `style.cssText` ni prop `style` en `pages/lab`, `features/run-exercise` ni el adaptador (FR-003, SC-011);
   - ningún global nuevo.
+- **`import.meta` en el dist** (TR-4): `importMeta` queda en el de T018 menos 3, porque salen tres entradas de `LEGACY_MODULES` (`register-editor`, `lab-explorers.js` y `quest-explorers.js`) y la de `lab.js` pasa a `register-lab` en su lugar. `dynamicImports` sigue en 0.
+- **`useStore` siempre con selector** (TR-5): la guarda de `no-restricted-syntax` (`CallExpression[callee.name='useStore'][arguments.length=1]`) llega con F5 o F6 en `eslint.config.ts`, antes del bloque de `complexity`. F7b no la toca ni suma otra; las cuatro llamadas de `LabPage` y la de T025 llevan selector.
+- **El resultado guardado** (F7b-4 y la decisión de la noche del 2026-10-28): la página lo lee sólo con `reviewStateOf`, `isReflectionSolved` y el tipo `LabResultV1` de `entities/exercise`. Nunca importa `RunOutcome`, `interpretRun` ni la forma interna `StoredResult`. Si A4 entró antes, consume la forma unificada (`RunOutcome.result: LabResultV1`); si no, consume las formas de F7a como están y el PR lo declara (R17).
+- **Los ayudantes de E2E que ya existen** (TR-7 y F7b-5): `LAB_KEY`, `LAB_WRITE` y `SYNC_WRITES` de `qa/e2e/lib/lab-storage.ts`; `attemptsLine` de `qa/e2e/lib/lab-copy.ts`; `blockWrites()` de `qa/e2e/fixtures/storage-control.ts`; y `markDocument`, `documentWasReloaded` y `observeReload` de `qa/e2e/lib/document-marker.ts`. Una E2E nueva los importa y no los redefine.
 - **Los estilos en línea que salen:** los dos `style=` de la reflexión y el `cssText` de la copia pasan a tres reglas de `pages/lab/ui/lab-page.css`, con el mismo estilo computado.
 - **La complejidad:** el total de `npm run lint` no sube. Salen los 13 avisos de los tres archivos legacy (32 a 19 en el prototipo) y ninguna función nueva pasa de 10 (FR-005).
 - **El formato guardado no cambia:** la clave, `version: 1`, los nombres y los topes (30 000, 10 000 y 3 000; 12 000 y 18 000). Las tres fixtures congeladas arrancan sin escribir, sin respaldar y sin avisar (FR-018).
@@ -103,7 +109,7 @@ Valores exactos, de la spec, de la constitución y de la base:
   - `frontend/app.js` y `frontend/src/index.html`;
   - `content/` y las entidades y la feature de F7a, salvo lo que dice cada tarea;
   - `package.json` y el lockfile;
-  - los 61 E2E de F7a.
+  - los 62 E2E de F7a. Sus títulos todavía dicen `KNOWN DEFECT (spec 021, quirk N)` en fc88d450; los pasa a «rareza N» F7a en su T016 (`ledger impl-f7a:19`), no F7b.
 - **El código y las pruebas, en inglés; los textos, en español,** y sin comentarios: sólo los de referencia puntual que trae el plan.
 
 ## Constitution Check
@@ -131,10 +137,27 @@ Valores exactos, de la spec, de la constitución y de la base:
 | **X2:** regiones vivas montadas | `#lab-review`, `#lab-prediction-feedback`, `#lab-filter-status`, `#lab-reflect-status`, `.explorer-explanation` y la región del explorador de misión conservan su nodo. Lo fijan las specs de componente, y el usuario lo comprueba con lector de pantalla | T023, T024 y T030 |
 | **F9-Q4 (D3):** el diálogo con un portal a `<body>` que se cierra al navegar | `ConfirmDialog`, dentro de `CodePhase` | T024 (R8) |
 | **Ruling C4:** si A4 entró antes, F7b porta lo que A4 dibujó en `lab.js` | Dos ramas: la A sin A4 y la B con A4 (T025). T018 decide con un predicado | T018 y T025 (R13) |
-| **D1:** el registro vacío al mostrar un ejercicio | Se crea en `enterLab` y en `openExercise`, después de guardar y sólo sin bloqueo | T021 y T024 (R5) |
+| **D1:** el registro vacío al mostrar un ejercicio | Se crea en `enterLab` y en `openExercise`, después de guardar y sólo sin bloqueo. Es la forma de F7b de la regla de F7a «`ensureRecord` antes de `draftOf`» (`ledger impl-f7a:56`): `showExercise` lo crea en el manejador, antes del dibujo que llama a `draftOf`, y el dibujo no escribe | T020, T021 y T024 (R5 y R17) |
 | **D2 y D5:** se retiran el `textarea` de respaldo y `TallerEditor` | `useCodeEditor` reemplaza a `mountCodeEditor`; salen `register-editor.ts` y `mount-code-editor.ts` | T022 y T027 (R4) |
 | **D4:** las hojas sin editar en `pages/lab/ui/` | `git mv` y las mismas líneas de `main.tsx`; las tres reglas nuevas van en `lab-page.css` | T024 y T027 (R9) |
 | **D6:** las misiones de proyecto y los recursos como constantes | `pages/lab/model/practice-content.ts` | T021 |
+| **Noche del 2026-10-28, las tres formas del resultado:** las unifica A4 (`RunOutcome.result: LabResultV1`); F7b consume la forma unificada | La página lee el resultado sólo por `reviewStateOf`, `isReflectionSolved` y `LabResultV1`. Si F7b entra antes que A4, consume las formas de F7a y el PR lo declara | T018, T024 y T030 (R17) |
+| **Noche del 2026-10-28, el tope del HTML:** 1 500 000 (#76) | `BOOT_SIZE_LIMIT` de `qa/build-check.ts`; el subpresupuesto de F7b sigue en +17 000 | T018 y T030 (R12) |
+| **Noche del 2026-10-28, `boot-check`:** `REACT_VIEWS` con el `mountedText` de F4 | T027 suma `'laboratorio'` al conjunto y conserva el encabezado `LABORATORIO · RUST` | T027 (R17) |
+
+## Alineación con F7a implementado
+
+F7a está implementado hasta su unidad 3 en `impl-f7a` (fc88d450); su unidad 4 (`lab.js` usa las reglas y se retira `TallerRunner`, T013 a T015) se lee en `plan.md` §4. Este plan se alineó con las dos fuentes el 2026-10-28. El detalle y las citas están en research-f7b.md, R17:
+
+| Qué fijó F7a | Qué cambia en este plan | Dónde |
+| --- | --- | --- |
+| `lab-run.spec.ts` tiene 14 E2E: F7a deja 62 | Los 61 pasan a 62, y cada total es un delta sobre T018 | Restricciones globales, T018, T019, §0.2, T027 y §7 |
+| `ensureRecord` antes de `draftOf` (D1) | La regla, explícita, y una prueba de `showExercise` | Review Focus, T020 y contracts/lab-page.md §2 |
+| `reviewStateOf` devuelve el `stderr` crudo (`review-state.ts:42`) | La vista conserva «No llegó una respuesta…», con una prueba | T023 y T024 |
+| Las tres formas del resultado | La página no usa `RunOutcome` ni `StoredResult` | Restricciones globales y T030 |
+| `qa/e2e/lib/lab-storage.ts` y la cita «rareza N» | Las E2E nuevas importan de ahí, y las specs nuevas citan «rareza N» | Reglas, T020 y T023 |
+| La unidad 4 importa los selectores de `./src/pages/lab` (`plan.md:4559`) | El índice del slice no cambia en T024: lo reemplaza T027, con el corte | T024 y T027 |
+| La unidad 4 deja cuatro líneas con `createPlaygroundTransport` o `buildPlaygroundProgram` en `lab.js` (`plan.md:5040-5075`) | El predicado de la rama de C4 mira sólo la llamada a `createPlaygroundTransport(` | T018 |
 
 ## Project Structure
 
@@ -145,7 +168,7 @@ specs/021-f7-laboratorio/
 ├── spec.md                       # F7 entera; F7b no la cambia
 ├── plan.md, research.md, quickstart.md, tasks.md, contracts/run-exercise.md   # F7a; no se tocan
 ├── plan-f7b.md                   # este archivo
-├── research-f7b.md               # decisiones R1 a R16, Context7 y mediciones
+├── research-f7b.md               # decisiones R1 a R17, Context7 y mediciones
 ├── quickstart-f7b.md             # cómo se verifica F7b y las comparaciones únicas
 ├── contracts/lab-page.md         # TallerLab después de F7b, la página, la sesión y el hook
 └── tasks-f7b.md                  # T018 a T030
@@ -175,7 +198,7 @@ frontend/
     │   ├── index.ts                                     (C, W) exporta el hook
     │   └── mount-code-editor.ts                         (W) se borra
     └── pages/lab/
-        ├── index.ts                                     (P) LabPage, enterLab y LabWorkshop
+        ├── index.ts                                     (W) LabPage, enterLab y LabWorkshop, en el corte
         ├── composition.ts                               (M) nuevo: la entrada sin vista para lab-api.ts
         ├── lib/browser.ts + spec, lib/copy-text.ts      (M)
         ├── model/                                       (M) types, lab-session + spec, mission-bridges + spec,
@@ -204,13 +227,15 @@ docs/architecture.md, qa/AGENTS.md, AGENTS.md            (K)
 
 Lo que el revisor mira primero:
 
-- **Los 184 E2E de hoy, sin editar.** `git diff <base> -- qa/e2e/specs qa/e2e/fixtures qa/e2e/lib` sólo agrega dos archivos, y `qa/e2e/pages/lab.ts` sólo suma dos métodos.
+- **Los E2E de la base, sin editar** (185 de F1, A2 y F7a, más los de F4, F5 y F6). `git diff <base> -- qa/e2e/specs qa/e2e/fixtures qa/e2e/lib` sólo agrega dos archivos, y `qa/e2e/pages/lab.ts` sólo suma dos métodos.
 - **Las escrituras:** ninguna en el dibujo. El registro vacío sale de `enterLab` y de `openExercise`, después del guardado de la selección. `replaceText` no escribe. `refreshFromLab` nunca escribe.
+- **`ensureRecord` antes de `draftOf`** (D1, `ledger impl-f7a:56`): todo camino a `ExerciseView` pasa por `showExercise`, que crea el registro con `ensureRecord` antes del dibujo (`enterLab` al montar y `openExercise` desde el mapa, «Sorprendeme», el desafío de hoy, «Siguiente» y «Anterior»). Las tres llamadas a `draftOf` (las dos de `CodePhase` y la de `PendingReview`) leen ese registro. Con el bloqueo de campaña, `showExercise` no lo crea y la página dibuja `CampaignLock`, que no llama a `draftOf`. `EMPTY_RECORD` es sólo el respaldo de tipo de `LabPage` y ningún camino lo hace llegar a `draftOf`. Es la misma regla que sigue la feature de F7a (`create-exercise-runner.ts:146-147`).
+- **El transporte sin mensaje:** `reviewStateOf` devuelve el `stderr` crudo (`review-state.ts:42`), así que `TransportReview` conserva su texto por omisión, «No llegó una respuesta del compilador. Revisá la conexión y probá de nuevo.». La feature guarda «No se pudo conectar al compilador.» cuando el adaptador lanza sin mensaje (`create-exercise-runner.ts:24` y `:58-61`), así que el texto de la vista queda para un `stderr` vacío: un resultado guardado antes, o un veredicto `transport-failure` con el mensaje vacío. Conviven los dos textos (F7b-3). Lo fija la spec de `CodePhase` (T023).
 - **X1 sin redibujos:** ningún `key` que cambie sin motivo. `open` sólo en el caso propio (una vez) y en los casos de prueba. `flushSync` antes de mover el foco.
 - **Los nodos de texto:** cada texto que hoy es un nodo es una plantilla, sin `{' '}` partiendo una frase (R7).
 - **La raíz partida:** `lab-api.ts` no importa React, la página ni un índice de motor. `register-lab.tsx` es el único que importa `pages/lab`. `window.TallerLab` no se congela, porque `boot-check` espía `init`.
 - **Lo retirado:** `grep` en 0 para los tres archivos, las dos hojas en `frontend/`, los cuatro globals y los métodos de HTML de los adaptadores (quickstart-f7b.md §2).
-- **Complejidad y tamaño:** el total de avisos no sube, y el HTML crece hasta +17 000 y queda bajo 1 250 000.
+- **Complejidad y tamaño:** el total de avisos no sube, y el HTML crece hasta +17 000 y queda bajo 1 500 000. `importMeta` baja 3 y `dynamicImports` sigue en 0.
 
 **Lo que la spec implica y ninguna prueba de hoy ejercita**, cada caso con la tarea que suma su prueba:
 
@@ -218,7 +243,7 @@ Lo que el revisor mira primero:
 2. **Una salida del compilador con el error vacío** empieza con un salto de línea: hoy el analizador de HTML lo descarta, y React no (FR-029). Lo fijan la spec de `preformatted` (T020) y el barrido en el estado `code-passed` (T028).
 3. **El reemplazo del texto del editor** por «Restaurar inicio» o «Cargarla y experimentar» dispararía `onChange` y guardaría dos veces (FR-016 y FR-041). Lo fijan la spec de `CodePhase` (T023: `save` una vez y `replaceText` llamado) y los E2E de F7a que cuentan las escrituras.
 4. **Evaluar el adaptador solo** junto con `register-campaign-engine.ts` traería un segundo motor o un segundo almacén (FR-014, riesgo 12). Lo fijan `lab-state-check` («lab-api.ts bundles the lab store once and no engine or route store») y `boot-check`, que evalúa `lab-api.ts` y `register-lab.tsx` solos (T027).
-5. **«Siguiente» hasta una misión bloqueada** dentro de la lista de un mundo no debe crear el registro vacío, porque hoy el bloqueo no dibuja el ejercicio (D1 y FR-017). Lo fija `enter-lab.spec.ts` («creates no record on the map nor behind a campaign lock», T020).
+5. **«Siguiente» hasta una misión bloqueada** dentro de la lista de un mundo no debe crear el registro vacío, porque hoy el bloqueo no dibuja el ejercicio (D1 y FR-017). Lo fijan dos pruebas de `enter-lab.spec.ts` (T020): «creates no record on the map nor behind a campaign lock» y la de `showExercise`, el camino de «Siguiente», que deja el registro sin bloqueo y ninguno con él.
 
 ## Reparto en paralelo
 
@@ -243,8 +268,8 @@ Lo que el revisor mira primero:
 | E · Red | U1 y U3 | `qa/e2e/pages/lab.ts`, `qa/e2e/specs/lab-explorer-focus.spec.ts` y `qa/e2e/specs/lab-react.spec.ts` | el build del legacy | 9 E2E |
 | M · Modelo | U2 | `frontend/src/pages/lab/composition.ts`, `pages/lab/lib/**` y `pages/lab/model/**`, salvo `map-selectors*` (F7a) | F7a: `map-selectors`, `entities/exercise`; F2b: los puentes y la gramática | las funciones de §2.0 |
 | C · Editor | U2 | `frontend/src/shared/ui/code-editor/create-code-editor.ts`, `use-code-editor.ts` e `index.ts` | — | `useCodeEditor` y `createCodeEditor` |
-| P · Página | U2 | `frontend/src/pages/lab/ui/**` e `index.ts` | de M y de C, todo; de F7a, `features/run-exercise` | `LabPage` |
-| W · Corte | U3 | `frontend/src/app/**` (salvo lo de otros), los legacy que se borran, las hojas, los adaptadores de F5 y F6 y `qa/` (salvo `qa/e2e`) | todo lo anterior | la página montada y el legacy retirado |
+| P · Página | U2 | `frontend/src/pages/lab/ui/**` | de M y de C, todo; de F7a, `features/run-exercise` | `LabPage` |
+| W · Corte | U3 | `frontend/src/app/**` (salvo lo de otros), `frontend/src/pages/lab/index.ts`, los legacy que se borran, las hojas, los adaptadores de F5 y F6 y `qa/` (salvo `qa/e2e`) | todo lo anterior | la página montada y el legacy retirado |
 
 **Puertos de los E2E:** K `E2E_PORT=4173`, E `4281` y W `4284`. Las comparaciones usan 4501 y 4502.
 
@@ -267,11 +292,12 @@ Lo que el revisor mira primero:
   - las skills `tdd`, `clean-code`, `vercel-react-best-practices`, `react-testing` y, para E, `playwright-best-practices`.
 - **TDD, siempre:**
   - cada módulo nuevo empieza con su firma lanzando `throw new Error('not implemented')`, y cada componente con un stub que lanza, para que su spec falle por comportamiento y no por un import;
+  - **los stubs van como `const` tipados** (TR-2), porque el prefijo `_` no silencia `no-unused-vars` en este repositorio (`ledger impl-f7a:47`). Una función: `export const showMap: (session: LabSession) => LabSession = () => { throw new Error('not implemented'); };`. Un componente: `const CodePhase: FunctionComponent<CodePhaseProps> = () => { throw new Error('not implemented'); };`, con `import type { FunctionComponent } from 'react';`, `export default CodePhase;` al final y ningún parámetro sin usar. La implementación de T021 y T024 los reemplaza por las declaraciones del plan;
   - la spec en rojo y la implementación van en commits separados; el commit rojo no pasa `npm test`, y el PR entero sí;
   - los E2E de U1 pasan contra el legacy desde el primer intento: son red. Los de X1 (T026) entran en rojo contra el legacy, y cada uno falla por la razón de X1, nunca por un localizador.
 - **Portar no reescribe:**
   - los textos, las clases, los ids, los `aria-*` y el orden de los elementos son los de `lab.js`, `lab-explorers.js` y `quest-explorers.js` en la base;
-  - las rarezas de lógica se conservan (la spec, «Rarezas que el port conserva»);
+  - las rarezas de lógica se conservan (la spec, «Rarezas que el port conserva»). Una prueba que fija una cita su número de la spec 021 como «rareza N»: `KNOWN DEFECT (spec 021, rareza N)`, nunca «quirk N» (F7b-6, `ledger impl-f7a:19`);
   - salen sólo los atributos `data-*` de delegación, que ninguna hoja ni ningún E2E usa.
 - **Un nodo de texto donde hoy hay uno.** Si el legacy escribe `${a}/${b} pistas` dentro de un elemento, la página escribe `` {`${a}/${b} pistas`} ``. Nunca `{a}/{b}`, ni una frase partida con `{' '}`. Un `{' '}` solo entre dos elementos está bien, porque hoy también es un nodo.
 - **Archivos que no son tuyos no se tocan.** Si tu tarea necesita algo de otro dueño, pedíselo a K.
@@ -301,25 +327,28 @@ Lo que el revisor mira primero:
 ### Tarea 0.1 · La línea base y los predicados (T018)
 
 - **Quién y cuándo:** K, sobre la base de implementación (`master` con F7a, F5 y F6), antes de cualquier cambio.
-- **Entrega:** un commit de documentación que agrega a [research-f7b.md](./research-f7b.md) la sección «Línea base de la implementación», con el hash, la fecha, los valores de [quickstart-f7b.md](./quickstart-f7b.md) §1 y el resultado de los predicados.
+- **Entrega:** un commit de documentación que agrega a [research-f7b.md](./research-f7b.md) la sección «Línea base de la implementación», con el hash, la fecha, los valores de [quickstart-f7b.md](./quickstart-f7b.md) §1, el resultado de los predicados y los diffs de T027 que volvió a derivar.
 - **Pasos:**
-  1. **El orden de integración.** `git log --oneline` muestra F7a, F5 y F6 en `master`. Si falta alguno, F7b no empieza.
-  2. **El arnés de componentes.** `node -e "require.resolve('jsdom')"` resuelve, `frontend/vitest.config.ts` tiene los proyectos `node` (`*.spec.ts`) y `jsdom` (`*.spec.tsx`) y existe el setup con jest-dom y `cleanup`. Si falta, K pide el permiso al usuario con la tabla del plan de F6 (T002: nombre, versión, origen, peso y licencia de cada paquete) y lo instala en un commit propio antes de T023.
-  3. **La rama de C4.** `grep -c "createPlaygroundTransport\|buildPlaygroundProgram" frontend/lab.js` da 2 en la rama A. Si da 0, A4 ya cambió la raíz y es la rama B: corre T025, y T027 toma las dos líneas de A4.
-  4. **Lo que dejaron F5 y F6.**
-     - `frontend/src/app/legacy/register-systems.tsx` publica nueve métodos;
-     - `frontend/src/app/legacy/campaign-bridges.ts` existe;
-     - `window.TallerCampaign` tiene siete métodos (el escenario de `boot-check` que suma F6).
+  1. **El orden de integración.** `git log --oneline` muestra F7a, F5 y F6 en `master`, sobre lo que ya trae 431c9d90 (F4, #67 y #76). Si falta alguno de los tres, F7b no empieza.
+  2. **El arnés de componentes** (TR-6). Ya está en `master` desde #67: `node -e "require.resolve('jsdom')"` resuelve, `frontend/vitest.config.ts` tiene los proyectos `node` (`*.spec.ts`) y `dom` (`*.spec.tsx`, entorno jsdom) y existe `frontend/src/vitest.setup.ts`, con jest-dom y `cleanup`. No se pide ningún permiso; si algo de eso falta, F7b no empieza y K avisa al coordinador.
+  3. **La rama de C4.** `grep -c "createPlaygroundTransport(" frontend/lab.js` da 1 o más en la rama A. Si da 0, A4 ya cambió la raíz y es la rama B: corre T025, y T027 toma las dos líneas de A4. El predicado mira sólo la llamada (el import termina en coma, no en paréntesis), porque la unidad 4 de F7a deja cuatro líneas con `createPlaygroundTransport` o `buildPlaygroundProgram` (las dos del import, `transport:` y `programBuilder`: `plan.md:5040-5075`).
+  4. **Lo que dejaron F5 y F6** (F7b-7).
+     - `frontend/src/app/legacy/register-systems.tsx` publica nueve métodos. En `impl-f5` (efaf39b2) la interfaz `TallerSystemsAdapter` los declara en `:42-52`, con `mountedLanguage` en `:62`, los imports del puente en `:9-13`, `readLinkQuery` y `workshopReturnHref` en `:20`, `escapeHtml` en `:22` y `BridgedWorkshop` en `:30-33`: los nombres que retira T027.
+     - `frontend/src/app/legacy/campaign-bridges.ts` existe y `window.TallerCampaign` tiene siete métodos (el escenario de `boot-check` que suma F6). En `impl-f6` (b20028be) la unidad 4 de F6 todavía no existe: no hay `register-campaign.tsx` ni `campaign-bridges.ts`. Los diffs de T027 sobre esos archivos, `boot-check.ts`, `load-order-check.ts`, `seams-guard-check.ts`, `register-campaign.spec.tsx` y `qa/lib/legacy-sources.ts` salen del plan de F6, y K los vuelve a derivar acá contra la base real.
+     - `qa/boot-check.ts` tiene `REACT_VIEWS` con las vistas de React de la base (`atlas`, `proyecto` y `sistemas`, más `campana` si F6 la sumó en su unidad 4) y el `mountedText` de F4, que también lee el `textContent` del elemento (TR-3).
+     - `eslint.config.ts` tiene la guarda de `useStore` (TR-5): `grep -n "useStore needs a selector" eslint.config.ts` la encuentra una vez, antes del bloque de `complexity`.
+     - `grep -c "quest-direct-lock" frontend/lab.css` da 5: F6 mudó ahí las reglas del bloqueo, que en 431c9d90 están en `frontend/campaign.css:598-615` (F7b-9).
 
      Si alguno difiere, se anota y T027 aplica la misma intención sobre lo que haya.
   5. `npm ci --offline --no-audit --no-fund`, `npm run build`, `npm test`, `npm run lint`, `npm run format:check` y `E2E_PORT=4173 npm run test:e2e`: todo en verde. Si algo falla, F7b no empieza.
   6. Anotar lo de quickstart-f7b.md §1:
      - los avisos (total y los de los tres archivos);
-     - los E2E (184, o lo que haya si entró algo más);
+     - los E2E de la base, N: los 185 de F1, A2 y F7a (106, 17 y 62), más los que sumaron F4, F5 y F6;
      - los checks y las pruebas de Vitest;
      - los escenarios de `lab-state-check`;
-     - `html.length` del dist.
-- **Compuerta:** los pasos 1 a 6, con los valores anotados.
+     - `html.length` del dist, `importMeta` y `dynamicImports`, y `BOOT_SIZE_LIMIT` de `qa/build-check.ts` (1 500 000).
+  7. **La forma del resultado** (F7b-4). `grep -n "result: LabResultV1" frontend/src/entities/exercise/model/run-outcome.ts` encuentra la línea si A4 ya unificó las formas. Si no la encuentra, F7b consume las de F7a: `LabResultV1` (`lab-result.ts:6-17`), `RunOutcome['result']` (`run-outcome.ts:20-31`, que F7b no usa) y `StoredResult` (`selectors.ts:15`, interna). Se anota, y el PR lo declara (T030).
+- **Compuerta:** los pasos 1 a 7, con los valores anotados.
 - **Vuelta atrás:** revertí el commit.
 
 ### 0.2 · La compuerta de cada unidad
@@ -331,7 +360,7 @@ La corre el dueño al cerrar su última tarea, y K antes del PR (T030). Una unid
 | `npm run typecheck`, `npm run lint` (sin errores, total ≤ base) y `npm run format:check` | sí | sí | sí | sí |
 | `npm run test:unit` | — | sí | sí | sí |
 | `npm test` | sí | sí | sí | sí |
-| `npm run build` y los E2E de hoy (184) | sí | sí | sí | sí |
+| `npm run build` y los E2E de la base (N, de T018) | sí | sí | sí | sí |
 | Los E2E nuevos | sí: los 2 de T019 contra el legacy | — | sí: los 7 de T026 en rojo contra el legacy y en verde después del corte | sí |
 | `git diff --check` | sí | sí | sí | sí |
 | `git diff <base> --stat -- frontend/lab.js` | vacío | vacío | borrado | borrado |
@@ -416,7 +445,7 @@ test.describe('the packet explorer (go-106)', () => {
 - **Pasos:**
   1. Escribí los dos archivos.
   2. `npm run build` y `E2E_PORT=4281 npm run test:e2e -- lab-explorer-focus.spec.ts --repeat-each 3`: 6 de 6, contra el legacy.
-  3. `E2E_PORT=4281 npm run test:e2e`: los 184 de hoy y los 2 nuevos.
+  3. `E2E_PORT=4281 npm run test:e2e`: los N de la base (T018) y los 2 nuevos, N + 2.
   4. `npm run typecheck`, `npm run lint` y `npm run format:check`.
   5. Commit: `test(e2e): el foco del paquete de Go que sólo veía quest-explorers-check`.
 - **Compuerta:** el paso 2 y el paso 3.
@@ -426,7 +455,7 @@ test.describe('the packet explorer (go-106)', () => {
 
 **Cubre:** FR-007, FR-009, FR-017, FR-020, FR-022 a FR-042, FR-051 (la vista), FR-056 a FR-059 y FR-062; la vista de FR-029; US1, US2, US3 y US5.
 
-**Entrega:** el modelo de la página, el hook del editor y los componentes, con sus specs, sin que la cadena de arranque los importe todavía. Al cerrar U2, el legacy sigue montado y los 186 E2E de U1 pasan.
+**Entrega:** el modelo de la página, el hook del editor y los componentes, con sus specs, sin que la cadena de arranque los importe todavía. Al cerrar U2, el legacy sigue montado y los N + 2 E2E de U1 pasan. El índice del slice, `pages/lab/index.ts`, queda como lo dejó F7a (los cuatro selectores del mapa y sus tipos), porque `lab.js` los importa de `./src/pages/lab` después de la unidad 4 de F7a (`plan.md:4559`); lo reemplaza T027, en el corte.
 
 ### 2.0 Contratos de la unidad 2
 
@@ -522,7 +551,7 @@ const useCodeEditor: (options: UseCodeEditorOptions) => CodeEditorBinding;
 
 ### Tarea 2.1 · Las specs del modelo, en rojo (T020, M)
 
-- **Crea los stubs** de `pages/lab/model/lab-session.ts`, `mission-bridges.ts`, `enter-lab.ts`, `map-stats.ts`, `mission-engines.ts`, `types.ts` y `pages/lab/lib/browser.ts`, con las firmas de §2.0 y cuerpos que lanzan `new Error('not implemented')`.
+- **Crea los stubs** de `pages/lab/model/lab-session.ts`, `mission-bridges.ts`, `enter-lab.ts`, `map-stats.ts`, `mission-engines.ts`, `types.ts` y `pages/lab/lib/browser.ts`, con las firmas de §2.0 y cuerpos que lanzan `new Error('not implemented')`. Cada función va como `const` tipado (TR-2), por ejemplo `export const showExercise: (exercise: { id: string; language: string }, link: MissionLink) => void = () => { throw new Error('not implemented'); };`; las constantes y los tipos (`NO_LINK`, `types.ts`) van completos.
 - **Crea las cinco specs.** Los valores esperados salen de los textos de hoy, de la gramática de F2b y de ejemplos resueltos a mano:
 
 `frontend/src/pages/lab/model/lab-session.spec.ts`:
@@ -608,7 +637,7 @@ describe('openLabSession', () => {
     });
   });
 
-  it('KNOWN DEFECT (spec 021, quirk 1): a language switch clears the search and the due filter, not the level nor the extras', () => {
+  it('KNOWN DEFECT (spec 021, rareza 1): a language switch clears the search and the due filter, not the level nor the extras', () => {
     const session = openLabSession(exploring(), 'go', link(), catalog, null);
 
     expect(session).toMatchObject({
@@ -668,7 +697,7 @@ describe('openLabSession', () => {
     expect(session.link).toEqual({ world: null, workshop: null });
   });
 
-  it('KNOWN DEFECT (spec 021, quirk 2): entering by URL keeps the explorers and the visual models', () => {
+  it('KNOWN DEFECT (spec 021, rareza 2): entering by URL keeps the explorers and the visual models', () => {
     const before = withQuestExplorer(advanceFlow(createLabSession()), 'rust-103', {
       notice: 'x',
     } as never);
@@ -904,7 +933,7 @@ describe('the way back', () => {
     expect(finishHref(NO_LINK, 'rust')).toBeNull();
   });
 
-  it('KNOWN DEFECT (spec 021, quirk 4): says «Volver al mapa» inside a campaign mission', () => {
+  it('KNOWN DEFECT (spec 021, rareza 4): says «Volver al mapa» inside a campaign mission', () => {
     expect(backLabel({ world: 'rust-world-1', workshop: null })).toBe('Volver al mapa');
     expect(backLabel({ world: null, workshop: '' })).toBe('Volver al taller');
   });
@@ -1005,7 +1034,7 @@ vi.mock('../../../entities/exercise', async (importOriginal) => ({
   },
 }));
 
-const { enterLab } = await import('./enter-lab');
+const { enterLab, showExercise } = await import('./enter-lab');
 const { createLabSession } = await import('./lab-session');
 
 const catalog = {
@@ -1061,6 +1090,13 @@ describe('enterLab', () => {
     );
 
     expect(engines.progress.records).toEqual({});
+  });
+
+  it('showExercise, the path of the map and of «Siguiente», leaves the record that draftOf reads, and none behind a lock (D1)', () => {
+    showExercise({ id: 'rust-02', language: 'rust' }, { world: null, workshop: null });
+    showExercise({ id: 'rust-01', language: 'rust' }, { world: 'rust-world-1', workshop: null });
+
+    expect(engines.progress.records).toEqual({ 'rust-02': {} });
   });
 });
 ```
@@ -2345,14 +2381,14 @@ export type { CodeEditorBinding, CodeEditorHandle, UseCodeEditorOptions } from '
 - **Pasos:**
   1. Los tres archivos.
   2. `npm run typecheck`, `npm run lint` y `npm run format:check`.
-  3. `npm run build` y los 184 E2E de hoy, en verde. El script del dist puede crecer: el índice del editor exporta el hook, y las llamadas del tema de `create-code-editor.ts` no se eliminan como código muerto. T027 borra la copia vieja.
+  3. `npm run build` y los N E2E de la base, en verde. El script del dist puede crecer: el índice del editor exporta el hook, y las llamadas del tema de `create-code-editor.ts` no se eliminan como código muerto. T027 borra la copia vieja.
   4. Commit: `feat(front): el hook del editor con un callback de cambio y el reemplazo sin escritura`.
 - **Compuerta:** el paso 2 y el paso 3.
 
 ### Tarea 2.4 · Las specs de componente, en rojo (T023, P)
 
-- **Cuándo:** con T021 y T022 integradas y el arnés de T018.
-- **Crea los stubs** de los componentes que prueban las specs, cada uno con su firma de props y un cuerpo que lanza `new Error('not implemented')`: `exercise/CodePhase.tsx`, `ReflectPhase.tsx`, `PredictionCard.tsx`, `HintsPanel.tsx`, `MissionContext.tsx`, `explorers/LabExplorer.tsx`, `QuestExplorer.tsx` y `map/LabMap.tsx`. Las props son las de T024.
+- **Cuándo:** con T021 y T022 integradas y el arnés de `master` (#67) que comprobó T018.
+- **Crea los stubs** de los componentes que prueban las specs, cada uno con su firma de props y un cuerpo que lanza `new Error('not implemented')`: `exercise/CodePhase.tsx`, `ReflectPhase.tsx`, `PredictionCard.tsx`, `HintsPanel.tsx`, `MissionContext.tsx`, `explorers/LabExplorer.tsx`, `QuestExplorer.tsx` y `map/LabMap.tsx`. Las props son las de T024. Cada stub va como `const` tipado, sin parámetros sin usar (TR-2): `const CodePhase: FunctionComponent<CodePhaseProps> = () => { throw new Error('not implemented'); };`, con `export default CodePhase;` al final.
 - **Crea las nueve specs.** Reemplazan los motores, el almacén y el hook del editor por dobles con `vi.mock`, y `HTMLDialogElement.prototype.showModal` y `close`, que jsdom no trae. Seis escenarios vienen de `lab-state-check` y dos de `lab-bridge-check` (§5).
 
 `frontend/src/pages/lab/ui/exercise/CodePhase.spec.tsx`:
@@ -2497,6 +2533,37 @@ describe('CodePhase', () => {
     expect(region).toHaveTextContent('La idea funciona en estos casos.');
   });
 
+  it('a transport failure shows its stored message, and the default text when it is empty (reviewStateOf keeps stderr raw)', () => {
+    const view = renderPhase();
+    const transportFailure = (stderr: string): LabRecord => ({
+      draft: 'fn inicio() {}',
+      attempts: 1,
+      result: {
+        code: 'fn inicio() {}',
+        customTest: '',
+        success: false,
+        stdout: '',
+        stderr,
+        transportError: true,
+        tests: [{ id: 't1', passed: false }],
+      },
+    });
+
+    view.rerenderWith({ running: false, record: transportFailure('') });
+    expect(document.getElementById('lab-review')).toHaveTextContent(
+      'No llegó una respuesta del compilador. Revisá la conexión y probá de nuevo.',
+    );
+
+    view.rerenderWith({
+      running: false,
+      record: transportFailure('No se pudo conectar al compilador.'),
+    });
+    expect(document.getElementById('lab-review')).toHaveTextContent(
+      'No se pudo conectar al compilador.',
+    );
+    expect(document.getElementById('lab-review')).not.toHaveTextContent('No llegó una respuesta');
+  });
+
   it('confirms «Restaurar inicio» in a dialog under <body>, writes once and gives the focus to the editor', async () => {
     const user = userEvent.setup();
     renderPhase();
@@ -2587,7 +2654,7 @@ describe('ReflectPhase', () => {
     vi.clearAllMocks();
   });
 
-  it('KNOWN DEFECT (spec 021, quirk 3): shows one text drawn with 40 characters or more and another while typing', () => {
+  it('KNOWN DEFECT (spec 021, rareza 3): shows one text drawn with 40 characters or more and another while typing', () => {
     renderPhase({ reflection: 'x'.repeat(40) });
     expect(document.getElementById('lab-reflection-status')).toHaveTextContent(
       'Explicación guardada. No la calificamos por longitud: contrastala con el razonamiento de abajo.',
@@ -3172,8 +3239,8 @@ describe('two tabs over the same storage (lab-state-check scenarios of spec 021,
 
 ### Tarea 2.5 · La página (T024, P)
 
-- **Tres entregas para el implementador,** una por región, cada una con sus specs de T023 en verde: el mapa (`map/`, con `LabMap.spec.tsx`), los exploradores (`explorers/`, con `LabExplorer.spec.tsx` y `QuestExplorer.spec.tsx`) y el ejercicio (`exercise/`, `LabPage.tsx`, `CampaignLock.tsx`, la hoja y el índice, con el resto). Los commits pueden ser uno por región.
-- **Escribe** los componentes, la hoja nueva y el índice del slice. El DOM es el de las funciones de `lab.js`, `lab-explorers.js` y `quest-explorers.js` en la base:
+- **Tres entregas para el implementador,** una por región, cada una con sus specs de T023 en verde: el mapa (`map/`, con `LabMap.spec.tsx`), los exploradores (`explorers/`, con `LabExplorer.spec.tsx` y `QuestExplorer.spec.tsx`) y el ejercicio (`exercise/`, `LabPage.tsx`, `CampaignLock.tsx` y la hoja, con el resto; el índice lo cambia T027). Los commits pueden ser uno por región.
+- **Escribe** los componentes y la hoja nueva; el índice del slice lo cambia T027. El DOM es el de las funciones de `lab.js`, `lab-explorers.js` y `quest-explorers.js` en la base:
   - las mismas clases (con el mismo texto del `className` cuando hoy se arma con plantilla), los mismos ids y los mismos `aria-*`;
   - sin los `data-*` de delegación;
   - sin `type` en los botones que hoy no lo tienen (los del explorador de misión sí lo llevan);
@@ -4856,6 +4923,8 @@ const ConfirmDialog = ({ confirmation, onDone }: ConfirmDialogProps) => {
 export default ConfirmDialog;
 ```
 
+**La revisión lee lo que dejó F7a** (`impl-f7a`, fc88d450): el estado sale de `reviewStateOf(exercise, record, running)` (`entities/exercise/model/review-state.ts:33-44`), con los siete casos de `ReviewState` (`:7-14`). El de `transport-failure` trae `message: result.stderr` crudo (`:42`), así que `TransportReview` conserva su texto por omisión cuando llega vacío (F7b-3). El resultado terminado se lee como `LabResultV1` (`lab-result.ts:6-17`), y `TestList` recibe `result={null}` en la falla de transporte: la entrada en falso por prueba que guarda la feature (`build-run-result.ts:25-28`) no se dibuja.
+
 `frontend/src/pages/lab/ui/exercise/Review.tsx`:
 
 ```tsx
@@ -6358,19 +6427,10 @@ export default PacketView;
 }
 ```
 
-- **El índice del slice.** Reemplaza al de F7a: los selectores del mapa ya no tienen lectores fuera de la página.
-
-`frontend/src/pages/lab/index.ts`:
-
-```ts
-export { default as LabPage } from './ui/LabPage';
-export type { LabPageProps } from './ui/LabPage';
-export { enterLab } from './model/enter-lab';
-export type { LabWorkshop } from './model/types';
-```
+- **El índice del slice no cambia en T024.** Queda como lo dejó F7a (`isExtraChallenge`, `matchesMapFilters`, `surprisePool`, `todayChallenge` y sus tipos), porque `lab.js` sigue montado y los importa de `./src/pages/lab` después de la unidad 4 de F7a (`plan.md:4559` y `:5044`). Reemplazarlo acá rompería el build del legacy; además, exportar la página desde ese índice puede arrastrar sus motores al paquete de `lab.js` antes del corte. Lo reemplaza T027, en el mismo commit que borra `lab.js` (§3.2, paso 1).
 
 - **Pasos:**
-  1. Los componentes, la hoja y el índice.
+  1. Los componentes y la hoja; `pages/lab/index.ts` no se toca.
   2. `npm run test:unit -- src/pages/lab`: las 15 specs del slice en verde.
   3. **Las mutaciones** (no corrieron al planificar), cada una detectada:
      - en `CodePhase`, `writeField` sin `saveLab()`: falla «writes each change of the editor, also an emptied draft»;
@@ -6806,11 +6866,21 @@ window.TallerLab = adapter;
 
 En la rama B, las dos líneas del transporte y del constructor de `lab-api.ts` son las de A4 que T018 encontró en `lab.js`, y `createExerciseRunner` lleva el tipo de su progreso.
 
-**2. La cadena y las hojas.**
+**El índice del slice.** Viene de T024: reemplaza al de F7a en este commit, cuando `lab.js`, el único lector de los selectores del mapa fuera de la página, se borra (`plan.md:4559`). Antes de escribirlo, `git grep -n "from './src/pages/lab'\|pages/lab'" -- frontend qa` sólo nombra `lab.js` y lo que este commit crea.
+
+`frontend/src/pages/lab/index.ts`:
+
+```ts
+export { default as LabPage } from './ui/LabPage';
+export type { LabPageProps } from './ui/LabPage';
+export { enterLab } from './model/enter-lab';
+export type { LabWorkshop } from './model/types';
+```
+
+**2. La cadena y las hojas.** Los dos diffs están derivados sobre `master` 431c9d90 (con las líneas de F4, `register-project-page` y `project.css`) y la unidad 4 de F7a, que retira `register-runner` (T015). Las líneas de `campaign.css` y `systems.css`, y las entradas de F5 y F6 en `LEGACY_MODULES`, son las de la base: T018 anota el diff real, con la misma intención.
 
 ```diff
 diff --git a/frontend/src/app/boot/legacy-views.ts b/frontend/src/app/boot/legacy-views.ts
-index 790e43f..b2f42b9 100644
 --- a/frontend/src/app/boot/legacy-views.ts
 +++ b/frontend/src/app/boot/legacy-views.ts
 @@ -3,14 +3,11 @@ import type { BootStage } from './run-boot';
@@ -6827,17 +6897,17 @@ index 790e43f..b2f42b9 100644
 -  () => import('../../../lab.js'),
 +  () => import('../legacy/register-lab'),
    () => import('../legacy/register-atlas'),
+   () => import('../legacy/register-project-page'),
    () => import('../legacy/register-campaign-engine'),
-   () => import('../legacy/register-effects'),
 ```
 
 ```diff
 diff --git a/frontend/src/app/main.tsx b/frontend/src/app/main.tsx
-index 7734688..65c8220 100644
 --- a/frontend/src/app/main.tsx
 +++ b/frontend/src/app/main.tsx
-@@ -1,8 +1,9 @@
+@@ -1,9 +1,10 @@
  import '../../styles.css';
+ import '../pages/project/ui/project.css';
 -import '../../lab.css';
 +import '../pages/lab/ui/lab.css';
 +import '../pages/lab/ui/lab-page.css';
@@ -6851,6 +6921,7 @@ index 7734688..65c8220 100644
 ```
 
 - `git mv frontend/lab.css frontend/src/pages/lab/ui/lab.css` y `git mv frontend/quest-explorers.css frontend/src/pages/lab/ui/quest-explorers.css`, sin editarlas (D4). Sobre la base con F5 y F6, las líneas de `campaign.css` y `systems.css` ya son las de sus páginas: cambian sólo las dos del laboratorio, en su lugar, y `lab-page.css` va justo después de `lab.css`.
+- **`.quest-direct-lock` viaja con `lab.css`** (F7b-9): F6 mudó las reglas del bloqueo (cinco selectores) de `campaign.css` a `lab.css` (`impl-f6`, b20028be, `frontend/lab.css:1950-1967`). Después del `git mv`, `grep -c "quest-direct-lock" frontend/src/pages/lab/ui/lab.css` da 5 (o lo que anotó T018), y `git grep -n "quest-direct-lock" -- ':(glob)frontend/*.css' frontend/src/pages/campaign` no imprime nada (con `:(glob)`, el `*` no entra en `frontend/src/`). El estado `lock` del barrido (quickstart-f7b.md §3.1) compara su estilo computado.
 
 **3. Los borrados.**
 
@@ -6884,7 +6955,7 @@ index 6721950..2129bc0 100644
 
 ```
 
-**4. Los adaptadores de F5 y F6** (R11). Se escribieron contra el código de sus planes y **no corrieron**. Si la versión integrada difiere, se aplica la misma intención y K revisa.
+**4. Los adaptadores de F5 y F6** (R11). Se escribieron contra el código de sus planes y **no corrieron**. Si la versión integrada difiere, se aplica la misma intención y K revisa. Lo de F5 coincide con su implementación (`impl-f5`, efaf39b2: los nueve métodos de `TallerSystemsAdapter` en `register-systems.tsx:42-52` y los nombres que salen, en las líneas que anota T018). Lo de F6 sale de su plan, porque la unidad 4 de F6 todavía no existe en `impl-f6` (b20028be): T018 lo vuelve a derivar (F7b-7). `SystemsLab.getExercises(): Exercise[]` de F5 (`:25-28`) lee `window.TallerLab` con `as unknown as`, así que el `readonly Exercise[]` de `labApi` no lo rompe.
 
 - **`frontend/src/app/legacy/register-systems.tsx` (F5).** Salen del objeto publicado `refresh`, `returnURL`, `missionIDs` y `exerciseContextHTML`. Salen también de la interfaz `TallerSystemsAdapter`, junto con las funciones `returnURL`, `missionIDs` y `exerciseContextHTML`, la variable `mountedLanguage` y su asignación en `mount`, y los imports que quedan sin uso: `workshopExerciseRole`, `workshopMissionIds` y `workshopReturnTarget` de `entities/systems-workshop/bridge`, `readLinkQuery` y `workshopReturnHref` de la gramática, y `escapeHtml`. `refresh()` queda como función interna, porque `mount` la llama. `BridgedWorkshop` sale y `workshops()` devuelve `SystemsWorkshop[]`. El objeto queda así:
 
@@ -7376,31 +7447,13 @@ index 1a8cb3e..5bcb973 100644
 
 ```diff
 diff --git a/qa/boot-check.ts b/qa/boot-check.ts
-index 99f4ffa..e7be022 100644
 --- a/qa/boot-check.ts
 +++ b/qa/boot-check.ts
-@@ -88,7 +88,7 @@ const VIEW_HEADINGS: Record<(typeof VIEWS)[number], string> = {
-   campana: 'CAMPAÑA · RUST',
-   sistemas: 'SISTEMAS · APRENDER DESARMANDO',
-   atlas: '',
--  laboratorio: 'LABORATORIO · RUST',
-+  laboratorio: '',
-   biblioteca: 'RECURSOS CON INTENCIÓN',
-   proyecto: 'UNA IDEA QUE CRECE CON VOS',
-   metodo: 'HACER ESPACIO PARA APRENDER',
-@@ -103,9 +103,9 @@ await test('navegación: cada vista se renderiza por hash sin lanzar', async ()
-     harness.navigate(view);
-     await harness.flush();
-     assert.deepEqual(harness.errors, [], `errores al navegar a #${view}`);
--    if (view === 'atlas') {
--      // El Atlas es React: monta nodos reales en #main en lugar de escribir innerHTML.
--      assert.ok(main.childNodes.length > 0, 'el Atlas no montó nodos en #main');
-+    if (view === 'atlas' || view === 'laboratorio') {
-+      // El Atlas y el laboratorio son React: montan nodos reales en #main en lugar de escribir innerHTML.
-+      assert.ok(main.childNodes.length > 0, `#${view} no montó nodos en #main`);
-     } else {
-       assert.ok(main.innerHTML.includes(VIEW_HEADINGS[view]), `#${view} no mostró su encabezado`);
-     }
+@@ -84,3 +84,3 @@ await test('adaptadores: cada window.Taller* real publica los métodos que consu
+
+-const REACT_VIEWS: ReadonlySet<string> = new Set(['atlas', 'proyecto', 'sistemas']);
++const REACT_VIEWS: ReadonlySet<string> = new Set(['atlas', 'proyecto', 'sistemas', 'laboratorio']);
+
 @@ -263,19 +263,26 @@ for (const file of FROZEN_EXPORTS) {
 
  const LEGACY_SOURCES = [
@@ -7436,9 +7489,14 @@ index 99f4ffa..e7be022 100644
        continue;
 ```
 
+**Lo que cambió en `boot-check` desde el prototipo** (TR-3 y F7b-7):
+
+- **La forma canónica** es la de la noche del 2026-10-28: el conjunto `REACT_VIEWS` de F5 (`impl-f5`, efaf39b2, `qa/boot-check.ts:85` y `:113`) con el `mountedText` de F4 (`qa/boot-check.ts:85-88` en 431c9d90), que también lee el `textContent` del elemento. T027 sólo suma `'laboratorio'` al conjunto que dejó la base; si F6 ya sumó `campana`, la línea queda con las cinco vistas y Prettier la parte en una por línea. No se agrega otra rama ni otro ayudante.
+- **El encabezado se conserva:** `VIEW_HEADINGS.laboratorio` sigue en `'LABORATORIO · RUST'`. El eyebrow de `LabMap` es un `span` y un nodo de texto (`` {` LABORATORIO · ${languageName.toUpperCase()}`} ``), que `mountedText` lee. El diff del prototipo lo vaciaba porque la rama de entonces sólo contaba nodos; si en la base no lo encuentra, T027 para y K lo revisa, sin vaciarlo.
+- **La lista de `LEGACY_SOURCES`** es la de la base: F5 ya sacó `frontend/systems.js` (`impl-f5`, efaf39b2, `qa/boot-check.ts:274-280`) y F6 cambia `frontend/campaign.js`. El tercer hunk se aplica por intención: sale `frontend/lab.js` (entra `lab-api.ts` en su lugar), salen `lab-explorers.js` y `quest-explorers.js`, y `register-lab.tsx` se evalúa solo con `REACT_ADAPTERS` y `evaluateAlone`.
+
 ```diff
 diff --git a/qa/load-order-check.ts b/qa/load-order-check.ts
-index e0c026d..8e43169 100644
 --- a/qa/load-order-check.ts
 +++ b/qa/load-order-check.ts
 @@ -19,7 +19,7 @@ import { repoRoot } from './lib/sources.ts';
@@ -7449,7 +7507,7 @@ index e0c026d..8e43169 100644
 +const LAB = 'frontend/src/app/legacy/register-lab.tsx';
  const STYLES = 'frontend/styles.css';
  const ATLAS = 'frontend/src/app/legacy/register-atlas.tsx';
- const CAMPAIGN_ENGINE = 'frontend/src/app/legacy/register-campaign-engine.ts';
+ const PROJECT_PAGE = 'frontend/src/app/legacy/register-project-page.tsx';
 @@ -48,7 +48,7 @@ const CONSTRAINTS: Constraint[] = [
    ...BEFORE_LAB.map((catalog): Constraint => [
      catalog,
@@ -7535,9 +7593,9 @@ index 75cf5d3..3f4f501 100644
 **6. Pasos:**
 
 1. Todo lo anterior.
-2. `npm run build`, `npm test` (37 checks en el prototipo, más los que hayan sumado F5 y F6) y `npm run test:unit`.
-3. `E2E_PORT=4284 npm run test:e2e`: **todos en verde**. Son los 184 de hoy, los 2 de T019 y los 7 de T026 (193 en el prototipo), más los de F5 y F6.
-4. `node qa/lab-state-check.ts` da 33; `node qa/boot-check.ts`, `node qa/load-order-check.ts` y `node qa/seams-guard-check.ts`, en verde.
+2. `npm run build`, `npm test` (los checks de T018 menos 2: salen `lab-bridge-check` y `quest-explorers-check`; 37 en el prototipo) y `npm run test:unit`.
+3. `E2E_PORT=4284 npm run test:e2e`: **todos en verde**. Son los N de la base (T018: los 185 de F1, A2 y F7a, más los de F4, F5 y F6), los 2 de T019 y los 7 de T026: N + 9 (193 en el prototipo, con los 61 que preveía el plan de F7a).
+4. `node qa/lab-state-check.ts` da los escenarios de T018 menos 6 (33 en el prototipo); `node qa/boot-check.ts`, `node qa/load-order-check.ts` y `node qa/seams-guard-check.ts`, en verde.
 5. **Las mutaciones,** cada una detectada:
    - `reset` de `lab-api.ts` sin `labRunner.abort()`: falla «Reset during a run aborts it and the late answer writes nothing»;
    - `lab-api.ts` importa `campaignEngine` del índice de `entities/campaign`: fallan el aislamiento de `lab-state-check` y `seams-guard-check` (R4);
@@ -7546,7 +7604,7 @@ index 75cf5d3..3f4f501 100644
    - el `select` del explorador genérico sin `select.focus()`: falla el E2E de F7a «generic (rust-36)…», porque Playwright no enfoca al elegir una opción.
 6. `npm run lint`: 0 errores y el total de T018 menos 13.
 7. `npm run format:check` y `git diff --check`.
-8. Los `grep` de quickstart-f7b.md §2, en 0.
+8. Los `grep` de quickstart-f7b.md §2, en 0, y `importMeta` del dist en el de T018 menos 3, con `dynamicImports` en 0 (TR-4).
 9. **Un solo commit:** `feat(front): el laboratorio es una página de React y se retiran lab.js, sus exploradores y sus globals`.
 
 - **Compuerta:** los pasos 2 a 8.
@@ -7564,7 +7622,7 @@ Corren fuera del repositorio, con el script de quickstart-f7b.md §3, sobre dos 
 | --- | --- | --- |
 | **El DOM** (`dom`) | `#main` y el diálogo abierto en 39 estados: el mapa (vacío, con el progreso congelado, sin resultados, con búsqueda, con «Repasar pendientes» y en Go), cada fase, los seis estados del revisor (ejecutando, falla de transporte, error, parcial, aprobado y vencido, con el doble del compilador), «Explicá» después de aprobar, el bloqueo, los dos contextos, las pistas, el diálogo y los nueve exploradores | 39 estados, **0 diferencias** fuera de la lista |
 | **Las trazas de los exploradores** (`explorers`) | Los 274 ejercicios: cuál explorador se dibuja (o ninguno) y, en cada uno, hasta 12 botones, con el texto dibujado, la región viva y el foco después de cada operación | 274 trazas y 720 pasos, **0 diferencias** |
-| **El barrido de estilo computado** (`style`) | Los 32 estados de la primera versión de la grilla a 1200, 981, 850, 700, 650 y 590 px, y los 7 del revisor a esos mismos anchos, con y sin movimiento reducido: cada propiedad computada de cada elemento y su caja. La fase de una animación en curso (el giro del indicador) no se compara | 384 capturas más 84 del revisor, **0 diferencias** |
+| **El barrido de estilo computado** (`style`) | Los 32 estados de la primera versión de la grilla a 1200, 981, 850, 700, 650 y 590 px, y los 7 del revisor a esos mismos anchos, con y sin movimiento reducido: cada propiedad computada de cada elemento y su caja. La fase de una animación en curso (el giro del indicador) no se compara, ni lo de adentro de un `details` cerrado salvo su `summary`; el puntero sale de la página antes de cada captura (TR-13) | 384 capturas más 84 del revisor, **0 diferencias** |
 | **Lo que se escribe** (`writes`, SC-003) | Con el reloj fijo y `Math.random` fijo, 22 secuencias: cada fila de «Lo que guarda y cuándo» (recorrer, abrir desde un nodo, desde el desafío de hoy, con «Sorprendeme» y con «siguiente», predecir, el editor, el caso propio, la variante, las pistas, la solución, restaurar, cargar la solución, ejecutar con los tres resultados, cancelar, la reflexión y la autoevaluación) y dos combinadas, una sobre el progreso congelado. Compara la lista de `set taller-laboratorio-v1` y el texto final | 22 secuencias y 51 escrituras, **0 diferencias** |
 | **La exportación** (`exports`, SC-012) | Cada fixture congelada: el mapa, las tres fases de `rust-09` y el bloqueo de `rust-112`; después, `window.TallerLab.exportState()` | 3 fixtures, 0 escrituras y la misma exportación |
 
@@ -7603,7 +7661,7 @@ Corren fuera del repositorio, con el script de quickstart-f7b.md §3, sobre dos 
 
 ### Tarea 4.3 · Compuerta final y PR (T030, K)
 
-- **La compuerta final de §0.2:** el tamaño (`html.length` bajo 1 250 000 y hasta +17 000 sobre T018), los `grep` en 0, ningún estilo en línea nuevo y la correspondencia de §5.
+- **La compuerta final de §0.2:** el tamaño (`html.length` bajo 1 500 000 y hasta +17 000 sobre T018), `importMeta` en el de T018 menos 3 y `dynamicImports` en 0, los `grep` en 0, ningún estilo en línea nuevo y la correspondencia de §5.
 - **Con permiso del usuario:** `docker compose build taller`.
 - **La comprobación con lector de pantalla** (X2, riesgo 5) es del usuario: con NVDA u Orca, lo que anuncian `#lab-review` al terminar una ejecución, `#lab-filter-status` al buscar, la región del robot al moverlo y `.explorer-explanation` del canal. Se registra en la revisión del PR.
 - **La descripción del PR**, en inglés:
@@ -7613,6 +7671,8 @@ Corren fuera del repositorio, con el script de quickstart-f7b.md §3, sobre dos 
   - cómo se verificó: los comandos, los números (el antes y el después del HTML, de los avisos y de los E2E) y las comparaciones de T028 con la lista de diferencias admitidas;
   - la correspondencia de §5;
   - quién lee cada método de `window.TallerLab` y qué ítem lo retira (§6, FR-014);
+  - la forma del resultado (paso 7 de T018): si A4 todavía no entró, que F7b consume las tres formas de F7a (`LabResultV1`, `RunOutcome['result']` y `StoredResult`) y que las unifica A4 (`RunOutcome.result: LabResultV1`) sin cambiar la página, que sólo lee `LabResultV1`;
+  - que `window.TallerLab` conserva su nombre, aunque los globals nuevos sigan la forma `Taller<Página>Page` de F4 (TR-14): FR-014 y SC-002 lo fijan;
   - lo pendiente: los hallazgos del informe.
 - **El título:** `feat(lab): port the lab view to React and retire lab.js, its explorers and their globals (F7b)`.
 - **El PR cubre** los 52 requisitos de F7b (§7) y SC-001 a SC-012 en su parte.
@@ -7620,7 +7680,7 @@ Corren fuera del repositorio, con el script de quickstart-f7b.md §3, sobre dos 
 
 ## 5. La correspondencia de los checks (FR-063, la parte de F7b)
 
-**`lab-state-check` (39 en la base, 33 después):**
+**`lab-state-check` (39 en la base del prototipo, 33 después; en la base real, los de T018 menos 6):**
 
 | Escenarios | Qué les pasa |
 | --- | --- |
@@ -7681,7 +7741,7 @@ Corren fuera del repositorio, con el script de quickstart-f7b.md §3, sobre dos 
 
 | Requisito | Tareas | Cómo |
 | --- | --- | --- |
-| FR-001 | T019, T026, T027 | Los 61 de F7a sin editar; los 7 de X1 en rojo y después en verde |
+| FR-001 | T019, T026, T027 | Los 62 de F7a sin editar; los 7 de X1 en rojo y después en verde |
 | FR-002 | T019, T027 | Los 123 de F1 y A2 sin editar; el Page Object sólo suma |
 | FR-003 | T024, T027, T030 | Sin dependencias ni estilos en línea; `lab-page.css` |
 | FR-004 | T018, T030 | `html.length` antes y después |
@@ -7740,15 +7800,15 @@ SC-006 es de F7a.
 
 ## Descargas y permisos
 
-Ninguna descarga. El arnés de componentes lo trae F3, F5 o F6. Si al llegar F7b todavía no está, T018 pide el permiso con la tabla del plan de F6 (T002), en un commit propio.
+Ninguna descarga y ningún permiso. El arnés de componentes ya está en `master` desde #67 (jsdom 30.1.2 y Testing Library, con el proyecto `dom`), y T018 sólo lo comprueba.
 
 ## Riesgos y lo que quedó sin verificar
 
 1. **Las specs de componente no corrieron** (R15). *Mitigación:* los E2E cubren los mismos comportamientos en el navegador, y T024 las corre en verde antes del corte.
 2. **Los archivos de F5 y F6** pueden diferir de sus planes. *Mitigación:* T018 los inspecciona, y T027 aplica la intención con la revisión de K.
-3. **El margen del peso** (R12): con los subpresupuestos de los otros planes, F7b deja 707 caracteres para F9 a F12 y A3. *Mitigación:* el tope de +17 000 en la compuerta, y el hallazgo para el coordinador.
+3. **El margen del peso** (R12): con el tope de 1 250 000 y los subpresupuestos de los otros planes, F7b dejaba 707 caracteres para F9 a F12 y A3. Con 1 500 000 (#76, la opción (c) del informe del plan) quedan 250 707 en el mismo peor caso. *Mitigación:* el tope de +17 000 en la compuerta.
 4. **Lo que anuncia un lector de pantalla** con las regiones vivas montadas (X2). *Mitigación:* la comprobación del usuario en T030.
-5. **El barrido no ve `:hover`, `:focus` ni las animaciones.** *Mitigación:* las hojas se mueven sin editarse, y las tres reglas nuevas no tienen esos estados.
+5. **El barrido no ve `:hover`, `:focus` ni las animaciones.** Con React, `:hover` además persiste después de un clic, porque el nodo bajo el puntero se conserva (TR-13, consecuencia de C2), y el legacy lo reemplazaba. *Mitigación:* el barrido saca el puntero de la página (`page.mouse.move(-1, -1)`) antes de capturar (quickstart-f7b.md §3.1); las hojas se mueven sin editarse, y las tres reglas nuevas no tienen esos estados.
 6. **La rama B de C4** depende de lo que A4 deje en `lab.js`. *Mitigación:* T025 sólo porta lo que está ahí, y los E2E de A4 lo vigilan.
 
 ## Complexity Tracking
