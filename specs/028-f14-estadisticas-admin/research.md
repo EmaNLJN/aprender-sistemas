@@ -115,7 +115,7 @@ La cabecera del archivo es `/** … */`, no `/*! … */`: el minificador la desc
 
 **El problema.** `AdminPage` recibe dos props y no puede sumar otra (spec, «Dónde vive»). Además, `seams-guard` (R5) prohíbe que una página importe `app/content/content`. El catálogo de ejercicios (`exerciseCatalog` de `entities/exercise`) daría los títulos de los ejercicios, pero no hay una entrada sin estado para los mundos, los talleres, los pasos del recorrido ni sus opciones.
 
-**Decisión.** Un provider de `pages/admin`, `ContentTitlesProvider` (`ui/content-titles-context.tsx`), recibe un `ContentTitles` que arma `app/` con `buildContentTitles(getContent())`. `buildContentTitles` vive en `pages/admin/model/content-titles.ts` y recibe una forma estructural mínima (`TitleSource`) que `Content` cumple sin conversión:
+**Decisión.** Un provider de `pages/admin`, `ContentTitlesProvider` (`ui/content-titles-context.tsx`), recibe de `app/` una función que devuelve el contenido: `source={getContent}`. Los títulos se arman la primera vez que una vista pide uno (`lazyTitles`), así que un contenedor que nunca abre la sección no lee el contenido. Eso importa porque la spec de F12a del contenedor (`admin-dialog.spec.tsx`) no publica contenido, y `getContent()` tira sin él. `buildContentTitles` vive en `pages/admin/model/content-titles.ts` y recibe una forma estructural mínima (`TitleSource`) que `Content` cumple sin conversión:
 
 - de los ejercicios, el título, las pruebas y las opciones de la predicción;
 - de los mundos, el título y las opciones del checkpoint;
@@ -262,11 +262,17 @@ La spec no los trae. Van en español rioplatense, y el usuario puede corregirlos
 | Una vista que se actualiza con cifras a la vista | «Actualizando…» |
 | Las fallas | «No pudimos cargar el resumen.», «No pudimos cargar los ejercicios.», «No pudimos cargar la cola.» y «No pudimos cargar las ejecuciones.» |
 | Los títulos de las vistas | «Resumen», «Ejercicios» y «Ejecuciones» (como los botones) |
-| La tabla de las cuentas | «Cuentas, por rol y estado» |
 | La fuente de una tabla | «Fuente: Estado actual.» y «Fuente: Historia.» |
 | Los totales | «Resueltos por primera vez, en el servidor», «Resueltos por primera vez, importados», «Alumnos nuevos», «Importaciones» y «Alumnos que ejecutaron (en todo el período: no es la suma de los intervalos)» |
 | Los gráficos | «Intentos por resultado» y «Alumnos que ejecutaron» |
-| Los resúmenes de un gráfico | «En el período hubo {n} intentos; el día con más fue el {d/m}, con {n}.», con «la semana con más fue la del {d/m}» y «el mes con más fue {mes de aaaa}»; «En el período ejecutaron {n} alumnos; …»; «En el período no hubo intentos.» |
+| Los resúmenes de un gráfico | «En el período hubo {n} intentos; el día con más fue el {d/m}, con {n}.», con «la semana con más fue la del {d/m}» y «el mes con más fue {mes de aaaa}»; «En el período ejecutaron {n} alumnos; …» y «En el período ejecutó 1 alumno; …»; «En el período no hubo intentos.» y «En el período nadie ejecutó código.» |
+| La leyenda de un gráfico | «Leyenda de {título}» (su nombre accesible) |
+| La actividad, completando los «…» de la spec | «Activos en los últimos 7 días» y «Activos en los últimos 30 días» |
+| Las cuentas por rol y estado | «{Admin|Alumno} · {Activa|Deshabilitada|Borrándose}» |
+| Las fuentes de una tabla con varias | «Fuente: Historia, salvo lo resuelto y los alumnos nuevos (Estado actual).» y «Fuente: Estado actual (empezaron, resueltos, ayuda y predicción) e Historia (intentos).» |
+| Las listas de opciones | «Opciones elegidas en la predicción de {ejercicio}», «Opciones del checkpoint de {mundo}», «Opciones de la predicción de {taller}» y «Opciones de la pregunta de {paso}» |
+| Los nombres de las barras | «{columna} de {catálogo}», «Asistidos en {ejercicio}», «Vieron la solución de {ejercicio}», «Acierto de la predicción de {…}», «Checkpoint aprobado en {mundo}» y «Sellaron el código de {taller}» |
+| El formulario de las ejecuciones y su paginación | «Filtrar las ejecuciones» y «Páginas de las ejecuciones» (sus nombres accesibles) |
 | Las filas de la serie | «{d/m/aaaa}», «Semana del {d/m/aaaa}» y «{mes} de {aaaa}» |
 | Un filtro que no afecta a una tabla | «Los filtros elegidos no cambian esta tabla.» |
 | La tabla de las preguntas del recorrido | «Preguntas del recorrido» |

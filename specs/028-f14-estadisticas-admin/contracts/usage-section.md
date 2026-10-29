@@ -14,7 +14,7 @@ Las rutas son relativas a `frontend/src/`. La API que se consume es la de C5 (`s
 | Las secciones de `AdminPage` | «Cuentas» e «Invitaciones» | Más «Uso del taller», tercera (F14a) |
 | Lo que envuelve las secciones | Nada | `PeriodProvider`, dentro de `AdminPage` (F14a) |
 | Lo que lee del contenedor | La sección inicial y el cierre | Lo mismo, más los títulos por `ContentTitlesProvider` si el contenedor lo monta. Sin él, los ids (F14a) |
-| La API pública (`pages/admin/index.ts`) | `AdminPage` y `AdminSection` | Más `ContentTitlesProvider`, `buildContentTitles` y los tipos `ContentTitles` y `TitleSource` (F14a) |
+| La API pública (`pages/admin/index.ts`) | `AdminPage` y `AdminSection` | Más `ContentTitlesProvider` y los tipos `ContentTitles` y `TitleSource` (F14a) |
 | La tabla de «Cuentas» | Las columnas de F12a, y el grupo «Acciones sobre {nombre}» | Una columna «Uso» antes de «Acciones», fuera del grupo; `ACTION_SLOTS` no cambia (F14b) |
 | La sección «Cuentas» | La lista | La lista queda montada y oculta mientras se ve el uso de una cuenta (F14b) |
 | `qa/e2e` | `AdminPage` (Page Object) y `admin-contract.ts` | Más `UsagePage`, el fixture `usage` y `usage-contract.ts`. `AdminPage` no cambia |
@@ -26,11 +26,10 @@ Las rutas son relativas a `frontend/src/`. La API que se consume es la de C5 (`s
 export { default as AdminPage } from './ui/AdminPage';
 export type { AdminSection } from './model/types';
 export { ContentTitlesProvider } from './ui/content-titles-context';
-export { buildContentTitles } from './model/content-titles';
 export type { ContentTitles, TitleSource } from './model/content-titles';
 ```
 
-**Quién monta `ContentTitlesProvider`.** El único lugar de `app/` que dibuja `<AdminPage`: hoy `app/account/AdminDialog.tsx` (F12a) y, con F10b, `app/routes/page-entries.tsx`. Lo envuelve con `titles={buildContentTitles(getContent())}`. `pages/admin` nunca importa `app/content` (`seams-guard`, R5).
+**Quién monta `ContentTitlesProvider`.** El único lugar de `app/` que dibuja `<AdminPage`: hoy `app/account/AdminDialog.tsx` (F12a) y, con F10b, `app/routes/page-entries.tsx`. Lo envuelve con `source={getContent}`, y los títulos se arman la primera vez que una vista pide uno (`lazyTitles`): un contenedor que nunca abre la sección no lee el contenido. `pages/admin` nunca importa `app/content` (`seams-guard`, R5).
 
 ## `pages/admin/model`: las formas de C5 (F14a)
 
@@ -183,6 +182,7 @@ export interface ContentTitles {
 export interface TitleSource { /* la forma mínima que Content de app/content cumple: ver plan, T006 */ }
 export const ID_TITLES: ContentTitles;
 export function buildContentTitles(source: TitleSource): ContentTitles;
+export function lazyTitles(source: () => TitleSource): () => ContentTitles; // arma los mapas una vez, al primer pedido
 
 // model/bar-chart.ts
 export type ColorToken = 'green' | 'accent' | 'accent-dark' | 'muted' | 'ink' | 'line';
@@ -194,7 +194,8 @@ export const Y_AXIS_PX = 60;
 export function stackSeries(values: readonly (readonly number[])[]): number[][];
 export function chartWidth(containerWidth: number, bars: number): number;
 
-// model/overview-series.ts
+// model/overview-series.ts (F14a, V1)
+export const OUTCOME_TOKENS: Readonly<Record<OutcomeKey, ColorToken>>;
 export function attemptsChart(series: readonly SeriesPoint[], granularity: Granularity): BarChart;
 export function studentsChart(series: readonly SeriesPoint[], granularity: Granularity): BarChart;
 export function peakSentence(starts: readonly string[], values: readonly number[], granularity: Granularity): string | null;
@@ -263,7 +264,7 @@ export const PeriodProvider: ({ children }: { readonly children: ReactNode }) =>
 export function usePeriod(): SharedPeriod;
 
 // ui/content-titles-context.tsx (exports nombrados)
-export const ContentTitlesProvider: ({ titles, children }: { readonly titles: ContentTitles; readonly children: ReactNode }) => ReactElement;
+export const ContentTitlesProvider: ({ source, children }: { readonly source: () => TitleSource; readonly children: ReactNode }) => ReactElement;
 export function useContentTitles(): ContentTitles; // ID_TITLES sin provider
 
 // componentes (export default cada uno)
