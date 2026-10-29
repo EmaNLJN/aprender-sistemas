@@ -18,6 +18,7 @@ type Commander func(ctx context.Context, name string, args []string, stdin io.Re
 // ExecCommand runs a system binary. If the context expires, WaitDelay avoids waiting forever for
 // the pipes the Docker client keeps open to close.
 func ExecCommand(ctx context.Context, name string, args []string, stdin io.Reader, stdout, stderr io.Writer) error {
+	//nolint:gosec // G204: name is the fixed "docker" binary and args come from createArgs and the sandbox profile, never from the request
 	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = stdin, stdout, stderr
 	cmd.WaitDelay = 2 * time.Second

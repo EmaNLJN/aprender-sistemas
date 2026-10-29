@@ -30,14 +30,15 @@ func startServe(t *testing.T, cleanup time.Duration, grace time.Duration) (cance
 			time.Sleep(cleanup)
 			cleaned.Store(true)
 		}),
-		BaseContext: func(net.Listener) context.Context { return root },
+		BaseContext:       func(net.Listener) context.Context { return root },
+		ReadHeaderTimeout: 5 * time.Second,
 	}
 	served = make(chan error, 1)
 	go func() { served <- serve(root, server, listener, grace) }()
 	go func() {
 		response, err := http.Get("http://" + listener.Addr().String() + "/")
 		if err == nil {
-			response.Body.Close()
+			_ = response.Body.Close()
 		}
 	}()
 	select {

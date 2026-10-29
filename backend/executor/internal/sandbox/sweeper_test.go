@@ -21,7 +21,7 @@ func (l *listingEngine) ListLabeled(_ context.Context, label string) ([]Resource
 }
 
 func (l *listingEngine) Remove(ctx context.Context, name string) error {
-	l.fakeEngine.Remove(ctx, name)
+	_ = l.fakeEngine.Remove(ctx, name)
 	return l.removeErr
 }
 

@@ -27,6 +27,7 @@
     "pretest:unit": "npm run curriculum",
     "test:executor": "sh backend/executor/scripts/test.sh",
     "test:executor:integration": "sh backend/executor/scripts/integration.sh",
+    "lint:executor": "sh backend/executor/scripts/lint.sh",
     "api:test": "docker compose --profile test run --rm --build test",
     "api:test:down": "sh backend/api/scripts/test-down.sh",
     "api:format:check": "docker compose --profile test run --rm --build --no-deps --entrypoint php test vendor/bin/pint --test",

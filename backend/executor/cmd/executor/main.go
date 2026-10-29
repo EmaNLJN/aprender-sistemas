@@ -108,6 +108,7 @@ func main() {
 // begins, and exiting then would kill cancelled requests before they remove their containers.
 func serve(root context.Context, server *http.Server, listener net.Listener, grace time.Duration) error {
 	shutdownDone := make(chan error, 1)
+	//nolint:gosec // G118: root is already cancelled when shutdown starts, so the grace period needs a fresh context
 	go func() {
 		<-root.Done()
 		ctx, cancel := context.WithTimeout(context.Background(), grace)

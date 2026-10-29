@@ -71,8 +71,8 @@ func (f *fakeEngine) Start(ctx context.Context, name string, stdin io.Reader, st
 	input, _ := io.ReadAll(stdin)
 	f.stdins = append(f.stdins, string(input))
 	phase := f.phaseFor(name)
-	io.WriteString(stdout, phase.stdout)
-	io.WriteString(stderr, phase.stderr)
+	_, _ = io.WriteString(stdout, phase.stdout)
+	_, _ = io.WriteString(stderr, phase.stderr)
 	if phase.block {
 		<-ctx.Done()
 		return ctx.Err()
