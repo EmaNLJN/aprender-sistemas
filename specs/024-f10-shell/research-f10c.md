@@ -6,7 +6,7 @@ Las decisiones técnicas de [plan-f10c.md](./plan-f10c.md), con sus alternativas
 
 Todo corrió fuera del repositorio, sin descargar nada, desde scripts en el scratchpad:
 
-- **Las copias:** dos worktrees descartables de `master` en `431c9d90` (F2a, F2b, A2, #67, #76 y F4), con un enlace al `node_modules` de otra copia del mismo `package-lock.json` (las 31 dependencias con la versión exacta del lockfile) y el Chrome Headless Shell de F1. Una es la base y la otra, el prototipo.
+- **Las copias:** tres worktrees descartables de `master` en `431c9d90` (F2a, F2b, A2, #67, #76 y F4), con un enlace al `node_modules` de otra copia del mismo `package-lock.json` (las 31 dependencias con la versión exacta del lockfile) y el Chrome Headless Shell de F1. Una es la base, otra el prototipo y la tercera, la de los dos controles negativos. Se borraron al terminar.
 - **El prototipo de la mudanza sobre `master`:** las mismas reglas del shell que el plan muda, cortadas de `styles.css` de `master` con el mismo criterio y pegadas en `frontend/src/app/shell/shell.css`, importada justo después de `styles.css`.
 - **Lo que corrió sobre las dos copias:** el build, las medidas del dist, el multiconjunto de F2b, el barrido de quickstart-f10c.md §3.3 en la grilla que `master` tiene, el control de determinismo, el control negativo del orden, la evidencia de quickstart-f10c.md §3.4, el control de borrado y los siete E2E de T037.
 - **La proyección de la base de F10c:** `styles.css` de `master` menos lo que sacan los planes mergeados de F3 (43 selectores), F9 (116) y F8 (25), más las cuatro reglas que F11a suma al final (`impl-f11a`, `a7b3c71d`), medida con `postcss` 8.5.28 y minificada con `lightningcss` 1.33.0, los dos de `node_modules`.
@@ -249,6 +249,16 @@ Lo que este plan supone de la base, con lo que lo confirma en T036 (paso entre p
 | S15 | Los slices de página son `account`, `admin`, `atlas`, `campaign`, `lab`, `library`, `method`, `project`, `route` y `systems` | `ls frontend/src/pages` (4.4) | Se cambian los nombres en `grid.mjs` |
 | S16 | El doble de la API responde la sesión con `user`, `features`, `contentVersion` y `catalogs`, y la administración pide `GET /api/admin/users` | Lectura de `api-double.ts` y del E2E de F12a (4.1); `unhandled` vacío (5) | Se copia la respuesta real a `grid.mjs` |
 | S17 | `#administracion` abre la administración para `ADMIN` | El estado `admin` llega a su condición de listo (5) | Si F12a no entró, el estado se quita de la grilla y se anota |
+
+**Verificado al planificar contra los planes de F10a y F10b** (worktree `plan-f10ab`, rama `plan/f10ab-shell-router`, `6b8352e1`). No son supuestos, salvo que la base traiga otra cosa:
+
+- **La carpeta del shell** es `frontend/src/app/shell/` (`Shell.tsx`, `shell-state.ts`, `toast.ts` y `menu-counts.ts`; plan de F10b, U5).
+- **La restricción del primer lugar** es `frontend/src/app/main-entry.spec.ts`, del proyecto `node`, que compara con `toEqual` la lista entera de imports `.css` de `main.tsx` contra `BASE_SHEETS` (plan de F10b, T027). La lista que deriva F10b pone `route.css`, `library.css`, `project.css` y `method.css` justo después de `styles.css`.
+- **F10b no mueve CSS,** salvo `.quiz-feedback:empty`, que suma al final de `route.css` (T032), y `.admin-dialog`, que saca de `admin.css`.
+- **F10b dibuja** `.session-status` siempre en `Shell.tsx`, `.empty-state` en las pantallas de la compuerta y de la sesión (`boot-screens`, en `app/boot/`), y deja el `<noscript>` en `index.html`.
+- **El Page Object del shell:** F10a (T007) suma `main` (`page.locator('#main')`), `skipLink`, `sidebar` (el `complementary` que contiene el menú), `progressBar` y `exportButton`. T037 usa esos tres primeros y suma sólo `topBar`, `footer` y `brandMark`.
+- **Las E2E de F10a** que tocan lo mismo fijan comportamiento, no CSS: el salto al contenido mueve el foco a `#main` (`shell-navigation.spec.ts`) y el toast muestra su texto y la clase `visible` (`shell-sidebar.spec.ts`). Las siete de T037 fijan valores de las reglas: no se duplican.
+- **La numeración:** F10a usa T001 a T014 y F10b, T015 a T035.
 
 ## Context7
 

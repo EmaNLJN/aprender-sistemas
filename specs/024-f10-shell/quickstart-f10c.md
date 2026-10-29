@@ -46,6 +46,16 @@ sha() { node -e 'const h=require("node:crypto").createHash("sha256");process.std
 
 4. **Los scripts,** en `$TMPDIR/f10c-compare/`: `css-multiset.mjs` (quickstart-f2b.md §3.1 a, sin cambios), y `grid.mjs`, `style-sweep.mjs` y `rule-evidence.mjs` de §3. Resuelven `postcss` y `@playwright/test` desde el `node_modules` de la raíz que reciben.
 5. **El control de determinismo** (§3.5 a) y **la evidencia de la base** (§3.4), con las verificaciones del plan, T036, pasos 4 a 8.
+6. **Al cerrar (T043),** cada copia descartable se borra sin tocar el `node_modules` real al que apunta su enlace: primero el enlace, después el worktree.
+
+   ```sh
+   rm "$TMPDIR/f10c-base/node_modules"
+   git worktree remove --force "$TMPDIR/f10c-base"
+   git worktree prune
+   git worktree list   # ya no la muestra
+   ```
+
+   Lo mismo con las copias de los controles de §3.5.
 
 ## 2. La compuerta de cada tarea de código
 
@@ -304,7 +314,7 @@ export async function open(browser, origin, root, state, capture, unhandled, bef
 
 ### 3.3 El barrido de estilo computado (`style-sweep.mjs`)
 
-Sirve cada `dist/` con su `vite preview`, abre cada estado en cada captura en un contexto nuevo y compara cada propiedad computada de cada elemento. La clave de un elemento sale del ancestro más cercano con `id` (F9). Esperado: `{"snapshots":525,…,"differences":0,"byState":{},"unhandled":[]}`.
+Sirve cada `dist/` con su `vite preview`, abre cada estado en cada captura en un contexto nuevo y compara cada propiedad computada de cada elemento. La clave de un elemento sale del ancestro más cercano con `id` (F9). Esperado: `{"snapshots":525,…,"differences":0,"byState":{},"unhandled":[]}`. Tarda entre 25 y 30 minutos (el prototipo comparó 405 capturas en unos 20): no está colgado.
 
 ```js
 // $TMPDIR/f10c-compare/style-sweep.mjs
@@ -390,7 +400,7 @@ try {
 node "$TMPDIR/f10c-compare/rule-evidence.mjs" . frontend/styles.css frontend/src/app/shell/shell.css > evidence.tsv
 ```
 
-Una fila por selector: la hoja, la línea, el contexto, el selector, la clase (research-f10c.md, R2), los dueños medidos, los que da la búsqueda en las fuentes, los que sólo da la búsqueda (`staticOnly`), en cuántas capturas se usó y lo que dice la cobertura de Chromium. La salida de error trae `coverageMatchesStyle` (tiene que ser `true`), los pedidos a `/api/` sin respuesta y los centinelas que fallaron; con alguno, el script sale con 1.
+Una fila por selector: la hoja, la línea, el contexto, el selector, la clase (research-f10c.md, R2), los dueños medidos, los que da la búsqueda en las fuentes, los que sólo da la búsqueda (`staticOnly`), en cuántas capturas se usó y lo que dice la cobertura de Chromium. La salida de error trae `coverageMatchesStyle` (tiene que ser `true`), los pedidos a `/api/` sin respuesta y los centinelas que fallaron; con alguno, el script sale con 1. Con la grilla entera tarda unos 15 minutos (el prototipo midió 465 capturas en unos 10).
 
 ```js
 // $TMPDIR/f10c-compare/rule-evidence.mjs

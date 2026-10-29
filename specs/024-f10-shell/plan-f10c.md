@@ -45,7 +45,7 @@
 
 **Constraints**: las de «Restricciones globales».
 
-**Scale/Scope**: un archivo nuevo de CSS (unas 450 líneas), uno de E2E (7 pruebas), y cambios en `frontend/src/app/main-entry.spec.ts` (una entrada y el título de su prueba), `frontend/styles.css` (pierde unas 450 líneas), `frontend/src/app/main.tsx` (una línea), `qa/e2e/pages/shell.ts` (seis localizadores) y la documentación.
+**Scale/Scope**: un archivo nuevo de CSS (unas 450 líneas), uno de E2E (7 pruebas), y cambios en `frontend/src/app/main-entry.spec.ts` (una entrada y el título de su prueba), `frontend/styles.css` (pierde unas 450 líneas), `frontend/src/app/main.tsx` (una línea), `qa/e2e/pages/shell.ts` (tres localizadores) y la documentación.
 
 ## Restricciones globales
 
@@ -120,7 +120,7 @@ frontend/
             └── shell.css                   (T039) nueva: las reglas del shell, en el orden de styles.css
 qa/
 └── e2e/
-    ├── pages/shell.ts                      (T037) suma sidebar, topBar, footer, main, skipLink y brandMark, si F10a no los dejó
+    ├── pages/shell.ts                      (T037) suma topBar, footer y brandMark; main, skipLink y sidebar son de F10a
     └── specs/shell-style.spec.ts           (T037) nueva: siete pruebas del aspecto del shell
 docs/architecture.md                        (T042, K) la fila del shell nombra la hoja nueva
 ```
@@ -132,7 +132,7 @@ docs/architecture.md                        (T042, K) la fila del shell nombra l
 | `frontend/src/app/main.tsx` | El orden de las hojas: `styles.css`, la del shell y después las de página |
 | `frontend/src/app/main-entry.spec.ts` (de F10b) | El orden entero de las hojas de `main.tsx`, ahora con la del shell segunda |
 | `qa/e2e/specs/shell-style.spec.ts` | El aspecto del shell que `css-contract` no cubre: impresión, 1 550, 1 150 y 590 px, el salto al contenido, el toast y el acento de cada idioma |
-| `qa/e2e/pages/shell.ts` | Los localizadores del shell por rol y nombre accesible, y la marca, que no tiene nombre |
+| `qa/e2e/pages/shell.ts` | Suma la barra superior y el pie, por rol, y la marca, que no tiene nombre; usa `main`, `skipLink` y `sidebar` de F10a |
 
 ## Review Focus
 
@@ -218,30 +218,24 @@ F10c es chico: una sola cola, porque cada tarea parte de la compuerta de la ante
 
 **Consume:** el fixture `shell` de `qa/e2e/fixtures` (con el doble de la API de F11a y su sesión simulada), `urls.view` de `qa/e2e/lib/urls.ts` y `expect(locator).toHaveCSS(name, value)` de Playwright 1.63.
 
-**Produce:** seis localizadores en `ShellPage`. Si F10a ya dejó alguno con otro nombre, se usa el suyo y se cambia el nombre en la spec; no se suma un duplicado.
+**Produce:** tres localizadores más en `ShellPage`. F10a (su T007) ya suma `main` (`page.locator('#main')`), `skipLink`, `sidebar` (el `complementary` que contiene el menú), `progressBar` y `exportButton`; la spec de T037 usa los suyos y no los duplica. Si la base trae otros nombres, se usan los de la base.
 
-1. **`qa/e2e/pages/shell.ts`.** Las propiedades, junto a las de hoy:
+1. **`qa/e2e/pages/shell.ts`.** Con la convención de F10a: los campos nuevos al final de la lista de campos y sus asignaciones al final del constructor.
 
    ```ts
-   readonly sidebar: Locator;
    readonly topBar: Locator;
    readonly footer: Locator;
-   readonly main: Locator;
-   readonly skipLink: Locator;
    readonly brandMark: Locator;
    ```
 
-   Y en el constructor, después de `this.menu`:
-
    ```ts
-   this.sidebar = page.getByRole('complementary').filter({ has: this.menu });
    this.topBar = page.getByRole('banner');
    this.footer = page.getByRole('contentinfo');
-   this.main = page.getByRole('main');
-   this.skipLink = page.getByRole('link', { name: 'Ir al contenido' });
    // The mark is aria-hidden: it has no accessible name.
    this.brandMark = page.getByRole('link', { name: 'Taller, inicio' }).locator('.brand-mark');
    ```
+
+   **Lo que ya prueba F10a y no se repite:** «the skip link moves the focus to #main…» (`shell-navigation.spec.ts`) fija el foco y la URL, y «the toast» (`shell-sidebar.spec.ts`) fija el texto y la clase `visible`. Las pruebas de T037 fijan otra cosa: lo que las reglas de CSS hacen con esos elementos (la posición del salto al contenido y la opacidad del toast), que es lo que F10c muda de hoja.
 
 2. **`qa/e2e/specs/shell-style.spec.ts`.** Los valores son los del texto de las reglas del shell en `styles.css` de la base; ningún selector de CSS sale del Page Object:
 
@@ -958,7 +952,8 @@ FR-060, en el mismo PR:
 3. **El tamaño:** `chars` antes y después y su diferencia, bajo 1 500 000 y como mucho 1 000 por encima. F10c no suma un router, así que «el aumento del router» de FR-004 es 0.
 4. **Sin estilos en línea ni dependencias:** `git diff <base> -- frontend | grep -E '^\+.*(style=|style=\{|setAttribute\(.style.|\.cssText)'` y `git diff <base> -- package.json package-lock.json` no imprimen nada.
 5. **La imagen web:** con permiso del usuario, `docker compose build taller`.
-6. **El PR** (título y descripción en inglés, la forma de quickstart-f10c.md §4): el problema, qué se mudó (la tabla de la evidencia por clase), la partición de `.small-label, .eyebrow, .topbar-label`, la lista de FR-055 (vacía o con sus reglas), las comparaciones con sus números, los controles, el tamaño, los hallazgos para otros ítems (research-f10c.md, R5: las reglas sin efecto de `.navigation a:last-child`) y lo que queda pendiente.
+6. **Las copias descartables:** se borran como dice quickstart-f10c.md §1, paso 6: primero el enlace a `node_modules`, después el worktree, y `git worktree prune`.
+7. **El PR** (título y descripción en inglés, la forma de quickstart-f10c.md §4): el problema, qué se mudó (la tabla de la evidencia por clase), la partición de `.small-label, .eyebrow, .topbar-label`, la lista de FR-055 (vacía o con sus reglas), las comparaciones con sus números, los controles, el tamaño, los hallazgos para otros ítems (research-f10c.md, R5: las reglas sin efecto de `.navigation a:last-child`) y lo que queda pendiente.
 
 ## Cobertura de requisitos
 
