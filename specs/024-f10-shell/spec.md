@@ -153,6 +153,14 @@ El usuario respondió el 2026-10-28 las tres preguntas que dejó el plan de F10b
 - Q: `dist-content-check` evalúa el `dist` con `boot-harness.ts` y `fake-dom.ts`, que FR-052 retira. ¿Qué cubre después de F10b? → A: Sólo las pruebas sobre el archivo servido: los bytes (`documentHash`) y las 17 porciones. Que el `dist` arranca sin errores y pide el contenido una vez lo prueban los E2E de A2, contra el mismo `dist`, en un navegador. La prueba de globals sale por F10-Q3. Decidió el usuario. (FR-052)
 - Q: ¿Se acepta que el salto al contenido funcione durante la carga? Hoy el enlace no tiene oyente hasta `startApp()`, así que la URL pasa a `#main`; con la raíz única, el foco va a `#main` y la URL no cambia. → A: Sí, como parte de F10-Q2. Va con su E2E en el commit rojo de T026 de F10b y se declara en el PR. Decidió el usuario. («Lo que cambia a propósito»)
 
+### Session 2026-10-28 (F10c, al planificar)
+
+Tres decisiones del usuario sobre F10c, tomadas sobre el plan ([plan-f10c.md](./plan-f10c.md)). Sólo tocan F10c (FR-054); no cambian nada de F10a ni de F10b.
+
+- Q: **¿Tailwind entra en F10c?** → A: No: es un ítem propio, **F15**, después de F10 y con su ADR. F10c termina la limpieza en CSS común y sin cambio visible, y además ordena los colores, los espacios y la tipografía del shell y de la base como variables CSS, con los nombres que espera el `@theme` de Tailwind v4 (`--color-*`, `--font-*`, `--text-*`, `--font-weight-*`, `--spacing-*`, `--container-*` y `--shadow-*`). Extiende las variables de `:root` de `styles.css` en lugar de inventar otras, y la paridad visual se prueba igual: el barrido en 0. Decidió el usuario.
+- Q: **¿Se parte `.small-label, .eyebrow, .topbar-label`?** → A: Sí: `.topbar-label`, que es del shell, se va a la hoja del shell con sus cuatro declaraciones, y `.small-label, .eyebrow` quedan en `styles.css` (FR-054). Decidió el usuario.
+- Q: **¿La hoja del shell absorbe las reglas de «Tu cuenta» de `pages/account/ui/account.css`?** → A: No: se quedan en la hoja de su slice. Decidió el usuario.
+
 ## El contrato de URL que se conserva
 
 Es el de la red de F1 (`url-contract`, `views` y `reload`), el de la gramática de F2b (`frontend/src/shared/config/url-grammar.ts`) y el que suman F3, F5 y F11a. F10 no lo cambia, salvo la forma de la administración (F10-Q4).
