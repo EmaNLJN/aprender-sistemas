@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-28
 
-**Status**: Clarificada (sesión del 2026-10-28; ver «Clarifications»). Partida en F15a, F15b y F15c (P5), con un plan por parte: `plan.md` (F15a), `plan-f15b.md` y `plan-f15c.md`. Ninguno está escrito todavía
+**Status**: Clarificada (sesión del 2026-10-28; ver «Clarifications»). Partida en F15a, F15b y F15c (P5), con un plan por parte: `plan.md` (F15a), `plan-f15b.md` y `plan-f15c.md`, ya escritos. Corregida el 2026-10-29 con lo que encontró el plan (ver «Clarifications», «Session 2026-10-29»)
 
 **Input**: Ítem nuevo **F15** del épico del front, decidido por el usuario el 2026-10-28 (`.coordinador/clarify-decisiones.md`, «Tailwind»): adoptar Tailwind CSS v4 en el front React, después de F10, con su ADR, usando la skill [`tailwind-design-system`](../../.agents/skills/tailwind-design-system/SKILL.md) y Context7. F10c deja los colores, los espacios y la tipografía como variables CSS listas para el `@theme` de Tailwind v4. La hoja de ruta [`specs/front-react/roadmap.md`](../front-react/roadmap.md) todavía no tiene la fila de F15. **Describe el código de `master` (`bb480677`)**: hasta ahí llegaron F2a, F2b, A2 y F4. Lo que dejan F3 a F10 sale de sus specs y del plan de F10c, y figura como supuesto con nombre. El plan de F10c es `specs/024-f10-shell/plan-f10c.md`, con `research-f10c.md` (R12) y `contracts/stylesheets-f10c.md`, en la rama `plan/f10c-estilos` (`1150db65`, PR #91), todavía fuera de `master`. La base es un ADR en estado **propuesta**, el de la sección «El ADR» (el 0010, a confirmar al escribirlo). Usa además el [ADR 0008](../../docs/adr/0008-pruebas-del-front.md), la [spec de F10](../024-f10-shell/spec.md), la [spec de C4](../008-c4-exposicion/spec.md), el [mapa del front legacy](../front-react/legacy-map.md) (§7) y la [constitución](../../.specify/memory/constitution.md) 1.4.1.
 
@@ -116,6 +116,23 @@ El usuario respondió las cinco preguntas y aceptó la partición. Cuatro respue
 - **El número del ADR** es el 0010, a confirmar al escribirlo: E1 usa el 0009.
 - **La transición de los tokens al `@theme`** es un requisito de F15a, y se prueba primero (FR-038). Tailwind emite por omisión sólo las variables del theme que se usan, y la documentación no dice si cuenta los `var()` de una hoja heredada. Por eso el bloque de tokens va en `@theme static`, que según la documentación emite todas las variables (Context7, «Fuentes consultadas»). Como el theme borra los valores por omisión, `static` emite sólo los tokens del taller, que son los mismos que hoy están en `:root`.
 
+### Session 2026-10-29
+
+El plan (`plan.md`, `plan-f15b.md` y `plan-f15c.md`, con su `research.md`) encontró cuatro puntos de la spec que no cerraban y tres decisiones para el usuario. La spec todavía no estaba en `master`, así que se corrige en su lugar. Lo corrigió el coordinador con el informe del plan (`.coordinador/plan-f15-report.md`).
+
+**Las correcciones:**
+
+- **FR-001 contra FR-036.** FR-001 pedía que los alias de F10c conservaran su valor, y FR-036 los borra en F15c. FR-001 dice ahora «salvo los alias que borra FR-036 en F15c». El barrido los informa por nombre (research.md, C3).
+- **Los tamaños de letra** (la fila de «Cómo conviven» y FR-015). La spec suponía que `text-12` fija el interlineado sólo si el theme define `--text-12--line-height`. Según Context7, `text-N` escribe siempre el interlineado, y con la variable sin definir anula el que el elemento hereda. La receta usa `text-(length:--text-N)` o `text-[Npx]`, que escriben sólo el tamaño, y un check prohíbe el interlineado de `text-*`. Lo confirma la sonda S2 de F15a (research.md, R10).
+- **FR-012** nombra ahora la excepción de FR-013: las reglas que compiten con el editor quedan fuera de la capa heredada.
+- **FR-029 contra FR-002.** La red congelada localiza elementos por clase (`css-contract.spec.ts`, `pre.terminal`, `.sys-trace li`, el toast con `visible`), y no se edita. FR-029 suma los marcadores (decisión 1).
+
+**Las tres decisiones** (cada una recomendada, a confirmar con el PR; el usuario las acepta al mergearlo):
+
+- **Decisión 1, las clases marcador** (FR-029): un elemento migrado conserva, sin regla, la clase que la red congelada usa para encontrarlo. La lista cerrada va en cada PR de F15b, y el check de colisiones la cubre (research.md, B2).
+- **Decisión 2, SC-005 y las familias del preflight:** SC-005 se lee sobre el theme y las utilidades. El preflight se importa tal cual en F15c, y el texto de sus familias de respaldo (`ui-sans-serif, system-ui, …` y `ui-monospace, …`) se lista en su PR (research.md, C5).
+- **Decisión 3, el tope por slice de F15b** (FR-004 y SC-007): `ceil(r × bytes de la hoja × 1,25)`, con un piso de 500 caracteres, donde `r` es la relación que mide el piloto. Los 5 000 de FR-004 quedan como techo sin permiso. Si el laboratorio prevé más de 5 000, el permiso ofrece partirlo por hoja (research.md, B5).
+
 ## El punto de partida
 
 **Lo que hay en `master` (`bb480677`), medido sin ejecutar nada:**
@@ -192,7 +209,7 @@ Esta es la parte que más riesgo tiene: durante toda la migración conviven dos 
 | **Unidades y colores** | El theme por omisión usa `rem` y colores OKLCH | **Píxeles y el hexadecimal de hoy.** El `rem` crece con el tamaño de letra que elige el alumno, y el barrido, a 16 px, no lo ve. OKLCH cambia cómo se escribe el color computado (FR-015) | El theme, revisado; el barrido |
 | **El acento de cada lenguaje** | Un theme que remite a otra variable sin `inline` la resuelve en `:root`, igual que un alias declarado en `:root`: la sobreescritura de `body[data-language='go']` no llega | **El acento sigue el lenguaje sin recargar.** El bloque de Go redefine `--color-accent*` como CSS común, como lo deja F10c, y redeclara los alias mientras existan (FR-016) | El E2E de la marca de F10c, sin editar, y uno por utilidad de acento en el piloto |
 | **Las variables que ninguna utilidad usa** | Por omisión emite sólo las variables del theme que se usan | **Todo token llega a la salida,** aunque ninguna utilidad lo use: el bloque de tokens va en `@theme static`, que según la documentación emite todas las variables. La documentación no dice si cuenta los `var()` de una hoja heredada (FR-038) | Un check sobre la salida, escrito antes de mover el bloque: cada token de la base con su valor. Después, la compuerta de F15a |
-| **Los tamaños de letra** | `text-12` fija el tamaño y, si el theme define `--text-12--line-height`, también el interlineado | **Una utilidad de tamaño no cambia el interlineado:** hoy las reglas fijan sólo el tamaño (FR-015) | El barrido |
+| **Los tamaños de letra** | `text-12` fija el tamaño y escribe siempre el interlineado con `--text-12--line-height`: sin la variable definida, anula el que el elemento hereda (Context7; corregido el 2026-10-29) | **Una utilidad de tamaño no cambia el interlineado:** hoy las reglas fijan sólo el tamaño. Se usa `text-(length:--text-N)` o `text-[Npx]`, que escriben sólo el tamaño, nunca `text-N` (FR-015) | Un check sobre la salida: ninguna utilidad escribe el interlineado de `text-*`; la sonda S2 de F15a; el barrido |
 | **Propiedades lógicas** | Las utilidades escriben `margin-inline` o `padding-block` y `calc(var(--spacing) * n)` | Se aceptan: en un documento de izquierda a derecha, el valor computado físico es el mismo | El barrido. El multiconjunto resuelto se aplica sólo a lo que queda en las hojas heredadas (FR-032) |
 | **Las variables de Tailwind** | Registra `--tw-*` con `@property` y pone las variables del theme en `:root` | Se aceptan por nombre, en una lista cerrada, como F10c cuenta aparte sus 61 tokens nuevos (`newTokens`). Las variables de hoy, alias incluidos, conservan su valor (FR-001) | El barrido: Chromium enumera las propiedades personalizadas (lo midió F10c) |
 
@@ -411,12 +428,12 @@ Cada requisito lleva entre paréntesis la parte que lo entrega (P5): *(F15a)*, *
   - **La grilla:** la de F10c, con los estados de los ítems que hayan entrado después.
   - **Las condiciones de captura:** el puntero en `(-1, -1)` y los `<details>` cerrados.
   - **El control de determinismo:** la base contra sí misma da 0 antes de comparar nada.
-  - **Las propiedades personalizadas:** Chromium las enumera (lo midió F10c). Las de la base (los tokens de F10c y sus alias) conservan su valor, y las nuevas de Tailwind (`--tw-*` y las que agregue el theme) se aceptan sólo por nombre, en una lista cerrada del plan.
+  - **Las propiedades personalizadas:** Chromium las enumera (lo midió F10c). Las de la base (los tokens de F10c y sus alias) conservan su valor, salvo los alias que borra FR-036 en F15c, y las nuevas de Tailwind (`--tw-*` y las que agregue el theme) se aceptan sólo por nombre, en una lista cerrada del plan.
 - **FR-002** *(todas)*: La red de la base DEBE pasar sin editarse después de cada PR: los 106 E2E de F1, los 17 de A2 y los que suman F3 a F14.
 - **FR-003** *(todas)*: Ningún PR DEBE agregar estilos en línea: ni `style=`, ni `style={…}`, ni `setAttribute('style', …)`, ni `.cssText`. Tampoco el patrón de Tailwind que pasa una variable por `style` para un valor arbitrario. El CSS DEBE generarse en el build, sin `<style>` en ejecución, y la CSP de C4 no cambia.
 - **FR-004** *(todas)*: La salida DEBE cumplir el contrato de entrega vigente cuando entra cada PR. Con A2, es un documento con un script y un estilo en línea, bajo 1 500 000 caracteres. Con C4, son hojas enlazadas con su nonce, bajo los topes por archivo. Cada PR informa el tamaño antes y después.
   - **El subpresupuesto de F15a:** 2 000 caracteres.
-  - **El de cada PR de F15b:** 5 000 caracteres.
+  - **El de cada PR de F15b:** el tope del slice, `ceil(r × bytes de la hoja × 1,25)`, con un piso de 500 caracteres, donde `r` es la relación que mide el piloto. Nunca más de 5 000 sin el permiso del usuario. Si el laboratorio prevé más de 5 000, el permiso ofrece partirlo por hoja. *(Recomendada, a confirmar con el PR.)*
   - **El de F15c,** que suma el preflight y sus reglas compensatorias: 10 000 caracteres.
 
   Por encima del suyo, el PR se detiene y lo aprueba el usuario.
@@ -435,7 +452,7 @@ Cada requisito lleva entre paréntesis la parte que lo entrega (P5): *(F15a)*, *
   - con `npm ci` y el build en verde en Linux con glibc (la CI), en Alpine con musl (la imagen web) y, declarado y sin verificar, en macOS.
 - **FR-010** *(F15a)*: El build DEBE funcionar con la forma de entrega vigente, la de A2 o la de C4. El CSS de Tailwind viaja en el mismo estilo que el resto, sin una hoja ni un pedido aparte.
 - **FR-011** *(F15a)*: Una sola entrada de CSS DEBE declarar el orden de las capas de forma explícita: el theme, la capa base, la capa heredada y las utilidades. Los nombres son del plan.
-- **FR-012** *(F15a)*: Todo el CSS de hoy DEBE entrar en la capa heredada, en el orden de hoy, sin cambiar una declaración: `styles.css`, la hoja del shell y cada hoja de slice. La excepción es el bloque de tokens, que pasa al `@theme` (FR-015). La prueba del orden de las hojas DEBE fijar el orden nuevo y abrir en rojo.
+- **FR-012** *(F15a)*: Todo el CSS de hoy DEBE entrar en la capa heredada, en el orden de hoy, sin cambiar una declaración: `styles.css`, la hoja del shell y cada hoja de slice. Las excepciones son el bloque de tokens, que pasa al `@theme` (FR-015), y las reglas que compiten con el editor, que quedan fuera de la capa (FR-013). La prueba del orden de las hojas DEBE fijar el orden nuevo y abrir en rojo.
 - **FR-013** *(F15a)*: Las reglas que compiten con estilos inyectados sin capa en ejecución (las `.cm-enhanced …` contra el theme de CodeMirror) DEBEN quedar fuera de la capa heredada, en una lista cerrada con el motivo de cada una. El plan las inventaría con el barrido del laboratorio con el editor montado en los siete anchos.
 - **FR-014** *(F15a y F15b)*: Ninguna regla del preflight de Tailwind DEBE llegar a la salida antes de F15c. Hasta entonces, la base del taller son sus reglas globales, en la capa heredada. *(Q2-B)*
 - **FR-015** *(F15a)*: El theme DEBE salir de los 61 tokens que deja F10c, que pasan del `:root` al `@theme`. El valor de cada uno se escribe una sola vez: la capa heredada (por sus nombres o por los alias) y las utilidades leen la misma variable.
@@ -443,7 +460,7 @@ Cada requisito lleva entre paréntesis la parte que lo entrega (P5): *(F15a)*, *
   - **Píxeles y hexadecimal:** las medidas van en píxeles, sin `rem`, y los colores con el hexadecimal de hoy.
   - **La escala de espacios:** `--spacing: 4px` *(Q3-A)*.
   - **Lo que lee el CSS heredado:** lo fija FR-038.
-  - **Los tamaños de letra:** una utilidad `text-*` DEBE dejar el interlineado como hoy.
+  - **Los tamaños de letra:** una utilidad `text-*` DEBE dejar el interlineado como hoy. Como `text-N` escribe siempre el interlineado, se usa `text-(length:--text-N)` o `text-[Npx]`, y un check sobre la salida prohíbe el interlineado de `text-*`. Lo confirma la sonda de F15a.
 - **FR-016** *(F15a)*: Toda utilidad que use los tokens de acento (`--color-accent`, `--color-accent-dark` y `--color-accent-soft`) DEBE seguir el lenguaje sin recargar. El bloque de `body[data-language='go']` queda como CSS común, redefine esos tokens y redeclara sus alias mientras existan.
 - **FR-017** *(F15a)*: Tailwind DEBE leer clases sólo de `frontend/src`, con `index.html`. Nunca de `content/`, `specs/`, `docs/`, `qa/`, `backend/`, `build/` ni `dist/`.
 - **FR-018** *(F15a)*: Ninguna clase heredada DEBE cambiar su estilo computado porque Tailwind genere una utilidad con el mismo nombre.
@@ -473,7 +490,7 @@ Cada requisito lleva entre paréntesis la parte que lo entrega (P5): *(F15a)*, *
 
   *(Q1-A)*
 - **FR-028** *(F15b)*: Cada PR de F15b DEBE abrir con los E2E de lo que el barrido no ve en ese slice: `:hover` (también por toque), `:focus-visible`, `:active` y las transiciones. Van escritos con el Page Object, en verde contra la base, y no se editan después.
-- **FR-029** *(F15b)*: El PR DEBE reemplazar las clases del slice por utilidades en sus componentes y borrar su hoja entera. Un elemento migrado no lleva a la vez clases heredadas de su slice y utilidades.
+- **FR-029** *(F15b)*: El PR DEBE reemplazar las clases del slice por utilidades en sus componentes y borrar su hoja entera. Un elemento migrado no lleva a la vez clases heredadas de su slice y utilidades. *(Recomendada, a confirmar con el PR.)* La excepción son los marcadores: la clase que la red congelada usa para encontrar el elemento queda en él, sin regla en ninguna hoja. La lista cerrada de marcadores del slice va en su PR, y el check de colisiones la cubre.
 - **FR-030** *(F15b)*: Cada clase base que use el slice (`.button`, `.eyebrow`, `.pill`, `.small-label`, `.empty-state` y las que encuentre el plan) DEBE pasar a un componente en la capa FSD más baja que la comparta, idéntico a la vista. La regla heredada sigue mientras otro slice sin migrar la use.
 - **FR-031** *(F15b)*: Un valor DEBE usar su token si existe. Si no, usa la escala de `--spacing: 4px` cuando ésta lo da exacto y, si no, un valor arbitrario con el literal de hoy. Siempre conserva el valor exacto, y cada PR cuenta sus valores arbitrarios como deuda. *(Q3-A)*
 - **FR-032** *(F15b)*: El multiconjunto resuelto de las hojas heredadas que quedan DEBE ser el de la base menos las reglas de la hoja borrada. Para lo migrado, el oráculo es el barrido: las utilidades escriben propiedades lógicas y `calc()`, y el multiconjunto no aplica.
@@ -508,9 +525,9 @@ Cada requisito lleva entre paréntesis la parte que lo entrega (P5): *(F15a)*, *
 - **SC-002** *(todas)*: El barrido da 0 diferencias en las propiedades estándar sobre la grilla entera después de cada PR, y el control de determinismo da 0 antes de comparar.
 - **SC-003** *(F15a)*: Con el plugin y sin utilidades en el código, el barrido da 0, el multiconjunto resuelto da 0 y 0, y el HTML crece como mucho 2 000 caracteres. Cada utilidad de la salida tiene su motivo, y cada token de la base llega a la salida con su valor.
 - **SC-004** *(F15c)*: Al cerrar no queda ninguna hoja por slice ni `styles.css`. Las hojas que quedan son la entrada y las excepciones de la lista, cada una con su motivo.
-- **SC-005** *(todas)*: El CSS construido tiene 0 condiciones de `@media` que no estaban en la base, 0 `@media (hover: hover)`, 0 utilidades con `!important` y 0 valores de la paleta, las fuentes o la escala por omisión de Tailwind. En F15a y F15b, además, 0 reglas de preflight.
+- **SC-005** *(todas)*: El CSS construido tiene 0 condiciones de `@media` que no estaban en la base, 0 `@media (hover: hover)`, 0 utilidades con `!important` y 0 valores de la paleta, las fuentes o la escala por omisión de Tailwind. En F15a y F15b, además, 0 reglas de preflight. *(Recomendada, a confirmar con el PR.)* Los valores por omisión se miden en el theme y en las utilidades. En F15c, el preflight se importa tal cual, y el texto de sus familias de respaldo se lista en su PR.
 - **SC-006** *(F15a)*: El primer ítem que entra después de F15a agrega su interfaz sin sumar ningún `.css` a la lista de hojas permitidas.
-- **SC-007** *(todas)*: Cada PR informa el tamaño de la salida antes y después, en la forma vigente. Queda bajo el tope y, sin aprobación del usuario, dentro de su subpresupuesto: 2 000 caracteres para F15a, 5 000 para cada PR de F15b y 10 000 para F15c.
+- **SC-007** *(todas)*: Cada PR informa el tamaño de la salida antes y después, en la forma vigente. Queda bajo el tope y, sin aprobación del usuario, dentro de su subpresupuesto: 2 000 caracteres para F15a, el tope de su slice para cada PR de F15b (FR-004, como mucho 5 000) y 10 000 para F15c.
 - **SC-008** *(F15a)*: `package.json` suma exactamente dos dependencias de desarrollo con versión exacta y ninguna de runtime. `npm ci` y el build pasan en la CI (glibc) y en la imagen web (musl).
 - **SC-009** *(todas)*: Cada PR cierra con `npm run build`, `npm test`, `npm run lint` (con el mismo total de avisos de complejidad), `npm run format:check`, `npm run test:e2e` y `git diff --check`, y la imagen web construye.
 - **SC-010** *(F15b)*: En los E2E de cada slice migrado, el `:hover` por toque, el foco con el teclado, el acento de Go y el movimiento reducido dan los mismos valores que en la base.
@@ -545,7 +562,7 @@ Cada requisito lleva entre paréntesis la parte que lo entrega (P5): *(F15a)*, *
 
 - **La base de F15** es `master` con F3 a F10 entregados, F10c incluido, con sus tokens (T042). El orden de las hojas, la grilla del barrido y los tokens son los del plan de F10c (`1150db65`); si la implementación de F10c cambia algo, F15 parte de lo que haya entrado.
 - **La versión de Tailwind** es la que esté publicada y tenga al menos dos semanas cuando se pida el permiso: 4.3.3 al 2026-10-28, publicada el 2026-07-16.
-- **Los subpresupuestos** (2 000 caracteres para F15a, 5 000 por PR de F15b y 10 000 para F15c) son estimaciones: cada plan los ajusta con su prototipo, y F15b, con el piloto.
+- **Los subpresupuestos** (2 000 caracteres para F15a, el tope de cada slice de F15b, como mucho 5 000, y 10 000 para F15c) son estimaciones: cada plan los ajusta con su prototipo, y F15b, con el piloto (FR-004).
 - **El número del ADR** es el 0010, a confirmar al escribirlo.
 - **El piso de navegadores** de Tailwind v4 y de `@layer` es aceptable para los alumnos del taller.
 - **La grilla de F10c** alcanza para cada slice. Si un slice tiene estados que la grilla no ve, su PR los suma antes de comparar.
@@ -670,7 +687,7 @@ Los agentes no las hacen.
 | --- | --- |
 | F15a, antes de instalar | Permiso para la descarga de la tabla de «Descargas previstas» (nombre, versión exacta, origen, peso y licencia) |
 | F15a, antes de integrar | Aceptar el ADR y el piso de navegadores que trae |
-| F15b, si un PR pasa los 5 000 caracteres | Aprobar el tamaño o pedir otra forma |
+| F15b, si un PR pasa el tope de su slice (FR-004, como mucho 5 000 sin permiso) | Aprobar el tamaño o pedir otra forma; para el laboratorio, partirlo por hoja |
 | F15c, si pasa los 10 000 caracteres o si la lista de reglas compensatorias crece más de lo razonable | Aprobar el tamaño o la lista, o pedir otra forma |
 | Cada PR | Permiso para construir la imagen web (`docker compose build taller`), como en cada port |
 

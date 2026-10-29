@@ -59,7 +59,7 @@ Valen para cada PR de F15b.
 - **Un elemento migrado** (FR-029) no lleva clases con regla heredada de su slice; conserva sólo los marcadores de su inventario.
 - **Sin** `!`, estilos en línea, `clsx`, `tailwind-merge` ni CVA (FR-003, FR-005, FR-034).
 - **`styles.css` no se edita en F15b**: las reglas de las clases base se borran en F15c (FR-036).
-- **El tamaño** (FR-004): bajo `BOOT_SIZE_LIMIT` (1 500 000) y bajo el tope del slice que T017 escribe en research (`ceil(r × bytes de la hoja × 1,25)`, con piso de 500), y nunca más de **5 000** sin el permiso del usuario.
+- **El tamaño** (FR-004): bajo `BOOT_SIZE_LIMIT` (1 500 000) y bajo el tope del slice que T017 escribe en research (`ceil(r × bytes de la hoja × 1,25)`, con piso de 500), y nunca más de **5 000** sin el permiso del usuario. Por encima del tope de su slice, el PR se detiene y lo aprueba el usuario (FR-004).
 - **Los checks de cierre** (SC-009): `npm run build`, `npm test`, `npm run lint` (con el mismo total de avisos de complejidad que la base del PR), `npm run format:check`, `E2E_PORT=<puerto> npm run test:e2e` y `git diff --check`; la imagen web, con permiso.
 - **Commits y PR:** en español los commits, con el trailer `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`; el PR en inglés, con el título `refactor(<slice>): style the <slice> with Tailwind utilities and drop <hoja>` y la forma de quickstart-f15b.md §4.
 
