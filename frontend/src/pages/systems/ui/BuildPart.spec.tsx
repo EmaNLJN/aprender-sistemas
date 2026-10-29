@@ -32,6 +32,22 @@ describe('BuildPart', () => {
     expect(screen.getByText('Llevá la sonda a Cargo.')).toBeInTheDocument();
   });
 
+  it('writes each pill as a single text node', () => {
+    const exercises = initProbeEngine();
+    const { container } = render(
+      <BuildPart
+        workshop={workshopView('probe', 'rust')}
+        language="rust"
+        exercises={exercises}
+        onPartChange={vi.fn()}
+      />,
+    );
+
+    const pills = container.querySelectorAll('.sys-pills span');
+    expect(pills).toHaveLength(3);
+    pills.forEach((pill) => expect(pill.childNodes).toHaveLength(1));
+  });
+
   it('links the known previous tools and skips the unknown ones', () => {
     const exercises = initProbeEngine();
     render(

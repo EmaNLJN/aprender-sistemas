@@ -26,7 +26,7 @@ const BuildPart = ({ workshop, language, exercises, onPartChange }: BuildPartPro
           <h2>{core.title}</h2>
           <p>{core.objective}</p>
           <div className="sys-pills">
-            <span>{core.tests.length} pruebas reales</span>
+            <span>{`${core.tests.length} pruebas reales`}</span>
             <span>Pistas progresivas</span>
             <span>Tu propio caso extra</span>
           </div>

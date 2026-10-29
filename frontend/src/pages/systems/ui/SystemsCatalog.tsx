@@ -68,8 +68,8 @@ const SystemsCatalog = ({ language, workshops, returnFocusTo, onOpen }: SystemsC
             mundo. Hacé visible una idea, provocá un fallo y construí su núcleo en {languageName}.
           </p>
           <div className="sys-pills">
-            <span>{workshops.length} talleres</span>
-            <span>{workshops.length * 2} núcleos programables</span>
+            <span>{`${workshops.length} talleres`}</span>
+            <span>{`${workshops.length * 2} núcleos programables`}</span>
             <span>Modelos paso a paso</span>
           </div>
         </div>

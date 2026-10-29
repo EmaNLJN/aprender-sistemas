@@ -40,6 +40,21 @@ describe('SystemsCatalog', () => {
     ).toHaveAttribute('max', '2');
   });
 
+  it('writes each hero pill as a single text node', () => {
+    const { container } = render(
+      <SystemsCatalog
+        language="rust"
+        workshops={seedCatalog()}
+        returnFocusTo={null}
+        onOpen={vi.fn()}
+      />,
+    );
+
+    const pills = container.querySelectorAll('.sys-pills span');
+    expect(pills).toHaveLength(3);
+    pills.forEach((pill) => expect(pill.childNodes).toHaveLength(1));
+  });
+
   it('filters by family with aria-pressed, keeps the focus and keeps the counter node', async () => {
     const user = userEvent.setup();
     render(
