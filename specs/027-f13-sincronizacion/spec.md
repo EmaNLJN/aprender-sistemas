@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-28
 
-**Status**: Borrador, con cinco preguntas para el clarify. Sin plan: el plan va después del de D1c
+**Status**: Clarificada el 2026-10-28: Q1 a Q5 respondidas, todas con la opción recomendada. Sin plan: el plan va después del de D1c
 
 **Input**: Ítem **F13** de la hoja de ruta [`specs/front-react/roadmap.md`](../front-react/roadmap.md), «Sincronización»: «el estado de sincronización, el aviso al salir con la cola sin enviar y los avisos de cuenta distinta, época cambiada y reloj desfasado». Son las superficies 3 y 5 de «Superficies que pide D1». El usuario aceptó el ítem el 2026-10-28 y pidió especificarlo ya, con el plan después del de D1c (`.coordinador/clarify-decisiones.md`, «Decisiones del 2026-10-28 (noche)»). Depende de D1c, de F10 y de F11. La fuente de verdad del protocolo es la [spec de D1](../007-d1-progreso-sincronizacion/spec.md), con su clarify y con las dos enmiendas que le hace D1c (el FR-070, por F11-Q5, y la cláusula de las claves v1 del FR-074, por F8-L7), y sus contratos de [D1a](../007-d1-progreso-sincronizacion/contracts/http.md) y de [D1b](../007-d1-progreso-sincronizacion/contracts/http-d1b.md). Se apoya en la [spec de F11](../015-f11-acceso-cuenta/spec.md) (F11a: «Tu cuenta», «Salir», «pedir el ingreso» y el cliente de la API; F11d: «computadora compartida» y «¿Este progreso es tuyo?»), en la [de F10](../024-f10-shell/spec.md) (la raíz única y el shell, donde vive el estado) y en la [de F8](../022-f8-metodo/spec.md) («Borrar todo» con el reset del servidor). El código se leyó en `master` (`24ba9d3d`) y, para el doble de la API de los E2E, en el worktree `impl-f11a` (`a7b3c71d`), todavía fuera de `master`. Usa como base el [ADR 0008](../../docs/adr/0008-pruebas-del-front.md) y el [ADR 0003](../../docs/adr/0003-integridad-del-progreso.md), aceptados, el [ADR 0006](../../docs/adr/0006-modelo-de-datos-y-api-multiusuario.md), en propuesta, el [mapa del front legacy](../front-react/legacy-map.md) y la [constitución](../../.specify/memory/constitution.md) 1.4.1.
 
@@ -103,73 +103,22 @@ Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumption
 | TDD; código y pruebas en inglés; interfaz en español rioplatense; teclado, celular y movimiento reducido | `AGENTS.md`; constitución, principios II, III y VI |
 | La spec, en español y sin código, con como mucho cinco preguntas para el clarify, cada una con su recomendación; E2E con un doble de `/api/sync` y `/api/progress` | Coordinador, 2026-10-28 (el encargo) |
 
-## Preguntas abiertas para el clarify
+## Clarifications
 
-Son cinco, cada una con sus opciones, una recomendada, su motivo y su costo. Se cierran en `/speckit-clarify`, y las respuestas pasan a una sección Clarifications.
+### Session 2026-10-28
 
-- **Los marcadores.** Cada pregunta deja un `[NEEDS CLARIFICATION]` donde decide algo, y ésos son los únicos: Q1 en FR-003 y FR-007, Q2 en FR-004, Q3 en FR-036, Q4 en FR-019 y Q5 en FR-015.
-- **Hasta el clarify,** lo que depende de una pregunta usa como borrador la opción recomendada.
-- **Las lecturas** de la sección siguiente no son preguntas: el usuario las corrige si no está de acuerdo.
+El usuario respondió las cinco preguntas con la opción recomendada. Los requisitos, los criterios, los riesgos y las alternativas ya las aplican, y no queda ningún `[NEEDS CLARIFICATION]`. Las opciones que no se eligieron, con su costo, están en «Alternativas consideradas».
 
-### Q1. Dónde se ve el estado de la cuenta en cada ancho
-
-**Contexto.** `#save-label` vive en `.sidebar-bottom`, que desde 850 px de ancho para abajo tiene `display: none` en `frontend/styles.css`, igual que «Exportar mi progreso». En un celular, el pie de guardado nunca se vio. «Tu cuenta» es un botón de la barra superior en todos los anchos y abre un diálogo (F11-Q3). `#toast` se ve en todos los anchos, salvo al imprimir. (FR-003 y FR-007)
-
-| Opción | Respuesta | Implicancias |
-| --- | --- | --- |
-| **A (recomendada)** | **El pie, «Tu cuenta», el toast y la franja.** La línea de la cuenta va en el pie de la barra lateral, debajo de `#save-label`. El mismo estado aparece en «Tu cuenta», en todos los anchos. Los cambios que importan (sin conexión, el taller que no responde y la vuelta) salen en `#toast`, y lo que pide algo al alumno, en la franja; los dos se ven en todos los anchos | En escritorio, el estado está siempre a la vista. En el celular, el alumno se entera de cada cambio por el toast y la franja, y ve el estado al abrir «Tu cuenta». No toca la barra superior, que a 320 px ya tiene el selector de lenguaje y «Tu cuenta». **Costo:** en el celular, «Enviando…» y «Sincronizado» sólo se ven abriendo «Tu cuenta» |
-| B | **Sólo el pie, el toast y la franja,** sin el estado en «Tu cuenta» | Un requisito menos. **Costo:** en el celular nunca se puede comprobar que lo último llegó: sólo se ve si algo falla |
-| C | **Un indicador compacto en la barra superior,** junto a «Tu cuenta», en todos los anchos, en lugar del pie | Siempre visible. **Costo:** cambia el aspecto del shell en escritorio; compite por el espacio con el selector de lenguaje y «Tu cuenta» a 320 px; y o quedan dos lugares de estado, o `#save-label` se muda y se editan los E2E de F1 que lo fijan (ver Q2) |
-| Otra | Decir dónde | |
-
-### Q2. Qué dice el pie: ¿se conservan los dos textos de hoy?
-
-**Contexto.** Con D1c, «Guardado en este navegador» sigue siendo cierto en modo normal, porque el progreso se escribe primero en el navegador (local primero), pero no dice si llegó a la cuenta. «Exportá para conservar tu avance» describe hoy el almacenamiento bloqueado; con D1c, el taller funciona ahí como en modo compartido y el progreso llega igual a la cuenta (D1, FR-070). Los dos textos los fijan dos E2E congelados de F1 (`qa/e2e/specs/startup-storage.spec.ts`, con `exact: true`), el tipo de `ShellPage.saveStatus` (`qa/e2e/pages/shell.ts`) y, desde F10, los E2E del pie que escribe F10a (F10, FR-026 y US3-3). (FR-004)
-
-| Opción | Respuesta | Implicancias |
-| --- | --- | --- |
-| **A (recomendada)** | **Dos líneas.** `#save-label` conserva sus dos textos y dice si el progreso se guarda en este navegador; la línea nueva dice si llegó a la cuenta | Son dos hechos distintos, y cada línea dice uno. **0 E2E congelados editados.** **Costo:** dos líneas en un pie de 10 px. Con el almacenamiento bloqueado, «Exportá para conservar tu avance» convive con «Sincronizado con tu cuenta»: las dos cosas son ciertas, pero el consejo de exportar pesa menos que hoy |
-| B | **Una sola línea** que reemplaza los dos textos de hoy y dice las dos cosas (por ejemplo, «Guardado en tu cuenta y en este navegador») | Un solo lugar que leer. **Costo:** editar los dos E2E de F1, el tipo de `saveStatus` y los E2E del pie de F10, en un commit propio con TDD y con la aprobación del usuario |
-| C | **Dos líneas, y `#save-label` cambia sólo en memoria:** en modo compartido o con el almacenamiento bloqueado dice «No se guarda en este navegador» | El consejo de exportar desaparece donde ya no hace falta. **Costo:** editar un E2E de F1 (el del almacenamiento bloqueado) y el tipo de `saveStatus`, con TDD y con la aprobación del usuario |
-| Otra | Decir qué textos | |
-
-### Q3. Cuándo pide confirmación el navegador al cerrar la pestaña
-
-**Contexto.** El aviso de `beforeunload` es el del navegador: no lleva un texto propio, no ofrece opciones y, según se sabe y el plan confirma, Chromium sólo lo muestra si el alumno ya interactuó con la página. Por eso «conservar o descartar» sólo es posible en «Salir». En modo normal, la cola vive en el espacio de la cuenta y sobrevive a cerrar la pestaña: se envía cuando esa cuenta vuelva a ese navegador, o vence a los 30 días (D1, FR-069). En modo compartido o con el almacenamiento bloqueado, la cola vive en memoria y cerrar la pestaña la pierde (D1, FR-070). El taller tiene además 11 enlaces internos que recargan el documento, porque cambian la query (F1), y un oyente de `beforeunload` también los ataja. (FR-036)
-
-| Opción | Respuesta | Implicancias |
-| --- | --- | --- |
-| **A (recomendada)** | **Sólo mientras cerrar pierde algo:** con la cola en memoria y cambios sin enviar | Pregunta sólo cuando hay una pérdida real. El oyente se pone y se saca con la condición, así que no molesta en modo normal y no le quita a la página el caché de ida y vuelta del navegador. **Costo:** en modo normal, cerrar con cambios sin enviar no avisa: quedan en el navegador hasta que la cuenta vuelva o venzan. En memoria, los 11 enlaces que recargan también preguntan (hallazgo para D1c) |
-| B | **Mientras haya cualquier cambio sin enviar,** en cualquier modo | Nadie cierra sin enterarse. **Costo:** en modo normal, cada cambio pasa unos segundos pendiente, así que la pregunta aparece seguido y sin una pérdida real, también en los 11 enlaces que recargan; los navegadores desaconsejan dejar el oyente puesto |
-| C | **Nunca:** basta el aviso al activar el modo compartido (F11d) y el estado de la cuenta | Sin oyente. **Costo:** en memoria, cerrar la pestaña pierde cambios sin confirmación, y el FR-071 de D1 queda cubierto sólo por el aviso de F11d al activar el modo, que pudo haber sido horas antes |
-| Otra | Decir cuándo | |
-
-### Q4. La forma de los avisos: ¿qué bloquea la pestaña?
-
-**Contexto.** El shell tiene tres formas de avisar: un diálogo modal, la franja (persistente, sin mover el foco) y `#toast` (4,5 s, y se va). D1 pide que una pestaña que quedó con otra cuenta «no modifique nada» (US3, escenario 3; SC-004). Lo que se escriba en esa pestaña entra en el espacio de la cuenta anterior, aunque quien esté en el teclado sea otra persona, y llega a la cuenta anterior cuando vuelva. Ése es el riesgo que la crítica del ADR 0006 marcó como crítico. F11a ya muestra el mensaje del servidor con «Recargar» cuando uno de sus formularios recibe `account_mismatch` (F11, FR-019), pero la sincronización corre sola, sin formulario. (FR-019)
-
-| Opción | Respuesta | Implicancias |
-| --- | --- | --- |
-| **A (recomendada)** | **Sólo la cuenta distinta es modal.** Un diálogo que no se cierra con Esc y deja inerte la página hasta recargar. La sesión vencida, la pestaña vieja, la época cambiada, los rechazos y el reloj van en la franja, persistentes y sin mover el foco. El toast queda para los cambios de estado | Una pestaña con otra cuenta no deja tocar nada, y lo demás no interrumpe a quien está escribiendo. **Costo:** un diálogo que sólo se resuelve recargando |
-| B | **Todo en la franja,** nada modal | Nada interrumpe. **Costo:** la pestaña de la cuenta anterior sigue andando en local hasta que el alumno recarga, con el riesgo de arriba |
-| C | **Recargar sola** ante la cuenta distinta, y avisar después de recargar | Sin decisión del alumno. **Costo:** lo que había en pantalla desaparece sin explicación; en memoria, la cola se pierde sin aviso, contra el FR-071 de D1 |
-| D | **También modal la época cambiada:** un diálogo que no se cierra sin descargar o descartar la copia | El alumno entiende en el acto por qué cambió su progreso. **Costo:** interrumpe aunque no haya copia que decidir, o usa dos formas para el mismo aviso |
-| Otra | Decir cuál | |
-
-### Q5. La sesión que vence mientras la sincronización corre sola
-
-**Contexto.** La sesión vence a los 30 minutos de inactividad o a las 8 horas (C3a, Q5), así que el 401 de la sincronización llega casi siempre al volver a la pestaña después de un rato. D1 pide conservar la cola y pedir el ingreso (FR-076). F8 y F12 llaman a «pedir el ingreso» enseguida ante un 401, pero ahí el alumno acaba de pedir algo; la sincronización, en cambio, corre sin que el alumno haga nada. (FR-015)
-
-| Opción | Respuesta | Implicancias |
-| --- | --- | --- |
-| **A (recomendada)** | **Avisar y dejar elegir:** la franja dice que la sesión venció y ofrece «Ingresar», que llama a «pedir el ingreso»; el alumno sigue estudiando y elige cuándo | Local primero: escribir nunca espera a la red (D1, FR-060), y nada interrumpe. **Costo:** el alumno puede seguir un rato sin sincronizar; en memoria, cerrar la pestaña pierde lo no enviado (lo cubre Q3) |
-| B | **Pedir el ingreso enseguida,** sobre el taller, como ante un 401 de una acción | La sesión vuelve antes. **Costo:** interrumpe sin que el alumno haya pedido nada, a veces en medio de una frase; el acceso deja el shell inerte |
-| C | **Enseguida sólo en memoria** (donde cerrar pierde), y avisar en modo normal | Protege el caso con pérdida. **Costo:** dos comportamientos que probar y explicar |
-| Otra | Decir cuál | |
+- Q: **Q1**, ¿dónde se ve el estado de la cuenta en cada ancho, si el pie de la barra lateral, con `#save-label`, se oculta desde 850 px? → A: Opción A: la línea de la cuenta va en el pie, debajo de `#save-label`; el mismo estado aparece en «Tu cuenta», en todos los anchos; los cambios de estado que importan (sin conexión, el taller que no responde y la vuelta) salen en `#toast`, y lo que pide algo al alumno, en la franja. No se toca la barra superior. Costo aceptado: en el celular, «Enviando…» y «Sincronizado» sólo se ven abriendo «Tu cuenta». Decidió el usuario. (FR-003, FR-007, FR-009, FR-010 y FR-012)
+- Q: **Q2**, ¿se conservan los dos textos de `#save-label`, que fijan dos E2E congelados de F1 (`startup-storage.spec.ts`) y los del pie de F10? → A: Opción A: dos líneas. `#save-label` conserva sus dos textos y dice si el progreso se guarda en este navegador, y la línea nueva dice si llegó a la cuenta. No se edita ningún E2E. Costo aceptado: dos líneas en un pie de 10 px, y con el almacenamiento bloqueado «Exportá para conservar tu avance» convive con el estado de la cuenta. Decidió el usuario. (FR-004 y FR-046)
+- Q: **Q3**, ¿cuándo pide confirmación el navegador (`beforeunload`) al cerrar o recargar la pestaña? → A: Opción A: sólo mientras cerrar pierde algo, con la cola en memoria (modo compartido o almacenamiento bloqueado) y cambios sin enviar; el oyente se pone y se saca con la condición. Costo aceptado: en modo normal, cerrar con cambios sin enviar no avisa, porque quedan en el espacio de la cuenta hasta que vuelva o venzan a los 30 días; y en memoria, los 11 enlaces que recargan el documento también preguntan (hallazgo para D1c). Decidió el usuario. (FR-035 a FR-037)
+- Q: **Q4**, ¿qué forma tiene cada aviso, y qué bloquea la pestaña? → A: Opción A: sólo la cuenta distinta es modal, con un diálogo que no se cierra con Esc y deja inerte la página hasta recargar. La sesión vencida, la pestaña vieja, la época cambiada, los rechazos y el reloj van en la franja, persistentes y sin mover el foco, y `#toast` queda para los cambios de estado. Costo aceptado: un diálogo que sólo se resuelve recargando. Decidió el usuario. (FR-014 y FR-019)
+- Q: **Q5**, ¿qué pasa cuando la sesión vence mientras la sincronización corre sola? → A: Opción A: la franja avisa y ofrece «Ingresar», que llama a «pedir el ingreso»; el acceso no se abre solo, y el alumno sigue estudiando. Costo aceptado: puede seguir un rato sin sincronizar, y en memoria, cerrar la pestaña pierde lo no enviado (lo cubre Q3). Decidió el usuario. (FR-015)
+- Las lecturas L1 a L8 no tuvieron respuesta: quedan como supuestos declarados, en «Lecturas de esta spec». Si el usuario corrige alguna, la spec se ajusta antes del plan.
 
 ## Lecturas de esta spec
 
-No son preguntas: es cómo esta spec aplica lo que ya está decidido. El usuario las corrige si no está de acuerdo.
+No son preguntas: es cómo esta spec aplica lo que ya está decidido. El clarify del 2026-10-28 no las respondió, así que quedan como supuestos declarados; si el usuario corrige alguna, la spec se ajusta antes del plan.
 
 - **L1, «atrasado».** El estado «atrasado» del FR-077 de D1 se lee como la pestaña vieja: el 409 `client_outdated`, ante el que D1c conserva la cola y pide recargar (D1, FR-076). Si D1c quiere decir otra cosa, por ejemplo una foto detrás del servidor, el estado se agrega con su propio texto.
 - **L2, «sin conexión».** El estado «sin conexión» sale de un envío que falló por la red, no de `navigator.onLine`, como eligió F8 para «Borrar todo» (F8-L6: se intenta y se avisa). Los eventos `online` y `offline` sólo le sirven a D1c para adelantar el reintento.
@@ -195,7 +144,7 @@ D1c es la mecánica; F13 es lo que el alumno ve y decide. La regla es la del FR-
 | Elegir y activar «computadora compartida»; el aviso del almacenamiento bloqueado en «Tu cuenta» | F11d (F11, FR-062 y FR-063) | Nada: lee el modo |
 | «¿Este progreso es tuyo?» y su respuesta, también el 409 `import_needs_confirmation` | F11d (F11, FR-064 y FR-065) | Nada |
 | «Tu cuenta», «Salir», «pedir el ingreso», el cliente de la API y sus errores de formulario | F11a | Suma la línea de la cuenta, la nota y la pregunta; llama a «pedir el ingreso» |
-| «Borrar todo», su contraseña, su espera y su `epoch_mismatch` | F8 (Q1, Q3 y L5) | No avisa la época por el propio «Borrar todo» (L6) |
+| «Borrar todo», su contraseña, su espera y su `epoch_mismatch` | F8 (F8-Q1, F8-Q3 y F8-L5) | No avisa la época por el propio «Borrar todo» (L6) |
 | El shell, el pie, `#toast` y la raíz única | F10 (FR-024 a FR-028 y FR-034) | Suma la línea, la franja y el diálogo dentro del shell |
 
 ### Lo que F13 supone de D1c
@@ -433,7 +382,7 @@ En el aula, con el modo compartido, un alumno escribe sin conexión y va a cerra
 
 1. **Dados** el almacenamiento bloqueado y cambios sin enviar, **cuando** se cierra la pestaña, **entonces** sale el diálogo `beforeunload` del navegador.
 2. **Dado** lo anterior, **cuando** los cambios llegan, **entonces** cerrar ya no pregunta.
-3. **Dado** el modo normal con cambios sin enviar, **cuando** se cierra la pestaña, **entonces** no sale el diálogo (con la opción A de Q3), y los cambios siguen en el espacio de la cuenta.
+3. **Dado** el modo normal con cambios sin enviar, **cuando** se cierra la pestaña, **entonces** no sale el diálogo (Q3), y los cambios siguen en el espacio de la cuenta.
 4. **Dados** cambios en memoria, **cuando** el alumno recarga desde «Recargar» del diálogo de cuenta distinta o sale con «Salir», **entonces** no sale el diálogo del navegador, porque ya eligió.
 
 *Cubre: FR-035 a FR-037; SC-005.*
@@ -511,11 +460,11 @@ Entre paréntesis, después del número, van los ítems de los que depende cada 
 
 **La línea de la cuenta**
 
-- **FR-003** *(D1c, F10b)*: El pie de la barra lateral DEBE sumar, debajo de `#save-label`, una línea con el estado de la cuenta y su punto, con el aspecto de `.save-status`. **[NEEDS CLARIFICATION: Q1, dónde se ve el estado en cada ancho]**
-- **FR-004** *(D1c, F10b)*: `#save-label` DEBE conservar sus dos textos y decir si el progreso se guarda en este navegador: «Guardado en este navegador» en modo normal, y «Exportá para conservar tu avance» en memoria. **[NEEDS CLARIFICATION: Q2, si se conservan los dos textos de hoy]** *(F10, FR-026)*
+- **FR-003** *(D1c, F10b)*: El pie de la barra lateral DEBE sumar, debajo de `#save-label`, una línea con el estado de la cuenta y su punto, con el aspecto de `.save-status`. *(Q1)*
+- **FR-004** *(D1c, F10b)*: `#save-label` DEBE conservar sus dos textos y decir si el progreso se guarda en este navegador: «Guardado en este navegador» en modo normal, y «Exportá para conservar tu avance» en memoria. Así, los E2E de F1 y de F10 que fijan esos textos no se editan. *(Q2; F10, FR-026)*
 - **FR-005** *(D1c)*: La línea DEBE mostrar, para cada estado de D1c, el texto de la tabla «Los estados de la cuenta», y no mostrarse antes de que D1c informe su primer estado.
 - **FR-006** *(D1c, F10b)*: El punto DEBE distinguir las tres familias (al día, en curso y problema) con los colores del taller, seguir oculto para el lector de pantalla y no ser lo único que las distingue: el texto dice lo mismo.
-- **FR-007** *(D1c, F11a)*: «Tu cuenta» DEBE mostrar, junto a «Salir» y en todos los anchos, la etiqueta «Tu progreso» con el texto de la línea. **[NEEDS CLARIFICATION: Q1]**
+- **FR-007** *(D1c, F11a)*: «Tu cuenta» DEBE mostrar, junto a «Salir» y en todos los anchos, la etiqueta «Tu progreso» con el texto de la línea. *(Q1)*
 - **FR-008** *(D1c)*: La línea NO DEBE ser una región viva ni llevar `role="status"`. *(L3)*
 
 **Los avisos de cambio de estado**
@@ -532,14 +481,14 @@ Entre paréntesis, después del número, van los ítems de los que depende cada 
 
 **La sesión vencida y la pestaña vieja**
 
-- **FR-015** *(D1c, F11a)*: Con «requiere ingreso», la franja DEBE mostrar el aviso de la sesión vencida, según el modo, con «Ingresar», que llama a «pedir el ingreso» de F11a. El acceso NO DEBE abrirse solo, y el alumno sigue estudiando. **[NEEDS CLARIFICATION: Q5, la sesión que vence en segundo plano]** *(D1, FR-076; F11, FR-006)*
+- **FR-015** *(D1c, F11a)*: Con «requiere ingreso», la franja DEBE mostrar el aviso de la sesión vencida, según el modo, con «Ingresar», que llama a «pedir el ingreso» de F11a. El acceso NO DEBE abrirse solo, y el alumno sigue estudiando. *(Q5; D1, FR-076; F11, FR-006)*
 - **FR-016** *(D1c, F11a)*: Si «pedir el ingreso» termina con la misma cuenta, el aviso DEBE irse y D1c sigue. Si termina con otra, el cambio es a propósito y F11a recarga el documento (FR-020 de F11), sin el diálogo de cuenta distinta. Sólo si la cola vive en memoria y quedan cambios sin enviar, antes de esa recarga DEBE abrirse «Cambiaste de cuenta», que dice cuántos se pierden y ofrece «Descargar lo que no se envió» y «Seguir», que recarga. En modo normal no hay aviso: lo no enviado queda en el espacio de la cuenta anterior. *(F11, FR-020; D1, FR-065 y FR-071)*
 - **FR-017** *(D1c)*: Con «pestaña vieja», la franja DEBE mostrar el mensaje del servidor con «Recargar». *(D1, FR-076)*
 - **FR-018** *(D1c)*: Si recargar pierde cambios, porque la cola vive en memoria, el aviso de la pestaña vieja DEBE decir cuántos y ofrecer «Descargar lo que no se envió» antes de «Recargar». *(D1, FR-071)*
 
 **La cuenta distinta**
 
-- **FR-019** *(D1c, F10b)*: Cuando D1c informa una cuenta distinta, DEBE abrirse el diálogo de cuenta distinta: modal, con el rol de un diálogo de alerta, que NO se cierra con Esc y deja la página inerte detrás hasta recargar. **[NEEDS CLARIFICATION: Q4, la forma de los avisos]** *(D1, US3; SC-004)*
+- **FR-019** *(D1c, F10b)*: Cuando D1c informa una cuenta distinta, DEBE abrirse el diálogo de cuenta distinta: modal, con el rol de un diálogo de alerta, que NO se cierra con Esc y deja la página inerte detrás hasta recargar. *(Q4; D1, US3; SC-004)*
 - **FR-020** *(D1c, F11a)*: El diálogo DEBE abrirse por las tres causas que detecta D1c, todas de una sesión que cambió de cuenta en otra pestaña:
   - un 409 `account_mismatch` en un pedido del cliente de D1c;
   - un 419 o un 401 después del cual `GET /api/session` trae otra cuenta;
@@ -576,7 +525,7 @@ Entre paréntesis, después del número, van los ítems de los que depende cada 
 **Al cerrar o recargar la pestaña**
 
 - **FR-035** *(D1c)*: Mientras D1c informe cambios que se perderían si el documento se descarga, DEBE pedirse la confirmación del navegador (`beforeunload`), con su texto. *(D1, FR-070 y FR-071)*
-- **FR-036** *(D1c)*: Esa confirmación DEBE pedirse sólo con la cola en memoria y cambios sin enviar. **[NEEDS CLARIFICATION: Q3, cuándo pide confirmación el navegador]**
+- **FR-036** *(D1c)*: Esa confirmación DEBE pedirse sólo con la cola en memoria y cambios sin enviar. En modo normal, la cola sobrevive a cerrar la pestaña, y NO DEBE pedirse. *(Q3)*
 - **FR-037** *(D1c, F11a, F11b)*: El oyente DEBE ponerse cuando la condición empieza a cumplirse y sacarse cuando deja de cumplirse; nunca queda puesto siempre. Las recargas que el alumno ya eligió NO DEBEN pedir la confirmación: «Salir», «Recargar» del diálogo de cuenta distinta y de la pestaña vieja, la recarga después de borrar la cuenta y la de un cambio de cuenta.
 
 **Teclado, foco, celular y movimiento reducido**
@@ -600,7 +549,7 @@ Entre paréntesis, después del número, van los ítems de los que depende cada 
 
   Sin servicios externos ni el stack de Docker. Cada error de consola que provoca una respuesta simulada se declara con `expectIssue` y su motivo. La confirmación del navegador se prueba con `page.close({ runBeforeUnload: true })` después de una interacción, con un manejador que comprueba que el diálogo es de tipo `beforeunload`. *(ADR 0008; `qa/AGENTS.md`)*
 - **FR-045** *(D1c)*: Cada comportamiento DEBE empezar con una prueba que falla. Vitest con Testing Library prueba la tabla de estados, el orden de la franja, las opciones de cada diálogo según el modo y la condición de la confirmación, con la interfaz de D1c simulada y sus estados armados con fishery. Los valores esperados se copian a mano de las tablas de esta spec, nunca de la misma factory ni del código que se prueba. *(Constitución, principio II; ADR 0008)*
-- **FR-046** *(F10b, D1c)*: La red E2E vigente al empezar F13 (los 106 de F1, los 17 de A2 y los de F3 a F12a, F10 y D1c) DEBE seguir en verde sin editar sus escenarios, salvo lo que decida Q2. Toda edición de un E2E existente va en su propio commit, con TDD y con la aprobación del usuario.
+- **FR-046** *(F10b, D1c)*: La red E2E vigente al empezar F13 (los 106 de F1, los 17 de A2 y los de F3 a F12a, F10 y D1c) DEBE seguir en verde sin editar ningún escenario: con Q2, tampoco cambian los de F1 y de F10 que fijan los textos del pie. Editar uno sería un cambio de comportamiento, en su propio commit, con TDD y con la aprobación del usuario. *(Q2)*
 - **FR-047** *(D1c, F10b, F11a)*: F13 DEBE cerrar con `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `npm run test:e2e` y `git diff --check` en verde, sin dependencias nuevas, con `dist/index.html` bajo `BOOT_SIZE_LIMIT` (1 500 000 caracteres) y su tamaño antes y después en el PR. DEBE actualizar `docs/architecture.md` y `qa/AGENTS.md` con lo que agrega.
 
 ### Key Entities *(include if feature involves data)*
@@ -623,11 +572,11 @@ Entre paréntesis, después del número, van los ítems de los que depende cada 
 - **SC-002**: Con el doble al día, cada E2E de la red existente termina con 0 avisos en la franja, 0 toasts de F13 y 0 diálogos de F13. Con cada respuesta problemática de FR-044, aparece exactamente el aviso, el toast o el diálogo que le corresponde, y un reintento que falla igual suma 0 anuncios.
 - **SC-003**: Con el diálogo de cuenta distinta abierto, salen 0 pedidos que modifican, el teclado y el mouse provocan 0 escrituras del almacenamiento, Esc lo deja abierto y su texto tiene 0 nombres, emails o ids de cuenta. Con la cola en memoria, el archivo se descarga antes de recargar. Un ingreso con otra cuenta en la misma pestaña abre 0 diálogos de cuenta distinta, y 1 «Cambiaste de cuenta» sólo con cambios en memoria.
 - **SC-004**: En los cinco caminos de «Salir», el espacio queda como dicen FR-030 a FR-033: enviado, limpio; conservar, con los cambios; descartar, limpio; en memoria, salir sin enviarlos, sin claves de progreso; y volver, sin cambios. «Volver» hace 0 pedidos de cierre, y un cierre que falla descarta 0 cambios.
-- **SC-005**: Con la cola en memoria y cambios sin enviar, cerrar la pestaña produce 1 diálogo `beforeunload`. Sin cambios, en modo normal (con la opción A de Q3) y en las recargas de FR-037, produce 0.
+- **SC-005**: Con la cola en memoria y cambios sin enviar, cerrar la pestaña produce 1 diálogo `beforeunload`. Sin cambios, en modo normal (Q3) y en las recargas de FR-037, produce 0.
 - **SC-006**: Con un `epoch_mismatch` y cambios pendientes, la descarga baja 1 archivo y el aviso sigue; descartar pide 1 confirmación y deja 0 avisos de época. Después del «Borrar todo» de la misma pestaña, hay 0 avisos de época.
 - **SC-007**: Con un desfase de 120 000 ms hay 0 avisos de reloj, y con uno de 150 000 ms, 1, en los dos sentidos; al bajar a 60 000 ms, 0. La franja con todos los avisos a la vez muestra los 5 en su orden, sin desplazamiento horizontal a 320 y a 390 px.
 - **SC-008**: Cada superficie se completa sólo con el teclado; al cerrar la pregunta al salir, el foco vuelve a «Salir»; con movimiento reducido hay 0 transiciones; y en una corrida sin problemas, `getByRole('alert')` y `getByRole('status')` encuentran los mismos elementos que sin F13 (E2E).
-- **SC-009**: La red E2E vigente al empezar F13 pasa con 0 escenarios editados, salvo los que decida Q2 (0 con la opción A).
+- **SC-009**: La red E2E vigente al empezar F13 pasa con 0 escenarios editados (Q2).
 - **SC-010**: `dist/index.html` queda bajo 1 500 000 caracteres, con su tamaño antes y después en el PR; F13 suma 0 dependencias y 0 sitios de estilo en línea; y `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `npm run test:e2e` y `git diff --check` pasan.
 
 ## Riesgos
@@ -637,9 +586,9 @@ Entre paréntesis, después del número, van los ítems de los que depende cada 
 3. **Demasiados avisos.** Un alumno con mala conexión podría recibir un toast tras otro. *Mitigación:* la línea no es viva (L3), el toast sale una vez por cambio de estado (FR-009, FR-010 y FR-043) y la franja sólo lleva lo que pide algo.
 4. **Chocar con la red.** Una región `alert` o `status` de más rompe los E2E que ubican el error de la compuerta y `#toast`. *Mitigación:* la franja sin `role` (FR-013) y SC-008.
 5. **El celular no ve el pie.** *Mitigación:* Q1, con el toast, la franja y «Tu cuenta».
-6. **Editar E2E congelados.** *Mitigación:* la opción A de Q2 no edita ninguno; las otras van con TDD y con aprobación (FR-046).
+6. **Editar E2E congelados.** *Mitigación:* con Q2, `#save-label` conserva sus dos textos y no se edita ninguno (FR-046).
 7. **La copia de la época no tiene formato ni destino.** El alumno descarga un archivo que quizás no puede volver a usar. *Mitigación:* el aviso no promete importarla (FR-025), y el formato es un hallazgo para D1c.
-8. **En memoria, los 11 enlaces que recargan el documento** piden la confirmación (con la opción A de Q3) y, si el alumno sigue, pierden la cola. *Mitigación:* un hallazgo para D1c: conservar la cola a través de una recarga de la misma pestaña, o enviarla antes de seguir el enlace.
+8. **En memoria, los 11 enlaces que recargan el documento** piden la confirmación (Q3) y, si el alumno sigue, pierden la cola. *Mitigación:* un hallazgo para D1c: conservar la cola a través de una recarga de la misma pestaña, o enviarla antes de seguir el enlace.
 9. **Un diálogo que no se cierra.** El de cuenta distinta sólo se resuelve recargando (Q4). *Mitigación:* en modo normal no se pierde nada al recargar, y en memoria se ofrece antes la copia.
 10. **Nada se ejecutó al especificar.** No corrieron `npm`, Docker ni un navegador. *Mitigación:* el plan mide; las cifras de esta spec salen de leer el código, los contratos y la documentación de Playwright.
 
@@ -673,7 +622,7 @@ Entre paréntesis, después del número, van los ítems de los que depende cada 
 **F10** (spec 024):
 
 - F13 va dentro del shell de la raíz única (F10b): la línea en el pie, la franja entre la barra superior y `#main`, los diálogos con portales en la raíz y los toasts por el canal único de `#toast` (FR-028 de F10).
-- El FR-026 de F10 (los dos textos del pie) sigue igual con la opción A de Q2; con la B o la C, F13 edita sus E2E.
+- El FR-026 de F10 (los dos textos del pie) sigue igual (Q2), y sus E2E no se editan.
 - F10 y F13 se integran de a uno (FR-059 de F10).
 
 **F8** (spec 022):
@@ -688,7 +637,7 @@ Entre paréntesis, después del número, van los ítems de los que depende cada 
 - La fila de F13 dice «Propuesta, sin aceptar» y «Pendiente»: pasa a «En especificación», con el enlace a esta spec, porque el usuario aceptó el ítem el 2026-10-28.
 - En «Superficies que pide D1», la 3 y la 5 pasan de «F13 (propuesta)» a F13.
 - En «Alcance por ítem», F13 deja de ser una propuesta y suma la franja, la línea en «Tu cuenta», los cambios rechazados (L4) y la nota de «Salir».
-- En «Decisiones abiertas», la fila de F13 pasa a nombrar las cinco preguntas de esta spec.
+- En «Decisiones abiertas», la fila de F13 queda cerrada con su clarify (2026-10-28): Q1 a Q5, todas con la opción recomendada.
 - En «Acciones del usuario», «Ahora», aceptar o rechazar F13 ya está hecho.
 - Las dependencias de F13 son D1c, F10 (F10b) y F11a; el modo compartido se ejerce con F11d o con el almacenamiento bloqueado.
 - «Criterios de aceptación globales» citan el tope de 1 250 000; desde el PR #76 es de 1 500 000.
@@ -712,11 +661,11 @@ Entre paréntesis, después del número, van los ítems de los que depende cada 
 
 | Tema | Alternativas | Decisión y motivo |
 | --- | --- | --- |
-| Dónde se ve el estado (Q1) | Sólo el pie y la franja; un indicador en la barra superior | **El pie, «Tu cuenta», el toast y la franja** (recomendada): el celular lo ve sin tocar la barra superior |
-| Los textos del pie (Q2) | Una sola línea nueva; dos líneas con un texto nuevo en memoria | **Dos líneas, sin tocar `#save-label`** (recomendada): 0 E2E congelados editados |
-| La confirmación al cerrar (Q3) | Siempre que haya cambios sin enviar; nunca | **Sólo si cerrar pierde algo** (recomendada): sin preguntas de más en modo normal |
-| La forma de los avisos (Q4) | Todo en la franja; recargar sola; la época también modal | **Sólo la cuenta distinta es modal** (recomendada): bloquea lo que mezcla cuentas y no interrumpe lo demás |
-| La sesión vencida en segundo plano (Q5) | Pedir el ingreso enseguida; enseguida sólo en memoria | **Avisar y dejar elegir** (recomendada): local primero |
+| Dónde se ve el estado (Q1) | B: sólo el pie, el toast y la franja; C: un indicador compacto en la barra superior | **A: el pie, «Tu cuenta», el toast y la franja** (usuario): el celular lo ve sin tocar la barra superior. B no deja comprobar en el celular que lo último llegó; C cambia el shell en escritorio, compite a 320 px con el selector de lenguaje y «Tu cuenta», y duplica el estado o edita los E2E de F1 |
+| Los textos del pie (Q2) | B: una sola línea nueva; C: dos líneas, con «No se guarda en este navegador» en memoria | **A: dos líneas, sin tocar `#save-label`** (usuario): 0 E2E congelados editados. B edita los dos E2E de F1, el tipo de `saveStatus` y los del pie de F10; C edita uno de F1 y el tipo |
+| La confirmación al cerrar (Q3) | B: siempre que haya cambios sin enviar; C: nunca | **A: sólo si cerrar pierde algo** (usuario): sin preguntas de más en modo normal. B pregunta seguido y sin pérdida real, también en los 11 enlaces que recargan; C pierde la cola en memoria sin confirmación, con sólo el aviso de F11d al activar el modo |
+| La forma de los avisos (Q4) | B: todo en la franja; C: recargar sola; D: la época también modal | **A: sólo la cuenta distinta es modal** (usuario): bloquea lo que mezcla cuentas y no interrumpe lo demás. B deja que la pestaña de la cuenta anterior siga escribiendo en su espacio; C borra lo que había en pantalla sin explicación y pierde la cola en memoria sin aviso; D interrumpe aunque no haya copia que decidir |
+| La sesión vencida en segundo plano (Q5) | B: pedir el ingreso enseguida; C: enseguida sólo en memoria | **A: avisar y dejar elegir** (usuario): local primero. B interrumpe sin que el alumno haya pedido nada; C son dos comportamientos que probar y explicar |
 | Anunciar la línea de la cuenta | Hacerla región viva (`role="status"`) | **No** (L3): anunciaría cada frase; los cambios importantes van por el toast |
 | Los avisos que piden algo | `#toast` | **La franja:** el toast se va a los 4,5 s, y la copia, «Recargar» o «Ingresar» tienen que quedar |
 | La franja como región | `role="alert"` o `role="status"` | **`aria-live` sin rol:** una región con rol, vacía, rompe los E2E que ubican la compuerta y el toast (F11, FR-076) |
@@ -742,10 +691,9 @@ Los agentes no las hacen.
 
 | Cuándo | Acción |
 | --- | --- |
-| Ahora | Responder el clarify (Q1 a Q5) y corregir, si hace falta, las lecturas L1 a L8 y los textos propuestos |
+| Antes del plan de F13 | Corregir, si hace falta, las lecturas L1 a L8 y los textos propuestos, que quedan como supuestos |
 | Plan de D1c | Contrastar «Lo que F13 supone de D1c» con su interfaz |
 | F13, antes y después de la franja | La comprobación manual con lector de pantalla de la franja, de los toasts y de los diálogos (X2) |
-| F13, sólo con la opción B o C de Q2 | Aprobar la edición de los E2E de F1 y de F10 que fijan los textos del pie |
 
 ## Descargas previstas
 

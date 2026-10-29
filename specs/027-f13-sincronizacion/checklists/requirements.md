@@ -15,8 +15,8 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
-- [ ] Requirements are testable and unambiguous
+- [x] No [NEEDS CLARIFICATION] markers remain
+- [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
 - [x] All acceptance scenarios are defined
@@ -33,11 +33,12 @@
 
 ## Notes
 
-**Lo que queda abierto hasta el clarify**
+**El clarify del 2026-10-28**
 
-- **Los marcadores.** Quedan siete `[NEEDS CLARIFICATION]`, uno o dos por pregunta: Q1 en FR-003 y FR-007, Q2 en FR-004, Q3 en FR-036, Q4 en FR-019 y Q5 en FR-015. Cada pregunta tiene sus opciones, la recomendada, su motivo y su costo, en «Preguntas abiertas para el clarify». Hasta el clarify, esos requisitos usan la opción recomendada como borrador.
-- **«Requirements are testable and unambiguous»** queda sin marcar por esos siete requisitos. Los otros 40 se pueden probar como están.
-- **Las lecturas L1 a L8** no son preguntas: son cómo la spec aplica lo ya decidido (por ejemplo, que «atrasado» del FR-077 de D1 es el 409 `client_outdated`, o que los cambios rechazados se muestran). El usuario las corrige si no está de acuerdo.
+- **Los marcadores.** Los siete `[NEEDS CLARIFICATION]` que había (Q1 en FR-003 y FR-007, Q2 en FR-004, Q3 en FR-036, Q4 en FR-019 y Q5 en FR-015) se resolvieron en el clarify del 2026-10-28, todos con la opción recomendada, y ya no están en la spec. Cada requisito cita su decisión. Las respuestas figuran en `## Clarifications`, y las opciones que no se eligieron, con su costo, en «Alternativas consideradas».
+- **Lo que cambió con las respuestas:** FR-004 y FR-046 dicen que no se edita ningún E2E (Q2), FR-036 dice que en modo normal no se pide la confirmación (Q3), y SC-005, SC-009, los riesgos 6 y 8, la relación con F10, la hoja de ruta y «Acciones del usuario» dejan de nombrar las opciones que no se eligieron.
+- **«Requirements are testable and unambiguous»** se marcó al responder el clarify: los siete requisitos que dependían de una respuesta ya la tienen.
+- **Las lecturas L1 a L8** no tuvieron respuesta: quedan como supuestos declarados (por ejemplo, que «atrasado» del FR-077 de D1 es el 409 `client_outdated`, o que los cambios rechazados se muestran). Si el usuario corrige alguna, la spec se ajusta antes del plan.
 
 **Excepciones deliberadas**
 
