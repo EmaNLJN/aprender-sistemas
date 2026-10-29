@@ -87,7 +87,7 @@ node lab-parity.mjs ../f7b-base . exports      # 3 fixtures; esperado: 0 escritu
   - une los nodos de texto vecinos y colapsa los espacios;
   - el editor cuenta como un solo nodo.
 - **En el estilo:** compara cada propiedad computada y la caja de cada elemento, con dos excepciones:
-  - el tamaño de lo que está dentro de un `details` cerrado: no se dibuja, y Chrome devuelve un tamaño que depende de si alguna vez se midió;
+  - lo que está dentro de un `details` cerrado, salvo su `summary`, no se compara: no se dibuja, y Chrome devuelve un tamaño computado que depende de si alguna vez se midió (TR-13). Es la mitigación que suman F3 y F9 a sus copias del barrido de F2b (`quickstart-f2b.md` §3.1 (b)) en la rama `plan/amend-f3-f9`; el prototipo sólo sacaba las seis propiedades de tamaño, y ahora se salta el elemento entero;
   - el `transform` y la caja de un elemento con una animación en curso, porque su fase depende del momento de la captura. Con movimiento reducido no hay animación, y se compara todo.
 - **En los exploradores:** recorre los 274 ejercicios y anota cuál se dibuja (o ninguno). Compara el texto dibujado (`innerText`), la región viva y el elemento con el foco.
 - **En las escrituras y la exportación:** reloj fijo (2026-10-06 12:00 UTC), `Math.random` fijo y el doble del compilador de `qa/e2e/lib/compiler-results.ts`. Envuelve `localStorage.setItem` y guarda cada escritura de la clave del laboratorio.
@@ -290,20 +290,10 @@ function styleSnapshot() {
   };
   for (const el of [document.documentElement, ...document.querySelectorAll('*')]) {
     if (el.closest('.cm-editor') && !el.classList.contains('cm-editor')) continue;
+    if (el.closest('details:not([open]) > :not(summary)')) continue;
     const cs = getComputedStyle(el);
     const props = {};
     for (let i = 0; i < cs.length; i++) props[cs[i]] = cs.getPropertyValue(cs[i]);
-    if (el.closest('details:not([open]) > :not(summary)')) {
-      for (const name of [
-        'block-size',
-        'height',
-        'inline-size',
-        'width',
-        'perspective-origin',
-        'transform-origin',
-      ])
-        delete props[name];
-    }
     const animated = el.getAnimations().some((animation) => animation.playState === 'running');
     if (animated) delete props.transform;
     const r = el.getBoundingClientRect();
