@@ -278,7 +278,7 @@ AggregateNotes({ period, generatedAt, withGranularity })
 DateField({ label, registration, messages })
 PeriodForm({ shown, withGranularity, failure })
 SeriesChart({ chart, summary })
-RunsList({ runs, title, lead })
+RunsList({ runs, title, lead, emptyText? })   // emptyText lo suma F14b, con el texto de F14a por omisión
 ```
 
 ## `pages/admin`, lo que suma F14b
@@ -310,6 +310,21 @@ export interface StudentDetail {
   readonly campaign: { readonly checkpoints: readonly CheckpointProgress[]; readonly sealedExercises: number };
   readonly workshops: readonly WorkshopProgress[]; readonly route: RouteProgress;
 }
+
+// model/stats-failure.ts
+export function isNotFound(failure: ApiFailure): boolean;
+
+// model/account-usage.ts
+export type GridFilter = 'all' | 'unsolved';
+export interface QuotaRow { readonly label: string; readonly used: number; readonly limit: number }
+export function resetSentence(progress: StudentProgress): string;
+export function predictionText(answered: boolean, correct: boolean): string;
+export function visibleRows(rows: readonly ExerciseProgressRow[], filter: GridFilter): ExerciseProgressRow[];
+export function quotaRows(quota: QuotaUse): QuotaRow[];
+export function activityChart(activity: readonly ActivityPoint[], granularity: Granularity): BarChart;
+export function activitySummary(activity: readonly ActivityPoint[], granularity: Granularity): string;
+export function helpText(row: ExerciseProgressRow): string;
+export function solvedText(row: ExerciseProgressRow): string;
 
 // model/parse-usage.ts
 export function parseStudentRow(value: unknown): StudentRow | null;

@@ -1580,12 +1580,12 @@ T001 corre cada detección sobre `f14a/base`, anota el resultado en research.md 
    });
    ```
 
-5. **`stats-failure.spec.ts`.** Los mensajes salen de `lang/es/api.php` de C5 y de F11a:
+5. **`stats-failure.spec.ts`.** Los mensajes salen de `lang/es/api.php` de C5 y de F11a (`qa/e2e/lib/api-contract.ts`, `MESSAGES`). Cubre los estados de SC-005 que no tienen una E2E propia: 429, 403, 409, un 5xx, un cuerpo que no es JSON y la red:
 
    ```ts
    import { describe, expect, it } from 'vitest';
    import type { ApiFailure } from '../../../shared/api/http';
-   import { NETWORK_MESSAGE } from '../../../shared/ui/form';
+   import { NETWORK_MESSAGE, UNEXPECTED_MESSAGE } from '../../../shared/ui/form';
    import { FORBIDDEN_HINT } from './react-to-failure';
    import { describeStatsFailure, isPeriodRejection } from './stats-failure';
 
@@ -1638,6 +1638,27 @@ T001 corre cada detección sobre `f14a/base`, anota el resultado en research.md 
        expect(describeStatsFailure({ kind: 'network' }, '')?.generalMessages).toEqual([
          NETWORK_MESSAGE,
        ]);
+     });
+
+     it('offers to reload on a changed account, and explains a server error and a body that is not JSON', () => {
+       const changed = describeStatsFailure(
+         response(409, 'account_mismatch', 'La sesión cambió de cuenta: recargá la página.'),
+         '',
+       );
+       expect(changed?.offerReload).toBe(true);
+       expect(changed?.generalMessages).toEqual(['La sesión cambió de cuenta: recargá la página.']);
+       expect(
+         describeStatsFailure(
+           response(500, 'server_error', 'Algo salió mal de nuestro lado. Probá de nuevo en un rato.'),
+           '',
+         )?.generalMessages,
+       ).toEqual(['Algo salió mal de nuestro lado. Probá de nuevo en un rato.']);
+       expect(describeStatsFailure({ kind: 'unexpected', status: 502 }, '')?.generalMessages).toEqual([
+         UNEXPECTED_MESSAGE,
+       ]);
+       expect(
+         describeStatsFailure(response(403, 'account_disabled', 'Tu cuenta está deshabilitada.'), ''),
+       ).toBeNull();
      });
 
      it('tells a rejected period apart from any other 422', () => {
@@ -7933,7 +7954,7 @@ Por su API dentro del slice (contrato), sin duplicarlas:
 | SC-002 | T018, T026 (la distribución oculta y ningún «verificado») |
 | SC-003 | T026 |
 | SC-004 (última oración) | T026 (`page.clock`, cinco minutos) |
-| SC-005 | T014, T016, T020 y T026: cargando, vacío, 422, 429 (T005), 503, 401, 403 (T005), 5xx y red (T005) |
+| SC-005 | T005 (429, 403, 409, 5xx, un cuerpo que no es JSON y la red), T014 y T016 (cargando, vacío, 503 y 422), T026 (422, 503 y 401 en el navegador); el 404 es de F14b |
 | SC-006 | T014, T026 |
 | SC-007 | T002, T023, T028 |
 | SC-008 | T026, T028 |
