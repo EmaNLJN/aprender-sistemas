@@ -102,7 +102,7 @@ Con el stack local (el escenario de C3a: la página del atacante en `http://loca
 4. C3a, C3b y C3c entregados, con una cuenta admin creada y el aviso de privacidad vigente; F11b y F12a integradas, con sus pantallas en el escenario 5.
 5. La corrida de registro de la auditoría de B3 (`npm run api:audit`, con runsc) en verde sobre el commit que se despliega.
 6. El escenario 13, con el par de límites fijado.
-7. HSTS en 300, `connect-src` anotado (final o provisorio, R30) y la lista de lo que el usuario hizo (CGNAT, dominio, cuenta del destino, claves).
+7. HSTS en 300, `connect-src` anotado (final o provisorio, R30; G2 no espera a A4, decidido por el usuario el 2026-10-28) y la lista de lo que el usuario hizo (CGNAT, dominio, cuenta del destino, claves).
 
 ## 11. G2: abrir (usuario y coordinador)
 

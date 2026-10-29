@@ -50,11 +50,11 @@ Las referencias «R1» a «R31» son secciones de este archivo. Los requisitos d
 | 23 | La compuerta se parte en G1 (antes de abrir) y G2 (al abrir), y la CI suma el job `public` | R22 |
 | 24 | Se suma V5, la verificación del destino de los respaldos | V5 |
 | 25 | Sin `vite-plugin-singlefile`, el build sigue con un solo módulo de JS y una sola hoja (`codeSplitting: false` y `cssCodeSplit: false`), y `BOOT_SIZE_LIMIT` sigue en 1 500 000 caracteres para el HTML más lo que enlaza | R25 |
-| 26 | El arranque en frío de un aula de 40 desde una IP se mide en HTTP/1.1 y en HTTP/2, y la ráfaga de la zona `api` y `limit_conn` se fijan con esa medida, sin ningún 429 | R26 |
+| 26 | El arranque en frío de un aula de 40 desde una IP se mide en HTTP/1.1 y en HTTP/2, y la ráfaga de la zona `api` y `limit_conn` se fijan con esa medida, sin ningún 429; el techo de 1 200 y 1 600 lo aceptó el usuario el 2026-10-28 | R26 |
 | 27 | La fase de los usuarios corre antes de `migrate` en la cadena de arranque (`grants-users`), y `grants` vuelve a la fase de las tablas | R27 |
 | 28 | Un sexto rol, `taller_audit`, para la auditoría de B3 | R28 |
 | 29 | El recorrido de la CSP corre contra el stack, con una configuración de Playwright aparte y las pantallas de F11 y de F12a | R29 |
-| 30 | `connect-src` final es `'self'`; mientras A4 no entre, el check acepta los Playgrounds sólo si el cliente de Playgrounds todavía existe | R30 |
+| 30 | `connect-src` final es `'self'`; mientras A4 no entre, el check acepta los Playgrounds sólo si el cliente de Playgrounds todavía existe; G2 no espera a A4 (el usuario, 2026-10-28) | R30 |
 | 31 | Qué espera cada tramo: la base a A3 y a C3; el recorrido y G1, a F11b y a F12a; G1, también a la auditoría de B3 | R31 |
 
 ## R1. Cómo se activa el modo público
@@ -443,11 +443,11 @@ Se conservan `server.proxy` y `preview.proxy: {}` de F11a (`qa/vite-proxy-check.
 
 **La escalera.** La ráfaga de la zona `api` pasa por 400, 800 y 1 200, y `limit_conn perip`, por 800, 1 200 y 1 600, de a un escalón en los dos. Queda el primer par que cumple el criterio, y se anota en este archivo, en el check y en la guía de operación.
 - No cambian el ritmo de la zona `api` (50 por segundo) ni la zona `session` (5 por segundo, ráfaga de 60): 40 sesiones entran en 60.
-- Si el último escalón no alcanza, T020 se detiene y lo lleva al coordinador. Sería el pool de PHP, no Nginx.
+- **El techo, decidido por el usuario el 2026-10-28:** el último escalón (ráfaga de 1 200 y `limit_conn perip 1600`) es el máximo aceptado. Si no alcanza, T020 se detiene y lo lleva al coordinador: sería el pool de PHP, no Nginx.
 
 **Por qué no una cuenta.** Cuántos pedidos están en vuelo a la vez depende de lo rápido que responde PHP y de cuántos flujos abre el navegador por conexión. La medida es la fuente.
 
-**El costo.** Una IP sola puede mandar de golpe hasta la ráfaga elegida, y no 400. Los límites por cuenta de Laravel siguen intactos, y el volumen sin CDN ya estaba fuera de alcance.
+**El costo, aceptado por el usuario el 2026-10-28.** Una IP sola puede mandar de golpe hasta la ráfaga elegida (como mucho 1 200), y no 400, y sostener hasta 1 600 conexiones o flujos. Los límites por cuenta de Laravel siguen intactos, y el volumen sin CDN ya estaba fuera de alcance.
 
 ## R27. Las cuentas existen antes de migrar, también en un volumen viejo
 
@@ -497,7 +497,7 @@ Si la corrida de registro con `taller_audit` falla con 1142 en otra tabla (por e
 
 ## R30. `connect-src` sin Playgrounds (A4-Q2, hallazgo C4-10)
 
-**Decisión.** El valor final es `connect-src 'self'` (A4-Q2; FR-032 y SC-003 de A4). C4 no espera a A4, así que T001 anota si A4 ya entró: no existe `frontend/src/shared/api/playground/` y `runtime-check` ya no está en `qa/run-checks.ts`.
+**Decisión.** El valor final es `connect-src 'self'` (A4-Q2; FR-032 y SC-003 de A4). C4 no espera a A4, y G2 tampoco (decidido por el usuario el 2026-10-28): si C4 abre antes, el código de los alumnos sigue yendo a los Playgrounds, como hoy, hasta que A4 los retire. T001 anota si A4 ya entró: no existe `frontend/src/shared/api/playground/` y `runtime-check` ya no está en `qa/run-checks.ts`.
 - **Si A4 ya entró,** `headers.conf` sale con el valor final.
 - **Si no,** sale con los dos hosts, y los checks lo atan al cliente:
   - `qa/nginx-headers-check.ts` acepta el valor con los Playgrounds sólo mientras exista `frontend/src/shared/api/playground/`, y exige el final cuando no existe;
@@ -506,7 +506,7 @@ Si la corrida de registro con `taller_audit` falla con 1142 en otra tabla (por e
 Así, el commit de A4 que retira el cliente hace fallar `npm test` hasta que edite `headers.conf`. «El segundo en llegar los quita» deja de depender de la memoria de quien integra. Los dos valores están escritos a mano en los checks.
 
 **Alternativas descartadas.**
-- Que C4 espere a A4: es una dependencia nueva que el usuario no decidió.
+- Que C4, o al menos G2, espere a A4: el usuario lo descartó el 2026-10-28.
 - Dejar los Playgrounds sin regla: la CSP quedaría abierta si nadie se acuerda.
 
 ## R31. Qué espera cada tramo
@@ -516,7 +516,7 @@ Así, el commit de A4 que retira el cliente hace fallar `npm test` hasta que edi
 | T001 (la base) | A3 (y con ella F11a) y C3 (C3a, C3b y C3c) en `master` | Tocan los archivos que C4 edita: `docker/nginx/nginx.conf`, `docker/compose.yaml`, `docker/compose.preview.yaml`, `docker/mysql/`, `backend/api/scripts/{init-env,deploy,smoke}.sh`, `frontend/vite.config.ts`, `qa/build-check.ts` y `qa/lib/built-page.ts`. C3c espera el dominio, así que el dominio es una acción del usuario anterior a C4 |
 | S2 (el recorrido de T021) | F11b y F12a en `master` | El recorrido suma sus pantallas. Son del front y no tocan los archivos de las ondas 1 y 2, así que T001 no las espera: anota su estado, y S2 se demora si no llegaron |
 | T025 (G1) | Lo anterior, más la corrida de registro de B3 en verde sobre el contenido que se despliega | Es la condición de G2 que pidió el coordinador. Si B3 ya está integrada en T018, su servicio `audit` toma `taller_audit` ahí |
-| Nunca | A4, D1c y F10 | A4 sólo cambia `connect-src` (R30) |
+| Nunca | A4, D1c y F10 | A4 sólo cambia `connect-src` (R30), y G2 no la espera (el usuario, 2026-10-28) |
 
 F11a llega a `master` en un solo PR, al final de sus unidades (TR-12). A3 y F12a se integran sobre `f11a/base`, así que en `master` llegan juntas o después de F11a.
 

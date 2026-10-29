@@ -88,7 +88,7 @@ Lo que cuentan los límites de Nginx y de Laravel, el bloqueo por cuenta y los r
 
 ## Los límites de conexión y de tiempo (FR-028)
 
-Por IP, las conexiones simultáneas tienen el tope `limit_conn perip` y lo que lo pasa recibe 429; con HTTP/2 cada pedido concurrente cuenta como una conexión. La cabecera tarda a lo sumo 10 segundos y el cuerpo, 20 entre dos lecturas (R10). Los límites de pedidos por IP son los de C3a, con la ráfaga de la zona `api` ajustada: el tope de conexiones y la ráfaga salen de la escalera de R26 (de 800 a 1 600 y de 400 a 1 200), con el criterio de que el arranque en frío de un aula de 40 desde una IP (unos 720 pedidos a `/api/`) no reciba ningún 429, ni en HTTP/1.1 ni en HTTP/2. Los valores elegidos quedan en research.md, R26, y en la guía de operación.
+Por IP, las conexiones simultáneas tienen el tope `limit_conn perip` y lo que lo pasa recibe 429; con HTTP/2 cada pedido concurrente cuenta como una conexión. La cabecera tarda a lo sumo 10 segundos y el cuerpo, 20 entre dos lecturas (R10). Los límites de pedidos por IP son los de C3a, con la ráfaga de la zona `api` ajustada: el tope de conexiones y la ráfaga salen de la escalera de R26 (de 800 a 1 600 y de 400 a 1 200; el techo lo aceptó el usuario el 2026-10-28), con el criterio de que el arranque en frío de un aula de 40 desde una IP (unos 720 pedidos a `/api/`) no reciba ningún 429, ni en HTTP/1.1 ni en HTTP/2. Los valores elegidos quedan en research.md, R26, y en la guía de operación.
 
 ## Lo que los vecinos pueden suponer
 

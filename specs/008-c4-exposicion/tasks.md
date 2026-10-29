@@ -6,7 +6,7 @@ Las ondas, los dueños de archivos, las interfaces y los puntos de sincronizaci�
 
 ## Phase 1: Setup — Línea de base y descargas (coordinador, onda 0)
 
-- [ ] T001 [US7] Línea de base: A3 (con F11a), C3a, C3b y C3c integrados; las suites y los checks de hoy en verde; las tablas, los servicios y los volúmenes anotados; `bootSize`, los `style=` y `cssText` y el aula en HTTP/1.1 medidos; el estado de F11b, F12a, B3 y A4 registrado; la confirmación del usuario de 80 y 443 sin CGNAT y del dominio con DNS editable (FR-002, FR-017, FR-020, FR-028, FR-046; plan 0.1)
+- [ ] T001 [US7] Línea de base: A3 (con F11a), C3a, C3b y C3c integrados; las suites y los checks de hoy en verde; las tablas, los servicios y los volúmenes anotados; `bootSize`, los `style=` y `cssText` y el aula en HTTP/1.1 medidos; el estado de F11b, F12a, B3 y A4 registrado; la confirmación del usuario de 80 y 443 sin CGNAT y del dominio propio con DNS editable (decidido por el usuario el 2026-10-28) (FR-002, FR-017, FR-020, FR-028, FR-046; plan 0.1)
 - [ ] T002 [US2] Lote 1 de descargas, con permiso: el módulo ACME de Nginx y Pebble 2.10.1 (FR-047; plan 0.2)
 
 ## Phase 2: Foundational — Verificaciones previas (onda 1; V5, en la onda 2)

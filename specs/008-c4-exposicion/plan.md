@@ -84,7 +84,7 @@ Valores exactos, copiados de la spec, de la constitución y de las decisiones de
   - T001 parte de A3 (con F11a) y de C3a, C3b y C3c en `master`;
   - S2, el recorrido de T021, espera además F11b y F12a;
   - G1 (T025) exige todo eso y la corrida de registro de la auditoría de B3 (`npm run api:audit`) en verde sobre el contenido que se despliega;
-  - A4 no es una dependencia (R30).
+  - A4 no es una dependencia, ni de G2 (R30; decidido por el usuario el 2026-10-28).
 - **El tope del HTML:** `BOOT_SIZE_LIMIT = 1500000` en `qa/build-check.ts`, sobre `bootSize` (el HTML más el módulo de JS y la hoja que enlaza).
   - `dist/index.html` solo: a lo sumo 20 000 caracteres.
   - El subpresupuesto de C4 sobre `bootSize`: +2 000 caracteres (R25).
@@ -102,6 +102,7 @@ Valores exactos, copiados de la spec, de la constitución y de las decisiones de
 - **Los límites:**
   - la zona `api` conserva 50 r/s y `nodelay`; su ráfaga sale de la escalera 400, 800 y 1 200;
   - `limit_conn perip` sale de la escalera 800, 1 200 y 1 600;
+  - el techo, 1 200 y 1 600, lo aceptó el usuario el 2026-10-28; si no alcanza, T020 se detiene;
   - el criterio: 0 respuestas 429 en el arranque en frío de 40 alumnos desde una IP, en HTTP/1.1 y en HTTP/2 (R26);
   - la zona `session` (5 r/s, ráfaga de 60) no cambia;
   - `client_header_timeout 10s`, `client_body_timeout 20s`, `send_timeout 30s`, `keepalive_timeout 30s` y `worker_connections 1024`.
@@ -302,7 +303,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 
 1. **Lo integrado.** `git log --oneline` de `master` y, para cada vecino, el commit que lo trajo:
    - **exigidos:** A3, que llega con F11a o después (TR-12), C3a, C3b y C3c. Si falta alguno, T001 se detiene: tocan los archivos que C4 edita (R31). Si A3 no retiró el puente estático de A2 (`dist/content/` después de un build, o `readBuiltContent` en `qa/lib/built-page.ts`), avisá: FR-022 impide desplegar C4;
-   - **las acciones del usuario previas:** su confirmación de que la conexión admite recibir por 80 y 443 sin CGNAT, y de que el dominio está registrado con DNS editable (C3c ya lo usa). Sin las dos, T001 se detiene y lo pregunta: no se planifica G2 sobre un supuesto;
+   - **las acciones del usuario previas:** su confirmación de que la conexión admite recibir por 80 y 443 sin CGNAT, y de que el dominio propio con DNS editable está registrado (decidido por el usuario el 2026-10-28; C3c ya lo usa). Sin las dos, T001 se detiene y lo pregunta: no se planifica G2 sobre un supuesto;
    - **anotados:** F11b y F12a (S2 los espera), B3 (G1 la espera; si está, T018 le da `taller_audit` a su servicio `audit`) y A4. A4 está si no existe `frontend/src/shared/api/playground/` y `runtime-check.ts` ya no figura en `qa/run-checks.ts`: decide el valor de `connect-src` de T009 (R30).
 2. Corré y anotá, como línea de base: `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `npm run api:format:check`, `npm run api:analyse`, `npm run api:test`; con `COMPOSE_PROJECT_NAME=taller-c4-base docker compose up --build -d --wait`: `npm run api:smoke`, `npm run api:content:check` y `sh backend/api/scripts/deploy-check.sh`.
 3. **Las medidas de la base:**
@@ -1120,7 +1121,7 @@ volumes:
      - **Los conteos, por HTTP/2:** 40 procesos de `curl -sk --http2 --resolve taller.test:18443:127.0.0.1 --parallel --parallel-max 18 -b <archivo> -w '%{http_code}\n'` a la vez, desde el host (una IP), cada uno con `GET /api/session` y las 17 porciones (las rutas son las que pide A3: T001 anota de qué módulo de `qa/` se leen, para no escribirlas a mano). Exige 0 respuestas 429 y 0 503 en los 720 pedidos, e imprime cuántas hubo de cada estado. Después, 2 000 pedidos en un segundo desde la misma IP reciben algún 429: el límite sigue existiendo.
      - **Los 40 arranques, por HTTP/2:** `qa/classroom-boot-check.ts` de A3, ampliado (paso 5), con `CLASSROOM_BASE_URL=https://taller.test:18443` y `CLASSROOM_COOKIE` con la cookie de la cuenta: 0 vistas de error en las dos rondas.
      - **Los 40 arranques, por HTTP/1.1:** el mismo script contra el stack local de la base de C4, como lo corre A3: 0 vistas de error, y los 429 del registro de `taller` durante la corrida, contados como en T001.
-     - **La escalera:** si algo de lo anterior falla con el par vigente (al empezar, ráfaga de 400 y `limit_conn perip 800`), se repite con el siguiente escalón (800 y 1 200; después, 1 200 y 1 600). Cada escalón va en una copia sin versionar de `docker/nginx/nginx.conf`, montada sobre la imagen por el archivo de prueba, y se recorre en los dos protocolos: la misma copia se monta en el stack local para la corrida por HTTP/1.1. Con el par fijado en S3, G1 repite las dos corridas sin copias (T025). El primer par que pasa todo se anota en research.md, R26 (con los conteos de cada escalón), y se le pasa al coordinador, que lo fija en S3 en `docker/nginx/nginx.conf` y en `qa/nginx-headers-check.ts`. Si el último escalón no alcanza, se detiene y lo lleva al coordinador.
+     - **La escalera:** si algo de lo anterior falla con el par vigente (al empezar, ráfaga de 400 y `limit_conn perip 800`), se repite con el siguiente escalón (800 y 1 200; después, 1 200 y 1 600, el techo que aceptó el usuario el 2026-10-28). Cada escalón va en una copia sin versionar de `docker/nginx/nginx.conf`, montada sobre la imagen por el archivo de prueba, y se recorre en los dos protocolos: la misma copia se monta en el stack local para la corrida por HTTP/1.1. Con el par fijado en S3, G1 repite las dos corridas sin copias (T025). El primer par que pasa todo se anota en research.md, R26 (con los conteos de cada escalón), y se le pasa al coordinador, que lo fija en S3 en `docker/nginx/nginx.conf` y en `qa/nginx-headers-check.ts`. Si el último escalón no alcanza, se detiene y lo lleva al coordinador.
    - **TLS:** `openssl s_client -tls1` y `-tls1_1` fallan; `-tls1_2` negocia una de las seis suites; `-tls1_3` negocia; `-no_ticket` no recibe ticket; `curl --http2 -I` informa HTTP/2.
    - **El currículo:** `/content/` y `/content/curriculum.<versión>.json` dan 404, y ninguno de los marcadores de `curriculumMarkers()` (`qa/lib/content-document.ts`) está en `/usr/share/nginx/html` de la imagen (`docker compose exec taller grep -rF`). Es lo que T011 y T016 de A3 ya comprueban en el modo local (hallazgo C4-4): acá se repite en el público.
    - **Los registros:** cada servicio en ejecución tiene la rotación de FR-029 (`docker inspect --format '{{.HostConfig.LogConfig}}'`).
@@ -1247,14 +1248,14 @@ export default defineConfig({
 3. V5 con las credenciales reales (T007), la expiración de 35 días comprobada y lo que dijo el proveedor sobre el país (§13.14).
 4. C3a, C3b y C3c entregados, con una cuenta admin creada y el aviso de privacidad vigente; F11b integrada; F12a integrada, es decir, el PR de su T026 (`f12a/base` a `master`) mergeado: es lo que F12-Q2 llama «las pantallas de administración integradas» (hallazgo C4-1); HSTS en 300.
 5. **La auditoría de B3:** la corrida de registro (`npm run api:audit`, con runsc) en verde sobre el commit que se despliega y con el árbol limpio, con su resumen (`qa/curriculum-audit/summary.md`) en el registro de G1. Si B3 todavía no está integrada, G1 espera.
-6. **La CSP:** si A4 ya entró, `connect-src 'self'`; si no, el valor provisorio, anotado como tal (R30).
+6. **La CSP:** si A4 ya entró, `connect-src 'self'`; si no, el valor provisorio, anotado como tal (R30). G1 y G2 no esperan a A4 (decidido por el usuario el 2026-10-28).
 7. Escribí el registro de G1 (en el PR y en la línea de evidencia de T025): qué pasó, con qué comando, y qué quedó sin verificar.
 
 **Compuerta:** todo lo anterior en verde o con su límite escrito. Sin G1, el usuario no abre el router.
 
 ### Tarea 8.3 · G2: abrir (T026, el usuario con el coordinador)
 
-**Pasos:** los del escenario 11 de [quickstart.md](./quickstart.md): G1 cerrada, con la auditoría de B3 en verde; el DNS y el monitor listos; con `ACME_DIRECTORY_URL` de staging, `public.sh up` y el reenvío de los puertos; el certificado de staging emitido y `public.sh status`; `public-check.sh --real <dominio>`; desde datos móviles, la invitación y el recorrido (SC-001) y la IP pública del teléfono en el registro de Nginx (V3b); el escaneo de puertos desde otra red (SC-011); el paso a producción y la rampa de HSTS con la condición de cada escalón.
+**Pasos:** los del escenario 11 de [quickstart.md](./quickstart.md), sin esperar a A4 (decidido por el usuario el 2026-10-28): G1 cerrada, con la auditoría de B3 en verde; el DNS y el monitor listos; con `ACME_DIRECTORY_URL` de staging, `public.sh up` y el reenvío de los puertos; el certificado de staging emitido y `public.sh status`; `public-check.sh --real <dominio>`; desde datos móviles, la invitación y el recorrido (SC-001) y la IP pública del teléfono en el registro de Nginx (V3b); el escaneo de puertos desde otra red (SC-011); el paso a producción y la rampa de HSTS con la condición de cada escalón.
 
 **Compuerta:** cada paso anotado. Si V3b muestra la IP del puente, se detiene y se ajusta la publicación.
 
@@ -1357,7 +1358,7 @@ Los agentes no las hacen. «G1» y «G2» son los dos tramos de la compuerta (R2
 | Cuándo | Acción | Tarea que la espera |
 | --- | --- | --- |
 | Antes de T001 (ya) | **Comprobar que la conexión admite recibir por 80 y 443** (sin CGNAT, sin filtro del proveedor). Si sólo falla el 80, TLS-ALPN-01 sirve; si falla el 443, C4 vuelve al usuario con alternativas | T003 (decide el desafío), G2 |
-| Antes de C3c, y por eso antes de T001 | **Elegir y registrar el dominio**, con DNS editable: C3c lo necesita para SPF, DKIM y DMARC, y C4 para el certificado y `APP_URL`. Un subdominio de DNS dinámico que no admita esos registros no sirve para los dos | C3c, T019 (valores de ejemplo hasta G2), G1, G2 |
+| Antes de C3c, y por eso antes de T001 | **Registrar un dominio propio con DNS editable** (decidido por el usuario el 2026-10-28): C3c lo necesita para SPF, DKIM y DMARC, y C4 para el certificado y `APP_URL` | C3c, T001 (la confirmación), T019 (valores de ejemplo hasta G2), G1, G2 |
 | Con la onda 1 | **El permiso para correr Docker** en los spikes, y después en las ondas 2 y 3 | T003 a T006, T009 a T023 |
 | Con el lote 1 de descargas | **El permiso** para el módulo ACME y Pebble | T002 |
 | Con el lote 2 de descargas | **El permiso** para `age` y `rclone` (y `curl-minimal` si falta) | T016 |
