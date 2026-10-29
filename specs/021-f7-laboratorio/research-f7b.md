@@ -2,7 +2,7 @@
 
 **Feature**: [spec.md](./spec.md) (spec 021, la parte F7b de P2) | **Plan**: [plan-f7b.md](./plan-f7b.md) | **Fecha**: 2026-10-28
 
-Este documento junta las decisiones técnicas de F7b con sus alternativas, la tabla de las consultas a Context7 y lo que se midió. El plan remite acá con la sigla de cada decisión (R1 a R16).
+Este documento junta las decisiones técnicas de F7b con sus alternativas, la tabla de las consultas a Context7 y lo que se midió. El plan remite acá con la sigla de cada decisión (R1 a R17). R17 es la enmienda del 2026-10-28, que alinea el plan con lo que F7a fijó al implementarse.
 
 F7b se apoya en tres planes que todavía no están en `master`; se citan sin enlace:
 
@@ -25,7 +25,7 @@ Se planificó sin tocar el código de `master` y sin descargar nada. El prototip
   - `npm test` en verde: 37 checks; 45 archivos y 878 pruebas de Vitest (5 archivos y 35 pruebas nuevas, todas de modelo);
   - `npm run typecheck`, `npm run lint` (0 errores, 19 avisos) y `prettier --check`;
   - `npm run build`;
-  - los E2E: **193 de 193** (los 123 de F1 y A2, los 61 de F7a sin editar y 9 nuevos);
+  - los E2E: **193 de 193** (los 123 de F1 y A2, los 61 de F7a sin editar y 9 nuevos). El prototipo tenía los 61 que preveía el plan de F7a; la implementación tiene 62, porque `lab-run.spec.ts` pasó de 13 a 14 (R17);
   - los 7 E2E de X1 contra el legacy de F7a: **7 en rojo, cada uno por la razón de X1** (el foco que se pierde, el panel que se cierra o el estado del filtro sin la búsqueda);
   - las cinco comparaciones únicas de quickstart-f7b.md §3, todas con 0 diferencias fuera de la lista:
     - el DOM, en 39 estados, con los seis del revisor;
@@ -42,20 +42,20 @@ Se planificó sin tocar el código de `master` y sin descargar nada. El prototip
     - `lab-api.ts` con el índice de `entities/campaign`: fallan el aislamiento de `lab-state-check` y R4 de `seams-guard-check`;
     - el registro vacío creado aunque haya bloqueo, el nivel reiniciado al cambiar de idioma y el estado del filtro sin la búsqueda: falla, en cada caso, su spec de modelo.
 - **Lo que no corrió:**
-  - las specs de componente (jsdom y Testing Library no están instalados y no se descarga nada: R15);
+  - las specs de componente (jsdom y Testing Library no estaban instalados al planificar y no se descargó nada; desde #67 están en `master`: R15);
   - los diffs sobre los archivos de F5 y F6;
   - la rama B de C4 (A4 no tiene plan);
   - Docker, la CI, macOS y la comprobación con lector de pantalla (X2), que es del usuario.
 
 ## Línea base de planificación
 
-Medida en la copia con F7a. T018 la vuelve a medir sobre la base real (`master` con F7a, F5 y F6).
+Medida en la copia con F7a. T018 la vuelve a medir sobre la base real (`master` con F7a, F5 y F6, sobre 431c9d90), y el plan espera cada conteo como un delta sobre esa medida (R17).
 
 | Qué | Valor |
 | --- | --- |
 | `npm run lint` | 0 errores, 32 avisos |
 | Avisos de los tres archivos legacy | 13: en `lab.js`, `render` 13, `mapHTML` 14, `exerciseHTML` 11 y los demás que dejó F7a; en `lab-explorers.js`, `body` 26; en `quest-explorers.js`, `robotBody` 16, `packetBody` 22 y `act` 19 |
-| E2E | 184: 106 de F1, 17 de A2 y 61 de F7a |
+| E2E | 184: 106 de F1, 17 de A2 y 61 de F7a (con el plan de F7a; la implementación deja 185, con 62 de F7a) |
 | `npm test` | 39 checks; 40 archivos y 843 pruebas de Vitest |
 | `lab-state-check` | 39 escenarios |
 | `dist/index.html` | `html.length` 1 144 712 |
@@ -66,7 +66,7 @@ Medida en la copia con F7a. T018 la vuelve a medir sobre la base real (`master` 
 | Qué | Valor |
 | --- | --- |
 | `npm run lint` | 0 errores, 19 avisos: salen los 13 de los tres archivos y no entra ninguno |
-| E2E | 193: los 184 y 9 nuevos (`lab-react.spec.ts` 7 y `lab-explorer-focus.spec.ts` 2) |
+| E2E | 193: los 184 y 9 nuevos (`lab-react.spec.ts` 7 y `lab-explorer-focus.spec.ts` 2); sobre la implementación de F7a, 194 |
 | `npm test` | 37 checks (salen `lab-bridge-check` y `quest-explorers-check`); 45 archivos y 878 pruebas de Vitest |
 | `lab-state-check` | 33 escenarios (R10) |
 | `load-order-check` | 21 imports, 16 restricciones de orden y 1 de etapas |
@@ -233,11 +233,11 @@ Los 7 E2E de `lab-react.spec.ts` lo fijan: en rojo contra el legacy de F7a y en 
 
 JSX pesa más que las plantillas de texto: cada elemento es una llamada con sus props. Quitar todo el legacy sin la página no es una medida útil: el árbol que sólo alcanzaba `lab.js` (CodeMirror, la feature y los modelos) cae con él, y el HTML queda en 510 815.
 
-**El margen.** Los subpresupuestos de los otros planes, sobre la base de F7a, son: F3 +30 000 (con nuqs) o +15 000; F4 +10 000; F5 +40 000 (con nuqs) o +25 000; F6 hasta +15 000; F8 hasta +9 000. En el peor caso (nuqs una sola vez) suman 1 144 712 + 30 000 + 10 000 + 25 000 + 15 000 + 9 000 = 1 233 712, y con F7b, 1 249 293: deja 707 caracteres para F9 a F12 y A3. Es un hallazgo para el coordinador. **El tope de F7b:** +17 000 sobre la base de T018. La pieza más grande del paquete es CodeMirror (535 kB), y su `basicSetup` es la palanca si hace falta; cambiarla no es de un port.
+**El margen.** Los subpresupuestos de los otros planes, sobre la base de F7a, son: F3 +30 000 (con nuqs) o +15 000; F4 +10 000; F5 +40 000 (con nuqs) o +25 000; F6 hasta +15 000; F8 hasta +9 000. En el peor caso (nuqs una sola vez) suman 1 144 712 + 30 000 + 10 000 + 25 000 + 15 000 + 9 000 = 1 233 712, y con F7b, 1 249 293: deja 707 caracteres para F9 a F12 y A3. Es un hallazgo para el coordinador. **Resuelto el 2026-10-28:** el usuario subió `BOOT_SIZE_LIMIT` a 1 500 000 (#76, la opción (c) del informe del plan), y en el mismo peor caso quedan 250 707 caracteres. **El tope de F7b:** +17 000 sobre la base de T018, sin cambios. La pieza más grande del paquete es CodeMirror (535 kB), y su `basicSetup` es la palanca si hace falta; cambiarla no es de un port.
 
 ## R13. La rama de C4: A4 entra antes que F7b
 
-**El predicado (T018):** `grep -c "createPlaygroundTransport\|buildPlaygroundProgram" frontend/lab.js` da 2 en la rama A (sin A4) y 0 si A4 ya cambió la raíz. Si da 0, es la rama B.
+**El predicado (T018):** `grep -c "createPlaygroundTransport(" frontend/lab.js` da 1 o más en la rama A (sin A4) y 0 si A4 ya cambió la raíz. Si da 0, es la rama B. El predicado del plan original contaba las líneas con `createPlaygroundTransport` o `buildPlaygroundProgram` y esperaba 2, pero la unidad 4 de F7a deja cuatro: las dos del import, `transport:` y `programBuilder` (`plan.md:5040-5075`; Prettier no junta el import, porque pasa de 100 columnas). El nuevo mira sólo la llamada, porque el import termina en coma, y no depende de cómo se escriban sus argumentos (R17).
 
 **En la rama B**, F7b porta como comportamiento vigente lo que A4 dibujó en `lab.js` (la spec, FR-007 y criterio C4):
 
@@ -265,7 +265,7 @@ El plan no inventa el código de A4: sus textos y sus nombres salen de `lab.js` 
 
 ## R15. Las specs de componente (FR-062 y SC-010)
 
-- **El arnés lo traen F3, F5 o F6** (jsdom 30.1.2, Testing Library y el proyecto `jsdom` de Vitest, según sus planes). T018 lo comprueba: `node -e "require.resolve('jsdom')"` y el proyecto `jsdom` en `frontend/vitest.config.ts`. Si no está, F7b pide el permiso (FR-003) con la tabla de F6, T002.
+- **El arnés ya está en `master`** desde #67 (TR-6): jsdom 30.1.2, `@testing-library/react` 16.3.3, `@testing-library/user-event` 14.6.7, `@testing-library/jest-dom` 7.0.1 y `@testing-library/dom` 10.4.2; el proyecto de Vitest se llama `dom` (entorno jsdom, `*.spec.tsx`) y el setup es `frontend/src/vitest.setup.ts`, con jest-dom y `cleanup`. T018 lo comprueba y no pide ningún permiso.
 - **Fishery no hace falta:** las entradas de las specs se escriben a mano.
 - **Las specs** (T023) cubren:
   - las regiones vivas que conservan su nodo (X2);
@@ -278,11 +278,48 @@ El plan no inventa el código de A4: sus textos y sus nombres salen de `lab.js` 
 
 ## R16. Lo que no se verificó
 
-1. **Las specs de componente:** el arnés no está instalado. Se escribieron contra el código del prototipo. T024 las corre en verde, y si una falla por el arnés (no por el código), se corrige la spec, nunca el componente.
+1. **Las specs de componente:** el arnés no estaba instalado al planificar (hoy está en `master`, #67). Se escribieron contra el código del prototipo. T024 las corre en verde, y si una falla por el arnés (no por el código), se corrige la spec, nunca el componente.
 2. **Los diffs de F5 y F6:** se escribieron contra el código de sus planes. Si la versión integrada difiere, se aplica la misma intención y K revisa.
 3. **La rama B de C4:** depende de lo que A4 deje en `lab.js`.
 4. **La comprobación con lector de pantalla (X2):** la hace el usuario en la revisión del PR.
-5. **El barrido de estilo no ve `:hover`, `:focus` ni las animaciones** (riesgo 6): las hojas se mueven sin editarse.
+5. **El barrido de estilo no ve `:hover`, `:focus` ni las animaciones** (riesgo 6): las hojas se mueven sin editarse. Con React, `:hover` persiste después de un clic (TR-13), así que el barrido saca el puntero antes de capturar (R17).
+
+## R17. Lo que fijó F7a al implementarse (enmienda del 2026-10-28)
+
+**Las fuentes.** F7a está implementado hasta su unidad 3 en `impl-f7a` (fc88d450), sin la ronda de arreglos de T008-T009, que sólo toca specs. Su unidad 4 (`lab.js` usa las reglas, compone la ejecución y se retira `TallerRunner`: T013 a T015) no existe todavía, y se lee en `plan.md` §4. Las restricciones salen de `.coordinador/hallazgos-para-planes.md` (secciones «F7b» y «Transversal») y de las decisiones de la noche del 2026-10-28 (`.coordinador/clarify-decisiones.md`). Ningún archivo de F7a cambió con esta enmienda.
+
+**Las interfaces que consume la página existen como el plan las usa.** Cada nombre que el plan importa de `entities/exercise` (29) y de `features/run-exercise` (6) está en sus índices de fc88d450, con la firma que usa el código del plan:
+
+- **las reglas** (`entities/exercise/model/record-rules.ts`): `ensureRecord(progress, id)` (`:16-18`), `hintPatch(record)`, `predictionPatch(exercise, answer)`, `revealSolutionPatch()`, `loadSolutionPatch(exercise)`, `restoreStarterPatch(exercise)`, `selfAssessmentPatch(confidence, now)` y `HINT_LIMIT`;
+- **los selectores** (`selectors.ts`): `draftOf(exercise, record)` (`:49-51`), `isSolved`, `isDueForReview`, `practicePointsOf`, `levelOf`, `normalizeCustomTest` e `isReflectionSolved(exercise, record)`; `liveHint(code, exercise)` (`live-hint.ts:3`); `reviewStateOf(exercise, record, running)` con su `ReviewState` de siete casos (`review-state.ts:7-14` y `:33-44`);
+- **el almacén:** `labStore.changes` es un `StoreApi<{ revision: number }>` (`lab-store.ts:44`), y `syncAfterRun` acepta `formatXp` (`sync-after-run.ts`);
+- **la feature** (`features/run-exercise/index.ts`): `createExerciseRunner` con sus nueve dependencias (`create-exercise-runner.ts:31-41`), `ExerciseRunner` con `state`, `run`, `cancel` y `abort` (`:43-48`), `RunState` (`run-state.ts:11`), `ProgramBuilder` (`transport.ts:42-46`), `createPlaygroundTransport` y `buildPlaygroundProgram` (`playground-transport.ts:11` y `:27`);
+- **los selectores del mapa** (`pages/lab/model/map-selectors.ts`): `MapFilters`, `LevelFilter`, `LabRecords`, `isExtraChallenge`, `matchesMapFilters`, `todayChallenge` y `surprisePool`.
+
+**Lo que cambia, entrada por entrada:**
+
+| Entrada | Lo que fijó F7a | Qué cambia en F7b |
+| --- | --- | --- |
+| F7b-1 | 62 E2E: 20 de `lab-exercise`, 12 de `lab-explorers`, 10 de `lab-map`, 14 de `lab-run` (11 y los 3 del `for` de `:39`) y 6 de `lab-storage` (3 y los 3 del `for` de `:30`); `ledger impl-f7a:31` | Los 61 pasan a 62. Los totales se esperan como delta sobre T018 (TR-15): la base son 185 de F1, A2 y F7a, más los 18 de `project.spec.ts` de F4 y los de F5 y F6; U1 deja N + 2 y el corte N + 9 |
+| F7b-2 | La feature llama a `ensureRecord` antes de `draftOf` (`create-exercise-runner.ts:146-147`), y el dibujo de `lab.js` lo hará con `recordFor` (`plan.md:4601` y `:4619`) | La página lo crea en `showExercise`, antes del dibujo, porque FR-017 prohíbe crearlo al dibujar. Todo camino a `ExerciseView` pasa por `showExercise` (`enterLab` y `openExercise`, que usan el mapa, «Sorprendeme», el desafío de hoy, «Siguiente» y «Anterior»), y con el bloqueo la página dibuja `CampaignLock`, que no llama a `draftOf`. `EMPTY_RECORD` es sólo el respaldo de tipo. Se suma una prueba de `showExercise` a `enter-lab.spec.ts` |
+| F7b-3 | `reviewStateOf` devuelve el `stderr` crudo (`review-state.ts:42`); la feature guarda `TRANSPORT_FALLBACK` cuando el adaptador lanza sin mensaje (`create-exercise-runner.ts:24` y `:58-61`) | La vista conserva «No llegó una respuesta del compilador. Revisá la conexión y probá de nuevo.» para un `stderr` vacío, como ya decía el plan. Se suma una prueba a la spec de `CodePhase` con los dos textos |
+| F7b-4 | Tres formas: `LabResultV1` (`lab-result.ts:6-17`), `RunOutcome['result']` (`run-outcome.ts:20-31`) y `StoredResult` (`selectors.ts:15`, interna) | La página sólo lee `LabResultV1`, `reviewStateOf` e `isReflectionSolved`. Si A4 entró antes, consume la forma unificada sin cambios; si no, consume las de F7a y el PR lo declara. T018 lo comprueba con un `grep` |
+| F7b-5 y TR-7 | `qa/e2e/lib/lab-storage.ts` exporta `LAB_KEY`, `LAB_WRITE` y `SYNC_WRITES` (`ledger impl-f7a:37`); `lab-copy.ts`, `attemptsLine` | Las dos E2E nuevas no leen lo guardado. La regla queda en «Restricciones globales»: se importan, no se redefinen, igual que `blockWrites()` y `document-marker.ts` |
+| F7b-6 | Los títulos de F7a dicen «quirk N» en fc88d450 (`lab-exercise.spec.ts:155` y `:327`, `lab-explorers.spec.ts:203`, `lab-map.spec.ts:151` y `:168`, `lab-run.spec.ts:285`); los corrige F7a en T016 (`ledger impl-f7a:19`) | Las cuatro specs nuevas de F7b citan «rareza N». Los E2E de F7a no se editan (FR-001) |
+| F7b-7 y TR-3 | `register-systems.tsx` de F5 coincide con el plan (`impl-f5`, efaf39b2, `:42-52`); la unidad 4 de F6 no existe (`impl-f6`, b20028be); `boot-check` usa `REACT_VIEWS` | El diff de `boot-check` suma `'laboratorio'` a `REACT_VIEWS` y conserva el encabezado `LABORATORIO · RUST`. Los diffs de `legacy-views.ts`, `main.tsx` y `load-order-check.ts` se derivaron de nuevo sobre 431c9d90 (con las líneas de F4) y se comprobaron con `git apply --check`; los de F6 los vuelve a derivar T018 |
+| F7b-9 | F6 mudó las reglas de `.quest-direct-lock` a `lab.css` (`impl-f6`, b20028be, `frontend/lab.css:1950-1967`) | T018 las cuenta y T027 comprueba que viajan con el `git mv` |
+| F7b-10 y TR-13 | Las cuatro trampas del barrido | El kerning (R7), el `<pre>` y el `textarea` (R7) y el `details` cerrado (quickstart §3.1) ya estaban. Se suma la cuarta: el barrido saca el puntero con `page.mouse.move(-1, -1)` antes de capturar |
+| TR-2 | Los stubs del rojo, como `const` tipados (`ledger impl-f7a:47`) | Las reglas de T020 y T023 dan la forma exacta |
+| TR-4 | Cada entrada de `LEGACY_MODULES` suma un `import.meta` al dist | `importMeta` baja 3 respecto de T018, y `dynamicImports` sigue en 0 |
+| TR-5 | La guarda de `useStore` llega con F5 o F6 | F7b no la toca; sus llamadas llevan selector |
+| TR-6 | El proyecto `dom` y `frontend/src/vitest.setup.ts`, en `master` desde #67 | `jsdom` pasa a `dom`, y T018 deja de pedir permiso |
+| TR-8 | `BOOT_SIZE_LIMIT` en 1 500 000 (#76) | El tope cambia; el subpresupuesto de +17 000, no |
+| TR-14 | Los globals nuevos siguen la forma `Taller<Página>Page` | No aplica: FR-014 y SC-002 conservan `window.TallerLab` |
+| TR-15 | Los conteos de la base cambian con cada port | Cada conteo es un delta sobre T018 |
+| La unidad 4 de F7a | `lab.js` importa los selectores del mapa de `./src/pages/lab` (`plan.md:4559` y `:5044`) | T024 no reemplaza el índice del slice, porque rompería el build del legacy en U2 (y puede arrastrar los motores al paquete de `lab.js`); lo reemplaza T027, en el corte |
+| La unidad 4 de F7a | `lab.js` tiene cuatro líneas con `createPlaygroundTransport` o `buildPlaygroundProgram` (`plan.md:5040-5075`) | El predicado de la rama de C4 mira sólo la llamada, `createPlaygroundTransport(` (R13) |
+
+**Lo que no aplica a F7b,** con el motivo: TR-1 (F7b no usa nuqs, decisión 1 y F7b-8, y ninguna de sus E2E recarga después de una escritura de nuqs), TR-9 y TR-10 (F11a), TR-11 y TR-12 (F7b no llama a la API; si F11a entra antes, el doble de la API es un fixture automático y las E2E de F7b corren con la sesión simulada), TR-16 (el quickstart no cuenta `<script`) y TR-17 (`window.TallerLab` no se congela desde el plan original).
 
 ## Las consultas a Context7
 
@@ -295,10 +332,12 @@ Se usó el segundo servidor (`mcp__44441c24-…`), porque el primero agotó la c
 | React (`/websites/react_dev_reference`) | 19.2.8 | `createPortal`, `flushSync`, la limpieza de un ref callback y `useEffectEvent` | El portal conserva el árbol de eventos de React; `flushSync` deja el DOM al día antes de mover el foco; `useEffectEvent` lee el último valor sin re-sincronizar el efecto | Sí: el diálogo (R8), el foco (R6) y los callbacks del editor (R4) |
 | Zustand (`/pmndrs/zustand`) | 5.0.15 | `useStore(storeApi, selector)` con un store de `zustand/vanilla` | Un selector chico por suscripción | No: la página se suscribe a las revisiones y al estado del runner |
 | Vitest (`/vitest-dev/vitest`) | 5.0.3 | `test.projects` en línea, `vi.mock` con `importOriginal` y `vi.hoisted` | Los proyectos en línea heredan la raíz; `vi.hoisted` comparte variables con la fábrica | No: las specs de modelo mockean los motores así |
-| Testing Library (`/testing-library/react-testing-library` y `/testing-library/user-event`) | 16.3.3 y 14.6.7 (plan de F6) | `render`, `screen.getByRole` con nombre, `userEvent.setup`, `click`, `type` y `selectOptions` | Consultas por rol y nombre accesible | No |
-| jsdom (`/jsdom/jsdom`) | 30.1.2 (plan de F6) | `HTMLDialogElement.showModal` | La documentación no lo cubre | Sí: la spec reemplaza `showModal` y `close` (R8) |
+| Testing Library (`/testing-library/react-testing-library` y `/testing-library/user-event`) | 16.3.3 y 14.6.7 (lockfile, #67) | `render`, `screen.getByRole` con nombre, `userEvent.setup`, `click`, `type` y `selectOptions` | Consultas por rol y nombre accesible | No |
+| jsdom (`/jsdom/jsdom`) | 30.1.2 (lockfile, #67) | `HTMLDialogElement.showModal` | La documentación no lo cubre | Sí: la spec reemplaza `showModal` y `close` (R8) |
 | Playwright (`/microsoft/playwright`) | 1.63.0 | `toHaveAttribute` de un atributo booleano, `toBeFocused` y `page.clock` | `toHaveAttribute('open', '')` exige que el atributo exista | No |
 | Vite (`/vitejs/vite`) | 8.3.2 | El orden de las hojas importadas desde JavaScript | Con un solo documento, el CSS sigue el orden de los imports | No: las líneas de `main.tsx` cambian en su lugar (R9) |
 | nuqs (`/47ng/nuqs`) | 2.10.2 (plan de F5) | `useQueryStates`, el orden de las claves y `null` | Escribe sólo sus claves y conserva las ajenas | Sí: la página no lo usa (R3) |
 | fishery | 2.4.0 (plan de F6) | — | No aplica: no hay fábricas | No |
 | React Hook Form | — | — | No aplica: la página no tiene formularios con validación | No |
+| Playwright (`/microsoft/playwright`), 2026-10-28 | 1.63.0 | `mouse.move(x, y)` y los efectos de `:hover` antes de capturar | `move` despacha `mousemove`; la guía de capturas recomienda llevar el puntero a `(-1, -1)` para que ningún `:hover` cambie lo capturado | Sí: el barrido usa `(-1, -1)`, fuera de la página, en lugar del `(0, 0)` de TR-13, que puede caer sobre la barra superior (R17) |
+| React (`/websites/react_dev_reference`), 2026-10-28 | 19.2.8, con `@types/react` 19.3.0 | El tipo `FunctionComponent<Props>` de los stubs | La referencia de React no documenta los tipos de TypeScript; el tipo es de `@types/react` 19.3.0 (lockfile) y ya lo usan los stubs de F11a (`impl-f11a`, T017-T018) | Sí: la forma de los stubs de T023 (TR-2) |

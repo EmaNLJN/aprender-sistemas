@@ -8,7 +8,7 @@ description: "Tareas de F7b, la vista del laboratorio: un registro liviano; el d
 
 ## Phase 1: Setup
 
-- [ ] T018 Línea base sobre `master` con F7a, F5 y F6, y los predicados del arnés y de la rama de C4, en `specs/021-f7-laboratorio/research-f7b.md` (plan §0.1)
+- [ ] T018 Línea base sobre `master` con F7a, F5 y F6, los predicados (el arnés de #67, la rama de C4, lo de F5 y F6, la forma del resultado) y los diffs de T027 derivados de nuevo, en `specs/021-f7-laboratorio/research-f7b.md` (plan §0.1)
 
 ## Phase 2: Foundational (la red que falta, contra el legacy)
 
@@ -20,13 +20,13 @@ description: "Tareas de F7b, la vista del laboratorio: un registro liviano; el d
 - [ ] T021 [US1] El modelo de la página: `frontend/src/pages/lab/model/`, `frontend/src/pages/lab/lib/` y `frontend/src/pages/lab/composition.ts` (plan §2.2)
 - [ ] T022 [P] [US2] El hook del editor: `frontend/src/shared/ui/code-editor/create-code-editor.ts`, `use-code-editor.ts` e `index.ts` (plan §2.3)
 - [ ] T023 [US2] Stubs y specs rojas de componente en `frontend/src/pages/lab/ui/` (plan §2.4)
-- [ ] T024 [US2] Los componentes, `frontend/src/pages/lab/ui/lab-page.css` y `frontend/src/pages/lab/index.ts` (plan §2.5)
+- [ ] T024 [US2] Los componentes y `frontend/src/pages/lab/ui/lab-page.css`, sin tocar el índice del slice (plan §2.5)
 - [ ] T025 [US2] Sólo en la rama B de C4: los estados y los textos de A4 en la página (plan §2.6)
 
 ## Phase 4: User Story 4 y 7 - El corte (Priority: P1)
 
 - [ ] T026 [US2] E2E de X1 en rojo contra el legacy, en `qa/e2e/specs/lab-react.spec.ts` (plan §3.1)
-- [ ] T027 [US7] El corte en un commit: `frontend/src/app/legacy/lab-api.ts` y `register-lab.tsx`, la cadena, las hojas, los borrados, los adaptadores de F5 y F6 y los checks de `qa/` (plan §3.2)
+- [ ] T027 [US7] El corte en un commit: `frontend/src/app/legacy/lab-api.ts` y `register-lab.tsx`, `frontend/src/pages/lab/index.ts`, la cadena, las hojas, los borrados, los adaptadores de F5 y F6 y los checks de `qa/` (plan §3.2)
 
 ## Phase N: Polish
 
