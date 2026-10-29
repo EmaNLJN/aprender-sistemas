@@ -574,7 +574,7 @@ Cada requisito lleva entre paréntesis la parte que lo entrega (P1): *(F14a)*, *
 **La sección, las vistas y el período**
 
 - **FR-001** *(F14a)*: La administración DEBE ofrecer una tercera sección, «Uso del taller», después de «Cuentas» e «Invitaciones», con el mismo patrón de botones de F12a (un grupo con nombre y `aria-pressed`). Al elegirla, DEBE mostrar «Resumen».
-- **FR-002** *(F14a)*: La sección DEBE tener cuatro vistas, «Resumen», «Ejercicios», «Alumnos» y «Ejecuciones», elegibles con el teclado y con el mismo patrón. Cambiar de vista NO DEBE recargar, cambiar la URL ni el historial, y el foco DEBE quedarse en el botón usado.
+- **FR-002** *(F14a y F14b: F14a entrega «Resumen», «Ejercicios» y «Ejecuciones», y F14b suma «Alumnos»)*: La sección DEBE tener cuatro vistas, «Resumen», «Ejercicios», «Alumnos» y «Ejecuciones», elegibles con el teclado y con el mismo patrón. Cambiar de vista NO DEBE recargar, cambiar la URL ni el historial, y el foco DEBE quedarse en el botón usado.
 - **FR-003** *(F14a)*: La sección DEBE vivir en la página de la administración de F12a y NO DEBE importar nada de «Tu cuenta», de la raíz de la cuenta, de `app/` ni del contenedor. El tipo de la sección suma un tercer valor, y el contrato de F12a se actualiza en el mismo commit. Con F10, la sección y la vista siguen fuera de la URL. *(F12, FR-062; F10, FR-041)*
 - **FR-004** *(F14a)*: «Resumen», «Ejercicios» y el detalle de una cuenta DEBEN compartir un período, con «Desde», «Hasta» y, donde hay serie, «Agrupar por» (día, semana o mes). El primer pedido DEBE salir sin `from` ni `to`, y el formulario se llena con `meta.period`. El período elegido se conserva al cambiar de vista mientras la administración siga abierta, y se descarta al cerrarla. *(L3)*
 - **FR-005** *(F14a)*: El formulario del período DEBE armarse con React Hook Form y enviarse sólo con «Aplicar». Antes de pedir, DEBE comprobar que estén las dos fechas, que «Desde» no sea posterior a «Hasta» y que el período no pase de 366 días, con el error en su campo. Un 422 del servidor DEBE llevar `errors.from`, `errors.to` y `errors.granularity` a sus campos, y el resto, al error general. *(F12, FR-055; contrato de C5, §2)*
@@ -703,7 +703,7 @@ Decidida en el clarify (P1-A). Sigue siendo una spec: cada parte tiene su plan, 
 
 La spec tiene **63 requisitos**: los 62 del borrador y FR-063, que suma el clarify (cómo se prueba lo que dibuja uPlot). Las dos partes quedan bajo los 52 de C3a.
 
-- **Qué gana:** F14a no muestra ningún dato de una cuenta y no deja líneas de registro. F14b concentra lo que sí: las consultas registradas, la columna de «Cuentas» y el cruce de Q3 con el detalle.
+- **Qué gana:** F14a no muestra el detalle de ninguna cuenta y no deja líneas de registro: de una cuenta sólo muestra el nombre de quien corrió cada ejecución en la lista sin filtro (FR-023), que no se filtra por cuenta ni deja registro (contrato de C5, §8). F14b concentra lo que sí: las consultas registradas, la columna de «Cuentas» y el cruce de Q3 con el detalle.
 - **Qué cuesta:** un segundo ciclo de plan y tareas, y F14b espera a F14a. La pregunta más común de quien enseña («quién no viene») llega en la segunda parte.
 - **Descartadas:** partir por el público (el uso y la operación), que dejaba la primera parte en unos 57 requisitos y la segunda en un ciclo entero para cinco; y no partir, con 62.
 
