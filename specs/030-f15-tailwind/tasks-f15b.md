@@ -15,10 +15,10 @@ Cada línea remite al plan. Cada slice es un PR, en este orden, con la base de l
 
 - [ ] T018 [US4] `shared/ui/form` sin `form.css`, con `FieldLabel` (plan-f15b §3)
 - [ ] T019 [US4] `entities/privacy-notice` sin `privacy-notice.css` (plan-f15b §3)
-- [ ] T020 [US4] `features/sign-in` sin `access.css`, con `Button` y el marcador `button` (plan-f15b §3)
+- [ ] T020 [US4] `features/sign-in` sin `access.css`, con `Button`, el marcador `button` y el control del toque (plan-f15b §3)
 - [ ] T021 [US4] `pages/account` sin `account.css` (plan-f15b §3)
 - [ ] T022 [US4] `pages/admin` sin `admin.css` (plan-f15b §3)
-- [ ] T023 [US4] Método sin `method.css`, con `TextButton`, `NoteState`, `DialogContent` y `DialogActions`, y el control del toque (plan-f15b §3)
+- [ ] T023 [US4] Método sin `method.css`, con `TextButton`, `NoteState`, `DialogContent` y `DialogActions` (plan-f15b §3)
 - [ ] T024 [US4] Biblioteca sin `library.css`, con `Pill`, `SearchField`, `EmptyState` y `VisuallyHidden` (plan-f15b §3)
 - [ ] T025 [US4] Recorrido sin `route.css` (plan-f15b §3)
 - [ ] T026 [US4] Atlas sin `atlas.css` (plan-f15b §3)

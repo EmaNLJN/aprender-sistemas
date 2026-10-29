@@ -147,7 +147,7 @@ docs/adr/0010-tailwind-css-v4.md, AGENTS.md, docs/architecture.md, qa/AGENTS.md 
    - **`global` o `token`:** pasa a `@layer base` en T036;
    - **`base` sin elementos** (`states` 0) o sólo con marcadores: se borra en T034;
    - **`base` con un elemento que no es marcador:** se para, porque es un slice sin migrar.
-5. **Los `!important` de las globales:** `grep -c '!important'` sobre el texto de las reglas `global` de la evidencia; es el número `GLOBAL_IMPORTANT` de T037.
+5. **Los `!important` de las globales:** se cuentan en el texto de las reglas `global` de la evidencia. Se esperan 3, como en `master`; es `GLOBAL_IMPORTANT` de T037.
 6. **El commit de documentación:** `docs(specs): la línea base de la implementación de F15c`.
 
 ## 1. Unidad 1 · Los E2E y las clases base
@@ -291,11 +291,20 @@ test.describe('what the preflight would change and the style sweep does not read
    Corren primero contra la base con el control de determinismo de esos dos estados (`PAGES=editor-search,editor-complete`).
 2. **En rojo:**
    - `main-entry.spec.ts`: `ENTRY_IMPORTS` suma `"'tailwindcss/preflight.css' layer(base)",` en el segundo lugar, después del theme;
-   - `style-output-check.ts`: `assertNoPreflight` se reemplaza por esta función, con `GLOBAL_IMPORTANT` de T032, paso 5, y `PREFLIGHT_IMPORTANT` igual a la cantidad de `!important` de `node_modules/tailwindcss/preflight.css` (`grep -c '!important'`):
+   - `style-output-check.ts`: `assertNoPreflight` se reemplaza por esta función. `GLOBAL_IMPORTANT` es la cantidad de `!important` de las reglas globales de `styles.css`: en `master` son 3 (`[hidden]` y las dos del movimiento reducido; las demás de la hoja son de páginas que los ports se llevan), y T032, paso 5, la confirma. La del preflight se cuenta en su texto, en `node_modules/tailwindcss/preflight.css`, que desde F15a es de una dependencia directa:
 
      ```ts
-     const GLOBAL_IMPORTANT = 0; // T032, step 5: the !important declarations of the global rules
-     const PREFLIGHT_IMPORTANT = 0; // grep -c '!important' node_modules/tailwindcss/preflight.css
+     const GLOBAL_IMPORTANT = 3;
+
+     function preflightImportant(): number {
+       const preflight = fs.readFileSync(
+         path.join(root, 'node_modules', 'tailwindcss', 'preflight.css'),
+         'utf8',
+       );
+       return readCss(preflight)
+         .rules.flatMap((rule) => rule.declarations)
+         .filter((declaration) => declaration.important).length;
+     }
 
      function assertCompensatedPreflight(sheet: CssSheet): void {
        const base = sheet.rules.filter((rule) => inLayer(rule, 'base'));
@@ -308,13 +317,13 @@ test.describe('what the preflight would change and the style sweep does not read
          .filter((declaration) => declaration.important).length;
        assert.equal(
          important,
-         GLOBAL_IMPORTANT + PREFLIGHT_IMPORTANT,
+         GLOBAL_IMPORTANT + preflightImportant(),
          'no compensating rule uses !important (FR-039)',
        );
      }
      ```
 
-     Los dos `0` se reemplazan por los números medidos; las dos líneas son las únicas con comentario, y dicen de dónde sale cada número.
+     Si T032 contó otra cantidad de `!important` en las globales, `GLOBAL_IMPORTANT` lleva la de T032.
    - Correr: la spec falla porque la entrada no importa el preflight, y el check, en `assertCompensatedPreflight`. Commit: `test(front): el preflight en la capa base, compensado (roja)`.
 3. **El preflight:** `@import 'tailwindcss/preflight.css' layer(base);` justo después del import del theme, y `npm run build`.
 4. **Lo que cambia,** sin compensar: `SAMPLES=100000 node qa/e2e/style-compare/style-sweep.ts "$TMPDIR/f15c/base" . > "$TMPDIR/f15c/preflight.txt"`. Cada línea es un estado, una captura, un elemento, una propiedad, el valor de la base y el de la rama.

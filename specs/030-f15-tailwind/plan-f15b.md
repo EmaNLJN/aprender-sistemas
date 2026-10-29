@@ -141,7 +141,7 @@ Lo que el revisor mira primero en cada PR:
 2. **Una utilidad escribe una propiedad de más** (el interlineado de `text-N`, el color de los cuatro bordes con `border-<color>`, un `transform` partido en `translate`): el barrido la ve sólo en los estados de la grilla. Lo fijan `style-output-check` (el interlineado) y el barrido de la grilla entera, con los E2E del slice para el resto (R4, B3).
 3. **Un marcador que se pierde rompe la red congelada** (`pre.terminal` en Proyecto, `.sr-only` en la Biblioteca): lo fija la red sin editar, que se corre entera en cada PR; el inventario los lista antes (R1).
 4. **Una clase base migrada por un slice pierde su regla heredada para otro slice sin migrar:** F15b no edita `styles.css`, y el barrido de cada PR corre sobre la grilla entera, con todas las páginas (R5).
-5. **El `:hover` deja de aplicar al tocar** si alguien quita la variante: el check estático de F15a lo fija; el primer slice con `:hover` corre una vez el control del toque (B7, R2).
+5. **El `:hover` deja de aplicar al tocar** si alguien quita la variante: el check estático de F15a lo fija; el primer PR que suma una utilidad `hover:` corre una vez el control del toque (B7, R2).
 
 ## 1. La receta de un slice
 
@@ -180,10 +180,11 @@ Sobre la base del PR, con su copia en `$TMPDIR/f15b-<slice>/base` (quickstart-f1
   - **El toque:** un `describe` con `test.use({ hasTouch: true, isMobile: true });` y `await locator.tap();`, sobre un elemento cuyo toque no navega ni dispara una acción externa (si todos lo hacen, la prueba intercepta la acción con `page.route`). Va en verde contra la base: si no, el elemento no sirve y se elige otro.
   - **`:focus-visible`:** el foco con el teclado (`locator.focus()` en el elemento anterior y `page.keyboard.press('Tab')`), y el contorno de hoy: `outline-style: solid`, `outline-width: 3px`, `outline-color: rgb(172, 72, 41)` (el acento de Rust) y `outline-offset: 4px`.
   - **`:checked` y los pseudoelementos:** la acción y `toHaveCSS(…, { pseudo: 'after' })`.
+  - **El acento de Go** (FR-016, SC-010), en todo slice que use una utilidad `*-accent*`: el color de Rust, `observeReload(page, () => shell.switchLanguage('go'))` de `qa/e2e/lib/document-marker.ts` en `false`, y el color de Go (`rgb(34, 98, 107)`). Los estados `-go` del barrido siembran el idioma antes de cargar: no prueban el cambio sin recargar.
   - **Las transiciones:** `transition-property` y `transition-duration` del elemento, con el movimiento reducido apagado (`test.use({ reducedMotion: 'no-preference' })`) y encendido (`'reduce'`, donde la regla global da `none`).
   - **Lo de adentro de un `<details>`:** abrirlo con un clic en su `<summary>` y medir.
 - **Correr:** `npm run build` y `E2E_PORT=4193 npm run test:e2e -- specs/<slice>-style.spec.ts`, en verde contra la base. Después, la red entera.
-- **El control del toque,** una vez, en el primer slice de la tabla con `:hover` (B7): en una copia de la rama, sin `@custom-variant hover (&:hover);`, `npm run build` y la prueba del toque: tiene que dar rojo. Si da verde, el check estático de F15a es la única guarda, y se anota en el PR.
+- **El control del toque,** una vez, en el primer PR que suma una utilidad `hover:` (se espera T020, por `Button`; B7): en una copia de la rama, sin `@custom-variant hover (&:hover);`, `npm run build` y la prueba del toque: tiene que dar rojo. Si da verde, el check estático de F15a es la única guarda, y se anota en el PR.
 - **Commit:** `test(e2e): lo que el barrido no ve de <slice>, en verde contra la base`.
 
 ### R3 · Las clases base a componentes (FR-030)
@@ -258,7 +259,7 @@ R1 sobre `frontend/src/pages/project/ui/project.css`. Lo esperado, medido en `ma
 | Clases base | `.page-heading` (y `h1`, `h1 em`, `p`, con 590 px), `.eyebrow` y `.eyebrow-line` (con la regla compartida de `.small-label, .eyebrow`), `.small-label`, `.recommendation-strip` (y `.strip-icon`, `p` y `strong`, con 590 px) y `.step-check` (con `:checked` y `:checked:after`) |
 | Marcadores | `terminal` (`#main pre.terminal`); `step-check` (lo nombra `input[type='checkbox']:not(.step-check)`) |
 | `!important` | Ninguno que alcance al slice |
-| Lo que el barrido no ve | El foco de la casilla y del `<summary>` (reglas globales), la casilla marcada con su `::after`, y la pista abierta (`.milestone details p`) |
+| Lo que el barrido no ve | El foco de la casilla y del `<summary>` (reglas globales), la casilla marcada con su `::after`, la pista abierta (`.milestone details p`) y el acento de Go al cambiar de idioma (`text-accent` del rótulo, del `<summary>` y del énfasis del título) |
 | Condiciones | `(max-width: 590px)` y `print`: `upto-590:` y `print:` |
 | Lo que React no dibuja | Nada |
 
@@ -272,10 +273,12 @@ Si la base trae otra cosa, mandan sus resultados. Se anota en la descripción de
 
 ```ts
 import { expect, test } from '../fixtures';
+import { observeReload } from '../lib/document-marker';
 import { urls } from '../lib/urls';
 
 const FIRST = 'Un lugar para guardar cosas';
 const ACCENT = 'rgb(172, 72, 41)';
+const GO_ACCENT = 'rgb(34, 98, 107)';
 const GREEN = 'rgb(56, 97, 74)';
 const CHECK_LINE = 'rgb(185, 191, 174)';
 
@@ -342,10 +345,24 @@ test.describe('the project page, where the style sweep does not look', () => {
     await expect(toggle).toHaveCSS('outline-width', '3px');
     await expect(toggle).toHaveCSS('outline-color', ACCENT);
   });
+
+  test('the eyebrow takes the Go accent when the language changes, without a reload', async ({
+    shell,
+    page,
+  }) => {
+    await shell.goto(urls.view('proyecto'));
+    const eyebrow = page.getByText('UNA IDEA QUE CRECE CON VOS');
+    await expect(eyebrow).toHaveCSS('color', ACCENT);
+
+    const reloaded = await observeReload(page, () => shell.switchLanguage('go'));
+
+    expect(reloaded).toBe(false);
+    await expect(eyebrow).toHaveCSS('color', GO_ACCENT);
+  });
 });
 ```
 
-1. **Correr:** `npm run build` y `E2E_PORT=4193 npm run test:e2e -- specs/project-style.spec.ts`: 4 de 4 en verde contra la base. Después, la red entera.
+1. **Correr:** `npm run build` y `E2E_PORT=4193 npm run test:e2e -- specs/project-style.spec.ts`: 5 de 5 en verde contra la base. Después, la red entera.
 2. **La prueba de que detectan algo,** una vez y sin commitear: en una copia, se borra `.step-check:checked:after` de `styles.css`, `npm run build` y la spec: tiene que fallar la segunda.
 3. **Checks:** `npx prettier --check qa/e2e/specs/project-style.spec.ts`, `npm run lint` y `git diff --check`.
 4. **Commit:** `test(e2e): el foco, la casilla marcada y la pista abierta de Proyecto, en verde contra la base`.
@@ -614,7 +631,7 @@ test.describe('the project page, where the style sweep does not look', () => {
 
    Si la base trae otro marcado o otros textos, se conservan los de la base y sólo cambian las clases.
 10. **La hoja:** `git rm frontend/src/pages/project/ui/project.css`; en `main.css`, la línea `@import '../pages/project/ui/project.css' layer(legacy);`; en `main-entry.spec.ts`, `"'../pages/project/ui/project.css' layer(legacy)",`; en `qa/stylesheets-check.ts`, `'frontend/src/pages/project/ui/project.css',`.
-11. **Correr:** `npm run build`, `npm test` (`style-output-check`, `stylesheets-check` y `main-entry.spec.ts` en verde), `npm run lint`, `npm run format:check` y `E2E_PORT=4193 npm run test:e2e` (la red entera, con las cuatro de T015 sin editar).
+11. **Correr:** `npm run build`, `npm test` (`style-output-check`, `stylesheets-check` y `main-entry.spec.ts` en verde), `npm run lint`, `npm run format:check` y `E2E_PORT=4193 npm run test:e2e` (la red entera, con las cinco de T015 sin editar).
 12. **Commit:** `refactor(project): Proyecto se estila con utilidades y project.css se va`.
 
 ### T017 · Las comparaciones, el peso y el PR del piloto (K)
@@ -633,10 +650,10 @@ Cada fila aplica la receta entera (R1 a R6) en su PR, con la base de la fila ant
 | --- | --- | --- | --- | --- | --- | --- |
 | 2 | T018 | `shared/ui/form` | `shared/ui/form/form.css` | Los formularios de F11a (ingreso, alta, restablecimiento); los estados `sign-in` y `session-error` de la grilla | Crea `FieldLabel` (`.field-label`) | Los del inventario |
 | 3 | T019 | `entities/privacy-notice` | `entities/privacy-notice/ui/privacy-notice.css` | El aviso de privacidad; si la grilla no lo dibuja, R1 suma su estado | — | Los del inventario |
-| 4 | T020 | `features/sign-in` | `features/sign-in/ui/access.css` | La pantalla de ingreso; se espera el primer `.button` | Crea `Button` (`.button`, `.secondary`, `.small` y `.dark`, con sus `:hover`), con el marcador `button` | `button` (`css-contract`) |
+| 4 | T020 | `features/sign-in` | `features/sign-in/ui/access.css` | La pantalla de ingreso; se espera el primer `.button`, y con él la primera utilidad `hover:`: corre el control del toque (R2) | Crea `Button` (`.button`, `.secondary`, `.small` y `.dark`, con sus `:hover`), con el marcador `button` | `button` (`css-contract`) |
 | 5 | T021 | `pages/account` | `pages/account/ui/account.css` | «Tu cuenta» (`.topbar-actions`, `.account-entry*`); «Salir» usa `.button.dark`, que vive en la hoja del shell hasta T030 | Reusa `Button` (`dark`) | Los del inventario |
 | 6 | T022 | `pages/admin` | `pages/admin/ui/admin.css` | La administración (estado `admin`); las tablas y el grupo «Acciones sobre {nombre}» | Reusa `Button` | Los del inventario |
-| 7 | T023 | Método | `pages/method/ui/method.css` | El diálogo de confirmación; las notas; el primer slice con `:hover` (`.button.secondary:hover`) corre el control del toque (R2) | Crea `TextButton`, `NoteState`, `DialogContent` y `DialogActions`; reusa `PageHeading`, `FieldLabel` y `Button` | Los del inventario |
+| 7 | T023 | Método | `pages/method/ui/method.css` | El diálogo de confirmación; las notas; `.button.secondary:hover` | Crea `TextButton`, `NoteState`, `DialogContent` y `DialogActions`; reusa `PageHeading`, `FieldLabel` y `Button` | Los del inventario |
 | 8 | T024 | Biblioteca | `pages/library/ui/library.css` | Los filtros con nuqs; `.resource-link:hover`; el estado `library-empty` | Crea `Pill`, `SearchField`, `EmptyState` y `VisuallyHidden` (marcador `sr-only`); reusa `PageHeading` | `sr-only` (`css-contract`, R5) |
 | 9 | T025 | Recorrido | `pages/route/ui/route.css` | Los módulos en `<details>` (E2E con un módulo abierto); `.step-check:checked + .step-title` (`StepCheck` suma `peer` y el título, `peer-checked:text-green`); `#quiz-feedback:empty` (`empty:`); el diálogo de la lección; `.hero .eyebrow` y los `.small-label` en contexto (variantes nuevas) | Reusa `StepCheck`, `RecommendationStrip`, `SmallLabel`, `Eyebrow`, `Pill`, `TextButton` y los del diálogo | Los del inventario |
 | 10 | T026 | Atlas | `pages/atlas/ui/atlas.css` | Cinco `:hover`; siete bloques de `@media` | Reusa `Eyebrow` | Los del inventario |

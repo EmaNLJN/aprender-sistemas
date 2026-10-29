@@ -923,7 +923,8 @@ Una sola cola: cada tarea parte de la compuerta de la anterior. K es el agente p
    - `git diff package.json` muestra exactamente dos líneas nuevas en `devDependencies`, sin `^`;
    - `node -e 'const l=require("./package-lock.json").packages; for (const k of Object.keys(l)) if (/oxide-linux-x64-(gnu|musl)|oxide-darwin-arm64|lightningcss-linux-x64-musl/.test(k)) console.log(k, l[k].version)'` imprime las variantes de Linux con glibc y musl y la de macOS, para que `npm ci` funcione en la CI, en la imagen y en macOS (FR-009);
    - `rm -rf node_modules && npm ci --no-audit --no-fund` termina en verde;
-   - `npm run build` y `npm test`, en verde: el dist no cambia todavía (el plugin no está en `vite.config.ts`), así que los hashes son los de T001.
+   - `npm run build` en verde, con los hashes del dist de T001 (el plugin todavía no está en `vite.config.ts`);
+   - `npm test` falla sólo en las rojas de T005, que siguen así hasta T008: las dos pruebas de `main-entry.spec.ts` y `assertLayerOrder` de `style-output-check`. Cualquier otra falla se para.
 4. **Commit:** `build(deps): tailwindcss y @tailwindcss/vite 4.3.3, exactas, de desarrollo`.
 
 ### Tarea 3.2 · La sonda (T007, sin commit de código)
@@ -946,7 +947,7 @@ Una sola cola: cada tarea parte de la compuerta de la anterior. K es el agente p
 3. **El build y la lectura:** `npm run build` en la copia, y el script de quickstart.md §4, que imprime con `css-blocks` cada regla de `@layer utilities`, las capas en orden, las condiciones de `@media`, el comienzo del `<style>` (S13) y si aparecen `bg-[#dedfcc]` (S9) o `zzprobe-spec-only` (S10).
 4. **El multiconjunto resuelto (S14):** en la copia, `main.css` sin las líneas de `@source inline`, `npm run build`, y `node qa/e2e/style-compare/resolved-multiset.ts "$TMPDIR/f15a/base" "$TMPDIR/f15a/probe"`.
 5. **El control de los tokens sin `static` (S11):** en la copia, `@theme static` pasa a `@theme`, `npm run build` y `node qa/style-output-check.ts` (desde la copia).
-6. **Lo que se anota:** el resultado de cada fila de R10 y, si no dio lo esperado, la alternativa que se aplica en T008 a T010 o en la receta de F15b. Las filas con «se para» detienen F15a hasta que K decida con el usuario.
+6. **Lo que se anota:** en la rama, `npm test` sigue fallando sólo en las rojas de T005; la sonda corre en la copia. El resultado de cada fila de R10 y, si no dio lo esperado, la alternativa que se aplica en T008 a T010 o en la receta de F15b. Las filas con «se para» detienen F15a hasta que K decida con el usuario.
 7. **El commit:** `docs(specs): la sonda de Tailwind 4.3.3 de F15a`. La copia se borra (quickstart.md §1, paso 6).
 
 ## 4. Unidad 4 · La base
