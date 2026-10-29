@@ -24,13 +24,13 @@ const useWorkshopSelection = (language: SystemsLanguage): WorkshopSelection => {
     workshopId: query.taller,
     part: query.parte,
     open(workshopId) {
-      setQuery({ lenguaje: language, taller: workshopId, parte: 'explore' });
+      void setQuery({ lenguaje: language, taller: workshopId, parte: 'explore' });
     },
     close() {
-      setQuery({ lenguaje: language, taller: null, parte: null });
+      void setQuery({ lenguaje: language, taller: null, parte: null });
     },
     changePart(workshopId, part) {
-      setQuery({ lenguaje: language, taller: workshopId, parte: part });
+      void setQuery({ lenguaje: language, taller: workshopId, parte: part });
     },
   };
 };

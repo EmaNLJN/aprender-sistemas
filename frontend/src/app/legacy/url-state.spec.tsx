@@ -9,7 +9,7 @@ const Probe = () => {
   return (
     <>
       <p>taller: {query.taller ?? 'none'}</p>
-      <button onClick={() => setQuery({ taller: 'heap' })}>open heap</button>
+      <button onClick={() => void setQuery({ taller: 'heap' })}>open heap</button>
     </>
   );
 };

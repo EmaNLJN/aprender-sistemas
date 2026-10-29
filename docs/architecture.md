@@ -222,7 +222,8 @@ entidades `exercise` (evidencia, ejecución, fusión de registros, catálogo y `
   con `recommended-typescript` (claves, `flushSync`, refs y APIs del DOM).
 - **Accesibilidad,** en los `.tsx`: `eslint-plugin-jsx-a11y-x` con `recommended`. Es el fork de
   `eslint-plugin-jsx-a11y` que soporta ESLint 10; el original no publica una versión desde 2024. Un `<pre>`
-  desplazable puede llevar `tabIndex={0}`, porque el teclado necesita enfocarlo para desplazarlo.
+  o una región con nombre (`role="region"`) desplazables pueden llevar `tabIndex={0}`, porque el
+  teclado necesita enfocarlos para desplazarlos.
 - **Promesas, con tipos** (`projectService`): `no-floating-promises`, `no-misused-promises` y
   `await-thenable`. Una promesa que se lanza sin esperarla se marca con `void`.
 - **Una excepción** va en su línea, con `eslint-disable-next-line <regla> -- <motivo>`; una regla no se

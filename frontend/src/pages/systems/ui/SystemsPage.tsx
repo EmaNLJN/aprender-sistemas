@@ -31,6 +31,7 @@ const SystemsPage = ({
   const workshop = workshops.find((item) => item.id === selection.workshopId);
 
   const openWorkshop = (workshopId: string) => {
+    // eslint-disable-next-line @eslint-react/dom-no-flush-sync -- the heading has to exist before it takes the focus
     flushSync(() => selection.open(workshopId));
     headingRef.current?.focus();
     scrollToTop();
@@ -47,6 +48,7 @@ const SystemsPage = ({
     );
 
   const backToCatalog = () => {
+    // eslint-disable-next-line @eslint-react/dom-no-flush-sync -- the catalog has to exist before the focus returns to it
     flushSync(() => {
       setReturnFocusTo(workshop.id);
       selection.close();
@@ -55,6 +57,7 @@ const SystemsPage = ({
   };
 
   const changePart = (part: WorkshopPart) => {
+    // eslint-disable-next-line @eslint-react/dom-no-flush-sync -- the pressed tab has to exist before it takes the focus
     flushSync(() => selection.changePart(workshop.id, part));
     tabsRef.current
       ?.querySelector<HTMLButtonElement>('[aria-pressed="true"]')

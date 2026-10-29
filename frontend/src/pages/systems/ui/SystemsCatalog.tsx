@@ -40,6 +40,7 @@ const SystemsCatalog = ({ language, workshops, returnFocusTo, onOpen }: SystemsC
   };
 
   const clearFilter = () => {
+    // eslint-disable-next-line @eslint-react/dom-no-flush-sync -- the search box takes the focus after the filter is cleared
     flushSync(() => updateFilter(EMPTY_CATALOG_FILTER));
     searchRef.current?.focus();
   };

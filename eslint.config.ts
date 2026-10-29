@@ -14,6 +14,7 @@ export default defineConfig([
     '.claude/**',
     '.codex/**',
     '.desloppify/**',
+    '.superpowers/**',
     'dist/**',
     'backend/api/**',
   ]),
@@ -48,7 +49,7 @@ export default defineConfig([
       ...jsxA11y.configs.recommended.rules,
       'jsx-a11y-x/no-noninteractive-tabindex': [
         'error',
-        { tags: ['pre'], roles: ['tabpanel'], allowExpressionValues: true },
+        { tags: ['pre'], roles: ['region', 'tabpanel'], allowExpressionValues: true },
       ],
     },
   },
