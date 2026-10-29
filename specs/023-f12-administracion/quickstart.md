@@ -6,7 +6,7 @@ Todos los comandos corren desde la raíz del worktree. Los que usan Docker piden
 
 ## 1. La línea base (T001)
 
-Sobre `f12a/base` recién creada (`master` con F11a integrada), antes de cualquier cambio:
+Sobre `f12a/base` recién creada (`f11a/base` con F11a completa, o `master` si F11a ya llegó ahí), antes de cualquier cambio:
 
 ```sh
 npm ci --offline --no-audit --no-fund
@@ -17,12 +17,28 @@ npm run format:check
 E2E_PORT=4173 npm run test:e2e
 node -e "console.log(require('fs').readFileSync('dist/index.html','utf8').length)"
 npm run lint 2>&1 | grep -c warning
+grep -n "BOOT_SIZE_LIMIT =" qa/build-check.ts
+```
+
+Las ramas B1 a B6 del plan («Ramas: lo que T001 detecta en la base»), y T002, que sólo verifica `reloadDocument`:
+
+```sh
+ls frontend/src/pages/account/ui/AccountMenu.tsx qa/e2e/pages/account.ts frontend/src/shared/lib/format-local-date-time.ts
+git grep -n "account: async" -- qa/e2e/fixtures/index.ts
+git grep -n "administration?: ComponentType<AdministrationProps>" -- frontend/src/pages/account/ui/AccountMenu.tsx
+git grep -n "onAdminister" -- frontend/src/pages/account/ui/AccountDialog.tsx
+git grep -n "'POST /api/auth/confirm-password'" -- qa/e2e/fixtures/api-double.ts
+git grep -n "ifNoneMatch" -- qa/e2e/fixtures/api-double.ts
+git grep -n "arguments.length=1" -- eslint.config.ts
+cat frontend/src/shared/lib/reload-document.ts
+git grep -n "reload-document" -- frontend/src
 ```
 
 Se anotan en research.md («Línea base de la implementación»):
 
 - el hash de la base;
-- `html.length`;
+- `html.length` y `BOOT_SIZE_LIMIT`;
+- el resultado de cada rama;
 - los checks de `npm test` y las pruebas de Vitest;
 - los avisos de lint;
 - la cantidad de E2E;
@@ -39,6 +55,8 @@ git diff --check
 E2E_PORT=4173 npm run test:e2e
 git diff --name-only f12a/base -- qa/e2e/specs qa/boot-check.ts qa/dist-content-check.ts qa/load-order-check.ts
 git diff --diff-filter=M --name-only f12a/base -- qa/e2e/specs
+git diff --name-only f12a/base -- qa/e2e/fixtures/api-double.ts
+git grep -n "Failed to load resource/" -- 'qa/e2e/specs/admin-*.spec.ts'
 git diff f12a/base -- frontend | grep -E '^\+.*(style=|style=\{|setAttribute\(.style.|\.cssText|sr-only)'
 node -e "console.log(require('fs').readFileSync('dist/index.html','utf8').length)"
 ```
@@ -47,7 +65,8 @@ node -e "console.log(require('fs').readFileSync('dist/index.html','utf8').length
 
 - **todo en verde,** con la red de la base y los E2E de F12a que ya existan;
 - **la primera lista** trae sólo `qa/e2e/specs/admin-entry.spec.ts`, `admin-accounts.spec.ts`, `admin-invitations.spec.ts` y `admin-layout.spec.ts`, y **la segunda,** nada: ningún E2E existente se edita;
-- **el `grep`** no imprime nada;
+- **la tercera,** nada: el doble de la API no cambia;
+- **los dos `grep`** no imprimen nada: ningún E2E de F12a usa la lista blanca ancha, y no hay estilos en línea;
 - **el tamaño,** con su diferencia contra T001, va a la descripción del PR.
 
 **Una spec suelta:**
@@ -102,7 +121,7 @@ console.table(totals);
 
 Se corre con `node <ruta>/measure-f12a.mjs "$PWD"`. Al planificar, la parte de la administración midió unos 30 500 caracteres de JS, más 1 515 de CSS (research.md, «Mediciones»).
 
-**La condición de corte** (research.md, R12): si `html.length` crece más de 35 000 caracteres sobre T001, o llega a 1 250 000, F12a no cierra. Se informa la tabla, y decide el usuario.
+**La condición de corte** (research.md, R12): si `html.length` crece más de 35 000 caracteres sobre T001, o llega a `BOOT_SIZE_LIMIT` de `qa/build-check.ts` (1 500 000 desde #76), F12a no cierra. Se informa la tabla, y decide el usuario.
 
 **Sin dependencias nuevas:** `git diff master -- package.json package-lock.json` no imprime nada (FR-056).
 
@@ -136,7 +155,7 @@ La CI no ejerce la cookie real, el CSRF ni la confirmación de la contraseña co
 
 | Unidad | En el navegador |
 | --- | --- |
-| U0 | Nada nuevo: `reloadDocument` se mudó |
+| U0 | Nada nuevo: la línea base y la verificación de `reloadDocument`, que ya estaba en `shared/lib` |
 | U1 | Nada: `AccountRoot` todavía no pasa `administration`, así que la entrada no aparece |
 | U2 | Nada en el taller: la página existe y se prueba montada sola |
 | U3 | Con una cuenta admin (el doble en los E2E, o el stack): «Administrar el taller» en «Tu cuenta» y la administración entera |
