@@ -23,7 +23,7 @@ interface AtlasPageProps {
 
 const AtlasPage = ({ entries, initialSession, language, onSessionChange }: AtlasPageProps) => {
   const [session, setSession] = useState(initialSession);
-  const latestSession = useRef(initialSession);
+  const latestSessionRef = useRef(initialSession);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const languageName = language === 'go' ? 'Go' : 'Rust';
@@ -36,13 +36,14 @@ const AtlasPage = ({ entries, initialSession, language, onSessionChange }: Atlas
     : -1;
 
   const updateSession = (change: (current: AtlasSession) => AtlasSession) => {
-    const next = change(latestSession.current);
-    latestSession.current = next;
+    const next = change(latestSessionRef.current);
+    latestSessionRef.current = next;
     onSessionChange(next);
     setSession(next);
   };
 
   const chooseConcept = (id: string) => {
+    // eslint-disable-next-line @eslint-react/dom-no-flush-sync -- the heading has to exist before it takes the focus
     flushSync(() => updateSession((current) => selectConcept(current, id)));
     headingRef.current?.focus({ preventScroll: true });
     headingRef.current?.scrollIntoView({ block: 'nearest', behavior: 'auto' });
