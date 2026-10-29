@@ -4,13 +4,13 @@
 
 **Created**: 2026-10-28
 
-**Status**: Borrador, con cinco preguntas abiertas para el clarify (Q1 a Q5); sin plan
+**Status**: Clarificada (sesión del 2026-10-28); lista para el plan
 
 **Input**: Ítem **C5** de la hoja de ruta [`specs/backend-multiusuario/roadmap.md`](../backend-multiusuario/roadmap.md), «Estadísticas del admin»: dar al admin métricas de uso sin exponer nunca el código ni los textos del alumno. Depende de D1 y de B2, y trae abierta la pregunta 6 del ADR 0006, «Qué ve el admin». Lee lo que dejaron B2 ([spec 005](../005-b2-api-ejecuciones/spec.md), PR #31), D1a y D1b ([spec 007](../007-d1-progreso-sincronizacion/spec.md), PR #36 y #39), C3a ([spec 004](../004-c3-identidad-acceso/spec.md), PR #24) y C3b ([spec 010](../010-c3b-admin-ciclo-de-vida/spec.md), PR #37), todos entregados. Fuente técnica: el [ADR 0006](../../docs/adr/0006-modelo-de-datos-y-api-multiusuario.md) (**propuesta**: el usuario todavía no lo aprobó), en D06, D20, D31, D33, D35, D38, S5, S6, §4.5, §7, §9, §10, §12 y la pregunta 6 de §13; y el [ADR 0005](../../docs/adr/0005-ejecucion-en-sandbox-propio.md) §5, por la evidencia autodeclarada. Pedido del coordinador del 2026-10-28 (ver «Lo que pidió el usuario»).
 
 ## Intención y alcance
 
-**Lo que entendemos.** Desde B2 y D1, el taller guarda en MySQL qué ejecuta cada alumno, qué resuelve, cuánta ayuda pide y cómo avanza en la campaña, los talleres de Sistemas y el recorrido. Quien administra no tiene cómo mirarlo: para saber si un ejercicio está mal calibrado, si una clase se trabó o si la cola alcanza, hoy necesita SQL a mano sobre la base de producción, que además le muestra el código y las reflexiones de todos. C5 le da al admin esas respuestas por la API, ya calculadas y con un límite de privacidad que se prueba: ningún camino devuelve el código, las salidas, las pruebas propias, los borradores, las reflexiones, las notas ni el crudo de una importación, y tampoco algo que permita reconstruirlos o compararlos. Las métricas salen agregadas (del taller entero, por catálogo, por ejercicio y por período) y por cuenta, y se calculan en vivo sobre las tablas que ya existen, sin tablas nuevas. C5 entrega sólo la API y sus contratos, como C3b: las pantallas son de un ítem del front que esta spec propone (Q4). Es para quien administra el taller (y muchas veces enseña con él), para quien opera el sandbox y para quien mantiene el currículo. Si esto no coincide con lo que se busca, es lo primero que hay que corregir: el resto de la spec sale de acá.
+**Lo que entendemos.** Desde B2 y D1, el taller guarda en MySQL qué ejecuta cada alumno, qué resuelve, cuánta ayuda pide y cómo avanza en la campaña, los talleres de Sistemas y el recorrido. Quien administra no tiene cómo mirarlo: para saber si un ejercicio está mal calibrado, si una clase se trabó o si la cola alcanza, hoy necesita SQL a mano sobre la base de producción, que además le muestra el código y las reflexiones de todos. C5 le da al admin esas respuestas por la API, ya calculadas y con un límite de privacidad que se prueba: ningún camino devuelve el código, las salidas, las pruebas propias, los borradores, las reflexiones, las notas ni el crudo de una importación, y tampoco algo que permita reconstruirlos o compararlos. Las métricas salen agregadas (del taller entero, por catálogo, por ejercicio y por período) y por cuenta, y se calculan en vivo sobre las tablas que ya existen, sin tablas nuevas. C5 entrega sólo la API y sus contratos, como C3b: las pantallas son de F14, un ítem nuevo del front (Q4). Es para quien administra el taller (y muchas veces enseña con él), para quien opera el sandbox y para quien mantiene el currículo. Si esto no coincide con lo que se busca, es lo primero que hay que corregir: el resto de la spec sale de acá.
 
 **Cómo sabremos que salió bien.**
 
@@ -32,7 +32,7 @@
 
 **Queda fuera:**
 
-- **Las pantallas:** las del resumen, el detalle, la cuenta, la cola y las ejecuciones son de un ítem del front que esta spec propone como hallazgo (Q4). C5 entrega la API, sus contratos y sus pruebas.
+- **Las pantallas:** las del resumen, el detalle, la cuenta, la cola y las ejecuciones son de F14, un ítem nuevo del front (Q4). C5 entrega la API, sus contratos y sus pruebas.
 - **Los rollups diarios** (`exercise_daily_stats`) y la réplica de lectura: son el camino de escala del ADR 0006 §9, con su disparador, y la hoja de ruta los deja fuera de C5. Esta spec mide si el disparador salta (FR-040) y no los construye.
 - **Cualquier exportación de admin** (ADR 0006 D33; hoja de ruta, «Fuera»): ni CSV, ni descarga, ni informe. El admin ve en pantalla.
 - **Los textos del alumno para tutoría:** leer el código, los borradores o las reflexiones de otra cuenta sería un ítem nuevo, con consentimiento y aviso de privacidad propios (Q1, opción C).
@@ -42,11 +42,11 @@
 
 **Sin hacer a propósito (YAGNI):** tablas nuevas o columnas nuevas; un índice antes de medir; una caché por cuenta; un interruptor para sumar a los admins a los agregados (ADR 0006 S5 dice «por defecto»; ver Assumptions); comparar períodos o calcular tendencias en el servidor; alertas o avisos por correo; filtros por aula o por grupo, que el taller no modela; un historial de actividad que no sean los intentos; una protección contra estampidas de la caché, con uno o dos admins.
 
-**Actores:** quien administra (rol `admin`, que muchas veces también enseña); quien opera el taller y el sandbox; quien mantiene el currículo; el alumno, cuyos datos se leen y que tiene que poder confiar en el límite; el ítem del front que dibuje las pantallas (Q4); y los ítems que C5 toca o espera: C3b, B2, D1, A4, D1c, C4, F11 y E1.
+**Actores:** quien administra (rol `admin`, que muchas veces también enseña); quien opera el taller y el sandbox; quien mantiene el currículo; el alumno, cuyos datos se leen y que tiene que poder confiar en el límite; F14, el ítem del front que dibuja las pantallas (Q4); y los ítems que C5 toca o espera: C3b, B2, D1, A4, D1c, C4, F11 y E1.
 
 ## Lo que pidió el usuario
 
-Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumptions) o una pregunta abierta (Q1 a Q5).
+Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumptions).
 
 | Pedido | Fuente |
 | --- | --- |
@@ -61,6 +61,11 @@ Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumption
 | Las pantallas de administración de F12 no traen las estadísticas, y las de C5 no tienen dueño en ninguna hoja de ruta | F12, «Queda fuera» (spec 023); hoja de ruta, «Enmiendas pendientes», C5 |
 | La administración se monta como un diálogo desde «Tu cuenta», y F10 la vuelve la ruta `#administracion` | Usuario, clarify del 2026-10-28 (F12-Q1 y F10-Q4) |
 | Esta spec deja claras las métricas útiles y su forma (agregadas, por catálogo, por ejercicio, por período y por cuenta), el límite de privacidad con los identificadores que sí salen y si hace falta un umbral de agregación, de dónde salen los datos dado lo que B2 ya borra, y si C5 trae pantalla o sólo API; el clarify trae como mucho cinco preguntas, con la 6 del ADR como primera candidata | Pedido de esta tarea |
+| El admin ve métricas, también por cuenta, sin textos, sin huellas y sin la opción elegida por cuenta, y sin umbral de agregación | Usuario, clarify del 2026-10-28 (Q1, opción A; cierra la pregunta 6 del ADR 0006) |
+| La lista de alumnos con su uso, `GET /api/admin/stats/students`, con las métricas calculadas sólo para la página | Usuario, clarify del 2026-10-28 (Q2, opción A) |
+| Cada consulta de una cuenta queda en los logs, con el admin, la cuenta y la acción, sin métricas | Usuario, clarify del 2026-10-28 (Q3, opción A) |
+| C5 entrega sólo la API; las pantallas son de un ítem nuevo del front, F14 · Estadísticas del admin | Usuario, clarify del 2026-10-28 (Q4, opción A) |
+| Los agregados cuentan a los alumnos con el rol vigente `student` y estado `active` o `disabled`, sin admins ni cuentas en supresión | Usuario, clarify del 2026-10-28 (Q5, opción A) |
 
 **Base del ADR 0006 (propuesta).** El usuario todavía no lo aprobó: la spec lo usa como base y cambia si lo enmienda. La aprobación condiciona la implementación, no la planificación.
 
@@ -78,11 +83,17 @@ Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumption
 
 ## Clarifications
 
-*(Vacía hasta el clarify: las preguntas están en «Preguntas abiertas».)*
+### Session 2026-10-28
 
-## Preguntas abiertas
+- Q: **Q1**, ¿qué ve el admin? → A: Métricas, también por cuenta: resultados, fechas, conteos, ayudas, si acertó o si respondió una pregunta, la autoevaluación y la actividad por día. Nunca el código, las salidas, las pruebas propias, los borradores, las reflexiones, las notas, ni el crudo ni el informe de una importación; tampoco sus huellas, si existen o cuánto miden, ni la opción elegida por cuenta. Sin umbral de agregación: cada tasa lleva su `n`. Cierra la pregunta 6 del ADR 0006. Decidió el usuario. (FR-006 a FR-011, FR-027, FR-029 a FR-031)
+- Q: **Q2**, ¿cómo encuentra el admin a los alumnos trabados o inactivos? → A: Con `GET /api/admin/stats/students`, la lista paginada con las métricas calculadas sólo para la página (opción A). Decidió el usuario. (FR-002, FR-029)
+- Q: **Q3**, ¿queda registrada cada consulta de una cuenta? → A: Sí: el detalle, la ficha y las ejecuciones filtradas por una cuenta dejan una línea en los logs con el admin, la cuenta y la acción, sin métricas (opción A). Decidió el usuario. (FR-015, SC-005)
+- Q: **Q4**, ¿quién dibuja las pantallas? → A: Un ítem nuevo del front, **F14 · Estadísticas del admin**, que depende de F12a y de C5 (opción A). C5 entrega sólo la API. Decidió el usuario. (FR-002; «Hallazgos para las hojas de ruta», 1)
+- Q: **Q5**, ¿qué cuentas entran en los agregados? → A: Los alumnos con el rol vigente `student` y estado `active` o `disabled`, sin admins ni cuentas en supresión (opción A). Decidió el usuario. (FR-016, FR-017)
 
-Los requisitos están escritos con la opción recomendada de cada pregunta y llevan «(Q*n*)». El checklist dice qué requisitos cambian con cada alternativa.
+## Preguntas del clarify
+
+Quedan como registro de las alternativas. El usuario eligió la opción recomendada en las cinco el 2026-10-28 (ver «Clarifications»). Los requisitos que salen de una pregunta llevan «(Q*n*)», que remite a su línea de «Clarifications».
 
 **Q1. ¿Qué ve el admin?** *(pregunta 6 del ADR 0006; FR-006 a FR-011, FR-027, FR-029 a FR-031)* El ADR propone «sólo métricas» y deja abierta la tutoría con textos. Pide además que el aviso de privacidad lo diga. Lo que se decida acá va al texto del aviso, que escribe el usuario (F11-Q2).
 
@@ -93,7 +104,7 @@ Los requisitos están escritos con la opción recomendada de cada pregunta y lle
 | C | A, más leer el código, los borradores y las reflexiones de una cuenta para tutoría | No cabe en C5: cambia D31 y D33, rompe la matriz de C3b (FR-041), pide un consentimiento versionado del alumno, un registro de cada lectura y otro aviso de privacidad, y el payload de un intento se poda a los 90 días. Sería un ítem nuevo, con su ADR |
 | D | Sólo agregados, sin vista por cuenta, con un umbral (por ejemplo, un agregado sobre menos de 5 alumnos sale vacío) | Lo más privado. Contradice la hoja de ruta («el resumen en la ficha de usuario») y un docente no puede ver quién se trabó. Con 274 ejercicios y una clase de 20, muchos agregados por ejercicio saldrían vacíos |
 
-**Recomendada: A.** Es la propuesta del ADR y lo que pide la hoja de ruta, y las banderas de acierto ya las decide el cliente (D39): la opción elegida por cuenta no agrega una señal que la distribución no tenga. **Costo:** el aviso de privacidad tiene que nombrar las métricas por cuenta y la actividad por día.
+**Recomendada y elegida: A.** Es la propuesta del ADR y lo que pide la hoja de ruta, y las banderas de acierto ya las decide el cliente (D39): la opción elegida por cuenta no agrega una señal que la distribución no tenga. **Costo:** el aviso de privacidad tiene que nombrar las métricas por cuenta y la actividad por día.
 
 **Q2. ¿Cómo encuentra el admin a los alumnos trabados o inactivos?** *(FR-029)* La hoja de ruta trae el detalle de una cuenta y el resumen en su ficha, pero para saber a quién mirar hace falta una lista. La de C3b (`GET /api/admin/users`) no trae ninguna métrica.
 
@@ -103,7 +114,7 @@ Los requisitos están escritos con la opción recomendada de cada pregunta y lle
 | B | Sin lista: el admin llega al detalle desde la lista de C3b, cuenta por cuenta | Lo mínimo. Para encontrar a los inactivos de una clase de 40 hay que abrir 40 fichas |
 | C | La lista de C3b suma la última actividad y su orden, y nada más | Cambia, de forma aditiva, un contrato que F12a ya consume. Responde «quién no viene», no «quién no avanza» |
 
-**Recomendada: A.** Es la forma «por cuenta» del pedido y la pregunta más común de quien enseña. Calcular sólo la página la mantiene barata y sin caché. **Costo:** una ruta con su prueba, y sumarla al §7 del ADR.
+**Recomendada y elegida: A.** Es la forma «por cuenta» del pedido y la pregunta más común de quien enseña. Calcular sólo la página la mantiene barata y sin caché. **Costo:** una ruta con su prueba, y sumarla al §7 del ADR.
 
 **Q3. ¿Queda registrada cada consulta de una cuenta?** *(FR-015)* C3b registra en los logs cada acción de admin con su actor, su destino y la acción (su FR-040; ADR 0006 D20), pero mirar no cambia nada. Con Q1-A, el detalle de una cuenta es el acceso más amplio a datos personales que tiene el admin.
 
@@ -112,7 +123,7 @@ Los requisitos están escritos con la opción recomendada de cada pregunta y lle
 | A | Cada respuesta con éxito del detalle de una cuenta, de su ficha y de las ejecuciones filtradas por esa cuenta deja una línea en los logs con el admin, la cuenta y la acción, sin ninguna métrica | Una línea por consulta, con la retención de logs que sigue abierta (§13.13 del ADR). Permite responder «quién miró mis datos» |
 | B | No se registra: leer no es una acción de admin | Nada que hacer. Si un alumno pregunta quién vio sus datos, no hay respuesta |
 
-**Recomendada: A.** Cuesta una línea y extiende una regla que ya existe; no es una auditoría de logins (R5). **Costo:** el aviso de privacidad puede decirlo. La lista y los agregados no dejan líneas, porque serían demasiadas por consulta.
+**Recomendada y elegida: A.** Cuesta una línea y extiende una regla que ya existe; no es una auditoría de logins (R5). **Costo:** el aviso de privacidad puede decirlo. La lista y los agregados no dejan líneas, porque serían demasiadas por consulta.
 
 **Q4. ¿Quién dibuja las pantallas?** *(FR-002; «Hallazgos para las hojas de ruta»)* C3b no trajo pantallas y F12 deja fuera las estadísticas. F12a monta la administración en `pages/admin`, con un `AdminPage` que recibe la sección («Cuentas» o «Invitaciones»), y F10 la vuelve `#administracion`.
 
@@ -123,7 +134,7 @@ Los requisitos están escritos con la opción recomendada de cada pregunta y lle
 | C | C5 trae sus pantallas | Un ítem del backend que toca `pages/admin` y espera a F11a y F12a; mezcla los dos épicos que la constitución separa |
 | D | Sin pantallas por ahora: la API se usa con `curl` | Lo más barato. Las estadísticas quedan para quien sepa armar un pedido con sesión, CSRF y la cuenta esperada |
 
-**Recomendada: A.** Sigue el precedente de C3b y F12 (el backend entrega el contrato y el front lo dibuja) y las convenciones de IDs de las dos hojas de ruta. **Costo:** un ítem más en la hoja de ruta del front, que integra el coordinador.
+**Recomendada y elegida: A.** Sigue el precedente de C3b y F12 (el backend entrega el contrato y el front lo dibuja) y las convenciones de IDs de las dos hojas de ruta. **Costo:** un ítem más en la hoja de ruta del front, que integra el coordinador.
 
 **Q5. ¿Qué cuentas entran en los agregados?** *(FR-016, FR-017)* El ADR excluye a los admins «por defecto» (S5). Falta decidir qué pasa con las cuentas deshabilitadas y con las que cambian de rol.
 
@@ -133,7 +144,7 @@ Los requisitos están escritos con la opción recomendada de cada pregunta y lle
 | B | Sólo los alumnos `active` | Las cifras de un período pasado bajan cada vez que se deshabilita a alguien, por ejemplo al cerrar un curso |
 | C | A, más un filtro para sumar a los admins | Lo que sugiere «por defecto». Un parámetro más, para un caso que la cuenta de admin separada que recomienda el ADR ya evita (S5) |
 
-**Recomendada: A.** Deshabilitar es reversible y no debería reescribir la historia; el rol se toma vigente porque el taller no guarda su historia. **Costo:** un alumno promovido desaparece de los agregados, y la spec lo dice (Edge Cases).
+**Recomendada y elegida: A.** Deshabilitar es reversible y no debería reescribir la historia; el rol se toma vigente porque el taller no guarda su historia. **Costo:** un alumno promovido desaparece de los agregados, y la spec lo dice (Edge Cases).
 
 ## El límite de privacidad
 
@@ -443,7 +454,7 @@ C5 no crea tablas. Estos son los conceptos que expone, todos derivados de las ta
 | B2 ([spec 005](../005-b2-api-ejecuciones/spec.md), entregada) | La definición única de intento (FR-029), los estados y motivos, `runs` con su retención de 14 días y los índices de `attempts`, `attempt_tests` y `runs` | Nada. Los rechazos 429 y 503 no dejan filas: si alguien quiere contarlos, es un cambio de B2 (ver «Hallazgos») |
 | D1a y D1b ([spec 007](../007-d1-progreso-sincronizacion/spec.md), entregadas) | Las tablas de progreso, `last_activity_at` (su FR-019), `progress_imports` y el reset que deja los intentos (su Q2) | Nada |
 | A4 y D1c (sin entregar) | Son los que llenan las tablas: A4 ejecuta desde el laboratorio y D1c sincroniza el progreso | Nada; C5 no los espera para construirse |
-| F12 ([spec 023](../023-f12-administracion/spec.md)) | `pages/admin` y su `AdminPage` por secciones, donde entra la pantalla de C5 | Nada con Q4-A; con Q4-B, su alcance |
+| F12 ([spec 023](../023-f12-administracion/spec.md)) | `pages/admin` y su `AdminPage` por secciones, donde entra la pantalla de C5 | Nada (Q4-A) |
 | F10 | La ruta `#administracion` (F10-Q4) | Nada |
 | F11 ([spec 015](../015-f11-acceso-cuenta/spec.md)) | El aviso de privacidad, cuyo texto escribe el usuario (F11-Q2) | El texto tiene que decir qué ve el admin (Q1) y, con Q3-A, que cada consulta queda registrada |
 | C4 ([spec 008](../008-c4-exposicion/spec.md)) | Los usuarios de MySQL por rol | Puede darles a las estadísticas un usuario de sólo lectura sin `SELECT` sobre las columnas de «Nunca sale», una defensa más allá de las pruebas (ver «Hallazgos») |
@@ -451,7 +462,7 @@ C5 no crea tablas. Estos son los conceptos que expone, todos derivados de las ta
 
 ## Hallazgos para las hojas de ruta
 
-1. **Un ítem del front para las pantallas (Q4).** Recomendado: **F14 · Estadísticas del admin**, en la hoja de ruta del front; F14 es el primer ID libre en `master` 24ba9d3d (F13 ya existe), y si otra spec en curso lo toma, el coordinador le asigna el siguiente. Entran una sección «Uso del taller» en `pages/admin` (el resumen con su serie, los catálogos y los ejercicios, la cola y las ejecuciones), el detalle de una cuenta desde «Cuentas» y su resumen, con sus specs y sus E2E. Depende de F12a y de C5; con F10 queda bajo `#administracion`. Cierra la entrada «C5» de «Enmiendas pendientes» de la hoja de ruta del backend. Es nuevo, no un port: no tiene comportamiento legacy que conservar.
+1. **Un ítem del front para las pantallas (Q4-A).** Decidido: **F14 · Estadísticas del admin**, en la hoja de ruta del front; F14 es el primer ID libre en `master` 24ba9d3d (F13 ya existe), y si otra spec en curso lo toma, el coordinador le asigna el siguiente. Entran una sección «Uso del taller» en `pages/admin` (el resumen con su serie, los catálogos y los ejercicios, la cola y las ejecuciones), el detalle de una cuenta desde «Cuentas» y su resumen, con sus specs y sus E2E. Depende de F12a y de C5; con F10 queda bajo `#administracion`. Cierra la entrada «C5» de «Enmiendas pendientes» de la hoja de ruta del backend. Es nuevo, no un port: no tiene comportamiento legacy que conservar.
 2. **Las dependencias de C5 ya están entregadas; sus datos, no.** La hoja de ruta dice «D1, B2». Lo que C5 lee lo dejaron D1a, D1b y B2, entregados: C5 puede planificarse e implementarse ya, sin esperar a la ola 5. Sus números describen el taller recién con A4 y D1c, y el ítem del front puede esperarlos.
 3. **El §7 del ADR 0006** suma `GET /api/admin/stats/students` (Q2-A) y el resumen de la ficha (`usage`). La pregunta 6 de §13 se cierra con el clarify de C5.
 4. **B2 no cuenta los rechazos.** Los 429 `quota_exceeded` y los 503 `queue_full` no dejan filas, así que nadie puede saber cuántas veces un aula se quedó sin lugar. Si hace falta, es un contador en B2 (o en los logs), no en C5.

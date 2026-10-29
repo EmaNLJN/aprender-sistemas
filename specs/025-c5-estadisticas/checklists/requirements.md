@@ -15,7 +15,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -33,8 +33,8 @@
 
 ## Notes
 
-- **Antes del clarify.** La spec no usa marcadores `[NEEDS CLARIFICATION]`: las cinco preguntas están en «Preguntas abiertas», cada una con sus opciones, la recomendada y su costo, y los requisitos están escritos con la opción recomendada y llevan «(Q*n*)», como hizo B3 antes de su clarify. El ítem «No [NEEDS CLARIFICATION] markers remain» queda sin marcar hasta que el usuario responda: entonces la sección «Clarifications» recibe una línea por pregunta y «Preguntas abiertas» pasa a «Preguntas del clarify».
-- **Qué cambia con cada alternativa** (con la recomendada no cambia nada):
+- **Clarify hecho el 2026-10-28:** el usuario eligió la opción recomendada en Q1 a Q5. Las respuestas están en «Clarifications» de la spec, con una línea por pregunta; «Preguntas abiertas» pasó a llamarse «Preguntas del clarify» y queda como registro de las alternativas. Los requisitos ya estaban escritos con la opción recomendada, así que no cambia ninguno: las referencias «(Q*n*)» remiten ahora a «Clarifications», como en las specs de B2 y B3.
+- **Qué habría cambiado con cada alternativa** (registro; se eligió la recomendada en las cinco):
   - **Q1-B** (la opción elegida por cuenta): FR-009 deja salir la opción por cuenta; FR-030 la suma a la grilla, a la campaña, a los talleres y al recorrido; la fila «La opción que eligió una cuenta» sale de «Nunca sale»; la historia 3, escenario 5, se invierte; SC-002 suma esas claves a las permitidas.
   - **Q1-C** (textos para tutoría): no cabe en C5. La spec queda como está y la tutoría es un ítem nuevo, con su ADR, que enmienda D31 y D33, el FR-041 de C3b y FR-006, FR-013 y FR-014 de esta spec.
   - **Q1-D** (sólo agregados con umbral): FR-011 pasa a exigir un umbral (por ejemplo, 5 alumnos) con el agregado vacío por debajo; salen FR-015, FR-017, FR-029, FR-030, FR-031, FR-035 y FR-037, la historia 4, SC-004 (su segunda mitad) y SC-005; Q2 y Q3 dejan de tener objeto; FR-002 pierde tres rutas, y la hoja de ruta, «el resumen en la ficha». Además, FR-032 pierde el filtro por cuenta y la cuenta de cada ejecución, y FR-010 queda sin rutas que lleven identificadores: si no, la lista de ejecuciones seguiría siendo una vista por cuenta.
