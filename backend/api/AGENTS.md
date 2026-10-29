@@ -9,9 +9,13 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
     `npm run api:test -- --filter=Nombre`.
   - `npm run api:test:down`: apaga la base de pruebas y borra la red `testing` del proyecto,
     sin tocar el stack principal.
+  - `npm run api:composer:validate`: `composer validate --strict` con la misma imagen de Composer que fija
+    el `Dockerfile`, sin red: `composer.json` válido y `composer.lock` al día.
   - `npm run api:format:check`: Pint.
   - `npm run api:analyse`: PHPStan con Larastan, nivel 9 desde C6 (`phpstan.neon`), sin baseline ni `ignoreErrors`, sobre `app`, `config`,
-    `database`, `routes` y `bootstrap/app.php`.
+    `database`, `routes` y `bootstrap/app.php`. El nivel 10, el máximo, es deuda con su propio PR: el
+    2026-10-29 daba 136 errores, casi todos valores `mixed` sin acotar.
+  - La CI corre los tres en el job `api`, antes de Pest; `make api-check` los corre local.
   - `npm run api:smoke`: con `docker compose up --build -d --wait` corriendo.
   - `npm run api:runs:check`: con el stack corriendo, ejecuciones reales contra el ejecutor (los doce
     casos de B2, las cuotas, la cola llena y el log). Crea y borra sus cuentas, y tarda unos minutos

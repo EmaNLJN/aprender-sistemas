@@ -30,6 +30,7 @@
     "api:test:down": "sh backend/api/scripts/test-down.sh",
     "api:format:check": "docker compose --profile test run --rm --build --no-deps --entrypoint php test vendor/bin/pint --test",
     "api:analyse": "docker compose --profile test run --rm --build --no-deps --entrypoint php test vendor/bin/phpstan analyse --memory-limit=1G --no-progress",
+    "api:composer:validate": "docker run --rm --network=none -v \"$PWD/backend/api\":/app:ro -w /app composer:2.10@sha256:af98f42dfff7c68ba8d53c2164fd9fde1087b7d449514baa38c418b1f6bc4bac validate --strict",
     "api:smoke": "sh backend/api/scripts/smoke.sh",
     "api:content:check": "node qa/api-content-check.ts",
     "api:sync:check": "node qa/api-sync-check.ts",

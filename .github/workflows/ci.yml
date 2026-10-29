@@ -129,6 +129,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: sh backend/api/scripts/init-env.sh
+      - run: npm run api:composer:validate
       - run: npm run api:format:check
       - run: npm run api:analyse
       - run: npm run api:test

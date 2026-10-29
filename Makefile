@@ -108,7 +108,8 @@ api-test: env-exists ## Pest contra mysql-test
 	npm run api:test
 
 .PHONY: api-check
-api-check: env-exists ## Pint, PHPStan y Pest
+api-check: env-exists ## composer validate, Pint, PHPStan y Pest
+	npm run api:composer:validate
 	npm run api:format:check
 	npm run api:analyse
 	npm run api:test
