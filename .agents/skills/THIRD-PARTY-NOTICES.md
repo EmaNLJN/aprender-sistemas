@@ -17,8 +17,8 @@ Las skills de esta carpeta son copias de repositorios de terceros, cada una con 
 | `vitest` | [antfu/skills](https://github.com/antfu/skills) | MIT | Copyright (c) 2025-PRESENT Anthony Fu |
 | `playwright-best-practices` | [currents-dev/playwright-best-practices-skill](https://github.com/currents-dev/playwright-best-practices-skill) | MIT | Copyright © 2026 Currents Software Inc. |
 | `api-and-interface-design` | [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) | MIT | Copyright (c) 2025 Addy Osmani |
-| `golang-lint` | [samber/cc-skills-golang](https://github.com/samber/cc-skills-golang) | MIT (declarada en su SKILL.md) | Samber (autor en su metadata); el repositorio no trae titular en la skill |
-| `github-actions-hardening` | [github/awesome-copilot](https://github.com/github/awesome-copilot) | MIT | GitHub, Inc. |
+| `golang-lint` | [samber/cc-skills-golang](https://github.com/samber/cc-skills-golang) | MIT | Copyright (c) 2026 Samuel Berthe |
+| `github-actions-hardening` | [github/awesome-copilot](https://github.com/github/awesome-copilot) | MIT | Copyright GitHub, Inc. |
 | `speckit-*` (las trece) | [github/spec-kit](https://github.com/github/spec-kit) | MIT | Copyright GitHub, Inc. |
 
 ## MIT
