@@ -18,12 +18,12 @@ Las ondas y los dueños están en «Reparto en paralelo» de [plan-f14b.md](./pl
 - [ ] T030 [P] [US3] M · Las formas por cuenta en `usage-types.ts`, las fábricas y las specs en rojo de `parse-students`, `account-usage` y `usage-endpoints-students` en `frontend/src/pages/admin/` (FR-025, FR-026, FR-030 a FR-035, FR-037 y FR-039; plan-f14b 1.1)
 - [ ] T031 [US3] M · `parseStudentRow`, `parseStudentDetail`, `account-usage.ts`, los textos de `usage-labels.ts` y `listStudents`, `getStudentDetail` y `listAccountRuns`, y la compuerta de U1 (FR-025, FR-026, FR-030 a FR-035, FR-037 y FR-039; plan-f14b 1.2)
 
-## Phase 3: User Stories 3 y 4 — U2, «Alumnos» y el uso de una cuenta (onda 2: D y luego S)
+## Phase 3: User Stories 3 y 4 — U2, el uso de una cuenta y «Alumnos» (onda 2: D y luego S)
 
-- [ ] T034 [P] [US4] D · Desde S1, spec en rojo de `ui/account-usage.spec.tsx` (FR-030 a FR-037, FR-042; SC-002 y SC-004; plan-f14b 2.1)
-- [ ] T035 [US4] D · `AccountUsage.tsx`, `AccountUsageReport.tsx`, `ExerciseGrid.tsx`, `AccountRuns.tsx`, `emptyText` en `RunsList.tsx` e `isNotFound` en `stats-failure.ts` (FR-029 a FR-037, FR-041, FR-042 y FR-045; plan-f14b 2.2)
-- [ ] T032 [US3] S · Desde T035, spec en rojo de `ui/students-view.spec.tsx` (FR-025 a FR-027 y FR-039; plan-f14b 2.3)
-- [ ] T033 [US3] S · `ui/StudentsView.tsx` sobre `usePagedList` y `ListView` de F12a (FR-025 a FR-027, FR-029 y FR-040; plan-f14b 2.4)
+- [ ] T032 [P] [US4] D · Desde S1, spec en rojo de `ui/account-usage.spec.tsx` (FR-030 a FR-037, FR-042; SC-002 y SC-004; plan-f14b 2.1)
+- [ ] T033 [US4] D · `AccountUsage.tsx`, `AccountUsageReport.tsx`, `ExerciseGrid.tsx`, `AccountRuns.tsx`, `emptyText` en `RunsList.tsx` e `isNotFound` en `stats-failure.ts` (FR-029 a FR-037, FR-041, FR-042 y FR-045; plan-f14b 2.2)
+- [ ] T034 [US3] S · Desde T033, spec en rojo de `ui/students-view.spec.tsx` (FR-025 a FR-027 y FR-039; plan-f14b 2.3)
+- [ ] T035 [US3] S · `ui/StudentsView.tsx` sobre `usePagedList` y `ListView` de F12a (FR-025 a FR-027, FR-029 y FR-040; plan-f14b 2.4)
 
 ## Phase 4: User Story 4 en «Cuentas» — U3, la columna, la lista oculta y la vista (onda 3: P; onda 4: K)
 

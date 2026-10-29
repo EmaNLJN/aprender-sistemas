@@ -28,7 +28,7 @@ F14b trae lo que es de una cuenta: quién no viene, su uso ejercicio por ejercic
 - **Seis unidades sobre `f14b/base`, con un solo merge a `master`:**
   - **U0:** la línea base, acumulada desde la de F14a;
   - **U1:** las formas de C5 por cuenta, sus reglas y sus pedidos;
-  - **U2:** la vista «Alumnos» y el detalle de una cuenta, a la vez;
+  - **U2:** el detalle de una cuenta y, sobre él, la vista «Alumnos»;
   - **U3:** la columna «Uso», la lista oculta de «Cuentas» y «Alumnos» en la sección;
   - **U4:** las E2E;
   - **U5:** la documentación, el peso y el PR.
@@ -96,8 +96,8 @@ Las de [plan.md](./plan.md), con estas diferencias:
 | Decisión | Cómo la aplica este plan | Dónde |
 | --- | --- | --- |
 | **Q1-A:** la columna «Uso» en «Cuentas», antes de «Acciones» | `AccountsTable` suma `onUsage` y la columna; `ACTION_SLOTS` no cambia | T036, T037 |
-| **Q3-A:** las muestras chicas | El detalle no tiene tasas sobre alumnos ni distribuciones; las cuotas no son tasas (research-f14b, R3) | T034, T035 |
-| **Q4-A:** no espera a A4 ni a D1c | El detalle de una cuenta sin progreso sale con la época 1 y todo en ceros, y lo dice | T034, T035, T041 |
+| **Q3-A:** las muestras chicas | El detalle no tiene tasas sobre alumnos ni distribuciones; las cuotas no son tasas (research-f14b, R3) | T032, T033 |
+| **Q4-A:** no espera a A4 ni a D1c | El detalle de una cuenta sin progreso sale con la época 1 y todo en ceros, y lo dice | T032, T033, T041 |
 | **P1-A:** F14b espera a F14a | Base `master` con F14a; reutiliza sus piezas | Todo el plan |
 | **Hallazgo F14-3:** la lista de «Cuentas» montada y oculta | Tarea propia con TDD sobre el código de F12a | T036, T037 |
 
@@ -159,11 +159,11 @@ Las reglas de F14a («Reparto en paralelo» y «Reglas para todos los agentes» 
 | 0 | K | T029 |
 | 1 | M y E a la vez | **M:** T030 y T031. **E:** T038 |
 | 1b | K | La compuerta de U1 |
-| 2 | S y D a la vez, desde S1 | **S:** T032 y T033. **D:** T034 y T035 |
+| 2 | D desde S1, y S desde T033 | **D:** T032 y T033. **S:** T034 y T035 |
 | 3 | P y E, desde S2 | **P:** T036 y T037. **E:** T039, en rojo |
 | 4 | K | La compuerta de U3, T040 y T041 |
 
-**Puntos de sincronización:** S1, K cerró la compuerta de U1; S2, S y D entregaron.
+**Puntos de sincronización:** S1, K cerró la compuerta de U1; S2, D y S entregaron.
 
 **Puertos de los E2E:** K `E2E_PORT=4173` y E `4196`.
 
@@ -1149,13 +1149,13 @@ Las reglas de F14a («Reparto en paralelo» y «Reglas para todos los agentes» 
 
 **La compuerta de U1 (K):** la de T011 de F14a. El PR: `feat(front): per-account usage model and requests (F14b U1)`, contra `f14b/base`.
 
-## 2. U2 · «Alumnos» y el uso de una cuenta (onda 2: S y D a la vez)
+## 2. U2 · El uso de una cuenta y «Alumnos» (onda 2: D y después S)
 
 **Cubre:** las historias 3 y 4 en los componentes; FR-025 a FR-027 y FR-029 a FR-037.
 
 **Reglas de las specs** (las de U3 de F14a): `PeriodProvider`, `renderWithFetch` de F12a con el `fetch` de `routeFetch`, `lib/plot` reemplazado con `vi.hoisted` y `vi.mock`, y `signInAs()` en `beforeEach`.
 
-### Tarea 2.1 · El uso de una cuenta, en rojo (T034, D, desde S1)
+### Tarea 2.1 · El uso de una cuenta, en rojo (T032, D, desde S1)
 
 **Archivos:** los stubs de `ui/AccountUsage.tsx`, `ui/AccountUsageReport.tsx`, `ui/ExerciseGrid.tsx` y `ui/AccountRuns.tsx`, y `ui/account-usage.spec.tsx`, en `frontend/src/pages/admin/`. D va primero, porque S usa `AccountUsage`.
 
@@ -1327,7 +1327,7 @@ Las reglas de F14a («Reparto en paralelo» y «Reglas para todos los agentes» 
 2. **Correr** `npm run test:unit -- frontend/src/pages/admin/ui/account-usage.spec.tsx`: en rojo, por `not implemented`.
 3. **Commit:** `test(front): specs del uso de una cuenta, en rojo`.
 
-### Tarea 2.2 · El uso de una cuenta (T035, D)
+### Tarea 2.2 · El uso de una cuenta (T033, D)
 
 **Archivos:** `ui/AccountUsage.tsx`, `ui/AccountUsageReport.tsx`, `ui/ExerciseGrid.tsx`, `ui/AccountRuns.tsx`, `ui/RunsList.tsx` (una prop opcional) y `model/stats-failure.ts` (`isNotFound`), en `frontend/src/pages/admin/`.
 
@@ -1727,11 +1727,11 @@ Las reglas de F14a («Reparto en paralelo» y «Reglas para todos los agentes» 
 7. **Correr** `npm run test:unit -- frontend/src/pages/admin/ui/account-usage.spec.tsx frontend/src/pages/admin/ui/runs-view.spec.tsx`, en verde (la de F14a también), y después `npm run typecheck` y `npm run lint`.
 8. **Commit:** `feat(front): el uso de una cuenta, con su grilla, sus cuotas, su actividad y sus ejecuciones`.
 
-### Tarea 2.3 · «Alumnos», en rojo (T032, S, desde T035)
+### Tarea 2.3 · «Alumnos», en rojo (T034, S, desde T033)
 
 **Archivos:** el stub de `ui/StudentsView.tsx` y `ui/students-view.spec.tsx`.
 
-**Consume:** de U1, `listStudents`; de F12a, `usePagedList`, `ListView`, `FilterSelect`, `TextField` y `messagesOf`; de T035, `AccountUsage`. **Produce:** `StudentsView` (`{ ownId }`).
+**Consume:** de U1, `listStudents`; de F12a, `usePagedList`, `ListView`, `FilterSelect`, `TextField` y `messagesOf`; de T033, `AccountUsage`. **Produce:** `StudentsView` (`{ ownId }`).
 
 1. **`ui/students-view.spec.tsx`.** Cubre la historia 3, FR-025 a FR-027 y FR-039 en la lista:
 
@@ -1866,7 +1866,7 @@ Las reglas de F14a («Reparto en paralelo» y «Reglas para todos los agentes» 
 2. **Correr** `npm run test:unit -- frontend/src/pages/admin/ui/students-view.spec.tsx`: en rojo, por `not implemented`.
 3. **Commit:** `test(front): specs de la lista de alumnos, en rojo`.
 
-### Tarea 2.4 · «Alumnos» (T033, S)
+### Tarea 2.4 · «Alumnos» (T035, S)
 
 **Archivos:** `ui/StudentsView.tsx`.
 
@@ -2843,28 +2843,28 @@ Las reglas de F14a («Reparto en paralelo» y «Reglas para todos los agentes» 
 | Requisito | Dónde |
 | --- | --- |
 | FR-002 («Alumnos») | T036, T037 |
-| FR-025 | T030, T031 (`listStudents` y `parseStudentRow`), T032, T033, T039 |
-| FR-026 | T030, T031, T032, T033 (búsqueda, inactividad y órdenes de la API), T039 |
-| FR-027 | T032, T033 |
+| FR-025 | T030, T031 (`listStudents` y `parseStudentRow`), T034, T035, T039 |
+| FR-026 | T030, T031, T034, T035 (búsqueda, inactividad y órdenes de la API), T039 |
+| FR-027 | T034, T035 |
 | FR-028 | T036, T037 (la columna «Uso»), T039 |
-| FR-029 | T032 a T037 (la lista montada y oculta, el foco y la sección marcada), T039 |
-| FR-030 | T034, T035 (un pedido por apertura y por período, el aviso), T039 (puntero y ficha) |
-| FR-031 | T030, T031, T034, T035 (la cuenta, el progreso, las importaciones, lo resuelto y los intentos) |
-| FR-032 | T030, T031 (`activityChart`), T034, T035, T039 (el dibujo) |
-| FR-033 | T030, T031 (`quotaRows`), T034, T035 |
-| FR-034 | T030, T031 (`visibleRows` y las banderas), T034, T035 (`ExerciseGrid`) |
-| FR-035 | T034, T035 (la campaña, los talleres y el recorrido) |
-| FR-036 | T034, T035 (`isNotFound`), T036, T037 (`list.reload`), T039 |
-| FR-037 | T030, T031 (`listAccountRuns`), T034, T035 (`AccountRuns`), T039 |
+| FR-029 | T034 a T037 (la lista montada y oculta, el foco y la sección marcada), T039 |
+| FR-030 | T032, T033 (un pedido por apertura y por período, el aviso), T039 (puntero y ficha) |
+| FR-031 | T030, T031, T032, T033 (la cuenta, el progreso, las importaciones, lo resuelto y los intentos) |
+| FR-032 | T030, T031 (`activityChart`), T032, T033, T039 (el dibujo) |
+| FR-033 | T030, T031 (`quotaRows`), T032, T033 |
+| FR-034 | T030, T031 (`visibleRows` y las banderas), T032, T033 (`ExerciseGrid`) |
+| FR-035 | T032, T033 (la campaña, los talleres y el recorrido) |
+| FR-036 | T032, T033 (`isNotFound`), T036, T037 (`list.reload`), T039 |
+| FR-037 | T030, T031 (`listAccountRuns`), T032, T033 (`AccountRuns`), T039 |
 | FR-038 | T039 (el almacenamiento, la URL, el historial y la consola después del detalle) |
-| FR-039 | T030 (la lectura descarta lo que el contrato no tiene), T032 (ningún orden por métrica), T034 |
-| FR-040 | T033 (lo resuelto con su desglose), T039 (ningún «verificado») |
-| FR-041, FR-042 | T034, T035, T039 (el detalle sin opciones ni distribuciones; las cuotas no son tasas) |
+| FR-039 | T030 (la lectura descarta lo que el contrato no tiene), T034 (ningún orden por métrica), T032 |
+| FR-040 | T035 (lo resuelto con su desglose), T039 (ningún «verificado») |
+| FR-041, FR-042 | T032, T033, T039 (el detalle sin opciones ni distribuciones; las cuotas no son tasas) |
 | FR-043 | El detalle no ofrece exportar (T039, ningún enlace de descarga, por F14a) |
-| FR-044 | T034, T035 (sólo al abrir; sus ejecuciones, a pedido), T039 |
-| FR-045 a FR-048 | T035 (la actividad con `SeriesChart` de F14a), T039 (el dibujo) |
-| FR-049 a FR-051 | T034, T035 (`useStatsRequest` y `RequestState` de F14a), T039 (401 y 404) |
-| FR-052 a FR-055 | T034 a T037 (el foco y las tablas), T039 (320 px) |
+| FR-044 | T032, T033 (sólo al abrir; sus ejecuciones, a pedido), T039 |
+| FR-045 a FR-048 | T033 (la actividad con `SeriesChart` de F14a), T039 (el dibujo) |
+| FR-049 a FR-051 | T032, T033 (`useStatsRequest` y `RequestState` de F14a), T039 (401 y 404) |
+| FR-052 a FR-055 | T032 a T037 (el foco y las tablas), T039 (320 px) |
 | FR-056 | Ninguna dependencia |
 | FR-057 | T037, T041 (acumulado desde T001 de F14a) |
 | FR-058 | T039 (la grilla con todos los ejercicios, sin virtualizar) |
@@ -2872,13 +2872,13 @@ Las reglas de F14a («Reparto en paralelo» y «Reglas para todos los agentes» 
 | FR-060 | T038, T039 (`UsagePage` y `AdminPage` de F12a) |
 | FR-061 | T037 y T041 (las pruebas de F12a, F12b y F14a sin editar) |
 | FR-062 | T040, T041 |
-| FR-063 | T034 (lo que recibe `drawBarChart`), T039 (el dibujo) |
-| SC-001 | T030 a T035 y T039 (cada cifra contra la respuesta) |
-| SC-002 | T034, T039 (0 opciones y 0 distribuciones en el detalle) |
+| FR-063 | T032 (lo que recibe `drawBarChart`), T039 (el dibujo) |
+| SC-001 | T030 a T033 y T039 (cada cifra contra la respuesta) |
+| SC-002 | T032, T039 (0 opciones y 0 distribuciones en el detalle) |
 | SC-003 | T039 |
-| SC-004 | T034, T036 y T039 (1 pedido al abrir, 1 por período, 0 al listar y pasar el puntero, 0 a la ficha) |
-| SC-005 | T034 (404), T039 (401), y los demás estados por F14a |
-| SC-006 | T035 (la tabla y el resumen de la actividad), T039 |
+| SC-004 | T032, T036 y T039 (1 pedido al abrir, 1 por período, 0 al listar y pasar el puntero, 0 a la ficha) |
+| SC-005 | T032 (404), T039 (401), y los demás estados por F14a |
+| SC-006 | T033 (la tabla y el resumen de la actividad), T039 |
 | SC-007 | T037, T041 |
 | SC-008 | T039, T041 (la grilla con todos los ejercicios) |
 | SC-010 | T041 |
