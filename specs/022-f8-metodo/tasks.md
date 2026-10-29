@@ -8,7 +8,7 @@ description: "Tareas de F8, el port de Método"
 
 ## Phase 1: Setup (U0)
 
-- [ ] T001 La línea base, la detección de B1 a B10 y su registro en `specs/022-f8-metodo/research.md` (FR-004, FR-005, FR-043; SC-009)
+- [ ] T001 La línea base sobre `f11a/base` (o `master` con F11a), la detección de B1 a B12 y su registro en `specs/022-f8-metodo/research.md` (FR-004, FR-005, FR-043; SC-009)
 
 ## Phase 2: Foundational · los E2E contra el legacy (U1)
 
@@ -29,15 +29,15 @@ description: "Tareas de F8, el port de Método"
 - [ ] T010 [US1] [US2] [US4] [US5] La página, en rojo, en `frontend/src/pages/method/ui/method-page.spec.tsx`, con el doble y la ayuda de render (FR-007, FR-017, FR-018, FR-020, FR-022, FR-030, FR-031, FR-039)
 - [ ] T011 [US1] [US2] [US4] [US5] La página sin montar, en `frontend/src/pages/method/ui/` y `lib/copy-with-fallback.ts`, y `downloadJsonFile` en `frontend/src/shared/lib/download-file.ts` (FR-007, FR-013, FR-026 a FR-036)
 - [ ] T012 [US6] `app-shell-check` y `boot-check` arrancan `app.js` con su instancia, del mismo bundle, en `qa/lib/sources.ts`, `legacy-sources.ts`, `app-shell-harness.ts`, `qa/app-shell-check.ts` y `qa/boot-check.ts`; el escenario de la suscripción, en rojo (FR-033, FR-041, FR-046)
-- [ ] T013 [US6] El corte: el adaptador `frontend/src/app/legacy/register-method.tsx`, `legacy-views.ts`, `frontend/app.js`, `frontend/src/index.html` y los checks de `qa/`, con la correspondencia de §3.9 (FR-008 a FR-014, FR-041, FR-045, FR-046; SC-006, SC-010)
+- [ ] T013 [US6] El corte: el adaptador `frontend/src/app/legacy/register-method-page.tsx` (`window.TallerMethodPage`), `legacy-views.ts`, `frontend/app.js` con `syncShell` y sin los `updateSaveLabel()` redundantes, `frontend/src/index.html`, `REACT_VIEWS` en `boot-check`, la guarda de `useStore` si falta y los checks de `qa/`, con la correspondencia de §3.9 (FR-008 a FR-014, FR-041, FR-045, FR-046; SC-006, SC-010)
 
 ## Phase 5: User Story 3 · «Borrar todo» con el servidor (U4)
 
-- [ ] T014 [US3] «Borrar todo» con la contraseña y el reset, en rojo, en `qa/e2e/specs/method-reset-server.spec.ts`, el doble de la API y los E2E que cambian a propósito (FR-021 a FR-025, FR-040, FR-047 a FR-049; SC-013)
+- [ ] T014 [US3] «Borrar todo» con la contraseña y el reset, en rojo, en `qa/e2e/specs/method-reset-server.spec.ts` (cada falla con su `/status of NNN/`), las tres rutas en `installDefaults` del doble de la API y los E2E que cambian a propósito (FR-021 a FR-025, FR-040, FR-047 a FR-049; SC-013)
 - [ ] T015 [P] [US3] El paso del servidor y su lugar en `resetAll`, en rojo, en `frontend/src/app/progress-backup/server-reset.spec.ts` y `features/progress-backup/model/progress-backup-edges.spec.ts` (FR-022, FR-024, FR-047, FR-048)
 - [ ] T016 [US3] `resetWithServer` en `features/progress-backup/model/create-progress-backup.ts`, `server-reset.ts` y el paso en `app-progress-backup.ts` (FR-022, FR-024, FR-047 a FR-049)
 - [ ] T017 [P] [US3] La confirmación con la contraseña, en rojo, en `frontend/src/pages/method/ui/reset-dialog.spec.tsx` (FR-021, FR-025, FR-039, FR-047)
-- [ ] T018 [US3] La confirmación en `frontend/src/pages/method/ui/ResetDialog.tsx`, `ProgressPanel.tsx` y `MethodPage.tsx`, `readOnly` en `shared/ui/form` y `reloadDocument` en el adaptador (FR-021, FR-025, FR-034, FR-047)
+- [ ] T018 [US3] La confirmación en `frontend/src/pages/method/ui/ResetDialog.tsx`, `ProgressPanel.tsx` y `MethodPage.tsx`, `readOnly` en `shared/ui/form` y `reloadDocument` de `shared/lib` en el adaptador (FR-021, FR-025, FR-034, FR-047)
 - [ ] T019 [P] [US3] `boot-check` con el servidor: las rutas en `qa/lib/content-server.ts`, `cookie` en `boot-harness.ts` y el orden en `qa/boot-check.ts`, en rojo hasta T016 (FR-022, FR-041; SC-013)
 - [ ] T020 La compuerta de U4 y la verificación a mano contra el stack (SC-001, SC-002)
 
@@ -45,4 +45,4 @@ description: "Tareas de F8, el port de Método"
 
 - [ ] T021 Las comparaciones únicas: el DOM, la confirmación después de Q1 y los bytes del archivo (FR-042; SC-003, SC-007)
 - [ ] T022 La documentación en `docs/architecture.md` y `qa/AGENTS.md` (FR-044)
-- [ ] T023 El peso, la compuerta final y el PR a `master` (FR-004, FR-006; SC-008, SC-011, SC-012)
+- [ ] T023 El peso contra `BOOT_SIZE_LIMIT` (1 500 000), la compuerta final y el PR a `master` (o a `f11a/base`) (FR-004, FR-006; SC-008, SC-011, SC-012)
