@@ -6,7 +6,9 @@ Las decisiones técnicas de A4, con sus alternativas, la tabla de Context7 y las
 
 ## R0 · La base de integración
 
-A4 se implementa sobre una base que todavía no existe entera. La fija T001 y la verifica antes de empezar:
+A4 se implementa sobre una base que todavía no existe entera. La fija T001 y la verifica antes de empezar.
+
+**La rama de partida (TR-12):** F11a llega a `master` en un solo PR, al final (`ledger impl-f11a:56`), y A3 se integra sobre `f11a/base`. Mientras F11a no esté en `master`, la rama de A4 sale de `f11a/base` (o de la rama que la suceda) con A3 integrada encima, más F7a y B3. Si F11a ya llegó, sale de `master`.
 
 | Ítem | Dónde está hoy | Qué toma A4 |
 | --- | --- | --- |
@@ -164,6 +166,8 @@ Guardar la plantilla «como porción opcional» sin tocar eso la perdería en ca
   - la plantilla se guarda sólo si hay una copia usable (`usableCopy`);
   - `forgetContentCopy` la borra con el registro;
   - un cambio de versión la descarta, porque A3 borra la copia.
+- **Lo que arrastra el arranque:** `afterPublish` usa `harnessToCarry`, que mira el formato y la forma de la plantilla sin volver a validar las 17 porciones (la fuente de A3 ya validó esa copia en el arranque, y la plantilla se revalida con su `ETag`). El laboratorio lee con `harnessOf`, que exige una copia usable.
+- **Cuándo se pide:** al montar el laboratorio. El contador de pedidos de las E2E de A3 cuenta sólo las porciones y la sesión (plan de A3, :4291), así que la plantilla no cambia esos conteos. Si T001 encuentra una E2E congelada que cuenta todos los pedidos a `/api/` en una URL del laboratorio, T020 usa la variante B: pedirla la primera vez que se dibuja «Experimentá», donde se usa. Es la lectura «cuando el laboratorio la necesita» de FR-029.
 - **Pedido al usuario:** D1 del informe, con la recomendación (a).
 
 ## R11 · La raíz de composición y las capas

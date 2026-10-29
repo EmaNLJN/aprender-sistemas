@@ -157,7 +157,7 @@ export interface CopiedHarness {
 - Va en `portions.harness` del registro de la copia (`taller-contenido`, almacén `copia`, clave `ultima`).
 - `usableCopy` la ignora: devuelve 17 porciones, y `COPY_FORMAT` no sube (A4-13).
 - `harnessOf(record)` la lee sólo si el registro es una copia usable y la porción tiene la forma `{etag: string, data: {rust: string, go: string}}`.
-- **Quién la escribe:** el laboratorio con `update`, después de un 200; el arranque de A3, que la arrastra del registro anterior en el mismo `update`.
+- **Quién la escribe:** el laboratorio con `update`, después de un 200; el arranque de A3, que la arrastra del registro anterior en el mismo `update` con `harnessToCarry` (sólo el formato y la forma de la plantilla).
 - **Quién la borra:** `forgetContentCopy`, y el borrado de A3 ante otra versión.
 
 ## 7. Los textos

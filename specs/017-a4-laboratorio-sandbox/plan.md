@@ -94,6 +94,7 @@ Valores exactos, copiados de la spec, de la constitución y de los hallazgos. To
 | Las E2E de F1 y A2 | Sólo cambian 9 de F1 en su código: 8 de `cycle.spec.ts` y 1 de `guards.spec.ts` (más los 2 de `css-contract.spec.ts`, que usan el doble nuevo sin editarse). Las de A2 no se tocan (FR-042, research R14) |
 | Las E2E de F7a | Cambian 10 de las 14 de `lab-run.spec.ts` y 1 de `lab-exercise.spec.ts` (research R14). La aserción de `lab-run.spec.ts:280` pasa al cuerpo del envío (A4-1) |
 | La aprobación | Las 20 E2E editadas van en **un** commit propio, con TDD y con la aprobación del usuario (FR-042; la regla de los ports de la hoja de ruta del front) |
+| La base (TR-12) | F11a llega a `master` en un solo PR, al final. Mientras tanto, A4 se integra sobre `f11a/base` (o la rama que la suceda) con A3 encima, más F7a y B3; si F11a ya está en `master`, sobre `master` |
 | El doble de la API | El de F11a, con la ruta antes del CSRF y `ApiCall.search`; A4 lo extiende sin otro `replyTo` ni otra búsqueda (TR-11, decisión del 2026-10-28, noche) |
 | La lista blanca de las E2E de error | `pageIssues.expectIssue(/status of NNN/, '…')` con el código exacto; una red caída a propósito, `/Failed to load resource: net::ERR_FAILED/` |
 | Los stubs del rojo | `const f: (a: A) => R = () => { throw new Error('not implemented'); };` (TR-2) |
@@ -291,7 +292,7 @@ Cinco entradas o fallas que la spec implica y que ninguna prueba de una tarea ej
 - **Qué hace:** confirma que la base tiene lo que A4 consume, mide los números que el plan no fija y crea el registro de la implementación.
 - **Archivos:** `specs/017-a4-laboratorio-sandbox/research.md`, sección «Línea base de la implementación», al final.
 - **Pasos:**
-  1. **Las dependencias integradas** en la rama de trabajo, que sale de `master`:
+  1. **Las dependencias integradas** en la rama de trabajo. Sale de `master` si F11a ya llegó; si no, de `f11a/base` (o la rama que la suceda), con A3 integrada encima (TR-12). Tiene que tener:
      - F7a entera, de T001 a T017 (`grep -c "createPlaygroundTransport\|buildPlaygroundProgram" frontend/lab.js` da 2; `test ! -e frontend/src/app/legacy/register-runner.ts`);
      - F11a (`test -e frontend/src/shared/api/http/api-client.ts && test -e qa/e2e/fixtures/api-double.ts`);
      - A3 (`test -e frontend/src/shared/lib/wait.ts && test -e frontend/src/shared/api/content/indexeddb-copy-store.ts && test -e frontend/src/shared/api/content/fake-indexed-db.ts`);
@@ -318,8 +319,17 @@ Cinco entradas o fallas que la spec implica y que ninguna prueba de una tarea ej
      ```
 
      Si aparece una prueba que no figura en R14, sumala a la lista de T019 o de T020 antes de empezar, y avisá.
-  7. **`boot-check` y la plantilla:** `grep -n "order\b" qa/boot-check.ts | head`. Anotá si algún escenario compara la lista completa de pedidos después de montar el laboratorio. T020 lo usa.
-  8. **El backend:** `npm run api:test`, `npm run api:analyse` y `npm run api:format:check` en verde; anotá el total de Pest.
+  7. **Las E2E que cuentan pedidos.** Desde T020, cada `mount` del laboratorio pide `GET /api/harness`, y las 17 de A2 y las de F1 no se editan (SC-010). Buscá las que cuentan o comparan pedidos:
+
+     ```sh
+     git grep -n "trackContentRequests\|trackSessionRequests\|api\.calls\b\|callsTo(\|PORTION_PATH" -- qa/e2e
+     ```
+
+     Para cada una, anotá si su URL abre `#laboratorio` y qué cuenta:
+     - **lo esperado,** según el plan de A3 (:4291): `content-requests.ts` cuenta sólo `^/api/(exercises|worlds|workshops|atlas|guide)$` y `/api/session`, así que `/api/harness` no entra;
+     - **si alguna cuenta todos los pedidos a `/api/`** en una URL del laboratorio y no se puede editar (A2 o F1), T020 aplica su variante B: la plantilla se pide la primera vez que se dibuja «Experimentá», no al montar.
+  8. **`boot-check` y la plantilla:** `grep -n "order\b" qa/boot-check.ts | head`. Anotá si algún escenario compara la lista completa de pedidos después de montar el laboratorio. T020 lo usa.
+  9. **El backend:** `npm run api:test`, `npm run api:analyse` y `npm run api:format:check` en verde; anotá el total de Pest.
 - **Commit:** `docs(specs): línea base de la implementación de A4`.
 
 ### 0.2 · La compuerta de cada unidad
@@ -3273,7 +3283,7 @@ export type { RunProgressCopy } from './ui/describe-run-progress';
   - `PORTION_NAMES` y `PortionName` (`portions.ts`);
   - `afterPublish` (`app/boot/content-stage.ts`).
 - **Produce:**
-  - `HarnessData`, `CopiedHarness`, `harnessOf` y `withHarness` (`harness-copy.ts`);
+  - `HarnessData`, `CopiedHarness`, `harnessOf`, `harnessToCarry` y `withHarness` (`harness-copy.ts`);
   - `ContentCopyUpdates` y `update` en el almacén;
   - el arrastre de la plantilla en `afterPublish` (research R10, la opción (a)).
 - **Archivos:**
@@ -3300,6 +3310,10 @@ export interface CopiedHarness {
   readonly data: HarnessData;
 }
 
+export const harnessToCarry: (record: unknown) => CopiedHarness | null = () => {
+  throw new Error('not implemented');
+};
+
 export const harnessOf: (record: unknown) => CopiedHarness | null = () => {
   throw new Error('not implemented');
 };
@@ -3325,7 +3339,7 @@ La firma de la fábrica pasa a `): ContentCopyStore & ContentCopyUpdates {`, y e
 import { describe, expect, it } from 'vitest';
 import curriculum from '../../../../../build/curriculum.json';
 import { COPY_FORMAT, usableCopy } from './content-copy';
-import { harnessOf, withHarness, type CopiedHarness } from './harness-copy';
+import { harnessOf, harnessToCarry, withHarness, type CopiedHarness } from './harness-copy';
 import { PORTION_NAMES, type PortionName } from './portions';
 
 const HARNESS: CopiedHarness = {
@@ -3374,6 +3388,14 @@ describe('the template as an optional portion of the copy (A4 FR-029, A4-13)', (
 
     expect(harnessOf(withTemplate)).toEqual(HARNESS);
     expect(usableCopy(withTemplate)).toEqual(copy);
+  });
+
+  it('carries the template of the previous record without validating its 17 portions again', () => {
+    const light = { format: COPY_FORMAT, version: 'a'.repeat(32), portions: { harness: HARNESS } };
+
+    expect(harnessToCarry(light)).toEqual(HARNESS);
+    expect(harnessToCarry({ ...light, format: COPY_FORMAT + 1 })).toBeNull();
+    expect(harnessOf(light)).toBeNull();
   });
 
   it('leaves the copy as it was without a template', () => {
@@ -3528,19 +3550,23 @@ Corré `npm run test:unit -- src/shared/api/content`: las specs de A3 siguen en 
 ```ts
 // harness-copy.ts (los tipos quedan como en el paso 1)
 import { isPlainObject } from '../../lib/is-plain-object';
-import { usableCopy, type ContentCopy } from './content-copy';
+import { COPY_FORMAT, usableCopy, type ContentCopy } from './content-copy';
 
 function isHarnessData(value: unknown): value is HarnessData {
   return isPlainObject(value) && typeof value.rust === 'string' && typeof value.go === 'string';
 }
 
-export function harnessOf(record: unknown): CopiedHarness | null {
-  if (usableCopy(record) === null || !isPlainObject(record) || !isPlainObject(record.portions))
+export function harnessToCarry(record: unknown): CopiedHarness | null {
+  if (!isPlainObject(record) || record.format !== COPY_FORMAT || !isPlainObject(record.portions))
     return null;
   const harness = record.portions.harness;
   if (!isPlainObject(harness) || typeof harness.etag !== 'string' || !isHarnessData(harness.data))
     return null;
   return { etag: harness.etag, data: { rust: harness.data.rust, go: harness.data.go } };
+}
+
+export function harnessOf(record: unknown): CopiedHarness | null {
+  return usableCopy(record) === null ? null : harnessToCarry(record);
 }
 
 export function withHarness(copy: ContentCopy, harness: CopiedHarness | null): ContentCopy {
@@ -3576,21 +3602,23 @@ En `indexeddb-copy-store.ts`, `update` reemplaza el stub dentro del objeto que d
 En el `index.ts` de `shared/api/content`:
 
 ```ts
-export { harnessOf, withHarness } from './harness-copy';
+export { harnessOf, harnessToCarry, withHarness } from './harness-copy';
 export type { CopiedHarness, HarnessData } from './harness-copy';
 export type { ContentCopyUpdates } from './indexeddb-copy-store';
 ```
 
 En `app/boot/content-stage.ts`:
 
-- el import de `../../shared/api/content` suma `harnessOf` y `withHarness`;
+- el import de `../../shared/api/content` suma `harnessToCarry` y `withHarness`;
 - en `afterPublish`, la línea `void contentCopies.write(copyOf(reading)).then(announceCopySaved);` pasa a:
 
 ```ts
   void contentCopies
-    .update((previous) => withHarness(copyOf(reading), harnessOf(previous)))
+    .update((previous) => withHarness(copyOf(reading), harnessToCarry(previous)))
     .then(announceCopySaved);
 ```
+
+`harnessToCarry` mira el formato y la forma de la plantilla, sin volver a validar las 17 porciones del registro anterior: la fuente de A3 ya validó esa copia en este arranque, y la plantilla arrastrada se revalida con su `ETag` al abrir el laboratorio. El laboratorio, en cambio, lee la plantilla con `harnessOf`, que exige una copia usable.
 
 **Paso 6.** `npm run test:unit -- src/shared/api/content` en verde. `npm test`: `boot-check` sigue en verde, porque su IndexedDB no existe y `update` devuelve `false` igual que `write`. Commit: `feat(front): la copia del contenido guarda la plantilla como porción opcional y la conserva (A4 FR-029)`.
 
@@ -5277,7 +5305,23 @@ await testAsync('Reset during a run aborts it and the late answer writes nothing
 
 **Paso 4.** `node qa/lab-state-check.ts` en verde. Mutación, descartada después: cambiá `labTransport` por `createPlaygroundTransport()` (con su import) y corré el check; los dos escenarios vuelven a fallar.
 
-**Paso 5.** `node qa/boot-check.ts`. Si un escenario falla sólo porque la lista completa de pedidos (`order`) suma `/api/harness` al montar el laboratorio (T001, paso 7), sumá `'/api/harness'` al esperado de ese escenario. El motivo va en el commit: A4 pide la plantilla al abrir el laboratorio (FR-029). Cualquier otra falla es un defecto: pará y avisá.
+**La variante B** (sólo si T001, paso 7, encontró una E2E congelada que cuenta todos los pedidos a `/api/` en una URL del laboratorio):
+
+- en lugar de `void labHarness.refresh();` en `mount`, la plantilla se pide la primera vez que se dibuja la vista previa en cada montaje;
+- `mount` suma `harnessAsked = false;`;
+- la IIFE suma `let harnessAsked = false;`;
+- `programPreviewHTML` empieza con:
+
+  ```js
+  if (!harnessAsked) {
+    harnessAsked = true;
+    void labHarness.refresh();
+  }
+  ```
+
+FR-029 dice «cuando el laboratorio la necesita» y «al abrir el laboratorio». La variante B la pide al abrir «Experimentá», que es donde se usa. Se anota en research como esa lectura, y el informe de la tarea lo dice.
+
+**Paso 5.** `node qa/boot-check.ts`. Si un escenario falla sólo porque la lista completa de pedidos (`order`) suma `/api/harness` al montar el laboratorio (T001, paso 8), sumá `'/api/harness'` al esperado de ese escenario. El motivo va en el commit: A4 pide la plantilla al abrir el laboratorio (FR-029). Cualquier otra falla es un defecto: pará y avisá.
 
 **Paso 6.** `npm test`, `npm run lint` (los avisos de `lab.js` no suben de los que dejó F7a; anotalos) y `npm run build && E2E_PORT=4300 npm run test:e2e`:
 
@@ -5731,7 +5775,10 @@ async function measureLabClassroom(base: string, pool: Session[], exercise: Exer
 1. **A3 no está implementada.** Las firmas de `wait`, `contentCopies`, `copyOf`, `afterPublish` y el doble de IndexedDB salen de su plan. *Mitigación:* T001 las verifica, y la regla de «Reglas para todos los agentes» manda usar las de la base sin cambiar la conducta.
 2. **El orden de las transacciones de IndexedDB** entre el arranque de A3 y la plantilla del laboratorio depende de que dos `readwrite` sobre el mismo almacén se serialicen, como pide la especificación de IndexedDB. *Mitigación:* las dos escrituras son `update` (lectura y escritura en una transacción), y la E2E de la revalidación lo fija con Chromium real.
 3. **Un `POST` que nunca vuelve** (la red se cuelga sin cortar) deja la ejecución en curso hasta que el alumno cancela: el cliente de F11a no tiene tope de tiempo. *Mitigación:* el botón «Cancelar ejecución» está siempre; queda anotado para C4, que mide la exposición real.
-4. **Los conteos de pedidos de las E2E de A3** podrían sumar `GET /api/harness` en las que abren el laboratorio. *Mitigación:* T001, paso 6, y T020, paso 5, los buscan; la plantilla es un recurso aparte de las 17 porciones.
+4. **Los conteos de pedidos de las E2E de A2, A3 y F1** podrían sumar `GET /api/harness` en las que abren el laboratorio. *Mitigación:*
+   - el contador de A3 (`qa/e2e/lib/content-requests.ts`, plan de A3 :4291) cuenta sólo las porciones y la sesión;
+   - T001, paso 7, busca cualquier otro conteo de pedidos, y T020 trae la variante B (la plantilla al dibujar «Experimentá»);
+   - T020, paso 5, cubre `boot-check`.
 5. **El lector de pantalla** sólo se comprueba a mano (X2). *Mitigación:* la E2E fija el DOM (un anuncio por tipo de estado), y T022 pide la comprobación manual.
 
 ## Complexity Tracking

@@ -139,7 +139,8 @@ export interface CopiedHarness {
   readonly etag: string;
   readonly data: HarnessData;
 }
-export function harnessOf(record: unknown): CopiedHarness | null;
+export function harnessOf(record: unknown): CopiedHarness | null; // exige una copia usable
+export function harnessToCarry(record: unknown): CopiedHarness | null; // sólo el formato y la forma
 export function withHarness(copy: ContentCopy, harness: CopiedHarness | null): ContentCopy;
 
 // indexeddb-copy-store.ts
@@ -168,7 +169,7 @@ export function createHarnessHolder(options: HarnessHolderOptions): HarnessHolde
 ```
 
 - `update` lee el registro y escribe lo que devuelve `change` en **una** transacción `readwrite`. Si `change` devuelve `null`, no escribe.
-- `afterPublish` (`app/boot/content-stage.ts`) escribe con `update((previous) => withHarness(copyOf(reading), harnessOf(previous)))`.
+- `afterPublish` (`app/boot/content-stage.ts`) escribe con `update((previous) => withHarness(copyOf(reading), harnessToCarry(previous)))`.
 - `refresh`:
   - la primera vez lee la plantilla de la copia;
   - pide `GET /api/harness` con `If-None-Match` si conoce un `ETag`;
