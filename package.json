@@ -19,6 +19,7 @@
     "lint": "eslint .",
     "format:check": "prettier . --check",
     "format": "prettier . --write",
+    "lint:infra": "sh tools/quality/lint-infra.sh",
     "check:lab": "node qa/lab-state-check.ts",
     "pretest": "npm run typecheck",
     "test": "node qa/run-checks.ts && vitest run --config frontend/vitest.config.ts",

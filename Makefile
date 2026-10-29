@@ -91,6 +91,10 @@ e2e-install: ## Baja el navegador de Playwright
 lint: ## ESLint
 	npm run lint
 
+.PHONY: lint-infra
+lint-infra: ## actionlint, zizmor, hadolint y shellcheck (Docker)
+	npm run lint:infra
+
 .PHONY: format
 format: ## Aplica Prettier
 	npm run format
