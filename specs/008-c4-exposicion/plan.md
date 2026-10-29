@@ -302,6 +302,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 
 1. **Lo integrado.** `git log --oneline` de `master` y, para cada vecino, el commit que lo trajo:
    - **exigidos:** A3, que llega con F11a o después (TR-12), C3a, C3b y C3c. Si falta alguno, T001 se detiene: tocan los archivos que C4 edita (R31). Si A3 no retiró el puente estático de A2 (`dist/content/` después de un build, o `readBuiltContent` en `qa/lib/built-page.ts`), avisá: FR-022 impide desplegar C4;
+   - **las acciones del usuario previas:** su confirmación de que la conexión admite recibir por 80 y 443 sin CGNAT, y de que el dominio está registrado con DNS editable (C3c ya lo usa). Sin las dos, T001 se detiene y lo pregunta: no se planifica G2 sobre un supuesto;
    - **anotados:** F11b y F12a (S2 los espera), B3 (G1 la espera; si está, T018 le da `taller_audit` a su servicio `audit`) y A4. A4 está si no existe `frontend/src/shared/api/playground/` y `runtime-check.ts` ya no figura en `qa/run-checks.ts`: decide el valor de `connect-src` de T009 (R30).
 2. Corré y anotá, como línea de base: `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `npm run api:format:check`, `npm run api:analyse`, `npm run api:test`; con `COMPOSE_PROJECT_NAME=taller-c4-base docker compose up --build -d --wait`: `npm run api:smoke`, `npm run api:content:check` y `sh backend/api/scripts/deploy-check.sh`.
 3. **Las medidas de la base:**
@@ -319,7 +320,7 @@ Los dueños tienen archivos disjuntos. Cada uno trabaja en su worktree, parte de
 5. `docker compose config --services` y `--volumes`, y `docker compose --profile ops config --services`: anotalos; T018 y T019 los comparan. Anotá también si el comando de `mysql` ya fija `binlog_expire_logs_seconds` y `binlog_row_image` (FR-038 sólo los agrega si ningún ítem anterior lo hizo).
 6. Avisá a los dueños de lo que cambió.
 
-**Compuerta:** las suites y los tres checks contra el stack en verde sobre la base; la lista de tablas, de servicios y de volúmenes anotada; el tamaño, los estilos en línea y el aula de la base medidos; y el estado de F11b, F12a, B3 y A4 registrado.
+**Compuerta:** las suites y los tres checks contra el stack en verde sobre la base; la lista de tablas, de servicios y de volúmenes anotada; el tamaño, los estilos en línea y el aula de la base medidos; el estado de F11b, F12a, B3 y A4 registrado; y las dos confirmaciones del usuario (80 y 443 sin CGNAT, y el dominio con DNS editable) anotadas.
 
 ### Tarea 0.2 · El lote 1 de descargas (T002)
 
@@ -1119,7 +1120,7 @@ volumes:
      - **Los conteos, por HTTP/2:** 40 procesos de `curl -sk --http2 --resolve taller.test:18443:127.0.0.1 --parallel --parallel-max 18 -b <archivo> -w '%{http_code}\n'` a la vez, desde el host (una IP), cada uno con `GET /api/session` y las 17 porciones (las rutas son las que pide A3: T001 anota de qué módulo de `qa/` se leen, para no escribirlas a mano). Exige 0 respuestas 429 y 0 503 en los 720 pedidos, e imprime cuántas hubo de cada estado. Después, 2 000 pedidos en un segundo desde la misma IP reciben algún 429: el límite sigue existiendo.
      - **Los 40 arranques, por HTTP/2:** `qa/classroom-boot-check.ts` de A3, ampliado (paso 5), con `CLASSROOM_BASE_URL=https://taller.test:18443` y `CLASSROOM_COOKIE` con la cookie de la cuenta: 0 vistas de error en las dos rondas.
      - **Los 40 arranques, por HTTP/1.1:** el mismo script contra el stack local de la base de C4, como lo corre A3: 0 vistas de error, y los 429 del registro de `taller` durante la corrida, contados como en T001.
-     - **La escalera:** si algo de lo anterior falla con el par vigente (al empezar, ráfaga de 400 y `limit_conn perip 800`), se repite con el siguiente escalón (800 y 1 200; después, 1 200 y 1 600). Cada escalón va en una copia sin versionar de `docker/nginx/nginx.conf`, montada sobre la imagen por el archivo de prueba. El primer par que pasa todo se anota en research.md, R26 (con los conteos de cada escalón), y se le pasa al coordinador, que lo fija en S3 en `docker/nginx/nginx.conf` y en `qa/nginx-headers-check.ts`. Si el último escalón no alcanza, se detiene y lo lleva al coordinador.
+     - **La escalera:** si algo de lo anterior falla con el par vigente (al empezar, ráfaga de 400 y `limit_conn perip 800`), se repite con el siguiente escalón (800 y 1 200; después, 1 200 y 1 600). Cada escalón va en una copia sin versionar de `docker/nginx/nginx.conf`, montada sobre la imagen por el archivo de prueba, y se recorre en los dos protocolos: la misma copia se monta en el stack local para la corrida por HTTP/1.1. Con el par fijado en S3, G1 repite las dos corridas sin copias (T025). El primer par que pasa todo se anota en research.md, R26 (con los conteos de cada escalón), y se le pasa al coordinador, que lo fija en S3 en `docker/nginx/nginx.conf` y en `qa/nginx-headers-check.ts`. Si el último escalón no alcanza, se detiene y lo lleva al coordinador.
    - **TLS:** `openssl s_client -tls1` y `-tls1_1` fallan; `-tls1_2` negocia una de las seis suites; `-tls1_3` negocia; `-no_ticket` no recibe ticket; `curl --http2 -I` informa HTTP/2.
    - **El currículo:** `/content/` y `/content/curriculum.<versión>.json` dan 404, y ninguno de los marcadores de `curriculumMarkers()` (`qa/lib/content-document.ts`) está en `/usr/share/nginx/html` de la imagen (`docker compose exec taller grep -rF`). Es lo que T011 y T016 de A3 ya comprueban en el modo local (hallazgo C4-4): acá se repite en el público.
    - **Los registros:** cada servicio en ejecución tiene la rotación de FR-029 (`docker inspect --format '{{.HostConfig.LogConfig}}'`).
@@ -1175,7 +1176,11 @@ export default defineConfig({
    - recorre las de F11b: cambiar la contraseña; descargar los datos, cuyo archivo llega con el nombre de `Content-Disposition`; y borrar la cuenta, con una segunda cuenta de estudiante;
    - recorre la de F12a: «Administrar el taller», desde «Tu cuenta», con la lista de cuentas, un filtro, la lista de invitaciones y una invitación por enlace.
 
-   En todo el recorrido exige 0 violaciones y 0 errores de consola. Los selectores son los roles y los nombres accesibles que dejan los Page Objects de F11a y F12a (`qa/e2e/pages/`), sin sus fixtures. Además:
+   Las aserciones van separadas:
+   - **las violaciones de la CSP:** 0 en todo el recorrido, sin excepción;
+   - **los errores de consola:** 0, salvo las líneas que cada paso espera, con la forma de TR-11: `/status of NNN/` con el código exacto, nunca `/Failed to load resource/`. Las esperadas son el `/status of 419/` del paso del cierre por CSRF (en la página del otro sitio) y, si la acción pide reconfirmar la contraseña, el `/status of 423/` de ese paso. Una línea esperada que no aparece también falla, como en `page-issues.ts`. El spec arma esa lista por paso: no importa el fixture, que trae el doble de la API.
+
+   Los selectores son los roles y los nombres accesibles que usan los Page Objects de F11a (`qa/e2e/pages/access.ts` y `qa/e2e/pages/account.ts`) y de F12a (`qa/e2e/pages/admin.ts`), importados como clases, sin sus fixtures. F11b no tiene plan todavía: sus pasos salen de su spec (FR-055 y FR-056: la contraseña reconfirmada, `POST /api/me/export` con el nombre de `Content-Disposition` y `DELETE /api/me`), y S2 relee su plan y su Page Object cuando existan. F11a y F12a no agregan estilos en línea (su FR-069 y su FR-054), así que no suman sitios a FR-017. Además:
    - **el editor:** el elemento `<style>` que arma CodeMirror tiene un `nonce` (su propiedad) igual al de la CSP de la respuesta del documento (`response.headers()`), la numeración de líneas está dibujada y el espaciador del gutter tiene `visibility: hidden` computado;
    - **la celebración:** se dispara por el camino de interfaz que ya cubre F1; si ninguno la dispara sin el sandbox, con el doble del ejecutor de F1, y se anota;
    - **dos `GET /` seguidos:** nonces distintos y sin `ETag` ni `Last-Modified`.
@@ -1187,7 +1192,7 @@ export default defineConfig({
    Un `POST` del mismo origen con `X-XSRF-TOKEN` sigue funcionando.
 5. Corrélo con el stack local de C4 (`STACK_BASE_URL=http://127.0.0.1:$TALLER_PORT npx playwright test --config qa/e2e/stack.config.ts`). Firefox es otro proyecto, sólo con el permiso del usuario. `npm run test:e2e` corre como antes, sin este spec.
 
-**Compuerta:** el recorrido en verde con 0 violaciones, con las pantallas de F11a, F11b y F12a, y el escenario de CSRF verde. Lo que no pudo correr (Firefox, la celebración) se informa como límite.
+**Compuerta:** el recorrido en verde con 0 violaciones y sin errores de consola fuera de los esperados, con las pantallas de F11a, F11b y F12a, y el escenario de CSRF verde. Lo que no pudo correr (Firefox, la celebración) se informa como límite.
 
 ### Tarea 7.3 · El job `public` de la CI (T022)
 
@@ -1240,7 +1245,7 @@ export default defineConfig({
    Anotá el resultado real de cada uno.
 2. El usuario presencia la restauración completa (`restore-check.sh --identity … --remote-env …`) y el simulacro (`--pitr`), y se anota la línea de cada una con `public.sh restore-record`.
 3. V5 con las credenciales reales (T007), la expiración de 35 días comprobada y lo que dijo el proveedor sobre el país (§13.14).
-4. C3a, C3b y C3c entregados, con una cuenta admin creada y el aviso de privacidad vigente; F11b y F12a integradas («las pantallas de administración integradas», F12-Q2); HSTS en 300.
+4. C3a, C3b y C3c entregados, con una cuenta admin creada y el aviso de privacidad vigente; F11b integrada; F12a integrada, es decir, el PR de su T026 (`f12a/base` a `master`) mergeado: es lo que F12-Q2 llama «las pantallas de administración integradas» (hallazgo C4-1); HSTS en 300.
 5. **La auditoría de B3:** la corrida de registro (`npm run api:audit`, con runsc) en verde sobre el commit que se despliega y con el árbol limpio, con su resumen (`qa/curriculum-audit/summary.md`) en el registro de G1. Si B3 todavía no está integrada, G1 espera.
 6. **La CSP:** si A4 ya entró, `connect-src 'self'`; si no, el valor provisorio, anotado como tal (R30).
 7. Escribí el registro de G1 (en el PR y en la línea de evidencia de T025): qué pasó, con qué comando, y qué quedó sin verificar.

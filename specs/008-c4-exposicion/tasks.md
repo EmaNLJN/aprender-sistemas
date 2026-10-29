@@ -6,7 +6,7 @@ Las ondas, los dueños de archivos, las interfaces y los puntos de sincronizaci�
 
 ## Phase 1: Setup — Línea de base y descargas (coordinador, onda 0)
 
-- [ ] T001 [US7] Línea de base: A3 (con F11a), C3a, C3b y C3c integrados; las suites y los checks de hoy en verde; las tablas, los servicios y los volúmenes anotados; `bootSize`, los `style=` y `cssText` y el aula en HTTP/1.1 medidos; el estado de F11b, F12a, B3 y A4 registrado (FR-002, FR-017, FR-020, FR-028, FR-046; plan 0.1)
+- [ ] T001 [US7] Línea de base: A3 (con F11a), C3a, C3b y C3c integrados; las suites y los checks de hoy en verde; las tablas, los servicios y los volúmenes anotados; `bootSize`, los `style=` y `cssText` y el aula en HTTP/1.1 medidos; el estado de F11b, F12a, B3 y A4 registrado; la confirmación del usuario de 80 y 443 sin CGNAT y del dominio con DNS editable (FR-002, FR-017, FR-020, FR-028, FR-046; plan 0.1)
 - [ ] T002 [US2] Lote 1 de descargas, con permiso: el módulo ACME de Nginx y Pebble 2.10.1 (FR-047; plan 0.2)
 
 ## Phase 2: Foundational — Verificaciones previas (onda 1; V5, en la onda 2)
@@ -56,6 +56,6 @@ Las ondas, los dueños de archivos, las interfaces y los puntos de sincronizaci�
 ## Phase 7: Polish — Documentación, compuertas y cierre (coordinador y el usuario; onda 4)
 
 - [ ] T024 [US7] La documentación, la guía `docs/operacion-publica.md` y el ADR que enmienda el 0004 §1 (FR-045; plan 8.1)
-- [ ] T025 [US6] La compuerta G1: los checks, el recorrido y el aula, la restauración presenciada, V5, C3 entregado, F11b y F12a integradas y la auditoría de B3 en verde (FR-042, FR-044; plan 8.2)
+- [ ] T025 [US6] La compuerta G1: los checks, el recorrido y el aula, la restauración presenciada, V5, C3 entregado, F11b integrada, el PR de T026 de F12a mergeado y la auditoría de B3 en verde (FR-042, FR-044; plan 8.2)
 - [ ] T026 [US1] G2: abrir con el entorno de pruebas de la autoridad, la prueba desde datos móviles, producción y la rampa de HSTS (FR-014, FR-043, FR-044; SC-001, SC-011; plan 8.3)
 - [ ] T027 [US7] El cierre y la evidencia, con SC-010 como evidencia pendiente (FR-044, FR-046; SC-010, SC-012, SC-013; plan 8.4)
