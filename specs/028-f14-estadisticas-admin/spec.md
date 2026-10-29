@@ -148,12 +148,12 @@ Cuando F14 llegue, esas pruebas ya son parte de la red. (FR-028 y FR-061)
 
 ### Q3. Qué hace la pantalla con las muestras chicas
 
-**Contexto.** C5 no tiene umbral de agregación (Q1-A): cada tasa sale con su `n`, y «la pantalla decide cómo marcar una muestra chica». Hay además un cruce que C5 no cerró. La opción elegida en una predicción, un checkpoint o una pregunta del recorrido no sale por cuenta (Q1-A), pero sí sale su distribución en los agregados, y el detalle de una cuenta dice si respondió. Si en un ejercicio respondió un solo alumno, la distribución dice qué eligió, y el detalle dice quién fue. La consigna de esta spec es que la interfaz no muestre ni deduzca lo que la API oculta. (FR-041 y FR-042)
+**Contexto.** C5 no tiene umbral de agregación (Q1-A): cada tasa sale con su `n`, y «la pantalla decide cómo marcar una muestra chica». Hay además un cruce que C5 no cerró. Hoy todas las preguntas tienen tres opciones (las 274 predicciones de ejercicios, las 25 de los talleres, los 8 checkpoints y las 24 preguntas del recorrido, contadas en `content/`). Por cuenta, el detalle dice si respondió y si acertó, y el contenido dice cuál es la correcta: de quien acertó, la pantalla ya muestra qué eligió, y C5 lo aceptó (sus banderas de acierto, Q1-A). Lo que Q1-A oculta es cuál de las dos opciones equivocadas eligió quien no acertó. Pero la distribución de los agregados lo dice cuando hay pocas respuestas: si un solo alumno respondió mal, la distribución dice qué eligió, y el detalle dice quién fue. La consigna de esta spec es que la interfaz no muestre ni deduzca lo que la API oculta. (FR-041 y FR-042)
 
 | Opción | Respuesta | Implicancias |
 | --- | --- | --- |
-| **A (recomendada)** | **Marcar y, en las opciones, ocultar.** Toda tasa muestra su numerador y su `n` («3 de 4»). Con `n` menor que 5 lleva la marca «Muestra chica» y no se dibuja su barra. Una distribución de opciones con menos de 5 respuestas no se muestra: se dice cuántas hubo. Va como hallazgo para C5, que puede aplicar el mismo corte en la API | Nada se presenta como tendencia con dos casos, y el cruce de arriba deja de estar en la pantalla. **Costo:** con un aula chica, varias distribuciones quedan ocultas al principio. El cruce no se cierra del todo: con 5 respuestas iguales, la distribución sigue diciendo qué eligió cada uno (riesgo 2), y la API sigue mandando el dato |
-| B | **Sólo marcar:** el `n` siempre y la marca «Muestra chica» con `n` menor que 5, sin ocultar nada | Lo que decidió C5, tal cual. **Costo:** con pocas respuestas, la pantalla muestra la opción que eligió una cuenta identificable |
+| **A (recomendada)** | **Marcar y, en las opciones, ocultar.** Toda tasa muestra su numerador y su `n` («3 de 4»). Con `n` menor que 5 lleva la marca «Muestra chica» y no se dibuja su barra. Una distribución de opciones con menos de 5 respuestas no se muestra: se dice cuántas hubo. Va como hallazgo para C5, que puede aplicar el mismo corte en la API | Nada se presenta como tendencia con dos casos, y con menos de 5 respuestas la pantalla deja de decir qué opción equivocada eligió una cuenta. **Costo:** con un aula chica, varias distribuciones quedan ocultas al principio. El cruce no se cierra del todo: con 5 o más respuestas, si todos los que no acertaron eligieron la misma opción, la distribución sigue diciendo cuál eligió cada uno (riesgo 2), y la API sigue mandando el dato. La opción de quien acertó sigue a la vista, como decidió C5 |
+| B | **Sólo marcar:** el `n` siempre y la marca «Muestra chica» con `n` menor que 5, sin ocultar nada | Lo que decidió C5, tal cual. **Costo:** con pocas respuestas, la pantalla muestra qué opción equivocada eligió una cuenta identificable |
 | C | **Ocultar todo lo chico:** con `n` menor que 5 no se muestra ninguna tasa ni distribución, sólo los conteos | Lo más prudente. **Costo:** con una clase de 20 y 274 ejercicios, la mayoría de las tasas por ejercicio quedan ocultas, y el admin igual las puede contar abriendo cada cuenta |
 | D | **Ni marcar ni ocultar:** el `n` y nada más | Lo más simple. **Costo:** dos casos se leen como tendencia, y queda el cruce de arriba |
 | Otra | Decir el umbral o la regla | |
@@ -190,7 +190,7 @@ La spec tiene 62 requisitos, contra los 52 de C3a. El detalle del conteo y del c
 
 No son decisiones nuevas: es cómo esta spec aplica reglas generales o lee una fuente, y el usuario puede corregirlas.
 
-- **L1. El detalle es una subvista, no un diálogo.** El detalle de una cuenta y el de un ejercicio reemplazan la vista dentro de la página, con «Volver» y el foco devuelto al botón que los abrió. Un diálogo sobre la administración, con una grilla de cientos de filas, sumaría un modal dentro de otro, y F12a deja uno solo a la vez (su FR-005). Como subvista funciona igual en el diálogo de hoy y bajo `#administracion` (F10), sin URL.
+- **L1. El detalle es una subvista, no un diálogo.** El detalle de una cuenta y el de un ejercicio ocupan el lugar de la vista dentro de la página, que queda montada y oculta, con «Volver» y el foco devuelto al botón que los abrió. Las ejecuciones de una cuenta se ven dentro de su detalle, sin cambiar de vista. Un diálogo sobre la administración, con una grilla de cientos de filas, sumaría un modal dentro de otro, y F12a deja uno solo a la vez (su FR-005). Como subvista funciona igual en el diálogo de hoy y bajo `#administracion` (F10), sin URL.
 - **L2. F14 no usa la ficha.** `GET /api/admin/users/{user}` con `usage` resume lo que el detalle ya trae entero, y pedir los dos dejaría dos líneas de registro (`view: summary` y `view: detail`) por cada vez que el admin mira una cuenta.
 - **L3. El período no se calcula en el navegador.** El primer pedido sale sin `from` ni `to`, y el formulario se llena con `meta.period` de la respuesta: «hoy» en el navegador puede ser otro día que en la zona del taller. El período elegido se comparte entre «Resumen», «Ejercicios» y el detalle mientras la administración siga abierta.
 - **L4. «Sin actividad desde» es una fecha que elige el admin,** no un atajo «hace 14 días», por la misma razón que L3.
@@ -221,7 +221,8 @@ No son decisiones nuevas: es cómo esta spec aplica reglas generales o lee una f
 
 - **En la administración de F12a.** «Uso del taller» es la tercera sección de `AdminPage`, después de «Cuentas» e «Invitaciones», con el mismo patrón de botones que F12a (un grupo con nombre y `aria-pressed`). Vive en el slice `pages/admin`, no en uno propio: es parte de la misma página, y dos páginas no se importan entre sí. Los nombres de módulos los fija el plan.
 - **El tipo de la sección.** La sección que recibe la página suma un tercer valor. Es un cambio al contrato de F12a (`contracts/admin-page.md`), que F14 hace en el mismo commit.
-- **Lo que no cambia de F12a:** el contenedor, su entrada en «Tu cuenta», las dos props de la página, el método de apertura del Page Object, las acciones, `ACTION_SLOTS` y las otras dos secciones.
+- **El detalle y su lista de origen.** Mientras se ve el detalle de una cuenta, la lista de la que salió sigue montada y oculta, para conservar su página, su búsqueda, sus filtros y el botón que lo abrió (FR-029). En el plan de F12a, ese estado vive dentro de la sección de «Cuentas» (`usePagedList`): F14 la cambia para que pueda dibujar el detalle sin desmontar la lista, en lugar de subir su estado a la página. Mientras se ve el detalle, el botón marcado es el de origen: «Cuentas», o «Uso del taller» con «Alumnos». Cambiar de sección o de vista descarta el detalle, como F12a descarta la sección que deja.
+- **Lo que no cambia de F12a:** el contenedor, su entrada en «Tu cuenta», las dos props de la página, el método de apertura del Page Object, las acciones, `ACTION_SLOTS` y la sección de «Invitaciones».
 - **Con F10.** La sección y la vista elegidas siguen fuera de la URL, como la sección de F12a (F10-Q4, su FR-041): `#administracion` abre en «Cuentas», y la URL nunca lleva una cuenta, una búsqueda ni un filtro.
 
 ## Las vistas
@@ -234,7 +235,7 @@ Cada vista pide su ruta al mostrarse, y no antes. Las cifras y sus formas son la
 | **Ejercicios** | `GET /api/admin/stats/exercises` con el período y los filtros | Los catálogos, los ejercicios (ordenables en el cliente), los mundos, los talleres de Sistemas y el recorrido | Barras de proporción en las tablas (lo resuelto de un catálogo) |
 | **Detalle de un ejercicio** | Ninguno: usa la respuesta de «Ejercicios» | Sus pruebas, la distribución de la predicción, la autoevaluación y las pistas reveladas | Barras de distribución, con su tabla |
 | **Alumnos** | `GET /api/admin/stats/students` con la página, la búsqueda, el filtro y el orden | La lista paginada de la población, con la última actividad, lo resuelto, los intentos de 7 y 30 días y el último intento | Ninguno |
-| **Detalle de una cuenta** | `GET /api/admin/stats/students/{user}` con el período | La cuenta, su progreso, sus importaciones, lo resuelto por catálogo, sus intentos, su actividad, sus cuotas, la grilla por ejercicio, la campaña, los talleres y el recorrido | La serie de la actividad, con su tabla; las cuotas con `<meter>` |
+| **Detalle de una cuenta** | `GET /api/admin/stats/students/{user}` con el período y, con «Ver sus ejecuciones», `GET /api/admin/runs` con `user` | La cuenta, su progreso, sus importaciones, lo resuelto por catálogo, sus intentos, su actividad, sus cuotas, la grilla por ejercicio, la campaña, los talleres y el recorrido | La serie de la actividad, con su tabla; las cuotas con `<meter>` |
 | **Ejecuciones** | `GET /api/admin/queue` y `GET /api/admin/runs` con sus filtros y el cursor | La cola (ahora y las últimas 24 horas) y la lista de ejecuciones de los últimos 14 días | Ninguno |
 
 **Lo que la pantalla explica.** La spec de C5 pide que la pantalla pueda explicar tres consecuencias de calcular en vivo sobre lo que B2 y D1 guardan:
@@ -251,7 +252,7 @@ La API ya decide qué sale (spec de C5, «El límite de privacidad»). La interf
 
 | La interfaz nunca | Por qué | Requisito |
 | --- | --- | --- |
-| Muestra la opción que eligió una cuenta, ni pone una distribución de opciones junto a una cuenta | Por cuenta sale sólo si acertó o si respondió (Q1-A de C5) | FR-039 y FR-042 |
+| Muestra la opción que eligió una cuenta, ni pone una distribución de opciones junto a una cuenta | Por cuenta sale sólo si acertó o si respondió (Q1-A de C5). De quien acertó, el acierto ya dice la opción, y C5 lo aceptó; lo oculto es cuál de las equivocadas eligió quien no acertó | FR-039 y FR-042 |
 | Dice si un texto del alumno existe o cuánto mide | La API no lo manda (FR-008 de C5), y la pantalla no lo deduce de nada | FR-039 |
 | Pone una cuenta al lado de un agregado («va por debajo de la mediana») | Es una comparación entre cuentas que la API no hace | FR-039 |
 | Ordena o filtra una página de alumnos por una métrica | Parecería un orden de todo el taller, y sólo ordena una página | FR-039 |
@@ -260,7 +261,7 @@ La API ya decide qué sale (spec de C5, «El límite de privacidad»). La interf
 | Exporta, descarga o copia las cifras | ADR 0006 D33 | FR-043 |
 | Pide el uso de una cuenta sin que el admin lo abra | Cada consulta queda registrada con el admin que la hizo (Q3-A de C5) | FR-030 y FR-044 |
 
-Con pocas respuestas, una distribución de opciones puede decir qué eligió una cuenta. Qué hace la pantalla lo decide Q3.
+Con pocas respuestas, una distribución de opciones puede decir qué opción equivocada eligió una cuenta. Qué hace la pantalla lo decide Q3.
 
 ## Los gráficos
 
@@ -311,6 +312,7 @@ Son propuestas, para que el usuario las corrija. «(servidor)» marca un mensaje
 - Los filtros «Catálogo», «Lenguaje» y «Nivel», cada uno con «Todos».
 - «Ordenar por»: «Orden del catálogo», «Menos resueltos primero», «Más intentos fallidos primero» y «Más ayuda primero».
 - Las tablas «Catálogos», «Ejercicios», «Mundos de la campaña», «Talleres de Sistemas» y «Recorrido».
+- Debajo del título de cada tabla, los filtros que la afectan: por ejemplo, «Filtrada por lenguaje y nivel.».
 - La marca «Retirado».
 - El botón de cada fila, «Ver {título}», y «Volver a Ejercicios».
 - En el detalle de un ejercicio: «Pruebas» («Falló» y «No llegó a correr»), «Predicción», «Autoevaluación» y «Pistas reveladas».
@@ -334,7 +336,7 @@ Son propuestas, para que el usuario las corrija. «(servidor)» marca un mensaje
 - Los bloques «Progreso», «Importaciones», «Resueltos por catálogo», «Intentos», «Actividad», «Cuotas de las últimas 24 horas», «Ejercicios», «Campaña», «Talleres de Sistemas» y «Recorrido».
 - «Hizo «Borrar todo» {n} veces; la última, el {fecha}.» o «Nunca hizo «Borrar todo».».
 - La grilla: «Mostrar»: «Todos» o «Sin resolver»; los estados «Resuelto», «Intentado» y «Empezado»; de una pregunta, «Respondió y acertó», «Respondió y no acertó» o «No respondió».
-- «Ver sus ejecuciones».
+- «Ver sus ejecuciones» y la tabla «Sus ejecuciones de los últimos 14 días».
 - Ante un 404: «Esa cuenta ya no existe o se está borrando.».
 
 **Ejecuciones**
@@ -345,7 +347,7 @@ Son propuestas, para que el usuario las corrija. «(servidor)» marca un mensaje
 - «No cuenta los pedidos rechazados por la cuota o por la cola llena: no quedan registrados.».
 - La tabla «Ejecuciones, de la más nueva a la más vieja», con las columnas «Aceptada», «Cuenta», «Ejercicio», «Lenguaje», «Estado», «Motivo», «Fase», «Código de salida», «Salida cortada», «Compilación», «Ejecución», «Empezó», «Terminó» y «Cancelación pedida».
 - Los estados que no son resultados: «En cola» y «Corriendo». Un motivo que la pantalla no conoce se muestra con su código.
-- Los filtros «Estado», «Ejercicio» y «Desde», y el filtro por cuenta, «Ejecuciones de {nombre}», con «Quitar».
+- Los filtros «Estado», «Ejercicio» y «Desde».
 - La paginación: «Más viejas» y «Volver a las más nuevas».
 - «El taller guarda las ejecuciones 14 días: las anteriores ya no existen.».
 
@@ -433,7 +435,7 @@ Quien enseña abre el uso de un alumno, desde «Alumnos» o desde «Cuentas», y
 4. **Dado** el detalle, **cuando** el admin cambia el período y lo aplica, **entonces** sale exactamente un pedido más.
 5. **Dado** «Volver a Cuentas», **cuando** lo usa, **entonces** vuelve a la lista como estaba, con el foco en «Ver el uso de Ana Pérez».
 6. **Dada** una cuenta que pasó a borrarse entre la lista y el detalle, **cuando** el pedido responde 404, **entonces** se ve «Esa cuenta ya no existe o se está borrando.» y «Volver», que vuelve a pedir la lista de origen.
-7. **Dado** «Ver sus ejecuciones», **cuando** lo usa, **entonces** se abre «Ejecuciones» con el filtro «Ejecuciones de Ana Pérez» y sale un solo `GET /api/admin/runs` con `user`.
+7. **Dado** «Ver sus ejecuciones», **cuando** lo usa, **entonces** aparece dentro del detalle la tabla «Sus ejecuciones de los últimos 14 días», sale un solo `GET /api/admin/runs` con `user`, y «Volver a Cuentas» sigue llevando a la lista.
 
 *Cubre: FR-028 a FR-037.*
 
@@ -570,7 +572,7 @@ Mientras P1 siga abierta, ningún requisito lleva marca de parte. El corte que s
 
 **Los ejercicios**
 
-- **FR-014**: «Ejercicios» DEBE filtrar por catálogo, lenguaje y nivel, con «Todos» en cada uno. Las opciones de catálogo DEBEN salir de los catálogos que devuelve la API, y los nombres de los niveles, de la configuración de niveles del front. Cada cambio de filtro DEBE pedir una sola vez, con el período vigente, y el nivel NO DEBE presentarse como aplicado al recorrido. *(Contrato de C5, §4)*
+- **FR-014**: «Ejercicios» DEBE filtrar por catálogo, lenguaje y nivel, con «Todos» en cada uno. Las opciones de catálogo DEBEN salir de los catálogos que devuelve la API, y los nombres de los niveles, de la configuración de niveles del front. Cada cambio de filtro DEBE pedir una sola vez, con el período vigente. Cada tabla DEBE decir qué filtros la afectan, según el contrato: el catálogo, sólo a los catálogos y los ejercicios; el lenguaje, a todo salvo el recorrido; y el nivel, a los catálogos, los ejercicios, los mundos y los talleres. *(Contrato de C5, §4)*
 - **FR-015**: DEBE mostrar la tabla de catálogos (por catálogo, lenguaje y nivel), con los ejercicios activos, los alumnos que empezaron, los que resolvieron al menos uno, la mediana de resueltos y la parte del catálogo resuelta.
 - **FR-016**: DEBE mostrar la tabla de ejercicios, con el título y el id, la marca «Retirado», los alumnos que lo empezaron, lo resuelto (en el servidor e importado), los intentos por resultado, los de operación, los importados, la mediana de intentos (entre quienes lo resolvieron y quienes no), el uso de ayuda y el acierto de la predicción con su `n`.
 - **FR-017**: La tabla de ejercicios DEBE poder ordenarse en el cliente, sin pedir nada: por el orden del catálogo (por omisión), por los menos resueltos sobre los empezados, por los más intentos fallidos y por la más ayuda. Un ejercicio sin alumnos DEBE ir al final en los órdenes por una tasa. *(L7)*
@@ -591,7 +593,7 @@ Mientras P1 siga abierta, ningún requisito lleva marca de parte. El corte que s
 - **FR-026**: DEBE buscar por nombre o email (hasta 80 caracteres, sólo al enviar), filtrar por «Sin actividad desde» (una fecha) y ordenar sólo con los órdenes de la API: por nombre, por la última actividad en los dos sentidos y por el alta. Cada cambio DEBE volver a la página 1. *(L4)*
 - **FR-027**: Cada fila de «Alumnos» DEBE ofrecer «Ver el uso de {nombre}», que abre el detalle de esa cuenta.
 - **FR-028**: Cada fila de «Cuentas», salvo las que se están borrando, DEBE ofrecer «Ver el uso de {nombre}» en una columna «Uso», fuera de «Acciones» y sin cambiar `ACTION_SLOTS`. **[NEEDS CLARIFICATION: Q1, ¿cómo se llega al detalle desde «Cuentas»? Borrador: la columna «Uso» (A)]**
-- **FR-029**: El detalle DEBE abrirse dentro de la página, en lugar de la vista, con el título «Uso de {nombre}» enfocado y «Volver a Cuentas» o «Volver a Alumnos», que vuelve a la lista como estaba y devuelve el foco al botón que lo abrió. NO DEBE ser un diálogo ni cambiar la URL. *(L1)*
+- **FR-029**: El detalle DEBE abrirse dentro de la página, en lugar de la vista, con el título «Uso de {nombre}» enfocado y «Volver a Cuentas» o «Volver a Alumnos», que vuelve a la lista como estaba y devuelve el foco al botón que lo abrió. Mientras tanto, la lista de origen queda montada y oculta, y el botón de sección marcado sigue siendo el de origen. NO DEBE ser un diálogo ni cambiar la URL. *(L1; «Dónde vive»)*
 - **FR-030**: Abrir el detalle y aplicar otro período DEBEN hacer exactamente un `GET /api/admin/stats/students/{id}` cada uno. La interfaz NO DEBE pedir el detalle de una cuenta sin esa acción del admin (ni por adelantado, ni al pasar el puntero) ni pedir `GET /api/admin/users/{id}`, y DEBE avisar que la consulta queda registrada. *(Q3-A de C5; L2 y L8)*
 - **FR-031**: El detalle DEBE mostrar la cuenta (nombre, email, rol y estado), su progreso (cuántos «Borrar todo» hizo, el último y su última actividad), sus importaciones (fecha, origen y época), lo resuelto por catálogo y lenguaje (en el servidor e importado) y sus intentos por resultado, en el período y en total. *(Contrato de C5, §6)*
 - **FR-032**: DEBE dibujar su actividad por intervalo del período con un gráfico y su tabla.
@@ -599,7 +601,7 @@ Mientras P1 siga abierta, ningún requisito lleva marca de parte. El corte que s
 - **FR-034**: DEBE mostrar la grilla por ejercicio, con el título y el id, el estado, cuándo se resolvió y si fue en el servidor, los intentos, el último intento con su resultado, la ayuda (asistido, vio la solución y las pistas), la predicción (si respondió y si acertó), la autoevaluación y el próximo repaso, con un filtro en el cliente: «Todos» o «Sin resolver».
 - **FR-035**: DEBE mostrar su campaña (el checkpoint por mundo y los sellos), sus talleres (código sellado, predicción, etapas y objetivos) y su recorrido (pasos, hitos, favoritos y preguntas respondidas), como banderas y conteos.
 - **FR-036**: Ante un 404, el detalle DEBE decir «Esa cuenta ya no existe o se está borrando.» y ofrecer «Volver», que vuelve a pedir la lista de origen. *(C5, FR-017)*
-- **FR-037**: «Ver sus ejecuciones» DEBE abrir «Ejecuciones» con la lista filtrada por esa cuenta, en un solo pedido, y mostrar el filtro «Ejecuciones de {nombre}» con «Quitar». *(Q3-A de C5)*
+- **FR-037**: «Ver sus ejecuciones» DEBE mostrar, dentro del detalle, la lista de las ejecuciones de esa cuenta de los últimos 14 días, en un solo pedido con `user` y con el cursor de FR-024, sin salir del detalle. *(Q3-A de C5)*
 
 **La privacidad en la interfaz**
 
@@ -687,7 +689,7 @@ La spec tiene **62 requisitos**, contra los 52 de C3a, así que propone un corte
 ## Riesgos
 
 1. **Las métricas por cuenta son vigilancia si se usan mal.** El admin ve el ritmo de estudio de cada alumno, día por día (Q1-A de C5). *Mitigación:* la interfaz no amplía lo que la API muestra (FR-039), cada consulta sale por una acción del admin y queda registrada (FR-030), y la pantalla lo dice (L8). El aviso de privacidad, que escribe el usuario, tiene que decirlo (hallazgo 7 de C5).
-2. **El cruce de las distribuciones con pocas respuestas.** Con Q3-A la pantalla oculta las distribuciones de menos de 5 respuestas, pero con 5 respuestas iguales la distribución sigue diciendo qué eligió cada uno, y la API sigue mandando el dato. *Mitigación:* el hallazgo para C5, que puede aplicar el corte en el servidor.
+2. **El cruce de las distribuciones con pocas respuestas.** Con Q3-A la pantalla oculta las distribuciones de menos de 5 respuestas. Quedan dos huecos: con 5 o más, si todos los que no acertaron eligieron la misma opción, la distribución dice cuál eligió cada uno; y la API sigue mandando el dato. La opción de quien acertó ya la dice su bandera, como decidió C5. *Mitigación:* el hallazgo para C5, que puede aplicar el corte en el servidor.
 3. **El código de F14 viaja a todos los alumnos** dentro de `dist/index.html` hasta que C4 retire `vite-plugin-singlefile`. *Mitigación:* no trae secretos, sólo nombra rutas que los contratos ya publican, y el servidor exige el rol en cada una; el subpresupuesto de FR-057 y Q2-A.
 4. **Pantallas diseñadas sin datos reales** (Q4). *Mitigación:* estados vacíos que explican, respuestas de prueba sacadas del contrato, y una revisión manual con datos armados antes del PR.
 5. **Las pruebas de F12a que cuentan botones** (Q1). *Mitigación:* el ajuste a su plan antes de implementarla, o el commit propio con TDD y la aprobación del usuario.
@@ -701,12 +703,13 @@ La spec tiene **62 requisitos**, contra los 52 de C3a, así que propone un corte
 **C5** (spec 025, rama `spec/c5-estadisticas`, PR #86, planificada):
 
 - F14 consume sus seis rutas, sin la ficha (L2), y la línea de registro de Q3 sale de lo que F14 pide.
-- **Hallazgo 1, las distribuciones con pocas respuestas:** junto con el «respondió» por cuenta del detalle, una distribución de una respuesta dice qué eligió una cuenta identificable, que es justo lo que Q1-A oculta. F14 lo resuelve en la pantalla (Q3-A); C5 puede resolverlo en la API con el mismo corte.
+- **Hallazgo 1, las distribuciones con pocas respuestas:** todas las preguntas de hoy tienen tres opciones. Junto con el «respondió y no acertó» por cuenta del detalle, una distribución con pocas respuestas dice cuál de las dos opciones equivocadas eligió una cuenta identificable, que es lo que Q1-A oculta (la de quien acertó ya la dicen las banderas). F14 lo tapa en la pantalla con menos de 5 respuestas (Q3-A); C5 puede aplicar el mismo corte en la API. Con 5 o más respuestas equivocadas iguales, el hueco sigue.
 - **Hallazgo 2, el filtro de nivel:** el contrato enumera `beginner`, `medium`, `advanced` y `expert`, y E1 suma `essentials` (E1-Q2). El contrato y la validación de C5 tienen que aceptarlo cuando entre E1.
 
 **F12a** (spec 023; plan enmendado en `plan/amend-a3-f8-f12a`, `191e5974`, PR #84; sin implementar):
 
 - F14 suma una sección a `AdminPage` y un valor al tipo de la sección: cambia `contracts/admin-page.md`.
+- **Hallazgo, la sección de «Cuentas» y el detalle:** el estado de la lista (la página, la búsqueda y los filtros) vive en la sección de «Cuentas» (`usePagedList`, T016). Para que el detalle vuelva a la lista como estaba, F14 cambia esa sección: dibuja el detalle con la lista montada y oculta. El plan de F12a no lo prevé, y el de F14 lo toma como un cambio a un archivo de F12a.
 - **Hallazgo, las pruebas que cuentan botones (Q1):** la spec de componente de «Cuentas» (T015) y el E2E de las cuentas (T022) cuentan los botones de toda la fila. Si cuentan los de la celda «Acciones», F14 suma su columna sin editar nada. Conviene inyectarlo en el brief de esas tareas antes de implementarlas, como se hizo con el E2E (l) de F3.
 - La tercera sección va después de «Invitaciones», así que la spec de la página que llega a «Invitaciones» con tres Tab no cambia.
 
@@ -741,7 +744,7 @@ La spec tiene **62 requisitos**, contra los 52 de C3a, así que propone un corte
 - **El taller de hoy** tiene 274 ejercicios (137 por lenguaje) en el catálogo del laboratorio; con E1, algunos más. Ninguna tabla necesita virtualizarse a esa escala (FR-058).
 - **Un aula de 40** es el supuesto de trabajo, como en C3b y F12: la lista de 25 por página alcanza.
 - **El umbral de una muestra chica** es 5, el mismo que usaba como ejemplo la opción D de Q1 de C5. Lo confirma Q3.
-- **El subpresupuesto de 40 000 caracteres** es una propuesta: F12a, con un volumen de pantallas parecido, estimó unos 32 000. Al subir el tope a 1 500 000, la suma del peor caso de los planes dejaba un margen de unos 250 000, según el coordinador.
+- **El subpresupuesto de 40 000 caracteres** es una propuesta: F12a, con un volumen de pantallas parecido, estimó unos 32 000. Al subir el tope, el coordinador calculó que la suma del peor caso de los planes dejaba un margen de 707 caracteres bajo el tope viejo de 1 250 000; con 1 500 000, eso da unos 250 000 (cuenta de esta spec, no una medida).
 - **Las fechas** se muestran con el formato del español de Argentina, y las cifras, con el punto de miles y la coma decimal.
 - **Los nombres de los roles y los estados** son los de F12a («Admin», «Alumno», «Activa», «Deshabilitada» y «Borrándose»).
 - **El ADR 0006 sigue en propuesta.** Lo que F14 toma de él llega a través de la spec de C5.
