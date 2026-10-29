@@ -15,7 +15,7 @@ func TestLimitedKeepsEverythingUnderTheCap(t *testing.T) {
 
 func TestLimitedCutsAtTheCapWithoutBlockingTheWriter(t *testing.T) {
 	l := &Limited{Max: 5}
-	l.Write([]byte("abc"))
+	_, _ = l.Write([]byte("abc"))
 	n, err := l.Write([]byte("defgh"))
 	if n != 5 || err != nil {
 		t.Fatalf("Write must accept everything without error so the program never stalls: %d, %v", n, err)
@@ -36,11 +36,11 @@ func TestLimitedCutsAtTheCapWithoutBlockingTheWriter(t *testing.T) {
 
 func TestLimitedMarksTruncationOnlyWhenSomethingIsDropped(t *testing.T) {
 	l := &Limited{Max: 5}
-	l.Write([]byte("abcde"))
+	_, _ = l.Write([]byte("abcde"))
 	if l.Truncated() {
 		t.Fatal("filling the cap exactly is not truncating: Truncated = true")
 	}
-	l.Write([]byte("f"))
+	_, _ = l.Write([]byte("f"))
 	if !l.Truncated() {
 		t.Fatal("with a full buffer, dropping a byte must set Truncated")
 	}
@@ -62,7 +62,7 @@ func TestLimitedDropsACharacterCutByTheCap(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			l := &Limited{Max: c.max}
-			l.Write([]byte(c.input))
+			_, _ = l.Write([]byte(c.input))
 			if got := l.String(); got != c.want || !l.Truncated() {
 				t.Fatalf("String = %q, Truncated = %v; want %q and true, with no U+FFFD the program did not print",
 					got, l.Truncated(), c.want)
@@ -73,7 +73,7 @@ func TestLimitedDropsACharacterCutByTheCap(t *testing.T) {
 
 func TestLimitedKeepsACompleteCharacterAtTheCap(t *testing.T) {
 	l := &Limited{Max: 3}
-	l.Write([]byte("añb"))
+	_, _ = l.Write([]byte("añb"))
 	if got := l.String(); got != "añ" {
 		t.Fatalf("String = %q; want %q", got, "añ")
 	}
@@ -81,7 +81,7 @@ func TestLimitedKeepsACompleteCharacterAtTheCap(t *testing.T) {
 
 func TestLimitedReplacesInvalidBytesFromTheProgram(t *testing.T) {
 	l := &Limited{Max: 10}
-	l.Write([]byte("a\xffb"))
+	_, _ = l.Write([]byte("a\xffb"))
 	if got := l.String(); got != "a\uFFFDb" {
 		t.Fatalf("String = %q; want %q", got, "a\uFFFDb")
 	}

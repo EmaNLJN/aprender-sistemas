@@ -23,10 +23,10 @@ func scripted(calls *[]commandCall, stdout map[string]string, fail map[string]er
 		*calls = append(*calls, commandCall{args: args})
 		key := strings.Join(args[:min(2, len(args))], " ")
 		if text, ok := stdout[key]; ok {
-			io.WriteString(out, text)
+			_, _ = io.WriteString(out, text)
 		}
 		if err := fail[key]; err != nil {
-			io.WriteString(errOut, "Error response from daemon: No such image: rust-img\n")
+			_, _ = io.WriteString(errOut, "Error response from daemon: No such image: rust-img\n")
 			return err
 		}
 		return nil
@@ -140,7 +140,9 @@ func TestListLabeledReadsContainersAndVolumes(t *testing.T) {
 func TestCreateVolumeSortsLabels(t *testing.T) {
 	var calls []commandCall
 	cli := DockerCLI{Exec: scripted(&calls, nil, nil)}
-	cli.CreateVolume(context.Background(), "taller-out-1", map[string]string{"b": "2", "a": "1"})
+	if err := cli.CreateVolume(context.Background(), "taller-out-1", map[string]string{"b": "2", "a": "1"}); err != nil {
+		t.Fatal(err)
+	}
 	want := []string{"volume", "create", "--label", "a=1", "--label", "b=2", "taller-out-1"}
 	if !slices.Equal(calls[0].args, want) {
 		t.Fatalf("args = %v", calls[0].args)
