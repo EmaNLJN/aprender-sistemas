@@ -9,7 +9,7 @@ Cada respuesta las lleva, una sola vez, con estos valores exactos. `Strict-Trans
 | Cabecera | Valor |
 | --- | --- |
 | `Strict-Transport-Security` | `max-age=<HSTS_MAX_AGE>`; sin `preload` ni `includeSubDomains`; sólo en las respuestas del 8443 |
-| `Content-Security-Policy` | `default-src 'self'; script-src 'self'; style-src 'self' 'nonce-<$request_id>'; style-src-attr 'unsafe-inline'; connect-src 'self' https://play.rust-lang.org https://play.golang.org; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'` |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self'; style-src 'self' 'nonce-<$request_id>'; style-src-attr 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'` (el valor final, A4-Q2). Mientras exista el cliente de Playgrounds (`frontend/src/shared/api/playground/`), `connect-src` es `'self' https://play.rust-lang.org https://play.golang.org`, y sólo eso cambia |
 | `X-Content-Type-Options` | `nosniff` |
 | `Referrer-Policy` | `no-referrer` |
 | `Permissions-Policy` | `camera=(), microphone=(), geolocation=(), payment=(), usb=(), display-capture=()` |
@@ -17,7 +17,7 @@ Cada respuesta las lleva, una sola vez, con estos valores exactos. `Strict-Trans
 
 **El nonce.** `<$request_id>` son 32 caracteres hexadecimales distintos en cada respuesta. El mismo valor reemplaza `__CSP_NONCE__` en el cuerpo de `/index.html`, y la CSP de esa respuesta lo lleva. Las respuestas de `/api/` y las de los archivos con huella llevan un nonce que nadie usa.
 
-**A4 y los Playgrounds.** Los dos `https://play.*` de `connect-src` los quita A4 al retirar el cliente de Playgrounds, con una sola línea de `docker/nginx/headers.conf`.
+**A4 y los Playgrounds.** Los dos `https://play.*` de `connect-src` los quita el segundo en llegar de C4 y A4, en la línea de `docker/nginx/headers.conf` y en los valores escritos a mano de `qa/nginx-headers-check.ts` y `backend/api/scripts/public-check.sh`, en el mismo commit. Los dos checks aceptan el valor con los Playgrounds sólo mientras exista `frontend/src/shared/api/playground/` (research.md, R30).
 
 ## Las clases de respuesta
 
@@ -79,7 +79,7 @@ con las seis cabeceras y sin `Set-Cookie`. Sin `Sec-Fetch-Site` (un cliente que 
 | --- | --- | --- |
 | Sesión | `taller-session`; `HttpOnly`, `SameSite=Lax`, sin `Secure` | `__Host-taller-session`; `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`, sin `Domain` |
 | Dispositivo | `taller-device`; `HttpOnly`, `SameSite=Lax` | `__Host-taller-device`; mismos atributos que la de sesión |
-| `XSRF-TOKEN` | Sin `HttpOnly` (la lee el front), `SameSite=Lax` | Con `Secure` |
+| `XSRF-TOKEN` | Sin `HttpOnly` (la lee el front), `SameSite=Lax`; el nombre exacto, sin prefijo: lo lee `XSRF_COOKIE_NAME` de `frontend/src/shared/api/http/read-xsrf-token.ts` (F11a) | Con `Secure`; el mismo nombre |
 | Recuerdo (`remember_web_<hash>`) | `HttpOnly`, `SameSite=Lax` | Con `Secure` |
 
 ## La IP del cliente (FR-026 y FR-027)
@@ -88,11 +88,11 @@ Lo que cuentan los límites de Nginx y de Laravel, el bloqueo por cuenta y los r
 
 ## Los límites de conexión y de tiempo (FR-028)
 
-Por IP, más de 300 conexiones simultáneas reciben 429; la cabecera tarda a lo sumo 10 segundos y el cuerpo, 20 entre dos lecturas (R10). Los límites de pedidos por IP son los de C3a.
+Por IP, las conexiones simultáneas tienen el tope `limit_conn perip` y lo que lo pasa recibe 429; con HTTP/2 cada pedido concurrente cuenta como una conexión. La cabecera tarda a lo sumo 10 segundos y el cuerpo, 20 entre dos lecturas (R10). Los límites de pedidos por IP son los de C3a, con la ráfaga de la zona `api` ajustada: el tope de conexiones y la ráfaga salen de la escalera de R26 (de 800 a 1 600 y de 400 a 1 200; el techo lo aceptó el usuario el 2026-10-28), con el criterio de que el arranque en frío de un aula de 40 desde una IP (unos 720 pedidos a `/api/`) no reciba ningún 429, ni en HTTP/1.1 ni en HTTP/2. Los valores elegidos quedan en research.md, R26, y en la guía de operación.
 
 ## Lo que los vecinos pueden suponer
 
-- **A3 y el front:** la API, sus códigos y sus cuerpos no cambian. El nombre de `XSRF-TOKEN` y su lectura por el cliente tampoco. `index.html` cambia en cada respuesta (el nonce) y no se cachea; los archivos con huella cambian de nombre con cada build.
-- **A4:** quita los dos Playgrounds de `connect-src` editando `docker/nginx/headers.conf`.
-- **B2:** `/api/runs` conserva su ubicación y su tope de 192 KiB, y repite el bloque de `/api/` con la línea `include …/headers.conf;` en el mismo lugar. Los 429 y los 413 llevan las seis cabeceras.
-- **D1 y C5:** una ubicación nueva con cabeceras propias incluye `headers.conf`, o `qa/nginx-headers-check.ts` falla.
+- **A3, F11 y el front:** la API, sus códigos y sus cuerpos no cambian. El nombre de `XSRF-TOKEN` y su lectura por el cliente tampoco. `index.html` cambia en cada respuesta (el nonce) y no se cachea; los archivos con huella cambian de nombre con cada build. El build sigue siendo un solo módulo de JS y una sola hoja (R25). Un 429 de la zona `api` o de `limit_conn` trae `Retry-After: 1`, como hoy.
+- **A4:** el segundo en llegar de C4 y A4 quita los dos Playgrounds de `connect-src`, en `docker/nginx/headers.conf` y en los valores esperados de los dos checks.
+- **B2, D1a y D1b:** `/api/runs` (192 KiB), `= /api/sync` (2 MiB) y `= /api/progress/import` (24 MiB) conservan su ubicación y su tope, y repiten el bloque de `/api/` con la línea `include …/headers.conf;` en el mismo lugar. Los 429 y los 413 llevan las seis cabeceras.
+- **D1c, C5 y F14:** una ubicación nueva con cabeceras propias incluye `headers.conf`, o `qa/nginx-headers-check.ts` falla.

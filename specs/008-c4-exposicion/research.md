@@ -2,7 +2,9 @@
 
 **Input**: [spec.md](./spec.md) con su clarify del 2026-10-06, el ADR 0004 §1, el ADR 0006, el código de C3a (rama `feat/c3a-identidad`, PR #24) y los planes de A2 y B2 y la spec de C3b/C3c (ramas hermanas). Cada decisión dice qué se eligió, por qué y qué se descartó. Las que la spec no fija y el plan completó están en la primera tabla, para que el coordinador las vea juntas.
 
-Las referencias «R1» a «R24» son secciones de este archivo. Los requisitos del ADR 0006 se citan como «§9» o «D37». «G1» y «G2» son los dos tramos de la compuerta de salida (R22).
+**Actualización del 2026-10-28.** El plan se escribió el 2026-10-06, antes de que cambiaran sus dependencias. Esta actualización parte de `master` en `431c9d90` y de los planes mergeados de A3, B3, C3c, F11a y F12a. Las decisiones nuevas o corregidas son R25 a R31, y las de R2, R7, R10 a R13, R22 y R24 se corrigieron en su lugar. La tabla de Context7 y las mediciones de sólo lectura están al final.
+
+Las referencias «R1» a «R31» son secciones de este archivo. Los requisitos del ADR 0006 se citan como «§9» o «D37». «G1» y «G2» son los dos tramos de la compuerta de salida (R22).
 
 ## Cómo se verificó
 
@@ -16,6 +18,7 @@ Las referencias «R1» a «R24» son secciones de este archivo. Los requisitos d
   - el Dockerfile `9.7/Dockerfile.oracle` de docker-library/mysql.
 - **Metadatos de descargas**, sin bajar nada: la API de GitHub (`age`, Pebble), la de Docker Hub (`rclone`, lego, certbot, `mysql`), el registro de GHCR (Pebble), el listado del repositorio Alpine de nginx.org y `pkgs.alpinelinux.org`.
 - **El código propio del front**, en el `node_modules` ya instalado del checkout principal: `@codemirror/view` 6.43.13 asigna `style.cssText` en el espaciador de la numeración de líneas (línea 11681) y define `EditorView.cspNonce` (línea 9012); los seis sitios de estilo en línea del código propio siguen donde dice la spec.
+- **El 2026-10-28**, para la actualización, se leyeron en `master` (`431c9d90`) `docker/nginx/nginx.conf` (cuatro bloques de `/api/`), `docker/compose.yaml`, `compose.yaml` de la raíz (un `include` de `docker/compose.yaml`), `docker/compose.preview.yaml`, `docker/mysql/db-grants.sql`, `backend/api/scripts/{deploy,deploy-check,smoke,check-account,init-env}.sh`, `backend/api/phpunit.xml`, las migraciones, `qa/build-check.ts`, `qa/lib/built-page.ts`, `qa/lib/api-account.ts`, `qa/e2e/playwright.config.ts`, `frontend/vite.config.ts` y `frontend/src/app/boot/legacy-views.ts`; los planes de A3, B3, C3c, F11a y F12a y las specs de A4, F11 y F12; `vite-plugin-singlefile` 2.3.3 y los tipos de Rolldown 1.2.12 en el `node_modules` del checkout principal; y, sólo para leer, `impl-f5` (`efaf39b2`, `frontend/src/pages/systems/ui/SceneView.tsx`), `impl-f7a` (`fc88d450`, `frontend/lab.js`) e `impl-b3` (`72574433`). Esta vez Context7 estuvo disponible (tabla al final).
 - **No se ejecutó nada.** Ni Docker, ni el build, ni un navegador, ni se descargó nada: la tarea era sólo de planificación. Todo lo que figura como configuración, script o SQL en el [plan](./plan.md) es referencia, y las verificaciones V1 a V5 de abajo lo prueban antes de construir.
 
 ## Decisiones del plan que la spec no fija
@@ -46,6 +49,13 @@ Las referencias «R1» a «R24» son secciones de este archivo. Los requisitos d
 | 22 | Rotación de registros de Docker de 20 MiB por 10 archivos por servicio, medida después de una semana | R21 |
 | 23 | La compuerta se parte en G1 (antes de abrir) y G2 (al abrir), y la CI suma el job `public` | R22 |
 | 24 | Se suma V5, la verificación del destino de los respaldos | V5 |
+| 25 | Sin `vite-plugin-singlefile`, el build sigue con un solo módulo de JS y una sola hoja (`codeSplitting: false` y `cssCodeSplit: false`), y `BOOT_SIZE_LIMIT` sigue en 1 500 000 caracteres para el HTML más lo que enlaza | R25 |
+| 26 | El arranque en frío de un aula de 40 desde una IP se mide en HTTP/1.1 y en HTTP/2, y la ráfaga de la zona `api` y `limit_conn` se fijan con esa medida, sin ningún 429; el techo de 1 200 y 1 600 lo aceptó el usuario el 2026-10-28 | R26 |
+| 27 | La fase de los usuarios corre antes de `migrate` en la cadena de arranque (`grants-users`), y `grants` vuelve a la fase de las tablas | R27 |
+| 28 | Un sexto rol, `taller_audit`, para la auditoría de B3 | R28 |
+| 29 | El recorrido de la CSP corre contra el stack, con una configuración de Playwright aparte y las pantallas de F11 y de F12a | R29 |
+| 30 | `connect-src` final es `'self'`; mientras A4 no entre, el check acepta los Playgrounds sólo si el cliente de Playgrounds todavía existe; G2 no espera a A4 (el usuario, 2026-10-28) | R30 |
+| 31 | Qué espera cada tramo: la base a A3 y a C3; el recorrido y G1, a F11b y a F12a; G1, también a la auditoría de B3 | R31 |
 
 ## R1. Cómo se activa el modo público
 
@@ -66,7 +76,7 @@ Las referencias «R1» a «R24» son secciones de este archivo. Los requisitos d
 
 ## R2. Un solo `nginx.conf` con tres puntos de inclusión
 
-**Decisión.** `docker/nginx/nginx.conf` sigue siendo el archivo de los dos modos y conserva ahí todas las ubicaciones, incluidos los bloques `location ^~ /api/` y `location ^~ /api/runs`. Lo que cambia por modo son tres archivos de `/etc/nginx/taller.d/`, que `nginx.conf` incluye en un punto fijo:
+**Decisión.** `docker/nginx/nginx.conf` sigue siendo el archivo de los dos modos y conserva ahí todas las ubicaciones, incluidos los cuatro bloques de la API: `location ^~ /api/`, `location ^~ /api/runs` (B2), `location = /api/sync` (D1a) y `location = /api/progress/import` (D1b), que hoy repiten las mismas directivas salvo `client_max_body_size`. Lo que cambia por modo son tres archivos de `/etc/nginx/taller.d/`, que `nginx.conf` incluye en un punto fijo:
 
 | Archivo | Dónde lo incluye `nginx.conf` | Local (en la imagen) | Público (renderizado) |
 | --- | --- | --- | --- |
@@ -77,7 +87,7 @@ Las referencias «R1» a «R24» son secciones de este archivo. Los requisitos d
 Las cabeceras de seguridad están en `docker/nginx/headers.conf` (R7), que `nginx.conf` incluye en el servidor y en cada ubicación que define cabeceras propias.
 
 **Por qué.**
-- El check de B2, `qa/nginx-api-blocks-check.ts`, extrae de `docker/nginx/nginx.conf` los dos bloques de `/api/` y exige que sus directivas sean las mismas y en el mismo orden. Moverlos a otro archivo lo rompería. Con la línea `include …/headers.conf;` en los dos bloques, el check sigue valiendo.
+- El check de B2, `qa/nginx-api-blocks-check.ts`, extrae de `docker/nginx/nginx.conf` los bloques de `/api/` y exige que sus directivas sean las mismas y en el mismo orden. Moverlos a otro archivo lo rompería. Con la línea `include …/headers.conf;` en el mismo lugar de los cuatro bloques, el check sigue valiendo. T001 relee cuántos bloques compara hoy ese check.
 - Los dos modos ejecutan las mismas ubicaciones: lo que se prueba en local, con el recorrido de la User Story 3, es lo que se sirve en público.
 - El modo local sigue siendo un archivo estático, sin renderizado, como hoy.
 
@@ -146,14 +156,15 @@ Las cabeceras de seguridad están en `docker/nginx/headers.conf` (R7), que `ngin
 
 ```nginx
 add_header Strict-Transport-Security $hsts_value always;
-add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'nonce-$request_id'; style-src-attr 'unsafe-inline'; connect-src 'self' https://play.rust-lang.org https://play.golang.org; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'" always;
+add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'nonce-$request_id'; style-src-attr 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'" always;
 add_header X-Content-Type-Options nosniff always;
 add_header Referrer-Policy no-referrer always;
 add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), display-capture=()" always;
 add_header Cross-Origin-Opener-Policy same-origin always;
 ```
 
-- `nginx.conf` lo incluye en el servidor y en **cada** ubicación que defina una `add_header` propia (la de `/api/`, la de `index.html`, la de los archivos con huella, `@too_many_requests` y `@csrf_rejected`). Una ubicación con cabeceras propias no hereda las del servidor, y por eso hoy `@too_many_requests`, que sólo repite `X-Content-Type-Options`, responde sin CSP ni `Referrer-Policy` (hallazgo para C3a y B2).
+- La línea de arriba es la final (A4-Q2). Mientras A4 no esté en `master`, `connect-src` lleva además `https://play.rust-lang.org https://play.golang.org` (R30).
+- `nginx.conf` lo incluye en el servidor y en **cada** ubicación que defina una `add_header` propia (los cuatro bloques de la API, la de `index.html`, la de los archivos con huella, `@too_many_requests` y `@csrf_rejected`). Una ubicación con cabeceras propias no hereda las del servidor, y por eso hoy `@too_many_requests`, que sólo repite `X-Content-Type-Options`, responde sin CSP ni `Referrer-Policy` (hallazgo para C3a y B2).
 - `Strict-Transport-Security` sale de `$hsts_value`: el modo local lo define vacío y Nginx no envía una cabecera cuyo valor es la cadena vacía; el público lo define por esquema (`https` → `max-age=<HSTS_MAX_AGE>`). El escalón de HSTS es una variable (FR-014).
 - Un check estático, `qa/nginx-headers-check.ts`, en `npm test`: toda ubicación, servidor o ubicación con nombre de `docker/nginx/` que contenga una `add_header` (fuera de `headers.conf`) incluye `headers.conf`, y el archivo tiene las seis cabeceras con los valores de FR-013, escritos a mano en el check.
 - El check de punta a punta (`public-check.sh`) pide una URL de cada clase y compara cabecera por cabecera. Las clases son las 8 de SC-003 (el HTML, un archivo con huella, un 404 de Nginx, `/api/` con éxito, `/api/` con un 404 y con un 419 de Laravel, `/healthz` y el 301 del puerto 80) más las que FR-015 nombra y la spec no cuenta: el 413 (un cuerpo mayor que el tope de `/api/runs`), el 429, el 502 (sin `php`) y el 419 de Nginx del cierre de sesión por CSRF.
@@ -211,13 +222,13 @@ location @csrf_rejected {
 | Directiva | Valor | Cuenta |
 | --- | --- | --- |
 | `worker_connections` | 1 024 (hoy 256) | Con HTTP/2 un navegador usa una o dos conexiones y, con HTTP/1.1, hasta seis. Cuarenta alumnos son entre 40 y 240 conexiones; 1 024 por proceso deja lugar a varios clientes más |
-| `limit_conn_zone $binary_remote_addr zone=perip:10m` y `limit_conn perip 300` | 300 por IP | Algo más que las 240 del peor aula: una IP sola no agota un proceso y hace falta más de tres para saturarlo. Se responde con `limit_conn_status 429`, que cae en el mismo JSON de `@too_many_requests` |
+| `limit_conn_zone $binary_remote_addr zone=perip:10m` y `limit_conn perip <N>` | `N` de la escalera de R26, a partir de 800 | En HTTP/1.1 un aula son entre 40 y 240 conexiones. En HTTP/2 **cada pedido concurrente cuenta como una conexión** (documentación de `ngx_http_limit_conn_module`), y A3 pide las 17 porciones a la vez (`Promise.all`): un aula que arranca junta llega a unos 720. La versión del 2026-10-06 proponía 300, que en HTTP/2 rechazaría el arranque. Se responde con `limit_conn_status 429`, que cae en el mismo JSON de `@too_many_requests` |
 | `client_header_timeout` | 10 s | Un navegador manda la cabecera completa en milisegundos; una conexión que la gotea se cierra |
 | `client_body_timeout` | 20 s | Es el tiempo entre dos lecturas, no del cuerpo entero; alcanza para los 24 MiB de la importación de D1 |
 | `send_timeout`, `keepalive_timeout` | 30 s | |
 | `reset_timedout_connection on` | | Libera el socket de lo que venció |
 
-Se prueban con conexiones lentas desde un contenedor y con un aula simulada desde otro (los dos con IP distintas), sin descargar nada: la imagen `taller` trae `wget` y `nc` de BusyBox. Los valores se revisan con una medición real en G2 (R22).
+Se prueban con conexiones lentas desde un contenedor y con un aula simulada desde otro (los dos con IP distintas), sin descargar nada: la imagen `taller` trae `wget` y `nc` de BusyBox. El aula que arranca junta, con la ráfaga de la zona `api` y en los dos protocolos, se mide como dice R26. Los valores se revisan con una medición real en G2 (R22).
 
 **Docker Desktop.** En macOS, la VM de Docker Desktop suele reemplazar la IP de origen por la de su puerta de enlace. El modo público se prueba y se opera en Linux (ADR 0005, «Host»), y la guía lo dice.
 
@@ -234,7 +245,7 @@ Se prueban con conexiones lentas desde un contenedor y con un aula simulada desd
 | `TALLER_DEVICE_SECURE` | `false` | `true` | `DEVICE_COOKIE_SECURE` |
 
 - `SESSION_DOMAIN` queda sin definir y `SESSION_PATH` en `/`: las condiciones de `__Host-`.
-- `XSRF-TOKEN` y la cookie de «recordarme» **no** se prefijan: el nombre de la primera lo fija `PreventRequestForgery` y lo lee el cliente de A3 por nombre, y el de la segunda sale del guard de sesión (`remember_web_<hash>`). Prefijarlas exige reescribir el middleware y el cliente por un beneficio chico: el token tiene que coincidir con el de la sesión, y un subdominio que pise `XSRF-TOKEN` no lo conoce. Las dos llevan `Secure` porque Laravel toma `session.secure` para todas las cookies que arma.
+- `XSRF-TOKEN` y la cookie de «recordarme» **no** se prefijan: el nombre de la primera lo fija `PreventRequestForgery` y lo lee el cliente de F11a por nombre (`XSRF_COOKIE_NAME = 'XSRF-TOKEN'` en `frontend/src/shared/api/http/read-xsrf-token.ts`, que A3 reutiliza; hallazgo C4-11). Si algún día se prefija, el mismo cambio edita esa constante y su spec. `public-check.sh` exige el nombre exacto, y el de la segunda sale del guard de sesión (`remember_web_<hash>`). Prefijarlas exige reescribir el middleware y el cliente por un beneficio chico: el token tiene que coincidir con el de la sesión, y un subdominio que pise `XSRF-TOKEN` no lo conoce. Las dos llevan `Secure` porque Laravel toma `session.secure` para todas las cookies que arma.
 - Laravel sabe que la conexión es segura sin `trustProxies`: `fastcgi_params` pasa `HTTPS $https if_not_empty`.
 - Los links de invitación y de recuperación se arman desde `APP_URL`, nunca desde `Host` (C3a).
 
@@ -243,22 +254,23 @@ Se prueban con conexiones lentas desde un contenedor y con un aula simulada desd
 ## R12. Usuarios de MySQL
 
 **Decisión.**
-- **Nombres.** `taller_app`, `taller_runs`, `taller_mail`, `taller_migrate` y `taller_backup`, con host `%` (D21 ya usa `taller_mail`; los roles de Q5 son `app`, `runs`, `mail`, `migrate` y `backup`).
-- **Los dos modos.** FR-030 no se limita al modo público, y lo que se prueba en la CI es lo que se despliega. `x-laravel-env` deja de fijar `DB_USERNAME` y `DB_PASSWORD` y cada servicio los fija con la contraseña de su rol (`APP_DB_PASSWORD`, `RUNS_DB_PASSWORD`, `MAIL_DB_PASSWORD`, `MIGRATE_DB_PASSWORD`, `BACKUP_DB_PASSWORD`). `x-laravel-test-env` y `phpunit.xml` no cambian: las pruebas usan `mysql-test` con root. El servicio `mysql` deja de crear el usuario `taller` (se quitan `MYSQL_USER` y `MYSQL_PASSWORD`), y `init-env.sh` deja de generar `MYSQL_PASSWORD`; un `.env` viejo conserva su línea, sin efecto.
+- **Nombres.** `taller_app`, `taller_runs`, `taller_mail`, `taller_migrate`, `taller_backup` y `taller_audit`, con host `%` (D21 ya usa `taller_mail`; los roles de Q5 son `app`, `runs`, `mail`, `migrate` y `backup`, y `audit` es de la auditoría de B3, R28).
+- **Los dos modos.** FR-030 no se limita al modo público, y lo que se prueba en la CI es lo que se despliega. `x-laravel-base-env` deja de fijar `DB_USERNAME` y `DB_PASSWORD` y cada servicio los fija con la contraseña de su rol (`APP_DB_PASSWORD`, `RUNS_DB_PASSWORD`, `MAIL_DB_PASSWORD`, `MIGRATE_DB_PASSWORD`, `BACKUP_DB_PASSWORD` y `AUDIT_DB_PASSWORD`). Los valores por omisión que hoy apuntan a `taller` (`${RUNS_DB_USERNAME:-taller}` y `${RUNS_DB_PASSWORD:-${MYSQL_PASSWORD}}` en `worker-runs`, y los `AUDIT_*` del servicio `audit` de B3) se reemplazan por la cuenta del rol. `x-laravel-test-env` y `phpunit.xml` no cambian: las pruebas usan `mysql-test` con root. El servicio `mysql` deja de crear el usuario `taller` (se quitan `MYSQL_USER` y `MYSQL_PASSWORD`), y `init-env.sh` deja de generar `MYSQL_PASSWORD`; un `.env` viejo conserva su línea, sin efecto.
 - **Dos fases, por una regla del manual de 9.7.** «MySQL permite conceder privilegios sobre bases de datos o tablas que no existen. Para las tablas, los privilegios que se conceden tienen que incluir `CREATE`» (`GRANT`). Entonces los permisos por tabla de `app`, `runs` y `mail` no pueden concederse en el inicio de un volumen nuevo, antes de que `migrate` cree las tablas, sin darles `CREATE`. La fase `users` (cuentas, los privilegios de nivel base de `migrate` y los globales y de base de `backup`) corre antes de migrar; la fase `tables`, después.
-- **Quién corre qué.**
-  - En un volumen nuevo, el inicio de MySQL corre la fase `users`. `migrate` crea las tablas. Un servicio nuevo, `grants`, con root y sin perfil, corre la fase `tables` y los servicios que dependían de `migrate` pasan a depender de `grants`.
-  - `db-grants` conserva el perfil `ops` y su nombre, porque `smoke.sh` de C3a comprueba que no se levanta sin ese perfil y FR-002 pide que los checks de hoy pasen sin editarlos. Corre las dos fases: es el comando manual y el primer paso de `deploy.sh` en un volumen que ya existía. `grants` y `db-grants` comparten un ancla.
-  - Orden de `deploy.sh`: construir → `db-grants` sólo si faltan los usuarios (un volumen anterior a C4: así un despliegue normal no toca ninguna tabla antes de migrar, que es lo que espera el escenario 3 de `deploy-check.sh`) → `migrate` → `grants` (los permisos de lo que migró) → `up` → `db-grants` otra vez sólo si `taller` todavía existe (lo retira, R13).
+- **Quién corre qué** (corregido el 2026-10-28, R27).
+  - El mecanismo ya lo trae C3c para `taller_mail`: `docker/mysql/apply-grants.sh`, `10-db-grants.sh`, el servicio `grants` y `db-grants`, con los nombres, los marcadores y las fases de este plan (hallazgo C4-8). C4 lo extiende y no lo reescribe.
+  - En un volumen nuevo, el inicio de MySQL corre la fase `users`. Un servicio nuevo, `grants-users`, con root y sin perfil, corre la fase `users` antes de `migrate` en cada arranque: crea las cuentas que falten y vuelve a fijar sus contraseñas, también en un volumen anterior a C4 levantado con `docker compose up` a secas. `migrate` crea las tablas. `grants` (el de C3c, que hoy corre las dos fases) vuelve a la fase `tables`, como C3c previó, y los servicios que dependían de `migrate` pasan a depender de `grants`.
+  - `db-grants` conserva el perfil `ops` y su nombre, porque `smoke.sh` de C3a comprueba que no se levanta sin ese perfil y FR-002 pide que los checks de hoy pasen sin editarlos. Corre las dos fases: es el comando manual. `grants-users`, `grants` y `db-grants` comparten un ancla.
+  - Orden de `deploy.sh`: construir → `mysql` sano → `grants-users` (sólo cuentas, contraseñas y privilegios de base: no toca ninguna tabla de `taller`, así que el escenario 3 de `deploy-check.sh` sigue viendo a `migrate` rendirse ante el bloqueo) → `migrate` → `db-grants` en cada despliegue, como dejó C3c (hallazgo C4-9: se conserva, porque es idempotente y sincroniza las contraseñas después de una rotación) → `up` → `db-grants` otra vez sólo si `taller` todavía existe (lo retira, R13).
 - **Plan alternativo si el coordinador prefiere un solo servicio.** `db-grants` sin perfil, en la cadena, y se edita la comprobación de C3a. Se descartó por FR-002.
 - **Las tablas.** `data-model.md` clasifica cada tabla de C3a y de B2 y fija la regla para las de D1, C3b y C3c (R24). Una prueba falla si `information_schema` tiene una tabla que la matriz no nombra.
 - **Una cuenta, un conjunto de privilegios.** `taller_migrate` no tiene `GRANT OPTION`, ni `CREATE ROUTINE`, `EVENT`, `TRIGGER` ni vistas: el esquema no los usa y una migración que los necesite edita la matriz a propósito. `FOR SHARE` pide sólo `SELECT` y `FOR UPDATE`, `SELECT` más `UPDATE`, `DELETE` o `LOCK TABLES` (manual de 9.7, lecturas con bloqueo): B2 toma `users FOR SHARE`, y los roles que bloquean con `FOR UPDATE` tienen `UPDATE` sobre esa tabla.
 
-**Alternativas descartadas.** Permisos de base con `partial_revokes` (sólo excluyen bases, no tablas); un esquema aparte para el contenido (cambia la base de C2 y todo lo que la usa); darle `GRANT OPTION` a `migrate` (FR-031: no puede conceder); conceder con `CREATE` sobre tablas inexistentes (le daría a `app` el poder de crearlas).
+**Alternativas descartadas.** La fase `users` condicional en `deploy.sh` y un aviso de `migrate.sh` como única salida en un volumen viejo (la versión del 2026-10-06: un `docker compose up` a secas fallaba en `migrate`, y C3c ya había resuelto ese caso para `taller_mail`); `grants` con las dos fases antes de `migrate` (los permisos por tabla fallan sin las tablas); permisos de base con `partial_revokes` (sólo excluyen bases, no tablas); un esquema aparte para el contenido (cambia la base de C2 y todo lo que la usa); darle `GRANT OPTION` a `migrate` (FR-031: no puede conceder); conceder con `CREATE` sobre tablas inexistentes (le daría a `app` el poder de crearlas).
 
 ## R13. Las contraseñas y la convergencia de `db-grants.sql`
 
-**Decisión.** `docker/mysql/db-grants.sql` sigue siendo el único archivo de usuarios y privilegios, con dos secciones marcadas (`-- @phase users` y `-- @phase tables`) y marcadores `@@APP_DB_PASSWORD@@` (uno por rol). `docker/mysql/apply-grants.sh [--phase users|tables|all] [--host <h>]` valida cada contraseña (`[A-Za-z0-9._~-]{24,128}`), sustituye los marcadores con `sed`, antepone `SET SESSION sql_log_bin = 0;` (ni siquiera el hash de una contraseña entra al binlog) y `SET SESSION lock_wait_timeout = 5;` (un permiso que espera un bloqueo de metadatos falla en lugar de colgar un despliegue), y entrega el SQL por la entrada estándar de `mysql`, nunca por la línea de comandos. El inicio de un volumen nuevo lo corre con `--phase users` y el socket (el servidor temporal sólo escucha ahí); `grants` y `db-grants`, con `--host mysql`. Es la interfaz que C3b/C3c necesitan para su usuario `taller_mail` (su FR-028).
+**Decisión.** `docker/mysql/db-grants.sql` sigue siendo el único archivo de usuarios y privilegios, con dos secciones marcadas (`-- @phase users` y `-- @phase tables`) y marcadores `@@APP_DB_PASSWORD@@` (uno por rol). `docker/mysql/apply-grants.sh [--phase users|tables|all] [--host <h>]` es el de C3c: valida cada contraseña (`[A-Za-z0-9._~-]{24,128}`), sustituye los marcadores con `sed`, antepone `SET SESSION sql_log_bin = 0;` (ni siquiera el hash de una contraseña entra al binlog) y `SET SESSION lock_wait_timeout = 5;` (un permiso que espera un bloqueo de metadatos falla en lugar de colgar un despliegue), y entrega el SQL por la entrada estándar de `mysql`, nunca por la línea de comandos. La contraseña de root va en un archivo de opciones temporal (`--defaults-extra-file`, `umask 077`, borrado al salir) y no en `MYSQL_PWD`, que está desaconsejada; los scripts se llaman con `sh`, sin `exec` ni el bit de ejecución, porque el inicio de MySQL sourcea un `.sh` (las tres diferencias que C3c registró contra la versión del 2026-10-06). C4 suma `APP RUNS MIGRATE BACKUP AUDIT` a la lista del `for` y un `-e` por marcador. El inicio de un volumen nuevo lo corre con `--phase users` y el socket (el servidor temporal sólo escucha ahí); `grants-users`, `grants` y `db-grants`, con `--host mysql`.
 
 - **Cada corrida vuelve a fijar las contraseñas:** `CREATE USER IF NOT EXISTS …` y `ALTER USER … IDENTIFIED BY …`. Rotar una contraseña es cambiar `.env` y correr `db-grants`.
 - **Los privilegios sólo se suman.** Un archivo que también quitara tendría una ventana, entre el `REVOKE` y el `GRANT`, en que un servicio vivo recibe el error 1142. Lo que sobra al achicar la matriz se revoca con una línea explícita en el mismo cambio, y la prueba de la matriz (`SHOW GRANTS` contra la matriz, en el stack desplegado) detecta un volumen al que esa línea no llegó.
@@ -339,7 +351,7 @@ El archivo público fija, para cada servicio, `logging: {driver: json-file, opti
 
 **El problema.** FR-044, como estaba, pedía probar el dominio real con el servidor de pruebas de la autoridad antes de abrir el reenvío de puertos. HTTP-01 y TLS-ALPN-01 necesitan que la autoridad llegue al puerto: antes de abrir, ninguna validación contra el dominio real puede salir (sólo DNS-01, que Q1 descartó, lo permitiría). Lo mismo vale para V3 desde otra red.
 
-**G1, antes de abrir el reenvío.** FR-033 en verde; FR-043 en local con un certificado de prueba y con Pebble; el recorrido de la User Story 3, sin violaciones de CSP; la restauración (a) presenciada por el usuario y el simulacro (b) hechos; HSTS en su escalón inicial; el destino verificado (V5); y C3a, C3b y C3c entregados, con una cuenta admin y el aviso de privacidad vigente.
+**G1, antes de abrir el reenvío.** FR-033 en verde; FR-043 en local con un certificado de prueba y con Pebble; el recorrido de la User Story 3, con las pantallas de F11a, F11b y F12a, sin violaciones de CSP; el arranque del aula sin ningún 429 (R26); la restauración (a) presenciada por el usuario y el simulacro (b) hechos; HSTS en su escalón inicial; el destino verificado (V5); C3a, C3b y C3c entregados, con una cuenta admin y el aviso de privacidad vigente; F11b y F12a integradas; y la corrida de registro de la auditoría de B3 en verde sobre el contenido que se despliega (R31).
 
 **G2, al abrir.** El usuario reenvía el 80 y el 443; con `ACME_DIRECTORY_URL` de staging (`https://acme-staging-v02.api.letsencrypt.org/directory`): emisión contra el dominio real y FR-043 contra él; V3b desde datos móviles; un escaneo de puertos desde otra red; después el emisor de producción y la rampa de HSTS (300 s, 86 400 s, 604 800 s y 31 536 000 s, cada escalón con su condición de FR-014).
 
@@ -358,14 +370,155 @@ Los tamaños son metadatos, no mediciones de `pull`: la API de GitHub da el tama
 - De C3a: el Nginx con sus zonas y el 429 en JSON, `db-grants.sql` y `db-grants`, la estructura de `init-env.sh`, la cookie de dispositivo configurable, `trustProxies` vacío y el contrato de errores `{message, code}`.
 - De A2: `qa/lib/built-page.ts` y `assertSinglefileDocument` (los que C4 cambia) y `curriculumMarkers()` y `contentVersion()` (los que FR-022 usa).
 - De B2: `RUNS_DB_USERNAME` y `RUNS_DB_PASSWORD`, la ubicación `/api/runs` y su check de bloques.
-- De C3b/C3c: `account_deletions`, `taller:reapply-deletions` y `worker-mail` con su usuario.
+- De C3b/C3c: `account_deletions`, `taller:reapply-deletions` y `worker-mail` con su usuario. De C3c, además, el mecanismo de los permisos ya implementado (`apply-grants.sh`, `10-db-grants.sh`, `grants` y `db-grants`) y `deploy.sh` con `db-grants` en cada despliegue.
+- De D1a y D1b: los bloques `= /api/sync` y `= /api/progress/import` de Nginx y las doce tablas de progreso.
+- De F11a: la sesión obligatoria, el cliente que lee `XSRF-TOKEN` por nombre, el proxy de `/api/` de `npm run dev` y de la vista previa (que se une a la red `taller-rust-go_web` del stack como externa) y `PRIVACY_VERSION` en `x-laravel-env` (T028 de F11a; hallazgo C4-13).
+- De A3: el contenido detrás de la sesión, el retiro del puente de A2 (FR-022 se cumple con T011 y T016 de A3) y `qa/classroom-boot-check.ts` (T015 de A3), la medida del aula (R26).
+- De F11b y F12a: las pantallas que el recorrido suma (R29).
+- De B3: el servicio `audit` con su gancho `AUDIT_DB_USERNAME` (R28) y la corrida de registro que G1 exige (R31).
 
 **Deja, y son hallazgos para quien integra** (el resumen está en el informe del plan):
 - C3a: la ubicación `@too_many_requests` pierde la CSP y `Referrer-Policy`; el DNS cerrado de `taller` no sirve para la exposición; el cierre de sesión por CSRF.
 - B2: su check de bloques de Nginx debe seguir leyendo `docker/nginx/nginx.conf` (C4 lo respeta).
 - C3b y C3c: el mecanismo de contraseñas de `db-grants.sql` (R13), el formato TSV del libro (R15) y que los permisos de `mail` son de la fase `tables` (R12).
 - A2 y A3: C4 cambia `built-page.ts`; A3 tiene que retirar el puente antes de C4.
-- La hoja de ruta: C4 depende de A3, C3a, C3b y C3c; ya no espera a F5, F7 ni F8; suma el simulacro de recuperación, el comando de estado, el job de CI y `docs/operacion-publica.md`.
+- La hoja de ruta: C4 depende de A3, C3a, C3b, C3c, F12a y F11b, y G1 de la auditoría de B3; ya no espera a F5, F7 ni F8; suma el simulacro de recuperación, el comando de estado, el job de CI y `docs/operacion-publica.md`.
+- B3: si B3 entra después de C4, su servicio `audit` nace con `taller_audit` y `AUDIT_DB_PASSWORD`, no con el valor por omisión `taller`, que C4 retira.
+- A4: el segundo en llegar de C4 y A4 quita los Playgrounds de `headers.conf` y de los valores escritos a mano de los checks (R30).
+
+## R25. El build sin `vite-plugin-singlefile` sigue siendo un solo módulo
+
+**El hallazgo.** El plugin no sólo mete el JS y el CSS en el HTML. Su gancho `config` también fija cinco opciones de build (`node_modules/vite-plugin-singlefile/dist/esm/index.js`, versión 2.3.3):
+- `codeSplitting: false` en la salida de Rolldown (Vite 8; con versiones anteriores, `inlineDynamicImports: true`);
+- `cssCodeSplit: false`;
+- `assetsInlineLimit: () => true`;
+- `base: './'`;
+- `assetsDir: ''`.
+
+Si se quita el plugin sin reponer las dos primeras, Rolldown arma un archivo por cada `import()` de `frontend/src/app/boot/legacy-views.ts` (los 19 de `LEGACY_MODULES` y el de `app.js`). Eso rompe tres cosas:
+- `evaluateBuiltPage` (`qa/lib/built-page.ts`) se detiene en «la salida usa import() dinámico real»;
+- `boot-check` y `load-order-check`, que evalúan la página construida, fallan;
+- la compuerta de `import.meta` de TR-4 (`dynamicImports` en 0) se rompe.
+
+**Decisión.** `frontend/vite.config.ts` sin `viteSingleFile` y con:
+- `html: { cspNonce: '__CSP_NONCE__' }`;
+- `build.cssCodeSplit: false`;
+- `build.rolldownOptions.output.codeSplitting: false`, junto al `banner` y los `comments` que ya están.
+
+El tipo es el de Rolldown 1.2.12 (`codeSplitting?: boolean | CodeSplittingOptions`): «`false`: Inline all dynamic imports into a single bundle (equivalent to deprecated `inlineDynamicImports: true`)». Context7 no lo nombra para la 8.0.10; se leyó en los tipos instalados.
+
+Las otras tres opciones vuelven a su valor por omisión:
+- `base` en `/`: Nginx sirve la raíz, y la vista previa también;
+- `assetsDir` en `assets`: es la `dist/assets/` que FR-021 cachea;
+- `assetsInlineLimit` en 4 096 bytes: lo que se incrusta como `data:` en el CSS lo lista V2. `img-src` admite `data:`, y una fuente no (cae en `default-src 'self'`): si aparece una, se fija `assetsInlineLimit: 0`.
+
+Se conservan `server.proxy` y `preview.proxy: {}` de F11a (`qa/vite-proxy-check.ts` los exige).
+
+**El tope.** `BOOT_SIZE_LIMIT` sigue en **1 500 000** caracteres (PR #76, decisión del usuario del 2026-10-28). Mide `bootSize`: el HTML más el módulo de JS y la hoja que enlaza, que es lo que el navegador baja para arrancar.
+- La hoja de ruta del front (`specs/front-react/roadmap.md:238`) le promete a F3 a F11 y a A3 unos 358 000 caracteres de margen sobre esa suma. Por eso C4 no lo achica con un tope «medido × 1,10», como proponía la versión del 2026-10-06.
+- El tope por archivo de FR-020 es otro: `dist/index.html` sin código en línea tiene a lo sumo **20 000** caracteres. La fuente, `frontend/src/index.html`, mide 4 381 bytes. Un HTML que pasa ese tope volvió a incrustar código o el currículo.
+- El subpresupuesto de C4 sobre `bootSize` es de **+2 000** caracteres: los atributos `nonce`, la `<meta>` y `csp-nonce.ts`. T001 mide la base y T011, el resultado.
+
+**Alternativas descartadas.**
+- Varios archivos con importación dinámica real: cambia el orden de carga que fija F2 y obliga a reescribir `evaluateBuiltPage` y la compuerta de TR-4, sin una ganancia que C4 necesite.
+- Conservar el plugin con `useRecommendedBuildConfig` y no incrustar: el plugin existe para incrustar, y FR-020 pide retirarlo.
+
+## R26. El aula detrás de un NAT (hallazgo C4-4)
+
+**El problema.** Un aula de 40 que arranca junta detrás de una IP hace unos 720 pedidos a `/api/`: por alumno, la sesión y las 17 porciones, que A3 pide a la vez con `Promise.all` (plan de A3, `fetchRound`).
+- **La zona `api`** de C3a admite una ráfaga de 400 con `nodelay` y 50 por segundo. Lo que sobra recibe un 429 inmediato con `Retry-After: 1`. A3 respeta esa espera dentro de su intento (su FR-009), así que el aula probablemente arranca, pero cada arranque en frío paga la espera y llena el registro de 429.
+- **`limit_conn` con HTTP/2** cuenta cada pedido concurrente como una conexión (documentación de `ngx_http_limit_conn_module`). En el modo público, con `http2 on`, los 300 por IP que proponía R10 rechazarían el arranque. En el modo local (HTTP/1.1) eso no se ve.
+
+**Decisión.** Medir y fijar los valores con la medida, no con una cuenta en el plan. La medida tiene tres partes, en T020.
+1. **HTTP/1.1, en el stack local:** `qa/classroom-boot-check.ts` de A3 (su T015), tal cual. T001 anota el resultado que A3 dejó en su research, «Mediciones contra el stack».
+2. **HTTP/2, en el stack de prueba público:** el mismo script, con dos variables nuevas:
+   - `CLASSROOM_BASE_URL=https://taller.test:18443`, con Chromium lanzado con `--host-resolver-rules=MAP taller.test 127.0.0.1` y los contextos con `ignoreHTTPSErrors`;
+   - `CLASSROOM_COOKIE`, la cookie de una cuenta de prueba abierta por HTTPS con `check-account.sh` y un `.curlrc` temporal (las `__Host-` no se aceptan por HTTP).
+3. **Los conteos, en `public-check.sh`:** 40 procesos de `curl --http2 --parallel --parallel-max 18` a la vez, desde una IP y con la cookie de la cuenta, con la sesión y las 17 porciones cada uno, y el conteo de estados.
+
+**El criterio:**
+- 0 vistas de error en las dos rondas del script de A3 (su SC-007), en los dos protocolos;
+- 0 respuestas 429 y 0 503 en los 720 pedidos de la parte 3;
+- y el límite sigue existiendo: 2 000 pedidos en un segundo desde una IP reciben algún 429.
+
+**La escalera.** La ráfaga de la zona `api` pasa por 400, 800 y 1 200, y `limit_conn perip`, por 800, 1 200 y 1 600, de a un escalón en los dos. Queda el primer par que cumple el criterio, y se anota en este archivo, en el check y en la guía de operación.
+- No cambian el ritmo de la zona `api` (50 por segundo) ni la zona `session` (5 por segundo, ráfaga de 60): 40 sesiones entran en 60.
+- **El techo, decidido por el usuario el 2026-10-28:** el último escalón (ráfaga de 1 200 y `limit_conn perip 1600`) es el máximo aceptado. Si no alcanza, T020 se detiene y lo lleva al coordinador: sería el pool de PHP, no Nginx.
+
+**Por qué no una cuenta.** Cuántos pedidos están en vuelo a la vez depende de lo rápido que responde PHP y de cuántos flujos abre el navegador por conexión. La medida es la fuente.
+
+**El costo, aceptado por el usuario el 2026-10-28.** Una IP sola puede mandar de golpe hasta la ráfaga elegida (como mucho 1 200), y no 400, y sostener hasta 1 600 conexiones o flujos. Los límites por cuenta de Laravel siguen intactos, y el volumen sin CDN ya estaba fuera de alcance.
+
+## R27. Las cuentas existen antes de migrar, también en un volumen viejo
+
+**El hallazgo** (plan de C3c, hallazgos C4-8 y C4-9). C3c dejó a `grants` con las dos fases para que un volumen anterior a C3c arranque con un `docker compose up --build -d --wait` a secas, que es como `AGENTS.md` documenta el stack. Con C4, `migrate` entra con `taller_migrate`. Así, la versión del 2026-10-06 rompía ese `up`: `migrate` corría antes de que existiera su cuenta, y la salida era un aviso de `migrate.sh`.
+
+**Decisión.** Un servicio `grants-users`, con el ancla de `grants`, corre `apply-grants.sh --phase users --host mysql` después de `mysql` sano y antes de `migrate`, que pasa a depender de él. La fase `users` sólo crea cuentas, fija contraseñas y concede privilegios de base y globales. No toca ninguna tabla de `taller`, así que el escenario 3 de `deploy-check.sh` sigue viendo a `migrate` rendirse ante el `LOCK TABLES exercises WRITE`. `grants` vuelve a la fase `tables`. El aviso de `migrate.sh` se conserva, para un `run --no-deps migrate` a mano.
+
+**`deploy.sh` no depende de que `run` espere condiciones.** La documentación de `docker compose run` dice que arranca los servicios de los que depende y que `--no-deps` lo evita, pero no que espere un `service_completed_successfully`. Por eso corre `grants-users` explícitamente y después `migrate` con `--no-deps`.
+
+**Se prueba** con un volumen creado con el `docker/compose.yaml` de la base de T001:
+- un `docker compose up --build -d --wait` a secas termina con `grants-users`, `migrate` y `grants` en 0 y los servicios con sus cuentas;
+- `deploy-check.sh` pasa sin editarse.
+
+Es la prueba de T027 de C3c, extendida a las seis cuentas.
+
+## R28. `taller_audit`, para la auditoría de B3 (hallazgo C4-5)
+
+**Decisión.** Un sexto rol, `taller_audit`, con `SELECT` sobre las cuatro tablas que lee la auditoría (data-model de B3, «Lo que se lee»): `content_imports`, `harness_templates`, `exercises` y `exercise_tests`. Nada más: ni escritura, ni DDL, ni `GRANT`.
+- Su contraseña, `AUDIT_DB_PASSWORD`, la genera `init-env.sh`.
+- El servicio `audit` de B3 (perfil `audit`) pasa de `${AUDIT_DB_USERNAME:-taller}` a `taller_audit` y depende de `grants`.
+
+Si la corrida de registro con `taller_audit` falla con 1142 en otra tabla (por ejemplo, un almacén de caché en la base), T015 suma esa tabla a la matriz, con su motivo, en el mismo cambio. Si B3 todavía no está integrada cuando corre T018, la cuenta y su fila de la matriz se crean igual, y el servicio con su usuario lo trae B3 (hallazgo para su plan).
+
+**Alternativa descartada.** Que la auditoría use `taller_app`, que lee el contenido. Pero `taller_app` escribe cuentas y progreso, y FR-012 de B3 pide que la auditoría no pueda escribir.
+
+## R29. El recorrido de la CSP, contra el stack (hallazgo C4-2)
+
+**Qué cambió.** Desde F11a la sesión es obligatoria (F11-Q1): sin la API, el taller muestra el ingreso o la falla de la sesión, y ninguna vista. El recorrido de V2 «sin API» ya no es posible, y SC-004 suma las pantallas de cuenta y de administración (clarify del 2026-10-28).
+
+**Decisión.**
+- **Una configuración de Playwright aparte,** `qa/e2e/stack.config.ts`:
+  - `testDir: qa/e2e/stack`, `baseURL` de `STACK_BASE_URL` y Chromium;
+  - sin `webServer`, que en Playwright 1.63 es una opción de la configuración entera, no de un proyecto. Un proyecto dentro de `qa/e2e/playwright.config.ts` igual levantaría `vite preview`, y `npm run test:e2e` tomaría el spec.
+- **El spec importa `test` y `expect` de `@playwright/test`,** no de `qa/e2e/fixtures`: el doble de la API de F11a es un fixture automático y simularía la sesión.
+- **Las cuentas** se abren por el camino real, con `openAccount` de `qa/lib/api-account.ts`, que suma un parámetro `role` con `'student'` por omisión (`taller:invite` ya acepta `--role=admin`):
+  - una de admin, para F12a;
+  - una de estudiante, que el recorrido borra desde F11b.
+- **Las pantallas:**
+  - de F11a: el ingreso, el alta con una invitación, el restablecimiento con un enlace de `taller:invite` o de la consola, el aviso de privacidad, «Tu cuenta» y «Salir»;
+  - de F11b: cambiar la contraseña, descargar los datos (con `Content-Disposition`) y borrar la cuenta;
+  - de F12a: el diálogo «Administrar el taller», con la lista de cuentas, un filtro, la lista de invitaciones y una invitación por enlace.
+
+  Se suman a las 8 vistas, los 5 enlaces, el editor y la celebración, con el mismo oyente de `securitypolicyviolation` y la consola.
+- **Las dos aserciones, separadas.** Las violaciones de la CSP son 0 sin excepción. Los errores de consola son 0 salvo los que cada paso espera, con la forma de TR-11 (`/status of NNN/`, nunca `/Failed to load resource/`): el 419 del cierre por CSRF y, si aparece, el 423 de una reconfirmación.
+- **Las fuentes de cada pantalla.** F11a y F12a tienen plan mergeado, con sus Page Objects (`qa/e2e/pages/access.ts`, `account.ts` y `admin.ts`) y sin estilos en línea (su FR-069 y su FR-054). F11b no tiene plan: sus pasos salen de su spec (FR-055 y FR-056), y S2 relee su plan cuando exista.
+- **V2 (T004)** recorre lo que exista en ese momento contra el stack local, con su configuración descartable de Nginx montada. T021 es el recorrido de registro, con F11b y F12a ya en `master`.
+
+## R30. `connect-src` sin Playgrounds (A4-Q2, hallazgo C4-10)
+
+**Decisión.** El valor final es `connect-src 'self'` (A4-Q2; FR-032 y SC-003 de A4). C4 no espera a A4, y G2 tampoco (decidido por el usuario el 2026-10-28): si C4 abre antes, el código de los alumnos sigue yendo a los Playgrounds, como hoy, hasta que A4 los retire. T001 anota si A4 ya entró: no existe `frontend/src/shared/api/playground/` y `runtime-check` ya no está en `qa/run-checks.ts`.
+- **Si A4 ya entró,** `headers.conf` sale con el valor final.
+- **Si no,** sale con los dos hosts, y los checks lo atan al cliente:
+  - `qa/nginx-headers-check.ts` acepta el valor con los Playgrounds sólo mientras exista `frontend/src/shared/api/playground/`, y exige el final cuando no existe;
+  - `public-check.sh` hace la misma comprobación en el host.
+
+Así, el commit de A4 que retira el cliente hace fallar `npm test` hasta que edite `headers.conf`. «El segundo en llegar los quita» deja de depender de la memoria de quien integra. Los dos valores están escritos a mano en los checks.
+
+**Alternativas descartadas.**
+- Que C4, o al menos G2, espere a A4: el usuario lo descartó el 2026-10-28.
+- Dejar los Playgrounds sin regla: la CSP quedaría abierta si nadie se acuerda.
+
+## R31. Qué espera cada tramo
+
+| Tramo | Espera | Por qué |
+| --- | --- | --- |
+| T001 (la base) | A3 (y con ella F11a) y C3 (C3a, C3b y C3c) en `master` | Tocan los archivos que C4 edita: `docker/nginx/nginx.conf`, `docker/compose.yaml`, `docker/compose.preview.yaml`, `docker/mysql/`, `backend/api/scripts/{init-env,deploy,smoke}.sh`, `frontend/vite.config.ts`, `qa/build-check.ts` y `qa/lib/built-page.ts`. C3c espera el dominio, así que el dominio es una acción del usuario anterior a C4 |
+| S2 (el recorrido de T021) | F11b y F12a en `master` | El recorrido suma sus pantallas. Son del front y no tocan los archivos de las ondas 1 y 2, así que T001 no las espera: anota su estado, y S2 se demora si no llegaron |
+| T025 (G1) | Lo anterior, más la corrida de registro de B3 en verde sobre el contenido que se despliega | Es la condición de G2 que pidió el coordinador. Si B3 ya está integrada en T018, su servicio `audit` toma `taller_audit` ahí |
+| Nunca | A4, D1c y F10 | A4 sólo cambia `connect-src` (R30), y G2 no la espera (el usuario, 2026-10-28) |
+
+F11a llega a `master` en un solo PR, al final de sus unidades (TR-12). A3 y F12a se integran sobre `f11a/base`, así que en `master` llegan juntas o después de F11a.
 
 ## Verificaciones previas
 
@@ -401,8 +554,8 @@ Cinco supuestos de la spec no se pudieron probar al planificar. Se corren como s
 **Cómo.**
 1. `nginx -V` con `http_sub_module`.
 2. Sin `vite-plugin-singlefile` y con `html.cspNonce`, `npm run build`: lista de `dist/` con tamaños; `dist/index.html` sin `<script>` ni `<style>` en línea y con el marcador en cada etiqueta; si el CSS incluye fuentes en `data:` (`assetsInlineLimit`).
-3. Servir con el Nginx local y la CSP (el prototipo de las tareas de N y F: si pasa, se conserva).
-4. Chromium con Playwright (el de F1): las 8 vistas, los 5 enlaces profundos, el editor (el tema con colores computados, la numeración de líneas, el espaciador `visibility: hidden`) y la celebración, con un oyente de `securitypolicyviolation` y la consola abierta.
+3. Servir con el Nginx del stack local y la CSP, con la configuración descartable y `dist/` montadas sobre la imagen (el prototipo de las tareas de N y F: si pasa, se conserva). Desde F11a hace falta el stack: sin `/api/` no hay sesión ni vistas (R29).
+4. Chromium con Playwright (el de F1), con una cuenta de prueba: las 8 vistas, los 5 enlaces profundos, el editor (el tema con colores computados, la numeración de líneas, el espaciador `visibility: hidden`), la celebración y las pantallas de F11 y F12a que ya estén en `master`, con un oyente de `securitypolicyviolation` y la consola abierta.
 5. Dos `GET /` seguidos: nonces distintos y sin `ETag` ni `Last-Modified`.
 6. Firefox, si el usuario permite la descarga; si no, una pasada manual declarada.
 
@@ -446,3 +599,44 @@ Cinco supuestos de la spec no se pudieron probar al planificar. Se corren como s
 **Pasa si.** Escribir funciona; leer, listar y borrar se rechazan; sobrescribir conserva la versión anterior; la expiración está configurada.
 
 **Decide.** Si no, el usuario elige otro proveedor o, sabiendo que no es afuera del sitio, Q2 en su opción B. **Dueño y momento.** B con el usuario, cuando exista la cuenta (acción 3), antes de G1. **Resultado.** Se anota al correrla.
+
+## Consultas a Context7 (2026-10-28)
+
+El servidor `mcp__context7__*` agotó la cuota del mes, así que se usó el segundo. Cada fila es una consulta, con la versión del lockfile o de la imagen contra la que se contrastó.
+
+| Librería | Versión (lockfile o imagen) y la de Context7 | Tema | Conclusión | ¿Cambió el plan? |
+| --- | --- | --- | --- | --- |
+| Vite | 8.3.2; `/vitejs/vite/v8.0.10` | `html.cspNonce` | Pone `nonce` en cada `<script>`, `<style>` y `<link>` de hoja y de precarga, e inyecta `<meta property="csp-nonce">`. El marcador lo tiene que reemplazar el servidor en cada pedido | No: confirma R8 |
+| Vite | 8.3.2; `/vitejs/vite/v8.0.10` | `build.cssCodeSplit` y `build.rolldownOptions` | `cssCodeSplit: false` deja una sola hoja, y `rolldownOptions` pasa las opciones a Rolldown. Context7 no nombra `codeSplitting`: se leyó en los tipos de Rolldown 1.2.12 instalados (`false` incrusta las importaciones dinámicas en un solo módulo) | Sí: R25 y T011 |
+| Playwright | 1.63.0; `/microsoft/playwright/v1.63.0` | `webServer` y `baseURL` | `webServer` es una propiedad de la configuración entera (`TestConfig.webServer`), y `baseURL` va en `use` | Sí: R29 y T021, con una configuración aparte |
+| Docker Compose | v5.6.1 en el host; `/docker/compose/v5.5.1` | `docker compose run` y sus dependencias | `run` arranca los servicios de los que depende si están detenidos, y `--no-deps` lo evita. No dice que espere `service_completed_successfully` | Sí: `deploy.sh` corre `grants-users` aparte (R27) |
+| Docker Compose | v5.6.1; `/websites/docker_compose` | `include` con un archivo que se suma por `-f` | Un archivo de `-f` puede modificar el modelo que arma un `include`. Las rutas relativas de los archivos que se suman se resuelven contra el primero de `-f`, no contra el propio | Sí: las rutas de `docker/compose.public*.yaml`, `compose.acme-test.yaml` y `compose.backup-test.yaml` se escriben desde la raíz (el primer archivo es `compose.yaml` de la raíz, que incluye `docker/compose.yaml`); la de `pebble.json` de T003 se corrige |
+| Docker Compose | v5.6.1; `/docker/compose/v5.5.1` y después `/docker/docs` | `!override` y `!reset` al fusionar | La primera consulta devolvió la fusión de `-f` sin las etiquetas; la de `/docker/docs` (`reference/compose-file/merge.md`) confirma que `!override` reemplaza el atributo entero (el ejemplo es justo `ports`) y que `!reset []` o `!reset null` lo vacían. La documentación de `include` dice que un archivo que se suma modifica el modelo que arma el `include`, y las etiquetas son parte de esa fusión | No: confirma R1 y el `dns: !reset []` de T019 |
+| Docker (el motor) | 29.9.2 en el host; `/docker/docs` | La publicación de puertos | Sin una dirección, un puerto se publica en todas las direcciones del host, IPv4 e IPv6; «to restrict a published port to IPv4 only, the address must be included», como `-p 0.0.0.0:8080:80`. El proxy de usuario (`docker-proxy`) no conserva la IP de origen | No: confirma R4, FR-001 y FR-027, y lo que V3 mide |
+| Vitest | 5.0.3 (lockfile); `/vitest-dev/vitest/v5.0.3` | `test.projects` con `name`, `environment` e `include` | Cada proyecto toma los archivos de su `include`. En `frontend/vitest.config.ts`, `**/*.spec.ts` va al proyecto `node` y `**/*.spec.tsx` al `dom` (TR-6) | No: `csp-nonce.spec.ts` de T012 corre en `node`, con el doble mínimo de documento que ya pide |
+| Pest | 5.3.0 (`backend/api/composer.lock`); `/pestphp/docs` (5.x) | `test`, `expect()->toBe()`, `toContain()` y `beforeEach` | La forma de los escenarios de `MigrateScriptTest` no cambia | No |
+| CodeMirror (`@codemirror/view`) | 6.43.13; `/codemirror/view` | `EditorView.cspNonce` | Faceta de texto, gana el primer valor, por omisión `""`; existe desde la 6.17.0 | No: confirma T012 |
+| Nginx | 1.30.5 (la imagen); `/websites/nginx` | `limit_req` con `burst` y `nodelay` | Lo que pasa la ráfaga se rechaza con `limit_req_status`. Las directivas se heredan sólo si el nivel no define las suyas | No |
+| Nginx | 1.30.5; `/websites/nginx` | `limit_conn` | «In HTTP/2 and HTTP/3, each concurrent request is considered a separate connection». Una conexión cuenta sólo con la cabecera completa leída | Sí: R10 y R26 |
+| Laravel | 13.34.0 (`composer.lock`); `/laravel/docs/__branch__13.x` | La verificación de CSRF con `Sec-Fetch-Site` | El middleware mira primero `Sec-Fetch-Site` y deja pasar `same-origin`; si no, cae en el token. Los navegadores mandan esa cabecera en contextos seguros | No: confirma R9. El recorrido de T021 lo comprueba en `127.0.0.1` |
+| MySQL | 9.7 (la imagen); `/websites/dev_mysql_doc` (el manual 26.7) | Los privilegios por columna | `SELECT` hace falta para las columnas del lado derecho de una asignación de `UPDATE` y para las del `WHERE` de `UPDATE` y `DELETE` | Sí: la sonda de `UPDATE` de la matriz pasa a `SET c = NULL WHERE 1 = 0`. Con `SET c = c`, `taller_mail` daría 1143 aunque tenga `UPDATE (sent_at)` (data-model §3, T015) |
+
+## Mediciones de sólo lectura (2026-10-28)
+
+Sin ejecutar código del repositorio, sin Docker y sin el build.
+
+| Qué | Valor |
+| --- | --- |
+| Base | `master` en `431c9d90` |
+| Bloques de la API en `docker/nginx/nginx.conf` | Cuatro: `^~ /api/`, `^~ /api/runs` (192k), `= /api/sync` (2m) y `= /api/progress/import` (24m). Cada uno repite las tres `add_header` de seguridad y `X-Request-Id` |
+| Límites de C3a | Zona `api`: 50 r/s, ráfaga de 400, `nodelay`. Zona `session`: 5 r/s, ráfaga de 60. `worker_connections 256`. Sin `limit_conn` |
+| `style=` en las plantillas legacy | 4: `frontend/app.js:302` (`margin:22px 0 0`), `frontend/lab.js:622` (dos: `margin-top:20px` y `font-size:12px;cursor:pointer`) y `frontend/systems.js:210` (el fondo del SVG, del contenido) |
+| `style.cssText` en el código propio | 2: `frontend/lab.js:717` y `frontend/src/shared/lib/celebration.ts:31` |
+| Lo que cambia con los ports | F5 (`impl-f5`, `efaf39b2`) pasa el de `systems.js` a `style={{ background: safe.background }}` en `frontend/src/pages/systems/ui/SceneView.tsx:85`. F7b (plan) pasa los dos `style=` y el `cssText` de `lab.js` a reglas de `pages/lab/ui/lab-page.css`. F8 (plan) muda el de `app.js` con el CSS de Método. Después de los tres, en el código propio quedan el `style={}` de F5 y el `cssText` de `celebration.ts`, más el `<style>` y el `cssText` de CodeMirror |
+| El comando del conteo, para T001 | `grep -rnoE 'style="[^"]*"\|style=\{\{' frontend/*.js frontend/src --include='*.js' --include='*.ts' --include='*.tsx' \| grep -v '\.spec\.'` y `grep -rn 'cssText' frontend/*.js frontend/src --include='*.js' --include='*.ts' --include='*.tsx' \| grep -v '\.spec\.'` |
+| Tablas en las migraciones | 50 definitivas, más `migrations` de Laravel; `cache_next` y `cache_locks_next` son de paso (un `RENAME TABLE`). Todas están en la matriz de data-model §3, que suma `mail_jobs` de C3c (comparado con un script sobre `CREATE TABLE` y `Schema::create`) |
+| `frontend/src/index.html` | 4 381 bytes: el tope de 20 000 caracteres para `dist/index.html` (R25) deja lugar para los `nonce` y la `<meta>` |
+| `BOOT_SIZE_LIMIT` | 1 500 000 en `qa/build-check.ts:11`. La medida del `dist/` con A3 y F11a la toma T001: la última publicada es la de F2b, 1 141 337 caracteres, más los +60 000 que F11a calcula |
+| Versiones | Vite 8.3.2, Rolldown 1.2.12, `vite-plugin-singlefile` 2.3.3, `@codemirror/view` 6.43.13, React 19.2.8, `@playwright/test` 1.63.0 y Vitest 5.0.3 (`package-lock.json`); Laravel 13.34.0 y Pest 5.3.0 (`backend/api/composer.lock`); Docker 29.9.2 y Compose v5.6.1 en el host de planificación |
+| La raíz de Compose | `compose.yaml` de la raíz es `name: taller-rust-go` más un `include` de `docker/compose.yaml` con `project_directory: .` |
+| `phpunit.xml` | Fuerza `DB_USERNAME=root` contra `mysql-test`, así que el servicio `test` no depende del usuario de `x-laravel-base-env` |

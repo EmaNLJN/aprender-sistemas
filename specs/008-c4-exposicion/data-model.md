@@ -44,7 +44,7 @@
 
 ### Las que genera `init-env.sh` (secretos, sin reemplazar las que ya existen)
 
-`APP_DB_PASSWORD`, `RUNS_DB_PASSWORD`, `MAIL_DB_PASSWORD`, `MIGRATE_DB_PASSWORD` y `BACKUP_DB_PASSWORD`: `openssl rand -hex 24` cada una, con una línea `add_missing` al final del script. Dejan de usarse `MYSQL_PASSWORD` (el usuario `taller` ya no se crea) y, por tanto, de generarse.
+`APP_DB_PASSWORD`, `RUNS_DB_PASSWORD`, `MIGRATE_DB_PASSWORD`, `BACKUP_DB_PASSWORD` y `AUDIT_DB_PASSWORD`: `openssl rand -hex 24` cada una, con una línea `add_missing` al final del script. `MAIL_DB_PASSWORD` ya la suma C3c. Deja de usarse `MYSQL_PASSWORD` (el usuario `taller` ya no se crea) y, por tanto, de generarse.
 
 ### Las que `public.sh` calcula y exporta
 
@@ -62,14 +62,16 @@
 
 | Servicio | Cambio |
 | --- | --- |
-| `mysql` | Sin `MYSQL_USER` ni `MYSQL_PASSWORD`; con las cinco contraseñas de rol en el entorno; monta `docker/mysql/10-db-grants.sh` en `/docker-entrypoint-initdb.d/` en lugar de `10-db-grants.sql`; el comando suma `--binlog-expire-logs-seconds=604800` y `--binlog-row-image=MINIMAL` |
+| `mysql` | Sin `MYSQL_USER` ni `MYSQL_PASSWORD`; con las seis contraseñas de rol en el entorno (C3c ya le pasa `MAIL_DB_PASSWORD`); monta `docker/mysql/10-db-grants.sh`, `db-grants.sql` y `apply-grants.sh`, como dejó C3c; el comando suma `--binlog-expire-logs-seconds=604800` y `--binlog-row-image=MINIMAL` |
 | `php`, `scheduler` | `DB_USERNAME=taller_app`, `DB_PASSWORD=${APP_DB_PASSWORD}`; dependen de `grants` en lugar de `migrate` |
-| `migrate` | `DB_USERNAME=taller_migrate`, `DB_PASSWORD=${MIGRATE_DB_PASSWORD}` |
-| `worker-runs` (B2) | `DB_USERNAME=taller_runs`, `DB_PASSWORD=${RUNS_DB_PASSWORD}`; depende de `grants` |
-| `worker-mail` (C3c) | `DB_USERNAME=taller_mail`, `DB_PASSWORD=${MAIL_DB_PASSWORD}`; depende de `grants` |
-| `grants` (nuevo) | La fase `tables` de `apply-grants.sh` con root, después de `migrate`; sin perfil; `restart: 'no'` |
-| `db-grants` | Sigue en el perfil `ops`; corre las dos fases; comparte con `grants` un ancla |
-| Todos los de Laravel | Las cookies y `APP_URL` salen de las variables `TALLER_*` de la sección 1, con su valor local por omisión |
+| `migrate` | `DB_USERNAME=taller_migrate`, `DB_PASSWORD=${MIGRATE_DB_PASSWORD}`; depende de `grants-users` |
+| `worker-runs` (B2) | `DB_USERNAME=taller_runs`, `DB_PASSWORD=${RUNS_DB_PASSWORD}`, sin los valores por omisión de hoy (`${RUNS_DB_USERNAME:-taller}` y `${MYSQL_PASSWORD}`); depende de `grants` |
+| `worker-mail` (C3c) | Ya entra con `taller_mail` y depende de `grants` (C3c); no cambia |
+| `audit` (B3, perfil `audit`) | `DB_USERNAME=taller_audit`, `DB_PASSWORD=${AUDIT_DB_PASSWORD}`, en lugar de `${AUDIT_DB_USERNAME:-taller}`; depende de `grants`. Si B3 todavía no está integrada, lo trae B3 |
+| `grants-users` (nuevo) | La fase `users` de `apply-grants.sh` con root, después de `mysql` sano y antes de `migrate`; sin perfil; `restart: 'no'` (R27) |
+| `grants` (de C3c) | Pasa de las dos fases a la fase `tables`, después de `migrate`; sin perfil |
+| `db-grants` | Sigue en el perfil `ops`; corre las dos fases; comparte con `grants-users` y `grants` un ancla, `x-grants`, cuyo `entrypoint` es `['sh', '/usr/local/bin/apply-grants.sh']` y cuyo `command` pone cada servicio |
+| Todos los de Laravel | Las cookies y `APP_URL` salen de las variables `TALLER_*` de la sección 1, con su valor local por omisión. `PRIVACY_VERSION` (F11a) y las `MAIL_*` de `x-laravel-env` (C3c) se conservan |
 
 ### El archivo público (`docker/compose.public.yaml`)
 
@@ -90,7 +92,7 @@ Puertos del modo público: en el host, 80 y 443 de `taller`; ningún otro servic
 
 ## 3. Usuarios de MySQL y matriz de privilegios
 
-Cuentas con host `%`. Abreviaturas: **S**ELECT, **I**NSERT, **U**PDATE, **D**ELETE. «—» es sin acceso. La lista es el piso de FR-031: V4 y las pruebas de punta a punta de A3, B2 y D1 la confirman, y quien suma una tabla la suma acá.
+Cuentas con host `%`. Abreviaturas: **S**ELECT, **I**NSERT, **U**PDATE, **D**ELETE. «—» es sin acceso. La lista es el piso de FR-031: V4 y las pruebas de punta a punta de A3, B2, B3 y D1 la confirman, y quien suma una tabla la suma acá.
 
 ### Globales y de base
 
@@ -99,30 +101,30 @@ Cuentas con host `%`. Abreviaturas: **S**ELECT, **I**NSERT, **U**PDATE, **D**ELE
 | `root` | todo | todo | sólo `db-grants`, `grants` y la inicialización de la imagen |
 | `taller_migrate` | — | SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, DROP, INDEX, REFERENCES | `SELECT` sobre `performance_schema.events_transactions_current`. Sin `GRANT OPTION`, `LOCK TABLES`, `TRIGGER`, `EVENT`, vistas ni rutinas |
 | `taller_backup` | `RELOAD`, `REPLICATION CLIENT` | SELECT, SHOW VIEW | Sin `TRIGGER`, `EVENT`, `PROCESS` ni `SHOW_ROUTINE` (R14) |
-| `taller_app`, `taller_runs`, `taller_mail` | — | nada a nivel base: sólo lo de la tabla siguiente | |
+| `taller_app`, `taller_runs`, `taller_mail`, `taller_audit` | — | nada a nivel base: sólo lo de la tabla siguiente | |
 
-### Por tabla (los tres roles de aplicación)
+### Por tabla (los cuatro roles de aplicación y el respaldo)
 
-| Clase | Tabla | `taller_app` | `taller_runs` | `taller_mail` | `taller_backup` |
-| --- | --- | --- | --- | --- | --- |
-| Contenido (22 de C2 y B2) | `languages`, `catalogs`, `content_imports`, `topics`, `workshops`, `exercises`, `exercise_grading_versions`, `exercise_tests`, `exercise_hints`, `workshop_objectives`, `workshop_steps`, `workshop_related_exercises`, `worlds`, `world_exercises`, `atlas_concepts`, `guide_resources`, `guide_sources`, `guide_tracks`, `guide_modules`, `guide_steps`, `guide_step_resources`, `harness_templates` | S | S sobre `exercises`, `exercise_tests`, `exercise_grading_versions`, `harness_templates`; el resto, — | — | S |
-| Identidad (C3a) | `users` | S, I, U, D | S (`FOR SHARE`) | — | S |
-| | `invitations` | S, I, U, D | — | `SELECT (id)` y `UPDATE (sent_at, send_failed_at)` | S |
-| | `password_reset_tokens` | S, I, U, D | — | — | S |
-| | `account_deletions` (C3b) | S, I, D | — | — | S |
-| Progreso y ejecuciones (B2) | `progress_heads` | S, I, U | S, U | — | S |
-| | `exercise_progress` | S, I, U, D | S, I, U | — | S |
-| | `runs` | S, I, U, D | S, U | — | S |
-| | `attempts` | S, D | S, I | — | S |
-| | `attempt_tests` | S, D | S, I | — | S |
-| | `attempt_payloads` | S, U, D | S, I | — | S |
-| Progreso de D1 | `sync_operations`, `progress_imports`, `drafts`, `campaign_seals`, `campaign_checkpoints`, `workshop_progress`, `workshop_observations`, `workshop_step_marks`, `route_marks`, `route_quiz_answers`, `route_notes`, `preferences` | S, I, U, D | — salvo lo que D1 pida | — | S |
-| Operación | `sessions`, `cache_locks` | S, I, U, D | — | — | S (el volcado toma sólo la estructura) |
-| | `cache` | S, I, U, D | S (la señal de reinicio de `queue:work`) | — | S (sólo la estructura) |
-| | `jobs` | S, I, U, D | S, I, U, D (la cola `runs`) | — | S (sólo la estructura) |
-| | `failed_jobs` | S, I, D | I | S, I, U, D | S (sólo la estructura) |
-| | `mail_jobs` (C3c) | I | — | S, I, U, D | S (sólo la estructura) |
-| Sólo `migrate` | `migrations`, `job_batches` | — | — | — | S |
+| Clase | Tabla | `taller_app` | `taller_runs` | `taller_mail` | `taller_audit` | `taller_backup` |
+| --- | --- | --- | --- | --- | --- | --- |
+| Contenido (22 de C2 y B2) | `languages`, `catalogs`, `content_imports`, `topics`, `workshops`, `exercises`, `exercise_grading_versions`, `exercise_tests`, `exercise_hints`, `workshop_objectives`, `workshop_steps`, `workshop_related_exercises`, `worlds`, `world_exercises`, `atlas_concepts`, `guide_resources`, `guide_sources`, `guide_tracks`, `guide_modules`, `guide_steps`, `guide_step_resources`, `harness_templates` | S | S sobre `exercises`, `exercise_tests`, `exercise_grading_versions`, `harness_templates`; el resto, — | — | S sobre `content_imports`, `harness_templates`, `exercises` y `exercise_tests` (data-model de B3); el resto, — | S |
+| Identidad (C3a) | `users` | S, I, U, D | S (`FOR SHARE`) | — | — | S |
+| | `invitations` | S, I, U, D | — | `SELECT (id, token_hash)` y `UPDATE (sent_at, send_failed_at)` (plan de C3c: el `WHERE` de su `UPDATE` lee `id` y `token_hash`) | — | S |
+| | `password_reset_tokens` | S, I, U, D | — | — | — | S |
+| | `account_deletions` (C3b) | S, I, D | — | — | — | S |
+| Progreso y ejecuciones (B2) | `progress_heads` | S, I, U | S, U | — | — | S |
+| | `exercise_progress` | S, I, U, D | S, I, U | — | — | S |
+| | `runs` | S, I, U, D | S, U | — | — | S |
+| | `attempts` | S, D | S, I | — | — | S |
+| | `attempt_tests` | S, D | S, I | — | — | S |
+| | `attempt_payloads` | S, U, D | S, I | — | — | S |
+| Progreso de D1 (entregado: D1a y D1b) | `sync_operations`, `progress_imports`, `drafts`, `campaign_seals`, `campaign_checkpoints`, `workshop_progress`, `workshop_observations`, `workshop_step_marks`, `route_marks`, `route_quiz_answers`, `route_notes`, `preferences` | S, I, U, D | — salvo lo que el cierre de una ejecución escriba (T001 lo lee en `backend/api/app/Runs/` y T015 lo prueba) | — | — | S |
+| Operación | `sessions`, `cache_locks` | S, I, U, D | — | — | — | S (el volcado toma sólo la estructura) |
+| | `cache` | S, I, U, D | S (la señal de reinicio de `queue:work`) | — | — | S (sólo la estructura) |
+| | `jobs` | S, I, U, D | S, I, U, D (la cola `runs`) | — | — | S (sólo la estructura) |
+| | `failed_jobs` | S, I, D | I | S, I, U, D | — | S (sólo la estructura) |
+| | `mail_jobs` (C3c) | I | — | S, I, U, D | — | S (sólo la estructura) |
+| Sólo `migrate` | `migrations`, `job_batches` | — | — | — | — | S |
 
 Reglas para lo que sumen D1, C3b, C3c y C5:
 - Una tabla de contenido: S para `app` y `backup`, y escribe sólo `migrate`.
@@ -132,14 +134,19 @@ Reglas para lo que sumen D1, C3b, C3c y C5:
 
 ### La prueba de la matriz
 
-`qa/api-grants-check.ts`, contra un stack con `mysql` real (el local sirve, porque los roles rigen en los dos modos): con las contraseñas de `.env`, para cada rol, tabla y operación genera sondas sin efectos (`SELECT … LIMIT 0`; `UPDATE … SET c = c WHERE 1 = 0`; `DELETE … WHERE 1 = 0`; `INSERT … SELECT … WHERE 1 = 0`) y exige éxito sólo donde la matriz lo concede, y el error 1142, 1143 o 1044 donde no. Además: un DDL, un `GRANT`, `FILE` y `mysql.*` fallan para cada rol; `SHOW GRANTS` de cada cuenta coincide con la matriz; el esquema `taller` no tiene triggers, rutinas ni eventos; y todas las tablas de `information_schema` están en la matriz. La matriz es un dato, `qa/fixtures/mysql-roles.json`, escrito a mano desde esta tabla y no desde las sentencias de `db-grants.sql`:
+`qa/api-grants-check.ts`, contra un stack con `mysql` real (el local sirve, porque los roles rigen en los dos modos): con las contraseñas de `.env`, para cada rol, tabla y operación genera sondas sin efectos y exige éxito sólo donde la matriz lo concede, y el error 1142, 1143 o 1044 donde no. Las sondas no leen columnas que la operación no necesita, porque MySQL pide `SELECT` sobre las columnas del lado derecho de una asignación y del `WHERE` (manual, «Privileges Provided»; research.md, Context7):
+- `SELECT <columna o *> FROM t LIMIT 0`;
+- `UPDATE t SET c = NULL WHERE 1 = 0`, por cada columna `c` concedida (con `SET c = c`, `taller_mail` daría 1143 aunque tenga `UPDATE (sent_at)`);
+- `DELETE FROM t WHERE 1 = 0`;
+- `INSERT INTO t (c) SELECT NULL FROM DUAL WHERE 1 = 0`. Además: un DDL, un `GRANT`, `FILE` y `mysql.*` fallan para cada rol; `SHOW GRANTS` de cada cuenta coincide con la matriz; el esquema `taller` no tiene triggers, rutinas ni eventos; y todas las tablas de `information_schema` están en la matriz. La matriz es un dato, `qa/fixtures/mysql-roles.json`, escrito a mano desde esta tabla y no desde las sentencias de `db-grants.sql`:
 
 ```json
 {
   "database": "taller",
   "roles": {
     "taller_app": { "tables": { "users": ["SELECT", "INSERT", "UPDATE", "DELETE"], "exercises": ["SELECT"] } },
-    "taller_mail": { "tables": { "mail_jobs": ["SELECT", "INSERT", "UPDATE", "DELETE"] }, "columns": { "invitations": { "SELECT": ["id"], "UPDATE": ["sent_at", "send_failed_at"] } } }
+    "taller_mail": { "tables": { "mail_jobs": ["SELECT", "INSERT", "UPDATE", "DELETE"] }, "columns": { "invitations": { "SELECT": ["id", "token_hash"], "UPDATE": ["sent_at", "send_failed_at"] } } },
+    "taller_audit": { "tables": { "content_imports": ["SELECT"], "harness_templates": ["SELECT"], "exercises": ["SELECT"], "exercise_tests": ["SELECT"] } }
   },
   "global": { "taller_backup": ["RELOAD", "REPLICATION CLIENT"] },
   "tablesWithoutAccess": ["migrations", "job_batches"]

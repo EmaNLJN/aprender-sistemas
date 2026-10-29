@@ -1,13 +1,13 @@
 # Quickstart: validar C4 de punta a punta
 
-**Input**: [spec.md](./spec.md), [plan.md](./plan.md), [contracts/http.md](./contracts/http.md) y [contracts/console.md](./contracts/console.md). Es una guía de validación: qué correr y qué tiene que pasar. El detalle de cada contrato está en los contratos, no acá. **Nada de esto se corrió al planificar**: los comandos son la referencia que las tareas del plan convierten en checks.
+**Input**: [spec.md](./spec.md), [plan.md](./plan.md), [contracts/http.md](./contracts/http.md) y [contracts/console.md](./contracts/console.md). Es una guía de validación: qué correr y qué tiene que pasar. El detalle de cada contrato está en los contratos, no acá. **Nada de esto se corrió al planificar**: los comandos son la referencia que las tareas del plan convierten en checks. Actualizada el 2026-10-28: el aula (escenario 13), el recorrido contra el stack con las pantallas de F11 y F12a, el volumen viejo con un `up` a secas y G1 con F11b, F12a y la auditoría de B3.
 
 En un worktree, cada comando de Docker lleva su propio `COMPOSE_PROJECT_NAME=<nombre-del-worktree>` en la misma línea (`backend/api/AGENTS.md`); el modo público fija el suyo.
 
 ## Prerrequisitos
 
 ```sh
-sh backend/api/scripts/init-env.sh          # suma las cinco contraseñas de rol si faltan
+sh backend/api/scripts/init-env.sh          # suma las contraseñas de rol que falten (cinco de C4 y la de C3c)
 ```
 
 Para los escenarios 4 a 9, un `.env` de prueba con `TALLER_DOMAIN=taller.test`, `ACME_CONTACT=ops@taller.test`, `ACME_ACCEPT_TOS=yes` y una clave `age` de prueba en `BACKUP_AGE_RECIPIENTS` (los checks los arman solos con valores de prueba; la clave la genera `age-keygen`, ya dentro de la imagen de respaldo).
@@ -23,7 +23,7 @@ sh backend/api/scripts/deploy-check.sh
 npm run api:test && npm run api:test:down
 ```
 
-**Esperado:** los cuatro pasan sin editar sus archivos; el único puerto publicado es `127.0.0.1:8080`; `curl -sI http://127.0.0.1:8080/` trae las seis cabeceras (sin `Strict-Transport-Security`) y la CSP con un nonce. En un volumen que ya existía antes de C4, `docker compose --profile ops run --rm db-grants` (o `deploy.sh`) crea los usuarios nuevos antes del primer `up`.
+**Esperado:** los cuatro pasan sin editar sus archivos; el único puerto publicado es `127.0.0.1:8080`; `curl -sI http://127.0.0.1:8080/` trae las seis cabeceras (sin `Strict-Transport-Security`) y la CSP con un nonce. En un volumen que ya existía antes de C4, el mismo `docker compose up --build -d --wait` a secas crea las cuentas nuevas: `grants-users` corre antes de `migrate` (R27). `npm run dev` y la vista previa (`docker compose -f docker/compose.preview.yaml up --build -d --wait`) sirven la aplicación con `/api/` pasado al stack, como dejó F11a.
 
 ## 2. La configuración pública, sin levantar nada (FR-001 a FR-003, SC-011)
 
@@ -43,7 +43,7 @@ node qa/nginx-headers-check.ts
 node qa/csp-guard-check.ts
 ```
 
-**Esperado:** pasan. Y fallan, citando archivo y línea, ante un `<script>` o un `<style>` en línea que se agregue a `frontend/src/index.html`, ante una `add_header` sin `include …/headers.conf;` en `docker/nginx/` y ante un valor de cabecera distinto del de FR-013.
+**Esperado:** pasan, con un solo `dist/assets/*.js`, un solo `dist/assets/*.css`, `dist/index.html` bajo 20 000 caracteres y `bootSize` bajo `BOOT_SIZE_LIMIT` (1 500 000). Y fallan, citando archivo y línea, ante un `<script>` o un `<style>` en línea que se agregue a `frontend/src/index.html`, ante una `add_header` sin `include …/headers.conf;` en `docker/nginx/`, ante un valor de cabecera distinto del de FR-013 y ante los Playgrounds en `connect-src` sin `frontend/src/shared/api/playground/` (R30).
 
 ## 4. El stack público con un certificado de prueba (FR-043, FR-010)
 
@@ -51,15 +51,15 @@ node qa/csp-guard-check.ts
 npm run public:check
 ```
 
-**Esperado:** el check levanta `docker/compose.public-test.yaml` con un certificado de prueba y valida, una por una, las 12 clases de respuesta de [contracts/http.md](./contracts/http.md) (las seis cabeceras, una sola vez), el 301 con el nombre configurado aunque llegue otro `Host`, el rechazo de una conexión por la IP o con otro nombre, los nombres y atributos de las cookies, TLS (1.0 y 1.1 rechazados, 1.2 y 1.3 con las suites de la guía, sin tickets, HTTP/2), `X-Forwarded-For`, `Forwarded` y `X-Real-IP` falsos que no cambian la IP del registro ni del límite, dos IP que cuentan por separado, las conexiones lentas de una IP que no frenan a otras, y que `/content/` y `/content/curriculum.<versión>.json` dan 404 y ningún marcador de `curriculumMarkers()` está en la imagen.
+**Esperado:** el check levanta `docker/compose.public-test.yaml` con un certificado de prueba y valida, una por una, las 12 clases de respuesta de [contracts/http.md](./contracts/http.md) (las seis cabeceras, una sola vez), el 301 con el nombre configurado aunque llegue otro `Host`, el rechazo de una conexión por la IP o con otro nombre, los nombres y atributos de las cookies, TLS (1.0 y 1.1 rechazados, 1.2 y 1.3 con las suites de la guía, sin tickets, HTTP/2), `X-Forwarded-For`, `Forwarded` y `X-Real-IP` falsos que no cambian la IP del registro ni del límite, dos IP que cuentan por separado, las conexiones lentas de una IP que no frenan a otras, el arranque de un aula por HTTP/2 sin ningún 429 (escenario 13), y que `/content/` y `/content/curriculum.<versión>.json` dan 404 y ningún marcador de `curriculumMarkers()` está en la imagen.
 
 ## 5. El recorrido en un navegador (FR-018, SC-004)
 
 ```sh
-npx playwright test --config qa/e2e/playwright.config.ts --project csp-walk
+STACK_BASE_URL=http://127.0.0.1:8080 npx playwright test --config qa/e2e/stack.config.ts
 ```
 
-**Esperado:** con el stack local arriba y una cuenta de prueba (la de `qa/lib/api-account.ts`), las 8 vistas, los 5 enlaces profundos, el editor (con su tema y su numeración de líneas, el espaciador oculto) y la celebración dan 0 `securitypolicyviolation` y 0 errores de consola. Dos `GET /` seguidos traen nonces distintos y ningún `ETag`. Firefox, sólo si el usuario permitió la descarga; si no, una pasada manual declarada.
+**Esperado:** con el stack local arriba y las cuentas de prueba de `qa/lib/api-account.ts` (una de admin y otra de estudiante), las 8 vistas, los 5 enlaces profundos, el editor (con su tema y su numeración de líneas, el espaciador oculto), la celebración y las pantallas de F11a (ingreso, alta, restablecimiento, aviso, «Tu cuenta», «Salir»), de F11b (contraseña, descargar los datos, borrar la cuenta) y de F12a («Administrar el taller») dan 0 `securitypolicyviolation` y 0 errores de consola. `npm run test:e2e` no corre este spec. Dos `GET /` seguidos traen nonces distintos y ningún `ETag`. Firefox, sólo si el usuario permitió la descarga; si no, una pasada manual declarada.
 
 ## 6. Los usuarios de MySQL (FR-030 a FR-033, SC-007)
 
@@ -67,7 +67,7 @@ npx playwright test --config qa/e2e/playwright.config.ts --project csp-walk
 npm run api:grants:check
 ```
 
-**Esperado:** para cada rol, las sondas que la matriz concede pasan y las demás fallan con el error 1142, 1143 o 1044; un DDL, un `GRANT`, `FILE` y `mysql.*` fallan para todos; `SHOW GRANTS` coincide con `qa/fixtures/mysql-roles.json`; ningún servicio está conectado como root o como `taller`; el esquema no tiene triggers, rutinas ni eventos; todas las tablas están en la matriz. Después, con un volumen que tiene al usuario `taller`: `sh backend/api/scripts/deploy.sh` deja a los servicios con sus usuarios sin dejar de servir (`curl` a `/api/up` en bucle durante el despliegue: 0 fallos), y el usuario `taller` ya no existe. Con un volumen nuevo, `docker compose up --build -d --wait` arranca sin pasos manuales.
+**Esperado:** para cada uno de los seis roles, las sondas que la matriz concede pasan y las demás fallan con el error 1142, 1143 o 1044 (`taller_mail` actualiza `sent_at` y no lo lee; `taller_audit` lee sólo sus cuatro tablas); un DDL, un `GRANT`, `FILE` y `mysql.*` fallan para todos; `SHOW GRANTS` coincide con `qa/fixtures/mysql-roles.json`; ningún servicio está conectado como root o como `taller`; el esquema no tiene triggers, rutinas ni eventos; todas las tablas están en la matriz. Después, con un volumen que tiene al usuario `taller`: `sh backend/api/scripts/deploy.sh` deja a los servicios con sus usuarios sin dejar de servir (`curl` a `/api/up` en bucle durante el despliegue: 0 fallos), y el usuario `taller` ya no existe. Con un volumen nuevo, `docker compose up --build -d --wait` arranca sin pasos manuales.
 
 ## 7. La emisión y la renovación con Pebble (FR-006 a FR-010, SC-002)
 
@@ -99,8 +99,10 @@ Con el stack local (el escenario de C3a: la página del atacante en `http://loca
 1. Los escenarios 1 a 9 en verde, con el resultado anotado.
 2. La restauración (a) presenciada por el usuario, y el simulacro (b).
 3. `probe-destination` con la credencial real (V5) y la expiración de 35 días comprobada.
-4. C3a, C3b y C3c entregados, con una cuenta admin creada y el aviso de privacidad vigente.
-5. HSTS en 300 y la lista de lo que el usuario hizo (CGNAT, dominio, cuenta del destino, claves).
+4. C3a, C3b y C3c entregados, con una cuenta admin creada y el aviso de privacidad vigente; F11b y F12a integradas, con sus pantallas en el escenario 5.
+5. La corrida de registro de la auditoría de B3 (`npm run api:audit`, con runsc) en verde sobre el commit que se despliega.
+6. El escenario 13, con el par de límites fijado.
+7. HSTS en 300, `connect-src` anotado (final o provisorio, R30; G2 no espera a A4, decidido por el usuario el 2026-10-28) y la lista de lo que el usuario hizo (CGNAT, dominio, cuenta del destino, claves).
 
 ## 11. G2: abrir (usuario y coordinador)
 
@@ -114,3 +116,13 @@ Con el stack local (el escenario de C3a: la página del atacante en `http://loca
 ## 12. A los 35 días (SC-010)
 
 `probe-destination` o la consola del proveedor: la expiración configurada a 35 días, al menos 7 copias diarias y 4 semanales y ninguna de más de 35 días. Hasta entonces se anota como **evidencia pendiente**, no como entregado.
+
+## 13. El aula detrás de un NAT (FR-028, SC-006; R26)
+
+```sh
+COMPOSE_PROJECT_NAME=c4-local node qa/classroom-boot-check.ts                       # HTTP/1.1, el de A3
+npm run public:check                                                               # incluye los conteos por HTTP/2
+CLASSROOM_BASE_URL=https://taller.test:18443 CLASSROOM_COOKIE='<cookie>' node qa/classroom-boot-check.ts   # HTTP/2, con el stack de prueba
+```
+
+**Esperado:** 40 arranques en frío y a la vez desde una IP, con copia y sin copia, sin ninguna vista de error en los dos protocolos; en los 720 pedidos de los conteos por HTTP/2, 0 respuestas 429 y 0 503; y 2 000 pedidos en un segundo desde una IP todavía reciben algún 429. El par de límites que lo logra (la ráfaga de la zona `api` y `limit_conn perip`) está en research.md, R26, y en la guía de operación.
