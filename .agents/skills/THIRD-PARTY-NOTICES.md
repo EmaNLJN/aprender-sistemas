@@ -10,13 +10,15 @@ Las skills de esta carpeta son copias de repositorios de terceros, cada una con 
 | `clean-code` | [sickn33/agentic-awesome-skills](https://github.com/sickn33/agentic-awesome-skills) | MIT | Copyright (c) 2026 Antigravity User |
 | `react-doctor` | [millionco/react-doctor](https://github.com/millionco/react-doctor) | MIT modificada (abajo) | Copyright (c) 2026 Million Software, Inc. |
 | `desloppify` | [peteromallet/desloppify](https://github.com/peteromallet/desloppify) | OSNL 0.2 (abajo) | Copyright (c) 2025-2026 Peter O'Malley |
-| `tailwind-design-system` | [wshobson/agents](https://github.com/wshobson/agents) | MIT | Copyright (c) 2024 Seth Hobson |
+| `tailwind-design-system`, `shellcheck-configuration` | [wshobson/agents](https://github.com/wshobson/agents) | MIT | Copyright (c) 2024 Seth Hobson |
 | `laravel-specialist`, `php-pro` | [Jeffallan/claude-skills](https://github.com/Jeffallan/claude-skills) | MIT | Copyright (c) 2025 (sin titular en el original; autor: Jeffallan) |
 | `laravel-patterns`, `laravel-security`, `laravel-tdd`, `react-testing`, `docker-patterns` | [affaan-m/ECC](https://github.com/affaan-m/ECC) | MIT | Copyright (c) 2026 Affaan Mustafa |
 | `makefile-generator` | [akin-ozer/cc-devops-skills](https://github.com/akin-ozer/cc-devops-skills) | Apache-2.0 | Texto completo en `makefile-generator/LICENSE.txt`; el repositorio no trae archivo NOTICE |
 | `vitest` | [antfu/skills](https://github.com/antfu/skills) | MIT | Copyright (c) 2025-PRESENT Anthony Fu |
 | `playwright-best-practices` | [currents-dev/playwright-best-practices-skill](https://github.com/currents-dev/playwright-best-practices-skill) | MIT | Copyright © 2026 Currents Software Inc. |
 | `api-and-interface-design` | [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) | MIT | Copyright (c) 2025 Addy Osmani |
+| `golang-lint` | [samber/cc-skills-golang](https://github.com/samber/cc-skills-golang) | MIT (declarada en su SKILL.md) | Samber (autor en su metadata); el repositorio no trae titular en la skill |
+| `github-actions-hardening` | [github/awesome-copilot](https://github.com/github/awesome-copilot) | MIT | GitHub, Inc. |
 | `speckit-*` (las trece) | [github/spec-kit](https://github.com/github/spec-kit) | MIT | Copyright GitHub, Inc. |
 
 ## MIT
