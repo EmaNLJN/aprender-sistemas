@@ -379,7 +379,7 @@ Se cierran en el paso clarify de la spec de cada ítem.
 - **2026-10-28 (noche), las specs y los planes que faltaban.** Ninguno está implementado.
   - **F13:** especificado (027, #79), con su clarify.
   - **Los planes:** F12b (#85, 15 tareas, con la actualización del plan de C3c), F11b y F11c (#87, 18 y 6), F10a y F10b (#88, 14 y 21) y F10c (#91, 9).
-  - **F14:** su spec (028) tiene el clarify registrado en su rama, `spec/f14-estadisticas-admin`, todavía fuera de `master`. Sus planes están en redacción.
+  - **F14:** spec 028 y sus dos planes (28 y 13 tareas), en un solo PR.
   - **F15:** spec 030 y sus tres planes (13, 18 y 8 tareas), en un solo PR.
 - **Orden de especificación:** F1, F2a, F2b y F4 están implementadas (#23, #40, #59 y #77). Los doce ítems de la entrada del 2026-10-28 se especificaron en paralelo, no de a uno.
 
