@@ -185,9 +185,9 @@ La tabla de E1 es la guía. Estas tablas la bajan a límites que se pueden revis
 
 Cada etapa sigue los mismos pasos. Si algo cambia después del paso 4, se vuelve al paso 2.
 
-1. **El borrador (el agente).** El agente parte de la base del PR: E1 entregado y la etapa anterior integrada (Q4-A). Antes de escribir, lee:
+1. **El borrador (el agente).** La etapa 2 parte de E1 entregado. Con Q4-A, cada etapa siguiente se redacta sobre la rama de la anterior mientras el usuario revisa esa anterior. Antes de su propia revisión, se rebasa sobre la anterior ya integrada y se comprueba contra su texto final: la columna «Supone» se contrasta con lo publicado en ese momento. Antes de escribir, el agente lee:
    - la fila de la etapa en las tablas de arriba;
-   - los ejercicios de Esenciales ya publicados;
+   - los ejercicios de Esenciales ya publicados y, si la etapa anterior sigue en revisión, su borrador;
    - los ejercicios de Inicial de la columna «Deja para Inicial»;
    - «Contenido del currículo» del README.
 
@@ -196,7 +196,7 @@ Cada etapa sigue los mismos pasos. Si algo cambia después del paso 4, se vuelve
    - `npm run curriculum`, que valida `content/` y nombra el archivo y el campo de cada error.
    - `npm test`. Incluye el `content-check` de E1 (etapas de cinco, con IDs y etapas atados a la posición), `curriculum-ids-check`, la parte permanente de la línea base de E1 (FR-039) y el check estático del caché de Go de B3 (FR-027).
    - `npm run lint`, `npm run format:check` y `git diff --check`.
-   - `npm run test:e2e` y las pruebas de Pest de la API, porque ahí también viven contratos de conteo.
+   - `npm run build` y después `npm run test:e2e`, y las pruebas de Pest de la API, porque ahí también viven contratos de conteo.
    - La comparación con la base del PR (FR-010).
    - Los contratos de conteo actualizados (FR-018).
 3. **La revisión pedagógica (el usuario).** El usuario lee cada ejercicio con los criterios de abajo, y aprueba o pide cambios, ejercicio por ejercicio. Un pedido de cambio vuelve al paso 1: el agente corrige, vuelve a correr el paso 2 y presenta sólo lo que cambió. La revisión termina cuando el usuario aprobó todos los ejercicios de la etapa (Q3-A).
@@ -279,7 +279,7 @@ Un alumno resolvió los cinco ejercicios de la piloto y nada fuera de Esenciales
 
 1. **Given** un alumno con `rust-138` a `rust-142` resueltos y nada más, **When** se integra la etapa 2 y pulsa «Un desafío para hoy» con «Todos los niveles», **Then** se abre el primer ejercicio de la etapa 2 (FR-028 de E1).
 2. **Given** un alumno con progreso fuera de Esenciales, **When** se integra una etapa, **Then** «Un desafío para hoy» le sugiere lo mismo que antes.
-3. **Given** el contenido generado en la base del PR y en su cabeza, **When** se comparan, **Then** sólo cambian las dos porciones de Esenciales, el meta de los ejercicios nuevos y `Content-Version`.
+3. **Given** el contenido generado en la base del PR y en su cabeza, **When** se comparan, **Then** sólo cambian las dos porciones de Esenciales, el meta de los ejercicios nuevos, la huella del documento (y con ella `Content-Version`) y el commit de origen.
 4. **Given** las tres fixtures de progreso congeladas, **When** arranca el taller con la etapa nueva, **Then** no escribe, no respalda y no avisa.
 
 ---
@@ -357,9 +357,9 @@ El usuario recibe los diez ejercicios de la etapa 2 con los mensajes del compila
 
 **El recorrido y las compuertas**
 
-- **FR-008**: El borrador DEBE escribirlo un agente desde fuentes oficiales, después de leer la fila de su etapa, los ejercicios de Esenciales publicados, los de Inicial que nombra su fila y «Contenido del currículo» del README. Su informe DEBE traer el mensaje del compilador de cada `reparar` y el resultado de la prueba previa en el host, o decir que no se pudo correr. *(FR-044 de E1; plan de E1, T004)*
-- **FR-009**: Antes de la revisión, cada etapa DEBE pasar en verde `npm run curriculum`, `npm test`, `npm run lint`, `npm run format:check`, `git diff --check`, `npm run test:e2e` y las pruebas de Pest de la API. *(FR-044 de E1; `qa/AGENTS.md`)*
-- **FR-010**: Cada PR DEBE mostrar que, entre el contenido generado en su base y en su cabeza, sólo cambian las dos porciones de Esenciales, el meta de los ejercicios nuevos y `Content-Version`. Las 17 porciones de antes de E1, la plantilla, y la etapa y las tres huellas de cada ejercicio ya publicado (los 274 y los de Esenciales) DEBEN ser idénticas. La comparación usa el meta que ya escribe `tools/content`, sin herramienta nueva, y el plan fija el procedimiento. *(FR-009 y FR-039 de E1; Q5)*
+- **FR-008**: El borrador DEBE escribirlo un agente desde fuentes oficiales, después de leer la fila de su etapa, los ejercicios de Esenciales publicados (y el borrador de la etapa anterior, si sigue en revisión: Q4), los de Inicial que nombra su fila y «Contenido del currículo» del README. Antes de su revisión, la etapa DEBE estar rebasada sobre la anterior ya integrada y comprobada contra el texto final de esa anterior. Su informe DEBE traer el mensaje del compilador de cada `reparar` y el resultado de la prueba previa en el host, o decir que no se pudo correr. *(FR-044 de E1; plan de E1, T004)*
+- **FR-009**: Antes de la revisión, cada etapa DEBE pasar en verde `npm run curriculum`, `npm test`, `npm run lint`, `npm run format:check`, `git diff --check`, `npm run build` seguido de `npm run test:e2e`, y las pruebas de Pest de la API. *(FR-044 de E1; `qa/AGENTS.md`)*
+- **FR-010**: Cada PR DEBE mostrar que, entre el contenido generado en su base y en su cabeza, sólo cambian las dos porciones de Esenciales, el meta de los ejercicios nuevos, la huella del documento (y con ella `Content-Version`) y el commit de origen del meta. Las 17 porciones de antes de E1, la plantilla, y la etapa y las tres huellas de cada ejercicio ya publicado (los 274 y los de Esenciales) DEBEN ser idénticas. La comparación usa el meta que ya escribe `tools/content`, sin herramienta nueva, y el plan fija el procedimiento. *(FR-009 y FR-039 de E1; Q5)*
 - **FR-011**: La revisión pedagógica del usuario DEBE ser una compuerta. El usuario aprueba de forma explícita cada ejercicio con los criterios de «Criterios de la revisión pedagógica», antes de la corrida de B3 y antes del PR. Un pedido de cambio vuelve al borrador, y el agente corrige, vuelve a correr FR-009 y FR-010 y presenta sólo lo que cambió. Sin la aprobación de todos los ejercicios de la etapa no hay merge, ni parcial. *(FR-044 de E1; Q3)*
 - **FR-012**: La auditoría de B3 DEBE correr después de la aprobación, sobre el último commit y con el árbol limpio, en una corrida de registro: completa, con runsc, sin hallazgos ni programas sin veredicto. Cualquier cambio posterior, aunque sea de texto, invalida el resumen y pide otra corrida. *(Spec 020, FR-032 y FR-038)*
 - **FR-013**: Cada etapa DEBE entrar en un PR propio, con los dos lenguajes (Q2). El título y la descripción van en inglés, con la notación de Angular. La descripción lleva el problema completo, el bloque del resumen de B3 pegado entero con el texto exacto que imprime el comando (formato `taller-audit-summary-1`), la aprobación del usuario con la fecha y los IDs, los conteos que cambiaron y lo que no se verificó. La CI comprueba el bloque, y el merge lo hace el usuario. *(`AGENTS.md`; spec 020, FR-038; Q2)*
@@ -403,7 +403,7 @@ El usuario recibe los diez ejercicios de la etapa 2 con los mensajes del compila
 - **SC-003**: El resumen de B3 de cada PR es de registro y está en verde. Las soluciones que aprueban y los iniciales que fallan como corresponde son tantos como los ejercicios del currículo (294, 304 y 314 con el plan de hoy), con 0 hallazgos y 0 programas sin veredicto, y su `harnessHash` es el de `master`.
 - **SC-004**: Cada PR tiene la aprobación explícita del usuario para el 100 % de sus ejercicios, fechada antes de la corrida de B3 del resumen.
 - **SC-005**: 0 archivos cambiados fuera de los que permite FR-017, en cada PR.
-- **SC-006**: 0 ejercicios de Esenciales comparten el nombre de la función y las expresiones de prueba con uno de Inicial o con otro de Esenciales. 0 errores del compilador se enseñan en más de una etapa.
+- **SC-006**: 0 ejercicios de Esenciales comparten la situación, el nombre de la función o las expresiones de prueba con uno de Inicial o con otro de Esenciales. 0 errores del compilador se enseñan en más de una etapa.
 - **SC-007**: La red de F1, las 17 E2E de A2 y las specs del Atlas, la campaña, Sistemas y la Biblioteca pasan sin editarse en cada PR. Las E2E del laboratorio sólo cambian en los conteos de FR-018.
 - **SC-008**: Las tres fixtures de progreso congeladas arrancan sin escribir, sin respaldar y sin avisar después de cada PR. Una copia exportada con progreso de Esenciales antes de una etapa se importa igual después.
 
