@@ -487,7 +487,7 @@ final readonly class Period
 }
 ```
 
-4. **Correrla en verde.** Si `WeekDay` no existe en Carbon 3.14.2, usar `CarbonInterface::MONDAY` y decirlo en el informe.
+4. **Correrla en verde.** `Carbon\WeekDay` es el enum de Carbon 3, y `startOfWeek()` lo acepta (research, Context7).
 5. **Los checks:** `api:analyse` y `api:format:check`.
 6. **El commit:** `feat(api): C5 suma el período de las estadísticas y sus intervalos locales (T002)`.
 
@@ -901,12 +901,7 @@ final class StatsCache
 }
 ```
 
-4. **En verde.** Si PHPStan no infiere el tipo de `Cache::store()->remember()`:
-   - se guarda el resultado en una variable;
-   - se comprueba la forma con `is_array($entry) && is_array($entry['data'] ?? null) && is_string($entry['generatedAt'] ?? null)`;
-   - si no la tiene, se lanza `LogicException`.
-
-   Nunca se agrega un `ignoreErrors`.
+4. **En verde.** `Repository::remember()` declara `@template TCacheValue` y devuelve `TCacheValue` (laravel/framework v13.34.0, `Contracts/Cache/Repository.php`), así que PHPStan toma el tipo del closure. Nunca se agrega un `ignoreErrors`.
 5. **Los checks:** `api:analyse` y `api:format:check`.
 6. **El commit:** `feat(api): C5 suma el portón de lectura con tope de tiempo y la caché de las estadísticas (T004)`.
 
@@ -5146,11 +5141,7 @@ Esta tarea no tuvo PHP, MySQL ni Docker: todo el código del plan es referencia 
   - el `left join (t1 join t2 on …) on …` con paréntesis;
   - el `group by` por el alias `solved` y por `value` (`ONLY_FULL_GROUP_BY`);
   - `order by` sobre la columna ENUM `kind` en su orden de declaración.
-- **Los tipos de PHPStan nivel 9:**
-  - `Cache::store()->remember()` (T004 dice qué hacer si no infiere el tipo);
-  - `config()->array()` en `BenchDatabase`;
-  - los `list<…>` de los arreglos armados en bucles;
-  - el `WeekDay::Monday` de Carbon 3.14.2 (T002 dice la alternativa).
+- **Los tipos de PHPStan nivel 9:** `config()->array()` en `BenchDatabase` y los `list<…>` de los arreglos armados en bucles. El tipo de `Cache::store()->remember()` y el `WeekDay::Monday` de Carbon ya se confirmaron (research, Context7).
 - **La fábrica de `User`:** que `created_at` y `updated_at` como `CarbonImmutable` se conserven en la fábrica (Eloquent no pisa un `created_at` sucio).
 - **El borde de la medianoche:** que el `compile_error` de las 02:30Z caiga en el intervalo del 5 de octubre se comprueba sólo con MySQL real.
 - **La medición:** el tiempo que tarda el sintetizador con la escala completa y el espacio que ocupa son estimaciones. La medición los informa, y la escala la decide el usuario.
