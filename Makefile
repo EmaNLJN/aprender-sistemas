@@ -126,6 +126,10 @@ api-down: ## Baja los servicios de prueba de la API
 executor-test: ## Pruebas del ejecutor Go
 	npm run test:executor
 
+.PHONY: executor-lint
+executor-lint: ## golangci-lint del ejecutor (Docker, sin red)
+	npm run lint:executor
+
 GITLEAKS := tools/quality/bin/gitleaks
 DESLOPPIFY := tools/quality/.venv/bin/desloppify
 

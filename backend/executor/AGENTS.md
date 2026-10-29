@@ -3,8 +3,9 @@
 Servicio Go del ADR 0005 (`docs/adr/0005-ejecucion-en-sandbox-propio.md`). Usa sólo la
 biblioteca estándar: no agregues módulos sin un ADR.
 
-- Pruebas: `npm run test:executor` (gofmt, vet y unitarias en contenedor, sin red y con el
-  código de sólo lectura) y `npm run test:executor:integration` (Docker real con runc;
+- Pruebas: `npm run test:executor` (unitarias en contenedor, sin red y con el código de sólo
+  lectura), `npm run lint:executor` (golangci-lint v2.15.0 en contenedor, con la configuración de
+  `.golangci.yml`; toda supresión `//nolint` lleva linter y motivo, lo exige nolintlint) y `npm run test:executor:integration` (Docker real con runc;
   `EXECUTOR_RUNTIME=runsc` después de la prueba de humo `backend/executor/scripts/smoke-gvisor.sh`).
   No forman parte de `npm test`. El host no necesita Go.
 - Invariantes de seguridad: los límites, imágenes y flags salen de
