@@ -34,6 +34,8 @@ Las decisiones técnicas del plan, con sus alternativas, la tabla de Context7 y 
 
 ### R3. Los selectores de pasos y la operación de alternar, en `entities/guide`
 
+> **Enmienda del 2026-10-28 (noche):** la operación de alternar es `routeStore.toggleMark` de F4, ya en `master`; F9 no crea `toggleRouteItem` (R17). Lo de abajo sobre `toggleRouteItem` queda como historia.
+
 - **Decisión:**
   - `entities/guide/model/route-selectors.ts` exporta `trackSteps`, `countCompletedSteps` y `nextPendingStep`, y `app.js` los usa en `stepsFor` y `completedCount` para la barra lateral. Es la «una sola fuente» de FR-023.
   - `entities/guide/model/toggle-route-item.ts` exporta `toggleRouteItem`, con la semántica de `toggleItem`: agrega al final o quita con `splice`, sobre el arreglo vivo.
@@ -43,6 +45,7 @@ Las decisiones técnicas del plan, con sus alternativas, la tabla de Context7 y 
 ### R4. Cómo se entera el shell de una escritura de la página
 
 - **Decisión:** `startApp()` se suscribe a la revisión del recorrido y redibuja el shell entero: `routeStore.changes.subscribe(() => syncShell())`.
+- **Con F4 en la base** (enmienda del 2026-10-28, R17): F4 se suscribió con `routeStore.changes.subscribe(updateSaveLabel);` inmediatamente después de `routeStore.open(data);` (`frontend/app.js:29`). F9 borra esa línea y pone la suya antes del `render();` final, porque `syncShell` lee `const` que se declaran después (`stepsFor`, `completedCount`, `languageName`) y `currentView`; y saca las llamadas a `updateSaveLabel()` que la suscripción vuelve redundantes (la de `save()` y la que sigue a `applyImport`), salvo que F8 ya lo haya hecho.
 - **Por qué `syncShell` y no sólo `updateSaveLabel`:** FR-022 pide la barra lateral («N de 12», el porcentaje y la barra de progreso) además de la etiqueta. `syncShell` termina llamando a `updateSaveLabel`, y todo lo que escribe es idempotente: `aria-pressed`, `aria-current`, los textos y `#resource-count`.
 - **Lo compartido:** F3 (FR-014) propone la suscripción sólo para el pie.
   - Si F3 entró antes, F9 cambia su `updateSaveLabel` por `syncShell`, que lo contiene.
@@ -114,7 +117,7 @@ Las decisiones técnicas del plan, con sus alternativas, la tabla de Context7 y 
 
 - **`boot-check`:**
   - El Recorrido es la vista por omisión. Con React, `#main.innerHTML` queda vacío, y cinco lecturas lo usaban como señal de que se dibujó: el escenario «arranque», la rama del Recorrido de «navegación», «startApp initializes in order and draws the first view», la bandera «after drawing» de `recordInitializations` y «a retry that succeeds».
-  - `FakeElement.textContent` no junta el texto de los hijos. Por eso `qa/lib/fake-dom.ts` suma `hasDrawn` (hay `innerHTML` o hay nodos) y `drawnText` (el `innerHTML` más el texto de los nodos). Sirven antes y después del port, así que el cambio va en un commit previo al corte, sin tocar ningún valor esperado.
+  - `FakeElement.textContent` no junta el texto de los hijos. Al planificar, el plan sumaba `hasDrawn` y `drawnText` a `qa/lib/fake-dom.ts`. **Con la enmienda del 2026-10-28** (R17) se usa la forma canónica: `mountedText`, el de F4, que ya está en `qa/boot-check.ts`. Las cuatro lecturas que no son la navegación pasan a `main.innerHTML + mountedText(main)`, que sirve antes y después del port, así que el cambio va en un commit previo al corte, sin tocar ningún valor esperado. La navegación pasa el Recorrido a `REACT_VIEWS` en el corte.
   - El mismo commit suma «startApp registers no interval», que falla contra el legacy por el `setInterval` de `app.js` (FR-013, US5-3).
   - En el commit del corte, `RESET_METHODS` suma `TallerRoute.resetTimer` después de `TallerSystems.resetSimulations` (FR-031).
 - **`app-shell-check`:**
@@ -124,7 +127,7 @@ Las decisiones técnicas del plan, con sus alternativas, la tabla de Context7 y 
 
 ### R12. Los E2E
 
-- **El Page Object:** `qa/e2e/pages/route.ts` (la clase `RoutePage`, como `AtlasPage`) y su fixture `route`. Para «Borrar todo», un Page Object mínimo de Método, `qa/e2e/pages/method.ts`, con la fixture `method`, salvo que F8 ya haya entrado: entonces se usa el suyo.
+- **El Page Object:** `qa/e2e/pages/route.ts` (la clase `RoutePage`, como `AtlasPage`) y su fixture `route`. Para «Borrar todo», el Page Object de Método que creó F5 (`qa/e2e/pages/method.ts`, con `resetProgress()` y `confirmReset()` y la fixture `method`; `impl-f5`, `d7944d81`): F9 le suma `resetAllProgress()` e `importCopy()`. Si F9 entra antes que F5, lo crea con la clase de F5 más sus dos métodos. Si F8 ya entró, se usa el suyo.
 - **Cinco specs:**
   - `route-steps.spec.ts`: US1, el teclado y la impresión;
   - `route-lesson.spec.ts`: US2, salvo el foco que cambia;
@@ -142,6 +145,8 @@ Las decisiones técnicas del plan, con sus alternativas, la tabla de Context7 y 
 - **Lo que un E2E contra el legacy no puede probar:** «no queda ningún intervalo con el temporizador detenido» y «`startApp` deja 0 intervalos». Hoy siempre hay uno. Van en Vitest (`vi.getTimerCount()`) y en `boot-check`.
 
 ### R13. La pila de pruebas de componentes
+
+> **Enmienda del 2026-10-28 (noche):** la pila llegó con #67 (`7aa96018`): los proyectos `node` y `dom` y el setup `frontend/src/vitest.setup.ts`, no `frontend/src/app/test-setup.ts`. F9 no la instala ni la configura. La guarda de `useStore` es el bloque de F6 (`[arguments.length=1]`), que entra con F5 o F6, o con T002 si ninguno entró (R17). Lo de abajo queda como historia.
 
 - **Si F9 es el primero en traerla,** pide permiso para las versiones del ADR 0008: `jsdom` 30.1.2, `@testing-library/react` 16.3.3, `@testing-library/dom` 10.4.2, `@testing-library/user-event` 14.6.7 y `@testing-library/jest-dom` 7.0.1. Todas son MIT, sólo `devDependencies`. En el registro hay parches más nuevos (`jsdom` 30.1.3 y `user-event` 14.6.8): el plan se queda con las del ADR y lo informa.
 - **`frontend/vitest.config.ts`** pasa a dos proyectos en línea, `node` (`**/*.spec.ts`) y `jsdom` (`**/*.spec.tsx`, con su setup). La raíz deja de tener `name`, `environment` e `include`. En Vitest 5 los proyectos en línea heredan la raíz por omisión y concatenan los arreglos: si la raíz conservara su `include`, el proyecto `jsdom` también correría los `*.spec.ts`.
@@ -171,19 +176,38 @@ Está en el plan, en «Lo compartido con F3, F4 y F8». En resumen:
 | Pieza | Si F9 entra primero | Si F9 entra después |
 | --- | --- | --- |
 | La suscripción del shell | La crea con `syncShell` | Cambia la de F3 por `syncShell`, si era sólo `updateSaveLabel` |
-| `toggleRouteItem` | La crea en `entities/guide`; `toggleItem` queda en `app.js` | La reutiliza; si es el último de los tres, borra `toggleItem` |
+| La operación de alternar | No aplica: F4 dejó `routeStore.toggleMark` | `toggleStep` llama `store.toggleMark('completed', id)`; si F3 ya entró, borra `toggleItem` de `app.js` |
 | Los bloques compartidos de CSS | Saca sus reglas de los `@media` compartidos y parte las dos reglas de impresión | Rebasa: saca lo suyo de bloques que otro ya tocó, por texto y no por número de línea |
-| La pila de componentes | La pide e instala, con los dos proyectos, el setup y la guarda | La usa como está |
-| `boot-check` | Suma `hasDrawn` y `drawnText` | Usa los ayudantes que haya dejado el otro, o los suma si no existen, y agrega `recorrido` a las vistas que se leen por nodos |
+| La pila de componentes | No aplica: llegó con #67 | La usa como está; suma la guarda de F6 sólo si falta |
+| `boot-check` | No aplica: F4 dejó `mountedText` | Usa `mountedText` en las cuatro lecturas y agrega `recorrido` a `REACT_VIEWS`, sin ayudantes en `fake-dom.ts` |
 | El patrón `store` por prop | Lo fija | Lo sigue |
 
 ### R16. El tamaño
 
-La base `f2b-acum` no tiene un `dist/`. Al planificar no se reconstruyó: la medida de partida la toma T001. La hoja de ruta registra 1 141 337 caracteres con F2b (medida del coordinador) y el tope de `qa/build-check` es 1 250 000.
+La base `f2b-acum` no tiene un `dist/`. Al planificar no se reconstruyó: la medida de partida la toma T001. La hoja de ruta registra 1 141 337 caracteres con F2b (medida del coordinador). El tope de `qa/build-check` era 1 250 000 al planificar; desde #76 es 1 500 000 (`BOOT_SIZE_LIMIT`).
 
 - **Lo que sale de `app.js`:** cerca de 9 000 caracteres de fuente con sus plantillas.
 - **Lo que entra:** siete componentes, tres módulos de modelo, el adaptador y el hook `useStore` de Zustand, que el bundle todavía no tenía (F2a sólo usaba `zustand/vanilla`).
-- **La compuerta:** el HTML queda bajo 1 250 000, con el antes y el después en el PR. Si crece más de 8 000 caracteres, el coordinador lo revisa antes de seguir (unos 108 000 tienen que alcanzar para F3 a F11 y A3).
+- **La compuerta:** el HTML queda bajo 1 500 000, con el antes y el después en el PR. Si crece más de 8 000 caracteres, el coordinador lo revisa antes de seguir. `import.meta` del script del dist cuenta la base de T001 más uno, por la entrada nueva de `LEGACY_MODULES` (TR-4).
+
+### R17. Lo que fijaron F4 a F6 (enmienda del 2026-10-28, noche)
+
+El plan se escribió antes de que F4, F5 y F6 se implementaran. Lo que fijaron manda sobre el plan, según las entradas `aplicar` de «F9» y «Transversal» de `.coordinador/hallazgos-para-planes.md` y las decisiones de esa noche (`.coordinador/clarify-decisiones.md`). El código se leyó con `git show` en estos commits, sin correr nada:
+
+| Pieza | Qué fijó la implementación | Dónde | Qué cambia en F9 |
+| --- | --- | --- | --- |
+| Alternar un paso | `routeStore.toggleMark(collection: RouteMarkCollection, id: string): boolean`: agrega al final o quita, escribe una vez y avisa una vez | `master` `431c9d90`, `frontend/src/entities/guide/model/route-store.ts:21`, `:27` y `:97`; probado en `route-store.spec.ts` con `completed` | §3.0, T011, T012 y T014: sin `toggleRouteItem`; `toggleStep` llama `store.toggleMark('completed', stepId)`. T018 borra `toggleItem` de `app.js` sólo si F3 ya entró |
+| La suscripción del shell | `routeStore.changes.subscribe(updateSaveLabel);` después de `routeStore.open(data);` | `master`, `frontend/app.js:29`; `.coordinador/pr-impl-f4.md:26` | T018 borra esa línea, pone `() => syncShell()` antes del `render();` final y saca las llamadas redundantes a `updateSaveLabel()` |
+| El Page Object de Método | `qa/e2e/pages/method.ts` con `MethodPage`, `resetProgress()` y `confirmReset()`, y la fixture `method` | `impl-f5` `efaf39b2` (commit `d7944d81`) | T003 le suma `resetAllProgress()` e `importCopy()`; si F9 entra antes que F5, lo crea con la clase de F5 |
+| La pila de componentes | jsdom, Testing Library y fishery; los proyectos `node` y `dom`; el setup `frontend/src/vitest.setup.ts` | `master` (#67, `7aa96018`), `frontend/vitest.config.ts` | T002 sólo verifica; no hay `app/test-setup.ts`, ni proyecto `jsdom`, ni `passWithNoTests` |
+| La guarda de `useStore` | El bloque con `CallExpression[callee.name='useStore'][arguments.length=1]` y su mensaje, antes del de `complexity` | `impl-f6` `b20028be`, `eslint.config.ts:43-54` (commit `e30ad0bf`); igual en `impl-f5` (commit `c6e7ebda`) | T002 lo suma tal cual sólo si ni F5 ni F6 entraron |
+| `boot-check` | La condición de F4 (`view === 'atlas' \|\| view === 'proyecto'`) con `mountedText`, que lee también el `textContent` del elemento; F5 la pasa a `REACT_VIEWS` | `master`, `qa/boot-check.ts:85-87` y `:111`; `impl-f5`, `qa/boot-check.ts:85` | T017 usa `mountedText` en las cuatro lecturas de la vista por omisión, sin `hasDrawn` ni `drawnText`; T018 pasa el Recorrido a `REACT_VIEWS` |
+| `import.meta` en el dist | Vite envuelve cada `import()` de `legacy-views.ts` con `import.meta.url`: F4 lo llevó de 22 a 23 | `.coordinador/pr-impl-f4.md:33`; `frontend/src/app/boot/legacy-views.ts:4` | La compuerta espera la base de T001 más uno |
+| El tope del HTML | `BOOT_SIZE_LIMIT = 1500000` | `master`, `qa/build-check.ts:11` (#76) | 1 500 000 en «Restricciones globales», T001, R16 y quickstart §2 |
+| Los stubs del rojo | `const` tipados, sin parámetros; los componentes como `FunctionComponent<Props>` | `.coordinador/hallazgos-para-planes.md`, TR-2 | Reglas, T011, T013 y T015 |
+| Las trampas del barrido | El puntero sobre un nodo que React conserva, el `<details>` cerrado ya medido y los textos que JSX parte | TR-13 (`impl-f5/.superpowers/sdd/plan/T025-report.md:49-53`) | T016 («Un texto, un nodo»), T010, T019 y quickstart §3.1 |
+
+**Lo que no cambia:** la forma de la página, el temporizador, la lección, los E2E y sus valores, las ramas de `resetTimer` y el patrón `store` por prop.
 
 ## Context7
 
@@ -199,14 +223,15 @@ El servidor `mcp__context7__*` agotó su cuota mensual el 2026-10-28, a la prime
 | React | 19.2.8 | `/websites/react_dev_reference` | Eventos de `<dialog>` y `<details>` | React expone `onCancel` y `onClose` para `<dialog>` y `onToggle` para `<details>` | Sí: el cierre por Esc se sincroniza con `onClose` (FR-033). `onToggle` no hace falta (R9) |
 | React | 19.2.8 | `/react/react/v19.2.8` | Lo mismo de `<dialog>`, en el repositorio con versión | Sin resultados para la consulta | No: se usó la referencia de react.dev |
 | Zustand | 5.0.15 | `/pmndrs/zustand/v5.0.12` (la más cercana publicada en Context7) | `createStore` de `zustand/vanilla` y `useStore(store, selector)` | `useStore` lee un store de vanilla con un selector; `subscribe` notifica en cada `setState` | Sí: el temporizador es un store de vanilla, y la página lee `phase` y `remaining` con dos selectores chicos (SC-011) |
-| Testing Library | `@testing-library/react` 16.3.3 (a instalar) | `/testing-library/testing-library-docs` | `cleanup` sin `globals` en Vitest; jest-dom con Vitest | Sin `globals`, `cleanup()` va en un `afterEach` del setup; los matchers entran con `import '@testing-library/jest-dom/vitest'` | Sí: `app/test-setup.ts` (R13) |
-| user-event | 14.6.7 (a instalar) | `/testing-library/testing-library-docs` | `userEvent.setup({ advanceTimers })` con temporizadores falsos | Con timers falsos hay que pasar la función que avanza el reloj; `delay: null` no se recomienda | Sí: las specs de componente con el temporizador usan `userEvent.setup({ advanceTimers: vi.advanceTimersByTime })` |
-| jsdom | 30.1.2 (a instalar) | `/jsdom/jsdom/v29.0.1` (la más nueva en Context7) | `HTMLDialogElement` y el foco | Context7 no trae el IDL del diálogo. Sí confirma que `activeElement` vuelve a `body` cuando el elemento con foco sale del DOM | La fuente oficial (abajo) decidió |
+| Testing Library | `@testing-library/react` 16.3.3 (instalada con #67) | `/testing-library/testing-library-docs` | `cleanup` sin `globals` en Vitest; jest-dom con Vitest | Sin `globals`, `cleanup()` va en un `afterEach` del setup; los matchers entran con `import '@testing-library/jest-dom/vitest'` | Sí: `app/test-setup.ts` (R13) |
+| user-event | 14.6.7 (instalada con #67) | `/testing-library/testing-library-docs` | `userEvent.setup({ advanceTimers })` con temporizadores falsos | Con timers falsos hay que pasar la función que avanza el reloj; `delay: null` no se recomienda | Sí: las specs de componente con el temporizador usan `userEvent.setup({ advanceTimers: vi.advanceTimersByTime })` |
+| jsdom | 30.1.2 (instalada con #67) | `/jsdom/jsdom/v29.0.1` (la más nueva en Context7) | `HTMLDialogElement` y el foco | Context7 no trae el IDL del diálogo. Sí confirma que `activeElement` vuelve a `body` cuando el elemento con foco sale del DOM | La fuente oficial (abajo) decidió |
 | jsdom | 30.1.2 | `WebFetch` de `jsdom/jsdom`, rama `main`, `lib/jsdom/living/nodes/HTMLDialogElement.webidl` | `show`, `showModal` y `close` | Sólo `open` está declarado; los tres métodos siguen comentados (como verificó el ADR 0008) | Sí: la spec del diálogo define un stub de `showModal` y `close`; el foco y Esc van al E2E (FR-042) |
 | Vite | 8.3.2 | `/vitejs/vite/v8.0.10` (la más nueva en Context7) | `build.cssCodeSplit` y el CSS de los chunks asíncronos | El CSS de un chunk asíncrono se trata aparte; desactivar el code split junta todo en un archivo | Sí: `route.css` se importa en `main.tsx` y no desde la página (R10) |
 | fishery | 2.4.0 | — | — | No se consultó: no entra (R13) | — |
 | nuqs | — | — | — | No aplica: el Recorrido no pone nada en la URL (FR-016) | — |
 | React Hook Form | — | — | — | No aplica: el Recorrido no tiene formularios | — |
+| ESLint | 10.12.0 | `/eslint/eslint` (enmienda del 2026-10-28) | Selectores de `no-restricted-syntax` con igualdad sobre un atributo anidado | `[attr=123]` y `[attr.level2=…]` están soportados; el ejemplo oficial usa `[arguments.length!=2]` | Sí: la guarda canónica de F6 (`[arguments.length=1]`) en T002, en lugar de `[arguments.length<2]` y su respaldo |
 
 ## Mediciones de sólo lectura
 
@@ -241,7 +266,7 @@ Las líneas de la base van de 287 a 1237 para las reglas base y de 1291 a 1719 p
 - la rama `stepCheck` del `change` (510 a 515);
 - `recorrido: renderRoute` y el `updateTimer()` final de `render()` (164 y 182).
 
-`stepsFor`, `completedCount`, `languageName`, `toggleItem`, `syncShell`, `save`, `updateSaveLabel` y `toast` siguen, porque los usan el shell y otras páginas.
+`stepsFor`, `completedCount`, `languageName`, `toggleItem`, `syncShell`, `save`, `updateSaveLabel` y `toast` siguen, porque los usan el shell y otras páginas. Con la enmienda (R17), `toggleItem` sale si F3 ya entró, porque no le quedan llamadas.
 
 **Los checks que tocan el Recorrido:**
 

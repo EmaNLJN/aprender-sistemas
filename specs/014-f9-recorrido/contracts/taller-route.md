@@ -50,7 +50,7 @@ interface RoutePageProps {
 ```
 
 - Lee el progreso con `store.getProgress()` en cada render y se suscribe sólo a `useStore(store.changes, (state) => state.revision)`.
-- Escribe una vez por acción del alumno con `store.save()`.
+- Escribe una vez por acción del alumno: alternar un paso con `store.toggleMark('completed', id)`, la operación de F4; la respuesta y la duración, con `store.save()`.
 - Dibuja la lección con un portal a `document.body`.
 - No lee `window`, `location` ni `getContent()`.
 
@@ -96,10 +96,9 @@ export const focusTimer: FocusTimer;
 export function trackSteps(track: GuideTrack): GuideStep[];
 export function countCompletedSteps(steps: readonly GuideStep[], completed: readonly string[]): number;
 export function nextPendingStep(steps: readonly GuideStep[], completed: readonly string[]): GuideStep | undefined;
-export function toggleRouteItem(collection: string[], id: string): void; // in place: push at the end or splice
 ```
 
-Los usan la página y `app.js`: `stepsFor` y `completedCount` de la barra lateral, y, cuando entren, los favoritos de F3 y los hitos de F4. Si F3 o F4 ya crearon la operación de alternar con otro nombre, F9 usa la suya y esta línea no se agrega.
+Los usan la página y `app.js`: `stepsFor` y `completedCount` de la barra lateral. La operación de alternar no se suma: es `routeStore.toggleMark(collection: RouteMarkCollection, id: string): boolean`, que F4 ya dejó en el almacén (`frontend/src/entities/guide/model/route-store.ts:27`) y que usan también Proyecto y la Biblioteca.
 
 ## 4. Las dos ramas de `resetTimer` (F8-Q2)
 

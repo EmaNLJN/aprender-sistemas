@@ -13,13 +13,13 @@
 
 **Arquitectura:**
 - La página vive en `frontend/src/pages/library/`: un modelo puro (el filtro, las etiquetas y el destino del foco) y cuatro componentes.
-- Lee los favoritos del singleton `routeStore`, con `useStore` y un selector chico, y escribe con `toggleItem` y `routeStore.save()`.
+- Lee los favoritos del singleton `routeStore`, con `useStore` y un selector chico, y escribe con `routeStore.toggleMark('favorites', id)`, la operación que F4 dejó en `entities/guide`.
 - Los filtros son la query de la URL (`useQueryStates`, con las claves de la gramática de F2b).
 - Un adaptador de `app/legacy/` le pasa los recursos de `getContent()` y la envuelve en el `NuqsAdapter` compartido. `app.js` la monta y la desmonta como al Atlas.
 
 **Stack:**
-- Lo que ya está: React 19.2.8, TypeScript 6.0.2, Vite 8.3.2, zustand 5.0.15, Vitest 5.0.3 y Playwright 1.63.0.
-- Lo que se suma: nuqs 2.10.2 (de ejecución), y jsdom 30.1.2, Testing Library y fishery 2.4.0 (de desarrollo).
+- Lo que ya está: React 19.2.8, TypeScript 6.0.2, Vite 8.3.2, zustand 5.0.15, Vitest 5.0.3 y Playwright 1.63.0; y, desde #67, jsdom 30.1.2, Testing Library y fishery 2.4.0, con los proyectos `node` y `dom` y el setup `frontend/src/vitest.setup.ts`.
+- Lo que se suma: nuqs 2.10.2 (de ejecución), que trae F5 con `url-state.tsx`. F3 lo instala sólo si entra antes que F5, con el mismo módulo, la misma versión y el mismo aviso de licencia (T015 y T016).
 
 > **Para quien lo implementa.**
 >
@@ -30,6 +30,7 @@
 >   - dos scripts de lectura en un directorio temporal, que recalcularon los ejemplos resueltos y listaron las reglas de CSS.
 >
 >   Ninguna prueba, ningún build y ningún tamaño del dist se midió: T001 y T002 los miden antes del primer cambio.
+> - **La enmienda del 2026-10-28 (noche).** El plan se alineó con lo que la implementación de F4 (en `master`, `431c9d90`), F5 (`impl-f5`, `efaf39b2`) y F6 (`impl-f6`, `b20028be`) ya fijó: `routeStore.toggleMark`, `blockWrites()`, la pila de componentes de #67, la guarda de `useStore` de F6, nuqs y `url-state.tsx` de F5, la forma canónica de `boot-check`, la compuerta de `import.meta`, los stubs del rojo, la espera de la URL antes de recargar y el tope de 1 500 000. Cada cambio, con su fuente, está en research.md (R14).
 
 ## Summary
 
@@ -49,7 +50,7 @@ F3 reemplaza `renderLibrary` y `renderResourceResults` de `frontend/app.js` por 
   - el lenguaje viaja como `en`, porque `lenguaje` ya es de Sistemas y los enlaces del menú conservan la query (R2);
   - el cambio de idioma estando en la Biblioteca conserva los filtros: `withLanguageQuery` deja las claves de la Biblioteca y borra las ajenas (FR-044);
   - la sincronización con las escrituras ajenas se activa en el montaje, nunca al evaluar (R6).
-- **Lo compartido con F4, F5 y F9 lo trae el primero que se integra,** con los mismos archivos y firmas que el plan de F5 (R7). T001 detecta qué hay en la base, y cada tarea condicional dice qué hacer en cada caso.
+- **Lo compartido con F4, F5 y F9 lo trae el primero que se integra,** con los mismos archivos y firmas que el plan de F5 (R7). En la base (`431c9d90`) F4 ya trajo `routeStore.toggleMark`, la suscripción del pie y `blockWrites()`, y #67, la pila de componentes; F5 trae nuqs y `url-state.tsx`, y F5 o F6, la guarda de `useStore` (R14). T001 detecta qué hay en la base, y cada tarea condicional dice qué hacer en cada caso.
 - **El CSS:** 41 reglas pasan a `pages/library/ui/library.css`, importada en `main.tsx` justo después de `styles.css`. Lo prueban el multiconjunto y el barrido de estilo computado de F2b, con 0 diferencias (R9).
 
 ## Technical Context
@@ -57,15 +58,15 @@ F3 reemplaza `renderLibrary` y `renderResourceResults` de `frontend/app.js` por 
 **Language/Version**: TypeScript como ES modules en `frontend/src/` y `qa/`; JavaScript legacy en `frontend/app.js`. Node 24.21.0.
 
 **Primary Dependencies**:
-- de ejecución: React 19.2.8, `react-dom` 19.2.8, zustand 5.0.15 (estrena `useStore`) y **nuqs 2.10.2, nueva** (con `@standard-schema/spec` 1.1.0, sólo tipos);
-- de desarrollo nuevas: `jsdom` 30.1.2, `@testing-library/react` 16.3.3, `@testing-library/dom` 10.4.2, `@testing-library/user-event` 14.6.7, `@testing-library/jest-dom` 7.0.1 y `fishery` 2.4.0.
+- de ejecución: React 19.2.8, `react-dom` 19.2.8, zustand 5.0.15 (con `useStore`, que F4 ya usa) y **nuqs 2.10.2** (con `@standard-schema/spec` 1.1.0, sólo tipos), que trae F5 o, si F3 entra antes, F3;
+- de desarrollo, ya instaladas con #67: `jsdom` 30.1.2, `@testing-library/react` 16.3.3, `@testing-library/dom` 10.4.2, `@testing-library/user-event` 14.6.7, `@testing-library/jest-dom` 7.0.1 y `fishery` 2.4.0.
 
-Todas en versión exacta y con permiso (§«Descargas y permisos»).
+Todas en versión exacta. Sólo nuqs pide permiso, y únicamente si F3 entra antes que F5 (§«Descargas y permisos»).
 
 **Storage**: `taller-learning-v1`, sin cambios de formato (ADR 0003). F3 no abre claves: los filtros viven en la URL.
 
 **Testing**:
-- Vitest en dos proyectos: `node` para `*.spec.ts` y `jsdom` para `*.spec.tsx`, con Testing Library y fishery.
+- Vitest en los dos proyectos de `master` (#67): `node` para `*.spec.ts` y `dom` (entorno jsdom) para `*.spec.tsx`, con Testing Library, el setup `frontend/src/vitest.setup.ts` y fishery.
 - Playwright contra el build servido: la red de F1, los 17 de A2, la spec nueva de la Biblioteca y un caso nuevo en `url-contract`.
 - Los checks de `qa/` (`boot-check`, `app-shell-check` y `load-order-check`).
 - Tres comparaciones únicas: legacy contra port, el multiconjunto de CSS y el barrido de estilo computado.
@@ -79,10 +80,10 @@ Todas en versión exacta y con permiso (§«Descargas y permisos»).
 **Constraints**: las de «Restricciones globales».
 
 **Scale/Scope**:
-- 15 archivos de producción nuevos, 14 al final porque T018 borra `use-library-filters.ts`: los 11 de la página (el índice, cinco del modelo, cuatro componentes y la hoja), el adaptador, `url-state.tsx`, `toggle-item.ts` y el setup de Vitest.
-- 10 archivos de prueba nuevos: siete specs de Vitest, la factory, el Page Object y la spec E2E.
-- 11 archivos de producción y configuración cambiados: `app.js`, `styles.css`, `main.tsx`, `legacy-views.ts`, `url-grammar.ts`, el índice de `entities/guide`, `vitest.config.ts`, `eslint.config.ts`, `package.json`, el lockfile y `THIRD-PARTY-NOTICES.txt`.
-- 12 archivos de prueba cambiados: `url-grammar.spec.ts`, ocho de `qa/` y tres de `qa/e2e/`.
+- 13 archivos de producción nuevos, 12 al final porque T018 borra `use-library-filters.ts`: los 11 de la página (el índice, cinco del modelo, cuatro componentes y la hoja), el adaptador y `url-state.tsx`. Si F5 ya trajo `url-state.tsx`, uno menos.
+- 9 archivos de prueba nuevos: seis specs de Vitest, la factory, el Page Object y la spec E2E. Si F5 ya trajo la spec de `url-state.tsx`, uno menos.
+- Entre 5 y 9 archivos de producción y configuración cambiados: `app.js`, `styles.css`, `main.tsx`, `legacy-views.ts` y `url-grammar.ts`; `eslint.config.ts`, si ni F5 ni F6 trajeron la guarda; y `package.json`, el lockfile y `THIRD-PARTY-NOTICES.txt`, si F3 instala nuqs.
+- 10 archivos de prueba cambiados: `url-grammar.spec.ts`, siete de `qa/` (`lib/sources.ts`, `lib/legacy-sources.ts`, `lib/app-shell-harness.ts`, `app-shell-check.ts`, `lib/app-adapters.ts`, `load-order-check.ts` y `boot-check.ts`) y dos de `qa/e2e/` (`fixtures/index.ts` y `specs/url-contract.spec.ts`).
 - 4 documentos.
 
 ## Restricciones globales
@@ -99,7 +100,7 @@ Valen para toda tarea. Los valores salen de la spec, la constitución 1.4.1, la 
 - **El progreso:**
   - la clave `taller-learning-v1`, `version: 1` y la forma y el orden de `favorites` no cambian;
   - con `qa/fixtures/progress-*.json` el arranque no escribe, no respalda ni avisa;
-  - cada clic en una estrella hace **una** escritura;
+  - cada clic en una estrella hace **una** escritura, con `routeStore.toggleMark('favorites', id)` de F4 (`entities/guide/model/route-store.ts:97`), sin una operación de alternar propia;
   - `curriculum-ids-check` sigue en verde (FR-004 y FR-012).
 - **Los textos exactos de la página**, copiados de `renderLibrary` y `renderResourceResults`:
   - «RECURSOS CON INTENCIÓN»;
@@ -124,12 +125,13 @@ Valen para toda tarea. Los valores salen de la spec, la constitución 1.4.1, la 
   - exactamente **un** campo de búsqueda (R4 de `css-contract`);
   - ningún `style=`, `setAttribute('style', …)` ni `style.cssText` (FR-023).
 - **El dist:**
-  - `dist/index.html` queda bajo **1 250 000** caracteres (`BOOT_SIZE_LIMIT`);
+  - `dist/index.html` queda bajo **1 500 000** caracteres (`BOOT_SIZE_LIMIT` de `qa/build-check.ts`, desde #76; T001 lo relee del check);
   - el aumento sobre T001 no pasa de **30 000** si F3 instala nuqs, ni de **15 000** si ya está;
   - un `<script type="module">`, un `<style>` y el contenido aparte;
+  - `import.meta` en el script del dist cuenta **la base de T001 más uno**, por la entrada nueva de `LEGACY_MODULES` (`register-library`), y `import(` queda como en T001 (TR-4: Vite envuelve cada `import()` de `legacy-views.ts` con `import.meta.url`). Si da otro número, K lo informa al coordinador antes de seguir;
   - `frontend/src/index.html`, el marcado del dist con los scripts y el estilo vaciados, `build/curriculum.json`, su copia servida y `dump-globals` dan **0 diferencias** contra T001;
   - el `<style>` cambia sólo de orden: 0 diferencias en el multiconjunto y en el barrido (FR-026 y FR-038).
-- **Las dependencias:** sólo nuqs es de ejecución. jsdom, Testing Library y fishery van a `devDependencies` y no son alcanzables desde `main.tsx`. Las versiones son exactas y el lockfile queda sincronizado (FR-033, FR-038 y FR-042).
+- **Las dependencias:** sólo nuqs es de ejecución. jsdom, Testing Library y fishery ya están en `devDependencies` (#67) y no son alcanzables desde `main.tsx`. Las versiones son exactas y el lockfile queda sincronizado (FR-033, FR-038 y FR-042).
 - **El código:**
   - TypeScript y ES modules;
   - un componente por archivo, con `const`, nombre igual al archivo y `export default` al final; el modelo, con exports nombrados;
@@ -138,7 +140,7 @@ Valen para toda tarea. Los valores salen de la spec, la constitución 1.4.1, la 
   - **ningún comentario**, salvo una referencia puntual;
   - nombres y pruebas en inglés, y textos para el alumno en español rioplatense.
 - **Las reglas de React:**
-  - `useStore` siempre con selector (FR-011);
+  - `useStore` siempre con selector (FR-011), con la guarda canónica de F6 (`[arguments.length=1]`, T006);
   - ninguna copia del progreso ni de los filtros en `useState`, `useRef` o un store (FR-010 y FR-021), salvo la sesión transitoria de T011, que T018 borra;
   - `useEffect` sólo para sistemas externos, y la página no usa ninguno (FR-025);
   - `flushSync` sólo en el manejador de la estrella (R8);
@@ -182,7 +184,7 @@ Valen para toda tarea. Los valores salen de la spec, la constitución 1.4.1, la 
 | El cambio de idioma en la Biblioteca (FR-044) | Conserva los filtros y borra las claves ajenas | Es la recomendación de la spec, y C2 de F1 sigue pasando |
 | La sesión del corte (FR-001) | Transitoria, en el adaptador; T018 la borra | R1 |
 | El destino del foco (FR-019) | El de la spec, sin ajustes | R8 |
-| fishery (FR-034) | Entra, con una factory de `GuideResource` en la página | R4 |
+| fishery (FR-034) | Se usa (llegó con #67), con una factory de `GuideResource` en la página | R4 |
 | Cuántos PR | Uno, el de la vista, revertible entero | Es la regla de la hoja de ruta («Un PR por vista»). El informe propone un PR previo con lo compartido |
 | Los contadores en la suscripción del shell | No: sólo el pie, que tiene prueba en rojo; F9 suma los contadores | R7 |
 
@@ -209,20 +211,18 @@ No hay `data-model.md`: F3 no cambia el formato del progreso. Las interfaces Typ
 
 ```text
 frontend/
-├── app.js                                    T007 toggleItem · T009 suscripción · T013 corte
+├── app.js                                    T013 corte (la suscripción del pie ya está, F4)
 ├── styles.css                                T019 sale lo de la Biblioteca
-├── vitest.config.ts                          T006 dos proyectos
+├── vitest.config.ts                          sin cambios: los proyectos node y dom ya están (#67)
 └── src/
-    ├── vitest-setup.ts                       T006 NUEVO, si no está
+    ├── vitest.setup.ts                       sin cambios: ya está (#67)
     ├── app/
     │   ├── main.tsx                          T019 importa library.css después de styles.css
     │   ├── boot/legacy-views.ts              T013 suma register-library
     │   └── legacy/
     │       ├── register-library.tsx          T013 NUEVO · T018 sin sesión y con UrlStateProvider
-    │       └── url-state.tsx (+ .spec.tsx)    T016 NUEVO, si no está
-    ├── entities/guide/
-    │   ├── index.ts                          T007 exporta toggleItem
-    │   └── model/toggle-item.ts (+ .spec.ts)  T007 NUEVO, si no está
+    │       └── url-state.tsx (+ .spec.tsx)    T016 NUEVO sólo si F5 no lo trajo
+    ├── entities/guide/                       sin cambios: la página usa routeStore.toggleMark (F4)
     ├── shared/config/url-grammar.ts (+ spec) T017 y T018 las constantes y withLanguageQuery
     └── pages/library/                        NUEVO
         ├── index.ts                          la API pública: LibraryPage (y, hasta T018, la sesión)
@@ -240,21 +240,21 @@ frontend/
             ├── EmptyLibrary.tsx                      T011 · T014
             └── library.css                           T019
 qa/
-├── e2e/fixtures/{index,storage-control}.ts   T003
+├── e2e/fixtures/index.ts                     T003 (storage-control.ts no cambia: blockWrites() es el de F4)
 ├── e2e/pages/library.ts                      T003 NUEVO
 ├── e2e/specs/library.spec.ts                 T004 · T012 · T014 · T017 NUEVO
 ├── e2e/specs/url-contract.spec.ts            T017 un caso nuevo
 ├── lib/{sources,legacy-sources,app-shell-harness}.ts   T008 y T013
-├── lib/app-adapters.ts · load-order-check.ts · boot-check.ts · lib/fake-dom.ts   T013
+├── lib/app-adapters.ts · load-order-check.ts · boot-check.ts   T013 (fake-dom.ts no cambia)
 └── app-shell-check.ts                        T008 y T009
-eslint.config.ts                              T006 la guarda de useStore
-package.json · package-lock.json · frontend/THIRD-PARTY-NOTICES.txt   T005 y T015
+eslint.config.ts                              T006 la guarda de useStore de F6, sólo si ni F5 ni F6 la trajeron
+package.json · package-lock.json · frontend/THIRD-PARTY-NOTICES.txt   T015, sólo si F3 entra antes que F5
 docs/architecture.md · qa/AGENTS.md · docs/agent-skills.md · docs/adr/0008-pruebas-del-front.md   T022
 ```
 
 **Structure Decision:**
 - La página vive en `pages/library`, con los segmentos `model` y `ui`, como el Atlas.
-- `toggleItem` baja a `entities/guide`, porque alterna ids del progreso del recorrido y la usan `app.js`, la Biblioteca y después F4 y F9.
+- La estrella escribe con `routeStore.toggleMark('favorites', id)`, que F4 dejó en `entities/guide`: alterna el id, escribe una vez y avisa una vez. F3 no crea `toggleItem` ni otra operación de alternar.
 - `url-state.tsx` va en `app/legacy/` porque lo usan los adaptadores de las páginas con nuqs, hasta que F10 deje una sola raíz.
 - No se crea `features`, `widgets` ni un barrel.
 
@@ -262,7 +262,7 @@ docs/architecture.md · qa/AGENTS.md · docs/agent-skills.md · docs/adr/0008-pr
 
 Lo que el revisor mira primero:
 
-- **El corte, en un solo commit (T013).** No queda ninguna rama `favorite`, `category` ni `clear-filters`, ningún `filter-*` ni `resource-search` en los delegados de `app.js`, y ningún `data-action` en el marcado nuevo. `render()` desmonta la Biblioteca antes de redibujar y la monta sin `?.`. El favorito se alterna una sola vez por clic.
+- **El corte, en un solo commit (T013).** No queda ninguna rama `favorite`, `category` ni `clear-filters`, ningún `filter-*` ni `resource-search` en los delegados de `app.js`, y ningún `data-action` en el marcado nuevo. `render()` desmonta la Biblioteca antes de redibujar y la monta sin `?.`. El favorito se alterna una sola vez por clic, con `routeStore.toggleMark('favorites', id)`.
 - **Una sola instancia del almacén.** El adaptador no importa `routeStore`: lo importa la página. `boot-check` monta la Biblioteca desde el bundle de `main.tsx` sin el error «Abrí el almacén…», y el escenario de `app-shell-check` usa el `routeStore` del mismo bundle que `app.js`.
 - **Ninguna copia del progreso** (FR-010). La revisión se suscribe con `useStore(routeStore.changes, (state) => state.revision)` y los favoritos se leen de `routeStore.getProgress()` en cada render. Un `useState(favorites)`, un `useMemo([favorites])` o un `useStore(store)` sin selector son defectos.
 - **El marcado igual al de hoy.**
@@ -291,7 +291,7 @@ Lo que el revisor mira primero:
 | --- | --- | --- | --- |
 | 0 · Línea base y verificación | T001 y T002 | Los valores de partida y la confirmación de nuqs | — (sólo documentación) |
 | 1 · E2E contra el legacy | T003 y T004 | El Page Object y los flujos de lo que se conserva, en verde contra el legacy | Se pierden las pruebas; nada de producción cambió |
-| 2 · Arnés, piezas compartidas, modelo y página sin montar | T005 a T011 | La pila de componentes, la guarda, `toggleItem`, el `routeStore` del arnés de `qa/`, la suscripción del pie, el modelo y la página con sus specs, sin montar | Sin efecto visible: la página no está montada |
+| 2 · Arnés, piezas compartidas, modelo y página sin montar | T005 a T011 | La comprobación de la pila de componentes y de `routeStore.toggleMark`, la guarda (si falta), el `routeStore` del arnés de `qa/`, el escenario del pie, el modelo y la página con sus specs, sin montar | Sin efecto visible: la página no está montada |
 | 3 · El corte | T012 y T013 | El adaptador, el montaje, el retiro de las siete ramas y las adaptaciones de `qa/` | Vuelve el legacy |
 | 4 · Los cambios a propósito | T014 a T018 | El foco (T014) y los filtros en la URL con nuqs (T015 a T018) | Cada commit devuelve el port anterior |
 | 5 · El CSS | T019 | `library.css` y los bloques partidos | Vuelve el CSS a `styles.css` |
@@ -330,10 +330,11 @@ Los tres tocan `render()` y los delegados en líneas vecinas: el rebase lo resue
   - las skills `tdd`, `clean-code`, `vitest` y `react-testing`, y `playwright-best-practices` si escribís E2E.
 - **Base y estado.** Partís del commit de T001. Antes de una tarea condicional, mirá lo que T001 anotó en research.md («Línea base de la implementación») y seguí la rama que corresponde.
 - **TDD, siempre.**
-  - Un módulo nuevo empieza con sus firmas lanzando `new Error('not implemented')`, para que su spec falle por comportamiento y no por un import.
+  - Un módulo nuevo empieza con sus firmas lanzando `new Error('not implemented')`, para que su spec falle por comportamiento y no por un import. **Los stubs del rojo van como `const` tipados** (TR-2): el prefijo `_` no silencia `no-unused-vars` en este repositorio, así que el stub no declara parámetros. Una función, `export const filterResources: (resources: readonly GuideResource[], filters: LibraryFilters, favorites: readonly string[]) => GuideResource[] = () => { throw new Error('not implemented'); };`; un componente, `const LibraryPage: FunctionComponent<LibraryPageProps> = () => null;`, con `import type { FunctionComponent } from 'react';`. La implementación vuelve a la forma de la sección de la tarea (`export function …` o el componente con sus props).
   - La prueba en rojo y la implementación van en commits separados. El commit rojo no pasa `npm test`; el PR entero sí.
   - Los valores esperados salen de la spec, de research.md (R4), del contrato de URL o de las fixtures congeladas, nunca del código ni de una factory.
   - Una prueba de la base que falla dice que el error está en el código nuevo: su valor esperado no se toca.
+- **Una E2E que recarga después de un cambio de filtro espera la URL.** nuqs escribe la URL al menos 50 ms después del cambio y no tiene escritura síncrona (la tercera diferencia de nuqs, decidida el 2026-10-28; TR-1). Antes de `page.reload()`, la prueba espera la query con `await page.waitForURL((url) => …)` o `await expect(page).toHaveURL((url) => …)`; nunca recarga en el acto.
 - **Mover no reescribe.**
   - El filtro conserva la búsqueda por subcadena y la lectura de los identificadores de lenguaje, `both` incluido.
   - La `.sr-only` vacía y el `class="pill "` (que pasa a `"pill"`) no se corrigen de paso.
@@ -363,32 +364,32 @@ Los tres tocan `render()` y los delegados en líneas vecinas: el rebase lo resue
 
 ### Tarea 0.1 · La línea base y el estado de la base (T001, K)
 
-- **Cuándo:** sobre la base de implementación (`master` con F2a, A2 y F2b), antes de cualquier cambio. Si F4, F5 o F9 se integraron antes, también los incluye.
+- **Cuándo:** sobre la base de implementación (`master` desde `431c9d90`, con F2a, A2, F2b, la pila de componentes de #67, el tope de #76 y F4 de #77), antes de cualquier cambio. Si F5, F6 o F9 se integraron antes, también los incluye.
 - **Entrega:** un commit de documentación que suma a research.md la sección «Línea base de la implementación», con el hash de la base, los valores de quickstart.md §1 y la tabla «Qué ya está en la base».
 - **Pasos:**
   1. `npm ci --offline --no-audit --no-fund`, `npm run build`, `npm test`, `npm run lint`, `npm run format:check` y `E2E_PORT=4173 npm run test:e2e`: todo en verde. Si algo falla, F3 no empieza.
   2. Anotar los valores de quickstart.md §1:
      - los hashes del script, del `<style>` y del marcado del dist;
-     - `html.length` y el conteo de `import(` y `import.meta`;
+     - `BOOT_SIZE_LIMIT` de `qa/build-check.ts` (1 500 000 desde #76) y el subpresupuesto de F3 (§«Restricciones globales»);
+     - `html.length` y el conteo de `import(` y `import.meta`, que son la base de la compuerta de TR-4;
      - el multiconjunto del CSS;
      - los avisos de complejidad, con la función de 11 de `renderResourceResults`;
      - la cantidad de pruebas de cada check y de Vitest;
      - `npx playwright test --config qa/e2e/playwright.config.ts --list | tail -1`.
-  3. Correr las detecciones de quickstart.md §1.3 y anotar cada pieza compartida como «está» o «falta». Las tareas condicionales (T005, T006, T007, T008, T009, T013, T015, T016 y T019) siguen esa tabla.
+  3. Correr las detecciones de quickstart.md §1.3 y anotar cada pieza compartida como «está» o «falta». Las tareas condicionales (T005, T006, T007, T008, T009, T013, T015, T016 y T019) siguen esa tabla. Con `431c9d90` se esperan «está» para la pila de DOM y fishery, los proyectos `node` y `dom`, `vitest.setup.ts`, `toggleMark`, la suscripción del pie y `blockWrites()`; y «falta» para nuqs, `url-state.tsx` y la guarda, salvo que F5 o F6 ya hayan entrado.
 - **Compuerta:** los pasos 1 a 3, con los valores anotados.
 
 ### Tarea 0.2 · La verificación corta de nuqs (T002, K; riesgo 14)
 
-- **Cuándo:** después de T001 y antes de la unidad 1, con los permisos de las descargas (§«Descargas y permisos», P1 y P2). Si T001 encontró nuqs y la pila de DOM instalados, el paso 2 se salta y todo lo demás corre sobre la base.
+- **Cuándo:** después de T001 y antes de la unidad 1. La pila de DOM ya está en la base (#67). Si T001 encontró nuqs (F5 ya entró), el paso 2 se salta y todo lo demás corre sobre la base; si no, el paso 2 pide el permiso P1 (§«Descargas y permisos»).
 - **Dónde:** en una copia descartable de la base (`git worktree add --detach ../f3-nuqs-probe <hash de T001>`), nunca en la rama. Se borra al terminar (`git worktree remove ../f3-nuqs-probe`).
 - **Pasos:**
   1. **Los metadatos:** `npm view nuqs@2.10.2 version license dist.unpackedSize`. Tiene que dar 2.10.2, MIT y 480 252.
   2. **La instalación en la copia:**
      ```sh
      npm install --save-exact nuqs@2.10.2
-     npm install --save-exact --save-dev jsdom@30.1.2 @testing-library/react@16.3.3 @testing-library/dom@10.4.2 @testing-library/user-event@14.6.7 @testing-library/jest-dom@7.0.1
      ```
-     La segunda línea sólo si T001 encontró la pila de DOM ausente.
+     La pila de DOM no se instala: está en la base desde #67.
   3. **Los exports:** `node --input-type=module -e "import('nuqs/adapters/react').then((m) => console.log(Object.keys(m).sort().join(',')))"`. Se espera `NuqsAdapter,enableHistorySync`.
   4. **El peso, como cota superior.** Al final de `frontend/src/app/main.tsx` de la copia va el código de abajo. Después, `npm run build`, y el `html.length` menos el de T001 es lo que suma nuqs. Si pasa de 25 000, se detiene y decide el coordinador.
      ```ts
@@ -398,7 +399,7 @@ Los tres tocan `render()` y los delegados en líneas vecinas: el rebase lo resue
        __nuqsProbe: { NuqsAdapter, enableHistorySync, parseAsBoolean, parseAsString, parseAsStringLiteral, useQueryStates },
      });
      ```
-  5. **El comportamiento en jsdom.** En `frontend/vitest.config.ts` de la copia va un proyecto `jsdom` con la configuración de T006, y en `frontend/src/nuqs-probe.spec.tsx`, el código de quickstart.md §2. Corre con `npx vitest run --config frontend/vitest.config.ts --project jsdom src/nuqs-probe.spec.tsx`. Se esperan los siete casos en verde:
+  5. **El comportamiento en jsdom.** La configuración no cambia: el proyecto `dom` de la base ya toma `*.spec.tsx` con su setup. En `frontend/src/nuqs-probe.spec.tsx` va el código de quickstart.md §2. Corre con `npx vitest run --config frontend/vitest.config.ts --project dom src/nuqs-probe.spec.tsx`. Se esperan los siete casos en verde:
      1. reemplaza la URL, conserva el hash y las claves ajenas, y no suma historial;
      2. la búsqueda de sólo espacios con `parseAsString`: el campo la conserva y la URL la lleva (`?buscar=+++`);
      3. la búsqueda de sólo espacios con un `eq` recortado: el campo se vacía (la opción B de D1);
@@ -413,12 +414,12 @@ Los tres tocan `render()` y los delegados en líneas vecinas: el rebase lo resue
 
 **Cubre:** FR-003, FR-005, FR-012, FR-013, FR-016 a FR-018, FR-020 y FR-031; SC-002, SC-003 y SC-007; US1, US2 y US3.
 
-### Tarea 1.1 · El Page Object, su fixture y el almacenamiento que lee y no escribe (T003, E)
+### Tarea 1.1 · El Page Object y su fixture; el almacenamiento que lee y no escribe es el de F4 (T003, E)
 
 - **Archivos:**
   - `qa/e2e/pages/library.ts`, nuevo;
-  - `qa/e2e/fixtures/index.ts`: suma la fixture `library`;
-  - `qa/e2e/fixtures/storage-control.ts`: suma `blockWrites()`.
+  - `qa/e2e/fixtures/index.ts`: suma la fixture `library`.
+- **`blockWrites()` no se escribe:** es el de F4, que ya está en `master` (`qa/e2e/fixtures/storage-control.ts:32-41`, #77). Bloquea `setItem` de `localStorage` con `QuotaExceededError` y deja leer. Su contrato: se llama **después** de `seed()` y no se combina con `watchWrites()`. Alcanza para la Biblioteca: el único caso que lo usa, (h), sólo alterna una estrella, y `toggleMark` escribe con `setItem` (`versioned-storage.ts`, `write`); ningún caso de F3 necesita bloquear `removeItem`. Si una E2E de F3 lo necesitara más adelante, se extiende ese mismo método en el mismo fixture, sin cambiar su firma (decisión del 2026-10-28, noche).
 - **Produce:**
 
 ```ts
@@ -514,27 +515,8 @@ export class LibraryPage {
 }
 ```
 
-```ts
-// qa/e2e/fixtures/storage-control.ts, a new method of StorageControl
-  async blockWrites(): Promise<void> {
-    await this.context.addInitScript(() => {
-      const setItem = Storage.prototype.setItem;
-      const removeItem = Storage.prototype.removeItem;
-      const quota = () => new DOMException('The quota has been exceeded.', 'QuotaExceededError');
-      Storage.prototype.setItem = function (key: string, value: string) {
-        if (this === window.localStorage) throw quota();
-        return setItem.call(this, key, value);
-      };
-      Storage.prototype.removeItem = function (key: string) {
-        if (this === window.localStorage) throw quota();
-        return removeItem.call(this, key);
-      };
-    });
-  }
-```
-
 - **La fixture:** en `qa/e2e/fixtures/index.ts`, `import { LibraryPage } from '../pages/library';`, `library: LibraryPage;` en `Fixtures` y `library: async ({ page }, use) => use(new LibraryPage(page)),` después de `atlas`.
-- **Pasos:** `npm run typecheck` (incluye `qa/e2e/tsconfig.json`) y `npm run lint`. Las pruebas de estas piezas son las de T004. Commit: `test(e2e): el Page Object de la Biblioteca y el almacenamiento que lee y no escribe`.
+- **Pasos:** `npm run typecheck` (incluye `qa/e2e/tsconfig.json`) y `npm run lint`. Las pruebas de estas piezas son las de T004. Commit: `test(e2e): el Page Object de la Biblioteca`.
 
 ### Tarea 1.2 · Los flujos de la Biblioteca, en verde contra el legacy (T004, E)
 
@@ -923,6 +905,7 @@ test('(l) switching the language on the library keeps the filters', async ({ she
 });
 ```
 
+- **`blockWrites()` en (h)** es el de F4: sin `seed()` en ese caso, y sin `watchWrites()`. Si un caso suma una semilla, `blockWrites()` va después de `seed()`.
 - **Pasos:**
   1. Escribir la spec y correrla contra el build del legacy: `npm run build` y `E2E_PORT=4191 npm run test:e2e -- specs/library.spec.ts`. Todo tiene que pasar.
   2. Correrla tres veces seguidas (`--repeat-each=3 --retries=0`) para descartar pruebas inestables.
@@ -937,68 +920,15 @@ test('(l) switching the language on the library keeps the filters', async ({ she
 
 ### Tarea 2.1 · La pila de componentes y fishery (T005, K)
 
-- **Si T001 encontró la pila de DOM y fishery instaladas:** no se hace nada.
-- **Si falta alguna:** con el permiso P2 (§«Descargas y permisos»), se instala sólo lo que falta:
-  ```sh
-  npm install --save-exact --save-dev jsdom@30.1.2 @testing-library/react@16.3.3 @testing-library/dom@10.4.2 @testing-library/user-event@14.6.7 @testing-library/jest-dom@7.0.1 fishery@2.4.0
-  ```
-- **Comprobaciones:**
-  - `git diff package.json` muestra sólo `devDependencies`, con versiones sin `^`;
-  - `npm ci --offline` reproduce el árbol;
-  - `npm run build` deja el script del dist con el mismo sha256 que en T001: nada de esto es alcanzable desde `main.tsx`.
-- **Commit:** `build(front): jsdom, Testing Library y fishery para las specs de componentes`.
+- **La pila ya está en la base:** jsdom 30.1.2, Testing Library y fishery 2.4.0 llegaron con #67 (`7aa96018`), en `devDependencies` y con versiones exactas. No se instala nada, no se pide el permiso P2 y no hay commit.
+- **Comprobación:** `npm ls jsdom @testing-library/react @testing-library/dom @testing-library/user-event @testing-library/jest-dom fishery` lista las seis con las versiones de arriba. Si falta alguna, es un hallazgo: K lo informa al coordinador y no la instala por su cuenta.
 
 ### Tarea 2.2 · Los dos proyectos de Vitest, el setup y la guarda de `useStore` (T006, K)
 
-- **Si T001 encontró `frontend/src/vitest-setup.ts`, los `projects` y la guarda:** no se cambia ningún archivo. Sólo se corre la prueba de la guarda del paso 4. Si no rechaza el temporal, es un hallazgo y K suma el bloque de ESLint de abajo.
-- **Archivos:** `frontend/vitest.config.ts`, `frontend/src/vitest-setup.ts` (nuevo) y `eslint.config.ts`. Su contenido es el mismo que el del plan de F5 (§2.1), para que el segundo en llegar no tenga nada que resolver.
-
-```ts
-// frontend/vitest.config.ts
-import { resolve } from 'node:path';
-import { defineConfig, mergeConfig } from 'vitest/config';
-import viteConfig from './vite.config.ts';
-
-export default mergeConfig(
-  viteConfig,
-  defineConfig({
-    // Vite's root is frontend/src: without this the cache would land in frontend/src/node_modules.
-    cacheDir: resolve(import.meta.dirname, '../node_modules/.vite'),
-    test: {
-      projects: [
-        {
-          extends: true,
-          test: { name: 'node', environment: 'node', include: ['**/*.spec.ts'] },
-        },
-        {
-          extends: true,
-          test: {
-            name: 'jsdom',
-            environment: 'jsdom',
-            include: ['**/*.spec.tsx'],
-            setupFiles: [resolve(import.meta.dirname, 'src/vitest-setup.ts')],
-          },
-        },
-      ],
-    },
-  }),
-);
-```
-
-La raíz sólo lleva `projects`. En Vitest 5, los proyectos en línea heredan la raíz y concatenan sus arreglos, así que un `include` en la raíz se sumaría al de `jsdom` (research.md, tabla). El comentario del `cacheDir` ya existe y se conserva.
-
-```ts
-// frontend/src/vitest-setup.ts
-import '@testing-library/jest-dom/vitest';
-import { cleanup } from '@testing-library/react';
-import { afterEach } from 'vitest';
-
-afterEach(() => {
-  cleanup();
-});
-```
-
-El bloque nuevo de `eslint.config.ts`, después del de `frontend/src/**/*.{js,jsx,ts,tsx}`:
+- **Los proyectos y el setup ya están en la base** (#67): `frontend/vitest.config.ts` tiene los proyectos `node` (`**/*.spec.ts`) y `dom` (entorno jsdom, `**/*.spec.tsx`), y `frontend/src/vitest.setup.ts` suma jest-dom y llama a `cleanup()`. No se cambian. Las specs de componente de F3 (`*.spec.tsx`) corren en `dom` y las de modelo (`*.spec.ts`), en `node`.
+- **La guarda de `useStore`** es el bloque canónico de F6 (`impl-f6`, `b20028be`, `eslint.config.ts:43-54`, commit `e30ad0bf`), que F5 copió igual (`impl-f5`, `efaf39b2`, commit `c6e7ebda`). F4 usa `useStore` y no la trajo: entra con F5 o con F6, el que llegue primero.
+  - **Si T001 la encontró:** no se cambia ningún archivo. Sólo se corre la prueba de la guarda del paso 1. Si no rechaza el temporal, es un hallazgo para el coordinador.
+  - **Si falta:** K suma este bloque exacto en `eslint.config.ts`, **inmediatamente antes del bloque de `complexity`**, con el mismo selector y el mismo mensaje, sin variantes:
 
 ```ts
   {
@@ -1007,8 +937,8 @@ El bloque nuevo de `eslint.config.ts`, después del de `frontend/src/**/*.{js,js
       'no-restricted-syntax': [
         'error',
         {
-          selector: "CallExpression[callee.name='useStore'][arguments.length<2]",
-          message: 'useStore needs a small selector: never subscribe to the whole store (F2a, Q3).',
+          selector: "CallExpression[callee.name='useStore'][arguments.length=1]",
+          message: 'useStore needs a selector: without one it subscribes to the whole store.',
         },
       ],
     },
@@ -1016,20 +946,7 @@ El bloque nuevo de `eslint.config.ts`, después del de `frontend/src/**/*.{js,js
 ```
 
 - **Pasos:**
-  1. **La prueba del proyecto, en rojo.** `frontend/src/vitest-setup.probe.spec.tsx`, descartable:
-     ```tsx
-     import { render, screen } from '@testing-library/react';
-     import { expect, it } from 'vitest';
-
-     it('renders in jsdom', () => {
-       render(<p>hola</p>);
-       expect(screen.getByText('hola')).toBeInTheDocument();
-     });
-     ```
-     `npm run test:unit -- src/vitest-setup.probe.spec.tsx` falla: el proyecto de hoy no toma `*.spec.tsx`.
-  2. Escribir la configuración y el setup. La prueba pasa en el proyecto `jsdom`, y `npm run test:unit` corre en `node` la misma cantidad de pruebas que T001.
-  3. Se borra la prueba descartable.
-  4. **La guarda, en rojo y después en verde.** `frontend/src/app/use-store-probe.tsx`, descartable:
+  1. **La guarda, en rojo y después en verde.** `frontend/src/app/use-store-probe.tsx`, descartable:
      ```tsx
      import { useStore } from 'zustand';
      import { createStore } from 'zustand/vanilla';
@@ -1047,74 +964,23 @@ El bloque nuevo de `eslint.config.ts`, después del de `frontend/src/**/*.{js,js
      - Con el bloque, falla con el mensaje de arriba.
      - `useStore(probeStore, (state) => state.revision)` pasa.
      - Se borra el temporal.
-  5. `npm run typecheck`, `npm run lint` y `npm run format:check`.
-- **Commit:** `test(front): el arnés de componentes de Vitest con jsdom y la guarda de useStore`.
-- **Compuerta:** los pasos 2 y 4, y SC-012: `grep -n library frontend/vitest.config.ts frontend/src/vitest-setup.ts eslint.config.ts` no imprime nada.
+  2. `npm run test:unit` corre los dos proyectos en verde, con la misma cantidad de pruebas que T001.
+  3. `npm run typecheck`, `npm run lint` y `npm run format:check`.
+- **Commit** (sólo si se sumó el bloque): `build(front): la guarda de useStore sin selector, el bloque de F6`.
+- **Compuerta:** los pasos 1 y 2, y SC-012: `grep -n library frontend/vitest.config.ts frontend/src/vitest.setup.ts eslint.config.ts` no imprime nada.
 
-### Tarea 2.3 · `toggleItem` baja a `entities/guide` (T007, S)
+### Tarea 2.3 · La escritura del favorito es `routeStore.toggleMark` de F4 (T007, S)
 
-- **Si T001 la encontró exportada por `entities/guide`:** no se hace nada.
-- **Archivos:**
-  - `frontend/src/entities/guide/model/toggle-item.ts` y `toggle-item.spec.ts`, nuevos;
-  - `frontend/src/entities/guide/index.ts`;
-  - `frontend/app.js`.
-- **Produce:** `export function toggleItem(collection: string[], id: string): void;`. Agrega `id` al final si falta, o lo quita, y **muta** el arreglo que recibe: el progreso se muta en el lugar antes de `routeStore.save()`.
-
-```ts
-// frontend/src/entities/guide/model/toggle-item.spec.ts
-import { describe, expect, it } from 'vitest';
-import { toggleItem } from './toggle-item';
-
-describe('toggleItem', () => {
-  it('adds a missing id at the end of the same array', () => {
-    const favorites = ['rust-100'];
-
-    toggleItem(favorites, 'go-tour');
-
-    expect(favorites).toEqual(['rust-100', 'go-tour']);
-  });
-
-  it('removes an id that is there and keeps the order of the rest', () => {
-    const favorites = ['rust-100', 'go-tour', 'context7'];
-
-    toggleItem(favorites, 'go-tour');
-
-    expect(favorites).toEqual(['rust-100', 'context7']);
-  });
-
-  it('returns to the start when it toggles twice', () => {
-    const completed = ['rust-ownership'];
-
-    toggleItem(completed, 'rust-first-session');
-    toggleItem(completed, 'rust-first-session');
-
-    expect(completed).toEqual(['rust-ownership']);
-  });
-});
-```
-
-```ts
-// frontend/src/entities/guide/model/toggle-item.ts
-export function toggleItem(collection: string[], id: string): void {
-  const index = collection.indexOf(id);
-  if (index === -1) collection.push(id);
-  else collection.splice(index, 1);
-}
-```
-
+- **Qué hay en la base:** F4 dejó `routeStore.toggleMark(collection: RouteMarkCollection, id: string): boolean` en `frontend/src/entities/guide/model/route-store.ts` (el tipo en `:21`, la firma en `:27` y la implementación en `:97`), con `RouteMarkCollection = 'completed' | 'milestones' | 'favorites'`. Agrega `id` al final si falta o lo quita, escribe una vez, avisa una vez a `routeStore.changes` y devuelve si guardó. El índice de `entities/guide` exporta `routeStore` y el tipo `RouteMarkCollection`, y `route-store.spec.ts` («toggling a mark of the route») ya lo prueba con `favorites`.
+- **Qué hace F3:** la página y el arnés de `qa/` escriben con `routeStore.toggleMark('favorites', id)` (T008, T011 y T014). **No se crea `toggleItem` ni otra operación de alternar,** y `frontend/app.js` no se toca en esta tarea: su `toggleItem` local sigue para los pasos del Recorrido hasta F9, y la rama `favorite` sale en el corte (T013).
 - **Pasos:**
-  1. La spec, con `toggleItem` lanzando `not implemented`. `npm run test:unit -- src/entities/guide/model/toggle-item.spec.ts` falla. Commit: `test(front): toggleItem alterna un id del progreso del recorrido (rojo)`.
-  2. La implementación, y `export { toggleItem } from './model/toggle-item';` en el índice.
-  3. En `frontend/app.js`:
-     - el primer import pasa a `import { routeStore, toggleItem } from './src/entities/guide';`;
-     - se borra la función local `toggleItem`, sin tocar ninguna llamada.
-  4. `node qa/app-shell-check.ts` (los pasos, los hitos y los favoritos la usan), `node qa/boot-check.ts`, `node qa/seams-guard-check.ts`, `npm test` y `npm run lint`.
-  5. Commit: `refactor(front): toggleItem vive en entities/guide y app.js la importa`.
-- **Compuerta:** el paso 4, sin cambiar un valor esperado.
+  1. `grep -n "toggleMark" frontend/src/entities/guide/model/route-store.ts` imprime la firma y la implementación, y `grep -n "routeStore\|RouteMarkCollection" frontend/src/entities/guide/index.ts` imprime los dos exports.
+  2. `npm run test:unit -- src/entities/guide/model/route-store.spec.ts` en verde.
+- **Compuerta:** los pasos 1 y 2. No hay commit. Si `toggleMark` falta o cambió de firma, F3 se detiene y lo decide el coordinador.
 
 ### Tarea 2.4 · El almacén del bundle de `app.js` en `app-shell-check` y los dos escenarios de `favorite` (T008, S)
 
-- **Cuándo:** después de T007.
+- **Cuándo:** después de T007, que comprobó `routeStore.toggleMark` en la base.
 - **Si T001 encontró el `routeStore` del arnés:** se usa el que está y se hace sólo el paso 4, con el ayudante equivalente.
 - **Archivos:** `qa/lib/sources.ts`, `qa/lib/legacy-sources.ts`, `qa/lib/app-shell-harness.ts` y `qa/app-shell-check.ts`.
 - **Produce:**
@@ -1144,18 +1010,18 @@ export function runModuleEntry<T>(context: vm.Context, name: string, contents: s
 // qa/lib/legacy-sources.ts
 const APP_SHELL_ENTRY = [
   `export { startApp } from './${APP_SHELL_SOURCE}';`,
-  "export { routeStore, toggleItem } from './frontend/src/entities/guide';",
+  "export { routeStore } from './frontend/src/entities/guide';",
 ].join('\n');
 
 export interface AppShellRouteStore {
   getProgress(): { favorites: string[]; completed: string[] };
   save(): boolean;
+  toggleMark(collection: 'completed' | 'milestones' | 'favorites', id: string): boolean;
 }
 
 export interface AppShellModule {
   startApp(): void;
   routeStore: AppShellRouteStore;
-  toggleItem(collection: string[], id: string): void;
 }
 
 export function loadAppShell(context: vm.Context): AppShellModule {
@@ -1163,13 +1029,13 @@ export function loadAppShell(context: vm.Context): AppShellModule {
 }
 ```
 
-Así `startApp`, `routeStore` y `toggleItem` salen del mismo bundle: el almacén que abre `app.js` es el que usa la prueba, como pasa en el navegador con la página. `boot-check` también llama a `loadAppShell`, sólo para `startApp`, y no cambia.
+Así `startApp` y `routeStore` salen del mismo bundle: el almacén que abre `app.js` es el que usa la prueba, como pasa en el navegador con la página. `boot-check` también llama a `loadAppShell`, sólo para `startApp`, y no cambia.
 
 ```ts
 // qa/lib/app-shell-harness.ts
 export interface LoadedHarness extends Harness {
   routeStore: AppShellRouteStore;
-  // The library page saves this way: toggle the id in the shared progress, then save.
+  // The library page saves this way: routeStore.toggleMark('favorites', id).
   toggleFavorite(id: string): void;
 }
 
@@ -1181,8 +1047,7 @@ export function buildHarness(options: HarnessOptions = {}): LoadedHarness {
     ...harness,
     routeStore: shell.routeStore,
     toggleFavorite(id) {
-      shell.toggleItem(shell.routeStore.getProgress().favorites, id);
-      shell.routeStore.save();
+      shell.routeStore.toggleMark('favorites', id);
     },
   };
 }
@@ -1195,7 +1060,7 @@ El comentario de `toggleFavorite` es la referencia puntual que permite `AGENTS.m
   - «almacén: un cambio de otra pestaña se fusiona y gana el idioma y los minutos de esta»: `await clickAction(harness, { action: 'favorite', id: 'go-tour' });` pasa a `harness.toggleFavorite('go-tour');`.
 - **Pasos:**
   1. Los tres cambios de `qa/lib/`. `node qa/app-shell-check.ts` sigue en verde, con la misma cantidad de escenarios.
-  2. Los dos reemplazos. Los dos escenarios pasan **contra el legacy** con sus aserciones intactas: el `save()` de la página y el de `app.js` son el mismo almacén.
+  2. Los dos reemplazos. Los dos escenarios pasan **contra el legacy** con sus aserciones intactas: el `toggleMark` de la página y el `save()` de `app.js` escriben en el mismo almacén.
   3. `node qa/boot-check.ts`, `npm run typecheck` y `npm run lint`.
   4. Commit: `test(qa): app-shell-check guarda los favoritos por el camino de la página`.
 - **Compuerta:** el paso 2, y `git diff qa/app-shell-check.ts` cambia sólo esas dos líneas.
@@ -1203,9 +1068,9 @@ El comentario de `toggleFavorite` es la referencia puntual que permite `AGENTS.m
 ### Tarea 2.5 · El pie de guardado sigue a la revisión del recorrido (T009, S)
 
 - **Cuándo:** después de T008.
-- **Si T001 encontró la suscripción:** se corre el escenario de abajo. Si pasa, no se cambia nada. Si falla porque el oyente no actualiza el pie, se suma `updateSaveLabel()` al oyente que está.
-- **Archivos:** `qa/app-shell-check.ts` (un escenario nuevo, después de «almacenamiento sin escritura…») y `frontend/app.js`.
-- **La prueba en rojo:**
+- **La suscripción ya está en la base:** F4 la dejó en `frontend/app.js:29`, inmediatamente después de `routeStore.open(data);`: `routeStore.changes.subscribe(updateSaveLabel);` (#77). Ésta es la rama «T001 encontró la suscripción»: se suma el escenario de abajo, que tiene que pasar sin tocar `app.js`. Si falla porque el oyente no actualiza el pie, se suma `updateSaveLabel()` al oyente que está. Si F9 ya cambió el oyente por `() => syncShell()`, el escenario pasa igual, porque `syncShell` llama a `updateSaveLabel`.
+- **Archivos:** `qa/app-shell-check.ts` (un escenario nuevo, después de «almacenamiento sin escritura…»). `frontend/app.js`, sólo en la rama sin suscripción.
+- **El escenario** (en rojo sólo si la base no tuviera la suscripción):
 
 ```ts
 await test('almacén: un guardado de otro consumidor actualiza el pie', () => {
@@ -1218,15 +1083,15 @@ await test('almacén: un guardado de otro consumidor actualiza el pie', () => {
 });
 ```
 
-Falla hoy: el `save()` de la página no pasa por el de `app.js`, que es el que actualiza el pie.
+Sin la suscripción fallaría: el guardado de la página no pasa por el `save()` de `app.js`, que es el que actualiza el pie. Con la base de F4 pasa, y queda como la protección del pie de FR-014 (rotura 10).
 
-- **La implementación:** en `frontend/app.js`, inmediatamente después de `routeStore.open(data);`, va `routeStore.changes.subscribe(updateSaveLabel);`. `updateSaveLabel` es una declaración de función de `startApp`, así que ya está definida. El `save()` de `app.js` sigue llamándola: el pie se escribe dos veces con el mismo texto, como hoy.
+- **La implementación, sólo si T001 no encontró la suscripción:** en `frontend/app.js`, inmediatamente después de `routeStore.open(data);`, va `routeStore.changes.subscribe(updateSaveLabel);`. `updateSaveLabel` es una declaración de función de `startApp`, así que ya está definida. El `save()` de `app.js` sigue llamándola: el pie se escribe dos veces con el mismo texto, como hoy.
 - **Lo que no entra:** los contadores de la barra lateral. Nada de la Biblioteca los cambia y no habría una prueba en rojo. F9 suma su línea al oyente, con su escenario (research.md, R7).
-- **Pasos:**
-  1. El escenario en rojo. Commit: `test(qa): un guardado de otro consumidor actualiza el pie (rojo)`.
-  2. La línea de `app.js`. `node qa/app-shell-check.ts` (todos), `node qa/boot-check.ts` (los oyentes del DOM no cambian), `npm test` y la red E2E.
-  3. Commit: `feat(front): el pie de guardado sigue a la revisión del recorrido`.
-- **Compuerta:** el paso 2.
+- **Pasos, con la suscripción de F4 en la base:**
+  1. El escenario. `node qa/app-shell-check.ts` (todos en verde, uno más que en T001) y `npm test`.
+  2. Commit: `test(qa): un guardado de otro consumidor actualiza el pie`.
+- **Pasos, sin la suscripción:** el escenario en rojo (commit `test(qa): un guardado de otro consumidor actualiza el pie (rojo)`), la línea de `app.js`, `node qa/app-shell-check.ts`, `node qa/boot-check.ts`, `npm test` y la red E2E, y el commit `feat(front): el pie de guardado sigue a la revisión del recorrido`.
+- **Compuerta:** el escenario en verde y `npm test`.
 
 ### Tarea 2.6 · El modelo de la Biblioteca y su factory (T010, P)
 
@@ -1511,14 +1376,14 @@ describe('the other labels', () => {
 ```
 
 - **Pasos:**
-  1. Los dos módulos, con sus firmas lanzando `not implemented`, la factory y las specs. `npm run test:unit -- src/pages/library/model` falla por comportamiento. Commit: `test(front): el filtro y las etiquetas de la Biblioteca (rojo)`.
+  1. Los dos módulos, con sus firmas lanzando `not implemented` como `const` tipados (TR-2), la factory y las specs. Los stubs: en `filter-resources.ts`, la interfaz `LibraryFilters` y `DEFAULT_LIBRARY_FILTERS` ya con su valor, y `export const filterResources: (resources: readonly GuideResource[], filters: LibraryFilters, favorites: readonly string[]) => GuideResource[] = () => { throw new Error('not implemented'); };`; en `resource-labels.ts`, `export const languageLabel: (languages: GuideResource['languages']) => string = () => { throw new Error('not implemented'); };`, y lo mismo para `costLabel: (cost: GuideResource['cost']) => string`, `favoriteLabel: (title: string, isFavorite: boolean) => string` y `resultsLabel: (shown: number, total: number) => string`. `npm run test:unit -- src/pages/library/model` falla por comportamiento, y `npm run lint` no da `no-unused-vars`. Commit: `test(front): el filtro y las etiquetas de la Biblioteca (rojo)`.
   2. La implementación. Las specs pasan, y `npm run typecheck`, `npm run lint` y `npm run format:check` pasan.
   3. Commit: `feat(front): el modelo de la Biblioteca`.
 - **Compuerta:** el paso 2 y `npm run lint` sin avisos nuevos.
 
 ### Tarea 2.7 · La página, sin montar, y su spec (T011, P)
 
-- **Cuándo:** después de T007 y T010.
+- **Cuándo:** después de T006, T007 y T010.
 - **Archivos nuevos:**
   - en `frontend/src/pages/library/`: `index.ts`, `model/use-library-filters.ts` y, en `ui/`, `LibraryPage.tsx` (con `LibraryPage.spec.tsx`), `LibraryFiltersBar.tsx`, `ResourceCard.tsx` y `EmptyLibrary.tsx`;
   - todavía no hay `library.css`: las reglas siguen en `styles.css` hasta T019.
@@ -1727,7 +1592,7 @@ export default EmptyLibrary;
 // frontend/src/pages/library/ui/LibraryPage.tsx
 import { useRef } from 'react';
 import { useStore } from 'zustand';
-import { routeStore, toggleItem, type GuideResource } from '../../../entities/guide';
+import { routeStore, type GuideResource } from '../../../entities/guide';
 import { filterResources, type LibraryFilters } from '../model/filter-resources';
 import { resultsLabel } from '../model/resource-labels';
 import useLibraryFilters from '../model/use-library-filters';
@@ -1749,8 +1614,7 @@ const LibraryPage = ({ resources, initialFilters, onFiltersChange }: LibraryPage
   const visible = filterResources(resources, filters, favorites);
 
   const toggleFavorite = (id: string) => {
-    toggleItem(routeStore.getProgress().favorites, id);
-    routeStore.save();
+    routeStore.toggleMark('favorites', id);
   };
 
   const clearFilters = () => {
@@ -1805,6 +1669,7 @@ export default LibraryPage;
 ```
 
 - **Notas para quien implementa:**
+  - La estrella escribe con `routeStore.toggleMark('favorites', id)` de F4: alterna, escribe una vez y avisa una vez a `routeStore.changes`, que redibuja la página (FR-012).
   - `useStore(routeStore.changes, (state) => state.revision)` va como sentencia. Suscribe la página a la revisión, y el progreso se vuelve a leer en cada render (FR-010). No se guarda en ninguna variable ni se memoiza nada.
   - Los textos largos de los párrafos pueden partirse en varias líneas de JSX, como arriba. JSX une las líneas de texto con un espacio, y el texto renderizado tiene que ser el de «Restricciones globales». Si Prettier los parte distinto, lo comprueba la spec.
   - `react-hooks/refs` permite leer `searchRef.current` dentro del manejador.
@@ -2092,7 +1957,7 @@ describe('the favorites', () => {
 
 - **De dónde salen los valores:** los textos, de la spec; la fusión de la otra pestaña, de ADR 0003 (decisión 9, la unión de favoritos); la cuenta, de los tres recursos de la spec.
 - **Pasos:**
-  1. Los componentes y el hook con sus firmas, cada componente devolviendo `null`, y la spec. `npm run test:unit -- src/pages/library/ui` falla por comportamiento. Commit: `test(front): la página de la Biblioteca, sin montar (rojo)`.
+  1. Los componentes y el hook con sus firmas, y la spec. Los stubs son `const` tipados sin parámetros (TR-2): cada componente, `const LibraryPage: FunctionComponent<LibraryPageProps> = () => null;` (y lo mismo para `LibraryFiltersBar`, `ResourceCard` y `EmptyLibrary` con sus props), con `import type { FunctionComponent } from 'react';` y su `export default`; el hook, `const useLibraryFilters: (initialFilters: LibraryFilters, onFiltersChange: (filters: LibraryFilters) => void) => [LibraryFilters, (change: LibraryFiltersChange) => void] = () => { throw new Error('not implemented'); };`. `npm run test:unit -- src/pages/library/ui` corre en el proyecto `dom` y falla por comportamiento, y `npm run lint` no da `no-unused-vars`. Commit: `test(front): la página de la Biblioteca, sin montar (rojo)`.
   2. La implementación de arriba. La spec pasa, y `npm run test:unit` corre los dos proyectos en verde.
   3. `npm run typecheck`, `npm run lint` (sin avisos nuevos y sin `no-restricted-syntax`), `npm run format:check`, `node qa/seams-guard-check.ts` y `npm test`.
   4. `npm run build` deja el script del dist con el mismo sha256 que antes de la tarea: la página no es alcanzable desde `main.tsx`.
@@ -2132,7 +1997,7 @@ test('(k) an open «Antes de empezar» stays open while its card stays visible',
 - **Archivos:**
   - `frontend/src/app/legacy/register-library.tsx` (nuevo) y `frontend/src/app/boot/legacy-views.ts`;
   - `frontend/app.js`;
-  - en `qa/`: `lib/app-adapters.ts`, `lib/app-shell-harness.ts`, `load-order-check.ts`, `boot-check.ts` y `lib/fake-dom.ts`.
+  - en `qa/`: `lib/app-adapters.ts`, `lib/app-shell-harness.ts`, `load-order-check.ts` y `boot-check.ts`. `lib/fake-dom.ts` no cambia.
 - **El adaptador** (con la sesión transitoria, que T018 borra):
 
 ```tsx
@@ -2178,7 +2043,7 @@ function mount(host: HTMLElement | null): void {
 window.TallerLibrary = Object.freeze({ mount, unmount });
 ```
 
-- **`legacy-views.ts`:** una línea nueva, `() => import('../legacy/register-library'),`, inmediatamente después de `() => import('../legacy/register-atlas'),`.
+- **`legacy-views.ts`:** una línea nueva, `() => import('../legacy/register-library'),`, inmediatamente después de `() => import('../legacy/register-atlas'),` (en la base, antes de `register-project-page`). Es la única entrada nueva de `LEGACY_MODULES`: `import.meta` del dist sube uno (TR-4).
 - **`frontend/app.js`, todo en el mismo commit:**
   1. Se borran `import { normalizeSearchText } from './src/shared/lib/normalize-search-text';` y la línea `const filters = { … };`.
   2. En `render()`:
@@ -2189,7 +2054,8 @@ window.TallerLibrary = Object.freeze({ mount, unmount });
   4. En el delegado de `click` de `#main`, se borran los tres bloques `if (action === 'favorite')`, `if (action === 'category')` y `if (action === 'clear-filters')`.
   5. En el de `change`, los tres bloques `if (target.id === 'filter-language' | 'filter-cost' | 'filter-favorites')`.
   6. En el de `input`, el bloque `if (target.id === 'resource-search')`.
-  7. Nada más cambia: `escapeHtml`, `toggleItem`, `data.resources` (el contador del menú y la lección) y los enlaces `#biblioteca` siguen.
+  7. **`toggleItem`, la función local de `startApp`:** si F9 ya entró, después de borrar la rama `favorite` no le queda ninguna llamada y se borra (`grep -n "toggleItem(" frontend/app.js` no imprime nada); si F9 no entró, sigue para los pasos del Recorrido y la borra F9. Ningún port la reemplaza por otra operación: las páginas usan `routeStore.toggleMark`.
+  8. Nada más cambia: `escapeHtml`, `data.resources` (el contador del menú y la lección) y los enlaces `#biblioteca` siguen.
 - **Los checks de `qa/`** (cambian cómo cargan o qué listan, no sus valores esperados):
   - `qa/lib/app-adapters.ts`: `TallerLibrary: ['mount', 'unmount'],` después de `TallerAtlas`.
   - `qa/lib/app-shell-harness.ts`:
@@ -2199,28 +2065,26 @@ window.TallerLibrary = Object.freeze({ mount, unmount });
   - `qa/load-order-check.ts`:
     - `const LIBRARY = 'frontend/src/app/legacy/register-library.tsx';` junto a `ATLAS`;
     - en `BEFORE_APP_REASONS`, `[LIBRARY]: 'render() de app.js llama a window.TallerLibrary.mount() sin guarda opcional en la vista biblioteca',`.
-  - `qa/lib/fake-dom.ts`: una función exportada que junta el texto de un árbol, porque `textContent` de `FakeElement` devuelve sólo el texto propio. Usa el tipo de nodo de `childNodes` (`FakeNode`, o la unión `FakeElement | FakeText` si no está exportado):
-    ```ts
-    export function renderedText(node: FakeNode): string {
-      if (node instanceof FakeText) return node.textContent;
-      return node.textContent + node.childNodes.map(renderedText).join('');
-    }
-    ```
-  - `qa/boot-check.ts`: el caso del Atlas pasa a un conjunto `REACT_VIEWS`, con el mismo encabezado esperado («RECURSOS CON INTENCIÓN» para la Biblioteca y `''` para el Atlas):
-    ```ts
-    // React views mount real nodes in #main instead of writing innerHTML.
-    const REACT_VIEWS: ReadonlySet<string> = new Set(['atlas', 'biblioteca']);
-    ```
-    El cuerpo del recorrido de vistas pasa a:
-    ```ts
-    if (REACT_VIEWS.has(view)) {
-      assert.ok(main.childNodes.length > 0, `#${view} no montó nodos en #main`);
-      assert.ok(renderedText(main).includes(VIEW_HEADINGS[view]), `#${view} no mostró su encabezado`);
-    } else {
-      assert.ok(main.innerHTML.includes(VIEW_HEADINGS[view]), `#${view} no mostró su encabezado`);
-    }
-    ```
-    El comentario del conjunto reemplaza al que hoy está dentro de la rama del Atlas. Si T001 encontró `REACT_VIEWS`, sólo se suma `'biblioteca'`.
+  - `qa/boot-check.ts`, con la forma canónica decidida el 2026-10-28 (noche): un conjunto `REACT_VIEWS: ReadonlySet<string>` con las vistas de React y la rama que mira los nodos montados con `mountedText`, el de F4. F3 no trae otro ayudante (ni `renderedText` ni nada en `qa/lib/fake-dom.ts`) y no cambia `mountedText`.
+    - **Si T001 encontró `REACT_VIEWS`** (F5 entró antes): sólo se suma `'biblioteca'` al conjunto.
+    - **Si T001 encontró la condición de F4** (`if (view === 'atlas' || view === 'proyecto') {`, la base `431c9d90`): K la pasa al conjunto, con la forma de F5 (`impl-f5`, `efaf39b2`, `qa/boot-check.ts:85`). La constante va inmediatamente antes de `function mountedText`, que queda igual:
+      ```ts
+      const REACT_VIEWS: ReadonlySet<string> = new Set(['atlas', 'proyecto', 'biblioteca']);
+      ```
+      y la rama del recorrido de vistas pasa a:
+      ```ts
+      if (REACT_VIEWS.has(view)) {
+        assert.ok(main.childNodes.length > 0, `#${view} no montó nodos en #main`);
+        assert.ok(
+          mountedText(main).includes(VIEW_HEADINGS[view]),
+          `#${view} no mostró su encabezado`,
+        );
+      } else {
+        assert.ok(main.innerHTML.includes(VIEW_HEADINGS[view]), `#${view} no mostró su encabezado`);
+      }
+      ```
+      Sale el comentario que F4 dejó dentro de la rama («El Atlas y Proyecto son React…»), como en F5: el nombre del conjunto lo dice.
+    - El encabezado esperado de la Biblioteca sigue siendo «RECURSOS CON INTENCIÓN» (`VIEW_HEADINGS`). La página lo escribe en un nodo de texto hermano del `<span className="eyebrow-line" />`, que `mountedText` lee.
 - **Pasos:**
   1. Integrar los cambios de arriba en un solo commit: `feat(front): la Biblioteca es una página de React que app.js monta por window.TallerLibrary`.
   2. `npm test`:
@@ -2230,7 +2094,7 @@ window.TallerLibrary = Object.freeze({ mount, unmount });
   3. `npm run build` y la red completa con `E2E_PORT=4173 npm run test:e2e`: los 106 de F1, los 17 de A2 y los 23 de `library.spec.ts`, el de T012 incluido. Ninguno se editó.
   4. SC-005: el `grep` de quickstart.md §3.1 no imprime nada.
   5. `npm run lint`: el aviso de complejidad 11 de `renderResourceResults` desaparece, y no aparece ninguno nuevo.
-  6. El dist, contra T001: el `<style>` (que todavía no cambia) y el marcado vaciado iguales, y `html.length` dentro del subpresupuesto.
+  6. El dist, contra T001: el `<style>` (que todavía no cambia) y el marcado vaciado iguales, `html.length` dentro del subpresupuesto y bajo 1 500 000, `import.meta` igual a T001 más uno e `import(` igual a T001 (TR-4).
 - **Compuerta:** los pasos 2 a 6.
 - **Vuelta atrás:** revertir este commit devuelve la Biblioteca legacy. La página y el resto de la unidad 2 quedan sin montar.
 
@@ -2401,8 +2265,7 @@ En `LibraryPage.tsx`:
         )
       : null;
     flushSync(() => {
-      toggleItem(routeStore.getProgress().favorites, id);
-      routeStore.save();
+      routeStore.toggleMark('favorites', id);
     });
     if (!leavesTheList) return;
     const target =
@@ -2413,7 +2276,7 @@ En `LibraryPage.tsx`:
 
 - **Por qué `flushSync`:** «Limpiar filtros» recién existe cuando React confirma el estado vacío, y el foco se mueve en el mismo evento. El guardado sube la revisión y `flushSync` aplica en el acto el render que eso agenda. La rotura deliberada 5 lo demuestra (quickstart.md §6).
 - **Pasos:**
-  1. El E2E, la spec del modelo (con `focusAfterRemoval` lanzando `not implemented`) y las cuatro pruebas de la página. Todas fallan: la del modelo, por comportamiento, y la de la página y el E2E, porque el foco cae al documento. Commit: `test(front): el foco no cae al documento al quitar un favorito (rojo)`.
+  1. El E2E, la spec del modelo (con `focusAfterRemoval` lanzando `not implemented` como `const` tipado: `export const focusAfterRemoval: (visibleIds: readonly string[], removedId: string) => string | null = () => { throw new Error('not implemented'); };`) y las cuatro pruebas de la página. Todas fallan: la del modelo, por comportamiento, y la de la página y el E2E, porque el foco cae al documento. Commit: `test(front): el foco no cae al documento al quitar un favorito (rojo)`.
   2. La implementación. `npm run test:unit -- src/pages/library` en verde, y `npm run build` con `E2E_PORT=4193 npm run test:e2e -- specs/library.spec.ts` en verde.
   3. `npm run lint` (sin avisos de `react-hooks`), `npm run typecheck` y `npm run format:check`.
   4. Commit: `feat(front): el foco pasa a la tarjeta que ocupa el lugar del favorito quitado (Q3)`.
@@ -2421,20 +2284,22 @@ En `LibraryPage.tsx`:
 
 ### Tarea 4.2 · nuqs, si no está (T015, K)
 
-- **Si T001 encontró `"nuqs": "2.10.2"`:** no se hace nada. Si es otra versión, K lo informa como hallazgo y sigue con la instalada, si exporta `enableHistorySync` (T002, paso 3).
-- **Si falta:** con el permiso P1 (§«Descargas y permisos»):
+- **Quién lo trae:** F5. Su rama instala nuqs 2.10.2, con permiso del usuario (`impl-f5`, commit `da2fc09f`): `"nuqs": "2.10.2"` en `dependencies`, el lockfile con `nuqs` y `@standard-schema/spec`, y el aviso de licencia en `frontend/THIRD-PARTY-NOTICES.txt`, después del de Zustand (`nuqs — https://github.com/47ng/nuqs` y el texto MIT de `node_modules/nuqs/LICENSE`). F3 ya no lo instala por su cuenta.
+- **Si T001 encontró `"nuqs": "2.10.2"`** (F5 entró antes): no se hace nada. Si es otra versión, K lo informa como hallazgo y sigue con la instalada, si exporta `enableHistorySync` (T002, paso 3).
+- **Si F3 entra antes que F5:** con el permiso P1 (§«Descargas y permisos»), F3 lo instala con el mismo módulo, la misma versión y el mismo aviso que F5, para que el rebase de F5 no tenga nada que resolver:
   1. `npm install --save-exact nuqs@2.10.2`. `package.json` suma `"nuqs": "2.10.2"` en `dependencies` y el lockfile suma `nuqs` y `@standard-schema/spec`.
-  2. En `frontend/THIRD-PARTY-NOTICES.txt`, después del aviso de Zustand y con su formato, un párrafo con la línea `nuqs — https://github.com/47ng/nuqs`, una línea en blanco y el texto completo de `node_modules/nuqs/LICENSE`.
+  2. En `frontend/THIRD-PARTY-NOTICES.txt`, después del aviso de Zustand y con su formato, un párrafo con la línea `nuqs — https://github.com/47ng/nuqs`, una línea en blanco y el texto completo de `node_modules/nuqs/LICENSE`. Es el mismo bloque que deja F5: `git -C ../impl-f5 show efaf39b2:frontend/THIRD-PARTY-NOTICES.txt` sirve para compararlo, si el worktree sigue.
   3. `npm ci --offline`, `npm run build` (el script del dist no cambia: nada importa nuqs todavía) y `npm test`.
   4. Commit: `build(front): nuqs 2.10.2 para los filtros de la Biblioteca en la URL`.
 
 ### Tarea 4.3 · La raíz compartida de nuqs, si no está (T016, K)
 
+- **Quién la trae:** F5, con estos mismos dos archivos (`impl-f5`, `efaf39b2`: `frontend/src/app/legacy/url-state.tsx`, con `NuqsAdapter` y `enableHistorySync` en `:2` y `startUrlStateSync()` en `:12-14`, y su spec; commits `034dc168` y `cfe2a3a2`). `startUrlStateSync()` se llama desde `mount`.
 - **Si T001 encontró `frontend/src/app/legacy/url-state.tsx`:**
   - se comprueba que exporte `UrlStateProvider` y `startUrlStateSync`;
   - se comprueba que `startUrlStateSync` llame a `enableHistorySync()` y que nadie la llame al evaluar un módulo: `grep -rn "startUrlStateSync()" frontend/src` muestra sólo llamadas dentro de un `mount`;
   - no se cambia nada más.
-- **Si falta:** los dos archivos del plan de F5 (§2.2), sin cambios, para que el segundo en llegar no tenga nada que resolver:
+- **Si falta (F3 entra antes que F5):** los dos archivos de F5, sin cambios, para que el segundo en llegar no tenga nada que resolver. Son idénticos a los de `impl-f5`:
 
 ```tsx
 // frontend/src/app/legacy/url-state.tsx
@@ -2511,7 +2376,7 @@ describe('url state', () => {
 ```
 
 - **Pasos:**
-  1. La spec en rojo, contra un `url-state.tsx` cuyas dos exportaciones lanzan `not implemented`. Commit: `test(front): la raíz de nuqs escribe con replace y ve las escrituras ajenas (rojo)`.
+  1. La spec en rojo, contra un `url-state.tsx` cuyas dos exportaciones son stubs `const` tipados (TR-2): `export const UrlStateProvider: FunctionComponent<UrlStateProviderProps> = () => null;` y `export const startUrlStateSync: () => void = () => { throw new Error('not implemented'); };`. Corre en el proyecto `dom`. Commit: `test(front): la raíz de nuqs escribe con replace y ve las escrituras ajenas (rojo)`.
   2. La implementación. `npm run test:unit -- src/app/legacy/url-state.spec.tsx` en verde.
   3. Comentar `enableHistorySync()` hace fallar el segundo caso; después se restaura.
   4. `grep -rn "nuqs/debug" frontend/src` no imprime nada.
@@ -2718,7 +2583,13 @@ describe('the filters in the URL', () => {
 ```
 
 - **Los E2E** (E):
-  - En el caso «the menu keeps the filters and a reload drops them» de `(i)`, el nombre pasa a «the menu and a reload keep the filters», y las dos últimas aserciones, a `await expect(library.languageFilter).toHaveValue('go');` y `await expect(library.cardTitles).toHaveText(titlesOf(['go-tests', 'go-examples']));`. Es la única edición de un E2E de la unidad 1, aprobada por el clarify (FR-003).
+  - En el caso «the menu keeps the filters and a reload drops them» de `(i)`, el nombre pasa a «the menu and a reload keep the filters»; inmediatamente antes de `await page.reload();` se suma la espera de la URL, porque nuqs la escribe al menos 50 ms después del cambio (la tercera diferencia de nuqs, TR-1):
+    ```ts
+    await page.waitForURL(
+      (url) => url.searchParams.get('en') === 'go' && url.searchParams.get('tipo') === 'lectura',
+    );
+    ```
+    y las dos últimas aserciones pasan a `await expect(library.languageFilter).toHaveValue('go');` y `await expect(library.cardTitles).toHaveText(titlesOf(['go-tests', 'go-examples']));`. Es la única edición de un E2E de la unidad 1, aprobada por el clarify (FR-003): la espera y las dos aserciones van en el mismo cambio.
   - En `(j) the keyboard` se suma el caso del cursor en medio de la consulta (entrada 1 de «Review Focus»), en verde con la sesión, como protección:
     ```ts
     test('typing in the middle of the query keeps the caret while each key rewrites the URL', async ({ shell, library, page }) => {
@@ -2835,6 +2706,7 @@ test.describe('(i) the filters in the URL', () => {
 });
 ```
 
+  - **La regla de la recarga.** De los casos nuevos, sólo «a search with special characters survives a reload» recarga después de escribir un filtro, y ya espera la URL con `await expect(page).toHaveURL(…)` antes de `page.reload()`. Ningún caso nuevo recarga en el acto.
   - En `url-contract.spec.ts`, la fixture `library` llega por `test` (la de `../fixtures`), y al final va un `describe` con un solo caso:
 
 ```ts
@@ -2975,11 +2847,11 @@ window.TallerLibrary = Object.freeze({ mount, unmount });
   1. La implementación. `npm run test:unit` en verde: la gramática, los parsers y la página.
   2. `npm run build`, `E2E_PORT=4193 npm run test:e2e`, `node qa/boot-check.ts` y `node qa/seams-guard-check.ts`. Pasan:
      - la red completa: F1 sin editar, C2 incluido; los 17 de A2; y `url-contract`, con su caso nuevo;
-     - la Biblioteca con sus casos nuevos;
+     - la Biblioteca con sus casos nuevos, y además `E2E_PORT=4193 npm run test:e2e -- specs/library.spec.ts --repeat-each=5 --retries=0`: (l) y «the menu and a reload keep the filters» cambian el idioma o navegan justo después de un filtro, mientras nuqs todavía no escribió la URL (riesgo 11). Si alguno falla una vez, es un hallazgo para el coordinador: el E2E (l) no se edita;
      - `boot-check`, que monta la Biblioteca con `NuqsAdapter` sobre el DOM falso.
   3. Ningún `useState` de filtros: `grep -rn "useState" frontend/src/pages/library` no imprime nada, y `grep -rn "initialFilters\|onFiltersChange\|DEFAULT_LIBRARY_FILTERS" frontend/src/app` tampoco.
   4. `startUrlStateSync()` sólo en `mount`, y el escenario de `boot-check` «main.tsx without its call evaluates quietly» sigue en verde, con 0 oyentes.
-  5. El dist: `html.length` dentro del subpresupuesto, con nuqs aparte, y la forma de A2 en `build-check`.
+  5. El dist: `html.length` dentro del subpresupuesto y bajo 1 500 000, con nuqs aparte; `import.meta` igual a T001 más uno; y la forma de A2 en `build-check`.
   6. `npm run lint`, `npm run typecheck` y `npm run format:check`.
   7. Commit: `feat(front): los filtros de la Biblioteca viven en la URL con nuqs (Q1)`.
 - **Compuerta:** los pasos 1 a 6.
@@ -2996,7 +2868,7 @@ window.TallerLibrary = Object.freeze({ mount, unmount });
   - `frontend/src/pages/library/ui/library.css` (nuevo);
   - `frontend/styles.css`;
   - `frontend/src/app/main.tsx`, que integra K: una línea, `import '../pages/library/ui/library.css';`, **inmediatamente después** de `import '../../styles.css';`.
-- **Si F4 o F9 ya partieron los bloques:** se rebasa sobre su `styles.css`, se sacan sólo los 43 selectores de abajo, y la hoja de la Biblioteca va también justo después de `styles.css`. Las hojas de página no comparten selectores, y su orden entre ellas no cambia la cascada: el barrido lo confirma.
+- **F4 ya partió bloques compartidos** (#77; `.coordinador/pr-impl-f4.md:14`): sacó `.milestone` de la regla de impresión, que en la base queda `.resource-card, .module`, y sus reglas del bloque de 590 px, y llevó las suyas a `pages/project/ui/project.css`. Por eso se rebasa sobre el `styles.css` de la base, se sacan sólo los 43 selectores de abajo, buscados por selector, y la hoja de la Biblioteca va también justo después de `styles.css`. Si F9 también entró, igual. Las hojas de página no comparten selectores, y su orden entre ellas no cambia la cascada: el barrido lo confirma. Los conteos del multiconjunto salen de T001, nunca de un número de este plan (TR-15).
 - **`library.css`:** el texto de las reglas, copiado sin cambiar una declaración, en el orden de `styles.css`. La única excepción es el bloque de impresión, que va entre los dos bloques de 590 px (research.md, R9):
 
 ```css
@@ -3212,7 +3084,7 @@ window.TallerLibrary = Object.freeze({ mount, unmount });
 ```
 
 - **`styles.css`:** se borran esas reglas, y nada más. Las líneas son las de la base, y si T001 encontró otra base se buscan por selector:
-  - en la base, `.filter-bar` (715 a 720), de `.filter-bar select` a `.favorite-filter` (743 a 782), de `.resource-results-label` a `.resource-link:hover` (786 a 874) y `.resource-notice` (1281 a 1286). Quedan `.page-heading`, `.search-wrap` con sus hijas, `input[type='checkbox']:not(.step-check)` y `.empty-state` con sus hijas;
+  - en la base `431c9d90`, `.filter-bar` (715 a 720), de `.filter-bar select` a `.favorite-filter` (743 a 782), de `.resource-results-label` a `.resource-link:hover` (786 a 874) y `.resource-notice` (1208 a 1213). Quedan `.page-heading`, `.search-wrap` con sus hijas, `input[type='checkbox']:not(.step-check)` y `.empty-state` con sus hijas;
   - en `@media (max-width: 1150px)`, `.filter-bar` (queda `.search-wrap`);
   - en `@media (max-width: 850px)`, `.resource-grid` y `.resource-card`;
   - en el primer `@media (max-width: 590px)`, `.resource-grid`, `.resource-card`, `.resource-card h2`, `.filter-bar`, `.filter-bar select`, `.filter-secondary`, `.filter-chip`, `.resource-fit`, `.resource-link` y `.favorite-button` (quedan `.page-heading h1` y `.page-heading p`);
@@ -3220,12 +3092,16 @@ window.TallerLibrary = Object.freeze({ mount, unmount });
   - en `@media print`:
     - de la lista de `display: none` salen `.filter-bar`, `.filter-secondary` y `.favorite-button`, y quedan `.sidebar, .topbar, .focus-timer, .data-actions, .main-footer, #toast`;
     - sale `.resource-grid`;
-    - de `.resource-card, .module, .milestone` sale `.resource-card`.
+    - de `.resource-card, .module` (F4 ya sacó `.milestone`) sale `.resource-card`.
 - **Pasos:**
   1. Una copia descartable del árbol de T018 como base (`git worktree add --detach ../f3-css-base <hash de T018>`), con `npm ci --offline` y `npm run build`.
   2. Los tres cambios, y `npm run build`.
   3. **El multiconjunto** (quickstart.md §5.1): `base` y `unit` con la misma cantidad, y `onlyBase` y `onlyUnit` en 0. Si sólo faltan declaraciones repetidas que lightningcss fusionó, se anota cuáles y se ajusta el orden de `library.css` para que no queden contiguas. Ninguna regla cambia de contenido.
-  4. **El barrido de estilo computado** (quickstart.md §5.2): las 14 páginas de F2b y los 6 estados de la Biblioteca, a 1 280, 981, 850, 650, 590 y 375 px, con y sin movimiento reducido, y en impresión. Se esperan 0 diferencias.
+  4. **El barrido de estilo computado** (quickstart.md §5.2): las 14 páginas de F2b y los 6 estados de la Biblioteca, a 1 280, 981, 850, 650, 590 y 375 px, con y sin movimiento reducido, y en impresión. Se esperan 0 diferencias. El barrido evita las cuatro trampas de TR-13 (quickstart.md §5.2, cambios 4 y 5):
+     - mueve el puntero fuera (`page.mouse.move(0, 0)`) antes de cada captura, porque React conserva el nodo bajo el puntero y su `:hover`;
+     - no compara lo de adentro de un `<details>` cerrado (el `<p>` de «Antes de empezar»), cuyo tamaño computado cambia si alguna vez se midió;
+     - si aparecen diferencias sub-píxel en `width`, `inline-size` o `*-origin` de un texto, primero se busca un texto que JSX partió en varios nodos y se arma en un solo nodo, con un template literal; nunca se acepta con una tolerancia;
+     - la Biblioteca no tiene `<pre>` ni `<textarea>`, así que el salto de línea inicial que descarta el analizador de HTML no aplica.
   5. **El control negativo,** una vez y sin commitear: invertir en `library.css` el bloque de 850 px y el primero de 590 px. El barrido tiene que dar más de 0 diferencias a 590 px (en el `padding` de `.resource-card` y el `gap` de `.resource-grid`), y el multiconjunto, 0. Se restaura.
   6. `npm test` (`load-order-check`: `styles.css` sigue primera), y la red completa: `css-contract` R1 a R10 sin editar, la `.sr-only` de R5 incluida.
   7. El dist: el script y el marcado iguales a los de T018, y el `<style>` con otro hash y el mismo multiconjunto.
@@ -3270,25 +3146,19 @@ window.TallerLibrary = Object.freeze({ mount, unmount });
 En el mismo PR (FR-040):
 
 - **`docs/architecture.md`:**
-  - en el «Mapa de archivos», una fila «Biblioteca migrada a React/TypeScript», con `frontend/src/pages/library/` (`ui`, `model`), su hoja `ui/library.css`, el adaptador `frontend/src/app/legacy/register-library.tsx` y la raíz de nuqs `frontend/src/app/legacy/url-state.tsx`;
+  - en el «Mapa de archivos», una fila «Biblioteca migrada a React/TypeScript», con `frontend/src/pages/library/` (`ui`, `model`), su hoja `ui/library.css`, el adaptador `frontend/src/app/legacy/register-library.tsx` y la raíz de nuqs `frontend/src/app/legacy/url-state.tsx` (si F5 no la documentó ya);
   - la fila de la gramática de URL suma «y la forma de la Biblioteca (`buscar`, `en`, `acceso`, `tipo`, `favoritos`)»;
   - la de «Navegación, recorrido y progreso general» deja de nombrar la Biblioteca;
   - el «Estado actual» de Feature-Sliced Design suma `frontend/src/pages/library`.
 - **`qa/AGENTS.md`:**
-  - en «Pruebas del front», la oración «La pila de DOM… llega con la primera spec de componente» pasa a «`*.spec.ts` corre en el proyecto `node` y `*.spec.tsx`, en `jsdom`, con Testing Library y el setup `frontend/src/vitest-setup.ts`»;
+  - «Pruebas del front» ya nombra el proyecto `dom` y el setup `frontend/src/vitest.setup.ts` (#67): no se toca;
   - la fila «Recorrido, biblioteca o respaldo global» suma «la Biblioteca: `qa/e2e/specs/library.spec.ts` y, con `npm run test:unit`, las specs de `pages/library`»;
-  - la de «Almacenes, motores…» suma la guarda de `useStore` sin selector en `npm run lint`.
-- **`docs/agent-skills.md`:** el «Alcance» dice que la pila de DOM y fishery ya están instaladas (F3).
-- **`docs/adr/0008-pruebas-del-front.md`:** una «Enmienda (F3)» con:
-  - los dos proyectos;
-  - que la raíz sólo lleva `projects`, porque Vitest 5 concatena los arreglos;
-  - el setup;
-  - las versiones instaladas y lo que midió `npm ci` (paquetes y tamaño);
-  - el tiempo de `npm run test:unit` antes y después;
+  - la de «Almacenes, motores…» suma la guarda de `useStore` sin selector en `npm run lint`, si F5 o F6 no la documentaron ya.
+- **`docs/agent-skills.md`:** si el «Alcance» todavía dice que la pila de DOM y fishery llegan con la primera spec, pasa a decir que llegaron con #67.
+- **`docs/adr/0008-pruebas-del-front.md`:** la pila, los proyectos y el setup ya los registró la enmienda de F4 (#67 y la primera `.spec.tsx`). F3 suma una «Enmienda (F3)» sólo con lo suyo:
   - que `vi.resetModules()` con `import()` dinámico es el patrón para una página que usa un singleton;
-  - que nuqs ya no espera al spike de F10: entra con F3, o con F5 si llega antes. Su «Queda fuera» lo dejaba para F10.
-
-  Si T001 encontró la pila ya instalada, sólo lo que F3 suma.
+  - el tiempo de `npm run test:unit` antes y después;
+  - si F5 no lo hizo, que nuqs ya no espera al spike de F10: entra con F5, o con F3 si llega antes. Su «Queda fuera» lo dejaba para F10.
 
 ### Tarea 6.4 · La compuerta y el PR (T023, K)
 
@@ -3396,12 +3266,12 @@ En el mismo PR (FR-040):
 
 ## Descargas y permisos
 
-Ninguna tarea baja nada sin el permiso del usuario, dado con nombre, origen y tamaño. Los tamaños son los de research.md (R12). Si T001 encontró un paquete instalado, su permiso no se pide.
+Ninguna tarea baja nada sin el permiso del usuario, dado con nombre, origen y tamaño. Los tamaños son los de research.md (R12). Si T001 encontró un paquete instalado, su permiso no se pide: con la base `431c9d90`, P2 ya no se pide (la pila llegó con #67), y P1 se pide sólo si F3 entra antes que F5.
 
 | Permiso | Cuándo | Qué | Tamaño |
 | --- | --- | --- | --- |
-| P1 · nuqs | Antes de T002 (la copia descartable) y de T015 (la rama) | `nuqs` 2.10.2 y su dependencia `@standard-schema/spec` 1.1.0, del registro de npm. MIT. De ejecución | 2 paquetes, 502 886 B desempaquetados y 131 106 B comprimidos. En el dist, el peso que mida T002 (se estiman entre 12 000 y 20 000 caracteres) |
-| P2 · la pila de DOM y fishery | Antes de T002 y de T005 | `jsdom` 30.1.2, `@testing-library/react` 16.3.3, `@testing-library/dom` 10.4.2, `@testing-library/user-event` 14.6.7 y `@testing-library/jest-dom` 7.0.1; `fishery` 2.4.0 con `lodash.mergewith` 4.6.2. Del registro de npm. MIT. De desarrollo | Unos 56 paquetes, 26,27 MB desempaquetados y 5,03 MB comprimidos (estimación del ADR 0008); fishery: 2 paquetes, 189 789 B y 42 617 B |
+| P1 · nuqs, sólo si F3 entra antes que F5 | Antes de T002 (la copia descartable) y de T015 (la rama) | `nuqs` 2.10.2 y su dependencia `@standard-schema/spec` 1.1.0, del registro de npm. MIT. De ejecución | 2 paquetes, 502 886 B desempaquetados y 131 106 B comprimidos. En el dist, el peso que mida T002 (se estiman entre 12 000 y 20 000 caracteres) |
+| P2 · la pila de DOM y fishery (no se pide: llegó con #67) | — | `jsdom` 30.1.2, `@testing-library/react` 16.3.3, `@testing-library/dom` 10.4.2, `@testing-library/user-event` 14.6.7 y `@testing-library/jest-dom` 7.0.1; `fishery` 2.4.0 con `lodash.mergewith` 4.6.2. Del registro de npm. MIT. De desarrollo | Unos 56 paquetes, 26,27 MB desempaquetados y 5,03 MB comprimidos (estimación del ADR 0008); fishery: 2 paquetes, 189 789 B y 42 617 B |
 | P3 · la imagen web | T023 | `docker compose build taller`, que puede bajar la imagen base fijada por digest | Lo que falte en la caché local |
 
 La comprobación manual con lector de pantalla (X2) del recuento y del estado vacío, antes sobre el legacy y después sobre la página, es una acción del usuario.
@@ -3412,12 +3282,13 @@ La comprobación manual con lector de pantalla (X2) del recuento y del estado va
 2. **nuqs en la práctica.** El hash, el reemplazo, la consulta de sólo espacios, la clave repetida, `null` y la sincronización salen del código de `v2.10.2`, no de una corrida: los confirma T002. Si la sincronización no existe, la unidad 4 espera al coordinador.
 3. **jsdom y `history.replaceState`.** El README no lo documenta. Lo usan la spec de `url-state.tsx` (T016) y el caso 7 de T002.
 4. **El DOM falso de `boot-check` no tiene `history.pushState`.** El parche de nuqs lo guarda igual (`undefined`) y sólo fallaría si alguien lo llamara. Ningún código lo llama: si un port futuro lo hace, el arnés suma un `pushState` vacío, como el `replaceState` que ya tiene.
-5. **Las reglas de React Compiler** de `eslint-plugin-react-hooks` 7 (`refs`, `globals` e `immutability`) sobre el mapa de refs y la mutación de `favorites` en el manejador. No se corrieron. Si alguna avisa, la implementación se detiene en T011 o T014 y K decide; no se desactiva una regla.
+5. **Las reglas de React Compiler** de `eslint-plugin-react-hooks` 7 (`refs`, `globals` e `immutability`) sobre el mapa de refs. El manejador ya no muta `favorites`: llama a `routeStore.toggleMark`. No se corrieron. Si alguna avisa, la implementación se detiene en T011 o T014 y K decide; no se desactiva una regla.
 6. **lightningcss** puede fusionar reglas al minificar. El orden de `library.css` lo evita para los dos bloques de 590 px (R9), y el multiconjunto lo comprueba.
-7. **El presupuesto del HTML del épico** no alcanza para todos los ports (R11). Es un hallazgo para el coordinador.
+7. **El presupuesto del HTML del épico.** Con 1 250 000 no alcanzaba para todos los ports (R11); el usuario subió el tope a 1 500 000 (#76), y F3 conserva su subpresupuesto.
 8. **El tiempo de la red E2E** crece con unos 35 casos nuevos. Si la suite de F1 tardó unos 35 s con un worker, se esperan entre 10 y 15 s más. T023 lo mide.
-9. **El plan de F5 está en curso.** Si cambia la firma de `url-state.tsx`, la configuración de Vitest o la guarda antes de que entre F3, F3 toma la suya en T006 y T016.
-10. **Integración con F4 y F9:** `app.js` (`render()` y los delegados), `styles.css` (los bloques compartidos), `main.tsx` (el orden de las hojas), `legacy-views.ts` y los checks de `qa/`. El que llega después rebasa y repite la compuerta.
+9. **F5 y F6 están implementados y sin mergear** (`impl-f5`, `efaf39b2`; `impl-f6`, `b20028be`). Si cambian la firma de `url-state.tsx` o la guarda antes de que entre F3, F3 toma la suya en T006 y T016.
+10. **Integración con F4 y F9:** `app.js` (`render()` y los delegados), `styles.css` (los bloques compartidos), `main.tsx` (el orden de las hojas), `legacy-views.ts` y los checks de `qa/`. F4 ya está en la base; con F9, el que llega después rebasa y repite la compuerta.
+11. **nuqs escribe la URL tarde** (al menos 50 ms; TR-1). Las E2E que recargan esperan la URL (Reglas). Dos casos de la unidad 1 hacen otra cosa justo después de un filtro: (l) cambia el idioma, y `withLanguageQuery` lee `location.href` en ese momento; e (i) navega por el menú. No recargan, y no se espera que fallen, porque la URL termina de escribirse sobre el hash nuevo; T018 los corre cinco veces seguidas. Si alguno falla, el E2E no se edita: decide el coordinador.
 
 ## Complexity Tracking
 

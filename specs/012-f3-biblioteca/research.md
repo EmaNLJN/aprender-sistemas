@@ -12,6 +12,7 @@
   - Ningún build, ninguna prueba y ninguna descarga: **todos los tamaños de este documento son estimaciones** hasta que T002 los mida.
 - **Context7.** El primer servidor (`mcp__context7__*`) agotó la cuota mensual el 2026-10-28 («Monthly quota reached»). Las consultas se hicieron en el segundo servidor de Context7, que indicó el coordinador. Algunas se completaron con la documentación oficial o con el código publicado de la versión, leídos con `WebFetch`. La tabla del final dice la fuente de cada fila.
 - **El plan de F5, en curso.** Se leyó `specs/018-f5-sistemas/research.md` y `plan.md` del worktree `plan-f5`: el primero está commiteado y el segundo, todavía no. F3 usa los mismos archivos y las mismas firmas para lo que comparten (R7). Las diferencias van al informe como hallazgos.
+- **La enmienda del 2026-10-28 (noche).** Después del merge del plan, la implementación de F4 (en `master`, `431c9d90`, #77), F5 (`impl-f5`, `efaf39b2`) y F6 (`impl-f6`, `b20028be`) fijó piezas que F3 comparte. El plan se corrigió con las entradas `aplicar` de «F3» y «Transversal» de `.coordinador/hallazgos-para-planes.md` y las decisiones de esa noche (`.coordinador/clarify-decisiones.md`). El código se leyó con `git show` en esos commits, sin correr nada. Lo que cambia, con su fuente, está en R14.
 
 ## R1 · Dónde viven los filtros entre el corte y la URL
 
@@ -142,7 +143,7 @@ Si el usuario no autoriza fishery, ese archivo exporta una función `build(param
   - agrega a `window` un oyente de `popstate` **que nunca se quita**;
   - se protege de un segundo parche del mismo adaptador con `history.nuqs.adapters`.
 - **El hash se conserva.** `updateUrl` arma la URL con `new URL(location.href)` y sólo cambia `search`. Con `history: 'replace'`, escribe con `history.replaceState(history.state, '__nuqs__', url)`.
-- **La limitación de escrituras.** El estado del hook se actualiza en el acto; la URL, como mucho cada 50 ms, con la primera escritura enseguida. Los valores menores que 50 ms se ignoran (documentación de opciones).
+- **La limitación de escrituras.** El estado del hook se actualiza en el acto; la URL, con un throttle de 50 ms como mínimo. Los valores menores que 50 ms se ignoran (documentación de opciones), y no hay escritura síncrona. F5 lo midió en el navegador: justo después de un clic, la URL todavía no cambió en 5 de 6 corridas (`impl-f5/.superpowers/sdd/plan/T025-report.md:28`). El usuario aceptó la diferencia (la tercera diferencia de nuqs, 2026-10-28): **una E2E que recarga después de un cambio de filtro espera la URL** (`page.waitForURL` o `expect(page).toHaveURL`) antes de `page.reload()`.
 - **La codificación** (`renderQueryString`):
   - el espacio va como `+`;
   - codifica `%`, `+`, `#`, `&`, `"`, `'`, `` ` ``, `<`, `>` y los caracteres de control;
@@ -170,16 +171,17 @@ Cada pieza tiene un dueño único y la trae **el primero que se integre**. T001 
 
 | Pieza | Si F3 la trae | Si ya está en la base |
 | --- | --- | --- |
-| La pila de componentes: jsdom, Testing Library, los dos proyectos de Vitest, `frontend/src/vitest-setup.ts` y la enmienda del ADR 0008 | T005 y T006, con el mismo contenido que el plan de F5 (§2.1) | Se usa tal cual. La spec de la página tiene que correr en el proyecto `jsdom` sin tocar la configuración |
-| fishery | T005, con la factory de F3 | Se usa |
-| La guarda de `useStore` sin selector (`no-restricted-syntax`) | T006 | La guarda tiene que rechazar un `useStore(routeStore.changes)` temporal. Si no lo rechaza, es un hallazgo |
-| `toggleItem` en `entities/guide` | T007 lo mueve desde `app.js` | La página lo importa del índice de `entities/guide` |
+| La pila de componentes: jsdom, Testing Library, los proyectos `node` y `dom` de Vitest, `frontend/src/vitest.setup.ts` y la enmienda del ADR 0008 | No aplica: llegó con #67, y F4 enmendó el ADR | Se usa tal cual. La spec de la página corre en el proyecto `dom` sin tocar la configuración |
+| fishery | No aplica: llegó con #67 | Se usa, con la factory de F3 |
+| La guarda de `useStore` sin selector (`no-restricted-syntax`) | T006, con el bloque exacto de F6 (`[arguments.length=1]`), antes del de `complexity` | La guarda tiene que rechazar un `useStore(routeStore.changes)` temporal. Si no lo rechaza, es un hallazgo |
+| La operación de alternar un favorito | No aplica: F4 trajo `routeStore.toggleMark` | La página y el arnés llaman `routeStore.toggleMark('favorites', id)`; F3 no crea `toggleItem` |
 | `harness.routeStore` en `app-shell-check` (otro consumidor del singleton, en el mismo bundle que `app.js`) | T008 | Se usa para reorientar los dos escenarios de `favorite` |
-| Los dos escenarios de `app-shell-check` que guardan con `favorite` | T008 los reorienta al camino de la página (`toggleItem` y `routeStore.save()`), con los mismos valores esperados | No aplica: son de F3 |
-| La suscripción del shell a `routeStore.changes` | T009: el pie (`#save-label`), con su escenario en rojo | Si F9 o F4 ya la trajeron, F3 comprueba que el pie se actualice y, si falta, suma el pie al oyente |
+| Los dos escenarios de `app-shell-check` que guardan con `favorite` | T008 los reorienta al camino de la página (`routeStore.toggleMark('favorites', id)`), con los mismos valores esperados | No aplica: son de F3 |
+| La suscripción del shell a `routeStore.changes` | No aplica: F4 la trajo (`app.js:29`) | T009 suma el escenario del pie, que pasa con la suscripción de F4; si F9 ya la cambió por `syncShell`, pasa igual |
 | Los contadores de la barra lateral en esa suscripción | No los trae: nada de la Biblioteca los cambia y no habría prueba en rojo. El oyente es una sola función que F9 extiende con su escenario | — |
-| nuqs, `url-state.tsx` y el aviso de licencia | T015 (permiso, instalación y aviso) y T016 (`UrlStateProvider` y `startUrlStateSync`, como F5 §2.2) | Se usan. F3 comprueba que la sincronización se active en `mount` |
-| `REACT_VIEWS` y el texto profundo en `boot-check` | T013 generaliza el caso del Atlas | F3 suma `'biblioteca'` al conjunto |
+| nuqs, `url-state.tsx` y el aviso de licencia | Sólo si F3 entra antes que F5: T015 (permiso, instalación y aviso) y T016, con los mismos archivos y la misma versión que `impl-f5` | Los trae F5. Se usan, y F3 comprueba que la sincronización se active en `mount` |
+| `REACT_VIEWS` y `mountedText` en `boot-check` | T013 pasa la condición de F4 (`atlas \|\| proyecto`) al conjunto canónico, con `atlas`, `proyecto` y `biblioteca`, y conserva `mountedText` de F4 | F3 suma `'biblioteca'` al conjunto |
+| `StorageControl.blockWrites()` | No aplica: lo trajo F4 | (h) lo usa tal cual; F3 no le suma `removeItem` |
 | La partición de los bloques de CSS compartidos | T019 parte los `@media` y la impresión, y saca sólo lo suyo | F3 rebasa sobre los bloques ya partidos, saca sólo lo suyo y repite el barrido |
 | R5 de `css-contract` (la `.sr-only` vacía de la Biblioteca) | La conserva, en cualquier orden | Igual: F4 y F9 no la tocan |
 
@@ -246,12 +248,12 @@ Se buscaron reglas de `styles.css` posteriores a cada regla movida que apliquen 
   - un error de React va a `console.error('No se pudo mostrar la Biblioteca.', error)` por `onUncaughtError`.
 - **`legacy-views.ts`** lo evalúa después de `register-atlas`, antes de `app.js`.
 - **`app.js`** lo monta en `render()` sin guarda opcional, como al Atlas, y `load-order-check` suma la restricción.
-- **`boot-check`.** `FakeElement.textContent` devuelve sólo el texto propio del elemento, y React reparte el texto en nodos hijos. La Biblioteca pasa al conjunto `REACT_VIEWS`, con una lectura recursiva del texto (`renderedText`) y el mismo valor esperado, «RECURSOS CON INTENCIÓN».
+- **`boot-check`.** `FakeElement.textContent` devuelve sólo el texto propio del elemento, y React reparte el texto en nodos hijos. La Biblioteca pasa al conjunto `REACT_VIEWS`, con la lectura recursiva que ya está en la base (`mountedText`, de F4) y el mismo valor esperado, «RECURSOS CON INTENCIÓN». F3 no suma ayudantes a `qa/lib/fake-dom.ts` (R14).
   - El DOM falso alcanza para montarla: ya monta el Atlas, con búsqueda y selector, y tiene `location`, `history.replaceState` y `addEventListener`.
   - No tiene `history.pushState`. El parche de nuqs lo guarda igual y sólo fallaría si alguien lo llamara, y nadie lo llama: es un riesgo anotado.
   - Montar la Biblioteca desde el bundle de `main.tsx` sin el error «Abrí el almacén del recorrido antes de usarlo.» es la prueba de FR-009: una sola instancia del almacén.
 - **`app-shell-check`:**
-  - `loadAppShell` pasa a empaquetar una entrada virtual que exporta `startApp` y, del mismo bundle, `routeStore` y `toggleItem`;
+  - `loadAppShell` pasa a empaquetar una entrada virtual que exporta `startApp` y, del mismo bundle, `routeStore`;
   - `buildHarness` deja el almacén en `harness.routeStore`, y `harness.toggleFavorite(id)` hace lo mismo que la página;
   - los dos escenarios que usaban la acción `favorite` pasan a ese camino con los mismos valores esperados;
   - el escenario nuevo del pie (T009) usa el mismo camino.
@@ -277,9 +279,9 @@ Se buscaron reglas de `styles.css` posteriores a cada regla movida que apliquen 
 | `useStore` de zustand | Menos de 1 000 caracteres | Envuelve a `useSyncExternalStore` |
 | La página contra lo que sale | Entre +2 000 y +6 000 | Sale `renderLibrary`, `renderResourceResults`, `filters` y siete ramas de los delegados, unos 4 500 caracteres de plantillas y lógica. Entran la página, cuatro componentes y el modelo en JSX compilado |
 
-**Subpresupuesto de F3.** El aumento de `html.length` sobre la línea base de T001 no pasa de **30 000 caracteres si F3 instala nuqs**, ni de **15 000 si ya lo instaló F5**, y el HTML queda bajo 1 250 000. Si la medida lo supera, la compuerta se detiene y decide el coordinador.
+**Subpresupuesto de F3.** El aumento de `html.length` sobre la línea base de T001 no pasa de **30 000 caracteres si F3 instala nuqs**, ni de **15 000 si ya lo instaló F5**, y el HTML queda bajo 1 500 000, el `BOOT_SIZE_LIMIT` de `qa/build-check.ts` desde #76. Si la medida lo supera, la compuerta se detiene y decide el coordinador.
 
-**Hallazgo para la hoja de ruta.** Con F2b, el HTML mide unos 1 141 337 caracteres y quedan unos 108 000 de margen:
+**Hallazgo para la hoja de ruta (resuelto con #76, que subió el tope a 1 500 000).** Con F2b y el tope de entonces, 1 250 000, el HTML medía unos 1 141 337 caracteres y quedaban unos 108 000 de margen:
 
 - F5 pide hasta 40 000 (25 000 si F3 trae nuqs) y F3, hasta 30 000 (15 000 si F5 trae nuqs). nuqs se paga una sola vez.
 - React Hook Form, de F11a, pesa unos 43 KB.
@@ -293,15 +295,15 @@ Medidas el 2026-10-28 con `npm view` y pedidos de un byte con `Range` (1 MB = 10
 
 | Paquete | Versión | Licencia | Desempaquetado | Comprimido | Para qué | Quién lo trae |
 | --- | --- | --- | --- | --- | --- | --- |
-| `nuqs` | 2.10.2 (`latest`, publicada el 2026-10-08) | MIT | 480 252 B | 126 928 B | Ejecución | El primero de F3 y F5 |
+| `nuqs` | 2.10.2 (`latest`, publicada el 2026-10-08) | MIT | 480 252 B | 126 928 B | Ejecución | F5 (`impl-f5`, `da2fc09f`), o F3 si entra antes |
 | `@standard-schema/spec` | 1.1.0 (dependencia de nuqs) | MIT | 22 634 B | 4 178 B | Sólo tipos | Con nuqs |
-| `jsdom` | 30.1.2 (la de la spec; ya existe 30.1.3) | MIT | 5 533 799 B | — | Desarrollo | El primer port con specs de componentes |
+| `jsdom` | 30.1.2 (la de la spec; ya existe 30.1.3) | MIT | 5 533 799 B | — | Desarrollo | #67, ya en `master` |
 | `@testing-library/react` | 16.3.3 | MIT | 339 581 B | — | Desarrollo | Ídem |
 | `@testing-library/dom` | 10.4.2 | MIT | 2 467 302 B | — | Desarrollo | Ídem |
 | `@testing-library/user-event` | 14.6.7 (la de la spec; ya existe 14.6.8) | MIT | 437 525 B | — | Desarrollo | Ídem |
 | `@testing-library/jest-dom` | 7.0.1 | MIT | 331 873 B | — | Desarrollo | Ídem |
 | La pila de DOM entera, con sus dependencias | — | — | unos 26,27 MB, 56 paquetes | unos 5,03 MB | Desarrollo | Estimación del ADR 0008 |
-| `fishery` | 2.4.0 | MIT | 135 590 B | 29 557 B | Desarrollo | El primero con una factory |
+| `fishery` | 2.4.0 | MIT | 135 590 B | 29 557 B | Desarrollo | #67, ya en `master` |
 | `lodash.mergewith` | 4.6.2 (dependencia de fishery) | MIT | 54 199 B | 13 060 B | Desarrollo | Con fishery |
 
 - **Las versiones** son las de la spec y la hoja de ruta. Las dos versiones de parche más nuevas (jsdom 30.1.3 y user-event 14.6.8) no se adoptan sin permiso: es un hallazgo.
@@ -312,12 +314,34 @@ Medidas el 2026-10-28 con `npm view` y pedidos de un byte con `Range` (1 MB = 10
 
 - **E2E.**
   - Hay un Page Object nuevo, `qa/e2e/pages/library.ts`, con su fixture `library`, y una spec nueva, `qa/e2e/specs/library.spec.ts`, con los 12 flujos de FR-031.
-  - `StorageControl` suma `blockWrites()`: `setItem` y `removeItem` de `localStorage` lanzan `QuotaExceededError` y la lectura sigue funcionando.
+  - `StorageControl.blockWrites()` es el de F4 (`qa/e2e/fixtures/storage-control.ts:32-41`): `setItem` de `localStorage` lanza `QuotaExceededError` y la lectura sigue funcionando. F3 no le suma `removeItem`, porque su único uso, (h), sólo escribe con `setItem` (R14).
   - `url-contract.spec.ts` suma un `describe` con un caso, y no edita nada más.
 - **El historial.** «Sin sumar entradas» se mide **relativo**: `history.length` antes y después de filtrar, como el escenario de F1 «opening an exercise rewrites the query and adds no entry». Además, Atrás vuelve a la vista anterior.
   - El plan de F11a (`349646d6`) dejó de usar `history.length` absoluto porque, después de `page.goto`, la pestaña ya tiene una entrada previa.
   - La medida relativa no depende de eso.
 - **Tipeo.** La búsqueda se escribe con `pressSequentially`, tecla por tecla, para ejercer una escritura de la URL por tecla. El tipeo lo prueba el valor final del campo. El cursor en medio de la consulta no lo prueba ninguna tarea: es una entrada de «Review Focus».
+
+## R14 · Lo que fijaron F4 a F6 (enmienda del 2026-10-28, noche)
+
+El plan se escribió antes de que F4, F5 y F6 se implementaran. Lo que fijaron manda sobre el plan, y estas son sus fuentes:
+
+| Pieza | Qué fijó la implementación | Dónde | Qué cambia en F3 |
+| --- | --- | --- | --- |
+| Alternar un favorito | `routeStore.toggleMark(collection: RouteMarkCollection, id: string): boolean`: agrega al final o quita, escribe una vez y avisa una vez | `master` `431c9d90`, `frontend/src/entities/guide/model/route-store.ts:21`, `:27` y `:97`; probado en `route-store.spec.ts` («toggling a mark of the route») | T007 sólo comprueba. La página (T011 y T014) y el arnés (T008) llaman `routeStore.toggleMark('favorites', id)`. No se crea `toggleItem` |
+| El pie de guardado | `routeStore.changes.subscribe(updateSaveLabel);` | `master`, `frontend/app.js:29` | T009 suma su escenario, que pasa sin tocar `app.js` |
+| El almacenamiento que lee y no escribe | `StorageControl.blockWrites()`, sólo `setItem`; va después de `seed()` y no se combina con `watchWrites()` | `master`, `qa/e2e/fixtures/storage-control.ts:32-41`; `.coordinador/pr-impl-f4.md:24` | T003 no lo escribe. (h) sólo escribe con `setItem` (`frontend/src/shared/lib/versioned-storage.ts`, `write`), así que F3 no necesita bloquear `removeItem` |
+| La pila de componentes | jsdom, Testing Library y fishery; los proyectos `node` y `dom`; el setup `frontend/src/vitest.setup.ts` | `master` (#67, `7aa96018`), `frontend/vitest.config.ts`; ADR 0008, enmienda de F4 | T005 y T006 no instalan ni configuran; T002 corre en `--project dom`; T022 no repite la enmienda |
+| La guarda de `useStore` | El bloque con `CallExpression[callee.name='useStore'][arguments.length=1]` y el mensaje «useStore needs a selector: without one it subscribes to the whole store.», antes del de `complexity` | `impl-f6` `b20028be`, `eslint.config.ts:43-54` (commit `e30ad0bf`); igual en `impl-f5` `efaf39b2` (commit `c6e7ebda`) | T006 lo suma tal cual sólo si ni F5 ni F6 entraron |
+| nuqs y la raíz de URL | nuqs 2.10.2 con su aviso después del de Zustand; `url-state.tsx` con `UrlStateProvider` y `startUrlStateSync()`, que se llama desde `mount` | `impl-f5` `efaf39b2`: `package.json:51`, `frontend/THIRD-PARTY-NOTICES.txt:94`, `frontend/src/app/legacy/url-state.tsx:2` y `:12-14` (commits `da2fc09f`, `034dc168` y `cfe2a3a2`) | T015 y T016 no hacen nada si F5 entró; si F3 entra antes, copian lo mismo |
+| La escritura diferida de nuqs | Al menos 50 ms después del cambio, sin escritura síncrona; el usuario aceptó la diferencia | `impl-f5/.superpowers/sdd/plan/T025-report.md:28` y `:41-47`; `.coordinador/clarify-decisiones.md`, «Decisiones del 2026-10-28 (noche)» | La E2E de (i) que recarga espera la URL (T017); riesgo 11 del plan |
+| `boot-check` | La condición de F4 (`view === 'atlas' \|\| view === 'proyecto'`) con su `mountedText`, que lee también el `textContent` del elemento; F5 la pasa a `REACT_VIEWS` | `master`, `qa/boot-check.ts:85-87` y `:111`; `impl-f5`, `qa/boot-check.ts:85` | T013 deja `REACT_VIEWS` con `atlas`, `proyecto` y `biblioteca` y el `mountedText` de F4; sin `renderedText` ni cambios en `fake-dom.ts` |
+| `import.meta` en el dist | Vite envuelve cada `import()` de `legacy-views.ts` con `import.meta.url`: F4 lo llevó de 22 a 23 con `dynamicImports` en 0 | `.coordinador/pr-impl-f4.md:33`; `frontend/src/app/boot/legacy-views.ts:4` | La compuerta espera la base de T001 más uno |
+| El tope del HTML | `BOOT_SIZE_LIMIT = 1500000` | `master`, `qa/build-check.ts:11` (#76) | 1 500 000 en «Restricciones globales», T013, T018 y quickstart.md §3.2 |
+| Los stubs del rojo | `const` tipados, sin parámetros; los componentes como `FunctionComponent<Props>` | `.coordinador/hallazgos-para-planes.md`, TR-2 (`impl-f7a` y `impl-f11a`) | Reglas, T010, T011, T014 y T016 |
+| El CSS que F4 ya partió | La regla de impresión queda `.resource-card, .module`, y `.resource-notice` está en `frontend/styles.css:1208-1213` | `master`, `frontend/styles.css` | T019 busca por selector y toma los conteos de T001 |
+| Las trampas del barrido | El puntero sobre un nodo que React conserva, el `<details>` cerrado ya medido, los textos que JSX parte | `.coordinador/hallazgos-para-planes.md`, TR-13 | T019 y quickstart.md §5.2 |
+
+**Lo que no cambia:** la forma de la página, los E2E de lo que se conserva, el contrato de URL salvo la nota de la escritura diferida, la sesión transitoria del corte y la decisión D1.
 
 ## Tabla de consultas
 
@@ -329,9 +353,9 @@ Medidas el 2026-10-28 con `npm view` y pedidos de un byte con `Range` (1 MB = 10
 | nuqs | 2.10.2 | `WebFetch` de `nuqs.dev/docs/options` | `history`, `limitUrlUpdates`, `clearOnDefault`, `defaultOptions` | `replace` por omisión; 50 ms como mínimo y la primera escritura enseguida; `clearOnDefault: true`; `defaultOptions` en el adaptador desde 2.5.0 | Sí: `history: 'replace'` explícito |
 | nuqs | 2.10.2 | `WebFetch` del código de `v2.10.2` en GitHub: `adapters/react.ts`, `adapters/lib/patch-history.ts`, `lib/url-encoding.ts`, `parsers.ts`, `serializer.ts`, `index.ts` y `useQueryStates.ts` | La escritura, la codificación, los parsers y el estado con `clearOnDefault` | Conserva el hash; la codificación de R6; un valor igual al de omisión según `eq` pasa el estado a `null` | Sí: la contradicción de R3 y la decisión D1 |
 | nuqs | 2.10.2 | `npm view` | Versión, exports, licencia y peso | `latest` 2.10.2 (2026-10-08), MIT, `./adapters/react` y `./adapters/testing`, `sideEffects` sólo en `debug.js`, 480 252 B y 101 archivos | Sí: R11 y R12 |
-| Vitest | 5.0.3 | Context7 `/vitest-dev/vitest/v5.0.3` (y el coordinador) | `test.projects` en línea | Heredan la raíz por omisión (`extends: true`) y concatenan los arreglos, como `include` y `setupFiles`; `name` no se hereda | Sí: la raíz sólo lleva `projects` y el `include` de hoy pasa al proyecto `node` (T006) |
+| Vitest | 5.0.3 | Context7 `/vitest-dev/vitest/v5.0.3` (y el coordinador) | `test.projects` en línea | Heredan la raíz por omisión (`extends: true`) y concatenan los arreglos, como `include` y `setupFiles`; `name` no se hereda | Sí, al planificar; con #67 la configuración ya está en `master` (proyectos `node` y `dom`) y T006 no la toca |
 | Vitest | 5.0.3 | Context7 `/vitest-dev/vitest/v5.0.3` | `vi.resetModules` y las dependencias externas | Vuelve a evaluar los módulos del proyecto al importarlos de nuevo; las dependencias de `node_modules` se importan de forma nativa y no se vuelven a evaluar | Sí: R5 |
-| Testing Library | `@testing-library/react` 16.3.3, `jest-dom` 7.0.1 | Context7 `/testing-library/testing-library-docs` | Vitest sin `globals` | `cleanup()` en un `afterEach` del setup; `import '@testing-library/jest-dom/vitest'` | Sí: `vitest-setup.ts` (T006) |
+| Testing Library | `@testing-library/react` 16.3.3, `jest-dom` 7.0.1 | Context7 `/testing-library/testing-library-docs` | Vitest sin `globals` | `cleanup()` en un `afterEach` del setup; `import '@testing-library/jest-dom/vitest'` | Sí, al planificar; el setup ya está en `master`: `frontend/src/vitest.setup.ts` (#67) |
 | user-event | 14.6.7 | Context7 `/testing-library/user-event` | `setup()`, `type`, `selectOptions`, `click` | Una instancia por prueba, antes del `render`, y `await` en cada interacción | No |
 | jsdom | 30.1.2 | Context7 `/jsdom/jsdom` | Navegación e historial | No implementa la navegación (`location.href = …`) ni el layout. El README no dice nada de `history.replaceState`, que la spec de `url-state.tsx` usa | Sí: T002 lo comprueba en la copia descartable |
 | fishery | 2.4.0 | Context7 `/thoughtbot/fishery` | `Factory.define`, `build` y `sequence` | `sequence` empieza en 1; los params se mezclan en profundidad y los arreglos se reemplazan enteros | Sí: R4 (los `languages` se pasan enteros) |
@@ -342,3 +366,6 @@ Medidas el 2026-10-28 con `npm view` y pedidos de un byte con `Range` (1 MB = 10
 | Playwright | 1.63.0 | `WebFetch` de `playwright.dev/docs/api/class-locatorassertions` | `toBeFocused`, `toHaveText` con arreglo, `toHaveJSProperty` | El arreglo exige la misma cantidad y el mismo orden; `toHaveJSProperty` lee `open` de `<details>` | Sí: el orden de los títulos y el detalle abierto |
 | ESLint | 10.12.0 (Context7 tiene 10.5.0) | Context7 `/eslint/eslint/v10.5.0` | Selectores de `no-restricted-syntax` | Los selectores aceptan atributos con condiciones (`[arguments.length<2]`) | Sí: la guarda (T006), igual a la de F5 |
 | Vite | 8.3.2 | Context7 `/vitejs/vite` y `WebFetch` de `vite.dev/guide/features` | El orden del CSS importado y `cssCodeSplit` | El CSS de un chunk asíncrono se extrae aparte; el de la entrada sigue el orden de los imports; lightningcss minifica | Sí: `library.css` se importa en `main.tsx` y el orden de R9 |
+| nuqs | 2.10.2 | Context7 `/47ng/nuqs` (segundo servidor, enmienda del 2026-10-28) | El throttle de la URL y `limitUrlUpdates` | La URL se encola y se escribe con un throttle de 50 ms por omisión; los valores menores se ignoran; el estado del hook cambia en el acto | Sí: la E2E de (i) espera la URL antes de recargar (R6 y R14) |
+| Playwright | 1.63.0 | Context7 `/microsoft/playwright/v1.63.0` (enmienda) | `page.waitForURL` con un predicado y la History API | Un cambio de URL por la History API cuenta como navegación, y el predicado recibe un `URL` | Sí: la espera de T017 (`page.waitForURL((url) => …)`) |
+| ESLint | 10.12.0 (Context7 trae `main`) | Context7 `/eslint/eslint` (enmienda) | Selectores de atributo con igualdad sobre un atributo anidado | `[attr=123]` y `[attr.level2=…]` están soportados; el ejemplo oficial usa `[arguments.length!=2]` | Sí: la guarda canónica de F6 (`[arguments.length=1]`) en T006, en lugar de `[arguments.length<2]` |
