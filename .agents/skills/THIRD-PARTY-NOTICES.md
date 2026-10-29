@@ -12,7 +12,8 @@ Las skills de esta carpeta son copias de repositorios de terceros, cada una con 
 | `desloppify` | [peteromallet/desloppify](https://github.com/peteromallet/desloppify) | OSNL 0.2 (abajo) | Copyright (c) 2025-2026 Peter O'Malley |
 | `tailwind-design-system` | [wshobson/agents](https://github.com/wshobson/agents) | MIT | Copyright (c) 2024 Seth Hobson |
 | `laravel-specialist`, `php-pro` | [Jeffallan/claude-skills](https://github.com/Jeffallan/claude-skills) | MIT | Copyright (c) 2025 (sin titular en el original; autor: Jeffallan) |
-| `laravel-patterns`, `laravel-security`, `laravel-tdd`, `react-testing` | [affaan-m/ECC](https://github.com/affaan-m/ECC) | MIT | Copyright (c) 2026 Affaan Mustafa |
+| `laravel-patterns`, `laravel-security`, `laravel-tdd`, `react-testing`, `docker-patterns` | [affaan-m/ECC](https://github.com/affaan-m/ECC) | MIT | Copyright (c) 2026 Affaan Mustafa |
+| `makefile-generator` | [akin-ozer/cc-devops-skills](https://github.com/akin-ozer/cc-devops-skills) | Apache-2.0 | Texto completo en `makefile-generator/LICENSE.txt`; el repositorio no trae archivo NOTICE |
 | `vitest` | [antfu/skills](https://github.com/antfu/skills) | MIT | Copyright (c) 2025-PRESENT Anthony Fu |
 | `playwright-best-practices` | [currents-dev/playwright-best-practices-skill](https://github.com/currents-dev/playwright-best-practices-skill) | MIT | Copyright © 2026 Currents Software Inc. |
 | `api-and-interface-design` | [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) | MIT | Copyright (c) 2025 Addy Osmani |
