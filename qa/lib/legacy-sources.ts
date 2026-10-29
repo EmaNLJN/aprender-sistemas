@@ -3,7 +3,7 @@
 // dependencias por window.* (ver qa/load-order-check.ts); los checks no repiten listas.
 import type vm from 'node:vm';
 import { SYSTEMS_DOMAINS, type SystemsDomain } from '../../tools/content/catalogs.ts';
-import { runModule, runSource, type RunOptions } from './sources.ts';
+import { runModule, runSource, runSourceGroup, type RunOptions } from './sources.ts';
 
 export type Language = 'rust' | 'go';
 
@@ -14,7 +14,7 @@ export const LAB_SOURCE = 'frontend/lab.js';
 export const CAMPAIGN_ENGINE_SOURCE = 'frontend/src/app/legacy/register-campaign-engine.ts';
 export const CAMPAIGN_UI_SOURCE = 'frontend/campaign.js';
 export const SYSTEMS_ENGINE_SOURCE = 'frontend/src/app/legacy/register-systems-engine.ts';
-export const SYSTEMS_UI_SOURCE = 'frontend/systems.js';
+export const SYSTEMS_UI_SOURCE = 'frontend/src/app/legacy/register-systems.tsx';
 
 // Ejercicios del recorrido y desafíos de campaña.
 export const LAB_EXERCISE_SOURCES: readonly string[] = [CATALOGS_SOURCE];
@@ -89,5 +89,5 @@ export function loadSystemsEngine(context: vm.Context): void {
 }
 
 export function loadSystemsUi(context: vm.Context): void {
-  runSource(context, SYSTEMS_UI_SOURCE);
+  runSourceGroup(context, [SYSTEMS_ENGINE_SOURCE, SYSTEMS_UI_SOURCE]);
 }

@@ -22,6 +22,8 @@ export type {
   ViewMetric,
 } from './model/types';
 export { appendLog, button, cell, metric } from './lib/view-builders';
+export { sanitizeScene } from './lib/sanitize-scene';
+export type { SafeScene, SafeSceneShape, UntrustedScene } from './lib/sanitize-scene';
 export { pcModel } from './models/pc';
 export type { PcState } from './models/pc';
 export { lowlevelModels } from './models/lowlevel';

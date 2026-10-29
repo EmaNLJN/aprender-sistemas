@@ -11,7 +11,7 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | --- | --- |
 | Documento, entrada ESM, arranque y adaptadores legacy | `frontend/src/index.html`, `frontend/src/app/main.tsx` (la secuencia de etapas), `frontend/src/app/boot/` (la compuerta del contenido y la cadena legacy, A2), `frontend/src/app/content/` (`getContent()`), `frontend/src/app/legacy/` |
 | Helpers y constantes compartidos, sin reglas de negocio | `frontend/src/shared/lib/`, `frontend/src/shared/config/` |
-| Gramática de URL (F2, unidad 5) | `frontend/src/shared/config/url-grammar.ts`: las vistas, la lectura de la query y los enlaces y las reescrituras de URL que usan `app.js`, `lab.js`, `campaign.js`, `systems.js` y el Atlas |
+| Gramática de URL (F2, unidad 5) | `frontend/src/shared/config/url-grammar.ts`: las vistas, la lectura de la query y los enlaces y las reescrituras de URL que usan `app.js`, `lab.js`, `campaign.js`, el Atlas y Sistemas |
 | Puentes entre vistas como datos (F2, unidad 5) | `frontend/src/entities/campaign/bridge.ts` (`campaignMissionContext` y `campaignLinkAccess`) y `frontend/src/entities/systems-workshop/bridge.ts` (`workshopMissionIds`, `workshopExerciseRole` y `workshopReturnTarget`): entradas sin estado que las fuentes legacy importan sin abrir almacenes. Fuera de un slice, una fuente legacy o de `app/` importa el índice del slice, si es su dueño, o una entrada sin estado; lo hace cumplir la regla R6 de `qa/seams-guard-check.ts` |
 | Evidencia de aprobación, interpretación de ejecuciones y fusión de registros | `frontend/src/entities/exercise/` |
 | Lectura versionada, respaldo y avisos de carga del progreso | `frontend/src/shared/lib/versioned-storage.ts` (ADR 0003) |
@@ -35,13 +35,14 @@ La estructura actual es plana y se organiza por responsabilidad y prefijo:
 | Mundos de campaña | `content/campaign/` |
 | Reglas, validación y progreso de campaña | `frontend/src/entities/campaign/`, adaptador `frontend/src/app/legacy/register-campaign-engine.ts` |
 | Interfaz y exploradores de campaña | `frontend/campaign.js`, `frontend/campaign.css`, `frontend/quest-explorers.js`, `frontend/quest-explorers.css`; el robot y los paquetes son modelos puros (`frontend/src/entities/exercise/model/quest-explorer.ts`, F2, unidad 7), que `quest-explorers.js` dibuja desde `entities/exercise/explorers` |
-| Contrato de simulaciones de Sistemas | `frontend/src/entities/systems-simulation/` (`defineModel`, tipos de vista y escena, y `mergeModelGroups`, el registro que une los modelos de los cuatro dominios para `systems.js`; F2, unidad 4) |
+| Contrato de simulaciones de Sistemas | `frontend/src/entities/systems-simulation/` (`defineModel`, tipos de vista y escena, y `mergeModelGroups`, el registro que une los modelos de los cuatro dominios para la página de Sistemas; F2, unidad 4. `sanitizeScene` sanea la escena de un modelo antes de dibujarla; F5) |
 | Modelos de Sistemas | `frontend/src/entities/systems-simulation/models/{lowlevel,infra,play,pc}/` (un archivo por modelo, con `defineModel`) |
 | Fichas de los talleres | `content/workshops/` |
 | Núcleos Rust/Go de Sistemas | sección `systems` de `content/{rust,go}/manifest.yaml` y una carpeta por núcleo en `content/{rust,go}/exercises/` |
 | Catálogos de Sistemas publicados en `window.SYSTEMS_*` | adaptadores `frontend/src/app/legacy/register-systems-{lowlevel,infra,play,pc}.ts`, que leen `getContent()` |
 | Sellos y progreso de Sistemas | `frontend/src/entities/systems-workshop/`, adaptador `frontend/src/app/legacy/register-systems-engine.ts` |
-| Interfaz de Sistemas | `frontend/systems.js`, `frontend/systems.css` |
+| Sistemas migrado a React/TypeScript (F5) | `frontend/src/pages/systems/` (`ui`, con `systems.css`, y `model`, con la selección del taller y la parte en la URL) y adaptador `frontend/src/app/legacy/register-systems.tsx` (`window.TallerSystems`, con sus nueve métodos hasta F7, F8 y F10) |
+| Estado navegable en la URL (F5) | `frontend/src/app/legacy/url-state.tsx`: `UrlStateProvider`, el `NuqsAdapter` con `history: 'replace'`, y `startUrlStateSync`, que activa la sincronización con el historial al montar la vista, no al evaluar el módulo |
 | Animaciones | `frontend/src/shared/lib/celebration.ts`, adaptador `frontend/src/app/legacy/register-effects.ts` |
 | Kits ZIP de proyecto | `frontend/src/features/download-project-kit/` (archivos puros y ZIP con fflate), `frontend/src/shared/lib/download-file.ts`, adaptador `frontend/src/app/legacy/register-project-kit.ts` |
 | Respaldo global del progreso: exportar, importar, «Borrar todo» y las ranuras de respaldo (F2, unidad 6) | `frontend/src/features/progress-backup/`: `createProgressBackup` recibe las cuatro áreas (el recorrido y los adaptadores del laboratorio, de campaña y de Sistemas) y devuelve promesas al importar y al borrar, para que D1c la reemplace sin tocar a quien la llama (Q4 de F2). `app.js` arma las áreas y sigue siendo dueño de la interfaz de Método hasta F8 |
@@ -192,8 +193,8 @@ para infraestructura o UI sin reglas de negocio. Abrí slices en `features` para
 acciones de valor para el alumno y en `entities` para conceptos de dominio estables
 sólo cuando varios consumidores justifiquen ese seam. No agregues `processes` —está
 deprecada— ni `widgets` hasta que exista un bloque autónomo que realmente los necesite.
-Estado actual: `frontend/src/app` (entrada, arranque y adaptadores legacy), `frontend/src/pages/atlas` y `frontend/src/pages/project`
-(las páginas migradas), `frontend/src/features` (`download-project-kit`, `progress-backup` y `progress-sync`), las
+Estado actual: `frontend/src/app` (entrada, arranque y adaptadores legacy), `frontend/src/pages/atlas`, `frontend/src/pages/project` y
+`frontend/src/pages/systems` (las páginas migradas), `frontend/src/features` (`download-project-kit`, `progress-backup` y `progress-sync`), las
 entidades `exercise` (evidencia, ejecución, fusión de registros, catálogo y `labStore`), `guide`
 (`routeStore`), `campaign` y `systems-workshop` (motores y puentes) y `systems-simulation`, y
 `frontend/src/shared` (helpers, la gramática de URL y constantes sin reglas de negocio).
@@ -221,7 +222,8 @@ entidades `exercise` (evidencia, ejecución, fusión de registros, catálogo y `
   con `recommended-typescript` (claves, `flushSync`, refs y APIs del DOM).
 - **Accesibilidad,** en los `.tsx`: `eslint-plugin-jsx-a11y-x` con `recommended`. Es el fork de
   `eslint-plugin-jsx-a11y` que soporta ESLint 10; el original no publica una versión desde 2024. Un `<pre>`
-  desplazable puede llevar `tabIndex={0}`, porque el teclado necesita enfocarlo para desplazarlo.
+  o una región con nombre (`role="region"`) desplazables pueden llevar `tabIndex={0}`, porque el
+  teclado necesita enfocarlos para desplazarlos.
 - **Promesas, con tipos** (`projectService`): `no-floating-promises`, `no-misused-promises` y
   `await-thenable`. Una promesa que se lanza sin esperarla se marca con `void`.
 - **Una excepción** va en su línea, con `eslint-disable-next-line <regla> -- <motivo>`; una regla no se

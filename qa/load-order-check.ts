@@ -24,6 +24,7 @@ const STYLES = 'frontend/styles.css';
 const ATLAS = 'frontend/src/app/legacy/register-atlas.tsx';
 const PROJECT_PAGE = 'frontend/src/app/legacy/register-project-page.tsx';
 const CAMPAIGN_ENGINE = 'frontend/src/app/legacy/register-campaign-engine.ts';
+const SYSTEMS_UI = 'frontend/src/app/legacy/register-systems.tsx';
 const SYSTEMS_ENGINE = 'frontend/src/app/legacy/register-systems-engine.ts';
 const CATALOGS = 'frontend/src/app/legacy/register-catalogs.ts';
 const SYSTEMS_DOMAINS = ['lowlevel', 'infra', 'play', 'pc'].map(
@@ -37,8 +38,7 @@ const BEFORE_APP_REASONS: Record<string, string> = {
     'render() de app.js llama a window.TallerLab.mount(); app.js también usa getExercises() en syncLinkedLanguage()',
   'frontend/campaign.js':
     'app.js llama a window.TallerCampaign?.init() al cargar y a mount() en render()',
-  'frontend/systems.js':
-    'app.js llama a window.TallerSystems?.init() al cargar y a mount() en render()',
+  [SYSTEMS_UI]: 'app.js llama a window.TallerSystems?.init() al cargar y a mount() en render()',
   [CATALOGS]:
     'app.js lee window.GUIDE_DATA al cargar; syncLinkedLanguage() lee window.RUST_CAMPAIGN/GO_CAMPAIGN y campaign.js init() los pasa al motor al cargar app.js',
   [ATLAS]:
@@ -65,8 +65,8 @@ const CONSTRAINTS: Constraint[] = [
   ],
   [
     SYSTEMS_ENGINE,
-    'frontend/systems.js',
-    'systems.js captura window.TallerSystemsEngine en const engine al evaluarse',
+    SYSTEMS_UI,
+    'el adaptador de Sistemas captura window.TallerSystemsEngine en const engine al evaluarse',
   ],
   ...Object.entries(BEFORE_APP_REASONS).map(([module, reason]): Constraint => [
     module,

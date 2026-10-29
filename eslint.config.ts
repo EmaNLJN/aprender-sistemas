@@ -14,6 +14,7 @@ export default defineConfig([
     '.claude/**',
     '.codex/**',
     '.desloppify/**',
+    '.superpowers/**',
     'dist/**',
     'backend/api/**',
   ]),
@@ -48,7 +49,7 @@ export default defineConfig([
       ...jsxA11y.configs.recommended.rules,
       'jsx-a11y-x/no-noninteractive-tabindex': [
         'error',
-        { tags: ['pre'], roles: ['tabpanel'], allowExpressionValues: true },
+        { tags: ['pre'], roles: ['region', 'tabpanel'], allowExpressionValues: true },
       ],
     },
   },
@@ -67,6 +68,18 @@ export default defineConfig([
   {
     files: ['qa/**/*.ts', 'tools/**/*.ts', '*.config.ts', 'frontend/*.config.ts'],
     languageOptions: { globals: globals.node },
+  },
+  {
+    files: ['frontend/src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "CallExpression[callee.name='useStore'][arguments.length=1]",
+          message: 'useStore needs a selector: without one it subscribes to the whole store.',
+        },
+      ],
+    },
   },
   {
     rules: {

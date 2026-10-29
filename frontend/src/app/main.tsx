@@ -4,7 +4,7 @@ import '../../lab.css';
 import '../pages/atlas/ui/atlas.css';
 import '../../campaign.css';
 import '../../quest-explorers.css';
-import '../../systems.css';
+import '../pages/systems/ui/systems.css';
 
 import { contentGate } from './boot/content-stage';
 import { legacyViews } from './boot/legacy-views';

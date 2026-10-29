@@ -743,7 +743,7 @@ test.describe('open and go back', () => {
 });
 
 test.describe('the three parts', () => {
-  test('each part presses its button, keeps the focus on it, writes the query and scrolls the tabs to the top', async ({
+  test('each part presses its button, keeps the focus on it, writes the query and scrolls the tabs 25px below the top', async ({
     shell,
     systems,
     page,
@@ -755,7 +755,7 @@ test.describe('the three parts', () => {
       await expect(systems.part(part)).toHaveAttribute('aria-pressed', 'true');
       await expect(systems.part(part)).toBeFocused();
       await expect(page).toHaveURL(urls.workshop('rust', 'cache', part));
-      await expect.poll(() => systems.partTabsTop()).toBe(0);
+      await expect.poll(() => systems.partTabsTop()).toBe(25);
     }
   });
 

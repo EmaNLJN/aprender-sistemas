@@ -67,6 +67,7 @@ test.describe('an action in each store survives a reload', () => {
     await shell.goto(urls.workshop('rust', 'cache', 'explore'));
     await systems.modelButton('Leer A').click();
     await systems.part('ship').click();
+    await page.waitForURL((url) => url.searchParams.get('parte') === 'ship');
     await systems.note().fill('mi nota de la prueba');
 
     await page.reload();

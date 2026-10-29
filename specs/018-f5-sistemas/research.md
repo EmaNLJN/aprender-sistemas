@@ -17,7 +17,7 @@ Valores que el plan usa como referencia. La implementación los vuelve a medir s
 
 | Qué | Valor | Fuente |
 | --- | --- | --- |
-| `dist/index.html` | 1 141 337 caracteres; tope 1 250 000 (`BOOT_SIZE_LIMIT` de `qa/build-check.ts`) | Hoja de ruta, «Criterios de aceptación globales» (medida del coordinador con F2b) |
+| `dist/index.html` | bajo 1 500 000 y con el aumento dentro de +40 000 | 1 171 610 caracteres; +24 872 sobre 1 146 738 (la base `8711fd8a`) | verde |
 | `frontend/systems.js` | 379 líneas, 26 938 bytes | `wc` sobre `2b37caf4` |
 | `frontend/systems.css` | 1 068 líneas, 19 468 bytes | `wc` sobre `2b37caf4` |
 | Avisos de complejidad | 35 en total; en `systems.js`, `onClick` (30) y `modelView` (11) | quickstart de F2b, §1; spec, FR-045 |
@@ -318,3 +318,115 @@ Ninguno sale del código que se porta.
 - **V2 (la CSP), V4 (el DOM) y la comparación de las 9 escenas** corren en T025.
 - **La comprobación con lector de pantalla de X2** es del usuario.
 - **macOS, Docker y la CI.**
+
+## Línea base de la implementación
+
+Medida por T001 el 2026-10-28 sobre `24ba9d3d` (rama `impl/f5-sistemas`; el código es el de `master` en `dd870a9c`, con F2a, A2 y F2b, y encima sólo commits de `specs/`). `npm ci --offline`, `npm run build`, `npm test` (719 pruebas de Vitest), `npm run lint` (0 errores), `npm run format:check` y los E2E (123 de 123) dieron verde.
+
+| Qué | Valor |
+| --- | --- |
+| `dist/index.html` | bajo 1 500 000 y con el aumento dentro de +40 000 | 1 171 610 caracteres; +24 872 sobre 1 146 738 (la base `8711fd8a`) | verde |
+| sha256 del script | `a0d182f082b6a0b9af30ab39a821a171001badabac4fba0e9c66f231c0d9be94` |
+| sha256 del `<style>` | `ae2971b09f63ae91d69f77007777d555159b8be1df652feb145535a963327b79` |
+| sha256 del marcado | `8e060fe765d256c22639d3b31c98a3a60160eb4263d3d0396714022c562892d8` |
+| sha256 de `build/curriculum.json` | `4555e8500e6ef5bd38cdaf46010d3f14e3345d7ec0c69aea983acfe67f62fbb6` |
+| sha256 de `dump-globals` | `859771e276be9dc757c25388fd617df7d8667ffab176992e82d79cf6e1dd6fa1` |
+| Avisos de complejidad | 35; en `systems.js`, `onClick` (30) y `modelView` (11) |
+| `boot-check` | 25 `PASS` |
+| `lab-bridge-check` | 21 `PASS` |
+| `app-shell-check` | 58 `PASS` |
+| `systems-check` | 46 `PASS` |
+| `npm run test:e2e` con `--workers=1` | 123 pasan en 45,6 s |
+
+Qué entró antes (quickstart §1.2):
+
+| Pregunta | Respuesta |
+| --- | --- |
+| nuqs | Ausente: T002 lo pide |
+| Pila de componentes (`jsdom`, Testing Library) | Presente (jsdom 30.1.2, `@testing-library/react` 16.3.3): T007 no corre |
+| fishery | Presente (2.4.0): T002 no la pide |
+| Raíz de nuqs (`enableHistorySync`) | Ninguna; tampoco hay `url-state.tsx` |
+| F6 | No entró: `frontend/campaign.js` existe |
+| Ayudante de grupos (`runSourceGroup`, `bundleSourceGroup`) | Ninguno en `qa/` |
+| `REACT_VIEWS` en `boot-check` | Ausente: T010 corre |
+| F8 | No entró: `createProgressBackup` sigue en `frontend/app.js` |
+
+## Resultado del spike de V6 y V1 (T003)
+
+Corrido el 2026-10-28 sobre una copia descartable de `impl/f5-sistemas`, con el adaptador real de nuqs 2.10.2 en jsdom (6 tests; los casos 2 y 3 son uno solo). No cambia el plan.
+
+| # | Comprobación | Resultado |
+| --- | --- | --- |
+| 1 | jsdom actualiza `location` con `replaceState` | OK |
+| 2 | abrir desde `/#sistemas` escribe `?lenguaje=rust&taller=cache&parte=explore` y conserva `#sistemas` | OK |
+| 3 | no suma entrada al historial | OK |
+| 4 | cerrar deja `?lenguaje=rust` | OK |
+| 5 | un parámetro ajeno se conserva (`?basura=1&lenguaje=rust&taller=cache&parte=explore`) | OK |
+| 6 | las claves que ya estaban conservan su orden (`?taller=cache&parte=ship&lenguaje=rust`) | OK |
+| 7 | con `enableHistorySync()`, un `replaceState` ajeno llega al hook | OK |
+
+- **`enableHistorySync`** se exporta en `nuqs/dist/adapters/react.js` de la 2.10.2.
+- **`localStorage`** también aparece en `nuqs/dist/server.js`, que es el entry `nuqs/server`. El plan no lo importa.
+- **V1, el peso estimado con esbuild:** nuqs suma 17 451 bytes, bajo el umbral de 25 000; zustand suma 245 y `@standard-schema/spec`, 0. La medida real es la diferencia de `html.length` en T025.
+- **El filtro del quickstart §2.1:** `npm run test:unit -- src/pages/...` no encuentra el archivo, porque el filtro es relativo a `frontend/src`. Funciona con el nombre del archivo.
+
+## Resultados de la compuerta (T025)
+
+Medidos el 2026-10-28 sobre `ef5b640f` (el corte), contra la línea base `24ba9d3d`, con los scripts de `quickstart.md` §3 (puertos 4571 y 4572 en lugar de 4501 y 4502; E2E en el 4185). Los números salen tal cual; las casillas rojas quedan abiertas.
+
+| Casilla | Esperado | Medido | Estado |
+| --- | --- | --- | --- |
+| `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `git diff --check` | verde, 0 errores de lint | verde; 801 pruebas de Vitest (719 en la base); 0 errores | verde |
+| `build/curriculum.json` y `dump-globals` | iguales a la base | iguales (`4555e850…` y `859771e2…`) | verde |
+| sha256 del `<style>` y del marcado | iguales a la base | iguales (`ae2971b0…` y `8e060fe7…`) | verde |
+| sha256 del script | cambia | `a68ae21c…` (la base, `a0d182f0…`) | verde |
+| `dist/index.html` | bajo 1 500 000 y con el aumento dentro de +40 000 | 1 171 610 caracteres; +24 872 sobre 1 146 738 (la base `8711fd8a`) | verde |
+| Avisos de complejidad | 35 − 2 = 33 | 33; se van `onClick` (30) y `modelView` (11) de `systems.js` y no entra ninguno | verde |
+| Escenarios de `boot`, `lab-bridge`, `app-shell` y `systems` | 25, 21, 58 y 46 | 25, 21, 58 y 46 | verde |
+| `seams-guard`, `dist-content` y `build` | verde | 25 escenarios; sin violaciones; 5 de 5 | verde |
+| Diferencia de `frontend/app.js` | vacía | vacía | verde |
+| Diferencia de `qa/e2e/specs/` | sólo `systems.spec.ts`, `systems-react.spec.ts` y `systems-url.spec.ts` | esos tres archivos, 630 líneas sumadas y ninguna borrada | verde |
+| `style="`, `innerHTML` y `dangerouslySetInnerHTML` en `pages/systems` | 0 | 0 | verde |
+| `style={` en `pages/systems` | una, en `SceneView.tsx` | una: `SceneView.tsx:85` | verde |
+| `nuqs/debug`; `window.`, `getContent` y `localStorage` en `pages/systems` | 0 | 0 y 0 | verde |
+| `systems.js` o `systems.css` en producción y configuraciones | nada | `frontend/src/app/main.tsx:6` importa `../pages/systems/ui/systems.css` (la hoja nueva); `frontend/systems.js` y `frontend/systems.css` ya no existen | verde, con la hoja nueva como único acierto |
+| Textos de la plantilla (§4.1) | `missing: 0` | 79 fragmentos, 0 faltantes | verde |
+| E2E | 184 pasan | Tras el rebase sobre `8711fd8a` (con F4) la red entera da 202 pasan (`E2E_PORT=4196 npm run test:e2e`); `systems.spec.ts` con `--repeat-each=3` da 165 de 165; `startup-storage.spec.ts` con `--repeat-each=20` da 80 de 80 (antes, 16 de 20) | verde |
+| DOM (V4): estados y diferencias | 187 y 0 | 187 y 0 | verde |
+| DOM: escenas | 9 | 19 en el contador del script, que suma el estado inicial, la acción y el pc con sellos de cada escena; los ids distintos son 9, con 0 diferencias | verde, con el esperado del quickstart corregido |
+| Barrido de estilo computado (V3 ampliado) | 276 capturas y 0 diferencias | 276 capturas y 0 diferencias de la base `8711fd8a` contra la rama, con el puntero fuera de la página, los `<details>` cerrados sin comparar y las animaciones terminadas (ninguna infinita: 0 esperas agotadas); el control de determinismo (la base contra sí misma) también da 0 | verde |
+| CSP (V2) en la rama | `rgb(20, 39, 31)` y 0 violaciones de `14271f` | `rgb(20, 39, 31)` y 0 (0 violaciones en total) | verde |
+| CSP en la base (control negativo) | 1 o más | 1 | verde |
+| V5: `npm run test:e2e -- --workers=1` | informar | base: 123 pruebas en 45,6 s; rama: 184 pruebas en 2,2 min (primera corrida) y 1,1 min (las otras dos, con un fallo de 5 s) | informado |
+| Mutaciones (§4) | cada una hace fallar su prueba | 15 de 16 la hacen fallar; la de T009 sólo se comprobó por el script de `engines` (detalle abajo) | verde, con T009 por el script |
+| Revert (SC-008) | la vista legacy vuelve y pasa su red | `npm run build` y `npm test` verdes (719 pruebas, como la base); `systems.spec.ts` pasa 55 de 55 sobre `systems.js` | verde |
+| `docker compose build taller` | con permiso | no se corrió | pendiente |
+
+### Las dos casillas rojas
+
+- **E2E.** `startup-storage.spec.ts` escribía la nota en «Llevátelo a un proyecto» y recargaba enseguida; en la rama la recarga caía a veces en «Manipulá el sistema» (16 fallos de 20 corridas contra 0 de 10 en la base), porque nuqs escribe la URL con al menos 50 ms de demora y la vista legacy lo hacía en el acto. El usuario aceptó esa diferencia (2026-10-28) y aprobó la única edición de una E2E congelada: el escenario «route, lab and Systems…» espera `parte=ship` en la URL con `page.waitForURL` antes del `reload`. Con eso `--repeat-each=20` da 80 de 80.
+- **Barrido.** Las diferencias eran de dos clases, y las dos están resueltas. Las de subpíxel venían de nodos de texto partidos por JSX (`{a} · {b}`): la vista legacy escribía uno solo. Se armó el texto como una sola cadena en las píldoras (`.sys-pills span`), la cabecera de cada tarjeta, la miga de pan y el progreso del catálogo (`{done} / {n}` y su leyenda), cada cambio con su prueba de componente (`childNodes.length === 1`). Las de color del botón del modelo tras una acción venían del puntero: React conserva el botón con el puntero encima y `innerHTML` lo recreaba sin `:hover`; el script ahora lleva el puntero a (-1, -1) antes de capturar, no compara lo de adentro de un `<details>` cerrado y espera a que las animaciones terminen. Con eso, la base contra la rama da 276 capturas y 0 diferencias.
+- **Los controles negativos del barrido**, contra la rama (así las diferencias vienen sólo de la mutación):
+  - la hoja de Sistemas antes de `atlas.css`: el sha256 del `<style>` cambia a `bacb17c4…`, pero el barrido da 0 diferencias en `sys-pc-seals-explore` y `sys-cache-ship` y, en las 23 páginas a 375 y 1280, sólo 4 del aviso animado;
+  - mover la última regla de `systems.css` (el `@media (max-width: 1000px)` de `.sys-external-grid`) al principio: el `<style>` cambia a `3ca31f47…`, el barrido sobre las dos páginas del quickstart da 0 y sobre las 23 páginas a 375 y 590 da 1 828 diferencias (1 646 de bloque y filas) en `sistemas`, `sys-empty` y `sys-family`, que son las páginas con las herramientas externas.
+
+### Las mutaciones
+
+| Tarea | Mutación | Falla |
+| --- | --- | --- |
+| T008 | Sin `enableHistorySync()` | «shows a foreign replaceState…» |
+| T009 | `separate` en lugar de `group` (no se aplicó la mutación: cargar el motor aparte pasa `lab-bridge-check`, 21 de 21) | el script de §2.3 da `engines: 2` |
+| T010 | `mount` sin montar nada | `boot-check`: «#sistemas no montó nodos en #main» |
+| T012 | Cortar tras filtrar | «cuts at 2 500 before dropping…» |
+| T012 | `SAFE_COLOR` sin `/i` | «… in any case» |
+| T014 | `.trim()` en la query | «does not trim the query» |
+| T015 | `resetSimulations` vacía el filtro | «resets the simulations and keeps the family and the search» |
+| T016 | Sin `clearOnDefault: false` | «opening writes…» |
+| T016 | `{ taller, parte, lenguaje }` | «opening writes…» |
+| T018 | `open={log.length > 0}` con `key` | «leaves the trace closed when the student closed it…» |
+| T020 | `control.value` sin `?? ''` | «a control without a value reaches the model as an empty string» |
+| T020 | `celebrate()` después del aviso | «celebrates before announcing the third seal» |
+| T022 | Sin el foco al volver | «going back writes the catalog query and focuses «Explorar →»…» y «back falls back to the search box…» |
+| T023 | Sin `flushSync` en `openWorkshop` | «…writes the query, focuses the title…» |
+| T024 | `Object.freeze(window.TallerSystems)` | `boot-check`: «startApp initializes in order…» |
+| T025 | Hoja de Sistemas antes de `atlas.css` | el sha256 del `<style>` cambia (el barrido no la ve) |

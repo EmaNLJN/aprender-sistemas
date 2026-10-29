@@ -2,6 +2,7 @@ import { test as base, expect } from '@playwright/test';
 import { AtlasPage } from '../pages/atlas';
 import { CampaignPage } from '../pages/campaign';
 import { LabPage } from '../pages/lab';
+import { MethodPage } from '../pages/method';
 import { ProjectPage } from '../pages/project';
 import { ShellPage } from '../pages/shell';
 import { SystemsPage } from '../pages/systems';
@@ -21,6 +22,7 @@ interface Fixtures {
   systems: SystemsPage;
   atlas: AtlasPage;
   project: ProjectPage;
+  method: MethodPage;
 }
 
 export const test = base.extend<Fixtures>({
@@ -48,6 +50,7 @@ export const test = base.extend<Fixtures>({
   systems: async ({ page }, use) => use(new SystemsPage(page)),
   atlas: async ({ page }, use) => use(new AtlasPage(page)),
   project: async ({ page }, use) => use(new ProjectPage(page)),
+  method: async ({ page }, use) => use(new MethodPage(page)),
 });
 
 export { expect };

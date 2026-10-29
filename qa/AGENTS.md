@@ -7,7 +7,9 @@ nuevas del front (Vitest y Playwright, ADR 0008) viven aparte: ver «Pruebas del
 
 - `qa/lib/sources.ts` empaqueta en memoria con esbuild cualquier fuente del navegador
   (JS o TS, con imports) y la ejecuta en un contexto VM con globals falsos
-  (`runSource`), o la importa como módulo (`importModule`). Cargá siempre las fuentes
+  (`runSource`), o la importa como módulo (`importModule`). `runSourceGroup` empaqueta varias
+  fuentes en un solo bundle y lo ejecuta en el contexto, para que compartan sus módulos: así
+  `loadSystemsUi` carga el motor y la interfaz de Sistemas con un único motor. Cargá siempre las fuentes
   por ahí: así los checks no dependen del formato ni de la ubicación del archivo.
   `runModule` evalúa una fuente como módulo en el contexto VM y devuelve sus exportaciones, y
   `bundleApp(path, { withoutStartCall: true })` empaqueta el arranque sin su `startApp();` (un plugin de
@@ -83,7 +85,7 @@ cambies y evitá reformatear las skills importadas o las salidas generadas.
 | Importación, validación o exportación del laboratorio | `node qa/lab-state-check.ts`, campaña y Sistemas |
 | Contexto de campaña o Sistemas dentro del laboratorio | `node qa/lab-bridge-check.ts` |
 | Exploradores del laboratorio, de robot y de paquetes | `node qa/quest-explorers-check.ts`; con `npm run test:unit`, las specs del mapa y de los modelos (`entities/exercise/model/explorer-kinds.spec.ts`, `lab-explorer.spec.ts` y `quest-explorer.spec.ts`, con la entrada `explorers.spec.ts`) |
-| Catálogo, sellos o progreso de Sistemas | `node qa/systems-check.ts` (carga el catálogo puro de `entities/exercise`, no evalúa `lab.js`) |
+| Catálogo, sellos, progreso o página de Sistemas | `node qa/systems-check.ts` (carga el catálogo puro de `entities/exercise`, no evalúa `lab.js`); con `npm run test:unit`, las specs de `pages/systems` y de `entities/systems-simulation/lib/sanitize-scene.spec.ts`; los E2E `systems.spec.ts`, `systems-react.spec.ts` y `systems-url.spec.ts` |
 | Modelo lowlevel, infra, play o pc | El correspondiente `node qa/systems-<dominio>-check.ts` |
 | Generación de proyectos o ZIP | `node qa/project-kit-check.ts` (usa la fábrica pura del catálogo) |
 | Ejecutor Go (`backend/executor/`) | `npm run test:executor`; con Docker real, `npm run test:executor:integration` (no forman parte de `npm test`) |

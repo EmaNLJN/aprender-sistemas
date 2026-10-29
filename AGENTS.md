@@ -6,7 +6,7 @@ Taller educativo en español con ejercicios de Rust/Go y simulaciones de Sistema
 La interfaz migra por funcionalidades a **React con TypeScript/TSX**; Vite construye
 un HTML y su contenido, y Nginx los sirve; Nginx también pasa `/api/` a la API Laravel de `backend/api/`
 (ADR 0004). Los compiladores son los Playgrounds oficiales.
-Atlas es la primera vista migrada; el resto conserva adaptadores legacy temporales.
+Atlas, Proyecto y Sistemas ya están migradas; el resto conserva adaptadores legacy temporales.
 
 ## Organización
 
@@ -28,7 +28,7 @@ Atlas es la primera vista migrada; el resto conserva adaptadores legacy temporal
 El repositorio se reparte en `frontend/` (la web), `backend/` (`api/` y `executor/`) y `docker/`
 (Compose y Nginx), según el ADR 0007; `content/`, `tools/`, `qa/`, `build/` y `dist/` quedan en
 la raíz. `frontend/` conserva sólo las vistas legacy que faltan migrar a React (`app.js`,
-`lab.js`, `campaign.js`, `systems.js`, `lab-explorers.js` y `quest-explorers.js`).
+`lab.js`, `campaign.js`, `lab-explorers.js` y `quest-explorers.js`).
 El resto vive en `frontend/src/` por capas FSD (`app`, `pages`, `features`, `entities`,
 `shared`); el mapa está en `docs/architecture.md`. `qa/` reúne verificaciones e investigación; `docs/` contiene reglas
 específicas de desarrollo; `.agents/skills/` contiene las skills del proyecto.
