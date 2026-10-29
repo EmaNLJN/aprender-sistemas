@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-07
 
-**Status**: Clarificada (sesión del 2026-10-28): el usuario respondió Q1 a Q5 con la opción recomendada. Lista para el plan; lo que depende de F7 espera a F7a, no a F7b (P2; C4 del coordinador)
+**Status**: Clarificada (sesión del 2026-10-28): el usuario respondió Q1 a Q5 con la opción recomendada, y después D1 a D3 del plan, también con la recomendada. Lo que depende de F7 espera a F7a, no a F7b (P2; C4 del coordinador)
 
 **Input**: Ítem **A4** de la hoja de ruta [`specs/backend-multiusuario/roadmap.md`](../backend-multiusuario/roadmap.md), «Laboratorio con el sandbox propio»: que el laboratorio use `/api/runs` en lugar de los Playgrounds públicos. Depende de B2, entregado ([spec 005](../005-b2-api-ejecuciones/spec.md), PR #31); de A3 (spec 016, rama `spec/a3-contenido-api`); de F7a, la primera parte del port del laboratorio en la [hoja de ruta del front](../front-react/roadmap.md) (spec 021, rama `spec/f7-laboratorio`; P2); y de B3, la auditoría del currículo (spec 020, rama `spec/b3-auditoria`; Q5). Las tres specs se citan sin enlace hasta que se integren. Fuente técnica: el [ADR 0005](../../docs/adr/0005-ejecucion-en-sandbox-propio.md) (aceptada) y el [ADR 0006](../../docs/adr/0006-modelo-de-datos-y-api-multiusuario.md) (**propuesta**), en su D24, su D26 y su §10. **Extiende** a [`specs/005-b2-api-ejecuciones`](../005-b2-api-ejecuciones/spec.md) en un punto del contrato de la ejecución, el id del intento (Q1). Pedido del coordinador del 2026-10-07 (ver «Lo que pidió el usuario»).
 
@@ -103,6 +103,19 @@ El usuario respondió las cinco preguntas con la opción recomendada. Las tres �
 - Q: **Q2 de F7** (el supuesto F7-S5), ¿qué estados de la espera expone `features/run-exercise`? → A: Un canal de progreso y la cancelación, con los estados de hoy en una unión ampliable. A4 suma los suyos (en la fila, esperando turno y la demora) y sus textos en la revisión, sin cambiar la orquestación ni el puerto. Decidió el usuario. (FR-036; «El seam de hoy y lo que F7 decidió»)
 - Q: **P2** (la Q4 de F7), ¿se parte F7? → A: Sí: F7a trae `features/run-exercise` con su puerto, el diagnóstico, los selectores y los E2E contra el legacy, sin vista nueva; F7b trae la vista. El puerto llega con F7a, y lo de A4 que depende de F7 espera a F7a, no a F7 entero. Decidió el usuario. Lo precisa el ruling C4 del coordinador: A4 espera a F7a y a B3, no a F7b, y sus estados y textos los dibuja la vista vigente cuando A4 entra, la revisión de `lab.js` si F7b todavía no entró (y F7b los porta con sus E2E) o la página React si ya entró. («Qué se puede planificar antes de F7a»)
 - Q: ¿Quién pide la plantilla del arnés? → A: A4, cuando el laboratorio la necesita. A3 confirmó en su clarify que no la pide al arrancar, y su copia del contenido admite guardarla como porción opcional (FR-015 de A3). (FR-029)
+
+### Session 2026-10-28 (decisiones del plan)
+
+El usuario respondió las tres decisiones del plan con la opción recomendada. Los detalles están en el research del plan (R10, R14 y R15).
+
+- Q: **D1**, ¿dónde se guarda la plantilla del arnés? → A: Opción (a): como porción opcional del registro de la copia del contenido de A3. El almacén de A3 suma un `update` que lee y escribe en una sola transacción, y el `afterPublish` de A3 arrastra la plantilla del registro anterior. Descartadas: la porción opcional sin arrastre (b), que se pierde en cada arranque con servidor, y sólo en memoria (c), que enmendaba esta FR. Decidió el usuario, 2026-10-28. (FR-029)
+- Q: **D2**, ¿se aprueba el commit de las E2E editadas? → A: Sí. Son 20, las medidas sobre F7a:
+  - las 9 de F1 que prevé FR-042;
+  - 10 de las 14 de `lab-run.spec.ts`;
+  - 1 de `lab-exercise.spec.ts`.
+
+  Van en un solo commit, con TDD. «quirk 8» de la spec 021 deja de ser `KNOWN DEFECT`, porque A4 lo corrige: el laboratorio ya no suma intentos. Decidió el usuario, 2026-10-28. (FR-042)
+- Q: **D3**, ¿cómo se hace la verificación contra el stack? → A: Como una verificación manual declarada, con la lista del quickstart del plan (§6). SC-007 se mide con `npm run api:runs:check`. Enmienda la forma de FR-047, que dejaba al plan elegir entre un proyecto de Playwright contra el stack y una verificación manual. Descartado: el proyecto de Playwright, porque el ADR 0008 corre Playwright sin API, no hay comando de consola para crear cuentas de prueba y la sesión dura 30 minutos. Decidió el usuario, 2026-10-28. (FR-047 y SC-007)
 
 ## El seam de hoy y lo que F7 decidió
 
@@ -458,7 +471,7 @@ La red E2E y los checks de `qa/` siguen fijando el comportamiento: los que simul
 **Verificación**
 
 - **FR-046**: El cliente de `/api/runs` y el armado del `result` DEBEN probarse con Vitest, con un doble de `fetch`, relojes simulados y valores esperados que salen de los contratos de B2 y C3a: un caso por fila de la tabla de estados y por respuesta de error, el calendario de consulta, los reintentos con la misma clave, la cancelación y los topes. Los E2E de A4 cubren, con el doble de la API, la fila, la demora, la cancelación, la espera de turno, una cuota con ventana, la sesión vencida y la vista previa.
-- **FR-047**: Una verificación contra el stack real con gVisor DEBE resolver desde el navegador un ejercicio de Rust y uno de Go con su solución de referencia y fallar con su código inicial, y comprobar que la línea de un error de compilación coincide con la vista previa. El plan elige si es un proyecto de Playwright contra el stack o una verificación manual declarada, porque el ADR 0008 corre Playwright sin API. Antes, la auditoría de B3 DEBE estar en verde: es condición de A4 (Q5; Q3 de B3).
+- **FR-047**: Una verificación contra el stack real con gVisor DEBE resolver desde el navegador un ejercicio de Rust y uno de Go con su solución de referencia y fallar con su código inicial, y comprobar que la línea de un error de compilación coincide con la vista previa. Es una verificación manual declarada, con la lista del quickstart del plan (D3, decidido por el usuario el 2026-10-28), porque el ADR 0008 corre Playwright sin API. Antes, la auditoría de B3 DEBE estar en verde: es condición de A4 (Q5; Q3 de B3).
 - **FR-048**: A4 NO DEBE agregar dependencias de npm ni de Composer ni estilos en línea (`style=`), y el HTML DEBE quedar bajo el tope que fija A2.
 
 ### Key Entities *(include if feature involves data)*

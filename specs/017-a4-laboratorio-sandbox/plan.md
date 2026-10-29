@@ -93,7 +93,7 @@ Valores exactos, copiados de la spec, de la constitución y de los hallazgos. To
 | El tope del HTML | `BOOT_SIZE_LIMIT = 1500000` (TR-8 y la decisión del 2026-10-28, noche) |
 | Las E2E de F1 y A2 | Sólo cambian 9 de F1 en su código: 8 de `cycle.spec.ts` y 1 de `guards.spec.ts` (más los 2 de `css-contract.spec.ts`, que usan el doble nuevo sin editarse). Las de A2 no se tocan (FR-042, research R14) |
 | Las E2E de F7a | Cambian 10 de las 14 de `lab-run.spec.ts` y 1 de `lab-exercise.spec.ts` (research R14). La aserción de `lab-run.spec.ts:280` pasa al cuerpo del envío (A4-1) |
-| La aprobación | Las 20 E2E editadas van en **un** commit propio, con TDD y con la aprobación del usuario (FR-042; la regla de los ports de la hoja de ruta del front) |
+| La aprobación | Las 20 E2E editadas van en **un** commit propio, con TDD. El usuario lo aprobó el 2026-10-28 (D2; FR-042; la regla de los ports de la hoja de ruta del front) |
 | La base (TR-12) | F11a llega a `master` en un solo PR, al final. Mientras tanto, A4 se integra sobre `f11a/base` (o la rama que la suceda) con A3 encima, más F7a y B3; si F11a ya está en `master`, sobre `master` |
 | El doble de la API | El de F11a, con la ruta antes del CSRF y `ApiCall.search`; A4 lo extiende sin otro `replyTo` ni otra búsqueda (TR-11, decisión del 2026-10-28, noche) |
 | La lista blanca de las E2E de error | `pageIssues.expectIssue(/status of NNN/, '…')` con el código exacto; una red caída a propósito, `/Failed to load resource: net::ERR_FAILED/` |
@@ -135,6 +135,9 @@ Valores exactos, copiados de la spec, de la constitución y de los hallazgos. To
 | **Las tres formas del resultado** (2026-10-28, noche): las unifica A4 | `LabResultV1` en un refactor tipado; el retiro de `RunOutcome` con `interpretRun` | T004, T024 |
 | **El doble de la API canónico** (2026-10-28, noche) | `CompilerDouble` sobre el `ApiDouble`, sin otro `replyTo` | T018 |
 | **`ExerciseKind::Complete` y `Repair`** (A4-5) | Sólo en el quickstart §6 | T028 |
+| **D1-(a)** (el usuario, 2026-10-28): la plantilla, porción opcional de la copia | `update` transaccional y arrastre en `afterPublish` | T015, T016 |
+| **D2** (el usuario, 2026-10-28): se aprueba el commit de las 20 E2E editadas, y «quirk 8» deja de ser `KNOWN DEFECT` | El commit de T019 | T019 |
+| **D3** (el usuario, 2026-10-28): FR-047 es una verificación manual declarada, con SC-007 medido por `npm run api:runs:check` | El quickstart §6 y la medición | T026, T028 |
 
 ## Project Structure
 
@@ -3963,7 +3966,7 @@ export const labProgramBuilder = createServerProgramBuilder(() => labHarness.cur
 
 ## 4. Unidad 4 · La red E2E sobre el doble de la API (dueño E, ondas 1 y 2)
 
-Cubre FR-042, FR-043, FR-046 (la parte E2E), US1 a US8 en el navegador y SC-001, SC-003 y SC-009. T018 sólo toca los dobles; T019 edita las E2E y suma las de A4, en un commit con la aprobación del usuario.
+Cubre FR-042, FR-043, FR-046 (la parte E2E), US1 a US8 en el navegador y SC-001, SC-003 y SC-009. T018 sólo toca los dobles; T019 edita las E2E y suma las de A4, en un commit que el usuario ya aprobó (D2, 2026-10-28).
 
 ### Tarea 4.1 · Los dobles (T018, E)
 
@@ -4359,7 +4362,7 @@ export const ATTEMPT_COUNT = /\d+ intentos?\./;
 
 ### Tarea 4.2 · Las E2E editadas y las de A4, en rojo (T019, E)
 
-- **Antes de empezar:** el usuario aprueba este commit (FR-042; Acciones del usuario de la spec). El coordinador le muestra la lista de research R14 y espera el OK. Sin el OK, la tarea se detiene en el paso 5, sin commit.
+- **La aprobación:** el usuario aprobó este commit el 2026-10-28 (D2; FR-042). Si al empezar la lista medida difiere de la de research R14 (T001, paso 6), el coordinador le muestra la diferencia antes del commit.
 - **Consume:** los dobles de T018; `errorBody` y `STUDENT` (`qa/e2e/lib/api-contract.ts`, F11a); `AccessPage` (`qa/e2e/pages/access.ts`); `LAB_KEY`, `LAB_WRITE` y `SYNC_WRITES` (`qa/e2e/lib/lab-storage.ts`).
 - **Produce:** 20 E2E editadas y las E2E nuevas de A4, todas en rojo contra el `lab.js` de F7a (que todavía llama a los Playgrounds, y la red estricta los bloquea).
 - **Archivos:** `qa/e2e/specs/cycle.spec.ts`, `guards.spec.ts`, `lab-run.spec.ts` y `lab-exercise.spec.ts`; `qa/e2e/specs/lab-sandbox.spec.ts` (nuevo).
@@ -5113,7 +5116,7 @@ Si `qa/e2e/lib/urls` no exporta `exercise(id, phase)` con esa firma, usá la que
 
 Anotá el conteo en el informe de la tarea.
 
-**Paso 7.** Commit, con la aprobación del usuario: `test(e2e): el laboratorio contra /api/runs: 20 E2E editadas con su aprobación y las de A4 (rojas, A4 FR-042)`. El cuerpo lista las 20 E2E editadas, archivo por archivo, y el motivo de cada grupo (research R14).
+**Paso 7.** Commit, aprobado por el usuario (D2): `test(e2e): el laboratorio contra /api/runs: 20 E2E editadas con su aprobación y las de A4 (rojas, A4 FR-042)`. El cuerpo lista las 20 E2E editadas, archivo por archivo, y el motivo de cada grupo (research R14).
 
 ## 5. Unidad 5 · `lab.js`, la vista vigente (dueño W, onda 3)
 
@@ -5690,7 +5693,7 @@ async function measureLabClassroom(base: string, pool: Session[], exercise: Exer
 
 ### Tarea 6.6 · La verificación contra el stack (T028, K con el usuario)
 
-- **Qué es:** cubre FR-047, SC-004 (la parte del stack), SC-006 y la corrida de SC-007. Es la verificación manual declarada de research R15.
+- **Qué es:** cubre FR-047, SC-004 (la parte del stack), SC-006 y la corrida de SC-007. Es la verificación manual declarada de research R15, que decidió el usuario el 2026-10-28 (D3).
 - **Antes:**
   - el usuario levanta el stack con gVisor y las imágenes del sandbox, o autoriza al coordinador a hacerlo (Acciones del usuario de la spec);
   - la corrida de registro de B3 está en verde (Q5).
@@ -5704,7 +5707,7 @@ async function measureLabClassroom(base: string, pool: Session[], exercise: Exer
   - el conteo de la red contra el de T001.
 - **El PR:** título en inglés con Angular (`feat(lab): run the lab in the workshop sandbox through /api/runs`), y la descripción con el problema completo (`AGENTS.md`):
   - el contexto y qué cambia;
-  - las 20 E2E editadas con la aprobación del usuario;
+  - las 20 E2E editadas, aprobadas por el usuario (D2);
   - lo que se retira y su reemplazo (research R17);
   - el resultado de T028;
   - el delta para F7b (research R18);
@@ -5766,7 +5769,7 @@ async function measureLabClassroom(base: string, pool: Session[], exercise: Exer
 - **Dependencias nuevas:** ninguna. `fishery`, Vitest y Playwright ya están en `package.json`.
 - **Descargas:** ninguna; A4 usa las imágenes del sandbox que B2 ya construye.
 - **Lo que hace el usuario:**
-  - aprobar el commit de las 20 E2E editadas (T019);
+  - el commit de las 20 E2E editadas ya está aprobado (D2, 2026-10-28);
   - levantar el stack con gVisor para T028, o autorizarlo;
   - revisar los textos propuestos (data-model.md §7) en el PR del plan.
 

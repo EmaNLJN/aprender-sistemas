@@ -31,14 +31,14 @@ description: "Tareas de A4, el laboratorio con el sandbox propio: un registro li
 ## Phase 4: User Story 6 - La vista previa con la plantilla del servidor (Priority: P2)
 
 - [ ] T014 [US6] La vista previa, el tope de 64 KiB y el índice en `frontend/src/features/run-exercise/` (plan §3.7)
-- [ ] T015 [US6] La plantilla en la copia de A3 y `update` en `frontend/src/shared/api/content/` y `frontend/src/app/boot/content-stage.ts` (plan §3.8)
+- [ ] T015 [US6] La plantilla en la copia de A3 (D1-(a), el usuario, 2026-10-28) y `update` en `frontend/src/shared/api/content/` y `frontend/src/app/boot/content-stage.ts` (plan §3.8)
 - [ ] T016 [US6] `createHarnessHolder` con `If-None-Match` en `frontend/src/shared/api/content/harness-holder.ts` (plan §3.9)
 - [ ] T017 [US1] La composición en `frontend/src/app/lab/server-execution.ts` y `frontend/src/features/sign-in/requests.ts` (plan §3.10)
 
 ## Phase 5: User Story 8 - La red sigue protegiendo (Priority: P3)
 
 - [ ] T018 [P] [US8] Los dobles: `qa/e2e/fixtures/api-double.ts`, `compiler-double.ts`, `qa/e2e/lib/compiler-results.ts`, `lab-copy.ts` y `qa/e2e/pages/lab.ts` (plan §4.1)
-- [ ] T019 [US8] Las 20 E2E editadas, con la aprobación del usuario, y `qa/e2e/specs/lab-sandbox.spec.ts`, en rojo (plan §4.2)
+- [ ] T019 [US8] Las 20 E2E editadas (aprobadas por el usuario el 2026-10-28, D2) y `qa/e2e/specs/lab-sandbox.spec.ts`, en rojo (plan §4.2)
 
 ## Phase 6: User Story 4, 5 y 7 - La espera, las cuotas y sin Playgrounds en la vista (Priority: P2)
 
@@ -53,5 +53,5 @@ description: "Tareas de A4, el laboratorio con el sandbox propio: un registro li
 - [ ] T025 [P] La CSP en `docker/nginx/nginx.conf` y la guarda de los hosts en `qa/nginx-api-blocks-check.ts` y `qa/build-check.ts` (plan §6.3)
 - [ ] T026 [P] La medición de SC-007 en `qa/api-runs-check.ts` (plan §6.4)
 - [ ] T027 La documentación: `AGENTS.md`, `README.md`, `qa/AGENTS.md`, `docs/architecture.md` y el ADR 0008 (plan §6.5)
-- [ ] T028 La verificación contra el stack con gVisor, con el usuario (plan §6.6; `quickstart.md` §6)
+- [ ] T028 La verificación manual contra el stack con gVisor (D3, el usuario, 2026-10-28), con el usuario (plan §6.6; `quickstart.md` §6)
 - [ ] T029 Compuerta final y PR (plan §6.7; `quickstart.md` §7)

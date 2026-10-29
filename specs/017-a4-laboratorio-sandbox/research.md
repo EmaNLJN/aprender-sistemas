@@ -161,14 +161,14 @@ Guardar la plantilla «como porción opcional» sin tocar eso la perdería en ca
 | (b) Porción opcional, sin arrastre | Igual, pero A3 no cambia | Cada arranque con servidor la borra: el primer laboratorio de cada carga pide 200 (unos 1,5 KB); la revalidación con `If-None-Match` sólo vale dentro de la página y en la copia sin servidor |
 | (c) Sólo en memoria | Ni copia ni IndexedDB | Enmienda FR-029: sin servidor no hay vista previa |
 
-- **Decisión del plan: (a).** Es lo que piden FR-029 y A4-13. La escritura en una transacción también evita que el laboratorio y el arranque se pisen: dos transacciones `readwrite` sobre el mismo almacén se ordenan, y la segunda ve lo que dejó la primera.
+- **La decisión: (a).** Es lo que piden FR-029 y A4-13. La escritura en una transacción también evita que el laboratorio y el arranque se pisen: dos transacciones `readwrite` sobre el mismo almacén se ordenan, y la segunda ve lo que dejó la primera.
 - **Las reglas de A3 se conservan:**
   - la plantilla se guarda sólo si hay una copia usable (`usableCopy`);
   - `forgetContentCopy` la borra con el registro;
   - un cambio de versión la descarta, porque A3 borra la copia.
 - **Lo que arrastra el arranque:** `afterPublish` usa `harnessToCarry`, que mira el formato y la forma de la plantilla sin volver a validar las 17 porciones (la fuente de A3 ya validó esa copia en el arranque, y la plantilla se revalida con su `ETag`). El laboratorio lee con `harnessOf`, que exige una copia usable.
 - **Cuándo se pide:** al montar el laboratorio. El contador de pedidos de las E2E de A3 cuenta sólo las porciones y la sesión (plan de A3, :4291), así que la plantilla no cambia esos conteos. Si T001 encuentra una E2E congelada que cuenta todos los pedidos a `/api/` en una URL del laboratorio, T020 usa la variante B: pedirla la primera vez que se dibuja «Experimentá», donde se usa. Es la lectura «cuando el laboratorio la necesita» de FR-029.
-- **Pedido al usuario:** D1 del informe, con la recomendación (a).
+- **Decidido:** la opción (a). Lo decidió el usuario el 2026-10-28 (D1; spec, «Clarifications»).
 
 ## R11 · La raíz de composición y las capas
 
@@ -220,11 +220,11 @@ Guardar la plantilla «como porción opcional» sin tocar eso la perdería en ca
   - los 2 del indicador en `css-contract.spec.ts`, que sólo llaman a `compiler.hold`;
   - el resto de F1 y de A2.
 - **«KNOWN DEFECT (spec 021, quirk 8)»:** A4 corrige ese defecto (las ejecuciones canceladas y las fallas de transporte ya no suman intentos). Por la regla de `qa/AGENTS.md`, la prueba cambia en su commit TDD y pierde el `KNOWN DEFECT`.
-- **La aprobación:** las 20 E2E editadas van en un solo commit, con la aprobación del usuario (D2 del informe).
+- **La aprobación:** las 20 E2E editadas van en un solo commit. El usuario lo aprobó el 2026-10-28 (D2; spec, «Clarifications»), y «quirk 8» deja de ser `KNOWN DEFECT`.
 
 ## R15 · FR-047: la verificación contra el stack
 
-- **Decisión:** una verificación manual declarada, con una lista en `quickstart.md` §6, más una medición por script para SC-007.
+- **Decidido:** una verificación manual declarada, con una lista en `quickstart.md` §6, más la medición de SC-007 con `npm run api:runs:check`. Lo decidió el usuario el 2026-10-28 (D3; spec, «Clarifications»), y enmienda la forma de FR-047.
 - **Por qué no un proyecto de Playwright contra el stack:**
   - el ADR 0008 corre Playwright sin API;
   - una cuenta de prueba exige el alta por invitación (no hay comando de consola para cuentas: hoja de ruta del backend, :204);
