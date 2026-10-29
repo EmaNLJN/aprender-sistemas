@@ -54,7 +54,7 @@ for (let at = 0; at < lines.length; at += 1) {
 }
 ```
 
-Se corre con `node <ruta>/check-f12b-diffs.mjs specs/023-f12-administracion/plan-f12b.md "$PWD"`. Al planificar, los 15 diffs aplicaron sobre el código del plan de F12a.
+Se corre con `node <ruta>/check-f12b-diffs.mjs specs/023-f12-administracion/plan-f12b.md "$PWD"`. Al planificar, los 18 diffs aplicaron sobre el código del plan de F12a.
 
 Se anotan en research-f12b.md («Línea base de la implementación»):
 

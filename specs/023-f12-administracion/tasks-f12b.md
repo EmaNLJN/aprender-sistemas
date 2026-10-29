@@ -12,7 +12,7 @@ Las ondas, los dueños de archivos y los puntos de sincronización (S1 a S3) est
 
 ## Phase 1: Setup — U0, la base (coordinador K, onda 0)
 
-- [ ] T027 K · La línea base sobre `f12b/base` (`master` con F12a y C3c): `html.length`, los checks, Vitest, los avisos de lint, los E2E y `git apply --check` de los 15 diffs, en `specs/023-f12-administracion/research-f12b.md` (FR-057 y FR-060; plan 0.1; quickstart-f12b §1)
+- [ ] T027 K · La línea base sobre `f12b/base` (`master` con F12a y C3c): `html.length`, los checks, Vitest, los avisos de lint, los E2E y `git apply --check` de los 18 diffs, en `specs/023-f12-administracion/research-f12b.md` (FR-057 y FR-060; plan 0.1; quickstart-f12b §1)
 
 ## Phase 2: Foundational — U1, el modelo, los pedidos y el doble (onda 1: M y E; onda 1b: K)
 

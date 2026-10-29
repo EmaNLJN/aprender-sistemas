@@ -378,7 +378,7 @@ Los dueños tienen archivos disjuntos («Project Structure»). Cada uno trabaja 
   - **el slot de F11a y F12a:** `AccountMenu` recibe la prop `administration` y `AccountRoot` le pasa `AdminDialog` (F11a-1 y F12a-3). F12b no lo toca;
   - **C3c:** existen `backend/api/app/Auth/Features.php` y `backend/api/app/Admin/AdminMailQuota.php`, y `backend/api/routes/api/admin-invitations.php` ya no responde 503 por correo cuando hay correo;
   - **el doble:** si `ApiDouble` ya tiene un campo `features` (lo pudo sumar F11c, F11c-2), T032 sólo lo usa;
-  - **los diffs:** cada bloque `diff` de T029, T031, T032, T035 y T037 se guarda en un archivo y se prueba con `git apply --check`. Lo que no aplique se anota, con el archivo y el motivo.
+  - **los diffs:** cada uno de los 18 bloques `diff` de T028, T029, T030, T031, T032, T035 y T037 se guarda en un archivo y se prueba con `git apply --check` (quickstart-f12b §1). Lo que no aplique se anota, con el archivo y el motivo.
 
   Si F12a o C3c no están en `master`, F12b no empieza.
 - **Entrega:** un commit de documentación que suma a research-f12b.md la sección «Línea base de la implementación», con:
@@ -714,193 +714,178 @@ K la corre antes de integrar cada unidad en `f12b/base` (T033, T039 y T041). Cad
    }
    ```
 
-2. **`parse-admin.ts`,** entero (reemplaza el stub de T028). Suma la entrega y las dos marcas a `parseAdminInvitation`, la entrada por correo a `parseInviteEntry` y `parseMailedInvitation` (R4 y R5):
+2. **`parse-admin.ts`.** Suma la entrega y las dos marcas a `parseAdminInvitation`, la entrada por correo a `parseInviteEntry` y `parseMailedInvitation` (R4 y R5). Primero se borra el stub de T028 y se vuelve atrás el import que sumó. Después, este diff sobre el archivo de F12a:
 
-   ```ts
-   import { isPlainObject } from '../../../shared/lib/is-plain-object';
-   import type {
-     AccountStatus,
-     AdminInvitation,
-     AdminUser,
-     Deletion,
-     Delivery,
-     InviteEntry,
-     InviteResult,
-     IssuedLink,
-     ListPage,
-     MailedInvitation,
-   } from './types';
+   ```diff
+   diff --git a/frontend/src/pages/admin/model/parse-admin.ts b/frontend/src/pages/admin/model/parse-admin.ts
+   --- a/frontend/src/pages/admin/model/parse-admin.ts
+   +++ b/frontend/src/pages/admin/model/parse-admin.ts
+   @@ -4,19 +4,23 @@ import type {
+      AdminInvitation,
+      AdminUser,
+      Deletion,
+   +  Delivery,
+      InviteEntry,
+      InviteResult,
+      IssuedLink,
+      ListPage,
+   +  MailedInvitation,
+    } from './types';
 
-   const ROLES = ['admin', 'student'] as const;
-   const STATUSES: readonly AccountStatus[] = ['active', 'disabled', 'deleting'];
-   const DELIVERIES: readonly Delivery[] = ['link', 'email'];
-   const RESULTS: readonly InviteResult[] = [
-     'created',
-     'renewed',
-     'user_exists',
-     'invitation_pending',
-     'rate_limited',
-   ];
+    const ROLES = ['admin', 'student'] as const;
+    const STATUSES: readonly AccountStatus[] = ['active', 'disabled', 'deleting'];
+   +const DELIVERIES: readonly Delivery[] = ['link', 'email'];
+    const RESULTS: readonly InviteResult[] = [
+      'created',
+      'renewed',
+      'user_exists',
+      'invitation_pending',
+   +  'rate_limited',
+    ];
 
-   function oneOf<T extends string>(options: readonly T[], value: unknown): value is T {
-     return options.some((option) => option === value);
-   }
+    function oneOf<T extends string>(options: readonly T[], value: unknown): value is T {
+   @@ -28,6 +32,11 @@ function inviterName(value: unknown): string | null | undefined {
+      return isPlainObject(value) && typeof value.name === 'string' ? value.name : undefined;
+    }
 
-   function inviterName(value: unknown): string | null | undefined {
-     if (value === null) return null;
-     return isPlainObject(value) && typeof value.name === 'string' ? value.name : undefined;
-   }
+   +function instantOrNull(value: unknown): string | null | undefined {
+   +  if (value === null) return null;
+   +  return typeof value === 'string' ? value : undefined;
+   +}
+   +
+    export function parseAdminUser(value: unknown): AdminUser | null {
+      if (!isPlainObject(value)) return null;
+      const { id, name, email, role, status, emailVerified, createdAt } = value;
+   @@ -37,10 +46,22 @@ export function parseAdminUser(value: unknown): AdminUser | null {
+      return { id, name, email, role, status, emailVerified, createdAt };
+    }
 
-   function instantOrNull(value: unknown): string | null | undefined {
-     if (value === null) return null;
-     return typeof value === 'string' ? value : undefined;
-   }
+   +function parseMailState(
+   +  value: Record<string, unknown>,
+   +): Pick<AdminInvitation, 'delivery' | 'sentAt' | 'sendFailedAt'> | null {
+   +  const { delivery } = value;
+   +  const sentAt = instantOrNull(value.sentAt);
+   +  const sendFailedAt = instantOrNull(value.sendFailedAt);
+   +  if (!oneOf(DELIVERIES, delivery) || sentAt === undefined || sendFailedAt === undefined)
+   +    return null;
+   +  return { delivery, sentAt, sendFailedAt };
+   +}
+   +
+    export function parseAdminInvitation(value: unknown): AdminInvitation | null {
+      if (!isPlainObject(value)) return null;
+      const { id, email, role, expiresAt, expired, createdAt } = value;
+      const invitedBy = inviterName(value.invitedBy);
+   +  const mailState = parseMailState(value);
+      if (typeof id !== 'number' || typeof email !== 'string' || !oneOf(ROLES, role)) return null;
+      if (
+        typeof expiresAt !== 'string' ||
+   @@ -48,8 +69,8 @@ export function parseAdminInvitation(value: unknown): AdminInvitation | null {
+        typeof createdAt !== 'string'
+      )
+        return null;
+   -  if (invitedBy === undefined) return null;
+   -  return { id, email, role, expiresAt, expired, invitedBy, createdAt };
+   +  if (invitedBy === undefined || mailState === null) return null;
+   +  return { id, email, role, ...mailState, expiresAt, expired, invitedBy, createdAt };
+    }
 
-   export function parseAdminUser(value: unknown): AdminUser | null {
-     if (!isPlainObject(value)) return null;
-     const { id, name, email, role, status, emailVerified, createdAt } = value;
-     if (typeof id !== 'number' || typeof name !== 'string' || typeof email !== 'string') return null;
-     if (!oneOf(ROLES, role) || !oneOf(STATUSES, status)) return null;
-     if (typeof emailVerified !== 'boolean' || typeof createdAt !== 'string') return null;
-     return { id, name, email, role, status, emailVerified, createdAt };
-   }
+    export function parsePage<T>(
+   @@ -77,10 +98,19 @@ export function parseIssuedLink(value: unknown): IssuedLink | null {
+      return { email, url, expiresAt };
+    }
 
-   function parseMailState(
-     value: Record<string, unknown>,
-   ): Pick<AdminInvitation, 'delivery' | 'sentAt' | 'sendFailedAt'> | null {
-     const { delivery } = value;
-     const sentAt = instantOrNull(value.sentAt);
-     const sendFailedAt = instantOrNull(value.sendFailedAt);
-     if (!oneOf(DELIVERIES, delivery) || sentAt === undefined || sendFailedAt === undefined)
-       return null;
-     return { delivery, sentAt, sendFailedAt };
-   }
+   +export function parseMailedInvitation(value: unknown): MailedInvitation | null {
+   +  if (!isPlainObject(value) || value.delivery !== 'email') return null;
+   +  const { email, expiresAt } = value;
+   +  if (typeof email !== 'string' || typeof expiresAt !== 'string') return null;
+   +  return { email, expiresAt };
+   +}
+   +
+    function parseInviteEntry(value: unknown): InviteEntry | null {
+      if (!isPlainObject(value) || typeof value.email !== 'string' || !oneOf(RESULTS, value.result))
+        return null;
+   -  return { email: value.email, result: value.result, link: parseIssuedLink(value) };
+   +  const entry = { email: value.email, result: value.result, link: parseIssuedLink(value) };
+   +  if (entry.link !== null || typeof value.expiresAt !== 'string') return entry;
+   +  return { ...entry, mailed: { email: value.email, expiresAt: value.expiresAt } };
+    }
 
-   export function parseAdminInvitation(value: unknown): AdminInvitation | null {
-     if (!isPlainObject(value)) return null;
-     const { id, email, role, expiresAt, expired, createdAt } = value;
-     const invitedBy = inviterName(value.invitedBy);
-     const mailState = parseMailState(value);
-     if (typeof id !== 'number' || typeof email !== 'string' || !oneOf(ROLES, role)) return null;
-     if (
-       typeof expiresAt !== 'string' ||
-       typeof expired !== 'boolean' ||
-       typeof createdAt !== 'string'
-     )
-       return null;
-     if (invitedBy === undefined || mailState === null) return null;
-     return { id, email, role, ...mailState, expiresAt, expired, invitedBy, createdAt };
-   }
-
-   export function parsePage<T>(
-     body: unknown,
-     parseItem: (value: unknown) => T | null,
-   ): ListPage<T> | null {
-     if (!isPlainObject(body) || !Array.isArray(body.data) || !isPlainObject(body.meta)) return null;
-     const { page, lastPage, total } = body.meta;
-     if (typeof page !== 'number' || typeof lastPage !== 'number' || typeof total !== 'number')
-       return null;
-     const items: T[] = [];
-     for (const entry of body.data) {
-       const item = parseItem(entry);
-       if (item === null) return null;
-       items.push(item);
-     }
-     return { items, meta: { page, lastPage, total } };
-   }
-
-   export function parseIssuedLink(value: unknown): IssuedLink | null {
-     if (!isPlainObject(value)) return null;
-     const { email, url, expiresAt } = value;
-     if (typeof email !== 'string' || typeof url !== 'string' || typeof expiresAt !== 'string')
-       return null;
-     return { email, url, expiresAt };
-   }
-
-   export function parseMailedInvitation(value: unknown): MailedInvitation | null {
-     if (!isPlainObject(value) || value.delivery !== 'email') return null;
-     const { email, expiresAt } = value;
-     if (typeof email !== 'string' || typeof expiresAt !== 'string') return null;
-     return { email, expiresAt };
-   }
-
-   function parseInviteEntry(value: unknown): InviteEntry | null {
-     if (!isPlainObject(value) || typeof value.email !== 'string' || !oneOf(RESULTS, value.result))
-       return null;
-     const entry = { email: value.email, result: value.result, link: parseIssuedLink(value) };
-     if (entry.link !== null || typeof value.expiresAt !== 'string') return entry;
-     return { ...entry, mailed: { email: value.email, expiresAt: value.expiresAt } };
-   }
-
-   export function parseInviteEntries(body: unknown): readonly InviteEntry[] | null {
-     if (!isPlainObject(body) || !Array.isArray(body.data)) return null;
-     const entries = body.data.map(parseInviteEntry);
-     return entries.every((entry) => entry !== null) ? entries : null;
-   }
-
-   export function parseDeletion(body: unknown): Deletion | null {
-     if (!isPlainObject(body) || !isPlainObject(body.data) || typeof body.message !== 'string')
-       return null;
-     const { status } = body.data;
-     return oneOf(STATUSES, status) ? { status, message: body.message } : null;
-   }
+    export function parseInviteEntries(body: unknown): readonly InviteEntry[] | null {
    ```
 
-3. **`invitation-texts.ts`,** entero (reemplaza el stub de T028). La acción `'resend'` conserva los textos de F12a, y su botón, el nombre que tenía en `InvitationsTable` (R3):
+3. **`invitation-texts.ts`.** La acción `'resend'` conserva los textos de F12a, y su botón, el nombre que tenía en `InvitationsTable` (R3). Primero se borran el tipo y el stub que sumó T028. Después, este diff sobre el archivo de F12a:
 
-   ```ts
-   export type InvitationAction = 'resend' | 'resend-by-email' | 'to-link' | 'revoke';
+   ```diff
+   diff --git a/frontend/src/pages/admin/model/invitation-texts.ts b/frontend/src/pages/admin/model/invitation-texts.ts
+   --- a/frontend/src/pages/admin/model/invitation-texts.ts
+   +++ b/frontend/src/pages/admin/model/invitation-texts.ts
+   @@ -1,23 +1,52 @@
+   +export type InvitationAction = 'resend' | 'resend-by-email' | 'to-link' | 'revoke';
+   +
+    export interface InvitationActionTexts {
+   +  readonly button: string;
+      readonly title: string;
+      readonly body: string;
+      readonly confirm: string;
+      readonly pending: string;
+    }
 
-   export interface InvitationActionTexts {
-     readonly button: string;
-     readonly title: string;
-     readonly body: string;
-     readonly confirm: string;
-     readonly pending: string;
-   }
-
-   const NEW_LINK_EXPIRY = 'El nuevo vence en 7 días, o en 48 horas si la invitación es de admin.';
-
-   export function invitationActionsFor(mailAvailable: boolean): readonly InvitationAction[] {
-     return mailAvailable ? ['resend-by-email', 'to-link', 'revoke'] : ['resend', 'revoke'];
-   }
-
-   export function invitationTexts(action: InvitationAction, email: string): InvitationActionTexts {
-     switch (action) {
-       case 'resend':
-         return {
-           button: `Reenviar la invitación de ${email}`,
-           title: `¿Generar un enlace nuevo para ${email}?`,
-           body: `El enlace anterior deja de valer. ${NEW_LINK_EXPIRY}`,
-           confirm: 'Generar el enlace',
-           pending: 'Generando…',
-         };
-       case 'resend-by-email':
-         return {
-           button: `Reenviar por correo la invitación de ${email}`,
-           title: `¿Reenviar por correo la invitación de ${email}?`,
-           body: `El enlace anterior deja de valer, y le mandamos uno nuevo por correo. ${NEW_LINK_EXPIRY}`,
-           confirm: 'Reenviar por correo',
-           pending: 'Generando…',
-         };
-       case 'to-link':
-         return {
-           button: `Pasar a enlace la invitación de ${email}`,
-           title: `¿Pasar a enlace la invitación de ${email}?`,
-           body: `El enlace anterior deja de valer, y el nuevo no sale por correo: se ve una sola vez acá, para que lo copies. ${NEW_LINK_EXPIRY}`,
-           confirm: 'Pasar a enlace',
-           pending: 'Generando…',
-         };
-       case 'revoke':
-         return {
-           button: `Revocar la invitación de ${email}`,
-           title: `¿Revocar la invitación de ${email}?`,
-           body: 'El enlace deja de valer, y nadie puede crear la cuenta con él.',
-           confirm: 'Revocar',
-           pending: 'Revocando…',
-         };
-     }
-   }
+   -export function invitationTexts(action: 'resend' | 'revoke', email: string): InvitationActionTexts {
+   -  if (action === 'resend') {
+   -    return {
+   -      title: `¿Generar un enlace nuevo para ${email}?`,
+   -      body: 'El enlace anterior deja de valer. El nuevo vence en 7 días, o en 48 horas si la invitación es de admin.',
+   -      confirm: 'Generar el enlace',
+   -      pending: 'Generando…',
+   -    };
+   +const NEW_LINK_EXPIRY = 'El nuevo vence en 7 días, o en 48 horas si la invitación es de admin.';
+   +
+   +export function invitationActionsFor(mailAvailable: boolean): readonly InvitationAction[] {
+   +  return mailAvailable ? ['resend-by-email', 'to-link', 'revoke'] : ['resend', 'revoke'];
+   +}
+   +
+   +export function invitationTexts(action: InvitationAction, email: string): InvitationActionTexts {
+   +  switch (action) {
+   +    case 'resend':
+   +      return {
+   +        button: `Reenviar la invitación de ${email}`,
+   +        title: `¿Generar un enlace nuevo para ${email}?`,
+   +        body: `El enlace anterior deja de valer. ${NEW_LINK_EXPIRY}`,
+   +        confirm: 'Generar el enlace',
+   +        pending: 'Generando…',
+   +      };
+   +    case 'resend-by-email':
+   +      return {
+   +        button: `Reenviar por correo la invitación de ${email}`,
+   +        title: `¿Reenviar por correo la invitación de ${email}?`,
+   +        body: `El enlace anterior deja de valer, y le mandamos uno nuevo por correo. ${NEW_LINK_EXPIRY}`,
+   +        confirm: 'Reenviar por correo',
+   +        pending: 'Generando…',
+   +      };
+   +    case 'to-link':
+   +      return {
+   +        button: `Pasar a enlace la invitación de ${email}`,
+   +        title: `¿Pasar a enlace la invitación de ${email}?`,
+   +        body: `El enlace anterior deja de valer, y el nuevo no sale por correo: se ve una sola vez acá, para que lo copies. ${NEW_LINK_EXPIRY}`,
+   +        confirm: 'Pasar a enlace',
+   +        pending: 'Generando…',
+   +      };
+   +    case 'revoke':
+   +      return {
+   +        button: `Revocar la invitación de ${email}`,
+   +        title: `¿Revocar la invitación de ${email}?`,
+   +        body: 'El enlace deja de valer, y nadie puede crear la cuenta con él.',
+   +        confirm: 'Revocar',
+   +        pending: 'Revocando…',
+   +      };
+      }
+   -  return {
+   -    title: `¿Revocar la invitación de ${email}?`,
+   -    body: 'El enlace deja de valer, y nadie puede crear la cuenta con él.',
+   -    confirm: 'Revocar',
+   -    pending: 'Revocando…',
+   -  };
+    }
    ```
 
 4. **`link-texts.ts`,** este diff (R4):
@@ -1805,98 +1790,125 @@ K la corre antes de integrar cada unidad en `f12b/base` (T033, T039 y T041). Cad
               ref={submitButton}
    ```
 
-3. **`InvitationsTable.tsx`,** entero. La marca del correo va debajo del email, y los botones salen de `invitationActionsFor` (R3 y R9):
+3. **`InvitationsTable.tsx`,** este diff. La marca del correo va debajo del email, y los botones salen de `invitationActionsFor` (R3 y R9):
 
-   ```tsx
-   import { formatLocalDateTime } from '../../../shared/lib/format-local-date-time';
-   import {
-     invitationActionsFor,
-     invitationTexts,
-     type InvitationAction,
-   } from '../model/invitation-texts';
-   import { ROLE_LABELS } from '../model/labels';
-   import { mailStatusText } from '../model/mail';
-   import type { AdminInvitation } from '../model/types';
+   ```diff
+   diff --git a/frontend/src/pages/admin/ui/InvitationsTable.tsx b/frontend/src/pages/admin/ui/InvitationsTable.tsx
+   --- a/frontend/src/pages/admin/ui/InvitationsTable.tsx
+   +++ b/frontend/src/pages/admin/ui/InvitationsTable.tsx
+   @@ -1,13 +1,18 @@
+    import { formatLocalDateTime } from '../../../shared/lib/format-local-date-time';
+   +import {
+   +  invitationActionsFor,
+   +  invitationTexts,
+   +  type InvitationAction,
+   +} from '../model/invitation-texts';
+    import { ROLE_LABELS } from '../model/labels';
+   +import { mailStatusText } from '../model/mail';
+    import type { AdminInvitation } from '../model/types';
 
-   interface InvitationsTableProps {
-     readonly titleId: string;
-     readonly invitations: readonly AdminInvitation[];
-     readonly busy: boolean;
-     readonly mailAvailable: boolean;
-     onAction(action: InvitationAction, invitation: AdminInvitation, opener: HTMLButtonElement): void;
-   }
+   -export type InvitationAction = 'resend' | 'revoke';
+   -
+    interface InvitationsTableProps {
+      readonly titleId: string;
+      readonly invitations: readonly AdminInvitation[];
+      readonly busy: boolean;
+   +  readonly mailAvailable: boolean;
+      onAction(action: InvitationAction, invitation: AdminInvitation, opener: HTMLButtonElement): void;
+    }
 
-   function expiry({ expired, expiresAt }: AdminInvitation): string {
-     return expired ? 'Vencida' : formatLocalDateTime(expiresAt);
-   }
+   @@ -15,7 +20,13 @@ function expiry({ expired, expiresAt }: AdminInvitation): string {
+      return expired ? 'Vencida' : formatLocalDateTime(expiresAt);
+    }
 
-   const InvitationsTable = ({
-     titleId,
-     invitations,
-     busy,
-     mailAvailable,
-     onAction,
-   }: InvitationsTableProps) => (
-     <div
-       className="admin-table-scroll"
-       role="region"
-       tabIndex={0}
-       aria-labelledby={titleId}
-       aria-busy={busy}
-     >
-       <table aria-labelledby={titleId}>
-         <thead>
-           <tr>
-             <th scope="col">Email</th>
-             <th scope="col">Rol</th>
-             <th scope="col">Vence</th>
-             <th scope="col">Creada por</th>
-             <th scope="col">Acciones</th>
-           </tr>
-         </thead>
-         <tbody>
-           {invitations.map((invitation) => {
-             const mailStatus = mailStatusText(invitation);
-             return (
-               <tr key={invitation.id}>
-                 <th scope="row">
-                   {invitation.email}
-                   {mailStatus === null ? null : <span className="admin-mark">{mailStatus}</span>}
-                 </th>
-                 <td>
-                   {ROLE_LABELS[invitation.role]}
-                   {invitation.role === 'admin' && !invitation.expired ? (
-                     <span className="admin-mark">Admin pendiente</span>
-                   ) : null}
-                 </td>
-                 <td>{expiry(invitation)}</td>
-                 <td>
-                   {invitation.invitedBy ?? 'Consola o cuenta borrada'} ·{' '}
-                   {formatLocalDateTime(invitation.createdAt)}
-                 </td>
-                 <td>
-                   <div className="admin-row-actions">
-                     {invitationActionsFor(mailAvailable).map((action) => (
-                       <button
-                         key={action}
-                         type="button"
-                         className="button secondary small"
-                         onClick={(event) => onAction(action, invitation, event.currentTarget)}
-                       >
-                         {invitationTexts(action, invitation.email).button}
-                       </button>
-                     ))}
-                   </div>
-                 </td>
-               </tr>
-             );
-           })}
-         </tbody>
-       </table>
-     </div>
-   );
-
-   export default InvitationsTable;
+   -const InvitationsTable = ({ titleId, invitations, busy, onAction }: InvitationsTableProps) => (
+   +const InvitationsTable = ({
+   +  titleId,
+   +  invitations,
+   +  busy,
+   +  mailAvailable,
+   +  onAction,
+   +}: InvitationsTableProps) => (
+      <div
+        className="admin-table-scroll"
+        role="region"
+   @@ -34,40 +45,42 @@ const InvitationsTable = ({ titleId, invitations, busy, onAction }: InvitationsT
+            </tr>
+          </thead>
+          <tbody>
+   -        {invitations.map((invitation) => (
+   -          <tr key={invitation.id}>
+   -            <th scope="row">{invitation.email}</th>
+   -            <td>
+   -              {ROLE_LABELS[invitation.role]}
+   -              {invitation.role === 'admin' && !invitation.expired ? (
+   -                <span className="admin-mark">Admin pendiente</span>
+   -              ) : null}
+   -            </td>
+   -            <td>{expiry(invitation)}</td>
+   -            <td>
+   -              {invitation.invitedBy ?? 'Consola o cuenta borrada'} ·{' '}
+   -              {formatLocalDateTime(invitation.createdAt)}
+   -            </td>
+   -            <td>
+   -              <div className="admin-row-actions">
+   -                <button
+   -                  type="button"
+   -                  className="button secondary small"
+   -                  onClick={(event) => onAction('resend', invitation, event.currentTarget)}
+   -                >
+   -                  Reenviar la invitación de {invitation.email}
+   -                </button>
+   -                <button
+   -                  type="button"
+   -                  className="button secondary small"
+   -                  onClick={(event) => onAction('revoke', invitation, event.currentTarget)}
+   -                >
+   -                  Revocar la invitación de {invitation.email}
+   -                </button>
+   -              </div>
+   -            </td>
+   -          </tr>
+   -        ))}
+   +        {invitations.map((invitation) => {
+   +          const mailStatus = mailStatusText(invitation);
+   +          return (
+   +            <tr key={invitation.id}>
+   +              <th scope="row">
+   +                {invitation.email}
+   +                {mailStatus === null ? null : <span className="admin-mark">{mailStatus}</span>}
+   +              </th>
+   +              <td>
+   +                {ROLE_LABELS[invitation.role]}
+   +                {invitation.role === 'admin' && !invitation.expired ? (
+   +                  <span className="admin-mark">Admin pendiente</span>
+   +                ) : null}
+   +              </td>
+   +              <td>{expiry(invitation)}</td>
+   +              <td>
+   +                {invitation.invitedBy ?? 'Consola o cuenta borrada'} ·{' '}
+   +                {formatLocalDateTime(invitation.createdAt)}
+   +              </td>
+   +              <td>
+   +                <div className="admin-row-actions">
+   +                  {invitationActionsFor(mailAvailable).map((action) => (
+   +                    <button
+   +                      key={action}
+   +                      type="button"
+   +                      className="button secondary small"
+   +                      onClick={(event) => onAction(action, invitation, event.currentTarget)}
+   +                    >
+   +                      {invitationTexts(action, invitation.email).button}
+   +                    </button>
+   +                  ))}
+   +                </div>
+   +              </td>
+   +            </tr>
+   +          );
+   +        })}
+          </tbody>
+        </table>
+      </div>
    ```
 
 4. **`InvitationsSection.tsx`,** este diff. «Reenviar» y «Pasar a enlace» usan el mismo pedido, y el aviso del reenvío por correo se escribe sólo con un 2xx:
