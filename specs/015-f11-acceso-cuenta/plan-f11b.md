@@ -125,7 +125,7 @@ Valen para toda tarea. Los valores están copiados de la spec, de la constituci�
 | **El doble de la API canónico** (2026-10-28, noche) | Las rutas de F11b se registran con `api.on` en cada escenario, sin otro `replyTo` ni otra propiedad | T047 y T051 |
 | **La lista blanca `/status of NNN/`** (2026-10-28, noche) | Cada error esperado se declara con su código exacto | T047 y T051 |
 | **Los stubs del rojo como `const` tipados** (TR-2) | Cada spec en rojo corre contra stubs así | Todas las tareas de specs |
-| **La «á» descompuesta con el escape** (F11a-5) | Las specs del cambio escriben `` `${'a'.repeat(14)}á` `` y el caso de 63 más «á», nunca el carácter pegado | T045 |
+| **La «á» descompuesta con el escape** (F11a-5) | Las specs del cambio escriben `` `${'a'.repeat(14)}a\u0301` `` y el caso de 63 más «á», nunca el carácter pegado | T045 |
 | **`stubDialogs` con un `showModal` que enfoca** (F11a-7) | Las specs de diálogos importan `stubDialogs` de `features/sign-in/ui/render-access.tsx` | T045 y T049 |
 | **La recarga de «Salir» y su prueba** (F11a-2) | La supresión prueba la recarga con un `vi.fn()` y mata el mutante «no recarga» | T049 |
 | **F11b-1 a F11b-5** (hallazgos) | El slice compartido; el error de `errors.password`; el texto propio del `auth_failed`, en el campo; las piezas de F11a | R23 a R25 y R31 |
@@ -295,7 +295,7 @@ C, W, M y E son delegables al subagente `implementador` (`AGENTS.md`, «Trabajo 
 
   Si un comando intenta descargar algo, pará y pedí permiso. Docker lo corre sólo K, con permiso.
 - **Las specs de diálogos** usan `stubDialogs()` de `features/sign-in/ui/render-access.tsx`, en un `beforeAll`. Su `showModal` enfoca el primer descendiente enfocable, como Chromium (F11a-7). No escribas otro stub.
-- **La «á» descompuesta** se escribe con el escape, `` `${'a'.repeat(14)}á` ``, nunca pegando el carácter, porque al pegarlo se compone (F11a-5).
+- **La «á» descompuesta** se escribe con el escape, `` `${'a'.repeat(14)}a\u0301` ``, nunca pegando el carácter, porque al pegarlo se compone (F11a-5).
 - **Los E2E de error** declaran el aviso de la consola con su código exacto: `pageIssues.expectIssue(/status of 422/, '…')`. Nunca `/Failed to load resource/` (TR-11).
 - **Estilo.**
   - Código, nombres de test y comentarios en inglés; la interfaz y los mensajes en español rioplatense, con el texto exacto de la spec.
@@ -1369,3 +1369,1107 @@ La compuerta de 0.2, con:
 - el PR `feat(front): the client downloads files, and the password confirmation becomes shared (F11b U5)`, contra `f11b/base`.
 
 **Reversión de U5:** se revierten T043, T042, T041, T040, T039, T038 y T037, en ese orden.
+
+## 6. U6 · Cambiar la contraseña (onda 4: M y E; onda 5: K)
+
+**Cubre:** FR-053 y FR-054; en el cambio, FR-019 a FR-021, FR-023 y FR-025 a FR-031; FR-066, FR-067 y FR-069; la historia 6.
+
+### Tarea 6.1 · Las specs del cambio, en rojo (T045, M)
+
+**Archivos:** en `frontend/src/pages/account/ui/`:
+
+- la ayuda `render-account.tsx`, completa;
+- los stubs de `AccountSubdialog.tsx`, `AccountResult.tsx`, `AccountFailureNotice.tsx`, `use-account-failure.ts`, `ChangePasswordForm.tsx`, `ChangePasswordDialog.tsx` y `AccountActions.tsx`;
+- las specs `account-actions.spec.tsx` y `change-password.spec.tsx`.
+
+**Consume:** de U5, el modelo y los endpoints; de F11a, `AccountMenu`, `AccessGate`, `accessRequests`, `reauthenticate`, `requestSignIn`, `shared/ui/form` y, en las specs, `stubDialogs` y `resetSession` de `features/sign-in/ui/render-access.tsx`. **Produce:** las firmas del contrato para estos componentes.
+
+1. **`render-account.tsx`,** la ayuda que importan las specs de F11b. Monta `AccessGate` con el `accessRequests` de la feature, que es el mismo que usa `reauthenticate`, para que un 401 muestre el ingreso de verdad:
+
+   ```tsx
+   import { render, screen } from '@testing-library/react';
+   import userEvent from '@testing-library/user-event';
+   import type { ReactNode } from 'react';
+   import { vi, type Mock } from 'vitest';
+   import type { PublishedUser } from '../../../entities/session';
+   import { AccessGate, accessRequests } from '../../../features/sign-in';
+   import { ApiClientContext, createApiClient, type FetchLike } from '../../../shared/api/http';
+   import { apiErrorBodyFactory } from '../../../shared/api/http/api-error.factory';
+   import {
+     createFakeFetch,
+     type FakeReply,
+     type RecordedCall,
+   } from '../../../shared/api/http/fake-fetch';
+   import { AccountContext } from '../model/account-context';
+
+   export type AccountUser = ReturnType<typeof userEvent.setup>;
+
+   export interface RenderedAccount {
+     readonly user: AccountUser;
+     readonly calls: readonly RecordedCall[];
+     readonly reloadDocument: Mock<() => void>;
+   }
+
+   export interface HeldFetch {
+     readonly fetch: FetchLike;
+     readonly calls: readonly RecordedCall[];
+     release(): void;
+   }
+
+   interface ErrorExtras {
+     readonly errors?: Record<string, string[]>;
+     readonly headers?: Readonly<Record<string, string>>;
+   }
+
+   export const ANA: PublishedUser = {
+     id: 41,
+     name: 'Ana Pérez',
+     email: 'ana@x.com',
+     role: 'student',
+     privacyAccepted: true,
+   };
+
+   export function renderWithFetch(
+     ui: ReactNode,
+     fetch: FetchLike,
+     calls: readonly RecordedCall[],
+   ): RenderedAccount {
+     const user = userEvent.setup();
+     const client = createApiClient({ fetch, readCookies: () => 'XSRF-TOKEN=abc' });
+     const reloadDocument = vi.fn<() => void>();
+     render(
+       <ApiClientContext value={client}>
+         <AccessGate requests={accessRequests} setShellInert={vi.fn()} reloadDocument={reloadDocument} />
+         <AccountContext value={{ account: ANA, reloadDocument }}>{ui}</AccountContext>
+       </ApiClientContext>,
+     );
+     return { user, calls, reloadDocument };
+   }
+
+   export function renderWithReplies(
+     ui: ReactNode,
+     replies: readonly (FakeReply | 'network-error')[],
+   ): RenderedAccount {
+     const fake = createFakeFetch(replies);
+     return renderWithFetch(ui, fake.fetch, fake.calls);
+   }
+
+   export function holdFirstReply(replies: readonly FakeReply[]): HeldFetch {
+     const fake = createFakeFetch(replies);
+     let release: () => void = () => {};
+     const held = new Promise<void>((resolve) => {
+       release = resolve;
+     });
+     let first = true;
+     const fetch: FetchLike = async (path, init) => {
+       if (first) {
+         first = false;
+         await held;
+       }
+       return fake.fetch(path, init);
+     };
+     return { fetch, calls: fake.calls, release: () => release() };
+   }
+
+   export function errorReply(
+     status: number,
+     code: string,
+     message: string,
+     extras: ErrorExtras = {},
+   ): FakeReply {
+     const body = apiErrorBodyFactory.build({ message, code, errors: extras.errors });
+     return { status, json: body, headers: extras.headers };
+   }
+
+   export async function typeInto(user: AccountUser, label: string, value: string): Promise<void> {
+     await user.click(screen.getByLabelText(label));
+     await user.paste(value);
+   }
+
+   export async function signInAgain(user: AccountUser, email: string, password: string): Promise<void> {
+     await typeInto(user, 'Email', email);
+     await typeInto(user, 'Contraseña', password);
+     await user.click(screen.getByRole('button', { name: 'Ingresar' }));
+   }
+   ```
+
+   `holdFirstReply` retiene el primer pedido hasta `release()`, y lo anota recién cuando lo suelta. Lo usan la prueba del doble clic y las de cerrar durante la confirmación.
+
+   `accessRequests` es un singleton del módulo. Cada spec que lleva al ingreso lo termina, para no dejar un pedido abierto en la prueba siguiente.
+2. **Los stubs,** con la forma de TR-2. Por ejemplo, `ChangePasswordDialog.tsx`:
+
+   ```tsx
+   import type { FunctionComponent } from 'react';
+
+   interface ChangePasswordDialogProps {
+     onClose(): void;
+   }
+
+   const ChangePasswordDialog: FunctionComponent<ChangePasswordDialogProps> = () => {
+     throw new Error('not implemented');
+   };
+
+   export default ChangePasswordDialog;
+   ```
+
+   Los otros cinco componentes van igual, con las props del contrato. `use-account-failure.ts` es:
+
+   ```ts
+   import type { FieldValues, Path, UseFormSetError } from 'react-hook-form';
+   import type { ApiFailure } from '../../../shared/api/http';
+
+   export interface PasswordRule<T extends FieldValues> {
+     readonly field: Path<T>;
+     readonly wrongMessage: string;
+   }
+
+   export interface AccountFailureHandling {
+     handle(failure: ApiFailure): void;
+     readonly offerReload: boolean;
+     readonly waiting: boolean;
+     reloadDocument(): void;
+   }
+
+   const useAccountFailure: <T extends FieldValues>(
+     setError: UseFormSetError<T>,
+     visibleFields: readonly Path<T>[],
+     password: PasswordRule<T>,
+   ) => AccountFailureHandling = () => {
+     throw new Error('not implemented');
+   };
+
+   export default useAccountFailure;
+   ```
+
+3. **`account-actions.spec.tsx`.** En rojo hasta que `AccountDialog` monte `AccountActions`:
+
+   ```tsx
+   import { render, screen, waitFor, within } from '@testing-library/react';
+   import userEvent from '@testing-library/user-event';
+   import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+   import { resetSession, stubDialogs } from '../../../features/sign-in/ui/render-access';
+   import { ApiClientContext, createApiClient } from '../../../shared/api/http';
+   import { createFakeFetch } from '../../../shared/api/http/fake-fetch';
+   import AccountMenu from './AccountMenu';
+   import { ANA } from './render-account';
+
+   let entryHost: HTMLElement;
+
+   beforeAll(stubDialogs);
+
+   beforeEach(() => {
+     entryHost = document.createElement('div');
+     document.body.append(entryHost);
+     resetSession(ANA);
+   });
+
+   afterEach(() => {
+     entryHost.remove();
+   });
+
+   async function openAccount() {
+     const user = userEvent.setup();
+     const client = createApiClient({
+       fetch: createFakeFetch([]).fetch,
+       readCookies: () => 'XSRF-TOKEN=abc',
+     });
+     render(
+       <ApiClientContext value={client}>
+         <AccountMenu entryHost={entryHost} reloadDocument={vi.fn()} />
+       </ApiClientContext>,
+     );
+     await user.click(within(entryHost).getByRole('button', { name: 'Tu cuenta' }));
+     return { user, account: screen.getByRole('dialog', { name: 'Tu cuenta' }) };
+   }
+
+   function buttonNames(container: HTMLElement): string[] {
+     return within(container)
+       .getAllByRole('button')
+       .map((button) => button.textContent ?? '');
+   }
+
+   describe('the actions of «Tu cuenta»', () => {
+     it('offers to change the password after the privacy notice and before «Salir»', async () => {
+       const { account } = await openAccount();
+       const names = buttonNames(account);
+       expect(names).toContain('Cambiar la contraseña');
+       expect(names.indexOf('Aviso de privacidad')).toBeLessThan(names.indexOf('Cambiar la contraseña'));
+       expect(names.indexOf('Cambiar la contraseña')).toBeLessThan(names.indexOf('Salir'));
+     });
+
+     it('opens its own dialog, outside «Tu cuenta», with the focus on the first field', async () => {
+       const { user, account } = await openAccount();
+       await user.click(within(account).getByRole('button', { name: 'Cambiar la contraseña' }));
+       const action = screen.getByRole('dialog', { name: 'Cambiar la contraseña' });
+       await waitFor(() => expect(within(action).getByLabelText('Contraseña actual')).toHaveFocus());
+       expect(account).not.toContainElement(action);
+     });
+
+     it('closing the action keeps «Tu cuenta» and gives the focus back to its button', async () => {
+       const { user, account } = await openAccount();
+       const opener = within(account).getByRole('button', { name: 'Cambiar la contraseña' });
+       await user.click(opener);
+       const action = screen.getByRole('dialog', { name: 'Cambiar la contraseña' });
+       await user.click(within(action).getByRole('button', { name: 'Cerrar' }));
+       expect(screen.queryByRole('dialog', { name: 'Cambiar la contraseña' })).toBeNull();
+       expect(screen.getByRole('dialog', { name: 'Tu cuenta' })).toBeInTheDocument();
+       expect(opener).toHaveFocus();
+     });
+   });
+   ```
+
+   **Por qué la tercera prueba importa** (Review Focus 3): sin el `stopPropagation` de `AccountSubdialog`, el `close` del diálogo de la acción llega por el árbol de React al `onClose` de «Tu cuenta», y los dos se cierran.
+4. **`change-password.spec.tsx`.** Los valores esperados salen de `lang/es/` y de la spec:
+
+   ```tsx
+   import { screen, waitFor } from '@testing-library/react';
+   import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+   import { resetSession, stubDialogs } from '../../../features/sign-in/ui/render-access';
+   import ChangePasswordDialog from './ChangePasswordDialog';
+   import {
+     ANA,
+     errorReply,
+     holdFirstReply,
+     renderWithFetch,
+     renderWithReplies,
+     signInAgain,
+     typeInto,
+     type AccountUser,
+   } from './render-account';
+
+   const CURRENT = 'una frase larga para el taller';
+   const NEW_PASSWORD = 'otra frase larga para cambiar';
+   const CHANGED = 'Tu contraseña cambió. Cerramos tus otras sesiones; esta sigue abierta.';
+   const CHANGE_ACCEPTED = { status: 200, json: { data: ANA } };
+   const TOO_MANY = 'Demasiados intentos. Esperá un momento antes de volver a probar.';
+
+   beforeAll(stubDialogs);
+
+   beforeEach(() => {
+     resetSession(ANA);
+   });
+
+   async function fillChange(
+     user: AccountUser,
+     password = NEW_PASSWORD,
+     confirmation = password,
+   ): Promise<void> {
+     await typeInto(user, 'Contraseña actual', CURRENT);
+     await typeInto(user, 'Contraseña nueva', password);
+     await typeInto(user, 'Repetí la contraseña nueva', confirmation);
+   }
+
+   async function changeTo(user: AccountUser, password = NEW_PASSWORD, confirmation = password): Promise<void> {
+     await fillChange(user, password, confirmation);
+     await user.click(screen.getByRole('button', { name: 'Cambiar la contraseña' }));
+   }
+
+   const dialog = (onClose = vi.fn()) => <ChangePasswordDialog onClose={onClose} />;
+
+   describe('changing the password', () => {
+     it('sends the three fields with X-Taller-User and says that this session goes on', async () => {
+       const onClose = vi.fn();
+       const { user, calls } = renderWithReplies(dialog(onClose), [CHANGE_ACCEPTED]);
+       await changeTo(user);
+       const result = await screen.findByRole('status');
+       expect(result).toHaveTextContent(CHANGED);
+       expect(result).toHaveFocus();
+       expect(screen.queryByLabelText('Contraseña actual')).toBeNull();
+       expect(calls[0]).toMatchObject({
+         method: 'PUT',
+         path: '/api/me/password',
+         body: { current_password: CURRENT, password: NEW_PASSWORD, password_confirmation: NEW_PASSWORD },
+       });
+       expect(calls[0]?.headers['x-taller-user']).toBe('41');
+       await user.click(screen.getByRole('button', { name: 'Listo' }));
+       expect(onClose).toHaveBeenCalledOnce();
+     });
+
+     it('marks the current password with its own text when the server refuses it', async () => {
+       const { user } = renderWithReplies(dialog(), [
+         errorReply(422, 'auth_failed', 'El email o la contraseña no son correctos.'),
+       ]);
+       await changeTo(user);
+       const current = screen.getByLabelText('Contraseña actual');
+       await waitFor(() => expect(current).toHaveAttribute('aria-invalid', 'true'));
+       expect(current).toHaveAccessibleDescription('La contraseña actual no es correcta.');
+       expect(current).toHaveFocus();
+       expect(screen.queryByText('El email o la contraseña no son correctos.')).toBeNull();
+     });
+
+     it('puts on the new password the confirmation that the server refuses', async () => {
+       const { user } = renderWithReplies(dialog(), [
+         errorReply(422, 'validation_failed', 'Hay datos que corregir.', {
+           errors: { password: ['La confirmación de contraseña no coincide.'] },
+         }),
+       ]);
+       await changeTo(user);
+       const fresh = screen.getByLabelText('Contraseña nueva');
+       await waitFor(() => expect(fresh).toHaveAttribute('aria-invalid', 'true'));
+       expect(fresh).toHaveAccessibleDescription(/La confirmación de contraseña no coincide\./);
+       expect(screen.getByLabelText('Repetí la contraseña nueva')).not.toHaveAttribute('aria-invalid');
+     });
+
+     it('shows every reason of the policy on the new password', async () => {
+       const { user } = renderWithReplies(dialog(), [
+         errorReply(422, 'validation_failed', 'Hay datos que corregir.', {
+           errors: { password: ['Es una contraseña muy usada: elegí otra.', 'No puede contener tu nombre.'] },
+         }),
+       ]);
+       await changeTo(user);
+       expect(await screen.findByText('Es una contraseña muy usada: elegí otra.')).toBeInTheDocument();
+       expect(screen.getByText('No puede contener tu nombre.')).toBeInTheDocument();
+     });
+
+     it('sends nothing with a short new password or a confirmation that does not match', async () => {
+       const { user, calls } = renderWithReplies(dialog(), [CHANGE_ACCEPTED]);
+       await changeTo(user, 'a'.repeat(14), 'b'.repeat(15));
+       expect(await screen.findByText('Tiene que tener al menos 15 caracteres.')).toBeInTheDocument();
+       expect(screen.getByText('La confirmación de la contraseña no coincide.')).toBeInTheDocument();
+       expect(calls).toHaveLength(0);
+     });
+
+     it.each([`${'a'.repeat(14)}a\u0301`, `${'a'.repeat(63)}a\u0301`])(
+       'sends %j, which has 15 or 64 characters after NFC',
+       async (password) => {
+         const { user, calls } = renderWithReplies(dialog(), [CHANGE_ACCEPTED]);
+         await changeTo(user, password);
+         await screen.findByRole('status');
+         expect(calls[0]?.body).toMatchObject({ password, password_confirmation: password });
+       },
+     );
+
+     it('refuses 65 characters after NFC, which are 66 UTF-16 units', async () => {
+       const { user, calls } = renderWithReplies(dialog(), [CHANGE_ACCEPTED]);
+       await changeTo(user, `${'a'.repeat(64)}a\u0301`);
+       expect(await screen.findByText('Puede tener hasta 64 caracteres.')).toBeInTheDocument();
+       expect(calls).toHaveLength(0);
+     });
+
+     it('waits for Retry-After before letting the button send again', async () => {
+       const { user } = renderWithReplies(dialog(), [
+         errorReply(429, 'too_many_requests', TOO_MANY, { headers: { 'Retry-After': '60' } }),
+       ]);
+       await changeTo(user);
+       const alert = await screen.findByRole('alert');
+       expect(alert).toHaveTextContent(TOO_MANY);
+       expect(alert).toHaveTextContent('Podés volver a intentar en 1 minuto.');
+       expect(screen.getByRole('button', { name: 'Cambiar la contraseña' })).toBeDisabled();
+     });
+
+     it('keeps the button busy while the server answers and sends once', async () => {
+       const held = holdFirstReply([CHANGE_ACCEPTED]);
+       const { user } = renderWithFetch(dialog(), held.fetch, held.calls);
+       await fillChange(user);
+       await user.dblClick(screen.getByRole('button', { name: 'Cambiar la contraseña' }));
+       expect(await screen.findByRole('button', { name: 'Cambiando la contraseña…' })).toBeDisabled();
+       held.release();
+       await screen.findByRole('status');
+       expect(held.calls).toHaveLength(1);
+     });
+
+     it('asks to sign in again after a 401 and keeps what was typed when the same account comes back', async () => {
+       const { user, calls, reloadDocument } = renderWithReplies(dialog(), [
+         errorReply(401, 'unauthenticated', 'Iniciá sesión para continuar.'),
+         { status: 200, json: { data: ANA } },
+         CHANGE_ACCEPTED,
+       ]);
+       await changeTo(user);
+       await screen.findByRole('dialog', { name: 'Ingresá al taller' });
+       await signInAgain(user, ANA.email, CURRENT);
+       await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Ingresá al taller' })).toBeNull());
+       expect(screen.getByLabelText('Contraseña actual')).toHaveValue(CURRENT);
+       await user.click(screen.getByRole('button', { name: 'Cambiar la contraseña' }));
+       expect(await screen.findByRole('status')).toHaveTextContent(CHANGED);
+       expect(calls.map((call) => call.path)).toEqual([
+         '/api/me/password',
+         '/api/auth/login',
+         '/api/me/password',
+       ]);
+       expect(reloadDocument).not.toHaveBeenCalled();
+     });
+
+     it('reloads the document when another account signs in after a 401', async () => {
+       const beto = { ...ANA, id: 7, name: 'Beto Gómez', email: 'beto@x.com' };
+       const { user, reloadDocument } = renderWithReplies(dialog(), [
+         errorReply(401, 'unauthenticated', 'Iniciá sesión para continuar.'),
+         { status: 200, json: { data: beto } },
+       ]);
+       await changeTo(user);
+       await screen.findByRole('dialog', { name: 'Ingresá al taller' });
+       await signInAgain(user, beto.email, CURRENT);
+       await waitFor(() => expect(reloadDocument).toHaveBeenCalledOnce());
+     });
+
+     it.each([
+       [409, 'account_mismatch', 'La sesión cambió de cuenta: recargá la página.'],
+       [403, 'account_disabled', 'Tu cuenta está deshabilitada. Consultá con quien administra el taller.'],
+     ])('shows the message of a %i %s and offers to reload', async (status, code, message) => {
+       const { user, reloadDocument } = renderWithReplies(dialog(), [errorReply(status, code, message)]);
+       await changeTo(user);
+       expect(await screen.findByRole('alert')).toHaveTextContent(message);
+       await user.click(screen.getByRole('button', { name: 'Recargar' }));
+       expect(reloadDocument).toHaveBeenCalledOnce();
+     });
+   });
+   ```
+
+5. **Correr** `npm run typecheck` y `npm run test:unit -- frontend/src/pages/account`: en rojo las dos specs nuevas, por `not implemented` o porque falta el botón. En verde, `account-menu.spec.tsx` de F11a y las del modelo de U5.
+6. **Commit:** `test(front): specs del cambio de contraseña en «Tu cuenta», en rojo`.
+
+### Tarea 6.2 · El cambio de contraseña (T046, M)
+
+**Archivos:** en `frontend/src/pages/account/ui/`, `account-texts.ts` (nuevo), los siete componentes y hooks de 6.1, `AccountDialog.tsx` y `account.css`.
+
+1. **`account-texts.ts`:**
+
+   ```ts
+   export const PASSWORD_TITLE = 'Cambiar la contraseña';
+   export const PASSWORD_CHANGED = 'Tu contraseña cambió. Cerramos tus otras sesiones; esta sigue abierta.';
+   export const CURRENT_PASSWORD_WRONG = 'La contraseña actual no es correcta.';
+   ```
+
+2. **`AccountSubdialog.tsx`.** Corta `close` y `cancel`, que React propaga por su árbol también a través del portal (R26). Devuelve el foco con `useLayoutEffect`, como `AccessDialog` de F11a:
+
+   ```tsx
+   import { useId, useLayoutEffect, useRef, type ReactNode } from 'react';
+
+   interface AccountSubdialogProps {
+     readonly title: string;
+     readonly children: ReactNode;
+     onClose(): void;
+   }
+
+   const AccountSubdialog = ({ title, children, onClose }: AccountSubdialogProps) => {
+     const dialog = useRef<HTMLDialogElement>(null);
+     const titleId = useId();
+     useLayoutEffect(() => {
+       const element = dialog.current;
+       const opener = document.activeElement;
+       if (element !== null && !element.open) element.showModal();
+       return () => {
+         if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
+       };
+     }, []);
+     return (
+       <dialog
+         ref={dialog}
+         className="account-subdialog"
+         aria-labelledby={titleId}
+         onCancel={(event) => event.stopPropagation()}
+         onClose={(event) => {
+           event.stopPropagation();
+           onClose();
+         }}
+       >
+         <div className="dialog-content">
+           <div className="dialog-top">
+             <h2 id={titleId}>{title}</h2>
+             <button
+               type="button"
+               className="close-dialog"
+               aria-label="Cerrar"
+               onClick={() => dialog.current?.close()}
+             >
+               ×
+             </button>
+           </div>
+           {children}
+         </div>
+       </dialog>
+     );
+   };
+
+   export default AccountSubdialog;
+   ```
+
+3. **`AccountResult.tsx`.** El mensaje toma el foco, para que se anuncie y deje el botón a un Tab (R29):
+
+   ```tsx
+   import { useEffect, useRef } from 'react';
+
+   interface AccountResultProps {
+     readonly message: string;
+     readonly actionLabel: string;
+     onAction(): void;
+   }
+
+   const AccountResult = ({ message, actionLabel, onAction }: AccountResultProps) => {
+     const notice = useRef<HTMLParagraphElement>(null);
+     useEffect(() => {
+       notice.current?.focus();
+     }, []);
+     return (
+       <div className="form-stack">
+         <p ref={notice} className="account-result" role="status" tabIndex={-1}>
+           {message}
+         </p>
+         <div className="dialog-actions">
+           <button type="button" className="button" onClick={onAction}>
+             {actionLabel}
+           </button>
+         </div>
+       </div>
+     );
+   };
+
+   export default AccountResult;
+   ```
+
+4. **`AccountFailureNotice.tsx`,** el error general con «Recargar» cuando hace falta:
+
+   ```tsx
+   import { ServerError } from '../../../shared/ui/form';
+
+   interface AccountFailureNoticeProps {
+     readonly messages: readonly string[];
+     readonly takeFocus: boolean;
+     readonly offerReload: boolean;
+     onReload(): void;
+   }
+
+   const AccountFailureNotice = ({ messages, takeFocus, offerReload, onReload }: AccountFailureNoticeProps) => (
+     <ServerError messages={messages} takeFocus={takeFocus}>
+       {offerReload ? (
+         <button className="button secondary" type="button" onClick={onReload}>
+           Recargar
+         </button>
+       ) : null}
+     </ServerError>
+   );
+
+   export default AccountFailureNotice;
+   ```
+
+5. **`use-account-failure.ts`.** Los tipos de 6.1 quedan, y el stub se reemplaza por el hook. Es la única traducción de una falla en las acciones de «Tu cuenta» (R27 y R30):
+
+   ```ts
+   import { useState } from 'react';
+   import type { FieldValues, Path, UseFormSetError } from 'react-hook-form';
+   import { reauthenticate, requestSignIn } from '../../../features/sign-in';
+   import type { ApiFailure } from '../../../shared/api/http';
+   import { showFailure, useRetryCountdown } from '../../../shared/ui/form';
+   import { useAccountContext } from '../model/account-context';
+   import { describeAccountFailure, passwordProblem } from '../model/account-failure';
+
+   export interface PasswordRule<T extends FieldValues> {
+     readonly field: Path<T>;
+     readonly wrongMessage: string;
+   }
+
+   export interface AccountFailureHandling {
+     handle(failure: ApiFailure): void;
+     readonly offerReload: boolean;
+     readonly waiting: boolean;
+     reloadDocument(): void;
+   }
+
+   const useAccountFailure = <T extends FieldValues>(
+     setError: UseFormSetError<T>,
+     visibleFields: readonly Path<T>[],
+     password: PasswordRule<T>,
+   ): AccountFailureHandling => {
+     const { account, reloadDocument } = useAccountContext();
+     const countdown = useRetryCountdown();
+     const [offerReload, setOfferReload] = useState(false);
+     const handle = (failure: ApiFailure): void => {
+       const problem = passwordProblem(failure, password.wrongMessage);
+       if (problem !== null) {
+         setError(password.field, { type: 'server', message: problem }, { shouldFocus: true });
+         return;
+       }
+       const description = describeAccountFailure(failure, visibleFields);
+       if (description.signedOut) {
+         void reauthenticate(account.id, { requestSignIn, reloadDocument });
+         return;
+       }
+       showFailure(setError, description, visibleFields);
+       setOfferReload(description.offerReload);
+       if (description.retryAfterSeconds !== null) countdown.start(description.retryAfterSeconds);
+     };
+     return { handle, offerReload, waiting: countdown.waiting, reloadDocument };
+   };
+
+   export default useAccountFailure;
+   ```
+
+   `reauthenticate` no se espera: el botón vuelve a quedar libre mientras el ingreso está abierto, y con la misma cuenta el alumno sigue donde estaba, con lo escrito (FR-020).
+6. **`ChangePasswordForm.tsx`.** El `auth_failed` marca «Contraseña actual» con su texto (FR-054); la confirmación que el servidor rechaza llega en `errors.password` y va a la contraseña nueva por `showFailure` (F11b-2):
+
+   ```tsx
+   import { useEffect } from 'react';
+   import { useForm } from 'react-hook-form';
+   import { checkNewPasswordLength } from '../../../entities/session';
+   import { useApiClient } from '../../../shared/api/http';
+   import {
+     MISMATCH,
+     PASSWORD_HINT,
+     PasswordField,
+     REQUIRED,
+     messagesOf,
+     useGuardedSubmit,
+   } from '../../../shared/ui/form';
+   import { changePassword } from '../api/account-endpoints';
+   import { useAccountContext } from '../model/account-context';
+   import AccountFailureNotice from './AccountFailureNotice';
+   import { CURRENT_PASSWORD_WRONG } from './account-texts';
+   import useAccountFailure from './use-account-failure';
+
+   interface ChangePasswordValues {
+     current_password: string;
+     password: string;
+     password_confirmation: string;
+   }
+
+   interface ChangePasswordFormProps {
+     onChanged(): void;
+   }
+
+   const VISIBLE_FIELDS = ['current_password', 'password', 'password_confirmation'] as const;
+   const PASSWORD_RULE = { field: 'current_password', wrongMessage: CURRENT_PASSWORD_WRONG } as const;
+
+   const ChangePasswordForm = ({ onChanged }: ChangePasswordFormProps) => {
+     const client = useApiClient();
+     const { account } = useAccountContext();
+     const {
+       register,
+       handleSubmit,
+       setError,
+       setFocus,
+       formState: { errors, isSubmitting },
+     } = useForm<ChangePasswordValues>({
+       criteriaMode: 'all',
+       defaultValues: { current_password: '', password: '', password_confirmation: '' },
+     });
+     const failure = useAccountFailure(setError, VISIBLE_FIELDS, PASSWORD_RULE);
+
+     useEffect(() => {
+       setFocus('current_password');
+     }, [setFocus]);
+
+     const submit = useGuardedSubmit(async (values: ChangePasswordValues) => {
+       const result = await changePassword(client, account.id, values);
+       if (result.ok) {
+         onChanged();
+         return;
+       }
+       failure.handle(result.failure);
+     });
+
+     const fieldHasError = VISIBLE_FIELDS.some((field) => errors[field] !== undefined);
+     return (
+       <form className="form-stack" noValidate onSubmit={handleSubmit(submit)}>
+         <AccountFailureNotice
+           messages={messagesOf(errors.root?.serverError)}
+           takeFocus={!fieldHasError}
+           offerReload={failure.offerReload}
+           onReload={failure.reloadDocument}
+         />
+         <PasswordField
+           label="Contraseña actual"
+           autoComplete="current-password"
+           registration={register('current_password', { required: REQUIRED })}
+           messages={messagesOf(errors.current_password)}
+         />
+         <PasswordField
+           label="Contraseña nueva"
+           autoComplete="new-password"
+           hint={PASSWORD_HINT}
+           registration={register('password', {
+             required: REQUIRED,
+             validate: { length: (value) => value === '' || checkNewPasswordLength(value) },
+           })}
+           messages={messagesOf(errors.password)}
+         />
+         <PasswordField
+           label="Repetí la contraseña nueva"
+           autoComplete="new-password"
+           registration={register('password_confirmation', {
+             required: REQUIRED,
+             validate: { same: (value, values) => value === values.password || MISMATCH },
+           })}
+           messages={messagesOf(errors.password_confirmation)}
+         />
+         <div className="form-actions">
+           <button className="button" type="submit" disabled={isSubmitting || failure.waiting}>
+             {isSubmitting ? 'Cambiando la contraseña…' : 'Cambiar la contraseña'}
+           </button>
+         </div>
+       </form>
+     );
+   };
+
+   export default ChangePasswordForm;
+   ```
+
+7. **`ChangePasswordDialog.tsx`.** Con el 200, el formulario se desmonta y queda el resultado (R29):
+
+   ```tsx
+   import { useState } from 'react';
+   import AccountResult from './AccountResult';
+   import AccountSubdialog from './AccountSubdialog';
+   import { PASSWORD_CHANGED, PASSWORD_TITLE } from './account-texts';
+   import ChangePasswordForm from './ChangePasswordForm';
+
+   interface ChangePasswordDialogProps {
+     onClose(): void;
+   }
+
+   const ChangePasswordDialog = ({ onClose }: ChangePasswordDialogProps) => {
+     const [changed, setChanged] = useState(false);
+     return (
+       <AccountSubdialog title={PASSWORD_TITLE} onClose={onClose}>
+         {changed ? (
+           <AccountResult message={PASSWORD_CHANGED} actionLabel="Listo" onAction={onClose} />
+         ) : (
+           <ChangePasswordForm onChanged={() => setChanged(true)} />
+         )}
+       </AccountSubdialog>
+     );
+   };
+
+   export default ChangePasswordDialog;
+   ```
+
+8. **`AccountActions.tsx`,** la versión de U6. El diálogo abierto va con un portal a `body` (R26). U7 suma los otros dos botones:
+
+   ```tsx
+   import { useState } from 'react';
+   import { createPortal } from 'react-dom';
+   import ChangePasswordDialog from './ChangePasswordDialog';
+
+   type AccountAction = 'password';
+
+   const AccountActions = () => {
+     const [open, setOpen] = useState<AccountAction | null>(null);
+     const close = (): void => setOpen(null);
+     return (
+       <div className="account-actions">
+         <button type="button" className="text-button" onClick={() => setOpen('password')}>
+           Cambiar la contraseña
+         </button>
+         {open === 'password' ? createPortal(<ChangePasswordDialog onClose={close} />, document.body) : null}
+       </div>
+     );
+   };
+
+   export default AccountActions;
+   ```
+
+9. **`AccountDialog.tsx`.** Suma dos imports y un bloque justo antes de `<SignOutSection` (R26). Con la versión de T023 de F11a queda así. Si la base trae el slot de la administración (F11a-1, `onAdminister`) o cualquier otra diferencia que anotó T036, se conserva tal cual, y el cambio sigue siendo sólo los imports y el bloque:
+
+   ```tsx
+   import { useEffect, useId, useRef, useState } from 'react';
+   import { PrivacyNoticeDialog } from '../../../entities/privacy-notice';
+   import type { PublishedUser } from '../../../entities/session';
+   import { AccountContext } from '../model/account-context';
+   import AccountActions from './AccountActions';
+   import SignOutSection from './SignOutSection';
+
+   interface AccountDialogProps {
+     readonly account: PublishedUser;
+     onClose(): void;
+     reloadDocument(): void;
+   }
+
+   const AccountDialog = ({ account, onClose, reloadDocument }: AccountDialogProps) => {
+     const dialog = useRef<HTMLDialogElement>(null);
+     const titleId = useId();
+     const [privacyOpen, setPrivacyOpen] = useState(false);
+     useEffect(() => {
+       const element = dialog.current;
+       if (element !== null && !element.open) element.showModal();
+     }, []);
+     return (
+       <>
+         <dialog ref={dialog} className="account-dialog" aria-labelledby={titleId} onClose={onClose}>
+           <div className="dialog-content">
+             <h2 id={titleId}>Tu cuenta</h2>
+             <p className="account-identity">
+               {account.name} · {account.email}
+             </p>
+             <button type="button" className="text-button" onClick={() => setPrivacyOpen(true)}>
+               Aviso de privacidad
+             </button>
+             <AccountContext value={{ account, reloadDocument }}>
+               <AccountActions />
+             </AccountContext>
+             <SignOutSection userId={account.id} reloadDocument={reloadDocument} />
+             <div className="dialog-actions">
+               <button type="button" className="button secondary" onClick={() => dialog.current?.close()}>
+                 Volver al taller
+               </button>
+             </div>
+           </div>
+         </dialog>
+         {privacyOpen ? <PrivacyNoticeDialog onClose={() => setPrivacyOpen(false)} /> : null}
+       </>
+     );
+   };
+
+   export default AccountDialog;
+   ```
+
+10. **`account.css`** suma, al final:
+
+    ```css
+    .account-actions {
+      display: grid;
+      justify-items: start;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .account-subdialog {
+      width: min(520px, calc(100% - 32px));
+    }
+    .account-result:focus {
+      outline: 3px solid var(--accent);
+      outline-offset: 4px;
+    }
+    @media (max-width: 590px) {
+      .account-subdialog {
+        width: 100%;
+        max-width: none;
+        height: 100%;
+        max-height: none;
+        margin: 0;
+        border-radius: 0;
+      }
+    }
+    ```
+
+11. **Correr** `npm run test:unit -- frontend/src/pages/account` (en verde, también `account-menu.spec.tsx` de F11a sin editar), `npm run typecheck` y `npm run lint`. Ninguna función nueva pasa de 10 de complejidad: `handle` tiene 4.
+12. **Commit:** `feat(front): cambiar la contraseña desde «Tu cuenta»`.
+
+### Tarea 6.3 · Los E2E del cambio, en rojo (T047, E)
+
+**Archivos:** `qa/e2e/lib/account-contract.ts` (nuevo), `qa/e2e/pages/account.ts` y `qa/e2e/specs/account-password.spec.ts` (nuevo).
+
+**Consume:** el doble de la API y los Page Objects de F11a. **Produce:** el contrato de los E2E de F11b.
+
+1. **`qa/e2e/lib/account-contract.ts`.** Los textos salen de `backend/api/lang/es/`. El archivo de la exportación lleva una «é», saltos de línea y espacios que `JSON.stringify` no conserva (R32):
+
+   ```ts
+   export const ACCOUNT_MESSAGES = {
+     password_confirmation_required: 'Confirmá tu contraseña para continuar.',
+     last_admin: 'Tiene que quedar al menos un admin activo.',
+   } as const;
+
+   export const DELETION_MESSAGE =
+     'Se está borrando tu cuenta con todo lo que guardó: el progreso, los intentos, el código y las importaciones. No se puede deshacer.';
+
+   export const CONFIRMED_MISMATCH = 'La confirmación de contraseña no coincide.';
+
+   export const EXPORT_FILE = {
+     name: 'taller-41-20261028.json',
+     text: '{\n  "format": "taller-export-2",\n  "exportedAt": "2026-10-28T15:30:00.000Z",\n  "account": {"id": 41, "name": "Ana Pérez", "email": "ana@x.com"},\n  "progress": {"exercises": []},\n  "attempts": [],\n  "imports": []\n}\n',
+   } as const;
+
+   export function accountError(code: keyof typeof ACCOUNT_MESSAGES) {
+     return { message: ACCOUNT_MESSAGES[code], code };
+   }
+   ```
+
+2. **`qa/e2e/pages/account.ts`.** Arriba de la clase se suman el tipo y la tabla, y dentro de `AccountPage`, los cuatro métodos. `button(name)` de F11a busca dentro de «Tu cuenta», y como el diálogo de cada acción vive en `body` (R26), encuentra sólo el botón que lo abre:
+
+   ```ts
+   export type AccountAction = 'Cambiar la contraseña' | 'Descargar mis datos' | 'Borrar mi cuenta';
+
+   const ACTION_TITLES: Readonly<Record<AccountAction, string>> = {
+     'Cambiar la contraseña': 'Cambiar la contraseña',
+     'Descargar mis datos': 'Descargá los datos de tu cuenta',
+     'Borrar mi cuenta': 'Borrar tu cuenta',
+   };
+   ```
+
+   ```ts
+     actionDialog(action: AccountAction): Locator {
+       return this.page.getByRole('dialog', { name: ACTION_TITLES[action], exact: true });
+     }
+
+     async openAction(action: AccountAction): Promise<Locator> {
+       await this.button(action).click();
+       const dialog = this.actionDialog(action);
+       await dialog.waitFor();
+       return dialog;
+     }
+
+     async changePassword(current: string, next: string, confirmation = next): Promise<void> {
+       const dialog = this.actionDialog('Cambiar la contraseña');
+       await dialog.getByLabel('Contraseña actual', { exact: true }).fill(current);
+       await dialog.getByLabel('Contraseña nueva', { exact: true }).fill(next);
+       await dialog.getByLabel('Repetí la contraseña nueva', { exact: true }).fill(confirmation);
+       await dialog.getByRole('button', { name: 'Cambiar la contraseña', exact: true }).click();
+     }
+
+     async confirmWithPassword(
+       action: 'Descargar mis datos' | 'Borrar mi cuenta',
+       password: string,
+     ): Promise<void> {
+       const dialog = this.actionDialog(action);
+       await dialog.getByLabel('Tu contraseña', { exact: true }).fill(password);
+       if (action === 'Borrar mi cuenta') {
+         await dialog.getByRole('checkbox', { name: 'Entiendo que no se puede deshacer.' }).check();
+       }
+       await dialog.getByRole('button', { name: action, exact: true }).click();
+     }
+   ```
+
+3. **`qa/e2e/specs/account-password.spec.ts`.** Cubre la historia 6 y, en el cambio, FR-019 a FR-021, FR-054 y FR-066:
+
+   ```ts
+   import { expect, test } from '../fixtures';
+   import { CONFIRMED_MISMATCH } from '../lib/account-contract';
+   import { MESSAGES, STUDENT, errorBody } from '../lib/api-contract';
+   import { urls } from '../lib/urls';
+
+   const CURRENT = 'una frase larga para el taller';
+   const NEW_PASSWORD = 'otra frase larga para cambiar';
+   const CHANGED = 'Tu contraseña cambió. Cerramos tus otras sesiones; esta sigue abierta.';
+
+   test.describe('changing the password from «Tu cuenta»', () => {
+     test('sends the three fields with X-Taller-User and the CSRF token, and this session goes on', async ({
+       account,
+       api,
+       shell,
+     }) => {
+       api.on('PUT /api/me/password', () => ({ status: 200, json: { data: STUDENT } }));
+       await shell.goto(urls.view('recorrido'));
+       await account.open();
+       const dialog = await account.openAction('Cambiar la contraseña');
+       await expect(dialog.getByLabel('Contraseña actual', { exact: true })).toBeFocused();
+       await account.changePassword(CURRENT, NEW_PASSWORD);
+       await expect(dialog.getByRole('status')).toHaveText(CHANGED);
+       const [call] = api.callsTo('PUT /api/me/password');
+       expect(call?.user).toBe(String(STUDENT.id));
+       expect(call?.xsrf).toBe(api.xsrfValue());
+       expect(call?.body).toEqual({
+         current_password: CURRENT,
+         password: NEW_PASSWORD,
+         password_confirmation: NEW_PASSWORD,
+       });
+       await dialog.getByRole('button', { name: 'Listo', exact: true }).click();
+       await expect(dialog).toBeHidden();
+       await expect(account.dialog).toBeVisible();
+     });
+
+     test('marks the current password with its own text, never with the one about the email', async ({
+       account,
+       api,
+       pageIssues,
+       shell,
+     }) => {
+       pageIssues.expectIssue(/status of 422/, 'the 422 auth_failed of the password change');
+       api.on('PUT /api/me/password', () => ({ status: 422, json: errorBody('auth_failed') }));
+       await shell.goto(urls.view('recorrido'));
+       await account.open();
+       const dialog = await account.openAction('Cambiar la contraseña');
+       await account.changePassword('una contraseña que no es', NEW_PASSWORD);
+       const current = dialog.getByLabel('Contraseña actual', { exact: true });
+       await expect(current).toHaveAttribute('aria-invalid', 'true');
+       await expect(current).toBeFocused();
+       await expect(dialog.getByText('La contraseña actual no es correcta.')).toBeVisible();
+       await expect(dialog.getByText(MESSAGES.auth_failed)).toHaveCount(0);
+     });
+
+     test('puts on the new password the confirmation that the server refuses', async ({
+       account,
+       api,
+       pageIssues,
+       shell,
+     }) => {
+       pageIssues.expectIssue(/status of 422/, 'the 422 validation_failed of the password change');
+       api.on('PUT /api/me/password', () => ({
+         status: 422,
+         json: errorBody('validation_failed', { password: [CONFIRMED_MISMATCH] }),
+       }));
+       await shell.goto(urls.view('recorrido'));
+       await account.open();
+       const dialog = await account.openAction('Cambiar la contraseña');
+       await account.changePassword(CURRENT, NEW_PASSWORD);
+       await expect(dialog.getByLabel('Contraseña nueva', { exact: true })).toHaveAttribute(
+         'aria-invalid',
+         'true',
+       );
+       await expect(dialog.getByText(CONFIRMED_MISMATCH)).toBeVisible();
+     });
+
+     test('signs in again after a 401, and the dialog keeps what was typed', async ({
+       access,
+       account,
+       api,
+       pageIssues,
+       shell,
+     }) => {
+       pageIssues.expectIssue(/status of 401/, 'the 401 of the password change');
+       api.reply('PUT /api/me/password', { status: 401, json: errorBody('unauthenticated') });
+       api.on('PUT /api/me/password', () => ({ status: 200, json: { data: STUDENT } }));
+       await shell.goto(urls.view('recorrido'));
+       await account.open();
+       const dialog = await account.openAction('Cambiar la contraseña');
+       await account.changePassword(CURRENT, NEW_PASSWORD);
+       await expect(access.heading('Ingresá al taller')).toBeVisible();
+       await access.signIn(STUDENT.email, CURRENT);
+       await expect(access.heading('Ingresá al taller')).toBeHidden();
+       await expect(dialog.getByLabel('Contraseña actual', { exact: true })).toHaveValue(CURRENT);
+       await dialog.getByRole('button', { name: 'Cambiar la contraseña', exact: true }).click();
+       await expect(dialog.getByRole('status')).toHaveText(CHANGED);
+       expect(api.callsTo('PUT /api/me/password')).toHaveLength(2);
+       expect(api.callsTo('POST /api/auth/login')).toHaveLength(1);
+     });
+
+     test('waits for Retry-After before letting the button send again', async ({
+       account,
+       api,
+       pageIssues,
+       shell,
+       page,
+     }) => {
+       pageIssues.expectIssue(/status of 429/, 'the 429 of the password change');
+       await page.clock.install();
+       api.on('PUT /api/me/password', () => ({
+         status: 429,
+         headers: { 'Retry-After': '60' },
+         json: errorBody('too_many_requests'),
+       }));
+       await shell.goto(urls.view('recorrido'));
+       await account.open();
+       const dialog = await account.openAction('Cambiar la contraseña');
+       await account.changePassword(CURRENT, NEW_PASSWORD);
+       await expect(dialog.getByRole('alert')).toContainText('Podés volver a intentar en 1 minuto.');
+       const send = dialog.getByRole('button', { name: 'Cambiar la contraseña', exact: true });
+       await expect(send).toBeDisabled();
+       await page.clock.fastForward(59_000);
+       await expect(send).toBeDisabled();
+       await page.clock.fastForward(1_000);
+       await expect(send).toBeEnabled();
+     });
+
+     test('Esc closes the action and goes back to «Tu cuenta», with the focus on its button', async ({
+       account,
+       shell,
+       page,
+     }) => {
+       await shell.goto(urls.view('recorrido'));
+       await account.open();
+       const dialog = await account.openAction('Cambiar la contraseña');
+       await page.keyboard.press('Escape');
+       await expect(dialog).toBeHidden();
+       await expect(account.dialog).toBeVisible();
+       await expect(account.button('Cambiar la contraseña')).toBeFocused();
+     });
+   });
+   ```
+
+4. **Correr** `npm run build && E2E_PORT=4191 npm run test:e2e -- specs/account-password.spec.ts`. Antes de T046, falla por la razón esperada: «Tu cuenta» no tiene el botón «Cambiar la contraseña». Después, en verde.
+5. **Commit:** `test(qa): E2E del cambio de contraseña, en rojo`.
+
+### Tarea 6.4 · La compuerta de U6 (T048, K)
+
+La compuerta de 0.2, con:
+
+- `account-password.spec.ts` en verde, y la red completa tres veces seguidas;
+- en el navegador, a 1 280 y a 390 px, «Tu cuenta» con «Cambiar la contraseña» antes de «Salir», y su diálogo a pantalla entera en el celular;
+- el PR `feat(front): change the password from «Tu cuenta» (F11b U6)`, contra `f11b/base`.
+
+**Reversión de U6:** se revierten T047, T046 y T045, en ese orden.
