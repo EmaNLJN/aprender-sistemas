@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-28
 
-**Status**: Clarificada el 2026-10-28 (ver «Clarifications») y partida en F14a y F14b (P1). Sin plan: el de F14a irá en `plan.md` y el de F14b, en `plan-f14b.md`
+**Status**: Clarificada el 2026-10-28 (ver «Clarifications») y partida en F14a y F14b (P1). Planificada el 2026-10-29: F14a en [plan.md](./plan.md) y F14b en [plan-f14b.md](./plan-f14b.md)
 
 **Input**: Ítem **F14** del épico del front, «Estadísticas del admin». Lo creó el clarify de C5 el 2026-10-28 (Q4-A): C5 entrega sólo la API, y sus pantallas son un ítem nuevo del front. Todavía no figura en la [hoja de ruta del front](../front-react/roadmap.md): la integra el coordinador. Lo encargó el coordinador el 2026-10-28. No es un port: el legacy no tiene estas pantallas.
 

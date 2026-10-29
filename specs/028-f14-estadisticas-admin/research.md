@@ -51,7 +51,7 @@ La cabecera del archivo es `/** … */`, no `/*! … */`: el minificador la desc
 **Decisión.**
 
 - `qa/lib/boot-harness.ts` suma `devicePixelRatio: 1` y `matchMedia`, que devuelve `{ matches: false, addEventListener, removeEventListener }` vacíos. No cambia ningún escenario de `boot-check` ni de `dist-content-check`: completa el navegador falso que comparten.
-- `frontend/src/vitest.setup.ts` suma `window.matchMedia` si jsdom no lo trae, con la forma completa de `MediaQueryList`. Ninguna spec de F12a se edita.
+- `frontend/src/vitest.setup.ts` suma `matchMedia` en `globalThis` si jsdom no lo trae, con la forma completa de `MediaQueryList`. Va en `globalThis` y no sólo en `window`, porque `setPxRatio` lo llama como global suelto (`matchMedia(…)`), y así alcanza aunque el entorno de Vitest no iguale `window` y `globalThis`. Ninguna spec de F12a se edita.
 - Las dos cosas van en T008, antes de que uPlot entre al bundle (T023).
 
 **Alternativas descartadas:**
@@ -124,6 +124,8 @@ La cabecera del archivo es `/** … */`, no `/*! … */`: el minificador la desc
 - de los hitos, los títulos de `PROJECT_MILESTONES` de `entities/guide`.
 
 Sin provider, `useContentTitles()` devuelve `ID_TITLES`, que muestra los ids y «Opción {n}». Así la página montada sola (SC-009) funciona igual.
+
+**`content-titles.ts` importa `entities/guide`** (`PROJECT_MILESTONES` y `milestoneId`), y su índice también crea `routeStore`. Corre en el proyecto `node` de Vitest sin problema: `createRouteStore()` no toca el almacenamiento hasta `open()` (`route-store.ts`, `bb480677`), y `route-store.spec.ts` ya importa ese módulo en `node`.
 
 **Dónde se monta.** En el lugar de la base que dibuja `<AdminPage`: `app/account/AdminDialog.tsx` (F12a) o `app/routes/page-entries.tsx` (F10b, U6). T001 lo detecta, y T024 envuelve ese único punto.
 

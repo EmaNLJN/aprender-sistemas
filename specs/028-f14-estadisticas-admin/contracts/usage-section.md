@@ -179,7 +179,22 @@ export interface ContentTitles {
   routeItem(kind: RouteMarkKind, key: string): string;
   option(owner: OptionOwner, ownerId: string, option: number): string; // «Opción {option + 1}» si no está
 }
-export interface TitleSource { /* la forma mínima que Content de app/content cumple: ver plan, T006 */ }
+interface OptionsSource { readonly options: readonly string[] }
+export interface ExerciseTitleSource { readonly id: string; readonly title: string; readonly tests: readonly { readonly id: string; readonly label: string }[]; readonly prediction: OptionsSource }
+export interface WorldTitleSource { readonly id: string; readonly title: string; readonly checkpoint: OptionsSource }
+export interface WorkshopTitleSource { readonly id: string; readonly title?: unknown; readonly prediction: OptionsSource }
+export interface StepTitleSource { readonly id: string; readonly title: string; readonly quiz: OptionsSource }
+export interface TitleSource { // la forma mínima que Content (app/content) cumple sin conversión
+  readonly lab: Readonly<Record<string, readonly ExerciseTitleSource[]>>;
+  readonly quests: Readonly<Record<string, readonly ExerciseTitleSource[]>>;
+  readonly cores: Readonly<Record<string, readonly ExerciseTitleSource[]>>;
+  readonly campaign: Readonly<Record<string, readonly WorldTitleSource[]>>;
+  readonly workshops: Readonly<Record<string, readonly WorkshopTitleSource[]>>;
+  readonly guide: {
+    readonly resources: readonly { readonly id: string; readonly title: string }[];
+    readonly tracks: Readonly<Record<string, { readonly modules: readonly { readonly steps: readonly StepTitleSource[] }[] }>>;
+  };
+}
 export const ID_TITLES: ContentTitles;
 export function buildContentTitles(source: TitleSource): ContentTitles;
 export function lazyTitles(source: () => TitleSource): () => ContentTitles; // arma los mapas una vez, al primer pedido
@@ -253,7 +268,7 @@ export function drawBarChart(host: HTMLElement, frame: HTMLElement, chart: BarCh
 - importa `uplot/dist/uPlot.min.css`;
 - dibuja con el ancho de `frame` (`chartWidth`) y lo observa con `ResizeObserver`;
 - la función que devuelve desconecta el observador y llama a `destroy()`;
-- las specs del proyecto `dom` lo reemplazan con `vi.mock('…/lib/plot', …)` y `vi.hoisted`.
+- las specs del proyecto `dom` lo reemplazan con `vi.mock('../lib/plot', () => ({ drawBarChart: plot.drawBarChart }))`, con `plot` creado por `vi.hoisted`.
 
 ## `pages/admin/ui` (F14a, lo que F14b reutiliza)
 
@@ -342,7 +357,15 @@ StudentsView({ ownId })
 
 ```ts
 // ui/AccountsTable.tsx (de F12a): una prop más, obligatoria
-interface AccountsTableProps { titleId; users; ownId; busy; /* mailAvailable con F12b */ onAction(…); onUsage(user: AdminUser, opener: HTMLButtonElement): void }
+interface AccountsTableProps {
+  readonly titleId: string;
+  readonly users: readonly AdminUser[];
+  readonly ownId: number;
+  readonly busy: boolean;
+  readonly mailAvailable: boolean; // sólo si F12b está en la base
+  onAction(action: UserAction, user: AdminUser, opener: HTMLButtonElement): void;
+  onUsage(user: AdminUser, opener: HTMLButtonElement): void;
+}
 ```
 
 **Reglas de la columna «Uso»** (FR-028):

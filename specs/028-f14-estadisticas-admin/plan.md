@@ -2663,7 +2663,7 @@ T001 corre cada detección sobre `f14a/base`, anota el resultado en research.md 
    }
    ```
 
-4. **`frontend/src/vitest.setup.ts`.** uPlot llama a `matchMedia` al evaluarse, y jsdom 30.1.2 no lo tiene (research, R3). Con esto, la spec de F12a que monta la página sin mocks puede importar la sección:
+4. **`frontend/src/vitest.setup.ts`.** uPlot llama a `matchMedia` al evaluarse, como global suelto y no como `window.matchMedia`, y jsdom 30.1.2 no lo tiene (research, R3). Por eso va en `globalThis`, que alcanza a los dos. Con esto, la spec de F12a que monta la página sin mocks puede importar la sección:
 
    ```ts
    import '@testing-library/jest-dom/vitest';
@@ -2683,8 +2683,8 @@ T001 corre cada detección sobre `f14a/base`, anota el resultado en research.md 
      };
    }
 
-   if (typeof window.matchMedia !== 'function') {
-     Object.defineProperty(window, 'matchMedia', {
+   if (typeof globalThis.matchMedia !== 'function') {
+     Object.defineProperty(globalThis, 'matchMedia', {
        configurable: true,
        writable: true,
        value: matchNothing,
