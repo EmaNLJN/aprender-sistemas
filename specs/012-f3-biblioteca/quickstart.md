@@ -55,22 +55,24 @@ También se anota el multiconjunto del CSS del dist: el script de §5.1, con la 
 Cada línea imprime algo si la pieza está. Lo que imprimen va a la tabla «Qué ya está en la base» de research.md, y decide qué rama sigue cada tarea condicional.
 
 ```sh
-grep -nE '"(nuqs|jsdom|fishery|@testing-library/react)"' package.json        # T005, T015
-test -f frontend/src/vitest-setup.ts && echo vitest-setup                       # T006
-grep -n "projects" frontend/vitest.config.ts                                    # T006
-grep -n "callee.name='useStore'" eslint.config.ts                               # T006
-grep -n "toggleItem" frontend/src/entities/guide/index.ts                        # T007
+grep -nE '"(nuqs|jsdom|fishery|@testing-library/react)"' package.json        # T005, T015 (con 431c9d90, todo menos nuqs)
+test -f frontend/src/vitest.setup.ts && echo vitest.setup                       # T006 (#67)
+grep -n "name: 'dom'" frontend/vitest.config.ts                                 # T006 (#67)
+grep -n "callee.name='useStore'" eslint.config.ts                               # T006 (F5 o F6)
+grep -n "toggleMark" frontend/src/entities/guide/model/route-store.ts            # T007 (F4)
 grep -n "routeStore" qa/lib/legacy-sources.ts                                    # T008
-grep -n "routeStore.changes.subscribe" frontend/app.js                           # T009
-grep -n "REACT_VIEWS" qa/boot-check.ts                                           # T013
-test -f frontend/src/app/legacy/url-state.tsx && echo url-state                  # T016
+grep -n "routeStore.changes.subscribe" frontend/app.js                           # T009 (F4)
+grep -n "async blockWrites" qa/e2e/fixtures/storage-control.ts                  # T003 (F4)
+grep -nE "REACT_VIEWS|view === 'atlas' \|\| view === 'proyecto'|function mountedText" qa/boot-check.ts   # T013
+test -f frontend/src/app/legacy/url-state.tsx && echo url-state                  # T016 (F5)
+grep -n "import(" frontend/src/app/boot/legacy-views.ts | wc -l                  # LEGACY_MODULES, para TR-4
 grep -nE "^\s+\.resource-card,$" frontend/styles.css                             # T019: si imprime, nadie partió la impresión
 ls frontend/src/pages                                                            # las páginas ya migradas
 ```
 
 ## 2. La verificación de nuqs (T002)
 
-En la copia descartable (`git worktree add --detach ../f3-nuqs-probe <hash de T001>`), con nuqs instalado y el proyecto `jsdom` de T006 en `frontend/vitest.config.ts`, va `frontend/src/nuqs-probe.spec.tsx`:
+En la copia descartable (`git worktree add --detach ../f3-nuqs-probe <hash de T001>`), con nuqs instalado y el proyecto `dom` de la base (#67) sin cambios, va `frontend/src/nuqs-probe.spec.tsx`. Si F5 ya trajo nuqs, corre sobre la base, sin copia:
 
 ```tsx
 import { act, render, screen, waitFor } from '@testing-library/react';
@@ -185,7 +187,7 @@ describe('nuqs 2.10.2 in a hash app', () => {
 });
 ```
 
-Se corre con `npx vitest run --config frontend/vitest.config.ts --project jsdom src/nuqs-probe.spec.tsx`. El resultado de cada caso va a research.md («Verificación de nuqs»). El caso 3 documenta la opción B de D1, que el plan no usa: tiene que pasar.
+Se corre con `npx vitest run --config frontend/vitest.config.ts --project dom src/nuqs-probe.spec.tsx`. El resultado de cada caso va a research.md («Verificación de nuqs»). El caso 3 documenta la opción B de D1, que el plan no usa: tiene que pasar.
 
 ## 3. La compuerta
 
@@ -229,8 +231,9 @@ grep -rnE "useStore\([^,]+\)" frontend/src
    | `build/curriculum.json` y `dump-globals` | el mismo hash |
    | `node qa/dist-content-check.ts` | en verde |
    | El `<style>` del dist | otro hash, el mismo multiconjunto (§5.1) |
-   | `html.length` | ≤ T001 + 30 000 si F3 instaló nuqs, o ≤ T001 + 15 000 si no, y < 1 250 000 |
-   | `import(` e `import.meta` | se informan: la forma de A2 suma una entrada a `legacy-views.ts` |
+   | `html.length` | ≤ T001 + 30 000 si F3 instaló nuqs, o ≤ T001 + 15 000 si no, y < 1 500 000 (`BOOT_SIZE_LIMIT`, #76) |
+   | `import.meta` | T001 + 1: la entrada nueva de `LEGACY_MODULES` (`register-library`); Vite envuelve cada `import()` de `legacy-views.ts` con `import.meta.url` (TR-4). Otro número se informa al coordinador antes de seguir |
+   | `import(` | igual que en T001 |
 
 4. **La complejidad:** `npm run lint` da un aviso menos que en T001, porque sale el predicado de 11 de `renderResourceResults`, y ninguna función nueva pasa de 10.
 5. **El tamaño de nuqs, aparte:** el que midió T002.
@@ -363,13 +366,15 @@ Es el script `css-multiset.mjs` de [quickstart-f2b.md §3.1 (a)](../009-f2-seams
 
 ### 5.2 El barrido de estilo computado
 
-Es el script `style-sweep.mjs` de [quickstart-f2b.md §3.1 (b)](../009-f2-seams/quickstart-f2b.md), con tres cambios:
+Es el script `style-sweep.mjs` de [quickstart-f2b.md §3.1 (b)](../009-f2-seams/quickstart-f2b.md), con cinco cambios. Los dos últimos evitan las trampas del barrido que encontró F5 (TR-13):
 
 1. **Cada entrada de `ALL_PAGES`** puede llevar una acción en el tercer lugar: una función `(page) => Promise<void>` en lugar del selector de búsqueda. En `snapshot`, `if (search) …` pasa a:
    ```js
    if (typeof search === 'function') await search(page);
    else if (search) { await page.fill(search, 'zzzz'); await page.waitForSelector('.lab-empty'); }
+   await page.mouse.move(0, 0);
    ```
+   La última línea es el cambio 4.
 2. **Las entradas de la Biblioteca,** al final de `ALL_PAGES`:
    ```js
    ['lib-search', '/#biblioteca', (page) => page.getByRole('searchbox', { name: 'Buscar recursos' }).fill('tour of')],
@@ -380,6 +385,17 @@ Es el script `style-sweep.mjs` de [quickstart-f2b.md §3.1 (b)](../009-f2-seams/
    ```
    Con `biblioteca`, que ya está, son seis estados de la Biblioteca.
 3. **La impresión.** `MEDIA = (process.env.MEDIA ?? 'screen,print').split(',')`. El bucle principal recorre también `MEDIA`, y `snapshot` llama a `await page.emulateMedia({ media })` antes de `goto`. Las capturas de `print` se acotan a `biblioteca`, `recorrido` y `proyecto` (`PAGES` y `WIDTHS=981,590`), que son las páginas con reglas en el bloque de impresión partido.
+
+4. **El puntero fuera.** React conserva el nodo que quedó bajo el puntero después de un clic, así que conserva su `:hover`; el legacy lo reemplazaba. `await page.mouse.move(0, 0);` va después de la acción y antes de capturar (la línea del cambio 1).
+5. **Lo de adentro de un `<details>` cerrado no se compara.** Un `<details>` cerrado da otro tamaño computado si alguna vez se midió. En el `page.evaluate`, el recorrido de `querySelectorAll('*')` salta los elementos que están dentro de un `<details>` cerrado, salvo su `<summary>`:
+   ```js
+   const hiddenInClosedDetails = (el) => { const d = el.parentElement?.closest('details'); return d !== null && d !== undefined && !d.open && el.closest('summary') === null; };
+   for (const el of [document.documentElement, ...document.querySelectorAll('*')]) {
+     if (hiddenInClosedDetails(el)) continue;
+   ```
+   Así se dejan de comparar los `<p>` de «Antes de empezar» de las tarjetas cerradas, y los de una abierta se siguen comparando.
+
+**Si aparecen diferencias sub-píxel** en `width`, `inline-size` o `*-origin` de un texto, primero se busca un texto que JSX partió en varios nodos (por ejemplo, `{count} recursos`) y se arma en un solo nodo, con un template literal: el kerning cambia el ancho. Nunca se aceptan con una tolerancia. La Biblioteca no tiene `<pre>` ni `<textarea>`, cuyo primer salto de línea descarta el analizador de HTML y React no.
 
 **Las dos corridas:**
 

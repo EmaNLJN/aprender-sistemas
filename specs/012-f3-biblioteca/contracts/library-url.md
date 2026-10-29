@@ -12,7 +12,7 @@ Es la séptima forma con query de la gramática de URL (`frontend/src/shared/con
 
 - **Sin filtros,** la URL es `/#biblioteca`, sin `?`.
 - **Sólo figura lo que no vale el valor por omisión.** nuqs lo borra de la query (`clearOnDefault`).
-- **Las escrituras son `replace`:** filtrar no suma entradas al historial. La primera escritura sale enseguida y las siguientes se agrupan, como mucho una cada 50 ms. El estado de la página cambia en el acto.
+- **Las escrituras son `replace`:** filtrar no suma entradas al historial. El estado de la página cambia en el acto, y la URL lo sigue con un throttle de al menos 50 ms, sin escritura síncrona: justo después de un cambio, la URL puede no tenerlo todavía. El usuario aceptó esa diferencia (la tercera diferencia de nuqs, 2026-10-28), y una prueba que recarga después de filtrar espera la URL antes de recargar.
 - **El hash no cambia.** nuqs reescribe sólo la query.
 
 ## Los parámetros

@@ -89,6 +89,17 @@ Las respuestas son del usuario. Las opciones que no se eligieron, o que se eligi
 - **Q2, qué se parte.** «Parte los bloques compartidos» se lee así: lo que usa sólo la Biblioteca se muda; lo que usan otras vistas (`.search-wrap`, `.empty-state`, la regla global de casillas y las partes de los `@media` y de impresión que son de otras páginas) se queda en `styles.css`, y cada bloque mezclado queda en dos bloques con la misma condición.
 - **Q3, a dónde va el foco.** «El foco no se pierde» no dice a qué elemento. La spec toma el siguiente en la lista (FR-019), y el plan puede ajustarlo si lo justifica. Los E2E fijan el comportamiento nuevo, así que se escriben en rojo contra el estado anterior, en el commit de cada cambio (FR-003), con este clarify como aprobación.
 
+### Enmienda 2026-10-28 (noche): lo que fijaron F4 a F6
+
+No son decisiones nuevas de F3. Aplican las del coordinador y del usuario del 2026-10-28 (noche) sobre lo que la implementación de F4 (#77), F5 y F6 ya fijó, y cambian sólo cómo se leen estos requisitos; lo que ve, hace y guarda el alumno no cambia. El detalle y las fuentes están en el plan (research.md, R14).
+
+- **FR-012:** «guardar en el acto con `routeStore.save()`» se cumple con `routeStore.toggleMark('favorites', id)`, que F4 dejó en `entities/guide`: agrega el id al final o lo quita, escribe una vez y avisa una vez. F3 no crea `toggleItem` ni otra operación de alternar.
+- **FR-011 y US5:** F4 fue el primero en importar `useStore`. La guarda es el bloque de F6, con el selector `CallExpression[callee.name='useStore'][arguments.length=1]` en lugar de «menos de dos argumentos», y entra con F5 o con F6, o con F3 si llega antes que los dos.
+- **FR-033 y US5:** la pila de componentes llegó con #67: los proyectos `node` y `dom` (este con el entorno jsdom) y el setup `frontend/src/vitest.setup.ts`; la enmienda del ADR 0008 la hizo F4. Donde esta spec dice «el proyecto `jsdom`», se lee `dom`. F3 no instala ni configura la pila.
+- **FR-042:** nuqs lo trae F5, con `url-state.tsx`. F3 lo instala sólo si entra antes que F5, con el mismo módulo, la misma versión (2.10.2) y el mismo aviso de licencia.
+- **La forma del dist** («Qué cambia en `dist/index.html` y por qué»): la cantidad de `import.meta` se espera igual a la de la base más uno por la entrada nueva de `LEGACY_MODULES`, e `import(` no cambia. El tope vigente de `qa/build-check.ts` (FR-038) es 1 500 000, desde #76.
+- **FR-006 y FR-031:** nuqs escribe la URL al menos 50 ms después del cambio, sin escritura síncrona, y el usuario aceptó la diferencia. Una E2E que recarga después de un cambio de filtro espera la URL antes de recargar.
+
 ## Qué se conserva y qué cambia a propósito
 
 El contrato de hoy sale de `renderLibrary` y `renderResourceResults` en `frontend/app.js`, en la base. Los valores esperados de cada prueba salen de esta tabla y de los ejemplos resueltos de abajo, que se calcularon corriendo el predicado legacy sobre los 15 recursos de `content/guide/` (nunca del código del port). La tercera columna dice quién lo prueba. Las filas marcadas **Cambia** son los tres cambios deliberados.
