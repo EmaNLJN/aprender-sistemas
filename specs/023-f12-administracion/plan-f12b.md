@@ -27,6 +27,8 @@
 >   - cuatro pruebas que muerden, comprobadas rompiendo el código a propósito.
 >
 >   El E2E tipa y pasa ESLint, pero no corrió: necesita F11a y F12a cableadas.
+>
+>   **Lo que enmendó la decisión de F14 (Q1-A, 2026-10-28) tampoco corrió:** el grupo «Acciones sobre {nombre}» de `AccountsTable`, las dos specs de F12a que cuentan botones dentro de él, y los conteos de T036 y T038 con `actions(name)`.
 
 ## Summary
 
@@ -104,7 +106,7 @@ Valen para toda tarea. Los valores están copiados de la spec, de la constituci�
   - F12b suma como mucho +6 000 sobre la línea base de T027;
   - si se pasa, T041 se detiene y decide el usuario.
 - **La complejidad:** ninguna función nueva pasa de 10. Los avisos de `npm run lint` no suben respecto de T027.
-- **La accesibilidad:** los botones de cada fila nombran a la persona o el email (FR-051); todo se hace con el teclado (FR-050); desde 320 px no hay desplazamiento horizontal (FR-052); ninguna animación (FR-053).
+- **La accesibilidad:** los botones de cada fila nombran a la persona o el email (FR-051); los de una fila de «Cuentas» van en un grupo «Acciones sobre {nombre}», para que la columna «Uso» de F14 no cambie los conteos (decisión del usuario, 2026-10-28, Q1-A de F14); todo se hace con el teclado (FR-050); desde 320 px no hay desplazamiento horizontal (FR-052); ninguna animación (FR-053).
 - **El backend:** no cambia.
 
 ## Constitution Check
@@ -132,6 +134,7 @@ Valen para toda tarea. Los valores están copiados de la spec, de la constituci�
 | **F12b-D3** (usuario, 2026-10-28) | El texto nuevo de `rate_limited` y los textos que agrega el plan | `RESULT_TEXTS` de `link-texts.ts` y sus tres esperados (R4; T029, T034 y T038); research-f12b.md, «Textos que agrega el plan» |
 | **F12-Q3** | La contraseña, a pedido ante un 423 | Los caminos nuevos usan el mismo `ActionDialog`: invitar por correo un admin, reenviar por correo una invitación de admin y la recuperación de un tercero (T038) |
 | **C3c-1** (noche del 2026-10-28) | Las 24 horas de los reintentos, aceptadas con #68 | El estado intermedio de la lista las promete (R9) |
+| **F14-Q1-A** (usuario, 2026-10-28) | Los botones de una fila de «Cuentas» van en un grupo «Acciones sobre {nombre}», para que la columna «Uso» de F14 no cambie los conteos | `AccountsTable` conserva el grupo y la condición de F12a, y las specs cuentan dentro de él con `actions(name)`, el método del Page Object de F12a (T036 y T038) |
 | **El doble canónico** | Ruta antes del CSRF y `ApiCall.search`; sin `query` ni `replyTo` propios | F12b suma sólo el campo `features` (T032; R11) |
 | **La lista blanca** | `/status of NNN/` | Todas las E2E de F12b (T038) |
 | **El slot `administration` de `AccountMenu`** (F11a-1 y F12a-3) | Lo deja F11a o F12a | F12b no lo toca; T027 comprueba que está |
@@ -1401,7 +1404,7 @@ K la corre antes de integrar cada unidad en `f12b/base` (T033, T039 y T041). Cad
    diff --git a/qa/e2e/pages/admin.ts b/qa/e2e/pages/admin.ts
    --- a/qa/e2e/pages/admin.ts
    +++ b/qa/e2e/pages/admin.ts
-   @@ -50,10 +50,18 @@ export class AdminPage {
+   @@ -54,10 +54,18 @@ export class AdminPage {
         await this.button(name).click();
       }
 
@@ -2108,7 +2111,8 @@ K la corre antes de integrar cada unidad en `f12b/base` (T033, T039 y T041). Cad
        renderSection([{ status: 200, json: pageBody([ANA, BETO, DANI]) }]);
        const table = await screen.findByRole('table', { name: 'Cuentas del taller, por nombre' });
        const ana = within(table).getByRole('row', { name: /Ana Pérez/ });
-       expect(within(ana).getAllByRole('button').at(-1)).toHaveTextContent(RESET);
+       const anaActions = within(ana).getByRole('group', { name: 'Acciones sobre Ana Pérez' });
+       expect(within(anaActions).getAllByRole('button').at(-1)).toHaveTextContent(RESET);
        for (const name of [/Beto Gómez/, /Dani Paz/]) {
          expect(
            within(within(table).getByRole('row', { name })).queryByRole('button', {
@@ -2313,15 +2317,15 @@ K la corre antes de integrar cada unidad en `f12b/base` (T033, T039 y T041). Cad
       <div
         className="admin-table-scroll"
         role="region"
-   @@ -46,7 +54,7 @@ const AccountsTable = ({ titleId, users, ownId, busy, onAction }: AccountsTableP
-                <td>{formatLocalDateTime(user.createdAt)}</td>
-                <td>
-                  <div className="admin-row-actions">
-   -                {actionsFor(user, ownId).map((action, index) => (
-   +                {actionsFor(user, ownId, mailAvailable).map((action, index) => (
-                      <button
-                        key={ACTION_SLOTS[index]}
-                        type="button"
+   @@ -32,7 +40,7 @@ const AccountsTable = ({ titleId, users, ownId, busy, onAction }: AccountsTableP
+          </thead>
+          <tbody>
+            {users.map((user) => {
+   -          const actions = actionsFor(user, ownId);
+   +          const actions = actionsFor(user, ownId, mailAvailable);
+              return (
+                <tr key={user.id}>
+                  <th scope="row">
    ```
 
 3. **`AccountsSection.tsx`,** este diff. Toda acción de una cuenta lleva el camino de la consola, porque sólo la recuperación puede recibir un 503 (R7):
@@ -2477,7 +2481,7 @@ K la corre antes de integrar cada unidad en `f12b/base` (T033, T039 y T041). Cad
      }) => {
        await shell.goto(urls.view('recorrido'));
        await admin.open();
-       await expect(admin.row(/Ana Pérez/).getByRole('button')).toHaveCount(3);
+       await expect(admin.actions(/Ana Pérez/).getByRole('button')).toHaveCount(3);
        await expect(admin.region.getByRole('button', { name: /Mandarle un enlace/ })).toHaveCount(0);
        await admin.openSection('Invitaciones');
        await expect(admin.inviteForm().getByLabel('Entrega', { exact: true })).toHaveCount(0);
@@ -2669,7 +2673,7 @@ K la corre antes de integrar cada unidad en `f12b/base` (T033, T039 y T041). Cad
        await admin.open();
        await expect(
          admin
-           .row(/Ana Pérez/)
+           .actions(/Ana Pérez/)
            .getByRole('button')
            .last(),
        ).toHaveText(RESET_ANA);
