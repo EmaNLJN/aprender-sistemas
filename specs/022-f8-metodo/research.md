@@ -4,6 +4,8 @@
 
 **La base leída.** `master` en `a24154d4`, con F2a, A2 y las cuatro unidades de F2b. Todas las citas de código salen de ahí, salvo las de F11a, que salen de su plan sin mergear (`plan-f11a`, rama `plan/f11a-acceso`, `b1f2e4c5`): `specs/015-f11-acceso-cuenta/plan.md` y `contracts/front-interfaces.md`. Se usan sus firmas tal cual. El backend es el de `master`.
 
+**La enmienda del 2026-10-28 (noche).** F11a se implementó hasta T021 (`impl-f11a`, `a7b3c71d`) y F4 llegó a `master` (`431c9d90`). Lo que eso cambió de este plan, con cada cita al código, está al final: «Enmienda: lo que F11a y F4 fijaron».
+
 **Lo que no se hizo.** No se corrió `npm`, Docker ni un navegador, ni se descargó nada: el worktree no tiene `node_modules`. Las medidas que hacen falta las toma T001 sobre la base de implementación.
 
 ## R1. Un PR, seis unidades y el orden de los commits
@@ -82,8 +84,8 @@ El motivo está en el comentario de la regla: los checks empaquetan cada fuente 
   - Va en el envoltorio del armado y no en la feature, porque D1c reimplementa la feature.
   - El armado arranca con `[simulaciones]`, y `startApp()` registra el cierre del temporizador. El orden de hoy, primero las simulaciones y después el temporizador, queda por construcción.
   - Si F9 ya entró (R12), el armado registra `focusTimer.reset` y `registerSessionReset` no se escribe.
-- **El contrato de `startApp()`.** Pasa a ser `startApp(progressBackup)`. La usan «Exportar mi progreso» y el registro del temporizador, y `render()` se la pasa a `window.TallerMethod.mount`.
-- **Cómo llega la instancia a la página.** `app.js` se la pasa a `TallerMethod.mount` en `render()`, la misma que recibió. El adaptador no importa el armado ni ningún singleton.
+- **El contrato de `startApp()`.** Pasa a ser `startApp(progressBackup)`. La usan «Exportar mi progreso» y el registro del temporizador, y `render()` se la pasa a `window.TallerMethodPage.mount`.
+- **Cómo llega la instancia a la página.** `app.js` se la pasa a `TallerMethodPage.mount` en `render()`, la misma que recibió. El adaptador no importa el armado ni ningún singleton.
 - **Lo que comparten la barra lateral y la página** (FR-013). `shared/lib/download-file.ts` suma `downloadJsonFile(file)`, el único lugar que convierte un `ProgressFile` en una descarga `application/json`.
   - `app.js` y la página llaman a `exportProgress()` de la misma instancia y después a `downloadJsonFile`.
   - Los respaldos usan `readBackup` y `downloadJsonFile`.
@@ -229,7 +231,7 @@ El modelo puro, en `model/method-texts.ts`, tiene `tutorPrompt`, los dos textos 
 
 ## R8. El shell se entera de cada escritura
 
-- **Decisión:** `startApp()` se suscribe con `routeStore.changes.subscribe(() => syncShell());`, después de declarar `currentView` y `timer`, y no justo después de `routeStore.open(data);` como dice F9: `syncShell` lee `currentView`, y un aviso antes de su `let` caería en la zona muerta temporal. Es la forma de F9 (su research, R4).
+- **Decisión (enmendada el 2026-10-28):** `startApp()` se suscribe con `routeStore.changes.subscribe(() => syncShell());` justo antes de su `render();` final, y la línea de F4 (`routeStore.changes.subscribe(updateSaveLabel);`, después de `routeStore.open(data);`) se borra. Ni en el lugar de la de F4 ni después de `const timer`: `syncShell` lee `currentView` (un `let`) y `stepsFor`, `completedCount` y `languageName` (`const` declarados después de `timer`), y un aviso antes de esas declaraciones caería en su zona muerta temporal. Es la forma del plan de F9 enmendado (T018, paso 11).
   - `syncShell` cubre `#save-label`, «N de 12», el porcentaje, la barra y el idioma (`body[data-language]`, `aria-pressed` y `#sidebar-language`), que «Borrar todo» devuelve a Rust (FR-033).
   - Todo lo que escribe es idempotente.
 - **Lo compartido** (R12):
@@ -331,14 +333,14 @@ El modelo puro, en `model/method-texts.ts`, tiene `tutorPrompt`, los dos textos 
 - **la fecha del archivo:** `page.clock.setFixedTime('2026-03-04T05:06:07Z')`, que fija `Date` sin detener los temporizadores;
 - **el portapapeles:** `context.grantPermissions(['clipboard-read', 'clipboard-write'])` y `navigator.clipboard.readText()` desde la página.
 
-**El doble de la API** (U4, contrato de F11a, «Lo que suman otros ítems»):
+**El doble de la API** (U4; la forma real es la de `impl-f11a`, `qa/e2e/fixtures/api-double.ts`, y F8 sólo le suma rutas y códigos):
 
 - `api-contract.ts` suma a `MESSAGES` los códigos que F8 usa, copiados de `lang/es/api.php` y de `ContentNotImported`;
 - `api-double.ts` suma tres rutas por omisión que responden bien: `confirm-password` 201, `GET /api/progress` 200 con `{userId, epoch: 1, revision: 0, …}` y el reset 200 `{epoch: 2, revision: 1}`.
 
   Con eso, los E2E de «Borrar todo» de F5 y F9 sólo necesitan escribir la contraseña. Cada falla se encola con `api.reply`, y la falta de red, con un `page.route(...).abort()` registrado después del doble, que Playwright prueba primero.
 
-**Los errores de la consola.** Cada respuesta de error deja «Failed to load resource». Las pruebas lo declaran con `pageIssues.expectIssue`, como `session-stage.spec.ts` de F11a.
+**Los errores de la consola.** Cada respuesta de error deja en la consola «Failed to load resource: the server responded with a status of NNN». Las pruebas lo declaran con `pageIssues.expectIssue(/status of NNN/, …)`, con el código exacto de cada caso, como `session-stage.spec.ts:104` y `:133` de F11a. Un pedido abortado con `route.abort()` usa el código `'failed'` por omisión y deja `net::ERR_FAILED` (Context7, abajo), así que se declara con `/net::ERR_FAILED/`, como `qa/e2e/specs/cycle.spec.ts:71`. `/Failed to load resource/` no se usa: tapaba cualquier otro pedido que fallara (TR-11).
 
 **`KNOWN DEFECT`** va en el nombre de las cuatro rarezas de «Método de hoy»:
 
@@ -353,17 +355,19 @@ T001 detecta con comandos qué hay en la base. Cada tarea condicional dice qué 
 
 | Pieza | Quién más la trae | Si no está en la base | Si ya está |
 | --- | --- | --- | --- |
-| La suscripción del shell | F3, F4 y F9 | T013 la crea con `syncShell` | Si llama a `updateSaveLabel`, T013 la cambia por `syncShell`; si llama a `syncShell`, nada |
+| La suscripción del shell | F3, F4 (en `master`, con `updateSaveLabel`) y F9 | T013 la crea con `syncShell` | Si llama a `updateSaveLabel`, T013 la cambia por `syncShell` y borra las llamadas a `updateSaveLabel()` que quedan redundantes; si llama a `syncShell`, nada |
 | La entrada virtual de `app-shell-check` | F3 | T012 la crea | T012 le suma `createProgressBackup` y `createProgressAreas` |
 | `harness.routeStore` | F3 | T012 lo suma | Se usa |
-| `REACT_VIEWS` y la lectura del texto de React en `boot-check` | F3 (`renderedText`) y F9 (`drawnText` en `fake-dom.ts`) | T013 crea `REACT_VIEWS` y `renderedText` | T013 suma `'metodo'` al conjunto y usa la ayuda que haya |
+| `REACT_VIEWS` y `mountedText` en `boot-check` | F4 (en `master`: la condición `atlas \|\| proyecto` y `mountedText`) y F5 (`REACT_VIEWS`) | Sin F4: T013 crea `REACT_VIEWS` con `atlas` y `metodo`, y copia el `mountedText` de F4 | Con la condición de F4, T013 la pasa a `REACT_VIEWS` con `atlas`, `proyecto` y `metodo`; con `REACT_VIEWS`, suma `'metodo'`. Siempre usa el `mountedText` de la base: ni `renderedText` ni `drawnText` (decisiones del 2026-10-28, noche) |
 | `qa/e2e/pages/method.ts` | F5 y F9 (`resetProgress()` y `confirmReset()`) | T002 la crea | T002 la amplía y conserva esos dos métodos |
 | `resetSimulations` | F5 | El armado lee `window.TallerSystems?.resetSimulations()` | T009 importa `resetSimulations` de `pages/systems/session.ts` (la crea si F5 no lo hizo) y T013 lo retira del adaptador, de `APP_ADAPTER_METHODS` y de `RESET_METHODS` |
 | El temporizador | F9 | `startApp()` lo registra con `registerSessionReset` | T009 registra `() => focusTimer.reset()` del índice de `pages/route` después de las simulaciones; T013 retira `resetTimer` del adaptador y su cierre de `app.js`; `registerSessionReset` no se escribe |
 | Los bloques compartidos de CSS | F3, F4 y F9 | T005 los parte | T005 rebasa y borra lo suyo por texto |
-| La pila de DOM de Vitest | F11a (o F3, F5 o F9 antes) | No puede faltar: F8 entra después de F11a | Los `*.spec.tsx` corren en el proyecto de DOM que haya (`dom` en F11a) |
+| La pila de DOM de Vitest | #67, ya en `master` | No puede faltar | Los `*.spec.tsx` corren en el proyecto `dom`, con el setup `frontend/src/vitest.setup.ts` |
 | `toggleItem` y `escapeHtml` en `app.js` | F3, F4 y F9 | F8 no los toca | Igual |
-| El contenido por la API | A3 | Nada | Los E2E de F8 filtran los pedidos a las tres rutas de progreso y miran sólo las claves de progreso; los scripts de las comparaciones responden el contenido como el doble de esa base |
+| El contenido por la API | A3 | El progreso por omisión del doble responde la `CONTENT_VERSION` de F11a | Los E2E de F8 filtran los pedidos a las tres rutas de progreso y miran sólo las claves de progreso. El progreso por omisión responde `this.contentVersion`; `bundleApp` va sin `__CONTENT_VERSION__`; `content-server.ts` usa el `respond` de A3; los scripts de las comparaciones responden el contenido como el doble de esa base |
+| La guarda de `useStore` en ESLint | F5 o F6 (el bloque de F6) | T013 suma el bloque de F6 tal cual, antes del de `complexity` | Se usa la de la base, sin sumar otra (TR-5) |
+| `lab-api.ts` (`labApi` en `window.TallerLab`) | F7b | El área del laboratorio lee `window.TallerLab` | Igual: «Borrar todo» sigue por `window.TallerLab.reset`, que `lab-api.ts` publica sin la página |
 
 **L11, aplicada:**
 
@@ -383,7 +387,7 @@ T001 detecta con comandos qué hay en la base. Cada tarea condicional dice qué 
   - el armado con el paso del servidor.
 
   React Hook Form, `shared/ui/form`, el cliente y Zustand ya están en el bundle desde F11a y F2a. JSX compilado pesa más que una plantilla: se estima +6 000 a +8 000 neto.
-- **La condición de corte:** si el HTML crece más de 9 000 caracteres respecto de T001, o pasa de 1 250 000, T023 para y avisa con la medida separada por módulo (el `metafile` de esbuild, como en el quickstart de F11a).
+- **La condición de corte:** si el HTML crece más de 9 000 caracteres respecto de T001, o pasa de `BOOT_SIZE_LIMIT` (1 500 000 desde #76, `qa/build-check.ts:11`), T023 para y avisa con la medida separada por módulo (el `metafile` de esbuild, como en el quickstart de F11a).
 
 ## R14. Las lecturas L1 a L12
 
@@ -416,13 +420,14 @@ El servidor `mcp__context7__*` agotó la cuota del mes (2026-10-28). Todas las c
 | React | 19.2.8 | `/websites/react_dev_reference` | Eventos de `<dialog>` | React expone `onCancel` y `onClose`, que en React burbujean | Sí: el estado se sincroniza con `onClose`, y `onCancel` frena Esc en la espera (R7) |
 | React Hook Form | 7.89.0 (la que instala F11a) | `/react-hook-form/documentation` | `isSubmitting` y `setError('root.serverError')` | `isSubmitting` vale `true` hasta que se resuelve la promesa del `onSubmit`; `handleSubmit` no se traga las excepciones | Sí: la espera de FR-025 sale de `isSubmitting`, y el envío nunca lanza: el paso devuelve resultados |
 | Zustand | 5.0.15 | `/pmndrs/zustand/v5.0.12` (la última con versión en Context7) | `useStore(store, selector)` con un store de `zustand/vanilla` | Suscribe a la parte que devuelve el selector | No: confirma el patrón de F2a |
-| Vitest | 5.0.3 | `/vitest-dev/vitest/v5.0.3` | Proyectos en línea y `mockResolvedValueOnce` | Los proyectos en línea heredan la raíz y concatenan los arreglos | No: F8 no toca la configuración; sus specs `.tsx` corren en el proyecto de DOM de F11a |
+| Vitest | 5.0.3 | `/vitest-dev/vitest/v5.0.3` | Proyectos en línea y `mockResolvedValueOnce` | Los proyectos en línea heredan la raíz y concatenan los arreglos | No: F8 no toca la configuración; sus specs `.tsx` corren en el proyecto `dom` de #67 |
 | Testing Library (user-event) | 14.6.7 | `/testing-library/user-event` | `user.type`, `user.click` y `user.upload` | `upload` respeta `accept` y dispara `input` y `change` en el campo de archivo | Sí: la spec de `ProgressPanel` importa con `user.upload` sobre el campo oculto |
 | jsdom | 30.1.2 | `/jsdom/jsdom/v29.0.1` (Context7 no tiene la 30) | `HTMLDialogElement` | Context7 no trae el dato. El ADR 0008 (§1) verificó que `showModal()` y `close()` no existen | Sí: las specs del diálogo definen un stub, y el foco y Esc van en E2E |
 | fishery | 2.4.0 | — | — | F8 no define factories propias: usa `apiErrorBodyFactory` de F11a en `server-reset.spec.ts`, que arma cuerpos de error, nunca valores esperados | No |
 | Playwright | 1.63.0 | `/microsoft/playwright/v1.63.0` | `Download` (`waitForEvent`, `path`) | Se espera el evento antes del clic; `path()` espera la descarga y da el archivo | Sí: `downloadedText` en `method-files.ts` |
 | Playwright | 1.63.0 | `/microsoft/playwright/v1.63.0` | `FileChooser.setFiles` | Acepta rutas o `{name, mimeType, buffer}` | Sí: el archivo de más de 10 MB es un `buffer` |
 | Playwright | 1.63.0 | `/microsoft/playwright/v1.63.0` | `clock.setFixedTime` | Fija `Date.now` y `new Date()` y deja correr los temporizadores | Sí: la exportación usa `setFixedTime`, no `install` |
+| Playwright | 1.63.0 | `/microsoft/playwright/v1.63.0` | `route.abort()` sin código y el error que ve la página (enmienda) | El código por omisión es `'failed'`, y `request.failure().errorText` es `net::ERR_FAILED` | Sí: la fila «no network» de T014 declara `/net::ERR_FAILED/` en lugar de `/Failed to load resource/` |
 | Playwright | 1.63.0 | `/microsoft/playwright/v1.63.0` | Permisos del portapapeles | `grantPermissions(['clipboard-read'])` y `navigator.clipboard.readText()` | Sí: el E2E de la copia lee el portapapeles real |
 | Vite | 8.3.2 | `/vitejs/vite/v8.0.10` (la más cercana) | `build.cssCodeSplit` | El CSS de un chunk asíncrono se separa en otro archivo | Sí: `method.css` se importa en `main.tsx` |
 | Laravel | 13.34.0 (`composer.lock`) | `/laravel/docs/__branch__13.x` | `session()->regenerate()` y el token CSRF | Regenerar el id de sesión no cambia el token; eso lo hace `regenerateToken()` | No: igual, el cliente de F11a lee la cookie en cada pedido, así que el reset después de `confirm-password` lleva el token vigente |
@@ -445,3 +450,41 @@ El servidor `mcp__context7__*` agotó la cuota del mes (2026-10-28). Todas las c
 - **Esc dos veces con el pedido retenido:** que `preventDefault()` en `keydown` corte el pedido de cierre en Chromium 1.63. Lo fija el E2E de T014.
 - **El peso,** las cuentas de avisos de ESLint y los conteos de la red: los mide T001.
 - **Que React monte Método en el DOM falso de `boot-check`.** Monta el Atlas, con formularios y `<select>`. Método suma `textarea` controlados y `blockquote`, que el DOM falso ya admite (`value`, `childNodes`, `textContent`).
+
+## Enmienda: lo que F11a y F4 fijaron
+
+El 2026-10-28 (noche) el plan se corrigió contra el código que F11a fijó al implementarse (`impl-f11a`, `a7b3c71d`, hasta T021, con su ledger `.superpowers/sdd/plan/progress.md`) y contra `master` con F4 (`431c9d90`). Son deltas: las tareas, sus números y su orden no cambian, y los fragmentos nuevos tampoco corrieron. Las restricciones vienen de `.coordinador/hallazgos-para-planes.md` (secciones «F8» y «Transversal») y de las decisiones del 2026-10-28 (noche).
+
+**Lo que F8 le pide a F11a, contra el código.** Nada de esto lo trajo F11a (F11a-9 lo dejó para F8), así que las tareas de F8 lo escriben sobre las formas reales:
+
+| Pedido | En `impl-f11a` | Qué hace F8 |
+| --- | --- | --- |
+| Las tres rutas por omisión del doble | `installDefaults()` (`qa/e2e/fixtures/api-double.ts:141-183`) responde siete rutas: la sesión, `login`, `logout`, la búsqueda y la aceptación de la invitación, `reset-password` y `me/privacy`. Ni `confirm-password`, ni `GET /api/progress`, ni el reset | T014 las suma al final con `this.on(…)`, con un `ApiReply` de `status`, `json` y `headers` |
+| Los cinco códigos de `MESSAGES` | `qa/e2e/lib/api-contract.ts:37-50` tiene doce; ninguno de los cinco | T014 suma los cinco, con los textos de `backend/api/lang/es/api.php` y de `ContentNotImported` |
+| `readOnly` en `TextField` y `PasswordField` | No está (`frontend/src/shared/ui/form/TextField.tsx:4-12` y `PasswordField.tsx:5-11`) | T018 escribe los dos archivos completos con la prop |
+| Las rutas de progreso en `qa/lib/content-server.ts` | Sólo la sesión, con un `Response` de Node (`:24-37`); el `FakeResponse` del archivo no tiene `text()`, que el cliente lee | T019 suma las tres con un `Response` de Node, como la sesión; con A3, con el `respond` de A3 |
+| `cookie: ''` en el documento de `boot-check` | `qa/lib/boot-harness.ts` no cambia en F11a, y su `document` (`:121-142` de `master`) no tiene `cookie` | T019 lo suma: `send()` arma `X-XSRF-TOKEN` con `document.cookie.split(';')` antes de pedir |
+| `reloadDocument` | En `frontend/src/shared/lib/reload-document.ts` desde T012 de F11a, no en `app/account` | T016 y T018 lo importan de `shared/lib` |
+| `messagesOf` | `messagesOf(error: FieldError \| GlobalError \| undefined)` (`frontend/src/shared/ui/form/show-failure.ts:8`) | Sin cambio: la confirmación le pasa `errors.password` y `errors.root?.serverError` |
+| `reauthenticate` | `reauthenticate(expectedUserId, { requestSignIn, reloadDocument })` (`frontend/src/features/sign-in/model/reauthenticate.ts:5-8`) | Sin cambio |
+| `ServerError`, `useGuardedSubmit`, `useRetryCountdown` y `FailureDescription` | Con las props y los campos que usa T018 | Sin cambio |
+| `apiErrorBodyFactory` y `createFakeFetch` | `frontend/src/shared/api/http/api-error.factory.ts` y `fake-fetch.ts` | Sin cambio: T015 los importa por ruta desde la spec |
+
+**Lo que cambió del doble de la API.** El doble busca la ruta antes de mirar el CSRF (`api-double.ts:127-139`, arreglo `f5b62ae6` de F11a): una ruta que modifica y no está registrada responde 404 y queda en `unhandled`, no 419. Ningún E2E de F8 espera un 419 del doble; cada falla se encola sobre una de las tres rutas registradas. La lista blanca de cada error es `/status of NNN/` o `/net::ERR_FAILED/`.
+
+**Lo que cambió por F4.**
+
+- `app-shell-check` tiene 56 escenarios, no 58: F4 sacó los dos de g). Después de T013 quedan 19, no 21. Los conteos los toma T001 (TR-15).
+- `boot-check` ya distingue las vistas de React con `mountedText` (`qa/boot-check.ts:85-88`) y la condición `atlas || proyecto` (`:111`). La forma canónica es `REACT_VIEWS: ReadonlySet<string>` con ese `mountedText`; F8 no crea `renderedText`.
+- La suscripción del shell ya existe, con `updateSaveLabel` (`frontend/app.js:29`). T013 la cambia por `syncShell` y borra el `updateSaveLabel()` de `save()` (`app.js:65`), que queda redundante porque `routeStore.save()` avisa (`route-store.ts:92-95`).
+- El adaptador de una página se llama `Taller<Página>Page` (`TallerProjectPage`, `register-project-page.tsx`). El de Método pasa a `TallerMethodPage`, en `register-method-page.tsx`; la spec dejaba el nombre provisional.
+- Cada entrada nueva de `LEGACY_MODULES` suma un `import.meta` al dist (F4: de 22 a 23). F8 suma una.
+
+**Lo que cambió por los demás ítems.**
+
+- **El tope del HTML** es `BOOT_SIZE_LIMIT` de 1 500 000 (#76).
+- **La guarda de `useStore`** es el bloque de F6, y F8 lo trae sólo si la base no lo tiene.
+- **El Page Object de Método** ya lo creó F5 (`impl-f5`, `qa/e2e/pages/method.ts`), con `resetProgress()` y `confirmReset()`; T002 lo amplía.
+- **A3** cambia el doble (`contentVersion` como campo), `qa/lib/sources.ts` (sin `__CONTENT_VERSION__`) y `content-server.ts`. La «Rama A3» del plan dice qué hace F8 en cada caso.
+- **F7b** deja `window.TallerLab` en `frontend/src/app/legacy/lab-api.ts`; «Borrar todo» sigue por ahí.
+- **Las trampas del barrido de estilo computado** de F5 (TR-13) quedan anotadas en T021 y en quickstart.md, §3.

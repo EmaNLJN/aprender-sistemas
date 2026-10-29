@@ -4,11 +4,13 @@
 
 Este documento junta las decisiones técnicas de F12a con sus alternativas, la tabla de consultas de documentación y lo que se midió sin tocar el repositorio. La base es `master` en `a24154d4` (F2a, A2 y F2b integradas) más F11a, que se lee de su plan (`plan-f11a/specs/015-f11-acceso-cuenta/`, `b1f2e4c5`) y, en lo ya implementado, de `impl-f11a` (`f11a/base`, `f262eec1`: la línea base, React Hook Form, la pila de DOM y el cliente). El backend de C3b se leyó en `backend/api/` de esta rama: las rutas, los controladores, los `FormRequest`, los presentadores, `lang/es/` y las pruebas de Pest de `tests/Feature/Admin/` y `tests/Feature/Accounts/`.
 
+**Revisión del 2026-10-28.** El plan se contrastó con el código real de F11a en `impl-f11a` (`f11a/base`, a7b3c71d, hasta T021 de F11a) y con `master` en `431c9d90`. Lo que cambió: `reloadDocument` y `ApiCall.search` ya están en F11a (T002 y T009 sólo los verifican); el lugar de la administración en «Tu cuenta» sigue pendiente en F11a (rama B2 del plan); las listas blancas de los E2E son angostas (`/status of NNN/`); los stubs del rojo son `const` tipados; `f12a/base` sale de `f11a/base` con F11a completa, y el tope del HTML es 1 500 000 (#76). Lo enmendado no corrió.
+
 ## Decisiones
 
 ### R1. La integración: una rama `f12a/base` y un solo PR a `master`
 
-**Decisión.** F12a se parte en cinco unidades con su compuerta (U0 a U4, `plan.md`). Cada unidad es un PR contra `f12a/base`, que sale de `master` con F11a integrada, y F12a llega a `master` en un solo PR, en T026.
+**Decisión.** F12a se parte en cinco unidades con su compuerta (U0 a U4, `plan.md`). Cada unidad es un PR contra `f12a/base`, que sale de `f11a/base` con F11a completa (T001 a T035 de F11a), o de `master` si F11a ya llegó ahí. F12a llega a `master` en un solo PR, en T026, después del PR de F11a y con `f12a/base` rebasada sobre ese `master`.
 
 **Por qué.** La administración no rompe ningún invariante si llega a medias, porque nadie la ve hasta que T023 la cablea. Pero C4 espera «las pantallas de administración integradas» (F12-Q2), y un solo PR deja una sola cosa que revisar y que revertir. Es la misma forma que F11a (su R1).
 
@@ -21,13 +23,13 @@ Este documento junta las decisiones técnicas de F12a con sus alternativas, la t
 | La página: secciones, listas, formularios y diálogos de las acciones | `pages/admin` (nuevo) | Es una vista entera con su ruta futura en F10 (FR-062). Su API pública es `AdminPage` y el tipo `AdminSection` |
 | La condición de admin | `isAdmin` en `entities/session` | La pide el contrato de F11a. La usan la entrada de hoy y la ruta de F10 |
 | El diálogo a pantalla entera | `app/account/AdminDialog.tsx` (nuevo) | Dos páginas no se importan entre sí (`docs/architecture.md`, «Feature-Sliced Design incremental»). `app` compone `pages/account` y `pages/admin` |
-| La entrada «Administrar el taller» | `AccountDialog`, y el lugar del diálogo, en `AccountMenu` (`pages/account`) | Lo deja previsto el contrato de F11a. `AccountMenu` recibe el contenedor por una prop `administration`, que le pasa `AccountRoot` |
-| `reloadDocument` | `shared/lib/reload-document.ts` (se muda desde `app/account/`) | La página lo necesita ante un 403 y en `reauthenticate`, y `pages` no puede importar `app`. FR-062 no le permite recibirlo como prop |
+| La entrada «Administrar el taller» | `AccountDialog`, y el lugar del diálogo, en `AccountMenu` (`pages/account`) | Lo deja previsto el contrato de F11a. `AccountMenu` recibe el contenedor por una prop `administration`, que le pasa `AccountRoot`. En `impl-f11a` (a7b3c71d) ese lugar todavía no está (T022 y T023 de F11a): T001 lo detecta (rama B2) |
+| `reloadDocument` | `shared/lib/reload-document.ts`, donde ya lo dejó F11a en su T012 por el hallazgo 3 de F12a (`impl-f11a`, `frontend/src/shared/lib/reload-document.ts:1-3`) | La página lo necesita ante un 403 y en `reauthenticate`, y `pages` no puede importar `app`. FR-062 no le permite recibirlo como prop |
 | `confirmPassword` y el paso de la contraseña | `pages/admin` | Hoy sólo lo usa F12a. El que llegue segundo entre F11b y F12a lo muda a un lugar compartido, como decide la spec (Dependencias reales) |
 
 **Alternativas descartadas:**
 
-- **`AccountMenu` monta `AdminPage` directamente,** como decía el contrato de F11a: `pages/account` importaría `pages/admin`, y Feature-Sliced Design lo prohíbe. Es un hallazgo para F11a.
+- **`AccountMenu` monta `AdminPage` directamente,** como decía el contrato de F11a: `pages/account` importaría `pages/admin`, y Feature-Sliced Design lo prohíbe. Es un hallazgo para F11a (el 2 de F12a), que F11a tomó para T022, T023 y T025 y todavía no implementó en a7b3c71d.
 - **La administración como `features/administer-workshop`,** que `pages/account` sí podría importar: es una página entera, y F10 la monta en una ruta. Un `pages/admin` que sólo envuelve una feature sería un wrapper vacío.
 - **`reloadDocument` como prop de la página:** contradice FR-062, que permite sólo la sección inicial y el cierre.
 
@@ -47,6 +49,7 @@ Este documento junta las decisiones técnicas de F12a con sus alternativas, la t
   - en cualquier otro paso, cuenta como cancelar.
 - **El foco vuelve explícito.** La sección guarda el control que abrió el diálogo (`event.currentTarget` en las filas y el botón «Crear las invitaciones» en el formulario), cierra con `flushSync` y le devuelve el foco. Si ese control ya no existe, el foco va al título de la tabla (FR-006). No depende del navegador: Safari no enfoca un botón al hacer clic.
 - **Las acciones de una fila tienen lugares fijos** (`ACTION_SLOTS`: estado, rol y borrar). Al deshabilitar, «Deshabilitar a Ana» pasa a «Rehabilitar a Ana» en el mismo botón del DOM, y el foco vuelve a él (historia 3, escenario 3).
+- **Las acciones de una fila van en un grupo** «Acciones sobre {nombre}» (`role="group"`), que se dibuja sólo si la fila tiene acciones. Las pruebas cuentan los botones dentro del grupo y no en la fila entera, así que una columna nueva antes de «Acciones», como la «Uso» de F14, no cambia ningún conteo. Es una decisión del usuario del 2026-10-28 (Q1-A de F14). El grupo no suma una parada de Tab: el orden del teclado es el de antes.
 
 ### R5. La contraseña a pedido (F12-Q3, FR-036 a FR-038)
 
@@ -101,16 +104,17 @@ Este documento junta las decisiones técnicas de F12a con sus alternativas, la t
 
 ### R10. Las pruebas (FR-058 y FR-059)
 
-- **Vitest.** Usa los proyectos `node` y `dom` que deja F11a (ya están en `impl-f11a`).
+- **Vitest.** Usa los proyectos `node` y `dom` de `frontend/vitest.config.ts`, en `master` desde #67, con el setup `frontend/src/vitest.setup.ts`.
   - Las factories de fishery arman los cuerpos con la forma del contrato de C3b (`AdminUser` y `AdminInvitation`, con `privacyVersion`, `updatedAt`, `sentAt`…). Los valores esperados se escriben a mano.
   - `render-admin.tsx` es la ayuda de las specs de la página: el stub de `<dialog>`, la sesión de Olga y el cliente real con un `fetch` falso.
   - `reloadDocument` se reemplaza con `vi.mock`: jsdom no implementa la navegación.
 - **E2E.** Corren sobre el doble de F11a:
-  - el doble suma `search` a `ApiCall`, porque `callOf` guardaba sólo el `pathname` y las pruebas de la búsqueda y de la paginación necesitan la query (hallazgo para F11a);
-  - cada ruta con id se registra con su propio `api.on`, porque el doble compara la ruta exacta;
+  - el doble ya guarda la query en `ApiCall.search`: lo sumó F11a por el hallazgo 4 de F12a (`impl-f11a`, `qa/e2e/fixtures/api-double.ts:11` y `:41`), y F12a no le cambia nada;
+  - cada ruta con id se registra con su propio `api.on`, porque el doble compara la ruta exacta. El doble busca la ruta antes de mirar el CSRF (`:127-139`): una ruta sin registrar da 404 y queda en `unhandled`, así que ningún E2E espera un 419;
+  - cada escenario que llega a `confirm-password` registra su respuesta, aunque F8 la haya sumado a `installDefaults` (rama B3 del plan);
   - `api.signInAccount = ADMIN` en el escenario del 401, porque el doble ingresa por omisión con `STUDENT`, y otra cuenta recarga;
-  - cada escenario con una respuesta que no es 2xx declara `pageIssues.expectIssue(/Failed to load resource/, …)`;
-  - la falla de red se simula con un `page.route(…).abort()` registrado después del doble.
+  - cada escenario con una respuesta que no es 2xx declara la lista blanca angosta, `pageIssues.expectIssue(/status of NNN/, …)` con el código exacto, como `impl-f11a` en `qa/e2e/specs/session-stage.spec.ts:104` y `:133`. `/Failed to load resource/` escondía cualquier otro error de red;
+  - la falla de red se simula con un `page.route(…).abort()` registrado después del doble, y se declara con `/net::ERR_FAILED/` (no tiene código), como `qa/e2e/specs/cycle.spec.ts:71`.
 - **El teclado y el foco** se prueban en E2E (jsdom no tiene `showModal` ni foco real). El orden de foco de la confirmación se verificó en Chromium.
 
 ### R11. Los estilos (FR-052 a FR-054)
@@ -136,7 +140,7 @@ Context7, segundo servidor (`mcp__44441c24-…`), el 2026-10-28. Cuando no tení
 | React | 19.2.8 | `/react/react/v19.2.8` | `autoFocus` y `commitMount` | `autoFocus` enfoca en el commit, no pone el atributo | Sí: el foco del título va en un efecto, no con `autoFocus` |
 | React Hook Form | 7.89.0 | `/react-hook-form/documentation` | `setError` con `root.serverError`, `types` y `shouldFocus` | `root.*` desde 7.43.0; `shouldFocus` necesita el `ref` registrado | No: se usa `showFailure` de F11a |
 | React Hook Form | 7.89.0 | `/react-hook-form/documentation` | `reset`, `isSubmitting`, `handleSubmit` | No llamar a `reset` dentro de `onSubmit`; `isSubmitting` dura lo que la promesa | Sí: «Invitar» no se vacía (R8); «Limpiar los filtros» llama a `reset` fuera del envío |
-| React Hook Form | 7.89.0 | Los tipos de `node_modules/react-hook-form` (en `impl-f11a`), no Context7 | El tipo de `errors.root.serverError` | Es `GlobalError` (`Partial<{type; message}>`), no `FieldError` | Sí: hallazgo para F11a, porque `messagesOf(errors.root?.serverError)` no tipa con la firma del contrato |
+| React Hook Form | 7.89.0 | Los tipos de `node_modules/react-hook-form` (en `impl-f11a`), no Context7 | El tipo de `errors.root.serverError` | Es `GlobalError` (`Partial<{type; message}>`), no `FieldError` | Sí: hallazgo para F11a, porque `messagesOf(errors.root?.serverError)` no tipa con la firma del contrato. F11a lo aplicó en T017 (`impl-f11a`, `frontend/src/shared/ui/form/show-failure.ts:8`) |
 | Testing Library (user-event) | 14.6.7 | `/testing-library/testing-library-docs` | El portapapeles | `userEvent.setup()` reemplaza `navigator.clipboard` por un stub | Sí: las specs leen `navigator.clipboard.readText()` |
 | Testing Library (react) | 16.3.3 | `/testing-library/testing-library-docs` | `getByRole` con `name`, `within`, `toHaveFocus` y el recorrido con `user.tab()` | Sin cambios respecto de F11a | No |
 | Vitest | 5.0.3 | `/vitest-dev/vitest/v5.0.3` | `vi.mock` con fábrica, el hoisting y `vi.mocked` | `vi.mock` sube al principio; la fábrica no puede usar variables de afuera | Sí: `vi.mock('../../../shared/lib/reload-document', () => ({ reloadDocument: vi.fn() }))` |
@@ -160,7 +164,7 @@ Todo se hizo en el scratchpad de la sesión, con el código del plan, el de F11a
 
 - se midió sobre el `dist/` de `f2b-k6` (`36a00d53`), cuyo `frontend/`, `content/`, `tools/` y `package*.json` son idénticos a `a24154d4`;
 - coincide con la línea base de F11a en `impl-f11a`;
-- el tope de `build-check` es 1 250 000.
+- el tope de `build-check` era 1 250 000 al planificar; desde #76 es 1 500 000 (`BOOT_SIZE_LIMIT`).
 
 **El peso estimado de F12a: 31 978 caracteres.** Se midió con esbuild 0.28.2 (`minify`, `charset: 'utf8'`), dejando afuera React, React Hook Form, Zustand y los slices de F11a, sobre `app/account/AdminDialog.tsx`, más `admin.css` minificado. Es una estimación: Vite 8 minifica con otra herramienta, y `vite-plugin-singlefile` lo mete todo en el HTML, así que cargar la administración aparte no ahorra nada.
 
@@ -187,6 +191,8 @@ Los cambios de `pages/account` y `entities/session` suman unos 200 más.
 
 Eso suma entre 76 400 y 106 400, sin contar A3, F7b, F8, F10 ni F12a. Las reservas ya pasan el margen, y F12a lo ocupa en dos tercios. Es la decisión 1 del informe.
 
+**El tope nuevo (2026-10-28).** El usuario subió `BOOT_SIZE_LIMIT` a 1 500 000 (#76): el margen crece en 250 000, y la decisión 1 queda resuelta por esa vía. El presupuesto de F12a (+35 000 sobre T001) no cambia, y T001 anota el valor de la base.
+
 **Las pruebas del plan, corridas sobre el código del plan:**
 
 - **86 specs de Vitest en verde:** 40 de `node` (isAdmin, los parsers, los emails, las acciones, las reacciones, los textos de los enlaces y los endpoints) y 46 de `dom` (la página, la lista paginada, las cuentas, las invitaciones, el diálogo de acción, la entrada en «Tu cuenta» y el contenedor).
@@ -194,7 +200,7 @@ Eso suma entre 76 400 y 106 400, sin contar A3, F7b, F8, F10 ni F12a. Las reserv
   - sin la comparación de `target` en el contenedor, falla «stays open when a confirmation inside it closes»;
   - sin la guarda `finished`, falla «does not send the action when the dialog closed while the password was being confirmed».
 - **Los checks:** `tsc` (con `noUncheckedIndexedAccess`), ESLint con `eslint.config.ts` del repo (`react-hooks` recomendado y complejidad 10) y Prettier con `prettier.config.ts`, todos en verde. La función más compleja es `usePagedList`, con 10.
-- **La condición del tipado.** `tsc` pasó con `messagesOf(error: FieldError | GlobalError | undefined)` en la copia de F11a. Con la firma del contrato de F11a (`FieldError | undefined`), `errors.root?.serverError` no tipa, porque React Hook Form 7.89.0 lo declara como `GlobalError`. Así fallan `PasswordStep.tsx` e `InviteForm.tsx`, y también el `LoginForm` del plan de F11a. Es el hallazgo 1 para F11a; si F11a resuelve otra cosa, T001 lo anota y T012 y T018 la usan.
+- **La condición del tipado.** `tsc` pasó con `messagesOf(error: FieldError | GlobalError | undefined)` en la copia de F11a. Con la firma del contrato de F11a (`FieldError | undefined`), `errors.root?.serverError` no tipa, porque React Hook Form 7.89.0 lo declara como `GlobalError`. Así fallan `PasswordStep.tsx` e `InviteForm.tsx`, y también el `LoginForm` del plan de F11a. Es el hallazgo 1 para F11a, y F11a lo adoptó en T017 (`impl-f11a`, `frontend/src/shared/ui/form/show-failure.ts:8`): T012 y T018 la usan tal cual.
 - **Los E2E:** tipan con el doble de F11a copiado de su plan, pero **no corrieron**, porque necesitan F11a cableada.
 
 **Chromium headless (Playwright 1.63, `chromium_headless_shell-1243`)** sobre un arnés que monta `AdminDialog` con un `fetch` falso, `styles.css`, `form.css` de F11a y `admin.css`:
@@ -230,7 +236,8 @@ La spec no los fija. Van como propuesta, para que el usuario los corrija.
 
 ## Lo que no se verificó
 
-- **Los E2E no corrieron:** necesitan F11a entera (la etapa de sesión, el doble y la raíz cableados). Tipan contra el doble copiado del plan de F11a.
+- **Los E2E no corrieron:** necesitan F11a entera (la etapa de sesión, el doble y la raíz cableados). Tipan contra el doble copiado del plan de F11a, y se revisaron contra el de `impl-f11a` (a7b3c71d).
+- **Lo enmendado el 2026-10-28 no corrió:** los stubs como `const` tipados, las listas blancas `/status of NNN/` y `/net::ERR_FAILED/`, y las ramas de T001 (B1 a B6) con sus efectos en T002, T007 a T009 y T023.
 - **El peso real** sale de Vite 8. La estimación usa esbuild, y T001 y T026 miden `html.length`.
 - **La cookie real, el CSRF y `confirm-password` contra el stack:**
   - `ConfirmPasswordController` regenera la sesión. El cliente de F11a lee la cookie en cada pedido, así que el reintento lleva el token vigente;

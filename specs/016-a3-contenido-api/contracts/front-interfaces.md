@@ -183,10 +183,11 @@ export interface SessionGateOptions {
 }
 export interface SessionStage extends BootStage {
   takeRead(): SessionRead | null; // la lectura del arranque, una vez
+  readAgain(request: { readonly signal: AbortSignal }): Promise<SessionRead>; // cada lectura siguiente, con el token guardado
 }
 export function createSessionGate(options: SessionGateOptions): SessionStage;
 
-// app/boot/session-view.ts (cambia F11a: salen showFailure, SessionFailure y sessionFailureMarkup)
+// app/boot/session-view.ts (cambia F11a: salen showFailure, SessionFailure y sessionFailureMarkup; SESSION_LOADING_MARKUP sigue como lo exporta F11a)
 export interface SessionView {
   showLoading(): void;
   clear(): void;
@@ -224,7 +225,7 @@ export const attemptBudget: AttemptBudget; // 20 000 ms
 export const tokenStage: TokenStage;
 export const signInFromBoot: RequestSignIn; // monta la raíz de la cuenta y pide el ingreso
 export const sessionStage: SessionStage;
-export const readSessionForContent: ReadSession; // con una lectura lista, monta la raíz de la cuenta (mountAccountRoot)
+export const readSessionForContent: SessionStage['readAgain']; // lee por sessionStage.readAgain y, con una lectura lista, monta la raíz de la cuenta (mountAccountRoot)
 
 // app/boot/content-stage.ts
 export const contentGate: BootStage;
@@ -238,9 +239,11 @@ export const CONTENT_COPY_SAVED_EVENT = 'taller:content-copy-saved'; // detail: 
 
 **La etapa de sesión, desde A3:**
 
+- toma el token del enlace una sola vez al empezar (`takeAccessToken()`, que llama a `take()` de F11a sin cambiarlo) y lo guarda;
 - empieza el presupuesto y pide la sesión, con «Conectando con el taller…» a los 400 ms;
 - con `user: null`, borra la copia y espera «pedir el ingreso» en pausa;
-- termina siempre, sin mostrar errores. Deja `takeRead()` y llama a `onReady()` sólo con la cuenta lista.
+- termina siempre, sin mostrar errores. Deja `takeRead()` y llama a `onReady()` sólo con la cuenta lista;
+- `readAgain` es la lectura de cada ronda y de cada «Reintentar» de la compuerta: el mismo lector, sin la espera de la etapa ni su vista, y con el token guardado mientras ninguna sesión haya respondido. El token se olvida en el momento en que se entrega a «pedir el ingreso», como en F11a (FR-005 de F11): una lectura que no responde, o un 429 que no entra en el presupuesto, lo conservan para la siguiente.
 
 **La compuerta:**
 
@@ -338,12 +341,12 @@ export function blockContentCopy(context: BrowserContext): Promise<void>;
 export function blockCopyWrites(context: BrowserContext): Promise<{ dispose(): Promise<void> }>;
 export function readStoredCopy(page: Page): Promise<unknown>;
 
-// qa/e2e/fixtures/api-double.ts (lo que suma A3)
+// qa/e2e/fixtures/api-double.ts (lo que suma A3 a la forma canónica de F11a)
 export interface ApiCall {
   method: string;
   path: string;
-  query: string;
-  ifNoneMatch: string | undefined;
+  search: string; // de F11a: la query del pedido; A3 no suma otra propiedad con ese dato
+  ifNoneMatch: string | undefined; // lo suma A3
   xsrf: string | undefined;
   user: string | undefined;
   body: unknown;
@@ -354,7 +357,7 @@ export interface ApiReply {
   body?: string;
   contentType?: string;
   headers?: Record<string, string>;
-  abort?: boolean;
+  abort?: boolean; // lo suma A3
 }
 export class ApiDouble {
   contentVersion: string; // la de build/curriculum.meta.json; la usan la sesión y las 17 porciones
@@ -364,7 +367,9 @@ export class ApiDouble {
 
 **Cómo responde el doble:**
 
-- **La búsqueda de una ruta:** primero con la query (`GET /api/exercises?catalog=lab&language=rust`) y después sin ella. `callsTo` compara la query sólo si la ruta la trae.
+- **La búsqueda de una ruta:** primero con la query (`GET /api/exercises?catalog=lab&language=rust`, armada con `search`) y después sin ella. `callsTo` compara la query sólo si la ruta la trae.
+- **El orden de F11a:** la ruta se busca antes de mirar el CSRF. Una ruta desconocida da 404 y queda en `unhandled`, que reporta `assertAllHandled()`; sólo una ruta conocida que modifica sin el `X-XSRF-TOKEN` vigente da 419.
+- **Con F8 en la base:** su `GET /api/progress` por omisión responde `contentVersion: this.contentVersion`.
 - **Las 17 porciones por omisión:**
   - un 304 si `If-None-Match` es su `ETag`;
   - si no, un 200 con los bytes del generador;

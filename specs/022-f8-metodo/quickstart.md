@@ -13,6 +13,7 @@ git log --oneline -1
 npm ci --offline
 npm run build
 node -e "console.log(require('fs').readFileSync('dist/index.html','utf8').length)"
+node -e "const h=require('fs').readFileSync('dist/index.html','utf8');console.log(JSON.stringify({importMeta:(h.match(/import\.meta/g)||[]).length,dynamicImports:(h.match(/\bimport\(/g)||[]).length}))"
 npm run lint 2>&1 | grep -c complexity
 npx eslint frontend/app.js --rule '{"complexity":["warn",{"max":1,"variant":"classic"}]}' 2>&1 | grep "Function 'render'"
 node qa/app-shell-check.ts | tail -1
@@ -35,19 +36,23 @@ git worktree add "$SCRATCH/f8-base" HEAD
 | --- | --- | --- |
 | B1 | `git grep -n "routeStore.changes.subscribe(" -- frontend/app.js` | imprime una línea; anotar si llama a `syncShell` o a `updateSaveLabel` |
 | B2 | `git grep -n "routeStore" -- qa/lib/legacy-sources.ts` | imprime algo |
-| B3 | `git grep -n "REACT_VIEWS\|renderedText\|drawnText" -- qa` | imprime algo |
+| B3 | `git grep -n "REACT_VIEWS\|mountedText\|renderedText\|drawnText" -- qa` | imprime algo; anotar si es la condición `atlas \|\| proyecto` de F4 o `REACT_VIEWS`, y si `mountedText` lee `node.textContent` |
 | B4 | `test -f qa/e2e/pages/method.ts && echo está` | imprime «está» |
 | B5 | `test -f frontend/src/pages/systems/index.ts && echo está` | imprime «está» |
 | B6 | `git grep -n "focusTimer" -- frontend/src/pages/route/index.ts` | imprime algo |
 | B7 | `git log --oneline a24154d4..HEAD -- frontend/styles.css` | lista commits de F3, F4 o F9 |
 | B8 | `git grep -ln "confirmReset()" -- qa/e2e/specs` | lista archivos |
-| B9 | `git grep -n "projects" -- frontend/vitest.config.ts` | imprime algo (si no, parar) |
-| B10 | `git grep -n "api.on('GET /api/" -- qa/e2e` | imprime algo: A3 sirve el contenido por la API (plan, «Rama A3») |
+| B9 | `git grep -n "name: 'dom'" -- frontend/vitest.config.ts` | imprime algo (si no, parar) |
+| B10 | `test -f qa/e2e/lib/content-portions.ts && echo está` | imprime «está»: A3 sirve el contenido por la API (plan, «Rama A3») |
+| B11 | `git grep -n "useStore needs a selector" -- eslint.config.ts` | imprime algo |
+| B12 | `test -f frontend/src/app/legacy/lab-api.ts && echo está` | imprime «está»: F7b entró (plan, «Rama F7b») |
 
-F11a tiene que estar:
+Y que ningún adaptador espiado por «borrar todo» esté congelado (TR-17): `git grep -n "Object.freeze" -- frontend/src/app/legacy` no nombra `TallerLab`, `TallerCampaignEngine`, `TallerSystemsEngine` ni `TallerSystems`.
+
+F11a tiene que estar, de `f11a/base` o de `master`:
 
 ```sh
-ls frontend/src/app/account/api-client.ts frontend/src/shared/ui/form/index.ts qa/e2e/fixtures/api-double.ts
+ls frontend/src/app/account/api-client.ts frontend/src/shared/ui/form/index.ts frontend/src/shared/lib/reload-document.ts qa/e2e/fixtures/api-double.ts
 ```
 
 ## 2. La compuerta de cada unidad
@@ -69,7 +74,7 @@ Lo que tiene que dar cada unidad:
 | --- | --- | --- |
 | U1 | `method-kept-state.spec.ts` (3) | — |
 | U2 | Lo mismo | El multiconjunto y el barrido (§3.1) |
-| U3 | Nada | La búsqueda de FR-010, `render()` en T001 + 1 y 21 escenarios en `app-shell-check` |
+| U3 | Nada | La búsqueda de FR-010, `render()` en T001 + 1, `import.meta` en T001 + 1 y, en `app-shell-check`, la cuenta de T001 menos 38 más 1 (19 con la base de F4) |
 | U4 | Nada | La verificación a mano (§4) |
 | U5 | Nada | §3.2, §3.3 y §5 |
 
@@ -142,11 +147,14 @@ async function snapshot(browser, origin, root, [, seeded, setup], width, motion,
   await page.goto(origin + '/#metodo');
   await page.getByRole('heading', { name: 'Tu progreso te pertenece.' }).waitFor();
   await setup(page);
+  await page.mouse.move(0, 0);
   await page.emulateMedia({ media });
   const result = await page.evaluate(() => {
     const out = {};
     const pathOf = (el) => { const parts = []; for (let n = el; n && n !== document.documentElement; n = n.parentElement) parts.unshift(n.tagName.toLowerCase() + (n.id ? '#' + n.id : ':' + [...n.parentElement.children].indexOf(n))); return parts.join('/'); };
     for (const el of document.querySelectorAll('#main *, #confirm-dialog, #confirm-dialog *')) {
+      const details = el.parentElement?.closest('details');
+      if (details && !details.open && el.closest('summary') === null) continue;
       const cs = getComputedStyle(el); const props = {};
       for (let i = 0; i < cs.length; i++) props[cs[i]] = cs.getPropertyValue(cs[i]);
       out[pathOf(el)] = props;
@@ -181,6 +189,13 @@ try {
 ```
 
 `pathOf` usa el id cuando existe, así que en el barrido de T005 el mismo DOM da las mismas claves. En T005 los dos lados son el legacy, y el `<p>` del `style=` pasa a la clase sin cambiar su lugar.
+
+Las mitigaciones de TR-13, como en los barridos de F3 y F9:
+
+- **el puntero fuera:** `page.mouse.move(0, 0)` saca el puntero de encima del botón que abrió la confirmación antes de capturar: `:hover` persiste, y con React el nodo bajo el puntero se conserva;
+- **lo de adentro de un `<details>` cerrado no se compara,** salvo su `<summary>`: un `<details>` cerrado da otro tamaño computado si alguna vez se midió. Método hoy no tiene ninguno, y la guarda queda para que el barrido no dependa de eso.
+
+Las otras trampas de TR-13 están en el plan, T021.
 
 **(c) El control negativo.** Se hace una vez, en una copia descartable: dentro de `method.css`, el `@media print { .data-actions { … } }` va antes de la regla base `.data-actions`. Esperado:
 
@@ -233,6 +248,7 @@ async function capture(browser, origin, root, state) {
   await page.goto(origin + '/#metodo');
   await page.getByRole('heading', { name: 'Tu progreso te pertenece.' }).waitFor();
   if (state.open) { await page.getByRole('button', { name: 'Borrar mi progreso' }).click(); await page.waitForSelector('#confirm-dialog[open]'); }
+  await page.mouse.move(0, 0);
   const result = await page.evaluate(() => {
     const IGNORED = new Set(['data-action', 'data-key', 'data-note']);
     const canon = (node) => {
@@ -271,6 +287,7 @@ try {
 
 - **Después de U4,** se corre otra vez contra la punta final. Las diferencias de `dialog` en los estados con la confirmación abierta se listan en el PR: son las de Q1 (plan, T021). Ninguna otra parte puede cambiar.
 - **Cuando la comparación encuentra algo,** se corrige el componente, salvo que sea una de las diferencias admitidas de FR-035, y se vuelve a correr.
+- **Las notas sembradas no empiezan con un salto de línea:** el analizador de HTML lo descarta después de `<textarea>` y React no (TR-13). Si una diferencia así apareciera, es de las que existen sólo por `innerHTML` y adopta lo de React (ruling C2): se lista en el PR.
 
 ### 3.3 Los bytes del archivo exportado (T021)
 
@@ -308,7 +325,9 @@ docker compose down
 node -e "console.log(require('fs').readFileSync('dist/index.html','utf8').length)"
 ```
 
-Si crece más de 9 000 caracteres respecto de T001, la medida por módulo sale del `metafile` de esbuild:
+Además, `import.meta` en T001 + 1 e `import(` en 0, con el segundo comando de §1.1 (TR-4). El tope es `BOOT_SIZE_LIMIT` de `qa/build-check.ts` (1 500 000).
+
+Si crece más de 9 000 caracteres respecto de T001, o pasa del tope, la medida por módulo sale del `metafile` de esbuild:
 
 ```js
 // node weight-by-module.mjs
@@ -320,7 +339,7 @@ const result = await esbuild.build({
   format: 'esm', jsx: 'automatic', loader: { '.css': 'empty' }, outdir: 'out',
   define: { 'process.env.NODE_ENV': '"production"', __CONTENT_VERSION__: '"x"' },
 });
-const groups = { 'pages/method': 0, 'app/progress-backup': 0, 'app/legacy/register-method': 0, otros: 0 };
+const groups = { 'pages/method': 0, 'app/progress-backup': 0, 'app/legacy/register-method-page': 0, otros: 0 };
 for (const output of Object.values(result.metafile.outputs)) for (const [path, { bytesInOutput }] of Object.entries(output.inputs)) {
   const group = Object.keys(groups).find((name) => path.includes(name)) ?? 'otros';
   groups[group] += bytesInOutput;

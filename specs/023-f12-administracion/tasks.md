@@ -7,12 +7,12 @@ Las ondas, los dueños de archivos y los puntos de sincronización (S1 a S4) est
 - **`[P]`** marca la cabeza de una cola que puede correr a la vez que otras de su onda: archivos disjuntos y ninguna tarea anterior sin cerrar. La cola de cada dueño es secuencial.
 - **`[US#]`** va en cada tarea de código, para trazarla a la spec.
 - **Las pruebas no son opcionales** (constitución, principio II): cada tarea de código abre con su spec en rojo, y cada par rojo y verde es de su dueño.
-- **La integración:** cada unidad es un PR contra `f12a/base`, y F12a llega a `master` en un solo PR, en T026 (research.md, R1).
+- **La integración:** `f12a/base` sale de `f11a/base` con F11a completa, o de `master` si F11a ya llegó; cada unidad es un PR contra `f12a/base`, y F12a llega a `master` en un solo PR, en T026, después del de F11a (research.md, R1).
 
 ## Phase 1: Setup — U0, la base (coordinador K, onda 0)
 
-- [ ] T001 K · La línea base sobre `f12a/base` (`master` con F11a): `html.length`, los checks, Vitest, los avisos de lint, los E2E y las firmas de F11a que difieren, en `specs/023-f12-administracion/research.md` (FR-057 y FR-060; plan 0.1; quickstart §1)
-- [ ] T002 K · `reloadDocument` pasa de `frontend/src/app/account/` a `frontend/src/shared/lib/reload-document.ts`, sin cambio de comportamiento, y la compuerta de U0 (FR-062; plan 0.2)
+- [ ] T001 K · La línea base sobre `f12a/base`: `html.length` y `BOOT_SIZE_LIMIT`, los checks, Vitest, los avisos de lint, los E2E, las ramas B1 a B6 y las firmas reales de F11a, en `specs/023-f12-administracion/research.md` (FR-057 y FR-060; plan 0.1 y «Ramas»; quickstart §1)
+- [ ] T002 K · Verificar que `reloadDocument` ya está en `frontend/src/shared/lib/reload-document.ts` (F11a, T012), sin commit propio, y la compuerta de U0 (FR-062; plan 0.2)
 
 ## Phase 2: Foundational — U1, el modelo, los endpoints, la entrada y el doble (onda 1: M, A y E; onda 1b: K)
 
@@ -20,9 +20,9 @@ Las ondas, los dueños de archivos y los puntos de sincronización (S1 a S4) est
 - [ ] T004 [US3] M · `parse-admin.ts`, `emails.ts`, `user-actions.ts`, `link-texts.ts`, `react-to-failure.ts`, `labels.ts` e `invitation-texts.ts` (FR-002, FR-009, FR-015, FR-016, FR-020 a FR-028 y FR-040; plan 1.2)
 - [ ] T005 [US3] M · Spec en rojo de `frontend/src/pages/admin/api/admin-endpoints.spec.ts` (FR-009 a FR-011, FR-016, FR-019, FR-026, FR-032, FR-033, FR-036 y FR-039; plan 1.3)
 - [ ] T006 [US3] M · `frontend/src/pages/admin/api/admin-endpoints.ts`: los ocho pedidos (FR-009 a FR-011, FR-016, FR-019, FR-026, FR-032, FR-033, FR-036 y FR-039; plan 1.4)
-- [ ] T007 [P] [US5] A · Specs en rojo de `frontend/src/entities/session/model/is-admin.spec.ts` y `frontend/src/pages/account/ui/admin-entry.spec.tsx`, con la interfaz `AdministrationProps` (FR-001 y FR-004; plan 1.5)
-- [ ] T008 [US5] A · `isAdmin`, `AccountMenu.tsx` con el panel y la prop `administration`, «Administrar el taller» en `AccountDialog.tsx` y el índice de `pages/account` (FR-001, FR-004 y FR-062; plan 1.6)
-- [ ] T009 [P] [US5] E · `search` en `qa/e2e/fixtures/api-double.ts`, el fixture `admin` en `qa/e2e/fixtures/index.ts`, `qa/e2e/lib/admin-contract.ts` y `qa/e2e/pages/admin.ts` (FR-059 y FR-063; SC-010; plan 1.7)
+- [ ] T007 [P] [US5] A · Specs en rojo de `frontend/src/entities/session/model/is-admin.spec.ts` y `frontend/src/pages/account/ui/admin-entry.spec.tsx`, con la interfaz `AdministrationProps` si la base no la trae (rama B2) (FR-001 y FR-004; plan 1.5)
+- [ ] T008 [US5] A · `isAdmin`, `AccountMenu.tsx` con el panel y la prop `administration`, «Administrar el taller» en `AccountDialog.tsx` y el índice de `pages/account`, entero o sólo lo que falte según la rama B2 (FR-001, FR-004 y FR-062; plan 1.6)
+- [ ] T009 [P] [US5] E · El fixture `admin` en `qa/e2e/fixtures/index.ts`, `qa/e2e/lib/admin-contract.ts` y `qa/e2e/pages/admin.ts`; `qa/e2e/fixtures/api-double.ts` no cambia, porque `search` ya está (FR-059 y FR-063; SC-010; plan 1.7)
 - [ ] T010 K · Compuerta y PR de U1 contra `f12a/base` (FR-054 y FR-060; plan 1.8)
 
 ## Phase 3: User Stories 1 a 6 — U2, la página (onda 2: D, L y E; onda 3: L e I; onda 4: P; onda 4b: K)
@@ -41,7 +41,7 @@ Las ondas, los dueños de archivos y los puntos de sincronización (S1 a S4) est
 
 ## Phase 4: User Story 5 de punta a punta — U3, los E2E y el cableado (onda 2: E; onda 5: K)
 
-- [ ] T022 [P] [US5] E · Desde T010, los E2E en rojo `admin-entry.spec.ts`, `admin-accounts.spec.ts`, `admin-invitations.spec.ts` y `admin-layout.spec.ts` en `qa/e2e/specs/` (FR-001 a FR-008, FR-010, FR-050 a FR-053, FR-059 y FR-063; SC-001 a SC-006; Review Focus 4 y 5; plan 3.1)
+- [ ] T022 [P] [US5] E · Desde T010, los E2E en rojo `admin-entry.spec.ts`, `admin-accounts.spec.ts`, `admin-invitations.spec.ts` y `admin-layout.spec.ts` en `qa/e2e/specs/`, con las listas blancas `/status of NNN/` (FR-001 a FR-008, FR-010, FR-050 a FR-053, FR-059 y FR-063; SC-001 a SC-006; Review Focus 4 y 5; plan 3.1)
 - [ ] T023 [US5] K · Spec en rojo y después `frontend/src/app/account/AdminDialog.tsx`, `AccountRoot.tsx` con `administration={AdminDialog}` y el import de `admin.css` en `frontend/src/app/main.tsx` (FR-003, FR-004 y FR-062; Review Focus 1; plan 3.2)
 - [ ] T024 K · Compuerta de U3 con la red tres veces seguidas, la revisión en el navegador y el PR (FR-007, FR-054 y FR-060; plan 3.3)
 

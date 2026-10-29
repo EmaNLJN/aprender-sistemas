@@ -2,7 +2,7 @@
 
 **Input:** [spec.md](../spec.md), [plan.md](../plan.md) y [research.md](../research.md).
 
-Las rutas son relativas a `frontend/src/`, salvo que digan otra cosa. Un slice se importa por su `index.ts`, y una tarea que cambia una firma cambia este contrato en el mismo commit. Lo de F11a sale de su contrato (`specs/015-f11-acceso-cuenta/contracts/front-interfaces.md`, en la rama `plan/f11a-acceso`) y se usa tal cual.
+Las rutas son relativas a `frontend/src/`, salvo que digan otra cosa. Un slice se importa por su `index.ts`, y una tarea que cambia una firma cambia este contrato en el mismo commit. Lo de F11a sale de su contrato (`specs/015-f11-acceso-cuenta/contracts/front-interfaces.md`) y, desde la enmienda del 2026-10-28 (noche), de su código implementado (`impl-f11a`, `a7b3c71d`); se usa tal cual.
 
 ## 1. `features/progress-backup`: lo que suma Q1
 
@@ -140,10 +140,10 @@ export function appProgressBackup(): AppProgressBackup; // la crea en la primera
 // frontend/app.js
 export function startApp(progressBackup: AppProgressBackup): void;
 
-// app/legacy/register-method.tsx
+// app/legacy/register-method-page.tsx
 declare global {
   interface Window {
-    TallerMethod: Readonly<{
+    TallerMethodPage: Readonly<{
       mount(host: HTMLElement | null, notify: (message: string) => void, progressBackup: ProgressBackup): void;
       unmount(): void;
     }>;
@@ -164,10 +164,11 @@ declare global {
 - **Lo que hace con la instancia:**
   - la usa para «Exportar mi progreso»;
   - registra el paso del temporizador con `registerSessionReset`;
-  - se la pasa a `window.TallerMethod.mount($('#main'), toast, progressBackup)` en `render()`.
+  - se la pasa a `window.TallerMethodPage.mount($('#main'), toast, progressBackup)` en `render()`.
 
 **El adaptador:**
 
+- se llama `TallerMethodPage`, en `app/legacy/register-method-page.tsx`: la forma `Taller<Página>Page` de F4 (`TallerProjectPage`), que no se confunde con un global de motor o de kit. La spec lo dejaba provisional como `TallerMethod`;
 - se evalúa antes que `app.js`;
 - no toca el almacenamiento, no registra oyentes ni intervalos y no importa `routeStore` ni el armado;
 - al montar, dibuja `MethodPage` dentro de `flushSync`, con `getContent().guide.sources`. Un error de React va a `console.error('No se pudo mostrar Método.', error)`.
@@ -283,3 +284,15 @@ export function version2File(): FilePayload;
   - `GET /api/progress` responde 200 con `{userId, epoch: 1, revision: 0, resetAt: null, contentVersion, serverTime}`;
   - `POST /api/progress/reset` responde 200 `{epoch: 2, revision: 1}`.
 - **Los mensajes:** `MESSAGES` suma `password_confirmation_required`, `epoch_mismatch`, `client_outdated`, `email_unverified` y `content_not_imported`.
+- **Lo que no cambia:** `replyTo`, que busca la ruta antes de mirar el CSRF (una ruta desconocida da 404 y queda en `unhandled`), `ApiCall` (con `search`, de F11a) y `ApiReply`. F8 no suma `query` ni otro `replyTo`.
+- **La versión del progreso por omisión:** `CONTENT_VERSION` de F11a; con A3 en la base, `this.contentVersion`, el campo que suma A3.
+- **Los errores esperados:** `pageIssues.expectIssue(/status of NNN/, …)` con el código de cada respuesta, y `/net::ERR_FAILED/` para un pedido abortado.
+
+## 8. `shared/ui/form`: lo que suma F8 (T018)
+
+```ts
+// shared/ui/form/TextField.tsx y PasswordField.tsx: una prop opcional más, al final de sus props
+readonly readOnly?: boolean; // TextField la pone en el <input>, antes de {...registration}; PasswordField la pasa a TextField
+```
+
+Sin la prop, los dos campos dibujan lo mismo que en F11a: ninguna spec de F11a cambia.

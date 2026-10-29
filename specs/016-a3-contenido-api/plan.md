@@ -18,8 +18,9 @@
 > **Para quien lo implementa.**
 >
 > - **Qué leer.** Leé completas las «Restricciones globales», las «Reglas para todos los agentes», el contrato y la sección de tu tarea. `tasks.md` tiene una línea por tarea (T001 a T016) y remite acá.
-> - **La base.** A3 se implementa después de que F11a llegue a `master`. Las unidades U1 a U3 son PR contra la rama de integración `a3/base`, que sale de ese `master`, y A3 llega a `master` en un solo PR (research.md, R16).
-> - **El código ya corrió.** El código de producción y las specs de Vitest de este plan se probaron en una copia descartable: 115 pruebas en verde, y `tsc`, ESLint y Prettier limpios, con lo de F11a reemplazado por sus firmas (research.md, «Cómo se verificó»). Los checks de `qa/`, el build, los E2E y Docker no corrieron.
+> - **La base.** A3 se integra sobre F11a completa: la rama de integración `a3/base` sale de `f11a/base` (las unidades de F11a van como PR apilados y F11a llega a `master` en un solo PR, después del aviso de privacidad y de las invitaciones), o de `master` si F11a ya llegó. Las unidades U1 a U3 son PR contra `a3/base`, y A3 llega a `master` en un solo PR, después de F11a (research.md, R16 y «Enmienda»).
+> - **El código ya corrió, salvo la enmienda.** El código de producción y las specs de Vitest de este plan se probaron en una copia descartable: 115 pruebas en verde, y `tsc`, ESLint y Prettier limpios, con lo de F11a reemplazado por sus firmas (research.md, «Cómo se verificó»). Los checks de `qa/`, el build, los E2E y Docker no corrieron. **Los fragmentos que cambió la enmienda del 2026-10-28 no corrieron:** la etapa de sesión con el token guardado (`readAgain`), las specs que recuperan los casos de F11a, el doble con `search` y las listas blancas angostas (research.md, «Enmienda»).
+> - **La enmienda del 2026-10-28.** El plan se escribió contra el texto del plan de F11a. Las diferencias con el código que F11a dejó (`impl-f11a`, `a7b3c71d`) están resueltas acá y listadas en research.md, «Enmienda: lo que F11a fijó al implementarse».
 
 ## Summary
 
@@ -29,10 +30,11 @@ A3 cambia la fuente del contenido y le suma la copia. El enfoque:
   - **U1, los módulos nuevos sin cablear:** la fuente de la API, la copia y su almacén, el presupuesto, el lector de la sesión y el aviso, con sus specs.
   - **U2, el corte (FR-031).** Un solo PR cablea la fuente nueva y retira el archivo estático. También adapta los checks, los E2E de A2 y los de F11a, suma los E2E de A3 y cambia la documentación.
   - **U3, contra el stack:** la imagen web, la vista previa, los 40 arranques de un aula y el PR a `master`.
-- **La etapa de sesión lee y la compuerta decide** (R1). Toda falla del intento, también la de la sesión, termina en la vista de error de A2 o en la copia. Es la decisión D1 del informe.
+- **La etapa de sesión lee y la compuerta decide** (R1). Toda falla del intento, también la de la sesión, termina en la vista de error de A2 o en la copia. Es la decisión D1-(a) del informe, aceptada con el merge del plan (#71).
+- **La etapa guarda el token del enlace** (R1, «Enmienda»). Lo toma una sola vez al empezar y lo pasa a cada lectura siguiente, también a la de «Reintentar», hasta que una sesión responde (FR-005 de F11).
 - **Un fetch propio para las porciones** (R3): el cliente de F11a no expone los encabezados de la respuesta y trata el 304 como una falla. El cliente sigue para la sesión y el ingreso.
 - **La copia en IndexedDB:** el adaptador nunca cuelga ni rechaza, y se cumple el invariante «la copia es lo último que este navegador publicó, o nada» (R4 a R7).
-- **Ninguna dependencia nueva** (R12). IndexedDB se prueba con un doble chico en Vitest y con la base real en Chromium. `fake-indexeddb` queda como decisión del usuario (D2).
+- **Ninguna dependencia nueva** (R12). IndexedDB se prueba con un doble chico en Vitest y con la base real en Chromium. Es la decisión D2-(a), aceptada con el merge del plan (#71): `fake-indexeddb` no entra.
 
 ## Technical Context
 
@@ -47,7 +49,7 @@ A3 cambia la fuente del contenido y le suma la copia. El enfoque:
 
 **Testing**:
 
-- **Vitest, proyecto `node`.** Las specs nuevas no necesitan DOM: el aviso y la vista de la sesión se prueban con `document` simulado con `vi.stubGlobal`.
+- **Vitest, proyecto `node`.** Las specs nuevas no necesitan DOM: el aviso y la vista de la sesión se prueban con `document` simulado con `vi.stubGlobal`. Los proyectos de `master` (#67, `frontend/vitest.config.ts`) son `node` (`*.spec.ts`) y `dom` (`*.spec.tsx`, con jsdom y el setup `frontend/src/vitest.setup.ts`); A3 no suma ninguna `.spec.tsx`.
 - **Los checks de `qa/`**, con un servidor simulado que sirve la sesión y los 17 recursos con los bytes del generador.
 - **Playwright,** con el doble de la API de F11a extendido.
 
@@ -75,7 +77,8 @@ Valen para toda tarea. Los valores están copiados de la spec, del contrato de F
 - **La red de pruebas:**
   - **los 106 E2E de F1 no se editan** (FR-038). Sólo cambia el doble de la API (`qa/e2e/fixtures/api-double.ts`) y la ayuda `qa/e2e/lib/content-requests.ts`;
   - **los 17 E2E de A2** (`qa/e2e/specs/content-gate.spec.ts`) se adaptan en un commit propio, con la tabla de «Compatibilidad» (FR-039);
-  - **los E2E de F11a** se adaptan en otro commit propio: dos de `session-stage.spec.ts`, por D1, y la cuenta de pedidos de uno de `sign-in.spec.ts`, porque el contenido pasa de un archivo a 17 recursos;
+  - **los E2E de F11a** se adaptan en otro commit propio: dos de `session-stage.spec.ts`, por D1, y la cuenta de pedidos de uno de `sign-in.spec.ts`, porque el contenido pasa de un archivo a 17 recursos. Las ediciones parten de la versión de esos archivos en la base, no del texto del plan de F11a: T001 las vuelve a derivar (`session-stage.spec.ts` cambió con el arreglo `f5b62ae6` de F11a);
+  - **la cuenta de la base:** los E2E, los checks y las pruebas de Vitest que se esperan salen de T001, nunca de un número escrito en este plan, porque cada port que entra antes los cambia. Los 106 de F1 y los 17 de A2 son conjuntos con nombre, no cuentas de la base;
   - **`load-order-check` y `main.tsx`** no cambian (la tabla de etapas tampoco).
 - **Los topes:**
   - 20 000 ms por intento, con la sesión, las porciones, las esperas de `Retry-After` y las rondas, sin el tiempo de «pedir el ingreso» (FR-010);
@@ -91,7 +94,7 @@ Valen para toda tarea. Los valores están copiados de la spec, del contrato de F
   - **`access` (FR-028):** «Tu cuenta no puede ver el contenido del taller. Si creés que es un error, consultá con quien administra el taller.»;
   - **el resto:** el título, el texto general, «Reintentar» y «Cargando el contenido del taller…» siguen como en A2.
 - **El estilo:** ningún `style=`, `style={…}`, `setAttribute('style', …)` ni `.cssText`. Las reglas nuevas van al final de `frontend/styles.css`.
-- **El peso:** `dist/index.html` bajo 1 250 000 caracteres (`qa/build-check.ts`). A3 estima unos +6 700 sobre la línea base de T001, y la condición de corte está en T014.
+- **El peso:** `dist/index.html` bajo `BOOT_SIZE_LIMIT`, 1 500 000 caracteres (`qa/build-check.ts` de `master`, #76). T001 anota el tope que lee en la base. A3 estima unos +6 700 sobre la línea base de T001, y la condición de corte está en T014.
 - **La complejidad:** ninguna función nueva de más de 10. Los avisos de `npm run lint` no suben respecto de T001.
 - **La accesibilidad:**
   - el aviso es una región `status` que no toma el foco ni se anima;
@@ -99,6 +102,12 @@ Valen para toda tarea. Los valores están copiados de la spec, del contrato de F
   - el aviso no desborda a 390 px (FR-026);
   - «Reintentar» conserva el foco y `Enter` (FR-027).
 - **El backend:** no cambia. Los contratos de C2 y C3a se consumen tal cual.
+- **El token del enlace (FR-005 de F11):** la etapa de sesión llama a `takeAccessToken()` una sola vez, al empezar, y guarda el token. Lo pasa a cada lectura siguiente de la sesión (`readAgain`, la de cada ronda y la de «Reintentar») hasta que una sesión responde; recién ahí lo entrega a «pedir el ingreso» y lo olvida. `take()` de F11a no cambia (`impl-f11a`, `frontend/src/app/boot/access-tokens.ts:74-78`).
+- **El doble de la API, en su forma canónica de F11a** (`impl-f11a`, `qa/e2e/fixtures/api-double.ts`):
+  - la query de un pedido es `ApiCall.search` (`:11` y `:41`). A3 no suma `query` ni otra propiedad con el mismo dato;
+  - `replyTo` busca la ruta antes de mirar el CSRF (`:127-139`): una ruta desconocida da 404 y queda en `unhandled`, que reporta `assertAllHandled()`. A3 no trae otro `replyTo`: suma la búsqueda con la query dentro de ese orden;
+  - A3 suma sólo `ifNoneMatch` en `ApiCall`, `abort` en `ApiReply`, el campo `contentVersion` y las 17 porciones.
+- **La lista blanca de los E2E de error:** `pageIssues.expectIssue(/status of NNN/, '…')`, con el código exacto de cada caso, nunca `/Failed to load resource/`. Un pedido abortado con `route.abort()` no tiene código: lleva `/net::ERR_FAILED/`, como `qa/e2e/specs/cycle.spec.ts:71` de `master`.
 
 ## Constitution Check
 
@@ -127,6 +136,9 @@ Valen para toda tarea. Los valores están copiados de la spec, del contrato de F
 | **C1:** la etapa de sesión es de F11a y A3 la extiende | `session-gate.ts` y `account-stages.ts` cambian; `main.tsx` y `load-order-check` no | T009 y T010 |
 | **El tope de 3 rondas** (propuesta de la spec) | `MAX_ROUNDS = 3`. Sin el stack no se midió un import, y T015 anota las rondas contra el stack | T006, T007 y T015 |
 | **La plantilla del harness** (propuesta de la spec) | No se pide al arrancar, y la copia admite una porción de más | T002 y T003 |
+| **D1-(a) y D2-(a) del informe** (aceptadas con el merge del plan, #71; clarify, «Decisiones del 2026-10-28 (noche)») | La falla de la sesión sin copia muestra la vista de error de A2, y la de F11a sale; IndexedDB se prueba con un doble propio, sin `fake-indexeddb` | T009, T010 y T012; T006 |
+| **El tope del HTML** (#76) | `BOOT_SIZE_LIMIT` = 1 500 000 | T001 y T014 |
+| **El doble de la API y las listas blancas** (clarify, «noche») | La forma canónica de F11a, con la ruta antes que el CSRF y `ApiCall.search`; `/status of NNN/`, nunca `/Failed to load resource/` | T012 |
 
 ## Project Structure
 
@@ -173,7 +185,7 @@ frontend/src/
 │       ├── attempt-budget.ts (+ .spec.ts)       # nuevo (B): el presupuesto del intento
 │       ├── session-reader.ts (+ .spec.ts)       # nuevo (B): la sesión con el ingreso, el 429 y el borrado de la copia
 │       ├── copy-notice.ts (+ .spec.ts)          # nuevo (B): el aviso sin servidor
-│       ├── session-gate.ts (+ .spec.ts)         # cambia (G): usa el lector y el presupuesto, y deja takeRead()
+│       ├── session-gate.ts (+ .spec.ts)         # cambia (G): usa el lector y el presupuesto, guarda el token, y deja takeRead() y readAgain()
 │       ├── session-view.ts (+ .spec.ts)         # cambia (G): sólo la espera
 │       ├── content-gate.ts (+ .spec.ts)         # cambia (G): la lectura, el presupuesto y onPublished
 │       ├── gate-view.ts (+ .spec.ts)            # cambia (G): los textos de version y access
@@ -221,11 +233,13 @@ Lo que el revisor mira primero:
   - si borrar falla, publica igual.
 - **La sesión manda:**
   - con `user: null` no se piden porciones y no se usa la copia: se borra y se espera el ingreso;
-  - con un 403 y con un token en la URL nunca se usa la copia sin servidor.
+  - con un 403 y con un token en la URL nunca se usa la copia sin servidor;
+  - el token del enlace sobrevive a una sesión que no responde: la etapa lo guarda y lo pasa a cada lectura hasta que una sesión responde, y entonces lo entrega a «pedir el ingreso» una sola vez (FR-005 de F11). Lo fijan `session-gate.spec.ts`, «keeps the token of the link through an unreachable read and hands it to the next read» y «spends the token once a session answered, even if a later read fails» (T009), y `content-api.spec.ts`, «keeps the token of the link through «Reintentar» and opens the sign-up with it» (T012).
 - **Los temporizadores:** el presupuesto, la espera de carga y los `Retry-After` no hacen nada después de resolver, aunque `clearTimeout` no haga nada. El ingreso no corre bajo ningún tope.
 - **La cuenta después de recuperar:** con el servidor caído al arrancar, la etapa de sesión no llama a `onReady`. La lectura de la compuerta que llega lista monta la raíz de la cuenta, así que después de «Reintentar» están «Tu cuenta» y «Salir».
 - **Los pedidos:** como mucho 18 por ronda, sin CSRF, con el `ETag` guardado tal como llegó.
 - **La red sin editar:** el diff de `qa/e2e/specs/` toca sólo `content-gate.spec.ts`, en su commit; `session-stage.spec.ts` y `sign-in.spec.ts`, juntos en otro; y el archivo nuevo.
+- **El doble de F11a:** el diff de `qa/e2e/fixtures/api-double.ts` conserva el orden de `replyTo` (la ruta antes que el CSRF) y `ApiCall.search`, y no suma `query`. Ningún E2E nuevo usa `/Failed to load resource/`.
 - **Los oráculos:** `dump-globals` da los mismos bytes, y `dist-content-check` compara los globals y las 17 huellas.
 - **El peso,** contra el presupuesto que queda (T014).
 
@@ -276,6 +290,7 @@ Los dueños tienen archivos disjuntos («Project Structure»). Cada uno trabaja 
   - las skills `tdd`, `clean-code`, `codebase-design` y `vitest` y, si escribís E2E, `playwright-best-practices`.
 - **TDD, siempre.**
   - Cada módulo nuevo empieza con su firma lanzando `throw new Error('not implemented')`, para que su spec falle por comportamiento y no por un import.
+  - **Los stubs del rojo son `const` tipados,** porque el prefijo `_` no silencia `no-unused-vars` en este repositorio: `export const createAttemptBudget: (options: AttemptBudgetOptions) => AttemptBudget = () => { throw new Error('not implemented'); };`. Las interfaces y los tipos del stub se declaran completos. La implementación en verde reemplaza el `const` por la `function` del plan.
   - La spec en rojo y su implementación van en commits separados: el commit rojo no pasa `npm test`, y el PR entero sí.
   - Si una prueba de la base falla, el error está en el código nuevo. Sólo cambian los valores esperados que nombra la tabla de «Compatibilidad».
 - **Los valores esperados** salen de la tabla de C2 (spec, «Key Entities»), de `build/curriculum.json` y de su meta, o de la spec. Nunca del módulo que se prueba.
@@ -283,6 +298,11 @@ Los dueños tienen archivos disjuntos («Project Structure»). Cada uno trabaja 
 - **Las importaciones:**
   - un slice se importa por su `index.ts`, y dentro de tu slice, por ruta directa;
   - las ayudas de specs (`fake-*.ts`) se importan por ruta directa, sólo desde specs.
+- **Los E2E:**
+  - el doble de la API es el de F11a (`qa/e2e/fixtures/api-double.ts`), con la ruta antes que el CSRF y `ApiCall.search`; A3 lo extiende como dice T012 y no trae otro `replyTo` ni otra propiedad para la query;
+  - un error esperado de la consola se declara con su código: `pageIssues.expectIssue(/status of 502/, '…')`. Un pedido abortado lleva `/net::ERR_FAILED/`. Nunca `/Failed to load resource/`;
+  - las recargas se detectan con `qa/e2e/lib/document-marker.ts` (`markDocument`, `documentWasReloaded` y `observeReload`), sin marcas propias en `window`;
+  - si una E2E recarga después de un cambio de estado que escribe nuqs (Sistemas, y la Biblioteca si F3 entró), espera la URL con `page.waitForURL` antes de recargar (clarify, «D1-bis»). Ninguna de las de este plan lo hace.
 - **Los comandos,** desde la raíz de tu worktree:
   - `npm ci --offline`;
   - `npm run test:unit -- <ruta>` y `node qa/<check>.ts` (antes de un check suelto, `npm run curriculum`);
@@ -311,13 +331,15 @@ Los dueños tienen archivos disjuntos («Project Structure»). Cada uno trabaja 
 
 ### Tarea 0.1 · La línea base y el contrato de F11a (T001)
 
-- **Quién y cuándo:** K, sobre `a3/base` recién creada (`master` con F11a) y antes de cualquier cambio.
+- **Quién y cuándo:** K, sobre `a3/base` recién creada (de `f11a/base` con F11a completa, T001 a T035, o de `master` si F11a ya llegó; TR-12) y antes de cualquier cambio. Si falta una pieza de F11a que este plan cambia (`features/sign-in/ui/PrivacyReacceptance.tsx`, `pages/account/ui/SignOutSection.tsx` o `qa/e2e/specs/sign-in.spec.ts`), A3 no empieza.
 - **Entrega:** un commit de documentación que suma a research.md la sección «Línea base de la implementación». Lleva:
   - el hash de la base y la fecha;
   - `html.length` de `dist/index.html`;
   - la cantidad de checks de `npm test` y de pruebas de Vitest;
   - los avisos de `npm run lint`;
-  - la cantidad de E2E: los 123 de F1 y A2 más los de F11a;
+  - la cantidad de E2E de la base, que pasa a ser la esperada (F1, A2, F11a y los ports que ya entraron; ningún número escrito en este plan la reemplaza);
+  - el tope `BOOT_SIZE_LIMIT` que lee en `qa/build-check.ts` (1 500 000 desde #76);
+  - las filas «está» o «falta» del paso 5;
   - el sha256 del stdout de `node tools/content/dump-globals.ts .`.
 - **Pasos:**
   1. Correr, todo en verde:
@@ -330,16 +352,28 @@ Los dueños tienen archivos disjuntos («Project Structure»). Cada uno trabaja 
      - `node -e "console.log(require('fs').readFileSync('dist/index.html','utf8').length)"`;
      - `npm run lint 2>&1 | grep -c warning`;
      - `node tools/content/dump-globals.ts . | sha256sum`.
-  3. **Contrastar F11a con su contrato** (Q1). Estas firmas tienen que estar en `master` tal como las usa este plan:
-     - `createSessionGate` y `SessionGateOptions` (con `timeoutMs`), `createSessionView` y `SessionView`, y `sessionStage` y `tokenStage` de `app/boot/account-stages.ts`;
+  3. **Contrastar F11a con su contrato** (Q1). Estas firmas tienen que estar en la base tal como las usa este plan. Entre paréntesis, dónde estaban en `impl-f11a` (`a7b3c71d`, T001 a T021):
+     - `createSessionGate` y `SessionGateOptions` (con `timeoutMs`; `frontend/src/app/boot/session-gate.ts:6-15` y `:47`), con la etapa que toma el token una vez al empezar y lo guarda hasta que una sesión responde (`:52` y `:67-68`);
+     - `createSessionView`, `SessionView` y `SESSION_LOADING_MARKUP`, exportado con ese nombre y este texto: `'<section class="empty-state" data-session-gate="loading"><p role="status">Conectando con el taller…</p></section>'` (`session-view.ts:12-16` y `:21-22`). A3 lo importa tal como lo exporta F11a y no lo redefine con otro texto;
+     - `sessionStage` y `tokenStage` de `app/boot/account-stages.ts` (`:12` y `:14`), y `take()` y `hadToken` de `TokenStage` (`access-tokens.ts:15-18` y `:74-78`): `take()` devuelve el token una sola vez, y A3 no lo cambia;
      - `fetchSession`, `sessionStore`, `SessionOutcome` y `SessionSnapshot` de `entities/session`;
-     - `requestSignIn`, `RequestSignIn`, `AccessToken`, `signOut` y `SignOutDependencies` de `features/sign-in`;
-     - `ApiDouble`, `ApiCall`, `ApiReply` y `ApiRoute` de `qa/e2e/fixtures/api-double.ts`;
-     - `qa/lib/content-server.ts` con `sessionRequests` y `order`;
-     - el escenario «the session is asked once, before the content» de `boot-check`.
+     - `requestSignIn`, `RequestSignIn` (`(options?: SignInOptions) => Promise<PublishedUser>`, `features/sign-in/model/access-request.ts`), `AccessToken`, `signOut` y `SignOutDependencies` (`{ client, userId }`, `model/sign-out.ts:3-6`) de `features/sign-in`;
+     - `ApiDouble`, `ApiCall` (con `search`, `:8-15`), `ApiReply`, `ApiRoute`, `on`, `reply`, `callsTo` y `assertAllHandled` de `qa/e2e/fixtures/api-double.ts`, con `replyTo` buscando la ruta antes de mirar el CSRF (`:127-139`);
+     - `qa/lib/content-server.ts` con `sessionRequests` y `order` (`:17-22`), que responde la sesión con un `Response` de Node (`:26-37`);
+     - el escenario «the session is asked once, before the content» de `boot-check`;
+     - los tres casos de `frontend/src/app/boot/session-gate.spec.ts` que A3 conserva en T009: «leaves no timer acting after a fast answer, even where clearTimeout cancels nothing» (`:101-108`), «says it is connecting after 400 ms, and clears it when the session arrives» (`:110-120`) y el `storeSession` antes del ingreso de «asks for the access when the account has not accepted the current notice» (`:211-223`), más «keeps the token of the link through a failure and a retry» (`:192-209`), que T009 reemplaza por sus dos casos del token.
 
      Si alguna difiere, se anota y el plan se corrige antes de U1.
-- **Compuerta:** los pasos 1 a 3, con los valores anotados.
+  4. **Volver a derivar las adaptaciones de los E2E de F11a** (A3-7). T012, paso 7, parte de `session-stage.spec.ts` tal como quedó en `impl-f11a` (`a7b3c71d`, con el arreglo `f5b62ae6`: el 502 no recarga y el error se limpia, y el 429 con un plazo fijo). K compara ese texto con el de la base y, si cambió, rehace el paso 7 sobre lo que haya, con las mismas intenciones: la falla en la vista de A2, la marca del documento, la cuenta de las 17 porciones y las listas blancas angostas. `sign-in.spec.ts` lo escribe T024 de F11a, después de `a7b3c71d`: K busca en la base el caso «goes on to the requested view without reloading, with the CSRF token and without X-Taller-User» y su `expect(contentRequests).toHaveLength(1);`, y anota la línea exacta que cambia.
+  5. **Las ramas: lo que cambia si F8 entró antes.** F8 toca cuatro archivos que A3 también cambia. Cada fila se anota como «está» o «falta», y T011 y T012 la siguen:
+
+     | Pieza de F8 | Detección | Si está |
+     | --- | --- | --- |
+     | Las rutas de la API en `qa/lib/content-server.ts` (`apiRequests`, `PROGRESS_API`, `method?` en el `init`) | `git grep -n "PROGRESS_API" -- qa/lib/content-server.ts` | La reescritura de T011 las conserva: `apiRequests` en `ContentServer`, `method?: string` en `FetchInit` y la consulta a `PROGRESS_API` al principio de `fetch`, con el `respond(status, body, headers)` de A3 |
+     | `cookie: ''` en el `document` de `qa/lib/boot-harness.ts` | `git grep -n "cookie: ''" -- qa/lib/boot-harness.ts` | T011 cambia los temporizadores sin tocar esa línea |
+     | El bloque `define` de `bundleApp` reescrito por F8 | `git grep -n "__CONTENT_VERSION__" -- qa/lib/sources.ts` | T011 saca la línea de `__CONTENT_VERSION__` del bloque que haya |
+     | `GET /api/progress` en `installDefaults` del doble | `git grep -n "'GET /api/progress'" -- qa/e2e/fixtures/api-double.ts` | T012 cambia su `contentVersion: CONTENT_VERSION` por `contentVersion: this.contentVersion`, para que el progreso por omisión no se desalinee de la sesión cuando una prueba la cambia |
+- **Compuerta:** los pasos 1 a 5, con los valores anotados.
 - **Vuelta atrás:** revertir el commit; nada depende de él.
 
 ### 0.2 · La compuerta de cada unidad
@@ -351,6 +385,7 @@ K la corre antes de integrar cada unidad en `a3/base` (T008, T014 y T016). Cada 
 3. **Sin dependencias:** `git diff a3/base -- package.json package-lock.json` no imprime nada (FR-034).
 4. **Sin estilos en línea:** `git diff a3/base -- frontend | grep -E '^\+.*(style=|style=\{|setAttribute\(.style.|\.cssText)'` no imprime nada.
 5. **La complejidad:** `npm run lint` da 0 errores y, como mucho, los avisos de T001.
+   - **Las listas blancas angostas y el doble de F11a:** `git diff a3/base -- qa/e2e | grep -E '^\+.*(Failed to load resource|query: url\.search|call\.query)'` no imprime nada.
 6. **El peso:** `html.length`, anotado en la descripción del PR con la diferencia contra T001.
 7. **El PR,** contra `a3/base`, con título y descripción en inglés. La descripción cuenta:
    - el contexto y qué faltaba;
@@ -453,8 +488,8 @@ K la corre antes de integrar cada unidad en `a3/base` (T008, T014 y T016). Cada 
    };
    ```
 
-3. **Los stubs.**
-   - `wait.ts` exporta `wait(ms, signal)`.
+3. **Los stubs,** como `const` tipados («Reglas para todos los agentes»).
+   - `wait.ts` exporta `export const wait: (ms: number, signal: AbortSignal) => Promise<void> = () => { throw new Error('not implemented'); };`.
    - `content-copy.ts` exporta, con los tipos del contrato:
      - `COPY_FORMAT = 1`;
      - las interfaces `CopiedPortion`, `ContentCopy` y `ContentCopyStore`;
@@ -778,7 +813,7 @@ K la corre antes de integrar cada unidad en `a3/base` (T008, T014 y T016). Cada 
 
 **Produce:** lo que el contrato dice de `app/boot` para el presupuesto, el lector y el aviso, y `formatLongDate`.
 
-1. **Los stubs,** con las firmas del contrato, que lanzan `not implemented`.
+1. **Los stubs,** con las firmas del contrato, como `const` tipados que lanzan `not implemented` («Reglas para todos los agentes»). Por ejemplo, `export const createSessionReader: (options: SessionReaderOptions) => ReadSession = () => { throw new Error('not implemented'); };`, con `SessionReaderOptions`, `SessionReadRequest` y `ReadSession` ya declarados.
 2. **`frontend/src/app/boot/attempt-budget.spec.ts`:**
 
    ```ts
@@ -1324,8 +1359,8 @@ K la corre antes de integrar cada unidad en `a3/base` (T008, T014 y T016). Cada 
    - **`api-content-source.ts`** exporta:
      - los tipos `SessionRead`, `ContentResponse`, `ContentFetch`, `ApiContentSourceOptions` y `ApiContentSource`;
      - `MAX_ROUNDS = 3`;
-     - `createApiContentSource`, cuyo `read` lanza `not implemented`.
-   - **`indexeddb-copy-store.ts`** exporta las cuatro constantes del contrato y `createIndexedDbCopyStore`, que lanza `not implemented`.
+     - `createApiContentSource`, cuyo `read` lanza `not implemented`: `export const createApiContentSource: (options: ApiContentSourceOptions) => ApiContentSource = () => ({ read: () => { throw new Error('not implemented'); } });`.
+   - **`indexeddb-copy-store.ts`** exporta las cuatro constantes del contrato y `createIndexedDbCopyStore`, un `const` tipado que lanza `not implemented`.
    - **`content-copies.ts`** queda entero, como en T007.
 2. **`fake-content-api.ts`.** Devuelve `Response` reales de Node; un 304 va sin cuerpo:
 
@@ -2853,7 +2888,7 @@ La compuerta de 0.2, con estos puntos propios:
    });
    ```
 
-3. **`session-gate.spec.ts`,** reescrita según la tabla de «Compatibilidad» (D1). Los casos de F11a que siguen valiendo conservan su intención. Los de la falla y el reintento pasan a «deja lo que leyó»:
+3. **`session-gate.spec.ts`,** reescrita según la tabla de «Compatibilidad» (D1). Los casos de F11a que siguen valiendo conservan su intención. Los de la falla y el reintento pasan a «deja lo que leyó». Se conservan tal cual tres casos que la revisión de F11a reforzó (`ff510eed`; `impl-f11a`, `session-gate.spec.ts:101-120` y `:211-223`): ningún temporizador actúa después de resolver aunque `clearTimeout` no cancele nada, la espera se limpia cuando la sesión llega (`view.clear`) y `storeSession` corre antes de «pedir el ingreso». El de F11a «keeps the token of the link through a failure and a retry» (`:192-209`) pasa a dos casos del token, porque desde A3 el reintento es de la compuerta y llega a la etapa por `readAgain`:
 
    ```ts
    import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -2933,6 +2968,7 @@ La compuerta de 0.2, con estos puntos propios:
      });
 
      afterEach(() => {
+       vi.restoreAllMocks();
        vi.useRealTimers();
      });
 
@@ -2947,20 +2983,24 @@ La compuerta de 0.2, con estos puntos propios:
        expect(stage.takeRead()).toBeNull();
      });
 
-     it('leaves no timer acting after a fast answer', async () => {
+     it('leaves no timer acting after a fast answer, even where clearTimeout cancels nothing', async () => {
+       vi.spyOn(globalThis, 'clearTimeout').mockImplementation(() => undefined);
        const { view, finished } = setup([sessionOf(ANA)]);
        await finished;
        await vi.advanceTimersByTimeAsync(30_000);
        expect(view.showLoading).not.toHaveBeenCalled();
      });
 
-     it('says it is connecting after 400 ms', async () => {
+     it('says it is connecting after 400 ms, and clears it when the session arrives', async () => {
        const pending = deferred<SessionOutcome>();
-       const { view } = setup([pending.promise]);
+       const { view, finished } = setup([pending.promise]);
        await vi.advanceTimersByTimeAsync(399);
        expect(view.showLoading).not.toHaveBeenCalled();
        await vi.advanceTimersByTimeAsync(1);
        expect(view.showLoading).toHaveBeenCalledOnce();
+       pending.resolve(sessionOf(ANA));
+       await finished;
+       expect(view.clear).toHaveBeenCalledOnce();
      });
 
      it('without an account forgets the copy, asks for the sign-in as a page and asks for the session once more', async () => {
@@ -3015,12 +3055,72 @@ La compuerta de 0.2, con estos puntos propios:
        expect(options.requestSignIn).toHaveBeenCalledOnce();
      });
 
+     it('keeps the token of the link through an unreachable read and hands it to the next read', async () => {
+       const takeAccessToken = vi
+         .fn<() => AccessToken | null>()
+         .mockReturnValueOnce(INVITATION)
+         .mockReturnValue(null);
+       const { options, stage, finished } = setup(
+         [{ kind: 'unreachable' }, { kind: 'unreachable' }, sessionOf(ANA)],
+         { takeAccessToken },
+       );
+       await finished;
+       expect(stage.takeRead()).toEqual({ kind: 'unreachable', failure: 'network' });
+       expect(await stage.readAgain({ signal: new AbortController().signal })).toEqual({
+         kind: 'unreachable',
+         failure: 'network',
+       });
+       void stage.readAgain({ signal: new AbortController().signal });
+       await flush();
+       expect(options.requestSignIn).toHaveBeenCalledOnce();
+       expect(options.requestSignIn).toHaveBeenCalledWith({
+         presentation: 'page',
+         reason: 'boot',
+         token: INVITATION,
+       });
+       expect(takeAccessToken).toHaveBeenCalledOnce();
+     });
+
+     it('spends the token once a session answered, even if a later read fails', async () => {
+       const takeAccessToken = vi
+         .fn<() => AccessToken | null>()
+         .mockReturnValueOnce(INVITATION)
+         .mockReturnValue(null);
+       const { options, signIn, stage, finished } = setup(
+         [sessionOf(ANA), { kind: 'unreachable' }, sessionOf(ANA)],
+         { takeAccessToken },
+       );
+       await flush();
+       signIn.resolve(ANA);
+       await finished;
+       expect(stage.takeRead()).toEqual({ kind: 'unreachable', failure: 'network' });
+       expect(await stage.readAgain({ signal: new AbortController().signal })).toEqual({
+         kind: 'ready',
+         contentVersion: 'v1',
+       });
+       expect(options.requestSignIn).toHaveBeenCalledOnce();
+     });
+
+     it('reads again without the wait of the stage and leaves its view alone', async () => {
+       const pending = deferred<SessionOutcome>();
+       const { view, stage, finished } = setup([{ kind: 'unreachable' }, pending.promise]);
+       await finished;
+       const again = stage.readAgain({ signal: new AbortController().signal });
+       await vi.advanceTimersByTimeAsync(1_000);
+       pending.resolve(sessionOf(ANA));
+       expect(await again).toEqual({ kind: 'ready', contentVersion: 'v1' });
+       expect(view.showLoading).not.toHaveBeenCalled();
+       expect(view.clear).toHaveBeenCalledOnce();
+     });
+
      it('asks for the access when the account has not accepted the current notice', async () => {
+       const pendingNotice = snapshotOf({ ...ANA, privacyAccepted: false });
        const { options, signIn, finished } = setup([
-         sessionOf({ ...ANA, privacyAccepted: false }),
+         { kind: 'session', snapshot: pendingNotice },
          sessionOf(ANA),
        ]);
        await flush();
+       expect(options.storeSession).toHaveBeenCalledWith(pendingNotice);
        expect(options.requestSignIn).toHaveBeenCalledOnce();
        signIn.resolve(ANA);
        await finished;
@@ -3131,7 +3231,7 @@ La compuerta de 0.2, con estos puntos propios:
    ```
 
    El import de Vitest de la spec suma `vi`.
-6. **Correr** `npm run test:unit -- frontend/src/app/boot frontend/src/features/sign-in/model`. Las adaptadas fallan por las firmas y los comportamientos nuevos (`budget`, `onPublished`, `takeRead` y `forgetContentCopy`), y `typecheck` falla por lo mismo.
+6. **Correr** `npm run test:unit -- frontend/src/app/boot frontend/src/features/sign-in/model`. Las adaptadas fallan por las firmas y los comportamientos nuevos (`budget`, `onPublished`, `takeRead`, `readAgain` y `forgetContentCopy`), y `typecheck` falla por lo mismo. Los tres casos que vienen de F11a pueden pasar en rojo contra la etapa de F11a; con la de A3 fijan lo mismo.
 7. **Commit:** `test(front): specs del corte de A3 en las etapas, la compuerta y «Salir», en rojo`.
 
 ### Tarea 2.2 · El corte en el front (T010, G)
@@ -3398,7 +3498,7 @@ La compuerta de 0.2, con estos puntos propios:
    }
    ```
 
-6. **`session-view.ts`.** Salen la falla, su marcado, «Reintentar» y la espera del 429 (D1):
+6. **`session-view.ts`.** Salen la falla, su marcado (`sessionFailureMarkup`), «Reintentar» y la espera del 429 (D1). `SESSION_LOADING_MARKUP` queda como lo exporta F11a, con el mismo nombre y el mismo texto (`impl-f11a`, `session-view.ts:21-22`): el bloque de abajo lo repite sólo para que el archivo quede entero. Con la falla también sale la devolución del foco de `showLoading` (`:54-56`), que servía para el «Reintentar» de la etapa:
 
    ```ts
    export interface SessionView {
@@ -3425,7 +3525,7 @@ La compuerta de 0.2, con estos puntos propios:
    }
    ```
 
-7. **`session-gate.ts`.** El comentario es la referencia puntual de F11a:
+7. **`session-gate.ts`.** El comentario es la referencia puntual de F11a. La etapa toma el token una sola vez al empezar y lo guarda; cada lectura lo lleva hasta que una sesión responde, y el `requestSignIn` que le da al lector lo olvida en el momento en que lo entrega, como hace F11a (`impl-f11a`, `session-gate.ts:52` y `:67-68`). `readAgain` es la lectura de cada ronda y de cada «Reintentar» de la compuerta: el mismo lector, sin la espera de la etapa:
 
    ```ts
    import type { SessionOutcome, SessionSnapshot } from '../../entities/session';
@@ -3450,6 +3550,7 @@ La compuerta de 0.2, con estos puntos propios:
 
    export interface SessionStage extends BootStage {
      takeRead(): SessionRead | null;
+     readAgain(request: { readonly signal: AbortSignal }): Promise<SessionRead>;
    }
 
    // One request. Its timer does nothing once it has settled: the harness of boot-check runs every
@@ -3471,22 +3572,32 @@ La compuerta de 0.2, con estos puntos propios:
    }
 
    export function createSessionGate(options: SessionGateOptions): SessionStage {
-     const readSession = createSessionReader({
-       fetchSession: (request) => fetchShowingLoading(options, request),
+     let token: AccessToken | null = null;
+     let read: SessionRead | null = null;
+     const requestSignInSpendingToken: RequestSignIn = (request) => {
+       token = null;
+       return options.requestSignIn(request);
+     };
+     const shared = {
        storeSession: options.storeSession,
-       requestSignIn: options.requestSignIn,
+       requestSignIn: requestSignInSpendingToken,
        forgetContentCopy: options.forgetContentCopy,
        budget: options.budget,
+     };
+     const readAtBoot = createSessionReader({
+       ...shared,
+       fetchSession: (request) => fetchShowingLoading(options, request),
      });
-     let read: SessionRead | null = null;
+     const readLater = createSessionReader({ ...shared, fetchSession: options.fetchSession });
      return {
        name: 'sessionStage',
        async run() {
+         token = options.takeAccessToken();
          options.budget.begin();
          const controller = new AbortController();
          const stopCap = options.budget.onExpired(() => controller.abort());
          try {
-           read = await readSession({ signal: controller.signal, token: options.takeAccessToken() });
+           read = await readAtBoot({ signal: controller.signal, token });
          } finally {
            stopCap();
          }
@@ -3498,11 +3609,14 @@ La compuerta de 0.2, con estos puntos propios:
          read = null;
          return taken;
        },
+       readAgain({ signal }) {
+         return readLater({ signal, token });
+       },
      };
    }
    ```
 
-8. **`account-stages.ts`.** Una lectura lista de la compuerta monta la raíz de la cuenta, como `onReady` en la etapa: después de un «Reintentar» que recupera la sesión, aparecen «Tu cuenta» y «Salir». `mountAccountRoot` no hace nada la segunda vez ni sin sus elementos:
+8. **`account-stages.ts`.** Una lectura lista de la compuerta monta la raíz de la cuenta, como `onReady` en la etapa: después de un «Reintentar» que recupera la sesión, aparecen «Tu cuenta» y «Salir». `mountAccountRoot` no hace nada la segunda vez ni sin sus elementos. La compuerta lee la sesión por `sessionStage.readAgain`, que lleva el token del enlace guardado en la etapa; no hay un segundo lector sin token:
 
    ```ts
    import { fetchSession, sessionStore, type SessionSnapshot } from '../../entities/session';
@@ -3512,8 +3626,7 @@ La compuerta de 0.2, con estos puntos propios:
    import { mountAccountRoot } from '../account/mount-account-root';
    import { createTokenStage } from './access-tokens';
    import { createAttemptBudget } from './attempt-budget';
-   import { createSessionGate } from './session-gate';
-   import { createSessionReader, type ReadSession } from './session-reader';
+   import { createSessionGate, type SessionStage } from './session-gate';
    import { createSessionView } from './session-view';
 
    const ATTEMPT_BUDGET_MS = 20_000;
@@ -3549,16 +3662,8 @@ La compuerta de 0.2, con estos puntos propios:
      loadingDelayMs: LOADING_DELAY_MS,
    });
 
-   const readFreshSession = createSessionReader({
-     fetchSession: fetchFromApi,
-     storeSession,
-     requestSignIn: signInFromBoot,
-     forgetContentCopy,
-     budget: attemptBudget,
-   });
-
-   export const readSessionForContent: ReadSession = async (request) => {
-     const read = await readFreshSession(request);
+   export const readSessionForContent: SessionStage['readAgain'] = async (request) => {
+     const read = await sessionStage.readAgain(request);
      if (read.kind === 'ready') mountAccountRoot();
      return read;
    };
@@ -3733,11 +3838,11 @@ La compuerta de 0.2, con estos puntos propios:
     Si el `sign-out.ts` de `master` difiere del plan de F11a, se conserva el de `master` y se le suman sólo `forgetContentCopy` en la interfaz y `await forgetContentCopy();` antes de devolver `signed-out`.
 15. **Los dos que llaman.** En `pages/account/ui/SignOutSection.tsx`, `signOut({ client, userId })` pasa a `signOut({ client, userId, forgetContentCopy })`, con `import { forgetContentCopy } from '../../../shared/api/content';`. En `features/sign-in/ui/PrivacyReacceptance.tsx`, `signOut({ client, userId: account.id })` pasa a `signOut({ client, userId: account.id, forgetContentCopy })`, con el mismo import.
 16. **El contrato de F11a** (`specs/015-f11-acceso-cuenta/contracts/front-interfaces.md`), en el mismo commit. Cambia:
-    - «`app/boot`: las etapas»: `SessionGateOptions` sin `timeoutMs` y con `forgetContentCopy` y `budget`; `createSessionGate` devuelve `SessionStage`; `SessionView` sin `showFailure`; y sale `SessionFailure`;
+    - «`app/boot`: las etapas»: `SessionGateOptions` sin `timeoutMs` y con `forgetContentCopy` y `budget`; `createSessionGate` devuelve `SessionStage`, con `takeRead()` y `readAgain(request)`, y la etapa guarda el token del enlace hasta que una sesión responde; `SessionView` sin `showFailure`; `SESSION_LOADING_MARKUP` sigue, y salen `SessionFailure` y `sessionFailureMarkup` (T034 de F11a los suma a `front-interfaces.md:313`);
     - la lista «A3 extiende la etapa de sesión» pasa a remitir a [`specs/016-a3-contenido-api/contracts/front-interfaces.md`](./contracts/front-interfaces.md);
-    - «`shared/api/http`», en «Lo que suman otros ítems»: «A3 pide las porciones con su propio `fetch` (research de A3, R3) y usa el cliente sólo para la sesión»;
+    - «`shared/api/http`», en «Lo que suman otros ítems»: «A3 pide las porciones con su propio `fetch` (research de A3, R3) y usa el cliente sólo para la sesión». Si T034 de F11a ya reescribió esa línea (`front-interfaces.md:77`, el hallazgo F11a-4), no se toca;
     - «`features/sign-in`»: `SignOutDependencies` con `forgetContentCopy`;
-    - «`qa/e2e`: el doble de la API»: `ApiCall` con `query` e `ifNoneMatch`, `ApiReply` con `abort`, `contentVersion` y las 17 rutas por omisión.
+    - «`qa/e2e`: el doble de la API»: `ApiCall` suma `ifNoneMatch` (la query sigue en `search`, de F11a), `ApiReply` con `abort`, `contentVersion` y las 17 rutas por omisión; `replyTo` conserva la ruta antes que el CSRF.
 17. **Correr:**
     - `npm run test:unit`, en verde, con las specs de T009;
     - `npm run typecheck`, `npm run lint` y `npm run build`;
@@ -3761,6 +3866,7 @@ La compuerta de 0.2, con estos puntos propios:
 - **El servidor simulado** sirve la sesión y los 17 recursos con los bytes del generador, su `ETag` y su `Content-Version`, y contesta 304 ante un `If-None-Match` igual (FR-036 y FR-037). Sus respuestas leen el cuerpo en una microtarea (R14).
 - **El arnés** corre los temporizadores por vencimiento, para que la espera de un `Retry-After` vaya antes que el tope del intento (R14).
 - **Los valores esperados de `boot-check`** cambian sólo donde lo dice la tabla de «Compatibilidad».
+- **Si F8 entró antes** (T001, paso 5), los archivos de `qa/lib` traen lo suyo, y estos pasos se aplican sobre lo que haya: la reescritura de `content-server.ts` conserva `apiRequests`, `method?: string` en el `init` y la consulta a `PROGRESS_API` al principio de `fetch`, respondida con el `respond(status, body, headers)` de este plan; `boot-harness.ts` conserva `cookie: ''` en su `document`; y `sources.ts` saca `__CONTENT_VERSION__` del bloque `define` que haya. El `sessionResponse()` de F11a, que responde la sesión con un `Response` de Node (`impl-f11a`, `qa/lib/content-server.ts:26-37`), se reemplaza en todos los casos por el de este plan, con el cuerpo que se lee en una microtarea (R14).
 
 1. **Primero, los casos nuevos y los cambios de `boot-check.ts` y de `build-check.ts`, en rojo,** según los pasos 3 y 6. Correr `node qa/boot-check.ts` contra la fuente estática: fallan por la razón esperada (no hay pedidos a `/api/` de porciones). Commit: `test(qa): boot-check y build-check esperan la API y no el archivo estático, en rojo`.
 2. **`qa/lib/content-server.ts`, entero:**
@@ -4380,7 +4486,7 @@ La compuerta de 0.2, con estos puntos propios:
    }
    ```
 
-4. **`qa/e2e/fixtures/api-double.ts`.** Los cambios son aditivos; si el archivo de `master` difiere del plan de F11a, se aplican sobre lo que haya:
+4. **`qa/e2e/fixtures/api-double.ts`.** Los cambios son aditivos sobre la forma canónica de F11a (`impl-f11a`, `a7b3c71d`): `ApiCall.search` (`:11` y `:41`) y `replyTo` con la ruta antes que el CSRF (`:127-139`). A3 no suma `query` ni otro `replyTo`. Si el archivo de la base difiere de `a7b3c71d`, se aplican sobre lo que haya:
    - **los imports** suman:
 
      ```ts
@@ -4396,18 +4502,18 @@ La compuerta de 0.2, con estos puntos propios:
      ```
 
      Salen las constantes `META` y `CONTENT_VERSION` de F11a, y sus imports de `node:fs` y `node:path` si no los usa nada más.
-   - **`ApiCall` y `ApiReply`** suman `query: string;` e `ifNoneMatch: string | undefined;` en `ApiCall`, y `abort?: boolean;` en `ApiReply`;
-   - **`callOf`** queda así:
+   - **`ApiCall` y `ApiReply`** suman sólo `ifNoneMatch: string | undefined;` en `ApiCall`, después de `search`, y `abort?: boolean;` en `ApiReply`. La query ya está en `search`;
+   - **`callOf`** queda así (lo único nuevo es `ifNoneMatch`):
 
      ```ts
      function callOf(request: Request): ApiCall {
        const headers = request.headers();
-       const text = request.postData();
        const url = new URL(request.url());
+       const text = request.postData();
        return {
          method: request.method(),
          path: url.pathname,
-         query: url.search,
+         search: url.search,
          ifNoneMatch: headers['if-none-match'],
          xsrf: headers['x-xsrf-token'],
          user: headers['x-taller-user'],
@@ -4426,34 +4532,42 @@ La compuerta de 0.2, con estos puntos propios:
          return this.calls.filter(
            (call) =>
              call.method === method &&
-             (target.includes('?') ? `${call.path}${call.query}` === target : call.path === target),
+             (target.includes('?') ? `${call.path}${call.search}` === target : call.path === target),
          );
        }
        ```
 
      - en `handle`, antes del `fulfill`: `if (reply.abort === true) { await route.abort(); return; }`;
-   - **`replyTo`** busca primero con la query y después sin ella:
+   - **`replyTo`** conserva el orden de F11a: primero busca la ruta, con la query (`exact`) y después sin ella (`general`); una ruta desconocida da 404 y queda en `unhandled`; recién con una ruta conocida mira el CSRF. Así, una ruta que modifica y no está registrada da el 404 que da el backend real y la reporta `assertAllHandled()`, en lugar de un 419 sin registrar (el arreglo `f5b62ae6` de F11a):
 
      ```ts
-     private async replyTo(call: ApiCall): Promise<ApiReply> {
-       const exact = `${call.method} ${call.path}${call.query}` as ApiRoute;
+     private routeFor(call: ApiCall): ApiRoute | null {
+       const exact = `${call.method} ${call.path}${call.search}` as ApiRoute;
        const general = `${call.method} ${call.path}` as ApiRoute;
+       for (const route of [exact, general]) {
+         if ((this.queued.get(route)?.length ?? 0) > 0 || this.handlers.has(route)) return route;
+       }
+       return null;
+     }
+
+     private async replyTo(call: ApiCall): Promise<ApiReply> {
+       const route = this.routeFor(call);
+       if (route === null) {
+         this.unhandled.push(`${call.method} ${call.path}${call.search}`);
+         return { status: 404, json: errorBody('not_found') };
+       }
        if (MODIFYING.has(call.method) && call.xsrf !== this.xsrfValue()) {
          return { status: 419, json: errorBody('csrf_token_mismatch') };
        }
-       for (const route of [exact, general]) {
-         const next = this.queued.get(route)?.shift();
-         if (next !== undefined) return next;
-         const handler = this.handlers.get(route);
-         if (handler !== undefined) return handler(call);
-       }
-       this.unhandled.push(exact);
-       return { status: 404, json: errorBody('not_found') };
+       return this.queued.get(route)?.shift() ?? this.handlers.get(route)!(call);
      }
      ```
 
+     Con una respuesta en cola para la ruta exacta y un manejador para la general, gana la cola de la exacta, como antes;
+
    - **en `installDefaults`:**
      - la sesión responde `contentVersion: this.contentVersion`;
+     - si F8 entró antes (T001, paso 5), su `GET /api/progress` por omisión pasa de `contentVersion: CONTENT_VERSION` a `contentVersion: this.contentVersion`, para no desalinearse de la sesión cuando una prueba la cambia;
      - al final se suman las 17 porciones:
 
        ```ts
@@ -4500,7 +4614,7 @@ La compuerta de 0.2, con estos puntos propios:
 
    const STORAGE_KEYS = Object.keys(frozenProgress) as StorageKey[];
    const PROGRESS_SAVED = 'Tu progreso sigue guardado';
-   const FAILED_RESOURCE = /Failed to load resource/;
+   const ABORTED = /net::ERR_FAILED/;
    const PORTIONS_PER_START = 17;
 
    async function failFirstSessionThenFallBack(page: Page, fail: (route: Route) => Promise<void>) {
@@ -4603,21 +4717,21 @@ La compuerta de 0.2, con estos puntos propios:
          kind: 'network',
          url: isSession,
          respond: (route) => route.abort(),
-         console: FAILED_RESOURCE,
+         console: ABORTED,
        },
        {
          name: 'a portion answers 404',
          kind: 'status',
          url: isPortion('guide'),
          respond: (route) => route.fulfill({ status: 404, body: 'no existe' }),
-         console: FAILED_RESOURCE,
+         console: /status of 404/,
        },
        {
          name: 'a portion answers 500',
          kind: 'status',
          url: isPortion('guide'),
          respond: (route) => route.fulfill({ status: 500, body: 'falló' }),
-         console: FAILED_RESOURCE,
+         console: /status of 500/,
        },
        {
          name: 'the body of a portion is not JSON',
@@ -4636,7 +4750,7 @@ La compuerta de 0.2, con estos puntos propios:
          kind: 'network',
          url: isPortion('atlas.go'),
          respond: (route) => route.abort(),
-         console: FAILED_RESOURCE,
+         console: ABORTED,
        },
        {
          name: 'a portion has another shape',
@@ -4708,7 +4822,7 @@ La compuerta de 0.2, con estos puntos propios:
        pageIssues,
        page,
      }) => {
-       pageIssues.expectIssue(FAILED_RESOURCE, 'the first session request');
+       pageIssues.expectIssue(ABORTED, 'the first session request');
        await failFirstSessionThenFallBack(page, (route) => route.abort());
        await storage.seed(frozenProgress);
        const sessionRequests = trackSessionRequests(page);
@@ -4733,7 +4847,7 @@ La compuerta de 0.2, con estos puntos propios:
        pageIssues,
        page,
      }) => {
-       pageIssues.expectIssue(FAILED_RESOURCE, 'both session requests');
+       pageIssues.expectIssue(ABORTED, 'both session requests');
        await page.route(isSession, (route) => route.abort());
        const sessionRequests = trackSessionRequests(page);
        await shell.goto(urls.view('recorrido'));
@@ -4753,7 +4867,7 @@ La compuerta de 0.2, con estos puntos propios:
        pageIssues,
        page,
      }) => {
-       pageIssues.expectIssue(FAILED_RESOURCE, 'the first session request');
+       pageIssues.expectIssue(ABORTED, 'the first session request');
        await failFirstSessionThenFallBack(page, (route) => route.abort());
 
        await shell.goto(urls.exercise('rust-02', 'code'));
@@ -4788,7 +4902,7 @@ La compuerta de 0.2, con estos puntos propios:
        pageIssues,
        page,
      }) => {
-       pageIssues.expectIssue(FAILED_RESOURCE, 'the first session request');
+       pageIssues.expectIssue(ABORTED, 'the first session request');
        await failFirstSessionThenFallBack(page, (route) => route.abort());
 
        await shell.goto(urls.exercise('rust-02', 'code'));
@@ -4803,8 +4917,8 @@ La compuerta de 0.2, con estos puntos propios:
    });
    ```
 
-7. **La adaptación de los E2E de F11a (D1 y el transporte),** en su propio commit (`test(qa): los E2E de F11a con la falla de la sesión en la vista de A2 y las 17 porciones`). En `session-stage.spec.ts`:
-   - sale la constante `UNREACHABLE`;
+7. **La adaptación de los E2E de F11a (D1 y el transporte),** en su propio commit (`test(qa): los E2E de F11a con la falla de la sesión en la vista de A2 y las 17 porciones`). Parte de `session-stage.spec.ts` tal como quedó en `impl-f11a` (`a7b3c71d`, con el arreglo `f5b62ae6`), o de lo que T001 anotó si la base cambió. En `session-stage.spec.ts`:
+   - sale la constante `UNREACHABLE`; `CONNECTING`, `markDocument`, `documentWasReloaded` y `trackContentRequests` se quedan;
    - en «asks for the session once, before the content», `trackApiAndContent` cuenta las porciones de la API en lugar de `/content/`. La condición pasa a `pathname === '/api/session' || /^\/api\/(exercises|worlds|workshops|atlas|guide)$/.test(pathname)`, y se suma `expect(seen).toHaveLength(18);`;
    - el `describe('the session does not answer', …)` queda así:
 
@@ -4816,18 +4930,30 @@ La compuerta de 0.2, con estos puntos propios:
          pageIssues,
          page,
        }) => {
-         pageIssues.expectIssue(FAILED_RESOURCE, 'the 502 of the first session request');
-         api.reply('GET /api/session', { status: 502, body: '<html>Bad Gateway</html>', contentType: 'text/html' });
+         pageIssues.expectIssue(/status of 502/, 'the 502 of the first session request');
+         api.reply('GET /api/session', {
+           status: 502,
+           body: '<html>Bad Gateway</html>',
+           contentType: 'text/html',
+         });
+         const contentRequests = trackContentRequests(page);
          await page.goto(urls.exercise('rust-02', 'code'));
          await expect(page.locator('#main [data-content-gate="failed"]')).toHaveAttribute('data-failure', 'network');
          await expect(page.getByRole('alert')).toContainText('Tu progreso sigue guardado en este navegador');
+         expect(contentRequests).toHaveLength(0);
          expect(await legacyEvaluated(page)).toBe(false);
          const retry = page.getByRole('button', { name: 'Reintentar' });
          await expect(retry).toBeFocused();
+         await markDocument(page);
          await retry.click();
          await expect(lab.tab('code')).toHaveAttribute('aria-selected', 'true');
-         await expect(page.getByRole('button', { name: 'Tu cuenta', exact: true })).toBeVisible();
+         expect(await documentWasReloaded(page)).toBe(false);
          expect(api.callsTo('GET /api/session')).toHaveLength(2);
+         expect(contentRequests).toHaveLength(17);
+         await expect(page.getByRole('alert')).toHaveCount(0);
+         await expect(retry).toHaveCount(0);
+         await expect(page.getByText(CONNECTING)).toHaveCount(0);
+         await expect(page.getByRole('button', { name: 'Tu cuenta', exact: true })).toBeVisible();
        });
 
        test('with a 429 whose Retry-After fits, waits and starts without an error', async ({
@@ -4836,7 +4962,7 @@ La compuerta de 0.2, con estos puntos propios:
          pageIssues,
          page,
        }) => {
-         pageIssues.expectIssue(FAILED_RESOURCE, 'the 429 of the first session request');
+         pageIssues.expectIssue(/status of 429/, 'the 429 of the first session request');
          api.reply('GET /api/session', {
            status: 429,
            headers: { 'Retry-After': '1' },
@@ -4853,7 +4979,7 @@ La compuerta de 0.2, con estos puntos propios:
          pageIssues,
          page,
        }) => {
-         pageIssues.expectIssue(FAILED_RESOURCE, 'the 429 of the session request');
+         pageIssues.expectIssue(/status of 429/, 'the 429 of the session request');
          api.reply('GET /api/session', {
            status: 429,
            headers: { 'Retry-After': '60' },
@@ -4866,13 +4992,13 @@ La compuerta de 0.2, con estos puntos propios:
      });
      ```
 
-   Los demás casos del archivo (sin cuenta, los dos tokens) no cambian. En el mismo commit, en `qa/e2e/specs/sign-in.spec.ts` de F11a, el caso «goes on to the requested view without reloading, with the CSRF token and without X-Taller-User» cambia `expect(contentRequests).toHaveLength(1);` por `expect(contentRequests).toHaveLength(17);`: después del ingreso se piden las 17 porciones y no el archivo. Nada más de ese archivo cambia.
+   El caso del 429 de F11a («with a 429 waits for Retry-After before letting retry», con `page.clock`) sale: desde A3 un 429 que entra en el presupuesto se espera sin error y uno que no entra muestra la falla de A2 en el acto, sin plazo, y lo fijan los dos casos de arriba. Los demás casos del archivo (sin cuenta, los dos tokens) no cambian. En el mismo commit, en `qa/e2e/specs/sign-in.spec.ts` de F11a, el caso «goes on to the requested view without reloading, with the CSRF token and without X-Taller-User» cambia `expect(contentRequests).toHaveLength(1);` por `expect(contentRequests).toHaveLength(17);`: después del ingreso se piden las 17 porciones y no el archivo. Nada más de ese archivo cambia.
 8. **`qa/e2e/specs/content-api.spec.ts`, los E2E de A3 (FR-040),** en rojo hasta que G entregue. Commit: `test(qa): E2E de A3: la copia, sin servidor, la sesión y las rondas`:
 
    ```ts
    import type { Page } from '@playwright/test';
    import { expect, test } from '../fixtures';
-   import { STUDENT, errorBody } from '../lib/api-contract';
+   import { INVITATION, STUDENT, errorBody } from '../lib/api-contract';
    import {
      blockContentCopy,
      blockCopyWrites,
@@ -4894,7 +5020,7 @@ La compuerta de 0.2, con estos puntos propios:
    import { urls } from '../lib/urls';
    import type { StorageControl } from '../fixtures/storage-control';
 
-   const FAILED_RESOURCE = /Failed to load resource/;
+   const ABORTED = /net::ERR_FAILED/;
    const NEXT_VERSION = 'b'.repeat(32);
    const NOTICE = '#content-copy-notice';
    const COPY_DAY = new Date('2026-10-07T15:00:00-03:00');
@@ -5005,7 +5131,7 @@ La compuerta de 0.2, con estos puntos propios:
        pageIssues,
        page,
      }) => {
-       pageIssues.expectIssue(FAILED_RESOURCE, 'the session request of the second start');
+       pageIssues.expectIssue(ABORTED, 'the session request of the second start');
        await page.clock.install({ time: COPY_DAY });
        await storage.seed(frozenProgress);
        await storage.watchWrites();
@@ -5036,7 +5162,7 @@ La compuerta de 0.2, con estos puntos propios:
          pageIssues,
          page,
        }) => {
-         pageIssues.expectIssue(FAILED_RESOURCE, 'the session request of the second start');
+         pageIssues.expectIssue(ABORTED, 'the session request of the second start');
          await watchCopySaved(context);
          await shell.goto(urls.view('recorrido'));
          expect(await copySaved(page)).toBe(true);
@@ -5057,7 +5183,7 @@ La compuerta de 0.2, con estos puntos propios:
        pageIssues,
        page,
      }) => {
-       pageIssues.expectIssue(FAILED_RESOURCE, 'the session request with the token');
+       pageIssues.expectIssue(ABORTED, 'the session request with the token');
        await watchCopySaved(context);
        await shell.goto(urls.view('recorrido'));
        expect(await copySaved(page)).toBe(true);
@@ -5068,6 +5194,31 @@ La compuerta de 0.2, con estos puntos propios:
        await expect(page.locator(NOTICE)).toBeEmpty();
      });
 
+     test('keeps the token of the link through «Reintentar» and opens the sign-up with it', async ({
+       shell,
+       access,
+       api,
+       pageIssues,
+       page,
+     }) => {
+       pageIssues.expectIssue(/status of 502/, 'the 502 of the first session request');
+       api.reply('GET /api/session', {
+         status: 502,
+         body: '<html>Bad Gateway</html>',
+         contentType: 'text/html',
+       });
+       await page.goto(`/#invitacion=${INVITATION.token}`);
+       await expect(shell.contentFailure).toHaveAttribute('data-failure', 'network');
+       await expect(page).toHaveURL(/\/$/);
+       await shell.retryButton.click();
+       await expect(access.heading('Creá tu cuenta')).toBeVisible();
+       await expect(page.getByText(`Te invitaron con ${INVITATION.email}.`)).toBeVisible();
+       expect(api.callsTo('GET /api/session')).toHaveLength(2);
+       expect(api.callsTo('POST /api/auth/invitations/lookup')[0]?.body).toEqual({
+         token: INVITATION.token,
+       });
+     });
+
      test('a browser that published a new version and could not keep it does not open the old one', async ({
        shell,
        api,
@@ -5076,7 +5227,7 @@ La compuerta de 0.2, con estos puntos propios:
        pageIssues,
        page,
      }) => {
-       pageIssues.expectIssue(FAILED_RESOURCE, 'the session request of the third start');
+       pageIssues.expectIssue(ABORTED, 'the session request of the third start');
        await storage.seed(frozenProgress);
        await watchCopySaved(context);
        await shell.goto(urls.view('recorrido'));
@@ -5125,7 +5276,7 @@ La compuerta de 0.2, con estos puntos propios:
        pageIssues,
        page,
      }) => {
-       pageIssues.expectIssue(FAILED_RESOURCE, 'the 401 of the guide');
+       pageIssues.expectIssue(/status of 401/, 'the 401 of the guide');
        api.reply(`GET ${PORTION_PATHS.guide}`, { status: 401, json: errorBody('unauthenticated') });
        const sessionRequests = trackSessionRequests(page);
        const portionRequests = trackContentRequests(page);
@@ -5146,7 +5297,7 @@ La compuerta de 0.2, con estos puntos propios:
        pageIssues,
        page,
      }) => {
-       pageIssues.expectIssue(FAILED_RESOURCE, 'the 403 of the guide');
+       pageIssues.expectIssue(/status of 403/, 'the 403 of the guide');
        await watchCopySaved(context);
        await shell.goto(urls.view('recorrido'));
        expect(await copySaved(page)).toBe(true);
@@ -5221,7 +5372,7 @@ La compuerta de 0.2, con estos puntos propios:
        pageIssues,
        page,
      }) => {
-       pageIssues.expectIssue(FAILED_RESOURCE, 'the 429 of the guide');
+       pageIssues.expectIssue(/status of 429/, 'the 429 of the guide');
        api.reply(`GET ${PORTION_PATHS.guide}`, {
          status: 429,
          headers: { 'Retry-After': '1' },
@@ -5247,7 +5398,7 @@ La compuerta de 0.2, con estos puntos propios:
    ```
 
 9. **Correr,** sobre la rama de G integrada:
-   - `npm run build && E2E_PORT=4194 npm run test:e2e -- --repeat-each=3 --retries=0`, con los 106 de F1, los 17 de A2, los de F11a y los de A3 en verde, tres veces seguidas;
+   - `npm run build && E2E_PORT=4194 npm run test:e2e -- --repeat-each=3 --retries=0`, con la cuenta de T001 (los 106 de F1, los 17 de A2, los de F11a y los de los ports que ya entraron) más los de A3 en verde, tres veces seguidas;
    - el tope de 20 s, aparte: `E2E_PORT=4194 npm run test:e2e -- specs/content-gate.spec.ts -g "20 s cap" --repeat-each=30 --retries=0`.
 
 ### Tarea 2.5 · La documentación (T013, K)
@@ -5290,7 +5441,7 @@ La compuerta de 0.2, con estos puntos propios:
 La compuerta de 0.2 sobre las ramas de G, Q, E y K integradas, con estos puntos propios:
 
 - **La red:**
-  - `E2E_PORT=4173 npm run test:e2e -- --repeat-each=3 --retries=0` en verde, con los 106 de F1, los 17 de A2, los de F11a y los de A3;
+  - `E2E_PORT=4173 npm run test:e2e -- --repeat-each=3 --retries=0` en verde, con la cuenta de T001 (los 106 de F1, los 17 de A2, los de F11a y los de los ports que ya entraron) más los de A3;
   - el tope de 20 s de A2, aparte, 30 veces (T012, paso 9).
 - **Lo que no se edita:** `git diff --name-only a3/base -- qa/e2e/specs` lista sólo `content-gate.spec.ts`, `session-stage.spec.ts`, `sign-in.spec.ts` y `content-api.spec.ts`. `git log --format=%s a3/base.. -- qa/e2e/specs/content-gate.spec.ts qa/e2e/specs/session-stage.spec.ts qa/e2e/specs/sign-in.spec.ts` muestra un commit para la adaptación de A2 y otro para la de F11a.
 - **Los oráculos:** el sha256 de `node tools/content/dump-globals.ts .` es el de T001 (FR-035), y `dist-content-check` está en verde.
@@ -5300,7 +5451,7 @@ La compuerta de 0.2 sobre las ramas de G, Q, E y K integradas, con estos puntos 
 - **El peso.**
   - **Cómo se mide:** `html.length` contra T001.
   - **Lo que se espera:** unos +6 700 (research.md, R15).
-  - **La condición de corte:** si A3 suma más de 12 000 caracteres, el doble de lo estimado, o el total llega a 1 250 000, A3 no cierra. Se informa la medida separada con el script de quickstart.md §4, y decide el usuario.
+  - **La condición de corte:** si A3 suma más de 12 000 caracteres, el doble de lo estimado, o el total llega a `BOOT_SIZE_LIMIT` (1 500 000), A3 no cierra. Se informa la medida separada con el script de quickstart.md §4, y decide el usuario.
 - **El PR:** `feat(front): read the content from the API with the last copy in the browser, and retire the static file (A3 U2)`, contra `a3/base`. La descripción en inglés lleva:
   - la tabla de compatibilidad;
   - el peso;
@@ -5452,9 +5603,9 @@ La compuerta de 0.2 sobre las ramas de G, Q, E y K integradas, con estos puntos 
 | Archivo y caso | Se conserva | Cambia |
 | --- | --- | --- |
 | `session-stage.spec.ts`, «asks for the session once, before the content» | Una sesión y que sea el primer pedido | Se cuentan las porciones de la API en lugar de `/content/`: 18 pedidos |
-| `session-stage.spec.ts`, «the session does not answer…» | El 502, ninguna vista evaluada, el foco en «Reintentar», la recuperación sin recargar y dos sesiones | Se ve la vista de A2 (`data-failure="network"` y «Tu progreso sigue guardado»), no «No pudimos conectar…». Después de recuperar, se exige «Tu cuenta», que monta la lectura de la compuerta |
-| `session-stage.spec.ts`, «with a 429 waits for Retry-After before letting retry» | Que un 429 se respeta | Pasa a dos casos: un `Retry-After: 1` que cabe se espera solo y arranca (FR-009); un `Retry-After: 60`, que no cabe, muestra `status` enseguida |
-| `session-gate.spec.ts` (Vitest) | Una sesión, ningún temporizador después de resolver, la espera a los 400 ms, el ingreso como página y la sesión otra vez, ningún tope durante el ingreso, el token y el aviso sin aceptar | La falla, el reintento, el tope de 20 s y el 429: la etapa no muestra errores y deja `takeRead()`. La lectura sin cuenta borra la copia |
+| `session-stage.spec.ts`, «the session does not answer…» | El 502 con `/status of 502/`, ninguna vista evaluada, ningún pedido de contenido antes del reintento, el foco en «Reintentar», la recuperación sin recargar (`markDocument`), dos sesiones, la alerta y «Conectando…» que desaparecen | Se ve la vista de A2 (`data-failure="network"` y «Tu progreso sigue guardado»), no «No pudimos conectar…». Después de recuperar, 17 pedidos de contenido y «Tu cuenta», que monta la lectura de la compuerta |
+| `session-stage.spec.ts`, «with a 429 waits for Retry-After before letting retry» | Que un 429 se respeta, con `/status of 429/` | Pasa a dos casos: un `Retry-After: 1` que cabe se espera solo y arranca (FR-009); un `Retry-After: 60`, que no cabe, muestra `status` enseguida. El plazo con `page.clock` sale, porque ya no hay un «Reintentar» que se habilita |
+| `session-gate.spec.ts` (Vitest) | Una sesión, ningún temporizador después de resolver aunque `clearTimeout` no cancele nada, la espera a los 400 ms y su limpieza al llegar la sesión (`view.clear`), el ingreso como página y la sesión otra vez, ningún tope durante el ingreso, el token, el aviso sin aceptar con `storeSession` antes del ingreso, y el token que sobrevive a una falla | La falla, el reintento, el tope de 20 s y el 429: la etapa no muestra errores y deja `takeRead()`. El token sobrevive a la falla y llega a la lectura siguiente por `readAgain`, y se gasta cuando una sesión responde. La lectura sin cuenta borra la copia |
 | `session-view.spec.ts` (Vitest) | La espera, `role="status"` y que no haga nada sin su elemento | Salen la falla, «Reintentar» y la espera del 429, que no se usan desde A3. `document` se simula, sin jsdom |
 | `sign-in.spec.ts`, «goes on to the requested view without reloading…» | Todo, menos una cuenta | La cuenta de pedidos de contenido pasa de 1 a 17: las porciones de la API en lugar del archivo |
 | `sign-out.spec.ts` (Vitest) | Todos sus casos y valores | Cada llamada pasa `forgetContentCopy`, y se suman dos casos |
@@ -5479,7 +5630,7 @@ La compuerta de 0.2 sobre las ramas de G, Q, E y K integradas, con estos puntos 
 
 - **A4:** A3 no pide la plantilla del harness. Si A4 la guarda en la copia, la suma como porción extra, y `usableCopy` la ignora sin invalidar copias.
 - **D1c:**
-  - reutiliza `sessionStage` y `readSessionForContent`, y compara la cuenta con `sessionStore`;
+  - reutiliza `sessionStage` (con `takeRead()` y `readAgain`) y `readSessionForContent`, y compara la cuenta con `sessionStore`;
   - la versión del contenido publicado está en `ContentReading.version`, y `onPublished` la recibe;
   - el riesgo 7 de la spec es suyo.
 - **F11d:** al activar «computadora compartida», llama a `forgetContentCopy()` de `shared/api/content`. A partir de ahí, `afterPublish` (en `content-stage.ts`) no tiene que escribir la copia: es el único punto de escritura, y F11d le suma la condición.
@@ -5497,7 +5648,7 @@ La compuerta de 0.2 sobre las ramas de G, Q, E y K integradas, con estos puntos 
 | --- | --- |
 | FR-001 | T004 y T005 (lector), T009 y T010 (etapa y cableado), T011 (la sesión en cada ronda) |
 | FR-002 | T004 y T005, T006 y T007 (ninguna porción sin la sesión lista), T011, T012 |
-| FR-003 | T009 y T010 (`takeRead`, la etapa termina sin error), T012 |
+| FR-003 | T009 y T010 (`takeRead`, la etapa termina sin error; `readAgain` lleva el token guardado hasta que una sesión responde, por el FR-005 de F11), T012 (el token sobrevive a «Reintentar») |
 | FR-004 | T006 y T007, T011 |
 | FR-005 | T006 y T007, T012 (la recarga con un pedido) |
 | FR-006, FR-007 | T006 y T007, T012 (16 respuestas 304 y un 200) |
@@ -5558,16 +5709,18 @@ La compuerta de 0.2 sobre las ramas de G, Q, E y K integradas, con estos puntos 
 
 1. **El código de F11a puede diferir de su plan.**
    - *Mitigación:* T001 contrasta las firmas. Las tareas que tocan archivos de F11a (T010 y T012) dicen qué conservar si difieren.
+   - *Ya pasó:* la enmienda del 2026-10-28 alinea el plan con `impl-f11a` hasta `a7b3c71d` (T001 a T021): el token guardado en la etapa, los tres casos de su spec de la compuerta, `ApiCall.search`, el orden de `replyTo` y las listas blancas angostas. Lo que F11a haga de T022 a T035 (`sign-in.spec.ts`, «Tu cuenta», «Salir» y la reaceptación del aviso) lo contrasta T001.
 2. **El orden de los temporizadores de `boot-check`** (R14). El arnés pasa a correrlos por vencimiento.
    - *Mitigación:* T011 corre todos los casos de hoy, y uno que falle por el orden se lleva al coordinador sin tocar sus valores.
 3. **El tiempo de la red E2E.** Cada arranque sin copia pasa 17 porciones por el doble.
    - *Mitigación:* la copia deja en un pedido las navegaciones siguientes de cada prueba.
    - T014 compara el tiempo de la red con T001, y si crece más de un 50 %, lo informa.
 4. **D1 cambia lo que muestra F11a sin servidor.** «No pudimos conectar con el taller» pasa a ser la vista de error de A2, y FR-009 de la spec 015 queda desactualizado.
-   - *Mitigación:* lo decide el usuario. El hallazgo va a la hoja de ruta.
+   - *Resuelto:* D1-(a) quedó aceptada con el merge del plan (#71; clarify, «Decisiones del 2026-10-28 (noche)»). El hallazgo sobre FR-009 de la spec 015 va a la hoja de ruta.
 5. **IndexedDB puede desalojar la copia** (riesgo 8 de la spec). Se acepta.
 6. **Un almacén que falla al borrar y después vuelve a funcionar** (riesgo residual 1 de la spec). Se acepta y se documenta: el invariante depende de que borrar funcione.
-7. **Nada de los checks, del build ni de Docker corrió al planificar** (research.md, «Lo que no se verificó»).
+7. **Nada de los checks, del build ni de Docker corrió al planificar** (research.md, «Lo que no se verificó»). Tampoco corrieron los fragmentos de la enmienda.
+8. **El texto de un pedido abortado en la consola.** `/net::ERR_FAILED/` es lo que Chromium escribe para `route.abort()` sin código (Context7: el código por omisión es `'failed'`), y ya lo usa `cycle.spec.ts:71`. Si otro navegador entra a la red, ese patrón cambia.
 
 ## Complexity Tracking
 

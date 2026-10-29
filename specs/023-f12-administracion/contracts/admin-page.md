@@ -2,7 +2,7 @@
 
 **Input**: [spec.md](../spec.md) («Dónde vive la administración» y «El compromiso con F10»), [plan.md](../plan.md) y [research.md](../research.md). Lo consumen las tareas de F12a y, después, F10 (la ruta enlazable), F12b (el correo) y F11b (el pedido compartido de la contraseña). Las firmas son exactas: una tarea que las cambia cambia este contrato en el mismo commit.
 
-Las rutas son relativas a `frontend/src/`. Cada slice se importa por su `index.ts` (`docs/architecture.md`, «Feature-Sliced Design incremental»). Las firmas de F11a que se citan son las de su contrato (`specs/015-f11-acceso-cuenta/contracts/front-interfaces.md`, rama `plan/f11a-acceso`).
+Las rutas son relativas a `frontend/src/`. Cada slice se importa por su `index.ts` (`docs/architecture.md`, «Feature-Sliced Design incremental»). Las firmas de F11a que se citan son las de su contrato (`specs/015-f11-acceso-cuenta/contracts/front-interfaces.md`), contrastadas el 2026-10-28 con el código de `impl-f11a` (`f11a/base`, a7b3c71d) en lo que ya está implementado; T001 vuelve a compararlas sobre `f12a/base`.
 
 ## `pages/admin`: la página (FR-062)
 
@@ -51,11 +51,11 @@ La usan la entrada de hoy (`AccountMenu`) y la ruta de F10. Es la única lectura
 ## `shared/lib/reload-document`
 
 ```ts
-// shared/lib/reload-document.ts (se muda desde app/account/reload-document.ts, sin cambios)
+// shared/lib/reload-document.ts (de F11a desde su T012; F12a no lo cambia)
 export function reloadDocument(): void; // window.location.reload()
 ```
 
-`AccountRoot` y `pages/admin` la importan de acá. Las specs de componentes la reemplazan con `vi.mock`.
+Ya vive acá en `impl-f11a` (`frontend/src/shared/lib/reload-document.ts:1-3`), y `AccountRoot` la importa de acá (`frontend/src/app/account/AccountRoot.tsx:3`). `pages/admin` también. Las specs de componentes la reemplazan con `vi.mock`.
 
 ## `pages/account`: la entrada y el lugar del contenedor
 
@@ -90,6 +90,7 @@ interface AccountDialogProps {
 - **Al usarla,** `AccountMenu` cierra «Tu cuenta» y monta `administration` con `onClose`. Ese `onClose` vuelve al estado cerrado y enfoca la entrada «Tu cuenta» (FR-004).
 - **Cuándo no existe.** Sin `administration`, o con una cuenta que no es admin, la entrada no está en el documento.
 - **Por qué es una prop y no un import:** `pages/account` no puede importar `pages/admin` (dos slices de la misma capa). Es un cambio al contrato de F11a, que decía «Su diálogo a pantalla entera se monta en `AccountMenu`»: lo sigue montando, pero lo recibe de `app/`.
+- **Quién lo agrega:** F11a tomó `administration` y `onAdminister` para sus T022, T023 y T025, que en a7b3c71d todavía no están. Si la base ya los trae, T008 suma sólo `isAdmin`, el panel y la entrada; si no, los agrega F12a (plan, rama B2). En los dos casos, las firmas son las de arriba.
 
 ## `app/account`: el contenedor de hoy (F12-Q1)
 
@@ -111,11 +112,11 @@ const AdminDialog = ({ onClose }: AdministrationProps) => /* <dialog className="
 ## `qa/e2e`: el doble, el Page Object y los datos
 
 ```ts
-// qa/e2e/fixtures/api-double.ts (cambio sobre F11a)
+// qa/e2e/fixtures/api-double.ts (de F11a, sin cambios: impl-f11a, :8-15 y :41)
 export interface ApiCall {
   method: string;
   path: string;
-  search: string; // nuevo: la query del pedido, con el '?' ('' si no hay)
+  search: string; // la query del pedido, con el '?' ('' si no hay)
   xsrf: string | undefined;
   user: string | undefined;
   body: unknown;
@@ -132,6 +133,7 @@ export class AdminPage {
   inviteForm(): Locator;
   table(name: string): Locator;
   row(name: RegExp): Locator;
+  actions(name: RegExp): Locator;
   notice(text: string): Locator;
   dialog(name: string): Locator;
   openSection(name: 'Cuentas' | 'Invitaciones'): Promise<void>;
@@ -155,7 +157,9 @@ export function linkFor(email: string): string;
 export const OWN_ROW, ANA_ROW, BETO_ROW, LEAVING_ROW: AdminUserJson;
 ```
 
-Las rutas de `/api/admin` se suman en cada escenario con `api.on('GET /api/admin/users', …)` y, con un id, una por id (`'PATCH /api/admin/users/12'`). Los escenarios usan `test.use({ sessionAccount: ADMIN })`.
+**Las acciones de una fila de «Cuentas»** van en un grupo con el nombre «Acciones sobre {nombre}» (`role="group"`), y la fila que no tiene acciones (la propia, la que se está borrando) no lo dibuja. `actions(name)` devuelve ese grupo: las pruebas cuentan los botones de una fila con `admin.actions(/Ana Pérez/).getByRole('button')`, y con una fila sin acciones el conteo da 0. Así la columna «Uso» de F14, que va antes de «Acciones», no cambia ninguno de esos conteos. La tabla de «Invitaciones» no lleva grupo.
+
+Las rutas de `/api/admin` se suman en cada escenario con `api.on('GET /api/admin/users', …)` y, con un id, una por id (`'PATCH /api/admin/users/12'`). El doble busca la ruta antes de mirar el CSRF: una que falte da 404 y queda en `unhandled`. `on` reemplaza la respuesta que hubiera (`Map.set`), también la de `confirm-password` si F8 la sumó a `installDefaults`. Los escenarios usan `test.use({ sessionAccount: ADMIN })`, y declaran cada falla con `/status of NNN/` o, para un pedido abortado, `/net::ERR_FAILED/`.
 
 ## Lo que hace cada ítem que sigue
 

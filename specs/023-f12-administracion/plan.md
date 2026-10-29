@@ -20,21 +20,25 @@
 > **Para quien lo implementa.**
 >
 > - **Qué leer.** Las «Restricciones globales», las «Reglas para todos los agentes», el contrato y la sección de tu tarea, enteras. `tasks.md` tiene una línea por tarea (T001 a T026) y remite acá.
-> - **La base.** F12a sale de `master` con F11a integrada, en la rama `f12a/base`. Las unidades U0 a U4 son PR contra `f12a/base`, y F12a llega a `master` en un solo PR, en T026 (research.md, R1).
+> - **La base.** La rama `f12a/base` sale de `f11a/base` con F11a completa (T001 a T035 de F11a), o de `master` si F11a ya llegó ahí. F12a usa piezas de U2 de F11a (`pages/account` y `qa/e2e/pages/account.ts`) y de U3 (`formatLocalDateTime`), así que no empieza sobre una `f11a/base` a medias: T001 lo comprueba. Las unidades U0 a U4 son PR contra `f12a/base`, y F12a llega a `master` en un solo PR, en T026, después del PR de F11a (research.md, R1).
 > - **El código verificado.** El código de este plan corrió fuera del repositorio:
 >   - las 86 specs de Vitest, en verde, con `tsc`, ESLint y Prettier del repo, sobre el código de F11a de su plan y de `impl-f11a`;
 >   - un arnés en Chromium, para el foco, los 320 px y Esc.
 >
 >   Los E2E tipan pero no corrieron, porque necesitan F11a cableada (research.md, «Mediciones» y «Lo que no se verificó»).
 >
->   El tipado pasó con `messagesOf(error: FieldError | GlobalError | undefined)`. La firma del contrato de F11a (`FieldError | undefined`) no acepta `errors.root?.serverError` de React Hook Form 7.89.0, y con ella no tipan `PasswordStep.tsx`, `InviteForm.tsx` ni el `LoginForm` de F11a (hallazgo 1 para F11a). Si F11a resuelve otra cosa, T001 lo anota y T012 y T018 usan la firma de `master`.
+>   **Lo que enmendó la revisión del 2026-10-28 no corrió:** los stubs del rojo como `const` tipados, las listas blancas `/status of NNN/` de los E2E, las ramas de T001 y lo que cambió en T002, T007 a T009 y T023 para partir del código real de F11a (`impl-f11a`, a7b3c71d).
+>
+>   **Lo que enmendó la decisión de F14 (Q1-A, 2026-10-28) tampoco corrió:** el grupo «Acciones sobre {nombre}» en `AccountsTable`, las specs de T015 que cuentan dentro de él y el método `actions(name)` del Page Object con los conteos de T022.
+>
+>   El tipado pasó con `messagesOf(error: FieldError | GlobalError | undefined)`. F11a la implementó así (`impl-f11a`, `frontend/src/shared/ui/form/show-failure.ts:8`, T017), por el hallazgo 1 de F12a, y T012 y T018 la usan tal cual.
 
 ## Summary
 
 F12a trae las pantallas que la consola no tiene: las cuentas y las invitaciones por enlace. El enfoque:
 
 - **Cinco unidades apiladas, con un solo merge a `master`** (R1):
-  - **U0:** la línea base y la mudanza de `reloadDocument`;
+  - **U0:** la línea base y la verificación de lo que F11a ya dejó (`reloadDocument` en `shared/lib`);
   - **U1:** el modelo, los endpoints, la entrada en «Tu cuenta» y lo que el doble de la API necesita;
   - **U2:** la página, con sus listas, sus formularios y su diálogo de acción;
   - **U3:** los E2E y el cableado;
@@ -58,7 +62,7 @@ F12a trae las pantallas que la consola no tiene: las cuentas y las invitaciones 
 
 **Testing**:
 
-- **Vitest,** en los dos proyectos que deja F11a: `node` para `*.spec.ts` y `dom` para `*.spec.tsx`.
+- **Vitest,** en los dos proyectos de `frontend/vitest.config.ts`, en `master` desde #67: `node` para `*.spec.ts` y `dom` para `*.spec.tsx`, con el setup `frontend/src/vitest.setup.ts`.
 - **Playwright,** con el Page Object de la administración sobre el doble de la API de F11a, con `sessionAccount: ADMIN`.
 
 Los valores esperados salen del contrato de C3b, de `backend/api/lang/es/` y de la spec, nunca del código que se prueba ni de una factory.
@@ -75,7 +79,7 @@ Los valores esperados salen del contrato de C3b, de `backend/api/lang/es/` y de 
 - **Lo que cambia:**
   - `AccountMenu.tsx`, `AccountDialog.tsx` y el índice de `pages/account`;
   - `AccountRoot.tsx` y `main.tsx`;
-  - el doble de la API y los fixtures de `qa/e2e`;
+  - los fixtures de `qa/e2e` (el doble de la API no cambia: F11a ya guarda `search`);
   - `docs/architecture.md` y `qa/AGENTS.md`.
 
 ## Restricciones globales
@@ -83,10 +87,10 @@ Los valores esperados salen del contrato de C3b, de `backend/api/lang/es/` y de 
 Valen para toda tarea. Los valores están copiados de la spec, de la constitución y de las reglas que deja F11a.
 
 - **La red, sin editar** (FR-060):
-  - los E2E de `qa/e2e/specs/` que existen en la base (los 123 de F1 y A2 y los de F11a);
+  - los E2E de `qa/e2e/specs/` que existen en la base (los de F1, A2, F4 y F11a, y los de cualquier ítem que haya entrado antes: la cuenta es la de T001, no un número de este plan);
   - los escenarios de `boot-check`, `dist-content-check` y `load-order-check`.
 - **Lo que sí cambia en `qa/e2e/`:**
-  - `fixtures/api-double.ts`, que suma `search` a `ApiCall`;
+  - ningún cambio en `fixtures/api-double.ts`: `ApiCall.search` ya está (`impl-f11a`, `qa/e2e/fixtures/api-double.ts:11` y `:41`);
   - `fixtures/index.ts`, que suma el fixture `admin`;
   - `pages/admin.ts` y `lib/admin-contract.ts`, nuevos;
   - los cuatro E2E nuevos, `specs/admin-*.spec.ts`.
@@ -108,13 +112,14 @@ Valen para toda tarea. Los valores están copiados de la spec, de la constituci�
   - la acción se repite una sola vez después del 201;
   - el front no lleva una lista de qué la pide.
 - **El peso:**
-  - `dist/index.html` queda bajo 1 250 000 caracteres (`qa/build-check.ts`);
+  - `dist/index.html` queda bajo `BOOT_SIZE_LIMIT` de `qa/build-check.ts`: 1 500 000 caracteres en `master` desde #76. T001 anota el valor de la base;
   - F12a suma como mucho +35 000 sobre la línea base de T001;
   - si se pasa, T026 se detiene y decide el usuario (R12).
 - **La complejidad:** ninguna función nueva pasa de 10. Los avisos de `npm run lint` no suben respecto de T001.
 - **La accesibilidad:**
   - todo se hace con el teclado, y el foco inicial va al título (FR-050);
   - cada tabla tiene título y encabezados, y los botones de cada fila nombran a la persona o el email (FR-051);
+  - los botones de una fila de «Cuentas» van en un grupo «Acciones sobre {nombre}», para que la columna «Uso» de F14 no cambie los conteos (decisión del usuario, 2026-10-28, Q1-A de F14);
   - desde 320 px no hay desplazamiento horizontal: la tabla se desplaza en su región, y los campos miden 16 px (FR-052);
   - con movimiento reducido no hay transiciones (FR-053).
 - **El backend:** no cambia.
@@ -166,10 +171,9 @@ frontend/src/
 ├── app/
 │   ├── main.tsx                                 # cambia (K): importa pages/admin/ui/admin.css
 │   └── account/
-│       ├── AccountRoot.tsx                      # cambia (K): administration={AdminDialog}; reloadDocument desde shared/lib
-│       ├── AdminDialog.tsx (+ admin-dialog.spec.tsx)   # nuevo (K): el contenedor de hoy
-│       └── reload-document.ts                   # se muda (K) a shared/lib
-├── shared/lib/reload-document.ts                # nuevo lugar (K)
+│       ├── AccountRoot.tsx                      # cambia (K): administration={AdminDialog}
+│       └── AdminDialog.tsx (+ admin-dialog.spec.tsx)   # nuevo (K): el contenedor de hoy
+├── shared/lib/reload-document.ts                # no cambia: ya está ahí desde F11a (T012); T002 lo verifica
 ├── entities/session/
 │   ├── model/is-admin.ts (+ .spec.ts)           # nuevo (A)
 │   └── index.ts                                 # cambia (A): exporta isAdmin
@@ -199,7 +203,7 @@ frontend/src/
         ├── AdminPage.tsx, admin-page.spec.tsx   # (P)
         └── admin.css                            # (P)
 qa/e2e/
-├── fixtures/api-double.ts                       # cambia (E): ApiCall.search
+├── fixtures/api-double.ts                       # no cambia: ApiCall.search ya está (F11a)
 ├── fixtures/index.ts                            # cambia (E): el fixture admin
 ├── lib/admin-contract.ts                        # nuevo (E)
 ├── pages/admin.ts                               # nuevo (E)
@@ -220,7 +224,7 @@ Lo que el revisor mira primero:
   - El 401 cierra el diálogo antes de pedir el ingreso.
   - El foco vuelve al control que abrió el diálogo o al título de su tabla.
 - **La contraseña.** La acción se repite exactamente una vez, y nada sale después de cancelar.
-- **La red.** El diff de `qa/e2e/specs/` toca sólo archivos `admin-*.spec.ts` nuevos. `boot-check`, `dist-content-check` y `load-order-check` no cambian.
+- **La red.** El diff de `qa/e2e/specs/` toca sólo archivos `admin-*.spec.ts` nuevos. `boot-check`, `dist-content-check` y `load-order-check` no cambian. Cada falla esperada se declara con `/status of NNN/` y su código exacto, o con `/net::ERR_FAILED/` para el pedido abortado; nunca con `/Failed to load resource/`.
 - **El peso y los estilos.** La medida contra T001, ningún `style=` y ningún `.sr-only`.
 
 **Lo que la spec implica y ninguna prueba de una tarea ejercitaba,** cada caso con la prueba que lo fija y la tarea que la suma:
@@ -265,9 +269,9 @@ Los dueños tienen archivos disjuntos («Project Structure»). Cada uno trabaja 
 
 **Integración** (research.md, R1):
 
-- Las unidades son PR contra `f12a/base`, que sale de `master` con F11a integrada. Cada PR se revierte solo en `f12a/base`.
-- El PR final de `f12a/base` a `master` lo abre K en T026.
-- **Si F11a todavía no está en `master`,** F12a no empieza: T001 lo comprueba.
+- Las unidades son PR contra `f12a/base`, que sale de `f11a/base` con F11a completa (T001 a T035 de F11a), o de `master` si F11a ya llegó ahí. Cada PR se revierte solo en `f12a/base`.
+- El PR final de `f12a/base` a `master` lo abre K en T026, después de que el PR de F11a llegue a `master` y con `f12a/base` rebasada sobre ese `master`.
+- **Si la base no tiene F11a completa** (falta `pages/account`, `qa/e2e/pages/account.ts` o `shared/lib/format-local-date-time.ts`), F12a no empieza: T001 lo comprueba («Ramas»).
 - **Si F10 llegara antes,** la administración nace como ruta, y el plan se consulta con el usuario (spec, Assumptions).
 
 ## Reglas para todos los agentes
@@ -279,7 +283,12 @@ Los dueños tienen archivos disjuntos («Project Structure»). Cada uno trabaja 
   - las skills `tdd`, `clean-code`, `vitest`, `react-testing` y las de Vercel;
   - si escribís E2E, `playwright-best-practices`.
 - **TDD, siempre.**
-  - Cada módulo nuevo empieza con su firma lanzando `throw new Error('not implemented')` (un componente: `const X = (props: XProps) => { throw new Error('not implemented'); }`), para que su spec falle por comportamiento y no por un import.
+  - Cada módulo nuevo empieza con su firma lanzando `throw new Error('not implemented')`, para que su spec falle por comportamiento y no por un import. El stub se escribe como `const` tipado, sin parámetros, porque el prefijo `_` no silencia `no-unused-vars` en este repositorio:
+    - una función: `export const isAdmin: (user: PublishedUser | null) => boolean = () => { throw new Error('not implemented'); };`;
+    - un componente: `const ActionDialog: FunctionComponent<ActionDialogProps> = () => { throw new Error('not implemented'); };`, con `export default ActionDialog;` al final;
+    - un hook: `const usePagedList: <Q extends Paged, T extends Identified>(load: LoadPage<Q, T>, initialQuery: Q, ownId: number) => PagedList<Q, T> = () => { throw new Error('not implemented'); };`, con su `export default`.
+
+    La implementación de la tarea verde reemplaza el stub por la declaración que escribe este plan.
   - La spec en rojo y su implementación van en commits separados. El commit rojo no pasa `npm test`; el PR entero sí.
   - Los valores esperados salen del contrato de C3b (`specs/010-c3b-admin-ciclo-de-vida/contracts/http.md`), de `backend/api/lang/es/`, de la spec o de un ejemplo resuelto a mano, nunca del módulo que se prueba ni de una factory.
 - **Archivos que no son tuyos no se tocan.** Si tu tarea necesita algo de otro dueño, pedíselo al coordinador.
@@ -301,13 +310,29 @@ Los dueños tienen archivos disjuntos («Project Structure»). Cada uno trabaja 
   - `interface` para las formas de objetos.
   - Un componente o un hook por archivo, declarado como `const` con nombre, con `export default` al final. Las funciones y las constantes van con exports nombrados.
   - Ningún `style=`, `style={…}`, `setAttribute('style', …)` ni `.cssText`.
-- **Si F11a cambió una firma de su contrato al implementarse** (por ejemplo, `messagesOf` para aceptar el `GlobalError` de React Hook Form; research.md, consultas), usá la firma de `master` y avisá al coordinador. No cambies código de F11a fuera de los archivos de tu tarea.
+  - `useStore` siempre con selector. F12a no suma ninguna guarda de ESLint: si la base ya trae la de F5 o F6 (`no-restricted-syntax` con `CallExpression[callee.name='useStore'][arguments.length=1]` en `eslint.config.ts`), la cumple; si no, la trae el primero de F5 y F6 que entre.
+- **Si F11a cambió una firma de su contrato al implementarse** (T001 las anota en su paso 4; `messagesOf`, por ejemplo, ya acepta el `GlobalError` de React Hook Form), usá la firma de la base y avisá al coordinador. No cambies código de F11a fuera de los archivos de tu tarea.
 - **Commits:** chicos, en español, con prefijo Angular y el trailer `Co-Authored-By` de tu modelo, sin `git push`:
   - `test(front): …` o `test(qa): …` para la spec en rojo;
   - `feat(front): …` para lo nuevo;
-  - `refactor(front): …` para la mudanza de T002;
+  - `refactor(front): …` sólo para lo que no cambia comportamiento;
   - `docs: …` para la documentación.
 - **Al terminar,** informá las tareas cerradas, los comandos que corriste con su resultado real, lo que no pudiste verificar y cualquier desvío del plan.
+
+## Ramas: lo que T001 detecta en la base
+
+F12a se escribió contra el plan de F11a y se revisó contra `impl-f11a` (a7b3c71d, hasta T021 de F11a). T001 corre cada detección sobre `f12a/base`, anota el resultado en research.md y aplica la rama que toca. Ninguna cambia el número ni el orden de las tareas.
+
+| Rama | Cómo se detecta | Sin la rama | Con la rama |
+| --- | --- | --- | --- |
+| **B1.** F11a completa | `ls frontend/src/pages/account/ui/AccountMenu.tsx qa/e2e/pages/account.ts frontend/src/shared/lib/format-local-date-time.ts` y `git grep -n "account: async" -- qa/e2e/fixtures/index.ts` | Falta algo: F12a no empieza. `impl-f11a` a7b3c71d todavía no tiene ninguno de los cuatro (T022 a T027 de F11a) | Sigue |
+| **B2.** El lugar de la administración en «Tu cuenta» (F11a-1) | `git grep -n "administration?: ComponentType<AdministrationProps>" -- frontend/src/pages/account/ui/AccountMenu.tsx` y `git grep -n "onAdminister" -- frontend/src/pages/account/ui/AccountDialog.tsx` | No imprimen nada: T007 suma la interfaz y la prop, y T008 hace `AccountMenu.tsx` y `AccountDialog.tsx` como dice el plan | Los dos imprimen: T007 no toca `AccountMenu.tsx` (sólo suma el export de `AdministrationProps` en `pages/account/index.ts` si falta). T008 suma sólo `isAdmin`, el panel `'administration'` con la condición `isAdmin(account)` y el botón «Administrar el taller», sobre los archivos de la base y sin reescribirlos |
+| **B3.** F8 entró antes (F12a-9) | `git grep -n "'POST /api/auth/confirm-password'" -- qa/e2e/fixtures/api-double.ts` | `confirm-password` no tiene respuesta por omisión: un pedido sin `api.on` da 404 y queda en `unhandled` | `installDefaults` ya la responde con 201, junto con `GET /api/progress` y el reset de F8. Los `api.on('POST /api/auth/confirm-password', …)` de T022 la reemplazan, porque `on` hace `Map.set` (`impl-f11a`, `qa/e2e/fixtures/api-double.ts:87-89`) |
+| **B4.** A3 entró antes | `git grep -n "ifNoneMatch" -- qa/e2e/fixtures/api-double.ts` | Nada cambia | El doble busca la ruta con la query y después sin ella, siempre antes del CSRF: las rutas de F12a, registradas sin query, se encuentran igual. A3 cambia `SignOutSection.tsx` (`forgetContentCopy`) y el montaje de «Tu cuenta»: T008 y T023 suman lo suyo sobre los archivos de la base y no deshacen eso |
+| **B5.** El tope del HTML | `grep -n "BOOT_SIZE_LIMIT =" qa/build-check.ts` | — | 1 500 000 desde #76. Si la base todavía dice 1 250 000, `f11a/base` no se rebasó sobre #76: se anota, y T026, que corre sobre `f12a/base` rebasada sobre `master`, usa 1 500 000 |
+| **B6.** La guarda de `useStore` (F5 o F6) | `git grep -n "arguments.length=1" -- eslint.config.ts` | F12a no la suma | La cumple: sus dos `useStore` llevan selector |
+
+En las dos situaciones de B3, cada escenario de T022 que llega a `confirm-password` registra su respuesta con `api.on`, y ninguno supone que la ruta no responde.
 
 ## 0. U0 · La base (coordinador K, onda 0)
 
@@ -315,26 +340,34 @@ Los dueños tienen archivos disjuntos («Project Structure»). Cada uno trabaja 
 
 ### Tarea 0.1 · La línea base (T001)
 
-- **Quién y cuándo:** K, sobre `f12a/base` recién creada (`master` con F11a integrada) y antes de cualquier cambio.
-- **Comprobar primero:** que `frontend/src/pages/account/ui/AccountMenu.tsx`, `frontend/src/features/sign-in/index.ts` y `qa/e2e/fixtures/api-double.ts` existen, y que el contrato de F11a se cumple. Si F11a no está en `master`, F12a no empieza.
+- **Quién y cuándo:** K, sobre `f12a/base` recién creada (`f11a/base` con F11a completa, o `master` si F11a ya llegó; «Reparto en paralelo», «Integración») y antes de cualquier cambio.
+- **Comprobar primero:** las ramas B1 a B6 («Ramas: lo que T001 detecta en la base»). Si B1 falla, F12a no empieza.
 - **Entrega:** un commit de documentación que suma a research.md la sección «Línea base de la implementación», con:
   - el hash de la base y la fecha;
-  - `html.length` de `dist/index.html`;
+  - `html.length` de `dist/index.html` y el valor de `BOOT_SIZE_LIMIT` (B5);
   - la cantidad de checks de `npm test` y de pruebas de Vitest;
   - los avisos de `npm run lint`;
-  - la cantidad de E2E;
-  - las firmas de F11a que difieren de su contrato. `messagesOf`, por ejemplo, puede haber cambiado su tipo.
+  - la cantidad de E2E, que es la que usan las compuertas (no un número de este plan);
+  - el resultado de cada rama, B1 a B6;
+  - las firmas de F11a del paso 4, y las que difieran de lo que usa este plan.
 - **Pasos:**
   1. Correr, todo en verde: `npm ci --offline --no-audit --no-fund`, `npm run build`, `npm test`, `npm run lint`, `npm run format:check` y `E2E_PORT=4173 npm run test:e2e`. Si algo falla, F12a no empieza.
   2. Medir `node -e "console.log(require('fs').readFileSync('dist/index.html','utf8').length)"` y contar los avisos (`npm run lint 2>&1 | grep -c warning`).
-  3. Registrar los valores. El presupuesto de F12a (+35 000) se cuenta desde lo medido acá.
+  3. Correr las detecciones de B1 a B6 y anotar qué rama aplica.
+  4. **Comparar las firmas reales de F11a** en la base con las que usa este plan. En `impl-f11a` (a7b3c71d) son estas; si la base difiere, se anota y la tarea que la usa sigue la de la base:
+     - **el doble,** `qa/e2e/fixtures/api-double.ts`: `` type ApiRoute = `${'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'} /api/${string}` `` (`:6`); `ApiCall` con `method`, `path`, `search`, `xsrf`, `user` y `body` (`:8-15`); `ApiReply` con `status`, `json?`, `body?`, `contentType?` y `headers?` (`:17-23`); en `ApiDouble`, `account` y `signInAccount` (`:54-55`), `calls` (`:56`), `on(route: ApiRoute, handler: ApiHandler): void` (`:87`), `reply(route: ApiRoute, ...replies: ApiReply[]): void` (`:91`), `callsTo(route: ApiRoute): ApiCall[]` (`:95`) y `assertAllHandled(): void` (`:100`). `replyTo` busca la ruta antes de mirar el CSRF (`:127-139`): una ruta sin registrar da 404 y queda en `unhandled`;
+     - **`messagesOf(error: FieldError | GlobalError | undefined): string[]`,** en `frontend/src/shared/ui/form/show-failure.ts:8`;
+     - **`reloadDocument(): void`,** en `frontend/src/shared/lib/reload-document.ts:1`;
+     - **`reauthenticate(expectedUserId: number, dependencies: { readonly requestSignIn: RequestSignIn; readonly reloadDocument: () => void }): Promise<ReauthenticationOutcome>`,** en `frontend/src/features/sign-in/model/reauthenticate.ts:5-8`;
+     - **`AccountMenu` y `AccountDialog`** (B2) y el fixture `account` con su `AccountPage` (B1), que en a7b3c71d todavía no existen: se anotan sus props y sus métodos tal como están en la base (`entryHost`, `reloadDocument`, `open()`, `button()`, `dialog` y `entry`, que usan T007, T009 y T022).
+  5. Registrar los valores. El presupuesto de F12a (+35 000) se cuenta desde lo medido acá.
 - **Commit:** `docs(specs): línea base de la implementación de F12a`.
 
-### Tarea 0.2 · `reloadDocument` pasa a `shared/lib` (T002)
+### Tarea 0.2 · `reloadDocument` ya está en `shared/lib` (T002)
 
-- **Quién:** K. Es una mudanza sin cambio de comportamiento: la página de la administración la necesita, y `pages` no puede importar `app` (research.md, R2).
+- **Quién:** K. F11a lo dejó en `frontend/src/shared/lib/reload-document.ts` desde su T012 (ledger de F11a, `:52` y `:55`), por el hallazgo 3 de F12a: T002 ya no muda nada y queda como una verificación de la compuerta de U0. La página de la administración lo necesita, y `pages` no puede importar `app` (research.md, R2).
 - **Pasos:**
-  1. `git mv frontend/src/app/account/reload-document.ts frontend/src/shared/lib/reload-document.ts`. El contenido no cambia:
+  1. Comprobar el archivo y su contenido, que tiene que ser este (`impl-f11a`, `frontend/src/shared/lib/reload-document.ts:1-3`):
 
      ```ts
      export function reloadDocument(): void {
@@ -342,10 +375,10 @@ Los dueños tienen archivos disjuntos («Project Structure»). Cada uno trabaja 
      }
      ```
 
-  2. En `frontend/src/app/account/AccountRoot.tsx`, el import pasa a `import { reloadDocument } from '../../shared/lib/reload-document';`. Con `grep -rn "reload-document" frontend/src` se comprueba que no queda otro import del lugar viejo.
-  3. Correr `npm run typecheck`, `npm test`, `npm run lint`, `node qa/boot-check.ts` y `npm run build && E2E_PORT=4173 npm run test:e2e -- specs/account.spec.ts`, todo en verde.
-- **Commit:** `refactor(front): reloadDocument pasa a shared/lib para la administración`.
-- **Compuerta de U0:** los pasos de 0.3 sobre T001 y T002, y el PR `refactor(front): move reloadDocument to shared/lib (F12a U0)` contra `f12a/base`.
+  2. Comprobar que `frontend/src/app/account/reload-document.ts` no existe y que `git grep -n "reload-document" -- frontend/src` lista sólo imports de `shared/lib/reload-document` (en a7b3c71d, `frontend/src/app/account/AccountRoot.tsx:3`).
+  3. Si algo difiere, F12a no sigue: se anota en research.md y se avisa al coordinador.
+- **Commit:** ninguno. El resultado va en el commit de T001.
+- **Compuerta de U0:** los pasos de 0.3 sobre T001 y T002, y el PR `docs(specs): F12a implementation baseline (F12a U0)` contra `f12a/base`.
 
 ### 0.3 · La compuerta de cada unidad
 
@@ -355,7 +388,9 @@ K la corre antes de integrar cada unidad en `f12a/base` (T010, T021, T024 y T026
 2. **Los comandos:** `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `git diff --check` y `E2E_PORT=4173 npm run test:e2e`.
 3. **La red sin editar:**
    - `git diff --name-only f12a/base -- qa/e2e/specs qa/boot-check.ts qa/dist-content-check.ts qa/load-order-check.ts` lista sólo archivos `qa/e2e/specs/admin-*.spec.ts`;
-   - `git diff --diff-filter=M --name-only f12a/base -- qa/e2e/specs` no lista nada.
+   - `git diff --diff-filter=M --name-only f12a/base -- qa/e2e/specs` no lista nada;
+   - `git diff --name-only f12a/base -- qa/e2e/fixtures/api-double.ts` no lista nada: el doble no cambia;
+   - `git grep -n "Failed to load resource/" -- 'qa/e2e/specs/admin-*.spec.ts'` no imprime nada: las fallas se declaran con `/status of NNN/` o `/net::ERR_FAILED/`.
 4. **Sin estilos en línea:** `git diff f12a/base -- frontend | grep -E '^\+.*(style=|style=\{|setAttribute\(.style.|\.cssText|sr-only)'` no imprime nada.
 5. **Complejidad:** `npm run lint` da 0 errores y, como mucho, los avisos de T001.
 6. **Peso:** `html.length` de `dist/index.html`, anotado en la descripción del PR con la diferencia contra T001.
@@ -375,7 +410,7 @@ K la corre antes de integrar cada unidad en `f12a/base` (T010, T021, T024 y T026
 - los ocho pedidos a la API;
 - `isAdmin`;
 - la entrada «Administrar el taller», con el lugar del contenedor en `AccountMenu`;
-- el doble con `search`, los datos del contrato y el Page Object.
+- el fixture `admin`, los datos del contrato y el Page Object (el doble ya guarda `search` desde F11a).
 
 Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T023.
 
@@ -554,7 +589,7 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
    }
    ```
 
-3. **Los stubs.** Cada uno exporta sus constantes con el valor de la tarea 1.2 y sus funciones lanzando `not implemented`:
+3. **Los stubs.** Cada uno exporta sus constantes con el valor de la tarea 1.2 y sus funciones como `const` tipados que lanzan `not implemented` («Reglas», TDD), por ejemplo `export const splitEmails: (text: string) => string[] = () => { throw new Error('not implemented'); };`. Los tipos (`UserAction`, `UserActionTexts` y `FailureReaction`) van completos, como en la tarea 1.2:
    - `parse-admin.ts`: `parseAdminUser`, `parseAdminInvitation`, `parsePage`, `parseIssuedLink`, `parseInviteEntries` y `parseDeletion`;
    - `emails.ts`: `MAX_EMAILS`, `NO_EMAILS`, `TOO_MANY_EMAILS`, `splitEmails`, `checkEmailCount`, `isEmailsField` y `emailMessages`;
    - `user-actions.ts`: `UserAction`, `UserActionTexts`, `ACTION_SLOTS`, `DELETE_ACKNOWLEDGEMENT`, `actionsFor`, `changeFor` y `userActionTexts`;
@@ -1329,7 +1364,7 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
 
 ### Tarea 1.3 · Las specs de los endpoints, en rojo (T005, M)
 
-**Archivos:** el stub de `frontend/src/pages/admin/api/admin-endpoints.ts` (las ocho funciones, con sus firmas de la tarea 1.4, lanzando `not implemented`) y `admin-endpoints.spec.ts`.
+**Archivos:** el stub de `frontend/src/pages/admin/api/admin-endpoints.ts` (las ocho funciones, con sus firmas de la tarea 1.4, como `const` tipados que lanzan `not implemented`; «Reglas», TDD) y `admin-endpoints.spec.ts`.
 
 1. **`admin-endpoints.spec.ts`.** Los métodos, las rutas, los cuerpos y los encabezados son los del contrato HTTP de C3b:
 
@@ -1673,8 +1708,17 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
 
 **Consume:** `AccountMenu`, `AccountDialog` y `sessionStore` de F11a. **Produce:** el contrato «`pages/account`: la entrada y el lugar del contenedor».
 
-1. **El stub** `is-admin.ts` exporta `isAdmin(user: PublishedUser | null): boolean`, que lanza `not implemented`.
-2. **En `AccountMenu.tsx`,** se agregan sin usarse:
+1. **El stub** `is-admin.ts`, como `const` tipado:
+
+   ```ts
+   import type { PublishedUser } from './types';
+
+   export const isAdmin: (user: PublishedUser | null) => boolean = () => {
+     throw new Error('not implemented');
+   };
+   ```
+
+2. **En `AccountMenu.tsx`,** con la rama B2 sin el lugar de la administración (si la base ya lo tiene, este paso no toca `AccountMenu.tsx` y sólo comprueba el export del índice), se agregan sin usarse:
    - la interfaz `export interface AdministrationProps { onClose(): void; }`;
    - la prop `readonly administration?: ComponentType<AdministrationProps>;` en `AccountMenuProps`.
 
@@ -1808,14 +1852,21 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
    });
    ```
 
-5. **Correr** `npm run test:unit -- frontend/src/entities/session frontend/src/pages/account`: en rojo `isAdmin` y los dos escenarios que esperan la entrada; en verde «does not exist for a student» y las specs de F11a.
+5. **Correr** `npm run test:unit -- frontend/src/entities/session frontend/src/pages/account`: en rojo `isAdmin` y los dos escenarios que esperan la entrada; en verde «does not exist for a student» y las specs de F11a. Con la rama B2 con el lugar ya puesto, «does not exist for a student» también puede quedar en rojo si la base ofrece la entrada sin mirar el rol: es un rojo esperado, y T008 lo pone en verde.
 6. **Commit:** `test(front): specs de isAdmin y de la entrada a la administración, en rojo`.
 
 ### Tarea 1.6 · La condición de admin y la entrada en «Tu cuenta» (T008, A)
 
 **Archivos:** `frontend/src/entities/session/model/is-admin.ts`, `frontend/src/entities/session/index.ts`, `frontend/src/pages/account/ui/AccountMenu.tsx`, `frontend/src/pages/account/ui/AccountDialog.tsx` y `frontend/src/pages/account/index.ts`.
 
-1. **`is-admin.ts`:**
+**La rama B2** (el lugar de la administración en «Tu cuenta», F11a-1). En `impl-f11a` (a7b3c71d) `pages/account` todavía no existe, y el lugar quedó pendiente para T022 y T023 de F11a. T001 anota qué encontró:
+
+- **sin el lugar,** los pasos 2 a 4 van como están: `AccountMenu.tsx` entero sobre el de F11a, y los tres cambios de `AccountDialog.tsx`;
+- **con el lugar** (la prop `administration` y `onAdminister?()` ya están), los pasos 2 a 4 no reescriben nada: sobre los archivos de la base se suman sólo la condición `isAdmin(account)` para pasar `onAdminister`, el panel `'administration'` que monta `Administration` con `onClose`, el botón «Administrar el taller» entre «Aviso de privacidad» y `<SignOutSection … />` si la base no lo dibuja, y el export de `AdministrationProps` si el índice no lo tiene. El resultado tiene que cumplir el mismo contrato (`contracts/admin-page.md`, «`pages/account`») y las mismas specs de T007.
+
+Con A3 en la base (B4), `AccountMenu.tsx` y `AccountDialog.tsx` conservan lo que A3 les haya cambiado.
+
+1. **`is-admin.ts`** (reemplaza el stub de T007):
 
    ```ts
    import type { PublishedUser } from './types';
@@ -1826,7 +1877,7 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
    ```
 
    En `entities/session/index.ts`, al final: `export { isAdmin } from './model/is-admin';`.
-2. **`AccountMenu.tsx`,** entero:
+2. **`AccountMenu.tsx`,** entero (sin el lugar de B2):
    - el estado pasa de `open` a un panel (`'account' | 'administration' | null`);
    - el contenedor llega por la prop `administration`, porque `pages/account` no puede importar `pages/admin` (research.md, R2).
 
@@ -1889,7 +1940,7 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
    export default AccountMenu;
    ```
 
-3. **`AccountDialog.tsx`,** tres cambios sobre el de F11a:
+3. **`AccountDialog.tsx`,** tres cambios sobre el de F11a (con el lugar de B2, sólo los que falten):
    - la interfaz suma `onAdminister?(): void;` después de `onClose(): void;`;
    - la desestructuración pasa a `({ account, onClose, onAdminister, reloadDocument }: AccountDialogProps)`;
    - entre el botón «Aviso de privacidad» y `<SignOutSection … />` se agrega:
@@ -1912,34 +1963,14 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
 5. **Correr** `npm run test:unit -- frontend/src/entities/session frontend/src/pages/account`, en verde: las specs de F11a (`account-menu.spec.tsx`) también, sin editarse. Después, `npm run typecheck` y `npm run lint`.
 6. **Commit:** `feat(front): «Administrar el taller» en «Tu cuenta», sólo para admins`.
 
-### Tarea 1.7 · El doble con la query, los datos del contrato y el Page Object (T009, E)
+### Tarea 1.7 · El fixture, los datos del contrato y el Page Object (T009, E)
 
-**Archivos:** `qa/e2e/fixtures/api-double.ts`, `qa/e2e/fixtures/index.ts`, `qa/e2e/lib/admin-contract.ts` y `qa/e2e/pages/admin.ts`.
+**Archivos:** `qa/e2e/fixtures/index.ts`, `qa/e2e/lib/admin-contract.ts` y `qa/e2e/pages/admin.ts`. `qa/e2e/fixtures/api-double.ts` no cambia.
 
 **Produce:** «`qa/e2e`» del contrato.
 
-1. **`api-double.ts`,** dos cambios: `callOf` guardaba sólo el `pathname`, y las pruebas de la búsqueda y de la paginación necesitan la query.
-   - `ApiCall` suma `search: string;` después de `path: string;`.
-   - `callOf` queda así:
-
-   ```ts
-   function callOf(request: Request): ApiCall {
-     const headers = request.headers();
-     const text = request.postData();
-     const url = new URL(request.url());
-     return {
-       method: request.method(),
-       path: url.pathname,
-       search: url.search,
-       xsrf: headers['x-xsrf-token'],
-       user: headers['x-taller-user'],
-       body: text ? (JSON.parse(text) as unknown) : undefined,
-     };
-   }
-   ```
-
-   Las rutas siguen comparándose por `METHOD path`, sin la query, así que ningún escenario de F11a cambia.
-2. **`fixtures/index.ts`,** tres cambios:
+1. **`api-double.ts`, sin cambios.** F11a ya guarda la query de cada pedido en `ApiCall.search` (`impl-f11a`, `qa/e2e/fixtures/api-double.ts:11`, y `callOf`, `:41`), por el hallazgo 4 de F12a. Las rutas se comparan por `METHOD path`, sin la query, y `replyTo` busca la ruta antes de mirar el CSRF (`:127-139`). T009 no suma `search`, `query`, otro `replyTo` ni ningún campo: lo comprueba `git diff f12a/base -- qa/e2e/fixtures/api-double.ts`, que no imprime nada. Con A3 en la base (B4), el doble ya trae lo de A3 y tampoco se toca.
+2. **`fixtures/index.ts`,** tres cambios, sobre el fixture `account` que deja F11a (B1; en a7b3c71d todavía no existe):
    - `import { AdminPage } from '../pages/admin';`;
    - `admin: AdminPage;` en `Fixtures`;
    - `admin: async ({ page, account }, use) => use(new AdminPage(page, account)),` después de `account`.
@@ -2099,6 +2130,10 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
        return this.region.getByRole('row', { name });
      }
 
+     actions(name: RegExp): Locator {
+       return this.row(name).getByRole('group', { name: /^Acciones sobre/ });
+     }
+
      notice(text: string): Locator {
        return this.region.getByRole('status').filter({ hasText: text });
      }
@@ -2127,7 +2162,7 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
    ```
 
 5. **Correr** `npm run typecheck` y `npm run build && E2E_PORT=4194 npm run test:e2e`: toda la red, en verde y sin cambios.
-6. **Commit:** `test(qa): la query en el doble de la API, los datos de la administración y su Page Object`.
+6. **Commit:** `test(qa): el fixture, los datos de la administración y su Page Object`.
 
 ### Tarea 1.8 · La compuerta de U1 (T010, K)
 
@@ -2156,6 +2191,8 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
 
 - en `frontend/src/pages/admin/ui/`, la ayuda `render-admin.tsx`, `action-dialog.spec.tsx` y los stubs de `ActionDialog.tsx`, `ConfirmStep.tsx`, `PasswordStep.tsx`, `LinksStep.tsx`, `LinkResult.tsx`, `FailureNotice.tsx` y `use-action-dialog.ts`;
 - en `frontend/src/pages/admin/lib/`, los stubs de `copy-text.ts` y `recover-session.ts`.
+
+Todos los stubs son `const` tipados que lanzan `not implemented` («Reglas», TDD): los componentes, como `const ActionDialog: FunctionComponent<ActionDialogProps> = () => { throw new Error('not implemented'); };` con su interfaz de props ya declarada; el hook y las funciones, con su firma de la tarea 2.2 como tipo.
 
 **Consume:** de M, `types.ts`, `react-to-failure.ts`, `link-texts.ts` y `confirmPassword`; de F11a, `shared/ui/form`, `shared/api/http` y `features/sign-in`. **Produce:** `ActionDialog` (`{ adminId, start, notFoundMessage, send, onFinish }`), `useActionDialog(ownId, fallback, announce)` y `FailureNotice`.
 
@@ -3095,7 +3132,7 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
 
 ### Tarea 2.3 · Las specs de la lista paginada, en rojo (T013, L, desde S1)
 
-**Archivos:** en `frontend/src/pages/admin/`, los stubs de `lib/use-paged-list.ts` (`LoadPage`, `PagedList` y el hook) y de `ui/ListView.tsx`, y `ui/paged-list.spec.tsx`.
+**Archivos:** en `frontend/src/pages/admin/`, los stubs de `lib/use-paged-list.ts` (`LoadPage`, `PagedList` y el hook) y de `ui/ListView.tsx`, y `ui/paged-list.spec.tsx`. Los stubs son `const` tipados («Reglas», TDD): el hook, como en el ejemplo de las reglas, y `ListView`, que es genérico, como `const ListView: <Q extends { readonly page: number }, T>(props: ListViewProps<Q, T>) => ReactNode = () => { throw new Error('not implemented'); };`.
 
 **Produce:** `usePagedList(load, initialQuery, ownId)` y `ListView` (`{ list, texts, onClear, children(items) }`).
 
@@ -3532,7 +3569,7 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
 
 ### Tarea 2.5 · Las specs de «Cuentas», en rojo (T015, L, desde S2)
 
-**Archivos:** el stub de `frontend/src/pages/admin/ui/AccountsSection.tsx` (`{ ownId }`) y `accounts-section.spec.tsx`.
+**Archivos:** el stub de `frontend/src/pages/admin/ui/AccountsSection.tsx` (`const AccountsSection: FunctionComponent<AccountsSectionProps> = () => { throw new Error('not implemented'); };`, con `AccountsSectionProps` = `{ ownId }`) y `accounts-section.spec.tsx`.
 
 1. **`accounts-section.spec.tsx`.** Cubre las historias 3 y 4 y la historia 5 en sus escenarios 4 y 5:
 
@@ -3580,14 +3617,14 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
        renderSection([{ status: 200, json: pageBody([OWN, ANA, LEAVING, UNVERIFIED]) }]);
        const table = await screen.findByRole('table', { name: 'Cuentas del taller, por nombre' });
        const own = within(table).getByRole('row', { name: /Olga Ruiz \(vos\)/ });
-       expect(within(own).queryAllByRole('button')).toHaveLength(0);
+       expect(within(own).queryByRole('group', { name: /^Acciones sobre/ })).toBeNull();
        const leaving = within(table).getByRole('row', { name: /Carla Díaz/ });
        expect(leaving).toHaveTextContent('Borrándose');
-       expect(within(leaving).queryAllByRole('button')).toHaveLength(0);
+       expect(within(leaving).queryByRole('group', { name: /^Acciones sobre/ })).toBeNull();
        expect(within(table).getByRole('row', { name: /Dani Paz/ })).toHaveTextContent('Sin verificar');
        const ana = within(table).getByRole('row', { name: /Ana Pérez/ });
        expect(
-         within(ana)
+         within(within(ana).getByRole('group', { name: 'Acciones sobre Ana Pérez' }))
            .getAllByRole('button')
            .map((button) => button.textContent),
        ).toEqual([
@@ -3710,7 +3747,7 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
        expect(calls[1]).toMatchObject({ method: 'DELETE', path: '/api/admin/users/12' });
        const row = screen.getByRole('row', { name: /Ana Pérez/ });
        expect(row).toHaveTextContent('Borrándose');
-       expect(within(row).queryAllByRole('button')).toHaveLength(0);
+       expect(within(row).queryByRole('group', { name: /^Acciones sobre/ })).toBeNull();
        expect(screen.getByRole('status')).toHaveTextContent(message);
        expect(screen.getByRole('heading', { name: 'Cuentas del taller, por nombre' })).toHaveFocus();
      });
@@ -3775,7 +3812,7 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
 
 **Archivos:** `ui/AccountsTable.tsx` y `ui/AccountsSection.tsx`, en `frontend/src/pages/admin/`.
 
-1. **`ui/AccountsTable.tsx`.** La región se desplaza con el teclado (`tabIndex={0}`) y los botones tienen lugares fijos (`ACTION_SLOTS`):
+1. **`ui/AccountsTable.tsx`.** La región se desplaza con el teclado (`tabIndex={0}`), los botones tienen lugares fijos (`ACTION_SLOTS`) y van en un grupo «Acciones sobre {nombre}» que se dibuja sólo si la fila tiene acciones:
 
    ```tsx
    import { formatLocalDateTime } from '../../../shared/lib/format-local-date-time';
@@ -3811,35 +3848,44 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
            </tr>
          </thead>
          <tbody>
-           {users.map((user) => (
-             <tr key={user.id}>
-               <th scope="row">
-                 {user.name}
-                 {user.id === ownId ? ' (vos)' : null}
-               </th>
-               <td>
-                 {user.email}
-                 {user.emailVerified ? null : <span className="admin-mark">Sin verificar</span>}
-               </td>
-               <td>{ROLE_LABELS[user.role]}</td>
-               <td>{STATUS_LABELS[user.status]}</td>
-               <td>{formatLocalDateTime(user.createdAt)}</td>
-               <td>
-                 <div className="admin-row-actions">
-                   {actionsFor(user, ownId).map((action, index) => (
-                     <button
-                       key={ACTION_SLOTS[index]}
-                       type="button"
-                       className="button secondary small"
-                       onClick={(event) => onAction(action, user, event.currentTarget)}
+           {users.map((user) => {
+             const actions = actionsFor(user, ownId);
+             return (
+               <tr key={user.id}>
+                 <th scope="row">
+                   {user.name}
+                   {user.id === ownId ? ' (vos)' : null}
+                 </th>
+                 <td>
+                   {user.email}
+                   {user.emailVerified ? null : <span className="admin-mark">Sin verificar</span>}
+                 </td>
+                 <td>{ROLE_LABELS[user.role]}</td>
+                 <td>{STATUS_LABELS[user.status]}</td>
+                 <td>{formatLocalDateTime(user.createdAt)}</td>
+                 <td>
+                   {actions.length === 0 ? null : (
+                     <div
+                       className="admin-row-actions"
+                       role="group"
+                       aria-label={`Acciones sobre ${user.name}`}
                      >
-                       {userActionTexts(action, user).button}
-                     </button>
-                   ))}
-                 </div>
-               </td>
-             </tr>
-           ))}
+                       {actions.map((action, index) => (
+                         <button
+                           key={ACTION_SLOTS[index]}
+                           type="button"
+                           className="button secondary small"
+                           onClick={(event) => onAction(action, user, event.currentTarget)}
+                         >
+                           {userActionTexts(action, user).button}
+                         </button>
+                       ))}
+                     </div>
+                   )}
+                 </td>
+               </tr>
+             );
+           })}
          </tbody>
        </table>
      </div>
@@ -4026,7 +4072,7 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
 
 ### Tarea 2.7 · Las specs de «Invitaciones», en rojo (T017, I, desde S2)
 
-**Archivos:** el stub de `frontend/src/pages/admin/ui/InvitationsSection.tsx` (`{ ownId }`) e `invitations-section.spec.tsx`.
+**Archivos:** el stub de `frontend/src/pages/admin/ui/InvitationsSection.tsx` (`const InvitationsSection: FunctionComponent<InvitationsSectionProps> = () => { throw new Error('not implemented'); };`, con `InvitationsSectionProps` = `{ ownId }`) e `invitations-section.spec.tsx`.
 
 1. **`invitations-section.spec.tsx`.** Cubre las historias 1 (escenarios 1, 2, 4, 5 y 7) y 2:
 
@@ -4676,7 +4722,7 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
 
 ### Tarea 2.9 · Las specs de la página, en rojo (T019, P, desde S3)
 
-**Archivos:** el stub de `frontend/src/pages/admin/ui/AdminPage.tsx` (`{ initialSection, onClose }`), `frontend/src/pages/admin/index.ts` y `ui/admin-page.spec.tsx`.
+**Archivos:** el stub de `frontend/src/pages/admin/ui/AdminPage.tsx` (`const AdminPage: FunctionComponent<AdminPageProps> = () => { throw new Error('not implemented'); };`, con `AdminPageProps` = `{ initialSection, onClose }`), `frontend/src/pages/admin/index.ts` y `ui/admin-page.spec.tsx`.
 
 1. **`index.ts`,** la API pública del slice:
 
@@ -4955,12 +5001,13 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
 
 **Archivos:** `qa/e2e/specs/admin-entry.spec.ts`, `admin-accounts.spec.ts`, `admin-invitations.spec.ts` y `admin-layout.spec.ts`.
 
-**Consume:** de T009, `AdminPage` (el Page Object), `admin-contract.ts` y `ApiCall.search`; de F11a, `ADMIN`, `STUDENT`, `errorBody`, `api.on`, `api.reply`, `api.callsTo` y `access.signIn`.
+**Consume:** de T009, `AdminPage` (el Page Object) y `admin-contract.ts`; de F11a, `ApiCall.search`, `ADMIN`, `STUDENT`, `errorBody`, `api.on`, `api.reply`, `api.callsTo`, `api.signInAccount`, `access.signIn` y el fixture `account` (las firmas de T001, paso 4).
 
 **Reglas de estos E2E** (research.md, R10):
 
-- cada escenario con una respuesta que no es 2xx declara `pageIssues.expectIssue(/Failed to load resource/, …)`;
-- las rutas con id se registran una por una (`'PATCH /api/admin/users/12'`);
+- cada escenario con una respuesta que no es 2xx declara esa respuesta con la lista blanca angosta, `pageIssues.expectIssue(/status of NNN/, …)` con el código exacto, una vez por código (así quedó en `impl-f11a`, `qa/e2e/specs/session-stage.spec.ts:104` y `:133`). El pedido abortado no tiene código: se declara con `/net::ERR_FAILED/`, como `qa/e2e/specs/cycle.spec.ts:71` de `master`. Nunca `/Failed to load resource/`, que esconde cualquier otro error de red;
+- las rutas con id se registran una por una (`'PATCH /api/admin/users/12'`). El doble busca la ruta antes de mirar el CSRF (`impl-f11a`, `qa/e2e/fixtures/api-double.ts:127-139`): una ruta sin registrar da 404 y queda en `unhandled`, y `assertAllHandled()` la reporta al final del escenario. Ningún E2E de F12a espera un 419;
+- cada escenario que llega a `POST /api/auth/confirm-password` registra su respuesta con `api.on`, aunque la base ya la responda por omisión (B3);
 - todo pedido que modifica se comprueba con `call.user === String(ADMIN.id)`;
 - las fechas se comparan en la zona de `playwright.config.ts` (America/Argentina/Buenos_Aires): `2026-10-12T15:30:00.000Z` se ve como «12 de octubre de 2026 a las 12:30».
 
@@ -4973,7 +5020,6 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
    import { observeReload } from '../lib/document-marker';
    import { urls } from '../lib/urls';
 
-   const FAILED_RESOURCE = /Failed to load resource/;
    const PASSWORD = 'una frase larga para el taller';
 
    test.describe('a student', () => {
@@ -5061,7 +5107,7 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
        shell,
        page,
      }) => {
-       pageIssues.expectIssue(FAILED_RESOURCE, 'the 403 of a role that was lost');
+       pageIssues.expectIssue(/status of 403/, 'the 403 of a role that was lost');
        api.reply('PATCH /api/admin/users/12', { status: 403, json: adminError('forbidden') });
        await shell.goto(urls.view('recorrido'));
        await admin.open();
@@ -5087,7 +5133,7 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
        pageIssues,
        shell,
      }) => {
-       pageIssues.expectIssue(FAILED_RESOURCE, 'the 401 of an expired session');
+       pageIssues.expectIssue(/status of 401/, 'the 401 of an expired session');
        api.signInAccount = ADMIN;
        api.reply('PATCH /api/admin/users/12', { status: 401, json: errorBody('unauthenticated') });
        await shell.goto(urls.view('recorrido'));
@@ -5125,7 +5171,6 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
    } from '../lib/admin-contract';
    import { urls } from '../lib/urls';
 
-   const FAILED_RESOURCE = /Failed to load resource/;
    const PASSWORD = 'una frase larga para el taller';
    const ACCOUNTS = 'Cuentas del taller, por nombre';
 
@@ -5167,9 +5212,9 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
        }));
        await shell.goto(urls.view('recorrido'));
        await admin.open();
-       await expect(admin.row(/Olga Ruiz \(vos\)/).getByRole('button')).toHaveCount(0);
-       await expect(admin.row(/Carla Díaz/).getByRole('button')).toHaveCount(0);
-       await expect(admin.row(/Ana Pérez/).getByRole('button')).toHaveCount(3);
+       await expect(admin.actions(/Olga Ruiz \(vos\)/).getByRole('button')).toHaveCount(0);
+       await expect(admin.actions(/Carla Díaz/).getByRole('button')).toHaveCount(0);
+       await expect(admin.actions(/Ana Pérez/).getByRole('button')).toHaveCount(3);
      });
    });
 
@@ -5187,7 +5232,7 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
        pageIssues,
        shell,
      }) => {
-       pageIssues.expectIssue(FAILED_RESOURCE, 'the 423 of the first sensitive action');
+       pageIssues.expectIssue(/status of 423/, 'the 423 of the first sensitive action');
        api.reply('PATCH /api/admin/users/12', {
          status: 423,
          json: adminError('password_confirmation_required'),
@@ -5238,7 +5283,8 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
        pageIssues,
        shell,
      }) => {
-       pageIssues.expectIssue(FAILED_RESOURCE, 'the 423 and the 422 of a wrong password');
+       pageIssues.expectIssue(/status of 423/, 'the 423 of the action');
+       pageIssues.expectIssue(/status of 422/, 'the 422 of a wrong password');
        api.on('PATCH /api/admin/users/12', () => ({
          status: 423,
          json: adminError('password_confirmation_required'),
@@ -5274,7 +5320,7 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
        pageIssues,
        shell,
      }) => {
-       pageIssues.expectIssue(FAILED_RESOURCE, 'the 409 of the last admin');
+       pageIssues.expectIssue(/status of 409/, 'the 409 of the last admin');
        api.on('PATCH /api/admin/users/13', () => ({ status: 409, json: adminError('last_admin') }));
        await shell.goto(urls.view('recorrido'));
        await admin.open();
@@ -5308,7 +5354,7 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
        await dialog.getByRole('checkbox', { name: 'Entiendo que no se puede deshacer.' }).check();
        await confirm.click();
        await expect(admin.row(/Ana Pérez/)).toContainText('Borrándose');
-       await expect(admin.row(/Ana Pérez/).getByRole('button')).toHaveCount(0);
+       await expect(admin.actions(/Ana Pérez/).getByRole('button')).toHaveCount(0);
        await expect(admin.notice(DELETION_MESSAGE)).toBeVisible();
        await expect(admin.region.getByRole('heading', { name: ACCOUNTS })).toBeFocused();
        expect(api.callsTo('DELETE /api/admin/users/12')[0]?.user).toBe(String(ADMIN.id));
@@ -5321,7 +5367,7 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
        shell,
        page,
      }) => {
-       pageIssues.expectIssue(FAILED_RESOURCE, 'the 429 of the administration limit');
+       pageIssues.expectIssue(/status of 429/, 'the 429 of the administration limit');
        await page.clock.install();
        api.reply('PATCH /api/admin/users/12', {
          status: 429,
@@ -5354,7 +5400,6 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
    import { OWN_ROW, adminError, invitation, linkFor, pageOf } from '../lib/admin-contract';
    import { urls } from '../lib/urls';
 
-   const FAILED_RESOURCE = /Failed to load resource/;
    const PASSWORD = 'una frase larga para el taller';
    const CLASSROOM = Array.from({ length: 40 }, (_, index) => `alumno${index + 1}@x.com`);
    const PENDING_ADMIN = invitation({ id: 7, email: 'root@x.com', role: 'admin' });
@@ -5445,7 +5490,7 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
        pageIssues,
        shell,
      }) => {
-       pageIssues.expectIssue(FAILED_RESOURCE, 'the 422 of a repeated email');
+       pageIssues.expectIssue(/status of 422/, 'the 422 of a repeated email');
        api.on('POST /api/admin/invitations', () => ({
          status: 422,
          json: errorBody('validation_failed', {
@@ -5469,7 +5514,7 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
        pageIssues,
        shell,
      }) => {
-       pageIssues.expectIssue(FAILED_RESOURCE, 'the 423 of an admin batch');
+       pageIssues.expectIssue(/status of 423/, 'the 423 of an admin batch');
        api.reply('POST /api/admin/invitations', {
          status: 423,
          json: adminError('password_confirmation_required'),
@@ -5523,7 +5568,7 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
        shell,
        page,
      }) => {
-       pageIssues.expectIssue(FAILED_RESOURCE, 'the aborted request of the batch');
+       pageIssues.expectIssue(/net::ERR_FAILED/, 'the aborted request of the batch');
        await shell.goto(urls.view('recorrido'));
        await admin.open();
        await page.route('**/api/admin/invitations', (route) =>
@@ -5620,7 +5665,7 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
        pageIssues,
        shell,
      }) => {
-       pageIssues.expectIssue(FAILED_RESOURCE, 'the 404 of an invitation accepted meanwhile');
+       pageIssues.expectIssue(/status of 404/, 'the 404 of an invitation accepted meanwhile');
        api.on('DELETE /api/admin/invitations/8', () => ({
          status: 404,
          json: adminError('not_found'),
@@ -5801,7 +5846,7 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
 
 **Archivos:** `frontend/src/app/account/AdminDialog.tsx`, `frontend/src/app/account/admin-dialog.spec.tsx`, `frontend/src/app/account/AccountRoot.tsx` y `frontend/src/app/main.tsx`.
 
-1. **La spec en rojo,** `app/account/admin-dialog.spec.tsx`, contra un stub de `AdminDialog` que lanza `not implemented`. Fija la Review Focus 1:
+1. **La spec en rojo,** `app/account/admin-dialog.spec.tsx`, contra un stub de `AdminDialog` como `const` tipado (`const AdminDialog: FunctionComponent<AdministrationProps> = () => { throw new Error('not implemented'); };`, con `export default AdminDialog;`). Fija la Review Focus 1:
 
    ```tsx
    import { fireEvent, render, screen } from '@testing-library/react';
@@ -5915,7 +5960,7 @@ Ningún alumno ve nada todavía: `AccountRoot` no pasa `administration` hasta T0
    export default AdminDialog;
    ```
 
-3. **`AccountRoot.tsx`,** entero:
+3. **`AccountRoot.tsx`.** Este es el resultado esperado sobre el `AccountRoot` del plan de F11a (T025 de F11a), que ya importa `reloadDocument` de `shared/lib` (`impl-f11a`, `frontend/src/app/account/AccountRoot.tsx:3`). Si el de la base difiere (por ejemplo, con A3, B4), se suman sólo el import de `AdminDialog` y la prop `administration={AdminDialog}` en `<AccountMenu … />`, sin reescribir el archivo:
 
    ```tsx
    import { AccessGate, accessRequests } from '../../features/sign-in';
@@ -5994,12 +6039,12 @@ Cambia en el mismo PR que U4 (FR-061):
 
 ### Tarea 4.2 · El peso, la compuerta final y el PR a `master` (T026, K)
 
-1. **El peso** (FR-057 y SC-007). Con `npm run build`:
+1. **El peso** (FR-057 y SC-007). Con `npm run build`, sobre la base del paso 2 (rebasada sobre `master` si salió de `f11a/base`):
    - `html.length` de `dist/index.html`, contra T001;
    - el análisis de esbuild de quickstart.md §3, que separa los bytes de `pages/admin` y del contenedor de los del resto.
 
-   **La condición de corte:** si la diferencia con T001 pasa de +35 000 caracteres o el total llega a 1 250 000, F12a no cierra. Se informa la medida y decide el usuario: achicar, subir el tope o esperar a C4 (spec, riesgo 1; research.md, R12).
-2. **La compuerta de 0.3,** sobre `f12a/base` con U1 a U4, con:
+   **La condición de corte:** si la diferencia con T001 pasa de +35 000 caracteres o el total llega a `BOOT_SIZE_LIMIT` de `qa/build-check.ts` (1 500 000 desde #76), F12a no cierra. Se informa la medida y decide el usuario: achicar, subir el tope o esperar a C4 (spec, riesgo 1; research.md, R12).
+2. **La compuerta de 0.3,** sobre `f12a/base` con U1 a U4, rebasada sobre `master` después de que el PR de F11a llegue ahí (si `f12a/base` salió de `f11a/base`), con:
    - la red completa cinco veces seguidas (`--repeat-each=5 --retries=0`);
    - `docker compose build taller`, con permiso;
    - la verificación a mano contra el stack (quickstart.md §4).
@@ -6127,13 +6172,13 @@ Ninguna. F12a no suma paquetes ni navegadores (FR-056). Docker corre sólo con p
 
 ## Riesgos y lo que quedó sin verificar
 
-1. **El peso** (spec, riesgo 1). F12a se estima en unos 32 000 caracteres, y las reservas de los demás ítems ya pasan el margen (research.md, «Mediciones»). *Mitigación:* la condición de corte de T026 y la decisión 1 del informe.
+1. **El peso** (spec, riesgo 1). F12a se estima en unos 32 000 caracteres. Con el tope en 1 500 000 (#76), el margen creció en 250 000 sobre el que se midió al planificar (research.md, «Mediciones»). *Mitigación:* la condición de corte de T026.
 2. **F11a puede llegar distinta de su plan.** *Mitigación:*
-   - T001 anota las firmas que difieren (`messagesOf`, por ejemplo, no tipa con el error general de React Hook Form, research.md);
-   - las reglas piden usar las de `master`;
+   - T001 compara las firmas reales de F11a (paso 4) y detecta las ramas B1 a B6. `messagesOf` ya acepta el error general de React Hook Form (`impl-f11a`, `show-failure.ts:8`);
+   - las reglas piden usar las de la base;
    - el contrato de F12a dice qué espera de cada pieza de F11a.
 3. **Los E2E no corrieron al planificar.** Necesitan F11a cableada. *Mitigación:*
-   - tipan contra el doble del plan de F11a;
+   - tipan contra el doble del plan de F11a, y se revisaron contra el de `impl-f11a` (a7b3c71d), que tiene lo que usan: `search`, `on`, `reply`, `callsTo` y `signInAccount`;
    - el comportamiento de fondo se verificó en Vitest y en Chromium (research.md);
    - T024 corre la red tres veces, y T026, cinco.
 4. **El cierre forzado de un `<dialog>`** (dos o tres Esc seguidos) depende del navegador. *Mitigación:* el diálogo de acción lo trata como cancelar o «Cerrar igual», y lo reabre si hay un pedido en curso (research.md, R4). Se observó en Chromium.

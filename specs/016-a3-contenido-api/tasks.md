@@ -7,11 +7,11 @@ Las ondas, los dueños de archivos y los puntos de sincronización (S1 y S2) est
 - **`[P]`** marca la cabeza de una cola que puede correr a la vez que otras de su onda: archivos disjuntos y ninguna tarea anterior sin cerrar. La cola de cada dueño es secuencial.
 - **`[US#]`** va en cada tarea de código, para trazarla a la spec.
 - **Las pruebas no son opcionales** (constitución, principio II). Cada tarea de código abre con su spec en rojo, y cada par rojo y verde es de su dueño.
-- **La integración:** cada unidad es un PR contra `a3/base`, y A3 llega a `master` en un solo PR, en T016 (research.md, R16).
+- **La integración:** cada unidad es un PR contra `a3/base`, que sale de `f11a/base` con F11a completa o de `master` si F11a ya llegó, y A3 llega a `master` en un solo PR, después de F11a, en T016 (research.md, R16).
 
 ## Phase 1: Setup — U0, la base (coordinador K, onda 0)
 
-- [ ] T001 K · La línea base sobre `a3/base` (`master` con F11a) y el contraste de las firmas de F11a con su contrato, en `specs/016-a3-contenido-api/research.md` (Q1; plan 0.1; quickstart §1)
+- [ ] T001 K · La línea base sobre `a3/base` (`f11a/base` o `master` con F11a), el contraste de las firmas y del código de F11a, las adaptaciones de sus E2E vueltas a derivar y las ramas de F8, en `specs/016-a3-contenido-api/research.md` (Q1; plan 0.1; quickstart §1)
 
 ## Phase 2: Foundational — U1, los módulos nuevos sin cablear (onda 1: S y B; onda 2: K)
 
@@ -25,7 +25,7 @@ Las ondas, los dueños de archivos y los puntos de sincronización (S1 y S2) est
 
 ## Phase 3: User Story 1 - El taller abre con el contenido de la API (Priority: P1), con las historias 2 a 6 en el corte — U2 (onda 3: G, Q, E y K; onda 4: K)
 
-- [ ] T009 [P] [US1] G · Desde S1, specs en rojo del corte: `content-gate.spec.ts`, `gate-view.spec.ts`, `session-gate.spec.ts` y `session-view.spec.ts` en `frontend/src/app/boot/`, y `frontend/src/features/sign-in/model/sign-out.spec.ts` (FR-003, FR-010, FR-021, FR-027 y FR-028; Review Focus 1; plan 2.1)
+- [ ] T009 [P] [US1] G · Desde S1, specs en rojo del corte: `content-gate.spec.ts`, `gate-view.spec.ts`, `session-gate.spec.ts` y `session-view.spec.ts` en `frontend/src/app/boot/`, y `frontend/src/features/sign-in/model/sign-out.spec.ts` (FR-003, FR-010, FR-021, FR-027 y FR-028; el token guardado y los tres casos de F11a; Review Focus 1; plan 2.1)
 - [ ] T010 [US1] G · El corte en el front:
   - en `frontend/src/shared/api/content/`: `content-source.ts`, `api-content-source.ts` e `index.ts`, y el borrado de `static-content-source.ts` y su spec;
   - en `frontend/src/app/boot/`: `content-gate.ts`, `gate-view.ts`, `session-gate.ts`, `session-view.ts`, `account-stages.ts` y `content-stage.ts`;
@@ -37,7 +37,7 @@ Las ondas, los dueños de archivos y los puntos de sincronización (S1 y S2) est
 - [ ] T011 [P] [US6] Q · Desde S1, en rojo y en verde desde S2: en `qa/lib/`, `boot-harness.ts`, `content-server.ts`, `built-page.ts` y `sources.ts`; y en `qa/`, `boot-check.ts`, `dist-content-check.ts` y `build-check.ts` (FR-013, FR-020, FR-023, FR-030 y FR-035 a FR-037; SC-001, SC-003 y SC-009; plan 2.3)
 - [ ] T012 [P] [US3] E · Desde S1, en rojo y en verde desde S2, cada adaptación en su commit:
   - en `qa/e2e/lib/`: `content-portions.ts`, `content-requests.ts` y `content-copy.ts`;
-  - `qa/e2e/fixtures/api-double.ts`;
+  - `qa/e2e/fixtures/api-double.ts`, sobre la forma de F11a (`ApiCall.search` y la ruta antes que el CSRF), con las listas blancas angostas en cada E2E de error;
   - la adaptación de `qa/e2e/specs/content-gate.spec.ts` (A2), y la de `qa/e2e/specs/session-stage.spec.ts` y `qa/e2e/specs/sign-in.spec.ts` (F11a);
   - el nuevo `qa/e2e/specs/content-api.spec.ts`.
 

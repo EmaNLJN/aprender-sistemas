@@ -191,7 +191,7 @@ Es un `CustomEvent` en `window`, `taller:content-copy-saved`, con `detail: {save
 
 **Por qué.** jsdom no implementa IndexedDB: la documentación de jsdom en Context7 no lo menciona, y `fake-indexeddb` existe justamente para Node y jsdom (consultas 8 y 9). Sumar `fake-indexeddb` contradice FR-034.
 
-**Lo que decide el usuario (D2 del informe):** si prefiere `fake-indexeddb` 6.2.6, se suma con permiso y se enmienda FR-034. Sus datos:
+**La decisión D2 del informe quedó en (a), aceptada con el merge del plan (#71; clarify, «Decisiones del 2026-10-28 (noche)»):** el doble propio, sin `fake-indexeddb`. Los datos que se evaluaron de `fake-indexeddb` 6.2.6:
 
 - licencia Apache-2.0;
 - 490 834 bytes desempaquetados y ninguna dependencia, según el registro de npm;
@@ -210,15 +210,15 @@ Por eso no hay tarea de spike.
 
 **El doble de F11a (`ApiDouble`) suma, sin cambiar lo que ya hace:**
 
-- **en `ApiCall`:** `query` (el `search` de la URL) e `ifNoneMatch`;
+- **en `ApiCall`:** `ifNoneMatch`. La query ya está en `search`, que F11a sumó a pedido de F12a (`impl-f11a`, `qa/e2e/fixtures/api-double.ts:11` y `:41`); A3 no suma `query`;
 - **en `ApiReply`:** `abort`;
-- **la búsqueda de rutas:** primero con la query (`GET /api/guide`, `GET /api/exercises?catalog=lab&language=rust`) y después sin ella;
+- **la búsqueda de rutas:** primero con la query (`GET /api/guide`, `GET /api/exercises?catalog=lab&language=rust`) y después sin ella, dentro del orden de F11a: la ruta se busca antes de mirar el CSRF, y una desconocida da 404 y queda en `unhandled` (`:127-139`);
 - **`contentVersion`:** un campo público que usan la sesión y las porciones;
 - **las 17 porciones por omisión:** con los bytes del generador, su `ETag` y el 304 cuando coincide el `If-None-Match`.
 
 **Las fallas de cada prueba** se arman con `page.route(predicado, …)`, que gana por estar registrada después del doble, y `route.fallback()` para seguir al doble.
 
-**Hallazgo para F11a:** su `ApiCall` no traía la query ni `If-None-Match`, y el doble no podía distinguir dos porciones de un mismo recurso.
+**Hallazgo para F11a, ya resuelto:** su `ApiCall` no traía la query; F11a sumó `search` (T014). `If-None-Match` lo suma A3.
 
 ### R14. El arnés de `boot-check`: temporizadores por vencimiento
 
@@ -242,12 +242,12 @@ Por eso no hay tarea de spike.
 | **Lo que suma A3, estimado** | **unos +6 700** |
 
 - **Retirar el archivo estático resta unos 660 caracteres del HTML:** la fuente estática (624) y la versión de 32 caracteres entre comillas. Ya están restados en la diferencia. Que `dist/content/` no exista no cambia el largo de `dist/index.html`.
-- **Contra el presupuesto:** quedan unos 48 000 caracteres para A3 y los ports, y A3 usa un 14 %.
+- **Contra el presupuesto:** con el tope de entonces (1 250 000) quedaban unos 48 000 caracteres para A3 y los ports, y A3 usaba un 14 %. Desde #76 el tope es `BOOT_SIZE_LIMIT` = 1 500 000; el margen real lo anota T001 sobre la base.
 - **La medición real** la hace T014 con `html.length`, y su condición de corte está en el plan.
 
 ### R16. La integración: `a3/base` y un solo merge
 
-- **Las unidades:** U1, U2 y U3 son PR contra `a3/base`, que sale de `master` con F11a.
+- **Las unidades:** U1, U2 y U3 son PR contra `a3/base`, que sale de `f11a/base` con F11a completa, o de `master` si F11a ya llegó (F11a llega a `master` en un solo PR, después del aviso de privacidad y de las invitaciones).
 - **El corte:** U2 es atómico (FR-031). Ningún commit de `master` tiene las dos fuentes: la estática sigue activa hasta U2, y U1 es código sin cablear.
 - **El merge:** `a3/base` llega a `master` en un solo PR (T016), con la documentación (FR-043 pide «el mismo cambio») y los E2E de A3.
 
@@ -283,6 +283,8 @@ Hechas el 2026-10-28 con el segundo servidor de Context7. Las versiones salen de
 | 11 | Vitest 5.0.3 (`/vitest-dev/vitest/v5.0.3`) | `useFakeTimers`: qué falsea | Falsea todo salvo `nextTick` y `queueMicrotask`, también `Date`. `advanceTimersByTimeAsync` vacía las promesas entre temporizadores | Sí: el presupuesto usa `Date.now()` |
 | 12 | Vite 8.0.10 (`/vitejs/vite/v8.0.10`; el lockfile tiene la 8.3.2) | Los ganchos del plugin: `config`, `configureServer` y `generateBundle` | Cada gancho es independiente: sacar `config` (el `define`) y `configureServer` deja `generateBundle` con los avisos de licencia | No |
 | 13 | Zustand 5.0.12 (`/pmndrs/zustand/v5.0.12`; el lockfile tiene la 5.0.15) | `createStore` de `zustand/vanilla` y `getState()` | Las acciones se llaman con `store.getState().accion(…)` fuera de React | No: es lo que ya hace F11a |
+| 14 | Playwright 1.63.0 (`/microsoft/playwright/v1.63.0`), consultado en la enmienda | `route.abort()` sin código | El código por omisión es `'failed'`. El texto que Chromium deja en la consola (`Failed to load resource: net::ERR_FAILED`) no lo dice la documentación: sale de `qa/e2e/specs/cycle.spec.ts:71` de `master`, que ya lo espera | Sí: los pedidos abortados llevan `/net::ERR_FAILED/`, y los que responden un código, `/status of NNN/` |
+| 15 | Vitest 5.0.3 (`/vitest-dev/vitest/v5.0.3`), consultado en la enmienda | `vi.spyOn` sobre `globalThis.clearTimeout` con temporizadores falsos, y `vi.restoreAllMocks` | `restoreAllMocks` devuelve la implementación original de cada `vi.spyOn`, sin borrar el historial; la guía recomienda llamarlo en `afterEach` | Sí: la spec de la etapa suma `vi.restoreAllMocks()` en `afterEach`, antes de `vi.useRealTimers()`, como la de F11a |
 
 ## Mediciones de sólo lectura
 
@@ -307,8 +309,53 @@ Ninguno. Los textos que lee el alumno son los de la spec, tal cual:
 
 ## Lo que no se verificó
 
-- **El código de F11a corriendo:** las firmas salen de su contrato, y su implementación no se leyó. T001 contrasta el contrato con `master`, y si algo difiere, el plan se corrige antes de U1.
+- **El código de F11a corriendo:** las firmas salían de su contrato. La enmienda del 2026-10-28 leyó su código hasta `a7b3c71d` (T001 a T021) y alineó el plan; lo de T022 a T035 lo contrasta T001, y si algo difiere, el plan se corrige antes de U1.
+- **Los fragmentos de la enmienda:** la etapa con `readAgain`, las specs de la compuerta con los casos de F11a, el doble con `search` y `routeFor`, y las listas blancas angostas no corrieron.
 - **Los checks contra el código de F11a:** `boot-check`, `dist-content-check` y `build-check` no corrieron. Tampoco `boot-check` con el arnés por vencimiento; lo prueba T011, con los casos de hoy en verde.
 - **El build de Vite y el peso real:** T014.
 - **La red E2E entera:** sólo se compilaron los E2E nuevos y los adaptados. Un riesgo nuevo es el tiempo, porque cada arranque sin copia pasa 17 porciones por el doble.
 - **Docker, la imagen web, la vista previa y la medición del aula:** T015 y T016, con permiso.
+
+## Enmienda: lo que F11a fijó al implementarse (2026-10-28)
+
+El plan se escribió contra el texto del plan de F11a. Esta sección registra lo que cambió al leer su código (`impl-f11a`, rama `f11a/base`, `a7b3c71d`, T001 a T021) y su ledger (`.superpowers/sdd/plan/progress.md`), con las decisiones del coordinador del 2026-10-28 (noche).
+
+### E1. El token del enlace vive en la etapa (FR-005 de F11)
+
+**El problema.** La etapa tomaba el token con `readSession({ signal, token: options.takeAccessToken() })`, y `take()` lo devuelve una sola vez. Si la primera lectura daba `unreachable`, el lector volvía sin entregarlo; el reintento de la compuerta leía la sesión por un segundo lector, sin token (`readSessionForContent`). Con la URL ya limpia, «Reintentar» perdía el alta o el restablecimiento. F11a no lo pierde: su etapa toma el token al empezar y lo olvida recién al entregarlo (`session-gate.ts:52` y `:67-68`), y lo fija «keeps the token of the link through a failure and a retry» (`session-gate.spec.ts:192-209`).
+
+**La decisión** (regla del coordinador). La etapa toma el token una sola vez al empezar, lo guarda y lo pasa a cada lectura siguiente hasta que una sesión responde. `take()` de F11a no cambia. La etapa expone `readAgain`, la lectura de cada ronda y de cada «Reintentar», con el mismo lector y sin la espera de la etapa, y `readSessionForContent` la usa en lugar de un segundo lector. El `requestSignIn` que la etapa le da al lector olvida el token en el momento en que lo entrega, así que una lectura `unreachable`, o un 429 que no entra en el presupuesto, lo conservan, y una lectura que falla después de un ingreso no lo vuelve a pedir.
+
+**Alternativas.**
+
+- **Guardar el token en `account-stages.ts`.** Ese archivo no tiene spec: el arreglo quedaría sin prueba.
+- **Olvidarlo cuando la lectura da `ready`.** Una lectura que falla después del ingreso lo conservaría, y el reintento volvería a mostrar el alta con un token ya usado.
+- **Cambiar `take()` para que lo devuelva más de una vez.** Lo prohíbe la regla, y cambia el contrato de F11a.
+
+**Las pruebas:** dos casos nuevos en `session-gate.spec.ts` (T009) y uno en `content-api.spec.ts` (T012), que pasa por el cableado real: una primera sesión 502 con `#invitacion=…`, «Reintentar» y el alta con la invitación.
+
+### E2. Los tres casos de la spec de la compuerta de F11a
+
+La revisión de F11a reforzó su spec (`ff510eed`), y la reescritura de A3 había perdido tres casos. Vuelven a T009, con las mismas intenciones: ningún temporizador actúa después de resolver aunque `clearTimeout` no cancele nada (`:101-108`, con `vi.restoreAllMocks()` en `afterEach`); la espera se limpia cuando llega la sesión (`:110-120`); y `storeSession` corre antes de «pedir el ingreso» (`:211-223`, el mutante M4).
+
+### E3. `SESSION_LOADING_MARKUP`
+
+F11a lo exporta de `app/boot/session-view.ts:21-22`, junto con `sessionFailureMarkup` (`:31`). A3 lo importa tal como lo exporta F11a, y saca `sessionFailureMarkup` con la falla (D1-(a)). El contrato de F11a los nombra desde su T034.
+
+### E4. El doble de la API, en la forma de F11a
+
+`ApiCall.search` ya existe, y `replyTo` busca la ruta antes de mirar el CSRF (el arreglo `f5b62ae6`). A3 suma sólo `ifNoneMatch`, `abort`, `contentVersion` y las 17 porciones, y busca la ruta con la query dentro de ese orden (`routeFor`). Si F8 entró antes, su `GET /api/progress` por omisión responde `this.contentVersion`.
+
+### E5. Las listas blancas de los E2E de error
+
+`/status of NNN/` con el código exacto, nunca `/Failed to load resource/` (`session-stage.spec.ts:104` y `:133` de F11a). Un pedido abortado con `route.abort()` no tiene código de estado: lleva `/net::ERR_FAILED/`, como `cycle.spec.ts:71` (consulta 14). Es la aplicación de la regla a un caso que no nombra; el informe de la enmienda lo lleva como pregunta.
+
+### E6. Lo demás
+
+- **Las adaptaciones de los E2E de F11a** parten de su versión final: `session-stage.spec.ts` de `a7b3c71d`; `sign-in.spec.ts`, de lo que T001 encuentre en la base.
+- **La base:** `f11a/base` o `master` con F11a (TR-12).
+- **Las decisiones D1-(a) y D2-(a):** aceptadas con el merge del plan (#71).
+- **El tope del HTML:** `BOOT_SIZE_LIMIT` = 1 500 000 (#76).
+- **Las cuentas de la base:** salen de T001.
+- **Los stubs del rojo:** `const` tipados, porque el prefijo `_` no silencia `no-unused-vars`.
+- **Lo que F8 toca en `qa/lib` y en el doble:** T001, paso 5, lo detecta y T011 y T012 lo conservan.

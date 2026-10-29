@@ -56,7 +56,9 @@ Lo que entrega la lectura de la sesión a la fuente:
   - `timeout`: se agotó el presupuesto;
   - `status`: un 429 que no cabe o que no trae `Retry-After`.
 
-La primera la deja la etapa de sesión (`sessionStage.takeRead()`). Las siguientes, en cada ronda, después del ingreso y en cada «Reintentar», las hace el lector de la sesión de la compuerta. Con `user: null`, el lector borra la copia y espera «pedir el ingreso», así que nunca entrega una lectura sin cuenta.
+La primera la deja la etapa de sesión (`sessionStage.takeRead()`). Las siguientes, en cada ronda, después del ingreso y en cada «Reintentar», las hace `sessionStage.readAgain`, con el mismo lector y sin la espera de la etapa. Con `user: null`, el lector borra la copia y espera «pedir el ingreso», así que nunca entrega una lectura sin cuenta.
+
+**El token del enlace (en memoria, en la etapa de sesión):** la etapa lo toma una sola vez al empezar (`take()` de F11a) y lo guarda. Cada lectura lo lleva mientras ninguna sesión haya respondido; el lector lo entrega a «pedir el ingreso» en cuanto una responde, y la etapa lo olvida en ese momento. Una lectura `unreachable` lo conserva para la siguiente (FR-005 de F11).
 
 ## El presupuesto del intento (`AttemptBudget`, en memoria)
 
@@ -82,14 +84,14 @@ La primera la deja la etapa de sesión (`sessionStage.takeRead()`). Las siguient
 ## El intento, paso a paso
 
 ```text
-etapa de sesión: begin() → GET /api/session ─┬─ 429 que cabe → esperar Retry-After → repetir
-                                              ├─ user: null → borrar la copia → pedir el ingreso (en pausa) → repetir
-                                              ├─ token o aviso sin aceptar → pedir el ingreso (en pausa) → repetir
-                                              ├─ lista → takeRead() = ready
-                                              └─ no responde o vence → takeRead() = unreachable
+etapa de sesión: token = take() → begin() → GET /api/session ─┬─ 429 que cabe → esperar Retry-After → repetir
+                                                              ├─ user: null → borrar la copia → pedir el ingreso (en pausa) → repetir
+                                                              ├─ token o aviso sin aceptar → pedir el ingreso (en pausa; el token se olvida) → repetir
+                                                              ├─ lista → takeRead() = ready
+                                                              └─ no responde o vence → takeRead() = unreachable (el token queda guardado)
 compuerta → fuente.read():
   leer la copia (a la vez)
-  sesión = takeRead() o leer la sesión de nuevo
+  sesión = takeRead() o readAgain() (con el token guardado, si ninguna sesión respondió)
   unreachable o contentVersion null → la copia (si se puede usar) o la falla
   la copia en la versión de la sesión → confirmed-copy
   ronda: las 17 porciones con su If-None-Match
