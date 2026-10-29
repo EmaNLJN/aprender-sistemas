@@ -213,6 +213,25 @@ entidades `exercise` (evidencia, ejecución, fusión de registros, catálogo y `
   problema concreto de cohesión o dependencias. No muevas todo el legacy de una vez
   ni crees capas, abstracciones o reexports para usos hipotéticos.
 
+## Lint del front
+
+`eslint.config.ts` suma, sobre las reglas recomendadas de ESLint y de typescript-eslint:
+
+- **React,** en `frontend/src`: `react-hooks` (los hooks y el compilador) y `@eslint-react/eslint-plugin`
+  con `recommended-typescript` (claves, `flushSync`, refs y APIs del DOM).
+- **Accesibilidad,** en los `.tsx`: `eslint-plugin-jsx-a11y-x` con `recommended`. Es el fork de
+  `eslint-plugin-jsx-a11y` que soporta ESLint 10; el original no publica una versión desde 2024. Un `<pre>`
+  desplazable puede llevar `tabIndex={0}`, porque el teclado necesita enfocarlo para desplazarlo.
+- **Promesas, con tipos** (`projectService`): `no-floating-promises`, `no-misused-promises` y
+  `await-thenable`. Una promesa que se lanza sin esperarla se marca con `void`.
+- **Una excepción** va en su línea, con `eslint-disable-next-line <regla> -- <motivo>`; una regla no se
+  apaga para todo el repo para ocultar un defecto.
+
+El resto de `recommendedTypeChecked` es deuda con su propio PR: el 2026-10-29 daba 240 errores (103 de
+`unbound-method` y 81 de `no-unsafe-*`). Prettier formatea JSX y TSX sin plugins, y ESLint no tiene reglas
+de formato, así que no hace falta `eslint-config-prettier`; cuando entre Tailwind (F15),
+`prettier-plugin-tailwindcss` ordena las clases.
+
 ## Complejidad ciclomática y legibilidad
 
 La complejidad ciclomática cuenta caminos linealmente independientes del flujo.
