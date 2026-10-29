@@ -216,7 +216,7 @@ Las dos specs del front escribieron lo que toman de C3c como supuesto, hasta que
 | `features.passwordReset` es la bandera de «hay correo» | Confirmado: no hay otra |
 | `created` y `renewed` por correo, sin enlace | Confirmado: traen `expiresAt` y no `url` |
 | `rate_limited` al pasar los 300 correos por día | Confirmado, con dos precisiones. Es por cada 24 horas desde el primer correo, no por día del calendario. Desde que se agota, gana sobre `user_exists` e `invitation_pending` y no se crea nada |
-| `sentAt` y `sendFailedAt` en la lista | Confirmado. `sendFailedAt` aparece cuando se agota el plazo de reintentos: 24 horas por omisión, o el vencimiento del link si llega antes (decisión 1 del plan) |
+| `sentAt` y `sendFailedAt` en la lista | Confirmado. `sendFailedAt` aparece cuando se agota el plazo de reintentos: 24 horas por omisión, o el vencimiento del link si llega antes (decisión 1 del plan, aceptada el 2026-10-28) |
 | El reenvío por correo responde «503; 404» | **Corregido:** también 429 `too_many_requests` con `Retry-After` si el admin llegó a su tope, y entonces no rota nada |
 | La recuperación de un tercero responde 202, sin el enlace | Confirmado. **Corregido:** también 429 `too_many_requests` con `Retry-After` si ya se emitió un link para esa cuenta hace menos de 60 segundos. Así el «Le mandamos un enlace…» de F12 nunca miente |
 | A un admin no se le ofrece la recuperación por correo | Confirmado: 422 `errors.user` |

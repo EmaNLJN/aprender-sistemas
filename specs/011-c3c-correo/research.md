@@ -84,7 +84,7 @@ El tiempo de espera del SMTP es de 20 s (`config/mail.php`, `mailers.smtp.timeou
 
 **Las pruebas del «después del COMMIT».** `Queue::fake()` registra en el momento aunque la transacción vuelva atrás (`QueueFake::push`). Las pruebas que dicen «después del COMMIT» o «una vuelta atrás no deja nada» fijan la conexión `mail` con el driver `database` y leen `mail_jobs`. Bajo `RefreshDatabase` eso funciona como en producción: el administrador de transacciones de prueba ejecuta lo diferido al confirmar el nivel 1 (FR-051).
 
-### R4. Reintentos y plazo de un correo (decisión 1 del informe)
+### R4. Reintentos y plazo de un correo (decisión 1 del informe, aceptada)
 
 **Decisión.**
 - La espera entre intentos es de 60, 300, 900 y 3600 segundos, y después cada 3600 (`taller.mail.backoff`). El primer intento sale apenas `worker-mail` lo toma.
@@ -93,7 +93,7 @@ El tiempo de espera del SMTP es de 20 s (`config/mail.php`, `mailers.smtp.timeou
 
 **Por qué.** La spec propone reintentar «hasta que venza su utilidad: la vida del link, o 24 horas si el correo no lleva uno». Leída al pie de la letra, una invitación de alumno se reintenta cada hora durante 7 días y `send_failed_at` (el «No salió» de F12b) aparece recién a la semana, cuando el link ya venció. Con el tope de 24 horas, quien administra se entera al día siguiente y puede reenviarla o pasarla a link. Ninguna de las dos manda un link vencido.
 
-**Si el usuario elige la lectura literal**, el cambio es una línea de `App\Mail\MailDeadline::for()`: `$linkExpiresAt ?? $queuedAt->addSeconds($window)` en lugar del mínimo. También cambian dos esperados de `MailDeadlineTest`.
+**Aceptada.** El usuario aceptó el tope de 24 horas el 2026-10-28, con el merge de este plan (#68): mergear un plan acepta sus decisiones recomendadas. `MailDeadline::for()` y `MailDeadlineTest` quedan como dice la Tarea 1.3, y F12b toma el plazo para el texto de su lista ([research-f12b.md](../023-f12-administracion/research-f12b.md), R9).
 
 ### R5. Qué queda de una falla
 
