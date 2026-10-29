@@ -25,15 +25,15 @@ description: "Tareas de F10b, la raíz única, el shell y el router: un registro
 
 ## Phase 4: User Story 7 - La composición sin `window` (Priority: P2)
 
-- [ ] T023 [US7] `frontend/src/app/lab/lab-api.ts` sin `window`, `shell-state.ts`, `page-engines.ts`, `page-entries.tsx`, las sesiones, `campaign-missions.ts`, `project-kit.ts` y los dueños nuevos de R4 en `qa/lib/seams-guard.ts` (plan §4.1; FR-050 y FR-051)
-- [ ] T024 [US7] El armado de `progress-backup` sin `window`, en `frontend/src/app/progress-backup/` (plan §4.2; FR-027 y FR-051)
-- [ ] T025 [US7] `qa/lib/app-modules.ts` y los checks de `legacy-sources.ts` leyendo el contenido de un solo paquete (plan §4.3; FR-049)
+- [ ] T023 [US7] `frontend/src/app/shell/shell-state.ts` y, en `frontend/src/app/routes/`, `page-engines.ts`, `page-entries.tsx`, las sesiones, `campaign-missions.ts` y `project-kit.ts`, sin montar, con los dueños nuevos de R4 en `qa/lib/seams-guard.ts` (plan §4.1; FR-050 y FR-051)
+- [ ] T024 [US7] El armado de `progress-backup` arma su fuente con imports, sin `window`, en `frontend/src/app/progress-backup/app-progress-backup.ts` (plan §4.2; FR-027 y FR-051)
+- [ ] T025 [US7] `frontend/src/app/legacy/lab-api.ts` sin `window`, `qa/lib/app-modules.ts` y los checks de `legacy-sources.ts` leyendo un solo paquete, en un commit (plan §4.3; FR-049)
 
 ## Phase 5: User Story 1, 2, 3, 4 y 7 - El corte (Priority: P1)
 
 - [ ] T026 [US1] `qa/e2e/specs/shell-edges.spec.ts` en verde; el rojo y el arreglo de F10-A1 en `qa/e2e/specs/views.spec.ts` y `frontend/app.js`; el rojo de `qa/e2e/specs/shell-changes.spec.ts` (plan §5.1; FR-033 y FR-046)
 - [ ] T027 [US4] Las specs rojas de la raíz: `shell-stage.spec.ts`, `boot-stages.spec.tsx`, `boot-modules.spec.tsx`, `start-taller.spec.tsx` y `frontend/src/app/main-entry.spec.ts` (plan §5.2; FR-040 y FR-052)
-- [ ] T028 [US7] El corte en un commit: la raíz única, `index.html`, las etapas, el retiro de `app.js`, de `legacyViews`, de `app/legacy/`, de la raíz de la cuenta, de los tres checks y sus arneses, `dist-content-check`, `seams-guard` y `dump-globals` (plan §5.3; FR-034 a FR-037, FR-047 a FR-053; SC-003)
+- [ ] T028 [US7] El corte en un commit: la raíz única, `index.html`, las etapas, el movimiento de `lab-api.ts` a `app/lab/`, el retiro de `app.js`, de `legacyViews`, de `app/legacy/`, de la raíz de la cuenta, de los tres checks y sus arneses, `dist-content-check`, `seams-guard` y `dump-globals` (plan §5.3; FR-034 a FR-037, FR-047 a FR-053; SC-003)
 
 ## Phase 6: User Story 5 - La administración como ruta (Priority: P2)
 

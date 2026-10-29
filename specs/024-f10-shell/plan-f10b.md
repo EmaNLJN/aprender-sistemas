@@ -190,7 +190,7 @@ frontend/src/
     │   ├── page-entries.tsx              (U4)  enterPage, leavePages y resolveRoute
     │   ├── page-engines.ts               (U4)  dueño de R4 de los motores
     │   ├── atlas-sessions.ts, campaign-session.ts, campaign-missions.ts, project-kit.ts (U4)
-    ├── lab/lab-api.ts                    (U4)  movido de app/legacy, sin window
+    ├── lab/lab-api.ts                    (U4, U5) sin window en T025; movido de app/legacy en el corte
     ├── progress-backup/                  (U4)  el armado de F8, sin window
     ├── account/                          (U5, U6) se van AccountRoot.tsx, mount-account-root.tsx y AdminDialog.tsx
     └── legacy/                           (U5)  se borra entero
@@ -1785,34 +1785,16 @@ Todo sigue sin montar hasta el corte. Los globals y los adaptadores siguen vivos
 ### 4.1 Las entradas de las páginas, los motores y el laboratorio (T023)
 
 **Archivos:**
-- se mueve `frontend/src/app/legacy/lab-api.ts` a `frontend/src/app/lab/lab-api.ts`, con `git mv`;
 - se crean `frontend/src/app/shell/shell-state.ts` y, en `frontend/src/app/routes/`, `page-engines.ts`, `page-entries.tsx`, `atlas-sessions.ts`, `campaign-session.ts`, `campaign-missions.ts` y `project-kit.ts`;
-- cambian `frontend/src/app/legacy/register-lab.tsx` (la ruta del import), `qa/lib/legacy-sources.ts` (`LAB_SOURCE`), `qa/lib/seams-guard.ts` (`INDEX_OWNERS`), `qa/seams-guard-check.ts` y `frontend/src/app/shell/Sidebar.spec.tsx`, que suma un escenario.
+- cambian `qa/lib/seams-guard.ts` (`INDEX_OWNERS`) y `frontend/src/app/shell/Sidebar.spec.tsx`, que suma un escenario.
 
-**1. `lab-api.ts`, sin `window`** (el código de la base es el del plan de F7b, 6635-6731). Tres cambios, nada más:
-- los imports suman `import { campaignEngine } from '../../entities/campaign';`, `import { systemsEngine } from '../../entities/systems-workshop';` e `import { getContent } from '../content/content';`;
-- `window.TallerCampaignEngine` pasa a `campaignEngine` y `window.TallerSystemsEngine` pasa a `systemsEngine`, en las tres apariciones;
-- `init()` lee el contenido:
+**Lo que esta tarea no toca, a propósito:**
+- `lab-api.ts` se queda en `frontend/src/app/legacy/`, igual que en la base;
+- los módulos nuevos lo importan desde `../legacy/lab-api`.
 
-  ```ts
-  function init(): void {
-    const content = getContent();
-    exerciseCatalog.init({
-      rustLab: content.lab.rust,
-      rustQuests: content.quests.rust,
-      goLab: content.lab.go,
-      goQuests: content.quests.go,
-      systemsLowlevel: content.cores.lowlevel,
-      systemsInfra: content.cores.infra,
-      systemsPlay: content.cores.play,
-      systemsPc: content.cores.pc,
-    });
-    // Nunca escribe al cargar: la primera escritura es una acción del alumno.
-    labStore.open(exerciseCatalog);
-  }
-  ```
+Moverlo ahora rompería las rutas que `boot-check` evalúa una por una (`LEGACY_SOURCES`, que F7b apuntó a `app/legacy/lab-api.ts`), y F10b no edita `boot-check` antes de borrarlo. T025 le saca `window`, en el mismo commit en que los checks pasan a un solo paquete, y el corte (T028) lo mueve a `app/lab/`.
 
-  El comentario existente se conserva. Los `|| []` salen, porque `getContent()` siempre trae las ocho porciones.
+**1. `lab-api.ts`** no cambia en esta tarea (ver arriba).
 
 **2. `shell-state.ts`,** el único módulo de `app/` que toca el almacén del recorrido (R4):
 
@@ -1910,7 +1892,7 @@ import {
 import { systemsEngine } from '../../entities/systems-workshop';
 import type { SystemsModelRegistry } from '../../pages/systems';
 import type { Content } from '../content/content';
-import { labApi } from '../lab/lab-api';
+import { labApi } from '../legacy/lab-api';
 
 let models: SystemsModelRegistry = {};
 
@@ -2023,7 +2005,7 @@ import {
   type KitWorkshop,
 } from '../../features/download-project-kit';
 import { downloadBlob } from '../../shared/lib/download-file';
-import { labApi } from '../lab/lab-api';
+import { labApi } from '../legacy/lab-api';
 
 interface KitLab {
   getExercises(): readonly KitExercise[];
@@ -2075,7 +2057,7 @@ import {
   labCatalog,
   labRunner,
   programBuilder,
-} from '../lab/lab-api';
+} from '../legacy/lab-api';
 import { appProgressBackup } from '../progress-backup/app-progress-backup';
 import { notify } from '../shell/toast';
 import { atlasSession, keepAtlasSession } from './atlas-sessions';
@@ -2192,7 +2174,7 @@ export function leavePages(): void {
 **7. `qa/lib/seams-guard.ts`.** `INDEX_OWNERS` suma los dueños nuevos, y conserva los de la base hasta el corte:
 
 ```ts
-const LAB_MODULE = 'frontend/src/app/lab/lab-api.ts';
+const LAB_MODULE = 'frontend/src/app/legacy/lab-api.ts';
 const PAGE_ENGINES = 'frontend/src/app/routes/page-engines.ts';
 const SHELL_STATE = 'frontend/src/app/shell/shell-state.ts';
 const PROGRESS_BACKUP_ASSEMBLY = 'frontend/src/app/progress-backup/app-progress-backup.ts';
@@ -2210,41 +2192,80 @@ const INDEX_OWNERS: Readonly<Record<string, readonly string[]>> = {
 };
 ```
 
-Si `PROGRESS_BACKUP_ASSEMBLY` ya existe en la base (F8), se reusa la constante. En `qa/seams-guard-check.ts`, la entrada de `LEGACY_OWNERS` que nombra `app/legacy/lab-api.ts` pasa a `app/lab/lab-api.ts`.
+Si `PROGRESS_BACKUP_ASSEMBLY` ya existe en la base (F8), se reusa la constante. `LAB_MODULE` nombra `app/legacy/lab-api.ts` hasta el corte, que lo cambia a `app/lab/lab-api.ts` con el movimiento. `lab-api.ts` ya es dueño de `exercise` desde F7b. Los de `campaign` y `systems-workshop` se le suman ahora, para que T025 pueda importar los motores sin otro cambio del guard.
 
 - **Los pasos:**
   1. Sumar el escenario de `Sidebar.spec.tsx`, correrlo y ver que falla, porque `shell-state.ts` todavía no existe. Commit `test(front): el pie lee storageAvailable después de cada revisión`.
-  2. Escribir los ocho archivos y el movimiento de `lab-api.ts`, con `register-lab.tsx` importando `../lab/lab-api` y `LAB_SOURCE` apuntando a `frontend/src/app/lab/lab-api.ts`.
+  2. Escribir los ocho archivos.
   3. `npm run typecheck`, `npm run lint`, `npm run test:unit`, `node qa/seams-guard-check.ts` y `npm test`, todo en verde.
-  4. `npm run build` y `E2E_PORT=4173 npm run test:e2e`, toda la red en verde: `lab-api.ts` ya no lee `window`, y es la misma instancia.
+  4. `npm run build` y `E2E_PORT=4173 npm run test:e2e`: toda la red en verde, porque nada de lo nuevo está conectado todavía.
 - **La red de estas entradas** son las E2E de cada port, cuando el corte las conecte. Las entradas repiten el `mount` de cada adaptador («Mover no reescribe»), como la unidad 8 de F2b, que se probó con la red de F1.
-- **Commit:** `refactor(front): las páginas se componen en app/routes y el laboratorio deja de leer window`.
+- **Commit:** `refactor(front): las páginas se componen en app/routes, sin montar`.
 
 ### 4.2 El armado de `progress-backup`, sin `window` (T024)
 
-**Archivos:** `frontend/src/app/progress-backup/progress-areas.ts`, `app-progress-backup.ts` y sus specs, de F8 (plan de F8, 1595-1716 y 4178-4197).
+**Archivo:** `frontend/src/app/progress-backup/app-progress-backup.ts`, de F8 (plan de F8, 1672-1716 y 4178-4197).
 
-**La sustitución,** lectura por lectura:
+**Por qué la interfaz no cambia todavía.** `createProgressAreas` y su tipo `LegacyProgressWindow` los usan también `qa/lib/app-shell-harness.ts` (`progressBackupFor` y `startShell`) y la entrada virtual de `app-shell-check` (plan de F8, 342-369). Esos dos se borran en el corte. Por eso T024 cambia sólo *qué* recibe `legacy`: un objeto armado con imports, en lugar de `window`. El corte renombra la interfaz (§5.3, punto 2).
 
-| Hoy, en el armado de F8 | En F10b |
+**El cambio, en `app-progress-backup.ts`:**
+
+| Hoy | En T024 |
 | --- | --- |
-| `legacy().TallerLab.exportState()`, `planImport`, `applyImport`, `reset` y `backups?.()` | `lab.exportState()` y los demás, con `lab: labApi` |
-| `legacy().TallerCampaign?.sync()` | `syncCampaign()` de `app/routes/page-engines.ts` |
-| `legacy().TallerSystems?.sync()` | `syncSystems()` de `page-engines.ts` |
-| `() => legacyWindow().TallerSystems?.resetSimulations()` en `sessionResets` | `resetSimulations` de `pages/systems` |
-| `() => window.TallerRoute?.resetTimer()` (rama A de F9) o `() => focusTimer.reset()` (rama B) | `() => focusTimer.reset()`, con `focusTimer` de `pages/route` |
-| El tipo `LegacyProgressWindow` y la fuente `legacy` | Una fuente `lab: LabProgress` y dos funciones, `syncCampaign` y `syncSystems`, en `ProgressSources` |
+| `legacy: () => window` (con el cast a `LegacyProgressWindow`) | `legacy: () => LEGACY_SURFACE` |
+| `sessionResets: [() => legacyWindow().TallerSystems?.resetSimulations()]` | `sessionResets: [resetSimulations]`, con `resetSimulations` importado de `pages/systems` |
+| El reinicio del temporizador de F9: `() => window.TallerRoute?.resetTimer()` (rama A) o `() => focusTimer.reset()` (rama B) | `() => focusTimer.reset()`, con `focusTimer` importado de `pages/route` |
 
-- **`progress-areas.spec.ts`** cambia su doble de `window` por un doble de `lab` y dos funciones espía, con los mismos valores esperados y el mismo orden de llamadas.
+```ts
+const LEGACY_SURFACE: LegacyProgressWindow = {
+  TallerLab: labApi,
+  TallerCampaign: { sync: syncCampaign },
+  TallerSystems: { sync: syncSystems },
+};
+```
+
+- `labApi` se importa de `../legacy/lab-api` hasta el corte, y `syncCampaign` y `syncSystems`, de `../routes/page-engines`.
+- Si el `LegacyProgressWindow` de la base pide otros campos, se completan con las mismas funciones: rige la regla de adaptación.
+- **La red de la tarea** es la de F8: `progress-areas.spec.ts`, que no cambia, y las E2E de Método (`method-*.spec.ts`), más `shell-sidebar.spec.ts` de F10a. No hay comportamiento nuevo, así que no hay spec roja: es un movimiento («Mover no reescribe»).
 - **Los pasos:**
-  1. Cambiar la spec y verla fallar, porque `createProgressAreas` todavía pide `legacy`. Commit `test(front): el armado de progress-backup recibe el laboratorio y las sincronizaciones`.
-  2. Cambiar los dos archivos.
-  3. `npm run test:unit`, `npm test` y, con el build, las E2E de F8 (`method-*.spec.ts`) y `shell-sidebar.spec.ts` de F10a, en verde.
-- **Commit:** `refactor(front): el armado de progress-backup importa sus fuentes en lugar de leer window`.
+  1. El cambio.
+  2. `npm run test:unit` y `npm test`.
+  3. `npm run build` y las E2E de F8 y de F10a, en verde.
+- **Commit:** `refactor(front): el armado de progress-backup arma su fuente legacy con imports en lugar de window`.
 
 ### 4.3 Los checks de `qa/` leen el contenido de un solo paquete (T025)
 
-**Archivos:** `qa/lib/app-modules.ts` (nuevo), los checks que importan `qa/lib/legacy-sources.ts` (T015 tiene la lista; research-f10b.md, R9) y `qa/lib/import-cases.ts`.
+**Archivos:** `frontend/src/app/legacy/lab-api.ts`, `qa/lib/app-modules.ts` (nuevo), los checks que importan `qa/lib/legacy-sources.ts` (T015 tiene la lista; research-f10b.md, R9) y `qa/lib/import-cases.ts`.
+
+**Todo va en un solo commit,** porque se sostiene junto. Con `lab-api.ts` sin `window`, un check que lo evalúa en un paquete aparte (`loadLab`) ya no encuentra el contenido ni los motores inicializados de su contexto. Recién con un solo paquete, con el contenido sembrado, vuelven a ser una misma instancia.
+
+**0. `lab-api.ts`, sin `window`** (el código de la base es el del plan de F7b, 6635-6731). Tres cambios, nada más:
+- los imports suman `import { campaignEngine } from '../../entities/campaign';`, `import { systemsEngine } from '../../entities/systems-workshop';` e `import { getContent } from '../content/content';`;
+- `window.TallerCampaignEngine` pasa a `campaignEngine` y `window.TallerSystemsEngine` pasa a `systemsEngine`, en las tres apariciones;
+- `init()` lee el contenido:
+
+  ```ts
+  function init(): void {
+    const content = getContent();
+    exerciseCatalog.init({
+      rustLab: content.lab.rust,
+      rustQuests: content.quests.rust,
+      goLab: content.lab.go,
+      goQuests: content.quests.go,
+      systemsLowlevel: content.cores.lowlevel,
+      systemsInfra: content.cores.infra,
+      systemsPlay: content.cores.play,
+      systemsPc: content.cores.pc,
+    });
+    // Nunca escribe al cargar: la primera escritura es una acción del alumno.
+    labStore.open(exerciseCatalog);
+  }
+  ```
+
+  El comentario existente se conserva. Los `|| []` salen, porque `getContent()` siempre trae las ocho porciones.
+
+  `lab-api.ts` sigue en `app/legacy/` hasta el corte.
+
 
 **`qa/lib/app-modules.ts`:** si la base llama `runModuleEntry` a la función de entrada virtual, se usa ese nombre. Si no acepta `RunOptions`, se le suma `options: RunOptions = {}` y se pasa a su paquete como hace `runSource`.
 
@@ -2291,7 +2312,7 @@ const APP_MODULES_ENTRY = [
   "export { getContent } from './frontend/src/app/content/content.ts';",
   "export { campaignEngine } from './frontend/src/entities/campaign/index.ts';",
   "export { systemsEngine } from './frontend/src/entities/systems-workshop/index.ts';",
-  "export { labApi } from './frontend/src/app/lab/lab-api.ts';",
+  "export { labApi } from './frontend/src/app/legacy/lab-api.ts';",
   "export { kitFiles, kitArchive } from './frontend/src/app/routes/project-kit.ts';",
   "export { pcModel, lowlevelModels, infraModels, playModels } from './frontend/src/entities/systems-simulation/index.ts';",
 ].join('\n');
@@ -2316,7 +2337,7 @@ export function loadAppModules(context: vm.Context): AppModules {
 }
 ```
 
-Las rutas de la entrada virtual siguen la forma de la entrada virtual de la base: relativas a la raíz, como `APP_SHELL_ENTRY` de F8. Si la base resuelve desde otro directorio, se ajusta el prefijo.
+Las rutas de la entrada virtual siguen la forma de la entrada virtual de la base: relativas a la raíz, como `APP_SHELL_ENTRY` de F8. Si la base resuelve desde otro directorio, se ajusta el prefijo. La de `lab-api.ts` pasa a `app/lab/` en el corte.
 
 **La sustitución en cada check** (contrato, §9). Es mecánica:
 - cada `loadX(context)` de `legacy-sources.ts` pasa a una sola llamada, `const app = loadAppModules(context)`, al principio;
@@ -2328,12 +2349,12 @@ Las rutas de la entrada virtual siguen la forma de la entrada virtual de la base
 **Ningún valor esperado cambia,** y cada check imprime el mismo conteo de escenarios que en T015.
 
 - **Los pasos:**
-  1. Escribir `app-modules.ts`.
+  1. Escribir `app-modules.ts` y sacarle `window` a `lab-api.ts` (punto 0).
   2. Cambiar los checks de a uno. Después de cada uno, `npm run curriculum && node qa/<check>.ts`, con el mismo conteo que en T015.
-  3. `npm test` en verde.
+  3. `npm test` en verde, y con el build, toda la red: `lab-api.ts` ya no lee `window`, y en el navegador los motores son las mismas instancias que publican sus adaptadores.
   4. **La mutación:** en una copia, cambiar en `app-modules.ts` `content.lab.rust` por `content.lab.go` para un check que cuente ejercicios de Rust (por ejemplo, `content-check`). Tiene que fallar.
 - **Lo que no se toca todavía:** `legacy-sources.ts` sigue, porque lo usan `boot-check` y `app-shell-check` (`loadAppShell`) hasta el corte.
-- **Commit:** `refactor(qa): los checks leen el contenido, los motores y el laboratorio de un solo paquete`.
+- **Commit:** `refactor(qa): el laboratorio deja de leer window y los checks leen un solo paquete`.
 
 ## 5. U5 · El corte (T026 a T028)
 
@@ -2620,7 +2641,7 @@ describe('startTaller', () => {
 
 ```ts
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const BASE_SHEETS: readonly string[] = [
@@ -2648,7 +2669,7 @@ function sheetsOf(source: string): string[] {
 
 describe('the entry module', () => {
   it('main.tsx imports styles.css first and the sheets in the order of the base', () => {
-    const source = readFileSync(resolve(import.meta.dirname, 'main.tsx'), 'utf8');
+    const source = readFileSync(fileURLToPath(new URL('./main.tsx', import.meta.url)), 'utf8');
     expect(sheetsOf(source)).toEqual(BASE_SHEETS);
   });
 });
@@ -2993,12 +3014,17 @@ export function startTaller(container: HTMLElement): Promise<void> {
   - `requestSignIn: (options) => { mountAccountRoot(); return requestSignIn(options); }` pasa a `requestSignIn`;
   - `onReady: mountAccountRoot` pasa a `onReady: () => undefined`, porque la raíz ya dibuja «Tu cuenta» desde el primer cuadro;
   - sale el import de `mountAccountRoot`.
+- **`lab-api.ts` se mueve:** `git mv frontend/src/app/legacy/lab-api.ts frontend/src/app/lab/lab-api.ts`. Pasan a `../lab/lab-api` los imports de `page-engines.ts`, `page-entries.tsx`, `project-kit.ts` y `app-progress-backup.ts`, y a `./frontend/src/app/lab/lab-api.ts` el de la entrada virtual de `qa/lib/app-modules.ts`. Los módulos nuevos del punto 1 ya lo importan desde ahí.
+- **`progress-areas.ts` renombra su fuente,** ahora que `app-shell-harness.ts` se borra:
+  - `LegacyProgressWindow` y `legacy` pasan a `lab: LabProgress` (la forma de `labApi`), `syncCampaign()` y `syncSystems()` en `ProgressSources`;
+  - `app-progress-backup.ts` pasa `lab: labApi, syncCampaign, syncSystems` y borra `LEGACY_SURFACE`;
+  - `progress-areas.spec.ts` cambia su doble de `window` por un doble de `lab` y dos espías, con los mismos valores esperados y el mismo orden de llamadas.
 - **`boot/session-view.ts`:** quedan sólo los tipos `SessionFailure` y `SessionView`, que importa `session-gate.ts`. Salen `SESSION_LOADING_MARKUP`, `sessionFailureMarkup`, `createSessionView` y sus ayudantes. Su spec sale: la cubre `boot-screens.spec.tsx`.
 
 **3. Lo que se borra** (`git rm`):
 - `frontend/app.js` y `frontend/src/app/boot/legacy-views.ts`;
 - `frontend/src/app/boot/gate-view.ts` y `gate-view.spec.ts`;
-- `frontend/src/app/legacy/` entera: cada `register-*` del inventario y `url-state.tsx`, que ya se movió;
+- `frontend/src/app/legacy/` entera: cada `register-*` del inventario, más `url-state.tsx` y `lab-api.ts`, que ya se movieron;
 - `frontend/src/app/account/AccountRoot.tsx` y `mount-account-root.tsx`;
 - `tools/content/dump-globals.ts`.
 
@@ -3010,7 +3036,7 @@ export function startTaller(container: HTMLElement): Promise<void> {
   - salen las pruebas «the bundle boots without errors», «the bundle publishes the content once and asks for the file once» y «the globals of the bundle equal the dump-globals oracle». Las dos primeras las cubre `content-gate.spec.ts` de A2 en un navegador real, contra el mismo `dist`, con el fixture `pageIssues`; la tercera sale por F10-Q3;
   - quedan «the served file has the generator bytes (documentHash)» y el script único;
   - la de las porciones pasa a leer el archivo servido: «the served file has the 17 portions of the generator», con `portionsOf(JSON.parse(builtContent.bytes.toString('utf8')))` comparado con las porciones de la meta, menos `harness`. La equivalencia del ensamblado la sigue probando `frontend/src/app/content/assemble-content.spec.ts`.
-- **`qa/lib/seams-guard.ts`:** `INDEX_OWNERS` queda como en el contrato, §8, sin `frontend/app.js` ni los dos `register-*-engine.ts`. En `qa/seams-guard-check.ts`, las fixtures que nombran `frontend/app.js` como dueño del recorrido pasan a `frontend/src/app/shell/shell-state.ts`, y las que nombran los adaptadores de los motores, a `frontend/src/app/routes/page-engines.ts`. Los escenarios y sus reglas esperadas no cambian.
+- **`qa/lib/seams-guard.ts`:** `INDEX_OWNERS` queda como en el contrato, §8, sin `frontend/app.js` ni los dos `register-*-engine.ts`, y con `LAB_MODULE` en `frontend/src/app/lab/lab-api.ts`. En `qa/seams-guard-check.ts`, la entrada que nombra `app/legacy/lab-api.ts` pasa a `app/lab/lab-api.ts`. En `qa/seams-guard-check.ts`, las fixtures que nombran `frontend/app.js` como dueño del recorrido pasan a `frontend/src/app/shell/shell-state.ts`, y las que nombran los adaptadores de los motores, a `frontend/src/app/routes/page-engines.ts`. Los escenarios y sus reglas esperadas no cambian.
 - **`qa/lib/sources.ts`:** salen las piezas que sólo usaban los checks borrados (`START_CALL_STATEMENT`, `withoutStartCall` y `expose` de F8, y `bundleApp` si nadie más lo usa), comprobado con `grep`.
 
 **5. Los pasos:**
