@@ -12,7 +12,7 @@ Las ondas y los dueños de archivos están en «Reparto en paralelo» de [plan-f
 
 ## Phase 1: Setup — la línea base (coordinador K, onda 0)
 
-- [ ] T060 K · La línea base sobre `f11d/base`: las detecciones B1 a B16 (D1c U3 a U5, «Tu cuenta» de F11a, A3, F8, F10c y los `seedRaw` con clic), el tamaño, los checks, Vitest, los avisos de lint y los E2E, en `specs/015-f11-acceso-cuenta/research-f11d.md` (FR-073 y FR-076; plan 0.1; quickstart-f11d §1)
+- [ ] T060 K · La línea base sobre `f11d/base`: las detecciones B1 a B17 (D1c U3 a U5, «Tu cuenta» de F11a, A3, F8, F10c, la hoja de «Tu cuenta» y las claves v1 reales antes de un clic con sesión), el tamaño, los checks, Vitest, los avisos de lint y los E2E, en `specs/015-f11-acceso-cuenta/research-f11d.md` (FR-073 y FR-076; plan 0.1; quickstart-f11d §1)
 
 ## Phase 2: User Story 9 - «¿Este progreso es tuyo?» (Priority: P3) — U9 (onda 1: M y E; onda 2: K y E)
 

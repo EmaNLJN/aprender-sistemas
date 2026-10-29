@@ -67,6 +67,7 @@ Además necesita F11a entera, con «Tu cuenta» (TR-12), A3 (`forgetContentCopy`
 - **Las capas.** `pages` puede importar `features/progress-sync` (`useProgressSync` y los tipos) y `shared`. Un slice nuevo en `features` no podría importar `features/progress-sync`, porque dos features no se importan entre sí.
 - **El lugar en el diálogo.** «Después de `<SignOutSection`» es el que F11b le deja a F11d («Lo que otros ítems toman de F11b») y el que dice el contrato de F11a («Lo que suman otros ítems»), así que no choca con F11b, que inserta antes, ni con F12a, que inserta después del aviso.
 - **El arranque.** La pregunta aparece al arrancar, antes de que el alumno abra «Tu cuenta», así que no puede vivir dentro de ese diálogo.
+- **Los estilos.** Van al final de `pages/account/ui/account.css`, la hoja que F10c deja con las reglas de «Tu cuenta» (clarify de F10, «Tailwind», 2026-10-28). El contrato de las hojas (`contracts/stylesheets-f10c.md`) pone en la hoja del shell lo que la raíz dibuja fuera de las páginas: si T060 encuentra ahí las reglas de «Tu cuenta», las de F11d van al final de ese bloque.
 
 **Alternativas:**
 
@@ -254,7 +255,7 @@ export interface SharedComputer {
 - **Sin editar:** los E2E de la base de T060, que incluyen los de D1c U5, y los escenarios de `boot-check`, `dist-content-check` y `load-order-check` (FR-076).
 - **Una excepción, con la aprobación del usuario** (T067). El escenario de «Borrar todo» de T025 de D1c siembra el v1 real con `seedRaw(frozenProgress)` y después hace clic en Método. Con F11d, la pregunta modal aparece al arrancar y tapa la página. La edición suma una línea que responde «No es mío» antes del primer clic.
   - Contra la base sin F11d, la línea falla, porque no hay diálogo.
-  - T060 inventaría cualquier otro uso de `seedRaw` con claves v1 seguido de un clic.
+  - T060 inventaría cualquier otro camino que deje claves v1 reales en una pestaña que después tiene sesión y hace clic: `seedRaw`; `storage.seed` en un escenario con `sessionAccount: null`, porque sin cuenta `StorageControl` de D1c no traduce (`spaceKey` devuelve la clave tal cual), y el escenario después ingresa; y un `localStorage.setItem` directo seguido de una recarga.
 - **El escenario de `boot-check` con `rawStorage`** (T017 de D1c) arranca con las claves v1. Con F11d, el diálogo se dibuja en el DOM falso, si el harness conoce `#account-root`: `FakeElement` tiene `showModal`, `close` y `focus` (`qa/lib/fake-dom.ts:162` y `:201`). El escenario no se edita, y su `harness.errors` tiene que seguir vacío. Lo comprueba la compuerta de U9.
 - **Lo que se suma:**
   - `qa/e2e/pages/progress-question.ts`;

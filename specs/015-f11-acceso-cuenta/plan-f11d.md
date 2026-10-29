@@ -93,7 +93,7 @@ Valen para toda tarea. Los valores están copiados de la spec, de la constituci�
   - F11d no toca la barra superior.
 - **El estilo:**
   - ningún `style=`, `style={…}`, `setAttribute('style', …)` ni `.cssText` (FR-069 y SC-011), y ninguna regla `transition` ni `animation` (FR-068);
-  - las reglas nuevas van al final de `frontend/src/pages/account/ui/account.css`, con los tokens de F10c (`var(--color-line)`);
+  - las reglas nuevas van al final de `frontend/src/pages/account/ui/account.css`, con los tokens de F10c (`var(--color-line)`). Es la hoja que F10c deja con las reglas de «Tu cuenta» (clarify de F10, «Tailwind», 2026-10-28: «las reglas de `account.css` se quedan en su hoja»). Si T060 (B17) encuentra las reglas de «Tu cuenta» en `frontend/src/app/shell/shell.css`, como pide el contrato de las hojas para lo que la raíz dibuja fuera de las páginas, las de F11d van al final de ese bloque;
   - si T060 anota que F10c no está en la base, se usa `var(--line)`; si F15a ya entró, el coordinador pasa los estilos de la tarea a utilidades de Tailwind en su brief (F15, Q5-A).
 - **La seguridad:** F11d no maneja contraseñas ni tokens, y no escribe nada en el almacenamiento (FR-070).
 - **Los textos:**
@@ -356,9 +356,10 @@ Las de [plan-f11b.md](./plan-f11b.md), «Reglas para todos los agentes», valen 
    | B11 | F10c: los tokens | `git grep -n -e "--color-line:" -- frontend/styles.css` | T064 y T072 usan `var(--line)` |
    | B12 | Quién más insertó en «Tu cuenta» | `git log --oneline -- frontend/src/pages/account/ui/AccountDialog.tsx` y `git grep -n "AccountActions\|onAdminister\|SyncStatus" -- frontend/src/pages/account/ui/AccountDialog.tsx` | Se anota; la inserción sigue siendo «justo después de `<SignOutSection`» |
    | B13 | `boot-check` conoce la raíz de la cuenta | `git grep -n "account-root" -- qa/lib/boot-harness.ts qa/boot-check.ts` | Se anota: sin ella, el diálogo no se dibuja en el DOM falso, y el escenario `rawStorage` de D1c no lo ejercita |
-   | B14 | E2E que siembran el v1 real y después hacen clic | `git grep -n "seedRaw(" -- qa/e2e/specs` | La lista va al usuario con T067. La conocida es el escenario de «Borrar todo» de T025 de D1c |
+   | B14 | E2E que dejan claves v1 reales en una pestaña que después tiene sesión y hace clic | `git grep -n "seedRaw(" -- qa/e2e/specs`; `git grep -l "sessionAccount: null" -- qa/e2e/specs` y, en esos archivos, `git grep -n "storage.seed("` (sin cuenta, `StorageControl` de D1c no traduce: `spaceKey` devuelve la clave tal cual); y `git grep -n "localStorage.setItem" -- qa/e2e/specs qa/e2e/lib` | La lista va al usuario con T067. La conocida es el escenario de «Borrar todo» de T025 de D1c |
    | B15 | Las ayudas de F11a | `git grep -n "export function stubDialogs" -- frontend/src/features/sign-in/ui/render-access.tsx`, `git grep -n "UNEXPECTED_MESSAGE" -- frontend/src/shared/ui/form/index.ts` y `git grep -n "reloadDocument" -- frontend/src/app/account/AccountRoot.tsx` | F11d espera |
    | B16 | F15a, por si los estilos pasan a utilidades | `git grep -n "tailwindcss" -- package.json` | Se anota; el coordinador ajusta los briefs de T064 y T072 |
+   | B17 | Dónde viven las reglas de «Tu cuenta» | `git grep -n "account-entry-button\|account-sign-out" -- frontend/src/app/shell/shell.css frontend/src/pages/account/ui/account.css` | Se anota: T064 y T072 suman sus reglas al final del bloque de «Tu cuenta» en la hoja donde esté (Restricciones globales, «El estilo») |
 
 3. **Las medidas,** con quickstart-f11d.md §1: `html.length`, los checks de `npm test`, las pruebas de Vitest, los avisos de lint y la cantidad de E2E en verde.
 4. **Commit:** `docs(specs): línea base de F11d`.
@@ -1297,7 +1298,7 @@ Cada PR lleva título en inglés, con notación de Angular, y una descripción e
    export default ImportReportSummary;
    ```
 
-6. **`ui/account.css`,** al final del archivo. Sin F10c en la base (T060, B11), no cambia nada, porque estas reglas no usan colores:
+6. **`ui/account.css`,** al final del archivo, o al final del bloque de «Tu cuenta» de `app/shell/shell.css` si T060 (B17) las encontró ahí. Sin F10c en la base (T060, B11), no cambia nada, porque estas reglas no usan colores:
 
    ```css
    .import-report {
@@ -1769,7 +1770,7 @@ Cada PR lleva título en inglés, con notación de Angular, y una descripción e
 
 **Antes de empezar:** el usuario aprueba la lista de T060 (B14). Sin la aprobación, la tarea no corre y la compuerta de U9 no pasa.
 
-1. **El cambio.** En el escenario de «Borrar todo» de T025 de D1c (el que siembra `seedRaw(frozenProgress)` y afirma que las claves v1 quedan), se suma `progressQuestion` a los parámetros del escenario y, justo después de la primera navegación que arranca el taller, esta línea:
+1. **El cambio.** En el escenario de «Borrar todo» de T025 de D1c (el que siembra `seedRaw(frozenProgress)` y afirma que las claves v1 quedan), y en cada escenario aprobado de la lista de T060 (B14) que deja claves v1 reales en una pestaña con sesión antes de un clic, se suma `progressQuestion` a los parámetros del escenario y, justo después de la navegación o del ingreso que arranca el taller con sesión, esta línea:
 
    ```ts
    await progressQuestion.button('No es mío').click();
@@ -2360,7 +2361,7 @@ La de 0.2, con:
    </div>
    ```
 
-5. **`account.css`,** al final del archivo. Sin F10c (T060, B11), `var(--line)`:
+5. **`account.css`,** al final del archivo, o al final del bloque de «Tu cuenta» de `app/shell/shell.css` si T060 (B17) las encontró ahí. Sin F10c (T060, B11), `var(--line)`:
 
    ```css
    .account-shared-computer {

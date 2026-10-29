@@ -25,12 +25,12 @@ npm run lint 2>&1 | grep -c warning
 E2E_PORT=4173 npm run test:e2e
 ```
 
-Las demás detecciones (B1 a B16) están en plan-f11d.md, tarea 0.1. Se anotan en research-f11d.md («Línea base de la implementación»):
+Las demás detecciones (B1 a B17) están en plan-f11d.md, tarea 0.1. Se anotan en research-f11d.md («Línea base de la implementación»):
 
 - el hash y de dónde salió (la punta de D1c U5 o `master`);
 - cada detección, con lo que encontró;
 - `html.length`, los checks, las pruebas de Vitest, los avisos de lint y los E2E;
-- la lista de `seedRaw(` con claves v1 seguida de un clic, para la aprobación de T067.
+- la lista de los caminos que dejan claves v1 reales en una pestaña que después tiene sesión y hace clic (B14), para la aprobación de T067.
 
 ## 2. La compuerta de cada unidad (T068 y T075)
 
