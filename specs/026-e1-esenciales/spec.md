@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-28
 
-**Status**: Draft: espera el clarify (Q1 a Q5)
+**Status**: Clarificada (sesión del 2026-10-28); con plan
 
 **Input**: Ítem **E1** de la hoja de ruta [`specs/backend-multiusuario/roadmap.md`](../backend-multiusuario/roadmap.md), «Sesión Esenciales»: sumar Esenciales como catálogo nuevo, primero de la cadena. Depende de A1 y D1; A1, D1a y D1b están entregados, y según la [spec 007](../007-d1-progreso-sincronizacion/spec.md) E1 sólo necesita D1a. Tiene abierta la decisión 1 del ADR 0006 §13: el resto de la cadena de Esenciales, si va antes de Inicial o en su lugar, y su código. La [hoja de ruta del front](../front-react/roadmap.md), en «Ítems del backend que tocan el front», agrega que los conteos del menú (4, 25 y 274), «24 misiones» y «/180» salen del catálogo (F6 y F10) o se actualizan a mano con E1. Fuente técnica: el [ADR 0006](../../docs/adr/0006-modelo-de-datos-y-api-multiusuario.md) (**propuesta**: esta spec lo usa como base y lo dice), en R10, S1, D13, D15, §5.1 (`catalogs` y `exercises`), §10 y §13.1; el [ADR 0004](../../docs/adr/0004-backend-laravel-mysql-contenido-y-progreso.md), en «Consecuencias» y su fase 9; y el objetivo 4 de [`docs/refactor-roadmap.md`](../../docs/refactor-roadmap.md). Encargo del coordinador del 2026-10-28.
 
@@ -26,22 +26,23 @@
 
 - El catálogo, su código y su posición en la cadena (Q2), y su lugar en `content/` y en el generador.
 - Las porciones nuevas en la API, el import y la sesión, sin tablas nuevas.
-- Un valor de nivel más, si Esenciales es un nivel (Q2).
+- Un valor de nivel más para los ejercicios (Q2).
 - El laboratorio con Esenciales: el nivel, el mapa, la sugerencia del día y los conteos (Q3).
 - La fuente del contenido del front con las porciones nuevas, y el catálogo de ejercicios que las incluye.
 - La auditoría de B3 sobre los ejercicios nuevos.
 - Los conteos y los contratos que se editan a mano.
 - El ADR de IDs y numeración de etapas.
-- La primera etapa de contenido real por lenguaje, con su circuito de autoría y revisión (Q5).
+- La primera etapa de contenido real por lenguaje, de cinco ejercicios, con su circuito de autoría y revisión (Q5).
 
 **Queda fuera:**
 
-- El resto del contenido de Esenciales, si el clarify lo pone en otro ítem (Q5).
+- El resto del contenido de Esenciales, que va en E2, «Contenido de Esenciales» (Q5).
 - Esenciales en la campaña, el Atlas, Sistemas, la Biblioteca o el Recorrido (Q3).
 - Las estadísticas por catálogo (C5).
 - El cliente v2 del progreso (D1c): Esenciales no le pide nada.
 - Desbloqueos o prerrequisitos entre catálogos: el ADR 0006 D13 los deja para una derivación futura de la posición y del progreso.
 - Los catálogos futuros de la «tercera lectura» del ADR 0006 S1, como intermedios o avanzados.
+- Los candidatos que dejaron los ports (hallazgo E1-6): las pistas de los hitos siguen en la configuración de `entities/guide` (F4), y el contador de Sistemas sigue sin plural. Ninguno cuenta ejercicios de Esenciales.
 
 **Sin hacer a propósito (YAGNI):**
 
@@ -60,11 +61,11 @@
 - el coordinador;
 - los ítems que E1 toca: C2, C6, C3a, B2, D1, B3, A2, A3, F2, F6, F7, F10 y el Atlas.
 
-## Qué es Esenciales para el alumno (propuesta para que la corrijas en Q1)
+## Qué es Esenciales para el alumno (Q1-A)
 
-**A quién sirve.** A quien llega al taller sin haber programado, o sin haber leído nunca un programa de Rust o de Go. No sabe todavía qué es un tipo, qué devuelve una función, cómo se lee una prueba ni qué quiere decir el compilador cuando rechaza el código. Inicial empieza un paso más arriba, y Esenciales es ese paso (Q1, opción A).
+**A quién sirve.** A quien llega al taller sin haber programado, o sin haber leído nunca un programa de Rust o de Go. No sabe todavía qué es un tipo, qué devuelve una función, cómo se lee una prueba ni qué quiere decir el compilador cuando rechaza el código. Inicial empieza un paso más arriba, y Esenciales es ese paso (Q1).
 
-**Qué temas trae.** Una propuesta de cuatro etapas por lenguaje, con cinco ejercicios cada una (20 por lenguaje y 40 en total): el mismo tamaño que las cuatro primeras etapas de Inicial. El número final lo fija el contenido (Q5); los requisitos dicen *N* por lenguaje.
+**Qué temas trae.** Cuatro etapas por lenguaje, con cinco ejercicios cada una (20 por lenguaje y 40 en total): el mismo tamaño que las cuatro primeras etapas de Inicial. E1 trae la primera etapa de cada lenguaje (5 ejercicios), y E2 las otras tres (Q5). Los requisitos dicen *N* por lenguaje: con E1, *N* = 5; con E2 completo, 20. Los temas de cada etapa son la guía de quien redacta; el texto final lo aprueba el usuario (FR-044).
 
 | Etapa | Rust | Go | Se superpone con |
 | --- | --- | --- | --- |
@@ -79,7 +80,7 @@ En cada etapa, uno o dos ejercicios `reparar` enseñan a leer un error del compi
 
 **Lo que el formato no permite.** El revisor corrige con expresiones booleanas sobre funciones, porque la plantilla del harness agrega la función de entrada. Un ejercicio de Esenciales no puede corregir lo que un programa imprime: «imprimir» se enseña en la consigna o en la revisión, no en las pruebas.
 
-**Cómo encaja en la cadena.** Con la opción recomendada de Q2, la cadena de niveles pasa a ser Esenciales, Inicial, Intermedio, Avanzado y Experto, la lectura principal del ADR 0006 S1. Esenciales es además el único catálogo con posición en la cadena (`chain_position` 1). `lab`, `quests` y `cores` siguen sin posición, porque abarcan varios niveles (spec 001, Q8).
+**Cómo encaja en la cadena.** Con Q2-A, la cadena de niveles de los ejercicios pasa a ser Esenciales, Inicial, Intermedio, Avanzado y Experto, la lectura principal del ADR 0006 S1. Esenciales es además el único catálogo con posición en la cadena (`chain_position` 1). `lab`, `quests` y `cores` siguen sin posición, porque abarcan varios niveles (spec 001, Q8).
 
 ## Lo que pidió el usuario
 
@@ -102,12 +103,25 @@ Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumption
 | Los IDs son inmutables y nunca se reutilizan; el contenido se edita en `content/`, nunca en `build/`; lo que se retira no se borra | Constitución, principio IV; `README.md`, «Contenido del currículo» |
 | Un ejercicio nuevo actualiza en el mismo commit `curriculum-ids.json`, los asserts de `content-check` y de `systems-check` y las cantidades del README | `README.md`, «Contenido del currículo» |
 | La spec deja claro qué es Esenciales para el alumno, dónde vive, qué cambia en cada capa, el código y la posición, la autoría del contenido, y trae como mucho 5 preguntas | Pedido de esta tarea |
+| Q1 a Q5 con la opción recomendada; las dos E2E de F1 que esperan `rust-01` se editan; el resto del contenido va en E2 | Usuario, clarify del 2026-10-28 |
 
 ## Clarifications
 
-Sin sesión todavía. El clarify espera las respuestas del usuario a Q1 a Q5. Los requisitos que dependen de una pregunta llevan «(Q*n*)» y están escritos con la opción recomendada. Si se elige otra, cambian los que nombra su encabezado.
+### Session 2026-10-28
+
+- Q: **Q1**, ¿a quién sirve Esenciales y qué trae? → A: A quien no programó o nunca leyó un programa de Rust o de Go: leer un ejercicio, valores y tipos, decidir y repetir, con ejercicios `reparar` que enseñan a leer el compilador. Opción A. Decidió el usuario. («Qué es Esenciales para el alumno»; FR-043 y FR-044)
+- Q: **Q2**, ¿cómo entra Esenciales en la cadena, y con qué código? → A: Un quinto nivel antes de Inicial, con el código `essentials` para el catálogo y para el nivel. Opción A. Decidió el usuario. Al registrarla, FR-012 se acota a la columna `level` de los ejercicios: es la única con contenido de Esenciales, y el Atlas, la campaña y Sistemas no lo muestran (FR-033). El costo de Q2-A baja de cuatro columnas a una. (FR-001, FR-004, FR-012, FR-026 y FR-033)
+- Q: **Q3**, ¿dónde ve el alumno a Esenciales, y por dónde empieza? → A: Sólo en el laboratorio, primero en el mapa y en el recorrido libre; «Un desafío para hoy» lo sugiere a quien no resolvió nada de ese lenguaje fuera de Esenciales; las tarjetas de sus temas se numeran 01, 02… Opción A. Decidió el usuario, y aprobó editar las dos E2E de F1 que esperan `rust-01` (`views.spec.ts` y `reload.spec.ts`), en un commit propio y con TDD. (FR-026 a FR-033, FR-037 y FR-040)
+- Q: **Q4**, ¿qué forma tienen los IDs? → A: Correlativos por lenguaje: `rust-138`… y `go-138`… Opción A. Decidió el usuario. (FR-005, FR-021 y FR-029)
+- Q: **Q5**, ¿quién escribe el contenido, y en qué ítem se entrega? → A: E1 trae la plataforma y una primera etapa real por lenguaje (5 ejercicios cada una), que redacta un agente y revisa el usuario. El resto va en un ítem nuevo, **E2, «Contenido de Esenciales»**, una etapa por PR. Opción A. Decidió el usuario. (FR-043 y FR-044)
+- **Hallazgos del coordinador aplicados al registrar el clarify** (`.coordinador/hallazgos-para-planes.md`, sección E1):
+  - E1-1: la auditoría de B3 ordena un catálogo que no nombra antes de `lab`. Esenciales va primero también en el informe, como en la cadena (FR-022).
+  - E1-6: E1 no toma los dos candidatos que dejaron los ports, las pistas de los hitos y el plural del contador de Sistemas («Queda fuera»).
+  - E1-7: E1 no suma globales de catálogo. El catálogo del front lee Esenciales del contenido publicado (FR-025).
 
 ## Preguntas del clarify
+
+Quedan como registro de las alternativas. El usuario eligió la opción recomendada en las cinco el 2026-10-28 (ver «Clarifications»).
 
 **Q1. ¿A quién sirve Esenciales y qué trae?** *(«Qué es Esenciales para el alumno»; FR-043 y FR-044)* De esto depende cuánto contenido hay que escribir y cuánto se superpone con Inicial.
 
@@ -176,8 +190,8 @@ Sin sesión todavía. El clarify espera las respuestas del usuario a Q1 a Q5. Lo
 
 | Capa | Qué cambia | Qué no cambia | Requisitos |
 | --- | --- | --- | --- |
-| Contenido y generador | Una sección por lenguaje en el manifiesto, sus carpetas de ejercicio, una clave nueva en `curriculum.json`, el catálogo y las huellas nuevas en el meta. El nivel nuevo en la lista compartida (Q2) | Las 17 porciones, los 274 ejercicios con su etapa y sus huellas, las etapas de taller y su fixture | FR-001 a FR-010 |
-| Base (MySQL) | Una fila en `catalogs` (`essentials`, por lenguaje, posición 1) y las filas de sus ejercicios, temas, pruebas, pistas y versiones de corrección en las tablas de hoy. El valor de nivel al final de las cuatro columnas `level` (Q2) | Ninguna tabla nueva. La validación de la cadena, que ya exige posiciones únicas y contiguas desde 1 | FR-011, FR-012 y FR-018 |
+| Contenido y generador | Una sección por lenguaje en el manifiesto, sus carpetas de ejercicio, una clave nueva en `curriculum.json`, el catálogo y las huellas nuevas en el meta. El nivel nuevo en la lista de niveles de los ejercicios (Q2) | Las 17 porciones, los 274 ejercicios con su etapa y sus huellas, las etapas de taller y su fixture | FR-001 a FR-010 |
+| Base (MySQL) | Una fila en `catalogs` (`essentials`, por lenguaje, posición 1) y las filas de sus ejercicios, temas, pruebas, pistas y versiones de corrección en las tablas de hoy. El valor de nivel al final de la columna `level` de los ejercicios (Q2) | Ninguna tabla nueva. La validación de la cadena, que ya exige posiciones únicas y contiguas desde 1 | FR-011, FR-012 y FR-018 |
 | API | Dos porciones nuevas por el recurso de ejercicios (`catalog` y `language`), el auto-chequeo y la caché de cuerpos de 19 porciones, la sesión con Esenciales primero | Las reglas de entrega de C2 (bytes, `ETag`, 304, `Content-Version`, `Cache-Control`, 422, 503, sesión), `/api/runs` y `/api/sync` | FR-013 a FR-017 |
 | Progreso | Nada en el formato. Los ejercicios nuevos se guardan por su ID en el navegador y en el servidor | El formato v1, las operaciones de D1, las tablas de progreso, las fixtures congeladas | FR-019 a FR-021 |
 | Auditoría (B3) | Cubre Esenciales sin cambiarse y lo informa como una sección más. Cada PR de contenido de Esenciales lleva su resumen | El comando, la clasificación y los límites | FR-022 y FR-023 |
@@ -186,7 +200,7 @@ Sin sesión todavía. El clarify espera las respuestas del usuario a Q1 a Q5. Lo
 
 ## Los conteos visibles
 
-Con la opción recomendada de Q3, sólo cambian los conteos del laboratorio. *N* es la cantidad de ejercicios de Esenciales por lenguaje.
+Con Q3-A, sólo cambian los conteos del laboratorio. *N* es la cantidad de ejercicios de Esenciales por lenguaje: 5 con E1, así que el menú pasa de 274 a 284 y cada lenguaje de 137 a 142.
 
 | Conteo | Hoy | Con E1 | Lo deriva del catálogo | Si no, quién lo edita a mano |
 | --- | --- | --- | --- | --- |
@@ -312,11 +326,11 @@ Después de E1, cada número que cuenta ejercicios coincide con el catálogo: el
 
 **Contenido y generador**
 
-- **FR-001**: Esenciales DEBE ser un catálogo nuevo, con el código que decida Q2 (propuesta: `essentials`), cortado por lenguaje y con posición 1 en la cadena, la única. `lab`, `quests` y `cores` siguen sin posición. *(ADR 0006 D13; spec 001, Q8; Q2)*
+- **FR-001**: Esenciales DEBE ser un catálogo nuevo, con el código `essentials`, cortado por lenguaje y con posición 1 en la cadena, la única. `lab`, `quests` y `cores` siguen sin posición. *(ADR 0006 D13; spec 001, Q8; Q2)*
 - **FR-002**: Su contenido DEBE vivir en `content/<lenguaje>/`: una sección al final del manifiesto de cada lenguaje, después de `systems`, y una carpeta por ejercicio en `content/<lenguaje>/exercises/<id>/`, con los tres archivos de siempre. No se agrega una carpeta de primer nivel en `content/`. *(«Dónde vive y cómo se arma»)*
 - **FR-003**: Las etapas de Esenciales DEBEN numerarse al final de cada lenguaje (hoy, desde la 50), y los 274 `stage` actuales no cambian. *(ADR 0006 D13; hoja de ruta, E1)*
-- **FR-004**: Cada ejercicio de Esenciales DEBE publicar su nivel, y el generador DEBE exigirlo en esa sección: sin nivel, el laboratorio lo clasifica por etapa como Experto. Con la opción recomendada de Q2, el nivel es `essentials`, con la etiqueta «Esenciales». *(Q2)*
-- **FR-005**: Los IDs de Esenciales DEBEN tener la forma que decida Q4 (propuesta: correlativos, `rust-138`… y `go-138`…). Además DEBEN ser únicos entre lenguajes y catálogos, cumplir la forma de ID de la API (minúsculas, dígitos y guiones, de 1 a 64 caracteres) y no repetir un ID usado nunca. *(Constitución IV; spec 001, FR-015; Q4)*
+- **FR-004**: Cada ejercicio de Esenciales DEBE publicar su nivel, y el generador DEBE exigirlo en esa sección: sin nivel, el laboratorio lo clasifica por etapa como Experto. El nivel es `essentials`, con la etiqueta «Esenciales». *(Q2)*
+- **FR-005**: Los IDs de Esenciales DEBEN ser correlativos por lenguaje, después del último de hoy: `rust-138`… y `go-138`… (los de E1 son `rust-138` a `rust-142` y `go-138` a `go-142`). Además DEBEN ser únicos entre lenguajes y catálogos, cumplir la forma de ID de la API (minúsculas, dígitos y guiones, de 1 a 64 caracteres) y no repetir un ID usado nunca. *(Constitución IV; spec 001, FR-015; Q4)*
 - **FR-006**: El generador DEBE validar los ejercicios de Esenciales con las reglas de los del laboratorio: los tres archivos, las claves de prueba estables, tres pistas, la revisión, la predicción, las fuentes, `kind`, `visual` y el encabezado de Go. Cada error nombra el archivo y el campo. *(`README.md`, «Contenido del currículo»)*
 - **FR-007**: `curriculum.json` DEBE sumar Esenciales como una clave nueva, después de las siete de hoy, con un arreglo por lenguaje. Cada ejercicio tiene la forma publicada y el orden de claves de uno del laboratorio, con el nivel siempre presente.
 - **FR-008**: El meta DEBE sumar el catálogo con su `sliceBy` y su posición, la huella de las dos porciones nuevas y las tres huellas de cada ejercicio nuevo, calculadas sólo en el generador. *(spec 001, FR-028 y FR-031)*
@@ -326,7 +340,7 @@ Después de E1, cada número que cuenta ejercicios coincide con el catálogo: el
 **Base y API**
 
 - **FR-011**: El import DEBE escribir Esenciales como una fila de `catalogs` y sus ejercicios, temas, pruebas, pistas y versiones de corrección en las tablas de hoy, sin tablas nuevas. DEBE hacerlo en su única transacción y con la validación de la cadena que ya existe: posiciones únicas y contiguas desde 1. *(ADR 0006 D12 y D13; spec 001, FR-004 y FR-006)*
-- **FR-012**: Si Esenciales es un nivel (Q2), las cuatro columnas `level` de la base (ejercicios, talleres, mundos y conceptos del Atlas) DEBEN aceptar el valor nuevo al final de su lista, con una migración sólo hacia adelante y la espera de bloqueos acotada. El generador y la base DEBEN aceptar los mismos niveles en cada tipo de registro. *(ADR 0006 §10, D07 y D35; Q2)*
+- **FR-012**: La columna `level` de los ejercicios DEBE aceptar el valor nuevo al final de su lista, con una migración sólo hacia adelante y la espera de bloqueos acotada. Las de talleres, mundos y conceptos del Atlas no cambian, y el generador rechaza ese nivel en esos registros: así el generador y la base aceptan los mismos niveles en cada tipo de registro. *(ADR 0006 §10, D07 y D35; Q2)*
 - **FR-013**: La API DEBE servir dos porciones nuevas, los ejercicios de Esenciales de Rust y de Go, por el recurso de ejercicios con `catalog` y `language`. Rigen las reglas de C2: los bytes del generador, `ETag`, 304 también con validador débil, `Content-Version`, `Cache-Control: private, no-cache`, 422 por parámetros, 503 sin import, y detrás de la sesión. *(spec 001, FR-013 a FR-025; spec 004)*
 - **FR-014**: `GET /api/exercises/{id}` DEBE servir cada ejercicio de Esenciales con los bytes de su `contentHash`, y responder 410 si se retiró. *(spec 001, FR-015)*
 - **FR-015**: El auto-chequeo del import y la caché de cuerpos DEBEN cubrir las 19 porciones del contenido (las 17 y las dos nuevas). La plantilla del harness sigue aparte. *(spec 001, FR-005 y FR-012)*
@@ -338,18 +352,18 @@ Después de E1, cada número que cuenta ejercicios coincide con el catálogo: el
 
 - **FR-019**: El progreso de un ejercicio de Esenciales DEBE guardarse por su ID, como el de cualquier otro: en el navegador (v1) y en el servidor (D1a y D1b), sin cambiar el formato v1, las operaciones de `/api/sync` ni las tablas de progreso. *(ADR 0003; spec 007, FR-005)*
 - **FR-020**: Arrancar con las tres fixtures de progreso congeladas DEBE seguir sin escribir, sin respaldar y sin avisar. Exportar e importar una copia con progreso de Esenciales DEBE conservarlo, con las reglas de fusión de hoy. *(ADR 0003; `qa/AGENTS.md`)*
-- **FR-021**: La campaña DEBE seguir funcionando con los ejercicios de Esenciales en la lista del laboratorio. Su motor recibe todos los ejercicios y hoy rechaza la configuración entera si un ID no tiene la forma `<lenguaje>-<número>`: si Q4 elige otra forma, el validador cambia con su prueba. Los sellos, los puntos y los desbloqueos de la campaña no cambian. *(Q4)*
+- **FR-021**: La campaña DEBE seguir funcionando con los ejercicios de Esenciales en la lista del laboratorio. Su motor recibe todos los ejercicios y rechaza la configuración entera si un ID no tiene la forma `<lenguaje>-<número>`: los IDs de Q4-A la cumplen, y el validador no cambia. Los sellos, los puntos y los desbloqueos de la campaña no cambian. *(Q4)*
 
 **Auditoría**
 
-- **FR-022**: La auditoría de B3 DEBE cubrir Esenciales sin una lista fija. Cada solución aprueba, y cada inicial falla por sus pruebas, o no compila si es `reparar`. El informe cuenta Esenciales como una sección más. *(spec 020, FR-001 y Q1)*
+- **FR-022**: La auditoría de B3 DEBE cubrir Esenciales sin una lista fija. Cada solución aprueba, y cada inicial falla por sus pruebas, o no compila si es `reparar`. El informe cuenta Esenciales como una sección más, y la primera de cada lenguaje, como en la cadena. *(spec 020, FR-001 y Q1; hallazgo E1-1)*
 - **FR-023**: Todo PR que sume o cambie un ejercicio de Esenciales DEBE llevar el resumen de una corrida de B3 en verde. El check estático del caché de Go DEBE cubrir sus `imports`. *(spec 020, FR-027, FR-032 y FR-038; B3-Q3)*
 
 **Front**
 
 - **FR-024**: La fuente del contenido vigente cuando entra E1, la estática de A2 o la de la API de A3, DEBE traer las dos porciones nuevas como obligatorias, con la regla de todo o nada y la forma de una porción de ejercicios. Si A3 ya entró, sube la versión de formato de la copia, la copia anterior se descarta como dice A3, y el arranque pasa de 18 a 20 pedidos por ronda. *(spec 006; spec 016, FR-014, FR-017 y FR-018, y su plan, §5)*
-- **FR-025**: El catálogo de ejercicios del front DEBE incluir los de Esenciales. Los lee del módulo de contenido si F10 ya retiró los globales de catálogos, y de un global por lenguaje si no. *(F10-Q3)*
-- **FR-026**: El laboratorio DEBE ofrecer Esenciales como el primer nivel, antes de Inicial, con su nombre, su conteo y un subtítulo (propuesta: «Tus primeros pasos»). Los otros cuatro niveles conservan su orden, sus textos y sus conteos. *(Q2)*
+- **FR-025**: El catálogo de ejercicios del front DEBE incluir los de Esenciales, leídos del contenido publicado por el lado de `app/` (`getContent()`), sin un global de catálogo nuevo. *(F10-Q3; hallazgo E1-7)*
+- **FR-026**: El laboratorio DEBE ofrecer Esenciales como el primer nivel, antes de Inicial, con su nombre, su conteo y el subtítulo «Tus primeros pasos». Los otros cuatro niveles conservan su orden, sus textos y sus conteos. *(Q2)*
 - **FR-027**: Un ejercicio de Esenciales DEBE abrirse, ejecutarse, revisarse, ofrecer pistas, predicción, explicación, variante y repaso, y descargarse como kit, igual que los demás y en las mismas fases. *(`README.md`, «Aprender en el taller»)*
 - **FR-028**: Con «Todos los niveles», el mapa DEBE mostrar primero los temas de Esenciales. El recorrido libre («anterior», «siguiente», la posición «X / Y» y el botón del pie) DEBE seguir el mismo orden: Esenciales y después el de hoy, así que `rust-137` y `go-137` siguen siendo los últimos. «Un desafío para hoy» DEBE sugerir el primer ejercicio de Esenciales sin resolver sólo a quien no resolvió ningún ejercicio de ese lenguaje fuera de Esenciales; a los demás, lo que sugería antes de E1. Con un nivel elegido, rige la regla de hoy dentro de ese nivel. *(Q3)*
 - **FR-029**: La tarjeta de un tema de Esenciales DEBE mostrar su número dentro de Esenciales, con dos cifras (01, 02…). Las de los 274 conservan su etapa. Los nodos siguen mostrando la última parte del ID. *(Q3 y Q4)*
@@ -358,7 +372,7 @@ Después de E1, cada número que cuenta ejercicios coincide con el catálogo: el
 - **FR-032**: El conteo del laboratorio en el menú DEBE incluir los ejercicios de Esenciales de los dos lenguajes. Si F10 ya entró, se deriva del catálogo; si no, E1 lo edita en `frontend/src/index.html` en el mismo cambio. *(spec 024, FR-032; hoja de ruta del front, E1)*
 - **FR-033**: El Atlas, la campaña, Sistemas, la Biblioteca y el Recorrido NO DEBEN cambiar a la vista: ni conteos, ni filtros, ni medidores de nivel, ni textos. Una vista no ofrece un nivel del que no tiene contenido. *(Q2 y Q3)*
 - **FR-034**: Los ejercicios de Esenciales NO DEBEN tener explorador propio: el mapa explícito por ID de F2 no los nombra. Usan los modelos de `visual` de hoy. *(spec 009, Q1)*
-- **FR-035**: El cambio del laboratorio DEBE hacerse sobre la vista vigente cuando E1 entra. Si F7b ya entró, va en la página de React. Si no, va en `lab.js`, y F7b lo porta como comportamiento vigente, con sus E2E (el modelo del ruling C4). La propuesta es que E1 espere a F7b. *(Assumptions)*
+- **FR-035**: El cambio del laboratorio DEBE hacerse sobre la vista vigente cuando E1 entra. Si F7b ya entró, va en la página de React. Si no, va en `lab.js`, y F7b lo porta como comportamiento vigente, con sus E2E (el modelo del ruling C4). E1 espera a F7b: su plan lo exige como precondición. *(Assumptions)*
 
 **Conteos, textos y contratos a mano**
 
@@ -376,29 +390,29 @@ Después de E1, cada número que cuenta ejercicios coincide con el catálogo: el
 
   *(Constitución, principio II; spec 001, FR-038 a FR-042)*
 - **FR-039**: Un check de `npm test` DEBE comparar las 17 porciones, y la etapa y las tres huellas de los 274 ejercicios, con una línea de base tomada de `master` antes del cambio, y fallar con la primera diferencia (SC-001).
-- **FR-040**: La red de F1 DEBE pasar sin editarse, salvo las dos pruebas que abren el primer ejercicio desde el mapa (`views.spec.ts` y `reload.spec.ts`, que hoy esperan `rust-01`). Esas cambian en un commit propio, con TDD y la aprobación del usuario (Q3). Las E2E nuevas cubren abrir, resolver y recargar un ejercicio de Esenciales con el compilador simulado, la pestaña Esenciales, la sugerencia para quien ya avanzó y el orden del recorrido libre (el anterior de `rust-01`).
+- **FR-040**: La red de F1 DEBE pasar sin editarse, salvo las dos pruebas que abren el primer ejercicio desde el mapa (`views.spec.ts` y `reload.spec.ts`, que hoy esperan `rust-01`). Esas cambian en un commit propio, con TDD: el usuario lo aprobó en el clarify (Q3). Las E2E nuevas cubren abrir, resolver y recargar un ejercicio de Esenciales con el compilador simulado, la pestaña Esenciales, la sugerencia para quien ya avanzó y el orden del recorrido libre (el anterior de `rust-01`).
 - **FR-041**: `npm run api:content:check` DEBE cubrir las 19 porciones a través de Nginx, con y sin compresión. *(spec 001, FR-047)*
 - **FR-042**: E1 DEBE cerrar con `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `git diff --check` y `npm run test:e2e` en verde. También con Pest, Pint y PHPStan nivel 9, y con el resumen de una corrida de B3 en verde sobre el último commit. *(Hoja de ruta, «Criterios de aceptación globales»; B3-Q3)*
 
 **Contenido**
 
-- **FR-043**: E1 DEBE entregar al menos una etapa real de Esenciales por lenguaje, porque el front no admite una porción vacía. La sección de Esenciales DEBE ser obligatoria en los manifiestos de los dos lenguajes (hoy `quests` y `systems` son opcionales), y el generador exige al menos una etapa en ella. El resto del contenido va donde decida Q5. *(Q1 y Q5)*
+- **FR-043**: E1 DEBE entregar la primera etapa real de Esenciales de cada lenguaje, de cinco ejercicios, porque el front no admite una porción vacía. Las otras tres etapas van en E2 (Q5). La sección de Esenciales DEBE ser obligatoria en los manifiestos de los dos lenguajes (hoy `quests` y `systems` son opcionales), y el generador exige al menos una etapa en ella. *(Q1 y Q5)*
 - **FR-044**: Antes de integrarse, cada ejercicio de Esenciales DEBE pasar por estos pasos:
   1. un borrador escrito desde fuentes oficiales y enlazado en `sources`. En Rust: The Rust Book, Rust by Example y la referencia de la biblioteca estándar. En Go: A Tour of Go, Effective Go, la especificación y la documentación de los paquetes;
   2. `npm run curriculum` y `npm test`;
   3. la auditoría de B3;
   4. la revisión pedagógica del usuario, que aprueba el texto, las pruebas y las pistas.
 
-  Con la opción recomendada de Q5, el borrador lo escribe un agente. *(Q5; constitución, principio IV)*
+  El borrador lo escribe un agente, y la revisión del usuario es la compuerta antes del PR. *(Q5; constitución, principio IV)*
 
 ### Key Entities *(include if feature involves data)*
 
 | Entidad | Qué representa | Cantidad |
 | --- | --- | --- |
 | Catálogo Esenciales | Una fila de `catalogs`: el código (Q2), el corte por lenguaje y la posición 1, la única de la cadena | 1 (con `lab`, `quests` y `cores`, 4) |
-| Nivel Esenciales | Con Q2-A, el primer valor de la cadena de niveles, con la etiqueta «Esenciales». Lo publica cada ejercicio de Esenciales | 1 (los niveles pasan de 4 a 5) |
-| Etapa de Esenciales | Un tema con sus ejercicios en la sección nueva del manifiesto. Su número sigue al de la última etapa de Sistemas | Propuesta: 4 por lenguaje (Q1) |
-| Ejercicio de Esenciales | Como uno del laboratorio, con su ID (Q4), su nivel siempre presente y sus tres huellas | Propuesta: *N* = 20 por lenguaje, y al principio 5 (Q5) |
+| Nivel Esenciales | El primer valor de la cadena de niveles de los ejercicios, con la etiqueta «Esenciales». Lo publica cada ejercicio de Esenciales | 1 (los niveles de los ejercicios pasan de 4 a 5; los de talleres, mundos y Atlas siguen en 4) |
+| Etapa de Esenciales | Un tema con sus ejercicios en la sección nueva del manifiesto. Su número sigue al de la última etapa de Sistemas | 4 por lenguaje (Q1): 1 en E1 (la 50) y 3 en E2 |
+| Ejercicio de Esenciales | Como uno del laboratorio, con su ID (Q4), su nivel siempre presente y sus tres huellas | *N* = 5 por lenguaje con E1, y 20 con E2 (Q5) |
 | Porción de Esenciales | Los ejercicios de Esenciales de un lenguaje, servidos con los bytes del generador | 2 (las porciones del contenido pasan de 17 a 19) |
 | ADR de IDs y etapas | Registra la forma de los IDs, la numeración al final, el código y la diferencia entre la etapa y el número que ve el alumno | 1 |
 
@@ -419,7 +433,7 @@ Después de E1, cada número que cuenta ejercicios coincide con el catálogo: el
 ## Riesgos
 
 1. **Dos ejes con el mismo nombre.** Con Q2-A, `essentials` es a la vez un catálogo y un nivel. Alguien puede filtrar por uno creyendo filtrar por el otro. *Mitigación:* el ADR lo dice, y FR-004 ata el nivel a la sección.
-2. **La lista de niveles es compartida.** Crecerla llega al Atlas, que dibuja tantas marcas como niveles y ofrece un filtro por cada uno, y a los validadores de la campaña, Sistemas y el generador. *Mitigación:* FR-033 y las specs del Atlas sin editar (SC-006).
+2. **La lista de niveles es compartida.** Crecerla llegaría al Atlas, que dibuja tantas marcas como niveles y ofrece un filtro por cada uno, y a los validadores de la campaña, Sistemas y el generador. *Mitigación:* el nivel nuevo es sólo de los ejercicios (FR-012), y la lista compartida no cambia; FR-033 y las specs del Atlas sin editar (SC-006).
 3. **Pestañas viejas después del despliegue.** Una pestaña con el front anterior respalda y avisa por los IDs de Esenciales que escribió otra. *Mitigación:* el comportamiento ya existe (ADR 0003) y no pierde nada. El aviso es visible, y se acepta.
 4. **Los conteos repetidos en muchos lugares.** El README, seis checks de `qa/`, el fixture de IDs, Pest y las E2E de F7a. *Mitigación:* FR-036 y la tabla de conteos; F7b puede hacer que sus E2E lean el catálogo (hallazgo).
 5. **La superposición con Inicial** (Q1). *Mitigación:* las reglas de «Qué es Esenciales» y la revisión pedagógica de cada ejercicio (FR-044).
@@ -427,7 +441,7 @@ Después de E1, cada número que cuenta ejercicios coincide con el catálogo: el
 7. **Cada PR de contenido necesita la auditoría local de B3**, con runsc y la instancia propia. *Mitigación:* es la regla de B3-Q3 para todo el contenido, no una carga nueva de E1.
 8. **El número de la tarjeta (01…) y el del nodo (138…) no coinciden** con Q4-A. *Mitigación:* ya pasa con los desafíos (tema 21, nodos 101 a 103). Q4-B lo resuelve, con su costo.
 9. **El recorrido libre se corre para todos** con Q3-A: la posición «X / Y» de cada ejercicio de hoy suma *N*, y `rust-01` y `go-01` pasan a tener un anterior. *Mitigación:* es la consecuencia visible de poner Esenciales primero, y la prueba una E2E nueva (FR-040). Ninguna E2E de hoy la fija.
-10. **El COPY de las columnas `level`.** *Mitigación:* son tablas de cientos de filas, con la espera acotada (D35).
+10. **El COPY de la columna `level` de los ejercicios.** *Mitigación:* es una tabla de cientos de filas, con la espera acotada (D35).
 11. **Nada de esto se ejecutó.** La spec sale de leer el código de `master` (24ba9d3d) y de `impl-f7a` (fc88d450). Las cifras de conteo son de ese código, y los números finales los fija el contenido.
 
 ## Relación con otras specs
@@ -450,9 +464,8 @@ Después de E1, cada número que cuenta ejercicios coincide con el catálogo: el
 
 | Cuándo | Acción |
 | --- | --- |
-| Ahora | Responder Q1 a Q5. |
-| Antes del plan | Si Q5 es A, aceptar el ítem nuevo de contenido en la hoja de ruta. |
-| Durante la implementación | Aprobar las dos ediciones de la red de F1 (Q3-A). Aprobar el ADR de IDs y etapas. Revisar la pedagogía de cada ejercicio de Esenciales. |
+| Hecho (2026-10-28) | Respondió Q1 a Q5, aprobó las dos ediciones de la red de F1 y aceptó el ítem E2. |
+| Durante la implementación | Aprobar el ADR de IDs y etapas. Revisar la pedagogía de cada ejercicio de la etapa piloto: es la compuerta antes del PR. |
 | Siempre | Aprobar o enmendar el ADR 0006, que sigue en «propuesta». E1 no pide descargas ni dependencias nuevas: la auditoría usa las imágenes del sandbox que ya construyó B2. |
 
 ## Assumptions
@@ -460,8 +473,8 @@ Después de E1, cada número que cuenta ejercicios coincide con el catálogo: el
 - El ADR 0006 sigue en «propuesta», y esta spec lo usa como base.
 - A1, D1a y D1b están entregados. E1 no necesita D1c.
 - B3 entra antes que E1 (ola 4 contra ola 5), así que su compuerta rige para el contenido de E1.
-- E1 entra después de F7b (propuesta; FR-035). F10 y A3 pueden haber entrado o no, y la spec cubre los dos casos (FR-024, FR-025 y FR-032).
-- Los temas, la cantidad (*N* = 20 por lenguaje) y el subtítulo «Tus primeros pasos» son propuestas que corrigen Q1 y Q5.
+- E1 entra después de F7b (FR-035). F10 y A3 pueden haber entrado o no, y la spec cubre los dos casos (FR-024 y FR-032).
+- Los temas y la cantidad salen de Q1 y Q5: 5 ejercicios por lenguaje en E1 y 20 con E2. El subtítulo «Tus primeros pasos» es el texto del nivel.
 - Las cifras de hoy salen de `master` (24ba9d3d): 49 etapas y 137 ejercicios por lenguaje, 17 porciones de contenido más la plantilla, y 3 catálogos. Las E2E del laboratorio salen de `impl-f7a` (fc88d450), que todavía no está en `master`.
 - La plantilla del harness corrige con expresiones booleanas sobre funciones, y Esenciales no cambia eso.
 - El laboratorio sigue sin bloqueos: Esenciales se recomienda, no se exige («Podés explorar cualquier tema, sin bloqueos»).

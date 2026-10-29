@@ -15,7 +15,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -33,13 +33,14 @@
 
 ## Notes
 
-- **El clarify está pendiente.** La spec no usa marcadores `[NEEDS CLARIFICATION]`: las cinco dudas son Q1 a Q5 de «Preguntas del clarify». Cada una trae opciones, la recomendada, su motivo y su costo, como en las specs 016, 017 y 020. Los requisitos que dependen de una pregunta llevan «(Q*n*)» y están escritos con la opción recomendada. Por eso queda sin marcar «No [NEEDS CLARIFICATION] markers remain», hasta que el usuario responda.
-- **Qué cambia según la respuesta:**
-  - Q1 cambia los temas, *N* y FR-043 y FR-044;
-  - Q2 cambia FR-001, FR-004, FR-012, FR-026 y FR-033, y quita la migración si no es A;
-  - Q3 cambia FR-026 a FR-033, FR-037 y FR-040, y con C suma la campaña y su riesgo 8;
-  - Q4 cambia FR-005, FR-021 y FR-029;
-  - Q5 cambia FR-043 y FR-044, y con A suma un ítem a la hoja de ruta.
+- **Clarify hecho el 2026-10-28:** el usuario eligió la opción recomendada en Q1 a Q5. Las respuestas están en «Clarifications», una línea por pregunta, y los requisitos que dependían de una opción quedaron firmes. Las referencias «(Q*n*)» remiten a esa línea. «Preguntas del clarify» queda como registro de las alternativas.
+- **Lo que cambió al registrarlo:**
+  - FR-012 se acota a la columna `level` de los ejercicios: el Atlas, la campaña y Sistemas no muestran Esenciales (FR-033), así que sus columnas y la lista compartida de niveles no cambian;
+  - FR-025 deja de admitir un global nuevo, por el hallazgo E1-7 del coordinador;
+  - FR-022 ordena Esenciales primero en el informe de B3, por el hallazgo E1-1;
+  - «Queda fuera» suma los candidatos del hallazgo E1-6;
+  - FR-005 y FR-043 fijan los IDs y la cantidad de E1: `rust-138` a `rust-142` y `go-138` a `go-142`;
+  - FR-040 registra la aprobación de las dos ediciones de F1.
 - **Excepciones deliberadas en «implementation details».** E1 suma un catálogo a un sistema entregado (C2, C3a, B2, D1a, D1b y A2) y a contratos ya fijados (A3, B3, F6, F7, F10). Por eso los requisitos nombran el resultado observable: los recursos y sus reglas, las tablas que no se crean, las columnas `level`, los archivos de `content/`, los checks y las E2E que cambian o no, y los comandos del proyecto. No nombran clases, funciones nuevas ni el diseño del laboratorio, que quedan para el plan. FR-002 sí fija dónde vive el contenido, porque es una decisión de la hoja de ruta y del ADR 0006 («numerar al final») y el encargo pide decirlo.
 - **«Non-technical stakeholders»:** el lector es el dueño del taller, que decide el contenido y conoce el sistema. «Qué es Esenciales para el alumno» y Q1 están escritos para la decisión pedagógica, sin jerga de código.
 - **«Technology-agnostic»:** los criterios usan conteos de porciones, de ejercicios y de programas, las huellas del generador y los comandos del proyecto, porque el valor de E1 es sumar sin cambiar un byte de lo que existe. SC-009 es una medición sin objetivo.
