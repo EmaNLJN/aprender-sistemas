@@ -206,17 +206,17 @@ Guardar la plantilla «como porción opcional» sin tocar eso la perdería en ca
 | --- | --- | --- |
 | `qa/e2e/specs/cycle.spec.ts` (F1) | 8: la constante del transporte y los dos títulos de `describe` | El detalle del fallo de transporte («No se pudo conectar con el taller.») y los títulos que nombran el Playground |
 | `qa/e2e/specs/guards.spec.ts` (F1) | 1: «a request to a public host…» | El pedido a un host público ya no sale al ejecutar (FR-042) |
-| `qa/e2e/specs/lab-run.spec.ts` (F7a) | 9 de 14 | Los 3 del `for`, «first approval», «Ctrl/⌘ + Enter» y «quirk 8», por el número de intentos y por `attempts`; «cancelling», porque ya no hay escritura ni intento; «back to the map», que esperaba el `requestfailed` del Playground; y «your own case», con la aserción de `:280` (A4-1) |
+| `qa/e2e/specs/lab-run.spec.ts` (F7a) | 10 de 14 | Los 3 del `for`, «first approval», «Ctrl/⌘ + Enter» y «quirk 8», por el número de intentos y por `attempts`; «cancelling», porque ya no hay escritura ni intento; «back to the map», que esperaba el `requestfailed` del Playground; «leaving the lab», porque sin el intento el laboratorio no escribe y `storedRecord` leía una clave que no existe; y «your own case», con la aserción de `:280` (A4-1) |
 | `qa/e2e/specs/lab-exercise.spec.ts` (F7a) | 1: `:103` | La vista previa lleva el nonce entre `__TALLER_TEST__` y `t1` |
 | `qa/lab-state-check.ts` (check) | 2: «Two tabs: a run keeps…» y «Reset during a run…» (los deja así T014 de F7a) | Esperan `attempts` 1 y un `fetch` del Playground |
 | `frontend/src/features/run-exercise/model/build-run-result.spec.ts:86` | 1 | Compara con `interpretRun`, que se retira: pasa a valores escritos |
 
 - **Sin editar:**
-  - las otras 5 de `lab-run.spec.ts`;
+  - las otras 4 de `lab-run.spec.ts` («transportError», «changing the phase», «the next and the previous» —que abre otro ejercicio y por eso guarda— y «goes stale»);
   - los 2 del indicador en `css-contract.spec.ts`, que sólo llaman a `compiler.hold`;
   - el resto de F1 y de A2.
 - **«KNOWN DEFECT (spec 021, quirk 8)»:** A4 corrige ese defecto (las ejecuciones canceladas y las fallas de transporte ya no suman intentos). Por la regla de `qa/AGENTS.md`, la prueba cambia en su commit TDD y pierde el `KNOWN DEFECT`.
-- **La aprobación:** las 19 E2E editadas van en un solo commit, con la aprobación del usuario (D2 del informe).
+- **La aprobación:** las 20 E2E editadas van en un solo commit, con la aprobación del usuario (D2 del informe).
 
 ## R15 · FR-047: la verificación contra el stack
 
