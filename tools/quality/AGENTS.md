@@ -53,6 +53,14 @@ La configuración `frontend/doctor.config.ts` excluye `dist/`, skills, dependenc
 herramientas auxiliares. La cobertura depende de las vistas React
 presentes y no representa por sí sola un score de calidad.
 
+La CI lo corre en el job `react-doctor` de `.github/workflows/ci.yml`, con esta misma versión
+(`npm ci --prefix tools/quality`), sólo cuando el cambio toca React según
+`.github/scripts/touches-react.sh`: un `.tsx` o `.jsx`, un módulo de `frontend/` que importa
+`react` o `react-dom`, `package.json`, esta configuración o el propio job. En un PR usa
+`--scope changed --base <base del PR>` y falla sólo por un error nuevo; los avisos quedan en el
+log. En un push a `master` analiza todo `frontend/`. Un falso positivo se silencia en su línea con
+`// react-doctor-disable-next-line <regla> -- <motivo>`.
+
 ## Desloppify
 
 Versión instalada: **1.0**, con extra `full` (incluye analizadores tree-sitter).
