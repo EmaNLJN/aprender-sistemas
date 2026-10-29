@@ -6,7 +6,7 @@ Todos los comandos corren desde la raíz del worktree. Los que usan Docker piden
 
 ## 1. La línea base (T001)
 
-Sobre `a3/base` recién creada (`master` con F11a), antes de cualquier cambio:
+Sobre `a3/base` recién creada (de `f11a/base` con F11a completa, o de `master` si F11a ya llegó), antes de cualquier cambio:
 
 ```sh
 npm ci --offline --no-audit --no-fund
@@ -18,6 +18,11 @@ E2E_PORT=4173 npm run test:e2e
 node -e "console.log(require('fs').readFileSync('dist/index.html','utf8').length)"
 npm run lint 2>&1 | grep -c warning
 node tools/content/dump-globals.ts . | sha256sum
+git grep -n "const BOOT_SIZE_LIMIT" -- qa/build-check.ts
+git grep -n "PROGRESS_API" -- qa/lib/content-server.ts
+git grep -n "cookie: ''" -- qa/lib/boot-harness.ts
+git grep -n "__CONTENT_VERSION__" -- qa/lib/sources.ts
+git grep -n "'GET /api/progress'" -- qa/e2e/fixtures/api-double.ts
 ```
 
 Se anotan en research.md, «Línea base de la implementación»:
@@ -26,10 +31,12 @@ Se anotan en research.md, «Línea base de la implementación»:
 - `html.length`;
 - los checks y las pruebas de Vitest;
 - los avisos de lint;
-- los E2E;
-- el sha256 de `dump-globals`.
+- los E2E (la cuenta esperada desde acá: ningún número escrito en el plan la reemplaza);
+- el sha256 de `dump-globals`;
+- `BOOT_SIZE_LIMIT` (1 500 000 desde #76);
+- las cuatro filas de F8 («está» o «falta»), según las cuatro últimas búsquedas.
 
-El contraste del contrato de F11a está en el plan (T001, paso 3).
+El contraste del contrato y del código de F11a está en el plan (T001, pasos 3 y 4), y las ramas de F8, en el paso 5.
 
 ## 2. La compuerta de una unidad (plan, 0.2)
 
@@ -41,6 +48,7 @@ npm run format:check
 git diff --check
 git diff a3/base -- package.json package-lock.json
 git diff a3/base -- frontend | grep -E '^\+.*(style=|style=\{|setAttribute\(.style.|\.cssText)'
+git diff a3/base -- qa/e2e | grep -E '^\+.*(Failed to load resource|query: url\.search|call\.query)'
 E2E_PORT=4173 npm run test:e2e -- --repeat-each=3 --retries=0
 node -e "console.log(require('fs').readFileSync('dist/index.html','utf8').length)"
 ```
@@ -48,7 +56,7 @@ node -e "console.log(require('fs').readFileSync('dist/index.html','utf8').length
 **Lo que se espera:**
 
 - **todo en verde;**
-- **los dos `git diff` y el `grep`** no imprimen nada;
+- **los dos `git diff` y los dos `grep`** no imprimen nada;
 - **el tamaño:** en U1 es igual al de T001; en U2, unos +6 700 caracteres.
 
 **En U2, además:**
