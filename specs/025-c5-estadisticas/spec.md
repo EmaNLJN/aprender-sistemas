@@ -109,7 +109,7 @@ Los requisitos están escritos con la opción recomendada de cada pregunta y lle
 
 | Opción | Qué implica | Costo |
 | --- | --- | --- |
-| A | Cada respuesta con éxito del detalle de una cuenta y de su ficha deja una línea en los logs con el admin, la cuenta y la acción, sin ninguna métrica | Una línea por consulta, con la retención de logs que sigue abierta (§13.13 del ADR). Permite responder «quién miró mis datos» |
+| A | Cada respuesta con éxito del detalle de una cuenta, de su ficha y de las ejecuciones filtradas por esa cuenta deja una línea en los logs con el admin, la cuenta y la acción, sin ninguna métrica | Una línea por consulta, con la retención de logs que sigue abierta (§13.13 del ADR). Permite responder «quién miró mis datos» |
 | B | No se registra: leer no es una acción de admin | Nada que hacer. Si un alumno pregunta quién vio sus datos, no hay respuesta |
 
 **Recomendada: A.** Cuesta una línea y extiende una regla que ya existe; no es una auditoría de logins (R5). **Costo:** el aviso de privacidad puede decirlo. La lista y los agregados no dejan líneas, porque serían demasiadas por consulta.
@@ -282,7 +282,7 @@ Quien opera ve si el sandbox alcanza: cuántas ejecuciones esperan y cuántas co
 2. **Dadas** ejecuciones de más de 14 días, **cuando** se pide la lista, **entonces** no aparecen, porque B2 las podó, y la respuesta lo dice.
 3. **Dada** la lista filtrada por `infra_error`, **cuando** se pagina con el cursor, **entonces** cada ejecución trae sólo los campos permitidos y ninguna página repite ni saltea una.
 
-*Cubre: FR-032 y FR-033; SC-002.*
+*Cubre: FR-015, FR-032 y FR-033; SC-002 y SC-005.*
 
 ---
 
@@ -308,7 +308,8 @@ El taller corre en un servidor con una sola MySQL. Mirar las estadísticas no pu
 
 - **Un alumno promovido a admin** sale de los agregados, también de los períodos pasados (Q5-A). Degradarlo lo devuelve.
 - **Un alumno deshabilitado** sigue contando en la historia y figura en las cuentas por estado (Q5-A). Su detalle se puede pedir.
-- **Una cuenta en supresión** responde 404 en el detalle y en la ficha desde que pasa a `deleting`, y no cuenta en ningún agregado.
+- **Un alumno que nunca practicó** (aceptó la invitación y no ejecutó ni sincronizó) no tiene cabecera de progreso: es justamente a quien busca la lista. Aparece con la última actividad nula y en ceros, entra siempre en el filtro «sin actividad desde» y cuenta en el resumen como «nunca tuvo actividad» (FR-021 y FR-029).
+- **Una cuenta en supresión** responde 404 en el detalle, en la ficha y como filtro de las ejecuciones desde que pasa a `deleting`; sus ejecuciones no aparecen en la lista y no cuenta en ningún agregado. La cola sí cuenta lo suyo que siga ocupando un lugar, sin identificarla.
 - **Una supresión con el resumen en caché:** la cuenta sigue en los números hasta 10 minutos. No queda ningún dato suyo en una caché por cuenta, porque no la hay (FR-035).
 - **«Borrar todo» en el medio:** la cuenta pierde sus resueltos y conserva sus intentos (spec 007, Q2). «Resueltos» baja y «aprobados» no (ver «De dónde salen los datos»).
 - **Los intentos legados** (importados del v1): nunca cuentan como intentos; aparecen aparte, como importados.
@@ -346,7 +347,7 @@ El taller corre en un servidor con una sola MySQL. Mirar las estadísticas no pu
 - **FR-012**: Cada respuesta DEBE armarse con una lista cerrada de campos, escrita en el contrato, y no copiando una fila menos lo prohibido. Una prueba por ruta compara las claves de una respuesta con esa lista.
 - **FR-013**: C5 DEBE ampliar la matriz «sin textos del alumno» de C3b (su FR-041): las claves prohibidas suman `stdout`, `stderr`, `program`, `nonce`, `report`, `code_sha256` y `raw_sha256`; los testigos se siembran también en `runs`, `drafts`, `route_notes`, `workshop_progress.note` y `progress_imports`; cada ruta nueva tiene su escenario (también las que llevan `{user}`), y la cuenta de rutas recorridas se actualiza. Como `code` está prohibida a cualquier profundidad, el código de un catálogo se publica como `catalog`. *(C3b FR-041 y SC-006)*
 - **FR-014**: Una prueba de arquitectura DEBE fallar si el código de C5 nombra una columna o una tabla de la lista de «Nunca sale». *(Como `LogArchTest` y `PurityTest` de B2)*
-- **FR-015**: Cada respuesta con éxito del detalle de una cuenta y de la ficha con su resumen DEBE dejar una línea en los logs con el admin, la cuenta y la acción, sin ninguna métrica y con las reglas de los logs de C3a (sin el email en claro). La lista y los agregados no dejan líneas. *(Q3; extiende C3b FR-040 y ADR 0006 D20)*
+- **FR-015**: Cada respuesta con éxito del detalle de una cuenta, de la ficha con su resumen y de la lista de ejecuciones filtrada por una cuenta DEBE dejar una línea en los logs con el admin, la cuenta y la acción, sin ninguna métrica y con las reglas de los logs de C3a (sin el email en claro). La lista de alumnos, la de ejecuciones sin ese filtro y los agregados no dejan líneas. *(Q3; extiende C3b FR-040 y ADR 0006 D20)*
 
 **Quiénes cuentan y qué significa cada cifra**
 
@@ -358,7 +359,7 @@ El taller corre en un servidor con una sola MySQL. Mirar las estadísticas no pu
 
 **El resumen y los períodos**
 
-- **FR-021**: El resumen DEBE traer: las cuentas por rol y estado; los alumnos con actividad en las últimas 24 horas, 7 y 30 días (por `last_activity_at`); en el período, las cuentas nuevas, los intentos que cuentan por resultado, los de operación, los alumnos distintos que ejecutaron, las primeras resoluciones (servidor e importado) y las importaciones; las invitaciones pendientes, vigentes y vencidas, con las de admin aparte; y las cuentas que hicieron «Borrar todo» alguna vez. *(ADR 0006 S6, D31)*
+- **FR-021**: El resumen DEBE traer: las cuentas por rol y estado; los alumnos con actividad en las últimas 24 horas, 7 y 30 días (por `last_activity_at`) y los que nunca tuvieron actividad (sin cabecera de progreso: B2 la crea con la primera ejecución y D1, con la primera sincronización); en el período, las cuentas nuevas, los intentos que cuentan por resultado, los de operación, los alumnos distintos que ejecutaron, las primeras resoluciones (servidor e importado) y las importaciones; las invitaciones pendientes, vigentes y vencidas, con las de admin aparte; y las cuentas que hicieron «Borrar todo» alguna vez. *(ADR 0006 S6, D31)*
 - **FR-022**: El resumen DEBE traer las mismas cifras del período como serie, por día, semana o mes. La actividad por período sale sólo de los intentos: la serie no puede contar a quien no ejecutó, y el contrato lo dice.
 - **FR-023**: El período DEBE pedirse con `from` y `to` (fechas), con los últimos 30 días por omisión y 366 como máximo, y cortarse en la zona horaria del taller, que es configuración (por omisión, `America/Argentina/Buenos_Aires`). Los datos siguen guardados en UTC.
 
@@ -372,13 +373,13 @@ El taller corre en un servidor con una sola MySQL. Mirar las estadísticas no pu
 
 **Por cuenta**
 
-- **FR-029**: `GET /api/admin/stats/students` DEBE listar a los alumnos de FR-016 con la paginación por offset de C3b (hasta 100 por página), con búsqueda por nombre o email, el filtro «sin actividad desde» y el orden por nombre, alta o última actividad. Cada fila trae los identificadores, la última actividad, lo resuelto (servidor e importado), los intentos que cuentan de los últimos 7 y 30 días y la fecha del último intento, calculados sólo para las cuentas de la página. *(Q2)*
-- **FR-030**: `GET /api/admin/stats/students/{user}` DEBE traer: la ficha; la época, `resetAt` y la última actividad; las importaciones (fecha, origen y época, nunca el informe); lo resuelto por catálogo y lenguaje; los intentos por resultado, en el período y en total; la actividad por día en el período; el uso de las cuotas (ejecuciones activas, aceptadas en el último minuto y en 24 horas, y minutos de sandbox de 24 horas, contra sus límites); la grilla por ejercicio (estado, `solvedAt`, `serverSolvedAt`, `attemptCount`, `lastAttemptAt`, el resultado del último intento, `assisted`, `solutionSeen`, `hintsRevealed`, `predictionCorrect`, `confidence` y `reviewDueAt`); la campaña (el checkpoint aprobado por mundo y los sellos); los talleres (código sellado, predicción acertada, etapas marcadas y objetivos observados, como conteos); y el recorrido (pasos, hitos y favoritos marcados, y preguntas respondidas, como conteos). *(Q1)*
+- **FR-029**: `GET /api/admin/stats/students` DEBE listar a los alumnos de FR-016 con la paginación por offset de C3b (hasta 100 por página), con búsqueda por nombre o email, el filtro «sin actividad desde» y el orden por nombre, alta o última actividad. Cada fila trae los identificadores, la última actividad, lo resuelto (servidor e importado), los intentos que cuentan de los últimos 7 y 30 días y la fecha del último intento, calculados sólo para las cuentas de la página. Un alumno que nunca practicó (sin cabecera de progreso) aparece con la última actividad nula y en ceros: el filtro «sin actividad desde» lo incluye siempre, y al ordenar por última actividad cuenta como la más vieja (primero en orden ascendente, último en descendente), con el id como desempate. *(Q2)*
+- **FR-030**: `GET /api/admin/stats/students/{user}` DEBE traer: la ficha; la época, `resetAt` y la última actividad; las importaciones (fecha, origen y época, nunca el informe); lo resuelto por catálogo y lenguaje; los intentos por resultado, en el período y en total; la actividad por día en el período; el uso de las cuotas (ejecuciones activas, aceptadas en el último minuto y en 24 horas, y minutos de sandbox de 24 horas, contra sus límites); la grilla por ejercicio (estado, `solvedAt`, `serverSolvedAt`, `attemptCount`, `lastAttemptAt`, el resultado del último intento, `assisted`, `solutionSeen`, `hintsRevealed`, `predictionCorrect`, `confidence` y `reviewDueAt`); la campaña (el checkpoint aprobado por mundo y los sellos); los talleres (código sellado, predicción acertada, etapas marcadas y objetivos observados, como conteos); y el recorrido (pasos, hitos y favoritos marcados, y preguntas respondidas, como conteos). Una cuenta sin cabecera de progreso sale con la época 1, `resetAt` y la última actividad nulos, y todo en ceros. *(Q1)*
 - **FR-031**: `GET /api/admin/users/{user}` DEBE sumar `usage` (la última actividad, lo resuelto en el servidor e importado, los intentos que cuentan de los últimos 30 días y las importaciones), de forma aditiva: `GET /api/admin/users` y el resto de la ficha no cambian. *(Extiende el contrato de la spec 010)*
 
 **Operación: ejecuciones y cola**
 
-- **FR-032**: `GET /api/admin/runs` DEBE listar las ejecuciones que B2 conserva (14 días), de la más nueva a la más vieja, con un cursor por fecha de aceptación e id y los filtros por estado, cuenta, ejercicio y fecha desde. Cada ejecución trae sólo: `id`, la cuenta (`id` y `name`), `exerciseId`, `language`, `status`, `reason`, `executorPhase`, `exitCode`, `truncated`, `compileMs`, `runMs`, `createdAt`, `startedAt`, `finishedAt` y si se pidió cancelarla. El contrato dice que lo anterior a 14 días ya no existe. *(ADR 0006 §4.5, `viewRunMetadata`, y §7)*
+- **FR-032**: `GET /api/admin/runs` DEBE listar las ejecuciones que B2 conserva (14 días), de la más nueva a la más vieja, con un cursor por fecha de aceptación e id y los filtros por estado, cuenta, ejercicio y fecha desde. Cada ejecución trae sólo: `id`, la cuenta (`id` y `name`), `exerciseId`, `language`, `status`, `reason`, `executorPhase`, `exitCode`, `truncated`, `compileMs`, `runMs`, `createdAt`, `startedAt`, `finishedAt` y si se pidió cancelarla. El contrato dice que lo anterior a 14 días ya no existe. Como el detalle (FR-017), la lista no muestra las ejecuciones de una cuenta en `deleting`, y un filtro por una cuenta inexistente o en supresión responde 404 `not_found`. *(ADR 0006 §4.5, `viewRunMetadata`, y §7)*
 - **FR-033**: `GET /api/admin/queue` DEBE traer, en vivo: cuántas ejecuciones esperan y cuántas corren, la antigüedad de la más vieja en espera, el tope de la cola y los lugares configurados (el mismo valor que usan el ejecutor y `worker-runs`); y, de las últimas 24 horas, la espera hasta empezar y la duración (mediana y p95) y los `infra_error` por motivo. No cuenta los rechazos 429 y 503, que no dejan filas, y el contrato lo dice. *(ADR 0006 §7; spec 005, FR-008 y FR-009)*
 
 **Caché, tope de tiempo y medición**
@@ -414,11 +415,11 @@ C5 no crea tablas. Estos son los conceptos que expone, todos derivados de las ta
 
 ### Measurable Outcomes
 
-- **SC-001**: Con la población armada a mano (alumnos, admins que estudian, una cuenta deshabilitada, una en supresión, intentos de dos épocas, intentos legados, importaciones y un reset), cada cifra de cada ruta coincide con el conteo a mano: 0 diferencias, en los períodos por día, semana y mes.
+- **SC-001**: Con la población armada a mano (alumnos, uno que nunca practicó y no tiene cabecera de progreso, admins que estudian, una cuenta deshabilitada, una en supresión, intentos de dos épocas, intentos legados, importaciones y un reset), cada cifra de cada ruta coincide con el conteo a mano: 0 diferencias, en los períodos por día, semana y mes.
 - **SC-002**: Con valores testigo en todas las columnas de «Nunca sale», el recorrido de todas las rutas de `/api/admin` (las 8 de C3b que responden con éxito y las de C5) encuentra 0 testigos, 0 claves prohibidas a cualquier profundidad y 0 rutas sin escenario. Cada ruta de C5 devuelve exactamente las claves de su lista cerrada.
 - **SC-003**: La prueba de arquitectura encuentra 0 referencias del código de C5 a las columnas y las tablas de «Nunca sale».
 - **SC-004**: El 100 % de las rutas de C5 responde 403 a un estudiante, también ante un destino inexistente, y 401 sin sesión. El detalle de una cuenta en supresión responde 404 en el 100 % de los casos, también si se lo pidió con éxito un instante antes.
-- **SC-005**: Cada consulta con éxito del detalle o de la ficha deja exactamente una línea de log con el admin, la cuenta y la acción, y 0 líneas llevan una métrica o el email en claro (Q3).
+- **SC-005**: Cada consulta con éxito del detalle, de la ficha o de las ejecuciones filtradas por una cuenta deja exactamente una línea de log con el admin, la cuenta y la acción, y 0 líneas llevan una métrica o el email en claro (Q3).
 - **SC-006**: Después de calcular cada ruta, las tablas de los alumnos tienen las mismas filas y revisiones que antes (0 escrituras fuera de la caché), y una sincronización y el cierre de una ejecución que corren durante un cálculo en frío no esperan ningún candado de C5.
 - **SC-007**: Una consulta que supera su tope responde 503 con su código y `Retry-After` en el 100 % de los casos, y deja 0 entradas en la caché.
 - **SC-008** (una medición, no un criterio de aprobación): con 5.000 alumnos sintéticos y dos años de intentos, se informan el tiempo en frío de cada ruta, su EXPLAIN antes y después de cada índice, los índices sumados y si alguna ruta sigue por encima de 2 s, el disparador del §9. Como la SC-012 de B2, todavía no hay un objetivo que cumplir: si el disparador salta, decide el usuario (FR-040).
@@ -450,7 +451,7 @@ C5 no crea tablas. Estos son los conceptos que expone, todos derivados de las ta
 
 ## Hallazgos para las hojas de ruta
 
-1. **Un ítem del front para las pantallas (Q4).** Recomendado: **F14 · Estadísticas del admin**, en la hoja de ruta del front. Entran una sección «Uso del taller» en `pages/admin` (el resumen con su serie, los catálogos y los ejercicios, la cola y las ejecuciones), el detalle de una cuenta desde «Cuentas» y su resumen, con sus specs y sus E2E. Depende de F12a y de C5; con F10 queda bajo `#administracion`. Cierra la entrada «C5» de «Enmiendas pendientes» de la hoja de ruta del backend. Es nuevo, no un port: no tiene comportamiento legacy que conservar.
+1. **Un ítem del front para las pantallas (Q4).** Recomendado: **F14 · Estadísticas del admin**, en la hoja de ruta del front; F14 es el primer ID libre en `master` 24ba9d3d (F13 ya existe), y si otra spec en curso lo toma, el coordinador le asigna el siguiente. Entran una sección «Uso del taller» en `pages/admin` (el resumen con su serie, los catálogos y los ejercicios, la cola y las ejecuciones), el detalle de una cuenta desde «Cuentas» y su resumen, con sus specs y sus E2E. Depende de F12a y de C5; con F10 queda bajo `#administracion`. Cierra la entrada «C5» de «Enmiendas pendientes» de la hoja de ruta del backend. Es nuevo, no un port: no tiene comportamiento legacy que conservar.
 2. **Las dependencias de C5 ya están entregadas; sus datos, no.** La hoja de ruta dice «D1, B2». Lo que C5 lee lo dejaron D1a, D1b y B2, entregados: C5 puede planificarse e implementarse ya, sin esperar a la ola 5. Sus números describen el taller recién con A4 y D1c, y el ítem del front puede esperarlos.
 3. **El §7 del ADR 0006** suma `GET /api/admin/stats/students` (Q2-A) y el resumen de la ficha (`usage`). La pregunta 6 de §13 se cierra con el clarify de C5.
 4. **B2 no cuenta los rechazos.** Los 429 `quota_exceeded` y los 503 `queue_full` no dejan filas, así que nadie puede saber cuántas veces un aula se quedó sin lugar. Si hace falta, es un contador en B2 (o en los logs), no en C5.
@@ -461,7 +462,7 @@ C5 no crea tablas. Estos son los conceptos que expone, todos derivados de las ta
 ## Assumptions
 
 - **Las habilidades del §4.5.** `viewStats` y `viewRunMetadata` son las habilidades del rol `admin` sobre C5. Con un solo rol que las tiene, el plan decide si son Gates propios o el grupo `admin` de C3b; ninguna lleva un `before()` que autorice todo.
-- **La zona horaria del taller** es `America/Argentina/Buenos_Aires` por omisión, configurable, y sólo corta los períodos: los datos siguen en UTC.
+- **La zona horaria del taller** es `America/Argentina/Buenos_Aires` por omisión, configurable, y sólo corta los períodos: los datos siguen en UTC. Si el plan convierte con zonas con nombre dentro de MySQL, tiene que confirmar que las tablas de zonas horarias están cargadas también en los volúmenes que ya existen; con un desfase fijo también alcanza para Buenos Aires, que hoy no cambia de hora. Lo decide el plan.
 - **El período por omisión** son los últimos 30 días, y el máximo, 366. El plan puede ajustarlos con la medición (FR-038).
 - **Sin interruptor para los admins.** S5 los excluye «por defecto»; con la cuenta de admin separada que recomienda el ADR, el caso de sumarlos no aparece. Si aparece, es Q5-C.
 - **La caché** es la del store `database` que ya usa el taller, sin Redis (ADR 0006 §9). Sus claves no llevan datos de una cuenta, porque las rutas por cuenta no usan caché.
