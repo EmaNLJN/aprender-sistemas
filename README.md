@@ -6,7 +6,17 @@ Los 50 núcleos de Sistemas forman parte de los 274 ejercicios. Cada lenguaje ti
 
 ## Levantar con Docker
 
-Necesitás Docker con Docker Compose. La primera vez, desde esta carpeta, creá el archivo `.env` con los secretos de la API y de MySQL:
+Necesitás Docker con Docker Compose. Con `make`, desde esta carpeta, la primera vez es:
+
+```sh
+make env
+make sandbox-images
+make up
+```
+
+`make down` lo detiene, y `make help` lista el resto: la vista previa, los checks, los E2E y las pruebas de la API. Lo que sigue explica qué corre cada paso.
+
+La primera vez, desde esta carpeta, creá el archivo `.env` con los secretos de la API y de MySQL:
 
 ```sh
 sh backend/api/scripts/init-env.sh
@@ -247,6 +257,8 @@ Un ejercicio nuevo cambia a propósito contratos que se actualizan a mano: `qa/f
 npm run build
 npm test
 ```
+
+`make check` corre lo mismo que el job del front de la CI (sin los E2E), y además `git diff --check`; `make e2e` construye y corre Playwright.
 
 `npm test` ejecuta, en el orden de `qa/run-checks.ts`, todos los checks locales en TypeScript; cada uno corre también por separado con `node qa/<check>.ts`. Comprueban el documento y su contenido, el orden de arranque, contrato de IDs del currículo, contenido, transporte sin red, respaldo del recorrido, reglas de campaña, contexto de campaña y Sistemas dentro del laboratorio y los modelos de robot/paquetes. `systems-check` cubre el catálogo y el motor de sellos; los cuatro checks de dominio prueban reglas de sus simulaciones. El check de kits crea ZIP, los vuelve a leer con un decodificador independiente y compara archivos, CRC y contenido del borrador. Estos comandos son comprobaciones locales; por sí solos no demuestran que un programa haya compilado.
 

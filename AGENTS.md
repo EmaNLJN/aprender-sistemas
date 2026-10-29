@@ -56,6 +56,11 @@ npm run build
 npm test
 ```
 
+El `Makefile` de la raíz envuelve estos comandos y los de Docker de más abajo. `make help` los
+lista: `make setup` la primera vez, y después `make up`, `make down`, `make check` y `make e2e`. La
+fuente sigue siendo los scripts de npm y Compose. Un comando nuevo entra como script, y como target
+sólo si se usa seguido.
+
 Para la verificación habitual, `npm run build` regenera todos los assets y
 `npm test` ejecuta la suite local completa. `npm run lint` ejecuta ESLint;
 `npm run format:check` comprueba formato sin editar. `npm run format` aplica
@@ -84,7 +89,8 @@ docker compose down
 ```
 
 El primer comando construye las dos imágenes del sandbox, sin las que el ejecutor no arranca:
-corrélo la primera vez y al menos una vez por semana (ADR 0005).
+corrélo la primera vez y al menos una vez por semana (ADR 0005). Con el `Makefile`, son
+`make sandbox-images`, `make up` y `make down`.
 
 La web queda en `http://localhost:8080`. Para servir `dist/` generado en
 el host como preview (el HTML, el contenido y los avisos de licencia, montados enteros), usá `docker compose -f docker/compose.preview.yaml up --build -d --wait`
