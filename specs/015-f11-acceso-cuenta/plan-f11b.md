@@ -784,7 +784,7 @@ Cada PR lleva título en inglés, con notación de Angular, y una descripción e
    }
    ```
 
-3. **Correr** `npm run test:unit -- frontend/src/shared/api/http`: en verde, también las 33 de F11a sin editar. Después, `npm run typecheck` y `npm run lint`.
+3. **Correr** `npm run test:unit -- frontend/src/shared/api/http`: en verde, también todas las de F11a sin editar. Después, `npm run typecheck` y `npm run lint`.
 4. **Commit:** `feat(front): el cliente descarga archivos con los bytes y el nombre del servidor`.
 
 ### Tarea 5.3 · Las specs de la confirmación compartida, en rojo (T039, W)
