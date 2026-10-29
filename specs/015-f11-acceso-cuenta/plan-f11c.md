@@ -17,7 +17,7 @@
 > **Para quien lo implementa.**
 >
 > - **Qué leer.** Leé completas las «Restricciones globales», las «Reglas para todos los agentes», el contrato y la sección de tu tarea. `tasks-f11c.md` tiene una línea por tarea (T054 a T059) y remite acá.
-> - **Cuándo.** F11c espera a C3c en `master` (spec, «Partición»; el dominio). T054 lo comprueba antes de empezar.
+> - **Cuándo.** F11c espera a C3c en `master` (spec, «Partición»), sin esperar el dominio, como F12b (decisión del usuario del 2026-10-29): se prueba con Mailpit, y el correo real a direcciones de verdad llega con el dominio. T054 lo comprueba antes de empezar.
 > - **La numeración** sigue la de F11b (T036 a T053, U5 a U7): F11c es la unidad U8, con las tareas T054 a T059 (research-f11c.md, R34).
 > - **El código verificado.** Ninguno. Se planificó leyendo la base de F11a en `impl-f11a` (`a7b3c71d`), su plan para el `AccessScreen` final (T032) y el contrato de C3c, que todavía no está implementada.
 
