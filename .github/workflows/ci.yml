@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       code: ${{ steps.classify.outputs.code }}
+      react: ${{ steps.classify.outputs.react }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -27,13 +28,22 @@ jobs:
           EVENT: ${{ github.event_name }}
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
         run: |
           if [ "$EVENT" = pull_request ]; then
-            code=$(git diff --name-only "$BASE...$HEAD" | sh .github/scripts/needs-full-ci.sh)
+            files=$(git diff --name-only "$BASE...$HEAD")
+            code=$(printf '%s\n' "$files" | sh .github/scripts/needs-full-ci.sh)
+            react=$(printf '%s\n' "$files" | sh .github/scripts/touches-react.sh)
+          elif git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            code=true
+            react=$(git diff --name-only "$BEFORE" "$AFTER" | sh .github/scripts/touches-react.sh)
           else
             code=true
+            react=true
           fi
           echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "react=$react" >> "$GITHUB_OUTPUT"
 
   secrets:
     name: secrets
@@ -84,6 +94,32 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 7
+
+  react-doctor:
+    name: react-doctor
+    needs: changes
+    if: needs.changes.outputs.react == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: tools/quality/package-lock.json
+      - run: npm ci --prefix tools/quality --no-audit --no-fund
+      - env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "$EVENT" = pull_request ]; then
+            set -- --scope changed --base "$BASE"
+          else
+            set -- --scope full
+          fi
+          tools/quality/node_modules/.bin/react-doctor frontend "$@" --verbose --no-telemetry --no-supply-chain --yes
 
   api:
     name: api
