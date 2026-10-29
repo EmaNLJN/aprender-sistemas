@@ -31,13 +31,13 @@ description: "Tareas de F10b, la raíz única, el shell y el router: un registro
 
 ## Phase 5: User Story 1, 2, 3, 4 y 7 - El corte (Priority: P1)
 
-- [ ] T026 [US1] `qa/e2e/specs/shell-edges.spec.ts` en verde; el rojo y el arreglo de F10-A1 en `qa/e2e/specs/views.spec.ts` y `frontend/app.js`; el rojo de `qa/e2e/specs/shell-changes.spec.ts` (plan §5.1; FR-033 y FR-046)
+- [ ] T026 [US1] `qa/e2e/specs/shell-edges.spec.ts` en verde; el rojo y el arreglo de F10-A1 en `qa/e2e/specs/views.spec.ts` y `frontend/app.js`; el rojo de `qa/e2e/specs/shell-changes.spec.ts`, con el salto durante la carga que decidió el usuario el 2026-10-28 (plan §5.1; FR-033 y FR-046)
 - [ ] T027 [US4] Las specs rojas de la raíz: `shell-stage.spec.ts`, `boot-stages.spec.tsx`, `boot-modules.spec.tsx`, `start-taller.spec.tsx` y `frontend/src/app/main-entry.spec.ts` (plan §5.2; FR-040 y FR-052)
-- [ ] T028 [US7] El corte en un commit: la raíz única, `index.html`, las etapas, el movimiento de `lab-api.ts` a `app/lab/`, el retiro de `app.js`, de `legacyViews`, de `app/legacy/`, de la raíz de la cuenta, de los tres checks y sus arneses, `dist-content-check`, `seams-guard` y `dump-globals` (plan §5.3; FR-034 a FR-037, FR-047 a FR-053; SC-003)
+- [ ] T028 [US7] El corte en un commit: la raíz única, `index.html`, las etapas, el movimiento de `lab-api.ts` a `app/lab/`, el retiro de `app.js`, de `legacyViews`, de `app/legacy/`, de la raíz de la cuenta, de los tres checks y sus arneses, `dist-content-check` con las pruebas sobre el archivo servido (decisión del usuario del 2026-10-28), `seams-guard` y `dump-globals` (plan §5.3; FR-034 a FR-037, FR-047 a FR-053; SC-003)
 
 ## Phase 6: User Story 5 - La administración como ruta (Priority: P2)
 
-- [ ] T029 [US5] El rojo: `AdminPage.open()` en `qa/e2e/pages/admin.ts`, los cinco escenarios de F12a, `qa/e2e/specs/admin-route.spec.ts` y las specs de `pages/account` (plan §6.1; FR-043)
+- [ ] T029 [US5] El rojo: `AdminPage.open()` en `qa/e2e/pages/admin.ts`, los cinco escenarios de F12a (decisión del usuario del 2026-10-28), `qa/e2e/specs/admin-route.spec.ts` y las specs de `pages/account` (plan §6.1; FR-043)
 - [ ] T030 [US5] `#administracion` en `frontend/src/app/routes/page-entries.tsx` y `router/app-navigator.ts`, el enlace en «Tu cuenta» y el retiro de `AdminDialog` y `.admin-dialog` (plan §6.2; FR-041 a FR-044; SC-011)
 
 ## Phase 7: User Story 6 - La devolución de la lección queda montada (Priority: P3)

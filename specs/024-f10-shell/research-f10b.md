@@ -103,7 +103,7 @@ Todo eso depende del almacén del recorrido o del contenido. Los dos botones del
 
 **Por qué sin `aria-pressed`:** el idioma todavía no se conoce, y un `aria-pressed="false"` en los dos botones afirmaría algo falso. Sin el atributo, el lector de pantalla los anuncia como botones comunes hasta que llega el estado.
 
-**Un cambio que la spec implica y no lista en «Lo que cambia a propósito» (hallazgo).** El salto al contenido *durante la carga* (spec, «Edge Cases»): hoy el enlace no tiene oyente hasta `startApp()`, así que la URL pasa a `#main`. En F10b el oyente está desde el primer cuadro: el foco va a `#main` y la URL no cambia. Su E2E falla contra la base, y por eso va en el commit rojo de U5 junto con los otros cambios visibles (plan-f10b.md, T026).
+**El salto al contenido durante la carga cambia, y está decidido** (el usuario, 2026-10-28; spec, «Clarifications» y «Lo que cambia a propósito»). El caso está en la spec, «Edge Cases»: hoy el enlace no tiene oyente hasta `startApp()`, así que la URL pasa a `#main`. En F10b el oyente está desde el primer cuadro: el foco va a `#main` y la URL no cambia. Su E2E falla contra la base, y por eso va en el commit rojo de U5 junto con los otros cambios visibles (plan-f10b.md, T026).
 
 ## R6 · El idioma: una función pura y una escritura en memoria
 
@@ -168,6 +168,7 @@ Todo eso depende del almacén del recorrido o del contenido. Los dos botones del
 
   `lab-bridge-check` ya lo retiró F7b. T015 confirma la lista con un `grep`.
 - **Salen** `tools/content/dump-globals.ts` y la prueba de globals de `qa/dist-content-check.ts`. La equivalencia del contenido la siguen probando `build-check` y el resto de `dist-content-check`.
+- **`dist-content-check` deja de evaluar el `dist`** (el usuario, 2026-10-28; spec, FR-052). Evaluarlo exigía `boot-harness.ts` y `fake-dom.ts`, que FR-052 retira, y con la raíz única habría que dibujar todo el shell de React en el DOM falso. Queda con las pruebas sobre el archivo servido: los bytes (`documentHash`) y las 17 porciones. Las que salen, «the bundle boots without errors» y «the bundle publishes the content once and asks for the file once», las cubren los E2E de A2 (`content-gate.spec.ts`), contra el mismo `dist`, en un navegador real, con el fixture `pageIssues`.
 
 **Por qué antes del corte.** T025 cambia los checks mientras los globals todavía existen: la sustitución se verifica sola, con el mismo conteo de escenarios. Recién el corte, T028, borra los globals.
 
@@ -208,7 +209,7 @@ El resto de `app/` les pide a ellos.
 
 Con una ruta por hash, abrir suma una entrada al historial, y Esc ya no cierra nada, porque no hay diálogo. T029 las reescribe con el método nuevo de `AdminPage.open()` y suma los escenarios de enlace y de recarga. Las de «admin-accounts» y «admin-invitations» abren sólo por `admin.open()`, así que no se editan.
 
-**Un hallazgo para el coordinador:** la reescritura alcanza a cinco escenarios, no a los dos que nombra el plan de F12a. FR-043 lo autoriza («los E2E que abren y cierran el diálogo»), pero el PR tiene que listarlos.
+**Decidido por el usuario el 2026-10-28:** se reescriben los cinco, en el commit rojo de T029, con la tabla de plan-f10b.md, §6.1. La spec lo registra en «Clarifications» y en FR-043, y el PR los lista.
 
 ## R12 · `#quiz-feedback` montada (X2)
 

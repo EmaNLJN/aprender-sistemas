@@ -76,7 +76,7 @@ Los valores esperados salen de la spec, de `frontend/src/index.html` de la base 
 - **`import.meta`** (TR-4): `importMeta` del `dist` no sube nunca. Lo esperado es el valor de T015 menos un `import.meta` por cada sitio `import(` de `legacy-views.ts` en la base, incluidos los de `run()` (research-f10b.md, R13). `dynamicImports` sigue en 0.
 - **La red sin editar** (FR-002): pasan todos los E2E de la base, incluidos los 5 archivos de F10a. Se editan sólo estos:
   - `views.spec.ts`, «KNOWN DEFECT (new, found by F1): <body> carries aria-pressed…» (F10-A1, FR-046);
-  - los 5 escenarios de F12a que dependen del diálogo (research-f10b.md, R11; FR-043).
+  - los 5 escenarios de F12a que dependen del diálogo (research-f10b.md, R11; FR-043), decididos por el usuario el 2026-10-28.
 
   Cada edición va en su propio commit rojo.
 - **La escritura diferida de nuqs** (D1-bis): una E2E nueva que recarga después de un cambio con nuqs espera la URL.
@@ -135,6 +135,9 @@ F10b compone código que llega con F3 a F9, F11a y F12a. Las firmas de este plan
 | **F12-Q1:** la administración pasa a ruta | U6, con sus E2E reescritas | §6 |
 | **El tope de 1 500 000 y D1-bis** (noche del 2026-10-28) | Las restricciones globales | — |
 | **Los adaptadores de página con la forma `Taller<Página>Page`** (coordinador) | El inventario los nombra así: `TallerProjectPage` y `TallerMethodPage` | §0 |
+| **Los cinco escenarios de F12a se reescriben** (el usuario, 2026-10-28) | La tabla de §6.1, en el commit rojo de T029 | §6.1 |
+| **`dist-content-check` queda con las pruebas sobre el archivo servido** (el usuario, 2026-10-28) | Los bytes y las 17 porciones; las pruebas que evaluaban el `dist` salen, cubiertas por los E2E de A2 | §5.3 |
+| **El salto al contenido funciona durante la carga** (el usuario, 2026-10-28; parte de F10-Q2) | Su E2E en el commit rojo de T026; se declara en el PR | §5.1 |
 
 ## Project Structure
 
@@ -310,7 +313,7 @@ La corre el agente principal antes del PR (T035).
 9. **El PR,** con título y descripción en inglés: `feat(front): F10b, one React root with the shell and the router`. Lleva:
    - el contexto y qué cambia;
    - la tabla de correspondencia de F10a, completa (FR-052);
-   - los cambios a propósito, cada uno con su commit;
+   - los cambios a propósito, cada uno con su commit, incluido el salto al contenido durante la carga;
    - las adaptaciones del inventario;
    - el tamaño, `import.meta` y la complejidad;
    - las dos comparaciones;
@@ -2478,7 +2481,7 @@ Cuatro commits, en este orden:
    });
    ```
 
-   Commit `test(e2e): los conteos llegan con el contenido y el salto funciona durante la carga (en rojo)`.
+   Commit `test(e2e): los conteos llegan con el contenido y el salto funciona durante la carga (en rojo)`. El cambio del salto lo decidió el usuario el 2026-10-28, como parte de F10-Q2, y el PR lo declara.
 
 ### 5.2 Las specs rojas de la raíz (T027)
 
@@ -3031,7 +3034,7 @@ export function startTaller(container: HTMLElement): Promise<void> {
 **4. `qa/`:**
 - **Se borran** `qa/boot-check.ts`, `qa/load-order-check.ts`, `qa/app-shell-check.ts`, `qa/lib/app-adapters.ts`, `qa/lib/boot-harness.ts`, `qa/lib/app-shell-harness.ts`, `qa/lib/fake-dom.ts` y `qa/lib/legacy-sources.ts`. Cualquier otro archivo de `qa/lib` que quede sin consumidores, también (`grep -rln "<archivo>" qa/`): `built-page.ts` (`evaluateBuiltPage`) o `content-server.ts`, si sólo los usaban esos.
 - **`qa/run-checks.ts`** pierde las tres líneas de los checks borrados.
-- **`qa/dist-content-check.ts`** deja de evaluar el `dist` (research-f10b.md, R9):
+- **`qa/dist-content-check.ts`** deja de evaluar el `dist` (decisión del usuario del 2026-10-28; spec, FR-052; research-f10b.md, R9):
   - salen el relanzamiento con `--experimental-vm-modules`, el arnés y el servidor de contenido;
   - salen las pruebas «the bundle boots without errors», «the bundle publishes the content once and asks for the file once» y «the globals of the bundle equal the dump-globals oracle». Las dos primeras las cubre `content-gate.spec.ts` de A2 en un navegador real, contra el mismo `dist`, con el fixture `pageIssues`; la tercera sale por F10-Q3;
   - quedan «the served file has the generator bytes (documentHash)» y el script único;
@@ -3067,7 +3070,7 @@ async open(): Promise<void> {
 }
 ```
 
-**2. Los cinco escenarios de F12a** (research-f10b.md, R11) se reescriben así. Los nombres nuevos reemplazan a los viejos:
+**2. Los cinco escenarios de F12a** (research-f10b.md, R11; decisión del usuario del 2026-10-28) se reescriben así. Los nombres nuevos reemplazan a los viejos:
 
 | Escenario de F12a | Pasa a |
 | --- | --- |
