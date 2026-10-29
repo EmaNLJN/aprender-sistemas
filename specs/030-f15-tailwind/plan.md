@@ -298,7 +298,7 @@ Una sola cola: cada tarea parte de la compuerta de la anterior. K es el agente p
      });
      ```
 
-   - **Las reglas que se comparan:** sólo las heredadas, con el contexto en forma canónica y sin la capa. Antes del `walkRules` de las tuplas:
+   - **Las reglas que se comparan:** sólo las heredadas, con el contexto en forma canónica y sin la capa. Al principio de `tuples()`, antes de los dos `walkRules`:
 
      ```ts
      const insideMedia = (node) => {
@@ -1279,6 +1279,8 @@ Una sola cola: cada tarea parte de la compuerta de la anterior. K es el agente p
    ```
 
    `print:`, `motion-safe:` y `motion-reduce:` son de Tailwind (S5). Si la sonda dijo otra cosa, se definen igual que las de ancho, con la condición literal.
+
+   Después de `npx prettier --write frontend/src/app/main.css`, la línea de `hover` tiene que seguir igual. Si Prettier la reescribe (por ejemplo, a `(&: hover)`), se usa la forma de bloque, que la documentación muestra para las variantes anidadas: `@custom-variant hover { &:hover { @slot; } }`, y la sonda S7 se repite con esa forma.
 2. **Correr:** `npm run build`; el `style` del dist es el mismo de T009 (las variantes no generan nada sin utilidades); `npm test`, `npm run lint` y `npm run format:check`.
 3. **La prueba de que hacen lo que dicen:** la sonda de T007 ya leyó la salida de `hover:bg-ink`, `upto-850:block` y `upto-590:block` con este mismo bloque (S6 y S7). Si T010 cambió algo respecto de lo que corrió la sonda, se repite S6 y S7 en una copia.
 4. **Commit:** `build(front): el hover con cualquier puntero y los anchos de hoy como variantes`.
