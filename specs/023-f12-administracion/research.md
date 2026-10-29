@@ -49,6 +49,7 @@ Este documento junta las decisiones técnicas de F12a con sus alternativas, la t
   - en cualquier otro paso, cuenta como cancelar.
 - **El foco vuelve explícito.** La sección guarda el control que abrió el diálogo (`event.currentTarget` en las filas y el botón «Crear las invitaciones» en el formulario), cierra con `flushSync` y le devuelve el foco. Si ese control ya no existe, el foco va al título de la tabla (FR-006). No depende del navegador: Safari no enfoca un botón al hacer clic.
 - **Las acciones de una fila tienen lugares fijos** (`ACTION_SLOTS`: estado, rol y borrar). Al deshabilitar, «Deshabilitar a Ana» pasa a «Rehabilitar a Ana» en el mismo botón del DOM, y el foco vuelve a él (historia 3, escenario 3).
+- **Las acciones de una fila van en un grupo** «Acciones sobre {nombre}» (`role="group"`), que se dibuja sólo si la fila tiene acciones. Las pruebas cuentan los botones dentro del grupo y no en la fila entera, así que una columna nueva antes de «Acciones», como la «Uso» de F14, no cambia ningún conteo. Es una decisión del usuario del 2026-10-28 (Q1-A de F14). El grupo no suma una parada de Tab: el orden del teclado es el de antes.
 
 ### R5. La contraseña a pedido (F12-Q3, FR-036 a FR-038)
 

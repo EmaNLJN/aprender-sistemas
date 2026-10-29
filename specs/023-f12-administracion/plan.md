@@ -29,6 +29,8 @@
 >
 >   **Lo que enmendó la revisión del 2026-10-28 no corrió:** los stubs del rojo como `const` tipados, las listas blancas `/status of NNN/` de los E2E, las ramas de T001 y lo que cambió en T002, T007 a T009 y T023 para partir del código real de F11a (`impl-f11a`, a7b3c71d).
 >
+>   **Lo que enmendó la decisión de F14 (Q1-A, 2026-10-28) tampoco corrió:** el grupo «Acciones sobre {nombre}» en `AccountsTable`, las specs de T015 que cuentan dentro de él y el método `actions(name)` del Page Object con los conteos de T022.
+>
 >   El tipado pasó con `messagesOf(error: FieldError | GlobalError | undefined)`. F11a la implementó así (`impl-f11a`, `frontend/src/shared/ui/form/show-failure.ts:8`, T017), por el hallazgo 1 de F12a, y T012 y T018 la usan tal cual.
 
 ## Summary
@@ -117,6 +119,7 @@ Valen para toda tarea. Los valores están copiados de la spec, de la constituci�
 - **La accesibilidad:**
   - todo se hace con el teclado, y el foco inicial va al título (FR-050);
   - cada tabla tiene título y encabezados, y los botones de cada fila nombran a la persona o el email (FR-051);
+  - los botones de una fila de «Cuentas» van en un grupo «Acciones sobre {nombre}», para que la columna «Uso» de F14 no cambie los conteos (decisión del usuario, 2026-10-28, Q1-A de F14);
   - desde 320 px no hay desplazamiento horizontal: la tabla se desplaza en su región, y los campos miden 16 px (FR-052);
   - con movimiento reducido no hay transiciones (FR-053).
 - **El backend:** no cambia.
@@ -2127,6 +2130,10 @@ Con A3 en la base (B4), `AccountMenu.tsx` y `AccountDialog.tsx` conservan lo que
        return this.region.getByRole('row', { name });
      }
 
+     actions(name: RegExp): Locator {
+       return this.row(name).getByRole('group', { name: /^Acciones sobre/ });
+     }
+
      notice(text: string): Locator {
        return this.region.getByRole('status').filter({ hasText: text });
      }
@@ -3610,14 +3617,14 @@ Todos los stubs son `const` tipados que lanzan `not implemented` («Reglas», TD
        renderSection([{ status: 200, json: pageBody([OWN, ANA, LEAVING, UNVERIFIED]) }]);
        const table = await screen.findByRole('table', { name: 'Cuentas del taller, por nombre' });
        const own = within(table).getByRole('row', { name: /Olga Ruiz \(vos\)/ });
-       expect(within(own).queryAllByRole('button')).toHaveLength(0);
+       expect(within(own).queryByRole('group', { name: /^Acciones sobre/ })).toBeNull();
        const leaving = within(table).getByRole('row', { name: /Carla Díaz/ });
        expect(leaving).toHaveTextContent('Borrándose');
-       expect(within(leaving).queryAllByRole('button')).toHaveLength(0);
+       expect(within(leaving).queryByRole('group', { name: /^Acciones sobre/ })).toBeNull();
        expect(within(table).getByRole('row', { name: /Dani Paz/ })).toHaveTextContent('Sin verificar');
        const ana = within(table).getByRole('row', { name: /Ana Pérez/ });
        expect(
-         within(ana)
+         within(within(ana).getByRole('group', { name: 'Acciones sobre Ana Pérez' }))
            .getAllByRole('button')
            .map((button) => button.textContent),
        ).toEqual([
@@ -3740,7 +3747,7 @@ Todos los stubs son `const` tipados que lanzan `not implemented` («Reglas», TD
        expect(calls[1]).toMatchObject({ method: 'DELETE', path: '/api/admin/users/12' });
        const row = screen.getByRole('row', { name: /Ana Pérez/ });
        expect(row).toHaveTextContent('Borrándose');
-       expect(within(row).queryAllByRole('button')).toHaveLength(0);
+       expect(within(row).queryByRole('group', { name: /^Acciones sobre/ })).toBeNull();
        expect(screen.getByRole('status')).toHaveTextContent(message);
        expect(screen.getByRole('heading', { name: 'Cuentas del taller, por nombre' })).toHaveFocus();
      });
@@ -3805,7 +3812,7 @@ Todos los stubs son `const` tipados que lanzan `not implemented` («Reglas», TD
 
 **Archivos:** `ui/AccountsTable.tsx` y `ui/AccountsSection.tsx`, en `frontend/src/pages/admin/`.
 
-1. **`ui/AccountsTable.tsx`.** La región se desplaza con el teclado (`tabIndex={0}`) y los botones tienen lugares fijos (`ACTION_SLOTS`):
+1. **`ui/AccountsTable.tsx`.** La región se desplaza con el teclado (`tabIndex={0}`), los botones tienen lugares fijos (`ACTION_SLOTS`) y van en un grupo «Acciones sobre {nombre}» que se dibuja sólo si la fila tiene acciones:
 
    ```tsx
    import { formatLocalDateTime } from '../../../shared/lib/format-local-date-time';
@@ -3841,35 +3848,44 @@ Todos los stubs son `const` tipados que lanzan `not implemented` («Reglas», TD
            </tr>
          </thead>
          <tbody>
-           {users.map((user) => (
-             <tr key={user.id}>
-               <th scope="row">
-                 {user.name}
-                 {user.id === ownId ? ' (vos)' : null}
-               </th>
-               <td>
-                 {user.email}
-                 {user.emailVerified ? null : <span className="admin-mark">Sin verificar</span>}
-               </td>
-               <td>{ROLE_LABELS[user.role]}</td>
-               <td>{STATUS_LABELS[user.status]}</td>
-               <td>{formatLocalDateTime(user.createdAt)}</td>
-               <td>
-                 <div className="admin-row-actions">
-                   {actionsFor(user, ownId).map((action, index) => (
-                     <button
-                       key={ACTION_SLOTS[index]}
-                       type="button"
-                       className="button secondary small"
-                       onClick={(event) => onAction(action, user, event.currentTarget)}
+           {users.map((user) => {
+             const actions = actionsFor(user, ownId);
+             return (
+               <tr key={user.id}>
+                 <th scope="row">
+                   {user.name}
+                   {user.id === ownId ? ' (vos)' : null}
+                 </th>
+                 <td>
+                   {user.email}
+                   {user.emailVerified ? null : <span className="admin-mark">Sin verificar</span>}
+                 </td>
+                 <td>{ROLE_LABELS[user.role]}</td>
+                 <td>{STATUS_LABELS[user.status]}</td>
+                 <td>{formatLocalDateTime(user.createdAt)}</td>
+                 <td>
+                   {actions.length === 0 ? null : (
+                     <div
+                       className="admin-row-actions"
+                       role="group"
+                       aria-label={`Acciones sobre ${user.name}`}
                      >
-                       {userActionTexts(action, user).button}
-                     </button>
-                   ))}
-                 </div>
-               </td>
-             </tr>
-           ))}
+                       {actions.map((action, index) => (
+                         <button
+                           key={ACTION_SLOTS[index]}
+                           type="button"
+                           className="button secondary small"
+                           onClick={(event) => onAction(action, user, event.currentTarget)}
+                         >
+                           {userActionTexts(action, user).button}
+                         </button>
+                       ))}
+                     </div>
+                   )}
+                 </td>
+               </tr>
+             );
+           })}
          </tbody>
        </table>
      </div>
@@ -5196,9 +5212,9 @@ Todos los stubs son `const` tipados que lanzan `not implemented` («Reglas», TD
        }));
        await shell.goto(urls.view('recorrido'));
        await admin.open();
-       await expect(admin.row(/Olga Ruiz \(vos\)/).getByRole('button')).toHaveCount(0);
-       await expect(admin.row(/Carla Díaz/).getByRole('button')).toHaveCount(0);
-       await expect(admin.row(/Ana Pérez/).getByRole('button')).toHaveCount(3);
+       await expect(admin.actions(/Olga Ruiz \(vos\)/).getByRole('button')).toHaveCount(0);
+       await expect(admin.actions(/Carla Díaz/).getByRole('button')).toHaveCount(0);
+       await expect(admin.actions(/Ana Pérez/).getByRole('button')).toHaveCount(3);
      });
    });
 
@@ -5338,7 +5354,7 @@ Todos los stubs son `const` tipados que lanzan `not implemented` («Reglas», TD
        await dialog.getByRole('checkbox', { name: 'Entiendo que no se puede deshacer.' }).check();
        await confirm.click();
        await expect(admin.row(/Ana Pérez/)).toContainText('Borrándose');
-       await expect(admin.row(/Ana Pérez/).getByRole('button')).toHaveCount(0);
+       await expect(admin.actions(/Ana Pérez/).getByRole('button')).toHaveCount(0);
        await expect(admin.notice(DELETION_MESSAGE)).toBeVisible();
        await expect(admin.region.getByRole('heading', { name: ACCOUNTS })).toBeFocused();
        expect(api.callsTo('DELETE /api/admin/users/12')[0]?.user).toBe(String(ADMIN.id));

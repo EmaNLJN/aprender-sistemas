@@ -133,6 +133,7 @@ export class AdminPage {
   inviteForm(): Locator;
   table(name: string): Locator;
   row(name: RegExp): Locator;
+  actions(name: RegExp): Locator;
   notice(text: string): Locator;
   dialog(name: string): Locator;
   openSection(name: 'Cuentas' | 'Invitaciones'): Promise<void>;
@@ -155,6 +156,8 @@ export function pageOf<T>(data: T[], page?: number, lastPage?: number, total?: n
 export function linkFor(email: string): string;
 export const OWN_ROW, ANA_ROW, BETO_ROW, LEAVING_ROW: AdminUserJson;
 ```
+
+**Las acciones de una fila de «Cuentas»** van en un grupo con el nombre «Acciones sobre {nombre}» (`role="group"`), y la fila que no tiene acciones (la propia, la que se está borrando) no lo dibuja. `actions(name)` devuelve ese grupo: las pruebas cuentan los botones de una fila con `admin.actions(/Ana Pérez/).getByRole('button')`, y con una fila sin acciones el conteo da 0. Así la columna «Uso» de F14, que va antes de «Acciones», no cambia ninguno de esos conteos. La tabla de «Invitaciones» no lleva grupo.
 
 Las rutas de `/api/admin` se suman en cada escenario con `api.on('GET /api/admin/users', …)` y, con un id, una por id (`'PATCH /api/admin/users/12'`). El doble busca la ruta antes de mirar el CSRF: una que falte da 404 y queda en `unhandled`. `on` reemplaza la respuesta que hubiera (`Map.set`), también la de `confirm-password` si F8 la sumó a `installDefaults`. Los escenarios usan `test.use({ sessionAccount: ADMIN })`, y declaran cada falla con `/status of NNN/` o, para un pedido abortado, `/net::ERR_FAILED/`.
 
