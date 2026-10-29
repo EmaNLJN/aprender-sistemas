@@ -129,6 +129,14 @@ Lo que sigue ya está decidido. Lo que no figura acá es un supuesto (Assumption
 - Q: ¿Qué texto muestra el 202 de «Recuperá tu contraseña»? (F11c) → A: El de esta spec: «Si el email corresponde a una cuenta, te llega un enlace para elegir una contraseña nueva. Vence en 60 minutos.», y no el `message` del 202 de C3c. Decidió el usuario, con la recomendada. (FR-061; plan-f11c.md, R36)
 - Q: ¿Dónde va el 422 `auth_failed` de una confirmación de la contraseña? (F11b-3 y F11b-4) → A: En el campo «Tu contraseña», con `aria-invalid`, el foco y el texto propio «La contraseña no es correcta.», y no en el error general. Enmienda la letra del FR-025 para la confirmación, y F8 toma el mismo texto de `features/confirm-password`. Decidió el usuario, con la recomendada. (FR-025 y FR-055; plan-f11b.md, R24)
 
+### Session 2026-10-29 (plan de F11d)
+
+Correcciones de redacción que trajo el plan de F11d ([plan-f11d.md](./plan-f11d.md), research-f11d.md R45) y el reparto de «Salir» que rige desde la spec de F13 (#79). No son preguntas nuevas.
+
+- **Los datos locales de la cuenta (FR-062 y la entidad).** No existe un registro: cada dueño los borra con su operación pública (D1c, su espacio con `enterSharedMode()`; A3, su copia del contenido con `forgetContentCopy()`), y la aplicación junta esas operaciones en un solo lugar, un puerto chico armado en `app/`.
+- **«Salir» con la cola sin enviar (FR-068 de D1).** D1c envía la cola y limpia; F13, aceptado, dibuja la espera, la pregunta y la nota (su L7). F11d no toca «Salir» y conserva sus dos superficies: la computadora compartida y «¿Este progreso es tuyo?».
+- **Lo que quedó viejo:** «D1c no tiene plan» (lo tiene: PR #93) y el tope de SC-008, que es 1 500 000 desde el PR #76.
+
 ## Partición
 
 **La aplicó el usuario el 2026-10-28 (P1).** F11 se parte en cuatro, cada parte con su plan y sus tareas, y sigue siendo una sola spec, como D1 y F2: cada parte toma su rango de requisitos.
@@ -157,7 +165,7 @@ Los doce transversales (FR-066 a FR-077) valen para cada parte y se repiten en s
   - el restablecimiento.
 - **F11b** cubre FR-053 a FR-059 con las historias 6 y 7 y SC-009, sobre el diálogo «Tu cuenta» de F11a. Se puede planificar en paralelo con F11a, pero se integra después.
 - **F11c** cubre FR-060 y FR-061 con la historia 8 y SC-010, y se planifica con C3c, cuando haya dominio.
-- **F11d** cubre FR-062 a FR-065 con la historia 9 y SC-010, y se planifica con D1c (o pasa a F13, si el usuario acepta ese ítem).
+- **F11d** cubre FR-062 a FR-065 con la historia 9 y SC-010, y se planifica después de D1c. F13, aceptado, se queda con lo que se ve de «Salir» (sesión del 2026-10-29).
 
 **El costo:**
 
@@ -646,7 +654,7 @@ Los transversales (FR-066 a FR-077) valen para todas las historias. Sus criterio
 
 **Lo de D1 (F11d; espera a D1c)**
 
-- **FR-062**: «Tu cuenta» DEBE ofrecer «Estoy en una computadora compartida». Antes de activarla, DEBE decir qué se pierde, también lo que no llegó al servidor. Al confirmar, DEBE borrar en ese momento los datos locales de la cuenta que registran sus dueños (D1c, su espacio local; A3, su copia del contenido), y desde ahí el navegador no guarda progreso. *(Q5; D1 FR-070, que se enmienda en D1c, y FR-071)*
+- **FR-062**: «Tu cuenta» DEBE ofrecer «Estoy en una computadora compartida». Antes de activarla, DEBE decir qué se pierde, también lo que no llegó al servidor. Al confirmar, DEBE borrar en ese momento los datos locales de la cuenta, que borra cada dueño con su operación pública y la aplicación junta en un solo lugar (D1c, su espacio local con `enterSharedMode()`; A3, su copia del contenido con `forgetContentCopy()`), y desde ahí el navegador no guarda progreso. *(Q5; D1 FR-070, que se enmienda en D1c, y FR-071)*
 - **FR-063**: Si el navegador no deja escribir en su almacenamiento, «Tu cuenta» DEBE avisar que el taller funciona en modo compartido. *(D1 FR-070)*
 - **FR-064**: Si el navegador tiene progreso v1 sin importar, después del ingreso y antes de que el cliente escriba nada, DEBE mostrar el resumen (los ejercicios resueltos y la fecha del último resultado) y preguntar «¿Este progreso es tuyo?». El cliente de D1c importa sólo con un sí. *(D1 FR-072 y FR-073)*
 - **FR-065**: Ante un 409 `import_needs_confirmation`, DEBE volver a preguntar sin decir el motivo y, con un sí, reenviar con la confirmación. Al terminar, DEBE mostrar el informe: lo escrito, lo omitido, lo reemplazado y los conflictos. *(D1 FR-073; contrato de D1b, §7)*
@@ -684,7 +692,7 @@ Los transversales (FR-066 a FR-077) valen para todas las historias. Sus criterio
 - **Aviso de privacidad:** un archivo del front con el texto y su versión, la misma que `PRIVACY_VERSION` (Q2). La cuenta aceptó la vigente o no (`privacyAccepted`).
 - **«Pedir el ingreso»:** la operación que muestra el acceso y se resuelve con la cuenta, fuera de los topes de espera del arranque. La llaman la etapa de sesión, las pantallas de F11 ante un 401 y A3 ante un 401 en una porción (R1 y C1).
 - **Entrada «Tu cuenta» y su diálogo:** un botón en la barra superior, el único punto de F11 dentro del shell legacy (Q3).
-- **Elección de computadora compartida** (F11d): se elige en «Tu cuenta» (Q5). Al activarla se borran los datos locales de la cuenta que registran sus dueños (el espacio de D1c y la copia del contenido de A3), y desde ahí el navegador no guarda progreso.
+- **Elección de computadora compartida** (F11d): se elige en «Tu cuenta» (Q5). Al activarla se borran los datos locales de la cuenta, cada uno con la operación pública de su dueño (el espacio de D1c y la copia del contenido de A3), y desde ahí el navegador no guarda progreso.
 - **Datos locales de la cuenta:** lo que cada dueño guarda de la cuenta en el navegador y registra para que se borre al activar el modo compartido: el espacio de D1c y la copia del contenido de A3. F11 los borra sin nombrar sus almacenes.
 
 ## Success Criteria *(mandatory)*
@@ -698,7 +706,7 @@ Los transversales (FR-066 a FR-077) valen para todas las historias. Sus criterio
 - **SC-005** (todas): Después de recorrer todas las pantallas en un E2E, hay 0 contraseñas y 0 tokens en `localStorage`, `sessionStorage`, `document.cookie`, la URL, el historial y la consola.
 - **SC-006** (F11a): Un email inexistente y una contraseña equivocada muestran el mismo texto visible (0 diferencias), y lo mismo pasa con un token inválido, uno vencido y un email sin cuenta en el restablecimiento.
 - **SC-007** (todas): Cada pantalla se completa sólo con el teclado. Cerrar «Tu cuenta» devuelve el foco a su entrada. A 320 y a 390 px no hay desplazamiento horizontal, y con movimiento reducido hay 0 transiciones (E2E).
-- **SC-008** (todas): `dist/index.html` queda por debajo de 1 250 000 caracteres (el límite de `build-check`), y el PR informa cuánto creció, separando la librería de formularios del código propio.
+- **SC-008** (todas): `dist/index.html` queda por debajo de 1 500 000 caracteres (el límite de `build-check`, desde el PR #76), y el PR informa cuánto creció, separando la librería de formularios del código propio.
 - **SC-009** (F11b): El archivo descargado tiene el nombre que mandó el servidor y los mismos bytes, y en el almacenamiento quedan 0 copias. Después de borrar la cuenta, el documento se recarga y las cuatro claves v1 siguen intactas.
 - **SC-010** (F11c y F11d): Con `features.passwordReset: false` no aparece ningún «¿Te olvidaste la contraseña?», y con `true`, un email que existe y uno que no muestran el mismo texto. Al activar el modo compartido en «Tu cuenta», el espacio local de la cuenta y la copia del contenido quedan vacíos en ese momento; al cerrar la pestaña quedan 0 claves de progreso (SC-004 de D1); y la pregunta no escribe nada antes del sí.
 - **SC-011** (todas): Cada parte cierra con `npm run build`, `npm test`, `npm run lint`, `npm run format:check`, `npm run test:e2e` y `git diff --check` en verde, y su código suma 0 sitios de estilo en línea (`style=`, `style={…}`, `setAttribute('style', …)` o `.cssText`).
@@ -718,7 +726,7 @@ Los transversales (FR-066 a FR-077) valen para todas las historias. Sus criterio
   Si C3a o C3b cambian por flow-forward, esta spec se ajusta.
 - **C3c está sólo especificada,** y su plan espera el dominio. Lo que F11c toma de ella (el 202 uniforme, el 503 `mail_unavailable` y `features.passwordReset`) es un supuesto hasta que tenga plan.
 - **La interfaz con A3** quedó acordada en el clarify del 2026-10-28 (R1 y el ruling C1): F11a introduce la etapa de sesión y «pedir el ingreso», y A3 la extiende. La spec de A3 (016, PR #49) se actualiza con esas respuestas.
-- **D1c no tiene plan.** Lo que F11d toma de D1 son las superficies 1 y 2, el estado y las acciones que expone el cliente (FR-077 de D1). El detalle se precisa con D1c.
+- **D1c tiene plan (PR #93).** Lo que F11d toma de D1 son las superficies 1 y 2, el estado y las acciones que expone el cliente (FR-077 de D1), con el contrato de `specs/007-d1-progreso-sincronizacion/contracts/sync-client-d1c.md`.
 - **El ADR 0006 sigue en propuesta.** Lo que F11 toma de él llega a través de las specs de C3a, C3b y D1.
 
 **Los textos y los archivos**
@@ -818,7 +826,7 @@ Los transversales (FR-066 a FR-077) valen para todas las historias. Sus criterio
 - F11d son las superficies 1 y 2.
 - El FR-070 de D1 se enmienda en D1c: el modo compartido se elige en «Tu cuenta» y, al activarlo, se borra en ese momento el espacio local de la cuenta (Q5). D1c registra ese espacio entre los datos locales de la cuenta, y A3, su copia del contenido.
 - D1c depende de F11a: del ingreso, de salir y de «pedir el ingreso».
-- D1 pide enviar la cola antes de cerrar la sesión (su FR-068). Ese paso lo suma F11d o D1c antes del `POST` de salida; F11a no lo anticipa.
+- D1 pide enviar la cola antes de cerrar la sesión (su FR-068). Ese paso es de D1c, que envía la cola antes del `POST` de salida, y F13 dibuja la espera y la pregunta (su L7); F11a no lo anticipa y F11d no toca «Salir».
 
 **F1, F2b y F8:**
 
