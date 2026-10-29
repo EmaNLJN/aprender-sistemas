@@ -37,13 +37,13 @@
 
 - **Los marcadores.** Quedan ocho `[NEEDS CLARIFICATION]`, de cinco preguntas:
   - Q1: el alcance, en la User Story 4 y FR-027;
-  - Q2: quién crea la escala de tokens, en FR-015;
+  - Q2: si el preflight entra alguna vez, en FR-014;
   - Q3: la forma de los valores que no son tokens, en la User Story 4 y FR-031;
   - Q4: el prefijo o las colisiones una por una, en FR-018;
   - Q5: la regla para lo nuevo, en la User Story 3 y FR-025.
 
   Cada pregunta tiene sus opciones, la recomendada, su motivo y su costo, en «Preguntas para el clarify».
-- **«Requirements are testable and unambiguous»** queda sin marcar hasta el clarify: FR-015, FR-018, FR-025, FR-027 y FR-031 dependen de una respuesta.
+- **«Requirements are testable and unambiguous»** queda sin marcar hasta el clarify: FR-014, FR-018, FR-025, FR-027 y FR-031 dependen de una respuesta.
 - **La partición (P5)** se propone sin aplicar. Cada requisito lleva ya la marca de la parte que le tocaría, para que el clarify la confirme o la borre.
 
 **Excepciones deliberadas**
@@ -69,5 +69,5 @@
 - **No se ejecutó** `npm ci`, el build, Docker ni un navegador. Sólo `npm view`, para los metadatos del registro, como pidió el encargo.
 - **Los conteos** de colores, tamaños, espaciados, condiciones de `@media`, `!important` y `:hover` salen de las siete hojas de `master` (`bb480677`), con `grep`.
 - **Las colisiones** (`sr-only` y `visible`) salen de cruzar las 481 clases de esas hojas con los nombres de utilidades de Tailwind. F15a las confirma con la salida real.
-- **Lo que deja F10** sale de su spec y del plan de F10c, que todavía no está en `master`.
+- **Lo que deja F10** sale de su spec y del plan de F10c (rama `plan/f10c-estilos`, `1150db65`, PR #91), que todavía no está en `master`. De ahí salen los 61 tokens con nombres de v4, sus alias y la lista de «Qué toma F15» (R12).
 - **La documentación de Tailwind** se consultó con la segunda instancia de Context7 (`/tailwindlabs/tailwindcss.com`), que es la del sitio y no está fijada a 4.3.3.
