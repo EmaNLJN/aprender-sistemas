@@ -4,7 +4,7 @@
 
 - **Fuente técnica:** el [mapa del front legacy](legacy-map.md), con lo que hace cada vista, sus globals, su DOM, sus URLs, su persistencia y sus puntos calientes; el [ADR 0008](../../docs/adr/0008-pruebas-del-front.md), aceptado el 2026-10-05; los [ADR 0001](../../docs/adr/0001-react-vite-y-backend-diferido.md), [0003](../../docs/adr/0003-integridad-del-progreso.md) y [0007](../../docs/adr/0007-organizacion-del-repositorio.md); [`docs/architecture.md`](../../docs/architecture.md) y [`docs/refactor-roadmap.md`](../../docs/refactor-roadmap.md).
 - **Camino decidido por el usuario (2026-10-05):** red y seams primero; después las vistas una por una, las hojas primero y cada raíz de React dentro del shell legacy; el shell y el router al final, con una sola raíz. A2 va temprano. Quedan descartados el shell primero y la reescritura en paralelo.
-- **Corre en paralelo con** la [hoja de ruta del backend](../backend-multiusuario/roadmap.md), que sigue con C3 y C6. El usuario partió C3 en C3a (identidad y acceso, la spec 004, sin Fortify por decisión suya del 2026-10-05) y C3b (correo y administración, sin spec). Los ítems A2, A3, A4, C3a y C3b pertenecen a esa hoja de ruta y se referencian acá; no se duplican.
+- **Corre en paralelo con** la [hoja de ruta del backend](../backend-multiusuario/roadmap.md), que sigue con C3 y C6. El usuario partió C3 en C3a (identidad y acceso, la spec 004, sin Fortify por decisión suya del 2026-10-05) y C3b (la administración y el ciclo de vida de la cuenta, sin correo; el correo pasó a C3c). Los ítems A2, A3, A4, C3a y C3b pertenecen a esa hoja de ruta y se referencian acá; no se duplican.
 - **Flujo:** Spec Kit, con la [constitución](../../.specify/memory/constitution.md) como compuerta de cada plan.
 
 ## Vocabulario
@@ -161,7 +161,7 @@ Cada línea nombra lo que entra, lo que borra, lo que conserva y lo que queda fu
   - Dependencias:
     - F11a espera a A2 y a C3a;
     - F11b, a F11a y a C3b, y C4 espera a F11b (decisión del usuario del 2026-10-28);
-    - F11c, a F11a y a C3c en `master`. Su plan cita el dominio, como la partición de la spec 015, aunque el plan de C3c se implementa sin él hasta su T031;
+    - F11c, a F11a y a C3c en `master`, sin esperar el dominio, como F12b (decisión del usuario del 2026-10-29): se prueba con Mailpit, y el correo real a direcciones de verdad llega con el dominio;
     - F11d, a F11a y a D1c.
 
     A3 espera sólo a F11a, y así desaparece el ciclo A3 → F11 → D1c → A4 → A3 (P1). F11b, F11c y F11d tocan el diálogo «Tu cuenta» y el ingreso que deja F11a, así que se integran después y de a una.
@@ -204,7 +204,7 @@ La hoja de ruta del backend es la dueña de estos ítems. Acá sólo se cablean 
 | A4 | Que el laboratorio use `/api/runs` | Espera a F7a y a B3, no a F7b (ruling C4 y A4-Q5): toma el puerto de `features/run-exercise` que deja F7a. No cambia sólo el adaptador: suma `attemptId` a la ejecución de la API (A4-Q1) y retira los Playgrounds (A4-Q2); lo que toma de F7 está en la [spec 017](../017-a4-laboratorio-sandbox/spec.md) y en la tabla F7-S1 a F7-S9. Sus estados y sus textos los dibuja la vista vigente cuando entra: la revisión de `lab.js` si F7b todavía no entró, y entonces F7b los porta con sus E2E, o la página React si ya entró |
 | C3a | La API de identidad y acceso: no incluye pantallas | Las pantallas de cuenta son F11 |
 | C3b | La administración de usuarios e invitaciones y el ciclo de vida de la cuenta, sin correo: no incluye pantallas | Las de administración son F12a; exportar y borrar la cuenta, F11b |
-| C3c | El correo: la recuperación por email, la invitación por correo y los avisos; no incluye pantallas | Las pantallas que lo usan son F11c y F12b. F12b arranca con su implementación en `master`, sin esperar el dominio (F12b-D1) |
+| C3c | El correo: la recuperación por email, la invitación por correo y los avisos; no incluye pantallas | Las pantallas que lo usan son F11c y F12b. Las dos arrancan con su implementación en `master`, sin esperar el dominio (F12b-D1, y para F11c, la decisión del usuario del 2026-10-29) |
 | C4 | CSP sin `'unsafe-inline'` | Espera a F12a y a F11b: su compuerta G1 suma «las pantallas de administración integradas» (F12-Q2) y F11b entregada (decisión del usuario del 2026-10-28). Su recorrido de la CSP suma las pantallas de F11a, F11b y F12a (plan actualizado en el PR #83). Ya no espera a ningún port: su clarify (Q3) conservó `style-src-attr 'unsafe-inline'`, así que los cuatro `style=` de las plantillas legacy (uno en Sistemas, dos en el laboratorio y uno en Método) no la bloquean. F5, F7 y F8 igual los retiran, por su alcance. Con los Playgrounds retirados (A4-Q2), la CSP queda estricta; si C4 abre antes que A4, la lleva con los Playgrounds hasta que A4 los quite. La corrida de registro de B3 en verde es parte de su compuerta G1 |
 | C5 | La API de las estadísticas del admin; no incluye pantallas | Sus pantallas son F14a y F14b (Q4-A de C5), que esperan a C5 implementado |
 | D1 | El cliente v2, con espacios por cuenta (D1c; D1a y D1b, del servidor, ya están entregados) | Se apoya en los almacenes con suscripción (unidad 1 de F2) y en la interfaz de `features/progress-backup` (unidad 6), y espera a F11a, a A3 y a A4; F11d entra en servicio con D1c. F8 usa ya el reset de D1b. D1c enmienda dos requisitos de D1: el FR-070, por F11-Q5, y la cláusula de las claves v1 del FR-074, que rige desde D1c (F8-L7). Sus superficies de vista están en «Superficies que pide D1». Los planes de F11d y de F13 van después del de D1c |
@@ -257,7 +257,7 @@ La spec de D1 (007) fija el estado y el contrato de cinco superficies de vista q
 | 4 | F7b | Ola 4: D1, C4 y A4, que espera a F7a y a B3 | F5, F6 y F7a entregados |
 | 5 | F10a, F10b y F10c, en ese orden | Ola 5: C5, E1 y E2 | F3 a F9 entregados, el último F7b, más F11a, F12a y A2 |
 | 6 | F15a, F15b y F15c, en ese orden | — | F10c entregado; para F15a, el permiso de la descarga y el ADR 0010 aceptado |
-| Aparte | F11b, F11c, F11d, F12b, F13, F14a y F14b | Cuando estén C3b (F11b), C3c en `master` (F11c, y F12b sin esperar el dominio), D1c (F11d y F13) y C5 (F14a) | Las partes de F11 necesitan F11a; F12b, F12a; F13, F10b, F11a y F11d; F14a, F12a, y F14b, F14a. Ninguno bloquea al tronco del front |
+| Aparte | F11b, F11c, F11d, F12b, F13, F14a y F14b | Cuando estén C3b (F11b), C3c en `master` (F11c y F12b, sin esperar el dominio), D1c (F11d y F13) y C5 (F14a) | Las partes de F11 necesitan F11a; F12b, F12a; F13, F10b, F11a y F11d; F14a, F12a, y F14b, F14a. Ninguno bloquea al tronco del front |
 
 - **Archivos que comparten los dos épicos:** `package.json` y `.github/workflows/ci.yml` (F1 suma el E2E al job `front` y C6 toca el job `api`), y la documentación. Los integra el agente principal.
 
@@ -390,11 +390,11 @@ Siguen pendientes:
 
 - **La hoja del backend:** su fila de C2 en «Acciones del usuario» dice que `npm ci` baja 243 dependencias; con la pila de pruebas son hasta 320.
 - **La constitución:** su tabla de épicos cuenta «F1…F13». Con F14 y F15 pasa a «F1…F15», y la del backend suma E2. Va en su próxima enmienda (specs de F14 y F15).
-- **«Salir» con la cola sin enviar (FR-068 de D1):** la spec de F13 toma lo que se ve, con la espera, la pregunta y la nota junto al botón, y deja a D1c el envío y la limpieza (L7, una lectura de esa spec). Las decisiones del coordinador del 2026-10-28 le dan la pantalla a F11d y la mecánica a D1c. Hay que elegir antes de los planes de D1c, F11d y F13.
-- **F11c y el dominio:** el plan de F11c todavía dice que espera el dominio, por la partición de la spec 015. El plan de C3c se implementa y se prueba sin él hasta su T031, y F12b ya no lo espera (F12b-D1). F11c no recibió la misma decisión.
 
 Resueltas, con el PR que las resolvió:
 
+- **«Salir» con la cola sin enviar (FR-068 de D1):** rige la L7 de la spec de F13 (#79), posterior a la decisión del coordinador del 2026-10-28 que le daba la pantalla a F11d. Lo que se ve (la espera, la pregunta y la nota junto al botón) es de F13; el envío de la cola y la limpieza, de D1c; el modo compartido y «¿Este progreso es tuyo?», de F11d. Este PR.
+- **F11c y el dominio:** el usuario decidió el 2026-10-29 que F11c arranca con C3c en `master`, sin esperar el dominio, como F12b. El plan de F11c se corrige en este PR.
 - **D1 y E1 no citaban a F2, F5, F7, F8 ni los conteos del catálogo:** lo resuelve la actualización de las hojas de ruta que sigue al PR #91. E1 espera a F7a, F7b y B3 y lleva los conteos a mano (FR-035 y FR-036 de la spec 026), y D1c llega a F11a y a A3 a través de A4.
 - **El alcance de C3 y su fila de «Acciones del usuario» hablaban de Fortify:** los corrigió el PR #18, con el plan de C3a.
 - **Las pantallas de C5 no tenían dueño:** son F14a y F14b, por la Q4-A del clarify de C5 (PR #86).

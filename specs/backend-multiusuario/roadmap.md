@@ -10,7 +10,7 @@
 
 - **IDs estables:** B1…E1, C5, C6 y E2 no se renumeran ni se reutilizan. Un ítem nuevo recibe un ID nuevo. Un ítem partido conserva su ID, y cada parte lo lleva con una letra: C3a a C3c y D1a a D1c.
 - **Una spec por ítem,** en `specs/NNN-<id>-<nombre>/` (`NNN` es el orden de creación de Spec Kit). La línea `Input` de cada spec nombra el ID de su ítem; esta tabla enlaza la spec de vuelta.
-- **Estados:** `Pendiente` (sin spec), `En especificación` (spec redactada, con preguntas abiertas o sin plan), `Planificado` (plan, tareas y análisis hechos), `En curso`, `Entregado`.
+- **Estados:** `Pendiente` (sin spec), `En especificación` (spec redactada, con preguntas abiertas o sin plan), `En planificación` (spec clarificada y plan en redacción; si la spec todavía no está en `master`, la fila no la enlaza), `Planificado` (plan, tareas y análisis hechos), `En curso`, `Entregado`.
 - **Entregado** exige la implementación integrada y la evidencia de QA: PR, commit y qué se ejecutó. Si algo quedó sin verificar, se escribe.
 - **Persistencia flow-forward** (constitución, principio VIII): al entregar, el directorio de la feature queda inmutable. Un cambio sustancial o un requisito nuevo es una spec nueva, enlazada a la original («extiende» o «reemplaza a»), y la fila del ítem apunta a las dos. Los bugs van a `.specify/bugs/<slug>/` (extensión `bug`) y no tocan el `tasks.md` de la feature.
 - **Integración:** `frontend/src/app/main.tsx`, `package.json`, las configuraciones y la documentación las integra el agente principal, aunque dos ítems corran en paralelo ([AGENTS.md](../../AGENTS.md)).
@@ -38,7 +38,7 @@
 | C4 | Exposición | Exponer el taller en Internet con certificado propio, cabeceras estrictas y mínimo privilegio | A3, C3 (C3a, C3b y C3c), [F12a y F11b](../front-react/roadmap.md) | Planificado | [008-c4-exposicion](../008-c4-exposicion/spec.md), con su [plan](../008-c4-exposicion/plan.md) y sus [tareas](../008-c4-exposicion/tasks.md) |
 | A4 | Laboratorio con el sandbox propio | Que el laboratorio use `/api/runs` en lugar de los Playgrounds públicos | B2, A3, B3, [F7a](../front-react/roadmap.md) | Planificado | [017-a4-laboratorio-sandbox](../017-a4-laboratorio-sandbox/spec.md), que extiende a la [005](../005-b2-api-ejecuciones/spec.md) con `attemptId`, con su [plan](../017-a4-laboratorio-sandbox/plan.md) y sus [tareas](../017-a4-laboratorio-sandbox/tasks.md) |
 | B3 | Auditoría local del currículo | Probar en el ejecutor local que todas las soluciones aprueban y todos los códigos iniciales fallan | B2; lo esperan A4, E1 y E2 | Planificado | [020-b3-auditoria-curriculo](../020-b3-auditoria-curriculo/spec.md), con su [plan](../020-b3-auditoria-curriculo/plan.md) y sus [tareas](../020-b3-auditoria-curriculo/tasks.md) |
-| C6 | Registros tipados del contenido | Que los registros del contenido viajen por la API como objetos tipados e inmutables, sin cambiar un byte publicado ni una fila, y que el análisis estático suba de nivel | C2 | Planificado | [002-c6-registros-tipados](../002-c6-registros-tipados/spec.md), que extiende a la 001 |
+| C6 | Registros tipados del contenido | Que los registros del contenido viajen por la API como objetos tipados e inmutables, sin cambiar un byte publicado ni una fila, y que el análisis estático suba de nivel | C2 | Entregado (PR #17) | [002-c6-registros-tipados](../002-c6-registros-tipados/spec.md), que extiende a la 001 |
 
 ## Alcance por ítem
 
