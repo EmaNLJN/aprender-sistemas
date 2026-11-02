@@ -294,3 +294,41 @@ Con sus dependencias, la estimación del ADR 0008 sigue siendo de 56 paquetes, u
 - la cantidad de E2E (106 de F1 y 17 de A2);
 - los escenarios de cada check;
 - los hashes del dist.
+
+## Línea base de la implementación
+
+Medida por T001 el 2026-11-02 sobre `9c4b45a6` (rama `impl/f9-recorrido`, con F2a, F2b, F4, F5 y la pila de #67). `npm ci --offline`, `npm run build`, `npm test -- --maxWorkers=2` (832 pruebas de Vitest en 45 archivos), `npm run lint` (0 errores), `npm run format:check` y los E2E (202 de 202, con `--workers=2`) dieron verde.
+
+| Qué | Valor |
+| --- | --- |
+| `dist/index.html` | 1 169 093 caracteres, bajo `BOOT_SIZE_LIMIT` (1 500 000, `qa/build-check.ts:11`) |
+| `import(` y `import.meta` del script | 0 y 23 (la base de TR-4: el corte debe dejar 24) |
+| sha256 del script | `78316afa239b0ac46e4c90bbc3041b8e88872fdb29466fa302a8ef668174635f` |
+| sha256 del `<style>` | `17e95d575eeb3286492c34976f4c9c85d5994da0b2df2cb7ca1ae81469dbd8cf` |
+| sha256 del marcado | `8e060fe765d256c22639d3b31c98a3a60160eb4263d3d0396714022c562892d8` |
+| sha256 de `build/curriculum.json` | `4555e8500e6ef5bd38cdaf46010d3f14e3345d7ec0c69aea983acfe67f62fbb6` |
+| sha256 de `dump-globals` | `859771e276be9dc757c25388fd617df7d8667ffab176992e82d79cf6e1dd6fa1` |
+| Avisos de lint | 47, de los que 33 son de complejidad |
+| `app.js`: complejidad | `syncLinkedLanguage` (41, 11), `render` (120, 12), `renderRoute` (156, 12), flecha (215, 11), flecha (405, 17) |
+| `boot-check` | 25 `PASS` |
+| `app-shell-check` | 56 `PASS` |
+| E2E | 202 |
+| Vitest | 832 pruebas, 45 archivos |
+
+Qué entró antes (plan, «Lo compartido con F3, F4 y F8»):
+
+| Fila | Rama |
+| --- | --- |
+| Suscripción del shell | F4 ya entró: `routeStore.changes.subscribe(updateSaveLabel)` en `app.js:29`; T018 la pasa a `syncShell` y saca las llamadas redundantes a `updateSaveLabel()` (`app.js:65`, `:118` y `:552`) |
+| Operación de alternar | F4 ya entró: `routeStore.toggleMark` en `route-store.ts:97`; `toggleItem` de `app.js` sigue con tres llamadas (`:355`, `:440` y `:472`) y F9 no crea `toggleRouteItem` |
+| Selectores de pasos | Ausentes: T011 y T012 los crean |
+| CSS compartido | F3 no entró: T010 saca las reglas del Recorrido de los `@media` |
+| Pila de componentes | Presente (proyecto `dom` en `frontend/vitest.config.ts:15`) |
+| Guarda de `useStore` | Presente (`eslint.config.ts:78`): T002 sólo verifica |
+| `boot-check` | Ya hay `REACT_VIEWS` (`atlas`, `proyecto`, `sistemas`) y `mountedText`: T017 suma `recorrido` |
+| Escenario «almacén» | F3 y F8 no entraron: T018 saca la parte del paso |
+| Patrón `store` por prop | El de las páginas Proyecto y Sistemas |
+| `resetTimer` | Rama A: F8 no entró |
+| Page Object de Método | F5 lo creó con `confirmReset()`, sin `importCopy` ni `resetAllProgress`: T003 los suma |
+
+El worktree de la base para las comparaciones es `../f9-base`, en `9c4b45a6`, con `npm ci --offline` y `npm run build`. El permiso de Docker (`docker compose build taller`) queda sin pedir.
