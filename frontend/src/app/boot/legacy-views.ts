@@ -3,7 +3,6 @@ import type { BootStage } from './run-boot';
 // qa/load-order-check.ts reads this list: one `() => import('…'),` per line, in evaluation order.
 const LEGACY_MODULES: readonly (() => Promise<unknown>)[] = [
   () => import('../legacy/register-catalogs'),
-  () => import('../legacy/register-runner'),
   () => import('../legacy/register-editor'),
   () => import('../../../lab-explorers.js'),
   () => import('../../../quest-explorers.js'),

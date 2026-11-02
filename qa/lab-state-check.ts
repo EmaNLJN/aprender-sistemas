@@ -5,7 +5,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { loadCampaignEngine, loadLab, loadLabCatalogs } from './lib/legacy-sources.ts';
 import { plainJson as plain } from './lib/plain-json.ts';
-import { importModule, repoRoot } from './lib/sources.ts';
+import { bundleSource, importModule, repoRoot } from './lib/sources.ts';
 
 interface Evidence {
   id: string;
@@ -792,6 +792,15 @@ test('A degraded load without a secured copy never touches the key and never say
   assert.equal(status.textContent, 'El guardado no está disponible: exportá tu avance.');
   assert.equal(tab.lab.applyImport(tab.lab.planImport({ version: 1, records: {} })), false);
   assert.deepEqual([...saved.entries()], before);
+});
+
+test('lab.js bundles the lab store once and no engine or route store', () => {
+  const bundle = bundleSource('frontend/lab.js');
+  const occurrences = (key: string) => bundle.split(key).length - 1;
+  assert.equal(occurrences('taller-laboratorio-v1'), 1);
+  assert.equal(occurrences('taller-campaign-v1'), 0);
+  assert.equal(occurrences('taller-systems-v1'), 0);
+  assert.equal(occurrences('taller-learning-v1'), 0);
 });
 
 console.log(passed + ' lab state scenarios passed; ' + failed + ' failed.');

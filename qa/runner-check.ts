@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import { runSource } from './lib/sources.ts';
+import { runModule } from './lib/sources.ts';
 
 interface FakeResponse {
   ok: boolean;
@@ -28,14 +28,12 @@ interface RunResult {
 interface Runner {
   run: (input: RunInput) => Promise<RunResult>;
 }
-interface RunnerWindow {
-  TallerRunner: Runner;
+interface PlaygroundModule {
+  runCode: (input: RunInput) => Promise<RunResult>;
 }
 
 function setup(fetchFn: FetchFn, quick = false): Runner {
-  const window = {} as RunnerWindow;
   const context = vm.createContext({
-    window,
     fetch: fetchFn,
     TextEncoder,
     AbortController,
@@ -43,8 +41,11 @@ function setup(fetchFn: FetchFn, quick = false): Runner {
     setTimeout: quick ? (fn: () => void) => setTimeout(fn, 5) : setTimeout,
     clearTimeout,
   });
-  runSource(context, 'frontend/src/app/legacy/register-runner.ts');
-  return window.TallerRunner;
+  const { runCode } = runModule<PlaygroundModule>(
+    context,
+    'frontend/src/shared/api/playground/index.ts',
+  );
+  return { run: runCode };
 }
 const response = (data: unknown, status = 200): FakeResponse => ({
   ok: status >= 200 && status < 300,
