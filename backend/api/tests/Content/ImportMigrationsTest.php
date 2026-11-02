@@ -26,14 +26,15 @@ function importCreateStatements(array $tables): array
     return $statements;
 }
 
-it('migrates, rolls back two steps and migrates again leaving the same tables and touching no other', function () {
+it('migrates, rolls back from the first import migration and migrates again leaving the same tables and touching no other', function () {
     foreach (IMPORT_MIGRATION_TABLES as $table) {
         expect(Schema::hasTable($table))->toBeTrue();
     }
     $before = importCreateStatements([...IMPORT_MIGRATION_TABLES, ...IMPORT_UNTOUCHED_TABLES]);
 
     try {
-        Artisan::call('migrate:rollback', ['--step' => 2, '--force' => true]);
+        $fromFirstImportMigration = DB::table('migrations')->where('migration', '>=', '2026_10_06_100011_create_progress_imports_table')->count();
+        Artisan::call('migrate:rollback', ['--step' => $fromFirstImportMigration, '--force' => true]);
         foreach (IMPORT_MIGRATION_TABLES as $table) {
             expect(Schema::hasTable($table))->toBeFalse();
         }
