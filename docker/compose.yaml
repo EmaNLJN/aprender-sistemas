@@ -81,6 +81,33 @@ x-mysql-healthcheck: &mysql-healthcheck
   start_period: 60s
   start_interval: 2s
 
+x-executor-base: &executor-base
+  build:
+    context: ./backend/executor
+    target: runtime
+  volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+  group_add:
+    - '${EXECUTOR_DOCKER_GID:?falta EXECUTOR_DOCKER_GID en .env (sh backend/api/scripts/init-env.sh)}'
+  read_only: true
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,size=16m
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  dns: ['127.0.0.1']
+  mem_limit: 256m
+  pids_limit: 128
+  stop_grace_period: 45s
+  healthcheck:
+    test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:8080/healthz']
+    interval: 10s
+    timeout: 3s
+    retries: 3
+    start_period: 5s
+    start_interval: 1s
+
 services:
   taller:
     build:
@@ -148,9 +175,7 @@ services:
     restart: unless-stopped
 
   executor:
-    build:
-      context: ./backend/executor
-      target: runtime
+    <<: *executor-base
     environment:
       EXECUTOR_TOKEN: *executor-token
       EXECUTOR_RUNTIME: '${EXECUTOR_RUNTIME:-runsc}'
@@ -160,29 +185,47 @@ services:
       GOMAXPROCS: '2'
       HOME: /tmp
     networks: [sandbox]
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    group_add:
-      - '${EXECUTOR_DOCKER_GID:?falta EXECUTOR_DOCKER_GID en .env (sh backend/api/scripts/init-env.sh)}'
-    read_only: true
-    tmpfs:
-      - /tmp:rw,noexec,nosuid,size=16m
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    dns: ['127.0.0.1']
-    mem_limit: 256m
-    pids_limit: 128
-    stop_grace_period: 45s
-    healthcheck:
-      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:8080/healthz']
-      interval: 10s
-      timeout: 3s
-      retries: 3
-      start_period: 5s
-      start_interval: 1s
     restart: unless-stopped
+
+  executor-audit:
+    <<: *executor-base
+    profiles: [audit]
+    environment:
+      EXECUTOR_TOKEN: *executor-token
+      EXECUTOR_RUNTIME: '${AUDIT_RUNTIME:-runsc}'
+      EXECUTOR_MAX_CONCURRENT: '${AUDIT_CONCURRENCY:-4}'
+      EXECUTOR_INSTANCE: auditoria
+      EXECUTOR_RUST_IMAGE: taller-sandbox-rust:local
+      EXECUTOR_GO_IMAGE: taller-sandbox-go:local
+      GOMAXPROCS: '2'
+      HOME: /tmp
+    networks: [audit]
+    restart: 'no'
+
+  audit:
+    <<: *laravel-runtime
+    profiles: [audit]
+    environment:
+      <<: *laravel-base-env
+      DB_USERNAME: '${AUDIT_DB_USERNAME:-taller}'
+      DB_PASSWORD: '${AUDIT_DB_PASSWORD:-${MYSQL_PASSWORD}}'
+      EXECUTOR_URL: http://executor-audit:8080
+      EXECUTOR_TOKEN: *executor-token
+      EXECUTOR_RUNTIME: '${AUDIT_RUNTIME:-runsc}'
+      AUDIT_INSTANCE: auditoria
+      AUDIT_CONCURRENCY: '${AUDIT_CONCURRENCY:-4}'
+      AUDIT_REPORT_DIRECTORY: /audit
+    user: '${AUDIT_UID:-82}:${AUDIT_GID:-82}'
+    command: ['php', 'artisan', 'curriculum:audit']
+    networks: [app, audit]
+    volumes:
+      - ./qa/curriculum-audit:/audit
+    depends_on:
+      mysql:
+        condition: service_healthy
+      executor-audit:
+        condition: service_healthy
+    restart: 'no'
 
   worker-runs:
     <<: *laravel-runtime
@@ -313,6 +356,8 @@ networks:
   testing:
     internal: true
   sandbox:
+    internal: true
+  audit:
     internal: true
 
 volumes:

@@ -35,6 +35,7 @@ CLAUDE.local.md
 /build/
 
 # Generated previews, validation records, and test output.
+/qa/curriculum-audit/
 /qa/lab-preview.html
 /qa/*-validation.json
 coverage/

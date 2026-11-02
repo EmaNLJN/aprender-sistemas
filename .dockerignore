@@ -28,6 +28,7 @@ __pycache__
 *.py[cod]
 qa/lab-preview.html
 qa/*-validation.json
+qa/curriculum-audit
 coverage
 test-results
 playwright-report
