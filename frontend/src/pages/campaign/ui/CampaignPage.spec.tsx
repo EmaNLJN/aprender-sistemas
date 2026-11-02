@@ -1,4 +1,4 @@
-import { act, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import curriculum from '../../../../../build/curriculum.json';
 import masterFixture from '../../../../../qa/fixtures/progress-master-2a278ad-storage.json';
@@ -91,6 +91,10 @@ describe('CampaignPage', () => {
   it('choosing a world rewrites ?mundo= in place, scrolls without animation and focuses its title', async () => {
     history.replaceState(null, '', '/?mundo=rust-world-1&x=1#campana');
     const replaceState = vi.spyOn(history, 'replaceState');
+    const titlesWhenScrolled: (string | undefined)[] = [];
+    vi.mocked(Element.prototype.scrollIntoView).mockImplementation(function (this: Element) {
+      titlesWhenScrolled.push(this.querySelector('h2')?.textContent);
+    });
     const { user, onSessionChange } = renderCampaignPage(rustSetup());
 
     await user.click(screen.getByRole('button', { name: /^Mundo 2: / }));
@@ -106,16 +110,17 @@ describe('CampaignPage', () => {
     expect(scroll.mock.invocationCallOrder[0]).toBeGreaterThan(
       replaceState.mock.invocationCallOrder.at(-1)!,
     );
+    expect(titlesWhenScrolled).toEqual(['Puerto de señales']);
     expect(screen.getByRole('heading', { level: 2, name: 'Puerto de señales' })).toHaveFocus();
     expect(onSessionChange).toHaveBeenLastCalledWith({ selected: 'rust-world-2', filter: 'all' });
   });
 
-  it('filtering shows the missions of the type and keeps the focus on the button', async () => {
-    const { user, onSessionChange } = renderCampaignPage(
+  it('filtering shows the missions of the type and keeps the focus on the button', () => {
+    const { onSessionChange } = renderCampaignPage(
       rustSetup({ stored: masterCampaignStorage, labState: masterLabState }),
     );
 
-    await user.click(screen.getByRole('button', { name: 'Kata' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Kata' }));
 
     const articles = screen.getAllByRole('article');
     expect(articles).toHaveLength(1);
@@ -142,11 +147,11 @@ describe('CampaignPage', () => {
     expect(screen.getByRole('button', { name: 'Todas' })).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('answering wrong marks the option, keeps the focus and writes once', async () => {
-    const { user, notify, storage } = renderCampaignPage(rustSetup({ labState: masterLabState }));
+  it('answering wrong marks the option, keeps the focus and writes once', () => {
+    const { notify, storage } = renderCampaignPage(rustSetup({ labState: masterLabState }));
     const optionA = within(checkpointRegion()).getAllByRole('button')[0];
 
-    await user.click(optionA);
+    fireEvent.click(optionA);
 
     expect(optionA).toHaveAttribute('aria-pressed', 'true');
     expect(optionA).toHaveClass('incorrect');
@@ -190,8 +195,37 @@ describe('CampaignPage', () => {
     await user.click(screen.getByRole('button', { name: 'Desafío final' }));
     await user.click(screen.getByRole('button', { name: /^Mundo 1: / }));
 
-    expect(rules.open).toBe(true);
+    expect(requirements).toBeInTheDocument();
     expect(requirements.open).toBe(true);
+
+    await user.click(screen.getByRole('button', { name: /^Mundo 2: / }));
+
+    expect(rules).toBeInTheDocument();
+    expect(rules.open).toBe(true);
+  });
+
+  it('a locked world shows its requirements and the way back to the open world', async () => {
+    const { user, onSessionChange } = renderCampaignPage(rustSetup());
+
+    await user.click(
+      screen.getByRole('button', { name: 'Mundo 3: Archivo de rutas, bloqueado; ver requisitos' }),
+    );
+
+    const locked = screen.getByRole('region', { name: 'Archivo de rutas' });
+    expect(within(locked).getByText('Avanzado / PRÓXIMA FRONTERA')).toBeInTheDocument();
+    expect(
+      within(locked).getByRole('heading', { level: 3, name: 'Esta región tiene un requisito.' }),
+    ).toBeInTheDocument();
+    const requirements = within(locked).getAllByRole('listitem');
+    expect(requirements).toHaveLength(2);
+    expect(requirements[0]).toHaveTextContent(/^Completá «Estación del robot»: /);
+    expect(requirements[1]).toHaveTextContent(/^Completá «Puerto de señales»: /);
+    expect(within(locked).queryByRole('group', { name: 'Tipo de misión' })).not.toBeInTheDocument();
+
+    await user.click(within(locked).getByRole('button', { name: 'Volver a Estación del robot →' }));
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Estación del robot' })).toHaveFocus();
+    expect(onSessionChange).toHaveBeenLastCalledWith({ selected: 'rust-world-1', filter: 'all' });
   });
 
   it('opening, choosing a world and filtering write nothing', async () => {
