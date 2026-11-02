@@ -73,7 +73,11 @@ const LoginForm = ({
   const fieldHasError = errors.email !== undefined || errors.password !== undefined;
   return (
     <>
-      <form className="form-stack" noValidate onSubmit={handleSubmit(submit)}>
+      <form
+        className="form-stack"
+        noValidate
+        onSubmit={(event) => void handleSubmit(submit)(event)}
+      >
         <AccessHeading level={headingLevel}>Ingresá al taller</AccessHeading>
         <p>Usá el email con el que te invitaron.</p>
         {notice === null ? null : <p className="access-notice">{notice}</p>}
