@@ -1,5 +1,6 @@
 import { test as base, expect } from '@playwright/test';
 import { STUDENT, type PublishedAccount } from '../lib/api-contract';
+import { AccountPage } from '../pages/account';
 import { AccessPage } from '../pages/access';
 import { AtlasPage } from '../pages/atlas';
 import { CampaignPage } from '../pages/campaign';
@@ -32,6 +33,7 @@ interface Fixtures {
   project: ProjectPage;
   method: MethodPage;
   access: AccessPage;
+  account: AccountPage;
 }
 
 export const test = base.extend<Fixtures & Options>({
@@ -69,6 +71,7 @@ export const test = base.extend<Fixtures & Options>({
   atlas: async ({ page }, use) => use(new AtlasPage(page)),
   project: async ({ page }, use) => use(new ProjectPage(page)),
   method: async ({ page }, use) => use(new MethodPage(page)),
+  account: async ({ page }, use) => use(new AccountPage(page)),
   access: async ({ page }, use) => use(new AccessPage(page)),
 });
 
