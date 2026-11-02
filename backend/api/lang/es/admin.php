@@ -21,4 +21,10 @@ return [
         'status' => 'El estado tiene que ser activo, deshabilitado o en borrado.',
         'sort' => 'El orden tiene que ser nombre, email, rol, estado o fecha de alta, con un guion adelante para invertirlo.',
     ],
+    'stats' => [
+        'from' => 'La fecha de inicio tiene que ser una fecha AAAA-MM-DD, y va junto con la de fin.',
+        'to' => 'La fecha de fin tiene que ser una fecha AAAA-MM-DD, no anterior a la de inicio, y va junto con la de inicio.',
+        'too_long' => 'El período puede tener hasta 366 días.',
+        'granularity' => 'El intervalo tiene que ser day, week o month.',
+    ],
 ];

@@ -12,7 +12,7 @@ use Illuminate\Testing\TestResponse;
 use Tests\Support\Browser;
 use Tests\Support\PopulatedAccount;
 
-const STUDENT_TEXT_KEYS = ['code', 'reflection', 'note', 'body', 'custom_test', 'raw_payload'];
+const STUDENT_TEXT_KEYS = ['code', 'reflection', 'note', 'body', 'custom_test', 'raw_payload', 'stdout', 'stderr', 'program', 'nonce', 'report', 'code_sha256', 'raw_sha256'];
 
 const STUDENT_TEXT_ROUTES_WITHOUT_SUCCESS = ['POST /api/admin/users/{user}/password-reset'];
 
@@ -117,6 +117,11 @@ beforeEach(function () {
     $student = PopulatedAccount::create();
     DB::table('exercise_progress')->where('user_id', $student->id)->update(['reflection' => 'mi reflexión privada', 'custom_test' => 'assert!(true)']);
     DB::table('attempt_payloads')->update(['custom_test' => 'assert!(false)', 'stdout' => 'salida privada']);
+    DB::table('runs')->update(['code' => 'código privado', 'stdout' => 'salida privada', 'stderr' => 'salida privada', 'custom_test' => 'assert!(false)']);
+    DB::table('drafts')->update(['code' => 'borrador privado']);
+    DB::table('route_notes')->update(['body' => 'nota privada']);
+    DB::table('workshop_progress')->update(['note' => 'nota privada']);
+    DB::table('progress_imports')->update(['raw_payload' => '{"crudo":"crudo privado"}', 'report' => '{"replaced":["crudo privado"]}']);
     $invitations = app(Invitations::class);
     $this->targets = [
         'student' => $student->id,
@@ -133,14 +138,14 @@ it('shows no text of a student at any depth in the successful answer of any admi
 
     expect(studentTextProblemsIn($walked))->toBe([]);
     foreach ($walked as $response) {
-        expect((string) $response->getContent())->not->toContain('mi reflexión privada')->not->toContain('assert!(')->not->toContain('salida privada');
+        expect((string) $response->getContent())->not->toContain('mi reflexión privada')->not->toContain('assert!(')->not->toContain('salida privada')->not->toContain('código privado')->not->toContain('borrador privado')->not->toContain('nota privada')->not->toContain('crudo privado')->not->toContain(str_repeat('b', 64))->not->toContain(str_repeat('d', 64));
     }
 });
 
 it('walks every admin route of the router except the one that cannot succeed until C3c', function () {
     $walked = array_keys(studentTextWalk($this->browser, $this->targets));
 
-    expect($walked)->toHaveCount(8)
+    expect($walked)->toHaveCount(9)
         ->and(array_values(array_diff(studentTextAdminRoutes(), $walked)))->toBe(STUDENT_TEXT_ROUTES_WITHOUT_SUCCESS);
 });
 

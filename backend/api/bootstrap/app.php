@@ -38,6 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
             __DIR__.'/../routes/api/progress.php',
             __DIR__.'/../routes/api/admin-users.php',
             __DIR__.'/../routes/api/admin-invitations.php',
+            __DIR__.'/../routes/api/admin-stats.php',
             __DIR__.'/../routes/api/export.php',
             __DIR__.'/../routes/api/deletion.php',
             __DIR__.'/../routes/api/progress-import.php',
