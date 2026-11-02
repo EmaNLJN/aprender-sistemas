@@ -1,0 +1,14 @@
+export const SYNC_FORMAT = 2;
+export const MAX_BATCH_OPERATIONS = 200;
+export const MAX_BATCH_BYTES = 1_572_864;
+export const MAX_KEEPALIVE_BYTES = 61_440;
+export const ENVELOPE_OVERHEAD_BYTES = 512;
+export const REQUESTS_PER_MINUTE = 60;
+export const MINUTE_MS = 60_000;
+export const CHANGE_DELAY_MS = 2_000;
+export const CHANGE_MAX_DELAY_MS = 10_000;
+export const RETRY_DELAYS_MS: readonly number[] = [5_000, 15_000, 30_000, 60_000];
+export const PHOTO_WAIT_WITH_COPY_MS = 3_000;
+export const PHOTO_WAIT_WITHOUT_COPY_MS = 10_000;
+export const SPACE_LIFETIME_MS = 2_592_000_000;
+export const CLOCK_SKEW_WARNING_MS = 120_000;
