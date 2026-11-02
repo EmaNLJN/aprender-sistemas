@@ -26,6 +26,7 @@ return [
     'last_admin' => 'Tiene que quedar al menos un admin activo.',
     'mail_unavailable' => 'El taller no puede mandar correos por ahora.',
     'import_needs_confirmation' => 'Confirmá que esta copia es tuya antes de combinarla con el progreso de tu cuenta.',
+    'stats_timeout' => 'Las estadísticas tardaron demasiado. Probá de nuevo en un rato.',
     'quota' => [
         'active' => 'Ya tenés una ejecución en curso: esperá a que termine.',
         'per_minute' => 'Hiciste demasiadas ejecuciones en el último minuto: esperá un momento.',

@@ -29,6 +29,7 @@ enum ApiCode: string
     case LastAdmin = 'last_admin';
     case MailUnavailable = 'mail_unavailable';
     case ImportNeedsConfirmation = 'import_needs_confirmation';
+    case StatsTimeout = 'stats_timeout';
 
     public function status(): int
     {
@@ -45,7 +46,7 @@ enum ApiCode: string
             self::TooManyRequests, self::QuotaExceeded => 429,
             self::BadRequest => 400,
             self::ServerError => 500,
-            self::QueueFull, self::MailUnavailable => 503,
+            self::QueueFull, self::MailUnavailable, self::StatsTimeout => 503,
         };
     }
 
