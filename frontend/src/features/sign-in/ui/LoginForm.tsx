@@ -15,6 +15,7 @@ import {
 } from '../../../shared/ui/form';
 import { login } from '../api/access-endpoints';
 import AccessHeading from './AccessHeading';
+import { REQUIRED } from './access-texts';
 
 interface LoginValues {
   email: string;
@@ -31,7 +32,6 @@ interface LoginFormProps {
 }
 
 const VISIBLE_FIELDS = ['email', 'password'] as const;
-const REQUIRED = 'Completá este campo.';
 
 const LoginForm = ({
   headingLevel,

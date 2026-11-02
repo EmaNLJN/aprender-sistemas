@@ -38,6 +38,7 @@ export interface InvitationDetails {
   readonly role: AccountRole;
   readonly expiresAt: string;
 }
+
 export interface SignupInput {
   readonly token: string;
   readonly name: string;
@@ -45,22 +46,42 @@ export interface SignupInput {
   readonly password_confirmation: string;
   readonly privacyVersion: string;
 }
-export function lookupInvitation(
-  _client: ApiClient,
-  _token: string,
+
+function parseInvitation(body: unknown): InvitationDetails | null {
+  if (!isPlainObject(body)) return null;
+  const { email, role, expiresAt } = body;
+  if (typeof email !== 'string' || typeof expiresAt !== 'string') return null;
+  if (role !== 'student' && role !== 'admin') return null;
+  return { email, role, expiresAt };
+}
+
+export async function lookupInvitation(
+  client: ApiClient,
+  token: string,
 ): Promise<EndpointResult<InvitationDetails>> {
-  throw new Error('not implemented');
+  const result = await client.send('POST', '/api/auth/invitations/lookup', { token });
+  if (!result.ok) return result;
+  const details = parseInvitation(result.body);
+  return details === null ? unexpected(result.status) : { ok: true, value: details };
 }
+
 export function acceptInvitation(
-  _client: ApiClient,
-  _input: SignupInput,
+  client: ApiClient,
+  input: SignupInput,
 ): Promise<EndpointResult<PublishedUser>> {
-  throw new Error('not implemented');
+  return accountFrom(client.send('POST', '/api/auth/invitations/accept', input));
 }
-export function acceptPrivacy(
-  _client: ApiClient,
-  _userId: number,
-  _privacyVersion: string,
+
+export async function acceptPrivacy(
+  client: ApiClient,
+  userId: number,
+  privacyVersion: string,
 ): Promise<EndpointResult<null>> {
-  throw new Error('not implemented');
+  const result = await client.send(
+    'POST',
+    '/api/me/privacy',
+    { privacyVersion },
+    { asUser: userId },
+  );
+  return result.ok ? { ok: true, value: null } : result;
 }
