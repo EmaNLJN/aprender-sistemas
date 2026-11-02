@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { createApiClient } from '../../../shared/api/http';
 import { createFakeFetch, type FakeReply } from '../../../shared/api/http/fake-fetch';
-import { login, lookupInvitation, acceptInvitation, acceptPrivacy } from './access-endpoints';
+import {
+  acceptInvitation,
+  acceptPrivacy,
+  login,
+  lookupInvitation,
+  resetPassword,
+} from './access-endpoints';
 
 const ANA = {
   id: 41,
@@ -92,5 +98,21 @@ describe('acceptPrivacy', () => {
     expect(calls[0]?.path).toBe('/api/me/privacy');
     expect(calls[0]?.body).toEqual({ privacyVersion: '2026-10-dev' });
     expect(calls[0]?.headers['x-taller-user']).toBe('41');
+  });
+});
+
+describe('resetPassword', () => {
+  it('sends the token, the email and both passwords without opening a session', async () => {
+    const { client, calls } = clientWith([{ status: 200, json: {} }]);
+    const input = {
+      token: '9f2c',
+      email: 'ana@x.com',
+      password: 'otra frase larga para el cambio',
+      password_confirmation: 'otra frase larga para el cambio',
+    };
+    expect(await resetPassword(client, input)).toEqual({ ok: true, value: null });
+    expect(calls[0]?.path).toBe('/api/auth/reset-password');
+    expect(calls[0]?.body).toEqual(input);
+    expect(calls[0]?.headers['x-taller-user']).toBeUndefined();
   });
 });

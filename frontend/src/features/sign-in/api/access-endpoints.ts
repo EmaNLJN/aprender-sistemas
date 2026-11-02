@@ -85,3 +85,16 @@ export async function acceptPrivacy(
   );
   return result.ok ? { ok: true, value: null } : result;
 }
+
+export interface ResetInput {
+  readonly token: string;
+  readonly email: string;
+  readonly password: string;
+  readonly password_confirmation: string;
+}
+
+export function resetPassword(client: ApiClient, input: ResetInput): Promise<EndpointResult<null>> {
+  void client;
+  void input;
+  throw new Error('resetPassword is not implemented');
+}
