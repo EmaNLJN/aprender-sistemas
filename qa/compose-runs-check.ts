@@ -23,6 +23,8 @@ interface Service {
   profiles?: string[];
   build?: unknown;
   image?: string;
+  user?: string;
+  healthcheck?: unknown;
 }
 
 interface Compose {
@@ -87,12 +89,12 @@ test('the sandbox network is internal and only the executor and the worker use i
   assert.deepEqual(members, ['executor', 'worker-runs']);
 });
 
-test('EXECUTOR_TOKEN reaches only the executor and the worker', () => {
+test('EXECUTOR_TOKEN reaches only the two executors, the worker and the audit command', () => {
   const holders = Object.entries(compose.services)
     .filter(([, service]) => service.environment?.EXECUTOR_TOKEN !== undefined)
     .map(([name]) => name)
     .sort();
-  assert.deepEqual(holders, ['executor', 'worker-runs']);
+  assert.deepEqual(holders, ['audit', 'executor', 'executor-audit', 'worker-runs']);
   const anchors = read('docker/compose.yaml').split(/^services:/m)[0];
   const tokenLines = anchors.split('\n').filter((line) => line.includes('EXECUTOR_TOKEN'));
   assert.equal(tokenLines.length, 1);
@@ -124,6 +126,80 @@ test('the deadline chain closes: executor write timeout < PHP request timeout, j
   );
   assert.ok(writeTimeout < requestTimeout);
   assert.ok(executorJobTimeout < secondsOf(worker.stop_grace_period));
+});
+
+const { 'executor-audit': auditExecutor, audit } = compose.services;
+
+test('the audit instance is the same executor under its own label, in its own network (FR-010)', () => {
+  assert.deepEqual(auditExecutor.profiles, ['audit']);
+  assert.deepEqual(auditExecutor.networks, ['audit']);
+  assert.equal(auditExecutor.environment?.EXECUTOR_INSTANCE, 'auditoria');
+  assert.equal(executor.environment?.EXECUTOR_INSTANCE, undefined);
+  for (const key of [
+    'build',
+    'volumes',
+    'group_add',
+    'read_only',
+    'cap_drop',
+    'dns',
+    'pids_limit',
+    'stop_grace_period',
+    'healthcheck',
+  ] as const) {
+    assert.deepEqual(auditExecutor[key], executor[key], key);
+  }
+  for (const key of ['EXECUTOR_RUST_IMAGE', 'EXECUTOR_GO_IMAGE', 'GOMAXPROCS'] as const) {
+    assert.equal(auditExecutor.environment?.[key], executor.environment?.[key], key);
+  }
+  assert.equal(auditExecutor.environment?.EXECUTOR_RUNTIME, '${AUDIT_RUNTIME:-runsc}');
+  assert.equal(auditExecutor.environment?.EXECUTOR_MAX_CONCURRENT, '${AUDIT_CONCURRENCY:-4}');
+});
+
+test('the audit command reaches its instance and MySQL only, without the Docker socket (FR-010, FR-020)', () => {
+  assert.deepEqual(audit.profiles, ['audit']);
+  assert.deepEqual(audit.networks, ['app', 'audit']);
+  assert.deepEqual(audit.volumes, ['./qa/curriculum-audit:/audit']);
+  assert.equal(audit.environment?.EXECUTOR_URL, 'http://executor-audit:8080');
+  assert.equal(audit.environment?.EXECUTOR_RUNTIME, auditExecutor.environment?.EXECUTOR_RUNTIME);
+  assert.equal(
+    audit.environment?.AUDIT_CONCURRENCY,
+    auditExecutor.environment?.EXECUTOR_MAX_CONCURRENT,
+  );
+  assert.equal(audit.environment?.AUDIT_INSTANCE, auditExecutor.environment?.EXECUTOR_INSTANCE);
+  assert.equal(audit.environment?.AUDIT_REPORT_DIRECTORY, '/audit');
+  assert.equal(audit.user, '${AUDIT_UID:-82}:${AUDIT_GID:-82}');
+});
+
+test('the audit network is internal and only the audit command and its instance use it', () => {
+  assert.equal(compose.networks.audit.internal, true);
+  const members = Object.entries(compose.services)
+    .filter(([, service]) => service.networks?.includes('audit'))
+    .map(([name]) => name)
+    .sort();
+  assert.deepEqual(members, ['audit', 'executor-audit']);
+});
+
+test('the limits of the audit are those of the executor profiles (R14)', () => {
+  const profile = read('backend/executor/internal/sandbox/profile.go');
+  const audit = read('backend/api/config/audit.php');
+  const phase = (block: RegExp) => {
+    const match = block.exec(profile);
+    assert.ok(match, String(block));
+    return { ms: Number(match[1]) * 1000, mib: Number(match[2]) };
+  };
+  const run = phase(/run := Phase\{\s*Timeout: (\d+) \* time\.Second, MemoryMiB: (\d+)/);
+  const rust = phase(
+    /"rust": \{[\s\S]*?Compile: Phase\{\s*Timeout: (\d+) \* time\.Second, MemoryMiB: (\d+)/,
+  );
+  const go = phase(
+    /"go": \{[\s\S]*?Compile: Phase\{\s*Timeout: (\d+) \* time\.Second, MemoryMiB: (\d+)/,
+  );
+  assert.equal(numberAfter(audit, /'compile_ms' => \['rust' => (\d+)/), rust.ms);
+  assert.equal(numberAfter(audit, /'compile_ms' => \[[^\]]*'go' => (\d+)/), go.ms);
+  assert.equal(numberAfter(audit, /'run_ms' => (\d+)/), run.ms);
+  assert.equal(numberAfter(audit, /'compile_memory_mib' => (\d+)/), rust.mib);
+  assert.equal(numberAfter(audit, /'compile_memory_mib' => (\d+)/), go.mib);
+  assert.equal(numberAfter(audit, /'run_memory_mib' => (\d+)/), run.mib);
 });
 
 done();
