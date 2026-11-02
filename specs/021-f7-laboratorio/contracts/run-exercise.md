@@ -262,7 +262,7 @@ En F7b la raíz pasa al adaptador de `app/legacy/` y llega a la página por prop
 | F7-S5 | Los estados de la espera y la cancelación | `RunState<Progress>`, `report` y `cancel()`; A4 amplía `Progress` sin tocar la feature (R1) |
 | F7-S6 | El arnés de la vista previa por parámetro, también para la copia | `ProgramBuilder` y `buildPlaygroundProgram`; `lab.js` pasa la vista previa y la copia por `programBuilder` |
 | F7-S7 | `sanitizeResult` sigue siendo el único normalizador | No cambia. `buildRunResult` arma, y A4 le suma `attemptId` a `sanitizeResult` |
-| F7-S8 | E2E con el doble del compilador y un Page Object | `CompilerDouble` y `LabPage` ampliados; 13 E2E nuevos usan el doble de los Playgrounds (`lab-run.spec.ts`) |
+| F7-S8 | E2E con el doble del compilador y un Page Object | `CompilerDouble` y `LabPage` ampliados; 14 E2E nuevos usan el doble de los Playgrounds (`lab-run.spec.ts`). Las 20 E2E que A4 edita (9 de F1, 10 de las 14 de `lab-run.spec.ts` y 1 de `lab-exercise.spec.ts`) van en un commit propio que el usuario aprobó el 2026-10-28 (D2); F7a no las toca |
 | F7-S9 | Se retira `register-runner.ts` | Sí; `runner-check` carga `shared/api/playground` directamente con sus 12 escenarios, y lo retira A4 |
 
 ## 8. Contra el resto de la spec de A4
@@ -283,4 +283,4 @@ Repasados los requisitos de A4 que tocan la feature:
 | FR-026 a FR-030, la vista previa y la copia | `ProgramBuilder` por parámetro, con la misma prueba propia normalizada. Hallazgo: si la plantilla nunca se obtuvo (FR-029), A4 amplía el retorno de `ProgramBuilder` y la vista vigente |
 | FR-036 y FR-039, los estados de la espera | `RunState<ApiRunProgress>`. La vista vigente anuncia cada cambio una vez |
 | FR-038, el número de intentos | Es de la vista. Los E2E de F7a toman el texto de `qa/e2e/lib/lab-copy.ts`, que A4 edita una vez |
-| FR-042, los E2E | Hay que pasar al doble de `/api/runs` los 11 de F1 y los 13 de `lab-run.spec.ts`; los otros 48 E2E de F7a no ejecutan código |
+| FR-042, los E2E | Hay que pasar al doble de `/api/runs` los 11 de F1 y los 14 de `lab-run.spec.ts`; los otros 48 E2E de F7a no ejecutan código. De ellos, A4 edita 20 (9 de F1, 10 de `lab-run.spec.ts` y 1 de `lab-exercise.spec.ts`), con la aprobación del usuario del 2026-10-28 (D2). La rareza 8 se corrige y pierde `KNOWN DEFECT` recién en A4 T019: F7a conserva el conteo vigente y sus aserciones |

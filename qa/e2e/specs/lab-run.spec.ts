@@ -282,7 +282,7 @@ test.describe('a free exercise with the Rust Playground simulated', () => {
     );
   });
 
-  test('KNOWN DEFECT (spec 021, quirk 8): the attempts count cancelled runs and transport failures', async ({
+  test('KNOWN DEFECT (spec 021, rareza 8): the attempts count cancelled runs and transport failures', async ({
     shell,
     lab,
     compiler,

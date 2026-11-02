@@ -152,7 +152,7 @@ test.describe('hints and the solution', () => {
     expect(await storage.writes()).toEqual([LAB_WRITE, LAB_WRITE, LAB_WRITE]);
   });
 
-  test('KNOWN DEFECT (spec 021, quirk 6): opening the solution writes every time', async ({
+  test('KNOWN DEFECT (spec 021, rareza 6): opening the solution writes every time', async ({
     shell,
     lab,
     storage,
@@ -324,7 +324,7 @@ test.describe('copying the program', () => {
 });
 
 test.describe('explaining', () => {
-  test('KNOWN DEFECT (spec 021, quirk 3): the reflection has three status texts', async ({
+  test('KNOWN DEFECT (spec 021, rareza 3): the reflection has three status texts', async ({
     shell,
     lab,
     storage,

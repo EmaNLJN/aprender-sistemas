@@ -333,7 +333,7 @@ La corre el dueño al cerrar su última tarea, y K antes del PR (T017). Una unid
 | --- | --- | --- |
 | `lab-map.spec.ts` | 10 | US1: las métricas del progreso congelado, el nivel con su foco, «Clásicos y sistemas» con su foco, la búsqueda vacía y «Ver todos los desafíos», «Repasar pendientes», abrir desde un nodo (una escritura, la URL y el foco en el título), «Sorprendeme» con y sin candidatos, y las rarezas 7 y 1 |
 | `lab-exercise.spec.ts` | 20 | US2: las pestañas por teclado, la predicción (con sus escrituras de laboratorio, Sistemas y campaña), el editor (una escritura por tecla, el estado, la vista previa y los cuatro textos de la pista en vivo), Esc, las pistas, la rareza 6, el diálogo y sus dos caminos de foco, «Restaurar inicio», «Inventar una variante», la copia con y sin portapapeles, la rareza 3, la reflexión por tecla, la autoevaluación, el estado de «Explicá» y el pie con sus tres destinos |
-| `lab-run.spec.ts` | 13 | US2 y US6: los cuatro resultados en un ejercicio libre, la primera aprobación (las escrituras, el `result`, `solvedAt` y `reviewAt`) y la segunda, Ctrl/⌘ + Enter dos veces con un solo pedido, la cancelación, cambiar de fase sin cancelar, abrir otro ejercicio y salir del laboratorio cancelando, la vigencia, la prueba propia recortada y la rareza 8 |
+| `lab-run.spec.ts` | 14 | US2 y US6: los cuatro resultados en un ejercicio libre, la primera aprobación (las escrituras, el `result`, `solvedAt` y `reviewAt`) y la segunda, Ctrl/⌘ + Enter dos veces con un solo pedido, la cancelación, cambiar de fase sin cancelar, abrir otro ejercicio y salir del laboratorio cancelando, la vigencia, la prueba propia recortada y la rareza 8 |
 | `lab-storage.spec.ts` | 6 | US4: las tres fixtures congeladas sin escrituras en el mapa, las tres fases y el bloqueo; `rust-09` resuelto (F7-Q1); recorrer, filtrar, buscar, cambiar de fase, usar un explorador y volver, con una sola escritura; y el almacenamiento bloqueado |
 | `lab-explorers.spec.ts` | 12 | US5 y FR-061: robot, paquete de Rust, paquete de Go, canal, genérico, puntero, ownership, slices y recorrido, cada uno con su operación, su región viva y su foco; el reinicio de los de misión al abrir otro ejercicio; el reinicio del de laboratorio y la fase que lo conserva; y la rareza 2 |
 
@@ -5523,7 +5523,7 @@ F7b lleva los escenarios de vista a specs de componente o a E2E (su parte de FR-
 | Quién | Toma | Dónde |
 | --- | --- | --- |
 | A4 | El puerto, el estado genérico, la orquestación, `buildRunResult` y la raíz donde cambia el par transporte y constructor | [contracts/run-exercise.md](./contracts/run-exercise.md) §1 a §6 |
-| A4 | Los E2E que usan el doble de los Playgrounds: los 11 de F1 y los 13 de `lab-run.spec.ts`; y el texto de los intentos en `qa/e2e/lib/lab-copy.ts` | §1, T005 |
+| A4 | Los E2E que usan el doble de los Playgrounds: los 11 de F1 y los 14 de `lab-run.spec.ts` (A4 edita 20, con la aprobación del usuario del 2026-10-28, D2); y el texto de los intentos en `qa/e2e/lib/lab-copy.ts` | §1, T005 |
 | A4 | `reviewStateOf` y `diagnose` en `entities/exercise`, donde su FR-018 hace ganar la explicación del servidor | §2, T009 |
 | F7b | Los 61 E2E sin editar, `LabPage`, las reglas, los selectores del mapa, el `runner` (que pasa de `lab.js` al adaptador de `app/legacy/`) y `programBuilder` por props | §1 a §4 |
 | F7b | Si A4 entró antes, los estados de A4 que `lab.js` dibuja en `reviewHTML`, que F7b porta como comportamiento vigente | Ruling C4 |

@@ -148,7 +148,7 @@ test.describe('the lab map', () => {
     await expect(page).not.toHaveURL(/ejercicio=/);
   });
 
-  test('KNOWN DEFECT (spec 021, quirk 7): «Sorprendeme» can pick the exercise that was already open', async ({
+  test('KNOWN DEFECT (spec 021, rareza 7): «Sorprendeme» can pick the exercise that was already open', async ({
     shell,
     lab,
     page,
@@ -165,7 +165,7 @@ test.describe('the lab map', () => {
     await expect(shell.toast).toHaveText('Un desafío elegido para tu próxima idea.');
   });
 
-  test('KNOWN DEFECT (spec 021, quirk 1): switching the language clears the search but keeps the level and «Clásicos y sistemas»', async ({
+  test('KNOWN DEFECT (spec 021, rareza 1): switching the language clears the search but keeps the level and «Clásicos y sistemas»', async ({
     shell,
     lab,
   }) => {

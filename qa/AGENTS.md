@@ -74,7 +74,7 @@ cambies y evitá reformatear las skills importadas o las salidas generadas.
 | IDs de ejercicios, mundos, talleres o conceptos | `node qa/curriculum-ids-check.ts` |
 | Contenido en `content/` | `npm run curriculum` y, entre los checks que leen el currículo real, `content-check`, `campaign-content-check`, `guide-content-check`, `atlas-check`, `curriculum-meta-check`, `curriculum-ids-check`, `systems-check` y el `systems-<dominio>-check` que corresponda (`node qa/<nombre>.ts`); `npm test` los corre todos; si ningún catálogo debe cambiar, `npm run curriculum && node tools/content/dump-globals.ts .` da los mismos bytes antes y después |
 | Generador en `tools/content/` | El `node qa/content-*-check.ts` del módulo tocado (usan fixtures temporales y no leen `content/`), `node qa/curriculum-meta-check.ts` si toca el meta (`build/curriculum.meta.json`) y el oráculo de la fila anterior |
-| Ejercicios o contratos de revisión | `node qa/content-check.ts`, `node qa/runner-check.ts` |
+| Ejercicios o contratos de revisión | `node qa/content-check.ts`, `node qa/runner-check.ts` y `npm run test:unit -- features/run-exercise entities/exercise` |
 | Recorrido, biblioteca o respaldo global | `node qa/guide-content-check.ts`, `node qa/app-shell-check.ts` (su opción `asyncAdapters` prueba áreas que devuelven promesas, como las de D1c) y, con `npm run test:unit`, la spec de `features/progress-backup` |
 | Lectura, respaldo o avisos de carga del progreso | `node qa/versioned-storage-check.ts` (incluida la regla de dos pestañas: el elemento que una quitó vuelve al guardar la otra, ADR 0003, decisión 9) y el check del almacén afectado |
 | Almacenes, motores o quién importa sus singletons | `node qa/seams-guard-check.ts`: cada clave del progreso en un solo archivo, `openVersionedStore` sólo en los cuatro dueños, ninguna fábrica importada y, entre las fuentes legacy y `app/`, ningún valor de los cuatro índices fuera de su dueño (R4) y ningún import profundo de un slice, sino su índice o una entrada sin estado (R6). Por debajo de `app/`, nada importa el JSON del currículo ni `getContent()` (R5). Las specs de cada almacén y motor (`npm run test:unit`) prueban la suscripción |
@@ -95,7 +95,7 @@ cambies y evitá reformatear las skills importadas o las salidas generadas.
 | Plantilla del harness (`content/harness/`) | `node qa/content-harness-check.ts` (sus casos en `qa/fixtures/shared/harness-cases.json`, que también corre Pest) |
 | Compose, Nginx o `init-env.sh` de las ejecuciones | `node qa/compose-runs-check.ts`, `node qa/nginx-api-blocks-check.ts` (las ubicaciones de `/api/runs` y `/api/sync` repiten las directivas de `/api/`) y `node qa/init-env-check.ts`; los tres corren en `npm test` |
 | Lógica, almacenes y componentes del front nuevo o movido | `npm run test:unit` (Vitest; también corre dentro de `npm test`) |
-| Enlaces, recargas, arranque con progreso, puentes entre vistas y aspecto del front | `npm run build && npm run test:e2e` (Playwright contra `dist/index.html`; no forma parte de `npm test`) |
+| Enlaces, recargas, arranque con progreso, puentes entre vistas y aspecto del front | `npm run build && npm run test:e2e` (Playwright contra `dist/index.html`; no forma parte de `npm test`); el laboratorio, en las specs `lab-*.spec.ts` |
 | Sólo documentación | Verificar rutas, comandos y enlaces locales; `git diff --check` |
 
 Para una reorganización de archivos o un cambio transversal, regenerá la página

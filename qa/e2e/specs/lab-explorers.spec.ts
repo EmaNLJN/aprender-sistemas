@@ -200,7 +200,7 @@ test.describe('the lab explorers', () => {
     );
   });
 
-  test('KNOWN DEFECT (spec 021, quirk 2): coming back to an exercise through the URL does not restart its explorer', async ({
+  test('KNOWN DEFECT (spec 021, rareza 2): coming back to an exercise through the URL does not restart its explorer', async ({
     shell,
     lab,
     page,
