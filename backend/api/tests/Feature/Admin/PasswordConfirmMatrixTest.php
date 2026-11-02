@@ -24,6 +24,8 @@ function passwordMatrixRequests(): array
         'GET users' => ['GET', '/api/admin/users', 'never', []],
         'GET user' => ['GET', '/api/admin/users/{student}', 'never', []],
         'GET invitations' => ['GET', '/api/admin/invitations', 'never', []],
+        'GET stats overview' => ['GET', '/api/admin/stats/overview', 'never', []],
+        'GET stats exercises' => ['GET', '/api/admin/stats/exercises', 'never', []],
         'DELETE invitation' => ['DELETE', '/api/admin/invitations/{studentInvitation}', 'never', []],
         'POST invitations as student' => ['POST', '/api/admin/invitations', 'never', ['emails' => ['nuevo@x.com'], 'role' => 'student', 'delivery' => 'link']],
         'resend of a student invitation' => ['POST', '/api/admin/invitations/{studentInvitation}/resend', 'never', ['delivery' => 'link']],
