@@ -30,6 +30,7 @@ x-laravel-env: &laravel-env
   RUNS_EXPIRY_QUEUED_SECONDS: '${RUNS_EXPIRY_QUEUED_SECONDS:-600}'
   RUNS_EXPIRY_RUNNING_SECONDS: '${RUNS_EXPIRY_RUNNING_SECONDS:-140}'
   RUNS_QUEUE_RETRY_AFTER: '${RUNS_QUEUE_RETRY_AFTER:-140}'
+  PRIVACY_VERSION: '${PRIVACY_VERSION:-2026-10-dev}'
 
 x-laravel-test-env: &laravel-test-env
   <<: *laravel-base-env
