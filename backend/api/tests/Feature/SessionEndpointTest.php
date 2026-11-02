@@ -5,6 +5,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Tests\Feature\Session\ProbeRoutes;
 use Tests\Support\Browser;
+use Tests\Support\MailWorld;
 
 beforeEach(function () {
     ProbeRoutes::register();
@@ -42,10 +43,12 @@ it('starts the guest session and hands out the CSRF cookie', function () {
         ->and(DB::table('sessions')->value('user_id'))->toBeNull();
 });
 
-it('takes the features from the configuration', function () {
-    config(['taller.features' => ['password_reset' => true, 'registration' => false]]);
-
+it('takes the features from mail availability and the registration switch', function () {
+    MailWorld::available();
     $this->browser->get('/api/session')->assertJsonPath('features', ['passwordReset' => true, 'registration' => false]);
+
+    config(['taller.registration.open' => true]);
+    $this->browser->get('/api/session')->assertJsonPath('features', ['passwordReset' => true, 'registration' => true]);
 });
 
 it('lists the active catalogs with a chain position first, by position, and then the rest by code', function () {

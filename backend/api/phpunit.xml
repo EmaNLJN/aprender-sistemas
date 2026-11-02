@@ -51,7 +51,12 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
-        <env name="MAIL_MAILER" value="array"/>
+        <env name="MAIL_MAILER" value="array" force="true"/>
+        <server name="MAIL_MAILER" value="array"/>
+        <env name="MAIL_REQUIRED" value="true" force="true"/>
+        <server name="MAIL_REQUIRED" value="true"/>
+        <env name="REGISTRATION_OPEN" value="false" force="true"/>
+        <server name="REGISTRATION_OPEN" value="false"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>

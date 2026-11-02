@@ -27,8 +27,46 @@ it('exposes the taller keys with typed accessors', function () {
         ->and(config()->array('taller.invitations'))->toBe(['student_days' => 7, 'admin_hours' => 48, 'prune_days' => 30])
         ->and(config()->integer('taller.session_max_hours'))->toBe(8)
         ->and(config()->integer('auth.guards.web.remember'))->toBe(43200)
-        ->and(config()->integer('taller.long_transaction_seconds'))->toBe(30)
-        ->and(config()->array('taller.features'))->toBe(['password_reset' => false, 'registration' => false]);
+        ->and(config()->integer('taller.long_transaction_seconds'))->toBe(30);
+});
+
+it('configures the mail channel for link-only mode, retries and the admin daily limit', function () {
+    expect(config()->boolean('taller.mail.required'))->toBeTrue()
+        ->and(config()->integer('taller.mail.retry_seconds'))->toBe(86400)
+        ->and(config()->array('taller.mail.backoff'))->toBe([60, 300, 900, 3600])
+        ->and(config()->integer('taller.mail.admin_daily_limit'))->toBe(300)
+        ->and(config()->string('taller.mail.timezone'))->toBe('America/Argentina/Buenos_Aires');
+});
+
+it('keeps the registration closed with no allowed domains', function () {
+    expect(config()->boolean('taller.registration.open'))->toBeFalse()
+        ->and(config()->array('taller.registration.allowed_domains'))->toBe([]);
+});
+
+it('reads the allowed registration domains trimmed, lowercased and without blanks', function () {
+    putenv('REGISTRATION_ALLOWED_DOMAINS= Escuela.edu.ar ,,otra.org');
+
+    try {
+        $this->refreshApplication();
+
+        expect(config()->array('taller.registration.allowed_domains'))->toBe(['escuela.edu.ar', 'otra.org']);
+    } finally {
+        putenv('REGISTRATION_ALLOWED_DOMAINS');
+        $this->refreshApplication();
+    }
+});
+
+it('runs the mail queue on its own table, with a retry window above the job timeout', function () {
+    expect(config()->string('queue.connections.mail.table'))->toBe('mail_jobs')
+        ->and(config()->string('queue.connections.mail.queue'))->toBe('mail')
+        ->and(config()->integer('queue.connections.mail.retry_after'))->toBe(120)
+        ->and(config()->boolean('queue.connections.mail.after_commit'))->toBeTrue();
+});
+
+it('gives the SMTP transport a 20 second timeout, TLS and the submission port', function () {
+    expect(config()->integer('mail.mailers.smtp.timeout'))->toBe(20)
+        ->and(config()->boolean('mail.mailers.smtp.require_tls'))->toBeTrue()
+        ->and(config()->integer('mail.mailers.smtp.port'))->toBe(587);
 });
 
 it('configures the device cookie without Secure and independent of APP_ENV', function () {

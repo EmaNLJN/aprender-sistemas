@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Auth\Features;
 use App\Auth\PublishedUser;
 use App\Content\ActiveCatalogs;
 use App\Content\ContentImports;
@@ -11,7 +12,7 @@ use Illuminate\Support\Facades\Auth;
 
 final class SessionController
 {
-    public function __construct(private ContentImports $imports, private ActiveCatalogs $catalogs) {}
+    public function __construct(private ContentImports $imports, private ActiveCatalogs $catalogs, private Features $features) {}
 
     public function show(): JsonResponse
     {
@@ -21,8 +22,8 @@ final class SessionController
             ->json([
                 'user' => $user instanceof User ? PublishedUser::from($user)->toPublished() : null,
                 'features' => [
-                    'passwordReset' => config()->boolean('taller.features.password_reset'),
-                    'registration' => config()->boolean('taller.features.registration'),
+                    'passwordReset' => $this->features->passwordReset(),
+                    'registration' => $this->features->registration(),
                 ],
                 'contentVersion' => $this->imports->latestVersion(),
                 'catalogs' => $this->catalogs->published(),

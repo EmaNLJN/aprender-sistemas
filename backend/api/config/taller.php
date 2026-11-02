@@ -17,7 +17,29 @@ return [
         'days' => 180,
     ],
 
-    'features' => ['password_reset' => false, 'registration' => false],
+    'mail' => [
+        'required' => filter_var(env('MAIL_REQUIRED', true), FILTER_VALIDATE_BOOLEAN),
+        'retry_seconds' => (int) env('MAIL_RETRY_SECONDS', 86400),
+        'backoff' => collect(explode(',', (string) env('MAIL_BACKOFF', '60,300,900,3600')))->map(fn (string $seconds) => (int) $seconds)->all(),
+        'admin_daily_limit' => 300,
+        'timezone' => 'America/Argentina/Buenos_Aires',
+    ],
+
+    'registration' => [
+        'open' => filter_var(env('REGISTRATION_OPEN', false), FILTER_VALIDATE_BOOLEAN),
+        'allowed_domains' => collect(explode(',', (string) env('REGISTRATION_ALLOWED_DOMAINS', '')))
+            ->map(fn (string $domain) => strtolower(trim($domain)))
+            ->filter()
+            ->values()
+            ->all(),
+        'per_hour_network' => 5,
+        'per_hour_global' => 100,
+        'verification_per_hour' => 3,
+        'verification_minutes' => 60,
+        'unverified_days' => 7,
+    ],
+
+    'forgot_password' => ['per_minute_network' => 5, 'per_hour_network' => 20, 'per_hour_email' => 3],
 
     'ledger_days' => 35,
 
