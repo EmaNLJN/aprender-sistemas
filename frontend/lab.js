@@ -1,10 +1,8 @@
 import {
-  buildProgram,
   draftOf,
   ensureRecord,
   exerciseCatalog,
   hintPatch,
-  interpretRun,
   isDueForReview,
   isReflectionSolved,
   isResultCurrent,
@@ -22,6 +20,11 @@ import {
   selfAssessmentPatch,
   syncAfterRun,
 } from './src/entities/exercise';
+import {
+  buildPlaygroundProgram,
+  createExerciseRunner,
+  createPlaygroundTransport,
+} from './src/features/run-exercise';
 import { isExtraChallenge, matchesMapFilters, surprisePool, todayChallenge } from './src/pages/lab';
 import { LEVEL_LABELS } from './src/shared/config/levels';
 import { exercisePhaseOr, readLinkQuery, withLabQuery } from './src/shared/config/url-grammar';
@@ -63,9 +66,7 @@ import { escapeHtml } from './src/shared/lib/escape-html';
   const records = () => labStore.getProgress().records;
   const filters = () => ({ query, dueOnly, extraOnly, level });
   const matches = (item) => matchesMapFilters(item, records(), filters(), Date.now());
-  let activeRun = null,
-    activeController = null,
-    lastFocus = null;
+  let lastFocus = null;
   let codeEditor = null;
   let simulation = {
     ownership: 'create',
@@ -113,8 +114,28 @@ import { escapeHtml } from './src/shared/lib/escape-html';
   const solved = (exercise) => isSolved(records()[exercise.id]);
   const due = (exercise) => isDueForReview(records()[exercise.id], Date.now());
   const levelLabel = (exercise) => LEVEL_LABELS[levelOf(exercise)];
+  const runner = createExerciseRunner({
+    store: labStore,
+    transport: createPlaygroundTransport(),
+    now: () => Date.now(),
+    notify: (message) => notify(message),
+    isLocked: (exercise) =>
+      Boolean(window.TallerCampaign?.lockedExerciseHTML(exercise.id, exercise.language)),
+    isCampaignMission: (exercise) =>
+      Boolean(window.TallerCampaignEngine.canAttempt(exercise.id, exercise.language).worldId),
+    syncSystems: () => window.TallerSystems?.sync(),
+    syncCampaign: () => window.TallerCampaign?.sync(),
+    logError: (error) => console.error(error),
+  });
+  const programBuilder = buildPlaygroundProgram;
+  const isRunning = () => runner.state.getState().status === 'running';
+  const isRunningExercise = (id) => {
+    const run = runner.state.getState();
+    return run.status === 'running' && run.exerciseId === id;
+  };
   const programFor = (item) =>
-    buildProgram(item, draftFor(item), normalizeCustomTest(recordFor(item.id).customTest));
+    programBuilder(item, draftFor(item), normalizeCustomTest(recordFor(item.id).customTest));
+  runner.state.subscribe(() => updateRunUI());
   const langName = () => (language === 'rust' ? 'Rust' : 'Go');
   function achievementStats() {
     const items = list();
@@ -160,10 +181,8 @@ import { escapeHtml } from './src/shared/lib/escape-html';
       host.removeEventListener('keydown', onKeydown);
       host.removeEventListener('scroll', onScroll, true);
     }
-    activeController?.abort();
-    activeController = null;
-    activeRun = null;
     host = null;
+    runner.abort();
   }
   function render() {
     if (!host) return;
@@ -274,9 +293,7 @@ import { escapeHtml } from './src/shared/lib/escape-html';
   }
   function openExercise(id) {
     if (!exerciseCatalog.byId.has(id) || exerciseCatalog.byId.get(id).language !== language) return;
-    activeController?.abort();
-    activeRun = null;
-    activeController = null;
+    runner.abort();
     selectedId = id;
     labStore.getProgress().selected[language] = id;
     phase = 'learn';
@@ -336,7 +353,7 @@ import { escapeHtml } from './src/shared/lib/escape-html';
     if (preview) preview.textContent = programFor(current());
   }
   function codeHTML(item, record) {
-    return `${executionGuideHTML()}<div class="lab-workbench"><div><section class="lab-task"><h2>Tu misión.</h2><ol>${item.instructions.map((instruction) => `<li>${escapeHtml(instruction)}</li>`).join('')}</ol></section><div class="editor-shell"><div class="editor-toolbar"><span class="editor-file">${language === 'rust' ? 'experimento.rs' : 'experimento.go'}</span><button data-lab-action="reset-code">Restaurar inicio ↺</button></div><div class="editor-wrapper"><pre id="lab-line-numbers" class="editor-lines" aria-hidden="true">1</pre><textarea id="lab-code" name="codigo" translate="no" class="code-input" aria-label="Editor de código ${langName()}" spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off" maxlength="30000" wrap="off">${escapeHtml(draftFor(item))}</textarea></div><div class="editor-footer"><span>Tab: sangría · Ctrl/⌘ + Enter: revisar · Esc: salir del editor</span><span id="lab-editor-status">Borrador guardado</span></div></div><div class="lab-run-bar"><button id="lab-run" class="button" data-lab-action="run" ${activeRun ? 'disabled' : ''}>${activeRun ? '<span class="lab-spinner" aria-hidden="true"></span> Revisando…' : '▷ Ejecutar y revisar'}</button><button class="text-button" data-lab-action="copy-code">Copiar programa completo ↗</button></div><p class="lab-run-disclosure">Al ejecutar, se envía este código al <a href="${language === 'rust' ? 'https://play.rust-lang.org/' : 'https://go.dev/play/'}" target="_blank" rel="noopener noreferrer">Playground oficial de ${langName()}</a>. Necesita conexión. El taller agrega la entrada del programa y las pruebas; editá las funciones del ejercicio.</p>${programPreviewHTML(item)}${customEditorHTML(item, record)}<div class="lab-hints"><div class="hints-top"><h3>Un empujón, si lo necesitás.</h3><span>${record.hints || 0}/3 pistas</span></div>${item.hints
+    return `${executionGuideHTML()}<div class="lab-workbench"><div><section class="lab-task"><h2>Tu misión.</h2><ol>${item.instructions.map((instruction) => `<li>${escapeHtml(instruction)}</li>`).join('')}</ol></section><div class="editor-shell"><div class="editor-toolbar"><span class="editor-file">${language === 'rust' ? 'experimento.rs' : 'experimento.go'}</span><button data-lab-action="reset-code">Restaurar inicio ↺</button></div><div class="editor-wrapper"><pre id="lab-line-numbers" class="editor-lines" aria-hidden="true">1</pre><textarea id="lab-code" name="codigo" translate="no" class="code-input" aria-label="Editor de código ${langName()}" spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off" maxlength="30000" wrap="off">${escapeHtml(draftFor(item))}</textarea></div><div class="editor-footer"><span>Tab: sangría · Ctrl/⌘ + Enter: revisar · Esc: salir del editor</span><span id="lab-editor-status">Borrador guardado</span></div></div><div class="lab-run-bar"><button id="lab-run" class="button" data-lab-action="run" ${isRunning() ? 'disabled' : ''}>${isRunning() ? '<span class="lab-spinner" aria-hidden="true"></span> Revisando…' : '▷ Ejecutar y revisar'}</button><button class="text-button" data-lab-action="copy-code">Copiar programa completo ↗</button></div><p class="lab-run-disclosure">Al ejecutar, se envía este código al <a href="${language === 'rust' ? 'https://play.rust-lang.org/' : 'https://go.dev/play/'}" target="_blank" rel="noopener noreferrer">Playground oficial de ${langName()}</a>. Necesita conexión. El taller agrega la entrada del programa y las pruebas; editá las funciones del ejercicio.</p>${programPreviewHTML(item)}${customEditorHTML(item, record)}<div class="lab-hints"><div class="hints-top"><h3>Un empujón, si lo necesitás.</h3><span>${record.hints || 0}/3 pistas</span></div>${item.hints
       .slice(0, record.hints || 0)
       .map(
         (hint, index) =>
@@ -347,7 +364,7 @@ import { escapeHtml } from './src/shared/lib/escape-html';
       )}<button class="button small secondary" data-lab-action="hint" ${(record.hints || 0) >= 3 ? 'disabled' : ''}>${record.hints ? 'Otra pista' : 'Dame una pista'}</button><details class="solution-panel" id="lab-solution"><summary data-lab-action="reveal-solution">Ver una solución razonada</summary><p>Usarla como apoyo es válido. Después cerrala y reconstruí la idea. Este intento quedará identificado como práctica con solución.</p><pre class="solution-code" translate="no">${escapeHtml(item.solution)}</pre><p>${escapeHtml(item.review.success)}</p><button class="button small secondary" data-lab-action="load-solution">Cargarla y experimentar</button></details></div></div><aside class="lab-coach" aria-label="Revisión del ejercicio"><div class="coach-heading"><div class="coach-avatar" aria-hidden="true">[?]</div><div><h2>Tu revisor didáctico</h2><span>COMPILADOR + CASOS EXPLICADOS</span></div></div><div class="coach-content" id="lab-review" aria-live="polite">${reviewHTML(item, record)}</div></aside></div><div class="lab-phase-footer"><p>Que compile es el primer paso. Abrí cada prueba para entender qué comprueba y qué deja afuera.</p><button class="button secondary" data-lab-action="phase" data-phase="reflect">Ponerlo en palabras →</button></div>`;
   }
   function reviewHTML(item, record) {
-    const review = reviewStateOf(item, record, activeRun?.id === item.id);
+    const review = reviewStateOf(item, record, isRunningExercise(item.id));
     if (review.kind === 'running')
       return '<h3>Probemos tu hipótesis.</h3><p>El compilador está revisando el programa. Después ejecutamos los casos del ejercicio y conectamos cada resultado con el concepto.</p><p class="runner-status busy"><span class="lab-spinner" aria-hidden="true"></span> Ejecutando código real…</p><button class="text-button" data-lab-action="cancel-run">Cancelar ejecución</button>';
     if (review.kind === 'unrun' || review.kind === 'stale')
@@ -392,83 +409,8 @@ import { escapeHtml } from './src/shared/lib/escape-html';
       })
       .join('')}</div>`;
   }
-  async function runExercise() {
-    const item = current();
-    if (activeRun) return;
-    if (window.TallerCampaign?.lockedExerciseHTML(item.id, language)) {
-      notify('Completá los requisitos de esta misión en tu campaña.');
-      return;
-    }
-    const record = recordFor(item.id),
-      code = draftFor(item),
-      customTest = normalizeCustomTest(record.customTest);
-    if (!code.trim()) {
-      notify('Escribí una solución o restaurá el inicio.');
-      return;
-    }
-    record.attempts = (record.attempts || 0) + 1;
-    save();
-    const run = { id: item.id, code };
-    activeRun = run;
-    activeController = new AbortController();
-    updateRunUI();
-    try {
-      let runnerResult;
-      try {
-        runnerResult = await window.TallerRunner.run({
-          language: item.language,
-          code: buildProgram(item, code, customTest),
-          signal: activeController.signal,
-        });
-      } catch (error) {
-        if (activeRun !== run || error.name === 'AbortError') return;
-        record.result = {
-          code,
-          customTest,
-          customPassed: false,
-          success: false,
-          stdout: '',
-          stderr: error.message || 'No se pudo conectar al compilador.',
-          transportError: true,
-          tests: [],
-          time: Date.now(),
-        };
-        save();
-        return;
-      }
-      if (activeRun !== run) return;
-      const { result, solved } = interpretRun(item, runnerResult, {
-        code,
-        customTest,
-        now: Date.now(),
-      });
-      record.result = result;
-      if (solved) {
-        const first = !record.solvedAt;
-        record.solvedAt = record.solvedAt || Date.now();
-        if (!record.reviewAt) record.reviewAt = Date.now() + 86400000;
-        notify(
-          first
-            ? '¡Experimento resuelto! +20 puntos de práctica. Ahora explicá el porqué.'
-            : 'Estos casos siguen funcionando. Probá una variante.',
-        );
-      }
-      save();
-      syncAfterRun({
-        syncSystems: () => window.TallerSystems?.sync(),
-        syncCampaign: () => window.TallerCampaign?.sync(),
-        isCampaignMission: () =>
-          Boolean(window.TallerCampaignEngine.canAttempt(item.id, language).worldId),
-        notify,
-        logError: (error) => console.error(error),
-      });
-    } finally {
-      if (activeRun === run) {
-        activeRun = null;
-        activeController = null;
-        updateRunUI();
-      }
-    }
+  function runExercise() {
+    return runner.run(current());
   }
   function updateRunUI() {
     if (!host || mode !== 'exercise') return;
@@ -489,8 +431,8 @@ import { escapeHtml } from './src/shared/lib/escape-html';
     if (phase !== 'code') return;
     const button = $('#lab-run');
     if (button) {
-      button.disabled = Boolean(activeRun);
-      button.innerHTML = activeRun
+      button.disabled = isRunning();
+      button.innerHTML = isRunning()
         ? '<span class="lab-spinner" aria-hidden="true"></span> Revisando…'
         : '▷ Ejecutar y revisar';
     }
@@ -652,8 +594,7 @@ import { escapeHtml } from './src/shared/lib/escape-html';
     }
     if (action === 'open') openExercise(button.dataset.id);
     if (action === 'map') {
-      activeController?.abort();
-      activeRun = null;
+      runner.abort();
       finishNavigation();
       host?.scrollIntoView({ block: 'start' });
     }
@@ -737,7 +678,7 @@ import { escapeHtml } from './src/shared/lib/escape-html';
         input.value = test.expression;
         save();
         updateProgramPreview();
-        if (!activeRun) updateRunUI();
+        if (!isRunning()) updateRunUI();
       }
       $('.custom-test-panel').open = true;
       input.focus();
@@ -749,14 +690,8 @@ import { escapeHtml } from './src/shared/lib/escape-html';
           : 'Cambiá una entrada o expectativa y ejecutá. Tu caso extra se revisa por separado.',
       );
     }
-    if (action === 'run') runExercise();
-    if (action === 'cancel-run') {
-      activeController?.abort();
-      activeRun = null;
-      activeController = null;
-      updateRunUI();
-      notify('Ejecución cancelada. Tu código sigue guardado.');
-    }
+    if (action === 'run') void runExercise();
+    if (action === 'cancel-run') runner.cancel();
     if (action === 'hint') {
       const record = recordFor(selectedId);
       Object.assign(record, hintPatch(record));
@@ -856,7 +791,7 @@ import { escapeHtml } from './src/shared/lib/escape-html';
       updateGutter();
       updateEditorStatus();
       updateProgramPreview();
-      if (!activeRun && (wasCurrent || isResultCurrent(current(), record))) {
+      if (!isRunning() && (wasCurrent || isResultCurrent(current(), record))) {
         $('#lab-review').innerHTML = reviewHTML(current(), record);
       }
       const hint = $('#lab-live-hint');
@@ -874,7 +809,7 @@ import { escapeHtml } from './src/shared/lib/escape-html';
     if (event.target.id === 'lab-code') {
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
         event.preventDefault();
-        runExercise();
+        void runExercise();
         return;
       }
       if (event.key === 'Escape') {
@@ -934,8 +869,7 @@ import { escapeHtml } from './src/shared/lib/escape-html';
       selectedId = null;
       mode = 'map';
       phase = 'learn';
-      activeController?.abort();
-      activeRun = null;
+      runner.abort();
       return removed;
     },
   };

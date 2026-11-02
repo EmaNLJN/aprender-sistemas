@@ -471,7 +471,7 @@ interface StubElement {
 interface TabOptions {
   failRemove?: boolean;
   campaignSync?: () => { xpGained?: number } | undefined;
-  runner?: () => Promise<unknown>;
+  fetch?: () => Promise<unknown>;
 }
 interface Tab {
   lab: TallerLabApi;
@@ -536,6 +536,10 @@ function openTab(saved: Map<string, string>, options: TabOptions = {}): Tab {
     history: { replaceState: () => undefined },
     document: { createElement: stubElement, activeElement: null },
     console: { error: (error: unknown) => errors.push(error) },
+    fetch: options.fetch,
+    TextEncoder,
+    setTimeout,
+    clearTimeout,
     localStorage: {
       getItem: (key: string) => saved.get(key) ?? null,
       setItem: (key: string, value: string) => void saved.set(key, value),
@@ -555,7 +559,6 @@ function openTab(saved: Map<string, string>, options: TabOptions = {}): Tab {
     };
     window.TallerCampaignEngine = { canAttempt: () => ({ worldId: 'mundo-1' }) };
   }
-  if (options.runner) window.TallerRunner = { run: options.runner };
   loadLab(context);
   const lab = window.TallerLab as TallerLabApi;
   lab.mount(host, 'rust', (message) => notices.push(message));
@@ -661,7 +664,7 @@ await testAsync(
   async () => {
     const saved = new Map<string, string>();
     const tabA = openTab(saved);
-    const tabB = openTab(saved, { runner: () => Promise.reject(new Error('sin red')) });
+    const tabB = openTab(saved, { fetch: () => Promise.reject(new TypeError('sin red')) });
     tabB.click('open', { id: 'rust-02' });
     const { lab } = tabA;
     lab.applyImport(
@@ -675,6 +678,27 @@ await testAsync(
     assert.equal((records['rust-02'].result as { transportError?: boolean }).transportError, true);
   },
 );
+
+await testAsync('Reset during a run aborts it and the late answer writes nothing', async () => {
+  const saved = new Map<string, string>();
+  let answer: (value: unknown) => void = () => undefined;
+  const tab = openTab(saved, {
+    fetch: () =>
+      new Promise((resolve) => {
+        answer = resolve;
+      }),
+  });
+  tab.click('open', { id: 'rust-02' });
+  tab.click('run');
+  assert.equal(storedRecords(saved)['rust-02'].attempts, 1);
+
+  assert.equal(tab.lab.reset(), true);
+  answer({ ok: true, status: 200, json: async () => ({ success: true, stdout: '', stderr: '' }) });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.deepEqual(storedRecords(saved), {});
+  assert.deepEqual(tab.notices, []);
+});
 
 test('One tab: emptied draft and reflection reload empty, without merging anything', () => {
   const saved = new Map<string, string>();
