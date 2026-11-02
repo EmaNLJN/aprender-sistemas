@@ -114,3 +114,32 @@ it('shows no text of a student', function () {
         expect($body)->not->toContain($canary);
     }
 });
+
+it('counts the world, the workshop in each language and the route against the population counted by hand', function () {
+    $data = $this->browser->get('/api/admin/stats/exercises?from=2026-10-01&to=2026-10-20')->assertOk()->json('data');
+
+    expect(array_keys($data))->toBe(['catalogs', 'exercises', 'worlds', 'workshops', 'route'])
+        ->and($data['worlds'])->toBe([
+            ['worldId' => 'fx-world-1', 'language' => 'rust', 'level' => 'beginner', 'retired' => false, 'exercises' => 1, 'solvedRows' => 3, 'studentsWithSeals' => 1,
+                'checkpoint' => ['answered' => 2, 'passed' => 1, 'options' => [['option' => 1, 'students' => 1], ['option' => 2, 'students' => 1]]]],
+        ])
+        ->and($data['workshops'])->toBe([
+            ['workshopId' => 'fx-workshop-1', 'language' => 'rust', 'level' => 'beginner', 'retired' => false, 'studentsStarted' => 2, 'codeSealed' => 1,
+                'prediction' => ['answered' => 1, 'correct' => 1, 'options' => [['option' => 1, 'students' => 1]]],
+                'stepsMarkedMedian' => 0.5, 'objectivesObservedMedian' => 0.5],
+            ['workshopId' => 'fx-workshop-1', 'language' => 'go', 'level' => 'beginner', 'retired' => false, 'studentsStarted' => 0, 'codeSealed' => 0,
+                'prediction' => ['answered' => 0, 'correct' => 0, 'options' => []],
+                'stepsMarkedMedian' => null, 'objectivesObservedMedian' => null],
+        ])
+        ->and($data['route'])->toBe([
+            'marks' => [['kind' => 'step', 'itemKey' => 'fx-step-1', 'students' => 2], ['kind' => 'milestone', 'itemKey' => 'm-01', 'students' => 1]],
+            'quiz' => [['stepId' => 'fx-step-1', 'answered' => 2, 'options' => [['option' => 0, 'students' => 1], ['option' => 1, 'students' => 1]]]],
+        ]);
+});
+
+it('filters the worlds and the workshops by language', function () {
+    $data = $this->browser->get('/api/admin/stats/exercises?language=go')->assertOk()->json('data');
+
+    expect($data['worlds'])->toBe([])
+        ->and(array_column($data['workshops'], 'language'))->toBe(['go']);
+});
