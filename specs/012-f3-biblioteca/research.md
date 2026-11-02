@@ -369,3 +369,37 @@ El plan se escribió antes de que F4, F5 y F6 se implementaran. Lo que fijaron m
 | nuqs | 2.10.2 | Context7 `/47ng/nuqs` (segundo servidor, enmienda del 2026-10-28) | El throttle de la URL y `limitUrlUpdates` | La URL se encola y se escribe con un throttle de 50 ms por omisión; los valores menores se ignoran; el estado del hook cambia en el acto | Sí: la E2E de (i) espera la URL antes de recargar (R6 y R14) |
 | Playwright | 1.63.0 | Context7 `/microsoft/playwright/v1.63.0` (enmienda) | `page.waitForURL` con un predicado y la History API | Un cambio de URL por la History API cuenta como navegación, y el predicado recibe un `URL` | Sí: la espera de T017 (`page.waitForURL((url) => …)`) |
 | ESLint | 10.12.0 (Context7 trae `main`) | Context7 `/eslint/eslint` (enmienda) | Selectores de atributo con igualdad sobre un atributo anidado | `[attr=123]` y `[attr.level2=…]` están soportados; el ejemplo oficial usa `[arguments.length!=2]` | Sí: la guarda canónica de F6 (`[arguments.length=1]`) en T006, en lugar de `[arguments.length<2]` |
+
+## Línea base de la implementación
+
+Medida el 2026-11-02 sobre `9c4b45a6` (`master`, con F2a, F2b, F4, F5, la pila de componentes de #67 y nuqs 2.10.2), antes de cualquier cambio de F3.
+
+| Valor | Resultado |
+| --- | --- |
+| `npm ci --offline`, `npm run build`, `npm test`, `npm run lint` y `npm run format:check` | En verde; lint con 0 errores y 47 avisos |
+| E2E (`E2E_PORT=4183`) | 202 pasan; `playwright --list`: `Total: 202 tests in 13 files` |
+| Vitest | 832 pruebas en 45 archivos |
+| `html.length` | 1 169 093 (el tope, `BOOT_SIZE_LIMIT` de `qa/build-check.ts`, es 1 500 000; subpresupuesto de F3: 15 000, con nuqs ya instalado) |
+| Hash del script, del `<style>` y del marcado | `78316afa239b0ac4`, `17e95d575eeb3286` y `8e060fe765d256c2` |
+| `import(` y `import.meta` en el script del dist | 0 y 23 (tras el corte se espera 24) |
+| `frontend/src/index.html`, `build/curriculum.json` y `dump-globals` | `6c3b7e6a81500f00`, `4555e8500e6ef5bd` y `859771e276be9dc7` |
+| Multiconjunto del CSS | `base` 4319, `distinctBase` 4315 |
+| Avisos de `complexity` (`npm run lint \| grep -c complexity`) | 33 |
+| Escenarios por check | `boot` 25, `app-shell` 56, `lab-state` 37, `project-kit` 11, `campaign` 34, `versioned-storage` 34, `seams-guard` 25 |
+
+### Qué ya está en la base
+
+| Pieza | Estado | Tarea |
+| --- | --- | --- |
+| jsdom 30.1.2, Testing Library y fishery 2.4.0 | está | T005 |
+| `frontend/src/vitest.setup.ts` y el proyecto `dom` | está | T006 |
+| Guarda de `useStore` (`[arguments.length=1]`, `eslint.config.ts:78`) | está | T006 |
+| `routeStore.toggleMark` (`route-store.ts:27` y `:97`) | está | T007 |
+| `routeStore` del bundle en `qa/lib/legacy-sources.ts` | falta | T008 |
+| `routeStore.changes.subscribe(updateSaveLabel)` en `frontend/app.js:29` | está | T009 |
+| `blockWrites()` en `qa/e2e/fixtures/storage-control.ts:32` | está | T003 |
+| `REACT_VIEWS` en `qa/boot-check.ts:85` (con `atlas`, `proyecto` y `sistemas`) | está | T013 |
+| nuqs 2.10.2 en `package.json` y `frontend/src/app/legacy/url-state.tsx` | está (F5) | T015 y T016 |
+| `LEGACY_MODULES`: 21 líneas con `import(` en `legacy-views.ts` | medido | T013 |
+| `.resource-card,` en `frontend/styles.css:1621` | imprime: nadie partió la impresión | T019 |
+| Páginas migradas en `frontend/src/pages` | `atlas`, `project` y `systems` | T011 |
