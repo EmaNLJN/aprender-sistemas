@@ -136,4 +136,14 @@ test('the preview joins the web network of the stack, so its Nginx reaches php f
   assert.deepEqual(preview.networks['stack-web'], { external: true, name: 'taller-rust-go_web' });
 });
 
+test('the Laravel services read PRIVACY_VERSION, by default the version of the front notice', () => {
+  for (const name of ['php', 'migrate', 'scheduler', 'worker-runs']) {
+    assert.equal(
+      compose.services[name]?.environment?.PRIVACY_VERSION,
+      '${PRIVACY_VERSION:-2026-10-dev}',
+      `${name} does not receive PRIVACY_VERSION`,
+    );
+  }
+});
+
 done();
