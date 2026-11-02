@@ -29,5 +29,7 @@ return [
         'catalog' => 'El catálogo no existe.',
         'language' => 'El lenguaje tiene que ser rust o go.',
         'level' => 'El nivel tiene que ser beginner, medium, advanced o expert.',
+        'inactive_since' => 'La fecha tiene que ser AAAA-MM-DD.',
+        'sort' => 'El orden tiene que ser name, createdAt o lastActivity, con un guion adelante para invertirlo.',
     ],
 ];

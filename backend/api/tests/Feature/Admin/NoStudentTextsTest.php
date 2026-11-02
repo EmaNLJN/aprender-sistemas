@@ -145,7 +145,7 @@ it('shows no text of a student at any depth in the successful answer of any admi
 it('walks every admin route of the router except the one that cannot succeed until C3c', function () {
     $walked = array_keys(studentTextWalk($this->browser, $this->targets));
 
-    expect($walked)->toHaveCount(10)
+    expect($walked)->toHaveCount(11)
         ->and(array_values(array_diff(studentTextAdminRoutes(), $walked)))->toBe(STUDENT_TEXT_ROUTES_WITHOUT_SUCCESS);
 });
 

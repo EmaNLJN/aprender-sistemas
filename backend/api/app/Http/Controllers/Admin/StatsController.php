@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Admin\PageMeta;
 use App\Http\Requests\Admin\ContentStatsRequest;
+use App\Http\Requests\Admin\ListStudentsRequest;
 use App\Http\Requests\Admin\StatsPeriodRequest;
 use App\Runs\Record\Instant;
+use App\Stats\Accounts\StudentDirectory;
 use App\Stats\Content\ContentStatsReader;
 use App\Stats\OverviewReader;
 use App\Stats\StatsCache;
@@ -33,5 +36,12 @@ final class StatsController
             'data' => $entry['data'],
             'meta' => ['generatedAt' => $entry['generatedAt'], 'period' => $period->toMeta(), 'filters' => $filters->toMeta()],
         ]);
+    }
+
+    public function students(ListStudentsRequest $request, StudentDirectory $directory): JsonResponse
+    {
+        $page = $directory->page($request->filters(), Instant::now());
+
+        return response()->json(['data' => $page->items(), 'meta' => PageMeta::of($page)]);
     }
 }
