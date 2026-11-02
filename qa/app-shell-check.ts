@@ -744,7 +744,7 @@ await test('accesibilidad: aria-pressed marca el idioma activo y aria-current la
 
 await test('shell: al cargar se inicializan campaña y Sistemas y se sincroniza la barra lateral', () => {
   const harness = buildHarness({ hash: '#proyecto' });
-  assert.ok(harness.calls.includes('Campaign.init'));
+  assert.ok(harness.calls.includes('CampaignEngine.init'));
   assert.ok(harness.calls.includes('Systems.init'));
   assert.equal(harness.elements['sidebar-language']?.textContent, 'RUST');
   assert.equal(harness.elements['sidebar-completed']?.textContent, '0 de 12');
@@ -754,7 +754,13 @@ await test('shell: al cargar se inicializan campaña y Sistemas y se sincroniza 
 await test('startApp calls the adapters in order and then renders', () => {
   const harness = createHarness({ hash: '#laboratorio' });
   loadAppShell(harness.context).startApp();
-  const startup = ['Lab.init', 'Campaign.init', 'Systems.init', 'Lab.loadWarning', 'Lab.mount'];
+  const startup = [
+    'Lab.init',
+    'CampaignEngine.init',
+    'Systems.init',
+    'Lab.loadWarning',
+    'Lab.mount',
+  ];
   assert.deepEqual(
     harness.calls.filter((name) => startup.includes(name)),
     startup,

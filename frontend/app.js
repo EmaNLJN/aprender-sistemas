@@ -13,6 +13,13 @@ import {
 import { downloadBlob } from './src/shared/lib/download-file';
 import { escapeHtml } from './src/shared/lib/escape-html';
 import { normalizeSearchText } from './src/shared/lib/normalize-search-text';
+function campaignConfig() {
+  return {
+    exercises: window.TallerLab.getExercises(),
+    worlds: { rust: window.RUST_CAMPAIGN || [], go: window.GO_CAMPAIGN || [] },
+  };
+}
+
 let started = false;
 export function startApp() {
   if (started) throw new Error('startApp ya se llamó: el arranque corre una sola vez.');
@@ -29,7 +36,10 @@ export function startApp() {
   routeStore.changes.subscribe(updateSaveLabel);
   const routeState = () => routeStore.getProgress();
   const filters = { query: '', language: 'all', category: 'all', cost: 'all', favorites: false };
-  const campaignInit = window.TallerCampaign?.init();
+  const campaignInit = window.TallerCampaignEngine?.init(
+    campaignConfig(),
+    window.TallerLab?.exportState(),
+  );
   const systemsInit = window.TallerSystems?.init();
   // Los avisos de todos los almacenes se muestran juntos; ninguno pisa a otro.
   const loadNotices = [

@@ -2,7 +2,7 @@ import '../../styles.css';
 import '../pages/project/ui/project.css';
 import '../../lab.css';
 import '../pages/atlas/ui/atlas.css';
-import '../../campaign.css';
+import '../pages/campaign/ui/campaign-page.css';
 import '../../quest-explorers.css';
 import '../pages/systems/ui/systems.css';
 

@@ -34,10 +34,12 @@ interface LoadedAdapter {
   toast: Mock<(message: string) => void>;
 }
 
+const originalScrollIntoView = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollIntoView');
 let currentHost: HTMLElement | undefined;
 
 async function loadAdapter(url = '/#campana'): Promise<LoadedAdapter> {
   vi.resetModules();
+  Element.prototype.scrollIntoView = vi.fn();
   history.replaceState(null, '', url);
   const writes: string[] = [];
   const items = new Map<string, string>();
@@ -80,6 +82,11 @@ afterEach(() => {
   } finally {
     currentHost?.remove();
     currentHost = undefined;
+    if (originalScrollIntoView) {
+      Object.defineProperty(Element.prototype, 'scrollIntoView', originalScrollIntoView);
+    } else {
+      Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
+    }
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
     vi.doUnmock('../../shared/lib/celebration');

@@ -82,7 +82,20 @@ await test('adaptadores: cada window.Taller* real publica los métodos que consu
   assert.deepEqual(missingAdapterMethods(context), []);
 });
 
-const REACT_VIEWS: ReadonlySet<string> = new Set(['atlas', 'proyecto', 'sistemas']);
+await test('TallerCampaign publishes exactly the seven methods that the lab and app.js use', async () => {
+  const { context } = await boot();
+  assert.deepEqual(Object.keys(context.TallerCampaign as object).sort(), [
+    'exerciseContextHTML',
+    'lockedExerciseHTML',
+    'mount',
+    'refresh',
+    'returnURL',
+    'sync',
+    'unmount',
+  ]);
+});
+
+const REACT_VIEWS: ReadonlySet<string> = new Set(['atlas', 'proyecto', 'sistemas', 'campana']);
 
 function mountedText(node: FakeNode): string {
   if (node instanceof FakeText) return node.nodeValue;
@@ -274,17 +287,22 @@ for (const file of FROZEN_EXPORTS) {
 const LEGACY_SOURCES = [
   'frontend/app.js',
   'frontend/lab.js',
-  'frontend/campaign.js',
+  'frontend/src/app/legacy/campaign-bridges.ts',
   'frontend/lab-explorers.js',
   'frontend/quest-explorers.js',
 ];
 
-await test('each legacy source evaluated alone neither throws nor touches the storage', () => {
+await test('each legacy source evaluated alone neither throws nor touches the storage', async () => {
   const problems: string[] = [];
-  for (const source of LEGACY_SOURCES) {
+  const adapter = 'frontend/src/app/legacy/register-campaign.tsx';
+  for (const source of [...LEGACY_SOURCES, adapter]) {
     const harness = createBootHarness({ blockStorage: true });
     try {
-      runSource(harness.context, source);
+      if (source === adapter) {
+        vm.runInContext(await bundleApp(source), harness.context, { filename: source });
+      } else {
+        runSource(harness.context, source);
+      }
     } catch (error) {
       problems.push(`${source} threw: ${(error as Error).message}`);
       continue;
@@ -326,7 +344,7 @@ const STORAGE_KEYS_IN_ORDER = [
 ];
 const INITIALIZERS = [
   ['TallerLab', 'init'],
-  ['TallerCampaign', 'init'],
+  ['TallerCampaignEngine', 'init'],
   ['TallerSystems', 'init'],
 ] as const;
 
@@ -351,7 +369,7 @@ await test('startApp initializes in order and draws the first view', async () =>
   startApp();
   assert.deepEqual(initializations, [
     'TallerLab.init',
-    'TallerCampaign.init',
+    'TallerCampaignEngine.init',
     'TallerSystems.init',
   ]);
   const firstReads = [

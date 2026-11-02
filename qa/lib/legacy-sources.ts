@@ -12,7 +12,8 @@ export const CATALOGS_SOURCE = 'frontend/src/app/legacy/register-catalogs.ts';
 export const APP_SHELL_SOURCE = 'frontend/app.js';
 export const LAB_SOURCE = 'frontend/lab.js';
 export const CAMPAIGN_ENGINE_SOURCE = 'frontend/src/app/legacy/register-campaign-engine.ts';
-export const CAMPAIGN_UI_SOURCE = 'frontend/campaign.js';
+export const CAMPAIGN_BRIDGES_SOURCE = 'frontend/src/app/legacy/campaign-bridges.ts';
+export const CAMPAIGN_ADAPTER_SOURCE = 'frontend/src/app/legacy/register-campaign.tsx';
 export const SYSTEMS_ENGINE_SOURCE = 'frontend/src/app/legacy/register-systems-engine.ts';
 export const SYSTEMS_UI_SOURCE = 'frontend/src/app/legacy/register-systems.tsx';
 
@@ -80,8 +81,8 @@ export function loadCampaignEngine(context: vm.Context): void {
   runSource(context, CAMPAIGN_ENGINE_SOURCE);
 }
 
-export function loadCampaignUi(context: vm.Context): void {
-  runSource(context, CAMPAIGN_UI_SOURCE);
+export function loadCampaignBridges<T>(context: vm.Context): T {
+  return runModule<{ campaignBridges: T }>(context, CAMPAIGN_BRIDGES_SOURCE).campaignBridges;
 }
 
 export function loadSystemsEngine(context: vm.Context): void {

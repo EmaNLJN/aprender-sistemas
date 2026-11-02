@@ -140,10 +140,7 @@ function fakeAdapters(
     },
     TallerAtlas: {},
     TallerProjectPage: {},
-    TallerCampaign: {
-      init: () => ({ loadWarning: options.warnings?.campaign ?? '' }),
-      sync: syncBehavior,
-    },
+    TallerCampaign: { sync: syncBehavior },
     TallerSystems: {
       init: () => ({ loadWarning: options.warnings?.systems ?? '' }),
       sync: () => {
@@ -152,6 +149,7 @@ function fakeAdapters(
       },
     },
     TallerCampaignEngine: {
+      init: () => ({ loadWarning: options.warnings?.campaign ?? '' }),
       exportState: () => campaignExport,
       planImport: planFor('campaign'),
       applyImport: asPromise(applyFor('campaign')),

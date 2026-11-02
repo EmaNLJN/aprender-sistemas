@@ -12,7 +12,7 @@ import vm from 'node:vm';
 import { plainJson } from './lib/plain-json.ts';
 import {
   loadCampaignEngine,
-  loadCampaignUi,
+  loadCampaignBridges,
   loadCampaignWorlds,
   loadLabCatalogs,
   loadSystemsUi,
@@ -31,11 +31,13 @@ interface Workshop {
   title: string;
 }
 interface CampaignApi {
-  init(): { ready: boolean; storageAvailable: boolean; loadWarning: string };
   sync(): unknown;
   returnURL(worldId: string): string;
   exerciseContextHTML(id: string, lang: string): string;
   lockedExerciseHTML(id: string, lang: string): string;
+}
+interface CampaignEngineApi {
+  init(config: unknown, labState: unknown): unknown;
 }
 interface SystemsApi {
   init(): { storageAvailable: boolean; loadWarning: string };
@@ -58,6 +60,8 @@ interface BridgeContext extends vm.Context {
   window: BridgeContext;
   location: { search: string; hash: string; href: string };
   RUST_CAMPAIGN?: unknown[];
+  GO_CAMPAIGN?: unknown[];
+  TallerCampaignEngine?: CampaignEngineApi;
   SYSTEMS_PC?: { workshops: Workshop[] };
   SYSTEMS_LOWLEVEL?: { workshops: Workshop[] };
   SYSTEMS_INFRA?: { workshops: Workshop[] };
@@ -109,10 +113,19 @@ function campaignBridge(
   loadCampaignWorlds(context);
   afterCatalogs?.(context);
   loadCampaignEngine(context);
-  loadCampaignUi(context);
-  const api = context.TallerCampaign;
-  assert.ok(api, 'campaign.js no publicó TallerCampaign');
-  assert.deepEqual(plainJson(api.init()), { ready: true, storageAvailable: true, loadWarning: '' });
+  const api = loadCampaignBridges<CampaignApi>(context);
+  assert.ok(api, 'campaign-bridges.ts no exportó campaignBridges');
+  const lab = context.TallerLab as { getExercises(): LabExercise[]; exportState(): LabState };
+  const engine = context.TallerCampaignEngine as CampaignEngineApi;
+  const config = {
+    exercises: lab.getExercises(),
+    worlds: { rust: context.RUST_CAMPAIGN ?? [], go: context.GO_CAMPAIGN ?? [] },
+  };
+  assert.deepEqual(plainJson(engine.init(config, lab.exportState())), {
+    ready: true,
+    storageAvailable: true,
+    loadWarning: '',
+  });
   return api;
 }
 

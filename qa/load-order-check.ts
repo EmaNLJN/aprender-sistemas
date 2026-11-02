@@ -23,6 +23,7 @@ const LAB = 'frontend/lab.js';
 const STYLES = 'frontend/styles.css';
 const ATLAS = 'frontend/src/app/legacy/register-atlas.tsx';
 const PROJECT_PAGE = 'frontend/src/app/legacy/register-project-page.tsx';
+const CAMPAIGN_ADAPTER = 'frontend/src/app/legacy/register-campaign.tsx';
 const CAMPAIGN_ENGINE = 'frontend/src/app/legacy/register-campaign-engine.ts';
 const SYSTEMS_UI = 'frontend/src/app/legacy/register-systems.tsx';
 const SYSTEMS_ENGINE = 'frontend/src/app/legacy/register-systems-engine.ts';
@@ -36,11 +37,12 @@ const SYSTEMS_CATALOGS = SYSTEMS_DOMAINS;
 const BEFORE_APP_REASONS: Record<string, string> = {
   [LAB]:
     'render() de app.js llama a window.TallerLab.mount(); app.js también usa getExercises() en syncLinkedLanguage()',
-  'frontend/campaign.js':
-    'app.js llama a window.TallerCampaign?.init() al cargar y a mount() en render()',
+  [CAMPAIGN_ADAPTER]:
+    'render() de app.js llama a window.TallerCampaign.refresh() y mount(), y el respaldo a sync()',
+  [CAMPAIGN_ENGINE]: 'startApp() inicializa el motor con window.TallerCampaignEngine.init()',
   [SYSTEMS_UI]: 'app.js llama a window.TallerSystems?.init() al cargar y a mount() en render()',
   [CATALOGS]:
-    'app.js lee window.GUIDE_DATA al cargar; syncLinkedLanguage() lee window.RUST_CAMPAIGN/GO_CAMPAIGN y campaign.js init() los pasa al motor al cargar app.js',
+    'app.js lee window.GUIDE_DATA al cargar; syncLinkedLanguage() lee window.RUST_CAMPAIGN/GO_CAMPAIGN y startApp() los pasa al motor de campaña',
   [ATLAS]:
     'render() de app.js llama a window.TallerAtlas.mount() sin guarda opcional en la vista atlas',
   [PROJECT_PAGE]:
@@ -60,8 +62,8 @@ const CONSTRAINTS: Constraint[] = [
   ]),
   [
     CAMPAIGN_ENGINE,
-    'frontend/campaign.js',
-    'campaign.js captura window.TallerCampaignEngine en const engine al evaluarse',
+    CAMPAIGN_ADAPTER,
+    'campaign-bridges.ts, que importa register-campaign.tsx, captura window.TallerCampaignEngine en const engine al evaluarse',
   ],
   [
     SYSTEMS_ENGINE,
