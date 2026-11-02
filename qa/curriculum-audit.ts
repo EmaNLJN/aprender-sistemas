@@ -20,6 +20,13 @@ function refuse(message: string): never {
   process.exit(2);
 }
 
+function validate(concurrency: string, runtime: string): void {
+  if (!/^[1-8]$/.test(concurrency))
+    refuse(`api:audit: --concurrency va de 1 a 8 y llegó «${concurrency}».`);
+  if (runtime !== 'runsc' && runtime !== 'runc')
+    refuse(`api:audit: --runtime admite runsc o runc y llegó «${runtime}».`);
+}
+
 function parseOptions(argv: readonly string[]): EntryOptions {
   const forwarded: string[] = [];
   let concurrency = process.env.AUDIT_CONCURRENCY ?? '4';
@@ -35,10 +42,7 @@ function parseOptions(argv: readonly string[]): EntryOptions {
         `api:audit: opción desconocida «${argument}». Se admiten --language=, --exercise=, --concurrency= y --runtime=.`,
       );
   }
-  if (!/^[1-8]$/.test(concurrency))
-    refuse(`api:audit: --concurrency va de 1 a 8 y llegó «${concurrency}».`);
-  if (runtime !== 'runsc' && runtime !== 'runc')
-    refuse(`api:audit: --runtime admite runsc o runc y llegó «${runtime}».`);
+  validate(concurrency, runtime);
   return { forwarded, concurrency, runtime };
 }
 
@@ -89,7 +93,7 @@ if (
 mkdirSync(REPORTS, { recursive: true });
 rmSync(REPORT, { force: true });
 
-let status = 1;
+let status: number;
 try {
   const audit = spawnSync(
     'docker',
