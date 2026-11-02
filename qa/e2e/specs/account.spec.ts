@@ -1,10 +1,21 @@
+import type { Page } from '@playwright/test';
 import { expect, test } from '../fixtures';
 import { MESSAGES, STUDENT, errorBody } from '../lib/api-contract';
 import { frozenProgress, type StorageKey } from '../lib/curriculum';
-import { observeReload } from '../lib/document-marker';
+import { documentWasReloaded, markDocument } from '../lib/document-marker';
 import { urls } from '../lib/urls';
 
 const NOTE = 'Tu progreso se guarda en este navegador, no en tu cuenta: queda acá aunque salgas.';
+
+async function expectReload(page: Page, action: () => Promise<void>): Promise<void> {
+  await markDocument(page);
+  await Promise.all([
+    page.waitForEvent('framenavigated', (frame) => frame === page.mainFrame()),
+    action(),
+  ]);
+  await page.waitForLoadState('load');
+  expect(await documentWasReloaded(page)).toBe(true);
+}
 
 test.describe('«Tu cuenta»', () => {
   test('opens from the top bar without changing the URL and closes with Esc, giving the focus back', async ({
@@ -42,7 +53,7 @@ test.describe('«Tu cuenta»', () => {
     await shell.goto(urls.view('recorrido'));
     const xsrf = api.xsrfValue();
     await account.open();
-    expect(await observeReload(page, () => account.signOut())).toBe(true);
+    await expectReload(page, () => account.signOut());
     const [call] = api.callsTo('POST /api/auth/logout');
     expect(call?.user).toBe(String(STUDENT.id));
     expect(call?.xsrf).toBe(xsrf);
@@ -63,7 +74,7 @@ test.describe('«Tu cuenta»', () => {
     api.reply('POST /api/auth/logout', { status: 401, json: errorBody('unauthenticated') });
     await shell.goto(urls.view('recorrido'));
     await account.open();
-    expect(await observeReload(page, () => account.signOut())).toBe(true);
+    await expectReload(page, () => account.signOut());
   });
 
   test('keeps the session and offers to retry when the server fails', async ({
@@ -79,7 +90,7 @@ test.describe('«Tu cuenta»', () => {
     await account.open();
     await account.signOut();
     await expect(account.dialog.getByRole('alert')).toHaveText('No pudimos cerrar la sesión.');
-    expect(await observeReload(page, () => account.button('Reintentar').click())).toBe(true);
+    await expectReload(page, () => account.button('Reintentar').click());
   });
 
   test('offers to reload when the session belongs to another account', async ({
@@ -95,7 +106,7 @@ test.describe('«Tu cuenta»', () => {
     await account.open();
     await account.signOut();
     await expect(account.dialog.getByRole('alert')).toContainText(MESSAGES.account_mismatch);
-    expect(await observeReload(page, () => account.button('Recargar').click())).toBe(true);
+    await expectReload(page, () => account.button('Recargar').click());
   });
 
   test('opens the privacy notice from «Tu cuenta» and goes back to it', async ({

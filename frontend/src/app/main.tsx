@@ -5,7 +5,10 @@ import '../pages/atlas/ui/atlas.css';
 import '../../campaign.css';
 import '../../quest-explorers.css';
 import '../pages/systems/ui/systems.css';
+import '../shared/ui/form/form.css';
+import '../entities/privacy-notice/ui/privacy-notice.css';
 import '../features/sign-in/ui/access.css';
+import '../pages/account/ui/account.css';
 
 import { sessionStage, tokenStage } from './boot/account-stages';
 import { contentGate } from './boot/content-stage';
