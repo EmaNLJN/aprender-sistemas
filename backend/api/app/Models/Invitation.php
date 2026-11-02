@@ -11,6 +11,7 @@ use Illuminate\Support\Carbon;
 /**
  * Larastan reads columns from Schema calls only, and these come from raw DDL.
  *
+ * @property int $id
  * @property string $email
  * @property Role $role
  * @property int|null $invited_by
