@@ -419,6 +419,34 @@ describe('createExerciseRunner: the state and the cancellation', () => {
     expect(runner.state.getState()).toEqual({ status: 'idle' });
   });
 
+  it('ignores progress from a cancelled run while idle and while another run is active', async () => {
+    const first = deferred<RunVerdict>();
+    const second = deferred<RunVerdict>();
+    const replies = [first.promise, second.promise];
+    const reports: ((progress: unknown) => void)[] = [];
+    const test = harness((_request, report) => {
+      reports.push(report);
+      return replies.shift()!;
+    });
+    const runner = createExerciseRunner(test.dependencies);
+    const firstRun = runner.run(EXERCISE);
+    runner.cancel();
+    reports[0]({ phase: 'stale' });
+    expect(runner.state.getState()).toEqual({ status: 'idle' });
+
+    const secondRun = runner.run(EXERCISE);
+    reports[1]({ phase: 'queued', position: 2 });
+    reports[0]({ phase: 'stale' });
+    expect(runner.state.getState()).toEqual({
+      status: 'running',
+      exerciseId: 'rust-01',
+      progress: { phase: 'queued', position: 2 },
+    });
+    first.resolve(PASSED);
+    second.resolve(FAILED);
+    await Promise.all([firstRun, secondRun]);
+  });
+
   it('cancel aborts the signal, goes idle at once, says so and discards the late result', async () => {
     const pending = deferred<RunVerdict>();
     const test = harness(() => pending.promise);
