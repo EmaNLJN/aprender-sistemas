@@ -93,8 +93,10 @@ export interface ResetInput {
   readonly password_confirmation: string;
 }
 
-export function resetPassword(client: ApiClient, input: ResetInput): Promise<EndpointResult<null>> {
-  void client;
-  void input;
-  throw new Error('resetPassword is not implemented');
+export async function resetPassword(
+  client: ApiClient,
+  input: ResetInput,
+): Promise<EndpointResult<null>> {
+  const result = await client.send('POST', '/api/auth/reset-password', input);
+  return result.ok ? { ok: true, value: null } : result;
 }

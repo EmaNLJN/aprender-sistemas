@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { FakeReply } from '../../../shared/api/http/fake-fetch';
 import type { SignInOptions } from '../model/access-request';
@@ -39,7 +39,7 @@ describe('resetting the password', () => {
   it('shows the email of the link, changes the password and shows the sign-in with the email, without a session', async () => {
     const { user, calls, requests } = resetting([{ status: 200, json: {} }]);
     expect(screen.getByText('Para ana@x.com.')).toBeInTheDocument();
-    expect(screen.getByLabelText('Contraseña nueva')).toHaveFocus();
+    await waitFor(() => expect(screen.getByLabelText('Contraseña nueva')).toHaveFocus());
     await chooseNewPassword(user, NEW_PASSWORD);
     expect(
       await screen.findByText(

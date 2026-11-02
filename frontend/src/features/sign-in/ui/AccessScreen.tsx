@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { useStore } from 'zustand';
 import { sessionStore, type PublishedUser } from '../../../entities/session';
 import type { AccessRequest } from '../model/access-request';
-import { EXPIRED_NOTICE } from './access-texts';
+import { EXPIRED_NOTICE, PASSWORD_CHANGED } from './access-texts';
 import InvitationScreen from './InvitationScreen';
 import LoginForm from './LoginForm';
 import PrivacyReacceptance from './PrivacyReacceptance';
+import ResetPasswordScreen from './ResetPasswordScreen';
 
 interface AccessScreenProps {
   readonly request: AccessRequest;
@@ -16,6 +17,7 @@ interface AccessScreenProps {
 type Screen =
   | { readonly kind: 'login'; readonly email: string; readonly notice: string | null }
   | { readonly kind: 'invitation'; readonly token: string }
+  | { readonly kind: 'reset'; readonly token: string; readonly email: string | null }
   | { readonly kind: 'privacy'; readonly account: PublishedUser };
 
 function loginScreen(notice: string | null, email = ''): Screen {
@@ -23,8 +25,9 @@ function loginScreen(notice: string | null, email = ''): Screen {
 }
 
 function initialScreen(request: AccessRequest, account: PublishedUser | null): Screen {
-  if (request.token?.kind === 'invitation')
-    return { kind: 'invitation', token: request.token.token };
+  const { token } = request;
+  if (token?.kind === 'invitation') return { kind: 'invitation', token: token.token };
+  if (token?.kind === 'reset') return { kind: 'reset', token: token.token, email: token.email };
   if (account !== null && !account.privacyAccepted) return { kind: 'privacy', account };
   return loginScreen(request.reason === 'expired' ? EXPIRED_NOTICE : null);
 }
@@ -46,6 +49,15 @@ const AccessScreen = ({ request, onFinish, reloadDocument }: AccessScreenProps) 
           headingLevel={level}
           onCreated={onFinish}
           onGoToSignIn={() => setScreen(loginScreen(null))}
+        />
+      );
+    case 'reset':
+      return (
+        <ResetPasswordScreen
+          token={screen.token}
+          email={screen.email}
+          headingLevel={level}
+          onDone={(email) => setScreen(loginScreen(PASSWORD_CHANGED, email))}
         />
       );
     case 'privacy':
