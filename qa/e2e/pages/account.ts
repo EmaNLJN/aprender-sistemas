@@ -3,10 +3,12 @@ import type { Locator, Page } from '@playwright/test';
 export class AccountPage {
   readonly entry: Locator;
   readonly dialog: Locator;
+  readonly topbar: Locator;
 
   constructor(readonly page: Page) {
     this.entry = page.getByRole('button', { name: 'Tu cuenta', exact: true });
     this.dialog = page.getByRole('dialog', { name: 'Tu cuenta' });
+    this.topbar = page.locator('.topbar');
   }
 
   async open(): Promise<void> {

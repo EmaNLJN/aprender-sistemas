@@ -19,6 +19,10 @@ export class AccessPage {
     return this.page.getByRole('alert');
   }
 
+  layer(): Locator {
+    return this.page.locator('.access-page');
+  }
+
   async signIn(email: string, password: string): Promise<void> {
     await this.field('Email').fill(email);
     await this.field('Contraseña').fill(password);
