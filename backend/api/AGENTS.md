@@ -20,6 +20,13 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
   - `npm run api:runs:check`: con el stack corriendo, ejecuciones reales contra el ejecutor (los doce
     casos de B2, las cuotas, la cola llena y el log). Crea y borra sus cuentas, y tarda unos minutos
     porque C3a acepta como mucho diez invitaciones por minuto desde una misma red.
+  - `npm run api:audit`: con el stack corriendo, la auditoría del currículo (B3): levanta
+    `executor-audit`, corre `php artisan curriculum:audit` en un contenedor `audit`, apaga la
+    instancia y deja `qa/curriculum-audit/report.json`, `report.txt` y `summary.md`.
+    `-- --language=go`, `-- --exercise=rust-63` (repetible), `-- --concurrency=1..8` y
+    `-- --runtime=runc` (desarrollo, no es de registro). Tarda unos minutos. Desde C4, en producción,
+    se corre fuera de hora: la instancia propia no ocupa lugares del servicio, pero comparte CPU y el
+    daemon de Docker.
   - `npm run api:sync:check`: con el stack corriendo, la sincronización del progreso de punta a
     punta (dos clientes de una cuenta que convergen, los reenvíos, la poda, la época y los límites)
     y la medición de SC-010. Crea y borra sus cuentas, y tarda unos minutos por el mismo límite.
@@ -95,6 +102,15 @@ en contenedores y `vendor/` sólo existe dentro de las imágenes.
   - Los casos de la plantilla (`qa/fixtures/shared/harness-cases.json`) los corren
     `qa/content-harness-check.ts` y `HarnessFixtureTest`: el `Dockerfile` copia esa carpeta a
     `tests/Fixtures/shared`.
+- **Auditoría del currículo (B3):** contratos en `specs/020-b3-auditoria-curriculo/contracts/`.
+  - `app/Audit/` reutiliza `ProgramComposer`, `ResultClassifier` y `ExecutorClient` sin cambiarlos.
+  - No escribe en la base ni en una cola (`AuditArchTest`).
+  - Corre una auditoría a la vez: toma el `GET_LOCK` `:curriculum-audit`.
+  - La compuerta: todo PR que toca la superficie de `qa/lib/audit-surface.ts` lleva el resumen de
+    una corrida completa con runsc en verde sobre su último commit con el árbol limpio, y el check
+    `audit-summary` lo comprueba.
+  - Un hallazgo es un bug de contenido (`.specify/bugs/`, extensión `bug`) que se corrige en
+    `content/`.
 - **Progreso (D1a):** contratos en `specs/007-d1-progreso-sincronizacion/contracts/` (`http.md` y
   `merge-rules.md`).
   - `app/Progress/` se reparte en `Operations` (los dieciséis tipos, la decodificación, el hash

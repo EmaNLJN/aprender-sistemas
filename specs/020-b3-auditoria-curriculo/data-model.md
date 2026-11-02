@@ -61,7 +61,7 @@ Sobre el estado y el motivo de la clasificación de B2 (`ResultClassifier`, con 
 | 2 | Cualquiera | `timeout`, o motivo `oom`, o motivo `pids_limit` | `finding` | `limit_exceeded` |
 | 3 | Solución | `passed`, sin prueba propia | `passes` | — |
 | 4 | Solución con prueba propia (muestra) | `passed` y la prueba propia en lo esperado | `passes` | — |
-| 5 | Solución con prueba propia (muestra) | `passed` y la prueba propia distinta de lo esperado (o `missing`) | `finding` | `custom_test_mismatch` |
+| 5 | Solución con prueba propia (muestra) | `passed` y la prueba propia distinta de lo esperado | `finding` | `custom_test_mismatch` |
 | 6 | Solución | Cualquier otro estado (`failed`, con motivo o sin él, `compile_error`, `runtime_error`) | `finding` | `solution_not_passed` |
 | 7 | Inicial | `failed` sin motivo (la evidencia completa y al menos una prueba en `fail`) | `fails_as_expected` | — |
 | 8 | Inicial de un `reparar` | `compile_error` sin motivo | `fails_as_expected` | — |

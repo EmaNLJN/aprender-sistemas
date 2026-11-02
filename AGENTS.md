@@ -293,8 +293,9 @@ capacidades, verificando fuente y alcance además de popularidad.
 Antes de cerrar un cambio, ejecutá los checks aplicables de `qa/AGENTS.md` y
 `git diff --check`. Informá resultados y limitaciones. En cada PR, `.github/workflows/ci.yml`
 corre los checks del front, de la API (Pint, PHPStan y Pest) y del ejecutor, gitleaks sobre
-sus commits, React Doctor y el lint de infraestructura (job `infra`): un PR se mergea con todos en
-verde. Un PR que sólo cambia Markdown fuera de `content/` saltea los tres primeros, y GitHub los
+sus commits, React Doctor y el lint de infraestructura (job `infra`); además,
+`.github/workflows/audit-summary.yml` comprueba el resumen de la auditoría del currículo cuando el
+PR toca la superficie auditada: un PR se mergea con todos en verde. Un PR que sólo cambia Markdown fuera de `content/` saltea los tres primeros, y GitHub los
 cuenta en verde (`.github/scripts/needs-full-ci.sh`); gitleaks e `infra` corren siempre. React
 Doctor corre sólo si el PR toca React (`.github/scripts/touches-react.sh`) y falla por un error
 nuevo, no por avisos. Para documentación,

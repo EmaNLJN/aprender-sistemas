@@ -291,6 +291,15 @@ La implementación del ejecutor (`docs/plans/2026-10-04-ejecutor-go.md`) ajustó
   el servicio arriba barrería los contenedores en curso); `/healthz` sirve de liveness, no
   de readiness, porque no consulta Docker.
 
+## Enmienda (2026-11-02, plan B3)
+
+- El §8 ya no tiene usos de `time.Sleep` en el contenido (medido el 2026-10-28) y el tiempo real se
+  informa contra el límite en la auditoría.
+- La auditoría de aceptación es `npm run api:audit`, con su instancia `executor-audit` (etiqueta
+  `auditoria`) y su compuerta en los PR.
+- Las «Fases» quedan en el orden 1, 2, 4, 3: la auditoría local va antes que el laboratorio, como
+  decidió el usuario en la Q5 de A4 (2026-10-28).
+
 ## Fuentes
 
 - [gVisor: seguridad](https://gvisor.dev/docs/architecture_guide/security/), [instalación](https://gvisor.dev/docs/user_guide/install/), [systemd y cgroup v2](https://gvisor.dev/docs/user_guide/systemd/)

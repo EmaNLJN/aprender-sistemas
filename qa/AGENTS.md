@@ -93,6 +93,8 @@ cambies y evitá reformatear las skills importadas o las salidas generadas.
 | Fusión del progreso o hitos del recorrido (D1a) | `node qa/merge-fixture-check.ts` (el fixture compartido `qa/fixtures/shared/merge-cases.json` contra el módulo de TypeScript; no se regenera) y `node qa/route-milestones-check.ts` (el fixture `qa/fixtures/shared/route-milestones.json` contra el catálogo de hitos de `entities/guide` y `MILESTONE_IDS`, importados); los dos corren en `npm test` |
 | Importación del progreso v1 (D1b) | `node qa/import-cases-check.ts` (el fixture compartido `qa/fixtures/shared/import-cases.json`: el crudo de cada copia, el normalizado que sale de los parsers del front, sin pérdida por sección, y los conteos; no se regenera); corre en `npm test` |
 | Plantilla del harness (`content/harness/`) | `node qa/content-harness-check.ts` (sus casos en `qa/fixtures/shared/harness-cases.json`, que también corre Pest) |
+| Caché precalentado de Go (`backend/executor/images/go/warm/main.go`) o los `imports` de un ejercicio de Go | `node qa/go-warm-cache-check.ts` (lee `backend/`: corre en `npm test`, no en la imagen web) |
+| Superficie auditada o resumen de la auditoría (B3) | `node qa/audit-summary-check.ts` (los catorce escenarios del contrato `audit-summary.md`; corre en `npm test`) y, con una corrida real, `npm run audit:gate -- --body-file=qa/curriculum-audit/summary.md` |
 | Compose, Nginx o `init-env.sh` de las ejecuciones | `node qa/compose-runs-check.ts`, `node qa/nginx-api-blocks-check.ts` (las ubicaciones de `/api/runs` y `/api/sync` repiten las directivas de `/api/`) y `node qa/init-env-check.ts`; los tres corren en `npm test` |
 | Lógica, almacenes y componentes del front nuevo o movido | `npm run test:unit` (Vitest; también corre dentro de `npm test`) |
 | Enlaces, recargas, arranque con progreso, puentes entre vistas y aspecto del front | `npm run build && npm run test:e2e` (Playwright contra `dist/index.html`; no forma parte de `npm test`) |
@@ -167,6 +169,11 @@ Usá respuestas simuladas para comprobar transporte sin llamadas públicas masiv
 
 ## Compiladores y evidencia
 
+- `npm run api:audit` es la auditoría masiva (B3): local, con runsc y su propia instancia del
+  ejecutor, sin restricción de corridas. Sus informes (`qa/curriculum-audit/`) son estado
+  generado; un informe cuyos sellos no coinciden con el contenido, la plantilla o las imágenes
+  actuales no vale. En los PR que tocan `qa/lib/audit-surface.ts`, el resumen va en la descripción
+  y lo comprueba `audit-summary`.
 - `node qa/project-kit-check.ts --docker` ejecuta Cargo/Go en contenedores
   descartables. Necesita las imágenes locales `rust:1.90-alpine` y
   `golang:1.25-alpine`; el script no las descarga.
@@ -175,7 +182,7 @@ Usá respuestas simuladas para comprobar transporte sin llamadas públicas masiv
   manifiestos actuales; en un clon limpio no hay evidencia previa garantizada.
 - `node qa/runtime-check.ts rust --ids=rust-113` y su variante
   `go --ids=go-113` envían código a los Playgrounds oficiales. Elegí los IDs
-  afectados y evitá repetir verificaciones masivas contra servicios públicos.
+  afectados; la verificación masiva ya no va por los Playgrounds: es `npm run api:audit`.
 - Usá `--write-report` en el check de kits sólo después de una ejecución real
   con compiladores. Una ejecución estructural no debe reemplazar esa evidencia.
 - Los manifiestos `*-validation.json`, previews, logs y resultados de pruebas

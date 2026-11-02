@@ -28,6 +28,7 @@ biblioteca estándar: no agregues módulos sin un ADR.
   necesita un `stop_grace_period` de 40 s o más.
 - Las imágenes base se fijan por digest con el tag delante. Las de sandbox se reconstruyen al
   menos cada semana (seguridad y caché de Go, ver la enmienda del ADR 0005); después de
-  actualizarlas, corré otra vez la integración con runc y con runsc.
+  actualizarlas, corré otra vez la integración con runc y con runsc y la auditoría del currículo (`npm run api:audit`);
+  un cambio de `images/go/warm/main.go` reconstruye la imagen de Go antes de auditar.
 - `integration.sh` monta el socket de Docker en el contenedor de pruebas: ese contenedor controla
   el daemon entero. Usa siempre `/var/run/docker.sock` e ignora `DOCKER_HOST`.

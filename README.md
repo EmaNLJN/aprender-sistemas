@@ -284,7 +284,14 @@ node qa/runtime-check.ts rust
 node qa/runtime-check.ts go
 ```
 
-Se agrupan las soluciones para reducir solicitudes y se conservan manifiestos con hashes de los programas verificados. No ejecutes verificaciones masivas repetitivas contra los servicios públicos. Las pruebas del navegador también deben comprobar editor, guardado, importación/exportación, respuesta del revisor, accesibilidad de teclado y diseño móvil.
+Desde B3 la auditoría masiva es `npm run api:audit`: estos comandos quedan para verificar pocos IDs contra los Playgrounds hasta que A4 los retire. Las pruebas del navegador también deben comprobar editor, guardado, importación/exportación, respuesta del revisor, accesibilidad de teclado y diseño móvil.
+
+La auditoría del currículo corre la solución y el código inicial de cada ejercicio en el sandbox propio, con runsc y una instancia del ejecutor sólo para ella, y no escribe nada en la base. Es la auditoría masiva desde B3: reemplaza a `runtime-check` para eso, que queda hasta A4 para lo que todavía usa los Playgrounds.
+
+```sh
+npm run api:audit   # con el stack levantado: soluciones que aprueban e iniciales que fallan, con su informe
+npm run audit:gate -- --body-file=qa/curriculum-audit/summary.md   # el check del resumen, como en la CI
+```
 
 La API Laravel tiene pruebas propias, fuera de `npm test` porque necesitan Docker:
 
