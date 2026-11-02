@@ -96,6 +96,11 @@ describe('practicePointsOf', () => {
     expect(practicePointsOf({ reflection: 'a'.repeat(40) })).toBe(5);
   });
 
+  it('solving earns 20 and the right prediction 5, each on its own', () => {
+    expect(practicePointsOf({ solvedAt: 1 })).toBe(20);
+    expect(practicePointsOf({ predictionCorrect: true })).toBe(5);
+  });
+
   it('no record earns nothing', () => {
     expect(practicePointsOf(undefined)).toBe(0);
   });
@@ -110,7 +115,7 @@ describe('draftOf and normalizeCustomTest', () => {
 
   it('the custom test loses the spaces of its ends, a no-break space included', () => {
     expect(normalizeCustomTest('  energia(1) == 7\n')).toBe('energia(1) == 7');
-    expect(normalizeCustomTest(' \t  ')).toBe('');
+    expect(normalizeCustomTest(' \t\u00a0 ')).toBe('');
     expect(normalizeCustomTest(undefined)).toBe('');
   });
 });
@@ -159,5 +164,18 @@ describe('isReviewComplete and isReflectionSolved', () => {
     expect(
       isReflectionSolved(EXERCISE, { draft: 'a', result: { ...passing('a'), success: false } }),
     ).toBe(false);
+  });
+
+  it('«Explicá» is not solved while a test of the current, successful run fails or is missing', () => {
+    const failing = {
+      ...passing('a'),
+      tests: [
+        { id: 't1', passed: true },
+        { id: 't2', passed: false },
+      ],
+    };
+    const missing = { ...passing('a'), tests: [{ id: 't1', passed: true }] };
+    expect(isReflectionSolved(EXERCISE, { draft: 'a', result: failing })).toBe(false);
+    expect(isReflectionSolved(EXERCISE, { draft: 'a', result: missing })).toBe(false);
   });
 });

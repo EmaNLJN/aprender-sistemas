@@ -36,4 +36,8 @@ describe('liveHint', () => {
   it('a pending part wins over an empty-looking main', () => {
     expect(liveHint('fn main() { todo!() }', EXERCISE)).toMatch(/^Todavía hay una parte/);
   });
+
+  it('the pending markers ignore case', () => {
+    expect(liveHint('// implementar la suma', EXERCISE)).toMatch(/^Todavía hay una parte/);
+  });
 });

@@ -8,7 +8,6 @@ const FALLBACK = {
     'Empezá por el primer error y comparalo con la firma y el comportamiento pedidos. Pedí una pista si todavía no encontrás la causa.',
 };
 
-// One compiler message per rule; the expected explanation starts as lab.js wrote it.
 const RUST: [stderr: string, explanationStart: string][] = [
   ['error[E0382]: borrow of moved value: `s`', 'Ese valor ya se movió.'],
   ['error[E0502]: cannot borrow `v` as mutable', 'Los préstamos que se superponen'],
@@ -79,5 +78,49 @@ describe('diagnose', () => {
   it('an unknown message and an empty one get the fallback', () => {
     expect(diagnose('Killed', 'rust')).toEqual(FALLBACK);
     expect(diagnose('', 'go')).toEqual(FALLBACK);
+  });
+
+  it('a real type mismatch says «expected» and still gets the types rule, not the syntax one', () => {
+    const stderr =
+      'error[E0308]: mismatched types\n --> src/main.rs:3:5\n  |\n3 |     "hola"\n  |     ^^^^^^ expected `i32`, found `&str`\n';
+    expect(diagnose(stderr, 'rust').explanation).toMatch(/^La expresión devuelve un tipo distinto/);
+  });
+
+  it.each([
+    ['use of moved value: `v`', 'Ese valor ya se movió.'],
+    [
+      'error[E0499]: cannot borrow `v` as mutable more than once at a time',
+      'Los préstamos que se superponen',
+    ],
+    [
+      'cannot borrow `v` as mutable because it is also borrowed as immutable',
+      'Los préstamos que se superponen',
+    ],
+    [
+      'error[E0596]: cannot borrow `v` as mutable, as it is not declared as mutable',
+      'Estás intentando modificar un binding',
+    ],
+    [
+      'cannot assign to `x`, as it is not declared as mutable',
+      'Estás intentando modificar un binding',
+    ],
+    ['missing lifetime specifier', 'Una referencia necesita apuntar'],
+    ['error: this file contains an unclosed delimiter', 'La estructura del código no coincide'],
+  ])('Rust, another spelling of a rule: %s', (stderr, explanationStart) => {
+    expect(diagnose(stderr, 'rust').explanation.startsWith(explanationStart)).toBe(true);
+  });
+
+  it.each([
+    ['./prog.go:3:8: "fmt" imported and not used', 'Go detectó una variable local'],
+    [
+      './prog.go:5:10: invalid operation: a + b (mismatched types int and string)',
+      'Los tipos de esta operación',
+    ],
+    [
+      'panic: runtime error: slice bounds out of range [:5] with capacity 3',
+      'Se intentó acceder fuera de los límites',
+    ],
+  ])('Go, another spelling of a rule: %s', (stderr, explanationStart) => {
+    expect(diagnose(stderr, 'go').explanation.startsWith(explanationStart)).toBe(true);
   });
 });

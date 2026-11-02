@@ -96,4 +96,38 @@ describe('reviewStateOf', () => {
       },
     });
   });
+
+  it('a run in progress is running even before its first result', () => {
+    expect(reviewStateOf(EXERCISE, {}, true)).toEqual({ kind: 'running' });
+  });
+
+  it('a transport failure of another version of the code is stale', () => {
+    const failure = result({ success: false, transportError: true, stderr: 'Sin red.', tests: [] });
+    expect(reviewStateOf(EXERCISE, { draft: 'b', result: failure }, false)).toEqual({
+      kind: 'stale',
+    });
+  });
+
+  it('the first failing test explains a partial run, and the pitfall stands in for an empty why', () => {
+    const bothFail = result({
+      tests: [
+        { id: 't1', passed: false },
+        { id: 't2', passed: false },
+      ],
+    });
+    expect(reviewStateOf(EXERCISE, { draft: 'a', result: bothFail }, false)).toEqual({
+      kind: 'partial',
+      passedCount: 0,
+      failure: 'Falla del primero.',
+    });
+    const withoutWhy = {
+      ...EXERCISE,
+      tests: [{ ...EXERCISE.tests[0], failure: '' }, EXERCISE.tests[1]],
+    };
+    expect(reviewStateOf(withoutWhy, { draft: 'a', result: bothFail }, false)).toEqual({
+      kind: 'partial',
+      passedCount: 0,
+      failure: 'Cuidado.',
+    });
+  });
 });
