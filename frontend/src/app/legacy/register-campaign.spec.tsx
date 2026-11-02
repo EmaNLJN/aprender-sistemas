@@ -156,6 +156,16 @@ describe('the campaign adapter', () => {
     expect(within(host).getByRole('region', { name: 'La estación del rover' })).toBeInTheDocument();
   });
 
+  it('a linked world stays remembered after its query is removed before a second mount', async () => {
+    const { host, toast } = await loadAdapter('/?mundo=rust-world-2#campana');
+    act(() => window.TallerCampaign.mount(host, 'rust', toast));
+    history.replaceState(null, '', '/#campana');
+
+    act(() => window.TallerCampaign.mount(host, 'rust', toast));
+
+    expect(within(host).getByRole('region', { name: 'Puerto de señales' })).toBeInTheDocument();
+  });
+
   it('returnURL is the world link', async () => {
     await loadAdapter();
 
