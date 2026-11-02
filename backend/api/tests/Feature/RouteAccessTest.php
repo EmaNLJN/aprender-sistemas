@@ -111,7 +111,7 @@ it('puts account.admin and throttle:admin on every route under /api/admin', func
         ->values()
         ->all();
 
-    expect($lacking)->toBe([])->and($adminRoutes)->toHaveCount(12);
+    expect($lacking)->toBe([])->and($adminRoutes)->toHaveCount(13);
 });
 
 it('flags an admin route declared outside the admin group', function () {

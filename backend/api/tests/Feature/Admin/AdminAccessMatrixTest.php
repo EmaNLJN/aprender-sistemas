@@ -88,7 +88,7 @@ beforeEach(function () {
     Invitation::reguard();
 });
 
-it('covers exactly the twelve routes under /api/admin', function () {
+it('covers exactly the thirteen routes under /api/admin', function () {
     expect(collect(adminMatrixRoutes())->map(fn (array $route) => "{$route[0]} {$route[1]}")->sort()->values()->all())->toBe([
         'DELETE /api/admin/invitations/{invitation}',
         'DELETE /api/admin/users/{user}',
@@ -96,6 +96,7 @@ it('covers exactly the twelve routes under /api/admin', function () {
         'GET /api/admin/stats/exercises',
         'GET /api/admin/stats/overview',
         'GET /api/admin/stats/students',
+        'GET /api/admin/stats/students/{user}',
         'GET /api/admin/users',
         'GET /api/admin/users/{user}',
         'PATCH /api/admin/users/{user}',

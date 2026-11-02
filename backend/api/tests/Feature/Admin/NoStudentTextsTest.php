@@ -52,6 +52,7 @@ function studentTextScenarios(array $targets): array
 {
     return [
         'GET /api/admin/users' => ['/api/admin/users', []],
+        'GET /api/admin/stats/students/{user}' => ["/api/admin/stats/students/{$targets['student']}", []],
         'GET /api/admin/users/{user}' => ["/api/admin/users/{$targets['student']}", []],
         'PATCH /api/admin/users/{user}' => ["/api/admin/users/{$targets['student']}", ['status' => 'disabled']],
         'GET /api/admin/invitations' => ['/api/admin/invitations', []],
@@ -145,7 +146,7 @@ it('shows no text of a student at any depth in the successful answer of any admi
 it('walks every admin route of the router except the one that cannot succeed until C3c', function () {
     $walked = array_keys(studentTextWalk($this->browser, $this->targets));
 
-    expect($walked)->toHaveCount(11)
+    expect($walked)->toHaveCount(12)
         ->and(array_values(array_diff(studentTextAdminRoutes(), $walked)))->toBe(STUDENT_TEXT_ROUTES_WITHOUT_SUCCESS);
 });
 

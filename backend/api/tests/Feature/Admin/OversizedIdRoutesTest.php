@@ -13,6 +13,7 @@ it('answers 404 not_found to an id of 20 digits', function (string $method, stri
     $browser->send($method, str_replace('{id}', OVERSIZED_ID, $path))->assertStatus(404)->assertJsonPath('code', 'not_found');
 })->with([
     'GET user' => ['GET', '/api/admin/users/{id}'],
+    'GET stats student' => ['GET', '/api/admin/stats/students/{id}'],
     'PATCH user' => ['PATCH', '/api/admin/users/{id}'],
     'POST password-reset' => ['POST', '/api/admin/users/{id}/password-reset'],
     'DELETE user' => ['DELETE', '/api/admin/users/{id}'],
