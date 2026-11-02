@@ -7,9 +7,7 @@ const CampaignRules = () => (
       <div>
         <h3>XP que significa algo</h3>
         <p>
-          {CODE_XP} XP por las pruebas del ejercicio y {PREDICTION_XP} por su predicción correcta.
-          Repetir no duplica puntos. Editar después no borra lo ganado. Las reflexiones no se
-          califican por longitud.
+          {`${CODE_XP} XP por las pruebas del ejercicio y ${PREDICTION_XP} por su predicción correcta. Repetir no duplica puntos. Editar después no borra lo ganado. Las reflexiones no se califican por longitud.`}
         </p>
       </div>
       <div>
@@ -23,11 +21,11 @@ const CampaignRules = () => (
       <div>
         <h3>Herramientas existentes</h3>
         <p>
-          El IDE usa{' '}
+          {'El IDE usa '}
           <a href="https://codemirror.net/" target="_blank" rel="noopener noreferrer">
             CodeMirror
           </a>
-          ; las celebraciones,{' '}
+          {'; las celebraciones, '}
           <a
             href="https://github.com/catdad/canvas-confetti"
             target="_blank"
@@ -35,15 +33,15 @@ const CampaignRules = () => (
           >
             canvas-confetti
           </a>
-          . Nos inspiran los ejercicios con pistas de{' '}
+          {'. Nos inspiran los ejercicios con pistas de '}
           <a
             href="https://rustlings.rust-lang.org/usage/"
             target="_blank"
             rel="noopener noreferrer"
           >
             Rustlings
-          </a>{' '}
-          y{' '}
+          </a>
+          {' y '}
           <a href="https://github.com/madhank93/golings" target="_blank" rel="noopener noreferrer">
             Golings
           </a>

@@ -30,7 +30,7 @@ const WorldMap = ({ worlds, selectedId, onChoose }: WorldMapProps) => (
             {world.completed ? '✓' : world.unlocked ? worldSymbol(index) : '◇'}
           </span>
           <span className="world-number">
-            MUNDO 0{index + 1} · {LEVEL_LABELS[world.level]}
+            {`MUNDO 0${index + 1} · ${LEVEL_LABELS[world.level]}`}
           </span>
           <strong>{world.title}</strong>
           <span className="world-status">{worldMapStatus(world)}</span>

@@ -15,7 +15,7 @@ const WorldProgress = ({ world, nextWorld, missions, onChooseWorld }: WorldProgr
       <div className="quest-unlocked" role="status">
         <span aria-hidden="true">✳</span>
         <div>
-          <strong>Insignia conseguida: {world.badge}</strong>
+          <strong>{`Insignia conseguida: ${world.badge}`}</strong>
           <p>Podés completar los puntos que faltan o seguir al siguiente mundo.</p>
         </div>
         {nextWorld ? (
@@ -45,7 +45,7 @@ const WorldProgress = ({ world, nextWorld, missions, onChooseWorld }: WorldProgr
         </small>
       </div>
       <a className="button" href={campaignMissionHref(world.id, next.id)}>
-        {next.code ? 'Resolver predicción' : 'Entrar al IDE'} ↗
+        {`${next.code ? 'Resolver predicción' : 'Entrar al IDE'} ↗`}
       </a>
     </div>
   );

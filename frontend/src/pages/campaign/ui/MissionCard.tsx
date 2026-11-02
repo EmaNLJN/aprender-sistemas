@@ -24,9 +24,7 @@ const MissionCard = ({ world, mission, content }: MissionCardProps) => {
     >
       <div className="quest-mission-title">
         <span className="mission-type">{missionTypeLabel(content.challengeType)}</span>
-        <span className="mission-points">
-          {mission.points}/{CODE_XP + PREDICTION_XP} XP
-        </span>
+        <span className="mission-points">{`${mission.points}/${CODE_XP + PREDICTION_XP} XP`}</span>
       </div>
       <h4>{content.title}</h4>
       <p>{content.objective}</p>

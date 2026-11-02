@@ -46,8 +46,8 @@ const WorldCheckpoint = ({ world, onAnswer }: WorldCheckpointProps) => {
               <>
                 <strong>
                   {answer === question.answer ? 'Bien razonado.' : 'Revisemos esa idea.'}
-                </strong>{' '}
-                {world.checkpointFeedback}
+                </strong>
+                {` ${world.checkpointFeedback}`}
               </>
             )}
           </div>
@@ -55,8 +55,7 @@ const WorldCheckpoint = ({ world, onAnswer }: WorldCheckpointProps) => {
       ) : (
         <>
           <p>
-            Se abre al verificar las seis misiones, reunir {PASS_SCORE} XP y resolver la predicción
-            del desafío final.
+            {`Se abre al verificar las seis misiones, reunir ${PASS_SCORE} XP y resolver la predicción del desafío final.`}
           </p>
           <ul>
             {world.checkpointReasons.map((reason, index) => (

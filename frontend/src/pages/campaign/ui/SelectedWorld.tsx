@@ -25,7 +25,7 @@ const SelectedWorld = ({ world, sectionRef, titleRef, children }: SelectedWorldP
     <div className="quest-world-head">
       <div>
         <span className="eyebrow">
-          {LEVEL_LABELS[world.level]} / {STAGE_LABELS[worldState(world)]}
+          {`${LEVEL_LABELS[world.level]} / ${STAGE_LABELS[worldState(world)]}`}
         </span>
         <h2 id="quest-world-title" tabIndex={-1} ref={titleRef}>
           {world.title}
@@ -34,7 +34,7 @@ const SelectedWorld = ({ world, sectionRef, titleRef, children }: SelectedWorldP
       </div>
       <span className="world-score">
         {world.score}
-        <small>/ {world.maxScore} XP</small>
+        <small>{`/ ${world.maxScore} XP`}</small>
       </span>
     </div>
     <p className="world-story">{world.story}</p>

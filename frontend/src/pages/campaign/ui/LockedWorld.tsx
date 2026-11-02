@@ -24,7 +24,7 @@ const LockedWorld = ({ world, previous, onChoose }: LockedWorldProps) => (
       </ul>
       {previous ? (
         <button className="button" onClick={() => onChoose(previous.id)}>
-          Volver a {previous.title} →
+          {`Volver a ${previous.title} →`}
         </button>
       ) : null}
     </div>

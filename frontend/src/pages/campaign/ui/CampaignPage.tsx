@@ -118,9 +118,9 @@ const CampaignPage = ({
       <div className="quest-mode-note">
         <span aria-hidden="true">↗</span>
         <p>
-          <strong>Una ruta con propósito.</strong> Cada mundo abre el siguiente al reunir{' '}
-          {PASS_SCORE} XP, verificar sus seis misiones, resolver la predicción final y superar su
-          checkpoint. Tu <a href={FREE_LAB_HREF}>laboratorio libre</a> sigue disponible.
+          <strong>Una ruta con propósito.</strong>
+          {` Cada mundo abre el siguiente al reunir ${PASS_SCORE} XP, verificar sus seis misiones, resolver la predicción final y superar su checkpoint. Tu `}
+          <a href={FREE_LAB_HREF}>laboratorio libre</a> sigue disponible.
         </p>
       </div>
       <WorldMap worlds={worlds} selectedId={world.id} onChoose={chooseWorld} />

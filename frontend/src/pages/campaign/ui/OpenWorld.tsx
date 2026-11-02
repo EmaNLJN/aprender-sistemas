@@ -42,7 +42,7 @@ const OpenWorld = ({
         <ol>
           {world.guide?.map((step, index) => (
             <li key={index}>
-              <span>0{index + 1}</span>
+              <span>{`0${index + 1}`}</span>
               {step}
             </li>
           ))}

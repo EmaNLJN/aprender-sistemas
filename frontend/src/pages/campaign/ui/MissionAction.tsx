@@ -25,7 +25,7 @@ const MissionAction = ({ world, mission, boss, mastered }: MissionActionProps) =
       className={`button small ${boss ? '' : 'secondary'}`}
       href={campaignMissionHref(world.id, mission.id)}
     >
-      {mastered ? 'Volver a experimentar' : boss ? 'Enfrentar el desafío final' : 'Abrir misión'} ↗
+      {`${mastered ? 'Volver a experimentar' : boss ? 'Enfrentar el desafío final' : 'Abrir misión'} ↗`}
     </a>
   );
 };
