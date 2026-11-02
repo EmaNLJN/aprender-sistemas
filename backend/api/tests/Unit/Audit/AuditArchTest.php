@@ -1,13 +1,13 @@
 <?php
 
 use App\Audit\AuditCatalog;
+use App\Audit\AuditedExercise;
 use App\Audit\AuditPlan;
 use App\Audit\AuditProgram;
 use App\Audit\AuditReport;
 use App\Audit\AuditReportText;
 use App\Audit\AuditRun;
 use App\Audit\AuditSelection;
-use App\Audit\AuditedExercise;
 use App\Audit\Diagnostic;
 use App\Audit\HostStamps;
 use App\Audit\JudgedProgram;

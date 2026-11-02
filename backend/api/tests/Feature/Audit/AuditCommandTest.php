@@ -2,6 +2,7 @@
 
 use App\Runs\Admission\ExerciseReader;
 use App\Runs\Program\ProgramComposer;
+use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -41,7 +42,7 @@ it('audits every active exercise twice and the sample, exits 0 and writes a reco
 
 it('decides each case of the table of the spec and exits as the spec says (SC-002)', function (string $marker, Closure $behavior, string $exercise, string $role, string $audit, ?string $finding, int $exitCode, string $line) {
     AuditWorld::curriculum();
-    AuditExecutorDouble::fake(AuditExecutorDouble::greenExcept([$marker => $behavior]));
+    AuditExecutorDouble::fake(AuditExecutorDouble::greenExcept([$marker => $behavior()]));
 
     $this->artisan('curriculum:audit')->expectsOutputToContain($line)->assertExitCode($exitCode);
 
@@ -232,7 +233,7 @@ it('refuses to start, says why and runs nothing (FR-013)', function (string $sit
 
 it('releases the lock after an unexpected failure while running programs', function () {
     AuditWorld::curriculum();
-    Http::swap(Mockery::mock(\Illuminate\Http\Client\Factory::class, [null])->makePartial());
+    Http::swap(Mockery::mock(Factory::class, [null])->makePartial());
     Http::shouldReceive('pool')->once()->andThrow(new RuntimeException('executor failed'));
     AuditExecutorDouble::fake([]);
 
@@ -260,9 +261,15 @@ it('keeps another connection lock when acquisition is refused', function () {
 it('forwards concurrency to the pool and bounds batches to its configured capacity', function () {
     AuditWorld::curriculum();
     config(['audit.concurrency' => 1, 'audit.batch_per_slot' => 2]);
-    Http::swap(Mockery::mock(\Illuminate\Http\Client\Factory::class, [null])->makePartial());
-    Http::shouldReceive('pool')->times(6)->with(Mockery::type(Closure::class), 1)->passthru();
     AuditExecutorDouble::fake(AuditExecutorDouble::green());
+    $factory = Http::getFacadeRoot();
+    Http::swap(Mockery::mock($factory));
+    $forwarded = [];
+    Http::shouldReceive('pool')->times(6)->andReturnUsing(function (callable $callback, int $concurrency) use ($factory, &$forwarded) {
+        $forwarded[] = $concurrency;
+
+        return $factory->pool($callback, concurrency: $concurrency);
+    });
 
     $this->artisan('curriculum:audit')
         ->expectsOutputToContain('Auditados 2 de 12 programas…')
@@ -271,5 +278,5 @@ it('forwards concurrency to the pool and bounds batches to its configured capaci
         ->assertExitCode(0);
 
     $report = json_decode((string) file_get_contents("{$this->reports}/report.json"), true, 512, JSON_THROW_ON_ERROR);
-    expect($report['run']['concurrency'])->toBe(1);
+    expect($report['run']['concurrency'])->toBe(1)->and($forwarded)->toBe([1, 1, 1, 1, 1, 1]);
 });
