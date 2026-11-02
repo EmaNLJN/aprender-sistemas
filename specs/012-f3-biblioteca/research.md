@@ -403,3 +403,12 @@ Medida el 2026-11-02 sobre `9c4b45a6` (`master`, con F2a, F2b, F4, F5, la pila d
 | `LEGACY_MODULES`: 21 líneas con `import(` en `legacy-views.ts` | medido | T013 |
 | `.resource-card,` en `frontend/styles.css:1621` | imprime: nadie partió la impresión | T019 |
 | Páginas migradas en `frontend/src/pages` | `atlas`, `project` y `systems` | T011 |
+
+## Verificación de nuqs
+
+Corrió sobre la base, sin copia descartable: F5 ya trajo nuqs 2.10.2 (`package.json`), así que no hubo instalación ni permiso P1.
+
+- **Metadatos:** `npm view nuqs@2.10.2` da versión 2.10.2, MIT y 480 252 B.
+- **Exports de `nuqs/adapters/react`:** `NuqsAdapter,enableHistorySync`.
+- **Peso:** no se mide aparte. nuqs ya está en el bundle por F5 y el subpresupuesto de F3 es el de «ya está» (15 000).
+- **Comportamiento en jsdom** (`frontend/src/nuqs-probe.spec.tsx` de quickstart.md §2, descartable y sin commitear, con `npx vitest run --config frontend/vitest.config.ts --project dom nuqs-probe`): los siete casos pasan, incluido el 6 (`enableHistorySync()` entrega un `history.replaceState` ajeno al hook), así que la unidad 4 puede seguir.
