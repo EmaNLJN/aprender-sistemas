@@ -4,6 +4,7 @@ import { CampaignPage } from '../pages/campaign';
 import { LabPage } from '../pages/lab';
 import { MethodPage } from '../pages/method';
 import { ProjectPage } from '../pages/project';
+import { RoutePage } from '../pages/route';
 import { ShellPage } from '../pages/shell';
 import { SystemsPage } from '../pages/systems';
 import { CompilerDouble } from './compiler-double';
@@ -21,6 +22,7 @@ interface Fixtures {
   campaign: CampaignPage;
   systems: SystemsPage;
   atlas: AtlasPage;
+  route: RoutePage;
   project: ProjectPage;
   method: MethodPage;
 }
@@ -49,6 +51,7 @@ export const test = base.extend<Fixtures>({
   campaign: async ({ page }, use) => use(new CampaignPage(page)),
   systems: async ({ page }, use) => use(new SystemsPage(page)),
   atlas: async ({ page }, use) => use(new AtlasPage(page)),
+  route: async ({ page }, use) => use(new RoutePage(page)),
   project: async ({ page }, use) => use(new ProjectPage(page)),
   method: async ({ page }, use) => use(new MethodPage(page)),
 });
