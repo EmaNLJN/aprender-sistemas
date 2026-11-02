@@ -174,7 +174,26 @@ signInFromDialog(email: string, password: string): Promise<void>;
 
 // qa/e2e/fixtures/index.ts (suma)
 // opción: syncNotices: 'none' | 'allowed' (por omisión 'none')
-// fixture automática: quietSync, que con 'none' afirma al terminar la franja vacía y ningún diálogo de cuenta abierto
+// fixture automática: quietSync; con 'none', cero eventos de F13 durante todos los documentos del escenario
 ```
 
 El método privado `upToDateSync(call)` del doble de D1c pasa a devolver `syncReply(call, this.contentVersion)`.
+
+
+## 7. Precisiones de cierre del plan (2026-11-02)
+
+- `EpochNotice` confirma contra la referencia de `EpochChange` presentada al alumno. Si sigue siendo la vigente, llama a `discardEpochCopy()` y después a `dismissEpochChange()`: la primera acción de D1c sólo quita la copia. No se atribuye al motor la eliminación del aviso.
+- «Descargar una copia» en la pregunta al salir no resuelve `choose`. El alumno conserva la pregunta abierta; «Salir sin enviarlos» responde `discard`. Es la recomendación 3 de plan.md, que precisa la frase de §5 del contrato D1c sin cambiar su interfaz.
+- `SyncNotices` conserva el archivo descargable del motor anterior cuando intercepta la recarga por ingreso con otra cuenta. No busca después el archivo en el motor de la cuenta nueva.
+- La aparición de `accountMismatch` resuelve cualquier pregunta de salida pendiente con `stay`, sin cierre HTTP ni limpieza. La superficie bloqueante de cuenta distinta tiene prioridad sobre otros diálogos F13.
+- `quietSync` observa todo el escenario, incluidos avisos transitorios y recargas. Los escenarios anteriores con errores deliberados se exceptúan en una lista de títulos exactos/motivos; el criterio de cero es para el doble al día. No se editan sus escenarios para instalar la observación.
+
+Puerto de pruebas adicional de T023, en `qa/e2e/lib/quiet-sync.ts`:
+
+```ts
+export interface QuietSyncObservation {
+  readonly events: readonly string[];
+  stop(): Promise<void>;
+}
+export function observeQuietSync(page: Page): Promise<QuietSyncObservation>;
+```

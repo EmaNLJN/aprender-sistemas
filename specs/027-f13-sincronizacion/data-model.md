@@ -1,6 +1,6 @@
 # Data model de F13: lo que el alumno ve de la sincronización
 
-**Input**: [spec.md](./spec.md), [plan.md](./plan.md) y [research.md](./research.md). El estado que se dibuja es el de D1c ([contrato del cliente v2](../007-d1-progreso-sincronizacion/contracts/sync-client-d1c.md), §2 y §3, PR #93, `plan/d1c-cliente-v2` en `2e743c00`). F13 no guarda nada: este documento dice cómo se traduce ese estado a lo que se ve, y los dos estados chicos que viven en la interfaz.
+**Input**: [spec.md](./spec.md), [plan.md](./plan.md) y [research.md](./research.md). El estado que se dibuja es el de D1c ([contrato del cliente v2](../007-d1-progreso-sincronizacion/contracts/sync-client-d1c.md), §2 y §3, PR #93, `plan/d1c-cliente-v2` en `2e743c00`). F13 no guarda nada: este documento dice cómo se traduce ese estado a lo que se ve, y los estados chicos que viven en la interfaz.
 
 ## 1. Lo que F13 lee de D1c
 
@@ -57,7 +57,7 @@ La memoria es `{status: SyncStatus | null, owed: boolean}`, que empieza en `{nul
 | --- | --- | --- | --- | --- |
 | Pestaña vieja | `status === 'outdated'` | «Esta pestaña quedó vieja. Recargá la página para seguir sincronizando.» y, con `lostOnUnload` mayor que 0, «Al recargar se pierden {n} cambios que no se enviaron.» | «Descargar lo que no se envió» (sólo con pérdida) y «Recargar» | Recargando |
 | Sesión vencida | `status === 'signed-out'` | El de su modo (spec, «La franja») | «Ingresar» | Cuando D1c vuelve a enviar |
-| Época cambiada | `epochChange !== null` y `!epochChange.ownReset` | «Tu progreso se borró desde otra pestaña o dispositivo {cuándo}. Te mostramos tu cuenta como quedó.» y, con copia, «{n} cambios de esta pestaña no llegaron a enviarse antes del borrado, y guardamos una copia.» | Sin copia, «Entendido»; con copia, «Descargar la copia» y «Descartar la copia» | `dismissEpochChange()` o `discardEpochCopy()`, o D1c lo quita |
+| Época cambiada | `epochChange !== null` y `!epochChange.ownReset` | «Tu progreso se borró desde otra pestaña o dispositivo {cuándo}. Te mostramos tu cuenta como quedó.» y, con copia, «{n} cambios de esta pestaña no llegaron a enviarse antes del borrado, y guardamos una copia.» | Sin copia, «Entendido»; con copia, «Descargar la copia» y «Descartar la copia» | `dismissEpochChange()` sin copia, o `discardEpochCopy()` seguido de `dismissEpochChange()` tras confirmar; también termina si D1c lo quita |
 | Rechazos | `rejectedCount > 0` | «{n} cambios no se pudieron guardar en tu cuenta. Por ahora siguen en este navegador, pero pueden perderse. Si se repite, avisale a quien administra el taller.» | «Entendido» | `acknowledgeRejected()` |
 | Reloj | `clockSkewMs !== null`, `|clockSkewMs| > 120 000` y no se usó «Entendido» | «El reloj de este dispositivo está {n} minutos {adelantado \| atrasado}. Tus cambios se guardan igual, pero pueden perder contra los de otro dispositivo. Corregí la fecha y la hora del dispositivo.» | «Entendido» | El desfase baja a 120 000 ms o menos, o «Entendido» por lo que dura el documento |
 
@@ -73,12 +73,12 @@ La memoria es `{status: SyncStatus | null, owed: boolean}`, que empieza en `{nul
 
 **`{cuándo}`** (research, R10): «hoy a las H:MM», «ayer a las H:MM», «el D de MES a las H:MM» y, de otro año, «el D de MES de AAAA a las H:MM», con «a la» para la una, en la hora local. Con `resetAt` en `null`, la frase termina en «dispositivo.».
 
-## 5. Los dos estados de la interfaz
+## 5. Los estados de la interfaz
 
 | Estado | Dónde vive | Valor inicial | Qué lo cambia |
 | --- | --- | --- | --- |
 | El reloj ya entendido | `useState` de `SyncNoticeStrip` | `false` | «Entendido» del reloj; nunca vuelve a `false` en el documento (L5) |
-| La confirmación del descarte | `useState` de `EpochNotice` | `false` | «Descartar la copia» la abre; «Cancelar» la cierra; «Descartar» llama a `discardEpochCopy()` y el aviso se va |
+| La confirmación del descarte | `useState<EpochChange \| null>` de `EpochNotice` | `null` | «Descartar la copia» la abre; «Cancelar» la cierra; «Descartar» llama a `discardEpochCopy()` y luego a `dismissEpochChange()`, y el aviso se va; si cambió la referencia de época, exige otra confirmación |
 | La pregunta al salir | `useSignOutQuestion` en `pages/account` | sin pregunta | `choose` la abre con lo que quedó; cada respuesta la cierra |
 | Lo que se pierde al cambiar de cuenta | `useState` de `SyncNotices` (`app/shell`) | `null` | La recarga de `reauthenticate` con otra cuenta y `lostOnUnload` mayor que 0 |
 

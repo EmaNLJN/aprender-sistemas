@@ -2,7 +2,7 @@
 
 **Fecha**: 2026-10-29 | **Spec**: [spec.md](./spec.md) | **Plan**: [plan.md](./plan.md) | **Modelo**: [data-model.md](./data-model.md) | **Contrato**: [contracts/sync-surfaces.md](./contracts/sync-surfaces.md)
 
-Cada decisión dice qué se eligió, por qué, qué se descartó y cómo se verifica. Las que completan algo que la spec deja abierto llevan **(propuesta del plan)**. Las fuentes que todavía no están en `master` se citan con su worktree y su commit, todos bajo `/home/emanuel/workflow/aprender-sistemas-worktrees/`:
+Cada decisión dice qué se eligió, por qué, qué se descartó y cómo se verifica. Las que completan algo que la spec deja abierto llevan **(propuesta del plan)**. Las fuentes que todavía no están en `master` se citan con su worktree y su commit, identificados por nombre relativo del worktree (sin rutas de máquina):
 
 | Fuente | Dónde | Commit |
 | --- | --- | --- |
@@ -63,7 +63,7 @@ Cada decisión dice qué se eligió, por qué, qué se descartó y cómo se veri
 
 - **El problema.** La pregunta al salir se dibuja dentro de «Tu cuenta», que es otro `<dialog>` con `onClose`. React no delega `cancel` ni `close`, pero igual junta los manejadores de todos los ancestros en el árbol de fibras: el `close` de la pregunta llegaría al `onClose` de «Tu cuenta» y la cerraría. Por eso F11a compara `event.target` con `event.currentTarget` en su diálogo del acceso, y montó el aviso de privacidad como hermano de «Tu cuenta».
 - **Decisión.** La pregunta llama a `event.stopPropagation()` en su `onCancel` y en su `onClose`. Lo mismo hace `BlockingDialog`.
-- **Verificación.** «closing the question does not close the dialog around it», en la spec de T020 («Review Focus» 1).
+- **Verificación.** «closing the question does not close the dialog around it», en la spec de T019 («Review Focus» 1).
 
 ## R7. La franja **(propuesta del plan, sobre FR-012 a FR-014)**
 
@@ -84,7 +84,7 @@ Cada decisión dice qué se eligió, por qué, qué se descartó y cómo se veri
 - **Decisión.**
   - `SignOutSection` pasa a `signOut` el puerto de D1c (`progress`), `onPhase` (la etiqueta del botón: «Enviando tus cambios…» y después «Saliendo…») y `choose`, que abre la pregunta y devuelve una promesa que resuelve la respuesta.
   - **El motivo** de lo que quedó (`LeftReason` de D1c): `offline` es «no hay conexión con el taller»; `signed-out`, «tu sesión venció»; `error` y `outdated`, «el taller no responde», como propone el contrato de D1c (§4). Con `account-changed` y el diálogo de cuenta distinta abierto, `choose` responde `stay` sin preguntar: el diálogo reemplaza a la pregunta y nada se descarta (Edge Cases). Con `account-changed` sin diálogo (un 403 `account_disabled` detiene a D1c sin cambiar el estado), pregunta con «el taller no responde».
-  - **«Descargar una copia»** (en memoria) baja el archivo de `downloadUnsent()` y deja la pregunta abierta: después el alumno elige «Salir sin enviarlos» o «Volver al taller». Es lo que hacen el diálogo de cuenta distinta y «Cambiaste de cuenta», y SC-004 cuenta cinco caminos de «Salir» sin uno de «descargar». El contrato de D1c (§5) decía «descarga y responde `discard`»: es una decisión para el usuario (la 3 del informe).
+  - **«Descargar una copia»** (en memoria) baja el archivo de `downloadUnsent()` y deja la pregunta abierta: después el alumno elige «Salir sin enviarlos» o «Volver al taller». Es lo que hacen el diálogo de cuenta distinta y «Cambiaste de cuenta», y SC-004 cuenta cinco caminos de «Salir» sin uno de «descargar». El contrato de D1c (§5) decía «descarga y responde `discard`»: es una decisión para el usuario (la 3 de plan.md).
   - **La nota** depende del estado: antes del primer estado de D1c (`status === null`), la de F11a (FR-052), porque el progreso sigue donde estaba; con estado, la del modo (FR-034).
   - **El foco** vuelve a «Salir» cuando la pregunta se cierra sin salir (FR-039): el botón estaba deshabilitado, así que el foco que devuelve el navegador al cerrar el diálogo no alcanza, y `SignOutSection` lo pone después de habilitarlo.
 
@@ -110,14 +110,14 @@ Cada decisión dice qué se eligió, por qué, qué se descartó y cómo se veri
 - **El tiempo.** La espera de 2 s y los reintentos de 5 y 15 s se recorren con `page.clock.install` y `runFor` (Context7). Los E2E del reloj no tocan `page.clock`: el desfase sale del `serverTime` respecto del `sentAt` del lote (Assumptions de la spec).
 - **La zona horaria** de los E2E de la época es `America/Argentina/Buenos_Aires` (`test.use({ timezoneId })`), para que «hoy a las 9:00» no dependa de la máquina.
 - **`beforeunload`.** `page.close({ runBeforeUnload: true })` corre los manejadores y no espera el cierre. El diálogo se espera con `page.waitForEvent('dialog')` y se comprueba `dialog.type() === 'beforeunload'`. Para afirmar que no hubo diálogo, un contador acepta cualquiera y la prueba espera el evento `close` de la página.
-- **SC-002 sobre toda la red.** Una fixture automática nueva, `quietSync`, comprueba al terminar cada E2E que la franja quedó vacía y que no hay un diálogo de cuenta distinta abierto. Las specs de F13 la apagan con `test.use({ syncNotices: 'allowed' })`. Cambia una fixture, no un escenario (FR-046).
+- **SC-002 sobre toda la red.** Una fixture automática nueva, `quietSync`, observa avisos, toasts y diálogos de F13 durante todo el escenario, conserva eventos entre documentos y exige cero al terminar con el doble al día. Así detecta un aviso que se fue antes del teardown. Las specs problemáticas nuevas usan `test.use({ syncNotices: 'allowed' })`; los escenarios anteriores deliberadamente problemáticos se inventarían en T001 y se exceptúan por título exacto y motivo, no por archivo completo. Cambia una fixture, no un escenario (FR-046).
 - **«Ingresar» dos veces en la página.** Con la sesión vencida, la franja tiene «Ingresar» y el formulario del acceso también. `access.button('Ingresar')` de F11a no está acotado al diálogo, así que F13 suma `access.signInFromDialog(email, password)`, que sí lo está.
 
 ## R13. La entrada en servicio y la nota de FR-052
 
 - **El problema.** Desde que la U3 de D1c vincula el espacio, la nota de F11a («Tu progreso se guarda en este navegador, no en tu cuenta…») dice algo falso, y la U4 de D1c ya limpia el espacio al salir.
-- **Decisión (propuesta, decisión 2 del informe).** F13 se parte en dos tramos de entrega:
-  - **U1 y U4** («Salir», la nota, la pregunta y «Tu progreso») no dependen de F10b: `SignOutSection` vive en `pages/account`, bajo `AccountRoot` o bajo `AppRoot`. Entran apiladas justo después de la U5 de D1c, en el mismo tren que D1c U3 a U5 y F11d, y se mergean seguidas. Ninguna versión publicada tiene la nota falsa.
+- **Decisión (propuesta, decisión 2 de plan.md).** F13 se parte en dos tramos de entrega:
+  - **U1 y U4** («Salir», la nota, la pregunta y «Tu progreso») no dependen de F10b: `SignOutSection` vive en `pages/account`, bajo `AccountRoot` o bajo `AppRoot`. Entran apiladas como D1c U3 → U4 → U5 → F13 U1 → U4 → F11d U9 → U10, sin publicar estados intermedios. Precisa la inserción de F13 en los planes mergeados #93/#97 sin invertir su orden relativo; ninguna versión publicada tiene la nota falsa.
   - **U2, U3 y U5** esperan a F10b, porque dibujan en el shell de React.
 - **Lo que queda entre los dos tramos,** si F10b llega después de D1c: sin toasts, franja, diálogo de cuenta distinta ni confirmación al cerrar. Lo mitigan el envío de D1c al ocultar la pestaña (FR-063) y que el modo compartido recién se elige con F11d.
 
@@ -125,7 +125,7 @@ Cada decisión dice qué se eligió, por qué, qué se descartó y cómo se veri
 
 - **«Los 5 avisos a la vez»** (US6, escenario 6, y SC-007) no pueden pasar: la pestaña vieja (`outdated`) y la sesión vencida (`signed-out`) son dos valores del mismo `status`. Vitest prueba el orden con cuatro (la pestaña vieja, la época, los rechazos y el reloj) y aparte la sesión vencida en su lugar; el E2E de 320 y 390 px arma tres.
 - **La época sin copia en un E2E** (US4, escenario 1) pide una copia local de D1c en una época vieja, y sembrarla exige el formato interno de `taller-v2:<id>:copia`. Vitest cubre FR-024 con el estado de D1c armado; el E2E cubre la época con copia, que es el caso que pierde datos.
-- **FR-046 y FR-034 chocan.** El E2E de F11a «opens from the top bar…» (`qa/e2e/specs/account.spec.ts`) afirma la nota de FR-052, que FR-034 reemplaza. Editarlo es el cambio de comportamiento que FR-046 prevé, con TDD, en su propio commit y con la aprobación del usuario (decisión 1 del informe).
+- **FR-046 y FR-034 chocan.** El E2E de F11a «opens from the top bar…» (`qa/e2e/specs/account.spec.ts`) afirma la nota de FR-052, que FR-034 reemplaza. Editarlo es el cambio de comportamiento que FR-046 prevé, con TDD, en su propio commit y con la aprobación del usuario (decisión 1 de plan.md).
 
 ## Consultas de Context7 y de documentación oficial
 
@@ -149,3 +149,30 @@ Con el segundo servidor de Context7 (el primero agotó su cuota el 2026-10-28). 
 ## Cómo se verificó al planificar
 
 Se leyó, sin correr nada: la spec de F13 entera, el plan, el contrato, los datos y el research de D1c (PR #93), los planes de F10a, F10b, F10c, F11a, A3 y F8 en `master`, el código de `impl-f11a` (el doble, los Page Objects, `AccessDialog`, `reauthenticate`, `AccountRoot`) y `master` (`styles.css`, `qa/lib/seams-guard.ts`, los E2E de F1). No corrieron `npm`, Vitest, Playwright ni un navegador: T001 toma la línea base y las detecciones, y cada compuerta mide.
+
+
+## R15. Contraste al completar el plan (2026-11-02)
+
+- **Descarte de época:** `discardEpochCopy()` de D1c deja `epochChange` con `copy: null`. Para SC-006, T011 llama después a `dismissEpochChange()`. La fixture reproduce ese contrato; un doble que borrase todo con la primera acción escondería el defecto. La confirmación queda ligada a la referencia de época que se confirmó; una época nueva exige otra confirmación aun si tiene `resetAt: null`.
+- **Pregunta y cuenta distinta:** si el aviso aparece mientras `choose` espera, T020 responde `stay`, quita la pregunta y deja el modal de cuenta distinta como única superficie bloqueante. No aplica limpieza ni devuelve foco detrás del modal.
+- **Dependencias entre tareas:** T006 espera los textos T003 y la factory T005; T007 espera T005. T010/T011/T019 no editan el índice en paralelo: K integra los exports. U4 no consume U2/U3/T023 para poder entrar en el tren antes del shell.
+- **Silencio observado:** T023 incluye un test que agrega y retira un aviso en el mismo turno. Leer sólo el DOM final daba un falso verde. El observador registra también nodos retirados, valores anteriores y documentos anteriores, sin leer internals del motor.
+- **Alcance del análisis:** SC-007 habla de cinco avisos juntos, pero `outdated` y `signed-out` son estados exclusivos del contrato. Se prueban los cinco tipos y ambos máximos realizables de cuatro; se conserva esta precisión como límite expreso, sin cambiar la spec aprobada.
+- **Decisiones del coordinador:** las tres recomendaciones de plan.md quedan para revisión del usuario en el PR del plan; el coordinador confirmó que se puede terminar la redacción con ellas. No autorizó a publicar ni ejecutar implementación.
+
+## Consultas renovadas al retomar (2026-11-02)
+
+Context7 respondió en el servidor `context7`. Todas las versiones instalables se contrastaron leyendo `package-lock.json` de esta rama; no hubo instalación ni descarga de dependencias. Se consultó cada ID con resolve antes de query. No se usa ni configura nuqs, React Hook Form, Laravel, Pest, PHPStan, Docker o gVisor en F13; por eso no se amplió la consulta a esas herramientas.
+
+| Librería | Lockfile | ID consultado y tema | Conclusión para el plan |
+| --- | --- | --- | --- |
+| React | 19.2.8 | `/reactjs/react.dev`: `useSyncExternalStore`, snapshot estable y cleanup | T008 no crea objetos en el selector; cambia suscripción al reemplazar motor |
+| Zustand | 5.0.15 | `/pmndrs/zustand/v5.0.12`: store vanilla, subscribe y unsubscribe | Los vigías procesan estado inicial y liberan su suscripción; docs versionadas en 5.0.12, lock 5.0.15 |
+| Vitest | 5.0.3 | `/vitest-dev/vitest/v5.0.3`: resetModules, stubGlobal y unstubAllGlobals | T002 reimporta después del reset y restaura window en finally |
+| Testing Library React / user-event | 16.3.3 / 14.6.7 | `/testing-library/testing-library-docs`: userEvent.setup, Tab y foco | Specs esperan interacciones; el atrapado de foco nativo se acredita en Chromium |
+| fishery | 2.4.0 | `/thoughtbot/fishery`: Factory.define y merge de build | Una factory completa, overrides de cada caso; esperados nunca derivados de la factory |
+| jsdom | 30.1.2 | `/jsdom/jsdom`: diálogo y navegación | Documentación muestra métodos de diálogo ausentes y navegación no implementada; T008 usa stub reversible, T025/T027 prueban la garantía real. La documentación no fija 30.1.2: T001 contrasta capacidades |
+| Playwright | 1.63.0 | `/microsoft/playwright/v1.63.0`: beforeunload, dialog y close | `runBeforeUnload` no espera el cierre; todo listener resuelve dialog, pruebas de ausencia esperan close |
+| Vite | 8.3.2 | `/vitejs/vite`: preview y strictPort | Se conserva el servidor de pruebas existente; puerto ocupado falla, sin cambiar configuración |
+
+Fuentes devueltas por las consultas: [React](https://react.dev/reference/react/useSyncExternalStore), [Zustand](https://github.com/pmndrs/zustand/blob/v5.0.12/docs/reference/apis/create-store.md), [Vitest](https://github.com/vitest-dev/vitest/blob/v5.0.3/docs/api/vi.md), [Testing Library](https://testing-library.com/docs/user-event/convenience/), [fishery](https://github.com/thoughtbot/fishery), [jsdom](https://github.com/jsdom/jsdom), [Playwright](https://github.com/microsoft/playwright/blob/v1.63.0/docs/src/dialogs.md) y [Vite](https://vite.dev/config/preview-options).
