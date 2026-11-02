@@ -26,5 +26,8 @@ return [
         'to' => 'La fecha de fin tiene que ser una fecha AAAA-MM-DD, no anterior a la de inicio, y va junto con la de inicio.',
         'too_long' => 'El período puede tener hasta 366 días.',
         'granularity' => 'El intervalo tiene que ser day, week o month.',
+        'catalog' => 'El catálogo no existe.',
+        'language' => 'El lenguaje tiene que ser rust o go.',
+        'level' => 'El nivel tiene que ser beginner, medium, advanced o expert.',
     ],
 ];
