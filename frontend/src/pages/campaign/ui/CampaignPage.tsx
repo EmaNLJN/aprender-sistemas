@@ -56,12 +56,14 @@ const CampaignPage = ({
 
   const chooseWorld = (worldId: string) => {
     history.replaceState(null, '', withWorldQuery(new URL(location.href), worldId));
+    // eslint-disable-next-line @eslint-react/dom-no-flush-sync -- the world title has to exist before it takes the focus
     flushSync(() => updateSession((current) => selectWorld(current, worldId)));
     worldSectionRef.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
     worldTitleRef.current?.focus({ preventScroll: true });
   };
 
   const chooseFilter = (filter: MissionFilter, button: HTMLButtonElement) => {
+    // eslint-disable-next-line @eslint-react/dom-no-flush-sync -- the pressed filter has to exist before it keeps the focus
     flushSync(() => updateSession((current) => setMissionFilter(current, filter)));
     button.focus({ preventScroll: true });
   };
@@ -69,6 +71,7 @@ const CampaignPage = ({
   const answerCheckpoint = (worldId: string, index: number, option: HTMLButtonElement) => {
     const before = campaignEngine.getWorlds(language).find((item) => item.id === worldId);
     let result!: CheckpointAnswerResult;
+    // eslint-disable-next-line @eslint-react/dom-no-flush-sync -- the marked option has to exist before it keeps the focus
     flushSync(() => {
       result = campaignEngine.answerCheckpoint(worldId, index);
     });
