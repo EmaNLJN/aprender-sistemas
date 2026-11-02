@@ -3,24 +3,22 @@
 namespace Tests\Support;
 
 use App\Audit\AuditCatalog;
-use App\Audit\AuditReport;
-use App\Audit\AuditRun;
-use App\Audit\AuditSelection;
-use App\Audit\HostStamps;
-use App\Audit\JudgedProgram;
-use App\Audit\ProgramJudge;
-use App\Runs\Execution\ExecutorReply;
-use Carbon\CarbonImmutable;
-
 use App\Audit\AuditedExercise;
 use App\Audit\AuditLimits;
 use App\Audit\AuditProgram;
+use App\Audit\AuditReport;
+use App\Audit\AuditRun;
+use App\Audit\AuditSelection;
 use App\Audit\CustomTestProbe;
 use App\Audit\ExerciseKind;
+use App\Audit\HostStamps;
+use App\Audit\JudgedProgram;
+use App\Audit\ProgramJudge;
 use App\Audit\ProgramRole;
 use App\Runs\Evidence\ExecutorResult;
 use App\Runs\Evidence\TestVerdict;
 use App\Runs\Evidence\Verdict;
+use App\Runs\Execution\ExecutorReply;
 use App\Runs\ExecutorPhase;
 use App\Runs\Program\ComposedProgram;
 use App\Runs\Program\ExerciseSnapshot;
@@ -29,6 +27,7 @@ use App\Runs\RunLanguage;
 use App\Runs\RunReason;
 use App\Runs\RunStatus;
 use App\Runs\TestOutcome;
+use Carbon\CarbonImmutable;
 
 final class AuditCases
 {
@@ -73,6 +72,7 @@ final class AuditCases
 
         return new Verdict($status, $reason, $phase, $exitCode, false, 900, 200, $stdout, $stderr, $tests, $custom);
     }
+
     public static function exampleReport(): AuditReport
     {
         $rust01 = self::exampleExercise('rust-01', '1', '2', ['Tres celdas', 'Reactor vacío', 'Escala distinta']);
